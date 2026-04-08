@@ -150,26 +150,28 @@ export default function NewsAllPage() {
 
             {/* 기사 카드 리스트 */}
             {dummyArticles.map((article) => (
-              <div key={article.id} className="an-card" onClick={() => {}}>
-                <div className="an-img" style={{ position: "relative", flexShrink: 0 }}>
-                  <div style={{ width: "100%", height: "100%", background: "#f4f6fa", borderRadius: 6 }}></div>
-                  {article.isVideo && (
-                    <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 44, height: 44, background: "rgba(0,0,0,0.4)", borderRadius: "50%", border: "2.5px solid white", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 5 }}>
-                      <svg viewBox="0 0 24 24" width="24" height="24" fill="white" style={{ marginLeft: 4 }}><path d="M8 5v14l11-7z"/></svg>
+              <Link key={article.id} href={`/news_read?article_id=${article.id}`} style={{ textDecoration: "none", color: "inherit" }}>
+                <div className="an-card">
+                  <div className="an-img" style={{ position: "relative", flexShrink: 0 }}>
+                    <div style={{ width: "100%", height: "100%", background: "#f4f6fa", borderRadius: 6 }}></div>
+                    {article.isVideo && (
+                      <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 44, height: 44, background: "rgba(0,0,0,0.4)", borderRadius: "50%", border: "2.5px solid white", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 5 }}>
+                        <svg viewBox="0 0 24 24" width="24" height="24" fill="white" style={{ marginLeft: 4 }}><path d="M8 5v14l11-7z"/></svg>
+                      </div>
+                    )}
+                  </div>
+                  <div className="an-body">
+                    <div className="an-title">{article.title}</div>
+                    <div className="an-desc">{article.desc}</div>
+                    <div className="an-meta">
+                      <span style={{ color: "#508bf5", fontWeight: "bold", marginRight: 8 }}>
+                        [{article.section1} &gt; {article.section2}]
+                      </span>
+                      {article.date} · {article.reporter}
                     </div>
-                  )}
-                </div>
-                <div className="an-body">
-                  <div className="an-title">{article.title}</div>
-                  <div className="an-desc">{article.desc}</div>
-                  <div className="an-meta">
-                    <span style={{ color: "#508bf5", fontWeight: "bold", marginRight: 8 }}>
-                      [{article.section1} &gt; {article.section2}]
-                    </span>
-                    {article.date} · {article.reporter}
                   </div>
                 </div>
-              </div>
+              </Link>
             ))}
 
             {/* 페이지네이션 */}
