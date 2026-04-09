@@ -84,6 +84,17 @@ export default function NewsLocalPage() {
               <option value="분양">분양</option>
             </>
           )}
+          {section1 === "뉴스/칼럼" && (
+            <>
+              <option value="부동산·주식·재테크">부동산·주식·재테크</option>
+              <option value="정치·경제·사회">정치·경제·사회</option>
+              <option value="세무·법률">세무·법률</option>
+              <option value="여행·건강·생활">여행·건강·생활</option>
+              <option value="IT·가전·가구">IT·가전·가구</option>
+              <option value="스포츠·연예·Car">스포츠·연예·Car</option>
+              <option value="인물·미션·기타">인물·미션·기타</option>
+            </>
+          )}
         </select>
       </header>
 
