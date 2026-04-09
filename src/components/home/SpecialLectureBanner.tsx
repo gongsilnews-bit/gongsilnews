@@ -14,21 +14,23 @@ export default function SpecialLectureBanner() {
       </div>
       <div className="lecture-grid mb-50">
         {lectures.map((item, i) => (
-          <Link href="/study_read" key={i} className="lecture-card" style={{ display: "block" }}>
+          <Link href="/study_read" key={i} className="lecture-card" style={{ display: "flex", flexDirection: "column", height: "100%" }}>
             <div className="lecture-thumb">
               <div style={{ width: "100%", height: "100%", background: "#eee" }}></div>
               {item.isNew && <span className="badge-new">NEW🔥</span>}
               <div className="bookmark-btn">🔖</div>
             </div>
-            <div className="lecture-info">
+            <div className="lecture-info" style={{ flex: 1, display: "flex", flexDirection: "column" }}>
               <div className="lecture-cat">{item.cat}</div>
               <h3 className="lecture-title" style={{ wordBreak: "keep-all" }}>{item.title}</h3>
               <div className="lecture-meta">
                 <span className="instructor">{item.instructor}</span>
                 <div className="rating">★ {item.rating}</div>
               </div>
-              <div style={{ fontWeight: 800, color: "#111", fontSize: 17, background: "#f8fafc", padding: "10px 14px", borderRadius: 8, display: "inline-block", border: "1px solid #e2e8f0" }}>
-                {item.price}
+              <div style={{ marginTop: "auto" }}>
+                <div style={{ fontWeight: 800, color: "#111", fontSize: 17, background: "#f8fafc", padding: "10px 14px", borderRadius: 8, display: "inline-block", border: "1px solid #e2e8f0" }}>
+                  {item.price}
+                </div>
               </div>
             </div>
           </Link>
