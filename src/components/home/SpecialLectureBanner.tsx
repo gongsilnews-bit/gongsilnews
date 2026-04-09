@@ -8,7 +8,7 @@ export default function SpecialLectureBanner() {
   ];
 
   return (
-    <div className="mt-50 mb-50">
+    <div className="container px-20 mt-50 mb-50">
       <div className="sec-title-wrap">
         <h2 className="sec-title" id="special-lecture" style={{ scrollMarginTop: 150 }}>부동산특강</h2>
       </div>
