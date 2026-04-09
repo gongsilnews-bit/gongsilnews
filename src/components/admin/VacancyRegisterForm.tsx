@@ -155,12 +155,12 @@ export default function VacancyRegisterForm({ onBack, darkMode = false }: Vacanc
             {/* 면적 계산기 */}
             <div style={{ marginBottom: 20 }}>
               <div style={{ fontSize: 14, fontWeight: 700, color: textPrimary, marginBottom: 10 }}>면적 계산기 (m² ↔ 평)</div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, overflow: "hidden" }}>
                 <input type="number" placeholder="m²" value={calcM2} onChange={(e) => { setCalcM2(e.target.value); if (e.target.value) setCalcPy((Number(e.target.value) * 0.3025).toFixed(1)); else setCalcPy(""); }}
-                  style={{ ...inputStyle, width: "auto", flex: 1, height: 40 }} />
-                <span style={{ color: textSecondary, fontSize: 14, fontWeight: 600 }}>=</span>
+                  style={{ ...inputStyle, width: 80, minWidth: 0, flex: "1 1 0", height: 40, padding: "0 8px" }} />
+                <span style={{ color: textSecondary, fontSize: 14, fontWeight: 600, flexShrink: 0 }}>=</span>
                 <input type="text" placeholder="평" value={calcPy} readOnly
-                  style={{ ...inputStyle, width: "auto", flex: 1, height: 40, background: darkMode ? "#1a1b1e" : "#f9fafb" }} />
+                  style={{ ...inputStyle, width: 80, minWidth: 0, flex: "1 1 0", height: 40, padding: "0 8px", background: darkMode ? "#1a1b1e" : "#f9fafb" }} />
               </div>
             </div>
 
@@ -422,6 +422,23 @@ export default function VacancyRegisterForm({ onBack, darkMode = false }: Vacanc
                 </div>
               </div>
             </div>
+
+            {/* ── 공실 등록하기 버튼 ── */}
+            <button
+              type="button"
+              onClick={() => { alert("공실 등록이 완료되었습니다!"); onBack(); }}
+              style={{
+                width: "100%", height: 56, border: "none", borderRadius: 10,
+                background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
+                color: "#fff", fontSize: 18, fontWeight: 800, cursor: "pointer",
+                letterSpacing: 1, marginTop: 32,
+                transition: "opacity 0.2s, transform 0.1s",
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.opacity = "0.9"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.opacity = "1"; }}
+            >
+              공실 등록하기
+            </button>
           </div>
         </div>
 
@@ -508,23 +525,6 @@ export default function VacancyRegisterForm({ onBack, darkMode = false }: Vacanc
             <div style={{ textAlign: "right", fontSize: 12, color: textSecondary, marginTop: 6 }}>진행률 {progress}%</div>
           </div>
         </div>
-      </div>
-
-      {/* ── 하단 고정 버튼 ── */}
-      <div style={{ position: "sticky", bottom: 0, left: 0, right: 0, zIndex: 50 }}>
-        <button
-          type="button"
-          onClick={() => { alert("공실 등록이 완료되었습니다!"); onBack(); }}
-          style={{
-            width: "100%", height: 64, border: "none", background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
-            color: "#fff", fontSize: 20, fontWeight: 800, cursor: "pointer", letterSpacing: 2,
-            transition: "opacity 0.2s",
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.opacity = "0.9"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.opacity = "1"; }}
-        >
-          공실 등록하기
-        </button>
       </div>
     </div>
   );
