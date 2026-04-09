@@ -11,8 +11,8 @@ export default function StudyReadPage() {
     setActiveTab(id);
     const el = document.getElementById(id);
     if (el) {
-      // Offset by header + sticky tab height (~180px)
-      const y = el.getBoundingClientRect().top + window.scrollY - 180;
+      // Offset by header + sticky tab height (~130px)
+      const y = el.getBoundingClientRect().top + window.scrollY - 130;
       window.scrollTo({ top: y, behavior: 'smooth' });
     }
   };
@@ -57,7 +57,7 @@ export default function StudyReadPage() {
              </div>
 
              {/* Sticky Tab Menu */}
-             <div className="sticky top-[108px] border-b border-[#eee] flex mb-[40px]" style={{ zIndex: 90, backgroundColor: "#ffffff" }}>
+             <div className="sticky top-[82px] border-b border-[#eee] flex mb-[40px]" style={{ zIndex: 90, backgroundColor: "#ffffff" }}>
                 {["introduce", "curriculum", "creator", "review"].map(tabId => {
                   const labels: any = { introduce: "클래스 소개", curriculum: "커리큘럼", creator: "크리에이터", review: "리뷰" };
                   return (
