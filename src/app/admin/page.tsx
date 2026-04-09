@@ -83,7 +83,7 @@ export default function AdminPage() {
   const [hoveredMenu, setHoveredMenu] = useState<string | null>(null);
   const [darkMode, setDarkMode] = useState(false);
 
-  const contentTitle = MENU_ITEMS.find(m => m.key === activeMenu)?.label || "대시보드";
+  const contentTitle = activeMenu === "members" ? "회원목록" : (MENU_ITEMS.find(m => m.key === activeMenu)?.label || "대시보드");
   const now = new Date();
   const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
 
@@ -301,6 +301,535 @@ export default function AdminPage() {
               </div>
             </div>
           </div>
+        ) : activeMenu === "gongsil" ? (
+          /* ===== 공실관리 리스트 (원본 iframe 디자인 1:1 복제) ===== */
+          <div style={{ flex: 1, overflowY: "auto", padding: "20px 28px", background: bg }}>
+            {/* 타이틀 */}
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
+              <h1 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: 0 }}>공실관리</h1>
+              <span style={{ fontSize: 13, color: "#ef4444", fontWeight: 600 }}>(광고 204건 / 전체 204건)</span>
+            </div>
+
+            {/* 메인 카드 */}
+            <div style={{ background: cardBg, borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", overflow: "hidden" }}>
+              {/* 필터 영역 */}
+              <div style={{ padding: "20px 24px", borderBottom: `1px solid ${border}`, display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <label style={{ fontSize: 13, fontWeight: 600, color: textSecondary, whiteSpace: "nowrap" }}>매물번호</label>
+                  <input type="text" placeholder="매물번호 입력" style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", width: 140 }} />
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <label style={{ fontSize: 13, fontWeight: 600, color: textSecondary, whiteSpace: "nowrap" }}>매물종류</label>
+                  <select style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", minWidth: 80 }}>
+                    <option>전체</option>
+                  </select>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <label style={{ fontSize: 13, fontWeight: 600, color: textSecondary, whiteSpace: "nowrap" }}>매물구분</label>
+                  <select style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", minWidth: 80 }}>
+                    <option>전체</option>
+                  </select>
+                </div>
+                <input type="text" placeholder="전체내용 입력하세요." style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", flex: 1, minWidth: 180 }} />
+                <button style={{ height: 36, padding: "0 18px", background: darkMode ? "#2c2d31" : "#374151", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>🔍 검색</button>
+                <button style={{ height: 36, padding: "0 14px", background: darkMode ? "#2c2d31" : "#fff", color: textSecondary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>초기화</button>
+              </div>
+
+              {/* 액션 버튼 영역 */}
+              <div style={{ padding: "16px 24px", borderBottom: `1px solid ${border}`, display: "flex", gap: 10, alignItems: "center" }}>
+                <button style={{ height: 36, padding: "0 16px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>+ 공실등록</button>
+                <button style={{ height: 36, padding: "0 16px", background: "#10b981", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>📄 엑셀 대량등록</button>
+                <button style={{ height: 36, padding: "0 16px", background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>🔄 고소취갱신</button>
+                <button style={{ height: 36, padding: "0 16px", background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>🗑 선택삭제</button>
+              </div>
+
+              {/* 데이터 테이블 */}
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 1100 }}>
+                  <thead>
+                    <tr style={{ background: darkMode ? "#2c2d31" : "#f9fafb" }}>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${border}`, width: 40 }}>
+                        <input type="checkbox" style={{ accentColor: "#3b82f6" }} />
+                      </th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${border}`, width: 90 }}>번호</th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${border}`, width: 90 }}>광고설정</th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${border}`, width: 90 }}>매물종류</th>
+                      <th style={{ padding: "12px 10px", textAlign: "left", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${border}` }}>주소 / 연락처</th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${border}`, width: 110 }}>금액</th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${border}`, width: 130 }}>방수/면적(m²)/층</th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${border}`, width: 70 }}>최초등록</th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${border}`, width: 120 }}>등록자/연락처</th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${border}`, width: 120 }}>관리</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      { id: "1/1612/133", adLabel: "광고중", adDays: "14일", adColor: "#10b981", type: "단독/다세대구", addr: "도곡동 탑데스하임", phone: "01088319450", deal: "매매", price: "6억", rooms: "1 / 244.55m² / -", date: "04.07", owner: "김미숙", ownerPhone: "010-5555-5555" },
+                      { id: "377952561", adLabel: "광고중", adDays: "5468", adColor: "#10b981", type: "다세대/빌라/연립", addr: "논현동 논현 4번지왕상", phone: "010-0555-0555", deal: "매매", price: "10억", rooms: "3 / m² / -", date: "04.08", owner: "김미숙", ownerPhone: "010-5555-5555" },
+                      { id: "71079848", adLabel: "광고중", adDays: "5484", adColor: "#10b981", type: "다가구", addr: "녹번동 관악드림타운", phone: "01088319450", deal: "매매", price: "11억 5000", rooms: "3 / 159.83m² / 8층", date: "04.04", owner: "김미숙", ownerPhone: "01088319450" },
+                      { id: "2971428573", adLabel: "광고중", adDays: "14963", adColor: "#10b981", type: "다가구", addr: "노원동 동부센트레빌", phone: "010-8631-9450", deal: "매매", price: "10억", rooms: "3 / 58m² / -", date: "04.04", owner: "김미숙", ownerPhone: "010-8631-9450" },
+                      { id: "1386120769", adLabel: "광고중", adDays: "13549", adColor: "#10b981", type: "아파트", addr: "서초동 서초클라스", phone: "010-8631-9450", deal: "매매", price: "7억", rooms: "2 / 39.12m² / 5층", date: "03.30", owner: "착한임대", ownerPhone: "010-8631-9450" },
+                      { id: "2943105657", adLabel: "광고중", adDays: "23.50", adColor: "#10b981", type: "아파트/단지형", addr: "서초동 서초프라지움더닉스", phone: "010-8631-9450", deal: "매매", price: "3.2억", rooms: "4 / 134.78m² / 7층", date: "03.30", owner: "착한임대", ownerPhone: "010-8631-9450" },
+                    ].map((row, idx) => (
+                      <tr key={idx} style={{ borderBottom: `1px solid ${darkMode ? "#333" : "#f3f4f6"}`, transition: "background 0.15s" }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = darkMode ? "#2c2d31" : "#fafbfc"; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                      >
+                        <td style={{ padding: "14px 10px", textAlign: "center", verticalAlign: "top" }}>
+                          <input type="checkbox" style={{ accentColor: "#3b82f6" }} />
+                        </td>
+                        <td style={{ padding: "14px 10px", textAlign: "center", verticalAlign: "top", fontSize: 12, color: textSecondary, lineHeight: "1.5" }}>
+                          <div style={{ fontWeight: 600 }}>1</div>
+                          <div style={{ fontSize: 11, color: "#9ca3af" }}>{row.id}</div>
+                        </td>
+                        <td style={{ padding: "14px 10px", textAlign: "center", verticalAlign: "top" }}>
+                          <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 4, fontSize: 11, fontWeight: 700, color: "#fff", background: row.adColor }}>{row.adLabel}</span>
+                          <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 4 }}>{row.adDays}</div>
+                        </td>
+                        <td style={{ padding: "14px 10px", textAlign: "center", verticalAlign: "top", fontSize: 12, fontWeight: 600, color: textPrimary }}>{row.type}</td>
+                        <td style={{ padding: "14px 10px", verticalAlign: "top" }}>
+                          <div style={{ fontWeight: 700, color: textPrimary, fontSize: 13, marginBottom: 2 }}>{row.addr}</div>
+                          <div style={{ fontSize: 12, color: "#3b82f6" }}>📞 {row.phone}</div>
+                        </td>
+                        <td style={{ padding: "14px 10px", textAlign: "center", verticalAlign: "top" }}>
+                          <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 4, fontSize: 12, fontWeight: 700, color: "#fff", background: "#ef4444" }}>{row.deal} {row.price}</span>
+                        </td>
+                        <td style={{ padding: "14px 10px", textAlign: "center", verticalAlign: "top", fontSize: 12, color: textSecondary }}>{row.rooms}</td>
+                        <td style={{ padding: "14px 10px", textAlign: "center", verticalAlign: "top", fontSize: 12, color: textSecondary }}>{row.date}</td>
+                        <td style={{ padding: "14px 10px", textAlign: "center", verticalAlign: "top" }}>
+                          <div style={{ fontWeight: 600, fontSize: 12, color: textPrimary }}>{row.owner}</div>
+                          <div style={{ fontSize: 11, color: "#3b82f6" }}>{row.ownerPhone}</div>
+                        </td>
+                        <td style={{ padding: "14px 10px", textAlign: "center", verticalAlign: "top" }}>
+                          <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
+                            <button style={{ height: 28, padding: "0 10px", background: darkMode ? "#2c2d31" : "#fff", color: "#3b82f6", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 4, fontSize: 11, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 3 }}>✓ 수정</button>
+                            <button style={{ height: 28, padding: "0 10px", background: darkMode ? "#2c2d31" : "#fff", color: "#9ca3af", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 4, fontSize: 11, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 3 }}>🗑 삭제</button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* 페이징 */}
+              <div style={{ padding: "16px 24px", display: "flex", justifyContent: "center", gap: 4, borderTop: `1px solid ${border}` }}>
+                <button style={{ width: 32, height: 32, border: `1px solid ${border}`, borderRadius: 4, background: darkMode ? "#2c2d31" : "#fff", color: textSecondary, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>&lt;</button>
+                <button style={{ width: 32, height: 32, border: "none", borderRadius: 4, background: "#3b82f6", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>1</button>
+                {[2,3,4,5].map(n => (
+                  <button key={n} style={{ width: 32, height: 32, border: `1px solid ${border}`, borderRadius: 4, background: darkMode ? "#2c2d31" : "#fff", color: textSecondary, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>{n}</button>
+                ))}
+                <button style={{ width: 32, height: 32, border: `1px solid ${border}`, borderRadius: 4, background: darkMode ? "#2c2d31" : "#fff", color: textSecondary, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>&gt;</button>
+              </div>
+            </div>
+          </div>
+
+        ) : activeMenu === "article" ? (
+          /* ===== 기사관리 리스트 (원본 iframe 디자인 1:1 복제) ===== */
+          <div style={{ flex: 1, overflowY: "auto", padding: "20px 28px", background: bg }}>
+            {/* 타이틀 */}
+            <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 20 }}>
+              <h1 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: 0 }}>기사관리</h1>
+              <span style={{ fontSize: 13, fontWeight: 600 }}>
+                ( <span style={{ color: "#17a2b8" }}>승인 14건</span> / <span style={{ color: "#6b7280" }}>승인신청 0건</span> / <span style={{ color: "#f59e0b" }}>작성중 0건</span> / <span style={{ color: "#ef4444" }}>반려 0건</span> )
+              </span>
+            </div>
+
+            {/* 메인 카드 */}
+            <div style={{ background: cardBg, borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", overflow: "hidden" }}>
+              {/* 필터 영역 */}
+              <div style={{ padding: "20px 24px", borderBottom: `1px solid ${border}`, display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <label style={{ fontSize: 13, fontWeight: 600, color: textSecondary, whiteSpace: "nowrap" }}>진행상황</label>
+                  <select style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", minWidth: 80 }}>
+                    <option>전체</option>
+                  </select>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <label style={{ fontSize: 13, fontWeight: 600, color: textSecondary, whiteSpace: "nowrap" }}>1차섹션</label>
+                  <select style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", minWidth: 80 }}>
+                    <option>전체</option>
+                  </select>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <label style={{ fontSize: 13, fontWeight: 600, color: textSecondary, whiteSpace: "nowrap" }}>2차섹션</label>
+                  <select style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", minWidth: 80 }}>
+                    <option>전체</option>
+                  </select>
+                </div>
+                <input type="text" placeholder="검색어를 입력하세요." style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", flex: 1, minWidth: 180 }} />
+                <button style={{ height: 36, padding: "0 18px", background: darkMode ? "#2c2d31" : "#374151", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>🔍 검색</button>
+                <button style={{ height: 36, padding: "0 14px", background: darkMode ? "#2c2d31" : "#fff", color: textSecondary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>초기화</button>
+              </div>
+
+              {/* 액션 버튼 영역 */}
+              <div style={{ padding: "16px 24px", borderBottom: `1px solid ${border}`, display: "flex", gap: 10, alignItems: "center" }}>
+                <button style={{ height: 36, padding: "0 16px", background: "#f59e0b", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>+ 기사쓰기</button>
+                <button style={{ height: 36, padding: "0 16px", background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>⭐ 광고순위갱신</button>
+                <button style={{ height: 36, padding: "0 16px", background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>🗑 선택삭제</button>
+              </div>
+
+              {/* 데이터 테이블 */}
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 1100 }}>
+                  <thead>
+                    <tr style={{ background: darkMode ? "#2c2d31" : "#f9fafb" }}>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#111"}`, width: 40 }}>
+                        <input type="checkbox" style={{ accentColor: "#3b82f6" }} />
+                      </th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#111"}`, width: 80 }}>기사번호</th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#111"}`, width: 80 }}>진행상황</th>
+                      <th style={{ padding: "12px 10px", textAlign: "left", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#111"}` }}>기사명</th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#111"}`, width: 120 }}>1차섹션</th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#111"}`, width: 120 }}>2차섹션</th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#111"}`, width: 140 }}>승인일자</th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#111"}`, width: 110 }}>작성자 / 연락처</th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#111"}`, width: 120 }}>관리</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      { no: 168, status: "광고중", statusDate: "04.06", title: "우리동네 샘플", section1: "우리동네부동산", section2: "아파트·오피스텔", approved: "2026-04-06 21:03", author: "김미숙" },
+                      { no: 158, status: "광고중", statusDate: "04.05", title: "강남역 도보권, 다용도 투자 가치 높은 다가구 매물 등장", section1: "우리동네부동산", section2: "상가·업무·공장·토지", approved: "2026-04-05 21:57", author: "김미숙" },
+                      { no: 157, status: "광고중", statusDate: "04.05", title: "강남3구 아파트, 여전히 서울 집값 상승을 이끈다", section1: "우리동네부동산", section2: "아파트·오피스텔", approved: "2026-04-05 21:54", author: "김미숙" },
+                      { no: 156, status: "광고중", statusDate: "04.05", title: "강남 아파트 전세가율 38%... 매매·전세 격차 확대", section1: "우리동네부동산", section2: "아파트·오피스텔", approved: "2026-04-05 21:53", author: "김미숙" },
+                      { no: 155, status: "광고중", statusDate: "04.05", title: "한국 대표팀, 3월 14일 마이애미서 8강 격돌", section1: "뉴스/칼럼", section2: "스포츠·연예·Car", approved: "2026-04-05 21:16", author: "김미숙" },
+                      { no: 154, status: "광고중", statusDate: "04.05", title: `"올림픽 하는지도 몰랐다"... 밀라노의 함성, 한국에선 '무관심'의 침묵`, section1: "뉴스/칼럼", section2: "스포츠·연예·Car", approved: "2026-04-05 21:15", author: "김미숙" },
+                      { no: 153, status: "광고중", statusDate: "04.05", title: "언제 어디서나 진료... 상시 비대면 진료 공식 허용으로 의료 패러다임 전환", section1: "뉴스/칼럼", section2: "건강·웰스", approved: "2026-04-05 21:13", author: "김미숙" },
+                      { no: 152, status: "광고중", statusDate: "04.05", title: `"내 취향 맞춤형 AI 가이드와 함께"... 북한산 'K-등산', 스마트 관광으로 진화`, section1: "뉴스/칼럼", section2: "여행·맛집", approved: "2026-04-05 21:12", author: "김미숙" },
+                    ].map((row, idx) => (
+                      <tr key={idx} style={{ borderBottom: `1px solid ${darkMode ? "#333" : "#f3f4f6"}`, transition: "background 0.15s" }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = darkMode ? "#2c2d31" : "#fafbfc"; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                      >
+                        <td style={{ padding: "14px 10px", textAlign: "center", verticalAlign: "middle" }}>
+                          <input type="checkbox" style={{ accentColor: "#3b82f6" }} />
+                        </td>
+                        <td style={{ padding: "14px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 13, fontWeight: 600, color: textPrimary }}>{row.no}</td>
+                        <td style={{ padding: "14px 10px", textAlign: "center", verticalAlign: "middle" }}>
+                          <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 4, fontSize: 11, fontWeight: 700, color: "#fff", background: "#17a2b8" }}>{row.status}</span>
+                          <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 3 }}>{row.statusDate}</div>
+                        </td>
+                        <td style={{ padding: "14px 10px", verticalAlign: "middle", fontWeight: 600, color: textPrimary, fontSize: 13, maxWidth: 350, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.title}</td>
+                        <td style={{ padding: "14px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 12, color: textSecondary }}>{row.section1}</td>
+                        <td style={{ padding: "14px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 12, color: textSecondary }}>{row.section2}</td>
+                        <td style={{ padding: "14px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 12, color: textSecondary }}>{row.approved}</td>
+                        <td style={{ padding: "14px 10px", textAlign: "center", verticalAlign: "middle" }}>
+                          <span style={{ fontSize: 11, color: "#ef4444", fontWeight: 700 }}>관리자</span>{" "}
+                          <span style={{ fontSize: 12, fontWeight: 600, color: textPrimary }}>{row.author}</span>
+                        </td>
+                        <td style={{ padding: "14px 10px", textAlign: "center", verticalAlign: "middle" }}>
+                          <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
+                            <button style={{ height: 28, padding: "0 10px", background: "#4b5563", color: "#fff", border: "none", borderRadius: 4, fontSize: 11, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 3 }}>✓ 수정</button>
+                            <button style={{ height: 28, padding: "0 10px", background: darkMode ? "#2c2d31" : "#fff", color: "#6b7280", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 4, fontSize: 11, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 3 }}>🗑 삭제</button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* 페이징 */}
+              <div style={{ padding: "16px 24px", display: "flex", justifyContent: "center", gap: 4, borderTop: `1px solid ${border}` }}>
+                <button style={{ width: 32, height: 32, border: `1px solid ${border}`, borderRadius: 4, background: darkMode ? "#2c2d31" : "#fff", color: textSecondary, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>&lt;</button>
+                <button style={{ width: 32, height: 32, border: "none", borderRadius: 4, background: "#3b82f6", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>1</button>
+                <button style={{ width: 32, height: 32, border: `1px solid ${border}`, borderRadius: 4, background: darkMode ? "#2c2d31" : "#fff", color: textSecondary, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>2</button>
+                <button style={{ width: 32, height: 32, border: `1px solid ${border}`, borderRadius: 4, background: darkMode ? "#2c2d31" : "#fff", color: textSecondary, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>&gt;</button>
+              </div>
+            </div>
+          </div>
+
+        ) : activeMenu === "board" ? (
+          /* ===== 게시판관리 리스트 (원본 iframe 디자인 1:1 복제) ===== */
+          <div style={{ flex: 1, overflowY: "auto", padding: "20px 28px", background: bg }}>
+            {/* 타이틀 + 버튼 */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
+              <h1 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: 0 }}>게시판 리스트 및 설정</h1>
+              <button style={{ height: 38, padding: "0 18px", background: "#374151", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>+ 새 게시판 생성</button>
+            </div>
+
+            {/* 메인 카드 */}
+            <div style={{ background: cardBg, borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", overflow: "hidden" }}>
+              {/* 데이터 테이블 */}
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 900 }}>
+                  <thead>
+                    <tr>
+                      <th style={{ padding: "14px 20px", textAlign: "left", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 100 }}>고유 ID</th>
+                      <th style={{ padding: "14px 20px", textAlign: "left", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 260 }}>게시판명</th>
+                      <th style={{ padding: "14px 20px", textAlign: "left", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 200 }}>스킨 테마 설정</th>
+                      <th style={{ padding: "14px 20px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 160 }}>권한 설정 (목록/읽기/쓰기)</th>
+                      <th style={{ padding: "14px 20px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}` }}>관리 액션</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      { id: "doc", name: "계약서/양식", desc: "(부동산 계약서외)", skin: "자료실 썸네일형", skinType: "file", perm: "1 / 5 / 9" },
+                      { id: "sound", name: "음원", desc: "(유튜브 전용 음원)", skin: "동영상 앨범형", skinType: "video", perm: "1 / 5 / 9" },
+                      { id: "design", name: "디자인", desc: "(부동산 마케팅 디자인)", skin: "자료실 썸네일형", skinType: "file", perm: "1 / 5 / 9" },
+                      { id: "app", name: "App(앱)", desc: "(부동산마케팅앱)", skin: "자료실 썸네일형", skinType: "file", perm: "1 / 5 / 9" },
+                      { id: "drone", name: "드론영상", desc: "(드론영상고유게시판)", skin: "동영상 앨범형", skinType: "video", perm: "1 / 5 / 9" },
+                    ].map((row, idx) => (
+                      <tr key={idx} style={{ borderBottom: `1px solid ${darkMode ? "#333" : "#f3f4f6"}`, transition: "background 0.15s" }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = darkMode ? "#2c2d31" : "#fafbfc"; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                      >
+                        <td style={{ padding: "18px 20px", verticalAlign: "middle", fontSize: 13, color: textSecondary, fontFamily: "monospace" }}>{row.id}</td>
+                        <td style={{ padding: "18px 20px", verticalAlign: "middle" }}>
+                          <span style={{ fontWeight: 700, color: textPrimary, fontSize: 14 }}>{row.name}</span>
+                          <span style={{ fontSize: 12, color: "#9ca3af", marginLeft: 6 }}>{row.desc}</span>
+                        </td>
+                        <td style={{ padding: "18px 20px", verticalAlign: "middle" }}>
+                          <span style={{
+                            display: "inline-flex", alignItems: "center", gap: 6,
+                            padding: "5px 12px", borderRadius: 6, fontSize: 12, fontWeight: 600,
+                            background: row.skinType === "file" ? (darkMode ? "#1a2e1a" : "#f0fdf4") : (darkMode ? "#1e1a2e" : "#f5f3ff"),
+                            color: row.skinType === "file" ? "#16a34a" : "#7c3aed",
+                            border: `1px solid ${row.skinType === "file" ? (darkMode ? "#166534" : "#bbf7d0") : (darkMode ? "#5b21b6" : "#ddd6fe")}`
+                          }}>
+                            {row.skinType === "file" ? (
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                            ) : (
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                            )}
+                            {row.skin}
+                          </span>
+                        </td>
+                        <td style={{ padding: "18px 20px", textAlign: "center", verticalAlign: "middle", fontSize: 13, fontWeight: 600, color: textPrimary }}>{row.perm}</td>
+                        <td style={{ padding: "18px 20px", textAlign: "center", verticalAlign: "middle" }}>
+                          <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+                            <button style={{ height: 30, padding: "0 12px", background: "#4b5563", color: "#fff", border: "none", borderRadius: 4, fontSize: 11, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                              설정
+                            </button>
+                            <button style={{ height: 30, padding: "0 12px", background: darkMode ? "#2c2d31" : "#fff", color: "#6b7280", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 4, fontSize: 11, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                              미리보기
+                            </button>
+                            <button style={{ height: 30, padding: "0 12px", background: darkMode ? "#2c2d31" : "#fff", color: "#9ca3af", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 4, fontSize: 11, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                              삭제
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+        ) : activeMenu === "study" ? (
+          /* ===== 스터디관리 리스트 (원본 iframe 디자인 1:1 복제) ===== */
+          <div style={{ flex: 1, overflowY: "auto", padding: "20px 28px", background: bg }}>
+            {/* 타이틀 */}
+            <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 20 }}>
+              <h1 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: 0 }}>스터디목록 (강의관리)</h1>
+              <span style={{ fontSize: 13, fontWeight: 600 }}>
+                ( <span style={{ color: "#3b82f6" }}>총 6건</span> / <span style={{ color: "#6b7280" }}>임시저장 1건</span> / <span style={{ color: "#6b7280" }}>유료지원 0건</span> )
+              </span>
+            </div>
+
+            {/* 메인 카드 */}
+            <div style={{ background: cardBg, borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", overflow: "hidden" }}>
+              {/* 필터 영역 */}
+              <div style={{ padding: "20px 24px", borderBottom: `1px solid ${border}`, display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <label style={{ fontSize: 13, fontWeight: 600, color: textSecondary, whiteSpace: "nowrap" }}>진행상황</label>
+                  <select style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", minWidth: 80 }}>
+                    <option>전체</option>
+                  </select>
+                </div>
+                <input type="text" placeholder="강의명을 검색하세요." style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", flex: 1, minWidth: 180 }} />
+                <button style={{ height: 36, padding: "0 18px", background: darkMode ? "#2c2d31" : "#374151", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>🔍 검색</button>
+                <button style={{ height: 36, padding: "0 14px", background: darkMode ? "#2c2d31" : "#fff", color: textSecondary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>초기화</button>
+              </div>
+
+              {/* 액션 버튼 영역 */}
+              <div style={{ padding: "16px 24px", borderBottom: `1px solid ${border}`, display: "flex", gap: 10, alignItems: "center" }}>
+                <button style={{ height: 36, padding: "0 16px", background: "#f59e0b", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>+ 새 강의 등록</button>
+                <button style={{ height: 36, padding: "0 16px", background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>🗑 선택삭제</button>
+              </div>
+
+              {/* 데이터 테이블 */}
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 900 }}>
+                  <thead>
+                    <tr style={{ background: darkMode ? "#2c2d31" : "#f9fafb" }}>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#111"}`, width: 40 }}>
+                        <input type="checkbox" style={{ accentColor: "#3b82f6" }} />
+                      </th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#111"}`, width: 80 }}>공개상태</th>
+                      <th style={{ padding: "12px 10px", textAlign: "left", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#111"}` }}>강의명</th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#111"}`, width: 120 }}>수강료(포인트)</th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#111"}`, width: 180 }}>최초등록일</th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#111"}`, width: 100 }}>관리</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      { status: "판매중", title: "[2026] 부동산이 쉽게 활용하는 유튜브 쇼츠 운영법", price: "2,000 P", date: "2026. 04. 07. 12시 08:34" },
+                      { status: "판매중", title: "[2026] 부동산이 알아야 하는 챗봇 활용법", price: "3,000 P", date: "2026. 04. 07. 12시 08:34" },
+                      { status: "판매중", title: "[202603] 부동산 중개에 필요한 지미나이 활용법", price: "5,000 P", date: "2026. 04. 07. 12시 08:34" },
+                      { status: "판매중", title: "[2026] 부동산이 쉽게 활용하는 유튜브 쇼츠 운영법", price: "2,000 P", date: "2026. 04. 05. 오전 11:44" },
+                      { status: "판매중", title: "[2026] 부동산이 알아야 하는 챗봇 활용법", price: "3,000 P", date: "2026. 04. 05. 오전 11:42" },
+                      { status: "판매중", title: "[202603] 부동산 중개에 필요한 지미나이 활용법", price: "5,000 P", date: "2026. 04. 05. 오전 11:40" },
+                    ].map((row, idx) => (
+                      <tr key={idx} style={{ borderBottom: `1px solid ${darkMode ? "#333" : "#f3f4f6"}`, transition: "background 0.15s" }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = darkMode ? "#2c2d31" : "#fafbfc"; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                      >
+                        <td style={{ padding: "14px 10px", textAlign: "center", verticalAlign: "middle" }}>
+                          <input type="checkbox" style={{ accentColor: "#3b82f6" }} />
+                        </td>
+                        <td style={{ padding: "14px 10px", textAlign: "center", verticalAlign: "middle" }}>
+                          <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 4, fontSize: 11, fontWeight: 700, color: "#92400e", background: "#fef3c7", border: "1px solid #fde68a" }}>{row.status}</span>
+                        </td>
+                        <td style={{ padding: "14px 10px", verticalAlign: "middle", fontWeight: 600, color: textPrimary, fontSize: 13 }}>{row.title}</td>
+                        <td style={{ padding: "14px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 13, fontWeight: 700, color: "#3b82f6" }}>{row.price}</td>
+                        <td style={{ padding: "14px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 12, color: textSecondary }}>{row.date}</td>
+                        <td style={{ padding: "14px 10px", textAlign: "center", verticalAlign: "middle" }}>
+                          <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
+                            <button style={{ height: 28, padding: "0 10px", background: darkMode ? "#2c2d31" : "#fff", color: "#3b82f6", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 4, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>수정</button>
+                            <button style={{ height: 28, padding: "0 10px", background: darkMode ? "#2c2d31" : "#fff", color: "#ef4444", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 4, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>삭제</button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* 페이징 */}
+              <div style={{ padding: "16px 24px", display: "flex", justifyContent: "center", gap: 4, borderTop: `1px solid ${border}` }}>
+                <button style={{ width: 32, height: 32, border: `1px solid ${border}`, borderRadius: 4, background: darkMode ? "#2c2d31" : "#fff", color: textSecondary, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>&lt;</button>
+                <button style={{ width: 32, height: 32, border: "none", borderRadius: 4, background: "#3b82f6", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>1</button>
+                <button style={{ width: 32, height: 32, border: `1px solid ${border}`, borderRadius: 4, background: darkMode ? "#2c2d31" : "#fff", color: textSecondary, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>&gt;</button>
+              </div>
+            </div>
+          </div>
+
+        ) : activeMenu === "members" ? (
+          /* ===== 회원관리 리스트 (원본 admin 디자인 1:1 복제) ===== */
+          <div style={{ flex: 1, overflowY: "auto", padding: "20px 28px", background: bg }}>
+            {/* 타이틀 */}
+            <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 20 }}>
+              <h1 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: 0 }}>회원관리</h1>
+              <span style={{ fontSize: 13, fontWeight: 600, color: textSecondary }}>
+                ( <span style={{ color: "#ef4444" }}>관리자 1명</span> / <span style={{ color: "#f59e0b" }}>부동산회원 1명</span> / <span style={{ color: "#6b7280" }}>일반 1명</span> / 전체 3명 )
+              </span>
+            </div>
+
+            {/* 메인 카드 */}
+            <div style={{ background: cardBg, borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", overflow: "hidden" }}>
+              {/* 필터 영역 */}
+              <div style={{ padding: "20px 24px", borderBottom: `1px solid ${border}`, display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <label style={{ fontSize: 13, fontWeight: 600, color: textSecondary, whiteSpace: "nowrap" }}>회원번호</label>
+                  <input type="text" placeholder="회원번호 입력" style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", width: 130 }} />
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <label style={{ fontSize: 13, fontWeight: 600, color: textSecondary, whiteSpace: "nowrap" }}>회원구분</label>
+                  <select style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", minWidth: 80 }}>
+                    <option>전체</option>
+                    <option>최고관리자</option>
+                    <option>부동산회원</option>
+                    <option>일반회원</option>
+                  </select>
+                </div>
+                <input type="text" placeholder="이름 또는 이메일 검색" style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", flex: 1, minWidth: 180 }} />
+                <button style={{ height: 36, padding: "0 18px", background: darkMode ? "#2c2d31" : "#374151", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>🔍 검색</button>
+                <button style={{ height: 36, padding: "0 14px", background: darkMode ? "#2c2d31" : "#fff", color: textSecondary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>초기화</button>
+              </div>
+
+              {/* 액션 버튼 영역 */}
+              <div style={{ padding: "16px 24px", borderBottom: `1px solid ${border}`, display: "flex", gap: 10, alignItems: "center" }}>
+                <button style={{ height: 36, padding: "0 16px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>+ 회원등록</button>
+                <button style={{ height: 36, padding: "0 16px", background: "#10b981", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>⭐ 승격순역순</button>
+                <button style={{ height: 36, padding: "0 16px", background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>🗑 선택삭제</button>
+                <button style={{ height: 36, padding: "0 16px", background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>✕ 회원/아바터/보기</button>
+              </div>
+
+              {/* 데이터 테이블 */}
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 1100 }}>
+                  <thead>
+                    <tr style={{ background: darkMode ? "#2c2d31" : "#f9fafb" }}>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 40 }}>
+                        <input type="checkbox" style={{ accentColor: "#3b82f6" }} />
+                      </th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 80 }}>회원번호</th>
+                      <th style={{ padding: "12px 10px", textAlign: "left", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}` }}>아이디</th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 70 }}>이름</th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 120 }}>연락처</th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 90 }}>회원구분</th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 90 }}>가입일</th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 60 }}>멤버십</th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 100 }}>유효 회원 기간</th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 120 }}>승인상태</th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 180 }}>관리</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      { no: "000001", email: "gongsilnews@gmail.com", name: "김미숙", phone: "-", role: "최고관리자", roleColor: "#dc2626", roleBg: "#fef2f2", date: "2026-03-17", membership: "무료", period: "-", status: "정상", statusColor: "#16a34a" },
+                      { no: "000002", email: "gongsilmarketing@gmail.com", name: "착한임대", phone: "010-8631-9450", role: "부동산회원", roleColor: "#d97706", roleBg: "#fffbeb", date: "2026-03-31", membership: "유료", period: "-", status: "🚨 보완요청 회원님!", statusColor: "#dc2626", statusBg: "#fef2f2" },
+                      { no: "000003", email: "suppliant@naver.com", name: "김농현", phone: "010-8831-9450", role: "일반회원", roleColor: "#4b5563", roleBg: "#f3f4f6", date: "2026-04-09", membership: "무료", period: "-", status: "정상", statusColor: "#16a34a" },
+                    ].map((row, idx) => (
+                      <tr key={idx} style={{ borderBottom: `1px solid ${darkMode ? "#333" : "#f3f4f6"}`, transition: "background 0.15s" }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = darkMode ? "#2c2d31" : "#fafbfc"; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                      >
+                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
+                          <input type="checkbox" style={{ accentColor: "#3b82f6" }} />
+                        </td>
+                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 12, color: textSecondary }}>{row.no}</td>
+                        <td style={{ padding: "16px 10px", verticalAlign: "middle" }}>
+                          <a href="#" style={{ fontSize: 13, fontWeight: 600, color: "#2563eb", textDecoration: "none" }}
+                            onMouseOver={(e) => (e.currentTarget.style.textDecoration = "underline")}
+                            onMouseOut={(e) => (e.currentTarget.style.textDecoration = "none")}
+                          >{row.email}</a>
+                        </td>
+                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 13, fontWeight: 600, color: textPrimary }}>{row.name}</td>
+                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 12, color: textSecondary }}>{row.phone}</td>
+                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
+                          <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 4, fontSize: 11, fontWeight: 700, color: row.roleColor, background: row.roleBg, border: `1px solid ${row.roleColor}22` }}>{row.role}</span>
+                        </td>
+                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 12, color: textSecondary }}>{row.date}</td>
+                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 12, color: textSecondary }}>{row.membership}</td>
+                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 12, color: textSecondary }}>{row.period}</td>
+                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
+                          {row.statusBg ? (
+                            <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 4, fontSize: 11, fontWeight: 700, color: row.statusColor, background: row.statusBg }}>{row.status}</span>
+                          ) : (
+                            <span style={{ fontSize: 13, fontWeight: 700, color: row.statusColor }}>{row.status}</span>
+                          )}
+                        </td>
+                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
+                          <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
+                            <button style={{ height: 28, padding: "0 10px", background: "#4b5563", color: "#fff", border: "none", borderRadius: 4, fontSize: 11, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 3 }}>✏️ 수정</button>
+                            <button style={{ height: 28, padding: "0 10px", background: darkMode ? "#2c2d31" : "#fff", color: "#6b7280", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 4, fontSize: 11, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 3 }}>🗑 삭제</button>
+                            <button style={{ height: 28, padding: "0 10px", background: darkMode ? "#2c2d31" : "#fff", color: "#6b7280", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 4, fontSize: 11, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 3 }}>📋 수정내역</button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* 페이징 */}
+              <div style={{ padding: "16px 24px", display: "flex", justifyContent: "center", gap: 4, borderTop: `1px solid ${border}` }}>
+                <button style={{ width: 32, height: 32, border: "none", borderRadius: 4, background: "#4b5563", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>1</button>
+                {[2,3,4,5].map(n => (
+                  <button key={n} style={{ width: 32, height: 32, border: `1px solid ${border}`, borderRadius: 4, background: darkMode ? "#2c2d31" : "#fff", color: textSecondary, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>{n}</button>
+                ))}
+              </div>
+            </div>
+          </div>
+
         ) : (
           /* 다른 메뉴 선택 시 placeholder */
           <div style={{ flex: 1, margin: "16px 16px 0 16px", background: cardBg, borderRadius: "14px 14px 0 0", boxShadow: "0 4px 12px rgba(0,0,0,0.06)", display: "flex", alignItems: "center", justifyContent: "center" }}>
