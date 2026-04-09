@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import VacancyRegisterForm from "@/components/admin/VacancyRegisterForm";
 
 /* ──────────────────────────────────────────────
    SVG 아이콘 컴포넌트 (원본 feather-icon 1:1 복제)
@@ -82,6 +83,7 @@ export default function AdminPage() {
   const [activeMenu, setActiveMenu] = useState("dashboard");
   const [hoveredMenu, setHoveredMenu] = useState<string | null>(null);
   const [darkMode, setDarkMode] = useState(false);
+  const [showRegisterForm, setShowRegisterForm] = useState(false);
 
   const contentTitle = activeMenu === "members" ? "회원목록" : (MENU_ITEMS.find(m => m.key === activeMenu)?.label || "대시보드");
   const now = new Date();
@@ -301,6 +303,9 @@ export default function AdminPage() {
               </div>
             </div>
           </div>
+        ) : activeMenu === "gongsil" && showRegisterForm ? (
+          /* ===== 공실등록 폼 ===== */
+          <VacancyRegisterForm onBack={() => setShowRegisterForm(false)} darkMode={darkMode} />
         ) : activeMenu === "gongsil" ? (
           /* ===== 공실관리 리스트 (원본 iframe 디자인 1:1 복제) ===== */
           <div style={{ flex: 1, overflowY: "auto", padding: "20px 28px", background: bg }}>
@@ -337,7 +342,7 @@ export default function AdminPage() {
 
               {/* 액션 버튼 영역 */}
               <div style={{ padding: "16px 24px", borderBottom: `1px solid ${border}`, display: "flex", gap: 10, alignItems: "center" }}>
-                <button style={{ height: 36, padding: "0 16px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>+ 공실등록</button>
+                <button onClick={() => setShowRegisterForm(true)} style={{ height: 36, padding: "0 16px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>+ 공실등록</button>
                 <button style={{ height: 36, padding: "0 16px", background: "#10b981", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>📄 엑셀 대량등록</button>
                 <button style={{ height: 36, padding: "0 16px", background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>🔄 고소취갱신</button>
                 <button style={{ height: 36, padding: "0 16px", background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>🗑 선택삭제</button>
