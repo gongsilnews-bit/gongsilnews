@@ -11,8 +11,8 @@ export default function StudyReadPage() {
     setActiveTab(id);
     const el = document.getElementById(id);
     if (el) {
-      // Offset by header + sticky tab height (~130px)
-      const y = el.getBoundingClientRect().top + window.scrollY - 130;
+      // Offset by header + sticky tab height (~140px)
+      const y = el.getBoundingClientRect().top + window.scrollY - 140;
       window.scrollTo({ top: y, behavior: 'smooth' });
     }
   };
@@ -57,7 +57,7 @@ export default function StudyReadPage() {
              </div>
 
              {/* Sticky Tab Menu */}
-             <div className="sticky top-[102px] border-b border-[#eee] flex mb-[40px]" style={{ zIndex: 90, backgroundColor: "#ffffff" }}>
+             <div className="sticky top-[90px] border-b border-[#eee] flex mb-[40px]" style={{ zIndex: 90, backgroundColor: "#ffffff" }}>
                 {["introduce", "curriculum", "creator", "review"].map(tabId => {
                   const labels: any = { introduce: "클래스 소개", curriculum: "커리큘럼", creator: "크리에이터", review: "리뷰" };
                   return (
@@ -167,7 +167,7 @@ export default function StudyReadPage() {
 
           {/* 우측 Sticky 플로팅 박스 (35%) */}
           <div className="flex-[3.5] min-w-0">
-             <div className="sticky top-[122px] bg-white border border-[#e5e5e5] rounded-[12px] p-[32px] shadow-[0_12px_40px_rgba(0,0,0,0.08)]">
+             <div className="sticky top-[110px] bg-white border border-[#e5e5e5] rounded-[12px] p-[32px] shadow-[0_12px_40px_rgba(0,0,0,0.08)]">
                 
                 <div className="text-[13px] font-[700] text-[#eb5757] mb-[8px]">🔥 기간 한정 30% 얼리버드 혜택</div>
                 <div className="flex items-end gap-[8px] mb-[8px]">
