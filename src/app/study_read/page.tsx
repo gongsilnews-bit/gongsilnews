@@ -1,10 +1,12 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
 export default function StudyReadPage() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState("introduce");
   
   const scrollToAnchor = (id: string) => {
@@ -197,7 +199,10 @@ export default function StudyReadPage() {
 
                 {/* 구매 버튼 */}
                 <div className="flex flex-col gap-[10px]">
-                   <button className="w-full bg-[#111] text-white py-[18px] rounded-[6px] text-[16px] font-[800] hover:bg-[#333] transition-colors">
+                   <button 
+                     onClick={() => router.push('/study_watch')}
+                     className="w-full bg-[#111] text-white py-[18px] rounded-[6px] text-[16px] font-[800] hover:bg-[#333] transition-colors"
+                   >
                      클래스 수강 시작하기
                    </button>
                    <div className="flex gap-[10px]">
