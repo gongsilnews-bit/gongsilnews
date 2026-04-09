@@ -1,11 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-);
-
 function maskEmail(email: string): string {
   const [local, domain] = email.split('@');
   if (!domain) return '***';
@@ -23,6 +18,11 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://stub.supabase.co',
+      process.env.SUPABASE_SERVICE_ROLE_KEY || 'stub'
+    );
+
     // members 테이블에서 이름 + 전화번호로 조회
     const { data, error } = await supabaseAdmin
       .from('members')
