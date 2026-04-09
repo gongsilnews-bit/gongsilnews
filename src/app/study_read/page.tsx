@@ -18,7 +18,7 @@ export default function StudyReadPage() {
   };
 
   return (
-    <div className="min-w-[1200px] overflow-x-auto bg-white font-sans text-[#222]">
+    <div className="min-w-[1200px] bg-white font-sans text-[#222]">
       <Header />
 
       <main className="w-[1200px] mx-auto px-[20px] pt-[30px] pb-[100px]">
