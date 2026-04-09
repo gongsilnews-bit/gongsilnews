@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import AuthModal from "./AuthModal";
 
 export default function Header() {
   const pathname = usePathname();
@@ -12,6 +13,9 @@ export default function Header() {
   const txtBannerListRef = useRef<HTMLUListElement>(null);
   const txtDropdownRef = useRef<HTMLDivElement>(null);
   const txtContainerRef = useRef<HTMLDivElement>(null);
+
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authTab, setAuthTab] = useState<'signup' | 'login'>('signup');
 
   useEffect(() => {
     const handleScroll = () => {
@@ -75,6 +79,12 @@ export default function Header() {
 
   return (
     <>
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        initialTab={authTab}
+      />
+
       {/* 1. Top Nav Bar */}
       <div className="top-bar">
         <div className="top-bar-left">
@@ -90,10 +100,10 @@ export default function Header() {
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "24px" }}>
             <div className="icon-tooltip-wrap" data-tooltip="회원가입">
-              <svg style={{ cursor: "pointer" }} viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+              <svg onClick={() => { setAuthTab('signup'); setIsAuthModalOpen(true); }} style={{ cursor: "pointer" }} viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
             </div>
             <div className="icon-tooltip-wrap" data-tooltip="로그인">
-              <svg style={{ cursor: "pointer" }} viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>
+              <svg onClick={() => { setAuthTab('login'); setIsAuthModalOpen(true); }} style={{ cursor: "pointer" }} viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>
             </div>
           </div>
         </div>
