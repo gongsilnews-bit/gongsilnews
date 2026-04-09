@@ -11,8 +11,20 @@ function BoardReadContent() {
   const boardId = searchParams.get("board_id") || "drone";
   const postId = searchParams.get("post_id");
 
-  // 원래 DB에서 가져올 데이터 대신 UI 확인용 더미
-  const boardName = boardId === "drone" ? "드론영상" : boardId === "app" ? "APP(앱)" : boardId === "design" ? "디자인" : boardId === "sound" ? "음원" : "계약서/양식";
+  const BOARD_CONFIG: Record<string, { title: string, tabs: string[] }> = {
+    drone: { title: "드론영상", tabs: ["전체", "드론", "아파트", "빌딩", "단독/다가구/빌라", "도로"] },
+    bbs_drone: { title: "드론영상", tabs: ["전체", "드론", "아파트", "빌딩", "단독/다가구/빌라", "도로"] },
+    app: { title: "APP(앱)", tabs: ["전체", "안드로이드", "iOS", "소스코드", "기타"] },
+    bbs_design: { title: "디자인", tabs: ["전체", "썸네일", "배너", "로고", "UI/UX", "명함"] },
+    bbs_sound: { title: "음원", tabs: ["전체", "배경음악(BGM)", "효과음", "나레이션", "기타"] },
+    bbs_form: { title: "계약서/양식", tabs: ["전체", "매매계약서", "임대차계약서", "영수증", "확인설명서", "기타"] },
+    design: { title: "디자인", tabs: ["전체", "썸네일", "배너", "로고", "UI/UX", "명함"] },
+    sound: { title: "음원", tabs: ["전체", "배경음악(BGM)", "효과음", "나레이션", "기타"] },
+    form: { title: "계약서/양식", tabs: ["전체", "매매계약서", "임대차계약서", "영수증", "확인설명서", "기타"] },
+  };
+
+  const currentBoard = BOARD_CONFIG[boardId] || BOARD_CONFIG["drone"];
+  const boardName = currentBoard.title;
   
   return (
     <>
@@ -29,10 +41,17 @@ function BoardReadContent() {
       </div>
 
       <div className="w-[1200px] mx-auto pt-[16px] px-[20px] pb-[10px] flex gap-[10px] flex-wrap">
-        <Link href={`/board?id=${boardId}`} className="border border-[#102c57] bg-[#102c57] text-white px-[18px] py-[8px] rounded-[20px] text-[14px] font-semibold cursor-pointer inline-block">전체</Link>
-        <Link href={`/board?id=${boardId}`} className="border border-[#ddd] bg-white px-[18px] py-[8px] rounded-[20px] text-[14px] text-[#666] font-semibold cursor-pointer hover:border-[#102c57] hover:text-[#102c57] transition-all inline-block">드론</Link>
-        <Link href={`/board?id=${boardId}`} className="border border-[#ddd] bg-white px-[18px] py-[8px] rounded-[20px] text-[14px] text-[#666] font-semibold cursor-pointer hover:border-[#102c57] hover:text-[#102c57] transition-all inline-block">아파트</Link>
-        <Link href={`/board?id=${boardId}`} className="border border-[#ddd] bg-white px-[18px] py-[8px] rounded-[20px] text-[14px] text-[#666] font-semibold cursor-pointer hover:border-[#102c57] hover:text-[#102c57] transition-all inline-block">빌딩</Link>
+        {currentBoard.tabs.map((tab, idx) => (
+          <Link 
+            key={idx} 
+            href={`/board?id=${boardId}`} 
+            className={idx === 0 
+              ? "border border-[#102c57] bg-[#102c57] text-white px-[18px] py-[8px] rounded-[20px] text-[14px] font-semibold cursor-default inline-block" 
+              : "border border-[#ddd] bg-white px-[18px] py-[8px] rounded-[20px] text-[14px] text-[#666] font-semibold cursor-pointer hover:border-[#102c57] hover:text-[#102c57] transition-all inline-block"}
+          >
+            {tab}
+          </Link>
+        ))}
       </div>
 
       <div className="w-[1200px] mx-auto pt-[20px] px-[20px] pb-[60px] flex gap-[40px] items-start">

@@ -14,16 +14,59 @@ function BoardContent() {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [postTitle, setPostTitle] = useState("");
 
-  const tabs = ["전체", "드론", "아파트", "빌딩", "단독/다가구/빌라", "도로"];
+  const BOARD_CONFIG: Record<string, { title: string, tabs: string[], posts: any[] }> = {
+    drone: {
+      title: "드론영상",
+      tabs: ["전체", "드론", "아파트", "빌딩", "단독/다가구/빌라", "도로"],
+      posts: [
+        { title: "강남역 사거리 대로변 빌딩 조망권 4K 특급 드론 촬영", category: "드론", author: "착한임대", views: 125, date: "2023.10.12" },
+        { title: "서초구 일대 4K 드론 촬영 원본", category: "빌딩", author: "강남부자", views: 98, date: "2023.10.10" },
+        { title: "송파구 재건축단지 항공뷰(드론) 전체 구역 영상", category: "아파트", author: "공인중개사", views: 240, date: "2023.10.05" },
+        { title: "마포구 상암동 아파트 단지 전경 드론뷰", category: "아파트", author: "수정부동산", views: 56, date: "2023.10.02" },
+        { title: "성수동 꼬마빌딩 건축현장 스케치 타임랩스", category: "빌딩", author: "성수마스터", views: 322, date: "2023.09.28" },
+        { title: "여의도 IFC몰 인근 도로 및 교차로 4K", category: "도로", author: "교통매니아", views: 76, date: "2023.09.20" },
+      ]
+    },
+    bbs_drone: { title: "드론영상", tabs: ["전체", "드론", "아파트", "빌딩", "단독/다가구/빌라", "도로"], posts: [ { title: "강남역 사거리 대로변 빌딩 조망권 4K 특급 드론 촬영", category: "드론", author: "착한임대", views: 125, date: "2023.10.12" } ] },
+    app: {
+      title: "APP(앱)",
+      tabs: ["전체", "안드로이드", "iOS", "소스코드", "기타"],
+      posts: [
+        { title: "부동산 중개인 전용 안드로이드 앱 소스", category: "안드로이드", author: "앱돌이", views: 210, date: "2023.10.11" },
+        { title: "iOS 매물관리 앱 디자인 및 코드", category: "iOS", author: "사과매니아", views: 88, date: "2023.10.08" },
+      ]
+    },
+    bbs_design: {
+      title: "디자인",
+      tabs: ["전체", "썸네일", "배너", "로고", "UI/UX", "명함"],
+      posts: [
+        { title: "공인중개사 유튜브 썸네일 PSD 무료 나눔", category: "썸네일", author: "디자인고수", views: 342, date: "2023.10.09" },
+        { title: "부동산 블로그 배너 이미지 세트", category: "배너", author: "공유천사", views: 156, date: "2023.10.07" },
+        { title: "세련된 중개사무소 명함 일러스트 파일", category: "명함", author: "일러스트레이터", views: 420, date: "2023.10.01" },
+      ]
+    },
+    bbs_sound: {
+      title: "음원",
+      tabs: ["전체", "배경음악(BGM)", "효과음", "나레이션", "기타"],
+      posts: [
+        { title: "집 소개 영상에 어울리는 잔잔한 BGM", category: "배경음악(BGM)", author: "사운드장인", views: 512, date: "2023.10.05" },
+        { title: "문 열리는 소리, 발소리 효과음 팩", category: "효과음", author: "오디오가이", views: 201, date: "2023.09.30" },
+      ]
+    },
+    bbs_form: {
+      title: "계약서/양식",
+      tabs: ["전체", "매매계약서", "임대차계약서", "영수증", "확인설명서", "기타"],
+      posts: [
+        { title: "2023년 표준 상가임대차계약서 양식(무료)", category: "임대차계약서", author: "법무사김씨", views: 890, date: "2023.10.02" },
+        { title: "중개대상물 확인·설명서 (주거용 건축물)", category: "확인설명서", author: "협회자료", views: 1042, date: "2023.09.28" },
+        { title: "부동산 매매계약서 특약사항 모음집", category: "매매계약서", author: "베테랑중개사", views: 654, date: "2023.09.15" },
+      ]
+    }
+  };
 
-  const dummyPosts = [
-    { title: "강남역 사거리 대로변 빌딩 조망권 4K 특급 드론 촬영", category: "드론", author: "착한임대", views: 125, date: "2023.10.12" },
-    { title: "서초구 일대 4K 드론 촬영 원본", category: "빌딩", author: "강남부자", views: 98, date: "2023.10.10" },
-    { title: "송파구 재건축단지 항공뷰(드론) 전체 구역 영상", category: "아파트", author: "공인중개사", views: 240, date: "2023.10.05" },
-    { title: "마포구 상암동 아파트 단지 전경 드론뷰", category: "아파트", author: "수정부동산", views: 56, date: "2023.10.02" },
-    { title: "성수동 꼬마빌딩 건축현장 스케치 타임랩스", category: "빌딩", author: "성수마스터", views: 322, date: "2023.09.28" },
-    { title: "여의도 IFC몰 인근 도로 및 교차로 4K", category: "도로", author: "교통매니아", views: 76, date: "2023.09.20" },
-  ];
+  const currentBoard = BOARD_CONFIG[boardId] || BOARD_CONFIG["drone"];
+  const tabs = currentBoard.tabs;
+  const dummyPosts = currentBoard.posts;
 
   const toggleTag = (tag: string) => {
     setSelectedTags(prev => {
@@ -101,7 +144,7 @@ function BoardContent() {
 
         <div className="board-header">
           <div className="board-title">
-            {boardId === "drone" ? "드론영상" : boardId === "app" ? "APP(앱)" : boardId === "design" ? "디자인" : boardId === "sound" ? "음원" : "계약서/양식"}
+            {currentBoard.title}
             <span style={{ fontSize: 16, fontWeight: 500, color: "#666", marginLeft: 10 }}>(자료실)</span>
           </div>
           <div className="b-search">
