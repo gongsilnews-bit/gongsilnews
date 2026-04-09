@@ -1,8 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
 import Link from "next/link";
 
 // 더미 기사 데이터 (원본 사이트에서 실제로 보이는 기사 목록과 동일)
@@ -62,7 +60,6 @@ export default function NewsListLayout({ category, title }: NewsListLayoutProps)
 
   return (
     <>
-      <Header />
       <main className="container px-20" style={{ position: "relative" }}>
         <div className="news-layout">
           {/* 좌측 뉴스 리스트 */}
@@ -153,7 +150,6 @@ export default function NewsListLayout({ category, title }: NewsListLayoutProps)
           </div>
         </div>
       </main>
-      <Footer />
     </>
   );
 }
