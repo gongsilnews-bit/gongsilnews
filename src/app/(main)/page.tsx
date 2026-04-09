@@ -1,5 +1,5 @@
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
+
+
 import QuickFloatingMenu from "@/components/common/QuickFloatingMenu";
 import MarketTickerBar from "@/components/home/MarketTickerBar";
 import HeroMapSection from "@/components/home/HeroMapSection";
@@ -13,7 +13,6 @@ import ChatbotBanner from "@/components/home/ChatbotBanner";
 export default function Home() {
   return (
     <>
-      <Header />
       <main className="container px-20" style={{ position: "relative" }}>
         
         <QuickFloatingMenu />
@@ -44,8 +43,6 @@ export default function Home() {
 
       {/* ========== 10. Floating or Promotions ========== */}
       <ChatbotBanner />
-
-      <Footer />
     </>
   );
 }

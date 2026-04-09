@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
+
 
 // 더미 기사 데이터 (원본 article_id=158 기반)
 const dummyArticle = {
@@ -64,7 +63,6 @@ export default function NewsReadPage() {
 
   return (
     <>
-      <Header />
       {/* 스크롤 진행 표시 바 */}
       <div className="scroll-progress" style={{ width: `${scrollProgress}%` }}></div>
 
@@ -250,7 +248,6 @@ export default function NewsReadPage() {
           </div>
         </div>
       </main>
-      <Footer />
     </>
   );
 }

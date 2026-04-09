@@ -3,8 +3,7 @@
 import React, { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
+
 
 function BoardContent() {
   const searchParams = useSearchParams();
@@ -285,11 +284,9 @@ function BoardContent() {
 export default function BoardPage() {
   return (
     <>
-      <Header />
       <Suspense fallback={<div style={{ padding: 40, textAlign: "center" }}>게시판을 불러오는 중...</div>}>
         <BoardContent />
       </Suspense>
-      <Footer />
     </>
   );
 }

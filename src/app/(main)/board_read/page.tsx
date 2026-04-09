@@ -2,8 +2,8 @@
 
 import React, { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
+
+
 import Link from "next/link";
 
 function BoardReadContent() {
@@ -210,11 +210,9 @@ function BoardReadContent() {
 export default function BoardReadPage() {
   return (
     <div className="min-w-[1200px] overflow-x-auto bg-white font-sans text-[#222]">
-      <Header />
       <Suspense fallback={<div className="p-10 text-center">불러오는 중...</div>}>
         <BoardReadContent />
       </Suspense>
-      <Footer />
     </div>
   );
 }
