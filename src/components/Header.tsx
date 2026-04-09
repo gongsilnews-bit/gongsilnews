@@ -160,7 +160,7 @@ export default function Header() {
                   </ul>
                 </div>
               </div>
-              <Link href="#special-lecture">부동산특강</Link>
+              <Link href="/#special-lecture">부동산특강</Link>
               <Link href="#">중개업소무료가입</Link>
             </nav>
           </div>

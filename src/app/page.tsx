@@ -344,7 +344,7 @@ export default function Home() {
             { cat: "경매/특수물건", title: "[2026] 부동산이 알아야 하는 민법 활용법", instructor: "공실마스터 특강", rating: "4.8 (198)", price: "3,000 P", isNew: true },
             { cat: "재개발/투자", title: "[20260] 부동산 중개에 필요한 재개발이 활용법", instructor: "공실마스터 특강", rating: "4.9 (154)", price: "5,000 P", isNew: false },
           ].map((item, i) => (
-            <div key={i} className="lecture-card">
+            <Link href="/study_read" key={i} className="lecture-card" style={{ display: "block" }}>
               <div className="lecture-thumb">
                 <div style={{ width: "100%", height: "100%", background: "#eee" }}></div>
                 {item.isNew && <span className="badge-new">NEW🔥</span>}
@@ -361,7 +361,7 @@ export default function Home() {
                   {item.price}
                 </div>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       </div>

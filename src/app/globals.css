@@ -120,9 +120,7 @@ button { border: none; background: none; cursor: pointer; font-family: inherit; 
 }
 .header.is-sticky {
     padding-top: 10px;
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 1);
     box-shadow: 0 4px 20px rgba(0,0,0,0.06);
     border-bottom: 2px solid #111111;
 }
