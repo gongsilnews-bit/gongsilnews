@@ -57,7 +57,7 @@ export default function StudyReadPage() {
              </div>
 
              {/* Sticky Tab Menu */}
-             <div className="sticky top-[108px] bg-white z-[90] border-b border-[#eee] flex mb-[40px]">
+             <div className="sticky top-[108px] border-b border-[#eee] flex mb-[40px]" style={{ zIndex: 90, backgroundColor: "#ffffff" }}>
                 {["introduce", "curriculum", "creator", "review"].map(tabId => {
                   const labels: any = { introduce: "클래스 소개", curriculum: "커리큘럼", creator: "크리에이터", review: "리뷰" };
                   return (
