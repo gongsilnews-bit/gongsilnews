@@ -49,6 +49,9 @@ export default function NewsLocalPage() {
   const [showDetail, setShowDetail] = useState(true);
   const [commentText, setCommentText] = useState("");
 
+  const [section1, setSection1] = useState("");
+  const [section2, setSection2] = useState("");
+
   return (
     <div style={{ height: "100vh", display: "flex", flexDirection: "column", overflow: "hidden", fontFamily: "'Pretendard', sans-serif" }}>
       {/* ===== 슬림 헤더 ===== */}
@@ -57,13 +60,30 @@ export default function NewsLocalPage() {
           <img src="/logo.png" alt="공실뉴스" style={{ height: 34 }} onError={(e) => { (e.target as HTMLImageElement).src = "https://via.placeholder.com/100x34?text=LOGO"; }} />
         </Link>
         <h1 style={{ fontSize: 26, fontWeight: 800, margin: 0, marginRight: 20, color: "#111" }}>우리동네뉴스</h1>
-        <select style={{ padding: "6px 10px", border: "1px solid #ccc", borderRadius: 4, outline: "none", fontSize: 14, minWidth: 130, fontWeight: 600, cursor: "pointer" }}>
+        <select 
+          value={section1} 
+          onChange={(e) => { setSection1(e.target.value); setSection2(""); }}
+          style={{ padding: "6px 10px", border: "1px solid #ccc", borderRadius: 4, outline: "none", fontSize: 14, minWidth: 130, fontWeight: 600, cursor: "pointer" }}
+        >
           <option value="">1차섹션 전체</option>
           <option value="우리동네부동산">우리동네부동산</option>
           <option value="뉴스/칼럼">뉴스/칼럼</option>
         </select>
-        <select style={{ padding: "6px 10px", border: "1px solid #ccc", borderRadius: 4, outline: "none", fontSize: 14, minWidth: 130, fontWeight: 600, cursor: "pointer", marginLeft: 8 }}>
+        <select 
+          value={section2}
+          onChange={(e) => setSection2(e.target.value)}
+          style={{ padding: "6px 10px", border: "1px solid #ccc", borderRadius: 4, outline: "none", fontSize: 14, minWidth: 130, fontWeight: 600, cursor: "pointer", marginLeft: 8 }}
+        >
           <option value="">2차섹션 전체</option>
+          {section1 === "우리동네부동산" && (
+            <>
+              <option value="아파트·오피스텔">아파트·오피스텔</option>
+              <option value="빌라·주택">빌라·주택</option>
+              <option value="원룸·투룸">원룸·투룸</option>
+              <option value="상가·업무·공장·토지">상가·업무·공장·토지</option>
+              <option value="분양">분양</option>
+            </>
+          )}
         </select>
       </header>
 
