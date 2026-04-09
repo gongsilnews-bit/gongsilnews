@@ -76,7 +76,7 @@ export default function Header() {
       {/* 1. Top Nav Bar */}
       <div className="top-bar">
         <div className="top-bar-left">
-          <div className="top-logo" onClick={() => window.location.href = "/"}>공실뉴스</div>
+          <div className="top-logo" onClick={() => window.location.href = "/"} style={{ cursor: "pointer" }}><img src="/logo.png" alt="공실뉴스" style={{ height: 28, objectFit: "contain" }} /></div>
           <div className="top-desc">11만 부동산을 위한 무료 정보 채널</div>
         </div>
         <div className="top-bar-right">
@@ -103,7 +103,7 @@ export default function Header() {
           <div className="header-top">
             <div className="ht-left"></div>
             <div className="ht-center">
-              <img src="https://via.placeholder.com/200x50?text=GONGSIL+NEWS" className="ht-logo" alt="부동산 정보채널 공실뉴스" onClick={() => window.location.href = "/"} />
+              <img src="/logo.png" className="ht-logo" alt="부동산 정보채널 공실뉴스" onClick={() => window.location.href = "/"} />
             </div>
             <div className="ht-right">
               <div className="txt-banner-container" ref={txtContainerRef}>
