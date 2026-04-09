@@ -129,7 +129,7 @@ export default function Header() {
           <div className="header-bottom">
             <nav className="gnb-new">
               <Link href="/news_all">전체뉴스</Link>
-              <Link href="/news">우리동네뉴스</Link>
+              <Link href="/news_map">우리동네뉴스</Link>
               <Link href="/news_finance">부동산·주식·재테크</Link>
               <Link href="/news_politics">정치·경제·사회</Link>
               <Link href="/news_law">세무·법률</Link>
