@@ -52,6 +52,7 @@ export default function GongsilPage() {
   const [showDetail, setShowDetail] = useState(true);
   const [activeDetailTab, setActiveDetailTab] = useState<"info" | "realtor">("info");
   const [showDetailFilters, setShowDetailFilters] = useState(false);
+  const [activeFilterDropdown, setActiveFilterDropdown] = useState<string | null>(null);
   const [galleryIndex, setGalleryIndex] = useState(0);
 
   const config = CATEGORY_CONFIG[activeCategory];
@@ -63,6 +64,7 @@ export default function GongsilPage() {
     setActivePills(key === "wish" ? [] : [c.pills[0] || ""]);
     setShowDetail(false);
     setShowDetailFilters(false);
+    setActiveFilterDropdown(null);
   };
 
   const togglePill = (p: string) => {
@@ -72,7 +74,7 @@ export default function GongsilPage() {
   return (
     <div style={{ height: "100vh", display: "flex", flexDirection: "column", overflow: "hidden", fontFamily: "'Pretendard', sans-serif" }}>
       {/* ===== 상단 필터 바 ===== */}
-      <div style={{ background: "#fff", width: "100%", zIndex: 20, position: "relative", borderBottom: "1px solid #ccc", flexShrink: 0 }}>
+      <div style={{ background: "#fff", width: "100%", zIndex: 200, position: "relative", borderBottom: "1px solid #ccc", flexShrink: 0 }}>
         {/* Tier 1: 메인 탭 */}
         <div style={{ display: "flex", gap: 24, padding: "0 20px", borderBottom: "1px solid #ddd", alignItems: "center", overflowX: "auto" }}>
           <Link href="/" style={{ marginRight: 15, display: "inline-flex", alignItems: "center", textDecoration: "none" }}>
@@ -88,7 +90,7 @@ export default function GongsilPage() {
 
         {/* Tier 2: 서브 필터(Pills + 드롭다운) */}
         {activeCategory !== "wish" && (
-          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 20px", borderBottom: "1px solid #e0e0e0", overflowX: "auto" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 20px", borderBottom: "1px solid #e0e0e0", overflowX: "visible" }}>
             {config.pills.map((p) => (
               <button key={p} onClick={() => togglePill(p)} style={{
                 background: activePills.includes(p) ? (isOfficePill(p) ? "#111" : "#e8f0fe") : "#fff",
@@ -103,9 +105,34 @@ export default function GongsilPage() {
             ))}
             <div style={{ width: 1, height: 16, background: "#e0e0e0", margin: "0 8px", flexShrink: 0 }}></div>
             {config.basicFilters.map((f) => (
-              <button key={f} style={{ background: "none", border: "none", fontSize: 13, color: "#555", cursor: "pointer", padding: "8px 12px", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", borderRadius: 4, flexShrink: 0, fontFamily: "inherit" }}>
-                {f} <span style={{ fontSize: 10, color: "#999" }}>▼</span>
-              </button>
+              <div key={f} style={{ position: "relative" }}>
+                <button 
+                  onClick={() => setActiveFilterDropdown(activeFilterDropdown === f ? null : f)}
+                  style={{ background: "none", border: "none", fontSize: 13, color: activeFilterDropdown === f ? "#111" : "#555", fontWeight: activeFilterDropdown === f ? "bold" : "normal", cursor: "pointer", padding: "8px 12px", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", borderRadius: 4, flexShrink: 0, fontFamily: "inherit" }}>
+                  {f} <span style={{ fontSize: 10, color: activeFilterDropdown === f ? "#111" : "#999" }}>▼</span>
+                </button>
+                {/* 드롭다운 레이어 */}
+                {f === "거래방식" && activeFilterDropdown === "거래방식" && (
+                  <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, background: "#fff", border: "1px solid #444", borderRadius: 4, boxShadow: "0 4px 12px rgba(0,0,0,0.15)", width: 220, zIndex: 1000 }}>
+                    <div style={{ padding: "12px 16px", borderBottom: "1px solid #eee", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: 14, fontWeight: "bold", color: "#111" }}>거래방식</span>
+                      <button onClick={() => setActiveFilterDropdown(null)} style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: "#999", padding: 0, lineHeight: 1 }}>✕</button>
+                    </div>
+                    <div style={{ padding: "12px 16px", display: "flex", flexDirection: "column", gap: 12 }}>
+                      {["전체", "매매", "전세", "월세", "단기임대"].map(type => (
+                        <label key={type} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 14, color: "#333", fontWeight: 500 }}>
+                          <input type="checkbox" defaultChecked style={{ width: 16, height: 16, accentColor: "#5b779a", cursor: "pointer" }} />
+                          {type}
+                        </label>
+                      ))}
+                    </div>
+                    <div style={{ padding: "12px 16px", background: "#f9f9f9", borderTop: "1px solid #eee", fontSize: 12, color: "#888", display: "flex", alignItems: "center", gap: 4, borderBottomLeftRadius: 4, borderBottomRightRadius: 4 }}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                      중복선택이 가능합니다.
+                    </div>
+                  </div>
+                )}
+              </div>
             ))}
             {config.showToggle && (
               <button onClick={() => setShowDetailFilters(!showDetailFilters)} style={{ background: "none", border: "none", fontSize: 13, fontWeight: "bold", color: "#1a73e8", cursor: "pointer", padding: "8px 12px", whiteSpace: "nowrap", flexShrink: 0, fontFamily: "inherit" }}>
