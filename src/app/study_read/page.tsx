@@ -29,7 +29,7 @@ export default function StudyReadPage() {
            <span className="cursor-pointer hover:font-bold">중개실무</span>
         </div>
 
-        <div className="flex gap-[40px] items-start relative">
+        <div className="flex gap-[40px] relative">
           
           {/* 좌측 메인 콘텐츠 (65%) */}
           <div className="flex-[6.5] min-w-0">
