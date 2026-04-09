@@ -315,6 +315,7 @@ export default function GongsilPage() {
 
               {/* 등록자정보 탭 */}
               {activeDetailTab === "realtor" && (
+                <>
                 <div style={{ padding: "24px 20px", background: "#fff" }}>
                   <div style={{ fontSize: 16, fontWeight: "bold", color: "#111", marginBottom: 12 }}>{detailData.realtor.name}</div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 6, background: "#fafafa", padding: 16, borderRadius: 8, border: "1px solid #eee" }}>
@@ -334,6 +335,59 @@ export default function GongsilPage() {
                     </div>
                   </div>
                 </div>
+
+                {/* ──── 등록 물건 리스트 ──── */}
+                <div style={{ borderTop: "10px solid #f5f5f5" }}>
+                  {dummyProperties.slice(0, 5).map((prop) => (
+                    <div key={prop.id} onClick={() => { setActiveProperty(prop.id); setActiveDetailTab("info"); setGalleryIndex(0); }}
+                      style={{
+                        display: "flex", justifyContent: "space-between", alignItems: "flex-start",
+                        padding: "16px 20px", cursor: "pointer", transition: "background 0.15s",
+                        borderBottom: "1px solid #f0f0f0", background: "#fff",
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = "#f9fbff"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = "#fff"; }}
+                    >
+                      <div style={{ flex: 1, paddingRight: 12, minWidth: 0 }}>
+                        <div style={{ fontSize: 14, fontWeight: "bold", color: "#111", marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{prop.name}</div>
+                        <div style={{ fontSize: 16, fontWeight: 800, color: "#1a73e8", marginBottom: 2 }}>{prop.price}</div>
+                        <div style={{ fontSize: 13, color: "#555", marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{prop.type} · {prop.direction} · {prop.area}</div>
+                        <div style={{ fontSize: 12, color: "#666", marginBottom: 6, display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{prop.rooms}</div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <span style={{ fontSize: 11, color: prop.tag === "수수료25%" ? "#2e7d32" : "#1a73e8", fontWeight: "bold", border: `1px solid ${prop.tag === "수수료25%" ? "#2e7d32" : "#1a73e8"}`, borderRadius: 3, padding: "2px 6px" }}>{prop.tag}</span>
+                          <span style={{ fontSize: 11, color: "#e53e3e", fontWeight: "bold" }}>{prop.tagId}</span>
+                          <span style={{ fontSize: 11, color: "#aaa" }}>{prop.date}</span>
+                        </div>
+                      </div>
+                      <div style={{ width: 80, height: 80, borderRadius: 6, overflow: "hidden", background: "#f0f0f0", flexShrink: 0 }}>
+                        <div style={{ width: "100%", height: "100%", background: "#ddd" }}></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* ──── 댓글상담 (등록자정보 탭 하단) ──── */}
+                <div style={{ marginTop: 0, borderTop: "1px solid #f0f0f0", padding: "20px 20px 30px" }}>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: "#222", marginBottom: 15, display: "flex", alignItems: "center", gap: 8 }}>
+                    댓글상담 <span style={{ color: "#1a73e8", fontSize: 15 }}>0개</span>
+                  </div>
+                  <div style={{ marginBottom: 25, border: "1px solid #ddd", borderRadius: 6, overflow: "hidden", background: "#fff" }}>
+                    <textarea
+                      placeholder={"가격을 제안하거나, 궁금한 점을 남겨보세요. 작성자에게 중개사인 알고 답변 수 있는 1:1 비공개 상담입니다."}
+                      style={{ width: "100%", minHeight: 80, border: "none", outline: "none", padding: "14px 15px", fontSize: 14, color: "#333", resize: "vertical", fontFamily: "inherit", background: "#fff", boxSizing: "border-box" }}
+                    />
+                    <div style={{ padding: "10px 15px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#fafafa", borderTop: "1px solid #eee" }}>
+                      <span style={{ fontSize: 13, color: "#888", display: "flex", alignItems: "center", gap: 4 }}>
+                        <span style={{ color: "#1a73e8" }}>🔒</span> 비밀댓글 자동적용
+                      </span>
+                      <button style={{ background: "#1a73e8", color: "#fff", border: "none", padding: "8px 24px", borderRadius: 4, fontWeight: "bold", cursor: "pointer", fontSize: 14, fontFamily: "inherit" }}>등록</button>
+                    </div>
+                  </div>
+                  <div style={{ textAlign: "center", padding: 30, color: "#888", fontSize: 13 }}>
+                    아직 등록된 문의가 없습니다.
+                  </div>
+                </div>
+                </>
               )}
             </div>
 
