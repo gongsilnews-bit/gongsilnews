@@ -2,6 +2,7 @@
 
 import React, { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
@@ -126,7 +127,7 @@ function BoardContent() {
             
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 15 }}>
               {dummyPosts.filter(p => activeTab === "전체" || p.category === activeTab).map((p, i) => (
-                <div key={i} className="vid-card" style={{ border: "1px solid #eee", borderRadius: 8, overflow: "hidden", cursor: "pointer" }}>
+                <Link href={`/board_read?board_id=${boardId}&post_id=${i}`} key={i} className="vid-card" style={{ display: "block", textDecoration: "none", color: "inherit", border: "1px solid #eee", borderRadius: 8, overflow: "hidden", cursor: "pointer" }}>
                   <div style={{ height: 140, background: "#222", position: "relative", overflow: "hidden" }}>
                     <img src="https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=320&q=80" style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.8 }} alt="thumb" />
                     <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 44, height: 44, background: "rgba(0,0,0,0.6)", borderRadius: "50%", border: "2px solid #fff", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -141,7 +142,7 @@ function BoardContent() {
                       <span>조회 {p.views} · {p.date}</span>
                     </div>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
 
