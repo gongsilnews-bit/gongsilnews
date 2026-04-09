@@ -13,15 +13,39 @@ interface VacancyRegisterFormProps {
   darkMode?: boolean;
 }
 
+// ── 1차→2차 카테고리 매핑 (원본 register.html에서 추출) ──
+const SUB_CATEGORIES: Record<string, string[]> = {
+  "아파트·오피스텔": ["아파트", "아파트분양권", "재건축", "오피스텔", "오피스텔분양권", "재개발"],
+  "빌라·주택": ["빌라/연립", "단독/다가구", "전원주택", "상가주택"],
+  "원룸·투룸": ["원룸", "투룸"],
+  "상가·업무·공장·토지": ["상가", "사무실", "공장/창고", "지식산업센터", "건물", "토지"],
+  "분양": ["아파트", "오피스텔", "빌라", "도시형생활주택", "생활숙박시설", "상가/업무"],
+};
+
+// 상업용 카테고리 (해당층/전체층 표시, 방/욕실/방향 숨김)
+const COMMERCIAL_CATEGORY = "상가·업무·공장·토지";
+
 export default function VacancyRegisterForm({ onBack, darkMode = false }: VacancyRegisterFormProps) {
   // ── 상태 관리 ──
   const [propertyType, setPropertyType] = useState<string>("아파트·오피스텔");
+  const [subCategory, setSubCategory] = useState<string>("아파트");
   const [tradeType, setTradeType] = useState<string>("매매");
   const [commission, setCommission] = useState<string>("공동중개 0%");
   const [parking, setParking] = useState<string>("없음");
   const [moveInDate, setMoveInDate] = useState<string>("즉시입주(공실)");
   const [ownerRelation, setOwnerRelation] = useState<string>("본인");
   const [consent, setConsent] = useState(false);
+
+  // 주거형 추가 필드
+  const [roomCount, setRoomCount] = useState("1");
+  const [bathCount, setBathCount] = useState("1");
+  const [direction, setDirection] = useState("남향");
+
+  // 상업형 추가 필드
+  const [currentFloor, setCurrentFloor] = useState("");
+  const [totalFloor, setTotalFloor] = useState("");
+
+  const isCommercial = propertyType === COMMERCIAL_CATEGORY;
 
   // 금액 필드
   const [deposit, setDeposit] = useState("");
@@ -199,11 +223,23 @@ export default function VacancyRegisterForm({ onBack, darkMode = false }: Vacanc
 
             {/* 매물 대분류 */}
             <label style={labelStyle}>매물 대분류 (1차) {reqMark}</label>
-            <div style={{ display: "flex", gap: 10, marginBottom: 24 }}>
+            <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
               {["아파트·오피스텔", "빌라·주택", "원룸·투룸", "상가·업무·공장·토지", "분양"].map(t => (
-                <SelectBtn key={t} label={t} selected={propertyType === t} onClick={() => setPropertyType(t)} />
+                <SelectBtn key={t} label={t} selected={propertyType === t} onClick={() => { setPropertyType(t); setSubCategory(SUB_CATEGORIES[t]?.[0] || ""); }} />
               ))}
             </div>
+
+            {/* 상세 종류 선택 (2차) */}
+            {SUB_CATEGORIES[propertyType] && (
+              <div style={{ marginBottom: 24 }}>
+                <label style={{ ...labelStyle, color: "#f97316", fontSize: 13 }}>상세 종류 선택 (2차) {reqMark}</label>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  {SUB_CATEGORIES[propertyType].map(s => (
+                    <SelectBtn key={s} label={s} selected={subCategory === s} onClick={() => setSubCategory(s)} />
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* 거래유형 */}
             <label style={labelStyle}>거래유형 {reqMark}</label>
@@ -259,6 +295,49 @@ export default function VacancyRegisterForm({ onBack, darkMode = false }: Vacanc
               <input type="text" placeholder="예: 10" value={maintenance} onChange={(e) => setMaintenance(e.target.value)} style={{ ...inputStyle }} />
               <span style={{ color: textSecondary, fontSize: 14, flexShrink: 0 }}>만원</span>
             </div>
+
+            {/* 동적 필드: 주거형 = 방/욕실/방향, 상업형 = 해당층/전체층 */}
+            {isCommercial ? (
+              <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
+                <div style={{ flex: 1 }}>
+                  <label style={labelStyle}>해당층</label>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <input type="number" placeholder="예: 3" value={currentFloor} onChange={(e) => setCurrentFloor(e.target.value)} style={inputStyle} />
+                    <span style={{ color: textSecondary, fontSize: 14, flexShrink: 0 }}>층</span>
+                  </div>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={labelStyle}>전체층</label>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <input type="number" placeholder="예: 5" value={totalFloor} onChange={(e) => setTotalFloor(e.target.value)} style={inputStyle} />
+                    <span style={{ color: textSecondary, fontSize: 14, flexShrink: 0 }}>층</span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div style={{ display: "flex", gap: 24, marginBottom: 16 }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={labelStyle}>방 개수</label>
+                    <select value={roomCount} onChange={(e) => setRoomCount(e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
+                      {["1","2","3","4","5","6","7+"].map(n => <option key={n}>{n}</option>)}
+                    </select>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={labelStyle}>욕실 개수</label>
+                    <select value={bathCount} onChange={(e) => setBathCount(e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
+                      {["1","2","3","4+"].map(n => <option key={n}>{n}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div style={{ marginBottom: 24, maxWidth: "50%" }}>
+                  <label style={labelStyle}>방향 (거실 등 주실 기준)</label>
+                  <select value={direction} onChange={(e) => setDirection(e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
+                    {["남향","남동향","남서향","동향","서향","북향","북동향","북서향"].map(d => <option key={d}>{d}</option>)}
+                  </select>
+                </div>
+              </>
+            )}
 
             {/* 면적 */}
             <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
