@@ -75,28 +75,42 @@ export default function NewsLocalPage() {
             1차섹션 전체 지도기사 1개
           </h2>
           <div style={{ flex: 1, overflowY: "auto", padding: 0 }}>
-            {sidebarArticles.map((item) => (
-              <div
-                key={item.id}
-                onClick={() => { setActiveArticle(item.id); setShowDetail(true); }}
-                style={{
-                  padding: 16,
-                  borderBottom: "1px solid #eee",
-                  cursor: "pointer",
-                  transition: "background 0.2s",
-                  background: activeArticle === item.id ? "#eaf4ff" : "#fff",
-                  borderLeft: activeArticle === item.id ? "4px solid #508bf5" : "4px solid transparent",
-                }}
-              >
-                <div style={{ fontSize: 11, color: "#508bf5", fontWeight: "bold", marginBottom: 4 }}>{item.section}</div>
-                <div style={{ fontSize: 15, fontWeight: "bold", lineHeight: 1.4, wordBreak: "keep-all", marginBottom: 8, color: "#111" }}>{item.title}</div>
-                <div style={{ fontSize: 13, color: "#666", marginBottom: 12, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{item.desc}</div>
-                <div style={{ fontSize: 12, color: "#999", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span>{item.date} · {item.reporter}</span>
-                  {item.hasLink && <span style={{ color: "#3b82f6", fontSize: 12 }}>기사상세보기 &gt;</span>}
+            {sidebarArticles.map((item) => {
+              const isActiveAndShowing = activeArticle === item.id && showDetail;
+              return (
+                <div
+                  key={item.id}
+                  onClick={() => {
+                    if (isActiveAndShowing) {
+                      setShowDetail(false);
+                    } else {
+                      setActiveArticle(item.id);
+                      setShowDetail(true);
+                    }
+                  }}
+                  style={{
+                    padding: 16,
+                    borderBottom: "1px solid #eee",
+                    cursor: "pointer",
+                    transition: "background 0.2s",
+                    background: activeArticle === item.id ? "#eaf4ff" : "#fff",
+                    borderLeft: activeArticle === item.id ? "4px solid #508bf5" : "4px solid transparent",
+                  }}
+                >
+                  <div style={{ fontSize: 11, color: "#508bf5", fontWeight: "bold", marginBottom: 4 }}>{item.section}</div>
+                  <div style={{ fontSize: 15, fontWeight: "bold", lineHeight: 1.4, wordBreak: "keep-all", marginBottom: 8, color: "#111" }}>{item.title}</div>
+                  <div style={{ fontSize: 13, color: "#666", marginBottom: 12, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{item.desc}</div>
+                  <div style={{ fontSize: 12, color: "#999", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span>{item.date} · {item.reporter}</span>
+                    {item.hasLink && (
+                      <span style={{ color: isActiveAndShowing ? "#d32f2f" : "#3b82f6", fontSize: 12, fontWeight: "bold" }}>
+                        {isActiveAndShowing ? "기사닫기 X" : "기사상세보기 >"}
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </aside>
 
