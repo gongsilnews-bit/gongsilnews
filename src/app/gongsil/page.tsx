@@ -145,31 +145,44 @@ export default function GongsilPage() {
             <span>현재 지도 화면 {dummyProperties.length}개</span>
           </div>
           <div style={{ flex: 1, overflowY: "auto", padding: 0, background: "#fff" }}>
-            {dummyProperties.map((prop) => (
-              <div key={prop.id} onClick={() => { setActiveProperty(prop.id); setShowDetail(true); setActiveDetailTab("info"); setGalleryIndex(0); }}
-                style={{
-                  display: "flex", justifyContent: "space-between", alignItems: "flex-start",
-                  padding: "16px 20px 16px 16px", cursor: "pointer", transition: "background 0.2s, border-color 0.2s",
-                  borderBottom: "1px solid #eee",
-                  borderLeft: activeProperty === prop.id ? "4px solid #1a73e8" : "4px solid transparent",
-                  background: activeProperty === prop.id ? "#eaf4ff" : "#fff",
-                }}>
-                <div style={{ flex: 1, paddingRight: 15, minWidth: 0 }}>
-                  <div style={{ fontSize: 14, fontWeight: "bold", color: "#111", marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{prop.name}</div>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: "#1a73e8", marginBottom: 2 }}>{prop.price}</div>
-                  <div style={{ fontSize: 13, color: "#555", marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{prop.type} · {prop.direction} · {prop.area}</div>
-                  <div style={{ fontSize: 12, color: "#666", marginBottom: 6, display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{prop.rooms}</div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: "auto" }}>
-                    <span style={{ display: "inline-block", fontSize: 11, color: prop.tag === "수수료25%" ? "#2e7d32" : "#1a73e8", fontWeight: "bold", border: `1px solid ${prop.tag === "수수료25%" ? "#2e7d32" : "#1a73e8"}`, borderRadius: 3, padding: "2px 6px" }}>{prop.tag}</span>
-                    <span style={{ fontSize: 11, color: "#e53e3e", fontWeight: "bold" }}>{prop.tagId}</span>
-                    <span style={{ fontSize: 11, color: "#aaa" }}>{prop.date}</span>
+            {dummyProperties.map((prop) => {
+              const isActiveAndShowing = activeProperty === prop.id && showDetail;
+              return (
+                <div key={prop.id} 
+                  onClick={() => { 
+                    if (isActiveAndShowing) {
+                      setShowDetail(false);
+                    } else {
+                      setActiveProperty(prop.id); 
+                      setShowDetail(true); 
+                      setActiveDetailTab("info"); 
+                      setGalleryIndex(0); 
+                    }
+                  }}
+                  style={{
+                    display: "flex", justifyContent: "space-between", alignItems: "flex-start",
+                    padding: "16px 20px 16px 16px", cursor: "pointer", transition: "background 0.2s, border-color 0.2s",
+                    borderBottom: "1px solid #eee",
+                    borderLeft: activeProperty === prop.id ? "4px solid #1a73e8" : "4px solid transparent",
+                    background: activeProperty === prop.id ? "#eaf4ff" : "#fff",
+                  }}>
+                  <div style={{ flex: 1, paddingRight: 15, minWidth: 0 }}>
+                    <div style={{ fontSize: 14, fontWeight: "bold", color: "#111", marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{prop.name}</div>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: "#1a73e8", marginBottom: 2 }}>{prop.price}</div>
+                    <div style={{ fontSize: 13, color: "#555", marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{prop.type} · {prop.direction} · {prop.area}</div>
+                    <div style={{ fontSize: 12, color: "#666", marginBottom: 6, display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{prop.rooms}</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: "auto" }}>
+                      <span style={{ display: "inline-block", fontSize: 11, color: prop.tag === "수수료25%" ? "#2e7d32" : "#1a73e8", fontWeight: "bold", border: `1px solid ${prop.tag === "수수료25%" ? "#2e7d32" : "#1a73e8"}`, borderRadius: 3, padding: "2px 6px" }}>{prop.tag}</span>
+                      <span style={{ fontSize: 11, color: "#e53e3e", fontWeight: "bold" }}>{prop.tagId}</span>
+                      <span style={{ fontSize: 11, color: "#aaa" }}>{prop.date}</span>
+                    </div>
+                  </div>
+                  <div style={{ width: 90, height: 90, borderRadius: 6, overflow: "hidden", background: "#f0f0f0", flexShrink: 0, marginLeft: 5 }}>
+                    <div style={{ width: "100%", height: "100%", background: "#ddd" }}></div>
                   </div>
                 </div>
-                <div style={{ width: 90, height: 90, borderRadius: 6, overflow: "hidden", background: "#f0f0f0", flexShrink: 0, marginLeft: 5 }}>
-                  <div style={{ width: "100%", height: "100%", background: "#ddd" }}></div>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </aside>
 
