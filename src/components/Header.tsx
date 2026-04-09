@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import AuthModal from "./AuthModal";
+import SignupCompleteModal from "./SignupCompleteModal";
+
 
 export default function Header() {
   const pathname = usePathname();
@@ -16,6 +18,8 @@ export default function Header() {
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authTab, setAuthTab] = useState<'signup' | 'login'>('signup');
+  const [isSignupCompleteOpen, setIsSignupCompleteOpen] = useState(false);
+
 
   useEffect(() => {
     const handleScroll = () => {
@@ -83,7 +87,16 @@ export default function Header() {
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
         initialTab={authTab}
+        onGoogleClick={() => {
+          setIsAuthModalOpen(false);
+          setIsSignupCompleteOpen(true);
+        }}
       />
+      <SignupCompleteModal
+        isOpen={isSignupCompleteOpen}
+        onClose={() => setIsSignupCompleteOpen(false)}
+      />
+
 
       {/* 1. Top Nav Bar */}
       <div className="top-bar">

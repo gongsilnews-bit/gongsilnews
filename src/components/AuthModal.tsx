@@ -7,9 +7,10 @@ interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialTab?: 'signup' | 'login';
+  onGoogleClick?: () => void;
 }
 
-export default function AuthModal({ isOpen, onClose, initialTab = 'signup' }: AuthModalProps) {
+export default function AuthModal({ isOpen, onClose, initialTab = 'signup', onGoogleClick }: AuthModalProps) {
   const [activeTab, setActiveTab] = useState<'signup' | 'login'>(initialTab);
   const [mounted, setMounted] = useState(false);
 
@@ -195,7 +196,9 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signup' }: Au
           </p>
 
           {/* Google 버튼 */}
-          <button style={{ width: '100%', background: '#fff', border: '1px solid #ddd', borderRadius: 8, padding: '12px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, fontWeight: 'bold', fontSize: 15, color: '#222', boxShadow: '0 1px 3px rgba(0,0,0,0.08)', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.2s' }}>
+          <button
+            onClick={() => { if (onGoogleClick) onGoogleClick(); }}
+            style={{ width: '100%', background: '#fff', border: '1px solid #ddd', borderRadius: 8, padding: '12px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, fontWeight: 'bold', fontSize: 15, color: '#222', boxShadow: '0 1px 3px rgba(0,0,0,0.08)', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.2s' }}>
             {/* Google G 로고 */}
             <svg width="20" height="20" viewBox="0 0 48 48">
               <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
