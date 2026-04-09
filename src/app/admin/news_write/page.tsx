@@ -226,7 +226,7 @@ export default function NewsWritePage() {
             {/* ── 섹션 ── */}
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
               <label style={{ fontSize: 14, fontWeight: 600, color: textPrimary, minWidth: 80 }}>섹션</label>
-              <select value={section1} onChange={e => setSection1(e.target.value)}
+              <select value={section1} onChange={e => { setSection1(e.target.value); setSection2(""); }}
                 style={{ flex: 1, padding: "10px 14px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 14, color: section1 ? textPrimary : textMuted, background: cardBg, outline: "none", fontFamily: "inherit", cursor: "pointer", appearance: "none", backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 12px center" }}>
                 <option value="">1차섹션 선택</option>
                 <option value="우리동네부동산">우리동네부동산</option>
@@ -234,12 +234,27 @@ export default function NewsWritePage() {
               </select>
               <select value={section2} onChange={e => setSection2(e.target.value)}
                 style={{ flex: 1, padding: "10px 14px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 14, color: section2 ? textPrimary : textMuted, background: cardBg, outline: "none", fontFamily: "inherit", cursor: "pointer", appearance: "none", backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 12px center" }}>
-                <option value="">2차섹션 선택</option>
-                <option value="아파트·오피스텔">아파트·오피스텔</option>
-                <option value="상가·업무·공장·토지">상가·업무·공장·토지</option>
-                <option value="건강·웰스">건강·웰스</option>
-                <option value="스포츠·연예·Car">스포츠·연예·Car</option>
-                <option value="여행·맛집">여행·맛집</option>
+                <option value="">2차섹션 전체</option>
+                {section1 === "우리동네부동산" && (
+                  <>
+                    <option value="아파트·오피스텔">아파트·오피스텔</option>
+                    <option value="빌라·주택">빌라·주택</option>
+                    <option value="원룸·투룸">원룸·투룸</option>
+                    <option value="상가·업무·공장·토지">상가·업무·공장·토지</option>
+                    <option value="분양">분양</option>
+                  </>
+                )}
+                {section1 === "뉴스/칼럼" && (
+                  <>
+                    <option value="부동산·주식·재테크">부동산·주식·재테크</option>
+                    <option value="정치·경제·사회">정치·경제·사회</option>
+                    <option value="세무·법률">세무·법률</option>
+                    <option value="여행·건강·생활">여행·건강·생활</option>
+                    <option value="IT·가전·가구">IT·가전·가구</option>
+                    <option value="스포츠·연예·Car">스포츠·연예·Car</option>
+                    <option value="인물·미션·기타">인물·미션·기타</option>
+                  </>
+                )}
               </select>
               <select value={series} onChange={e => setSeries(e.target.value)}
                 style={{ width: 120, padding: "10px 14px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 14, color: series ? textPrimary : textMuted, background: cardBg, outline: "none", fontFamily: "inherit", cursor: "pointer", appearance: "none", backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 12px center" }}>

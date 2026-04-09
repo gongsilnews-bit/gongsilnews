@@ -84,6 +84,7 @@ export default function AdminPage() {
   const [hoveredMenu, setHoveredMenu] = useState<string | null>(null);
   const [darkMode, setDarkMode] = useState(false);
   const [showRegisterForm, setShowRegisterForm] = useState(false);
+  const [showBoardModal, setShowBoardModal] = useState(false);
 
   const contentTitle = activeMenu === "members" ? "회원목록" : (MENU_ITEMS.find(m => m.key === activeMenu)?.label || "대시보드");
   const now = new Date();
@@ -563,7 +564,7 @@ export default function AdminPage() {
             {/* 타이틀 + 버튼 */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
               <h1 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: 0 }}>게시판 리스트 및 설정</h1>
-              <button style={{ height: 38, padding: "0 18px", background: "#374151", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>+ 새 게시판 생성</button>
+              <button onClick={() => setShowBoardModal(true)} style={{ height: 38, padding: "0 18px", background: "#374151", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>+ 새 게시판 생성</button>
             </div>
 
             {/* 메인 카드 */}
@@ -873,6 +874,168 @@ export default function AdminPage() {
           </div>
         )}
       </main>
+
+      {/* ===== 게시판 생성 모달 (1:1 픽셀 복제) ===== */}
+      {showBoardModal && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+          background: "rgba(0, 0, 0, 0.5)", zIndex: 9999,
+          display: "flex", alignItems: "center", justifyContent: "center"
+        }}>
+          <div style={{
+            background: darkMode ? "#1f2937" : "#ffffff", width: 560, borderRadius: 10,
+            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)", overflow: "hidden",
+            fontFamily: "'Pretendard Variable', -apple-system, sans-serif"
+          }}>
+            {/* 헤더 */}
+            <div style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              padding: "24px 28px 16px"
+            }}>
+              <h2 style={{ fontSize: 18, fontWeight: 800, color: textPrimary, margin: 0 }}>게시판 생성</h2>
+              <button onClick={() => setShowBoardModal(false)} style={{
+                background: "none", border: "none", cursor: "pointer", color: "#9ca3af",
+                display: "flex", alignItems: "center", justifyContent: "center"
+              }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              </button>
+            </div>
+
+            {/* 바디 */}
+            <div style={{ padding: "10px 28px 24px", display: "flex", flexDirection: "column", gap: 20 }}>
+              {/* 1열: 고유 ID */}
+              <div>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: textPrimary, marginBottom: 6 }}>
+                  게시판 고유 ID <span style={{ color: "#ef4444" }}>*</span>
+                </label>
+                <input type="text" placeholder="예: bbs_notice (영문, 숫자 조합)" style={{
+                  width: "100%", height: 42, padding: "0 14px", fontSize: 13,
+                  border: `1px solid ${border}`, borderRadius: 6, background: darkMode ? "#111" : "#fff",
+                  color: textPrimary, outline: "none", fontFamily: "inherit"
+                }} onFocus={(e) => e.target.style.borderColor = "#3b82f6"} onBlur={(e) => e.target.style.borderColor = border} />
+                <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 6, letterSpacing: "-0.2px" }}>URL 주소로 사용될 고유 이름입니다. 예: dori</div>
+              </div>
+
+              {/* 2열: 게시판 이름, 보조 타이틀 */}
+              <div style={{ display: "flex", gap: 16 }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: textPrimary, marginBottom: 6 }}>
+                    게시판 이름 <span style={{ color: "#ef4444" }}>*</span>
+                  </label>
+                  <input type="text" placeholder="예: 공지사항" style={{
+                    width: "100%", height: 42, padding: "0 14px", fontSize: 13,
+                    border: `1px solid ${border}`, borderRadius: 6, background: darkMode ? "#111" : "#fff",
+                    color: textPrimary, outline: "none", fontFamily: "inherit"
+                  }} onFocus={(e) => e.target.style.borderColor = "#3b82f6"} onBlur={(e) => e.target.style.borderColor = border} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: textPrimary, marginBottom: 6 }}>
+                    보조 타이틀
+                  </label>
+                  <input type="text" placeholder="예: 자료실" style={{
+                    width: "100%", height: 42, padding: "0 14px", fontSize: 13,
+                    border: `1px solid ${border}`, borderRadius: 6, background: darkMode ? "#111" : "#fff",
+                    color: textPrimary, outline: "none", fontFamily: "inherit"
+                  }} onFocus={(e) => e.target.style.borderColor = "#3b82f6"} onBlur={(e) => e.target.style.borderColor = border} />
+                </div>
+              </div>
+
+              {/* 3열: 스킨/테마 구조 선택, 가로 갯수 */}
+              <div style={{ display: "flex", gap: 16 }}>
+                <div style={{ flex: 2 }}>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: textPrimary, marginBottom: 6 }}>
+                    스킨 / 테마 구조 선택 <span style={{ color: "#ef4444" }}>*</span>
+                  </label>
+                  <div style={{ position: "relative" }}>
+                    <select style={{
+                      width: "100%", height: 42, padding: "0 34px 0 14px", fontSize: 13,
+                      border: `1px solid ${border}`, borderRadius: 6, background: darkMode ? "#111" : "#fff",
+                      color: textPrimary, outline: "none", fontFamily: "inherit", appearance: "none", cursor: "pointer"
+                    }} onFocus={(e) => e.target.style.borderColor = "#3b82f6"} onBlur={(e) => e.target.style.borderColor = border}>
+                      <option>📑 일반 리스트형 (자유게시판/공지사항)</option>
+                      <option>🖼️ 갤러리/앨범형</option>
+                    </select>
+                    <svg style={{ position: "absolute", right: 12, top: 14, pointerEvents: "none", color: "#9ca3af" }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                  </div>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: textPrimary, marginBottom: 6 }}>
+                    가로 갯수 (앨범형)
+                  </label>
+                  <div style={{ position: "relative" }}>
+                    <select style={{
+                      width: "100%", height: 42, padding: "0 34px 0 14px", fontSize: 13,
+                      border: `1px solid ${border}`, borderRadius: 6, background: darkMode ? "#111" : "#fff",
+                      color: textPrimary, outline: "none", fontFamily: "inherit", appearance: "none", cursor: "pointer"
+                    }} onFocus={(e) => e.target.style.borderColor = "#3b82f6"} onBlur={(e) => e.target.style.borderColor = border}>
+                      <option>3개의 보기</option>
+                      <option>4개의 보기</option>
+                    </select>
+                    <svg style={{ position: "absolute", right: 12, top: 14, pointerEvents: "none", color: "#9ca3af" }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                  </div>
+                </div>
+              </div>
+
+              {/* 4열: 세부 카테고리 */}
+              <div>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: textPrimary, marginBottom: 6 }}>
+                  세부 카테고리 (분류)
+                </label>
+                <input type="text" placeholder="쉼표(,)로 구분하여 입력하세요. (예: 드론, 아파트, 빌딩)" style={{
+                  width: "100%", height: 42, padding: "0 14px", fontSize: 13,
+                  border: `1px solid ${border}`, borderRadius: 6, background: darkMode ? "#111" : "#fff",
+                  color: textPrimary, outline: "none", fontFamily: "inherit"
+                }} onFocus={(e) => e.target.style.borderColor = "#3b82f6"} onBlur={(e) => e.target.style.borderColor = border} />
+              </div>
+
+              {/* 5열: 권한 설정 */}
+              <div style={{ display: "flex", gap: 12 }}>
+                {[
+                  { label: "목록 열람 권한", val: "1레벨 (일반회원 이상)" },
+                  { label: "내용 읽기/다운로드 권한", val: "5레벨 (기자/제휴 이상)" },
+                  { label: "글쓰기 권한", val: "9레벨 (관리자 전용)" }
+                ].map((col, i) => (
+                  <div key={i} style={{ flex: 1 }}>
+                    <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: textSecondary, marginBottom: 6, letterSpacing: "-0.5px" }}>
+                      {col.label}
+                    </label>
+                    <div style={{ position: "relative" }}>
+                      <select style={{
+                        width: "100%", height: 38, padding: "0 28px 0 10px", fontSize: 12,
+                        border: `1px solid ${border}`, borderRadius: 6, background: darkMode ? "#111" : "#fff",
+                        color: textPrimary, outline: "none", fontFamily: "inherit", appearance: "none", cursor: "pointer"
+                      }} onFocus={(e) => e.target.style.borderColor = "#3b82f6"} onBlur={(e) => e.target.style.borderColor = border}>
+                        <option>{col.val}</option>
+                      </select>
+                      <svg style={{ position: "absolute", right: 8, top: 12, pointerEvents: "none", color: "#9ca3af" }} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 푸터 버튼영역 */}
+            <div style={{
+              display: "flex", justifyContent: "flex-end", gap: 8, padding: "20px 28px 28px"
+            }}>
+              <button onClick={() => setShowBoardModal(false)} style={{
+                padding: "0 20px", height: 44, borderRadius: 6, border: `1px solid ${border}`,
+                background: darkMode ? "#374151" : "#ffffff", color: textPrimary,
+                fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", transition: "background 0.2s"
+              }} onMouseOver={(e) => e.currentTarget.style.background = darkMode ? "#4b5563" : "#f9fafb"} onMouseOut={(e) => e.currentTarget.style.background = darkMode ? "#374151" : "#ffffff"}>
+                취소
+              </button>
+              <button style={{
+                padding: "0 24px", height: 44, borderRadius: 6, border: "none",
+                background: "#2a2f3a", color: "#ffffff", transition: "background 0.2s",
+                fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
+              }} onMouseOver={(e) => e.currentTarget.style.background = "#111827"} onMouseOut={(e) => e.currentTarget.style.background = "#2a2f3a"}>
+                설정 저장하기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
