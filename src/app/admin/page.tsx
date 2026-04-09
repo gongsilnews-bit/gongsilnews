@@ -953,7 +953,10 @@ export default function AdminPage() {
                       color: textPrimary, outline: "none", fontFamily: "inherit", appearance: "none", cursor: "pointer"
                     }} onFocus={(e) => e.target.style.borderColor = "#3b82f6"} onBlur={(e) => e.target.style.borderColor = border}>
                       <option>📑 일반 리스트형 (자유게시판/공지사항)</option>
-                      <option>🖼️ 갤러리/앨범형</option>
+                      <option>▶️ 동영상 앨범형 (유튜브 + 드라이브 다운로드 최적화)</option>
+                      <option>📄 파일 자료실형 (디자인 썸네일 + 다운로드 버튼)</option>
+                      <option>💡 자주묻는질문 (FAQ 아코디언형)</option>
+                      <option>🔒 1:1 문의 (작성자/관리자 전용 비밀글)</option>
                     </select>
                     <svg style={{ position: "absolute", right: 12, top: 14, pointerEvents: "none", color: "#9ca3af" }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
                   </div>
@@ -1000,12 +1003,15 @@ export default function AdminPage() {
                       {col.label}
                     </label>
                     <div style={{ position: "relative" }}>
-                      <select style={{
+                      <select defaultValue={col.val} style={{
                         width: "100%", height: 38, padding: "0 28px 0 10px", fontSize: 12,
                         border: `1px solid ${border}`, borderRadius: 6, background: darkMode ? "#111" : "#fff",
                         color: textPrimary, outline: "none", fontFamily: "inherit", appearance: "none", cursor: "pointer"
                       }} onFocus={(e) => e.target.style.borderColor = "#3b82f6"} onBlur={(e) => e.target.style.borderColor = border}>
-                        <option>{col.val}</option>
+                        <option>비회원 + 전체</option>
+                        <option>1레벨 (일반회원 이상)</option>
+                        <option>5레벨 (기자/제휴 이상)</option>
+                        <option>9레벨 (관리자 전용)</option>
                       </select>
                       <svg style={{ position: "absolute", right: 8, top: 12, pointerEvents: "none", color: "#9ca3af" }} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
                     </div>
