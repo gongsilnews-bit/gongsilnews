@@ -2,8 +2,10 @@
 
 import { useEffect, useRef } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 export default function Header() {
+  const pathname = usePathname();
   const headerRef = useRef<HTMLElement>(null);
   const searchWrapRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -128,13 +130,13 @@ export default function Header() {
           </div>
           <div className="header-bottom">
             <nav className="gnb-new">
-              <Link href="/news_all">전체뉴스</Link>
-              <Link href="/news_map">우리동네뉴스</Link>
-              <Link href="/news_finance">부동산·주식·재테크</Link>
-              <Link href="/news_politics">정치·경제·사회</Link>
-              <Link href="/news_law">세무·법률</Link>
-              <Link href="/news_life">여행·건강·생활</Link>
-              <Link href="/news_etc">기타</Link>
+              <Link href="/news_all" className={pathname === "/news_all" ? "active" : ""}>전체뉴스</Link>
+              <Link href="/news_map" className={pathname === "/news_map" ? "active" : ""}>우리동네뉴스</Link>
+              <Link href="/news_finance" className={pathname === "/news_finance" ? "active" : ""}>부동산·주식·재테크</Link>
+              <Link href="/news_politics" className={pathname === "/news_politics" ? "active" : ""}>정치·경제·사회</Link>
+              <Link href="/news_law" className={pathname === "/news_law" ? "active" : ""}>세무·법률</Link>
+              <Link href="/news_life" className={pathname === "/news_life" ? "active" : ""}>여행·건강·생활</Link>
+              <Link href="/news_etc" className={pathname === "/news_etc" ? "active" : ""}>기타</Link>
               <span className="divider"></span>
               <Link href="/gongsil">공실열람</Link>
               <div className="gnb-dropdown-parent" style={{ position: "relative", display: "inline-block" }}>
