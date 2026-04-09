@@ -30,7 +30,9 @@ export default function VacancyRegisterForm({ onBack, darkMode = false }: Vacanc
   const [propertyType, setPropertyType] = useState<string>("아파트·오피스텔");
   const [subCategory, setSubCategory] = useState<string>("아파트");
   const [tradeType, setTradeType] = useState<string>("매매");
-  const [commission, setCommission] = useState<string>("공동중개 0%");
+  const [commissionType, setCommissionType] = useState<string>("법정수수료");
+  const [commissionAmount, setCommissionAmount] = useState("");
+  const [commissionEtc, setCommissionEtc] = useState("");
   const [parking, setParking] = useState<string>("없음");
   const [moveInDate, setMoveInDate] = useState<string>("즉시입주(공실)");
   const [ownerRelation, setOwnerRelation] = useState<string>("본인");
@@ -391,7 +393,24 @@ export default function VacancyRegisterForm({ onBack, darkMode = false }: Vacanc
             {/* ── 섹션 2: 위치/주소 ── */}
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
               <h2 style={{ fontSize: 20, fontWeight: 800, color: textPrimary, margin: 0 }}>위치/주소</h2>
-              <button type="button" style={{ height: 36, padding: "0 16px", background: "#10b981", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+              <button type="button" onClick={() => {
+                if (typeof window !== "undefined") {
+                  const script = document.createElement("script");
+                  script.src = "//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js";
+                  script.onload = () => {
+                    new (window as any).daum.Postcode({
+                      oncomplete: (data: any) => {
+                        setSido(data.sido || "");
+                        setSigungu(data.sigungu || "");
+                        setDong(data.bname || "");
+                        setDetailAddr(data.roadAddress || data.jibunAddress || "");
+                        setBuildingName(data.buildingName || "");
+                      }
+                    }).open();
+                  };
+                  document.head.appendChild(script);
+                }
+              }} style={{ height: 36, padding: "0 16px", background: "#10b981", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
                 🔍 찾기
               </button>
             </div>
@@ -444,12 +463,30 @@ export default function VacancyRegisterForm({ onBack, darkMode = false }: Vacanc
             {/* ── 구분선 ── */}
             <div style={{ borderTop: `1px dashed ${border}`, margin: "32px 0" }} />
 
-            {/* ── 섹션 3: 중개보수 지급 ── */}
-            <label style={labelStyle}>중개보수 지급 {reqMark}</label>
-            <div style={{ display: "flex", gap: 10, marginBottom: 24 }}>
-              {["공동중개 0%", "물건수수료지급 25%", "물건수수료지급 50%", "물건수수료지급 100%"].map(t => (
-                <SelectBtn key={t} label={t} selected={commission === t} onClick={() => setCommission(t)} />
-              ))}
+            {/* ── 섹션 3: 중개수수료 ── */}
+            <label style={labelStyle}>중개수수료 {reqMark}</label>
+            <div style={{ border: `1px solid ${border}`, borderRadius: 10, padding: "20px 24px", marginBottom: 24 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontSize: 14, fontWeight: 600, color: textPrimary }}>
+                  <input type="radio" name="commissionType" checked={commissionType === "법정수수료"} onChange={() => setCommissionType("법정수수료")} style={{ accentColor: "#3b82f6", width: 18, height: 18 }} />
+                  법정수수료 지급
+                </label>
+                <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontSize: 14, color: textPrimary }}>
+                  <input type="radio" name="commissionType" checked={commissionType === "금액직접"} onChange={() => setCommissionType("금액직접")} style={{ accentColor: "#3b82f6", width: 18, height: 18 }} />
+                  <input type="text" placeholder="" value={commissionAmount} onChange={(e) => setCommissionAmount(e.target.value)} disabled={commissionType !== "금액직접"}
+                    style={{ ...inputStyle, width: 120, height: 36, padding: "0 12px", opacity: commissionType === "금액직접" ? 1 : 0.4 }} />
+                  <span style={{ fontSize: 14, color: textSecondary }}>만</span>
+                </label>
+                <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontSize: 14, color: textPrimary }}>
+                  <input type="radio" name="commissionType" checked={commissionType === "기타"} onChange={() => setCommissionType("기타")} style={{ accentColor: "#3b82f6", width: 18, height: 18 }} />
+                  기타
+                  <input type="text" placeholder="" value={commissionEtc} onChange={(e) => setCommissionEtc(e.target.value)} disabled={commissionType !== "기타"}
+                    style={{ ...inputStyle, flex: 1, height: 36, padding: "0 12px", opacity: commissionType === "기타" ? 1 : 0.4 }} />
+                </label>
+              </div>
+              <div style={{ marginTop: 16, background: darkMode ? "#1e3a5f" : "#eff6ff", borderRadius: 8, padding: "12px 16px", fontSize: 12, color: "#3b82f6", lineHeight: 1.6 }}>
+                ⓘ 매물의뢰서 작성자는 법정수수료를 지급하는 것에 대하여 동의하며, 중개수수료 지급관련 민원이 발생될 경우 <strong>공실뉴스</strong> 매물 등록에 제한이 될 수 있음을 확인합니다.
+              </div>
             </div>
 
             {/* ── 구분선 ── */}
@@ -479,28 +516,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false }: Vacanc
               </label>
             </div>
 
-            {/* ── 구분선 ── */}
-            <div style={{ borderTop: `1px dashed ${border}`, margin: "32px 0" }} />
 
-            {/* ── 섹션 5: 부동산 / 기업 정보 ── */}
-            <h2 style={{ fontSize: 17, fontWeight: 800, color: textPrimary, margin: "0 0 16px", display: "flex", alignItems: "center", gap: 8 }}>
-              🏘️ 부동산 / 기업 정보
-            </h2>
-            <div style={{ display: "flex", gap: 16, marginBottom: 16 }}>
-              <div style={{ width: 80, height: 80, borderRadius: 10, border: `1px dashed ${border}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: textSecondary, fontSize: 12, flexShrink: 0 }}>
-                사진
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ display: "flex", gap: 12, marginBottom: 8 }}>
-                  <input type="text" placeholder="업체명" style={{ ...inputStyle, height: 36, fontSize: 13 }} />
-                  <input type="text" placeholder="대표자" style={{ ...inputStyle, height: 36, fontSize: 13 }} />
-                </div>
-                <div style={{ display: "flex", gap: 12 }}>
-                  <input type="text" placeholder="사업자번호" style={{ ...inputStyle, height: 36, fontSize: 13 }} />
-                  <input type="text" placeholder="전화번호" style={{ ...inputStyle, height: 36, fontSize: 13 }} />
-                </div>
-              </div>
-            </div>
 
             {/* ── 공실 등록하기 버튼 ── */}
             <button
