@@ -140,7 +140,7 @@ export default function NewsLocalPage() {
                   </div>
                   <div style={{ display: "flex", gap: 16, alignItems: "center", color: "#333", fontSize: 20 }}>
                     {/* 원문보기 */}
-                    <a href="#" style={{ fontSize: 13, fontWeight: "bold", color: "#508bf5", border: "1px solid #508bf5", borderRadius: 20, padding: "4px 14px", textDecoration: "none", transition: "all 0.2s" }}>원문보기</a>
+                    <a href="#" className="text-[13px] font-bold text-[#508bf5] border border-[#508bf5] rounded-full px-[14px] py-[4px] no-underline transition-all duration-200 hover:bg-[#508bf5] hover:text-white">원문보기</a>
                     {/* 찜 */}
                     <span className="meta-icon" title="스크랩">
                       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"></path></svg>
