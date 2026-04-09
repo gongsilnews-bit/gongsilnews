@@ -78,7 +78,7 @@ export default function Header() {
       {/* 1. Top Nav Bar */}
       <div className="top-bar">
         <div className="top-bar-left">
-          <div className="top-logo" onClick={() => window.location.href = "/"} style={{ cursor: "pointer" }}><img src="/logo.png" alt="공실뉴스" style={{ height: 28, objectFit: "contain" }} /></div>
+          <div className="top-logo" onClick={() => window.location.href = "/"} style={{ cursor: "pointer" }}>공실뉴스</div>
           <div className="top-desc">11만 부동산을 위한 무료 정보 채널</div>
         </div>
         <div className="top-bar-right">
