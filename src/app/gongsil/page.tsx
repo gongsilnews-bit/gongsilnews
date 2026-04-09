@@ -228,6 +228,7 @@ export default function GongsilPage() {
 
               {/* 매물정보 탭 */}
               {activeDetailTab === "info" && (
+                <>
                 <div style={{ display: "grid", gridTemplateColumns: "110px 1fr", borderBottom: "10px solid #f5f5f5" }}>
                   {detailData.tableInfo.map((row, i) => (
                     <React.Fragment key={i}>
@@ -236,6 +237,80 @@ export default function GongsilPage() {
                     </React.Fragment>
                   ))}
                 </div>
+
+                {/* ──── 위치정보 ──── */}
+                <div style={{ padding: "20px 20px 0" }}>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: "#222", marginTop: 10, marginBottom: 12 }}>위치정보</div>
+                  <div style={{ width: "100%", height: 200, borderRadius: 8, marginBottom: 20, background: "#e8eaed", display: "flex", alignItems: "center", justifyContent: "center", color: "#999", fontSize: 14, border: "1px solid #eee" }}>
+                    🗺️ 카카오맵 (위치정보)
+                  </div>
+                </div>
+
+                {/* ──── 로드뷰 ──── */}
+                <div style={{ padding: "0 20px" }}>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: "#222", marginBottom: 12 }}>로드뷰</div>
+                  <div style={{ width: "100%", height: 200, borderRadius: 8, marginBottom: 20, background: "#e8eaed", display: "flex", alignItems: "center", justifyContent: "center", color: "#999", fontSize: 14, border: "1px solid #eee" }}>
+                    🛣️ 카카오 로드뷰
+                  </div>
+                </div>
+
+                {/* ──── 옵션 (3탭: 옵션/관리비/시간정보) ──── */}
+                <div style={{ padding: "0 20px 20px" }}>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: "#222", marginBottom: 20 }}>옵션</div>
+                  {/* 탭 아이콘 3개 */}
+                  <div style={{ display: "flex", gap: 0, marginBottom: 20, borderBottom: "1px solid #eee" }}>
+                    {[
+                      { icon: "🛒", label: "옵션" },
+                      { icon: "🏛", label: "관리비" },
+                      { icon: "⏰", label: "시간정보" },
+                    ].map((tab, idx) => (
+                      <div key={idx} style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "14px 28px", cursor: "pointer", borderBottom: idx === 0 ? "2px solid #333" : "2px solid transparent", color: idx === 0 ? "#333" : "#bbb", fontSize: 22, transition: "all 0.2s" }} title={tab.label}>
+                        {tab.icon}
+                      </div>
+                    ))}
+                  </div>
+                  {/* 옵션 아이콘 그리드 */}
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 20 }}>
+                    {[
+                      { icon: "❄️", name: "에어컨" },
+                      { icon: "🍳", name: "싱크대" },
+                      { icon: "🚿", name: "붙박이장" },
+                      { icon: "🔒", name: "보안시스템" },
+                      { icon: "🅿️", name: "주차기능" },
+                      { icon: "📺", name: "TV" },
+                    ].map((opt, idx) => (
+                      <div key={idx} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, width: 64 }}>
+                        <div style={{ width: 44, height: 44, borderRadius: 8, background: "#f5f5f5", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 }}>{opt.icon}</div>
+                        <span style={{ fontSize: 11, color: "#666", textAlign: "center", whiteSpace: "nowrap" }}>{opt.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* ──── 댓글상담 ──── */}
+                <div style={{ marginTop: 20, borderTop: "1px solid #f0f0f0", padding: "20px 20px 30px" }}>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: "#222", marginBottom: 15, display: "flex", alignItems: "center", gap: 8 }}>
+                    댓글상담 <span style={{ color: "#1a73e8", fontSize: 15 }}>0개</span>
+                  </div>
+                  {/* 입력 영역 */}
+                  <div style={{ marginBottom: 25, border: "1px solid #ddd", borderRadius: 6, overflow: "hidden", background: "#fff" }}>
+                    <textarea
+                      placeholder={"가격을 제안하거나, 궁금한 점을 남겨보세요. 작성자에게 중개사인 알고 답변 수 있는 1:1 비공개 상담입니다."}
+                      style={{ width: "100%", minHeight: 80, border: "none", outline: "none", padding: "14px 15px", fontSize: 14, color: "#333", resize: "vertical", fontFamily: "inherit", background: "#fff", boxSizing: "border-box" }}
+                    />
+                    <div style={{ padding: "10px 15px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#fafafa", borderTop: "1px solid #eee" }}>
+                      <span style={{ fontSize: 13, color: "#888", display: "flex", alignItems: "center", gap: 4 }}>
+                        <span style={{ color: "#1a73e8" }}>🔒</span> 비밀댓글 자동적용
+                      </span>
+                      <button style={{ background: "#1a73e8", color: "#fff", border: "none", padding: "8px 24px", borderRadius: 4, fontWeight: "bold", cursor: "pointer", fontSize: 14, fontFamily: "inherit" }}>등록</button>
+                    </div>
+                  </div>
+                  {/* 댓글 리스트 */}
+                  <div style={{ textAlign: "center", padding: 30, color: "#888", fontSize: 13 }}>
+                    아직 등록된 문의가 없습니다.
+                  </div>
+                </div>
+                </>
               )}
 
               {/* 등록자정보 탭 */}
