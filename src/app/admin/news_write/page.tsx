@@ -7,6 +7,8 @@ import { useRouter } from "next/navigation";
 type StatusType = "작성중" | "승인신청" | "반려";
 type FormType = "일반" | "카드뉴스" | "갤러리";
 
+import AdminSidebar from "@/components/admin/AdminSidebar";
+
 export default function NewsWritePage() {
   const router = useRouter();
 
@@ -55,14 +57,17 @@ export default function NewsWritePage() {
   const textMuted = "#9ca3af";
   const inputBg = "#fafafa";
   const accentBlue = "#3b82f6";
+  const headerBg = "#ffffff";
 
   return (
-    <div style={{ minHeight: "100vh", background: pageBg, fontFamily: "'Pretendard Variable', 'Noto Sans KR', -apple-system, sans-serif" }}>
-      {/* ═══ 상단 헤더 ═══ */}
+    <div style={{ display: "flex", height: "100vh", width: "100vw", fontFamily: "'Pretendard Variable', -apple-system, sans-serif", background: pageBg, overflow: "hidden" }}>
+      <AdminSidebar activeMenu="article" />
+      <main style={{ flex: 1, display: "flex", flexDirection: "column", background: pageBg, overflow: "hidden" }}>
+        {/* ═══ 상단 헤더 ═══ */}
       <header style={{
         height: 56, background: cardBg, borderBottom: `1px solid ${border}`,
         display: "flex", alignItems: "center", padding: "0 24px", justifyContent: "space-between",
-        position: "sticky", top: 0, zIndex: 100,
+        flexShrink: 0, zIndex: 100,
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           {/* 로고 */}
@@ -83,8 +88,10 @@ export default function NewsWritePage() {
         </div>
       </header>
 
-      {/* ═══ 3컬럼 레이아웃 ═══ */}
-      <div style={{ maxWidth: 1400, margin: "0 auto", padding: "24px 16px", display: "flex", gap: 20, alignItems: "flex-start" }}>
+      {/* 컨텐츠 스크롤 영역 */}
+      <div style={{ flex: 1, overflowY: "auto" }}>
+        {/* ═══ 3컬럼 레이아웃 ═══ */}
+        <div style={{ maxWidth: 1400, margin: "0 auto", padding: "24px 16px", display: "flex", gap: 20, alignItems: "flex-start" }}>
 
         {/* ═══ 좌측 사이드바: 글쓰기도구 ═══ */}
         <aside style={{ width: 220, minWidth: 220, position: "sticky", top: 80, flexShrink: 0 }}>
@@ -224,11 +231,6 @@ export default function NewsWritePage() {
                 <option value="">1차섹션 선택</option>
                 <option value="우리동네부동산">우리동네부동산</option>
                 <option value="뉴스/칼럼">뉴스/칼럼</option>
-                <option value="부동산·주식·재테크">부동산·주식·재테크</option>
-                <option value="정치·경제·사회">정치·경제·사회</option>
-                <option value="세무·법률">세무·법률</option>
-                <option value="여행·건강·생활">여행·건강·생활</option>
-                <option value="기타">기타</option>
               </select>
               <select value={section2} onChange={e => setSection2(e.target.value)}
                 style={{ flex: 1, padding: "10px 14px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 14, color: section2 ? textPrimary : textMuted, background: cardBg, outline: "none", fontFamily: "inherit", cursor: "pointer", appearance: "none", backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 12px center" }}>
@@ -476,6 +478,8 @@ export default function NewsWritePage() {
         </aside>
 
       </div>
+      </div>
+      </main>
     </div>
   );
 }
