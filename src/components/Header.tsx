@@ -136,7 +136,16 @@ export default function Header() {
               <Link href="/news_politics" className={pathname === "/news_politics" ? "active" : ""}>정치·경제·사회</Link>
               <Link href="/news_law" className={pathname === "/news_law" ? "active" : ""}>세무·법률</Link>
               <Link href="/news_life" className={pathname === "/news_life" ? "active" : ""}>여행·건강·생활</Link>
-              <Link href="/news_etc" className={pathname === "/news_etc" ? "active" : ""}>기타</Link>
+              <div className="gnb-dropdown-parent" style={{ position: "relative", display: "inline-block" }}>
+                <Link href="/news_etc" className={pathname === "/news_etc" ? "active" : ""} style={{ padding: "10px 0", transition: "color 0.2s" }}>기타</Link>
+                <div className="gnb-dropdown">
+                  <ul>
+                    <li><Link href="/news_etc?cat=it">IT·가전·가구</Link></li>
+                    <li><Link href="/news_etc?cat=sports">스포츠·연예·Car</Link></li>
+                    <li><Link href="/news_etc?cat=mission">인물·미션·기타</Link></li>
+                  </ul>
+                </div>
+              </div>
               <span className="divider"></span>
               <Link href="/gongsil">공실열람</Link>
               <div className="gnb-dropdown-parent" style={{ position: "relative", display: "inline-block" }}>
