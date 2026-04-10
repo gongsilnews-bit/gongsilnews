@@ -1,7 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import VacancyRegisterForm from "@/components/admin/VacancyRegisterForm";
+import MemberRegisterForm from "@/components/admin/MemberRegisterForm";
+import { adminGetMembers } from "./actions";
 
 /* ──────────────────────────────────────────────
    SVG 아이콘 컴포넌트 (원본 feather-icon 1:1 복제)
@@ -82,6 +84,16 @@ export default function AdminPage() {
   const [darkMode, setDarkMode] = useState(false);
   const [showRegisterForm, setShowRegisterForm] = useState(false);
   const [showBoardModal, setShowBoardModal] = useState(false);
+  const [showMemberRegister, setShowMemberRegister] = useState(false);
+  const [dbMembers, setDbMembers] = useState<any[]>([]);
+
+  useEffect(() => {
+    adminGetMembers().then((res) => {
+      if (res?.success && res.data) {
+        setDbMembers(res.data);
+      }
+    });
+  }, []);
 
   const contentTitle = activeMenu.startsWith("members") ? "회원관리" : (MENU_ITEMS.find(m => m.key === activeMenu)?.label || "대시보드");
   const now = new Date();
@@ -735,6 +747,15 @@ export default function AdminPage() {
 
         ) : activeMenu.startsWith("members") ? (
           /* ===== 회원관리 리스트 (원본 admin 디자인 1:1 복제) ===== */
+          showMemberRegister ? (
+            <MemberRegisterForm 
+              darkMode={darkMode} 
+              onBack={() => {
+                setShowMemberRegister(false);
+                adminGetMembers().then(res => setDbMembers(res.data || []));
+              }} 
+            />
+          ) : (
           <div style={{ flex: 1, overflowY: "auto", padding: "20px 28px", background: bg }}>
             {/* 타이틀 */}
             <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 20 }}>
@@ -768,7 +789,7 @@ export default function AdminPage() {
 
               {/* 액션 버튼 영역 */}
               <div style={{ padding: "16px 24px", borderBottom: `1px solid ${border}`, display: "flex", gap: 10, alignItems: "center" }}>
-                <button style={{ height: 36, padding: "0 16px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>+ 회원등록</button>
+                <button onClick={() => setShowMemberRegister(true)} style={{ height: 36, padding: "0 16px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>+ 회원등록</button>
                 <button style={{ height: 36, padding: "0 16px", background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>🗑 선택삭제</button>
               </div>
 
@@ -793,35 +814,37 @@ export default function AdminPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {[
-                      { no: "000001", email: "gongsilnews@gmail.com", name: "김미숙", phone: "-", role: "최고관리자", roleColor: "#dc2626", roleBg: "#fef2f2", date: "2026-03-17", membership: "무료", period: "-", status: "정상", statusColor: "#16a34a" },
-                      { no: "000002", email: "gongsilmarketing@gmail.com", name: "착한임대", phone: "010-8631-9450", role: "부동산회원", roleColor: "#d97706", roleBg: "#fffbeb", date: "2026-03-31", membership: "유료", period: "-", status: "🚨 보완요청 회원님!", statusColor: "#dc2626", statusBg: "#fef2f2" },
-                      { no: "000003", email: "suppliant@naver.com", name: "김농현", phone: "010-8831-9450", role: "일반회원", roleColor: "#4b5563", roleBg: "#f3f4f6", date: "2026-04-09", membership: "무료", period: "-", status: "정상", statusColor: "#16a34a" },
-                    ].map((row, idx) => (
-                      <tr key={idx} style={{ borderBottom: `1px solid ${darkMode ? "#333" : "#f3f4f6"}`, transition: "background 0.15s" }}
+                    {dbMembers.length > 0 ? (
+                      dbMembers.map((member, idx) => {
+                        const roleMap: any = { 'ADMIN': '최고관리자', 'REALTOR': '부동산회원', 'USER': '일반회원' };
+                        const displayRole = roleMap[member.role] || member.role || '일반회원';
+                        const createdDate = member.created_at ? new Date(member.created_at).toISOString().split('T')[0] : "-";
+                        
+                        return (
+                      <tr key={member.id || idx} style={{ borderBottom: `1px solid ${darkMode ? "#333" : "#f3f4f6"}`, transition: "background 0.15s" }}
                         onMouseEnter={(e) => { e.currentTarget.style.background = darkMode ? "#3a3b3f" : "#f1f3f5"; }}
                         onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
                       >
                         <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
                           <input type="checkbox" style={{ accentColor: "#3b82f6" }} />
                         </td>
-                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>{row.no}</td>
+                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>{String(idx + 1).padStart(6, '0')}</td>
                         <td style={{ padding: "16px 10px", verticalAlign: "middle", textAlign: "left" }}>
                           <a href="#" style={{ fontSize: 15, fontWeight: 600, color: textSecondary, textDecoration: "none" }}
                             onMouseOver={(e) => (e.currentTarget.style.textDecoration = "underline")}
                             onMouseOut={(e) => (e.currentTarget.style.textDecoration = "none")}
-                          >{row.email}</a>
+                          >{member.email}</a>
                         </td>
-                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 15, fontWeight: 600, color: textPrimary }}>{row.name}</td>
-                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>{row.phone}</td>
+                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 15, fontWeight: 600, color: textPrimary }}>{member.name || '-'}</td>
+                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>{member.phone || '-'}</td>
                         <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>
-                          {row.role}
+                          {displayRole}
                         </td>
-                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>{row.date}</td>
-                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>{row.membership}</td>
-                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>{row.period}</td>
+                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>{createdDate}</td>
+                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>무료</td>
+                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>-</td>
                         <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>
-                          {row.status}
+                          {member.signup_completed ? '정상' : '승인대기'}
                         </td>
                         <td style={{ padding: "16px 10px", textAlign: "right", verticalAlign: "middle" }}>
                           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
@@ -840,7 +863,15 @@ export default function AdminPage() {
                           </div>
                         </td>
                       </tr>
-                    ))}
+                        );
+                      })
+                    ) : (
+                      <tr>
+                        <td colSpan={11} style={{ padding: "40px 0", textAlign: "center", color: textSecondary, fontSize: 14 }}>
+                          가입된 회원이 없습니다.
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -854,6 +885,7 @@ export default function AdminPage() {
               </div>
             </div>
           </div>
+          )
 
         ) : (
           /* 다른 메뉴 선택 시 placeholder */

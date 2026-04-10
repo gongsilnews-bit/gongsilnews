@@ -116,3 +116,14 @@ export async function adminUploadAgencyDocument(formData: FormData) {
   }
 }
 
+// ── 모든 회원 목록 조회 ──
+export async function adminGetMembers() {
+  const supabaseAdmin = getAdminClient();
+  try {
+    const { data: members, error } = await supabaseAdmin.from('members').select('*').order('created_at', { ascending: false });
+    if (error) return { success: false, error: error.message };
+    return { success: true, data: members };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
