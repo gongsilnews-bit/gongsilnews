@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useCallback } from "react";
+import { geocodeAddress } from "@/app/actions/geocode";
 
 /* ──────────────────────────────────────────────
    공실등록 폼 컴포넌트 (register.html 1:1 복제)
@@ -74,6 +75,10 @@ export default function VacancyRegisterForm({ onBack, darkMode = false }: Vacanc
   // 의뢰인
   const [clientName, setClientName] = useState("김미숙");
   const [clientPhone, setClientPhone] = useState("");
+
+  // 좌표
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [geocoding, setGeocoding] = useState(false);
 
   // 좌측 도구 - 면적 계산기
   const [calcM2, setCalcM2] = useState("");
@@ -399,12 +404,30 @@ export default function VacancyRegisterForm({ onBack, darkMode = false }: Vacanc
                   script.src = "//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js";
                   script.onload = () => {
                     new (window as any).daum.Postcode({
-                      oncomplete: (data: any) => {
+                      oncomplete: async (data: any) => {
                         setSido(data.sido || "");
                         setSigungu(data.sigungu || "");
                         setDong(data.bname || "");
                         setDetailAddr(data.roadAddress || data.jibunAddress || "");
                         setBuildingName(data.buildingName || "");
+
+                        // 카카오 Geocoder REST API로 좌표 자동 추출
+                        setGeocoding(true);
+                        try {
+                          const result = await geocodeAddress(data.address || data.roadAddress || data.jibunAddress);
+                          if (result.success && result.lat && result.lng) {
+                            setCoords({ lat: result.lat, lng: result.lng });
+                            console.log(`\u2705 \uc88c\ud45c \ubcc0\ud658 \uc131\uacf5: ${result.lat}, ${result.lng}`);
+                          } else {
+                            console.warn('\u26a0\ufe0f \uc88c\ud45c \ubcc0\ud658 \uc2e4\ud328:', result.error);
+                            setCoords(null);
+                          }
+                        } catch (err) {
+                          console.error('\uc88c\ud45c \ubcc0\ud658 \uc911 \uc624\ub958:', err);
+                          setCoords(null);
+                        } finally {
+                          setGeocoding(false);
+                        }
                       }
                     }).open();
                   };
@@ -447,8 +470,23 @@ export default function VacancyRegisterForm({ onBack, darkMode = false }: Vacanc
             </div>
 
             <div style={{ background: darkMode ? "#1e3a5f" : "#eff6ff", borderRadius: 8, padding: "12px 16px", marginBottom: 8, fontSize: 13, color: "#3b82f6", fontWeight: 600 }}>
-              확인 주소: 주소를 입력해주세요.
+              {sido ? `확인 주소: ${sido} ${sigungu} ${dong} ${detailAddr}` : `확인 주소: 주소를 입력해주세요.`}
             </div>
+            {geocoding && (
+              <div style={{ fontSize: 12, color: "#3b82f6", marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+                ⏳ 주소로부터 좌표를 추출하는 중...
+              </div>
+            )}
+            {!geocoding && coords && (
+              <div style={{ fontSize: 12, color: "#10b981", marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+                ✅ 좌표 추출 완료: 위도 {coords.lat.toFixed(6)}, 경도 {coords.lng.toFixed(6)}
+              </div>
+            )}
+            {!geocoding && sido && !coords && (
+              <div style={{ fontSize: 12, color: "#f59e0b", marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+                ⚠️ 좌표 추출 실패 — 주소를 다시 검색해 주세요.
+              </div>
+            )}
 
             {/* ── 전달사항 ── */}
             <label style={{ ...labelStyle, marginTop: 32 }}>전달사항 (특징, 입주일 등)</label>

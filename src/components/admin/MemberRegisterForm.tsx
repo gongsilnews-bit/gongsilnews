@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { adminCreateMember, adminUpdateAgency, adminUploadAgencyDocument, adminGetMemberDetail, adminUpdateMember } from "@/app/admin/actions";
+import { geocodeAddress } from "@/app/actions/geocode";
 
 interface MemberRegisterFormProps {
   onBack: () => void;
@@ -37,6 +38,8 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
   const [files, setFiles] = useState<{ reg_cert?: File; biz_cert?: File }>({});
   const [filePreviews, setFilePreviews] = useState<{ reg_cert?: string; biz_cert?: string }>({});
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [geocoding, setGeocoding] = useState(false);
 
   const compressToWebP = (file: File): Promise<File> => {
     if (!file.type.startsWith("image/")) return Promise.resolve(file);
@@ -120,12 +123,30 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
   const openDaumPostcode = () => {
     if ((window as any).daum && (window as any).daum.Postcode) {
       new (window as any).daum.Postcode({
-        oncomplete: function(data: any) {
+        oncomplete: async function(data: any) {
           setAgencyData({
             ...agencyData,
             zipcode: data.zonecode,
             address: data.address
           });
+
+          // 카카오 Geocoder REST API로 좌표 자동 추출
+          setGeocoding(true);
+          try {
+            const result = await geocodeAddress(data.address);
+            if (result.success && result.lat && result.lng) {
+              setCoords({ lat: result.lat, lng: result.lng });
+              console.log(`✅ 좌표 변환 성공: ${result.lat}, ${result.lng}`);
+            } else {
+              console.warn('⚠️ 좌표 변환 실패:', result.error);
+              setCoords(null);
+            }
+          } catch (err) {
+            console.error('좌표 변환 중 오류:', err);
+            setCoords(null);
+          } finally {
+            setGeocoding(false);
+          }
         }
       }).open();
     } else {
@@ -240,6 +261,8 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
           ...agencyData,
           reg_cert_url: regCertUrl,
           biz_cert_url: bizCertUrl,
+          lat: coords?.lat || null,
+          lng: coords?.lng || null,
           status: isAdmin ? agencyData.status : (agencyData.status === "APPROVED" ? "APPROVED" : "PENDING")
         };
 
@@ -404,6 +427,22 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
                 <span style={{ fontSize: 13, color: darkMode ? "#9ca3af" : "#6b7280", flexShrink: 0 }}>상세주소</span>
                 <input type="text" name="address_detail" value={agencyData.address_detail} onChange={handleAgencyChange} style={{...inputStyle, flex: 1}} placeholder="상세주소 입력" />
               </div>
+              {/* 좌표 변환 결과 표시 */}
+              {geocoding && (
+                <div style={{ fontSize: 12, color: "#3b82f6", marginTop: 6, display: "flex", alignItems: "center", gap: 6 }}>
+                  ⏳ 주소로부터 좌표를 추출하는 중...
+                </div>
+              )}
+              {!geocoding && coords && (
+                <div style={{ fontSize: 12, color: "#10b981", marginTop: 6, display: "flex", alignItems: "center", gap: 6 }}>
+                  ✅ 좌표 추출 완료: {coords.lat.toFixed(6)}, {coords.lng.toFixed(6)}
+                </div>
+              )}
+              {!geocoding && agencyData.address && !coords && (
+                <div style={{ fontSize: 12, color: "#f59e0b", marginTop: 6, display: "flex", alignItems: "center", gap: 6 }}>
+                  ⚠️ 좌표 추출 실패 — 나중에 다시 주소를 검색해 주세요.
+                </div>
+              )}
             </div>
           </div>
 

@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import DaumPostcodeEmbed from 'react-daum-postcode';
 import { createClient } from '@/utils/supabase/client';
+import { geocodeAddress } from '@/app/actions/geocode';
 import imageCompression from 'browser-image-compression';
 import { adminUploadAgencyDocument } from '@/app/admin/actions';
 
@@ -101,7 +102,7 @@ export default function SignupCompleteModal({ isOpen, onClose, email = '', name 
   };
 
   // 주소 검색 완료 핸들러
-  const handleCompletePostcode = (data: any) => {
+  const handleCompletePostcode = async (data: any) => {
     let fullAddress = data.address;
     let extraAddress = '';
 
@@ -114,9 +115,21 @@ export default function SignupCompleteModal({ isOpen, onClose, email = '', name 
     setFormData(prev => ({ ...prev, zipcode: data.zonecode, addr: fullAddress }));
     setIsPostcodeOpen(false);
 
-    // TODO: 원래는 여기서 카카오 Geocoder API를 통해 위경도를 가져와야 합니다.
-    // 임시로 기본 좌표값을 넣습니다.
-    setCoords({ lat: 37.5665, lng: 126.9780 });
+    // 카카오 Geocoder REST API를 통해 실제 위경도 좌표 추출
+    try {
+      const result = await geocodeAddress(data.address);
+      if (result.success && result.lat && result.lng) {
+        setCoords({ lat: result.lat, lng: result.lng });
+        console.log(`✅ 좌표 변환 성공: ${result.lat}, ${result.lng}`);
+      } else {
+        console.warn('⚠️ 좌표 변환 실패:', result.error);
+        // 좌표 변환 실패 시에도 가입 자체는 진행 가능하도록 null 유지
+        setCoords(null);
+      }
+    } catch (err) {
+      console.error('좌표 변환 중 오류:', err);
+      setCoords(null);
+    }
   };
 
   // 폼 제출 (회원가입 최종 처리)
