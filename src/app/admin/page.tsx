@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import VacancyRegisterForm from "@/components/admin/VacancyRegisterForm";
 import MemberRegisterForm from "@/components/admin/MemberRegisterForm";
 import { adminGetMembers, adminSoftDeleteMember, adminRestoreMember, adminHardDeleteMember } from "./actions";
+import { getArticles } from "@/app/actions/article";
 import { createClient } from "@/utils/supabase/client";
 
 /* ──────────────────────────────────────────────
@@ -89,12 +90,16 @@ export default function AdminPage() {
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const [checkedMemberIds, setCheckedMemberIds] = useState<string[]>([]);
   const [dbMembers, setDbMembers] = useState<any[]>([]);
+  const [dbArticles, setDbArticles] = useState<any[]>([]);
 
   useEffect(() => {
     adminGetMembers().then((res) => {
       if (res?.success && res.data) {
         setDbMembers(res.data);
       }
+    });
+    getArticles().then(res => {
+      if (res.success) setDbArticles(res.data || []);
     });
   }, []);
 
@@ -562,35 +567,36 @@ export default function AdminPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {[
-                      { no: 168, status: "광고중", statusDate: "04.06", title: "우리동네 샘플", section1: "우리동네부동산", section2: "아파트·오피스텔", approved: "2026-04-06 21:03", author: "김미숙" },
-                      { no: 158, status: "광고중", statusDate: "04.05", title: "강남역 도보권, 다용도 투자 가치 높은 다가구 매물 등장", section1: "우리동네부동산", section2: "상가·업무·공장·토지", approved: "2026-04-05 21:57", author: "김미숙" },
-                      { no: 157, status: "광고중", statusDate: "04.05", title: "강남3구 아파트, 여전히 서울 집값 상승을 이끈다", section1: "우리동네부동산", section2: "아파트·오피스텔", approved: "2026-04-05 21:54", author: "김미숙" },
-                      { no: 156, status: "광고중", statusDate: "04.05", title: "강남 아파트 전세가율 38%... 매매·전세 격차 확대", section1: "우리동네부동산", section2: "아파트·오피스텔", approved: "2026-04-05 21:53", author: "김미숙" },
-                      { no: 155, status: "광고중", statusDate: "04.05", title: "한국 대표팀, 3월 14일 마이애미서 8강 격돌", section1: "뉴스/칼럼", section2: "스포츠·연예·Car", approved: "2026-04-05 21:16", author: "김미숙" },
-                      { no: 154, status: "광고중", statusDate: "04.05", title: `"올림픽 하는지도 몰랐다"... 밀라노의 함성, 한국에선 '무관심'의 침묵`, section1: "뉴스/칼럼", section2: "스포츠·연예·Car", approved: "2026-04-05 21:15", author: "김미숙" },
-                      { no: 153, status: "광고중", statusDate: "04.05", title: "언제 어디서나 진료... 상시 비대면 진료 공식 허용으로 의료 패러다임 전환", section1: "뉴스/칼럼", section2: "건강·웰스", approved: "2026-04-05 21:13", author: "김미숙" },
-                      { no: 152, status: "광고중", statusDate: "04.05", title: `"내 취향 맞춤형 AI 가이드와 함께"... 북한산 'K-등산', 스마트 관광으로 진화`, section1: "뉴스/칼럼", section2: "여행·맛집", approved: "2026-04-05 21:12", author: "김미숙" },
-                    ].map((row, idx) => (
-                      <tr key={idx} style={{ borderBottom: `1px solid ${darkMode ? "#333" : "#f3f4f6"}`, transition: "background 0.15s" }}
+                    {dbArticles.length > 0 ? (
+                      dbArticles.map((row, idx) => {
+                        const statusMap: Record<string, string> = { DRAFT: "작성중", PENDING: "승인신청", APPROVED: "광고중", REJECTED: "반려", DELETED: "삭제" };
+                        const statusColorMap: Record<string, { color: string; bg: string }> = {
+                          DRAFT: { color: "#92400e", bg: "#fef3c7" },
+                          PENDING: { color: "#6b7280", bg: "#f3f4f6" },
+                          APPROVED: { color: darkMode ? "#bae6fd" : "#0369a1", bg: darkMode ? "#0a2638" : "#e0f2fe" },
+                          REJECTED: { color: "#b91c1c", bg: "#fee2e2" },
+                        };
+                        const st = statusColorMap[row.status] || statusColorMap.DRAFT;
+                        const createdDate = row.created_at ? new Date(row.created_at).toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }) : "-";
+                        return (
+                      <tr key={row.id || idx} style={{ borderBottom: `1px solid ${darkMode ? "#333" : "#f3f4f6"}`, transition: "background 0.15s" }}
                         onMouseEnter={(e) => { e.currentTarget.style.background = darkMode ? "#2c2d31" : "#fafbfc"; }}
                         onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
                       >
                         <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
                           <input type="checkbox" style={{ accentColor: "#3b82f6" }} />
                         </td>
-                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, fontWeight: 600, color: textPrimary }}>{row.no}</td>
+                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, fontWeight: 600, color: textPrimary }}>{row.article_no}</td>
                         <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
-                          <span style={{ display: "inline-block", padding: "4px 8px", borderRadius: 4, fontSize: 13, fontWeight: 700, color: darkMode ? "#bae6fd" : "#0369a1", background: darkMode ? "#0a2638" : "#e0f2fe" }}>{row.status}</span>
-                          <div style={{ fontSize: 13, color: textSecondary, marginTop: 4, fontWeight: 600 }}>{row.statusDate}</div>
+                          <span style={{ display: "inline-block", padding: "4px 8px", borderRadius: 4, fontSize: 13, fontWeight: 700, color: st.color, background: st.bg }}>{statusMap[row.status] || row.status}</span>
                         </td>
                         <td style={{ padding: "16px 10px", verticalAlign: "middle", fontWeight: 700, color: textPrimary, fontSize: 15, maxWidth: 350, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.title}</td>
-                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>{row.section1}</td>
-                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>{row.section2}</td>
-                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>{row.approved}</td>
+                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>{row.section1 || "-"}</td>
+                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>{row.section2 || "-"}</td>
+                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>{createdDate}</td>
                         <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
                           <span style={{ fontSize: 13, color: "#ef4444", fontWeight: 700 }}>관리자</span>{" "}
-                          <span style={{ fontSize: 15, fontWeight: 600, color: textPrimary }}>{row.author}</span>
+                          <span style={{ fontSize: 15, fontWeight: 600, color: textPrimary }}>{row.author_name || "-"}</span>
                         </td>
                         <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
                           <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
@@ -605,7 +611,11 @@ export default function AdminPage() {
                           </div>
                         </td>
                       </tr>
-                    ))}
+                        );
+                      })
+                    ) : (
+                      <tr><td colSpan={9} style={{ color: "#9ca3af", fontSize: 14, textAlign: "center", padding: 40 }}>등록된 기사가 없습니다. '+ 기사쓰기' 버튼으로 첫 기사를 작성해보세요!</td></tr>
+                    )}
                   </tbody>
                 </table>
               </div>
