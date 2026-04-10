@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { createClient } from "@/utils/supabase/client";
+import MemberRegisterForm from "@/components/admin/MemberRegisterForm";
 
 /* ──────────────────────────────────────────────
    SVG 아이콘 컴포넌트 (원본 user_admin.html 1:1 복제)
@@ -63,6 +65,25 @@ export default function RealtyAdminPage() {
   const [activeMenu, setActiveMenu] = useState("dashboard");
   const [hoveredMenu, setHoveredMenu] = useState<string | null>(null);
   const [darkMode, setDarkMode] = useState(false);
+  const [memberId, setMemberId] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string>("로딩중...");
+
+  useEffect(() => {
+    async function fetchUser() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user && user.email) {
+        setUserEmail(user.email);
+        const { data } = await supabase.from("members").select("id, name").eq("email", user.email).single();
+        if (data) {
+          setMemberId(data.id);
+          setUserName(data.name || "이름없음");
+        }
+      }
+    }
+    fetchUser();
+  }, []);
 
   const now = new Date();
   const timeStr = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`;
@@ -138,8 +159,8 @@ export default function RealtyAdminPage() {
             onMouseEnter={(e) => { e.currentTarget.style.background = darkMode ? "#2c2d31" : "#f3f4f6"; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
           >
-            <span style={{ fontWeight: 800, fontSize: 17, color: textPrimary }}>착한임대</span>
-            <span style={{ fontSize: 14, color: darkMode ? "#aaa" : "#666" }}>gongsilmarketing@gmail.com</span>
+            <span style={{ fontWeight: 800, fontSize: 17, color: textPrimary }}>{userName}</span>
+            <span style={{ fontSize: 14, color: darkMode ? "#aaa" : "#666" }}>{userEmail || "로딩중..."}</span>
             <span style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 4, marginLeft: 4, background: "#ebf5ff", color: "#3b82f6" }}>부동산회원(유료)</span>
             <span style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 4, marginLeft: 4, color: "#be123c", background: "#fee2e2", border: "1px solid #ef4444", display: "inline-flex", alignItems: "center", gap: 4 }}>🚨 보완요청 확인요망</span>
           </div>
@@ -147,7 +168,11 @@ export default function RealtyAdminPage() {
             <button onClick={() => setDarkMode(!darkMode)} style={{ background: darkMode ? "#2c2d31" : "none", border: `1px solid ${darkMode ? "#444" : "#e5e7eb"}`, borderRadius: 8, width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 18, color: darkMode ? "#e1e4e8" : "#555" }} title="다크모드 전환">
               {darkMode ? "☀️" : "🌙"}
             </button>
-            <button style={{ padding: "8px 16px", fontSize: 13, fontWeight: 600, color: "#fff", border: "none", borderRadius: 6, background: darkMode ? "#374151" : "#4b5563", cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>로그아웃</button>
+            <button onClick={async () => {
+              const supabase = createClient();
+              await supabase.auth.signOut();
+              window.location.href = "/";
+            }} style={{ padding: "8px 16px", fontSize: 13, fontWeight: 600, color: "#fff", border: "none", borderRadius: 6, background: darkMode ? "#374151" : "#4b5563", cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>로그아웃</button>
             <a href="/" style={{ padding: "8px 16px", fontSize: 13, fontWeight: 600, color: darkMode ? "#e1e4e8" : "#4b5563", textDecoration: "none", border: `1px solid ${darkMode ? "#444" : "#e5e7eb"}`, borderRadius: 6, background: darkMode ? "#2c2d31" : "#fff", display: "flex", alignItems: "center", gap: 6, transition: "all 0.2s" }}>
               🏠 공실페이지 가기
             </a>
@@ -245,6 +270,14 @@ export default function RealtyAdminPage() {
                 <div style={{ color: "#9ca3af", fontSize: 13, textAlign: "center" as const, padding: 20 }}>댓글 없음</div>
               </div>
             </div>
+          </div>
+        ) : activeMenu === "settings" ? (
+          <div style={{ flex: 1, padding: "20px 28px", overflowY: "auto", background: cardBg, margin: 16, marginBottom: 0, borderTopLeftRadius: 12, borderTopRightRadius: 12, boxShadow: "0 4px 6px rgba(0,0,0,0.05)" }}>
+            {memberId ? (
+              <MemberRegisterForm memberId={memberId} onBack={() => setActiveMenu("dashboard")} />
+            ) : (
+              <div style={{ textAlign: "center", padding: 40, color: textSecondary }}>사용자 정보를 불러오는 중입니다...</div>
+            )}
           </div>
         ) : (
           /* 다른 메뉴 선택 시 placeholder */

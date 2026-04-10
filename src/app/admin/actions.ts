@@ -127,3 +127,58 @@ export async function adminGetMembers() {
     return { success: false, error: error.message };
   }
 }
+
+// ── 개별 회원 상세 조회 (편집용) ──
+export async function adminGetMemberDetail(memberId: string) {
+  const supabaseAdmin = getAdminClient();
+  try {
+    const { data: member, error: memberError } = await supabaseAdmin.from('members').select('*').eq('id', memberId).single();
+    if (memberError) return { success: false, error: memberError.message };
+
+    let agency = null;
+    if (member.role === 'REALTOR' || member.role === '부동산회원') {
+      const { data: agencyData } = await supabaseAdmin.from('agencies').select('*').eq('owner_id', memberId).single();
+      if (agencyData) agency = agencyData;
+    }
+
+    return { success: true, member, agency };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+// ── 회원 삭제 (Soft Delete) ──
+export async function adminSoftDeleteMember(memberId: string) {
+  const supabaseAdmin = getAdminClient();
+  try {
+    const { error } = await supabaseAdmin.from('members').update({ is_deleted: true }).eq('id', memberId);
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+// ── 회원 복구 (Restore) ──
+export async function adminRestoreMember(memberId: string) {
+  const supabaseAdmin = getAdminClient();
+  try {
+    const { error } = await supabaseAdmin.from('members').update({ is_deleted: false }).eq('id', memberId);
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+// ── 회원 영구 삭제 (Hard Delete) ──
+export async function adminHardDeleteMember(memberId: string) {
+  const supabaseAdmin = getAdminClient();
+  try {
+    const { error } = await supabaseAdmin.from('members').delete().eq('id', memberId);
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}

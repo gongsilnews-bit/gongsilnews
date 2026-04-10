@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from "react";
 import VacancyRegisterForm from "@/components/admin/VacancyRegisterForm";
 import MemberRegisterForm from "@/components/admin/MemberRegisterForm";
-import { adminGetMembers } from "./actions";
+import { adminGetMembers, adminSoftDeleteMember, adminRestoreMember, adminHardDeleteMember } from "./actions";
+import { createClient } from "@/utils/supabase/client";
 
 /* ──────────────────────────────────────────────
    SVG 아이콘 컴포넌트 (원본 feather-icon 1:1 복제)
@@ -36,7 +37,7 @@ const MENU_ITEMS: MenuItem[] = [
   { key: "dashboard", label: "대시보드", icon: <IconDashboard /> },
   { key: "members", label: "회원", icon: <IconMembers />, submenus: [
     { key: "members_list", label: "회원목록" },
-    { key: "dormant", label: "휴면회원목록" },
+    { key: "dormant", label: "휴지통" },
   ]},
   { key: "gongsil", label: "공실", icon: <IconBuilding /> },
   { key: "article", label: "기사", icon: <IconArticle /> },
@@ -85,6 +86,8 @@ export default function AdminPage() {
   const [showRegisterForm, setShowRegisterForm] = useState(false);
   const [showBoardModal, setShowBoardModal] = useState(false);
   const [showMemberRegister, setShowMemberRegister] = useState(false);
+  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
+  const [checkedMemberIds, setCheckedMemberIds] = useState<string[]>([]);
   const [dbMembers, setDbMembers] = useState<any[]>([]);
 
   useEffect(() => {
@@ -94,6 +97,14 @@ export default function AdminPage() {
       }
     });
   }, []);
+
+  const handleSidebarClick = (key: string) => {
+    setActiveMenu(key);
+    setShowRegisterForm(false);
+    setShowBoardModal(false);
+    setShowMemberRegister(false);
+    setSelectedMemberId(null);
+  };
 
   const contentTitle = activeMenu.startsWith("members") ? "회원관리" : (MENU_ITEMS.find(m => m.key === activeMenu)?.label || "대시보드");
   const now = new Date();
@@ -126,7 +137,7 @@ export default function AdminPage() {
                 onMouseEnter={() => setHoveredMenu(item.key)}
                 onMouseLeave={() => setHoveredMenu(null)}>
                 <button
-                  onClick={() => setActiveMenu(item.key)}
+                  onClick={() => handleSidebarClick(item.key)}
                   style={{
                     display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
                     padding: "12px 0", textDecoration: "none", width: "100%", border: "none", cursor: "pointer",
@@ -165,7 +176,7 @@ export default function AdminPage() {
                   }}>
                     {item.submenus.map((sub) => (
                       <button key={sub.key} 
-                        onClick={() => setActiveMenu(sub.key)}
+                        onClick={() => handleSidebarClick(sub.key)}
                         style={{
                         display: "block", padding: "10px 16px", fontSize: 13, fontWeight: 600,
                         color: "#e1e4e8", textDecoration: "none", whiteSpace: "nowrap" as const,
@@ -202,7 +213,11 @@ export default function AdminPage() {
           <button onClick={() => setDarkMode(!darkMode)} style={{ background: darkMode ? "#2c2d31" : "none", border: `1px solid ${darkMode ? "#444" : "#e5e7eb"}`, borderRadius: 8, width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 18, color: darkMode ? "#e1e4e8" : "#555", marginRight: 4 }} title="다크모드 전환">
             {darkMode ? "☀️" : "🌙"}
           </button>
-          <button style={{ padding: "7px 14px", fontSize: 13, fontWeight: 600, color: "#fff", border: "none", borderRadius: 6, background: darkMode ? "#2c2d31" : "#4b5563", cursor: "pointer" }}>로그아웃</button>
+          <button onClick={async () => {
+            const supabase = createClient();
+            await supabase.auth.signOut();
+            window.location.href = "/";
+          }} style={{ padding: "7px 14px", fontSize: 13, fontWeight: 600, color: "#fff", border: "none", borderRadius: 6, background: darkMode ? "#2c2d31" : "#4b5563", cursor: "pointer", display: "flex", alignItems: "center" }}>로그아웃</button>
           <a href="/" style={{ padding: "7px 14px", fontSize: 13, fontWeight: 600, color: darkMode ? "#e1e4e8" : "#4b5563", textDecoration: "none", border: `1px solid ${darkMode ? "#444" : "#e5e7eb"}`, borderRadius: 6, background: darkMode ? "#2c2d31" : "#fff", display: "flex", alignItems: "center", gap: 6 }}>
             🏠 공실페이지 가기
           </a>
@@ -745,13 +760,15 @@ export default function AdminPage() {
             </div>
           </div>
 
-        ) : activeMenu.startsWith("members") ? (
+        ) : (activeMenu.startsWith("members") || activeMenu === "dormant") ? (
           /* ===== 회원관리 리스트 (원본 admin 디자인 1:1 복제) ===== */
           showMemberRegister ? (
             <MemberRegisterForm 
               darkMode={darkMode} 
+              editMemberId={selectedMemberId}
               onBack={() => {
                 setShowMemberRegister(false);
+                setSelectedMemberId(null);
                 adminGetMembers().then(res => setDbMembers(res.data || []));
               }} 
             />
@@ -759,7 +776,9 @@ export default function AdminPage() {
           <div style={{ flex: 1, overflowY: "auto", padding: "20px 28px", background: bg }}>
             {/* 타이틀 */}
             <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 20 }}>
-              <h1 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: 0 }}>회원목록</h1>
+              <h1 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: 0 }}>
+                {activeMenu === "dormant" ? "휴지통" : "회원목록"}
+              </h1>
               <span style={{ fontSize: 13, fontWeight: 600, color: textSecondary }}>
                 ( <span>관리자 1명</span> / <span>부동산회원 1명</span> / <span>일반 1명</span> / 전체 3명 )
               </span>
@@ -783,14 +802,70 @@ export default function AdminPage() {
                   </select>
                 </div>
                 <input type="text" placeholder="이름 또는 이메일 검색" style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", flex: 1, minWidth: 180 }} />
-                <button style={{ height: 36, padding: "0 18px", background: darkMode ? "#2c2d31" : "#374151", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>🔍 검색</button>
+                <button style={{ height: 36, padding: "0 18px", background: darkMode ? "#2c2d31" : "#374151", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                  </svg>
+                  검색
+                </button>
                 <button style={{ height: 36, padding: "0 14px", background: darkMode ? "#2c2d31" : "#fff", color: textSecondary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>초기화</button>
               </div>
 
               {/* 액션 버튼 영역 */}
               <div style={{ padding: "16px 24px", borderBottom: `1px solid ${border}`, display: "flex", gap: 10, alignItems: "center" }}>
-                <button onClick={() => setShowMemberRegister(true)} style={{ height: 36, padding: "0 16px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>+ 회원등록</button>
-                <button style={{ height: 36, padding: "0 16px", background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>🗑 선택삭제</button>
+                {activeMenu === "dormant" ? (
+                  <button onClick={async () => {
+                    if (checkedMemberIds.length === 0) {
+                      alert("재등록할 회원을 왼쪽 체크박스로 선택해주세요.");
+                      return;
+                    }
+                    if (confirm(`선택한 ${checkedMemberIds.length}명의 회원을 다시 정상 회원으로 복구하시겠습니까?`)) {
+                      for (const id of checkedMemberIds) {
+                        await adminRestoreMember(id);
+                      }
+                      adminGetMembers().then(r => { if (r.success) setDbMembers(r.data || []) });
+                      setCheckedMemberIds([]);
+                      setActiveMenu("members_list");
+                    }
+                  }} style={{ height: 36, padding: "0 16px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 3 21 3 21 9"/><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="21 3 14 10"/></svg>
+                    재등록
+                  </button>
+                ) : (
+                  <button onClick={() => { setSelectedMemberId(null); setShowMemberRegister(true); }} style={{ height: 36, padding: "0 16px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>+ 회원등록</button>
+                )}
+                <button onClick={async () => {
+                  if (checkedMemberIds.length === 0) {
+                    alert("삭제할 회원을 왼쪽 체크박스로 선택해주세요.");
+                    return;
+                  }
+                  if (activeMenu === "dormant") {
+                    if (confirm(`선택한 ${checkedMemberIds.length}명의 회원을 영구 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`)) {
+                      for (const id of checkedMemberIds) {
+                        await adminHardDeleteMember(id);
+                      }
+                      adminGetMembers().then(r => { if (r.success) setDbMembers(r.data || []) });
+                      setCheckedMemberIds([]);
+                    }
+                  } else {
+                    if (confirm(`선택한 ${checkedMemberIds.length}명의 회원을 휴지통으로 이동하시겠습니까?`)) {
+                      for (const id of checkedMemberIds) {
+                        await adminSoftDeleteMember(id);
+                      }
+                      adminGetMembers().then(r => { if (r.success) setDbMembers(r.data || []) });
+                      setCheckedMemberIds([]);
+                    }
+                  }
+                }} style={{ height: 36, padding: "0 16px", background: darkMode ? "#2c2d31" : "#fff", color: activeMenu === "dormant" ? "#ef4444" : textPrimary, border: `1px solid ${activeMenu === "dormant" ? "#ef4444" : border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    <line x1="10" y1="11" x2="10" y2="17"></line>
+                    <line x1="14" y1="11" x2="14" y2="17"></line>
+                  </svg>
+                  {activeMenu === "dormant" ? "영구삭제" : "선택삭제"}
+                </button>
               </div>
 
               {/* 데이터 테이블 */}
@@ -799,23 +874,31 @@ export default function AdminPage() {
                   <thead>
                     <tr style={{ background: darkMode ? "#2c2d31" : "#f9fafb" }}>
                       <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 40 }}>
-                        <input type="checkbox" style={{ accentColor: "#3b82f6" }} />
+                        <input type="checkbox" style={{ accentColor: "#3b82f6" }} 
+                          checked={dbMembers.length > 0 && checkedMemberIds.length === (activeMenu === "dormant" ? dbMembers.filter(m => m.is_deleted).length : dbMembers.filter(m => !m.is_deleted).length) && checkedMemberIds.length > 0}
+                          onChange={(e) => {
+                            const list = activeMenu === "dormant" ? dbMembers.filter(m => m.is_deleted) : dbMembers.filter(m => !m.is_deleted);
+                            if (e.target.checked) setCheckedMemberIds(list.map((m: any) => m.id));
+                            else setCheckedMemberIds([]);
+                          }}
+                        />
                       </th>
-                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 80 }}>회원번호</th>
-                      <th style={{ padding: "12px 10px", textAlign: "left", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}` }}>아이디</th>
-                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 70 }}>이름</th>
-                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 120 }}>연락처</th>
-                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 90 }}>회원구분</th>
-                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 90 }}>가입일</th>
-                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 60 }}>멤버십</th>
-                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 100 }}>유효 회원 기간</th>
-                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 120 }}>승인상태</th>
-                      <th style={{ padding: "12px 10px", textAlign: "right", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 220 }}>관리</th>
+                      <th style={{ padding: "12px 20px 12px 10px", textAlign: "right", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 90 }}>회원번호</th>
+                      <th style={{ padding: "12px 10px", textAlign: "left", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 280 }}>아이디</th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 80 }}>이름</th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 140 }}>연락처</th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 110 }}>회원구분</th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 120 }}>가입일</th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 100 }}>승인상태</th>
+                      <th style={{ width: "auto", borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}` }}></th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 220 }}>관리</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {dbMembers.length > 0 ? (
-                      dbMembers.map((member, idx) => {
+                    {(() => {
+                      const displayMembers = activeMenu === "dormant" ? dbMembers.filter(m => m.is_deleted) : dbMembers.filter(m => !m.is_deleted);
+                      return displayMembers.length > 0 ? (
+                        displayMembers.map((member, idx) => {
                         const roleMap: any = { 'ADMIN': '최고관리자', 'REALTOR': '부동산회원', 'USER': '일반회원' };
                         const displayRole = roleMap[member.role] || member.role || '일반회원';
                         const createdDate = member.created_at ? new Date(member.created_at).toISOString().split('T')[0] : "-";
@@ -826,13 +909,20 @@ export default function AdminPage() {
                         onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
                       >
                         <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
-                          <input type="checkbox" style={{ accentColor: "#3b82f6" }} />
+                          <input type="checkbox" style={{ accentColor: "#3b82f6" }} 
+                            checked={checkedMemberIds.includes(member.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) setCheckedMemberIds(prev => [...prev, member.id]);
+                              else setCheckedMemberIds(prev => prev.filter(id => id !== member.id));
+                            }}
+                          />
                         </td>
-                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>{String(idx + 1).padStart(6, '0')}</td>
+                        <td style={{ padding: "16px 20px 16px 10px", textAlign: "right", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>{String(dbMembers.length - dbMembers.findIndex(m => m.id === member.id)).padStart(6, '0')}</td>
                         <td style={{ padding: "16px 10px", verticalAlign: "middle", textAlign: "left" }}>
-                          <a href="#" style={{ fontSize: 15, fontWeight: 600, color: textSecondary, textDecoration: "none" }}
+                          <a href="#" style={{ fontSize: 15, fontWeight: 600, color: textSecondary, textDecoration: "none", cursor: "pointer" }}
                             onMouseOver={(e) => (e.currentTarget.style.textDecoration = "underline")}
                             onMouseOut={(e) => (e.currentTarget.style.textDecoration = "none")}
+                            onClick={(e) => { e.preventDefault(); setSelectedMemberId(member.id); setShowMemberRegister(true); }}
                           >{member.email}</a>
                         </td>
                         <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 15, fontWeight: 600, color: textPrimary }}>{member.name || '-'}</td>
@@ -841,20 +931,40 @@ export default function AdminPage() {
                           {displayRole}
                         </td>
                         <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>{createdDate}</td>
-                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>무료</td>
-                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>-</td>
                         <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>
                           {member.signup_completed ? '정상' : '승인대기'}
                         </td>
+                        <td></td>
                         <td style={{ padding: "16px 10px", textAlign: "right", verticalAlign: "middle" }}>
                           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-                            <button style={{ height: 30, padding: "0 12px", background: "#4b5563", color: "#fff", border: "none", borderRadius: 4, fontSize: 11, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
+                            <button onClick={() => { setSelectedMemberId(member.id); setShowMemberRegister(true); }} style={{ height: 30, padding: "0 12px", background: "#4b5563", color: "#fff", border: "none", borderRadius: 4, fontSize: 11, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
                               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                               수정
                             </button>
-                            <button style={{ height: 30, padding: "0 12px", background: darkMode ? "#2c2d31" : "#fff", color: "#9ca3af", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 4, fontSize: 11, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
+                            <button onClick={async () => {
+                              if (activeMenu === "dormant") {
+                                if (confirm("정말로 이 회원을 영구 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.")) {
+                                  const res = await adminHardDeleteMember(member.id);
+                                  if (res.success) {
+                                    adminGetMembers().then(r => { if (r.success) setDbMembers(r.data || []) });
+                                  } else {
+                                    alert("영구 삭제 실패: " + res.error);
+                                  }
+                                }
+                              } else {
+                                if (confirm("이 회원을 휴지통으로 이동하시겠습니까? (삭제 처리)")) {
+                                  const res = await adminSoftDeleteMember(member.id);
+                                  if (res.success) {
+                                    adminGetMembers().then(r => { if (r.success) setDbMembers(r.data || []) });
+                                    setActiveMenu("dormant");
+                                  } else {
+                                    alert("삭제 실패: " + res.error);
+                                  }
+                                }
+                              }
+                            }} style={{ height: 30, padding: "0 12px", background: darkMode ? "#2c2d31" : "#fff", color: activeMenu === "dormant" ? "#ef4444" : "#9ca3af", border: `1px solid ${activeMenu === "dormant" ? "#ef4444" : (darkMode ? "#444" : "#d1d5db")}`, borderRadius: 4, fontSize: 11, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
                               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                              삭제
+                              {activeMenu === "dormant" ? "영구삭제" : "삭제"}
                             </button>
                             <button style={{ height: 30, padding: "0 12px", background: darkMode ? "#2c2d31" : "#fff", color: "#6b7280", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 4, fontSize: 11, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
                               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
@@ -868,10 +978,11 @@ export default function AdminPage() {
                     ) : (
                       <tr>
                         <td colSpan={11} style={{ padding: "40px 0", textAlign: "center", color: textSecondary, fontSize: 14 }}>
-                          가입된 회원이 없습니다.
+                          {activeMenu === "dormant" ? "삭제된 회원이 없습니다." : "가입된 회원이 없습니다."}
                         </td>
                       </tr>
-                    )}
+                    );
+                  })()}
                   </tbody>
                 </table>
               </div>
