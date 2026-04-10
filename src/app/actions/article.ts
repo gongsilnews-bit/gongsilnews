@@ -175,12 +175,12 @@ export async function uploadArticleMedia(formData: FormData) {
     const path = `articles/${articleId}/${Date.now()}.${ext}`;
 
     const { error: uploadError } = await supabase.storage
-      .from("article_media")
+      .from("article-media")
       .upload(path, file, { upsert: true });
     if (uploadError) return { success: false, error: uploadError.message };
 
     const { data: urlData } = supabase.storage
-      .from("article_media")
+      .from("article-media")
       .getPublicUrl(path);
 
     const { error: dbError } = await supabase.from("article_media").insert({

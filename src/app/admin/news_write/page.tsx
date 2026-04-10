@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { saveArticle } from "@/app/actions/article";
+import { saveArticle, uploadArticleMedia } from "@/app/actions/article";
 import { geocodeAddress } from "@/app/actions/geocode";
 import { createClient } from "@/utils/supabase/client";
 
@@ -40,6 +40,51 @@ export default function NewsWritePage() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [articleCoords, setArticleCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [geocoding, setGeocoding] = useState(false);
+  const [photoFiles, setPhotoFiles] = useState<{ file: File; preview: string }[]>([]);
+  const [attachFiles, setAttachFiles] = useState<{ file: File; name: string }[]>([]);
+
+  /* ── WebP 압축 변환 ── */
+  const compressToWebP = (file: File, maxWidth = 1920, quality = 0.82): Promise<File> => {
+    return new Promise((resolve) => {
+      if (!file.type.startsWith('image/')) { resolve(file); return; }
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let w = img.width, h = img.height;
+        if (w > maxWidth) { h = Math.round(h * maxWidth / w); w = maxWidth; }
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d')!;
+        ctx.drawImage(img, 0, 0, w, h);
+        canvas.toBlob((blob) => {
+          const webpFile = new File([blob!], file.name.replace(/\.[^.]+$/, '.webp'), { type: 'image/webp' });
+          resolve(webpFile);
+        }, 'image/webp', quality);
+      };
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
+  /* ── 사진 선택 ── */
+  const handlePhotoSelect = (files: FileList | null) => {
+    if (!files) return;
+    const newFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
+    const previews = newFiles.map(f => ({ file: f, preview: URL.createObjectURL(f) }));
+    setPhotoFiles(prev => [...prev, ...previews]);
+  };
+  const removePhoto = (idx: number) => {
+    setPhotoFiles(prev => { URL.revokeObjectURL(prev[idx].preview); return prev.filter((_, i) => i !== idx); });
+  };
+
+  /* ── 파일 선택 ── */
+  const handleFileSelect = (files: FileList | null) => {
+    if (!files) return;
+    const newFiles = Array.from(files).map(f => ({ file: f, name: f.name }));
+    setAttachFiles(prev => [...prev, ...newFiles]);
+  };
+  const removeFile = (idx: number) => {
+    setAttachFiles(prev => prev.filter((_, i) => i !== idx));
+  };
 
   /* ── 현재 로그인 사용자 ID 가져오기 ── */
   useEffect(() => {
@@ -127,6 +172,33 @@ export default function NewsWritePage() {
       });
 
       if (result.success) {
+        const articleId = result.articleId;
+
+        // 사진 업로드 (WebP 압축 후 업로드)
+        if (articleId && photoFiles.length > 0) {
+          for (let i = 0; i < photoFiles.length; i++) {
+            const compressed = await compressToWebP(photoFiles[i].file);
+            const formData = new FormData();
+            formData.append('file', compressed);
+            formData.append('article_id', articleId);
+            formData.append('media_type', 'PHOTO');
+            formData.append('sort_order', String(i));
+            await uploadArticleMedia(formData);
+          }
+        }
+
+        // 첨부파일 업로드
+        if (articleId && attachFiles.length > 0) {
+          for (let i = 0; i < attachFiles.length; i++) {
+            const formData = new FormData();
+            formData.append('file', attachFiles[i].file);
+            formData.append('article_id', articleId);
+            formData.append('media_type', 'FILE');
+            formData.append('sort_order', String(i));
+            await uploadArticleMedia(formData);
+          }
+        }
+
         alert("✅ 기사가 저장되었습니다!");
         router.push("/admin");
       } else {
@@ -548,14 +620,34 @@ export default function NewsWritePage() {
                 </button>
               </div>
               {!photoCollapsed && (
-                <div style={{
-                  border: `2px dashed #d1d5db`, borderRadius: 8, padding: "24px 16px",
-                  textAlign: "center", color: textMuted, fontSize: 12, lineHeight: 1.6, cursor: "pointer",
-                  background: "#fdfdfd",
-                }}>
-                  📷 마우스로 이미지를 끌어오거나, 클릭해주세요.<br />
-                  <span style={{ fontSize: 11, color: "#b0b0b0" }}>(허용용량 10MB)</span>
-                </div>
+                <>
+                  <input type="file" id="photo-upload" accept="image/*" multiple hidden
+                    onChange={e => handlePhotoSelect(e.target.files)} />
+                  <div 
+                    onClick={() => document.getElementById('photo-upload')?.click()}
+                    onDragOver={e => { e.preventDefault(); e.currentTarget.style.borderColor = '#3b82f6'; }}
+                    onDragLeave={e => { e.currentTarget.style.borderColor = '#d1d5db'; }}
+                    onDrop={e => { e.preventDefault(); e.currentTarget.style.borderColor = '#d1d5db'; handlePhotoSelect(e.dataTransfer.files); }}
+                    style={{
+                      border: `2px dashed #d1d5db`, borderRadius: 8, padding: "18px 16px",
+                      textAlign: "center", color: textMuted, fontSize: 12, lineHeight: 1.6, cursor: "pointer",
+                      background: "#fdfdfd", transition: "border-color 0.2s",
+                    }}>
+                    📷 마우스로 이미지를 끌어오거나, 클릭해주세요.<br />
+                    <span style={{ fontSize: 11, color: "#b0b0b0" }}>(WebP 자동 압축 · 허용용량 10MB)</span>
+                  </div>
+                  {photoFiles.length > 0 && (
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
+                      {photoFiles.map((p, i) => (
+                        <div key={i} style={{ position: "relative", width: 60, height: 60, borderRadius: 6, overflow: "hidden", border: `1px solid ${border}` }}>
+                          <img src={p.preview} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                          <button type="button" onClick={() => removePhoto(i)}
+                            style={{ position: "absolute", top: 2, right: 2, width: 18, height: 18, background: "rgba(0,0,0,0.6)", color: "#fff", border: "none", borderRadius: "50%", fontSize: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
               )}
             </div>
 
@@ -591,14 +683,34 @@ export default function NewsWritePage() {
                 </button>
               </div>
               {!fileCollapsed && (
-                <div style={{
-                  border: `2px dashed #d1d5db`, borderRadius: 8, padding: "24px 16px",
-                  textAlign: "center", color: textMuted, fontSize: 12, lineHeight: 1.6, cursor: "pointer",
-                  background: "#fdfdfd",
-                }}>
-                  📎 마우스로 파일을 끌어오거나, 클릭해주세요.<br />
-                  <span style={{ fontSize: 11, color: "#b0b0b0" }}>(허용용량 2MB)</span>
-                </div>
+                <>
+                  <input type="file" id="file-upload" multiple hidden
+                    onChange={e => handleFileSelect(e.target.files)} />
+                  <div 
+                    onClick={() => document.getElementById('file-upload')?.click()}
+                    onDragOver={e => { e.preventDefault(); e.currentTarget.style.borderColor = '#3b82f6'; }}
+                    onDragLeave={e => { e.currentTarget.style.borderColor = '#d1d5db'; }}
+                    onDrop={e => { e.preventDefault(); e.currentTarget.style.borderColor = '#d1d5db'; handleFileSelect(e.dataTransfer.files); }}
+                    style={{
+                      border: `2px dashed #d1d5db`, borderRadius: 8, padding: "18px 16px",
+                      textAlign: "center", color: textMuted, fontSize: 12, lineHeight: 1.6, cursor: "pointer",
+                      background: "#fdfdfd", transition: "border-color 0.2s",
+                    }}>
+                    📎 마우스로 파일을 끌어오거나, 클릭해주세요.<br />
+                    <span style={{ fontSize: 11, color: "#b0b0b0" }}>(허용용량 2MB)</span>
+                  </div>
+                  {attachFiles.length > 0 && (
+                    <div style={{ marginTop: 8 }}>
+                      {attachFiles.map((f, i) => (
+                        <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 0", fontSize: 12, color: textSecondary }}>
+                          <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>📄 {f.name}</span>
+                          <button type="button" onClick={() => removeFile(i)}
+                            style={{ background: "none", border: "none", color: "#ef4444", fontSize: 11, cursor: "pointer" }}>✕</button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>
