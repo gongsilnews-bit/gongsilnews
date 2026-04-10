@@ -261,7 +261,7 @@ export default function UserAdminPage() {
         ) : activeMenu === "settings" ? (
           <div style={{ flex: 1, padding: "20px 28px", overflowY: "auto", background: cardBg, margin: 16, marginBottom: 0, borderTopLeftRadius: 12, borderTopRightRadius: 12, boxShadow: "0 4px 6px rgba(0,0,0,0.05)" }}>
             {memberId ? (
-              <MemberRegisterForm memberId={memberId} onBack={() => setActiveMenu("dashboard")} />
+              <MemberRegisterForm editMemberId={memberId} onBack={() => setActiveMenu("dashboard")} />
             ) : (
               <div style={{ textAlign: "center", padding: 40, color: textSecondary }}>사용자 정보를 불러오는 중입니다...</div>
             )}

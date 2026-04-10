@@ -120,7 +120,7 @@ export async function adminUploadAgencyDocument(formData: FormData) {
 export async function adminGetMembers() {
   const supabaseAdmin = getAdminClient();
   try {
-    const { data: members, error } = await supabaseAdmin.from('members').select('*').order('created_at', { ascending: false });
+    const { data: members, error } = await supabaseAdmin.from('members').select('*, agencies(status)').order('created_at', { ascending: false });
     if (error) return { success: false, error: error.message };
     return { success: true, data: members };
   } catch (error: any) {

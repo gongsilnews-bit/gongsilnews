@@ -236,9 +236,9 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
 
         const finalAgencyData = {
           ...agencyData,
-          ...(regCertUrl ? { reg_cert_url: regCertUrl } : {}),
-          ...(bizCertUrl ? { biz_cert_url: bizCertUrl } : {}),
-          status: isAdmin ? agencyData.status : "PENDING"
+          reg_cert_url: regCertUrl,
+          biz_cert_url: bizCertUrl,
+          status: isAdmin ? agencyData.status : (agencyData.status === "APPROVED" ? "APPROVED" : "PENDING")
         };
 
         const agencyRes = await adminUpdateAgency(memberId, finalAgencyData);
@@ -338,9 +338,17 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
                   <option value="REJECTED">서류보완</option>
                 </select>
               ) : (
-                <span style={{ fontSize: 14, fontWeight: 700, padding: "4px 10px", borderRadius: 4, ...((agencyData.status === "APPROVED") ? { background: "#d1fae5", color: "#065f46" } : (agencyData.status === "REJECTED") ? { background: "#fee2e2", color: "#b91c1c" } : { background: "#fef3c7", color: "#92400e" }) }}>
-                  {agencyData.status === "APPROVED" ? "정상승인" : agencyData.status === "REJECTED" ? "서류보완 필요" : "승인대기"}
-                </span>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{ fontSize: 14, fontWeight: 700, padding: "4px 10px", borderRadius: 4, ...((agencyData.status === "APPROVED") ? { background: "#d1fae5", color: "#065f46" } : (agencyData.status === "REJECTED") ? { background: "#fee2e2", color: "#b91c1c" } : { background: "#fef3c7", color: "#92400e" }) }}>
+                    {agencyData.status === "APPROVED" ? "정상승인" : agencyData.status === "REJECTED" ? "서류보완 필요" : "승인대기"}
+                  </span>
+                  {agencyData.status === "PENDING" && (
+                    <span style={{ fontSize: 13, color: darkMode ? "#a1a1aa" : "#6b7280" }}>서류를 꼼꼼히 확인하고 있어요! 조금만 기다려주세요 🐰</span>
+                  )}
+                  {agencyData.status === "REJECTED" && (
+                    <span style={{ fontSize: 13, color: darkMode ? "#fca5a5" : "#ef4444", fontWeight: 600 }}>앗! 제출하신 서류가 조금 부족해요 😭 아래에서 다시 첨부해주세요!</span>
+                  )}
+                </div>
               )
             ) : (
               <span style={{ fontSize: 14, color: darkMode ? "#9ca3af" : "#6b7280" }}>{editMemberId ? "정상" : "대기"}</span>

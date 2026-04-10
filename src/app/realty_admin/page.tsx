@@ -68,6 +68,7 @@ export default function RealtyAdminPage() {
   const [memberId, setMemberId] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>("로딩중...");
+  const [agencyStatus, setAgencyStatus] = useState<string>("PENDING");
 
   useEffect(() => {
     async function fetchUser() {
@@ -79,6 +80,10 @@ export default function RealtyAdminPage() {
         if (data) {
           setMemberId(data.id);
           setUserName(data.name || "이름없음");
+          const { data: agencyData } = await supabase.from("agencies").select("status").eq("owner_id", data.id).single();
+          if (agencyData && agencyData.status) {
+            setAgencyStatus(agencyData.status);
+          }
         }
       }
     }
@@ -162,7 +167,8 @@ export default function RealtyAdminPage() {
             <span style={{ fontWeight: 800, fontSize: 17, color: textPrimary }}>{userName}</span>
             <span style={{ fontSize: 14, color: darkMode ? "#aaa" : "#666" }}>{userEmail || "로딩중..."}</span>
             <span style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 4, marginLeft: 4, background: "#ebf5ff", color: "#3b82f6" }}>부동산회원(유료)</span>
-            <span style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 4, marginLeft: 4, color: "#be123c", background: "#fee2e2", border: "1px solid #ef4444", display: "inline-flex", alignItems: "center", gap: 4 }}>🚨 보완요청 확인요망</span>
+            {agencyStatus === "REJECTED" && <span style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 4, marginLeft: 4, color: "#be123c", background: "#fee2e2", border: "1px solid #ef4444", display: "inline-flex", alignItems: "center", gap: 4 }}>🚨 보완요청 확인요망</span>}
+            {agencyStatus === "PENDING" && <span style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 4, marginLeft: 4, color: "#92400e", background: "#fef3c7", border: "1px solid #fde68a" }}>⏳ 승인 대기중</span>}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
             <button onClick={() => setDarkMode(!darkMode)} style={{ background: darkMode ? "#2c2d31" : "none", border: `1px solid ${darkMode ? "#444" : "#e5e7eb"}`, borderRadius: 8, width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 18, color: darkMode ? "#e1e4e8" : "#555" }} title="다크모드 전환">
@@ -182,6 +188,28 @@ export default function RealtyAdminPage() {
         {/* 대시보드 or 준비중 */}
         {activeMenu === "dashboard" ? (
           <div style={{ flex: 1, overflowY: "auto", margin: 16, marginBottom: 0, background: cardBg, borderTopLeftRadius: 12, borderTopRightRadius: 12, boxShadow: "0 4px 6px rgba(0,0,0,0.05)", padding: "20px 28px" }}>
+            
+            {/* 승인 상태 배너 */}
+            {agencyStatus === "PENDING" && (
+              <div style={{ padding: "16px 20px", marginBottom: 24, borderRadius: 8, background: darkMode ? "#422814" : "#fffbeb", border: `1px solid ${darkMode ? "#78350f" : "#fef08a"}`, display: "flex", gap: 12, alignItems: "flex-start", color: darkMode ? "#fde68a" : "#92400e" }}>
+                <span style={{ fontSize: 20 }}>⏳</span>
+                <div>
+                  <div style={{ fontWeight: 800, fontSize: 15, marginBottom: 4 }}>현재 서류 검토가 진행 중입니다.</div>
+                  <div style={{ fontSize: 13, opacity: 0.9 }}>제출해주신 중개업소 증빙 서류를 관리자가 검토하고 있습니다. 최종 승인 전까지 일부 기능 사용이 제한될 수 있습니다.</div>
+                </div>
+              </div>
+            )}
+            
+            {agencyStatus === "REJECTED" && (
+              <div style={{ padding: "16px 20px", marginBottom: 24, borderRadius: 8, background: darkMode ? "#451a1a" : "#fef2f2", border: `1px solid ${darkMode ? "#7f1d1d" : "#fecaca"}`, display: "flex", gap: 12, alignItems: "flex-start", color: darkMode ? "#fca5a5" : "#b91c1c" }}>
+                <span style={{ fontSize: 20 }}>🚨</span>
+                <div>
+                  <div style={{ fontWeight: 800, fontSize: 15, marginBottom: 4 }}>제출하신 서류의 보완이 필요합니다.</div>
+                  <div style={{ fontSize: 13, opacity: 0.9 }}>제출된 서류가 미비하여 승인이 거절되었습니다. 좌측의 <strong>[정보설정]</strong> 메뉴로 이동하여 서류를 다시 첨부해 주시기 바랍니다.</div>
+                </div>
+              </div>
+            )}
+
             {/* 타이틀 */}
             <h1 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: "0 0 20px", display: "flex", alignItems: "center", gap: 10 }}>
               <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#3b82f6", display: "inline-block" }} />
@@ -274,7 +302,7 @@ export default function RealtyAdminPage() {
         ) : activeMenu === "settings" ? (
           <div style={{ flex: 1, padding: "20px 28px", overflowY: "auto", background: cardBg, margin: 16, marginBottom: 0, borderTopLeftRadius: 12, borderTopRightRadius: 12, boxShadow: "0 4px 6px rgba(0,0,0,0.05)" }}>
             {memberId ? (
-              <MemberRegisterForm memberId={memberId} onBack={() => setActiveMenu("dashboard")} />
+              <MemberRegisterForm editMemberId={memberId} onBack={() => setActiveMenu("dashboard")} />
             ) : (
               <div style={{ textAlign: "center", padding: 40, color: textSecondary }}>사용자 정보를 불러오는 중입니다...</div>
             )}

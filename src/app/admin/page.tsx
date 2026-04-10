@@ -766,6 +766,7 @@ export default function AdminPage() {
             <MemberRegisterForm 
               darkMode={darkMode} 
               editMemberId={selectedMemberId}
+              isAdmin={true}
               onBack={() => {
                 setShowMemberRegister(false);
                 setSelectedMemberId(null);
@@ -903,6 +904,31 @@ export default function AdminPage() {
                         const displayRole = roleMap[member.role] || member.role || '일반회원';
                         const createdDate = member.created_at ? new Date(member.created_at).toISOString().split('T')[0] : "-";
                         
+                        let agencyStatus = null;
+                        if (member.agencies) {
+                          agencyStatus = Array.isArray(member.agencies) ? member.agencies[0]?.status : member.agencies.status;
+                        }
+                        
+                        let displayStatus = member.signup_completed ? '정상' : '승인대기';
+                        let statusColor = textSecondary;
+                        let statusBg = "transparent";
+                        
+                        if (member.role === 'REALTOR') {
+                          if (agencyStatus === 'APPROVED') {
+                            displayStatus = '정상승인';
+                            statusColor = "#065f46";
+                            statusBg = "#d1fae5";
+                          } else if (agencyStatus === 'REJECTED') {
+                            displayStatus = '서류보완 필요';
+                            statusColor = "#b91c1c";
+                            statusBg = "#fee2e2";
+                          } else {
+                            displayStatus = '승인대기';
+                            statusColor = "#92400e";
+                            statusBg = "#fef3c7";
+                          }
+                        }
+                        
                         return (
                       <tr key={member.id || idx} style={{ borderBottom: `1px solid ${darkMode ? "#333" : "#f3f4f6"}`, transition: "background 0.15s" }}
                         onMouseEnter={(e) => { e.currentTarget.style.background = darkMode ? "#3a3b3f" : "#f1f3f5"; }}
@@ -931,8 +957,26 @@ export default function AdminPage() {
                           {displayRole}
                         </td>
                         <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>{createdDate}</td>
-                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>
-                          {member.signup_completed ? '정상' : '승인대기'}
+                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14 }}>
+                          {member.role === 'REALTOR' ? (
+                            <span 
+                              onClick={() => { setSelectedMemberId(member.id); setShowMemberRegister(true); }}
+                              style={{ display: "inline-block", padding: "4px 8px", borderRadius: 4, background: statusBg, color: statusColor, fontWeight: 700, fontSize: 12, cursor: "pointer", transition: "opacity 0.2s" }}
+                              onMouseEnter={(e) => e.currentTarget.style.opacity = "0.8"}
+                              onMouseLeave={(e) => e.currentTarget.style.opacity = "1"}
+                              title="클릭하여 회원정보 수정"
+                            >
+                              {displayStatus}
+                            </span>
+                          ) : (
+                            <span 
+                              onClick={() => { setSelectedMemberId(member.id); setShowMemberRegister(true); }}
+                              style={{ color: textSecondary, cursor: "pointer", textDecoration: "underline" }}
+                              title="클릭하여 회원정보 수정"
+                            >
+                              {displayStatus}
+                            </span>
+                          )}
                         </td>
                         <td></td>
                         <td style={{ padding: "16px 10px", textAlign: "right", verticalAlign: "middle" }}>
