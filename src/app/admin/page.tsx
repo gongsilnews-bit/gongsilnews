@@ -35,9 +35,6 @@ const MENU_ITEMS: MenuItem[] = [
   { key: "members", label: "회원", icon: <IconMembers />, submenus: [
     { key: "members_list", label: "회원목록" },
     { key: "dormant", label: "휴면회원목록" },
-    { key: "etc_register", label: "기타등록관리" },
-    { key: "author_display", label: "필자표시관리" },
-    { key: "department", label: "부서관리" },
   ]},
   { key: "gongsil", label: "공실", icon: <IconBuilding /> },
   { key: "article", label: "기사", icon: <IconArticle /> },
@@ -86,7 +83,7 @@ export default function AdminPage() {
   const [showRegisterForm, setShowRegisterForm] = useState(false);
   const [showBoardModal, setShowBoardModal] = useState(false);
 
-  const contentTitle = activeMenu === "members" ? "회원목록" : (MENU_ITEMS.find(m => m.key === activeMenu)?.label || "대시보드");
+  const contentTitle = activeMenu.startsWith("members") ? "회원관리" : (MENU_ITEMS.find(m => m.key === activeMenu)?.label || "대시보드");
   const now = new Date();
   const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
 
@@ -109,7 +106,7 @@ export default function AdminPage() {
         </div>
 
         {/* 메뉴 리스트 */}
-        <ul style={{ listStyle: "none", margin: 0, padding: "16px 0", flex: 1, overflowY: "auto", scrollbarWidth: "none" as const }}>
+        <ul style={{ listStyle: "none", margin: 0, padding: "16px 0", flex: 1, overflow: "visible" }}>
           {MENU_ITEMS.map((item) => (
             <React.Fragment key={item.key}>
               {item.dividerBefore && <li style={{ height: 1, background: "rgba(255,255,255,0.15)", margin: "4px 14px" }} />}
@@ -147,24 +144,25 @@ export default function AdminPage() {
                 {/* 서브메뉴 (회원 메뉴만) */}
                 {item.submenus && hoveredMenu === item.key && (
                   <div style={{
-                    position: "absolute", left: 80, top: 0, minWidth: 160,
-                    background: darkMode ? "#25262b" : "#ffffff", borderRadius: 8,
-                    boxShadow: "4px 4px 20px rgba(0,0,0,0.18)", zIndex: 100,
-                    padding: "6px 0", border: `1px solid ${darkMode ? "#444" : "#e5e7eb"}`,
-                    animation: "fadeInSub 0.15s ease"
+                    position: "absolute", left: 80, top: 0, minWidth: 140,
+                    background: "#25262b", borderRadius: 6,
+                    boxShadow: "4px 4px 20px rgba(0,0,0,0.3)", zIndex: 100,
+                    padding: "8px 0", border: `1px solid #444`,
+                    animation: "fadeInSub 0.15s ease",
+                    overflow: "hidden"
                   }}>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: "#9ca3af", padding: "8px 18px 4px", letterSpacing: "0.08em", borderBottom: `1px solid ${darkMode ? "#3a3b3f" : "#f3f4f6"}`, marginBottom: 2, textTransform: "uppercase" as const }}>회원관리</div>
                     {item.submenus.map((sub) => (
-                      <button key={sub.key} style={{
-                        display: "block", padding: "10px 18px", fontSize: 13, fontWeight: 600,
-                        color: darkMode ? "#ccc" : "#374151", textDecoration: "none", whiteSpace: "nowrap" as const,
-                        cursor: "pointer", transition: "background 0.15s, color 0.15s",
-                        borderLeft: "3px solid transparent", background: "none",
-                        borderRight: "none", borderTop: "none", borderBottom: "none",
+                      <button key={sub.key} 
+                        onClick={() => setActiveMenu(sub.key)}
+                        style={{
+                        display: "block", padding: "10px 16px", fontSize: 13, fontWeight: 600,
+                        color: "#e1e4e8", textDecoration: "none", whiteSpace: "nowrap" as const,
+                        cursor: "pointer", transition: "all 0.15s",
+                        border: "none", background: "transparent",
                         width: "100%", textAlign: "left" as const, fontFamily: "inherit",
                       }}
-                        onMouseEnter={(e) => { e.currentTarget.style.background = darkMode ? "#38393e" : "#f0f4ff"; e.currentTarget.style.borderLeftColor = darkMode ? "#fbbf24" : "#111111"; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.background = "none"; e.currentTarget.style.borderLeftColor = "transparent"; }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = "#38393e"; e.currentTarget.style.color = "#ffffff"; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#e1e4e8"; }}
                       >
                         {sub.label}
                       </button>
@@ -735,14 +733,14 @@ export default function AdminPage() {
             </div>
           </div>
 
-        ) : activeMenu === "members" ? (
+        ) : activeMenu.startsWith("members") ? (
           /* ===== 회원관리 리스트 (원본 admin 디자인 1:1 복제) ===== */
           <div style={{ flex: 1, overflowY: "auto", padding: "20px 28px", background: bg }}>
             {/* 타이틀 */}
             <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 20 }}>
-              <h1 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: 0 }}>회원관리</h1>
+              <h1 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: 0 }}>회원목록</h1>
               <span style={{ fontSize: 13, fontWeight: 600, color: textSecondary }}>
-                ( <span style={{ color: "#ef4444" }}>관리자 1명</span> / <span style={{ color: "#f59e0b" }}>부동산회원 1명</span> / <span style={{ color: "#6b7280" }}>일반 1명</span> / 전체 3명 )
+                ( <span>관리자 1명</span> / <span>부동산회원 1명</span> / <span>일반 1명</span> / 전체 3명 )
               </span>
             </div>
 
@@ -771,29 +769,27 @@ export default function AdminPage() {
               {/* 액션 버튼 영역 */}
               <div style={{ padding: "16px 24px", borderBottom: `1px solid ${border}`, display: "flex", gap: 10, alignItems: "center" }}>
                 <button style={{ height: 36, padding: "0 16px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>+ 회원등록</button>
-                <button style={{ height: 36, padding: "0 16px", background: "#10b981", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>⭐ 승격순역순</button>
                 <button style={{ height: 36, padding: "0 16px", background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>🗑 선택삭제</button>
-                <button style={{ height: 36, padding: "0 16px", background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>✕ 회원/아바터/보기</button>
               </div>
 
               {/* 데이터 테이블 */}
               <div style={{ overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 1100 }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 1200, whiteSpace: "nowrap" }}>
                   <thead>
                     <tr style={{ background: darkMode ? "#2c2d31" : "#f9fafb" }}>
-                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 40 }}>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 40 }}>
                         <input type="checkbox" style={{ accentColor: "#3b82f6" }} />
                       </th>
-                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 80 }}>회원번호</th>
-                      <th style={{ padding: "12px 10px", textAlign: "left", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}` }}>아이디</th>
-                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 70 }}>이름</th>
-                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 120 }}>연락처</th>
-                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 90 }}>회원구분</th>
-                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 90 }}>가입일</th>
-                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 60 }}>멤버십</th>
-                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 100 }}>유효 회원 기간</th>
-                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 120 }}>승인상태</th>
-                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 180 }}>관리</th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 80 }}>회원번호</th>
+                      <th style={{ padding: "12px 10px", textAlign: "left", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}` }}>아이디</th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 70 }}>이름</th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 120 }}>연락처</th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 90 }}>회원구분</th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 90 }}>가입일</th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 60 }}>멤버십</th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 100 }}>유효 회원 기간</th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 120 }}>승인상태</th>
+                      <th style={{ padding: "12px 10px", textAlign: "right", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 220 }}>관리</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -803,36 +799,32 @@ export default function AdminPage() {
                       { no: "000003", email: "suppliant@naver.com", name: "김농현", phone: "010-8831-9450", role: "일반회원", roleColor: "#4b5563", roleBg: "#f3f4f6", date: "2026-04-09", membership: "무료", period: "-", status: "정상", statusColor: "#16a34a" },
                     ].map((row, idx) => (
                       <tr key={idx} style={{ borderBottom: `1px solid ${darkMode ? "#333" : "#f3f4f6"}`, transition: "background 0.15s" }}
-                        onMouseEnter={(e) => { e.currentTarget.style.background = darkMode ? "#2c2d31" : "#fafbfc"; }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = darkMode ? "#3a3b3f" : "#f1f3f5"; }}
                         onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
                       >
                         <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
                           <input type="checkbox" style={{ accentColor: "#3b82f6" }} />
                         </td>
-                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 12, color: textSecondary }}>{row.no}</td>
-                        <td style={{ padding: "16px 10px", verticalAlign: "middle" }}>
-                          <a href="#" style={{ fontSize: 13, fontWeight: 600, color: "#2563eb", textDecoration: "none" }}
+                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>{row.no}</td>
+                        <td style={{ padding: "16px 10px", verticalAlign: "middle", textAlign: "left" }}>
+                          <a href="#" style={{ fontSize: 15, fontWeight: 600, color: textSecondary, textDecoration: "none" }}
                             onMouseOver={(e) => (e.currentTarget.style.textDecoration = "underline")}
                             onMouseOut={(e) => (e.currentTarget.style.textDecoration = "none")}
                           >{row.email}</a>
                         </td>
-                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 13, fontWeight: 600, color: textPrimary }}>{row.name}</td>
-                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 12, color: textSecondary }}>{row.phone}</td>
-                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
-                          <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 4, fontSize: 11, fontWeight: 700, color: row.roleColor, background: row.roleBg, border: `1px solid ${row.roleColor}22` }}>{row.role}</span>
+                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 15, fontWeight: 600, color: textPrimary }}>{row.name}</td>
+                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>{row.phone}</td>
+                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>
+                          {row.role}
                         </td>
-                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 12, color: textSecondary }}>{row.date}</td>
-                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 12, color: textSecondary }}>{row.membership}</td>
-                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 12, color: textSecondary }}>{row.period}</td>
-                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
-                          {row.statusBg ? (
-                            <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 4, fontSize: 11, fontWeight: 700, color: row.statusColor, background: row.statusBg }}>{row.status}</span>
-                          ) : (
-                            <span style={{ fontSize: 13, fontWeight: 700, color: row.statusColor }}>{row.status}</span>
-                          )}
+                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>{row.date}</td>
+                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>{row.membership}</td>
+                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>{row.period}</td>
+                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>
+                          {row.status}
                         </td>
-                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
-                          <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+                        <td style={{ padding: "16px 10px", textAlign: "right", verticalAlign: "middle" }}>
+                          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
                             <button style={{ height: 30, padding: "0 12px", background: "#4b5563", color: "#fff", border: "none", borderRadius: 4, fontSize: 11, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
                               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                               수정

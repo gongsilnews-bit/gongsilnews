@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { createClient } from '@/utils/supabase/client';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -18,6 +19,22 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signup', onGo
   const [findPhone, setFindPhone] = useState('');
   const [findResult, setFindResult] = useState<{ found: boolean; email?: string; provider?: string } | null>(null);
   const [findLoading, setFindLoading] = useState(false);
+
+  const handleOAuthLogin = async (providerName: 'google' | 'kakao' | 'naver') => {
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: providerName,
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+      if (error) throw error;
+    } catch (err) {
+      console.error(err);
+      alert('로그인 처리 중 오류가 발생했습니다.');
+    }
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -184,7 +201,7 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signup', onGo
               {/* ━━━ 소셜 로그인 버튼 ━━━ */}
               <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {/* 구글 (메인 - 추천) */}
-                <button onClick={() => { if (onGoogleClick) onGoogleClick(); }}
+                <button onClick={() => handleOAuthLogin('google')}
                   style={{ width: '100%', background: '#fff', border: '2px solid #4285F4', borderRadius: 8, padding: '13px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, fontWeight: 'bold', fontSize: 15, color: '#222', boxShadow: '0 2px 8px rgba(66,133,244,0.15)', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s', position: 'relative' }}
                   onMouseOver={e => { e.currentTarget.style.boxShadow = '0 4px 14px rgba(66,133,244,0.25)'; e.currentTarget.style.background = '#f8faff'; }}
                   onMouseOut={e => { e.currentTarget.style.boxShadow = '0 2px 8px rgba(66,133,244,0.15)'; e.currentTarget.style.background = '#fff'; }}
@@ -201,7 +218,7 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signup', onGo
 
                 {/* 카카오 + 네이버 (두 번째 줄, 반반) */}
                 <div style={{ display: 'flex', gap: 10 }}>
-                  <button onClick={() => { if (onGoogleClick) onGoogleClick(); }}
+                  <button onClick={() => handleOAuthLogin('kakao')}
                     style={{ flex: 1, background: '#FEE500', border: 'none', borderRadius: 8, padding: '12px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontWeight: 'bold', fontSize: 13, color: '#000', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s' }}
                     onMouseOver={e => (e.currentTarget.style.background = '#f5dc00')}
                     onMouseOut={e => (e.currentTarget.style.background = '#FEE500')}
@@ -209,7 +226,7 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signup', onGo
                     <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#3C1E1E" d="M12 3C6.48 3 2 6.36 2 10.44c0 2.62 1.75 4.93 4.38 6.24l-1.12 4.16c-.1.36.3.65.6.44l4.94-3.26c.39.04.79.06 1.2.06 5.52 0 10-3.36 10-7.64C22 6.36 17.52 3 12 3z"/></svg>
                     카카오
                   </button>
-                  <button onClick={() => { if (onGoogleClick) onGoogleClick(); }}
+                  <button onClick={() => alert('네이버 로그인은 현재 준비 중입니다. 구글이나 카카오를 이용해주세요!')}
                     style={{ flex: 1, background: '#03C75A', border: 'none', borderRadius: 8, padding: '12px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontWeight: 'bold', fontSize: 13, color: '#fff', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s' }}
                     onMouseOver={e => (e.currentTarget.style.background = '#02b350')}
                     onMouseOut={e => (e.currentTarget.style.background = '#03C75A')}

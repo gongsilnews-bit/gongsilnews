@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>IDEA 11: 회원 데이터 아키텍처 설계 회의록</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  @page {
+    size: A4;
+    margin: 20mm 15mm;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 11px;
+    line-height: 1.7;
+    color: #1a1a1a;
+    padding: 20mm 15mm;
+    max-width: 210mm;
+    margin: 0 auto;
+  }
+  h1 { font-size: 20px; margin: 0 0 10px; border-bottom: 3px solid #1a1a1a; padding-bottom: 8px; }
+  h2 { font-size: 15px; margin: 24px 0 8px; color: #0055aa; border-bottom: 1px solid #ccc; padding-bottom: 4px; page-break-after: avoid; }
+  h3 { font-size: 12px; margin: 14px 0 6px; color: #333; page-break-after: avoid; }
+  p { margin: 4px 0; }
+  .subtitle { color: #666; margin-bottom: 16px; font-size: 12px; }
+  hr { margin: 16px 0; border: none; border-top: 1px solid #ddd; }
+  table { border-collapse: collapse; width: 100%; margin: 8px 0; font-size: 10.5px; page-break-inside: avoid; }
+  th, td { border: 1px solid #ccc; padding: 5px 8px; text-align: left; }
+  th { background: #f0f4f8; font-weight: 700; }
+  tr:nth-child(even) { background: #fafbfc; }
+  code { background: #f4f4f4; padding: 1px 4px; border-radius: 3px; font-size: 10px; font-family: 'Consolas', 'Courier New', monospace; }
+  pre { background: #f7f8fa; border: 1px solid #e0e0e0; border-radius: 4px; padding: 10px; margin: 8px 0; font-size: 10px; line-height: 1.5; white-space: pre-wrap; word-break: break-all; font-family: 'Consolas', 'Courier New', monospace; page-break-inside: avoid; }
+  ul, ol { margin: 4px 0 4px 20px; }
+  li { margin: 2px 0; }
+  strong { color: #0055aa; }
+  .page-break { page-break-before: always; }
+  @media print {
+    body { padding: 0; }
+    h2 { page-break-after: avoid; }
+    pre, table { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<h1>💡 IDEA 11: 회원(Members) 데이터 아키텍처 설계 회의록</h1>
+<p class="subtitle">공실뉴스 플랫폼의 회원 데이터 구조를 설계하기 위해 진행된 기획 회의 내용을 정리한 문서입니다.</p>
+<hr>
+
+<h2>1. 회원구분은 딱 3가지 (Role)</h2>
+<p>복잡하게 6~7개로 나누지 않고, <strong>역할(role)은 3가지만</strong> 만든다. 세부 구분은 역할을 늘리지 않고 다른 컬럼(칸)의 값으로 처리한다.</p>
+<table>
+  <tr><th>role</th><th>명칭</th><th>설명</th></tr>
+  <tr><td><code>ADMIN</code></td><td>관리자회원</td><td>플랫폼 전체 관리 (최고관리자 + 부관리자)</td></tr>
+  <tr><td><code>REALTOR</code></td><td>부동산회원</td><td>매물 등록, 서브도메인 관리 (소장 + 직원)</td></tr>
+  <tr><td><code>USER</code></td><td>일반회원</td><td>뉴스 열람, 찜하기 (무료 + 유료)</td></tr>
+</table>
+
+<h3>세부 구분은 role을 늘리지 않고 옆 칸(컬럼)으로 처리</h3>
+<table>
+  <tr><th>원래 구분</th><th>role</th><th>세부 구분 방법</th></tr>
+  <tr><td>최고관리자</td><td><code>ADMIN</code></td><td><code>appointed_by</code>가 비어있음 (아무도 지정 안 함 = 최고)</td></tr>
+  <tr><td>부관리자</td><td><code>ADMIN</code></td><td><code>appointed_by</code>에 최고관리자 ID가 들어있음</td></tr>
+  <tr><td>부동산 소장</td><td><code>REALTOR</code></td><td><code>agencies.owner_id</code>가 내 ID</td></tr>
+  <tr><td>부동산 직원</td><td><code>REALTOR</code></td><td><code>agency_members</code>에 소속되어 있으나 owner가 아님</td></tr>
+  <tr><td>일반회원</td><td><code>USER</code></td><td><code>plan = FREE</code></td></tr>
+  <tr><td>일반유료회원</td><td><code>USER</code></td><td><code>plan = PAID_1</code> 또는 <code>PAID_2</code></td></tr>
+</table>
+
+<h3>왜 3가지로 충분한가?</h3>
+<ul>
+  <li>role을 6개로 만들면 → 코드에서 <code>role === 'REALTOR_FREE' || role === 'REALTOR_PAID1' || ...</code> 이런 지저분한 조건이 생김</li>
+  <li>role 3개 + plan 분리하면 → <code>role === 'REALTOR'</code> 한 줄이면 끝. 요금제는 따로 체크</li>
+</ul>
+
+<hr>
+<h2>2. 요금제(Plan)는 역할과 분리</h2>
+<p><strong>"누구인가(role)"와 "돈을 내는가(plan)"는 완전히 독립적으로 움직인다.</strong></p>
+<table>
+  <tr><th>대상</th><th>plan 저장 위치</th><th>이유</th></tr>
+  <tr><td>부동산</td><td><code>agencies.plan</code></td><td>소장이 업체 단위로 결제. 직원은 공짜로 따라감</td></tr>
+  <tr><td>일반회원</td><td><code>members.plan</code></td><td>개인이 본인 것만 결제</td></tr>
+</table>
+<h3>동작 예시</h3>
+<ul>
+  <li>부동산 소장이 유료 가입 → <code>agencies.plan = 'PAID_1'</code> → 직원 전부 유료 기능 사용</li>
+  <li>일반회원이 유료 구독 → <code>members.plan = 'PAID_1'</code> → 본인만 유료 기능 사용</li>
+  <li>요금제 변경 시 → plan 값만 수정. role은 건드리지 않음</li>
+</ul>
+
+<hr>
+<h2>3. 3개 테이블 구조</h2>
+
+<h3>3-1. <code>members</code> — 회원 마스터 테이블</h3>
+<p>모든 회원(관리자, 부동산, 일반)의 기본 정보를 보관하는 핵심 테이블.</p>
+<table>
+  <tr><th>컬럼</th><th>설명</th></tr>
+  <tr><td><code>id</code></td><td>회원 고유번호 (auth.users와 1:1 연결)</td></tr>
+  <tr><td><code>email</code></td><td>이메일</td></tr>
+  <tr><td><code>name</code></td><td>이름</td></tr>
+  <tr><td><code>phone</code></td><td>연락처</td></tr>
+  <tr><td><code>avatar_url</code></td><td>프로필 사진</td></tr>
+  <tr><td><code>provider</code></td><td>가입경로 (google / kakao / naver)</td></tr>
+  <tr><td><code>role</code></td><td><strong>회원구분 3가지: ADMIN / REALTOR / USER</strong></td></tr>
+  <tr><td><code>plan</code></td><td>요금제 (FREE / PAID_1 / PAID_2) — 일반회원용</td></tr>
+  <tr><td><code>appointed_by</code></td><td>누가 지정했나 (부관리자 구분용)</td></tr>
+  <tr><td><code>status</code></td><td>상태 (active / suspended)</td></tr>
+  <tr><td><code>signup_completed</code></td><td>가입 마무리 모달 완료 여부</td></tr>
+  <tr><td><code>created_at</code></td><td>가입일</td></tr>
+  <tr><td><code>updated_at</code></td><td>수정일</td></tr>
+</table>
+
+<h3>3-2. <code>agencies</code> — 부동산 업체 테이블</h3>
+<p>부동산 업체 정보를 보관. 서브도메인, 테마, 업체 과금의 근거가 되는 B2B 핵심 허브.</p>
+<table>
+  <tr><th>컬럼</th><th>설명</th></tr>
+  <tr><td><code>id</code></td><td>업체 고유번호</td></tr>
+  <tr><td><code>owner_id</code></td><td><strong>소장 회원 ID</strong> (이 값으로 소장/직원 구분)</td></tr>
+  <tr><td><code>name</code></td><td>상호명</td></tr>
+  <tr><td><code>ceo_name</code></td><td>대표자명</td></tr>
+  <tr><td><code>phone, cell</code></td><td>대표전화 / 휴대폰</td></tr>
+  <tr><td><code>zipcode, address, address_detail</code></td><td>주소</td></tr>
+  <tr><td><code>lat, lng</code></td><td>위경도 (On-Write Geocoding)</td></tr>
+  <tr><td><code>biz_num, reg_num</code></td><td>사업자등록번호 / 중개등록번호</td></tr>
+  <tr><td><code>biz_cert_url</code></td><td>사업자등록증 파일</td></tr>
+  <tr><td><code>subdomain</code></td><td>서브도메인 슬러그 (예: happy → happy.gongsilnews.com)</td></tr>
+  <tr><td><code>theme_id</code></td><td>선택한 테마</td></tr>
+  <tr><td><code>logo_url</code></td><td>커스텀 로고</td></tr>
+  <tr><td><code>plan</code></td><td><strong>업체 요금제</strong> (FREE / PAID_1 / PAID_2)</td></tr>
+  <tr><td><code>status</code></td><td>상태 (ACTIVE / SUSPENDED / DELETED)</td></tr>
+</table>
+
+<h3>3-3. <code>agency_members</code> — 소속 관계 + 직원별 권한 설정</h3>
+<p>소장이 직원별로 세밀하게 권한을 조절하는 공간.</p>
+<table>
+  <tr><th>컬럼</th><th>설명</th></tr>
+  <tr><td><code>agency_id</code></td><td>어느 부동산</td></tr>
+  <tr><td><code>member_id</code></td><td>어느 직원</td></tr>
+  <tr><td><code>is_owner</code></td><td>소장 여부 (TRUE / FALSE)</td></tr>
+  <tr><td><code>max_properties</code></td><td>매물 등록 한도 (NULL이면 무제한)</td></tr>
+  <tr><td><code>max_articles</code></td><td>기사 등록 한도</td></tr>
+  <tr><td><code>can_view_stats</code></td><td>통계 열람 가능 여부</td></tr>
+  <tr><td><code>can_manage_board</code></td><td>게시판 관리 가능 여부</td></tr>
+  <tr><td><code>note</code></td><td>소장 메모</td></tr>
+</table>
+
+<hr>
+<h2>4. agencies 테이블이 반드시 필요한 이유</h2>
+<h3>4-1. 소장 교체 시 안전성</h3>
+<ul>
+  <li>매물이 "사람(user_id)"에 붙어있으면 → 소장 탈퇴 시 매물 미아됨</li>
+  <li>매물이 "업체(agency_id)"에 붙어있으면 → 소장만 교체, 매물은 그대로 유지</li>
+  <li>비유: 개인 명의 사업(위험) vs 법인 사업(안전)</li>
+</ul>
+<h3>4-2. 네트워크 광고 (연락처 마스킹)</h3>
+<ul>
+  <li>A부동산이 매물 등록 후 [네트워크광고 ON] 클릭</li>
+  <li>B부동산 서브홈에서 같은 매물이 보이되, <strong>B부동산 이름/연락처로 교체</strong>되어 노출</li>
+  <li>매물 데이터는 1건만 저장, 보여줄 때만 이름을 바꿔치기 (속도 영향 거의 없음)</li>
+</ul>
+<h3>4-3. 서브도메인 시스템의 기반</h3>
+<ul>
+  <li><code>agencies.subdomain = 'happy'</code> → <code>happy.gongsilnews.com</code></li>
+  <li><code>agencies.theme_id</code> → 홈페이지 테마 변경</li>
+  <li>최고관리자가 업체의 상태를 통제 (활성/정지/삭제)</li>
+</ul>
+
+<hr>
+<h2>5. 테이블 간 연결(관계) 구조</h2>
+<pre>
+members (회원)
+  │
+  ├── articles.author_id     → 이 회원이 쓴 기사
+  ├── properties.user_id     → 이 회원이 입력한 매물
+  │
+  └── agency_members          → 이 회원이 소속된 부동산
+        │
+        └── agencies           → 부동산 업체 정보
+              │
+              ├── properties.agency_id  → 이 업체 소속 매물 (소유권)
+              └── owner_id → members.id  → 이 업체의 소장
+</pre>
+<p><strong>핵심:</strong> 매물에는 <code>user_id</code>(누가 입력)와 <code>agency_id</code>(어느 업체 소속) 두 개가 모두 필요.</p>
+
+<hr>
+<h2>6. DB 개념 정리 (회의 중 논의 사항)</h2>
+<h3>테이블 vs 컬럼 vs 로우</h3>
+<table>
+  <tr><th>용어</th><th>엑셀 비유</th><th>예시</th></tr>
+  <tr><td>데이터베이스</td><td>엑셀 파일 1개</td><td>공실뉴스 DB 전체</td></tr>
+  <tr><td>테이블</td><td>시트 탭</td><td>members, properties, articles</td></tr>
+  <tr><td>컬럼</td><td>세로 열 (항목)</td><td>이름, 이메일, 가격, 주소</td></tr>
+  <tr><td>로우</td><td>가로 행 (데이터 1건)</td><td>김소장의 정보 한 줄</td></tr>
+</table>
+
+<h3>속도에 영향을 주는 것 / 안 주는 것</h3>
+<table>
+  <tr><th>항목</th><th>속도 영향</th></tr>
+  <tr><td>테이블 개수 (26개)</td><td>❌ 영향 없음 (1000개도 OK)</td></tr>
+  <tr><td>한 테이블에 데이터 50만 건</td><td>⚠️ 인덱스 필요</td></tr>
+  <tr><td>컬럼 200개 (한 테이블)</td><td>⚠️ 설계 문제 → 30~50개가 적정</td></tr>
+  <tr><td>배열(ARRAY) 안에 데이터 200개</td><td>✅ 영향 없음</td></tr>
+</table>
+
+<h3>검색(필터)용 vs 표시용 컬럼</h3>
+<ul>
+  <li><strong>검색에 쓰는 항목</strong> (가격, 지역, 유형) → 각각 컬럼으로 분리 (인덱스 가능)</li>
+  <li><strong>보여주기만 하는 항목</strong> (옵션 목록, 이미지) → 배열/JSONB 하나에 묶어도 됨</li>
+  <li>배열 안에서도 검색 가능: <code>WHERE '에어컨' = ANY(options)</code> + GIN 인덱스</li>
+</ul>
+
+<hr>
+<h2>7. 기존 DB 현황 및 정리 방향</h2>
+<h3>현재 존재하는 회원 관련 테이블 (정리 대상)</h3>
+<table>
+  <tr><th>테이블</th><th>데이터</th><th>처리</th></tr>
+  <tr><td><code>members</code></td><td>3건 (테스트)</td><td><strong>삭제 후 새로 생성</strong></td></tr>
+  <tr><td><code>profiles</code></td><td>2건 (테스트)</td><td><strong>삭제</strong> (members와 중복)</td></tr>
+  <tr><td><code>realtor_info</code></td><td>0건</td><td><strong>삭제</strong> (agencies로 대체)</td></tr>
+</table>
+<h3>유지하는 테이블 (잘 만들어져 있음)</h3>
+<ul>
+  <li><code>properties</code> (37개 컬럼) — lat/lng, exposure_target 등 이미 구비</li>
+  <li><code>articles</code> (24개 컬럼) — author_id로 회원 연결 구조 갖춤</li>
+  <li><code>boards</code>, <code>board_posts</code>, <code>comments</code> 등 — 정상</li>
+</ul>
+
+<hr>
+<h2>8. 자동 동기화 (소셜 로그인 → 회원 자동 생성)</h2>
+<pre>
+소셜 로그인 → auth.users INSERT → 트리거 동작 → members INSERT (signup_completed = FALSE)
+→ 가입 마무리 모달 표시 → 추가정보 입력 → members UPDATE (signup_completed = TRUE)
+</pre>
+
+<hr>
+<h2>9. 향후 작업 순서 (확정 시)</h2>
+<ol>
+  <li>기존 <code>members</code>, <code>profiles</code>, <code>realtor_info</code> 테이블 삭제</li>
+  <li>새 <code>members</code> 테이블 생성 (role 3가지 + plan 분리)</li>
+  <li><code>agencies</code> 테이블 생성 (부동산 업체 정보)</li>
+  <li><code>agency_members</code> 테이블 생성 (소속 + 직원별 권한)</li>
+  <li><code>auth.users → members</code> 자동 동기화 트리거 생성</li>
+  <li><code>properties</code> 테이블에 <code>agency_id</code> 컬럼 추가</li>
+  <li>RLS(보안 정책) 설정</li>
+  <li>가입 마무리 모달(<code>SignupCompleteModal.tsx</code>) DB 연결</li>
+  <li>Header 로그인 상태 표시</li>
+</ol>
+
+<div class="page-break"></div>
+
+<h2>10. 인덱스(Index) — DB 속도의 핵심</h2>
+<h3>인덱스란?</h3>
+<p><strong>전화번호부의 "ㄱㄴㄷ 탭"과 같은 원리.</strong> DB가 데이터를 빨리 찾기 위해 미리 만들어놓는 목차.</p>
+<pre>
+❌ 인덱스 없음 = 1만 명 전화번호부에서 "김소장"을 1쪽부터 다 뒤짐 → 느림
+✅ 인덱스 있음 = "ㄱ → 23쪽" 목차 보고 바로 점프 → 빠름
+</pre>
+<h3>인덱스 vs 컬럼 차이</h3>
+<ul>
+  <li><strong>컬럼</strong> = 데이터 자체 (이름, 전화번호 등). 없으면 데이터가 없음 (필수)</li>
+  <li><strong>인덱스</strong> = 그 데이터를 빨리 찾는 목차 (부가장치). 없어도 동작하지만 느릴 뿐 (선택)</li>
+</ul>
+<h3>인덱스 특징</h3>
+<ul>
+  <li>SQL 한 줄로 걸 수 있음: <code>CREATE INDEX idx_지역 ON properties (sigungu);</code></li>
+  <li>한번 걸면 데이터 추가/수정/삭제 시 <strong>자동으로 목차 업데이트</strong></li>
+  <li>지금은 데이터가 적어서 불필요. <strong>나중에 느려지면 그때 추가하면 됨</strong></li>
+</ul>
+<h3>인덱스가 필요한 시점</h3>
+<table>
+  <tr><th>로우(데이터) 수</th><th>인덱스 필요 여부</th></tr>
+  <tr><td>1만 건</td><td>없어도 빠름</td></tr>
+  <tr><td>10만 건</td><td>있으면 좋음</td></tr>
+  <tr><td>100만 건</td><td>반드시 필요</td></tr>
+</table>
+
+<hr>
+<h2>11. Supabase 플랫폼 특징 정리</h2>
+<p>Supabase = <strong>서버 개발자 없이도 서비스를 만들 수 있게 해주는 백엔드 올인원 도구</strong></p>
+
+<h3>핵심 기능 6가지</h3>
+<table>
+  <tr><th>#</th><th>기능</th><th>공실뉴스 활용</th></tr>
+  <tr><td>①</td><td><strong>DB (PostgreSQL)</strong></td><td>회원, 매물, 기사 저장</td></tr>
+  <tr><td>②</td><td><strong>Auth (인증)</strong></td><td>구글/카카오 소셜 로그인</td></tr>
+  <tr><td>③</td><td><strong>Storage (파일)</strong></td><td>매물 사진, 사업자등록증 업로드</td></tr>
+  <tr><td>④</td><td><strong>Realtime (실시간)</strong></td><td>카톡 같은 채팅, 쪽지 실시간 알림</td></tr>
+  <tr><td>⑤</td><td><strong>RLS (보안)</strong></td><td>내 매물은 나만 수정 가능</td></tr>
+  <tr><td>⑥</td><td><strong>Edge Functions</strong></td><td>AI 기능 등 서버 로직</td></tr>
+</table>
+
+<h3>현재 요금제 (Pro)</h3>
+<table>
+  <tr><th>항목</th><th>용량</th><th>여유도</th></tr>
+  <tr><td>DB 용량</td><td>8GB</td><td>매물 수십만 건 OK</td></tr>
+  <tr><td>파일 저장</td><td>100GB</td><td>사진 수만 장 OK</td></tr>
+  <tr><td>리얼타임 연결</td><td>500개 동시</td><td>회원 간 쪽지 여유</td></tr>
+  <tr><td>회원 1만 명</td><td>약 5MB</td><td>전혀 문제없음</td></tr>
+</table>
+
+<h3>Supabase를 선택한 이유 (vs MySQL 등)</h3>
+<table>
+  <tr><th>기능</th><th>PostgreSQL (Supabase)</th><th>MySQL</th></tr>
+  <tr><td>지도 기능(PostGIS)</td><td>✅ 최강</td><td>⚠️ 기본만</td></tr>
+  <tr><td>배열(ARRAY) 지원</td><td>✅ 기본 내장</td><td>❌ 없음</td></tr>
+  <tr><td>JSONB 검색</td><td>✅ 빠름</td><td>⚠️ 느림</td></tr>
+  <tr><td>실시간(Realtime)</td><td>✅ 내장</td><td>❌ 별도 구축</td></tr>
+</table>
+<p><strong>프롭테크(부동산 기술) 서비스에는 PostgreSQL이 업계 표준</strong> (직방, 다방 등도 사용)</p>
+
+<hr>
+<h2>12. PostGIS — 지도 매물 검색 아키텍처</h2>
+<h3>PostGIS란?</h3>
+<p>PostgreSQL에 내장된 <strong>지도 전용 엔진</strong>. 좌표(lat, lng) 기반의 공간 계산을 DB가 직접 처리해줌.</p>
+
+<h3>동작 흐름</h3>
+<pre>
+[매물 등록 시]
+중개사가 주소 입력 → 카카오 API가 좌표 변환 → lat, lng를 DB에 저장 (1번만)
+
+[손님이 지도를 볼 때]
+지도 화면의 네모 좌표를 DB에 보냄 → PostGIS가 그 안의 매물만 골라서 돌려줌
+
+[지도를 이동하면]
+새로운 네모 좌표를 다시 보냄 → 해당 영역 매물만 다시 가져옴 (자동 반복)
+</pre>
+
+<h3>BBOX (Bounding Box) 방식</h3>
+<pre>
+사용자 화면에 보이는 영역:
+  좌하단 좌표 (37.49, 127.01) ~ 우상단 좌표 (37.52, 127.07)
+
+DB 쿼리:
+  5만 개 매물 중 이 네모 안에 있는 것만 → 150개만 돌려줌
+  나머지 49,850개는 아예 안 가져옴 → 속도 극한 유지
+</pre>
+
+<h3>클러스터링 (핀 묶기)</h3>
+<pre>
+지도를 많이 축소하면 핀 수천 개가 겹침 → 화면 멈춤 위험
+
+해결: 여러 핀을 하나로 묶어서 숫자로 표시
+  [강남 1,500] [서초 980] [마포 720]
+  숫자를 클릭하면 확대되면서 개별 핀이 펼쳐짐
+
+이 묶기 계산도 PostGIS가 DB에서 처리 → 브라우저 부하 없음
+</pre>
+
+<h3>PostGIS 활용 범위 (매물만이 아님)</h3>
+<table>
+  <tr><th>기능</th><th>어떤 테이블</th><th>활용</th></tr>
+  <tr><td>공실열람 지도</td><td>properties (lat, lng)</td><td>화면 내 매물만 표시</td></tr>
+  <tr><td>우리동네뉴스</td><td>articles (lat, lng)</td><td>내 위치 근처 기사만 표시</td></tr>
+  <tr><td>주변 부동산 찾기</td><td>agencies (lat, lng)</td><td>내 주변 중개사무소 표시</td></tr>
+  <tr><td>지역 기반 광고</td><td>Geo-Fencing</td><td>매물 반경 3km 부동산에만 네트워크 광고 노출</td></tr>
+</table>
+
+<hr>
+<h2>13. 실시간 채팅 기능 (Supabase Realtime 활용)</h2>
+<h3>공실뉴스 내부 채팅 = 카톡 대체</h3>
+<pre>
+기존: 손님이 매물 봄 → 전화번호 복사 → 카톡 열기 → 대화 (사이트 이탈)
+채팅: 손님이 매물 봄 → [문의하기] 클릭 → 바로 채팅 시작 (사이트 안에서)
+</pre>
+
+<h3>필요한 테이블 2개 추가</h3>
+<table>
+  <tr><th>테이블</th><th>역할</th></tr>
+  <tr><td><code>chat_rooms</code></td><td>채팅방 (1:1, 단체)</td></tr>
+  <tr><td><code>chat_messages</code></td><td>메시지 내용, 보낸사람, 시간</td></tr>
+</table>
+
+<h3>구현 가능한 기능</h3>
+<ul>
+  <li>✅ 1:1 채팅 (임대인 ↔ 부동산)</li>
+  <li>✅ 단체 채팅방 (부동산끼리 공동중개 논의)</li>
+  <li>✅ 읽음/안읽음 표시</li>
+  <li>✅ 새 메시지 알림 (빨간 숫자 뱃지)</li>
+  <li>✅ 사진/파일/서류 전송 (Supabase Storage 활용)</li>
+  <li>✅ 매물 카드 공유 (매물 링크 보내면 미리보기 표시)</li>
+</ul>
+
+<h3>비즈니스 효과</h3>
+<ul>
+  <li>카톡으로 나가면 → 손님이 사이트를 떠남 → 재방문 불확실</li>
+  <li>공실뉴스 안에서면 → 손님이 계속 머무름 → 다른 매물도 보게 됨</li>
+  <li><strong>사이트 체류 시간 증가 → 광고 수익 증가 → 플랫폼 가치 증가</strong></li>
+</ul>
+
+</body>
+</html>
