@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { saveArticle } from "@/app/actions/article";
+import { geocodeAddress } from "@/app/actions/geocode";
 import { createClient } from "@/utils/supabase/client";
 
 /* ─── 타입 ─── */
@@ -37,6 +38,8 @@ export default function NewsWritePage() {
   const [fileCollapsed, setFileCollapsed] = useState(false);
   const [saving, setSaving] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [articleCoords, setArticleCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [geocoding, setGeocoding] = useState(false);
 
   /* ── 현재 로그인 사용자 ID 가져오기 ── */
   useEffect(() => {
@@ -58,6 +61,29 @@ export default function NewsWritePage() {
 
   const removeKeyword = (idx: number) => {
     setKeywords(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  /* ── 위치 좌표 변환 (장소명/주소 → 좌표) ── */
+  const handleGeocode = async () => {
+    if (!location.trim()) {
+      alert("장소명 또는 주소를 입력해주세요.");
+      return;
+    }
+    setGeocoding(true);
+    try {
+      const result = await geocodeAddress(location);
+      if (result.success && result.lat && result.lng) {
+        setArticleCoords({ lat: result.lat, lng: result.lng });
+      } else {
+        alert("❌ 좌표를 찾을 수 없습니다. 다른 주소로 시도해주세요.");
+        setArticleCoords(null);
+      }
+    } catch {
+      alert("❌ 좌표 변환 중 오류가 발생했습니다.");
+      setArticleCoords(null);
+    } finally {
+      setGeocoding(false);
+    }
   };
 
   /* ── 기사 저장 ── */
@@ -96,6 +122,8 @@ export default function NewsWritePage() {
         published_at: publishedAt,
         keywords,
         location_name: location,
+        lat: articleCoords?.lat,
+        lng: articleCoords?.lng,
       });
 
       if (result.success) {
@@ -453,12 +481,25 @@ export default function NewsWritePage() {
             <hr style={{ border: "none", borderTop: `1px solid ${border}`, margin: "0 0 24px 0" }} />
 
             {/* ── 위치등록 ── */}
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 32 }}>
-              <label style={{ fontSize: 14, fontWeight: 600, color: textPrimary, minWidth: 80 }}>위치등록</label>
-              <button style={{ padding: "8px 14px", background: "#4b5563", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>지도검색</button>
-              <input type="text" value={location} onChange={e => setLocation(e.target.value)} placeholder="예: 37.490416, 127.518709"
-                style={{ flex: 1, padding: "10px 14px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 14, color: textPrimary, background: cardBg, outline: "none", fontFamily: "inherit" }} />
-              <button style={{ padding: "8px 14px", background: "#6b7280", color: "#fff", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>#위도 경도 넣는법</button>
+            <div style={{ marginBottom: 32 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
+                <label style={{ fontSize: 14, fontWeight: 600, color: textPrimary, minWidth: 80 }}>위치등록</label>
+                <input type="text" value={location} onChange={e => setLocation(e.target.value)} 
+                  placeholder="장소명 또는 주소 입력 (예: 강남역, 코엑스, 서울 강남구...)"
+                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleGeocode(); } }}
+                  style={{ flex: 1, padding: "10px 14px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 14, color: textPrimary, background: cardBg, outline: "none", fontFamily: "inherit" }} />
+                <button type="button" onClick={handleGeocode} disabled={geocoding}
+                  style={{ padding: "8px 18px", background: geocoding ? "#9ca3af" : "#10b981", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: geocoding ? "not-allowed" : "pointer", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 6 }}>
+                  {geocoding ? "⏳ 변환 중..." : "📍 좌표 변환"}
+                </button>
+              </div>
+              {articleCoords && (
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginLeft: 92, fontSize: 13 }}>
+                  <span style={{ color: "#10b981", fontWeight: 600 }}>✅ 위도 {articleCoords.lat.toFixed(6)}, 경도 {articleCoords.lng.toFixed(6)}</span>
+                  <button type="button" onClick={() => { setArticleCoords(null); setLocation(""); }} 
+                    style={{ background: "none", border: "none", color: "#ef4444", fontSize: 12, cursor: "pointer", padding: "2px 6px" }}>✕ 초기화</button>
+                </div>
+              )}
             </div>
 
             {/* ── 저장완료 버튼 ── */}
