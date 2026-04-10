@@ -1,7 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { saveArticle } from "@/app/actions/article";
+import { createClient } from "@/utils/supabase/client";
 
 /* ─── 타입 ─── */
 type StatusType = "작성중" | "승인신청" | "반려";
@@ -33,6 +35,16 @@ export default function NewsWritePage() {
   const [photoCollapsed, setPhotoCollapsed] = useState(false);
   const [videoCollapsed, setVideoCollapsed] = useState(false);
   const [fileCollapsed, setFileCollapsed] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  /* ── 현재 로그인 사용자 ID 가져오기 ── */
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => {
+      if (data?.user) setCurrentUserId(data.user.id);
+    });
+  }, []);
 
   /* ─── 키워드 추가 ─── */
   const handleKeywordAdd = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -46,6 +58,57 @@ export default function NewsWritePage() {
 
   const removeKeyword = (idx: number) => {
     setKeywords(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  /* ── 기사 저장 ── */
+  const handleSave = async () => {
+    if (!title.trim()) {
+      alert("제목을 입력해주세요.");
+      return;
+    }
+    if (!section1) {
+      alert("1차 섹션을 선택해주세요.");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      // 노출시간 조합
+      let publishedAt: string | null = null;
+      if (publishDate) {
+        publishedAt = `${publishDate}T${publishTime || "00:00"}:00`;
+      }
+
+      const result = await saveArticle({
+        author_id: currentUserId || undefined,
+        author_name: reporterName,
+        author_email: reporterEmail,
+        status: status,
+        form_type: formType,
+        section1,
+        section2,
+        series,
+        title,
+        subtitle,
+        content,
+        youtube_url: youtubeUrl,
+        is_shorts: isShortsRatio,
+        published_at: publishedAt,
+        keywords,
+        location_name: location,
+      });
+
+      if (result.success) {
+        alert("✅ 기사가 저장되었습니다!");
+        router.push("/admin");
+      } else {
+        alert("❌ 저장 실패: " + result.error);
+      }
+    } catch (err: any) {
+      alert("❌ 오류 발생: " + err.message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   /* ─── 공통 스타일 변수 ─── */
@@ -399,16 +462,24 @@ export default function NewsWritePage() {
             </div>
 
             {/* ── 저장완료 버튼 ── */}
-            <button style={{
-              width: "100%", padding: "16px 0", background: accentBlue, color: "#fff",
-              border: "none", borderRadius: 8, fontSize: 16, fontWeight: 700, cursor: "pointer",
-              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-              transition: "background 0.2s",
-            }}
-              onMouseOver={e => e.currentTarget.style.background = "#2563eb"}
-              onMouseOut={e => e.currentTarget.style.background = accentBlue}
+            <button 
+              type="button"
+              onClick={handleSave}
+              disabled={saving}
+              style={{
+                width: "100%", padding: "16px 0", 
+                background: saving ? "#9ca3af" : accentBlue, 
+                color: "#fff",
+                border: "none", borderRadius: 8, fontSize: 16, fontWeight: 700, 
+                cursor: saving ? "not-allowed" : "pointer",
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                transition: "background 0.2s",
+                opacity: saving ? 0.7 : 1,
+              }}
+              onMouseOver={e => { if (!saving) e.currentTarget.style.background = "#2563eb"; }}
+              onMouseOut={e => { if (!saving) e.currentTarget.style.background = accentBlue; }}
             >
-              ✓ 저장완료
+              {saving ? "⏳ 저장 중..." : "✓ 저장완료"}
             </button>
           </div>
         </main>
