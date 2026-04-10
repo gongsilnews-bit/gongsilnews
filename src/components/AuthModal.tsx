@@ -30,9 +30,9 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signup', onGo
         },
       });
       if (error) throw error;
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert('로그인 처리 중 오류가 발생했습니다.');
+      alert('로그인 오류: ' + (err?.message || String(err)));
     }
   };
 
