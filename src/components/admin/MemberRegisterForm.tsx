@@ -225,7 +225,7 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
           fileForm.append("file", files.reg_cert);
           fileForm.append("path", `${memberId}/reg_cert_${Date.now()}.webp`);
           const uploadRes = await adminUploadAgencyDocument(fileForm);
-          if (uploadRes.success) regCertUrl = uploadRes.url;
+          if (uploadRes.success) regCertUrl = uploadRes.url || null;
         }
 
         if (files.biz_cert) {
@@ -233,7 +233,7 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
           fileForm.append("file", files.biz_cert);
           fileForm.append("path", `${memberId}/biz_cert_${Date.now()}.webp`);
           const uploadRes = await adminUploadAgencyDocument(fileForm);
-          if (uploadRes.success) bizCertUrl = uploadRes.url;
+          if (uploadRes.success) bizCertUrl = uploadRes.url || null;
         }
 
         const finalAgencyData = {

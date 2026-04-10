@@ -24,7 +24,7 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signup', onGo
     try {
       const supabase = createClient();
       const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: providerName,
+        provider: providerName as any,
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
         },
