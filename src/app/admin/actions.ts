@@ -141,6 +141,9 @@ export async function adminGetMemberDetail(memberId: string) {
       if (agencyData) agency = agencyData;
     }
 
+    const { count } = await supabaseAdmin.from('members').select('*', { count: 'exact', head: true }).lte('created_at', member.created_at);
+    member.memberNumber = String(count || 1).padStart(6, '0');
+
     return { success: true, member, agency };
   } catch (error: any) {
     return { success: false, error: error.message };

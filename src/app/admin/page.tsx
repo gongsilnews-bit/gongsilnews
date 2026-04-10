@@ -362,16 +362,36 @@ export default function AdminPage() {
                   </select>
                 </div>
                 <input type="text" placeholder="전체내용 입력하세요." style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", flex: 1, minWidth: 180 }} />
-                <button style={{ height: 36, padding: "0 18px", background: darkMode ? "#2c2d31" : "#374151", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>🔍 검색</button>
+                <button style={{ height: 36, padding: "0 18px", background: darkMode ? "#2c2d31" : "#374151", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                  </svg>
+                  검색
+                </button>
                 <button style={{ height: 36, padding: "0 14px", background: darkMode ? "#2c2d31" : "#fff", color: textSecondary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>초기화</button>
               </div>
 
               {/* 액션 버튼 영역 */}
               <div style={{ padding: "16px 24px", borderBottom: `1px solid ${border}`, display: "flex", gap: 10, alignItems: "center" }}>
                 <button onClick={() => setShowRegisterForm(true)} style={{ height: 36, padding: "0 16px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>+ 공실등록</button>
-                <button style={{ height: 36, padding: "0 16px", background: "#10b981", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>📄 엑셀 대량등록</button>
-                <button style={{ height: 36, padding: "0 16px", background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>🔄 고소취갱신</button>
-                <button style={{ height: 36, padding: "0 16px", background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>🗑 선택삭제</button>
+                <button style={{ height: 36, padding: "0 16px", background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                  엑셀 대량등록
+                </button>
+                <button style={{ height: 36, padding: "0 16px", background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
+                  고소취갱신
+                </button>
+                <button style={{ height: 36, padding: "0 16px", background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    <line x1="10" y1="11" x2="10" y2="17"></line>
+                    <line x1="14" y1="11" x2="14" y2="17"></line>
+                  </svg>
+                  선택삭제
+                </button>
               </div>
 
               {/* 데이터 테이블 */}
@@ -395,49 +415,49 @@ export default function AdminPage() {
                   </thead>
                   <tbody>
                     {[
-                      { id: "1/1612/133", adLabel: "광고중", adDays: "14일", adColor: "#10b981", type: "단독/다세대구", addr: "도곡동 탑데스하임", phone: "01088319450", deal: "매매", price: "6억", rooms: "1 / 244.55m² / -", date: "04.07", owner: "김미숙", ownerPhone: "010-5555-5555" },
-                      { id: "377952561", adLabel: "광고중", adDays: "5468", adColor: "#10b981", type: "다세대/빌라/연립", addr: "논현동 논현 4번지왕상", phone: "010-0555-0555", deal: "매매", price: "10억", rooms: "3 / m² / -", date: "04.08", owner: "김미숙", ownerPhone: "010-5555-5555" },
-                      { id: "71079848", adLabel: "광고중", adDays: "5484", adColor: "#10b981", type: "다가구", addr: "녹번동 관악드림타운", phone: "01088319450", deal: "매매", price: "11억 5000", rooms: "3 / 159.83m² / 8층", date: "04.04", owner: "김미숙", ownerPhone: "01088319450" },
-                      { id: "2971428573", adLabel: "광고중", adDays: "14963", adColor: "#10b981", type: "다가구", addr: "노원동 동부센트레빌", phone: "010-8631-9450", deal: "매매", price: "10억", rooms: "3 / 58m² / -", date: "04.04", owner: "김미숙", ownerPhone: "010-8631-9450" },
-                      { id: "1386120769", adLabel: "광고중", adDays: "13549", adColor: "#10b981", type: "아파트", addr: "서초동 서초클라스", phone: "010-8631-9450", deal: "매매", price: "7억", rooms: "2 / 39.12m² / 5층", date: "03.30", owner: "착한임대", ownerPhone: "010-8631-9450" },
-                      { id: "2943105657", adLabel: "광고중", adDays: "23.50", adColor: "#10b981", type: "아파트/단지형", addr: "서초동 서초프라지움더닉스", phone: "010-8631-9450", deal: "매매", price: "3.2억", rooms: "4 / 134.78m² / 7층", date: "03.30", owner: "착한임대", ownerPhone: "010-8631-9450" },
+                      { id: "1/1612/133", adLabel: "광고중", adDays: "14일", type: "단독/다세대구", addr: "도곡동 탑데스하임", phone: "010-8831-9450", deal: "매매", price: "6억", rooms: "1 / 244.55m² / -", date: "04.07", owner: "김미숙", ownerPhone: "010-5555-5555" },
+                      { id: "377952561", adLabel: "광고중", adDays: "5468", type: "다세대/빌라/연립", addr: "논현동 논현 4번지왕상", phone: "010-0555-0555", deal: "매매", price: "10억", rooms: "3 / m² / -", date: "04.08", owner: "김미숙", ownerPhone: "010-5555-5555" },
+                      { id: "71079848", adLabel: "광고중", adDays: "5484", type: "다가구", addr: "녹번동 관악드림타운", phone: "010-8831-9450", deal: "매매", price: "11억 5000", rooms: "3 / 159.83m² / 8층", date: "04.04", owner: "김미숙", ownerPhone: "010-8831-9450" },
+                      { id: "2971428573", adLabel: "광고중", adDays: "14963", type: "다가구", addr: "노원동 동부센트레빌", phone: "010-8631-9450", deal: "매매", price: "10억", rooms: "3 / 58m² / -", date: "04.04", owner: "김미숙", ownerPhone: "010-8631-9450" },
+                      { id: "1386120769", adLabel: "광고중", adDays: "13549", type: "아파트", addr: "서초동 서초클라스", phone: "010-8631-9450", deal: "매매", price: "7억", rooms: "2 / 39.12m² / 5층", date: "03.30", owner: "착한임대", ownerPhone: "010-8631-9450" },
+                      { id: "2943105657", adLabel: "광고중", adDays: "23.50", type: "아파트/단지형", addr: "서초동 서초프라지움더닉스", phone: "010-8631-9450", deal: "매매", price: "3.2억", rooms: "4 / 134.78m² / 7층", date: "03.30", owner: "착한임대", ownerPhone: "010-8631-9450" },
                     ].map((row, idx) => (
                       <tr key={idx} style={{ borderBottom: `1px solid ${darkMode ? "#333" : "#f3f4f6"}`, transition: "background 0.15s" }}
-                        onMouseEnter={(e) => { e.currentTarget.style.background = darkMode ? "#2c2d31" : "#fafbfc"; }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = darkMode ? "#3a3b3f" : "#f1f3f5"; }}
                         onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
                       >
-                        <td style={{ padding: "14px 10px", textAlign: "center", verticalAlign: "top" }}>
+                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
                           <input type="checkbox" style={{ accentColor: "#3b82f6" }} />
                         </td>
-                        <td style={{ padding: "14px 10px", textAlign: "center", verticalAlign: "top", fontSize: 12, color: textSecondary, lineHeight: "1.5" }}>
-                          <div style={{ fontWeight: 600 }}>1</div>
-                          <div style={{ fontSize: 11, color: "#9ca3af" }}>{row.id}</div>
+                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 13, color: textSecondary }}>
+                          <div style={{ fontWeight: 700 }}>1</div>
+                          <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 2 }}>{row.id}</div>
                         </td>
-                        <td style={{ padding: "14px 10px", textAlign: "center", verticalAlign: "top" }}>
-                          <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 4, fontSize: 11, fontWeight: 700, color: "#fff", background: row.adColor }}>{row.adLabel}</span>
-                          <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 4 }}>{row.adDays}</div>
+                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
+                          <span style={{ display: "inline-block", padding: "4px 8px", borderRadius: 4, background: darkMode ? "#1a2e1a" : "#d1fae5", color: darkMode ? "#4ade80" : "#065f46", fontWeight: 700, fontSize: 12 }}>{row.adLabel}</span>
+                          <div style={{ fontSize: 12, color: textSecondary, marginTop: 4, fontWeight: 600 }}>{row.adDays}</div>
                         </td>
-                        <td style={{ padding: "14px 10px", textAlign: "center", verticalAlign: "top", fontSize: 12, fontWeight: 600, color: textPrimary }}>{row.type}</td>
-                        <td style={{ padding: "14px 10px", verticalAlign: "top" }}>
-                          <div style={{ fontWeight: 700, color: textPrimary, fontSize: 13, marginBottom: 2 }}>{row.addr}</div>
-                          <div style={{ fontSize: 12, color: "#3b82f6" }}>📞 {row.phone}</div>
+                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 13, fontWeight: 700, color: textSecondary }}>{row.type}</td>
+                        <td style={{ padding: "16px 10px", verticalAlign: "middle" }}>
+                          <div style={{ fontWeight: 700, color: textPrimary, fontSize: 14, marginBottom: 4 }}>{row.addr}</div>
+                          <div style={{ fontSize: 13, color: textSecondary }}>{row.phone}</div>
                         </td>
-                        <td style={{ padding: "14px 10px", textAlign: "center", verticalAlign: "top" }}>
-                          <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 4, fontSize: 12, fontWeight: 700, color: "#fff", background: "#ef4444" }}>{row.deal} {row.price}</span>
+                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
+                          <span style={{ color: darkMode ? "#fca5a5" : "#ef4444", fontWeight: 500, fontSize: 13 }}>{row.deal} {row.price}</span>
                         </td>
-                        <td style={{ padding: "14px 10px", textAlign: "center", verticalAlign: "top", fontSize: 12, color: textSecondary }}>{row.rooms}</td>
-                        <td style={{ padding: "14px 10px", textAlign: "center", verticalAlign: "top", fontSize: 12, color: textSecondary }}>{row.date}</td>
-                        <td style={{ padding: "14px 10px", textAlign: "center", verticalAlign: "top" }}>
-                          <div style={{ fontWeight: 600, fontSize: 12, color: textPrimary }}>{row.owner}</div>
-                          <div style={{ fontSize: 11, color: "#3b82f6" }}>{row.ownerPhone}</div>
+                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 13, color: textSecondary }}>{row.rooms}</td>
+                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 13, color: textSecondary }}>{row.date}</td>
+                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
+                          <div style={{ fontWeight: 700, fontSize: 13, color: textPrimary, marginBottom: 2 }}>{row.owner}</div>
+                          <div style={{ fontSize: 12, color: textSecondary }}>{row.ownerPhone}</div>
                         </td>
-                        <td style={{ padding: "14px 10px", textAlign: "center", verticalAlign: "top" }}>
+                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
                           <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
-                            <button style={{ height: 30, padding: "0 12px", background: "#4b5563", color: "#fff", border: "none", borderRadius: 4, fontSize: 11, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
+                            <button style={{ height: 30, padding: "0 12px", background: darkMode ? "#374151" : "#4b5563", color: "#fff", border: "none", borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
                               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                               수정
                             </button>
-                            <button style={{ height: 30, padding: "0 12px", background: darkMode ? "#2c2d31" : "#fff", color: "#9ca3af", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 4, fontSize: 11, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
+                            <button style={{ height: 30, padding: "0 12px", background: darkMode ? "#2c2d31" : "#fff", color: activeMenu === "dormant" ? "#ef4444" : "#9ca3af", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
                               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                               삭제
                             </button>

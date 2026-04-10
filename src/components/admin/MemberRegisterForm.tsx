@@ -17,7 +17,8 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
     name: "",
     phone: "",
     role: "일반회원",
-    created_at: ""
+    created_at: "",
+    memberNumber: ""
   });
 
   const [agencyData, setAgencyData] = useState({
@@ -81,7 +82,8 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
             name: res.member.name || "",
             phone: res.member.phone || "",
             role: roleMap[res.member.role] || "일반회원",
-            created_at: res.member.created_at ? new Date(res.member.created_at).toISOString().split('T')[0] : ""
+            created_at: res.member.created_at ? new Date(res.member.created_at).toISOString().split('T')[0] : "",
+            memberNumber: res.member.memberNumber || ""
           });
           if (res.agency) {
             setAgencyData({
@@ -287,7 +289,9 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
         <div style={rowStyle}>
           <div style={labelStyle}>회원번호</div>
           <div style={contentStyle}>
-            <span style={{ fontSize: 14, color: darkMode ? "#9ca3af" : "#6b7280" }}>[자동 부여]</span>
+            <span style={{ fontSize: 14, color: darkMode ? "#9ca3af" : "#6b7280" }}>
+              {editMemberId ? formData.memberNumber : "[자동 부여]"}
+            </span>
           </div>
         </div>
 
