@@ -399,18 +399,18 @@ export default function AdminPage() {
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 1100 }}>
                   <thead>
                     <tr style={{ background: darkMode ? "#2c2d31" : "#f9fafb" }}>
-                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${border}`, width: 40 }}>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 40 }}>
                         <input type="checkbox" style={{ accentColor: "#3b82f6" }} />
                       </th>
-                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${border}`, width: 90 }}>번호</th>
-                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${border}`, width: 90 }}>광고설정</th>
-                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${border}`, width: 90 }}>매물종류</th>
-                      <th style={{ padding: "12px 10px", textAlign: "left", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${border}` }}>주소 / 연락처</th>
-                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${border}`, width: 110 }}>금액</th>
-                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${border}`, width: 130 }}>방수/면적(m²)/층</th>
-                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${border}`, width: 70 }}>최초등록</th>
-                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${border}`, width: 120 }}>등록자/연락처</th>
-                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${border}`, width: 120 }}>관리</th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 90 }}>번호</th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 90 }}>광고설정</th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 90 }}>매물종류</th>
+                      <th style={{ padding: "12px 10px", textAlign: "left", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 300 }}>주소 / 연락처</th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 110 }}>금액</th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 130 }}>방수/면적(m²)/층</th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 70 }}>최초등록</th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 120 }}>등록자/연락처</th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 120 }}>관리</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -429,27 +429,27 @@ export default function AdminPage() {
                         <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
                           <input type="checkbox" style={{ accentColor: "#3b82f6" }} />
                         </td>
-                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 13, color: textSecondary }}>
+                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>
                           <div style={{ fontWeight: 700 }}>1</div>
-                          <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 2 }}>{row.id}</div>
+                          <div style={{ fontSize: 13, color: "#9ca3af", marginTop: 2 }}>{row.id}</div>
                         </td>
                         <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
-                          <span style={{ display: "inline-block", padding: "4px 8px", borderRadius: 4, background: darkMode ? "#1a2e1a" : "#d1fae5", color: darkMode ? "#4ade80" : "#065f46", fontWeight: 700, fontSize: 12 }}>{row.adLabel}</span>
-                          <div style={{ fontSize: 12, color: textSecondary, marginTop: 4, fontWeight: 600 }}>{row.adDays}</div>
+                          <span style={{ display: "inline-block", padding: "4px 8px", borderRadius: 4, background: darkMode ? "#1a2e1a" : "#d1fae5", color: darkMode ? "#4ade80" : "#065f46", fontWeight: 700, fontSize: 13 }}>{row.adLabel}</span>
+                          <div style={{ fontSize: 13, color: textSecondary, marginTop: 4, fontWeight: 600 }}>{row.adDays}</div>
                         </td>
-                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 13, fontWeight: 700, color: textSecondary }}>{row.type}</td>
+                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 15, fontWeight: 600, color: textPrimary }}>{row.type}</td>
                         <td style={{ padding: "16px 10px", verticalAlign: "middle" }}>
-                          <div style={{ fontWeight: 700, color: textPrimary, fontSize: 14, marginBottom: 4 }}>{row.addr}</div>
-                          <div style={{ fontSize: 13, color: textSecondary }}>{row.phone}</div>
+                          <div style={{ fontWeight: 700, color: textPrimary, fontSize: 15, marginBottom: 4 }}>{row.addr}</div>
+                          <div style={{ fontSize: 14, color: textSecondary }}>{row.phone}</div>
                         </td>
                         <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
-                          <span style={{ color: darkMode ? "#fca5a5" : "#ef4444", fontWeight: 500, fontSize: 13 }}>{row.deal} {row.price}</span>
+                          <span style={{ color: darkMode ? "#fca5a5" : "#ef4444", fontWeight: 600, fontSize: 15 }}>{row.deal} {row.price}</span>
                         </td>
-                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 13, color: textSecondary }}>{row.rooms}</td>
-                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 13, color: textSecondary }}>{row.date}</td>
+                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>{row.rooms}</td>
+                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>{row.date}</td>
                         <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
-                          <div style={{ fontWeight: 700, fontSize: 13, color: textPrimary, marginBottom: 2 }}>{row.owner}</div>
-                          <div style={{ fontSize: 12, color: textSecondary }}>{row.ownerPhone}</div>
+                          <div style={{ fontWeight: 700, fontSize: 15, color: textPrimary, marginBottom: 2 }}>{row.owner}</div>
+                          <div style={{ fontSize: 14, color: textSecondary }}>{row.ownerPhone}</div>
                         </td>
                         <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
                           <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
@@ -515,15 +515,32 @@ export default function AdminPage() {
                   </select>
                 </div>
                 <input type="text" placeholder="검색어를 입력하세요." style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", flex: 1, minWidth: 180 }} />
-                <button style={{ height: 36, padding: "0 18px", background: darkMode ? "#2c2d31" : "#374151", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>🔍 검색</button>
+                <button style={{ height: 36, padding: "0 18px", background: darkMode ? "#2c2d31" : "#374151", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                  </svg>
+                  검색
+                </button>
                 <button style={{ height: 36, padding: "0 14px", background: darkMode ? "#2c2d31" : "#fff", color: textSecondary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>초기화</button>
               </div>
 
               {/* 액션 버튼 영역 */}
               <div style={{ padding: "16px 24px", borderBottom: `1px solid ${border}`, display: "flex", gap: 10, alignItems: "center" }}>
                 <button onClick={() => window.location.href = "/admin/news_write"} style={{ height: 36, padding: "0 16px", background: "#f59e0b", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>+ 기사쓰기</button>
-                <button style={{ height: 36, padding: "0 16px", background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>⭐ 광고순위갱신</button>
-                <button style={{ height: 36, padding: "0 16px", background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>🗑 선택삭제</button>
+                <button style={{ height: 36, padding: "0 16px", background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 6.91 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                  광고순위갱신
+                </button>
+                <button style={{ height: 36, padding: "0 16px", background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    <line x1="10" y1="11" x2="10" y2="17"></line>
+                    <line x1="14" y1="11" x2="14" y2="17"></line>
+                  </svg>
+                  선택삭제
+                </button>
               </div>
 
               {/* 데이터 테이블 */}
@@ -531,17 +548,17 @@ export default function AdminPage() {
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 1100 }}>
                   <thead>
                     <tr style={{ background: darkMode ? "#2c2d31" : "#f9fafb" }}>
-                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#111"}`, width: 40 }}>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 40 }}>
                         <input type="checkbox" style={{ accentColor: "#3b82f6" }} />
                       </th>
-                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#111"}`, width: 80 }}>기사번호</th>
-                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#111"}`, width: 80 }}>진행상황</th>
-                      <th style={{ padding: "12px 10px", textAlign: "left", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#111"}` }}>기사명</th>
-                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#111"}`, width: 120 }}>1차섹션</th>
-                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#111"}`, width: 120 }}>2차섹션</th>
-                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#111"}`, width: 140 }}>승인일자</th>
-                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#111"}`, width: 110 }}>작성자 / 연락처</th>
-                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#111"}`, width: 120 }}>관리</th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 90 }}>기사번호</th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 90 }}>진행상황</th>
+                      <th style={{ padding: "12px 10px", textAlign: "left", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 300 }}>기사명</th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 120 }}>1차섹션</th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 120 }}>2차섹션</th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 140 }}>승인일자</th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 110 }}>작성자 / 연락처</th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 120 }}>관리</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -559,29 +576,29 @@ export default function AdminPage() {
                         onMouseEnter={(e) => { e.currentTarget.style.background = darkMode ? "#2c2d31" : "#fafbfc"; }}
                         onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
                       >
-                        <td style={{ padding: "14px 10px", textAlign: "center", verticalAlign: "middle" }}>
+                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
                           <input type="checkbox" style={{ accentColor: "#3b82f6" }} />
                         </td>
-                        <td style={{ padding: "14px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 13, fontWeight: 600, color: textPrimary }}>{row.no}</td>
-                        <td style={{ padding: "14px 10px", textAlign: "center", verticalAlign: "middle" }}>
-                          <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 4, fontSize: 11, fontWeight: 700, color: "#fff", background: "#17a2b8" }}>{row.status}</span>
-                          <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 3 }}>{row.statusDate}</div>
+                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, fontWeight: 600, color: textPrimary }}>{row.no}</td>
+                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
+                          <span style={{ display: "inline-block", padding: "4px 8px", borderRadius: 4, fontSize: 13, fontWeight: 700, color: darkMode ? "#bae6fd" : "#0369a1", background: darkMode ? "#0a2638" : "#e0f2fe" }}>{row.status}</span>
+                          <div style={{ fontSize: 13, color: textSecondary, marginTop: 4, fontWeight: 600 }}>{row.statusDate}</div>
                         </td>
-                        <td style={{ padding: "14px 10px", verticalAlign: "middle", fontWeight: 600, color: textPrimary, fontSize: 13, maxWidth: 350, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.title}</td>
-                        <td style={{ padding: "14px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 12, color: textSecondary }}>{row.section1}</td>
-                        <td style={{ padding: "14px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 12, color: textSecondary }}>{row.section2}</td>
-                        <td style={{ padding: "14px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 12, color: textSecondary }}>{row.approved}</td>
-                        <td style={{ padding: "14px 10px", textAlign: "center", verticalAlign: "middle" }}>
-                          <span style={{ fontSize: 11, color: "#ef4444", fontWeight: 700 }}>관리자</span>{" "}
-                          <span style={{ fontSize: 12, fontWeight: 600, color: textPrimary }}>{row.author}</span>
+                        <td style={{ padding: "16px 10px", verticalAlign: "middle", fontWeight: 700, color: textPrimary, fontSize: 15, maxWidth: 350, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.title}</td>
+                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>{row.section1}</td>
+                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>{row.section2}</td>
+                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>{row.approved}</td>
+                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
+                          <span style={{ fontSize: 13, color: "#ef4444", fontWeight: 700 }}>관리자</span>{" "}
+                          <span style={{ fontSize: 15, fontWeight: 600, color: textPrimary }}>{row.author}</span>
                         </td>
-                        <td style={{ padding: "14px 10px", textAlign: "center", verticalAlign: "middle" }}>
+                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
                           <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
-                            <button style={{ height: 30, padding: "0 12px", background: "#4b5563", color: "#fff", border: "none", borderRadius: 4, fontSize: 11, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
+                            <button style={{ height: 30, padding: "0 12px", background: "#4b5563", color: "#fff", border: "none", borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
                               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                               수정
                             </button>
-                            <button style={{ height: 30, padding: "0 12px", background: darkMode ? "#2c2d31" : "#fff", color: "#9ca3af", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 4, fontSize: 11, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
+                            <button style={{ height: 30, padding: "0 12px", background: darkMode ? "#2c2d31" : "#fff", color: "#9ca3af", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
                               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                               삭제
                             </button>
@@ -619,11 +636,11 @@ export default function AdminPage() {
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 900 }}>
                   <thead>
                     <tr>
-                      <th style={{ padding: "14px 20px", textAlign: "left", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 100 }}>고유 ID</th>
-                      <th style={{ padding: "14px 20px", textAlign: "left", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 260 }}>게시판명</th>
-                      <th style={{ padding: "14px 20px", textAlign: "left", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 200 }}>스킨 테마 설정</th>
-                      <th style={{ padding: "14px 20px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 160 }}>권한 설정 (목록/읽기/쓰기)</th>
-                      <th style={{ padding: "14px 20px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}` }}>관리 액션</th>
+                      <th style={{ padding: "14px 20px", textAlign: "left", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 100 }}>고유 ID</th>
+                      <th style={{ padding: "14px 20px", textAlign: "left", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 260 }}>게시판명</th>
+                      <th style={{ padding: "14px 20px", textAlign: "left", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 200 }}>스킨 테마 설정</th>
+                      <th style={{ padding: "14px 20px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 160 }}>권한 설정 (목록/읽기/쓰기)</th>
+                      <th style={{ padding: "14px 20px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}` }}>관리 액션</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -638,39 +655,36 @@ export default function AdminPage() {
                         onMouseEnter={(e) => { e.currentTarget.style.background = darkMode ? "#2c2d31" : "#fafbfc"; }}
                         onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
                       >
-                        <td style={{ padding: "18px 20px", verticalAlign: "middle", fontSize: 13, color: textSecondary, fontFamily: "monospace" }}>{row.id}</td>
-                        <td style={{ padding: "18px 20px", verticalAlign: "middle" }}>
-                          <span style={{ fontWeight: 700, color: textPrimary, fontSize: 14 }}>{row.name}</span>
-                          <span style={{ fontSize: 12, color: "#9ca3af", marginLeft: 6 }}>{row.desc}</span>
+                        <td style={{ padding: "16px 20px", verticalAlign: "middle", fontSize: 14, color: textSecondary, fontFamily: "monospace" }}>{row.id}</td>
+                        <td style={{ padding: "16px 20px", verticalAlign: "middle" }}>
+                          <span style={{ fontWeight: 700, color: textPrimary, fontSize: 15 }}>{row.name}</span>
+                          <span style={{ fontSize: 13, color: textSecondary, marginLeft: 6 }}>{row.desc}</span>
                         </td>
-                        <td style={{ padding: "18px 20px", verticalAlign: "middle" }}>
+                        <td style={{ padding: "16px 20px", verticalAlign: "middle" }}>
                           <span style={{
                             display: "inline-flex", alignItems: "center", gap: 6,
-                            padding: "5px 12px", borderRadius: 6, fontSize: 12, fontWeight: 600,
-                            background: row.skinType === "file" ? (darkMode ? "#1a2e1a" : "#f0fdf4") : (darkMode ? "#1e1a2e" : "#f5f3ff"),
-                            color: row.skinType === "file" ? "#16a34a" : "#7c3aed",
-                            border: `1px solid ${row.skinType === "file" ? (darkMode ? "#166534" : "#bbf7d0") : (darkMode ? "#5b21b6" : "#ddd6fe")}`
+                            fontSize: 14, fontWeight: 500, color: textSecondary
                           }}>
                             {row.skinType === "file" ? (
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                             ) : (
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="2" x2="17" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line><line x1="2" y1="7" x2="7" y2="7"></line><line x1="2" y1="17" x2="7" y2="17"></line><line x1="17" y1="17" x2="22" y2="17"></line><line x1="17" y1="7" x2="22" y2="7"></line></svg>
                             )}
                             {row.skin}
                           </span>
                         </td>
-                        <td style={{ padding: "18px 20px", textAlign: "center", verticalAlign: "middle", fontSize: 13, fontWeight: 600, color: textPrimary }}>{row.perm}</td>
-                        <td style={{ padding: "18px 20px", textAlign: "center", verticalAlign: "middle" }}>
+                        <td style={{ padding: "16px 20px", textAlign: "center", verticalAlign: "middle", fontSize: 15, fontWeight: 600, color: textSecondary }}>{row.perm}</td>
+                        <td style={{ padding: "16px 20px", textAlign: "center", verticalAlign: "middle" }}>
                           <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
-                            <button style={{ height: 30, padding: "0 12px", background: "#4b5563", color: "#fff", border: "none", borderRadius: 4, fontSize: 11, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
+                            <button style={{ height: 30, padding: "0 12px", background: "#4b5563", color: "#fff", border: "none", borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
                               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                               설정
                             </button>
-                            <button style={{ height: 30, padding: "0 12px", background: darkMode ? "#2c2d31" : "#fff", color: "#6b7280", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 4, fontSize: 11, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
+                            <button style={{ height: 30, padding: "0 12px", background: darkMode ? "#2c2d31" : "#fff", color: "#6b7280", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
                               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                               미리보기
                             </button>
-                            <button style={{ height: 30, padding: "0 12px", background: darkMode ? "#2c2d31" : "#fff", color: "#9ca3af", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 4, fontSize: 11, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
+                            <button style={{ height: 30, padding: "0 12px", background: darkMode ? "#2c2d31" : "#fff", color: "#9ca3af", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
                               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                               삭제
                             </button>
@@ -706,14 +720,28 @@ export default function AdminPage() {
                   </select>
                 </div>
                 <input type="text" placeholder="강의명을 검색하세요." style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", flex: 1, minWidth: 180 }} />
-                <button style={{ height: 36, padding: "0 18px", background: darkMode ? "#2c2d31" : "#374151", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>🔍 검색</button>
+                <button style={{ height: 36, padding: "0 18px", background: darkMode ? "#2c2d31" : "#374151", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                  </svg>
+                  검색
+                </button>
                 <button style={{ height: 36, padding: "0 14px", background: darkMode ? "#2c2d31" : "#fff", color: textSecondary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>초기화</button>
               </div>
 
               {/* 액션 버튼 영역 */}
               <div style={{ padding: "16px 24px", borderBottom: `1px solid ${border}`, display: "flex", gap: 10, alignItems: "center" }}>
                 <button style={{ height: 36, padding: "0 16px", background: "#f59e0b", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>+ 새 강의 등록</button>
-                <button style={{ height: 36, padding: "0 16px", background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>🗑 선택삭제</button>
+                <button style={{ height: 36, padding: "0 16px", background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    <line x1="10" y1="11" x2="10" y2="17"></line>
+                    <line x1="14" y1="11" x2="14" y2="17"></line>
+                  </svg>
+                  선택삭제
+                </button>
               </div>
 
               {/* 데이터 테이블 */}
@@ -721,14 +749,14 @@ export default function AdminPage() {
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 900 }}>
                   <thead>
                     <tr style={{ background: darkMode ? "#2c2d31" : "#f9fafb" }}>
-                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#111"}`, width: 40 }}>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 40 }}>
                         <input type="checkbox" style={{ accentColor: "#3b82f6" }} />
                       </th>
-                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#111"}`, width: 80 }}>공개상태</th>
-                      <th style={{ padding: "12px 10px", textAlign: "left", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#111"}` }}>강의명</th>
-                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#111"}`, width: 120 }}>수강료(포인트)</th>
-                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#111"}`, width: 180 }}>최초등록일</th>
-                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 12, borderBottom: `2px solid ${darkMode ? "#555" : "#111"}`, width: 100 }}>관리</th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 80 }}>공개상태</th>
+                      <th style={{ padding: "12px 10px", textAlign: "left", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}` }}>강의명</th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 120 }}>수강료(포인트)</th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 180 }}>최초등록일</th>
+                      <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 100 }}>관리</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -744,22 +772,22 @@ export default function AdminPage() {
                         onMouseEnter={(e) => { e.currentTarget.style.background = darkMode ? "#2c2d31" : "#fafbfc"; }}
                         onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
                       >
-                        <td style={{ padding: "14px 10px", textAlign: "center", verticalAlign: "middle" }}>
+                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
                           <input type="checkbox" style={{ accentColor: "#3b82f6" }} />
                         </td>
-                        <td style={{ padding: "14px 10px", textAlign: "center", verticalAlign: "middle" }}>
-                          <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 4, fontSize: 11, fontWeight: 700, color: "#92400e", background: "#fef3c7", border: "1px solid #fde68a" }}>{row.status}</span>
+                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
+                          <span style={{ display: "inline-block", padding: "4px 8px", borderRadius: 4, fontSize: 13, fontWeight: 700, color: "#92400e", background: "#fef3c7", border: "1px solid #fde68a" }}>{row.status}</span>
                         </td>
-                        <td style={{ padding: "14px 10px", verticalAlign: "middle", fontWeight: 600, color: textPrimary, fontSize: 13 }}>{row.title}</td>
-                        <td style={{ padding: "14px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 13, fontWeight: 700, color: "#3b82f6" }}>{row.price}</td>
-                        <td style={{ padding: "14px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 12, color: textSecondary }}>{row.date}</td>
-                        <td style={{ padding: "14px 10px", textAlign: "center", verticalAlign: "middle" }}>
+                        <td style={{ padding: "16px 10px", verticalAlign: "middle", fontWeight: 700, color: textPrimary, fontSize: 15 }}>{row.title}</td>
+                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 15, fontWeight: 700, color: "#3b82f6" }}>{row.price}</td>
+                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>{row.date}</td>
+                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
                           <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
-                            <button style={{ height: 30, padding: "0 12px", background: "#4b5563", color: "#fff", border: "none", borderRadius: 4, fontSize: 11, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
+                            <button style={{ height: 30, padding: "0 12px", background: "#4b5563", color: "#fff", border: "none", borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
                               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                               수정
                             </button>
-                            <button style={{ height: 30, padding: "0 12px", background: darkMode ? "#2c2d31" : "#fff", color: "#9ca3af", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 4, fontSize: 11, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
+                            <button style={{ height: 30, padding: "0 12px", background: darkMode ? "#2c2d31" : "#fff", color: "#9ca3af", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
                               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                               삭제
                             </button>
