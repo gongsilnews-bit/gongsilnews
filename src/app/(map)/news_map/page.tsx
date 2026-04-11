@@ -218,7 +218,7 @@ export default function NewsLocalPage() {
                     <span>조회수 {articleDetail.view_count || 0}</span>
                   </div>
                   <div style={{ display: "flex", gap: 16, alignItems: "center", color: "#333", fontSize: 20 }}>
-                    <Link href={`/news_read?article_id=${articleDetail.id}`} style={{ fontSize: 13, fontWeight: "bold", color: "#508bf5", border: "1px solid #508bf5", borderRadius: 20, padding: "4px 14px", textDecoration: "none", transition: "all 0.2s" }}>원문보기</Link>
+                    <Link href={`/news/${articleDetail.id}`} style={{ fontSize: 13, fontWeight: "bold", color: "#508bf5", border: "1px solid #508bf5", borderRadius: 20, padding: "4px 14px", textDecoration: "none", transition: "all 0.2s" }}>원문보기</Link>
                     <span className="meta-icon" title="스크랩">
                       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"></path></svg>
                     </span>
@@ -334,7 +334,7 @@ export default function NewsLocalPage() {
                     {popularArticles.map((item, i) => (
                       <li key={item.id} style={{ display: "flex", fontSize: 14, marginBottom: 16, lineHeight: 1.4, cursor: "pointer" }}>
                         <span style={{ fontWeight: 900, color: "#508bf5", width: 24, flexShrink: 0, fontSize: 15 }}>{i + 1}</span>
-                        <Link href={`/news_read?article_id=${item.id}`} style={{ textDecoration: "none", fontWeight: 600, color: "#555" }}>{item.title}</Link>
+                        <Link href={`/news/${item.id}`} style={{ textDecoration: "none", fontWeight: 600, color: "#555" }}>{item.title}</Link>
                       </li>
                     ))}
                   </ul>

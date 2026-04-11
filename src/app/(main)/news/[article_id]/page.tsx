@@ -1,8 +1,8 @@
 import { getArticleDetail, getArticles } from "@/app/actions/article";
 import NewsReadContent from "@/components/NewsReadContent";
 
-export default async function NewsReadPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
-  const resolvedParams = await searchParams;
+export default async function NewsReadPage({ params }: { params: Promise<{ article_id: string }> }) {
+  const resolvedParams = await params;
   const articleId = typeof resolvedParams.article_id === "string" ? resolvedParams.article_id : null;
 
   // 서버에서 미리 데이터 가져오기 — 즉시 표시!

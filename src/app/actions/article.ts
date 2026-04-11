@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@supabase/supabase-js";
+import { unstable_cache, revalidateTag } from "next/cache";
 
 function getAdminClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -131,22 +132,19 @@ export async function saveArticle(data: {
       await supabase.from("article_keywords").insert(keywordRows);
     }
 
+    // 캐시 무효화 (목록 및 상세 즉시 갱신)
+    // @ts-ignore
+    revalidateTag("articles");
+
     return { success: true, articleId };
   } catch (err: any) {
     return { success: false, error: err.message };
   }
 }
 
-/* ── 기사 목록 조회 ── */
-export async function getArticles(filters?: {
-  status?: string;
-  section1?: string;
-  section2?: string;
-  limit?: number;
-}) {
-  const supabase = getAdminClient();
-
-  try {
+const getArticlesCached = unstable_cache(
+  async (filters?: { status?: string; section1?: string; section2?: string; limit?: number }) => {
+    const supabase = getAdminClient();
     let query = supabase
       .from("articles")
       .select("*, article_keywords(keyword)")
@@ -160,29 +158,39 @@ export async function getArticles(filters?: {
 
     const { data, error } = await query;
     if (error) return { success: false, error: error.message };
-
     return { success: true, data };
-  } catch (err: any) {
-    return { success: false, error: err.message };
-  }
+  },
+  ["articles-list"],
+  { tags: ["articles"], revalidate: 3600 } // 1시간 기본 캐시, 작성 시 무효화
+);
+
+export async function getArticles(filters?: {
+  status?: string;
+  section1?: string;
+  section2?: string;
+  limit?: number;
+}) {
+  return await getArticlesCached(filters);
 }
 
-/* ── 기사 상세 조회 ── */
-export async function getArticleDetail(articleId: string) {
-  const supabase = getAdminClient();
-
-  try {
+/* ── 기사 상세 조회 (캐싱 적용) ── */
+const getArticleDetailCached = unstable_cache(
+  async (articleId: string) => {
+    const supabase = getAdminClient();
     const { data, error } = await supabase
       .from("articles")
       .select("*, article_keywords(keyword), article_media(*)")
       .eq("id", articleId)
       .single();
     if (error) return { success: false, error: error.message };
-
     return { success: true, data };
-  } catch (err: any) {
-    return { success: false, error: err.message };
-  }
+  },
+  ["article-detail"],
+  { tags: ["articles"], revalidate: 3600 }
+);
+
+export async function getArticleDetail(articleId: string) {
+  return await getArticleDetailCached(articleId);
 }
 
 /* ── 기사 미디어 업로드 ── */
@@ -238,6 +246,10 @@ export async function deleteArticle(articleId: string) {
       .update({ is_deleted: true })
       .eq("id", articleId);
     if (error) return { success: false, error: error.message };
+    
+    // @ts-ignore
+    revalidateTag("articles"); // 캐시 무효화
+    
     return { success: true };
   } catch (err: any) {
     return { success: false, error: err.message };
@@ -316,10 +328,16 @@ export async function adminUpdateArticleStatus(articleIds: string[], status: 'AP
         console.warn("❌ reject_reason column missing in DB. Ignoring reject_reason.");
         const { error: fallbackError } = await supabase.from("articles").update({ status }).in("id", articleIds);
         if (fallbackError) return { success: false, error: fallbackError.message };
+        
+        // @ts-ignore
+        revalidateTag("articles"); // 캐시 무효화
         return { success: true };
       }
       return { success: false, error: error.message };
     }
+    
+    // @ts-ignore
+    revalidateTag("articles"); // 캐시 무효화
     return { success: true };
   } catch (err: any) {
     return { success: false, error: err.message };
