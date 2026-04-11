@@ -16,6 +16,7 @@ export default function NewsLocalPage() {
   const [section1, setSection1] = useState("");
   const [section2, setSection2] = useState("");
   const mapRef = React.useRef<HTMLDivElement>(null);
+  const [mapError, setMapError] = useState<string | null>(null);
   const kakaoMapRef = React.useRef<any>(null);
   const markersRef = React.useRef<any[]>([]);
 
@@ -164,6 +165,9 @@ export default function NewsLocalPage() {
         const kakaoApiKey = process.env.NEXT_PUBLIC_KAKAO_APP_KEY || "535b712ad15df457168dcab800fcb4aa";
         script.id = "kakao-map-script";
         script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoApiKey}&libraries=services&autoload=false`;
+        script.onerror = () => {
+          setMapError("카카오맵 JS 키가 유효하지 않거나 등록되지 않았습니다.");
+        };
         document.head.appendChild(script);
         script.onload = loadKakaoMap;
       } else {
@@ -502,6 +506,13 @@ export default function NewsLocalPage() {
 
           {/* 지도 영역 */}
           <div ref={mapRef} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", background: "#e8eaed" }}>
+            {mapError && (
+              <div style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", background: "#ffefef", color: "#d32f2f", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, zIndex: 10 }}>
+                <span style={{ fontSize: 40 }}>⚠️</span>
+                <span style={{ fontSize: 16, fontWeight: "bold" }}>지도 로드 오류</span>
+                <span style={{ fontSize: 14 }}>{mapError}</span>
+              </div>
+            )}
           </div>
         </div>
       </main>
