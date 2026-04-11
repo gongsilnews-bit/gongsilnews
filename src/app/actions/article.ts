@@ -41,7 +41,10 @@ export async function saveArticle(data: {
     const statusMap: Record<string, string> = {
       "작성중": "DRAFT",
       "승인신청": "PENDING",
+      "승인": "APPROVED",
+      "광고중": "APPROVED",
       "반려": "REJECTED",
+      "삭제": "DELETED",
     };
     const formTypeMap: Record<string, string> = {
       "일반": "NORMAL",
@@ -294,7 +297,7 @@ export async function togglePhotoFavorite(mediaId: string, isFavorite: boolean) 
 }
 
 /* ── 관리자 기사 일괄 상태 수정 ── */
-export async function adminUpdateArticleStatus(articleIds: string[], status: 'PUBLISHED' | 'REJECTED' | 'DRAFT' | 'PENDING', reject_reason?: string) {
+export async function adminUpdateArticleStatus(articleIds: string[], status: 'APPROVED' | 'REJECTED' | 'DRAFT' | 'PENDING', reject_reason?: string) {
   const supabase = getAdminClient();
 
   try {

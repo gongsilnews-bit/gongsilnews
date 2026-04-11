@@ -1154,7 +1154,7 @@ export default function AdminPage() {
                 <button onClick={async () => {
                   if (checkedArticleIds.length === 0) { alert("승인할 기사를 선택하세요."); return; }
                   if (confirm(`선택한 ${checkedArticleIds.length}건의 기사를 일괄 승인(발행)하시겠습니까?`)) {
-                    const res = await adminUpdateArticleStatus(checkedArticleIds, 'PUBLISHED');
+                    const res = await adminUpdateArticleStatus(checkedArticleIds, 'APPROVED');
                     if (res.success) {
                       getArticles().then(r => setDbArticles(r.data || []));
                       setCheckedArticleIds([]);
@@ -1188,7 +1188,7 @@ export default function AdminPage() {
                             const filtered = dbArticles.filter(a => {
                               if (articleFilter === "전체") return true;
                               if (articleFilter === "승인대기") return a.status === 'PENDING';
-                              if (articleFilter === "발행됨") return a.status === 'PUBLISHED';
+                              if (articleFilter === "발행됨") return a.status === 'APPROVED';
                               if (articleFilter === "작성중") return a.status === 'DRAFT';
                               if (articleFilter === "반려") return a.status === 'REJECTED';
                               return true;
@@ -1210,7 +1210,7 @@ export default function AdminPage() {
                       const filtered = dbArticles.filter(a => {
                         if (articleFilter === "전체") return true;
                         if (articleFilter === "승인대기") return a.status === 'PENDING';
-                        if (articleFilter === "발행됨") return a.status === 'PUBLISHED';
+                        if (articleFilter === "발행됨") return a.status === 'APPROVED';
                         if (articleFilter === "작성중") return a.status === 'DRAFT';
                         if (articleFilter === "반려") return a.status === 'REJECTED';
                         return true;
@@ -1232,7 +1232,7 @@ export default function AdminPage() {
                           </td>
                           <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
                             {a.status === 'PENDING' && <span style={{ padding: "4px 8px", background: "#8b5cf6", color: "#fff", borderRadius: 4, fontSize: 12, fontWeight: 700 }}>승인대기</span>}
-                            {a.status === 'PUBLISHED' && <span style={{ padding: "4px 8px", background: "#10b981", color: "#fff", borderRadius: 4, fontSize: 12, fontWeight: 700 }}>발행됨</span>}
+                            {a.status === 'APPROVED' && <span style={{ padding: "4px 8px", background: "#10b981", color: "#fff", borderRadius: 4, fontSize: 12, fontWeight: 700 }}>발행됨</span>}
                             {a.status === 'REJECTED' && <span style={{ padding: "4px 8px", background: "#ef4444", color: "#fff", borderRadius: 4, fontSize: 12, fontWeight: 700 }}>반려됨</span>}
                             {a.status === 'DRAFT' && <span style={{ padding: "4px 8px", background: "#9ca3af", color: "#fff", borderRadius: 4, fontSize: 12, fontWeight: 700 }}>작성중</span>}
                           </td>

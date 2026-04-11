@@ -7,7 +7,7 @@ import { geocodeAddress } from "@/app/actions/geocode";
 import { createClient } from "@/utils/supabase/client";
 
 /* ─── 타입 ─── */
-type StatusType = "DRAFT" | "PENDING" | "PUBLISHED" | "REJECTED" | string;
+type StatusType = "DRAFT" | "PENDING" | "APPROVED" | "REJECTED" | string;
 type FormType = "일반" | "카드뉴스" | "갤러리";
 
 import AdminSidebar from "@/components/admin/AdminSidebar";
@@ -1580,7 +1580,7 @@ export default function NewsWritePage() {
             {/* ── 저장완료 버튼 영역 (권한 분기) ── */}
             {currentUserRole === 'ADMIN' ? (
               <div style={{ display: 'flex', gap: 8 }}>
-                <button type="button" disabled={saving} onClick={async () => { setStatus('PUBLISHED'); await handleSave('PUBLISHED'); }}
+                <button type="button" disabled={saving} onClick={async () => { setStatus('APPROVED'); await handleSave('APPROVED'); }}
                   style={{ flex: 1, padding: "16px 0", background: saving ? "#9ca3af" : "#10b981", color: "#fff", border: "none", borderRadius: 8, fontSize: 16, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer" }}>
                   {saving ? "⏳ 처리 중..." : "✓ 승인 (바로 발행)"}
                 </button>
