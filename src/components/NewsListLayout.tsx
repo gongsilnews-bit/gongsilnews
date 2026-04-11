@@ -5,6 +5,7 @@ import Link from "next/link";
 
 interface Article {
   id: string;
+  article_no?: number;
   title: string;
   subtitle?: string;
   content?: string;
