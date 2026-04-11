@@ -75,14 +75,15 @@ export default function NewsLocalPage() {
     fetchArticles();
   }, [section1, section2]);
 
-  // 기사 선택 시 상세 가져오기
-  const handleSelectArticle = async (id: string) => {
-    if (activeArticleId === id && showDetail) {
-      setShowDetail(false);
-      return;
-    }
+  // 기사 선택 시 상세 가져오기 (리스트 영역용)
+  const handleSelectArticle = async (id: string, forceShowDetail = false) => {
     setActiveArticleId(id);
-    setShowDetail(true);
+    
+    // 강제로 열어야 할 경우 열기
+    if (forceShowDetail) {
+      setShowDetail(true);
+    }
+
     setArticleDetail(null);
     const res = await getArticleDetail(id);
     if (res.success && res.data) {
@@ -181,7 +182,17 @@ export default function NewsLocalPage() {
                   </div>
                   <div style={{ fontSize: 12, color: "#999", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <span>{formatDate(item.published_at || item.created_at)} · {item.author_name || "공실뉴스"}</span>
-                    <span style={{ color: isActiveAndShowing ? "#d32f2f" : "#3b82f6", fontSize: 12, fontWeight: "bold" }}>
+                    <span 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (isActiveAndShowing) {
+                          setShowDetail(false);
+                        } else {
+                          handleSelectArticle(item.id, true);
+                        }
+                      }}
+                      style={{ color: isActiveAndShowing ? "#d32f2f" : "#3b82f6", fontSize: 12, fontWeight: "bold", cursor: "pointer", zIndex: 10 }}
+                    >
                       {isActiveAndShowing ? "기사닫기 X" : "기사상세보기 >"}
                     </span>
                   </div>
@@ -192,10 +203,45 @@ export default function NewsLocalPage() {
         </aside>
 
         {/* 지도 + 기사 상세 래퍼 */}
-        <div style={{ flex: 1, height: "100%", position: "relative", minWidth: 0, background: "#eee" }}>
-          {/* 기사 상세 뷰 (플로팅) */}
-          {showDetail && articleDetail && (
-            <div style={{ position: "absolute", top: 0, left: 0, width: 750, maxWidth: "100%", height: "100%", borderRight: "1px solid #ddd", boxShadow: "5px 0 20px rgba(0,0,0,0.1)", background: "#fff", zIndex: 2000, overflowY: "auto", animation: "fadeIn 0.2s ease" }}>
+        <div style={{ flex: 1, height: "100%", position: "relative", minWidth: 0, background: "#eee", overflow: "hidden" }}>
+          {/* 가상 마커 (말풍선 시뮬레이터) - 지도가 들어갈 구역 */}
+          {activeArticleId && articleDetail && !showDetail && (
+            <div style={{
+              position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 50,
+              background: "#fff", padding: "16px 20px", borderRadius: 12, boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
+              border: "1px solid #ddd", width: 340, animation: "fadeIn 0.2s ease"
+            }}>
+              <h3 style={{ fontSize: 18, fontWeight: 800, color: "#111", marginBottom: 8, lineHeight: 1.3, wordBreak: "keep-all" }}>
+                {articleDetail.title}
+              </h3>
+              <p style={{ fontSize: 13, color: "#666", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", marginBottom: 12 }}>
+                {articleDetail.subtitle || stripHtml(articleDetail.content || "").slice(0, 100)}
+              </p>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #eee", paddingTop: 12 }}>
+                <span style={{ fontSize: 12, color: "#999" }}>{formatDate(articleDetail.published_at || articleDetail.created_at)}</span>
+                <button 
+                  onClick={() => setShowDetail(true)}
+                  style={{ background: "#508bf5", color: "#fff", border: "none", borderRadius: 20, padding: "5px 12px", fontSize: 12, fontWeight: "bold", cursor: "pointer", transition: "all 0.2s" }}
+                >
+                  기사 보러가기 ➔
+                </button>
+              </div>
+              {/* 말풍선 꼬리 */}
+              <div style={{ position: "absolute", bottom: -10, left: "50%", transform: "translateX(-50%)", width: 0, height: 0, borderLeft: "10px solid transparent", borderRight: "10px solid transparent", borderTop: "10px solid #fff" }}></div>
+            </div>
+          )}
+
+          {/* 기사 상세 뷰 (플로팅 - 좌 ➔ 우 애니메이션) */}
+          {articleDetail && (
+            <div style={{ 
+              position: "absolute", top: 0, left: 0, width: 750, maxWidth: "100%", height: "100%", 
+              borderRight: "1px solid #ddd", boxShadow: "5px 0 30px rgba(0,0,0,0.15)", background: "#fff", 
+              zIndex: 2000, overflowY: "auto", 
+              transform: showDetail ? "translateX(0)" : "translateX(-100%)",
+              opacity: showDetail ? 1 : 0,
+              visibility: showDetail ? "visible" : "hidden",
+              transition: "transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease, visibility 0.4s"
+            }}>
               <div style={{ maxWidth: 1200, margin: "0 auto", padding: "20px 40px 40px", position: "relative" }}>
                 {/* X 닫기 버튼 */}
                 <button onClick={() => setShowDetail(false)} style={{ position: "absolute", top: -10, right: 0, background: "none", border: "none", fontSize: 32, color: "#999", cursor: "pointer", padding: 10, lineHeight: 1, zIndex: 10, transition: "color 0.15s" }} title="닫기">✕</button>
@@ -343,9 +389,11 @@ export default function NewsLocalPage() {
             </div>
           )}
 
-          {/* 기사 상세 로딩 중 */}
-          {showDetail && !articleDetail && (
-            <div style={{ position: "absolute", top: 0, left: 0, width: 750, maxWidth: "100%", height: "100%", background: "#fff", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", color: "#999", fontSize: 16 }}>
+          {/* 기사 상세 뷰 (래퍼 종료) */}
+          
+          {/* 기사 로딩 상태 표시창 추가 */}
+          {activeArticleId && showDetail && !articleDetail && (
+            <div style={{ position: "absolute", top: 0, left: 0, width: 750, maxWidth: "100%", height: "100%", background: "#fff", zIndex: 1999, display: "flex", alignItems: "center", justifyContent: "center", color: "#999", fontSize: 16 }}>
               기사를 불러오는 중...
             </div>
           )}
