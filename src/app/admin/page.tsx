@@ -5,6 +5,7 @@ import VacancyRegisterForm from "@/components/admin/VacancyRegisterForm";
 import MemberRegisterForm from "@/components/admin/MemberRegisterForm";
 import { adminGetMembers, adminSoftDeleteMember, adminRestoreMember, adminHardDeleteMember } from "./actions";
 import { getArticles } from "@/app/actions/article";
+import { getBoards, deleteBoard } from "@/app/actions/board";
 import { createClient } from "@/utils/supabase/client";
 
 /* ──────────────────────────────────────────────
@@ -91,6 +92,7 @@ export default function AdminPage() {
   const [checkedMemberIds, setCheckedMemberIds] = useState<string[]>([]);
   const [dbMembers, setDbMembers] = useState<any[]>([]);
   const [dbArticles, setDbArticles] = useState<any[]>([]);
+  const [dbBoards, setDbBoards] = useState<any[]>([]);
 
   useEffect(() => {
     adminGetMembers().then((res) => {
@@ -100,6 +102,9 @@ export default function AdminPage() {
     });
     getArticles().then(res => {
       if (res.success) setDbArticles(res.data || []);
+    });
+    getBoards().then(res => {
+      if (res.success) setDbBoards(res.data || []);
     });
   }, []);
 
@@ -654,36 +659,31 @@ export default function AdminPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {[
-                      { id: "doc", name: "계약서/양식", desc: "(부동산 계약서외)", skin: "자료실 썸네일형", skinType: "file", perm: "1 / 5 / 9" },
-                      { id: "sound", name: "음원", desc: "(유튜브 전용 음원)", skin: "동영상 앨범형", skinType: "video", perm: "1 / 5 / 9" },
-                      { id: "design", name: "디자인", desc: "(부동산 마케팅 디자인)", skin: "자료실 썸네일형", skinType: "file", perm: "1 / 5 / 9" },
-                      { id: "app", name: "App(앱)", desc: "(부동산마케팅앱)", skin: "자료실 썸네일형", skinType: "file", perm: "1 / 5 / 9" },
-                      { id: "drone", name: "드론영상", desc: "(드론영상고유게시판)", skin: "동영상 앨범형", skinType: "video", perm: "1 / 5 / 9" },
-                    ].map((row, idx) => (
-                      <tr key={idx} style={{ borderBottom: `1px solid ${darkMode ? "#333" : "#f3f4f6"}`, transition: "background 0.15s" }}
+                    {dbBoards.length > 0 ? (
+                      dbBoards.map((row, idx) => {
+                        const skinLabels: Record<string, string> = { FILE_THUMB: "자료실 썸네일형", VIDEO_ALBUM: "동영상 앨범형", LIST: "일반 목록형", GALLERY: "갤러리형" };
+                        const isVideo = row.skin_type === 'VIDEO_ALBUM';
+                        return (
+                      <tr key={row.id || idx} style={{ borderBottom: `1px solid ${darkMode ? "#333" : "#f3f4f6"}`, transition: "background 0.15s" }}
                         onMouseEnter={(e) => { e.currentTarget.style.background = darkMode ? "#2c2d31" : "#fafbfc"; }}
                         onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
                       >
-                        <td style={{ padding: "16px 20px", verticalAlign: "middle", fontSize: 14, color: textSecondary, fontFamily: "monospace" }}>{row.id}</td>
+                        <td style={{ padding: "16px 20px", verticalAlign: "middle", fontSize: 14, color: textSecondary, fontFamily: "monospace" }}>{row.board_id}</td>
                         <td style={{ padding: "16px 20px", verticalAlign: "middle" }}>
                           <span style={{ fontWeight: 700, color: textPrimary, fontSize: 15 }}>{row.name}</span>
-                          <span style={{ fontSize: 13, color: textSecondary, marginLeft: 6 }}>{row.desc}</span>
+                          {row.description && <span style={{ fontSize: 13, color: textSecondary, marginLeft: 6 }}>({row.description})</span>}
                         </td>
                         <td style={{ padding: "16px 20px", verticalAlign: "middle" }}>
-                          <span style={{
-                            display: "inline-flex", alignItems: "center", gap: 6,
-                            fontSize: 14, fontWeight: 500, color: textSecondary
-                          }}>
-                            {row.skinType === "file" ? (
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 14, fontWeight: 500, color: textSecondary }}>
+                            {!isVideo ? (
                               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                             ) : (
                               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="2" x2="17" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line><line x1="2" y1="7" x2="7" y2="7"></line><line x1="2" y1="17" x2="7" y2="17"></line><line x1="17" y1="17" x2="22" y2="17"></line><line x1="17" y1="7" x2="22" y2="7"></line></svg>
                             )}
-                            {row.skin}
+                            {skinLabels[row.skin_type] || row.skin_type}
                           </span>
                         </td>
-                        <td style={{ padding: "16px 20px", textAlign: "center", verticalAlign: "middle", fontSize: 15, fontWeight: 600, color: textSecondary }}>{row.perm}</td>
+                        <td style={{ padding: "16px 20px", textAlign: "center", verticalAlign: "middle", fontSize: 15, fontWeight: 600, color: textSecondary }}>{row.perm_list} / {row.perm_read} / {row.perm_write}</td>
                         <td style={{ padding: "16px 20px", textAlign: "center", verticalAlign: "middle" }}>
                           <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
                             <button style={{ height: 30, padding: "0 12px", background: "#4b5563", color: "#fff", border: "none", borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
@@ -694,14 +694,18 @@ export default function AdminPage() {
                               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                               미리보기
                             </button>
-                            <button style={{ height: 30, padding: "0 12px", background: darkMode ? "#2c2d31" : "#fff", color: "#9ca3af", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
+                            <button onClick={async () => { if (confirm(`'${row.name}' 게시판을 삭제하시겠습니까?`)) { const res = await deleteBoard(row.board_id); if (res.success) setDbBoards(prev => prev.filter(b => b.board_id !== row.board_id)); else alert('삭제 실패: ' + res.error); }}} style={{ height: 30, padding: "0 12px", background: darkMode ? "#2c2d31" : "#fff", color: "#9ca3af", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
                               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                               삭제
                             </button>
                           </div>
                         </td>
                       </tr>
-                    ))}
+                        );
+                      })
+                    ) : (
+                      <tr><td colSpan={5} style={{ color: "#9ca3af", fontSize: 14, textAlign: "center", padding: 40 }}>등록된 게시판이 없습니다.</td></tr>
+                    )}
                   </tbody>
                 </table>
               </div>
