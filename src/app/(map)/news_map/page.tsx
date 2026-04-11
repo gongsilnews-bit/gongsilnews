@@ -107,10 +107,9 @@ export default function NewsLocalPage() {
   useEffect(() => {
     const loadKakaoMap = () => {
       const kakao = (window as any).kakao;
-      if (!mapRef.current) return;
+      if (!kakao || !kakao.maps || !mapRef.current) return;
       
-      if (!kakaoMapRef.current) {
-        // 중심좌표: 첫 기사의 위치 혹은 기본 위치(강남역)
+      const renderMap = () => {
         let initialLat = 37.498095;
         let initialLng = 127.027610;
         
@@ -120,42 +119,64 @@ export default function NewsLocalPage() {
           initialLng = validArt.lng;
         }
 
-        const options = {
-          center: new kakao.maps.LatLng(initialLat, initialLng),
-          level: 5,
-        };
-        kakaoMapRef.current = new kakao.maps.Map(mapRef.current, options);
-      }
+        if (!kakaoMapRef.current) {
+          const options = {
+            center: new kakao.maps.LatLng(initialLat, initialLng),
+            level: 5,
+          };
+          kakaoMapRef.current = new kakao.maps.Map(mapRef.current, options);
+        }
 
-      // 기존 마커 제거
-      markersRef.current.forEach((m: any) => m.setMap(null));
-      markersRef.current = [];
+        // 기존 마커 제거
+        markersRef.current.forEach((m: any) => m.setMap(null));
+        markersRef.current = [];
 
-      // 새 마커 생성
-      articles.forEach(art => {
-        if (!art.lat || !art.lng) return;
-        const position = new kakao.maps.LatLng(art.lat, art.lng);
-        const marker = new kakao.maps.Marker({ position });
-        
-        // 마커 클릭 이벤트
-        kakao.maps.event.addListener(marker, 'click', () => {
-          handleSelectArticle(art.id, false);
+        // 새 마커 생성
+        articles.forEach(art => {
+          if (!art.lat || !art.lng) return;
+          const position = new kakao.maps.LatLng(art.lat, art.lng);
+          const marker = new kakao.maps.Marker({ position });
+          
+          // 마커 클릭 이벤트
+          kakao.maps.event.addListener(marker, 'click', () => {
+            handleSelectArticle(art.id, false);
+          });
+
+          marker.setMap(kakaoMapRef.current);
+          markersRef.current.push(marker);
         });
 
-        marker.setMap(kakaoMapRef.current);
-        markersRef.current.push(marker);
-      });
+        // Vercel 브라우저 사이즈 문제로 회색 화면이 뜨는 버그 방지 (강제 리렌더)
+        setTimeout(() => {
+          if (kakaoMapRef.current) {
+            kakaoMapRef.current.relayout();
+            kakaoMapRef.current.setCenter(new kakao.maps.LatLng(initialLat, initialLng));
+          }
+        }, 500);
+      };
+
+      kakao.maps.load(() => renderMap());
     };
 
     if (!(window as any).kakao || !(window as any).kakao.maps) {
-      const script = document.createElement("script");
-      script.src = "//dapi.kakao.com/v2/maps/sdk.js?appkey=535b712ad15df457168dcab800fcb4aa&libraries=services&autoload=false";
-      document.head.appendChild(script);
-      script.onload = () => {
-        (window as any).kakao.maps.load(() => loadKakaoMap());
-      };
+      if (!document.getElementById("kakao-map-script")) {
+        const script = document.createElement("script");
+        const kakaoApiKey = process.env.NEXT_PUBLIC_KAKAO_APP_KEY || "535b712ad15df457168dcab800fcb4aa";
+        script.id = "kakao-map-script";
+        script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoApiKey}&libraries=services&autoload=false`;
+        document.head.appendChild(script);
+        script.onload = loadKakaoMap;
+      } else {
+        // 스크립트 태그는 있는데 아직 로드가 안 끝난 상태이므로 조금 기다립니다.
+        const checkReady = setInterval(() => {
+          if ((window as any).kakao && (window as any).kakao.maps) {
+            clearInterval(checkReady);
+            loadKakaoMap();
+          }
+        }, 100);
+      }
     } else {
-      (window as any).kakao.maps.load(() => loadKakaoMap());
+      loadKakaoMap();
     }
   }, [articles]);
 
@@ -480,7 +501,7 @@ export default function NewsLocalPage() {
           </div>
 
           {/* 지도 영역 */}
-          <div ref={mapRef} style={{ width: "100%", height: "100%", background: "#e8eaed" }}>
+          <div ref={mapRef} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", background: "#e8eaed" }}>
           </div>
         </div>
       </main>

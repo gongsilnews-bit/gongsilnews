@@ -887,7 +887,8 @@ export default function NewsWritePage() {
     if (showMapModal) {
       if (!(window as any).kakao || !(window as any).kakao.maps) {
         const script = document.createElement("script");
-        script.src = "//dapi.kakao.com/v2/maps/sdk.js?appkey=535b712ad15df457168dcab800fcb4aa&libraries=services&autoload=false";
+        const kakaoApiKey = process.env.NEXT_PUBLIC_KAKAO_APP_KEY || "535b712ad15df457168dcab800fcb4aa";
+        script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoApiKey}&libraries=services&autoload=false`;
         document.head.appendChild(script);
         script.onload = () => {
           (window as any).kakao.maps.load(() => initKakaoMap());
