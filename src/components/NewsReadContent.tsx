@@ -115,11 +115,11 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
                     margin: "0 auto",
                     height: 0,
                     overflow: "hidden",
-                    borderRadius: 8,
+
                   }}>
                     <iframe
                       src={`https://www.youtube.com/embed/${youtubeId}`}
-                      style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none", borderRadius: 8 }}
+                      style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" }}
                       allowFullScreen
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     />
@@ -130,7 +130,7 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
                   <img
                     src={article.thumbnail_url}
                     alt={article.title}
-                    style={{ width: "100%", maxHeight: 500, objectFit: "cover", borderRadius: 8 }}
+                    style={{ width: "100%", maxHeight: 500, objectFit: "cover" }}
                   />
                 </div>
               ) : null}

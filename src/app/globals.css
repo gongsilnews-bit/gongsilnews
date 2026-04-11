@@ -818,7 +818,6 @@ button { border: none; background: none; cursor: pointer; font-family: inherit; 
 }
 .article-img-wrap {
     width: 100%;
-    border-radius: 8px;
     overflow: hidden;
     margin: 30px 0;
     text-align: center;
@@ -828,6 +827,37 @@ button { border: none; background: none; cursor: pointer; font-family: inherit; 
     display: block;
     margin: 0 auto;
     object-fit: contain;
+}
+/* 에디터에서 삽입된 이미지: 둥근 모서리 없이 원본 그대로 표시 */
+.article-body img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 0;
+    display: block;
+    margin: 20px auto;
+}
+/* 에디터 잔여 UI 요소 숨김 (삭제 X 버튼, 리사이즈 핸들 등) */
+.article-body .ProseMirror-selectednode,
+.article-body [contenteditable],
+.article-body .image-resizer,
+.article-body .image-view,
+.article-body [class*="resize"],
+.article-body [class*="delete"],
+.article-body [class*="remove"] {
+    border: none !important;
+    outline: none !important;
+}
+.article-body button,
+.article-body [role="button"] {
+    display: none !important;
+}
+/* figure > figcaption 빈 캡션 숨김 */
+.article-body figcaption:empty {
+    display: none;
+}
+.article-body figure {
+    margin: 20px 0;
+    text-align: center;
 }
 
 /* Subtitle Summary Box */
