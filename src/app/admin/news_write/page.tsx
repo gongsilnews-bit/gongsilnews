@@ -750,6 +750,91 @@ export default function NewsWritePage() {
     }
   };
 
+  /* ── 카카오맵 모달 로직 ── */
+  useEffect(() => {
+    if (showMapModal) {
+      if (!(window as any).kakao || !(window as any).kakao.maps) {
+        const script = document.createElement("script");
+        script.src = "//dapi.kakao.com/v2/maps/sdk.js?appkey=535b712ad15df457168dcab800fcb4aa&libraries=services&autoload=false";
+        document.head.appendChild(script);
+        script.onload = () => {
+          (window as any).kakao.maps.load(() => initKakaoMap());
+        };
+      } else {
+        initKakaoMap();
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showMapModal]);
+
+  const initKakaoMap = () => {
+    if (!mapRef.current) return;
+    const kakao = (window as any).kakao;
+    const centerLatLng = articleCoords ? new kakao.maps.LatLng(articleCoords.lat, articleCoords.lng) : new kakao.maps.LatLng(37.498095, 127.027610); // 기본 강남역
+    const options = { center: centerLatLng, level: 3 };
+    
+    if (!kakaoMapRef.current) {
+      kakaoMapRef.current = new kakao.maps.Map(mapRef.current, options);
+      kakaoMarkerRef.current = new kakao.maps.Marker({ position: centerLatLng });
+      kakaoMarkerRef.current.setMap(kakaoMapRef.current);
+      kakaoPlacesRef.current = new kakao.maps.services.Places();
+      kakaoInfoWindowRef.current = new kakao.maps.InfoWindow({ zIndex: 1, removable: true });
+    } else {
+      kakaoMapRef.current.setCenter(centerLatLng);
+      kakaoMarkerRef.current.setPosition(centerLatLng);
+    }
+
+    // 클릭 이벤트 (마커 이동 및 오버레이 띄우기)
+    kakao.maps.event.addListener(kakaoMapRef.current, 'click', (mouseEvent: any) => {
+      const latlng = mouseEvent.latLng;
+      kakaoMarkerRef.current.setPosition(latlng);
+      displayMapOverlay(latlng.getLat(), latlng.getLng(), "직접 선택한 위치");
+    });
+  };
+
+  const handleMapSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!mapSearchKw.trim() || !kakaoPlacesRef.current) return;
+    kakaoPlacesRef.current.keywordSearch(mapSearchKw, (data: any, status: any) => {
+      const kakao = (window as any).kakao;
+      if (status === kakao.maps.services.Status.OK && data.length > 0) {
+        const place = data[0];
+        const latlng = new kakao.maps.LatLng(place.y, place.x);
+        kakaoMapRef.current.setCenter(latlng);
+        kakaoMarkerRef.current.setPosition(latlng);
+        displayMapOverlay(place.y, place.x, place.place_name || place.address_name);
+      } else {
+        alert("검색 결과가 없습니다.");
+      }
+    });
+  };
+
+  const displayMapOverlay = (lat: number, lng: number, title: string) => {
+    const kakao = (window as any).kakao;
+    const content = `
+      <div style="padding: 12px; background: #fff; border-radius: 8px; min-width: 200px; text-align: center; font-family: sans-serif;">
+        <div style="font-size: 14px; font-weight: 800; color: #111827; margin-bottom: 6px;">${title}</div>
+        <div style="font-size: 12px; color: #6b7280; margin-bottom: 12px;">📍 좌표: ${parseFloat(lat as any).toFixed(6)}, ${parseFloat(lng as any).toFixed(6)}</div>
+        <button id="kakao-modal-confirm-btn" style="width: 100%; padding: 10px 0; background: #e8590c; color: #fff; border: none; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer;">
+          ✔ 이 위치를 기사 좌표로 등록
+        </button>
+      </div>
+    `;
+    kakaoInfoWindowRef.current.setContent(content);
+    kakaoInfoWindowRef.current.open(kakaoMapRef.current, kakaoMarkerRef.current);
+
+    setTimeout(() => {
+      const btn = document.getElementById('kakao-modal-confirm-btn');
+      if (btn) {
+        btn.onclick = () => {
+          setArticleCoords({ lat: parseFloat(lat as any), lng: parseFloat(lng as any) });
+          setShowMapModal(false);
+          kakaoInfoWindowRef.current.close();
+        };
+      }
+    }, 100);
+  };
+
   /* ── 현재 로그인 사용자 ID 가져오기 ── */
   useEffect(() => {
     const supabase = createClient();
@@ -1078,16 +1163,16 @@ export default function NewsWritePage() {
             <hr style={{ border: "none", borderTop: `1px solid ${border}`, margin: "0 0 24px 0" }} />
 
             {/* ── 섹션 ── */}
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24, flexWrap: "wrap" }}>
               <label style={{ fontSize: 14, fontWeight: 600, color: textPrimary, minWidth: 80 }}>섹션</label>
               <select value={section1} onChange={e => { setSection1(e.target.value); setSection2(""); }}
-                style={{ flex: 1, padding: "8px 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 14, color: textPrimary, background: cardBg, outline: "none", fontFamily: "inherit", cursor: "pointer", appearance: "none", backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 12px center" }}>
+                style={{ width: 180, padding: "8px 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 14, color: textPrimary, background: cardBg, outline: "none", fontFamily: "inherit", cursor: "pointer", appearance: "none", backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 12px center" }}>
                 <option value="" disabled style={{ color: textMuted }}>1차섹션 선택</option>
                 <option value="우리동네부동산">우리동네부동산</option>
                 <option value="뉴스/칼럼">뉴스/칼럼</option>
               </select>
               <select value={section2} onChange={e => setSection2(e.target.value)}
-                style={{ flex: 1, padding: "8px 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 14, color: textPrimary, background: cardBg, outline: "none", fontFamily: "inherit", cursor: "pointer", appearance: "none", backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 12px center" }}>
+                style={{ width: 180, padding: "8px 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 14, color: textPrimary, background: cardBg, outline: "none", fontFamily: "inherit", cursor: "pointer", appearance: "none", backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 12px center" }}>
                 <option value="" disabled style={{ color: textMuted }}>2차섹션 전체</option>
                 {section1 === "우리동네부동산" && (
                   <>
@@ -1109,6 +1194,10 @@ export default function NewsWritePage() {
                     <option value="인물·미션·기타">인물·미션·기타</option>
                   </>
                 )}
+              </select>
+              <select value={series} onChange={e => setSeries(e.target.value)}
+                style={{ width: 180, padding: "8px 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 14, color: textPrimary, background: cardBg, outline: "none", fontFamily: "inherit", cursor: "pointer", appearance: "none", backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 12px center" }}>
+                <option value="" disabled style={{ color: textMuted }}>연재</option>
               </select>
             </div>
 
@@ -1243,26 +1332,31 @@ export default function NewsWritePage() {
             {/* ── 구분선 ── */}
             <hr style={{ border: "none", borderTop: `1px solid ${border}`, margin: "0 0 24px 0" }} />
 
-            {/* ── 위치등록 ── */}
-            <div style={{ marginBottom: 32 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
-                <label style={{ fontSize: 14, fontWeight: 600, color: textPrimary, minWidth: 80 }}>위치등록</label>
-                <input type="text" value={location} onChange={e => setLocation(e.target.value)} 
-                  placeholder="장소명 또는 주소 입력 (예: 강남역, 코엑스, 서울 강남구...)"
-                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleGeocode(); } }}
-                  style={{ flex: 1, padding: "10px 14px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 14, color: textPrimary, background: cardBg, outline: "none", fontFamily: "inherit" }} />
-                <button type="button" onClick={handleGeocode} disabled={geocoding}
-                  style={{ padding: "8px 18px", background: geocoding ? "#9ca3af" : "#10b981", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: geocoding ? "not-allowed" : "pointer", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 6 }}>
-                  {geocoding ? "⏳ 변환 중..." : "📍 좌표 변환"}
+            {/* ── 위치등록 (레거시 공실뉴스 UI 복원) ── */}
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 32 }}>
+              <label style={{ fontSize: 14, fontWeight: 600, color: textPrimary, minWidth: 80 }}>위치등록</label>
+              
+              <div style={{ display: "flex", gap: 8, alignItems: "center", flex: 1 }}>
+                <button type="button" onClick={() => setShowMapModal(true)} style={{ padding: "0 16px", height: 40, background: "#6b7280", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
+                  지도검색
+                </button>
+                
+                <input type="text" value={articleCoords ? `${articleCoords.lat.toFixed(6)}, ${articleCoords.lng.toFixed(6)}` : ''} 
+                  onChange={e => {
+                    const parts = e.target.value.split(',').map(s => parseFloat(s.trim()));
+                    if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+                      setArticleCoords({ lat: parts[0], lng: parts[1] });
+                    } else if (e.target.value === '') {
+                      setArticleCoords(null);
+                    }
+                  }}
+                  placeholder="예: 37.490416, 127.518709"
+                  style={{ width: 240, padding: "0 14px", height: 40, border: `1px solid ${border}`, borderRadius: 6, fontSize: 14, color: textPrimary, background: "#f9fafb", outline: "none", fontFamily: "inherit" }} />
+                
+                <button type="button" onClick={() => window.open('https://map.kakao.com', '_blank')} style={{ padding: "0 16px", height: 40, background: "#9ca3af", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 500, cursor: "pointer", whiteSpace: "nowrap" }}>
+                  #위도 경도 넣는법
                 </button>
               </div>
-              {articleCoords && (
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginLeft: 92, fontSize: 13 }}>
-                  <span style={{ color: "#10b981", fontWeight: 600 }}>✅ 위도 {articleCoords.lat.toFixed(6)}, 경도 {articleCoords.lng.toFixed(6)}</span>
-                  <button type="button" onClick={() => { setArticleCoords(null); setLocation(""); }} 
-                    style={{ background: "none", border: "none", color: "#ef4444", fontSize: 12, cursor: "pointer", padding: "2px 6px" }}>✕ 초기화</button>
-                </div>
-              )}
             </div>
 
             {/* ── 저장완료 버튼 ── */}
@@ -2002,6 +2096,48 @@ export default function NewsWritePage() {
                   ))}
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ 지도 모달 (카카오맵) ═══ */}
+      {showMapModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+          background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          backdropFilter: 'blur(2px)', zIndex: 9999
+        }}>
+          <div style={{
+            background: '#fff', borderRadius: 16, width: 1000, height: 750, maxWidth: '95%', maxHeight: '95%', display: "flex", flexDirection: "column",
+            boxShadow: '0 10px 25px rgba(0,0,0,0.2)', overflow: 'hidden', animation: 'scaleUp 0.3s ease-out', position: 'relative'
+          }}>
+            {/* 상단 오렌지 헤더 띠 */}
+            <div style={{ background: '#f97316', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 20 }}>🗺️</span>
+                <span style={{ fontSize: 18, fontWeight: 800, color: '#fff' }}>위치 자동 입력 (카카오맵)</span>
+              </div>
+              <button type="button" onClick={() => setShowMapModal(false)}
+                style={{ background: 'none', border: 'none', color: '#fff', fontSize: 20, cursor: 'pointer' }}>✕</button>
+            </div>
+
+            {/* 검색 폼 */}
+            <div style={{ padding: '16px 24px', background: '#fff', borderBottom: `1px solid ${border}` }}>
+              <form onSubmit={handleMapSearch} style={{ display: "flex", gap: 10 }}>
+                <input type="text" placeholder="지역명, 아파트명, 건물명 검색 (예: 강남역, 대치동 은마)"
+                  value={mapSearchKw} onChange={e => setMapSearchKw(e.target.value)}
+                  style={{ flex: 1, padding: "12px 16px", border: `2px solid #e5e7eb`, borderRadius: 8, fontSize: 15, outline: "none" }} />
+                <button type="submit" style={{ padding: "0 32px", background: "#c2410c", color: "#fff", border: "none", borderRadius: 8, fontSize: 16, fontWeight: 800, cursor: "pointer" }}>지도 검색</button>
+              </form>
+              <div style={{ fontSize: 13, color: textSecondary, textAlign: 'center', marginTop: 12 }}>
+                지도를 마우스로 클릭하시면 해당 위치의 빨간 마커와 함께 좌표가 임시 저장됩니다.
+              </div>
+            </div>
+
+            {/* 지도 영역 */}
+            <div ref={mapRef} style={{ flex: 1, position: 'relative', width: '100%' }}>
+              {/* 지도 렌더링 컨테이너 */}
             </div>
           </div>
         </div>
