@@ -227,7 +227,7 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
               <ul className="pop-list">
                 {popularArticles.length > 0 ? popularArticles.map((item, i) => (
                   <li key={item.id} className="pop-item">
-                    <Link href={`/news/${item.id}`} style={{ textDecoration: "none", color: "inherit", display: "flex", alignItems: "flex-start", gap: 8, width: "100%" }}>
+                    <Link href={`/news/${item.article_no || item.id}`} style={{ textDecoration: "none", color: "inherit", display: "flex", alignItems: "flex-start", gap: 8, width: "100%" }}>
                       <span className="pop-ranking">{i + 1}</span>
                       <span className="pop-title">{item.title}</span>
                     </Link>

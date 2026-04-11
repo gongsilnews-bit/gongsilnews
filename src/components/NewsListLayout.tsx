@@ -83,7 +83,7 @@ export default function NewsListLayout({ category, title, initialArticles, initi
 
             {/* 기사 카드 리스트 — 서버에서 미리 받아와서 즉시 표시 */}
             {pagedArticles.length > 0 ? pagedArticles.map((article) => (
-              <Link key={article.id} href={`/news/${article.id}`} style={{ textDecoration: "none", color: "inherit" }}>
+              <Link key={article.id} href={`/news/${article.article_no || article.id}`} style={{ textDecoration: "none", color: "inherit" }}>
                 <div className="an-card">
                   <div className="an-img" style={{ position: "relative", flexShrink: 0 }}>
                     {article.thumbnail_url ? (
@@ -144,7 +144,7 @@ export default function NewsListLayout({ category, title, initialArticles, initi
               <ul className="pop-list">
                 {initialPopular.length > 0 ? initialPopular.map((item, i) => (
                   <li key={item.id} className="pop-item">
-                    <Link href={`/news/${item.id}`} style={{ textDecoration: "none", color: "inherit", display: "flex", alignItems: "flex-start", gap: 8, width: "100%" }}>
+                    <Link href={`/news/${item.article_no || item.id}`} style={{ textDecoration: "none", color: "inherit", display: "flex", alignItems: "flex-start", gap: 8, width: "100%" }}>
                       <span className="pop-ranking">{i + 1}</span>
                       <span className="pop-title">{item.title}</span>
                     </Link>

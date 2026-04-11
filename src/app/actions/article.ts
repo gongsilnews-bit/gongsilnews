@@ -175,13 +175,20 @@ export async function getArticles(filters?: {
 
 /* ── 기사 상세 조회 (캐싱 적용) ── */
 const getArticleDetailCached = unstable_cache(
-  async (articleId: string) => {
+  async (articleIdentifier: string) => {
     const supabase = getAdminClient();
-    const { data, error } = await supabase
+    let query = supabase
       .from("articles")
-      .select("*, article_keywords(keyword), article_media(*)")
-      .eq("id", articleId)
-      .single();
+      .select("*, article_keywords(keyword), article_media(*)");
+      
+    // 숫자로만 구성된 경우 article_no 로 조회, 아니면 id(UUID) 로 조회
+    if (/^[0-9]+$/.test(articleIdentifier)) {
+      query = query.eq("article_no", parseInt(articleIdentifier, 10));
+    } else {
+      query = query.eq("id", articleIdentifier);
+    }
+    
+    const { data, error } = await query.single();
     if (error) return { success: false, error: error.message };
     return { success: true, data };
   },
