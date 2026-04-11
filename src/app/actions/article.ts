@@ -31,6 +31,7 @@ export async function saveArticle(data: {
   location_name?: string;
   published_at: string | null;
   keywords: string[];
+  thumbnail_url?: string;
 }) {
   const supabase = getAdminClient();
 
@@ -65,6 +66,7 @@ export async function saveArticle(data: {
       lng: data.lng || null,
       location_name: data.location_name || null,
       published_at: data.published_at || null,
+      thumbnail_url: data.thumbnail_url || null,
       updated_at: new Date().toISOString(),
     };
 

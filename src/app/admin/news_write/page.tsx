@@ -35,6 +35,12 @@ export default function NewsWritePage() {
   const [location, setLocation] = useState("");
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [isShortsRatio, setIsShortsRatio] = useState(false);
+  const [videoItems, setVideoItems] = useState<{ url: string; videoId: string; caption: string; isShorts: boolean; isCover: boolean }[]>([]);
+  /* ── 동영상 수정 모달 상태 ── */
+  const [showVideoEditModal, setShowVideoEditModal] = useState(false);
+  const [editVideoIdx, setEditVideoIdx] = useState(-1);
+  const [editVideoUrl, setEditVideoUrl] = useState('');
+  const [editVideoCaption, setEditVideoCaption] = useState('');
   const [photoCollapsed, setPhotoCollapsed] = useState(false);
   const [videoCollapsed, setVideoCollapsed] = useState(false);
   const [fileCollapsed, setFileCollapsed] = useState(false);
@@ -65,6 +71,20 @@ export default function NewsWritePage() {
   const [editAlign, setEditAlign] = useState<'left' | 'center' | 'right'>('left');
   const [editCaption, setEditCaption] = useState('');
   const [editCaptionAlign, setEditCaptionAlign] = useState<'left' | 'center' | 'right'>('left');
+
+  /* ── 유튜브 헬퍼 ── */
+  const extractYoutubeId = (url: string): string | null => {
+    const patterns = [
+      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([\w-]{11})/,
+      /youtube\.com\/shorts\/([\w-]{11})/,
+    ];
+    for (const p of patterns) {
+      const m = url.match(p);
+      if (m) return m[1];
+    }
+    return null;
+  };
+  const getYoutubeThumbnail = (videoId: string) => `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
 
   /* ── WebP 압축 변환 ── */
   const compressToWebP = (file: File, maxWidth = 1920, quality = 0.82): Promise<File> => {
@@ -100,6 +120,94 @@ export default function NewsWritePage() {
     }
   };
 
+  /* ── 에디터 내 미디어 삭제 버튼 생성 ── */
+  const createDeleteBtn = (wrapper: HTMLElement, type: 'photo' | 'video') => {
+    const btn = document.createElement('button');
+    btn.className = 'editor-media-delete';
+    btn.innerHTML = '✕';
+    btn.setAttribute('contenteditable', 'false');
+    btn.title = type === 'photo' ? '사진 삭제' : '영상 삭제';
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      // 뒤의 br 제거
+      const nextSib = wrapper.nextSibling;
+      if (nextSib && nextSib.nodeName === 'BR') nextSib.remove();
+      wrapper.remove();
+      if (editorRef.current) setContent(editorRef.current.innerHTML || '');
+      syncSidebarFromEditor();
+    });
+    wrapper.style.position = 'relative';
+    wrapper.appendChild(btn);
+  };
+
+  /* ── 에디터 DOM 변경 시 사이드바 상태 동기화 ── */
+  const syncSidebarFromEditor = () => {
+    if (!editorRef.current) return;
+    const currentPhotos = editorRef.current.querySelectorAll('.inserted-photo');
+    const currentVideos = editorRef.current.querySelectorAll('.inserted-video');
+
+    // 사진: 에디터에 없는 것들은 사이드바에서도 제거
+    setPhotoFiles(prev => {
+      if (prev.length <= currentPhotos.length) return prev;
+      // 에디터에 남은 수만큼만 유지 (앞에서부터)
+      const updated = prev.slice(0, currentPhotos.length);
+      if (updated.length > 0 && !updated.some(p => p.isCover)) {
+        updated[0].isCover = true;
+      }
+      return updated;
+    });
+
+    setVideoItems(prev => {
+      if (prev.length <= currentVideos.length) return prev;
+      return prev.slice(0, currentVideos.length);
+    });
+  };
+
+  /* ── 에디터 hover 삭제 버튼 CSS 주입 ── */
+  useEffect(() => {
+    const styleId = 'editor-media-styles';
+    if (document.getElementById(styleId)) return;
+    const style = document.createElement('style');
+    style.id = styleId;
+    style.textContent = `
+      .inserted-photo, .inserted-video {
+        position: relative;
+      }
+      .inserted-photo .editor-media-delete,
+      .inserted-video .editor-media-delete {
+        display: none;
+        position: absolute;
+        top: 6px;
+        right: 6px;
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background: rgba(239,68,68,0.9);
+        color: #fff;
+        border: 2px solid #fff;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+        z-index: 10;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        transition: transform 0.15s;
+      }
+      .inserted-photo:hover .editor-media-delete,
+      .inserted-video:hover .editor-media-delete {
+        display: flex;
+      }
+      .inserted-photo .editor-media-delete:hover,
+      .inserted-video .editor-media-delete:hover {
+        transform: scale(1.15);
+        background: rgba(220,38,38,1);
+      }
+    `;
+    document.head.appendChild(style);
+  }, []);
+
   /* ── 에디터 커서 위치에 이미지 삽입 ── */
   const insertImageAtCursor = (previewUrl: string, caption: string, opts?: { size?: number; align?: string; captionAlign?: string }) => {
     if (!editorRef.current) return;
@@ -134,6 +242,9 @@ export default function NewsWritePage() {
       clear.style.cssText = 'clear: both;';
       wrapper.appendChild(clear);
     }
+
+    // 삭제 버튼 추가
+    createDeleteBtn(wrapper, 'photo');
 
     // 커서 뒤에 줄바꿈 추가
     const br = document.createElement('br');
@@ -267,9 +378,16 @@ export default function NewsWritePage() {
     }
   };
 
-  /* ── 대표사진 지정 ── */
+  /* ── 대표 지정 (사진) — 영상 대표도 해제 ── */
   const setAsCover = (idx: number) => {
     setPhotoFiles(prev => prev.map((p, i) => ({ ...p, isCover: i === idx })));
+    setVideoItems(prev => prev.map(v => ({ ...v, isCover: false })));
+  };
+
+  /* ── 대표 지정 (영상) — 사진 대표도 해제 ── */
+  const setVideoCover = (idx: number) => {
+    setVideoItems(prev => prev.map((v, i) => ({ ...v, isCover: i === idx })));
+    setPhotoFiles(prev => prev.map(p => ({ ...p, isCover: false })));
   };
 
   /* ── 사진 정렬 변경 (우측 사이드바 버튼 클릭 시 에디터에도 반영) ── */
@@ -417,6 +535,146 @@ export default function NewsWritePage() {
     setAttachFiles(prev => prev.filter((_, i) => i !== idx));
   };
 
+  /* ── 유튜브 영상 커서 위치에 삽입 ── */
+  const insertVideoAtCursor = (videoId: string, caption: string, isShorts: boolean) => {
+    if (!editorRef.current) return;
+
+    const wrapper = document.createElement('div');
+    wrapper.style.cssText = 'margin: 16px 0; text-align: center;';
+    wrapper.setAttribute('contenteditable', 'false');
+    wrapper.className = 'inserted-video';
+
+    const iframeWrap = document.createElement('div');
+    iframeWrap.style.cssText = isShorts
+      ? 'position: relative; width: 315px; height: 560px; margin: 0 auto;'
+      : 'position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%;';
+
+    const iframe = document.createElement('iframe');
+    iframe.src = `https://www.youtube.com/embed/${videoId}`;
+    iframe.style.cssText = isShorts
+      ? 'width: 100%; height: 100%; border: none; border-radius: 8px;'
+      : 'position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; border-radius: 8px;';
+    iframe.setAttribute('allowfullscreen', 'true');
+    iframe.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture');
+    iframeWrap.appendChild(iframe);
+    wrapper.appendChild(iframeWrap);
+
+    if (caption) {
+      const cap = document.createElement('p');
+      cap.style.cssText = 'font-size: 13px; color: #6b7280; margin: 8px 0 0 0; text-align: center; line-height: 1.5;';
+      cap.textContent = caption;
+      wrapper.appendChild(cap);
+    }
+
+    // 삭제 버튼 추가
+    createDeleteBtn(wrapper, 'video');
+
+    const br = document.createElement('br');
+
+    if (savedRangeRef.current && editorRef.current.contains(savedRangeRef.current.commonAncestorContainer)) {
+      const range = savedRangeRef.current;
+      range.deleteContents();
+      range.insertNode(br);
+      range.insertNode(wrapper);
+      range.setStartAfter(br);
+      range.collapse(true);
+      const sel = window.getSelection();
+      sel?.removeAllRanges();
+      sel?.addRange(range);
+    } else {
+      editorRef.current.appendChild(wrapper);
+      editorRef.current.appendChild(br);
+    }
+    setContent(editorRef.current.innerHTML || '');
+  };
+
+  /* ── 영상 추가 (입력하기 버튼) ── */
+  const handleAddVideo = () => {
+    if (!youtubeUrl.trim()) { alert('유튜브 링크를 입력해주세요.'); return; }
+    const videoId = extractYoutubeId(youtubeUrl);
+    if (!videoId) { alert('올바른 YouTube 링크를 입력해주세요.'); return; }
+
+    setVideoItems(prev => [...prev, { url: youtubeUrl, videoId, caption: '', isShorts: isShortsRatio, isCover: false }]);
+    insertVideoAtCursor(videoId, '', isShortsRatio);
+    setYoutubeUrl('');
+  };
+
+  /* ── 영상 삭제 ── */
+  const removeVideo = (idx: number) => {
+    if (editorRef.current) {
+      const videos = editorRef.current.querySelectorAll('.inserted-video');
+      if (videos[idx]) {
+        const nextSib = videos[idx].nextSibling;
+        if (nextSib && nextSib.nodeName === 'BR') nextSib.remove();
+        videos[idx].remove();
+        setContent(editorRef.current.innerHTML || '');
+      }
+    }
+    setVideoItems(prev => {
+      const updated = prev.filter((_, i) => i !== idx);
+      // 대표영상이 삭제되면 첫 사진을 대표로
+      if (prev[idx]?.isCover && updated.length === 0 && photoFiles.length > 0) {
+        setPhotoFiles(pf => {
+          const pfu = [...pf];
+          if (pfu.length > 0 && !pfu.some(p => p.isCover)) pfu[0].isCover = true;
+          return pfu;
+        });
+      }
+      return updated;
+    });
+  };
+
+  /* ── 영상 수정 모달 열기 ── */
+  const openEditVideoModal = (idx: number) => {
+    const v = videoItems[idx];
+    if (!v) return;
+    setEditVideoIdx(idx);
+    setEditVideoUrl(v.url);
+    setEditVideoCaption(v.caption);
+    setShowVideoEditModal(true);
+  };
+
+  /* ── 영상 수정 모달 확인 ── */
+  const handleEditVideoConfirm = () => {
+    const idx = editVideoIdx;
+    if (idx < 0) return;
+    const newId = extractYoutubeId(editVideoUrl);
+    if (!newId) { alert('올바른 YouTube 링크를 입력해주세요.'); return; }
+
+    setVideoItems(prev => prev.map((v, i) => i === idx ? { ...v, url: editVideoUrl, videoId: newId, caption: editVideoCaption } : v));
+
+    // 에디터 DOM 업데이트
+    if (editorRef.current) {
+      const videos = editorRef.current.querySelectorAll('.inserted-video');
+      if (videos[idx]) {
+        const wrapper = videos[idx] as HTMLElement;
+        const iframe = wrapper.querySelector('iframe');
+        if (iframe) iframe.src = `https://www.youtube.com/embed/${newId}`;
+
+        let capEl = wrapper.querySelector('p');
+        if (editVideoCaption) {
+          if (!capEl) {
+            capEl = document.createElement('p');
+            capEl.style.cssText = 'font-size: 13px; color: #6b7280; margin: 8px 0 0 0; text-align: center; line-height: 1.5;';
+            wrapper.appendChild(capEl);
+          }
+          capEl.textContent = editVideoCaption;
+        } else if (capEl) {
+          capEl.remove();
+        }
+        setContent(editorRef.current.innerHTML || '');
+      }
+    }
+    setShowVideoEditModal(false);
+  };
+
+  /* ── 에디터에 이미 삽입된 영상 다시 삽입 (□ 삽입 버튼) ── */
+  const reinsertVideo = (idx: number) => {
+    const v = videoItems[idx];
+    if (!v) return;
+    insertVideoAtCursor(v.videoId, v.caption, v.isShorts);
+  };
+
   /* ── 현재 로그인 사용자 ID 가져오기 ── */
   useEffect(() => {
     const supabase = createClient();
@@ -481,6 +739,15 @@ export default function NewsWritePage() {
         publishedAt = `${publishDate}T${publishTime || "00:00"}:00`;
       }
 
+      // 대표 이미지 URL 결정
+      let thumbnailUrl = '';
+      const coverVideo = videoItems.find(v => v.isCover);
+      if (coverVideo) {
+        // YouTube 고해상도 썸네일
+        thumbnailUrl = `https://img.youtube.com/vi/${coverVideo.videoId}/maxresdefault.jpg`;
+      }
+      // 사진 대표이면 업로드 후 URL 업데이트 (아래에서 처리)
+
       const result = await saveArticle({
         author_id: currentUserId || undefined,
         author_name: reporterName,
@@ -500,6 +767,7 @@ export default function NewsWritePage() {
         location_name: location,
         lat: articleCoords?.lat,
         lng: articleCoords?.lng,
+        thumbnail_url: thumbnailUrl || undefined,
       });
 
       if (result.success) {
@@ -513,7 +781,25 @@ export default function NewsWritePage() {
             formData.append('article_id', articleId);
             formData.append('media_type', 'PHOTO');
             formData.append('sort_order', String(i));
-            await uploadArticleMedia(formData);
+            formData.append('is_cover', photoFiles[i].isCover ? 'true' : 'false');
+            const uploadResult = await uploadArticleMedia(formData);
+
+            // 대표 사진이면 thumbnail_url 업데이트
+            if (photoFiles[i].isCover && uploadResult.success && uploadResult.url) {
+              await saveArticle({
+                id: articleId,
+                author_name: reporterName,
+                author_email: reporterEmail,
+                status, form_type: formType,
+                section1, section2, series,
+                title, subtitle, content,
+                youtube_url: youtubeUrl,
+                is_shorts: isShortsRatio,
+                published_at: publishedAt,
+                keywords,
+                thumbnail_url: uploadResult.url,
+              });
+            }
           }
         }
 
@@ -1051,14 +1337,82 @@ export default function NewsWritePage() {
               {!videoCollapsed && (
                 <div>
                   <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
-                    <input type="text" value={youtubeUrl} onChange={e => setYoutubeUrl(e.target.value)} placeholder="YouTube영상링크입력"
+                    <input type="text" value={youtubeUrl} onChange={e => setYoutubeUrl(e.target.value)}
+                      placeholder="YouTube영상링크입력"
+                      onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddVideo(); } }}
                       style={{ flex: 1, padding: "8px 10px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 12, color: textPrimary, background: cardBg, outline: "none", fontFamily: "inherit" }} />
-                    <button style={{ padding: "8px 12px", background: "#374151", color: "#fff", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>입력하기</button>
+                    <button onClick={handleAddVideo}
+                      style={{ padding: "8px 12px", background: "#374151", color: "#fff", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>입력하기</button>
                   </div>
-                  <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: textSecondary, cursor: "pointer" }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: textSecondary, cursor: "pointer", marginBottom: 8 }}>
                     <input type="checkbox" checked={isShortsRatio} onChange={e => setIsShortsRatio(e.target.checked)} style={{ accentColor: accentBlue }} />
                     쇼츠(세로) 영상으로 크기 맞춤
                   </label>
+
+                  {/* 등록된 영상 목록 */}
+                  {videoItems.length > 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {videoItems.map((v, i) => (
+                        <div key={i} style={{
+                          background: '#f9fafb', borderRadius: 8,
+                          border: v.isCover ? '2px solid #3b82f6' : `1px solid ${border}`,
+                          overflow: 'hidden', transition: 'border-color 0.2s',
+                        }}>
+                          {/* 썸네일 */}
+                          <div style={{ position: 'relative' }}>
+                            <img src={getYoutubeThumbnail(v.videoId)} alt=""
+                              style={{ width: '100%', height: 100, objectFit: 'cover', display: 'block' }} />
+                            {/* 재생 아이콘 */}
+                            <div style={{
+                              position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
+                              width: 36, height: 36, borderRadius: '50%', background: 'rgba(0,0,0,0.6)',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            }}>
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="#fff"><polygon points="6 3 20 12 6 21" /></svg>
+                            </div>
+                            {/* 삭제 버튼 */}
+                            <button type="button" onClick={() => removeVideo(i)}
+                              style={{
+                                position: 'absolute', top: 4, right: 4, width: 20, height: 20,
+                                background: 'rgba(0,0,0,0.55)', color: '#fff', border: 'none', borderRadius: '50%',
+                                fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              }}>✕</button>
+                            {/* 대표 라벨 */}
+                            {v.isCover && (
+                              <div style={{
+                                position: 'absolute', top: 6, left: 6, padding: '2px 8px',
+                                background: 'rgba(59,130,246,0.9)', color: '#fff', fontSize: 10, fontWeight: 700,
+                                borderRadius: 4,
+                              }}>대표</div>
+                            )}
+                          </div>
+                          {/* 버튼 영역 */}
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 8px' }}>
+                            <button type="button" onClick={() => reinsertVideo(i)}
+                              style={{
+                                padding: '3px 10px', background: '#e5e7eb', color: textSecondary, border: 'none',
+                                borderRadius: 4, fontSize: 10, fontWeight: 600, cursor: 'pointer',
+                                display: 'flex', alignItems: 'center', gap: 4,
+                              }}>□ 삽입</button>
+                            <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                              {!v.isCover && (
+                                <button type="button" onClick={() => setVideoCover(i)}
+                                  style={{ padding: '2px 6px', background: '#e5e7eb', color: textSecondary, border: 'none', borderRadius: 3, fontSize: 9, fontWeight: 600, cursor: 'pointer' }}>대표지정</button>
+                              )}
+                              <button type="button" onClick={() => openEditVideoModal(i)}
+                                title="영상 설정"
+                                style={{
+                                  width: 26, height: 26, borderRadius: 4, cursor: 'pointer',
+                                  border: `1px solid ${border}`, background: '#fff',
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  color: textSecondary, fontSize: 14,
+                                }}>⚙</button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -1404,6 +1758,84 @@ export default function NewsWritePage() {
               onMouseOut={e => e.currentTarget.style.background = '#3b82f6'}
               >✓ 확인</button>
               <button onClick={() => setShowEditModal(false)} style={{
+                padding: '12px 36px', background: '#fff', color: textPrimary, border: `1px solid ${border}`, borderRadius: 8,
+                fontSize: 15, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
+              }}>✕ 취소</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ 동영상추가/수정 모달 ═══ */}
+      {showVideoEditModal && editVideoIdx >= 0 && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.45)', zIndex: 9999,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }} onClick={() => setShowVideoEditModal(false)}>
+          <div onClick={e => e.stopPropagation()} style={{
+            background: '#fff', borderRadius: 14, width: 520, maxHeight: '80vh', overflowY: 'auto',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
+          }}>
+            {/* 헤더 */}
+            <div style={{
+              background: '#374151', color: '#fff', padding: '16px 24px',
+              borderRadius: '14px 14px 0 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            }}>
+              <span style={{ fontSize: 17, fontWeight: 800 }}>동영상추가</span>
+              <button onClick={() => setShowVideoEditModal(false)} style={{ background: 'none', border: 'none', color: '#fff', fontSize: 22, cursor: 'pointer', lineHeight: 1 }}>✕</button>
+            </div>
+
+            {/* 바디 */}
+            <div style={{ padding: '28px 28px' }}>
+              {/* 영상URL/태그 */}
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, marginBottom: 24 }}>
+                <label style={{ fontSize: 14, fontWeight: 700, color: textPrimary, minWidth: 90, paddingTop: 10 }}>영상URL/태그</label>
+                <textarea value={editVideoUrl} onChange={e => setEditVideoUrl(e.target.value)}
+                  placeholder="https://youtu.be/..."
+                  rows={3}
+                  style={{
+                    flex: 1, padding: '10px 14px', border: `1px solid ${border}`, borderRadius: 8,
+                    fontSize: 14, color: textPrimary, background: '#fafafa', outline: 'none',
+                    fontFamily: 'inherit', resize: 'vertical', lineHeight: 1.6,
+                  }}
+                />
+              </div>
+
+              {/* 미리보기 */}
+              {editVideoUrl && extractYoutubeId(editVideoUrl) && (
+                <div style={{ marginBottom: 24, textAlign: 'center' }}>
+                  <img src={getYoutubeThumbnail(extractYoutubeId(editVideoUrl)!)} alt="미리보기"
+                    style={{ maxWidth: '100%', maxHeight: 160, borderRadius: 8, border: `1px solid ${border}` }} />
+                </div>
+              )}
+
+              {/* 캡션 */}
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, marginBottom: 8 }}>
+                <label style={{ fontSize: 14, fontWeight: 700, color: textPrimary, minWidth: 90, paddingTop: 10 }}>캡션</label>
+                <textarea value={editVideoCaption} onChange={e => setEditVideoCaption(e.target.value)}
+                  placeholder="동영상설명입력"
+                  rows={3}
+                  style={{
+                    flex: 1, padding: '10px 14px', border: `1px solid ${border}`, borderRadius: 8,
+                    fontSize: 14, color: textPrimary, background: '#fafafa', outline: 'none',
+                    fontFamily: 'inherit', resize: 'vertical', lineHeight: 1.6,
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* 푸터 버튼 */}
+            <div style={{ padding: '16px 28px 24px', display: 'flex', justifyContent: 'center', gap: 12 }}>
+              <button onClick={handleEditVideoConfirm} style={{
+                padding: '12px 36px', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 8,
+                fontSize: 15, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
+                boxShadow: '0 2px 8px rgba(59,130,246,0.3)', transition: 'background 0.15s',
+              }}
+              onMouseOver={e => e.currentTarget.style.background = '#2563eb'}
+              onMouseOut={e => e.currentTarget.style.background = '#3b82f6'}
+              >✓ 확인</button>
+              <button onClick={() => setShowVideoEditModal(false)} style={{
                 padding: '12px 36px', background: '#fff', color: textPrimary, border: `1px solid ${border}`, borderRadius: 8,
                 fontSize: 15, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
               }}>✕ 취소</button>
