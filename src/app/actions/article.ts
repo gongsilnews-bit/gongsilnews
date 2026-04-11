@@ -268,3 +268,20 @@ export async function togglePhotoFavorite(mediaId: string, isFavorite: boolean) 
     return { success: false, error: err.message };
   }
 }
+
+/* ── 관리자 기사 일괄 상태 수정 ── */
+export async function adminUpdateArticleStatus(articleIds: string[], status: 'PUBLISHED' | 'REJECTED' | 'DRAFT' | 'PENDING') {
+  const supabase = getAdminClient();
+
+  try {
+    const { error } = await supabase
+      .from("articles")
+      .update({ status: status })
+      .in("id", articleIds);
+      
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}

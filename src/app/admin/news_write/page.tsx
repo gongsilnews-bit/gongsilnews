@@ -48,7 +48,7 @@ export default function NewsWritePage() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [articleCoords, setArticleCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [geocoding, setGeocoding] = useState(false);
-  const [photoFiles, setPhotoFiles] = useState<{ file: File; preview: string; caption: string; isCover: boolean; size: number; align: string; captionAlign: string }[]>([]);
+  const [photoFiles, setPhotoFiles] = useState<{ file: File | null; preview: string; caption: string; isCover: boolean; size: number; align: string; captionAlign: string; mediaId?: string }[]>([]);
   const [attachFiles, setAttachFiles] = useState<{ file: File; name: string }[]>([]);
   const [loadArticleId, setLoadArticleId] = useState<string | null>(null);
 
@@ -140,6 +140,32 @@ export default function NewsWritePage() {
             }
             if (d.article_keywords) {
               setKeywords(d.article_keywords.map((k: any) => k.keyword));
+            }
+            if (d.article_media) {
+              const existingPhotos = d.article_media
+                .filter((m: any) => m.media_type === "PHOTO")
+                .map((m: any) => ({
+                  file: null,
+                  preview: m.url,
+                  caption: m.caption || "",
+                  isCover: d.thumbnail_url === m.url,
+                  size: m.file_size || 0,
+                  align: "center",
+                  captionAlign: "center",
+                  mediaId: m.id
+                }));
+              setPhotoFiles(existingPhotos);
+
+              const existingVideos = d.article_media
+                .filter((m: any) => m.media_type === "VIDEO")
+                .map((m: any) => ({
+                  url: m.url,
+                  videoId: m.url.includes("v=") ? m.url.split("v=")[1].split("&")[0] : (m.url.split("/").pop() || ""),
+                  caption: m.caption || "",
+                  isShorts: false,
+                  isCover: false
+                }));
+              setVideoItems(existingVideos);
             }
           }
         });
@@ -931,12 +957,22 @@ export default function NewsWritePage() {
     }, 100);
   };
 
-  /* ── 현재 로그인 사용자 ID 가져오기 ── */
+  /* ── 현재 로그인 사용자 권한 가져오기 ── */
+  const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
+
   useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => {
-      if (data?.user) setCurrentUserId(data.user.id);
-    });
+    const fetchUser = async () => {
+      const supabase = createClient();
+      const { data } = await supabase.auth.getUser();
+      if (data?.user) {
+        setCurrentUserId(data.user.id);
+        const { data: memberData } = await supabase.from('members').select('role').eq('id', data.user.id).single();
+        if (memberData && memberData.role) {
+          setCurrentUserRole(memberData.role);
+        }
+      }
+    };
+    fetchUser();
   }, []);
 
   /* ─── 키워드 추가 ─── */
@@ -978,7 +1014,7 @@ export default function NewsWritePage() {
   };
 
   /* ── 기사 저장 ── */
-  const handleSave = async () => {
+  const handleSave = async (overrideStatus?: string) => {
     if (!title.trim()) {
       alert("제목을 입력해주세요.");
       return;
@@ -1005,19 +1041,23 @@ export default function NewsWritePage() {
       }
       // 사진 대표이면 업로드 후 URL 업데이트 (아래에서 처리)
 
+      const currentHtmlContent = editorRef.current ? editorRef.current.innerHTML : content;
+
+      const finalStatus = overrideStatus || status;
+
       const result = await saveArticle({
         id: loadArticleId || undefined,
         author_id: currentUserId || undefined,
         author_name: reporterName,
         author_email: reporterEmail,
-        status: status,
+        status: finalStatus,
         form_type: formType,
         section1,
         section2,
         series,
         title,
         subtitle,
-        content,
+        content: currentHtmlContent,
         youtube_url: youtubeUrl,
         is_shorts: isShortsRatio,
         published_at: publishedAt,
@@ -1030,35 +1070,58 @@ export default function NewsWritePage() {
 
       if (result.success) {
         const articleId = result.articleId;
+        let finalHtml = currentHtmlContent;
+        let finalThumbnailUrl = thumbnailUrl;
+        let htmlChanged = false;
 
-        // 사진 업로드 (등록 시점에 이미 WebP 압축 완료)
+        // 사진 첨부: 신규 파일(p.file !== null)은 업로드 진행
         if (articleId && photoFiles.length > 0) {
           for (let i = 0; i < photoFiles.length; i++) {
-            const formData = new FormData();
-            formData.append('file', photoFiles[i].file);
-            formData.append('article_id', articleId);
-            formData.append('media_type', 'PHOTO');
-            formData.append('sort_order', String(i));
-            formData.append('is_cover', photoFiles[i].isCover ? 'true' : 'false');
-            const uploadResult = await uploadArticleMedia(formData);
-
-            // 대표 사진이면 thumbnail_url 업데이트
-            if (photoFiles[i].isCover && uploadResult.success && uploadResult.url) {
-              await saveArticle({
-                id: articleId,
-                author_name: reporterName,
-                author_email: reporterEmail,
-                status, form_type: formType,
-                section1, section2, series,
-                title, subtitle, content,
-                youtube_url: youtubeUrl,
-                is_shorts: isShortsRatio,
-                published_at: publishedAt,
-                keywords,
-                thumbnail_url: uploadResult.url,
-              });
+            const p = photoFiles[i];
+            if (p.file) {
+              const formData = new FormData();
+              formData.append('file', p.file);
+              formData.append('article_id', articleId);
+              formData.append('media_type', 'PHOTO');
+              formData.append('sort_order', String(i));
+              formData.append('is_cover', p.isCover ? 'true' : 'false');
+              
+              const uploadResult = await uploadArticleMedia(formData);
+              if (uploadResult.success && uploadResult.url) {
+                // 본문에 삽입된 브라우저 Blob URL을 실제 서버 Public URL로 치환
+                const localUrl = p.preview;
+                if (finalHtml.includes(localUrl)) {
+                  finalHtml = finalHtml.replaceAll(localUrl, uploadResult.url);
+                  htmlChanged = true;
+                }
+                if (p.isCover) {
+                  finalThumbnailUrl = uploadResult.url;
+                }
+              }
+            } else {
+              // 기존에 DB에 있던 사진
+              if (p.isCover) finalThumbnailUrl = p.preview;
             }
           }
+        }
+
+        // 2차 저장: HTML 본문이 치환되었거나 대표사진(커버)이 새로 할당된 경우 덮어쓰기 업데이트
+        if (htmlChanged || finalThumbnailUrl !== thumbnailUrl || finalStatus !== status) {
+          await saveArticle({
+            id: articleId,
+            author_id: currentUserId || undefined,
+            author_name: reporterName,
+            author_email: reporterEmail,
+            status: finalStatus, form_type: formType,
+            section1, section2, series,
+            title, subtitle, 
+            content: finalHtml,
+            youtube_url: youtubeUrl,
+            is_shorts: isShortsRatio,
+            published_at: publishedAt,
+            keywords,
+            thumbnail_url: finalThumbnailUrl || undefined,
+          });
         }
 
         // 첨부파일 업로드
@@ -1502,26 +1565,36 @@ export default function NewsWritePage() {
               </div>
             </div>
 
-            {/* ── 저장완료 버튼 ── */}
-            <button 
-              type="button"
-              onClick={handleSave}
-              disabled={saving}
-              style={{
-                width: "100%", padding: "16px 0", 
-                background: saving ? "#9ca3af" : accentBlue, 
-                color: "#fff",
-                border: "none", borderRadius: 8, fontSize: 16, fontWeight: 700, 
-                cursor: saving ? "not-allowed" : "pointer",
-                display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-                transition: "background 0.2s",
-                opacity: saving ? 0.7 : 1,
-              }}
-              onMouseOver={e => { if (!saving) e.currentTarget.style.background = "#2563eb"; }}
-              onMouseOut={e => { if (!saving) e.currentTarget.style.background = accentBlue; }}
-            >
-              {saving ? "⏳ 저장 중..." : "✓ 저장완료"}
-            </button>
+            {/* ── 저장완료 버튼 영역 (권한 분기) ── */}
+            {currentUserRole === 'ADMIN' ? (
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button type="button" disabled={saving} onClick={async () => { setStatus('PUBLISHED'); await handleSave('PUBLISHED'); }}
+                  style={{ flex: 1, padding: "16px 0", background: saving ? "#9ca3af" : "#10b981", color: "#fff", border: "none", borderRadius: 8, fontSize: 16, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer" }}>
+                  {saving ? "⏳ 처리 중..." : "✓ 승인 (바로 발행)"}
+                </button>
+                <button type="button" disabled={saving} onClick={async () => { setStatus('REJECTED'); await handleSave('REJECTED'); }}
+                  style={{ flex: 1, padding: "16px 0", background: saving ? "#9ca3af" : "#ef4444", color: "#fff", border: "none", borderRadius: 8, fontSize: 16, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer" }}>
+                  반려 (보류)
+                </button>
+                <button type="button" disabled={saving} onClick={() => handleSave()}
+                  style={{ flex: 1, padding: "16px 0", background: saving ? "#9ca3af" : "#4b5563", color: "#fff", border: "none", borderRadius: 8, fontSize: 16, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer" }}>
+                  수정저장
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button type="button" disabled={saving} onClick={async () => { setStatus('DRAFT'); await handleSave('DRAFT'); }}
+                  style={{ flex: 1, padding: "16px 0", background: saving ? "#9ca3af" : "#6b7280", color: "#fff", border: "none", borderRadius: 8, fontSize: 16, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer" }}>
+                  임시저장 (작성중)
+                </button>
+                <button type="button" disabled={saving} onClick={async () => { setStatus('PENDING'); await handleSave('PENDING'); }}
+                  style={{ flex: 1, padding: "16px 0", background: saving ? "#9ca3af" : accentBlue, color: "#fff", border: "none", borderRadius: 8, fontSize: 16, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.7 : 1 }}
+                  onMouseOver={e => { if (!saving) e.currentTarget.style.background = "#2563eb"; }}
+                  onMouseOut={e => { if (!saving) e.currentTarget.style.background = accentBlue; }}>
+                  {saving ? "⏳ 저장 중..." : "✓ 승인신청"}
+                </button>
+              </div>
+            )}
           </div>
         </main>
 
