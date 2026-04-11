@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { saveArticle, uploadArticleMedia } from "@/app/actions/article";
+import { saveArticle, uploadArticleMedia, getPhotoLibrary, togglePhotoFavorite } from "@/app/actions/article";
 import { geocodeAddress } from "@/app/actions/geocode";
 import { createClient } from "@/utils/supabase/client";
 
@@ -71,6 +71,22 @@ export default function NewsWritePage() {
   const [editAlign, setEditAlign] = useState<'left' | 'center' | 'right'>('left');
   const [editCaption, setEditCaption] = useState('');
   const [editCaptionAlign, setEditCaptionAlign] = useState<'left' | 'center' | 'right'>('left');
+
+  /* ── 포토DB 모달 상태 ── */
+  const [showPhotoDbModal, setShowPhotoDbModal] = useState(false);
+  const [photoDbTab, setPhotoDbTab] = useState<'전체사진' | '즐겨찾기'>('전체사진');
+  const [photoDbSearch, setPhotoDbSearch] = useState('');
+  const [photoDbItems, setPhotoDbItems] = useState<any[]>([]);
+  const [isPhotoDbLoading, setIsPhotoDbLoading] = useState(false);
+
+  /* ── 지도 검색 모달 (카카오맵) ── */
+  const [showMapModal, setShowMapModal] = useState(false);
+  const [mapSearchKw, setMapSearchKw] = useState('');
+  const mapRef = React.useRef<HTMLDivElement>(null);
+  const kakaoMapRef = React.useRef<any>(null);
+  const kakaoMarkerRef = React.useRef<any>(null);
+  const kakaoInfoWindowRef = React.useRef<any>(null);
+  const kakaoPlacesRef = React.useRef<any>(null);
 
   /* ── 유튜브 헬퍼 ── */
   const extractYoutubeId = (url: string): string | null => {
@@ -675,6 +691,65 @@ export default function NewsWritePage() {
     insertVideoAtCursor(v.videoId, v.caption, v.isShorts);
   };
 
+  /* ── 포토DB 모달 로직 ── */
+  const openPhotoDbModal = () => {
+    setShowPhotoDbModal(true);
+    setPhotoDbTab('전체사진');
+    setPhotoDbSearch('');
+    fetchPhotoDb('', false);
+  };
+
+  const fetchPhotoDb = async (searchStr: string, favOnly: boolean) => {
+    setIsPhotoDbLoading(true);
+    const res = await getPhotoLibrary({ search: searchStr, isFavorite: favOnly });
+    if (res.success && res.data) {
+      setPhotoDbItems(res.data);
+    } else {
+      setPhotoDbItems([]);
+    }
+    setIsPhotoDbLoading(false);
+  };
+
+  useEffect(() => {
+    if (showPhotoDbModal) {
+      fetchPhotoDb(photoDbSearch, photoDbTab === '즐겨찾기');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [photoDbTab]);
+
+  const handlePhotoDbSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    fetchPhotoDb(photoDbSearch, photoDbTab === '즐겨찾기');
+  };
+
+  const handleToggleFav = async (e: React.MouseEvent, photoId: string, currentFav: boolean) => {
+    e.stopPropagation();
+    const res = await togglePhotoFavorite(photoId, !currentFav);
+    if (res.success) {
+      setPhotoDbItems(prev => prev.map(p => p.id === photoId ? { ...p, is_favorite: !currentFav } : p));
+      if (photoDbTab === '즐겨찾기') {
+        fetchPhotoDb(photoDbSearch, true); // 목록 갱신
+      }
+    } else {
+      alert("상태 변경에 실패했습니다.");
+    }
+  };
+
+  const handleSelectFromPhotoDb = async (photo: any) => {
+    setShowPhotoDbModal(false);
+    try {
+      // URL에서 Blob으로 변환하여 일반 첨부와 동일한 로직 태우기
+      const response = await fetch(photo.url);
+      const blob = await response.blob();
+      const ext = photo.filename ? photo.filename.split('.').pop() : 'webp';
+      const file = new File([blob], photo.filename || `db_photo_${Date.now()}.${ext}`, { type: blob.type });
+      
+      handlePhotoSelect([file]); // 기존 로직 재활용
+    } catch (err) {
+      alert("사진을 불러오는 중 오류가 발생했습니다.");
+    }
+  };
+
   /* ── 현재 로그인 사용자 ID 가져오기 ── */
   useEffect(() => {
     const supabase = createClient();
@@ -901,7 +976,7 @@ export default function NewsWritePage() {
                 <span style={{ fontSize: 11, fontWeight: 600, color: textSecondary }}>파일</span>
               </button>
               {/* 포토DB */}
-              <button style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "12px 4px", border: "none", background: "none", cursor: "pointer", borderRadius: 8 }}>
+              <button onClick={openPhotoDbModal} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "12px 4px", border: "none", background: "none", cursor: "pointer", borderRadius: 8 }}>
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={textSecondary} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="2" y="2" width="20" height="20" rx="2"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/>
                 </svg>
@@ -1006,14 +1081,14 @@ export default function NewsWritePage() {
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
               <label style={{ fontSize: 14, fontWeight: 600, color: textPrimary, minWidth: 80 }}>섹션</label>
               <select value={section1} onChange={e => { setSection1(e.target.value); setSection2(""); }}
-                style={{ flex: 1, padding: "10px 14px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 14, color: section1 ? textPrimary : textMuted, background: cardBg, outline: "none", fontFamily: "inherit", cursor: "pointer", appearance: "none", backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 12px center" }}>
-                <option value="">1차섹션 선택</option>
+                style={{ flex: 1, padding: "8px 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 14, color: textPrimary, background: cardBg, outline: "none", fontFamily: "inherit", cursor: "pointer", appearance: "none", backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 12px center" }}>
+                <option value="" disabled style={{ color: textMuted }}>1차섹션 선택</option>
                 <option value="우리동네부동산">우리동네부동산</option>
                 <option value="뉴스/칼럼">뉴스/칼럼</option>
               </select>
               <select value={section2} onChange={e => setSection2(e.target.value)}
-                style={{ flex: 1, padding: "10px 14px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 14, color: section2 ? textPrimary : textMuted, background: cardBg, outline: "none", fontFamily: "inherit", cursor: "pointer", appearance: "none", backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 12px center" }}>
-                <option value="">2차섹션 전체</option>
+                style={{ flex: 1, padding: "8px 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 14, color: textPrimary, background: cardBg, outline: "none", fontFamily: "inherit", cursor: "pointer", appearance: "none", backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 12px center" }}>
+                <option value="" disabled style={{ color: textMuted }}>2차섹션 전체</option>
                 {section1 === "우리동네부동산" && (
                   <>
                     <option value="아파트·오피스텔">아파트·오피스텔</option>
@@ -1034,10 +1109,6 @@ export default function NewsWritePage() {
                     <option value="인물·미션·기타">인물·미션·기타</option>
                   </>
                 )}
-              </select>
-              <select value={series} onChange={e => setSeries(e.target.value)}
-                style={{ width: 120, padding: "10px 14px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 14, color: series ? textPrimary : textMuted, background: cardBg, outline: "none", fontFamily: "inherit", cursor: "pointer", appearance: "none", backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 12px center" }}>
-                <option value="">연재</option>
               </select>
             </div>
 
@@ -1223,13 +1294,17 @@ export default function NewsWritePage() {
             <h3 style={{ fontSize: 15, fontWeight: 800, color: textPrimary, margin: "0 0 16px 0" }}>라이브러리</h3>
 
             {/* 포토DB 간편검색 */}
-            <div style={{ position: "relative", marginBottom: 20 }}>
+            <form onSubmit={handlePhotoDbSearch} style={{ position: "relative", marginBottom: 20 }}>
               <input type="text" placeholder="포토DB 간편검색"
+                value={photoDbSearch} onChange={e => setPhotoDbSearch(e.target.value)}
+                onClick={openPhotoDbModal}
                 style={{ width: "100%", padding: "10px 36px 10px 14px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: cardBg, outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)" }}>
-                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-              </svg>
-            </div>
+              <button type="button" onClick={openPhotoDbModal} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer" }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+              </button>
+            </form>
 
             {/* ── 사진 섹션 ── */}
             <div style={{ marginBottom: 16 }}>
@@ -1839,6 +1914,94 @@ export default function NewsWritePage() {
                 padding: '12px 36px', background: '#fff', color: textPrimary, border: `1px solid ${border}`, borderRadius: 8,
                 fontSize: 15, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
               }}>✕ 취소</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ 포토DB 모달 ═══ */}
+      {showPhotoDbModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+          background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          backdropFilter: 'blur(2px)', zIndex: 9999
+        }}>
+          <div style={{
+            background: '#fff', borderRadius: 16, width: 800, maxWidth: '90%', maxHeight: '90%', display: "flex", flexDirection: "column",
+            boxShadow: '0 10px 25px rgba(0,0,0,0.2)', overflow: 'hidden', animation: 'scaleUp 0.3s ease-out'
+          }}>
+            {/* 헤더 */}
+            <div style={{ background: '#3b82f6', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 20 }}>🖼️</span>
+                <span style={{ fontSize: 18, fontWeight: 800, color: '#fff' }}>포토DB</span>
+              </div>
+              <button type="button" onClick={() => setShowPhotoDbModal(false)}
+                style={{ background: 'none', border: 'none', color: '#fff', fontSize: 20, cursor: 'pointer' }}>✕</button>
+            </div>
+
+            {/* 검색바 & 탭 */}
+            <div style={{ padding: '20px 24px 0 24px' }}>
+              <form onSubmit={handlePhotoDbSearch} style={{ display: "flex", gap: 10, marginBottom: 20 }}>
+                <input type="text" placeholder="사진 설명 또는 파일명으로 검색"
+                  value={photoDbSearch} onChange={e => setPhotoDbSearch(e.target.value)}
+                  style={{ flex: 1, padding: "12px 16px", border: `1px solid ${border}`, borderRadius: 8, fontSize: 14, outline: "none" }} />
+                <button type="submit" style={{ padding: "0 24px", background: "#374151", color: "#fff", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>검색</button>
+              </form>
+
+              <div style={{ display: "flex", gap: 24, borderBottom: `1px solid ${border}` }}>
+                {['전체사진', '즐겨찾기'].map(tab => (
+                  <button key={tab} type="button" onClick={() => setPhotoDbTab(tab as any)}
+                    style={{
+                      background: "none", border: "none", borderBottom: photoDbTab === tab ? "3px solid #f97316" : "3px solid transparent",
+                      padding: "8px 4px", fontSize: 15, fontWeight: photoDbTab === tab ? 800 : 600,
+                      color: photoDbTab === tab ? "#f97316" : textSecondary, cursor: "pointer", transition: "all 0.2s"
+                    }}>
+                    {tab === '즐겨찾기' && <span style={{ color: '#f59e0b', marginRight: 4 }}>⭐</span>}
+                    {tab}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 메인 리스트 영역 */}
+            <div style={{ flex: 1, overflowY: "auto", padding: "20px 24px", background: "#f9fafb" }}>
+              {isPhotoDbLoading ? (
+                <div style={{ textAlign: "center", padding: "40px", color: textMuted }}>⏳ 불러오는 중...</div>
+              ) : photoDbItems.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "60px 0", color: textMuted }}>저장된 사진이 없습니다.</div>
+              ) : (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 16 }}>
+                  {photoDbItems.map(photo => (
+                    <div key={photo.id} style={{ 
+                      background: "#fff", borderRadius: 8, border: `1px solid ${border}`, overflow: "hidden", 
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.05)", cursor: "pointer", transition: "transform 0.2s"
+                    }}
+                    onMouseOver={e => e.currentTarget.style.transform = "translateY(-4px)"}
+                    onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}
+                    onClick={() => handleSelectFromPhotoDb(photo)}>
+                      <div style={{ position: "relative", width: "100%", paddingTop: "100%", background: "#f3f4f6" }}>
+                        <img src={photo.url} alt="" style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+                        {/* 즐겨찾기 별모양 버튼 */}
+                        <button type="button" onClick={(e) => handleToggleFav(e, photo.id, photo.is_favorite)}
+                          style={{
+                            position: "absolute", top: 6, right: 6, width: 28, height: 28, background: "rgba(255,255,255,0.9)",
+                            borderRadius: "50%", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
+                            boxShadow: "0 1px 4px rgba(0,0,0,0.2)"
+                          }}>
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill={photo.is_favorite ? "#f59e0b" : "none"} stroke={photo.is_favorite ? "#f59e0b" : "#9ca3af"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                          </svg>
+                        </button>
+                      </div>
+                      <div style={{ padding: "8px", fontSize: 11, color: textSecondary }}>
+                        <div style={{ fontWeight: 600, color: textPrimary, marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{photo.filename || "무제"}</div>
+                        <div style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{photo.caption || "설명 없음"}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>

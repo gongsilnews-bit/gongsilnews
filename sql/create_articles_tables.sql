@@ -50,6 +50,7 @@ CREATE TABLE article_media (
   caption     TEXT,
   sort_order  INT DEFAULT 0,
   file_size   INT,
+  is_favorite BOOLEAN DEFAULT FALSE,
   created_at  TIMESTAMPTZ DEFAULT now()
 );
 

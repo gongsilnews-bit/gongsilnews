@@ -216,3 +216,55 @@ export async function deleteArticle(articleId: string) {
     return { success: false, error: err.message };
   }
 }
+
+/* ── 포토DB 목록 조회 (최근 업로드된 사진들) ── */
+export async function getPhotoLibrary(filters?: {
+  search?: string;
+  isFavorite?: boolean;
+  limit?: number;
+}) {
+  const supabase = getAdminClient();
+
+  try {
+    let query = supabase
+      .from("article_media")
+      .select("id, url, filename, caption, is_favorite, created_at, file_size")
+      .eq("media_type", "PHOTO")
+      .order("created_at", { ascending: false });
+
+    if (filters?.isFavorite) {
+      query = query.eq("is_favorite", true);
+    }
+    if (filters?.search) {
+      // filename or caption 검색
+      query = query.or(`filename.ilike.%${filters.search}%,caption.ilike.%${filters.search}%`);
+    }
+    if (filters?.limit) {
+      query = query.limit(filters.limit);
+    }
+
+    const { data, error } = await query;
+    if (error) return { success: false, error: error.message };
+
+    return { success: true, data };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+/* ── 포토DB 즐겨찾기 토글 ── */
+export async function togglePhotoFavorite(mediaId: string, isFavorite: boolean) {
+  const supabase = getAdminClient();
+
+  try {
+    const { error } = await supabase
+      .from("article_media")
+      .update({ is_favorite: isFavorite })
+      .eq("id", mediaId);
+      
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
