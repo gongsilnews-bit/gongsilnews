@@ -94,7 +94,17 @@ export default function AdminPage() {
   const [dbArticles, setDbArticles] = useState<any[]>([]);
   const [articleFilter, setArticleFilter] = useState("전체");
   const [checkedArticleIds, setCheckedArticleIds] = useState<string[]>([]);
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
+  const [selectedArticleIdsForReject, setSelectedArticleIdsForReject] = useState<string[]>([]);
   const [dbBoards, setDbBoards] = useState<any[]>([]);
+
+  const REJECT_REASONS = [
+    "사진 화질 불량 또는 이미지 누락",
+    "제목 및 본문 오타 수정 요망",
+    "사실 확인 필요 (내용 불충분)",
+    "기타 사유 (직접 입력)"
+  ];
 
   useEffect(() => {
     adminGetMembers().then((res) => {
@@ -1431,6 +1441,47 @@ export default function AdminPage() {
           </div>
         </div>
       )}
+      {/* ===== 반려 사유 입력 모달 ===== */}
+      {showRejectModal && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ background: darkMode ? "#1f2937" : "#fff", width: 420, borderRadius: 12, padding: "24px", boxShadow: "0 10px 25px rgba(0,0,0,0.2)" }}>
+            <h3 style={{ margin: "0 0 12px 0", fontSize: 18, color: textPrimary, fontWeight: 800 }}>기사 반려 사유 입력</h3>
+            <p style={{ margin: "0 0 20px 0", fontSize: 13, color: textSecondary }}>선택한 기사를 반려 상태로 변경합니다. 작성자에게 전달할 반려 사유를 선택하거나 기입해주세요.</p>
+            
+            <select 
+              value={REJECT_REASONS.includes(rejectReason) ? rejectReason : "기타 사유 (직접 입력)"} 
+              onChange={(e) => setRejectReason(e.target.value === "기타 사유 (직접 입력)" ? "" : e.target.value)}
+              style={{ width: "100%", padding: "12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 14, marginBottom: 12, outline: "none", color: textPrimary, background: darkMode ? "#374151" : "#fff" }}
+            >
+              {REJECT_REASONS.map(r => <option key={r} value={r}>{r}</option>)}
+            </select>
+
+            {(!REJECT_REASONS.includes(rejectReason) || rejectReason === "기타 사유 (직접 입력)") && (
+               <textarea 
+                 value={rejectReason === "기타 사유 (직접 입력)" ? "" : rejectReason} 
+                 onChange={e => setRejectReason(e.target.value)} 
+                 placeholder="상세 반려 사유를 직접 입력하세요." 
+                 style={{ width: "100%", height: 80, padding: 12, border: `1px solid ${border}`, borderRadius: 6, fontSize: 14, resize: "none", outline: "none", color: textPrimary, background: darkMode ? "#374151" : "#fff", boxSizing: "border-box" }} 
+               />
+            )}
+
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 24 }}>
+              <button type="button" onClick={() => setShowRejectModal(false)} style={{ padding: "10px 18px", background: darkMode ? "#4b5563" : "#f3f4f6", color: darkMode ? "#fff" : "#4b5563", border: "none", borderRadius: 6, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>취소</button>
+              <button type="button" onClick={async () => {
+                const res = await adminUpdateArticleStatus(selectedArticleIdsForReject, 'REJECTED', rejectReason);
+                if (res.success) {
+                  getArticles().then(r => setDbArticles(r.data || []));
+                  setCheckedArticleIds([]);
+                  setShowRejectModal(false);
+                } else {
+                  alert("처리 실패: " + res.error);
+                }
+              }} style={{ padding: "10px 18px", background: "#ef4444", color: "#fff", border: "none", borderRadius: 6, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>반려 처리</button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

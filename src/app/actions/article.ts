@@ -32,6 +32,7 @@ export async function saveArticle(data: {
   published_at: string | null;
   keywords: string[];
   thumbnail_url?: string;
+  reject_reason?: string;
 }) {
   const supabase = getAdminClient();
 
@@ -69,6 +70,9 @@ export async function saveArticle(data: {
       thumbnail_url: data.thumbnail_url || null,
       updated_at: new Date().toISOString(),
     };
+    if (data.reject_reason !== undefined) {
+      (articleData as any).reject_reason = data.reject_reason;
+    }
 
     let articleId = data.id;
 
@@ -78,7 +82,16 @@ export async function saveArticle(data: {
         .from("articles")
         .update(articleData)
         .eq("id", articleId);
-      if (error) return { success: false, error: error.message };
+      if (error) {
+        if (error.message.includes("reject_reason")) {
+           console.warn("❌ reject_reason column missing in DB. Ignoring reject_reason.");
+           delete (articleData as any).reject_reason;
+           const { error: fallbackError } = await supabase.from("articles").update(articleData).eq("id", articleId);
+           if (fallbackError) return { success: false, error: fallbackError.message };
+        } else {
+           return { success: false, error: error.message };
+        }
+      }
     } else {
       // 신규
       const { data: inserted, error } = await supabase
@@ -86,8 +99,19 @@ export async function saveArticle(data: {
         .insert(articleData)
         .select("id")
         .single();
-      if (error) return { success: false, error: error.message };
-      articleId = inserted.id;
+      if (error) {
+        if (error.message.includes("reject_reason")) {
+           console.warn("❌ reject_reason column missing in DB. Ignoring reject_reason.");
+           delete (articleData as any).reject_reason;
+           const { data: fallbackInserted, error: fallbackError } = await supabase.from("articles").insert(articleData).select("id").single();
+           if (fallbackError) return { success: false, error: fallbackError.message };
+           articleId = fallbackInserted.id;
+        } else {
+           return { success: false, error: error.message };
+        }
+      } else {
+        articleId = inserted.id;
+      }
     }
 
     // 키워드 처리: 기존 삭제 후 새로 INSERT
@@ -270,16 +294,29 @@ export async function togglePhotoFavorite(mediaId: string, isFavorite: boolean) 
 }
 
 /* ── 관리자 기사 일괄 상태 수정 ── */
-export async function adminUpdateArticleStatus(articleIds: string[], status: 'PUBLISHED' | 'REJECTED' | 'DRAFT' | 'PENDING') {
+export async function adminUpdateArticleStatus(articleIds: string[], status: 'PUBLISHED' | 'REJECTED' | 'DRAFT' | 'PENDING', reject_reason?: string) {
   const supabase = getAdminClient();
 
   try {
+    const updateData: any = { status };
+    if (reject_reason) {
+      updateData.reject_reason = reject_reason;
+    }
+
     const { error } = await supabase
       .from("articles")
-      .update({ status: status })
+      .update(updateData)
       .in("id", articleIds);
       
-    if (error) return { success: false, error: error.message };
+    if (error) {
+      if (error.message.includes("reject_reason")) {
+        console.warn("❌ reject_reason column missing in DB. Ignoring reject_reason.");
+        const { error: fallbackError } = await supabase.from("articles").update({ status }).in("id", articleIds);
+        if (fallbackError) return { success: false, error: fallbackError.message };
+        return { success: true };
+      }
+      return { success: false, error: error.message };
+    }
     return { success: true };
   } catch (err: any) {
     return { success: false, error: err.message };

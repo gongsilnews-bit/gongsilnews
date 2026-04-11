@@ -198,9 +198,11 @@ export async function saveBoardComment(payload: {
   if (error) return { success: false, error: error.message };
 
   // comment_count 증가
-  await supabase.rpc("increment_comment_count", { p_post_id: payload.post_id }).catch(() => {
+  try {
+    await supabase.rpc("increment_comment_count", { p_post_id: payload.post_id });
+  } catch (err) {
     // rpc가 없으면 무시 (수동 카운트)
-  });
+  }
 
   return { success: true };
 }
