@@ -350,3 +350,33 @@ export async function adminUpdateArticleStatus(articleIds: string[], status: 'AP
     return { success: false, error: err.message };
   }
 }
+
+/* ── 기사 조회수 1 증가 ── */
+export async function incrementArticleView(articleId: string) {
+  const supabase = getAdminClient();
+  try {
+    const { data: article, error: fetchError } = await supabase
+      .from("articles")
+      .select("view_count")
+      .eq("id", articleId)
+      .single();
+
+    if (fetchError || !article) return { success: false, error: fetchError?.message };
+
+    const newViewCount = (article.view_count || 0) + 1;
+
+    const { error: updateError } = await supabase
+      .from("articles")
+      .update({ view_count: newViewCount })
+      .eq("id", articleId);
+
+    if (updateError) return { success: false, error: updateError.message };
+
+    // @ts-ignore
+    revalidateTag("articles");
+    
+    return { success: true, view_count: newViewCount };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}

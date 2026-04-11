@@ -18,6 +18,7 @@ export default function NewsLocalPage() {
   const mapRef = React.useRef<HTMLDivElement>(null);
   const [mapError, setMapError] = useState<string | null>(null);
   const kakaoMapRef = React.useRef<any>(null);
+  const clustererRef = React.useRef<any>(null);
   const markersRef = React.useRef<any[]>([]);
 
   // 날짜 포맷
@@ -123,16 +124,43 @@ export default function NewsLocalPage() {
         if (!kakaoMapRef.current) {
           const options = {
             center: new kakao.maps.LatLng(initialLat, initialLng),
-            level: 5,
+            level: 7, // 클러스터링을 잘 보이게 하기 위해 기본 레벨을 조금 넓게 줌
           };
           kakaoMapRef.current = new kakao.maps.Map(mapRef.current, options);
+          
+          // 클러스터러 초기화
+          clustererRef.current = new kakao.maps.MarkerClusterer({
+            map: kakaoMapRef.current,
+            averageCenter: true, 
+            minLevel: 5, // 클러스터 할 최소 지도 레벨
+            calculator: [10, 30, 50], // 클러스터의 크기 구분 기준
+            texts: (count: number) => count.toString(),
+            styles: [
+              { // 작음
+                width: '36px', height: '36px', background: '#ff8e15', color: '#fff', textAlign: 'center', lineHeight: '36px', borderRadius: '50%', fontWeight: 'bold', fontSize: '14px', border: '2px solid #fff', boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
+              },
+              { // 중간
+                width: '46px', height: '46px', background: '#ff8e15', color: '#fff', textAlign: 'center', lineHeight: '46px', borderRadius: '50%', fontWeight: 'bold', fontSize: '15px', border: '2px solid #fff', boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
+              },
+              { // 큼
+                width: '56px', height: '56px', background: '#e67300', color: '#fff', textAlign: 'center', lineHeight: '56px', borderRadius: '50%', fontWeight: 'bold', fontSize: '16px', border: '2px solid #fff', boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
+              },
+              { // 매우 큼
+                width: '66px', height: '66px', background: '#cc6600', color: '#fff', textAlign: 'center', lineHeight: '66px', borderRadius: '50%', fontWeight: 'bold', fontSize: '18px', border: '2px solid #fff', boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
+              }
+            ]
+          });
         }
 
         // 기존 마커 제거
-        markersRef.current.forEach((m: any) => m.setMap(null));
+        if (clustererRef.current) {
+          clustererRef.current.clear();
+        }
         markersRef.current = [];
 
-        // 새 마커 생성
+        // 새 마커 배열
+        const newMarkers: any[] = [];
+
         articles.forEach(art => {
           if (!art.lat || !art.lng) return;
           const position = new kakao.maps.LatLng(art.lat, art.lng);
@@ -143,9 +171,13 @@ export default function NewsLocalPage() {
             handleSelectArticle(art.id, false);
           });
 
-          marker.setMap(kakaoMapRef.current);
+          newMarkers.push(marker);
           markersRef.current.push(marker);
         });
+
+        if (clustererRef.current && newMarkers.length > 0) {
+          clustererRef.current.addMarkers(newMarkers);
+        }
 
         // Vercel 브라우저 사이즈 문제로 회색 화면이 뜨는 버그 방지 (강제 리렌더)
         setTimeout(() => {
@@ -164,7 +196,7 @@ export default function NewsLocalPage() {
         const script = document.createElement("script");
         const kakaoApiKey = process.env.NEXT_PUBLIC_KAKAO_APP_KEY || "535b712ad15df457168dcab800fcb4aa";
         script.id = "kakao-map-script";
-        script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoApiKey}&libraries=services&autoload=false`;
+        script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoApiKey}&libraries=services,clusterer&autoload=false`;
         script.onerror = () => {
           setMapError("카카오맵 JS 키가 유효하지 않거나 등록되지 않았습니다.");
         };
@@ -302,27 +334,29 @@ export default function NewsLocalPage() {
           {/* 가상 마커 (말풍선 시뮬레이터) - 지도가 들어갈 구역 위 정중앙 */}
           {activeArticleId && articleDetail && !showDetail && (
             <div style={{
-              position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -100%) translateY(-25px)", zIndex: 50, // 마커(핀 중앙)보다 약간 위로 위치시킴
-              background: "#fff", padding: "16px 20px", borderRadius: 12, boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
-              border: "1px solid #ddd", width: 340, animation: "fadeIn 0.2s ease"
+              position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -100%) translateY(-25px)", zIndex: 100, // 마커(핀 중앙)보다 약간 위로 위치시킴
+              background: "#fff", padding: "14px 18px", borderRadius: 8, boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+              border: "1px solid #e0e0e0", width: 280, animation: "fadeIn 0.2s ease"
             }}>
-              <h3 style={{ fontSize: 18, fontWeight: 800, color: "#111", marginBottom: 8, lineHeight: 1.3, wordBreak: "keep-all" }}>
+              <h3 style={{ fontSize: 15, fontWeight: 700, color: "#222", marginBottom: 6, lineHeight: 1.3, wordBreak: "keep-all", display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
                 {articleDetail.title}
               </h3>
-              <p style={{ fontSize: 13, color: "#666", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", marginBottom: 12 }}>
-                {articleDetail.subtitle || stripHtml(articleDetail.content || "").slice(0, 100)}
+              <p style={{ fontSize: 12, color: "#777", display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden", marginBottom: 10 }}>
+                {articleDetail.subtitle || stripHtml(articleDetail.content || "").slice(0, 50)}
               </p>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #eee", paddingTop: 12 }}>
-                <span style={{ fontSize: 12, color: "#999" }}>{formatDate(articleDetail.published_at || articleDetail.created_at)}</span>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 8, borderTop: "1px solid #f0f0f0" }}>
+                <span style={{ fontSize: 11, color: "#999" }}>
+                  {formatDate(articleDetail.published_at || articleDetail.created_at)} | {articleDetail.author_name || "공실뉴스"}
+                </span>
                 <button 
                   onClick={() => setShowDetail(true)}
-                  style={{ background: "#508bf5", color: "#fff", border: "none", borderRadius: 20, padding: "5px 12px", fontSize: 12, fontWeight: "bold", cursor: "pointer", transition: "all 0.2s" }}
+                  style={{ background: "transparent", color: "#508bf5", border: "none", padding: 0, fontSize: 12, fontWeight: "bold", cursor: "pointer", transition: "color 0.2s" }}
                 >
-                  기사 보러가기 ➔
+                  기사 보러가기 &gt;
                 </button>
               </div>
               {/* 말풍선 꼬리 */}
-              <div style={{ position: "absolute", bottom: -10, left: "50%", transform: "translateX(-50%)", width: 0, height: 0, borderLeft: "10px solid transparent", borderRight: "10px solid transparent", borderTop: "10px solid #fff" }}></div>
+              <div style={{ position: "absolute", bottom: -8, left: "50%", transform: "translateX(-50%)", width: 0, height: 0, borderLeft: "8px solid transparent", borderRight: "8px solid transparent", borderTop: "8px solid #fff" }}></div>
             </div>
           )}
 
