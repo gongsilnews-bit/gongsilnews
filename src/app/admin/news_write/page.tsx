@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { saveArticle, uploadArticleMedia, getPhotoLibrary, togglePhotoFavorite } from "@/app/actions/article";
+import { saveArticle, uploadArticleMedia, getPhotoLibrary, togglePhotoFavorite, getArticleDetail } from "@/app/actions/article";
 import { geocodeAddress } from "@/app/actions/geocode";
 import { createClient } from "@/utils/supabase/client";
 
@@ -50,6 +50,102 @@ export default function NewsWritePage() {
   const [geocoding, setGeocoding] = useState(false);
   const [photoFiles, setPhotoFiles] = useState<{ file: File; preview: string; caption: string; isCover: boolean; size: number; align: string; captionAlign: string }[]>([]);
   const [attachFiles, setAttachFiles] = useState<{ file: File; name: string }[]>([]);
+  const [loadArticleId, setLoadArticleId] = useState<string | null>(null);
+
+  /* ── 관련기사 관련 상태 ── */
+  const [relatedArticles, setRelatedArticles] = useState<{id: string, title: string, section1: string, published_at: string}[]>([]);
+  const [showRelatedArticleModal, setShowRelatedArticleModal] = useState(false);
+  const [relatedArticlesDb, setRelatedArticlesDb] = useState<any[]>([]);
+  const [isRelatedArticlesLoading, setIsRelatedArticlesLoading] = useState(false);
+  const [relatedArticleSearch, setRelatedArticleSearch] = useState('');
+
+  const fetchRelatedArticles = async (searchKw: string = '') => {
+    setIsRelatedArticlesLoading(true);
+    const { getArticles } = await import('@/app/actions/article');
+    const res = await getArticles({ limit: 130 }); // 최근 130건 (이미지 참조)
+    if (res.success && res.data) {
+      let data = res.data;
+      if (searchKw) {
+         data = data.filter((a: any) => a.title?.includes(searchKw));
+      }
+      setRelatedArticlesDb(data);
+    }
+    setIsRelatedArticlesLoading(false);
+  };
+
+  const handleRelatedSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    fetchRelatedArticles(relatedArticleSearch);
+  };
+
+  const handleSelectRelatedArticle = (article: any) => {
+    if (relatedArticles.some(a => a.id === article.id)) return;
+    setRelatedArticles(prev => [...prev, {
+      id: article.id,
+      title: article.title,
+      section1: article.section1,
+      published_at: article.published_at
+    }]);
+  };
+
+  useEffect(() => {
+    if (showRelatedArticleModal) {
+       fetchRelatedArticles(relatedArticleSearch);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showRelatedArticleModal]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const articleId = params.get("id");
+      if (articleId) {
+        setLoadArticleId(articleId);
+        getArticleDetail(articleId).then(res => {
+          if (res.success && res.data) {
+            const d = res.data;
+            if (d.status === "PENDING") setStatus("승인신청");
+            else if (d.status === "REJECTED") setStatus("반려");
+            else setStatus("작성중");
+            
+            if (d.form_type === "CARD_NEWS") setFormType("카드뉴스");
+            else if (d.form_type === "GALLERY") setFormType("갤러리");
+            else setFormType("일반");
+            
+            if (d.published_at) {
+              const dt = new Date(d.published_at);
+              const yy = dt.getFullYear();
+              const mm = String(dt.getMonth()+1).padStart(2,'0');
+              const dd = String(dt.getDate()).padStart(2,'0');
+              setPublishDate(`${yy}-${mm}-${dd}`);
+              
+              const hh = String(dt.getHours()).padStart(2,'0');
+              const _min = String(dt.getMinutes()).padStart(2,'0');
+              setPublishTime(`${hh}:${_min}`);
+            }
+            if (d.section1) setSection1(d.section1);
+            if (d.section2) setSection2(d.section2);
+            if (d.series) setSeries(d.series);
+            if (d.author_name) setReporterName(d.author_name);
+            if (d.author_email) setReporterEmail(d.author_email);
+            if (d.title) setTitle(d.title);
+            if (d.subtitle) setSubtitle(d.subtitle);
+            if (d.youtube_url) setYoutubeUrl(d.youtube_url);
+            if (d.is_shorts) setIsShortsRatio(true);
+            if (d.lat && d.lng) setArticleCoords({ lat: d.lat, lng: d.lng });
+            if (d.location_name) setLocation(d.location_name);
+            if (d.content) {
+              setContent(d.content);
+              if (editorRef.current) editorRef.current.innerHTML = d.content;
+            }
+            if (d.article_keywords) {
+              setKeywords(d.article_keywords.map((k: any) => k.keyword));
+            }
+          }
+        });
+      }
+    }
+  }, []);
 
   /* ── 사진추가 모달 상태 ── */
   const [showPhotoModal, setShowPhotoModal] = useState(false);
@@ -910,6 +1006,7 @@ export default function NewsWritePage() {
       // 사진 대표이면 업로드 후 URL 업데이트 (아래에서 처리)
 
       const result = await saveArticle({
+        id: loadArticleId || undefined,
         author_id: currentUserId || undefined,
         author_name: reporterName,
         author_email: reporterEmail,
@@ -1355,9 +1452,24 @@ export default function NewsWritePage() {
             <hr style={{ border: "none", borderTop: `1px solid ${border}`, margin: "0 0 24px 0" }} />
 
             {/* ── 관련기사 ── */}
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
-              <label style={{ fontSize: 14, fontWeight: 600, color: textPrimary, minWidth: 80 }}>관련기사</label>
-              <button style={{ padding: "8px 14px", background: "#4b5563", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>+ 관련기사추가</button>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <label style={{ fontSize: 14, fontWeight: 600, color: textPrimary, minWidth: 80 }}>관련기사</label>
+                <button type="button" onClick={() => setShowRelatedArticleModal(true)} style={{ padding: "8px 14px", background: "#4b5563", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>+ 관련기사추가</button>
+              </div>
+              {relatedArticles.length > 0 && (
+                <div style={{ paddingLeft: 92, display: "flex", flexDirection: "column", gap: 8 }}>
+                  {relatedArticles.map((ra, idx) => (
+                    <div key={ra.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, color: textPrimary }}>
+                      <span style={{ color: textSecondary }}>ㄴ</span>
+                      <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 500 }}>{ra.title}</span>
+                      <button type="button" onClick={() => {
+                        setRelatedArticles(prev => prev.filter((_, i) => i !== idx));
+                      }} style={{ padding: "4px 8px", background: "#fff", border: `1px solid ${border}`, borderRadius: 4, fontSize: 12, color: textSecondary, cursor: "pointer" }}>삭제</button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* ── 구분선 ── */}
@@ -2169,6 +2281,84 @@ export default function NewsWritePage() {
             {/* 지도 영역 */}
             <div ref={mapRef} style={{ flex: 1, position: 'relative', width: '100%' }}>
               {/* 지도 렌더링 컨테이너 */}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ 관련기사 검색 모달 ═══ */}
+      {showRelatedArticleModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+          background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          backdropFilter: 'blur(2px)', zIndex: 9999
+        }}>
+          <div style={{
+            background: '#fff', borderRadius: 16, width: 900, height: 750, maxWidth: '95%', maxHeight: '95%', display: "flex", flexDirection: "column",
+            boxShadow: '0 10px 25px rgba(0,0,0,0.2)', overflow: 'hidden', animation: 'scaleUp 0.3s ease-out', position: 'relative'
+          }}>
+            {/* 헤더 */}
+            <div style={{ background: '#3b4363', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: 18, fontWeight: 800, color: '#fff' }}>관련기사검색</span>
+              <button type="button" onClick={() => setShowRelatedArticleModal(false)}
+                style={{ background: 'none', border: 'none', color: '#fff', fontSize: 20, cursor: 'pointer' }}>✕</button>
+            </div>
+
+            {/* 검색 폼 및 리스트 헤더 */}
+            <div style={{ padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${border}` }}>
+              <div>
+                <span style={{ fontSize: 18, fontWeight: 700 }}>기사</span>
+                <span style={{ fontSize: 13, color: textSecondary, marginLeft: 8 }}>(전체 {relatedArticlesDb.length}건)</span>
+              </div>
+              <form onSubmit={handleRelatedSearch} style={{ display: 'flex', gap: 8 }}>
+                <input type="text" placeholder="기사 제목 검색 (테스트)" value={relatedArticleSearch} onChange={e => setRelatedArticleSearch(e.target.value)}
+                  style={{ padding: '8px 12px', border: `1px solid ${border}`, borderRadius: 6, fontSize: 14, minWidth: 200 }} />
+                <button type="submit" style={{ padding: '8px 16px', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 6, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>Q 검색하기</button>
+              </form>
+            </div>
+
+            {/* 리스트 본문 */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '0 24px' }}>
+              {isRelatedArticlesLoading ? (
+                <div style={{ padding: '40px', textAlign: 'center', color: textSecondary }}>로딩 중...</div>
+              ) : relatedArticlesDb.length === 0 ? (
+                <div style={{ padding: '40px', textAlign: 'center', color: textSecondary }}>검색 결과가 없습니다.</div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  {relatedArticlesDb.map((article) => (
+                    <div key={article.id} style={{ display: 'flex', alignItems: 'flex-start', padding: '16px 0', borderBottom: `1px solid ${border}`, gap: 16 }}>
+                      <input type="checkbox" style={{ marginTop: 4, transform: 'scale(1.2)' }}
+                        checked={relatedArticles.some(a => a.id === article.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            handleSelectRelatedArticle(article);
+                          } else {
+                            setRelatedArticles(prev => prev.filter(a => a.id !== article.id));
+                          }
+                        }}
+                      />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 16, fontWeight: 700, color: textPrimary, marginBottom: 6 }}>{article.title}</div>
+                        <div style={{ fontSize: 13, color: textSecondary, display: 'flex', gap: 8, alignItems: 'center' }}>
+                          <span>{article.section1 || '분류없음'}</span>
+                          <span style={{ color: '#d1d5db' }}>|</span>
+                          <span>{article.author_name || '관리자'}</span>
+                          <span style={{ color: '#d1d5db' }}>|</span>
+                          <span>{article.published_at ? new Date(article.published_at).toISOString().substring(0, 10) : '발행일없음'}</span>
+                        </div>
+                      </div>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', background: article.status === 'PENDING' ? '#8b5cf6' : article.status === 'DRAFT' ? '#9ca3af' : '#10b981', padding: '4px 8px', borderRadius: 4 }}>
+                        {article.status === 'PENDING' ? '승인신청' : article.status === 'DRAFT' ? '미출판' : '발행됨'}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            {/* 완료 버튼 */}
+            <div style={{ padding: '16px 24px', borderTop: `1px solid ${border}`, textAlign: 'center', background: '#f9fafb' }}>
+              <button type="button" onClick={() => setShowRelatedArticleModal(false)}
+                style={{ padding: '12px 32px', background: '#10b981', color: '#fff', border: 'none', borderRadius: 6, fontSize: 16, fontWeight: 700, cursor: 'pointer' }}>선택 완료</button>
             </div>
           </div>
         </div>
