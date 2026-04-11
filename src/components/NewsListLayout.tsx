@@ -1,56 +1,37 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
-import { getArticles } from "@/app/actions/article";
+
+interface Article {
+  id: string;
+  title: string;
+  subtitle?: string;
+  content?: string;
+  section1?: string;
+  section2?: string;
+  author_name?: string;
+  thumbnail_url?: string;
+  youtube_url?: string;
+  published_at?: string;
+  created_at?: string;
+  view_count?: number;
+}
 
 interface NewsListLayoutProps {
   category: string;
   title: string;
+  initialArticles: Article[];
+  initialPopular: Article[];
 }
 
-export default function NewsListLayout({ category, title }: NewsListLayoutProps) {
-  const [articles, setArticles] = useState<any[]>([]);
-  const [popularArticles, setPopularArticles] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+export default function NewsListLayout({ category, title, initialArticles, initialPopular }: NewsListLayoutProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
 
-  useEffect(() => {
-    const fetchArticles = async () => {
-      setLoading(true);
-      try {
-        // 승인된 기사만 가져오기
-        const filters: any = { status: "APPROVED" };
-
-        // 카테고리별 필터
-        if (category !== "all") {
-          filters.section2 = category;
-        }
-
-        const res = await getArticles(filters);
-        if (res.success && res.data) {
-          setArticles(res.data);
-        }
-
-        // 인기 기사 (조회수 순 상위 5개)
-        const popularRes = await getArticles({ status: "APPROVED", limit: 50 });
-        if (popularRes.success && popularRes.data) {
-          const sorted = [...popularRes.data].sort((a, b) => (b.view_count || 0) - (a.view_count || 0));
-          setPopularArticles(sorted.slice(0, 5));
-        }
-      } catch (err) {
-        console.error("기사 불러오기 실패:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchArticles();
-  }, [category]);
-
   // 페이지네이션 계산
-  const totalPages = Math.max(1, Math.ceil(articles.length / ITEMS_PER_PAGE));
-  const pagedArticles = articles.slice(
+  const totalPages = Math.max(1, Math.ceil(initialArticles.length / ITEMS_PER_PAGE));
+  const pagedArticles = initialArticles.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
@@ -100,12 +81,8 @@ export default function NewsListLayout({ category, title }: NewsListLayoutProps)
               {title}
             </div>
 
-            {/* 로딩 상태 */}
-            {loading ? (
-              <div style={{ padding: "60px 0", textAlign: "center", color: "#888", fontSize: 15 }}>
-                기사를 불러오는 중...
-              </div>
-            ) : pagedArticles.length > 0 ? pagedArticles.map((article) => (
+            {/* 기사 카드 리스트 — 서버에서 미리 받아와서 즉시 표시 */}
+            {pagedArticles.length > 0 ? pagedArticles.map((article) => (
               <Link key={article.id} href={`/news_read?article_id=${article.id}`} style={{ textDecoration: "none", color: "inherit" }}>
                 <div className="an-card">
                   <div className="an-img" style={{ position: "relative", flexShrink: 0 }}>
@@ -135,7 +112,7 @@ export default function NewsListLayout({ category, title }: NewsListLayoutProps)
                       <span style={{ color: "#508bf5", fontWeight: "bold", marginRight: 8 }}>
                         [{article.section1 || "뉴스"} &gt; {article.section2 || "전체"}]
                       </span>
-                      {formatDate(article.published_at || article.created_at)} · {article.author_name || "공실뉴스"}
+                      {formatDate(article.published_at || article.created_at || "")} · {article.author_name || "공실뉴스"}
                     </div>
                   </div>
                 </div>
@@ -147,7 +124,7 @@ export default function NewsListLayout({ category, title }: NewsListLayoutProps)
             )}
 
             {/* 페이지네이션 */}
-            {articles.length > 0 && (
+            {initialArticles.length > 0 && (
               <div className="pagination">
                 <button className="page-btn" disabled={currentPage <= 1} onClick={() => handlePageChange(-1)}>&lt; 이전</button>
                 <span className="page-info">{currentPage} / {totalPages}</span>
@@ -165,7 +142,7 @@ export default function NewsListLayout({ category, title }: NewsListLayoutProps)
             <div className="sb-widget">
               <div className="sb-title">많이 본 뉴스</div>
               <ul className="pop-list">
-                {popularArticles.length > 0 ? popularArticles.map((item, i) => (
+                {initialPopular.length > 0 ? initialPopular.map((item, i) => (
                   <li key={item.id} className="pop-item">
                     <Link href={`/news_read?article_id=${item.id}`} style={{ textDecoration: "none", color: "inherit", display: "flex", alignItems: "flex-start", gap: 8, width: "100%" }}>
                       <span className="pop-ranking">{i + 1}</span>

@@ -1,4 +1,5 @@
 import NewsListLayout from "@/components/NewsListLayout";
+import { getArticles } from "@/app/actions/article";
 
 export default async function NewsEtcPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
   const resolvedParams = await searchParams;
@@ -18,5 +19,15 @@ export default async function NewsEtcPage({ searchParams }: { searchParams: Prom
     categoryFilter = "인물·미션·기타";
   }
 
-  return <NewsListLayout category={categoryFilter} title={displayTitle} />;
+  const [articlesRes, popularRes] = await Promise.all([
+    getArticles({ status: "APPROVED", section2: categoryFilter }),
+    getArticles({ status: "APPROVED", limit: 50 }),
+  ]);
+
+  const articles = articlesRes.success ? (articlesRes.data || []) : [];
+  const popular = popularRes.success
+    ? [...(popularRes.data || [])].sort((a, b) => (b.view_count || 0) - (a.view_count || 0)).slice(0, 5)
+    : [];
+
+  return <NewsListLayout category={categoryFilter} title={displayTitle} initialArticles={articles} initialPopular={popular} />;
 }
