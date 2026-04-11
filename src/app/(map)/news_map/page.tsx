@@ -242,8 +242,8 @@ export default function NewsLocalPage() {
                   )}
 
                   <div className="article-body">
-                    {/* 유튜브 영상 */}
-                    {youtubeId ? (
+                    {/* 유튜브 영상 — 본문에 이미 포함된 경우 중복 표시 안 함 */}
+                    {youtubeId && !(articleDetail.content && articleDetail.content.includes('youtube.com/embed')) ? (
                       <div className="article-img-wrap">
                         <div style={{
                           position: "relative",
@@ -263,7 +263,7 @@ export default function NewsLocalPage() {
                           />
                         </div>
                       </div>
-                    ) : articleDetail.thumbnail_url ? (
+                    ) : !youtubeId && articleDetail.thumbnail_url && !(articleDetail.content && articleDetail.content.includes(articleDetail.thumbnail_url)) ? (
                       <div className="article-img-wrap">
                         <img src={articleDetail.thumbnail_url} alt={articleDetail.title} style={{ width: "100%", maxHeight: 400, objectFit: "cover", borderRadius: 8 }} />
                       </div>

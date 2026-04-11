@@ -153,8 +153,8 @@ export default function NewsReadPage() {
 
             {/* 기사 본문 */}
             <div className="article-body">
-              {/* 대표 이미지 또는 동영상 */}
-              {hasYoutube ? (
+              {/* 대표 이미지 또는 동영상 — 본문에 이미 포함된 경우 중복 표시 안 함 */}
+              {hasYoutube && !(article.content && article.content.includes('youtube.com/embed')) ? (
                 <div className="article-img-wrap">
                   <div style={{
                     position: "relative",
@@ -174,7 +174,7 @@ export default function NewsReadPage() {
                     />
                   </div>
                 </div>
-              ) : article.thumbnail_url ? (
+              ) : !hasYoutube && article.thumbnail_url && !(article.content && article.content.includes(article.thumbnail_url)) ? (
                 <div className="article-img-wrap">
                   <img
                     src={article.thumbnail_url}
