@@ -15,6 +15,9 @@ export default function NewsLocalPage() {
 
   const [section1, setSection1] = useState("");
   const [section2, setSection2] = useState("");
+  const mapRef = React.useRef<HTMLDivElement>(null);
+  const kakaoMapRef = React.useRef<any>(null);
+  const markersRef = React.useRef<any[]>([]);
 
   // 날짜 포맷
   const formatDate = (dateStr: string) => {
@@ -99,6 +102,73 @@ export default function NewsLocalPage() {
   };
 
   const youtubeId = articleDetail ? extractYoutubeId(articleDetail.youtube_url) : null;
+
+  // 카카오맵 초기화 및 기사 목록 변경 시 마커 렌더링
+  useEffect(() => {
+    const loadKakaoMap = () => {
+      const kakao = (window as any).kakao;
+      if (!mapRef.current) return;
+      
+      if (!kakaoMapRef.current) {
+        // 중심좌표: 첫 기사의 위치 혹은 기본 위치(강남역)
+        let initialLat = 37.498095;
+        let initialLng = 127.027610;
+        
+        const validArt = articles.find(a => a.lat && a.lng);
+        if (validArt) {
+          initialLat = validArt.lat;
+          initialLng = validArt.lng;
+        }
+
+        const options = {
+          center: new kakao.maps.LatLng(initialLat, initialLng),
+          level: 5,
+        };
+        kakaoMapRef.current = new kakao.maps.Map(mapRef.current, options);
+      }
+
+      // 기존 마커 제거
+      markersRef.current.forEach((m: any) => m.setMap(null));
+      markersRef.current = [];
+
+      // 새 마커 생성
+      articles.forEach(art => {
+        if (!art.lat || !art.lng) return;
+        const position = new kakao.maps.LatLng(art.lat, art.lng);
+        const marker = new kakao.maps.Marker({ position });
+        
+        // 마커 클릭 이벤트
+        kakao.maps.event.addListener(marker, 'click', () => {
+          handleSelectArticle(art.id, false);
+        });
+
+        marker.setMap(kakaoMapRef.current);
+        markersRef.current.push(marker);
+      });
+    };
+
+    if (!(window as any).kakao || !(window as any).kakao.maps) {
+      const script = document.createElement("script");
+      script.src = "//dapi.kakao.com/v2/maps/sdk.js?appkey=535b712ad15df457168dcab800fcb4aa&libraries=services&autoload=false";
+      document.head.appendChild(script);
+      script.onload = () => {
+        (window as any).kakao.maps.load(() => loadKakaoMap());
+      };
+    } else {
+      (window as any).kakao.maps.load(() => loadKakaoMap());
+    }
+  }, [articles]);
+
+  // 활성화된 기사 변경 시 지도 부드럽게 이동 (PanTo)
+  useEffect(() => {
+    if (activeArticleId && kakaoMapRef.current && (window as any).kakao) {
+      const activeArt = articles.find(a => a.id === activeArticleId);
+      if (activeArt && activeArt.lat && activeArt.lng) {
+        const moveLatLon = new (window as any).kakao.maps.LatLng(activeArt.lat, activeArt.lng);
+        kakaoMapRef.current.panTo(moveLatLon);
+      }
+    }
+  }, [activeArticleId, articles]);
 
   return (
     <div style={{ height: "100vh", display: "flex", flexDirection: "column", overflow: "hidden", fontFamily: "'Pretendard', sans-serif" }}>
@@ -204,10 +274,10 @@ export default function NewsLocalPage() {
 
         {/* 지도 + 기사 상세 래퍼 */}
         <div style={{ flex: 1, height: "100%", position: "relative", minWidth: 0, background: "#eee", overflow: "hidden" }}>
-          {/* 가상 마커 (말풍선 시뮬레이터) - 지도가 들어갈 구역 */}
+          {/* 가상 마커 (말풍선 시뮬레이터) - 지도가 들어갈 구역 위 정중앙 */}
           {activeArticleId && articleDetail && !showDetail && (
             <div style={{
-              position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 50,
+              position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -100%) translateY(-25px)", zIndex: 50, // 마커(핀 중앙)보다 약간 위로 위치시킴
               background: "#fff", padding: "16px 20px", borderRadius: 12, boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
               border: "1px solid #ddd", width: 340, animation: "fadeIn 0.2s ease"
             }}>
@@ -409,9 +479,8 @@ export default function NewsLocalPage() {
             <span style={{ background: "none", border: "none", cursor: "pointer", fontWeight: "bold", padding: "5px 10px", color: "#508bf5" }}>검색 🔍</span>
           </div>
 
-          {/* 지도 placeholder */}
-          <div style={{ width: "100%", height: "100%", background: "#e8eaed", display: "flex", alignItems: "center", justifyContent: "center", color: "#999", fontSize: 18 }}>
-            🗺️ 카카오맵 영역 (향후 연동)
+          {/* 지도 영역 */}
+          <div ref={mapRef} style={{ width: "100%", height: "100%", background: "#e8eaed" }}>
           </div>
         </div>
       </main>
