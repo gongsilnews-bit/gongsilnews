@@ -279,7 +279,7 @@ export default function NewsLocalPage() {
                   {articleDetail.article_keywords && articleDetail.article_keywords.length > 0 && (
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 8, margin: "24px 0", padding: "16px 0", borderTop: "1px solid #eee" }}>
                       {articleDetail.article_keywords.map((kw: any, i: number) => (
-                        <span key={i} style={{ padding: "4px 12px", borderRadius: 20, background: "#f0f4ff", color: "#508bf5", fontSize: 13, fontWeight: 600 }}>
+                        <span key={i} style={{ padding: "6px 14px", borderRadius: 20, background: "#fff", color: "#555", fontSize: 13, fontWeight: 500, border: "1px solid #ccc" }}>
                           #{kw.keyword}
                         </span>
                       ))}
