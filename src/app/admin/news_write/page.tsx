@@ -1231,50 +1231,66 @@ export default function NewsWritePage() {
             <hr style={{ border: "none", borderTop: `1px solid ${border}`, margin: "0 0 0 0" }} />
 
             {/* ── 에디터 툴바 ── */}
+            {/* ── 에디터 툴바 ── */}
             <div style={{ display: "flex", alignItems: "center", gap: 2, padding: "8px 12px", borderBottom: `1px solid ${border}`, background: "#fafafa", flexWrap: "wrap" }}>
               {/* 폰트 */}
-              <select style={{ padding: "6px 8px", border: `1px solid ${border}`, borderRadius: 4, fontSize: 13, color: textPrimary, background: cardBg, cursor: "pointer", fontFamily: "inherit" }}>
-                <option>sans-serif</option>
-                <option>serif</option>
-                <option>monospace</option>
+              <select onChange={(e) => { document.execCommand('fontName', false, e.target.value); editorRef.current?.focus(); }} style={{ padding: "6px 8px", border: `1px solid ${border}`, borderRadius: 4, fontSize: 13, color: textPrimary, background: cardBg, cursor: "pointer", fontFamily: "inherit" }}>
+                <option value="sans-serif">sans-serif</option>
+                <option value="serif">serif</option>
+                <option value="monospace">monospace</option>
               </select>
-              {/* 크기 */}
-              <select style={{ padding: "6px 8px", border: `1px solid ${border}`, borderRadius: 4, fontSize: 13, color: textPrimary, background: cardBg, cursor: "pointer", marginLeft: 4 }}>
-                <option>16</option>
-                <option>12</option>
-                <option>14</option>
-                <option>18</option>
-                <option>20</option>
-                <option>24</option>
+              {/* 크기 (실제로는 1~7 크기를 사용) */}
+              <select onChange={(e) => { document.execCommand('fontSize', false, e.target.value); editorRef.current?.focus(); }} defaultValue="3" style={{ padding: "6px 8px", border: `1px solid ${border}`, borderRadius: 4, fontSize: 13, color: textPrimary, background: cardBg, cursor: "pointer", marginLeft: 4 }}>
+                <option value="2">12</option>
+                <option value="3">14</option>
+                <option value="4">16</option>
+                <option value="5">18</option>
+                <option value="6">20</option>
+                <option value="7">24</option>
               </select>
               <div style={{ width: 1, height: 20, background: border, margin: "0 6px" }} />
+              
               {/* B I U S */}
-              {["B", "I", "U"].map(btn => (
-                <button key={btn} style={{ width: 32, height: 32, border: "none", background: "none", cursor: "pointer", fontSize: 14, fontWeight: btn === "B" ? 800 : 400, fontStyle: btn === "I" ? "italic" : "normal", textDecoration: btn === "U" ? "underline" : "none", color: textPrimary, borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center" }}>{btn}</button>
-              ))}
+              <button type="button" onMouseDown={e => { e.preventDefault(); document.execCommand('bold', false); }} style={{ width: 32, height: 32, border: "none", background: "none", cursor: "pointer", fontSize: 14, fontWeight: 800, color: textPrimary, borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center" }}>B</button>
+              <button type="button" onMouseDown={e => { e.preventDefault(); document.execCommand('italic', false); }} style={{ width: 32, height: 32, border: "none", background: "none", cursor: "pointer", fontSize: 14, fontStyle: "italic", color: textPrimary, borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center" }}>I</button>
+              <button type="button" onMouseDown={e => { e.preventDefault(); document.execCommand('underline', false); }} style={{ width: 32, height: 32, border: "none", background: "none", cursor: "pointer", fontSize: 14, textDecoration: "underline", color: textPrimary, borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center" }}>U</button>
               {/* 취소선 */}
-              <button style={{ width: 32, height: 32, border: "none", background: "none", cursor: "pointer", fontSize: 14, color: textPrimary, borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "line-through" }}>S</button>
+              <button type="button" onMouseDown={e => { e.preventDefault(); document.execCommand('strikeThrough', false); }} style={{ width: 32, height: 32, border: "none", background: "none", cursor: "pointer", fontSize: 14, color: textPrimary, borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "line-through" }}>S</button>
               {/* 지우개 */}
-              <button style={{ width: 32, height: 32, border: "none", background: "none", cursor: "pointer", borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <button type="button" onMouseDown={e => { e.preventDefault(); document.execCommand('removeFormat', false); }} title="서식 지우기" style={{ width: 32, height: 32, border: "none", background: "none", cursor: "pointer", borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={textSecondary} strokeWidth="2"><path d="M20 20H7L3 16l10-10 7 7-6 7"/><path d="M6 11l7 7"/></svg>
               </button>
+              
               <div style={{ width: 1, height: 20, background: border, margin: "0 6px" }} />
+              
               {/* 글자색 A▼ */}
-              <button style={{ width: 32, height: 32, border: "none", background: "none", cursor: "pointer", fontSize: 15, fontWeight: 800, color: textPrimary, borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
-                A<span style={{ fontSize: 8, marginLeft: 1 }}>▼</span>
-              </button>
+              <label title="글자색" style={{ width: 32, height: 32, border: "none", background: "none", cursor: "pointer", fontSize: 15, fontWeight: 800, color: textPrimary, borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
+                <span onMouseDown={e => e.preventDefault()}>A<span style={{ fontSize: 8, marginLeft: 1 }}>▼</span></span>
+                <input type="color" onChange={e => { document.execCommand('foreColor', false, e.target.value); editorRef.current?.focus(); }} style={{ position: "absolute", opacity: 0, width: "100%", height: "100%", cursor: "pointer" }} />
+              </label>
               {/* 배경색 A▼ */}
-              <button style={{ width: 32, height: 32, border: "none", background: "none", cursor: "pointer", fontSize: 15, fontWeight: 800, color: "#f59e0b", borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                A<span style={{ fontSize: 8, marginLeft: 1, color: textSecondary }}>▼</span>
-              </button>
+              <label title="배경색" style={{ width: 32, height: 32, border: "none", background: "none", cursor: "pointer", fontSize: 15, fontWeight: 800, color: "#f59e0b", borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
+                <span onMouseDown={e => e.preventDefault()}>A<span style={{ fontSize: 8, marginLeft: 1, color: textSecondary }}>▼</span></span>
+                <input type="color" onChange={e => { document.execCommand('hiliteColor', false, e.target.value); editorRef.current?.focus(); }} style={{ position: "absolute", opacity: 0, width: "100%", height: "100%", cursor: "pointer" }} />
+              </label>
+              
               <div style={{ width: 1, height: 20, background: border, margin: "0 6px" }} />
-              {/* 정렬 */}
-              <button style={{ padding: "6px 8px", border: "none", background: "none", cursor: "pointer", fontSize: 13, color: textSecondary, borderRadius: 4, display: "flex", alignItems: "center", gap: 2 }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="18" y2="18"/></svg>
-                <span style={{ fontSize: 8 }}>▼</span>
-              </button>
+              
+              {/* 정렬 셀렉트 */}
+              <select onChange={e => { document.execCommand(e.target.value, false); editorRef.current?.focus(); }} defaultValue="" title="텍스트 정렬" style={{ padding: "6px 8px", border: `1px solid ${border}`, borderRadius: 4, fontSize: 13, color: textPrimary, background: cardBg, cursor: "pointer" }}>
+                <option value="" disabled hidden>정렬</option>
+                <option value="justifyLeft">왼쪽</option>
+                <option value="justifyCenter">가운데</option>
+                <option value="justifyRight">오른쪽</option>
+                <option value="justifyFull">양쪽</option>
+              </select>
+              
               {/* 링크 */}
-              <button style={{ width: 32, height: 32, border: "none", background: "none", cursor: "pointer", borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <button type="button" onMouseDown={e => {
+                e.preventDefault();
+                const url = prompt("연결할 링크의 URL을 입력하세요 (예: https://gongsil.com):", "https://");
+                if (url) document.execCommand('createLink', false, url);
+              }} title="링크 삽입" style={{ width: 32, height: 32, border: "none", background: "none", cursor: "pointer", borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center", marginLeft: 4 }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={textSecondary} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
                 </svg>
