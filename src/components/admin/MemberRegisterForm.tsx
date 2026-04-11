@@ -105,6 +105,10 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
               reg_cert: res.agency.reg_cert_url || undefined,
               biz_cert: res.agency.biz_cert_url || undefined
             });
+            // DB에 저장된 좌표를 coords state에 복원
+            if (res.agency.lat && res.agency.lng) {
+              setCoords({ lat: Number(res.agency.lat), lng: Number(res.agency.lng) });
+            }
           }
         }
         setLoading(false);

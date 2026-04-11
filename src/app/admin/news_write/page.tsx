@@ -28,6 +28,8 @@ export default function NewsWritePage() {
   const [title, setTitle] = useState("");
   const [subtitle, setSubtitle] = useState("");
   const [content, setContent] = useState("");
+  const editorRef = React.useRef<HTMLDivElement>(null);
+  const savedRangeRef = React.useRef<Range | null>(null);
   const [keyword, setKeyword] = useState("");
   const [keywords, setKeywords] = useState<string[]>([]);
   const [location, setLocation] = useState("");
@@ -40,8 +42,29 @@ export default function NewsWritePage() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [articleCoords, setArticleCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [geocoding, setGeocoding] = useState(false);
-  const [photoFiles, setPhotoFiles] = useState<{ file: File; preview: string }[]>([]);
+  const [photoFiles, setPhotoFiles] = useState<{ file: File; preview: string; caption: string; isCover: boolean; size: number; align: string; captionAlign: string }[]>([]);
   const [attachFiles, setAttachFiles] = useState<{ file: File; name: string }[]>([]);
+
+  /* ── 사진추가 모달 상태 ── */
+  const [showPhotoModal, setShowPhotoModal] = useState(false);
+  const [modalFile, setModalFile] = useState<File | null>(null);
+  const [modalPreview, setModalPreview] = useState<string>("");
+  const [modalSize, setModalSize] = useState<number>(600);
+  const [modalInsertMode, setModalInsertMode] = useState<'자동' | '수동'>('자동');
+  const [modalAlign, setModalAlign] = useState<'left' | 'center' | 'right'>('left');
+  const [modalWatermark, setModalWatermark] = useState<number>(0);
+  const [modalCaption, setModalCaption] = useState('');
+  const [modalCaptionAlign, setModalCaptionAlign] = useState<'left' | 'center' | 'right'>('left');
+  const modalFileRef = React.useRef<HTMLInputElement>(null);
+
+  /* ── 사진수정 모달 상태 ── */
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editPhotoIdx, setEditPhotoIdx] = useState<number>(-1);
+  const [editSize, setEditSize] = useState<number>(600);
+  const [editInsertMode, setEditInsertMode] = useState<'자동' | '수동'>('자동');
+  const [editAlign, setEditAlign] = useState<'left' | 'center' | 'right'>('left');
+  const [editCaption, setEditCaption] = useState('');
+  const [editCaptionAlign, setEditCaptionAlign] = useState<'left' | 'center' | 'right'>('left');
 
   /* ── WebP 압축 변환 ── */
   const compressToWebP = (file: File, maxWidth = 1920, quality = 0.82): Promise<File> => {
@@ -65,15 +88,323 @@ export default function NewsWritePage() {
     });
   };
 
-  /* ── 사진 선택 ── */
-  const handlePhotoSelect = (files: FileList | null) => {
+  /* ── 에디터 커서 위치 저장 ── */
+  const saveSelection = () => {
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0) {
+      const range = sel.getRangeAt(0);
+      // 에디터 내부인지 확인
+      if (editorRef.current && editorRef.current.contains(range.commonAncestorContainer)) {
+        savedRangeRef.current = range.cloneRange();
+      }
+    }
+  };
+
+  /* ── 에디터 커서 위치에 이미지 삽입 ── */
+  const insertImageAtCursor = (previewUrl: string, caption: string, opts?: { size?: number; align?: string; captionAlign?: string }) => {
+    if (!editorRef.current) return;
+    const imgSize = opts?.size || 600;
+    const align = opts?.align || 'center';
+    const capAlign = opts?.captionAlign || 'left';
+
+    // 이미지 + 캡션 wrapper 생성
+    const wrapper = document.createElement('div');
+    const wrapAlign = align === 'left' ? 'left' : align === 'right' ? 'right' : 'center';
+    wrapper.style.cssText = `margin: 16px 0; text-align: ${wrapAlign};`;
+    wrapper.setAttribute('contenteditable', 'false');
+    wrapper.className = 'inserted-photo';
+
+    const img = document.createElement('img');
+    img.src = previewUrl;
+    const floatCss = align === 'left' ? 'float: left; margin: 0 16px 8px 0;' : align === 'right' ? 'float: right; margin: 0 0 8px 16px;' : 'display: block; margin: 0 auto;';
+    img.style.cssText = `max-width: ${imgSize}px; width: 100%; height: auto; border-radius: 6px; ${floatCss}`;
+    img.alt = caption || '기사 이미지';
+    wrapper.appendChild(img);
+
+    if (caption) {
+      const cap = document.createElement('p');
+      cap.style.cssText = `font-size: 13px; color: #6b7280; margin: 8px 0 0 0; text-align: ${capAlign}; line-height: 1.5; clear: both;`;
+      cap.textContent = caption;
+      wrapper.appendChild(cap);
+    }
+
+    // float 해제용 clearfix
+    if (align !== 'center') {
+      const clear = document.createElement('div');
+      clear.style.cssText = 'clear: both;';
+      wrapper.appendChild(clear);
+    }
+
+    // 커서 뒤에 줄바꿈 추가
+    const br = document.createElement('br');
+
+    if (savedRangeRef.current && editorRef.current.contains(savedRangeRef.current.commonAncestorContainer)) {
+      const range = savedRangeRef.current;
+      range.deleteContents();
+      range.insertNode(br);
+      range.insertNode(wrapper);
+      // 커서를 이미지 뒤로 이동
+      range.setStartAfter(br);
+      range.collapse(true);
+      const sel = window.getSelection();
+      sel?.removeAllRanges();
+      sel?.addRange(range);
+    } else {
+      // 저장된 커서가 없으면 에디터 맨 끝에 삽입
+      editorRef.current.appendChild(wrapper);
+      editorRef.current.appendChild(br);
+    }
+
+    // content 상태 업데이트
+    setContent(editorRef.current.innerHTML || "");
+  };
+
+  /* ── 사진 선택 (우측 사이드바 드래그/클릭용 — 즐시 WebP 압축 후 삽입) ── */
+  const handlePhotoSelect = async (files: FileList | null) => {
     if (!files) return;
     const newFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
-    const previews = newFiles.map(f => ({ file: f, preview: URL.createObjectURL(f) }));
-    setPhotoFiles(prev => [...prev, ...previews]);
+
+    for (const f of newFiles) {
+      const compressed = await compressToWebP(f);
+      const preview = URL.createObjectURL(compressed);
+      const photo = {
+        file: compressed,
+        preview,
+        caption: '',
+        isCover: false,
+        size: 600,
+        align: 'center',
+        captionAlign: 'left',
+      };
+
+      setPhotoFiles(prev => {
+        const updated = [...prev, photo];
+        if (prev.length === 0) updated[0].isCover = true;
+        return updated;
+      });
+
+      insertImageAtCursor(preview, '', { size: 600, align: 'center', captionAlign: 'left' });
+    }
   };
+
+  /* ── 사진추가 모달: 좌측 사진 버튼 클릭 시 열기 ── */
+  const openPhotoModal = () => {
+    saveSelection();
+    setModalFile(null);
+    setModalPreview('');
+    setModalSize(600);
+    setModalInsertMode('자동');
+    setModalAlign('left');
+    setModalWatermark(0);
+    setModalCaption('');
+    setModalCaptionAlign('left');
+    setShowPhotoModal(true);
+  };
+
+  /* ── 모달에서 파일 선택 (즐시 WebP 압축) ── */
+  const handleModalFileSelect = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const f = files[0];
+    if (!f.type.startsWith('image/')) return;
+    const compressed = await compressToWebP(f);
+    setModalFile(compressed);
+    setModalPreview(URL.createObjectURL(compressed));
+  };
+
+  /* ── 모달 확인 → 에디터 커서 위치 삽입 + 우측 사이드바 반영 ── */
+  const handlePhotoModalConfirm = () => {
+    if (!modalFile || !modalPreview) {
+      alert('사진 파일을 선택해주세요.');
+      return;
+    }
+
+    const newPhoto = {
+      file: modalFile,
+      preview: modalPreview,
+      caption: modalCaption,
+      isCover: false,
+      size: modalSize,
+      align: modalAlign,
+      captionAlign: modalCaptionAlign,
+    };
+
+    setPhotoFiles(prev => {
+      const updated = [...prev, newPhoto];
+      if (prev.length === 0) updated[0].isCover = true;
+      return updated;
+    });
+
+    // 에디터 커서 위치에 삽입
+    insertImageAtCursor(modalPreview, modalCaption, {
+      size: modalSize,
+      align: modalAlign,
+      captionAlign: modalCaptionAlign,
+    });
+
+    setShowPhotoModal(false);
+  };
+
+  /* ── 사진 캡션 업데이트 ── */
+  const updatePhotoCaption = (idx: number, caption: string) => {
+    setPhotoFiles(prev => prev.map((p, i) => i === idx ? { ...p, caption } : p));
+    // 에디터 내 해당 이미지의 캡션도 업데이트
+    if (editorRef.current) {
+      const photos = editorRef.current.querySelectorAll('.inserted-photo');
+      if (photos[idx]) {
+        let capEl = photos[idx].querySelector('p');
+        if (caption) {
+          if (!capEl) {
+            capEl = document.createElement('p');
+            capEl.style.cssText = 'font-size: 13px; color: #6b7280; margin: 8px 0 0 0; text-align: center; line-height: 1.5;';
+            photos[idx].appendChild(capEl);
+          }
+          capEl.textContent = caption;
+        } else if (capEl) {
+          capEl.remove();
+        }
+        setContent(editorRef.current.innerHTML || "");
+      }
+    }
+  };
+
+  /* ── 대표사진 지정 ── */
+  const setAsCover = (idx: number) => {
+    setPhotoFiles(prev => prev.map((p, i) => ({ ...p, isCover: i === idx })));
+  };
+
+  /* ── 사진 정렬 변경 (우측 사이드바 버튼 클릭 시 에디터에도 반영) ── */
+  const updatePhotoAlign = (idx: number, newAlign: 'left' | 'center' | 'right') => {
+    setPhotoFiles(prev => prev.map((p, i) => i === idx ? { ...p, align: newAlign } : p));
+    // 에디터 내 해당 이미지 정렬도 변경
+    if (editorRef.current) {
+      const photos = editorRef.current.querySelectorAll('.inserted-photo');
+      if (photos[idx]) {
+        const wrapper = photos[idx] as HTMLElement;
+        const wrapAlign = newAlign === 'left' ? 'left' : newAlign === 'right' ? 'right' : 'center';
+        wrapper.style.textAlign = wrapAlign;
+        const img = wrapper.querySelector('img') as HTMLElement;
+        if (img) {
+          const floatCss = newAlign === 'left' ? 'float: left; margin: 0 16px 8px 0; display: inline;'
+            : newAlign === 'right' ? 'float: right; margin: 0 0 8px 16px; display: inline;'
+            : 'float: none; display: block; margin: 0 auto;';
+          img.style.cssText = img.style.cssText.replace(/float:[^;]*;?/g, '').replace(/display:[^;]*;?/g, '').replace(/margin:[^;]*;?/g, '') + floatCss;
+        }
+        // clearfix 처리
+        const existingClear = wrapper.querySelector('div[style*="clear"]');
+        if (newAlign !== 'center') {
+          if (!existingClear) {
+            const clear = document.createElement('div');
+            clear.style.cssText = 'clear: both;';
+            wrapper.appendChild(clear);
+          }
+        } else if (existingClear) {
+          existingClear.remove();
+        }
+        setContent(editorRef.current.innerHTML || '');
+      }
+    }
+  };
+
+  /* ── 사진수정 모달 열기 ── */
+  const openEditPhotoModal = (idx: number) => {
+    const p = photoFiles[idx];
+    if (!p) return;
+    setEditPhotoIdx(idx);
+    setEditSize(p.size || 600);
+    setEditInsertMode('자동');
+    setEditAlign((p.align || 'center') as 'left' | 'center' | 'right');
+    setEditCaption(p.caption || '');
+    setEditCaptionAlign((p.captionAlign || 'left') as 'left' | 'center' | 'right');
+    setShowEditModal(true);
+  };
+
+  /* ── 사진수정 모달 확인 → 에디터 + 상태 반영 ── */
+  const handleEditPhotoConfirm = () => {
+    const idx = editPhotoIdx;
+    if (idx < 0) return;
+
+    // 상태 업데이트
+    setPhotoFiles(prev => prev.map((p, i) => i === idx ? {
+      ...p,
+      caption: editCaption,
+      size: editSize,
+      align: editAlign,
+      captionAlign: editCaptionAlign,
+    } : p));
+
+    // 에디터 DOM 업데이트
+    if (editorRef.current) {
+      const photos = editorRef.current.querySelectorAll('.inserted-photo');
+      if (photos[idx]) {
+        const wrapper = photos[idx] as HTMLElement;
+        const wrapAlign = editAlign === 'left' ? 'left' : editAlign === 'right' ? 'right' : 'center';
+        wrapper.style.textAlign = wrapAlign;
+
+        // 이미지 크기 + 정렬
+        const img = wrapper.querySelector('img') as HTMLElement;
+        if (img) {
+          const floatCss = editAlign === 'left' ? 'float: left; margin: 0 16px 8px 0;'
+            : editAlign === 'right' ? 'float: right; margin: 0 0 8px 16px;'
+            : 'display: block; margin: 0 auto;';
+          img.style.cssText = `max-width: ${editSize}px; width: 100%; height: auto; border-radius: 6px; ${floatCss}`;
+        }
+
+        // 캡션 업데이트
+        let capEl = wrapper.querySelector('p');
+        if (editCaption) {
+          if (!capEl) {
+            capEl = document.createElement('p');
+            // clearfix 앞에 삽입
+            const clearDiv = wrapper.querySelector('div[style*="clear"]');
+            if (clearDiv) wrapper.insertBefore(capEl, clearDiv);
+            else wrapper.appendChild(capEl);
+          }
+          capEl.style.cssText = `font-size: 13px; color: #6b7280; margin: 8px 0 0 0; text-align: ${editCaptionAlign}; line-height: 1.5; clear: both;`;
+          capEl.textContent = editCaption;
+        } else if (capEl) {
+          capEl.remove();
+        }
+
+        // clearfix 처리
+        const existingClear = wrapper.querySelector('div[style*="clear"]');
+        if (editAlign !== 'center') {
+          if (!existingClear) {
+            const clear = document.createElement('div');
+            clear.style.cssText = 'clear: both;';
+            wrapper.appendChild(clear);
+          }
+        } else if (existingClear) {
+          existingClear.remove();
+        }
+
+        setContent(editorRef.current.innerHTML || '');
+      }
+    }
+
+    setShowEditModal(false);
+  };
+
   const removePhoto = (idx: number) => {
-    setPhotoFiles(prev => { URL.revokeObjectURL(prev[idx].preview); return prev.filter((_, i) => i !== idx); });
+    // 에디터 내 해당 이미지도 제거
+    if (editorRef.current) {
+      const photos = editorRef.current.querySelectorAll('.inserted-photo');
+      if (photos[idx]) {
+        // 뒤에 br이 있으면 같이 제거
+        const nextSib = photos[idx].nextSibling;
+        if (nextSib && nextSib.nodeName === 'BR') nextSib.remove();
+        photos[idx].remove();
+        setContent(editorRef.current.innerHTML || "");
+      }
+    }
+    setPhotoFiles(prev => {
+      URL.revokeObjectURL(prev[idx].preview);
+      const updated = prev.filter((_, i) => i !== idx);
+      // 대표사진이 삭제되면 첫번째를 대표로
+      if (updated.length > 0 && !updated.some(p => p.isCover)) {
+        updated[0].isCover = true;
+      }
+      return updated;
+    });
   };
 
   /* ── 파일 선택 ── */
@@ -174,12 +505,11 @@ export default function NewsWritePage() {
       if (result.success) {
         const articleId = result.articleId;
 
-        // 사진 업로드 (WebP 압축 후 업로드)
+        // 사진 업로드 (등록 시점에 이미 WebP 압축 완료)
         if (articleId && photoFiles.length > 0) {
           for (let i = 0; i < photoFiles.length; i++) {
-            const compressed = await compressToWebP(photoFiles[i].file);
             const formData = new FormData();
-            formData.append('file', compressed);
+            formData.append('file', photoFiles[i].file);
             formData.append('article_id', articleId);
             formData.append('media_type', 'PHOTO');
             formData.append('sort_order', String(i));
@@ -264,7 +594,7 @@ export default function NewsWritePage() {
             {/* 6개 아이콘 그리드 */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 4, marginBottom: 20 }}>
               {/* 사진 */}
-              <button style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "12px 4px", border: "none", background: "none", cursor: "pointer", borderRadius: 8 }}>
+              <button onClick={openPhotoModal} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "12px 4px", border: "none", background: "none", cursor: "pointer", borderRadius: 8 }}>
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
                 </svg>
@@ -507,6 +837,7 @@ export default function NewsWritePage() {
 
             {/* ── 에디터 본문 영역 ── */}
             <div
+              ref={editorRef}
               contentEditable
               suppressContentEditableWarning
               style={{
@@ -514,7 +845,10 @@ export default function NewsWritePage() {
                 fontSize: 15, lineHeight: 1.8, color: textPrimary, outline: "none", background: cardBg,
                 borderBottomLeftRadius: 6, borderBottomRightRadius: 6,
               }}
-              onInput={(e) => setContent(e.currentTarget.textContent || "")}
+              onInput={(e) => setContent(e.currentTarget.innerHTML || "")}
+              onMouseUp={saveSelection}
+              onKeyUp={saveSelection}
+              onFocus={saveSelection}
             />
 
             {/* ── 구분선 ── */}
@@ -637,12 +971,67 @@ export default function NewsWritePage() {
                     <span style={{ fontSize: 11, color: "#b0b0b0" }}>(WebP 자동 압축 · 허용용량 10MB)</span>
                   </div>
                   {photoFiles.length > 0 && (
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 10 }}>
                       {photoFiles.map((p, i) => (
-                        <div key={i} style={{ position: "relative", width: 60, height: 60, borderRadius: 6, overflow: "hidden", border: `1px solid ${border}` }}>
-                          <img src={p.preview} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                          <button type="button" onClick={() => removePhoto(i)}
-                            style={{ position: "absolute", top: 2, right: 2, width: 18, height: 18, background: "rgba(0,0,0,0.6)", color: "#fff", border: "none", borderRadius: "50%", fontSize: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+                        <div key={i} style={{
+                          background: "#f9fafb", borderRadius: 8,
+                          border: p.isCover ? "2px solid #3b82f6" : `1px solid ${border}`,
+                          overflow: "hidden", transition: "border-color 0.2s",
+                        }}>
+                          {/* 썸네일 + 삭제/대표 버튼 */}
+                          <div style={{ position: "relative" }}>
+                            <img src={p.preview} alt="" style={{ width: "100%", height: 120, objectFit: "cover", display: "block" }} />
+                            {/* 대표 라벨 */}
+                            {p.isCover && (
+                              <div style={{
+                                position: "absolute", top: 6, left: 6, padding: "2px 8px",
+                                background: "rgba(59,130,246,0.9)", color: "#fff", fontSize: 10, fontWeight: 700,
+                                borderRadius: 4,
+                              }}>대표</div>
+                            )}
+                            {/* 삭제 버튼 */}
+                            <button type="button" onClick={() => removePhoto(i)}
+                              style={{
+                                position: "absolute", top: 5, right: 5, width: 20, height: 20,
+                                background: "rgba(0,0,0,0.55)", color: "#fff", border: "none", borderRadius: "50%",
+                                fontSize: 11, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+                              }}>✕</button>
+                          </div>
+
+                          {/* 정렬 버튼 + 설정 버튼 */}
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 8px", gap: 4 }}>
+                            {/* 좌/중앙/우 정렬 버튼 */}
+                            <div style={{ display: "flex", gap: 2 }}>
+                              {([{ k: 'left' as const, icon: '◧', tip: '좌측' }, { k: 'center' as const, icon: '▣', tip: '중앙' }, { k: 'right' as const, icon: '◨', tip: '우측' }]).map(({ k, icon, tip }) => (
+                                <button key={k} type="button" title={tip}
+                                  onClick={() => updatePhotoAlign(i, k)}
+                                  style={{
+                                    width: 28, height: 26, borderRadius: 4, fontSize: 14, cursor: "pointer",
+                                    border: p.align === k ? "2px solid #3b82f6" : `1px solid ${border}`,
+                                    background: p.align === k ? "#dbeafe" : "#fff",
+                                    color: p.align === k ? "#3b82f6" : textMuted,
+                                    display: "flex", alignItems: "center", justifyContent: "center",
+                                    transition: "all 0.12s",
+                                  }}>{icon}</button>
+                              ))}
+                            </div>
+
+                            <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                              {!p.isCover && (
+                                <button type="button" onClick={() => setAsCover(i)}
+                                  style={{ padding: "2px 6px", background: "#e5e7eb", color: textSecondary, border: "none", borderRadius: 3, fontSize: 9, fontWeight: 600, cursor: "pointer" }}>대표지정</button>
+                              )}
+                              {/* 설정 버튼 */}
+                              <button type="button" onClick={() => openEditPhotoModal(i)}
+                                title="사진 설정"
+                                style={{
+                                  width: 26, height: 26, borderRadius: 4, cursor: "pointer",
+                                  border: `1px solid ${border}`, background: "#fff",
+                                  display: "flex", alignItems: "center", justifyContent: "center",
+                                  color: textSecondary, fontSize: 14,
+                                }}>⚙</button>
+                            </div>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -718,6 +1107,311 @@ export default function NewsWritePage() {
 
       </div>
       </div>
+
+      {/* ═══ 사진추가 모달 ═══ */}
+      {showPhotoModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.45)', zIndex: 9999,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }} onClick={() => setShowPhotoModal(false)}>
+          <div onClick={e => e.stopPropagation()} style={{
+            background: '#fff', borderRadius: 14, width: 540, maxHeight: '85vh', overflowY: 'auto',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
+          }}>
+            {/* 헤더 */}
+            <div style={{
+              background: '#3b82f6', color: '#fff', padding: '16px 24px',
+              borderRadius: '14px 14px 0 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            }}>
+              <span style={{ fontSize: 17, fontWeight: 800 }}>사진추가</span>
+              <button onClick={() => setShowPhotoModal(false)} style={{ background: 'none', border: 'none', color: '#fff', fontSize: 22, cursor: 'pointer', lineHeight: 1 }}>✕</button>
+            </div>
+
+            {/* 바디 */}
+            <div style={{ padding: '24px 28px' }}>
+              {/* 선택 */}
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, marginBottom: 24 }}>
+                <label style={{ fontSize: 14, fontWeight: 700, color: textPrimary, minWidth: 80, paddingTop: 8 }}>선택</label>
+                <div style={{ flex: 1 }}>
+                  <input type="file" ref={modalFileRef} accept="image/*" hidden onChange={e => handleModalFileSelect(e.target.files)} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <button onClick={() => modalFileRef.current?.click()} style={{
+                      padding: '8px 16px', background: '#f3f4f6', border: `1px solid ${border}`, borderRadius: 6,
+                      fontSize: 13, fontWeight: 600, cursor: 'pointer', color: textPrimary,
+                    }}>파일 선택</button>
+                    <span style={{ fontSize: 13, color: modalFile ? textPrimary : textMuted }}>
+                      {modalFile ? modalFile.name : '선택된 파일 없음'}
+                    </span>
+                  </div>
+                  <p style={{ fontSize: 12, color: '#f59e0b', margin: '8px 0 0 0' }}>⚠ 허용용량 (10 Mb) / 이미지 파일(jpg, gif, png)</p>
+                  {modalPreview && (
+                    <div style={{ marginTop: 12, borderRadius: 8, overflow: 'hidden', border: `1px solid ${border}`, maxWidth: 200 }}>
+                      <img src={modalPreview} alt="미리보기" style={{ width: '100%', height: 'auto', display: 'block' }} />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* 기준크기 */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
+                <label style={{ fontSize: 14, fontWeight: 700, color: textPrimary, minWidth: 80 }}>기준크기</label>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  {[180, 250, 600, 960, 1280].map(s => (
+                    <button key={s} onClick={() => setModalSize(s)} style={{
+                      padding: '7px 14px', borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                      border: modalSize === s ? '2px solid #3b82f6' : `1px solid ${border}`,
+                      background: modalSize === s ? '#1e3a5f' : '#fff',
+                      color: modalSize === s ? '#fff' : textPrimary,
+                      transition: 'all 0.15s',
+                    }}>{s}px</button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 삽입방식 */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
+                <label style={{ fontSize: 14, fontWeight: 700, color: textPrimary, minWidth: 80 }}>삽입방식</label>
+                <div style={{ display: 'flex', gap: 4, background: '#f3f4f6', borderRadius: 6, padding: 3 }}>
+                  {(['자동', '수동'] as const).map(m => (
+                    <button key={m} onClick={() => setModalInsertMode(m)} style={{
+                      padding: '7px 18px', border: 'none', borderRadius: 5, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                      background: modalInsertMode === m ? '#1e3a5f' : 'transparent',
+                      color: modalInsertMode === m ? '#fff' : textSecondary,
+                      transition: 'all 0.15s',
+                    }}>{m}</button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 삽입위치 */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
+                <label style={{ fontSize: 14, fontWeight: 700, color: textPrimary, minWidth: 80 }}>삽입위치</label>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  {([{ k: 'left' as const, icon: '◧' }, { k: 'center' as const, icon: '▣' }, { k: 'right' as const, icon: '◨' }]).map(({ k, icon }) => (
+                    <button key={k} onClick={() => setModalAlign(k)} style={{
+                      width: 38, height: 38, borderRadius: 6, fontSize: 18, cursor: 'pointer',
+                      border: modalAlign === k ? '2px solid #3b82f6' : `1px solid ${border}`,
+                      background: modalAlign === k ? '#1e3a5f' : '#fff',
+                      color: modalAlign === k ? '#fff' : textSecondary,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      transition: 'all 0.15s',
+                    }}>{icon}</button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 워터마크 */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
+                <label style={{ fontSize: 14, fontWeight: 700, color: textPrimary, minWidth: 80 }}>워터마크</label>
+                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                  {Array.from({ length: 9 }, (_, i) => (
+                    <button key={i} onClick={() => setModalWatermark(i)} style={{
+                      width: 34, height: 34, borderRadius: 5, cursor: 'pointer',
+                      border: modalWatermark === i ? '2px solid #3b82f6' : `1px solid ${border}`,
+                      background: modalWatermark === i ? '#dbeafe' : '#f0fdf4',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      transition: 'all 0.15s',
+                    }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={modalWatermark === i ? '#3b82f6' : '#6b7280'} strokeWidth="2">
+                        <rect x="3" y="3" width="18" height="18" rx="2"/>
+                        {i === 0 && <circle cx="8" cy="8" r="2" fill={modalWatermark === i ? '#3b82f6' : '#6b7280'}/>}
+                        {i === 1 && <circle cx="12" cy="8" r="2" fill={modalWatermark === i ? '#3b82f6' : '#6b7280'}/>}
+                        {i === 2 && <circle cx="16" cy="8" r="2" fill={modalWatermark === i ? '#3b82f6' : '#6b7280'}/>}
+                        {i === 3 && <circle cx="8" cy="12" r="2" fill={modalWatermark === i ? '#3b82f6' : '#6b7280'}/>}
+                        {i === 4 && <circle cx="12" cy="12" r="2" fill={modalWatermark === i ? '#3b82f6' : '#6b7280'}/>}
+                        {i === 5 && <circle cx="16" cy="12" r="2" fill={modalWatermark === i ? '#3b82f6' : '#6b7280'}/>}
+                        {i === 6 && <circle cx="8" cy="16" r="2" fill={modalWatermark === i ? '#3b82f6' : '#6b7280'}/>}
+                        {i === 7 && <circle cx="12" cy="16" r="2" fill={modalWatermark === i ? '#3b82f6' : '#6b7280'}/>}
+                        {i === 8 && <circle cx="16" cy="16" r="2" fill={modalWatermark === i ? '#3b82f6' : '#6b7280'}/>}
+                      </svg>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 설명 (캡션) */}
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, marginBottom: 20 }}>
+                <label style={{ fontSize: 14, fontWeight: 700, color: textPrimary, minWidth: 80, paddingTop: 8 }}>설명 <span style={{ fontWeight: 400, color: textMuted }}>(캡션)</span></label>
+                <textarea value={modalCaption} onChange={e => setModalCaption(e.target.value)}
+                  placeholder="사진설명입력"
+                  rows={3}
+                  style={{
+                    flex: 1, padding: '10px 14px', border: `1px solid ${border}`, borderRadius: 8,
+                    fontSize: 14, color: textPrimary, background: '#fafafa', outline: 'none',
+                    fontFamily: 'inherit', resize: 'vertical', lineHeight: 1.6,
+                  }}
+                />
+              </div>
+
+              {/* 캡션정렬 */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 8 }}>
+                <label style={{ fontSize: 14, fontWeight: 700, color: textPrimary, minWidth: 80 }}>캡션정렬</label>
+                <div style={{ display: 'flex', gap: 4, background: '#f3f4f6', borderRadius: 6, padding: 3 }}>
+                  {([{ k: 'left' as const, label: '좌측' }, { k: 'center' as const, label: '중앙' }, { k: 'right' as const, label: '우측' }]).map(({ k, label }) => (
+                    <button key={k} onClick={() => setModalCaptionAlign(k)} style={{
+                      padding: '7px 18px', border: 'none', borderRadius: 5, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                      background: modalCaptionAlign === k ? '#1e3a5f' : 'transparent',
+                      color: modalCaptionAlign === k ? '#fff' : textSecondary,
+                      transition: 'all 0.15s',
+                    }}>{label}</button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* 푸터 버튼 */}
+            <div style={{ padding: '16px 28px 24px', display: 'flex', justifyContent: 'center', gap: 12 }}>
+              <button onClick={handlePhotoModalConfirm} style={{
+                padding: '12px 36px', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 8,
+                fontSize: 15, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
+                boxShadow: '0 2px 8px rgba(59,130,246,0.3)', transition: 'background 0.15s',
+              }}
+              onMouseOver={e => e.currentTarget.style.background = '#2563eb'}
+              onMouseOut={e => e.currentTarget.style.background = '#3b82f6'}
+              >✓ 확인</button>
+              <button onClick={() => setShowPhotoModal(false)} style={{
+                padding: '12px 36px', background: '#fff', color: textPrimary, border: `1px solid ${border}`, borderRadius: 8,
+                fontSize: 15, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
+              }}>✕ 취소</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ 사진수정 모달 ═══ */}
+      {showEditModal && editPhotoIdx >= 0 && photoFiles[editPhotoIdx] && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.45)', zIndex: 9999,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }} onClick={() => setShowEditModal(false)}>
+          <div onClick={e => e.stopPropagation()} style={{
+            background: '#fff', borderRadius: 14, width: 540, maxHeight: '85vh', overflowY: 'auto',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
+          }}>
+            {/* 헤더 */}
+            <div style={{
+              background: '#374151', color: '#fff', padding: '16px 24px',
+              borderRadius: '14px 14px 0 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            }}>
+              <span style={{ fontSize: 17, fontWeight: 800 }}>사진수정</span>
+              <button onClick={() => setShowEditModal(false)} style={{ background: 'none', border: 'none', color: '#fff', fontSize: 22, cursor: 'pointer', lineHeight: 1 }}>✕</button>
+            </div>
+
+            {/* 바디 */}
+            <div style={{ padding: '24px 28px' }}>
+              {/* 선택 (미리보기) */}
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, marginBottom: 24 }}>
+                <label style={{ fontSize: 14, fontWeight: 700, color: textPrimary, minWidth: 80, paddingTop: 8 }}>선택</label>
+                <div style={{ flex: 1 }}>
+                  <div style={{ borderRadius: 8, overflow: 'hidden', border: `1px solid ${border}`, background: '#f9fafb', textAlign: 'center', padding: 16 }}>
+                    <img src={photoFiles[editPhotoIdx].preview} alt="미리보기"
+                      style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 6, objectFit: 'contain' }} />
+                  </div>
+                  <p style={{ fontSize: 12, color: textMuted, margin: '6px 0 0 0' }}>
+                    {photoFiles[editPhotoIdx].file.name} ({(photoFiles[editPhotoIdx].file.size / 1024).toFixed(0)}KB)
+                  </p>
+                </div>
+              </div>
+
+              {/* 기준크기 */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
+                <label style={{ fontSize: 14, fontWeight: 700, color: textPrimary, minWidth: 80 }}>기준크기</label>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  {[180, 250, 600, 960, 1280].map(s => (
+                    <button key={s} onClick={() => setEditSize(s)} style={{
+                      padding: '7px 14px', borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                      border: editSize === s ? '2px solid #3b82f6' : `1px solid ${border}`,
+                      background: editSize === s ? '#1e3a5f' : '#fff',
+                      color: editSize === s ? '#fff' : textPrimary,
+                      transition: 'all 0.15s',
+                    }}>{s}px</button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 삽입방식 */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
+                <label style={{ fontSize: 14, fontWeight: 700, color: textPrimary, minWidth: 80 }}>삽입방식</label>
+                <div style={{ display: 'flex', gap: 4, background: '#f3f4f6', borderRadius: 6, padding: 3 }}>
+                  {(['자동', '수동'] as const).map(m => (
+                    <button key={m} onClick={() => setEditInsertMode(m)} style={{
+                      padding: '7px 18px', border: 'none', borderRadius: 5, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                      background: editInsertMode === m ? '#1e3a5f' : 'transparent',
+                      color: editInsertMode === m ? '#fff' : textSecondary,
+                      transition: 'all 0.15s',
+                    }}>{m}</button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 삽입위치 */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
+                <label style={{ fontSize: 14, fontWeight: 700, color: textPrimary, minWidth: 80 }}>삽입위치</label>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  {([{ k: 'left' as const, icon: '◧' }, { k: 'center' as const, icon: '▣' }, { k: 'right' as const, icon: '◨' }]).map(({ k, icon }) => (
+                    <button key={k} onClick={() => setEditAlign(k)} style={{
+                      width: 38, height: 38, borderRadius: 6, fontSize: 18, cursor: 'pointer',
+                      border: editAlign === k ? '2px solid #3b82f6' : `1px solid ${border}`,
+                      background: editAlign === k ? '#1e3a5f' : '#fff',
+                      color: editAlign === k ? '#fff' : textSecondary,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      transition: 'all 0.15s',
+                    }}>{icon}</button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 설명 (캡션) */}
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, marginBottom: 20 }}>
+                <label style={{ fontSize: 14, fontWeight: 700, color: textPrimary, minWidth: 80, paddingTop: 8 }}>설명 <span style={{ fontWeight: 400, color: textMuted }}>(캡션)</span></label>
+                <textarea value={editCaption} onChange={e => setEditCaption(e.target.value)}
+                  placeholder="사진설명입력"
+                  rows={3}
+                  style={{
+                    flex: 1, padding: '10px 14px', border: `1px solid ${border}`, borderRadius: 8,
+                    fontSize: 14, color: textPrimary, background: '#fafafa', outline: 'none',
+                    fontFamily: 'inherit', resize: 'vertical', lineHeight: 1.6,
+                  }}
+                />
+              </div>
+
+              {/* 캡션정렬 */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 8 }}>
+                <label style={{ fontSize: 14, fontWeight: 700, color: textPrimary, minWidth: 80 }}>캡션정렬</label>
+                <div style={{ display: 'flex', gap: 4, background: '#f3f4f6', borderRadius: 6, padding: 3 }}>
+                  {([{ k: 'left' as const, label: '좌측' }, { k: 'center' as const, label: '중앙' }, { k: 'right' as const, label: '우측' }]).map(({ k, label }) => (
+                    <button key={k} onClick={() => setEditCaptionAlign(k)} style={{
+                      padding: '7px 18px', border: 'none', borderRadius: 5, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                      background: editCaptionAlign === k ? '#1e3a5f' : 'transparent',
+                      color: editCaptionAlign === k ? '#fff' : textSecondary,
+                      transition: 'all 0.15s',
+                    }}>{label}</button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* 푸터 버튼 */}
+            <div style={{ padding: '16px 28px 24px', display: 'flex', justifyContent: 'center', gap: 12 }}>
+              <button onClick={handleEditPhotoConfirm} style={{
+                padding: '12px 36px', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 8,
+                fontSize: 15, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
+                boxShadow: '0 2px 8px rgba(59,130,246,0.3)', transition: 'background 0.15s',
+              }}
+              onMouseOver={e => e.currentTarget.style.background = '#2563eb'}
+              onMouseOut={e => e.currentTarget.style.background = '#3b82f6'}
+              >✓ 확인</button>
+              <button onClick={() => setShowEditModal(false)} style={{
+                padding: '12px 36px', background: '#fff', color: textPrimary, border: `1px solid ${border}`, borderRadius: 8,
+                fontSize: 15, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
+              }}>✕ 취소</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       </main>
     </div>
   );
