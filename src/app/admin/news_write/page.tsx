@@ -1311,6 +1311,11 @@ export default function NewsWritePage() {
               onMouseUp={saveSelection}
               onKeyUp={saveSelection}
               onFocus={saveSelection}
+              onPaste={(e) => {
+                e.preventDefault();
+                const text = e.clipboardData.getData("text/plain");
+                document.execCommand("insertText", false, text);
+              }}
             />
 
             {/* ── 구분선 ── */}
@@ -1369,7 +1374,7 @@ export default function NewsWritePage() {
                   placeholder="예: 37.490416, 127.518709"
                   style={{ width: 240, padding: "0 14px", height: 40, border: `1px solid ${border}`, borderRadius: 6, fontSize: 14, color: textPrimary, background: "#f9fafb", outline: "none", fontFamily: "inherit" }} />
                 
-                <button type="button" onClick={() => window.open('https://map.kakao.com', '_blank')} style={{ padding: "0 16px", height: 40, background: "#9ca3af", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 500, cursor: "pointer", whiteSpace: "nowrap" }}>
+                <button type="button" onClick={() => alert("카카오맵 지도검색 버튼을 눌러 위치를 누르면 자동으로 입력됩니다!\n직접 입력 시: 위도, 경도 순으로 입력하세요.")} style={{ padding: "0 16px", height: 40, background: "#9ca3af", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 500, cursor: "pointer", whiteSpace: "nowrap" }}>
                   #위도 경도 넣는법
                 </button>
               </div>
