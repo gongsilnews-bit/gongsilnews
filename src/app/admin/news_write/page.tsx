@@ -7,7 +7,7 @@ import { geocodeAddress } from "@/app/actions/geocode";
 import { createClient } from "@/utils/supabase/client";
 
 /* ─── 타입 ─── */
-type StatusType = "작성중" | "승인신청" | "반려";
+type StatusType = "DRAFT" | "PENDING" | "PUBLISHED" | "REJECTED" | string;
 type FormType = "일반" | "카드뉴스" | "갤러리";
 
 import AdminSidebar from "@/components/admin/AdminSidebar";
@@ -16,7 +16,7 @@ export default function NewsWritePage() {
   const router = useRouter();
 
   /* ─── 상태 ─── */
-  const [status, setStatus] = useState<StatusType>("작성중");
+  const [status, setStatus] = useState<StatusType>("DRAFT");
   const [formType, setFormType] = useState<FormType>("일반");
   const [publishDate, setPublishDate] = useState("2026-03-24");
   const [publishTime, setPublishTime] = useState("00:00");
@@ -418,8 +418,8 @@ export default function NewsWritePage() {
     setContent(editorRef.current.innerHTML || "");
   };
 
-  /* ── 사진 선택 (우측 사이드바 드래그/클릭용 — 즐시 WebP 압축 후 삽입) ── */
-  const handlePhotoSelect = async (files: FileList | null) => {
+  /* ── 사진 선택 (우측 사이드바 드래그/클릭용 — WebP 압축 후 삽입) ── */
+  const handlePhotoSelect = async (files: FileList | File[] | null) => {
     if (!files) return;
     const newFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
 
@@ -2061,7 +2061,7 @@ export default function NewsWritePage() {
                       style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 6, objectFit: 'contain' }} />
                   </div>
                   <p style={{ fontSize: 12, color: textMuted, margin: '6px 0 0 0' }}>
-                    {photoFiles[editPhotoIdx].file.name} ({(photoFiles[editPhotoIdx].file.size / 1024).toFixed(0)}KB)
+                    {photoFiles[editPhotoIdx].file ? `${photoFiles[editPhotoIdx].file?.name} (${((photoFiles[editPhotoIdx].file?.size || 0) / 1024).toFixed(0)}KB)` : '기존 업로드 사진'}
                   </p>
                 </div>
               </div>
