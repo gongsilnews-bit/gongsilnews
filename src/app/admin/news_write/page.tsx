@@ -847,7 +847,8 @@ export default function NewsWritePage() {
   const handleKeywordAdd = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && keyword.trim()) {
       e.preventDefault();
-      const newKeywords = keyword.split(",").map(k => k.trim()).filter(k => k);
+      // 콤마, 띄어쓰기, 해시태그(#) 기준으로 분할
+      const newKeywords = keyword.split(/[,#\s]+/).map(k => k.trim()).filter(k => k);
       setKeywords(prev => [...prev, ...newKeywords]);
       setKeyword("");
     }
@@ -1336,7 +1337,16 @@ export default function NewsWritePage() {
                   </div>
                 )}
                 <input type="text" value={keyword} onChange={e => setKeyword(e.target.value)} onKeyDown={handleKeywordAdd}
-                  placeholder="키워드 입력 후 엔터 (콤마, 띄어쓰기로 여러 개 붙여넣기 가능)"
+                  onPaste={(e) => {
+                    const pastedData = e.clipboardData.getData("text");
+                    // 여러 단어나 #, 콤마가 포함된 경우 복붙 즉시 자동 분할 (엔터 없이도)
+                    if (/[,#\s]/.test(pastedData)) {
+                       e.preventDefault();
+                       const pastedKeywords = pastedData.split(/[,#\s]+/).map(k => k.trim()).filter(k => k);
+                       setKeywords(prev => [...prev, ...pastedKeywords]);
+                    }
+                  }}
+                  placeholder="키워드 입력 후 엔터 (#, 콤마, 띄어쓰기로 여러 개 붙여넣기 가능)"
                   style={{ width: "100%", padding: "10px 14px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 14, color: textPrimary, background: cardBg, outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
               </div>
             </div>

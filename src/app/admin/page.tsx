@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import VacancyRegisterForm from "@/components/admin/VacancyRegisterForm";
 import MemberRegisterForm from "@/components/admin/MemberRegisterForm";
 import { adminGetMembers, adminSoftDeleteMember, adminRestoreMember, adminHardDeleteMember } from "./actions";
-import { getArticles } from "@/app/actions/article";
+import { getArticles, deleteArticle } from "@/app/actions/article";
 import { getBoards, deleteBoard } from "@/app/actions/board";
 import { createClient } from "@/utils/supabase/client";
 
@@ -605,11 +605,20 @@ export default function AdminPage() {
                         </td>
                         <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
                           <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
-                            <button style={{ height: 30, padding: "0 12px", background: "#4b5563", color: "#fff", border: "none", borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
+                            <button onClick={() => window.location.href = `/admin/news_write?id=${row.id}`} style={{ height: 30, padding: "0 12px", background: "#4b5563", color: "#fff", border: "none", borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
                               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                               수정
                             </button>
-                            <button style={{ height: 30, padding: "0 12px", background: darkMode ? "#2c2d31" : "#fff", color: "#9ca3af", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
+                            <button onClick={async () => {
+                              if (confirm(`'${row.title}' 기사를 삭제하시겠습니까?`)) {
+                                const res = await deleteArticle(row.id);
+                                if (res.success) {
+                                  setDbArticles(prev => prev.filter(a => a.id !== row.id));
+                                } else {
+                                  alert('삭제 실패: ' + res.error);
+                                }
+                              }
+                            }} style={{ height: 30, padding: "0 12px", background: darkMode ? "#2c2d31" : "#fff", color: "#9ca3af", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
                               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                               삭제
                             </button>
