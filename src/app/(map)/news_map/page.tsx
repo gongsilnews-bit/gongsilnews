@@ -219,10 +219,38 @@ export default function NewsLocalPage() {
         geoArticles.forEach(art => {
           if (!art.lat || !art.lng) return;
           const position = new kakao.maps.LatLng(art.lat, art.lng);
-          const marker = new kakao.maps.Marker({ position });
+
+          // 오렌지색 원 커스텀 마커 이미지 (SVG → DataURL)
+          const size = 32;
+          const svgStr = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="%23ff8e15" stroke="white" stroke-width="2.5"/><text x="50%25" y="54%25" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="13" font-weight="bold" font-family="sans-serif">1</text></svg>`;
+          const markerImage = new kakao.maps.MarkerImage(
+            `data:image/svg+xml,${svgStr}`,
+            new kakao.maps.Size(size, size),
+            { offset: new kakao.maps.Point(size / 2, size / 2) }
+          );
+
+          const marker = new kakao.maps.Marker({ position, image: markerImage });
 
           // 마커에 기사 ID 연결 (클러스터 필터에 사용)
           (marker as any)._articleId = art.id;
+
+          // 마우스 오버 → 살짝 키운 원 마커 이미지
+          const hoverSize = 40;
+          const hoverSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${hoverSize}" height="${hoverSize}"><circle cx="${hoverSize/2}" cy="${hoverSize/2}" r="${hoverSize/2 - 2}" fill="%23e67300" stroke="white" stroke-width="3"/><text x="50%25" y="54%25" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="15" font-weight="bold" font-family="sans-serif">1</text></svg>`;
+          const hoverImage = new kakao.maps.MarkerImage(
+            `data:image/svg+xml,${hoverSvg}`,
+            new kakao.maps.Size(hoverSize, hoverSize),
+            { offset: new kakao.maps.Point(hoverSize / 2, hoverSize / 2) }
+          );
+
+          kakao.maps.event.addListener(marker, 'mouseover', () => {
+            marker.setImage(hoverImage);
+            marker.setZIndex(100);
+          });
+          kakao.maps.event.addListener(marker, 'mouseout', () => {
+            marker.setImage(markerImage);
+            marker.setZIndex(0);
+          });
 
           // 개별 마커 클릭 → 말풍선 표시
           kakao.maps.event.addListener(marker, 'click', () => {
@@ -253,7 +281,7 @@ export default function NewsLocalPage() {
     if (!(window as any).kakao || !(window as any).kakao.maps) {
       if (!document.getElementById("kakao-map-script")) {
         const script = document.createElement("script");
-        const kakaoApiKey = process.env.NEXT_PUBLIC_KAKAO_APP_KEY || "535b712ad15df457168dcab800fcb4aa";
+        const kakaoApiKey = process.env.NEXT_PUBLIC_KAKAO_APP_KEY || "435d3602201a49ea712e5f5a36fe6efc";
         script.id = "kakao-map-script";
         script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoApiKey}&libraries=services,clusterer&autoload=false`;
         script.onerror = () => setMapError("카카오맵 JS 키가 유효하지 않거나 등록되지 않았습니다.");
