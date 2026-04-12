@@ -205,9 +205,10 @@ export default function NewsLocalPage() {
             }
           });
 
-          // 지도 줌/이동 시 클러스터 필터 해제 (전체 보기로 복원)
+          // 지도 이동/줌 완료 시 → 현재 뷰포트에 보이는 기사만 사이드바에 표시
           kakao.maps.event.addListener(kakaoMapRef.current, 'idle', () => {
-            // idle 이벤트에서는 자동 리셋하지 않음 (명시적으로 "전체보기" 버튼으로 해제)
+            if (clusterMode) return; // 클러스터 필터 모드에서는 뷰포트 필터 비활성
+            updateVisibleArticles();
           });
         }
 
@@ -271,6 +272,8 @@ export default function NewsLocalPage() {
           if (kakaoMapRef.current) {
             kakaoMapRef.current.relayout();
             kakaoMapRef.current.setCenter(new kakao.maps.LatLng(initialLat, initialLng));
+            // 초기 로딩 후 현재 뷰포트 기사 필터링
+            setTimeout(() => updateVisibleArticles(), 200);
           }
         }, 500);
       };
@@ -295,7 +298,7 @@ export default function NewsLocalPage() {
     } else {
       loadKakaoMap();
     }
-  }, [geoArticles, showArticleOnMap, closeInfoWindow]);
+  }, [geoArticles, showArticleOnMap, closeInfoWindow, updateVisibleArticles, clusterMode]);
 
   /* ── 사이드바 기사 클릭 시 지도 이동 + 말풍선 ── */
   const handleListArticleClick = useCallback((article: any) => {
@@ -305,14 +308,27 @@ export default function NewsLocalPage() {
     handleSelectArticle(article.id, false);
   }, [showArticleOnMap, handleSelectArticle]);
 
-  /* ── 전체보기 (클러스터 필터 해제) ── */
+  /* ── 현재 지도 뷰포트에 보이는 기사만 필터링 ── */
+  const updateVisibleArticles = useCallback(() => {
+    if (!kakaoMapRef.current) { setFilteredArticles(geoArticles); return; }
+    const bounds = kakaoMapRef.current.getBounds();
+    const sw = bounds.getSouthWest();
+    const ne = bounds.getNorthEast();
+    const visible = geoArticles.filter(a => 
+      a.lat >= sw.getLat() && a.lat <= ne.getLat() && 
+      a.lng >= sw.getLng() && a.lng <= ne.getLng()
+    );
+    setFilteredArticles(visible);
+  }, [geoArticles]);
+
+  /* ── 전체보기 (클러스터 필터 해제, 뷰포트 기반으로 복원) ── */
   const handleShowAll = useCallback(() => {
-    setFilteredArticles(geoArticles);
     setClusterMode(false);
     setActiveArticleId(null);
     setShowDetail(false);
     closeInfoWindow();
-  }, [geoArticles, closeInfoWindow]);
+    updateVisibleArticles();
+  }, [closeInfoWindow, updateVisibleArticles]);
 
   return (
     <div style={{ height: "100vh", display: "flex", flexDirection: "column", overflow: "hidden", fontFamily: "'Pretendard', sans-serif" }}>
@@ -322,7 +338,7 @@ export default function NewsLocalPage() {
           <img src="/logo.png" alt="공실뉴스" style={{ height: 32 }} onError={(e) => { (e.target as HTMLImageElement).src = "https://via.placeholder.com/100x32?text=LOGO"; }} />
         </Link>
         <h1 style={{ fontSize: 22, fontWeight: 900, margin: 0, color: "#111", letterSpacing: -0.5 }}>우리동네뉴스</h1>
-        <div style={{ display: "flex", gap: 8, marginLeft: "auto" }}>
+        <div style={{ display: "flex", gap: 8, marginLeft: 12 }}>
           <select value={section1} onChange={(e) => { setSection1(e.target.value); setSection2(""); }}
             style={{ padding: "7px 12px", border: "1px solid #ddd", borderRadius: 6, outline: "none", fontSize: 13, fontWeight: 600, cursor: "pointer", background: "#fff" }}>
             <option value="">1차섹션 전체</option>
@@ -366,7 +382,7 @@ export default function NewsLocalPage() {
                 </>
               ) : (
                 <>
-                  <span style={{ color: "#ff8e15" }}>🗺️</span> 전체 지도기사 {geoArticles.length}개
+                  <span style={{ color: "#ff8e15" }}>🗺️</span> 지도영역 기사 {filteredArticles.length}개
                 </>
               )}
             </h2>
