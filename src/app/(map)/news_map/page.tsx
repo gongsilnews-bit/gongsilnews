@@ -444,30 +444,6 @@ export default function NewsLocalPage() {
         {/* ── 지도 + 기사 상세 래퍼 ── */}
         <div style={{ flex: 1, height: "100%", position: "relative", minWidth: 0, background: "#e8eaed", overflow: "hidden" }}>
 
-          {/* 말풍선 (비상세 모드에서만 표시 – 기사 선택 시 표시) */}
-          {activeArticleId && articleDetail && !showDetail && (
-            <div style={{
-              position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -100%) translateY(-25px)", zIndex: 100,
-              background: "#fff", padding: "14px 18px", borderRadius: 10, boxShadow: "0 6px 20px rgba(0,0,0,0.18)",
-              border: "1px solid #e0e0e0", width: 280, animation: "fadeIn 0.2s ease"
-            }}>
-              <h3 style={{ fontSize: 15, fontWeight: 700, color: "#222", marginBottom: 6, lineHeight: 1.35, wordBreak: "keep-all", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-                {articleDetail.title}
-              </h3>
-              <p style={{ fontSize: 12, color: "#777", display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden", marginBottom: 10 }}>
-                {articleDetail.subtitle || stripHtml(articleDetail.content || "").slice(0, 50)}
-              </p>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 8, borderTop: "1px solid #f0f0f0" }}>
-                <span style={{ fontSize: 11, color: "#999" }}>
-                  {formatDate(articleDetail.published_at || articleDetail.created_at)} | {articleDetail.author_name || "공실뉴스"}
-                </span>
-                <button onClick={() => setShowDetail(true)} style={{ background: "transparent", color: "#ff8e15", border: "none", padding: 0, fontSize: 12, fontWeight: "bold", cursor: "pointer" }}>
-                  기사 보러가기 &gt;
-                </button>
-              </div>
-              <div style={{ position: "absolute", bottom: -8, left: "50%", transform: "translateX(-50%)", width: 0, height: 0, borderLeft: "8px solid transparent", borderRight: "8px solid transparent", borderTop: "8px solid #fff" }}></div>
-            </div>
-          )}
 
           {/* 기사 상세 뷰 (좌→우 슬라이드) */}
           {articleDetail && (

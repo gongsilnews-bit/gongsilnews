@@ -814,7 +814,7 @@ button { border: none; background: none; cursor: pointer; font-family: inherit; 
     font-weight: 700;
     background: #fdfdfd;
     padding: 15px;
-    border-left: 4px solid #508bf5;
+    border-left: 4px solid #ff8e15;
 }
 .article-img-wrap {
     width: 100%;
@@ -862,7 +862,7 @@ button { border: none; background: none; cursor: pointer; font-family: inherit; 
 
 /* Subtitle Summary Box */
 .article-subtitle-box {
-    border-left: 3px solid #508bf5;
+    border-left: 3px solid #ff8e15;
     padding-left: 16px;
     margin: 24px 0;
     font-size: 16px;
