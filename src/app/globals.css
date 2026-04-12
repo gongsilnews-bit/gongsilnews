@@ -862,7 +862,7 @@ button { border: none; background: none; cursor: pointer; font-family: inherit; 
 
 /* Subtitle Summary Box */
 .article-subtitle-box {
-    border-left: 3px solid #ff8e15;
+    border-left: 3px solid #508bf5;
     padding-left: 16px;
     margin: 24px 0;
     font-size: 16px;
@@ -871,6 +871,10 @@ button { border: none; background: none; cursor: pointer; font-family: inherit; 
     line-height: 1.6;
     white-space: pre-line;
     word-break: keep-all;
+}
+
+.map-subtitle-box {
+    border-left-color: #ff8e15;
 }
 
 /* Article Footer */

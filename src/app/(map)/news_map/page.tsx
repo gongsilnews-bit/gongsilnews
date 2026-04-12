@@ -474,19 +474,21 @@ export default function NewsLocalPage() {
         <div style={{ flex: 1, height: "100%", position: "relative", minWidth: 0, background: "#e8eaed", overflow: "hidden" }}>
 
 
-          {/* 기사 상세 뷰 (좌→우 슬라이드) */}
-          {articleDetail && (
-            <div style={{
-              position: "absolute", top: 0, left: 0, width: 750, maxWidth: "100%", height: "100%",
-              borderRight: "1px solid #ddd", boxShadow: "5px 0 30px rgba(0,0,0,0.15)", background: "#fff",
-              zIndex: 2000, overflowY: "auto",
-              transform: showDetail ? "translateX(0)" : "translateX(-100%)",
-              opacity: showDetail ? 1 : 0,
-              visibility: showDetail ? "visible" : "hidden",
-              transition: "transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease, visibility 0.4s"
-            }}>
+          {/* 기사 상세 뷰 (좌→우 슬라이드) - 항상 렌더링 유지하여 CSS transform 애니메이션 발동 */}
+          <div style={{
+            position: "absolute", top: 0, left: 0, width: 750, maxWidth: "100%", height: "100%",
+            borderRight: "1px solid #ddd", boxShadow: "5px 0 30px rgba(0,0,0,0.15)", background: "#fff",
+            zIndex: 2000, overflowY: "auto",
+            transform: showDetail ? "translateX(0)" : "translateX(-100%)",
+            opacity: showDetail ? 1 : 0,
+            visibility: showDetail ? "visible" : "hidden",
+            transition: "transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease, visibility 0.4s"
+          }}>
+            {/* 닫기 버튼은 항상 렌더링 (로딩 중에도 닫을 수 있게) */}
+            <button onClick={() => setShowDetail(false)} style={{ position: "absolute", top: 10, right: 10, background: "none", border: "none", fontSize: 32, color: "#999", cursor: "pointer", padding: 10, lineHeight: 1, zIndex: 10 }} title="닫기">✕</button>
+
+            {articleDetail ? (
               <div style={{ maxWidth: 1200, margin: "0 auto", padding: "20px 40px 40px", position: "relative" }}>
-                <button onClick={() => setShowDetail(false)} style={{ position: "absolute", top: -10, right: 0, background: "none", border: "none", fontSize: 32, color: "#999", cursor: "pointer", padding: 10, lineHeight: 1, zIndex: 10 }} title="닫기">✕</button>
 
                 <div style={{ fontSize: 14, color: "#666", marginBottom: 8, fontWeight: 600 }}>
                   [{articleDetail.section1 || "뉴스"} &gt; {articleDetail.section2 || "전체"}]
@@ -508,7 +510,7 @@ export default function NewsLocalPage() {
                 </div>
 
                 <div style={{ paddingTop: 0, marginTop: 30 }}>
-                  {articleDetail.subtitle && <div className="article-subtitle-box">{articleDetail.subtitle}</div>}
+                  {articleDetail.subtitle && <div className="article-subtitle-box map-subtitle-box">{articleDetail.subtitle}</div>}
                   <div className="article-body">
                     {youtubeId && !(articleDetail.content && articleDetail.content.includes('youtube.com/embed')) ? (
                       <div className="article-img-wrap">
@@ -563,16 +565,14 @@ export default function NewsLocalPage() {
                   </div>
                 </div>
               </div>
-            </div>
-          )}
-
-          {/* 기사 로딩 표시 */}
-          {activeArticleId && showDetail && !articleDetail && (
-            <div style={{ position: "absolute", top: 0, left: 0, width: 750, maxWidth: "100%", height: "100%", background: "#fff", zIndex: 1999, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16 }}>
-              <div style={{ width: 36, height: 36, border: "3px solid #f0f0f0", borderTop: "3px solid #ff8e15", borderRadius: "50%", animation: "spin 0.8s linear infinite" }}></div>
-              <div style={{ fontSize: 15, color: "#888", fontWeight: 500 }}>기사를 불러오는 중</div>
-            </div>
-          )}
+            ) : activeArticleId ? (
+              /* 로딩 표시자를 슬라이드 패널 내부로 통합 */
+              <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16 }}>
+                <div style={{ width: 36, height: 36, border: "3px solid #f0f0f0", borderTop: "3px solid #ff8e15", borderRadius: "50%", animation: "spin 0.8s linear infinite" }}></div>
+                <div style={{ fontSize: 15, color: "#888", fontWeight: 500 }}>기사를 불러오는 중</div>
+              </div>
+            ) : null}
+          </div>
 
           {/* 지도 영역 */}
           <div ref={mapRef} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", background: "#e8eaed" }}>
