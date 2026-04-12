@@ -1,6 +1,28 @@
 import { getArticleDetail, getArticles } from "@/app/actions/article";
 import NewsReadContent from "@/components/NewsReadContent";
 
+// 1시간 주기로 재생성 (ISR)
+export const revalidate = 3600;
+// 미리 구워지지 않은 경로도 동적으로 생성하도록 허용
+export const dynamicParams = true;
+
+export async function generateStaticParams() {
+  try {
+    // 가장 먼저 빌드되어야 할 기사들 (최근 기사 50개)
+    const recentRes = await getArticles({ status: "APPROVED", limit: 50 });
+    
+    if (recentRes.success && recentRes.data) {
+      // 숫자형 article_no를 우선 파라미터로 사용 (없으면 id)
+      return recentRes.data.map((article: any) => ({
+        article_id: (article.article_no || article.id).toString(),
+      }));
+    }
+  } catch (error) {
+    console.error("Failed to generate static params for articles", error);
+  }
+  return [];
+}
+
 export default async function NewsReadPage({ params }: { params: Promise<{ article_id: string }> }) {
   const resolvedParams = await params;
   const articleId = typeof resolvedParams.article_id === "string" ? resolvedParams.article_id : null;

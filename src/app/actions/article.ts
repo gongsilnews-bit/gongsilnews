@@ -372,8 +372,8 @@ export async function incrementArticleView(articleId: string) {
 
     if (updateError) return { success: false, error: updateError.message };
 
-    // @ts-ignore
-    revalidateTag("articles");
+    // 캐시 무효화 삭제: 조회수+1 할 때마다 전체 기사 목록 캐시가 초기화되는 레이턴시 문제 방지
+    // revalidateTag("articles");
     
     return { success: true, view_count: newViewCount };
   } catch (err: any) {
