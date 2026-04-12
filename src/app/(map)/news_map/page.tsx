@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { getArticles, getArticleDetail, incrementArticleView } from "@/app/actions/article";
+import MapSearchBar from "@/components/MapSearchBar";
 
 export default function NewsLocalPage() {
   /* ── 상태 ── */
@@ -164,6 +165,18 @@ export default function NewsLocalPage() {
     );
     setFilteredArticles(visible);
   }, [geoArticles]);
+
+  /* ── 지도 검색 바를 통한 부드러운 위치 이동 ── */
+  const panMapTo = useCallback((lat: number, lng: number) => {
+    if (kakaoMapRef.current) {
+      const kakao = (window as any).kakao;
+      const moveLatLon = new kakao.maps.LatLng(lat, lng);
+      // 부드러운 이동 (panTo)
+      kakaoMapRef.current.panTo(moveLatLon);
+      // 이동 시 지도 레벨을 동네 수준으로 당기기
+      kakaoMapRef.current.setLevel(5, { animate: true });
+    }
+  }, []);
 
   // Ref 동기화: 이벤트 리스너 클로저에서 항상 최신 값 참조
   useEffect(() => { clusterModeRef.current = clusterMode; }, [clusterMode]);
@@ -584,6 +597,9 @@ export default function NewsLocalPage() {
               </div>
             )}
           </div>
+          
+          {/* 🔍 지도 지역/검색어 오버레이 UI */}
+          <MapSearchBar onSearchCoord={panMapTo} />
 
           {/* 지도 위 안내 배지 */}
           <div style={{ position: "absolute", bottom: 20, left: "50%", transform: "translateX(-50%)", zIndex: 10, background: "rgba(0,0,0,0.7)", color: "#fff", padding: "8px 20px", borderRadius: 30, fontSize: 13, fontWeight: 600, pointerEvents: "none", opacity: geoArticles.length > 0 ? 1 : 0 }}>
