@@ -1,161 +1,280 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
-
-const PROVINCES = [
-  "서울특별시", "부산광역시", "대구광역시", "인천광역시", 
-  "광주광역시", "대전광역시", "울산광역시", "세종특별자치시",
-  "경기도", "강원특별자치도", "충청북도", "충청남도", 
-  "전라북도", "전라남도", "경상북도", "경상남도", "제주특별자치도"
-];
+import React, { useState, useEffect, useRef } from "react";
 
 interface MapSearchBarProps {
-  onSearchCoord: (lat: number, lng: number) => void;
+  onSearchCoord: (lat: number, lng: number, zoomLevel?: number) => void;
 }
 
 export default function MapSearchBar({ onSearchCoord }: MapSearchBarProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [selectedProvince, setSelectedProvince] = useState("지역 선택");
-  const [keyword, setKeyword] = useState("");
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [activePanel, setActivePanel] = useState<"region" | "search" | null>(null);
+  const [activeTab, setActiveTab] = useState<"sido" | "gugun" | "dong">("sido");
 
-  // 외부 클릭 시 모달 닫기
+  const [sidoList, setSidoList] = useState<any[]>([]);
+  const [gugunList, setGugunList] = useState<any[]>([]);
+  const [dongList, setDongList] = useState<any[]>([]);
+
+  const [selectedSido, setSelectedSido] = useState<string>("위치 파악중");
+  const [selectedGugun, setSelectedGugun] = useState<string>("-");
+  const [selectedDong, setSelectedDong] = useState<string>("-");
+
+  const [currentSidoCode, setCurrentSidoCode] = useState<string>("");
+  const [currentGugunCode, setCurrentGugunCode] = useState<string>("");
+
+  const [keyword, setKeyword] = useState("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+
+  const regionRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
+
+  // Close panels on click outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setIsOpen(false);
+      if (activePanel === "region" && regionRef.current && !regionRef.current.contains(e.target as Node)) {
+        // Only close if click is not on the floating filter trigger buttons
+        if (!(e.target as Element).closest("#wishFloatingFilter")) {
+          setActivePanel(null);
+        }
+      }
+      if (activePanel === "search" && searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        if (!(e.target as Element).closest("#wishFloatingFilter")) {
+          setActivePanel(null);
+        }
       }
     };
-    if (isOpen) document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [isOpen]);
+  }, [activePanel]);
 
-  const searchLocation = (query: string) => {
-    const kakao = (window as any).kakao;
-    if (!kakao || !kakao.maps || !kakao.maps.services) {
-      alert("카카오맵 서비스 로딩 중입니다. 잠시 후 다시 시도해주세요.");
-      return;
+  // Load Sido on mount
+  useEffect(() => {
+    loadRegSido();
+  }, []);
+
+  const loadRegSido = async () => {
+    try {
+      const res = await fetch('https://grpc-proxy-server-mkvo6j4wsq-du.a.run.app/v1/regcodes?regcode_pattern=*00000000');
+      const data = await res.json();
+      setSidoList(data.regcodes || []);
+    } catch (e) {
+      console.error(e);
     }
+  };
 
-    const ps = new kakao.maps.services.Places();
-    const geocoder = new kakao.maps.services.Geocoder();
+  const loadRegGugun = async (sidoCode: string) => {
+    setGugunList([]);
+    const prefix = sidoCode.substring(0, 2);
+    try {
+      const res = await fetch(`https://grpc-proxy-server-mkvo6j4wsq-du.a.run.app/v1/regcodes?regcode_pattern=${prefix}*00000&is_ignore_zero=true`);
+      const data = await res.json();
+      const sorted = (data.regcodes || []).sort((a: any, b: any) => a.name.localeCompare(b.name));
+      const formatted = sorted.map((c: any) => {
+        const nameParts = c.name.split(' ');
+        return { code: c.code, name: nameParts.slice(1).join(' ') };
+      });
+      setGugunList(formatted);
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
-    // 1. 장소(Places) 키워드 검색
-    ps.keywordSearch(query, (data: any, status: any) => {
-      if (status === kakao.maps.services.Status.OK && data.length > 0) {
-        onSearchCoord(parseFloat(data[data.length > 1 ? 0 : 0].y), parseFloat(data[0].x)); 
-      } else {
-        // 2. 장소가 없으면 주소(Geocoder) 검색으로 Fallback
-        geocoder.addressSearch(query, (result: any, status2: any) => {
-          if (status2 === kakao.maps.services.Status.OK && result.length > 0) {
-            onSearchCoord(parseFloat(result[result.length > 1 ? 0 : 0].y), parseFloat(result[0].x));
-          } else {
-            alert("검색결과가 존재하지 않습니다.");
-          }
+  const loadRegDong = async (gugunCode: string) => {
+    setDongList([]);
+    const prefix = gugunCode.substring(0, 5);
+    try {
+      const res = await fetch(`https://grpc-proxy-server-mkvo6j4wsq-du.a.run.app/v1/regcodes?regcode_pattern=${prefix}*&is_ignore_zero=true`);
+      const data = await res.json();
+      const sorted = (data.regcodes || []).sort((a: any, b: any) => a.name.localeCompare(b.name));
+      const formatted = sorted
+        .filter((c: any) => c.code !== gugunCode)
+        .map((c: any) => {
+          const parts = c.name.split(' ');
+          return { code: c.code, name: parts[parts.length - 1] };
         });
+      setDongList(formatted);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const moveToMapSearchByKeyword = (searchKeyword: string, zlevel: number) => {
+    const kakao = (window as any).kakao;
+    if (!kakao || !kakao.maps || !kakao.maps.services) return;
+    const ps = new kakao.maps.services.Places();
+
+    ps.keywordSearch(searchKeyword, (data: any, status: any) => {
+      if (status === kakao.maps.services.Status.OK && data.length > 0) {
+        onSearchCoord(parseFloat(data[0].y), parseFloat(data[0].x), zlevel);
       }
     });
   };
 
-  const handleProvinceSelect = (province: string) => {
-    setSelectedProvince(province);
-    setIsOpen(false);
-    searchLocation(province);
+  const onRegSelectSido = (code: string, name: string) => {
+    setCurrentSidoCode(code);
+    setSelectedSido(name);
+    setSelectedGugun("-");
+    setSelectedDong("-");
+    loadRegGugun(code);
+    setActiveTab("gugun");
+    moveToMapSearchByKeyword(name, 8);
   };
 
-  const handleKeywordSearch = (e: React.FormEvent) => {
-    e.preventDefault();
+  const onRegSelectGugun = (code: string, name: string) => {
+    setCurrentGugunCode(code);
+    setSelectedGugun(name);
+    setSelectedDong("-");
+    loadRegDong(code);
+    setActiveTab("dong");
+    moveToMapSearchByKeyword(`${selectedSido} ${name}`, 6);
+  };
+
+  const onRegSelectDong = (name: string) => {
+    setSelectedDong(name);
+    moveToMapSearchByKeyword(`${selectedSido} ${selectedGugun} ${name}`, 4);
+    setActivePanel(null); // Close panel after final selection
+  };
+
+  const executeMapKeywordSearch = () => {
     if (!keyword.trim()) return;
-    const finalQuery = selectedProvince !== "지역 선택" ? `${selectedProvince} ${keyword}` : keyword;
-    searchLocation(finalQuery);
+    setIsSearching(true);
+    const kakao = (window as any).kakao;
+    if (!kakao || !kakao.maps || !kakao.maps.services) return;
+    const ps = new kakao.maps.services.Places();
+
+    ps.keywordSearch(keyword, (data: any, status: any) => {
+      setIsSearching(false);
+      if (status === kakao.maps.services.Status.OK) {
+        setSearchResults(data);
+      } else {
+        setSearchResults([]);
+      }
+    });
+  };
+
+  const onSelectSearchResult = (item: any) => {
+    onSearchCoord(parseFloat(item.y), parseFloat(item.x), 5); // Navigate and zoom
+    setActivePanel(null);
   };
 
   return (
-    <div style={{ position: "absolute", top: 20, left: 60, zIndex: 1000, display: "flex", alignItems: "center", gap: 10 }}>
-      {/* 검색 바 컨테이너 */}
-      <div style={{ 
-        display: "flex", background: "#fff", borderRadius: 8, 
-        boxShadow: "0 4px 12px rgba(0,0,0,0.15)", height: 46, overflow: "visible", position: "relative"
-      }}>
-        
-        {/* 드롭다운 트리거 버튼 */}
-        <div ref={dropdownRef} style={{ position: "relative" }}>
-          <button 
-            onClick={() => setIsOpen(!isOpen)}
-            style={{ 
-              height: "100%", padding: "0 16px", borderRight: "1px solid #eee", fontSize: 14, 
-              fontWeight: 700, color: selectedProvince !== "지역 선택" ? "#ff8e15" : "#333", 
-              cursor: "pointer", display: "flex", alignItems: "center", gap: 8 
-            }}
-          >
-            {selectedProvince} <span style={{ fontSize: 10, color: "#999" }}>{isOpen ? "▲" : "▼"}</span>
-          </button>
+    <>
+      <style>{`
+        #wishFloatingFilter { display: flex; position: absolute; top: 15px; left: 20px; z-index: 1000; background: #fff; padding: 5px 15px; border-radius: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border: 1px solid #ddd; align-items: center; gap: 10px; font-size: 14px; color: #333; transition: box-shadow 0.2s; }
+        #wishFloatingFilter:hover { box-shadow: 0 6px 15px rgba(0,0,0,0.15); }
+        .wish-select { background: none; border: none; cursor: pointer; font-weight: bold; padding: 5px 10px; }
+        .wish-select::after { content: ' ▼'; font-size: 10px; color: #999; }
+        .region-tab { flex:1; padding:12px; background:transparent; border:none; cursor:pointer; font-weight:bold; font-size:14px; color:#666; transition:all 0.2s; border-bottom:2px solid transparent; }
+        .region-tab.active { color:#ff8e15; border-bottom:2px solid #ff8e15; background:#fff; }
+        .reg-item-btn { padding:8px 5px; background:#fff; border:1px solid #eee; border-radius:4px; font-size:13px; color:#444; cursor:pointer; transition:all 0.2s; text-align:center; }
+        .reg-item-btn:hover { background:#ff8e15; color:#fff; border-color:#ff8e15; }
+        .region-close-btn:hover { background:#ddd !important; }
+      `}</style>
 
-          {/* 시/도 선택 팝오버 */}
-          {isOpen && (
-            <div style={{ 
-              position: "absolute", top: 54, left: 0, width: 380, background: "#fff", 
-              borderRadius: 8, boxShadow: "0 8px 24px rgba(0,0,0,0.15)", padding: 20, zIndex: 1001,
-              border: "1px solid #ddd"
-            }}>
-              <div style={{ display: "flex", gap: 10, borderBottom: "1px solid #eee", paddingBottom: 12, marginBottom: 16 }}>
-                <span style={{ fontSize: 14, fontWeight: "bold", color: "#ff8e15", borderBottom: "2px solid #ff8e15", paddingBottom: 11, marginBottom: -13 }}>시/도</span>
-                <span style={{ fontSize: 14, fontWeight: "bold", color: "#ccc", cursor: "not-allowed" }} title="상세 주소는 우측 검색창을 이용해주세요">시/군/구</span>
-                <span style={{ fontSize: 14, fontWeight: "bold", color: "#ccc", cursor: "not-allowed" }} title="상세 주소는 우측 검색창을 이용해주세요">읍/면/동</span>
-              </div>
-              
-              <div style={{ 
-                display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, maxHeight: 300, overflowY: "auto"
-              }}>
-                {PROVINCES.map(prov => (
-                  <button 
-                    key={prov} 
-                    onClick={() => handleProvinceSelect(prov)}
-                    style={{ 
-                      padding: "10px 0", fontSize: 13, border: "1px solid #ebebeb", borderRadius: 4,
-                      background: selectedProvince === prov ? "#fff7ed" : "#fff",
-                      color: selectedProvince === prov ? "#dd6b20" : "#555",
-                      fontWeight: selectedProvince === prov ? "bold" : "normal",
-                      cursor: "pointer", transition: "all 0.2s"
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.borderColor = "#ff8e15"}
-                    onMouseLeave={(e) => { if(selectedProvince !== prov) e.currentTarget.style.borderColor = "#ebebeb" }}
-                  >
-                    {prov}
-                  </button>
-                ))}
-              </div>
-              <div style={{ borderTop: "1px solid #eee", marginTop: 16, paddingTop: 16, textAlign: "center" }}>
-                <button onClick={() => setIsOpen(false)} style={{ fontSize: 14, color: "#666", width: "100%", background: "#f8f9fa", padding: "10px", borderRadius: 4, cursor: "pointer", border: "1px solid #ddd" }}>닫기</button>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* 텍스트 검색 폼 */}
-        <form onSubmit={handleKeywordSearch} style={{ display: "flex", alignItems: "center", flex: 1 }}>
-          <input 
-            type="text" 
-            placeholder="동네, 단지, 지하철역 검색" 
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-            style={{ border: "none", outline: "none", padding: "0 16px", fontSize: 14, width: 220, color: "#111" }}
-          />
-          <button type="submit" style={{ padding: "0 16px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", borderLeft: "1px solid #eee", color: "#ff8e15" }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8"></circle>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            </svg>
-          </button>
-        </form>
+      {/* 지도 통합 플로팅 검색 바 */}
+      <div id="wishFloatingFilter">
+        <span className="wish-select" onClick={() => { setActivePanel("region"); setActiveTab("sido"); }}>
+          {selectedSido}
+        </span>
+        <div style={{ width: 1, height: 12, background: "#ccc" }}></div>
+        <span className="wish-select" onClick={() => { setActivePanel("region"); setActiveTab("gugun"); }}>
+          {selectedGugun}
+        </span>
+        <div style={{ width: 1, height: 12, background: "#ccc" }}></div>
+        <span className="wish-select" onClick={() => { setActivePanel("region"); setActiveTab("dong"); }}>
+          {selectedDong}
+        </span>
+        <div style={{ width: 1, height: 12, background: "#ccc" }}></div>
+        <span className="wish-select" style={{ color: "#ff8e15" }} onClick={() => setActivePanel(activePanel === "search" ? null : "search")}>
+          검색 🔍
+        </span>
       </div>
-      
-      {/* 초기화 버튼 */}
-      {(selectedProvince !== "지역 선택" || keyword) && (
-        <button onClick={() => { setSelectedProvince("지역 선택"); setKeyword(""); }} style={{ background: "#fff", borderRadius: "50%", width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.1)", cursor: "pointer", border: "1px solid #ddd", color: "#888", fontSize: 15 }} title="검색 초기화">
-          ↺
-        </button>
+
+      {/* 지역 선택 캐스케이딩 패널 */}
+      {activePanel === "region" && (
+        <div ref={regionRef} style={{ position: "absolute", top: 70, left: 20, zIndex: 1001, background: "#fff", width: 380, borderRadius: 8, boxShadow: "0 4px 15px rgba(0,0,0,0.2)", overflow: "hidden" }}>
+          <div style={{ display: "flex", borderBottom: "1px solid #ccc", background: "#f9f9f9" }}>
+            <button className={`region-tab ${activeTab === "sido" ? "active" : ""}`} onClick={() => setActiveTab("sido")}>시/도</button>
+            <button className={`region-tab ${activeTab === "gugun" ? "active" : ""}`} onClick={() => setActiveTab("gugun")}>시/군/구</button>
+            <button className={`region-tab ${activeTab === "dong" ? "active" : ""}`} onClick={() => setActiveTab("dong")}>읍/면/동</button>
+          </div>
+          <div style={{ padding: 15, height: 250, overflowY: "auto" }}>
+            {activeTab === "sido" && (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+                {sidoList.length > 0 ? (
+                  sidoList.map(c => (
+                    <button key={c.code} className="reg-item-btn" onClick={() => onRegSelectSido(c.code, c.name)}>{c.name}</button>
+                  ))
+                ) : (
+                  <div style={{ gridColumn: "1/-1", textAlign: "center", padding: 20, color: "#888" }}>로딩중...</div>
+                )}
+              </div>
+            )}
+            {activeTab === "gugun" && (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+                {!currentSidoCode ? (
+                  <div style={{ gridColumn: "1/-1", textAlign: "center", padding: 20, color: "#888" }}>먼저 시/도를 선택해주세요.</div>
+                ) : gugunList.length > 0 ? (
+                  gugunList.map(c => (
+                    <button key={c.code} className="reg-item-btn" onClick={() => onRegSelectGugun(c.code, c.name)}>{c.name}</button>
+                  ))
+                ) : (
+                  <div style={{ gridColumn: "1/-1", textAlign: "center", padding: 20, color: "#888" }}>세부 지역 없음</div>
+                )}
+              </div>
+            )}
+            {activeTab === "dong" && (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+                {!currentGugunCode ? (
+                  <div style={{ gridColumn: "1/-1", textAlign: "center", padding: 20, color: "#888" }}>먼저 시/군/구를 선택해주세요.</div>
+                ) : dongList.length > 0 ? (
+                  dongList.map(c => (
+                    <button key={c.code} className="reg-item-btn" onClick={() => onRegSelectDong(c.name)}>{c.name}</button>
+                  ))
+                ) : (
+                  <div style={{ gridColumn: "1/-1", textAlign: "center", padding: 20, color: "#888" }}>세부 지역 없음</div>
+                )}
+              </div>
+            )}
+          </div>
+          <button className="region-close-btn" onClick={() => setActivePanel(null)} style={{ width: "100%", padding: 10, border: "none", background: "#eee", cursor: "pointer", fontSize: 14, color: "#555" }}>
+            닫기
+          </button>
+        </div>
       )}
-    </div>
+
+      {/* 지도 검색 입력 패널 */}
+      {activePanel === "search" && (
+        <div ref={searchRef} style={{ position: "absolute", top: 70, left: 20, zIndex: 1001, background: "#fff", padding: 15, borderRadius: 8, boxShadow: "0 4px 15px rgba(0,0,0,0.2)", width: 320 }}>
+          <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+            <input 
+              type="text" 
+              placeholder="동, 읍, 면 또는 랜드마크 검색" 
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && executeMapKeywordSearch()}
+              style={{ flex: 1, padding: 8, border: "1px solid #ccc", borderRadius: 4, outline: "none", fontSize: 13 }} 
+            />
+            <button onClick={executeMapKeywordSearch} style={{ padding: "8px 12px", background: "#ff8e15", color: "#fff", border: "none", borderRadius: 4, cursor: "pointer", fontWeight: "bold", fontSize: 13 }}>
+              이동
+            </button>
+          </div>
+          <div style={{ maxHeight: 200, overflowY: "auto", fontSize: 13, color: "#555" }}>
+            {isSearching ? (
+              <div style={{ padding: 10 }}>검색 중...</div>
+            ) : searchResults.length > 0 ? (
+              searchResults.map((item, idx) => (
+                <div key={idx} style={{ padding: 10, borderBottom: "1px solid #eee", cursor: "pointer" }} onClick={() => onSelectSearchResult(item)}>
+                  <div style={{ fontWeight: "bold", color: "#333", marginBottom: 2 }}>{item.place_name || item.address_name}</div>
+                  <div style={{ fontSize: 12, color: "#888" }}>{item.address_name}</div>
+                </div>
+              ))
+            ) : keyword && !isSearching ? (
+              <div style={{ padding: 10, color: "#e74c3c" }}>검색 결과가 없습니다.</div>
+            ) : null}
+          </div>
+        </div>
+      )}
+    </>
   );
 }

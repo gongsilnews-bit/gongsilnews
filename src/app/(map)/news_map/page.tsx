@@ -107,47 +107,65 @@ export default function NewsLocalPage() {
     }
   }, []);
 
-  /* ── InfoWindow 닫기 ── */
+  /* ── InfoWindow / CustomOverlay 닫기 ── */
   const closeInfoWindow = useCallback(() => {
     if (infoWindowRef.current) {
-      infoWindowRef.current.close();
+      if (typeof infoWindowRef.current.close === 'function') {
+        infoWindowRef.current.close();
+      } else if (typeof infoWindowRef.current.setMap === 'function') {
+        infoWindowRef.current.setMap(null);
+      }
       infoWindowRef.current = null;
     }
   }, []);
 
-  /* ── 지도에서 특정 기사 위치에 말풍선 표시 ── */
+  /* ── 지도에서 특정 기사 위치에 커스텀 오버레이 표시 ── */
   const showArticleOnMap = useCallback((article: any) => {
     if (!kakaoMapRef.current || !article.lat || !article.lng) return;
     const kakao = (window as any).kakao;
     const position = new kakao.maps.LatLng(article.lat, article.lng);
 
-    // 기존 InfoWindow 닫기
+    // 기존 오버레이 닫기
     closeInfoWindow();
 
-    // 글로벌 함수 등록 (InfoWindow HTML에서 호출)
+    // 글로벌 함수 등록 (HTML에서 호출)
     (window as any).__openArticleDetail = (id: string) => {
       handleSelectArticle(id, true);
     };
+    (window as any).__closeCustomOverlay = () => {
+      closeInfoWindow();
+    };
 
-    // 새 InfoWindow 생성
+    // 하나로 이어진 깔끔한 말풍선 오버레이 생성
     const content = `
-      <div style="padding:14px 18px;max-width:280px;font-family:'Pretendard',sans-serif;line-height:1.4;">
-        <h4 style="margin:0 0 6px;font-size:15px;font-weight:700;color:#222;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:keep-all;">${article.title}</h4>
-        <p style="margin:0 0 10px;font-size:12px;color:#777;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;">${article.subtitle || stripHtml(article.content || '').slice(0, 60)}</p>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding-top:8px;border-top:1px solid #f0f0f0;">
-          <span style="font-size:11px;color:#999;">${formatDate(article.published_at || article.created_at)} | ${article.author_name || '공실뉴스'}</span>
-          <span onclick="window.__openArticleDetail('${article.id}')" style="font-size:12px;font-weight:bold;color:#ff8e15;cursor:pointer;">기사 보러가기 &gt;</span>
+      <div style="position: relative; background: #fff; padding: 16px 20px; max-width: 300px; min-width: 250px; border-radius: 8px; box-shadow: 0 6px 20px rgba(0,0,0,0.15); border: 1px solid #ddd; font-family: 'Pretendard', sans-serif; line-height: 1.4; margin-bottom: 22px;">
+        <div onclick="window.__closeCustomOverlay()" style="position: absolute; top: 10px; right: 12px; font-size: 18px; color: #999; cursor: pointer; line-height: 1; padding: 4px;" title="닫기">✕</div>
+        
+        <h4 style="margin: 0 16px 8px 0; font-size: 16px; font-weight: 800; color: #111; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: keep-all; letter-spacing: -0.5px;">${article.title}</h4>
+        <p style="margin: 0 0 14px; font-size: 13px; color: #666; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;">${article.subtitle || stripHtml(article.content || '').slice(0, 60)}</p>
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 12px; border-top: 1px solid #f0f0f0;">
+          <span style="font-size: 12px; color: #a1a1aa; white-space: nowrap;">${formatDate(article.published_at || article.created_at)} · ${article.author_name || '공실뉴스'}</span>
+          <span onclick="window.__openArticleDetail('${article.id}')" style="font-size: 13px; font-weight: bold; color: #ff8e15; cursor: pointer; white-space: nowrap;">기사 보러가기 &gt;</span>
         </div>
+        
+        <!-- 꼬리 부분 (삼각형) - 라인 없이 이어진 느낌 구현 -->
+        <div style="position: absolute; bottom: -11px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 11px solid transparent; border-right: 11px solid transparent; border-top: 11px solid #ddd;"></div>
+        <div style="position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 11px solid transparent; border-right: 11px solid transparent; border-top: 11px solid #fff;"></div>
       </div>
     `;
 
-    const iw = new kakao.maps.InfoWindow({
+    const customOverlay = new kakao.maps.CustomOverlay({
       content,
       position,
-      removable: true,
+      clickable: true,
+      xAnchor: 0.5,
+      yAnchor: 1, // 마커 상단에 말풍선 밑면을 위치
+      zIndex: 5
     });
-    iw.open(kakaoMapRef.current);
-    infoWindowRef.current = iw;
+    
+    customOverlay.setMap(kakaoMapRef.current);
+    infoWindowRef.current = customOverlay;
 
     // 지도 이동
     kakaoMapRef.current.panTo(position);
@@ -601,10 +619,6 @@ export default function NewsLocalPage() {
           {/* 🔍 지도 지역/검색어 오버레이 UI */}
           <MapSearchBar onSearchCoord={panMapTo} />
 
-          {/* 지도 위 안내 배지 */}
-          <div style={{ position: "absolute", bottom: 20, left: "50%", transform: "translateX(-50%)", zIndex: 10, background: "rgba(0,0,0,0.7)", color: "#fff", padding: "8px 20px", borderRadius: 30, fontSize: 13, fontWeight: 600, pointerEvents: "none", opacity: geoArticles.length > 0 ? 1 : 0 }}>
-            🗞️ 지도 위 숫자를 클릭하면 해당 지역의 뉴스를 확인할 수 있습니다
-          </div>
         </div>
       </main>
 
