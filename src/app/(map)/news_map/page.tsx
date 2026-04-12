@@ -28,6 +28,8 @@ export default function NewsLocalPage() {
   const clustererRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
   const infoWindowRef = useRef<any>(null);
+  const clusterModeRef = useRef(false);
+  const updateVisibleArticlesRef = useRef<() => void>(() => {});
 
   /* ── 유틸: 날짜 포맷 ── */
   const formatDate = (dateStr: string) => {
@@ -121,6 +123,11 @@ export default function NewsLocalPage() {
     // 기존 InfoWindow 닫기
     closeInfoWindow();
 
+    // 글로벌 함수 등록 (InfoWindow HTML에서 호출)
+    (window as any).__openArticleDetail = (id: string) => {
+      handleSelectArticle(id, true);
+    };
+
     // 새 InfoWindow 생성
     const content = `
       <div style="padding:14px 18px;max-width:280px;font-family:'Pretendard',sans-serif;line-height:1.4;">
@@ -128,7 +135,7 @@ export default function NewsLocalPage() {
         <p style="margin:0 0 10px;font-size:12px;color:#777;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;">${article.subtitle || stripHtml(article.content || '').slice(0, 60)}</p>
         <div style="display:flex;justify-content:space-between;align-items:center;padding-top:8px;border-top:1px solid #f0f0f0;">
           <span style="font-size:11px;color:#999;">${formatDate(article.published_at || article.created_at)} | ${article.author_name || '공실뉴스'}</span>
-          <a href="/news/${article.article_no || article.id}" target="_blank" style="font-size:12px;font-weight:bold;color:#508bf5;text-decoration:none;">기사 보러가기 &gt;</a>
+          <span onclick="window.__openArticleDetail('${article.id}')" style="font-size:12px;font-weight:bold;color:#ff8e15;cursor:pointer;">기사 보러가기 &gt;</span>
         </div>
       </div>
     `;
@@ -143,7 +150,7 @@ export default function NewsLocalPage() {
 
     // 지도 이동
     kakaoMapRef.current.panTo(position);
-  }, [closeInfoWindow]);
+  }, [closeInfoWindow, handleSelectArticle]);
 
   /* ── 현재 지도 뷰포트에 보이는 기사만 필터링 ── */
   const updateVisibleArticles = useCallback(() => {
@@ -157,6 +164,10 @@ export default function NewsLocalPage() {
     );
     setFilteredArticles(visible);
   }, [geoArticles]);
+
+  // Ref 동기화: 이벤트 리스너 클로저에서 항상 최신 값 참조
+  useEffect(() => { clusterModeRef.current = clusterMode; }, [clusterMode]);
+  useEffect(() => { updateVisibleArticlesRef.current = updateVisibleArticles; }, [updateVisibleArticles]);
 
   /* ── 카카오맵 초기화 및 마커 렌더링 ── */
   useEffect(() => {
@@ -220,8 +231,8 @@ export default function NewsLocalPage() {
 
           // 지도 이동/줌 완료 시 → 현재 뷰포트에 보이는 기사만 사이드바에 표시
           kakao.maps.event.addListener(kakaoMapRef.current, 'idle', () => {
-            if (clusterMode) return; // 클러스터 필터 모드에서는 뷰포트 필터 비활성
-            updateVisibleArticles();
+            if (clusterModeRef.current) return; // 클러스터 필터 모드에서는 뷰포트 필터 비활성
+            updateVisibleArticlesRef.current();
           });
         }
 
@@ -286,7 +297,7 @@ export default function NewsLocalPage() {
             kakaoMapRef.current.relayout();
             kakaoMapRef.current.setCenter(new kakao.maps.LatLng(initialLat, initialLng));
             // 초기 로딩 후 현재 뷰포트 기사 필터링
-            setTimeout(() => updateVisibleArticles(), 200);
+            setTimeout(() => updateVisibleArticlesRef.current(), 200);
           }
         }, 500);
       };
@@ -311,7 +322,7 @@ export default function NewsLocalPage() {
     } else {
       loadKakaoMap();
     }
-  }, [geoArticles, showArticleOnMap, closeInfoWindow, updateVisibleArticles, clusterMode]);
+  }, [geoArticles, showArticleOnMap, closeInfoWindow]);
 
   /* ── 전체보기 (클러스터 필터 해제, 뷰포트 기반으로 복원) ── */
   const handleShowAll = useCallback(() => {
