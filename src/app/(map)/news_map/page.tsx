@@ -145,6 +145,19 @@ export default function NewsLocalPage() {
     kakaoMapRef.current.panTo(position);
   }, [closeInfoWindow]);
 
+  /* ── 현재 지도 뷰포트에 보이는 기사만 필터링 ── */
+  const updateVisibleArticles = useCallback(() => {
+    if (!kakaoMapRef.current) { setFilteredArticles(geoArticles); return; }
+    const bounds = kakaoMapRef.current.getBounds();
+    const sw = bounds.getSouthWest();
+    const ne = bounds.getNorthEast();
+    const visible = geoArticles.filter(a => 
+      a.lat >= sw.getLat() && a.lat <= ne.getLat() && 
+      a.lng >= sw.getLng() && a.lng <= ne.getLng()
+    );
+    setFilteredArticles(visible);
+  }, [geoArticles]);
+
   /* ── 카카오맵 초기화 및 마커 렌더링 ── */
   useEffect(() => {
     const loadKakaoMap = () => {
@@ -300,27 +313,6 @@ export default function NewsLocalPage() {
     }
   }, [geoArticles, showArticleOnMap, closeInfoWindow, updateVisibleArticles, clusterMode]);
 
-  /* ── 사이드바 기사 클릭 시 지도 이동 + 말풍선 ── */
-  const handleListArticleClick = useCallback((article: any) => {
-    setActiveArticleId(article.id);
-    showArticleOnMap(article);
-    // 상세도 미리 로드
-    handleSelectArticle(article.id, false);
-  }, [showArticleOnMap, handleSelectArticle]);
-
-  /* ── 현재 지도 뷰포트에 보이는 기사만 필터링 ── */
-  const updateVisibleArticles = useCallback(() => {
-    if (!kakaoMapRef.current) { setFilteredArticles(geoArticles); return; }
-    const bounds = kakaoMapRef.current.getBounds();
-    const sw = bounds.getSouthWest();
-    const ne = bounds.getNorthEast();
-    const visible = geoArticles.filter(a => 
-      a.lat >= sw.getLat() && a.lat <= ne.getLat() && 
-      a.lng >= sw.getLng() && a.lng <= ne.getLng()
-    );
-    setFilteredArticles(visible);
-  }, [geoArticles]);
-
   /* ── 전체보기 (클러스터 필터 해제, 뷰포트 기반으로 복원) ── */
   const handleShowAll = useCallback(() => {
     setClusterMode(false);
@@ -329,6 +321,14 @@ export default function NewsLocalPage() {
     closeInfoWindow();
     updateVisibleArticles();
   }, [closeInfoWindow, updateVisibleArticles]);
+
+  /* ── 사이드바 기사 클릭 시 지도 이동 + 말풍선 ── */
+  const handleListArticleClick = useCallback((article: any) => {
+    setActiveArticleId(article.id);
+    showArticleOnMap(article);
+    // 상세도 미리 로드
+    handleSelectArticle(article.id, false);
+  }, [showArticleOnMap, handleSelectArticle]);
 
   return (
     <div style={{ height: "100vh", display: "flex", flexDirection: "column", overflow: "hidden", fontFamily: "'Pretendard', sans-serif" }}>
@@ -396,13 +396,15 @@ export default function NewsLocalPage() {
           {/* 기사 리스트 */}
           <div style={{ flex: 1, overflowY: "auto" }}>
             {loading ? (
-              <div style={{ padding: 60, textAlign: "center", color: "#999", fontSize: 14 }}>
-                <div style={{ fontSize: 28, marginBottom: 12 }}>⏳</div>기사를 불러오는 중...
+              <div style={{ padding: 80, textAlign: "center" }}>
+                <div style={{ width: 32, height: 32, border: "3px solid #f0f0f0", borderTop: "3px solid #ff8e15", borderRadius: "50%", animation: "spin 0.8s linear infinite", margin: "0 auto 16px" }}></div>
+                <div style={{ fontSize: 14, color: "#888", fontWeight: 500 }}>기사를 불러오는 중</div>
               </div>
             ) : filteredArticles.length === 0 ? (
-              <div style={{ padding: 60, textAlign: "center", color: "#999", fontSize: 14 }}>
-                <div style={{ fontSize: 28, marginBottom: 12 }}>📭</div>
-                {clusterMode ? "선택한 영역에 기사가 없습니다." : "좌표가 등록된 기사가 없습니다."}
+              <div style={{ padding: 60, textAlign: "center" }}>
+                <div style={{ fontSize: 14, color: "#aaa", fontWeight: 500 }}>
+                  {clusterMode ? "선택한 영역에 기사가 없습니다." : "현재 지도 영역에 기사가 없습니다."}
+                </div>
               </div>
             ) : filteredArticles.map((item) => {
               const isActive = activeArticleId === item.id;
@@ -555,8 +557,9 @@ export default function NewsLocalPage() {
 
           {/* 기사 로딩 표시 */}
           {activeArticleId && showDetail && !articleDetail && (
-            <div style={{ position: "absolute", top: 0, left: 0, width: 750, maxWidth: "100%", height: "100%", background: "#fff", zIndex: 1999, display: "flex", alignItems: "center", justifyContent: "center", color: "#999", fontSize: 16 }}>
-              ⏳ 기사를 불러오는 중...
+            <div style={{ position: "absolute", top: 0, left: 0, width: 750, maxWidth: "100%", height: "100%", background: "#fff", zIndex: 1999, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16 }}>
+              <div style={{ width: 36, height: 36, border: "3px solid #f0f0f0", borderTop: "3px solid #ff8e15", borderRadius: "50%", animation: "spin 0.8s linear infinite" }}></div>
+              <div style={{ fontSize: 15, color: "#888", fontWeight: 500 }}>기사를 불러오는 중</div>
             </div>
           )}
 
@@ -582,6 +585,10 @@ export default function NewsLocalPage() {
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(5px); }
           to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
         }
       `}</style>
     </div>
