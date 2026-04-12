@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 
+import { incrementArticleView } from "@/app/actions/article";
+
 interface NewsReadContentProps {
   article: any;
   popularArticles: any[];
@@ -11,6 +13,7 @@ interface NewsReadContentProps {
 export default function NewsReadContent({ article, popularArticles }: NewsReadContentProps) {
   const [scrollProgress, setScrollProgress] = useState(0);
   const [commentText, setCommentText] = useState("");
+  const [viewCount, setViewCount] = useState(article.view_count || 0);
 
   // 날짜 포맷
   const formatDate = (dateStr: string) => {
@@ -25,6 +28,16 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
     const h12 = hour > 12 ? hour - 12 : hour || 12;
     return `입력 ${yyyy}. ${mm}. ${dd}. ${ampm} ${String(h12).padStart(2, "0")}:${min}`;
   };
+
+  useEffect(() => {
+    if (article && article.id) {
+      incrementArticleView(article.id).then((res) => {
+        if (res.success && res.view_count !== undefined) {
+          setViewCount(res.view_count);
+        }
+      });
+    }
+  }, [article.id]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -79,7 +92,7 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
                 <span className="meta-divider"></span>
                 <span>{formatDate(article.published_at || article.created_at)}</span>
                 <span className="meta-divider"></span>
-                <span>조회수 {article.view_count || 0}</span>
+                <span>조회수 {viewCount}</span>
               </div>
               <div className="meta-stats">
                 <span className="meta-icon" title="찜하기">
