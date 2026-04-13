@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { geocodeAddress } from "@/app/actions/geocode";
+import { createClient } from "@/utils/supabase/client";
 
 /* ──────────────────────────────────────────────
    공실등록 폼 컴포넌트 (register.html 1:1 복제)
@@ -13,6 +14,8 @@ interface VacancyRegisterFormProps {
   onBack: () => void;
   darkMode?: boolean;
   userRole?: "admin" | "realtor" | "user";
+  initialClientName?: string;
+  initialClientPhone?: string;
 }
 
 // ── 1차→2차 카테고리 매핑 (원본 register.html에서 추출) ──
@@ -27,7 +30,7 @@ const SUB_CATEGORIES: Record<string, string[]> = {
 // 상업용 카테고리 (해당층/전체층 표시, 방/욕실/방향 숨김)
 const COMMERCIAL_CATEGORY = "상가·사무실·건물·공장·토지";
 
-export default function VacancyRegisterForm({ onBack, darkMode = false, userRole = "admin" }: VacancyRegisterFormProps) {
+export default function VacancyRegisterForm({ onBack, darkMode = false, userRole = "admin", initialClientName = "", initialClientPhone = "" }: VacancyRegisterFormProps) {
   // ── 상태 관리 ──
   const [propertyType, setPropertyType] = useState<string>("아파트·오피스텔");
   const [subCategory, setSubCategory] = useState<string>("아파트");
@@ -38,7 +41,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
   const [parking, setParking] = useState<string>("없음");
   const [moveInDate, setMoveInDate] = useState<string>("즉시입주(공실)");
   const [ownerRelation, setOwnerRelation] = useState<string>("본인");
-  const [consent, setConsent] = useState(false);
+  const [consent, setConsent] = useState(true);
 
   // 주거형 추가 필드
   const [roomCount, setRoomCount] = useState("1");
@@ -85,8 +88,30 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
   const [description, setDescription] = useState("");
 
   // 의뢰인
-  const [clientName, setClientName] = useState("김미숙");
-  const [clientPhone, setClientPhone] = useState("");
+  const [clientName, setClientName] = useState(initialClientName);
+  const [clientPhone, setClientPhone] = useState(initialClientPhone);
+
+  useEffect(() => {
+    if (initialClientName) setClientName(initialClientName);
+    if (initialClientPhone) setClientPhone(initialClientPhone);
+  }, [initialClientName, initialClientPhone]);
+
+  // 부동산 회원 전용 (Landlord/Realtor info)
+  const [realtorCommission, setRealtorCommission] = useState("공동중개 0%");
+  const [exposureType, setExposureType] = useState("부동산노출"); // Default changed
+  
+  // 수정 가능한 부동산/기업정보
+  const [rCompany, setRCompany] = useState("착한임대부동산");
+  const [rRegNum, setRRegNum] = useState("1666-4414411");
+  const [rBoss, setRBoss] = useState("김동현");
+  const [rBizNum, setRBizNum] = useState("211-33-21777");
+  const [rTel, setRTel] = useState("02-541-1611");
+  const [rCell, setRCell] = useState("02-541-1611");
+  const [rAddr, setRAddr] = useState("서울 강남구 논현동 189-13");
+
+  const [landlordName, setLandlordName] = useState("");
+  const [landlordPhone, setLandlordPhone] = useState("");
+  const [landlordMemo, setLandlordMemo] = useState("");
 
   // 좌표
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
@@ -291,7 +316,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
   const progress = Math.round((doneCount / checkItems.length) * 100);
 
   return (
-    <div style={{ flex: 1, overflowY: "auto", background: bg, position: "relative" }}>
+    <div style={{ flex: 1, background: bg, position: "relative" }}>
       {/* ── 타이틀 ── */}
       <div style={{ textAlign: "center", padding: "28px 0 20px", borderBottom: `1px solid ${border}`, background: cardBg }}>
         <h1 style={{ fontSize: 20, fontWeight: 800, color: textPrimary, margin: 0 }}>공실등록</h1>
@@ -336,27 +361,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
               </div>
             </div>
 
-            {/* 중개보수 계산기 */}
-            <div style={{ marginBottom: 20 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                <span style={{ fontSize: 14, fontWeight: 700, color: textPrimary }}>중개보수 계산기</span>
-                <button type="button" style={{ fontSize: 13, fontWeight: 700, color: "#3b82f6", background: "none", border: "none", cursor: "pointer" }}>계산</button>
-              </div>
-              <div style={{ fontSize: 12, color: textSecondary }}>매물 금액 입력 후 계산을 누르세요.</div>
-            </div>
 
-            {/* 홍보용 이모지 */}
-            <div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: textPrimary, marginBottom: 10 }}>홍보용 이모지</div>
-              <div style={{ display: "flex", gap: 6, fontSize: 20, flexWrap: "wrap" }}>
-                {["✓", "✨", "🔥", "🏠", "💡", "📊", "💯", "⭐"].map((e, i) => (
-                  <span key={i} style={{ cursor: "pointer", padding: "2px 4px", borderRadius: 4, transition: "background 0.2s" }}
-                    onMouseEnter={(ev) => { ev.currentTarget.style.background = darkMode ? "#333" : "#f3f4f6"; }}
-                    onMouseLeave={(ev) => { ev.currentTarget.style.background = "transparent"; }}
-                  >{e}</span>
-                ))}
-              </div>
-            </div>
           </div>
         </div>
 
@@ -646,36 +651,38 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
             </div>
 
             {/* 노출 범위 설정 */}
-            <div style={{ background: darkMode ? "#1a1b1e" : "#f9fafb", padding: "16px 20px", borderRadius: 10, border: `1px solid ${border}`, marginBottom: 24 }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: textPrimary, marginBottom: 12 }}>주소 노출 범위 설정</div>
-              <div style={{ display: "flex", gap: 20 }}>
-                {propertyType === "아파트·오피스텔" ? (
-                  <>
-                    <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14, cursor: "pointer" }}>
-                      <input type="radio" name="addressExposure" checked={addressExposure === "동/호수공개"} onChange={() => setAddressExposure("동/호수공개")} /> 동/호수공개
-                    </label>
-                    <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14, cursor: "pointer" }}>
-                      <input type="radio" name="addressExposure" checked={addressExposure === "동수공개"} onChange={() => setAddressExposure("동수공개")} /> 동수공개
-                    </label>
-                    <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14, cursor: "pointer" }}>
-                      <input type="radio" name="addressExposure" checked={addressExposure === "비공개"} onChange={() => setAddressExposure("비공개")} /> 비공개
-                    </label>
-                  </>
-                ) : (
-                  <>
-                    <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14, cursor: "pointer" }}>
-                      <input type="radio" name="addressExposure" checked={addressExposure === "번지공개"} onChange={() => setAddressExposure("번지공개")} /> 번지공개
-                    </label>
-                    <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14, cursor: "pointer" }}>
-                      <input type="radio" name="addressExposure" checked={addressExposure === "본번지만공개"} onChange={() => setAddressExposure("본번지만공개")} /> 본번지만공개
-                    </label>
-                    <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14, cursor: "pointer" }}>
-                      <input type="radio" name="addressExposure" checked={addressExposure === "기본주소만공개"} onChange={() => setAddressExposure("기본주소만공개")} /> 기본주소만공개
-                    </label>
-                  </>
-                )}
+            {userRole !== "user" && (
+              <div style={{ background: darkMode ? "#1a1b1e" : "#f9fafb", padding: "16px 20px", borderRadius: 10, border: `1px solid ${border}`, marginBottom: 24 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: textPrimary, marginBottom: 12 }}>주소 노출 범위 설정</div>
+                <div style={{ display: "flex", gap: 20 }}>
+                  {propertyType === "아파트·오피스텔" ? (
+                    <>
+                      <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14, cursor: "pointer" }}>
+                        <input type="radio" name="addressExposure" checked={addressExposure === "동/호수공개"} onChange={() => setAddressExposure("동/호수공개")} /> 동/호수공개
+                      </label>
+                      <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14, cursor: "pointer" }}>
+                        <input type="radio" name="addressExposure" checked={addressExposure === "동수공개"} onChange={() => setAddressExposure("동수공개")} /> 동수공개
+                      </label>
+                      <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14, cursor: "pointer" }}>
+                        <input type="radio" name="addressExposure" checked={addressExposure === "비공개"} onChange={() => setAddressExposure("비공개")} /> 비공개
+                      </label>
+                    </>
+                  ) : (
+                    <>
+                      <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14, cursor: "pointer" }}>
+                        <input type="radio" name="addressExposure" checked={addressExposure === "번지공개"} onChange={() => setAddressExposure("번지공개")} /> 번지공개
+                      </label>
+                      <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14, cursor: "pointer" }}>
+                        <input type="radio" name="addressExposure" checked={addressExposure === "본번지만공개"} onChange={() => setAddressExposure("본번지만공개")} /> 본번지만공개
+                      </label>
+                      <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14, cursor: "pointer" }}>
+                        <input type="radio" name="addressExposure" checked={addressExposure === "기본주소만공개"} onChange={() => setAddressExposure("기본주소만공개")} /> 기본주소만공개
+                      </label>
+                    </>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
 
             <div style={{ display: "flex", gap: 24, marginBottom: 16 }}>
               <div style={{ flex: 1 }}>
@@ -690,33 +697,33 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
             <div style={{ display: "flex", gap: 24, marginBottom: 16 }}>
               <div style={{ flex: 1 }}>
                 <label style={labelStyle}>읍/면/동/리 {reqMark}</label>
-                <input type="text" placeholder="예: 양평읍 창대리" value={dong} onChange={(e) => setDong(e.target.value)} style={inputStyle} />
+                <input type="text" placeholder="예: 논현동" value={dong} onChange={(e) => setDong(e.target.value)} style={inputStyle} />
               </div>
               <div style={{ flex: 1 }}>
-                <label style={labelStyle}>나머지 주소 {!isFieldExposed("detailAddr") && <span style={{ color: "#f97316", fontSize: 12 }}>(비공개)</span>}</label>
-                <input type="text" placeholder="예: 남북로 53" value={detailAddr} onChange={(e) => setDetailAddr(e.target.value)} style={inputStyle} />
+                <label style={labelStyle}>나머지 주소 {!isFieldExposed("detailAddr") && userRole !== "user" && <span style={{ color: "#f97316", fontSize: 12 }}>(비공개)</span>}</label>
+                <input type="text" placeholder="예: 논현로115길 31" value={detailAddr} onChange={(e) => setDetailAddr(e.target.value)} style={inputStyle} />
               </div>
             </div>
             <div style={{ display: "flex", gap: 24, marginBottom: 16 }}>
               <div style={{ flex: propertyType === "아파트·오피스텔" ? 1.5 : 1 }}>
-                <label style={labelStyle}>{propertyType === "아파트·오피스텔" ? "단지명" : "건물명"} {!isFieldExposed("buildingName") && <span style={{ color: "#f97316", fontSize: 12 }}>(비공개)</span>}</label>
+                <label style={labelStyle}>{propertyType === "아파트·오피스텔" ? "단지명" : "건물명"} {!isFieldExposed("buildingName") && userRole !== "user" && <span style={{ color: "#f97316", fontSize: 12 }}>(비공개)</span>}</label>
                 <input type="text" placeholder={propertyType === "아파트·오피스텔" ? "예: 래미안아파트" : "예: 행복빌라"} value={buildingName} onChange={(e) => setBuildingName(e.target.value)} style={inputStyle} />
               </div>
               
               {propertyType === "아파트·오피스텔" ? (
                 <>
                   <div style={{ flex: 1 }}>
-                    <label style={labelStyle}>동 {!isFieldExposed("aptDong") && <span style={{ color: "#f97316", fontSize: 12 }}>(비공개)</span>}</label>
+                    <label style={labelStyle}>동 {!isFieldExposed("aptDong") && userRole !== "user" && <span style={{ color: "#f97316", fontSize: 12 }}>(비공개)</span>}</label>
                     <input type="text" placeholder="예: 101동" value={aptDong} onChange={(e) => setAptDong(e.target.value)} style={inputStyle} />
                   </div>
                   <div style={{ flex: 1 }}>
-                    <label style={labelStyle}>호수 {!isFieldExposed("hosu") && <span style={{ color: "#f97316", fontSize: 12 }}>(비공개)</span>}</label>
+                    <label style={labelStyle}>호수 {!isFieldExposed("hosu") && userRole !== "user" && <span style={{ color: "#f97316", fontSize: 12 }}>(비공개)</span>}</label>
                     <input type="text" placeholder="예: 405호" value={hosu} onChange={(e) => setHosu(e.target.value)} style={inputStyle} />
                   </div>
                 </>
               ) : (
                 <div style={{ flex: 1 }}>
-                  <label style={labelStyle}>호수 {!isFieldExposed("hosu") && <span style={{ color: "#f97316", fontSize: 12 }}>(비공개)</span>}</label>
+                  <label style={labelStyle}>호수 {!isFieldExposed("hosu") && userRole !== "user" && <span style={{ color: "#f97316", fontSize: 12 }}>(비공개)</span>}</label>
                   <input type="text" placeholder="예: 101호" value={hosu} onChange={(e) => setHosu(e.target.value)} style={inputStyle} />
                 </div>
               )}
@@ -878,33 +885,127 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                   <option>본인</option><option>가족</option><option>지인</option><option>임차인</option><option>법인</option><option>기타</option>
                 </select>
 
-                {/* 동의 체크박스 */}
-                <div style={{ display: "flex", gap: 12, padding: "20px", border: `1px solid ${border}`, borderRadius: 10, marginBottom: 24, alignItems: "flex-start" }}>
-                  <input type="checkbox" id="consent" checked={consent} onChange={(e) => setConsent(e.target.checked)}
-                    style={{ marginTop: 3, accentColor: "#3b82f6", width: 18, height: 18, flexShrink: 0 }} />
-                  <label htmlFor="consent" style={{ fontSize: 13, color: textSecondary, lineHeight: 1.6, cursor: "pointer" }}>
-                    <strong style={{ color: textPrimary }}>매물 광고 진행에 동의합니다. (필수)</strong><br />
-                    공실뉴스 부동산 위원이 빠른 계약을 위해 네이버부동산, 유튜브, 블로그 등 다양한 광고를 진행하는 것에 동의합니다.
-                  </label>
-                </div>
+                {/* 동의 체크박스 - (해당 롤 전용이 아닌 경우에는 하단으로 이동하였지만 일반유저는 여기서도 렌더링 생략하고 공통부로 뺌) */}
               </>
             ) : (
               <>
                 {/* ── 구분선 ── */}
                 <div style={{ borderTop: `1px dashed ${border}`, margin: "32px 0" }} />
-
-                {/* ── 섹션 3: 부동산 회원 정보 ── */}
-                <h2 style={{ fontSize: 20, fontWeight: 800, color: textPrimary, margin: "0 0 24px" }}>부동산 회원 정보</h2>
-                <div style={{ border: `1px solid ${border}`, borderRadius: 10, padding: "20px 24px", marginBottom: 24, background: darkMode ? "#1e3a5f" : "#eff6ff" }}>
-                  <div style={{ fontSize: 14, color: "#3b82f6", fontWeight: 700, marginBottom: 8 }}>
-                    ✅ 중개수수료 및 의뢰인 정보 자동 대체
+                
+                {/* ── 중개보수 지급 / 노출 선택 ── */}
+                <div style={{ marginBottom: 24 }}>
+                  <label style={labelStyle}>중개보수 지급 <span style={{ color: "#ef4444" }}>*</span></label>
+                  <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
+                    {["공동중개 0%", "물건수수료지급 20%", "물건수수료지급 60%", "물건수수료지급 100%"].map(opt => (
+                      <button
+                        key={opt} type="button" onClick={() => setRealtorCommission(opt)}
+                        style={{
+                          flex: 1, padding: "10px 0", borderRadius: 8, fontSize: 13, cursor: "pointer",
+                          border: realtorCommission === opt ? "1px solid #1d4ed8" : `1px solid ${border}`,
+                          background: realtorCommission === opt ? (darkMode ? "#1e3a5f" : "#eff6ff") : cardBg,
+                          color: realtorCommission === opt ? "#1d4ed8" : textSecondary,
+                          fontWeight: realtorCommission === opt ? 700 : 500, transition: "all 0.2s"
+                        }}
+                      >{opt}</button>
+                    ))}
                   </div>
-                  <div style={{ fontSize: 13, color: textSecondary, lineHeight: 1.6 }}>
-                    부동산 회원 공실 등록 시, 회원님의 <strong>중개사무소 정보가 매물에 자동으로 노출</strong>됩니다.<br />
-                    (정보 수정은 좌측 메뉴의 '정보설정'에서 가능합니다)
+
+                  <label style={labelStyle}>노출선택 <span style={{ color: "#ef4444" }}>*</span></label>
+                  <div style={{ display: "flex", gap: 16 }}>
+                    <div
+                      onClick={() => setExposureType("부동산노출")}
+                      style={{
+                        flex: 1, padding: "16px", borderRadius: 8, cursor: "pointer",
+                        border: exposureType === "부동산노출" ? "2px solid #3b82f6" : `1px solid ${border}`,
+                        background: exposureType === "부동산노출" ? (darkMode ? "#1e3a8a" : "#ebf5ff") : cardBg,
+                      }}
+                    >
+                      <div style={{ fontSize: 14, fontWeight: 700, color: exposureType === "부동산노출" ? "#2563eb" : textPrimary, marginBottom: 6 }}>부동산노출</div>
+                      <div style={{ fontSize: 12, color: exposureType === "부동산노출" ? "#3b82f6" : textSecondary, lineHeight: 1.5 }}>
+                        비로그인, 일반인로그인시 매물상세보기는 부동산엔 열람가능하고<br/>
+                        비회원 일반인에게는 비공개
+                      </div>
+                    </div>
+                    <div
+                      onClick={() => setExposureType("부동산노출 + 일반인노출")}
+                      style={{
+                        flex: 1, padding: "16px", borderRadius: 8, cursor: "pointer",
+                        border: exposureType === "부동산노출 + 일반인노출" ? "2px solid #3b82f6" : `1px solid ${border}`,
+                        background: exposureType === "부동산노출 + 일반인노출" ? (darkMode ? "#1e3a8a" : "#ebf5ff") : cardBg,
+                      }}
+                    >
+                      <div style={{ fontSize: 14, fontWeight: 700, color: exposureType === "부동산노출 + 일반인노출" ? "#2563eb" : textPrimary, marginBottom: 6 }}>부동산노출 + 일반인노출</div>
+                      <div style={{ fontSize: 12, color: exposureType === "부동산노출 + 일반인노출" ? "#3b82f6" : textSecondary }}>모두에게 노출</div>
+                    </div>
                   </div>
                 </div>
+
+                <div style={{ borderTop: `1px dashed ${border}`, margin: "32px 0" }} />
+
+                {/* ── 부동산 / 기업 정보 ── */}
+                <div style={{ background: darkMode ? "#1a1b1e" : "#f0f2f5", padding: "20px 24px", borderRadius: 10, border: `1px solid ${border}`, marginBottom: 24 }}>
+                  <h3 style={{ fontSize: 15, fontWeight: 800, margin: "0 0 16px", display: "flex", gap: 8, alignItems: "center" }}>
+                    <span>🏘️</span> 부동산 / 기업 정보
+                  </h3>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px 24px", marginBottom: 16 }}>
+                    <div>
+                      <label style={{ ...labelStyle, fontSize: 12, marginBottom: 6 }}>상호명</label>
+                      <input type="text" value={rCompany} onChange={(e) => setRCompany(e.target.value)} style={{ ...inputStyle, background: cardBg, color: textPrimary }} />
+                    </div>
+                    <div>
+                      <label style={{ ...labelStyle, fontSize: 12, marginBottom: 6 }}>중개등록번호</label>
+                      <input type="text" value={rRegNum} onChange={(e) => setRRegNum(e.target.value)} style={{ ...inputStyle, background: cardBg, color: textPrimary }} />
+                    </div>
+                    <div>
+                      <label style={{ ...labelStyle, fontSize: 12, marginBottom: 6 }}>대표자명</label>
+                      <input type="text" value={rBoss} onChange={(e) => setRBoss(e.target.value)} style={{ ...inputStyle, background: cardBg, color: textPrimary }} />
+                    </div>
+                    <div>
+                      <label style={{ ...labelStyle, fontSize: 12, marginBottom: 6 }}>사업자등록번호</label>
+                      <input type="text" value={rBizNum} onChange={(e) => setRBizNum(e.target.value)} style={{ ...inputStyle, background: cardBg, color: textPrimary }} />
+                    </div>
+                    <div>
+                      <label style={{ ...labelStyle, fontSize: 12, marginBottom: 6 }}>일반번호</label>
+                      <input type="text" value={rTel} onChange={(e) => setRTel(e.target.value)} style={{ ...inputStyle, background: cardBg, color: textPrimary }} />
+                    </div>
+                    <div>
+                      <label style={{ ...labelStyle, fontSize: 12, marginBottom: 6 }}>휴대번호</label>
+                      <input type="text" value={rCell} onChange={(e) => setRCell(e.target.value)} style={{ ...inputStyle, background: cardBg, color: textPrimary }} />
+                    </div>
+                  </div>
+                  <div>
+                    <label style={{ ...labelStyle, fontSize: 12, marginBottom: 6 }}>부동산 주소</label>
+                    <input type="text" value={rAddr} onChange={(e) => setRAddr(e.target.value)} style={{ ...inputStyle, background: cardBg, color: textPrimary }} />
+                  </div>
+                </div>
+
+                {/* ── 임대인 정보 (메모) ── */}
+                <div style={{ border: `1px solid ${darkMode ? "#f9731655" : "#fed7aa"}`, borderRadius: 10, background: darkMode ? "#331c12" : "#fff7ed", padding: "20px 24px", position: "relative", overflow: "hidden", marginBottom: 24 }}>
+                  <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 4, background: "#ea580c" }} />
+                  <label style={{ ...labelStyle, marginTop: 0 }}>
+                    임대인명 <span style={{ color: "#ea580c", fontSize: 12, fontWeight: 600 }}>[중개사님만 확인 가능한 비공개 메모 정보입니다.]</span> <span style={{ color: "#ef4444" }}>*</span>
+                  </label>
+                  <input type="text" placeholder="예: 착한임대" value={landlordName} onChange={(e) => setLandlordName(e.target.value)} style={{ ...inputStyle, marginBottom: 16, background: cardBg }} />
+
+                  <label style={labelStyle}>임대인 연락처 <span style={{ color: "#ef4444" }}>*</span></label>
+                  <input type="text" placeholder="예: 010-8831-9450" value={landlordPhone} onChange={(e) => setLandlordPhone(e.target.value)} style={{ ...inputStyle, marginBottom: 16, background: cardBg }} />
+
+                  <label style={labelStyle}>메모</label>
+                  <textarea placeholder="임대인 특이사항 등 중개사님만 보는 메모를 입력하세요." value={landlordMemo} onChange={(e) => setLandlordMemo(e.target.value)} rows={4} style={{ ...inputStyle, height: "auto", resize: "vertical", background: cardBg }} />
+                </div>
               </>
+            )}
+
+            {/* 동통: 동의 체크박스 (일반회원/관리자용, 부동산회원은 제외) */}
+            {userRole !== "realtor" && (
+              <div style={{ display: "flex", gap: 12, padding: "20px", border: `1px solid ${border}`, borderRadius: 10, marginBottom: 24, alignItems: "flex-start" }}>
+                <input type="checkbox" id="consent" checked={consent} onChange={(e) => setConsent(e.target.checked)}
+                  style={{ marginTop: 3, accentColor: "#3b82f6", width: 18, height: 18, flexShrink: 0, cursor: "pointer" }} />
+                <label htmlFor="consent" style={{ fontSize: 13, color: textSecondary, lineHeight: 1.6, cursor: "pointer" }}>
+                  <strong style={{ color: textPrimary }}>매물 광고 진행에 동의합니다. (필수)</strong><br />
+                  공실뉴스 부동산이 빠른 계약을 위해 네이버부동산, 유튜브, 블로그 등 다양한 광고를 진행하는 것에 동의합니다.
+                </label>
+              </div>
             )}
 
 
@@ -977,17 +1078,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
             </div>
           </div>
 
-          {/* 주변 시세 정보 */}
-          <div style={{ background: cardBg, borderRadius: 14, padding: "28px 24px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)", marginBottom: 20 }}>
-            <h2 style={{ fontSize: 17, fontWeight: 800, color: textPrimary, margin: "0 0 8px", borderBottom: `2px solid ${textPrimary}`, paddingBottom: 12 }}>주변 시세 정보</h2>
-            <div style={{ background: darkMode ? "#1a1b1e" : "#f8f9fa", borderRadius: 10, padding: "40px 20px", textAlign: "center" }}>
-              <div style={{ fontSize: 40, marginBottom: 8 }}>📊</div>
-              <div style={{ fontSize: 13, color: textSecondary, lineHeight: 1.6 }}>
-                주소를 입력하시면 주변 실거래가 및<br />건축물대장 정보가 요약됩니다.
-              </div>
-              <div style={{ fontSize: 13, color: "#ef4444", fontWeight: 600, marginTop: 8 }}>(서비스 준비 중)</div>
-            </div>
-          </div>
+
 
           {/* 작성 체크리스트 */}
           <div style={{ background: cardBg, borderRadius: 14, padding: "28px 24px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
