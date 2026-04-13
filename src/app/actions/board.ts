@@ -110,6 +110,7 @@ export async function saveBoardPost(payload: {
   youtube_url?: string;
   drive_url?: string;
   drive_label?: string;
+  external_url?: string;
   is_notice?: boolean;
 }) {
   if (payload.id) {

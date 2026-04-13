@@ -5,7 +5,7 @@ import VacancyRegisterForm from "@/components/admin/VacancyRegisterForm";
 import MemberRegisterForm from "@/components/admin/MemberRegisterForm";
 import { adminGetMembers, adminSoftDeleteMember, adminRestoreMember, adminHardDeleteMember } from "./actions";
 import { getArticles, deleteArticle, adminUpdateArticleStatus } from "@/app/actions/article";
-import { getBoards, deleteBoard } from "@/app/actions/board";
+import { getBoards, deleteBoard, saveBoard } from "@/app/actions/board";
 import { createClient } from "@/utils/supabase/client";
 
 /* ──────────────────────────────────────────────
@@ -87,6 +87,12 @@ export default function AdminPage() {
   const [darkMode, setDarkMode] = useState(false);
   const [showRegisterForm, setShowRegisterForm] = useState(false);
   const [showBoardModal, setShowBoardModal] = useState(false);
+  const [boardId, setBoardId] = useState("");
+  const [boardName, setBoardName] = useState("");
+  const [boardSubtitle, setBoardSubtitle] = useState("");
+  const [boardSkinType, setBoardSkinType] = useState("LIST");
+  const [boardCategories, setBoardCategories] = useState("");
+  const [editingBoardId, setEditingBoardId] = useState<string | null>(null);
   const [showMemberRegister, setShowMemberRegister] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const [checkedMemberIds, setCheckedMemberIds] = useState<string[]>([]);
@@ -662,7 +668,7 @@ export default function AdminPage() {
             {/* 타이틀 + 버튼 */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
               <h1 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: 0 }}>게시판 리스트 및 설정</h1>
-              <button onClick={() => setShowBoardModal(true)} style={{ height: 38, padding: "0 18px", background: "#374151", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>+ 새 게시판 생성</button>
+              <button onClick={() => { setEditingBoardId(null); setBoardId(""); setBoardName(""); setBoardSubtitle(""); setBoardSkinType("LIST"); setBoardCategories(""); setShowBoardModal(true); }} style={{ height: 38, padding: "0 18px", background: "#374151", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>+ 새 게시판 생성</button>
             </div>
 
             {/* 메인 카드 */}
@@ -682,8 +688,8 @@ export default function AdminPage() {
                   <tbody>
                     {dbBoards.length > 0 ? (
                       dbBoards.map((row, idx) => {
-                        const skinLabels: Record<string, string> = { FILE_THUMB: "자료실 썸네일형", VIDEO_ALBUM: "동영상 앨범형", LIST: "일반 목록형", GALLERY: "갤러리형" };
-                        const isVideo = row.skin_type === 'VIDEO_ALBUM';
+                        const skinLabels: Record<string, string> = { FILE_THUMB: "자료실형 (영상/파일)", VIDEO_ALBUM: "자료실형 (영상/파일)", LIST: "일반 목록형", GALLERY: "갤러리형" };
+                        const isVideo = row.skin_type === 'VIDEO_ALBUM' || row.skin_type === 'FILE_THUMB';
                         return (
                       <tr key={row.id || idx} style={{ borderBottom: `1px solid ${darkMode ? "#333" : "#f3f4f6"}`, transition: "background 0.15s" }}
                         onMouseEnter={(e) => { e.currentTarget.style.background = darkMode ? "#2c2d31" : "#fafbfc"; }}
@@ -707,7 +713,15 @@ export default function AdminPage() {
                         <td style={{ padding: "16px 20px", textAlign: "center", verticalAlign: "middle", fontSize: 15, fontWeight: 600, color: textSecondary }}>{row.perm_list} / {row.perm_read} / {row.perm_write}</td>
                         <td style={{ padding: "16px 20px", textAlign: "center", verticalAlign: "middle" }}>
                           <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
-                            <button style={{ height: 30, padding: "0 12px", background: "#4b5563", color: "#fff", border: "none", borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
+                            <button onClick={() => {
+                              setEditingBoardId(row.board_id);
+                              setBoardId(row.board_id);
+                              setBoardName(row.name || "");
+                              setBoardSubtitle(row.subtitle || row.description || "");
+                              setBoardSkinType(row.skin_type || "LIST");
+                              setBoardCategories(row.categories || "");
+                              setShowBoardModal(true);
+                            }} style={{ height: 30, padding: "0 12px", background: "#4b5563", color: "#fff", border: "none", borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
                               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                               설정
                             </button>
@@ -1291,7 +1305,7 @@ export default function AdminPage() {
               display: "flex", alignItems: "center", justifyContent: "space-between",
               padding: "24px 28px 16px"
             }}>
-              <h2 style={{ fontSize: 18, fontWeight: 800, color: textPrimary, margin: 0 }}>게시판 생성</h2>
+              <h2 style={{ fontSize: 18, fontWeight: 800, color: textPrimary, margin: 0 }}>게시판 {editingBoardId ? "수정" : "생성"}</h2>
               <button onClick={() => setShowBoardModal(false)} style={{
                 background: "none", border: "none", cursor: "pointer", color: "#9ca3af",
                 display: "flex", alignItems: "center", justifyContent: "center"
@@ -1307,10 +1321,10 @@ export default function AdminPage() {
                 <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: textPrimary, marginBottom: 6 }}>
                   게시판 고유 ID <span style={{ color: "#ef4444" }}>*</span>
                 </label>
-                <input type="text" placeholder="예: bbs_notice (영문, 숫자 조합)" style={{
+                <input type="text" placeholder="예: bbs_notice (영문, 숫자 조합)" value={boardId} onChange={e => setBoardId(e.target.value)} disabled={!!editingBoardId} style={{
                   width: "100%", height: 42, padding: "0 14px", fontSize: 13,
-                  border: `1px solid ${border}`, borderRadius: 6, background: darkMode ? "#111" : "#fff",
-                  color: textPrimary, outline: "none", fontFamily: "inherit"
+                  border: `1px solid ${border}`, borderRadius: 6, background: editingBoardId ? (darkMode ? "#1a1a1a" : "#f3f4f6") : (darkMode ? "#111" : "#fff"),
+                  color: editingBoardId ? "#9ca3af" : textPrimary, outline: "none", fontFamily: "inherit"
                 }} onFocus={(e) => e.target.style.borderColor = "#3b82f6"} onBlur={(e) => e.target.style.borderColor = border} />
                 <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 6, letterSpacing: "-0.2px" }}>URL 주소로 사용될 고유 이름입니다. 예: dori</div>
               </div>
@@ -1321,7 +1335,7 @@ export default function AdminPage() {
                   <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: textPrimary, marginBottom: 6 }}>
                     게시판 이름 <span style={{ color: "#ef4444" }}>*</span>
                   </label>
-                  <input type="text" placeholder="예: 공지사항" style={{
+                  <input type="text" placeholder="예: 공지사항" value={boardName} onChange={e => setBoardName(e.target.value)} style={{
                     width: "100%", height: 42, padding: "0 14px", fontSize: 13,
                     border: `1px solid ${border}`, borderRadius: 6, background: darkMode ? "#111" : "#fff",
                     color: textPrimary, outline: "none", fontFamily: "inherit"
@@ -1331,7 +1345,7 @@ export default function AdminPage() {
                   <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: textPrimary, marginBottom: 6 }}>
                     보조 타이틀
                   </label>
-                  <input type="text" placeholder="예: 자료실" style={{
+                  <input type="text" placeholder="예: 자료실" value={boardSubtitle} onChange={e => setBoardSubtitle(e.target.value)} style={{
                     width: "100%", height: 42, padding: "0 14px", fontSize: 13,
                     border: `1px solid ${border}`, borderRadius: 6, background: darkMode ? "#111" : "#fff",
                     color: textPrimary, outline: "none", fontFamily: "inherit"
@@ -1346,16 +1360,14 @@ export default function AdminPage() {
                     스킨 / 테마 구조 선택 <span style={{ color: "#ef4444" }}>*</span>
                   </label>
                   <div style={{ position: "relative" }}>
-                    <select style={{
+                    <select value={boardSkinType} onChange={e => setBoardSkinType(e.target.value)} style={{
                       width: "100%", height: 42, padding: "0 34px 0 14px", fontSize: 13,
                       border: `1px solid ${border}`, borderRadius: 6, background: darkMode ? "#111" : "#fff",
                       color: textPrimary, outline: "none", fontFamily: "inherit", appearance: "none", cursor: "pointer"
                     }} onFocus={(e) => e.target.style.borderColor = "#3b82f6"} onBlur={(e) => e.target.style.borderColor = border}>
-                      <option>📑 일반 리스트형 (자유게시판/공지사항)</option>
-                      <option>▶️ 동영상 앨범형 (유튜브 + 드라이브 다운로드 최적화)</option>
-                      <option>📄 파일 자료실형 (디자인 썸네일 + 다운로드 버튼)</option>
-                      <option>💡 자주묻는질문 (FAQ 아코디언형)</option>
-                      <option>🔒 1:1 문의 (작성자/관리자 전용 비밀글)</option>
+                      <option value="LIST">📑 일반 리스트형 (자유게시판/공지사항)</option>
+                      <option value="FILE_THUMB">📁 자료실형 (영상/파일 통합 - 유튜브·드라이브·썸네일 자동감지)</option>
+                      <option value="GALLERY">🖼️ 갤러리형 (이미지 위주 모아보기)</option>
                     </select>
                     <svg style={{ position: "absolute", right: 12, top: 14, pointerEvents: "none", color: "#9ca3af" }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
                   </div>
@@ -1383,7 +1395,7 @@ export default function AdminPage() {
                 <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: textPrimary, marginBottom: 6 }}>
                   세부 카테고리 (분류)
                 </label>
-                <input type="text" placeholder="쉼표(,)로 구분하여 입력하세요. (예: 드론, 아파트, 빌딩)" style={{
+                <input type="text" placeholder="쉼표(,)로 구분하여 입력하세요. (예: 드론, 아파트, 빌딩)" value={boardCategories} onChange={e => setBoardCategories(e.target.value)} style={{
                   width: "100%", height: 42, padding: "0 14px", fontSize: 13,
                   border: `1px solid ${border}`, borderRadius: 6, background: darkMode ? "#111" : "#fff",
                   color: textPrimary, outline: "none", fontFamily: "inherit"
@@ -1430,7 +1442,29 @@ export default function AdminPage() {
               }} onMouseOver={(e) => e.currentTarget.style.background = darkMode ? "#4b5563" : "#f9fafb"} onMouseOut={(e) => e.currentTarget.style.background = darkMode ? "#374151" : "#ffffff"}>
                 취소
               </button>
-              <button style={{
+              <button onClick={async () => {
+                if (!boardId || !boardName || !boardSkinType) {
+                  alert("게시판 ID, 게시판 이름, 스킨 타입을 모두 입력해주세요.");
+                  return;
+                }
+                const res = await saveBoard({
+                  board_id: boardId,
+                  name: boardName,
+                  subtitle: boardSubtitle,
+                  skin_type: boardSkinType,
+                  categories: boardCategories,
+                  perm_list: "전체",
+                  perm_read: "전체",
+                  perm_write: "관리자",
+                });
+                if (res.success) {
+                  alert("게시판 설정이 저장되었습니다.");
+                  setShowBoardModal(false);
+                  getBoards().then(r => { if (r.success) setDbBoards(r.data || []) });
+                } else {
+                  alert("저장 실패: " + res.error);
+                }
+              }} style={{
                 padding: "0 24px", height: 44, borderRadius: 6, border: "none",
                 background: "#2a2f3a", color: "#ffffff", transition: "background 0.2s",
                 fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",

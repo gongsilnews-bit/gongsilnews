@@ -1015,3 +1015,72 @@ button { border: none; background: none; cursor: pointer; font-family: inherit; 
     font-size: 12px;
     font-weight: normal;
 }
+
+/* ========== 게시판 (Board, 자료실) CSS ========== */
+.board-header { margin-top: 30px; display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #222; padding-bottom: 15px; }
+.board-title { font-size: 24px; font-weight: 800; color: #102c57; }
+.board-search-write { display: flex; gap: 15px; align-items: center; }
+.b-search { display: flex; border: 1px solid #ccc; border-radius: 4px; overflow: hidden; }
+.b-search input { border: none; padding: 8px 12px; outline: none; width: 220px; font-size: 14px; }
+.b-search button { background: #f8f9fa; border-left: 1px solid #ccc; padding: 0 15px; font-weight: bold; color: #555; }
+.b-write-btn { background: #508bf5; color: #fff; padding: 8px 16px; border-radius: 4px; font-weight: bold; font-size: 14px; cursor: pointer; transition: background 0.2s; }
+.b-write-btn:hover { background: #16407b; }
+
+.board-tabs { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
+.b-tab { border: 1px solid #ddd; background: #fff; padding: 8px 16px; border-radius: 20px; font-size: 14px; color: #666; cursor: pointer; font-weight: 600; transition: all 0.2s; white-space: nowrap; }
+.b-tab:hover { border-color: #508bf5; color: #508bf5; }
+.b-tab.active { background: #102c57; color: #fff; border-color: #102c57; }
+
+.b-layout { display: flex; gap: 40px; margin-top: 20px; margin-bottom: 60px; }
+.b-list-area { flex: 1; min-width: 0; }
+.b-sidebar { width: 320px; flex-shrink: 0; }
+
+.b-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+
+/* 리스트형 게시판 테이블 */
+.b-list-table { width: 100%; border-collapse: collapse; margin-top: 10px; border-top: 2px solid #222; }
+.b-list-table th, .b-list-table td { border-bottom: 1px solid #eee; padding: 12px 10px; }
+.b-list-table th { background: #f8f9fa; font-weight: 700; color: #333; font-size: 14px; text-align: center; }
+.b-list-table td { font-size: 14px; color: #555; text-align: center; }
+.b-list-table td.subject { text-align: left; color: #111; font-weight: 600; cursor: pointer; }
+.b-list-table td.subject:hover { text-decoration: underline; color: #508bf5; }
+.b-list-table .cat-badge { font-size: 11px; font-weight: 700; color: #508bf5; background: rgba(80,139,245,0.1); border-radius: 4px; padding: 2px 6px; margin-right: 8px; display: inline-block; vertical-align: middle; }
+
+/* Modal */
+.b-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; z-index: 9999999; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+.b-modal-content { background: #fff; width: 640px; max-height: 90vh; overflow-y: auto; border-radius: 12px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+.mod-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 15px; }
+.mod-title { font-size: 20px; font-weight: bold; color: #102c57; }
+.mod-close { font-size: 24px; cursor: pointer; color: #999; }
+.mod-close:hover { color: #333; }
+.mod-row { margin-bottom: 15px; }
+.mod-label { display: block; font-size: 14px; font-weight: bold; margin-bottom: 8px; color: #333; }
+
+.header-tags { display: flex; gap: 8px; flex-wrap: wrap; }
+.h-tag { border: 1px solid #ddd; background: #fdfdfd; padding: 8px 14px; border-radius: 4px; font-size: 13px; color: #555; cursor: pointer; user-select: none; transition: all 0.2s;}
+.h-tag:hover { background: #f0f0f0; }
+.h-tag.selected { background: #508bf5; color: #fff; border-color: #508bf5; font-weight: bold; }
+
+.mod-input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; outline: none; transition: border 0.2s;}
+.mod-input:focus { border-color: #508bf5; }
+.mod-textarea { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; outline: none; height: 180px; resize: none; transition: border 0.2s;}
+.mod-textarea:focus { border-color: #508bf5; }
+.mod-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px; }
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .b-layout { flex-direction: column; }
+    .b-sidebar { width: 100%; display: flex; gap: 20px; }
+    .sb-banner, .sb-widget { flex: 1; }
+}
+@media (max-width: 768px) {
+    .b-grid { grid-template-columns: repeat(2, 1fr); }
+    .board-header { flex-direction: column; align-items: flex-start; gap: 15px; }
+    .b-modal-content { width: 90%; padding: 20px; }
+    .b-sidebar { flex-direction: column; }
+}
+@media (max-width: 480px) {
+    .b-grid { grid-template-columns: 1fr; }
+    .b-search input { width: 150px; }
+    .b-tab { padding: 6px 12px; font-size: 13px; }
+}

@@ -130,7 +130,12 @@ export default function NewsLocalPage() {
 
     // 글로벌 함수 등록 (HTML에서 호출)
     (window as any).__openArticleDetail = (id: string) => {
-      handleSelectArticle(id, true);
+      // 이미 열려있는 같은 기사면 닫기
+      if (activeArticleId === id && showDetail) {
+        setShowDetail(false);
+      } else {
+        handleSelectArticle(id, true);
+      }
     };
     (window as any).__closeCustomOverlay = () => {
       closeInfoWindow();
@@ -169,7 +174,7 @@ export default function NewsLocalPage() {
 
     // 지도 이동
     kakaoMapRef.current.panTo(position);
-  }, [closeInfoWindow, handleSelectArticle]);
+  }, [closeInfoWindow, handleSelectArticle, activeArticleId, showDetail]);
 
   /* ── 현재 지도 뷰포트에 보이는 기사만 필터링 ── */
   const updateVisibleArticles = useCallback(() => {
