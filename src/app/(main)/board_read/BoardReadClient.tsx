@@ -181,7 +181,17 @@ export default function BoardReadClient({
 
               {/* 다중 외부 링크를 등록된 순서대로 모두 노출 */}
               {externalLinks.map((link: any, idx: number) => {
-                if (link.type === "YOUTUBE") {
+                // 사용자 입력 실수 방지: URL 기반 자동 타입 유추
+                let resolvedType = link.type;
+                if (link.url) {
+                  if (link.url.includes("drive.google.com")) {
+                    resolvedType = "DRIVE";
+                  } else if (link.url.includes("youtube.com") || link.url.includes("youtu.be")) {
+                    resolvedType = "YOUTUBE";
+                  }
+                }
+
+                if (resolvedType === "YOUTUBE") {
                   const embedUrl = getYoutubeEmbedUrl(link.url);
                   if (!embedUrl) return null;
                   return (
@@ -194,7 +204,7 @@ export default function BoardReadClient({
                       />
                     </div>
                   );
-                } else if (link.type === "DRIVE") {
+                } else if (resolvedType === "DRIVE") {
                   const embedUrl = driveEmbedUrl(link.url);
                   return (
                     <div key={link.id || idx} style={{ marginBottom: 28 }}>
@@ -241,7 +251,7 @@ export default function BoardReadClient({
                       </div>
                     </div>
                   );
-                } else if (link.type === "LINK") {
+                } else if (resolvedType === "LINK") {
                   return (
                     <div key={link.id || idx} style={{ marginBottom: 28 }}>
                       <div style={{

@@ -251,7 +251,11 @@ export default function BoardWriteClient({
                   if (e.key === "Enter") {
                     e.preventDefault();
                     if (!newLinkUrl.trim()) return alert("URL을 입력해주세요.");
-                    setExternalLinks([...externalLinks, { id: Date.now().toString(), type: newLinkType, label: newLinkLabel, url: newLinkUrl }]);
+                    let autoType = newLinkType;
+                    if (newLinkUrl.includes("drive.google.com")) autoType = "DRIVE";
+                    else if (newLinkUrl.includes("youtube.com") || newLinkUrl.includes("youtu.be")) autoType = "YOUTUBE";
+                    
+                    setExternalLinks([...externalLinks, { id: Date.now().toString(), type: autoType, label: newLinkLabel, url: newLinkUrl }]);
                     setNewLinkLabel("");
                     setNewLinkUrl("");
                   }
@@ -262,7 +266,11 @@ export default function BoardWriteClient({
                 type="button"
                 onClick={() => {
                   if (!newLinkUrl.trim()) return alert("URL을 입력해주세요.");
-                  setExternalLinks([...externalLinks, { id: Date.now().toString(), type: newLinkType, label: newLinkLabel, url: newLinkUrl }]);
+                  let autoType = newLinkType;
+                  if (newLinkUrl.includes("drive.google.com")) autoType = "DRIVE";
+                  else if (newLinkUrl.includes("youtube.com") || newLinkUrl.includes("youtu.be")) autoType = "YOUTUBE";
+
+                  setExternalLinks([...externalLinks, { id: Date.now().toString(), type: autoType, label: newLinkLabel, url: newLinkUrl }]);
                   setNewLinkLabel("");
                   setNewLinkUrl("");
                 }}

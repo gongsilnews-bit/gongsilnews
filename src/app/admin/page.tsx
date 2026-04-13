@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import AdminManual from "./AdminManual";
 import VacancyRegisterForm from "@/components/admin/VacancyRegisterForm";
 import MemberRegisterForm from "@/components/admin/MemberRegisterForm";
 import { adminGetMembers, adminSoftDeleteMember, adminRestoreMember, adminHardDeleteMember } from "./actions";
@@ -863,6 +864,8 @@ export default function AdminPage() {
             </div>
           </div>
 
+        ) : activeMenu === "manual" ? (
+          <AdminManual />
         ) : (activeMenu.startsWith("members") || activeMenu === "dormant") ? (
           /* ===== 회원관리 리스트 (원본 admin 디자인 1:1 복제) ===== */
           showMemberRegister ? (

@@ -19,6 +19,55 @@ function getDriveThumbnail(url: string): string | null {
   return m ? `https://drive.google.com/thumbnail?id=${m[1]}&sz=w400` : null;
 }
 
+// 우선순위에 따른 대표 썸네일 추출 (1순위: 직접첨부이미지, 2순위: 유튜브링크, 3순위: 구글드라이브링크)
+function getPrimaryThumbnail(p: any): string {
+  if (p.thumbnail_url) return p.thumbnail_url;
+
+  let ytUrl = p.youtube_url;
+  let drUrl = p.drive_url;
+  
+  try {
+    if (p.external_url && p.external_url.startsWith("[")) {
+      const links = JSON.parse(p.external_url);
+      const firstYt = links.find((l: any) => l.type === "YOUTUBE" || (l.url && (l.url.includes("youtube.com") || l.url.includes("youtu.be"))));
+      const firstDr = links.find((l: any) => l.type === "DRIVE" || (l.url && l.url.includes("drive.google.com")));
+      if (firstYt?.url) ytUrl = firstYt.url;
+      if (firstDr?.url) drUrl = firstDr.url;
+    }
+  } catch(e) {}
+
+  const ytThumb = getYoutubeThumbnail(ytUrl);
+  if (ytThumb) return ytThumb;
+
+  const drThumb = getDriveThumbnail(drUrl);
+  if (drThumb) return drThumb;
+
+  return "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=320&q=80";
+}
+
+// 비디오 아이콘 표시 여부 판별기
+function hasVideoLink(p: any, skinType: string): boolean {
+  // 유튜브는 항상 비디오
+  let hasVideo = p.youtube_url;
+  // 구글 드라이브는 VIDEO_ALBUM 스킨일 때만 비디오로 간주 (나머지 자료실은 일반 파일 다운로드 목적)
+  let isDriveVideo = (skinType === "VIDEO_ALBUM") && p.drive_url && p.drive_url.includes("drive.google.com/file/d/");
+  
+  hasVideo = hasVideo || isDriveVideo;
+
+  try {
+    if (p.external_url && p.external_url.startsWith("[")) {
+      const links = JSON.parse(p.external_url);
+      hasVideo = hasVideo || links.some((l: any) => {
+        if (l.type === "YOUTUBE" || (l.url && (l.url.includes("youtube.com") || l.url.includes("youtu.be")))) return true;
+        if (skinType === "VIDEO_ALBUM" && (l.type === "DRIVE" || (l.url && l.url.includes("drive.google.com")))) return true;
+        return false;
+      });
+    }
+  } catch(e) {}
+  
+  return !!hasVideo;
+}
+
 export default function BoardClient({ board, initialPosts }: { board: any, initialPosts: any[] }) {
   const [activeTab, setActiveTab] = useState("전체");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -164,8 +213,8 @@ export default function BoardClient({ board, initialPosts }: { board: any, initi
                 {filteredPosts.length > 0 ? filteredPosts.map((p, i) => (
                   <Link href={`/board_read?id=${p.id}`} key={p.id} style={{ display: "block", textDecoration: "none", color: "inherit", border: "1px solid #eee", borderRadius: 8, overflow: "hidden", cursor: "pointer" }}>
                     <div style={{ height: 140, background: "#222", position: "relative", overflow: "hidden" }}>
-                      <img src={p.thumbnail_url || getYoutubeThumbnail(p.youtube_url) || getDriveThumbnail(p.drive_url) || "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=320&q=80"} style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.8 }} alt="thumb" />
-                      {(p.youtube_url || (p.drive_url && p.drive_url.includes("drive.google.com/file/d/"))) && (
+                      <img src={getPrimaryThumbnail(p)} style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.8 }} alt="thumb" />
+                      {hasVideoLink(p, board.skin_type) && (
                         <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 44, height: 44, background: "rgba(0,0,0,0.6)", borderRadius: "50%", border: "2px solid #fff", display: "flex", alignItems: "center", justifyContent: "center" }}>
                           <svg width="20" height="20" fill="#fff" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                         </div>
