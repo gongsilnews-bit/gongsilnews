@@ -172,108 +172,111 @@ export default function BoardReadClient({
 
             {/* 본문 */}
             <div style={{ padding: "32px" }}>
-              {/* YouTube 영상 (다중 지원) */}
-              {ytLinks.map((link: any, idx: number) => {
-                const embedUrl = getYoutubeEmbedUrl(link.url);
-                if (!embedUrl) return null;
-                return (
-                  <div key={link.id || idx} style={{ marginBottom: 28, position: "relative", paddingTop: "56.25%", height: 0, overflow: "hidden", background: "#000", borderRadius: 8 }}>
-                    <iframe
-                      style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" }}
-                      src={embedUrl}
-                      allowFullScreen
-                      title={link.label || "YouTube 영상"}
-                    />
-                  </div>
-                );
-              })}
-
-              {/* Google Drive 영상 인라인 재생 (유튜브가 하나도 없을 때 첫 번째 드라이브 영상만) */}
-              {ytLinks.length === 0 && driveLinks.length > 0 && driveEmbedUrl(driveLinks[0].url) && (
-                <div style={{ marginBottom: 28, position: "relative", paddingTop: "56.25%", height: 0, overflow: "hidden", background: "#000", borderRadius: 8 }}>
-                  <iframe
-                    style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" }}
-                    src={driveEmbedUrl(driveLinks[0].url)!}
-                    allow="autoplay"
-                    allowFullScreen
-                    title="Google Drive 영상"
-                  />
-                </div>
-              )}
-
-              {/* 썸네일 이미지 (영상 아무것도 없을 때) */}
-              {ytLinks.length === 0 && (!driveLinks.length || !driveEmbedUrl(driveLinks[0].url)) && post.thumbnail_url && (
+              {/* 썸네일 노출 (최상단) */}
+              {post.thumbnail_url && (
                 <div style={{ marginBottom: 28, textAlign: "center" }}>
                   <img src={post.thumbnail_url} alt="썸네일" style={{ maxWidth: "100%", borderRadius: 8 }} />
                 </div>
               )}
 
+              {/* 다중 외부 링크를 등록된 순서대로 모두 노출 */}
+              {externalLinks.map((link: any, idx: number) => {
+                if (link.type === "YOUTUBE") {
+                  const embedUrl = getYoutubeEmbedUrl(link.url);
+                  if (!embedUrl) return null;
+                  return (
+                    <div key={link.id || idx} style={{ marginBottom: 28, position: "relative", paddingTop: "56.25%", height: 0, overflow: "hidden", background: "#000", borderRadius: 8 }}>
+                      <iframe
+                        style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" }}
+                        src={embedUrl}
+                        allowFullScreen
+                        title={link.label || "YouTube 영상"}
+                      />
+                    </div>
+                  );
+                } else if (link.type === "DRIVE") {
+                  const embedUrl = driveEmbedUrl(link.url);
+                  return (
+                    <div key={link.id || idx} style={{ marginBottom: 28 }}>
+                      {/* 구글 드라이브 미리보기 (있으면) */}
+                      {embedUrl && (
+                        <div style={{ marginBottom: 20, position: "relative", paddingTop: "56.25%", height: 0, overflow: "hidden", background: "#000", borderRadius: 8 }}>
+                          <iframe
+                            style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" }}
+                            src={embedUrl}
+                            allow="autoplay"
+                            allowFullScreen
+                            title="Google Drive 영상"
+                          />
+                        </div>
+                      )}
+                      {/* 다운로드 버튼 */}
+                      <div style={{
+                        background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8,
+                        padding: "16px 24px", display: "flex", alignItems: "center",
+                        justifyContent: "space-between", gap: 20
+                      }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 15, fontWeight: 800, color: "#1e293b", marginBottom: 4 }}>{link.label || "구글 드라이브 자료 다운로드"}</div>
+                          <div style={{ fontSize: 13, color: "#64748b" }}>이 게시물에 관련된 구글 드라이브 파일을 다운로드합니다.</div>
+                        </div>
+                        <a
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            display: "inline-flex", alignItems: "center", gap: 8,
+                            background: "#508bf5", color: "#fff", padding: "11px 22px",
+                            borderRadius: 6, fontSize: 14, fontWeight: 700,
+                            textDecoration: "none", whiteSpace: "nowrap"
+                          }}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="7 10 12 15 17 10"/>
+                            <line x1="12" y1="15" x2="12" y2="3"/>
+                          </svg>
+                          구글 드라이브 다운로드
+                        </a>
+                      </div>
+                    </div>
+                  );
+                } else if (link.type === "LINK") {
+                  return (
+                    <div key={link.id || idx} style={{ marginBottom: 28 }}>
+                      <div style={{
+                        background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8,
+                        padding: "16px 24px", display: "flex", alignItems: "center",
+                        justifyContent: "space-between", gap: 20
+                      }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 15, fontWeight: 800, color: "#1e293b", marginBottom: 4 }}>{link.label || "외부 데이터 링크"}</div>
+                          <div style={{ fontSize: 13, color: "#64748b" }}>게시된 외부 링크 자료로 연결합니다.</div>
+                        </div>
+                        <a
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            display: "inline-flex", alignItems: "center", gap: 8,
+                            background: "#f8fafc", border: "1px solid #e2e8f0", color: "#333",
+                            padding: "11px 22px", borderRadius: 6, fontSize: 14, fontWeight: 600,
+                            textDecoration: "none", whiteSpace: "nowrap"
+                          }}
+                        >
+                          🔗 외부 링크 방문
+                        </a>
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
+              })}
+
               {/* 내용 */}
               {post.content && (
                 <div style={{ fontSize: 16, lineHeight: 1.8, color: "#333", marginBottom: 28, whiteSpace: "pre-wrap" }}>
                   {post.content}
-                </div>
-              )}
-
-              {/* 파일 다운로드 / 바로가기 (구글 드라이브 및 외부 링크 다중 지원) */}
-              {(driveLinks.length > 0 || otherLinks.length > 0) && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 20, marginBottom: 28 }}>
-                  {driveLinks.map((link: any, idx: number) => (
-                    <div key={link.id || idx} style={{
-                      background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8,
-                      padding: "16px 24px", display: "flex", alignItems: "center",
-                      justifyContent: "space-between", gap: 20
-                    }}>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 15, fontWeight: 800, color: "#1e293b", marginBottom: 4 }}>{link.label || "구글 드라이브 자료 다운로드"}</div>
-                        <div style={{ fontSize: 13, color: "#64748b" }}>이 게시물에 관련된 구글 드라이브 파일을 다운로드합니다.</div>
-                      </div>
-                      <a
-                        href={link.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{
-                          display: "inline-flex", alignItems: "center", gap: 8,
-                          background: "#508bf5", color: "#fff", padding: "11px 22px",
-                          borderRadius: 6, fontSize: 14, fontWeight: 700,
-                          textDecoration: "none", whiteSpace: "nowrap"
-                        }}
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                          <polyline points="7 10 12 15 17 10"/>
-                          <line x1="12" y1="15" x2="12" y2="3"/>
-                        </svg>
-                        구글 드라이브 다운로드
-                      </a>
-                    </div>
-                  ))}
-                  
-                  {otherLinks.map((link: any, idx: number) => (
-                    <div key={link.id || idx} style={{
-                      background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8,
-                      padding: "16px 24px", display: "flex", alignItems: "center",
-                      justifyContent: "space-between", gap: 20
-                    }}>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 15, fontWeight: 800, color: "#1e293b", marginBottom: 4 }}>{link.label || "외부 데이터 링크"}</div>
-                        <div style={{ fontSize: 13, color: "#64748b" }}>게시된 외부 링크 자료로 연결합니다.</div>
-                      </div>
-                      <a
-                        href={link.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{
-                          display: "inline-flex", alignItems: "center", gap: 8,
-                          background: "#f8fafc", border: "1px solid #e2e8f0", color: "#333",
-                          padding: "11px 22px", borderRadius: 6, fontSize: 14, fontWeight: 600,
-                          textDecoration: "none", whiteSpace: "nowrap"
-                        }}
-                      >
-                        🔗 외부 링크 방문
-                      </a>
-                    </div>
-                  ))}
                 </div>
               )}
 
