@@ -313,7 +313,7 @@ export default function RealtyAdminPage() {
           /* ===== 공실등록 폼 ===== */
           <div style={{ flex: 1, padding: 0, overflowY: "auto", background: bg }}>
             <div style={{ padding: "16px 32px 0 32px" }}>
-              <VacancyRegisterForm onBack={() => setShowRegisterForm(false)} userRole="realtor" darkMode={darkMode} />
+              <VacancyRegisterForm onBack={() => setShowRegisterForm(false)} userRole="realtor" darkMode={darkMode} ownerId={memberId || ""} />
             </div>
           </div>
         ) : activeMenu === "gongsil" ? (

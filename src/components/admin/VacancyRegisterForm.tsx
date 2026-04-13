@@ -3,6 +3,7 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { geocodeAddress } from "@/app/actions/geocode";
 import { createClient } from "@/utils/supabase/client";
+import { createVacancy, uploadVacancyPhoto, saveVacancyPhoto } from "@/app/actions/vacancy";
 
 /* ──────────────────────────────────────────────
    공실등록 폼 컴포넌트 (register.html 1:1 복제)
@@ -16,6 +17,7 @@ interface VacancyRegisterFormProps {
   userRole?: "admin" | "realtor" | "user";
   initialClientName?: string;
   initialClientPhone?: string;
+  ownerId?: string;
 }
 
 // ── 1차→2차 카테고리 매핑 (원본 register.html에서 추출) ──
@@ -30,7 +32,7 @@ const SUB_CATEGORIES: Record<string, string[]> = {
 // 상업용 카테고리 (해당층/전체층 표시, 방/욕실/방향 숨김)
 const COMMERCIAL_CATEGORY = "상가·사무실·건물·공장·토지";
 
-export default function VacancyRegisterForm({ onBack, darkMode = false, userRole = "admin", initialClientName = "", initialClientPhone = "" }: VacancyRegisterFormProps) {
+export default function VacancyRegisterForm({ onBack, darkMode = false, userRole = "admin", initialClientName = "", initialClientPhone = "", ownerId = "" }: VacancyRegisterFormProps) {
   // ── 상태 관리 ──
   const [propertyType, setPropertyType] = useState<string>("아파트·오피스텔");
   const [subCategory, setSubCategory] = useState<string>("아파트");
@@ -42,6 +44,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
   const [moveInDate, setMoveInDate] = useState<string>("즉시입주(공실)");
   const [ownerRelation, setOwnerRelation] = useState<string>("본인");
   const [consent, setConsent] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
   // 주거형 추가 필드
   const [roomCount, setRoomCount] = useState("1");
@@ -123,6 +126,45 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
 
   // 사진
   const [photos, setPhotos] = useState<File[]>([]);
+
+  // ── WebP 압축 ──
+  const compressToWebP = (file: File): Promise<File> => {
+    if (!file.type.startsWith("image/")) return Promise.resolve(file);
+    return new Promise((resolve) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const MAX_WIDTH = 1920;
+        const MAX_HEIGHT = 1080;
+        let width = img.width;
+        let height = img.height;
+        if (width > height) {
+          if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+        } else {
+          if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) { URL.revokeObjectURL(url); return resolve(file); }
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob((blob) => {
+          URL.revokeObjectURL(url);
+          if (!blob) return resolve(file);
+          const newName = file.name.replace(/\.[^/.]+$/, "") + ".webp";
+          resolve(new File([blob], newName, { type: "image/webp" }));
+        }, "image/webp", 0.8);
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+      img.src = url;
+    });
+  };
+
+  const addPhotos = async (files: File[]) => {
+    const compressed = await Promise.all(files.map(f => compressToWebP(f)));
+    setPhotos(prev => [...prev, ...compressed].slice(0, 5));
+  };
 
   // ── 면적 자동 변환 ──
   const handleM2Change = useCallback((val: string, setter: (v: string) => void, pySetter: (v: string) => void) => {
@@ -1013,18 +1055,112 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
             {/* ── 공실 등록하기 버튼 ── */}
             <button
               type="button"
-              onClick={() => { alert("공실 등록이 완료되었습니다!"); onBack(); }}
+              disabled={submitting}
+              onClick={async () => {
+                if (!propertyType || !tradeType) {
+                  alert("매물 분류와 거래유형은 필수입니다.");
+                  return;
+                }
+                if (!sido || !sigungu || !dong) {
+                  alert("시/도, 시/군/구, 읍/면/동/리는 필수입니다.");
+                  return;
+                }
+                if (!clientName || !clientPhone) {
+                  alert("의뢰인 이름과 연락처는 필수입니다.");
+                  return;
+                }
+
+                setSubmitting(true);
+                try {
+                  const roleMap: Record<string, string> = { admin: 'ADMIN', realtor: 'REALTOR', user: 'USER' };
+
+                  const result = await createVacancy({
+                    owner_id: ownerId,
+                    owner_role: roleMap[userRole] || 'USER',
+                    property_type: propertyType,
+                    sub_category: subCategory,
+                    trade_type: tradeType,
+                    deposit: parseInt(deposit) || 0,
+                    monthly_rent: parseInt(monthly) || 0,
+                    maintenance_fee: parseInt(maintenance) || 0,
+                    commission_type: commissionType,
+                    commission_amount: commissionAmount || undefined,
+                    commission_etc: commissionEtc || undefined,
+                    supply_m2: supplyM2 ? parseFloat(supplyM2) : undefined,
+                    supply_py: supplyPy ? parseFloat(supplyPy) : undefined,
+                    exclusive_m2: exclusiveM2 ? parseFloat(exclusiveM2) : undefined,
+                    exclusive_py: exclusivePy ? parseFloat(exclusivePy) : undefined,
+                    room_count: isCommercial ? undefined : parseInt(roomCount) || 1,
+                    bath_count: isCommercial ? undefined : parseInt(bathCount) || 1,
+                    direction: isCommercial ? undefined : direction,
+                    current_floor: isCommercial ? currentFloor : undefined,
+                    total_floor: isCommercial ? totalFloor : undefined,
+                    parking,
+                    move_in_date: moveInDate,
+                    options: selectedOptions,
+                    sido, sigungu, dong,
+                    detail_addr: detailAddr || undefined,
+                    building_name: buildingName || undefined,
+                    apt_dong: aptDong || undefined,
+                    hosu: hosu || undefined,
+                    address_exposure: addressExposure,
+                    lat: coords?.lat,
+                    lng: coords?.lng,
+                    client_name: clientName,
+                    client_phone: clientPhone,
+                    owner_relation: ownerRelation,
+                    description: description || undefined,
+                    realtor_commission: userRole === 'realtor' ? realtorCommission : undefined,
+                    exposure_type: userRole === 'realtor' ? exposureType : undefined,
+                    landlord_name: userRole === 'realtor' ? landlordName : undefined,
+                    landlord_phone: userRole === 'realtor' ? landlordPhone : undefined,
+                    landlord_memo: userRole === 'realtor' ? landlordMemo : undefined,
+                    consent,
+                    infrastructure: Object.keys(infrastructure).length > 0 ? infrastructure : undefined,
+                  });
+
+                  if (!result.success) {
+                    alert("등록 실패: " + result.error);
+                    return;
+                  }
+
+                  // 사진 업로드
+                  if (photos.length > 0 && result.id) {
+                    for (let i = 0; i < photos.length; i++) {
+                      const photo = photos[i];
+                      const fileForm = new FormData();
+                      fileForm.append('file', photo);
+                      fileForm.append('path', `${result.id}/${i}_${Date.now()}.webp`);
+                      const uploadRes = await uploadVacancyPhoto(fileForm);
+                      if (uploadRes.success && uploadRes.url) {
+                        await saveVacancyPhoto(result.id, uploadRes.url, i);
+                      }
+                    }
+                  }
+
+                  const statusMsg = userRole === 'user'
+                    ? '공실이 등록되었습니다! 관리자 승인 후 광고가 시작됩니다.'
+                    : '공실 등록이 완료되었습니다!';
+                  alert(statusMsg);
+                  onBack();
+                } catch (err: any) {
+                  alert("오류 발생: " + err.message);
+                } finally {
+                  setSubmitting(false);
+                }
+              }}
               style={{
                 width: "100%", height: 56, border: "none", borderRadius: 10,
-                background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
-                color: "#fff", fontSize: 18, fontWeight: 800, cursor: "pointer",
+                background: submitting ? "#9ca3af" : "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
+                color: "#fff", fontSize: 18, fontWeight: 800,
+                cursor: submitting ? "not-allowed" : "pointer",
                 letterSpacing: 1, marginTop: 32,
                 transition: "opacity 0.2s, transform 0.1s",
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.opacity = "0.9"; }}
+              onMouseEnter={(e) => { if (!submitting) e.currentTarget.style.opacity = "0.9"; }}
               onMouseLeave={(e) => { e.currentTarget.style.opacity = "1"; }}
             >
-              공실 등록하기
+              {submitting ? "등록 중..." : "공실 등록하기"}
             </button>
           </div>
         </div>
@@ -1051,8 +1187,8 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
               }}
               onDragOver={(e) => { e.preventDefault(); e.currentTarget.style.borderColor = "#3b82f6"; e.currentTarget.style.background = darkMode ? "#1e3a5f" : "#eff6ff"; }}
               onDragLeave={(e) => { e.currentTarget.style.borderColor = border; e.currentTarget.style.background = "transparent"; }}
-              onDrop={(e) => { e.preventDefault(); e.currentTarget.style.borderColor = border; e.currentTarget.style.background = "transparent"; const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith("image/")); setPhotos(prev => [...prev, ...files].slice(0, 5)); }}
-              onClick={() => { const input = document.createElement("input"); input.type = "file"; input.accept = "image/*"; input.multiple = true; input.onchange = (e: any) => { const files = Array.from(e.target.files || []) as File[]; setPhotos(prev => [...prev, ...files].slice(0, 5)); }; input.click(); }}
+              onDrop={(e) => { e.preventDefault(); e.currentTarget.style.borderColor = border; e.currentTarget.style.background = "transparent"; const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith("image/")); addPhotos(files); }}
+              onClick={() => { const input = document.createElement("input"); input.type = "file"; input.accept = "image/*"; input.multiple = true; input.onchange = (e: any) => { const files = Array.from(e.target.files || []) as File[]; addPhotos(files); }; input.click(); }}
             >
               <div style={{ fontSize: 36, color: "#9ca3af", marginBottom: 8 }}>☁️</div>
               <div style={{ fontSize: 14, fontWeight: 700, color: textPrimary }}>사진 마우스 끌어오기</div>

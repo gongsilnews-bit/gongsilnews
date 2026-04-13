@@ -108,6 +108,7 @@ export default function AdminPage() {
   const [rejectReason, setRejectReason] = useState("");
   const [selectedArticleIdsForReject, setSelectedArticleIdsForReject] = useState<string[]>([]);
   const [dbBoards, setDbBoards] = useState<any[]>([]);
+  const [adminUserId, setAdminUserId] = useState<string>("");
 
   const REJECT_REASONS = [
     "사진 화질 불량 또는 이미지 누락",
@@ -127,6 +128,13 @@ export default function AdminPage() {
     });
     getBoards().then(res => {
       if (res.success) setDbBoards(res.data || []);
+    });
+    // 현재 로그인한 관리자 ID 가져오기
+    import("@/utils/supabase/client").then(({ createClient }) => {
+      const supabase = createClient();
+      supabase.auth.getUser().then(({ data: { user } }) => {
+        if (user) setAdminUserId(user.id);
+      });
     });
   }, []);
 
@@ -363,7 +371,7 @@ export default function AdminPage() {
           </div>
         ) : activeMenu === "gongsil" && showRegisterForm ? (
           /* ===== 공실등록 폼 ===== */
-          <VacancyRegisterForm onBack={() => setShowRegisterForm(false)} darkMode={darkMode} />
+          <VacancyRegisterForm onBack={() => setShowRegisterForm(false)} darkMode={darkMode} userRole="admin" ownerId={adminUserId} />
         ) : activeMenu === "gongsil" ? (
           /* ===== 공실관리 리스트 (원본 iframe 디자인 1:1 복제) ===== */
           <div style={{ flex: 1, overflowY: "auto", padding: "20px 28px", background: bg }}>

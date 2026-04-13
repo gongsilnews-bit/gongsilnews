@@ -280,6 +280,7 @@ export default function UserAdminPage() {
                 userRole="user"
                 initialClientName={userName !== "로딩중..." ? userName : ""}
                 initialClientPhone={userPhone}
+                ownerId={memberId || ""}
               />
             </div>
           </div>
