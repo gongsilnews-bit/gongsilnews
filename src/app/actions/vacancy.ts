@@ -6,7 +6,12 @@ function getAdminClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
   return createClient(supabaseUrl, serviceKey, {
-    auth: { autoRefreshToken: false, persistSession: false }
+    auth: { autoRefreshToken: false, persistSession: false },
+    global: {
+      fetch: (url, options) => {
+        return fetch(url, { ...options, cache: 'no-store' });
+      }
+    }
   });
 }
 

@@ -57,13 +57,23 @@ export default function GongsilPage() {
 
   useEffect(() => {
     async function fetchVacancies() {
-      const res = await getVacancies({ all: true });
-      if (res.success) {
-        const withImages = (res.data || []).map((v: any) => ({
-          ...v,
-          images: v.vacancy_photos ? v.vacancy_photos.sort((a:any, b:any)=>a.sort_order - b.sort_order).map((p:any) => p.url) : []
-        }));
-        setDbVacancies(withImages.filter((v: any) => v.status === 'ACTIVE' && v.lat && v.lng));
+      try {
+        const res = await getVacancies({ all: true });
+        console.log("getVacancies response:", res);
+        
+        if (res.success) {
+          const withImages = (res.data || []).map((v: any) => ({
+            ...v,
+            images: v.vacancy_photos ? [...v.vacancy_photos].sort((a:any, b:any)=>a.sort_order - b.sort_order).map((p:any) => p.url) : []
+          }));
+          const filtered = withImages.filter((v: any) => v.status === 'ACTIVE' && v.lat && v.lng);
+          console.log("Filtered active vacancies with coords:", filtered);
+          setDbVacancies(filtered);
+        } else {
+          console.error("fetch failed:", res.error);
+        }
+      } catch (err) {
+        console.error("Error calling getVacancies:", err);
       }
     }
     fetchVacancies();
