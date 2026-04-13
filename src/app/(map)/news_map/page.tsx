@@ -22,6 +22,7 @@ export default function NewsLocalPage() {
   const [mapError, setMapError] = useState<string | null>(null);
   const [clusterMode, setClusterMode] = useState(false);  // 클러스터 클릭으로 필터 중인지 여부
   const [activeInfoWindow, setActiveInfoWindow] = useState<any>(null); // 현재 열린 InfoWindow ref
+  const [mapCenterRegion, setMapCenterRegion] = useState<{sido:string, gugun:string, dong:string} | null>(null);
 
   /* ── Refs ── */
   const mapRef = useRef<HTMLDivElement>(null);
@@ -194,7 +195,7 @@ export default function NewsLocalPage() {
 
     // 지도 이동
     kakaoMapRef.current.panTo(position);
-  }, [closeInfoWindow, handleSelectArticle, activeArticleId, showDetail]);
+  }, [closeInfoWindow, handleSelectArticle]);
 
   /* ── 현재 지도 뷰포트에 보이는 기사만 필터링 ── */
   const updateVisibleArticles = useCallback(() => {
@@ -285,10 +286,29 @@ export default function NewsLocalPage() {
             }
           });
 
-          // 지도 이동/줌 완료 시 → 현재 뷰포트에 보이는 기사만 사이드바에 표시
+          // 지도 이동/줌 완료 시 → 현재 뷰포트에 보이는 기사만 사이드바에 표시 + 주소 파악
           kakao.maps.event.addListener(kakaoMapRef.current, 'idle', () => {
-            if (clusterModeRef.current) return; // 클러스터 필터 모드에서는 뷰포트 필터 비활성
-            updateVisibleArticlesRef.current();
+            if (!clusterModeRef.current) {
+              updateVisibleArticlesRef.current();
+            }
+            
+            // 중심 좌표로 주소 역지오코딩
+            if (kakao.maps.services && kakao.maps.services.Geocoder) {
+              const center = kakaoMapRef.current.getCenter();
+              const geocoder = new kakao.maps.services.Geocoder();
+              geocoder.coord2RegionCode(center.getLng(), center.getLat(), (result: any, status: any) => {
+                if (status === kakao.maps.services.Status.OK) {
+                  const hResult = result.find((r: any) => r.region_type === 'H') || result[0];
+                  if (hResult) {
+                    setMapCenterRegion({
+                      sido: hResult.region_1depth_name,
+                      gugun: hResult.region_2depth_name,
+                      dong: hResult.region_3depth_name
+                    });
+                  }
+                }
+              });
+            }
           });
         }
 
@@ -642,7 +662,7 @@ export default function NewsLocalPage() {
           </div>
           
           {/* 🔍 지도 지역/검색어 오버레이 UI */}
-          <MapSearchBar onSearchCoord={panMapTo} />
+          <MapSearchBar onSearchCoord={panMapTo} mapCenterRegion={mapCenterRegion} />
 
         </div>
       </main>

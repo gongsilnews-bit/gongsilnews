@@ -4,9 +4,10 @@ import React, { useState, useEffect, useRef } from "react";
 
 interface MapSearchBarProps {
   onSearchCoord: (lat: number, lng: number, zoomLevel?: number) => void;
+  mapCenterRegion?: { sido: string; gugun: string; dong: string } | null;
 }
 
-export default function MapSearchBar({ onSearchCoord }: MapSearchBarProps) {
+export default function MapSearchBar({ onSearchCoord, mapCenterRegion }: MapSearchBarProps) {
   const [activePanel, setActivePanel] = useState<"region" | "search" | null>(null);
   const [activeTab, setActiveTab] = useState<"sido" | "gugun" | "dong">("sido");
 
@@ -14,7 +15,7 @@ export default function MapSearchBar({ onSearchCoord }: MapSearchBarProps) {
   const [gugunList, setGugunList] = useState<any[]>([]);
   const [dongList, setDongList] = useState<any[]>([]);
 
-  const [selectedSido, setSelectedSido] = useState<string>("위치 파악중");
+  const [selectedSido, setSelectedSido] = useState<string>("시/도 선택");
   const [selectedGugun, setSelectedGugun] = useState<string>("-");
   const [selectedDong, setSelectedDong] = useState<string>("-");
 
@@ -51,6 +52,16 @@ export default function MapSearchBar({ onSearchCoord }: MapSearchBarProps) {
   useEffect(() => {
     loadRegSido();
   }, []);
+
+  // Update labels if map moves and we receive new center region, 
+  // but only if the user is not actively trying to pick a region from the panel.
+  useEffect(() => {
+    if (mapCenterRegion && activePanel !== "region") {
+      setSelectedSido(mapCenterRegion.sido || "시/도 선택");
+      setSelectedGugun(mapCenterRegion.gugun || "-");
+      setSelectedDong(mapCenterRegion.dong || "-");
+    }
+  }, [mapCenterRegion, activePanel]);
 
   const loadRegSido = async () => {
     try {
@@ -144,8 +155,10 @@ export default function MapSearchBar({ onSearchCoord }: MapSearchBarProps) {
 
     ps.keywordSearch(keyword, (data: any, status: any) => {
       setIsSearching(false);
-      if (status === kakao.maps.services.Status.OK) {
+      if (status === kakao.maps.services.Status.OK && data.length > 0) {
         setSearchResults(data);
+        // 검색 즉시 첫 번째 결과 위치로 지도를 이동시킵니다
+        onSearchCoord(parseFloat(data[0].y), parseFloat(data[0].x), 5);
       } else {
         setSearchResults([]);
       }
