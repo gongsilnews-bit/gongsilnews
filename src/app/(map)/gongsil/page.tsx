@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { getVacancies } from "@/app/actions/vacancy";
 
 // 카테고리 설정 데이터
 const CATEGORY_CONFIG: Record<string, { name: string; pills: string[]; basicFilters: string[]; detailFilters: string[]; showToggle: boolean; pillStyle?: string }> = {
@@ -14,36 +15,7 @@ const CATEGORY_CONFIG: Record<string, { name: string; pills: string[]; basicFilt
 };
 
 // 더미 매물 데이터
-const dummyProperties = [
-  { id: 1, name: "서초플러스 1동", price: "매매 7억", type: "아파트", direction: "남향", area: '49.57㎡(15.0평) / ...', rooms: "룸 2개, 욕실 1개, 에어컨, 보안시스템, 급매, ...", tag: "공동중개", tagId: "1360207898", date: "2026.03.30.", img: "" },
-  { id: 2, name: "논현빌2 101동 101호", price: "매매 10억", type: "아파트", direction: "남향", area: '84㎡(25.4평) / 59...', rooms: "룸 3개, 욕실 2개, 에어컨, 싱크대, 문워이장", tag: "수수료25%", tagId: "4146662407", date: "2026.03.28.", img: "" },
-  { id: 3, name: "동부센트레빌 101동 101호", price: "매매 10억", type: "아파트", direction: "남향", area: '84㎡(25.4평) / 59...', rooms: "룸 3개, 욕실 2개, 에어컨, 바닥, 문워이장, ...", tag: "공동중개", tagId: "619120431", date: "2026.03.27.", img: "" },
-  { id: 4, name: "거평타운오피스텔 101동 101호", price: "매매 10억", type: "아파트", direction: "남향", area: '', rooms: "룸 3개, 욕실 2개, 에어컨, 싱크대, 보안시스...", tag: "공동중개", tagId: "738290754", date: "2026.03.26.", img: "" },
-  { id: 5, name: "동부센트레빌", price: "매매 10억", type: "아파트", direction: "남향", area: '', rooms: "룸 1개, 욕실 1개, 에어컨, 싱크대", tag: "공동중개", tagId: "3872338338", date: "2026.03.26.", img: "" },
-  { id: 6, name: "동부센트레빌 101동 101호", price: "매매 50억", type: "아파트", direction: "남향", area: '', rooms: "룸 3개, 욕실 1개, 문워이장, 싱크대, ...", tag: "공동중개", tagId: "637449093", date: "2026.03.25.", img: "" },
-  { id: 7, name: "한양아파트 101동 101호", price: "매매 50억", type: "오피스텔", direction: "남향", area: '', rooms: "룸 1개, 욕실 1개, 세탁기, 인덕션, 주차기능", tag: "공동중개", tagId: "564902613", date: "2026.03.26.", img: "" },
-];
-
-// 상세 매물 정보
-const detailData = {
-  images: ["/sample1.jpg", "/sample2.jpg", "/sample3.jpg", "/sample4.jpg"],
-  tag: "공동중개", tagId: "1360207898", date: "2026.03.30.",
-  buildingName: "서초플러스 1동", price: "매매 7억",
-  type: "아파트", direction: "남향",
-  supplyArea: '49.57㎡(15.0평) / 38.12㎡(11.5평)',
-  rooms: "룸 2개", parking: "주차 없음", options: "에어컨, 보안시스템, 급매",
-  tableInfo: [
-    { label: "매물번호", value: "1360207898" },
-    { label: "소재지", value: "서울특별시 서초구 서초동 1612" },
-    { label: "매물특징", value: "서초플러스" },
-    { label: "공급/전용면적", value: '49.57㎡(15.0평) / 38.12㎡(11.5평)' },
-    { label: "해당층/총층", value: "3층 / 10층" },
-    { label: "방/욕실수", value: "2개 / 1개" },
-    { label: "방향", value: "남향" },
-  ],
-  realtor: { name: "착한임대부동산", rep: "대표 김동현", regNum: "등록번호 1666-4414411", addr: "서울 강남구 논현동 189-13", phone: "☎ 전화 02-541-1611, 010-8831-9450" },
-  realtorStats: { sell: 10, rent: 0, monthly: 0, short: 0 },
-};
+// 삭제됨: 더미데이터
 
 export default function GongsilPage() {
   const [activeCategory, setActiveCategory] = useState("apart");
@@ -54,6 +26,37 @@ export default function GongsilPage() {
   const [showDetailFilters, setShowDetailFilters] = useState(false);
   const [activeFilterDropdown, setActiveFilterDropdown] = useState<string | null>(null);
   const [galleryIndex, setGalleryIndex] = useState(0);
+
+  const [dbVacancies, setDbVacancies] = useState<any[]>([]);
+
+  useEffect(() => {
+    async function fetchVacancies() {
+      const res = await getVacancies({ all: true });
+      if (res.success) {
+        setDbVacancies(res.data?.filter(v => v.status === 'ACTIVE') || []);
+      }
+    }
+    fetchVacancies();
+  }, []);
+
+  const formatAmount = (amt: number) => {
+    if (!amt) return "";
+    const manwon = Math.round(amt / 10000);
+    if (manwon >= 10000) {
+      const eok = Math.floor(manwon / 10000);
+      const rest = manwon % 10000;
+      return `${eok}억${rest ? ` ${rest}` : ""}`;
+    }
+    return `${manwon}만`;
+  };
+
+  const getPriceText = (row: any) => {
+    if (!row) return "";
+    const monthlyManwon = row.monthly_rent ? Math.round(row.monthly_rent / 10000) : 0;
+    return row.trade_type === "매매" ? `매매 ${formatAmount(row.deposit)}`
+      : row.trade_type === "전세" ? `전세 ${formatAmount(row.deposit)}`
+      : `${formatAmount(row.deposit)}/${monthlyManwon}만`;
+  };
 
   const config = CATEGORY_CONFIG[activeCategory];
   const isOfficePill = (p: string) => p.includes("오피스텔");
@@ -168,53 +171,66 @@ export default function GongsilPage() {
       <main style={{ display: "flex", flex: 1, minHeight: 0, position: "relative" }}>
         {/* 좌측 사이드바: 매물 리스트 (380px) */}
         <aside style={{ width: 380, minWidth: 380, height: "100%", background: "#fff", borderRight: "1px solid #eee", display: "flex", flexDirection: "column", zIndex: 20 }}>
-          <div style={{ padding: "15px 20px", fontWeight: 800, fontSize: 15, color: "#111", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #eee", flexShrink: 0 }}>
-            <span>현재 지도 화면 {dummyProperties.length}개</span>
-          </div>
-          <div style={{ flex: 1, overflowY: "auto", padding: 0, background: "#fff" }}>
-            {dummyProperties.map((prop) => {
-              const isActiveAndShowing = activeProperty === prop.id && showDetail;
-              return (
-                <div key={prop.id} 
-                  onClick={() => { 
-                    if (isActiveAndShowing) {
-                      setShowDetail(false);
-                    } else {
-                      setActiveProperty(prop.id); 
-                      setShowDetail(true); 
-                      setActiveDetailTab("info"); 
-                      setGalleryIndex(0); 
-                    }
-                  }}
-                  style={{
-                    display: "flex", justifyContent: "space-between", alignItems: "flex-start",
-                    padding: "16px 20px 16px 16px", cursor: "pointer", transition: "background 0.2s, border-color 0.2s",
-                    borderBottom: "1px solid #eee",
-                    borderLeft: activeProperty === prop.id ? "4px solid #1a73e8" : "4px solid transparent",
-                    background: activeProperty === prop.id ? "#eaf4ff" : "#fff",
-                  }}>
-                  <div style={{ flex: 1, paddingRight: 15, minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: "bold", color: "#111", marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{prop.name}</div>
-                    <div style={{ fontSize: 16, fontWeight: 800, color: "#1a73e8", marginBottom: 2 }}>{prop.price}</div>
-                    <div style={{ fontSize: 13, color: "#555", marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{prop.type} · {prop.direction} · {prop.area}</div>
-                    <div style={{ fontSize: 12, color: "#666", marginBottom: 6, display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{prop.rooms}</div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: "auto" }}>
-                      <span style={{ display: "inline-block", fontSize: 11, color: prop.tag === "수수료25%" ? "#2e7d32" : "#1a73e8", fontWeight: "bold", border: `1px solid ${prop.tag === "수수료25%" ? "#2e7d32" : "#1a73e8"}`, borderRadius: 3, padding: "2px 6px" }}>{prop.tag}</span>
-                      <span style={{ fontSize: 11, color: "#e53e3e", fontWeight: "bold" }}>{prop.tagId}</span>
-                      <span style={{ fontSize: 11, color: "#aaa" }}>{prop.date}</span>
+            <div style={{ padding: "15px 20px", fontWeight: 800, fontSize: 15, color: "#111", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #eee", flexShrink: 0 }}>
+              <span>현재 지도 화면 {dbVacancies.length}개</span>
+            </div>
+            <div style={{ flex: 1, overflowY: "auto", padding: 0, background: "#fff" }}>
+              {dbVacancies.map((prop) => {
+                const isActiveAndShowing = activeProperty === prop.id && showDetail;
+                const addrText = [prop.dong, prop.building_name].filter(Boolean).join(" ");
+                const priceText = getPriceText(prop);
+                const tagColor = prop.commission_type === '공동수수료' ? "#2e7d32" : "#1a73e8";
+
+                return (
+                  <div key={prop.id} 
+                    onClick={() => { 
+                      if (isActiveAndShowing) {
+                        setShowDetail(false);
+                      } else {
+                        setActiveProperty(prop.id); 
+                        setShowDetail(true); 
+                        setActiveDetailTab("info"); 
+                        setGalleryIndex(0); 
+                      }
+                    }}
+                    style={{
+                      display: "flex", justifyContent: "space-between", alignItems: "flex-start",
+                      padding: "16px 20px 16px 16px", cursor: "pointer", transition: "background 0.2s, border-color 0.2s",
+                      borderBottom: "1px solid #eee",
+                      borderLeft: activeProperty === prop.id ? "4px solid #1a73e8" : "4px solid transparent",
+                      background: activeProperty === prop.id ? "#eaf4ff" : "#fff",
+                    }}>
+                    <div style={{ flex: 1, paddingRight: 15, minWidth: 0 }}>
+                      <div style={{ fontSize: 14, fontWeight: "bold", color: "#111", marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{addrText || "주소 없음"}</div>
+                      <div style={{ fontSize: 16, fontWeight: 800, color: "#1a73e8", marginBottom: 2 }}>{priceText}</div>
+                      <div style={{ fontSize: 13, color: "#555", marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{prop.property_type} · {prop.direction || "방향없음"} · {prop.exclusive_m2 ? `${prop.exclusive_m2}㎡` : "면적미상"}</div>
+                      <div style={{ fontSize: 12, color: "#666", marginBottom: 6, display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                        룸 {prop.room_count || 0}개, 욕실 {prop.bathroom_count || 0}개
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: "auto" }}>
+                        <span style={{ display: "inline-block", fontSize: 11, color: tagColor, fontWeight: "bold", border: `1px solid ${tagColor}`, borderRadius: 3, padding: "2px 6px" }}>{prop.commission_type || "중개"}</span>
+                        <span style={{ fontSize: 11, color: "#e53e3e", fontWeight: "bold" }}>{prop.vacancy_no}</span>
+                        <span style={{ fontSize: 11, color: "#aaa" }}>{new Date(prop.created_at).toLocaleDateString('ko-KR', {month: '2-digit', day: '2-digit'})}</span>
+                      </div>
+                    </div>
+                    <div style={{ width: 90, height: 90, borderRadius: 6, overflow: "hidden", background: "#f0f0f0", flexShrink: 0, marginLeft: 5 }}>
+                      {prop.images?.[0] ? <img src={prop.images[0]} style={{width:'100%', height:'100%', objectFit:'cover'}} /> : <div style={{ width: "100%", height: "100%", background: "#ddd" }}></div>}
                     </div>
                   </div>
-                  <div style={{ width: 90, height: 90, borderRadius: 6, overflow: "hidden", background: "#f0f0f0", flexShrink: 0, marginLeft: 5 }}>
-                    <div style={{ width: "100%", height: "100%", background: "#ddd" }}></div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
         </aside>
 
         {/* 중앙: 매물 상세 패널 (600px) */}
-        {showDetail && (
+        {showDetail && activeProperty && (
+          () => {
+            const prop = dbVacancies.find(v => v.id === activeProperty);
+            if (!prop) return null;
+            const images = prop.images && prop.images.length > 0 ? prop.images : [""];
+            const tagColor = prop.commission_type === '공동수수료' ? "#2e7d32" : "#1a73e8";
+            
+            return (
           <div style={{ width: 600, minWidth: 600, flexShrink: 0, background: "#fff", display: "flex", flexDirection: "column", position: "relative", borderRight: "1px solid #eee", zIndex: 25, boxShadow: "5px 0 15px rgba(0,0,0,0.05)", height: "100%" }}>
             {/* 닫기 버튼 */}
             <button onClick={() => setShowDetail(false)} style={{ position: "absolute", top: 15, right: 15, width: 30, height: 30, background: "rgba(255,255,255,0.8)", border: "1px solid #ddd", borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, fontWeight: "bold", color: "#333", zIndex: 100 }}>×</button>
@@ -222,10 +238,14 @@ export default function GongsilPage() {
             <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden" }}>
               {/* 갤러리 */}
               <div style={{ position: "relative", width: "100%", height: 200, background: "#f0f0f0" }}>
-                <div style={{ width: "100%", height: "100%", background: "#c0c0c0", display: "flex", alignItems: "center", justifyContent: "center", color: "#666" }}>매물 이미지</div>
-                <button onClick={() => setGalleryIndex(Math.max(0, galleryIndex - 1))} style={{ position: "absolute", top: "50%", left: 0, transform: "translateY(-50%)", background: "rgba(0,0,0,0.2)", color: "#fff", border: "none", fontSize: 18, padding: "10px 6px", cursor: "pointer", borderRadius: "0 4px 4px 0" }}>〈</button>
-                <button onClick={() => setGalleryIndex(Math.min(3, galleryIndex + 1))} style={{ position: "absolute", top: "50%", right: 0, transform: "translateY(-50%)", background: "rgba(0,0,0,0.2)", color: "#fff", border: "none", fontSize: 18, padding: "10px 6px", cursor: "pointer", borderRadius: "4px 0 0 4px" }}>〉</button>
-                <div style={{ position: "absolute", bottom: 15, right: 15, background: "rgba(0,0,0,0.6)", color: "#fff", fontSize: 11, padding: "4px 12px", borderRadius: 20 }}>{galleryIndex + 1}/4</div>
+                {images[galleryIndex] ? <img src={images[galleryIndex]} style={{width:'100%', height:'100%', objectFit:'cover'}} /> : <div style={{ width: "100%", height: "100%", background: "#c0c0c0", display: "flex", alignItems: "center", justifyContent: "center", color: "#666" }}>이미지 없음</div>}
+                {images.length > 1 && (
+                  <>
+                    <button onClick={() => setGalleryIndex(Math.max(0, galleryIndex - 1))} style={{ position: "absolute", top: "50%", left: 0, transform: "translateY(-50%)", background: "rgba(0,0,0,0.2)", color: "#fff", border: "none", fontSize: 18, padding: "10px 6px", cursor: "pointer", borderRadius: "0 4px 4px 0" }}>〈</button>
+                    <button onClick={() => setGalleryIndex(Math.min(images.length - 1, galleryIndex + 1))} style={{ position: "absolute", top: "50%", right: 0, transform: "translateY(-50%)", background: "rgba(0,0,0,0.2)", color: "#fff", border: "none", fontSize: 18, padding: "10px 6px", cursor: "pointer", borderRadius: "4px 0 0 4px" }}>〉</button>
+                    <div style={{ position: "absolute", bottom: 15, right: 15, background: "rgba(0,0,0,0.6)", color: "#fff", fontSize: 11, padding: "4px 12px", borderRadius: 20 }}>{galleryIndex + 1}/{images.length}</div>
+                  </>
+                )}
               </div>
 
               {/* 헤더 정보 */}
@@ -233,27 +253,27 @@ export default function GongsilPage() {
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, paddingRight: 30 }}>
                   <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                     <span style={{ fontSize: 11, fontWeight: "bold", color: "#ff5a5f", border: "1px solid #ff5a5f", padding: "2px 4px", borderRadius: 2 }}>확인매물</span>
-                    <span style={{ color: "#e53e3e", fontSize: 11, fontWeight: "bold" }}>{detailData.tag} {detailData.tagId}</span>
-                    <span style={{ fontSize: 12, color: "#888" }}>{detailData.date}</span>
+                    <span style={{ color: "#e53e3e", fontSize: 11, fontWeight: "bold" }}>{prop.commission_type} {prop.vacancy_no}</span>
+                    <span style={{ fontSize: 12, color: "#888" }}>{new Date(prop.created_at).toLocaleDateString()}</span>
                   </div>
                   <div style={{ display: "flex", gap: 10, fontSize: 11 }}>
                     <button style={{ background: "none", border: "none", cursor: "pointer", color: "#ff5a5f", display: "flex", alignItems: "center", gap: 4, padding: 0, fontSize: 11 }}>● 허위매물신고</button>
                     <button style={{ background: "none", border: "none", cursor: "pointer", color: "#666", display: "flex", alignItems: "center", gap: 4, padding: 0, fontSize: 11 }}>🖨 인쇄</button>
                   </div>
                 </div>
-                <h2 style={{ fontSize: 15, fontWeight: "bold", color: "#333", margin: "0 0 6px 0" }}>{detailData.buildingName}</h2>
+                <h2 style={{ fontSize: 15, fontWeight: "bold", color: "#333", margin: "0 0 6px 0" }}>{[prop.dong, prop.building_name].filter(Boolean).join(" ")}</h2>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <h1 style={{ fontSize: 26, fontWeight: 800, color: "#1f5edb", margin: 0 }}>{detailData.price}</h1>
+                  <h1 style={{ fontSize: 26, fontWeight: 800, color: "#1f5edb", margin: 0 }}>{getPriceText(prop)}</h1>
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                     <button style={{ background: "none", border: "1.5px solid #ddd", borderRadius: 6, width: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#666", fontSize: 17 }} title="찜하기">🔖</button>
                     <button style={{ background: "none", border: "1.5px solid #ddd", borderRadius: 6, width: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#666", fontSize: 17 }} title="공유">🔗</button>
                   </div>
                 </div>
-                <div style={{ fontSize: 13, color: "#555", marginTop: 4, marginBottom: 12 }}>{detailData.type} · {detailData.direction} · 공급/전용 면적: {detailData.supplyArea}</div>
+                <div style={{ fontSize: 13, color: "#555", marginTop: 4, marginBottom: 12 }}>{prop.property_type} · {prop.direction || "방향없음"} · 공급/전용 면적: {prop.supply_m2 || 0}㎡ / {prop.exclusive_m2 || 0}㎡</div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 12, fontSize: 13, color: "#555" }}>
-                  <span>{detailData.rooms}</span><span style={{ width: 1, height: 10, background: "#ddd", display: "inline-block" }}></span>
-                  <span>{detailData.parking}</span><span style={{ width: 1, height: 10, background: "#ddd", display: "inline-block" }}></span>
-                  <span>{detailData.options}</span>
+                  <span>룸 {prop.room_count || 0}개</span><span style={{ width: 1, height: 10, background: "#ddd", display: "inline-block" }}></span>
+                  <span>주차 {prop.parking_count ? `${prop.parking_count}대` : "정보없음"}</span><span style={{ width: 1, height: 10, background: "#ddd", display: "inline-block" }}></span>
+                  <span>{prop.options?.join(", ") || "옵션없음"}</span>
                 </div>
               </div>
 
@@ -270,12 +290,20 @@ export default function GongsilPage() {
               {activeDetailTab === "info" && (
                 <>
                 <div style={{ display: "grid", gridTemplateColumns: "110px 1fr", borderBottom: "10px solid #f5f5f5" }}>
-                  {detailData.tableInfo.map((row, i) => (
-                    <React.Fragment key={i}>
-                      <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "flex-start", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>{row.label}</div>
-                      <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{row.value}</div>
-                    </React.Fragment>
-                  ))}
+                  <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "flex-start", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>매물번호</div>
+                  <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.vacancy_no}</div>
+                  <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "flex-start", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>소재지</div>
+                  <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{[prop.sido, prop.sigungu, prop.dong, prop.detail_addr].filter(Boolean).join(" ")}</div>
+                  <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "flex-start", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>매물특성</div>
+                  <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.memo || "-"}</div>
+                  <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "flex-start", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>공급/전용면적</div>
+                  <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.supply_m2 || 0}㎡ / {prop.exclusive_m2 || 0}㎡</div>
+                  <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "flex-start", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>해당층/총층</div>
+                  <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.current_floor || "-"} / {prop.total_floor || "-"}</div>
+                  <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "flex-start", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>방/욕실수</div>
+                  <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.room_count || 0}개 / {prop.bathroom_count || 0}개</div>
+                  <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "flex-start", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>방향</div>
+                  <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.direction || "-"}</div>
                 </div>
 
                 {/* ──── 위치정보 ──── */}
@@ -357,29 +385,25 @@ export default function GongsilPage() {
               {activeDetailTab === "realtor" && (
                 <>
                 <div style={{ padding: "24px 20px", background: "#fff" }}>
-                  <div style={{ fontSize: 16, fontWeight: "bold", color: "#111", marginBottom: 12 }}>{detailData.realtor.name}</div>
+                  <div style={{ fontSize: 16, fontWeight: "bold", color: "#111", marginBottom: 12 }}>{prop.members ? prop.members.agency_name || prop.members.name : prop.client_name}</div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 6, background: "#fafafa", padding: 16, borderRadius: 8, border: "1px solid #eee" }}>
-                    <span style={{ fontWeight: "bold", fontSize: 15, color: "#222" }}>{detailData.realtor.rep}</span>
-                    <span style={{ fontSize: 13, color: "#666" }}>{detailData.realtor.regNum}</span>
-                    <span style={{ fontSize: 13, color: "#666" }}>{detailData.realtor.addr}</span>
-                    <span style={{ fontSize: 14, fontWeight: "bold", color: "#1f5edb", marginTop: 4 }}>{detailData.realtor.phone}</span>
+                    <span style={{ fontWeight: "bold", fontSize: 15, color: "#222" }}>{prop.members ? prop.members.name : prop.client_name}</span>
+                    <span style={{ fontSize: 14, fontWeight: "bold", color: "#1f5edb", marginTop: 4 }}>{prop.members ? prop.members.phone : prop.client_phone}</span>
                   </div>
                   <div style={{ marginTop: 24 }}>
                     <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 12, color: "#111" }}>공실등록현황</div>
                     <div style={{ display: "flex", gap: 8, borderBottom: "2px solid #1a73e8", paddingBottom: 8 }}>
-                      {Object.entries(detailData.realtorStats).map(([k, v]) => (
-                        <span key={k} style={{ fontSize: 13, color: k === "sell" ? "#1a73e8" : "#888", fontWeight: k === "sell" ? "bold" : "normal", padding: "4px 8px" }}>
-                          {k === "sell" ? "매매" : k === "rent" ? "전세" : k === "monthly" ? "월세" : "단기"} {v}
+                        <span style={{ fontSize: 13, color: "#1a73e8", fontWeight: "bold", padding: "4px 8px" }}>
+                          해당 사용자의 정보가 제한적입니다.
                         </span>
-                      ))}
                     </div>
                   </div>
                 </div>
 
                 {/* ──── 등록 물건 리스트 ──── */}
                 <div style={{ borderTop: "10px solid #f5f5f5" }}>
-                  {dummyProperties.slice(0, 5).map((prop) => (
-                    <div key={prop.id} onClick={() => { setActiveProperty(prop.id); setActiveDetailTab("info"); setGalleryIndex(0); }}
+                  {dbVacancies.slice(0, 5).map((vp) => (
+                    <div key={vp.id} onClick={() => { setActiveProperty(vp.id); setActiveDetailTab("info"); setGalleryIndex(0); }}
                       style={{
                         display: "flex", justifyContent: "space-between", alignItems: "flex-start",
                         padding: "16px 20px", cursor: "pointer", transition: "background 0.15s",
@@ -389,18 +413,13 @@ export default function GongsilPage() {
                       onMouseLeave={(e) => { e.currentTarget.style.background = "#fff"; }}
                     >
                       <div style={{ flex: 1, paddingRight: 12, minWidth: 0 }}>
-                        <div style={{ fontSize: 14, fontWeight: "bold", color: "#111", marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{prop.name}</div>
-                        <div style={{ fontSize: 16, fontWeight: 800, color: "#1a73e8", marginBottom: 2 }}>{prop.price}</div>
-                        <div style={{ fontSize: 13, color: "#555", marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{prop.type} · {prop.direction} · {prop.area}</div>
-                        <div style={{ fontSize: 12, color: "#666", marginBottom: 6, display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{prop.rooms}</div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <span style={{ fontSize: 11, color: prop.tag === "수수료25%" ? "#2e7d32" : "#1a73e8", fontWeight: "bold", border: `1px solid ${prop.tag === "수수료25%" ? "#2e7d32" : "#1a73e8"}`, borderRadius: 3, padding: "2px 6px" }}>{prop.tag}</span>
-                          <span style={{ fontSize: 11, color: "#e53e3e", fontWeight: "bold" }}>{prop.tagId}</span>
-                          <span style={{ fontSize: 11, color: "#aaa" }}>{prop.date}</span>
-                        </div>
+                        <div style={{ fontSize: 14, fontWeight: "bold", color: "#111", marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{vp.building_name || vp.dong}</div>
+                        <div style={{ fontSize: 16, fontWeight: 800, color: "#1a73e8", marginBottom: 2 }}>{getPriceText(vp)}</div>
+                        <div style={{ fontSize: 13, color: "#555", marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{vp.property_type} · {vp.direction || "방향없음"}</div>
+                        <div style={{ fontSize: 12, color: "#666", marginBottom: 6, display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden" }}>룸 {vp.room_count || 0}개, 욕실 {vp.bathroom_count || 0}개</div>
                       </div>
                       <div style={{ width: 80, height: 80, borderRadius: 6, overflow: "hidden", background: "#f0f0f0", flexShrink: 0 }}>
-                        <div style={{ width: "100%", height: "100%", background: "#ddd" }}></div>
+                        {vp.images?.[0] ? <img src={vp.images[0]} style={{width:'100%', height:'100%', objectFit:'cover'}} /> : <div style={{ width: "100%", height: "100%", background: "#ddd" }}></div>}
                       </div>
                     </div>
                   ))}
@@ -433,11 +452,13 @@ export default function GongsilPage() {
 
             {/* 하단 고정 바 */}
             <div style={{ width: "100%", height: 75, flexShrink: 0, background: "#fff", borderTop: "1px solid #e0e0e0", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 20px", boxSizing: "border-box", boxShadow: "0 -4px 12px rgba(0,0,0,0.05)", zIndex: 10 }}>
-              <span style={{ fontSize: 18, fontWeight: "bold", color: "#111" }}>{detailData.price}</span>
+              <span style={{ fontSize: 18, fontWeight: "bold", color: "#111" }}>{getPriceText(prop)}</span>
               <button style={{ background: "#1a73e8", color: "#fff", border: "none", padding: "10px 28px", borderRadius: 4, fontSize: 15, fontWeight: "bold", cursor: "pointer" }}>연락처 보기</button>
             </div>
           </div>
-        )}
+            );
+          }
+        )()}
 
         {/* 우측: 지도 영역 */}
         <div style={{ flex: 1, height: "100%", position: "relative", minWidth: 0, background: "#eee" }}>
