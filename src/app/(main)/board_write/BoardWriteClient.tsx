@@ -3,7 +3,30 @@
 import React, { useState, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { saveBoardPost, uploadBoardAttachment } from "@/app/actions/board";
+import { saveBoardPost, uploadBoardAttachment, uploadBoardThumbnail } from "@/app/actions/board";
+
+const convertToWebp = (file: File): Promise<File> => {
+  return new Promise((resolve) => {
+    if (!file.type.startsWith("image/")) return resolve(file);
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext("2d");
+      ctx?.drawImage(img, 0, 0);
+      canvas.toBlob((blob) => {
+        if (blob) {
+          resolve(new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".webp", { type: "image/webp" }));
+        } else {
+          resolve(file);
+        }
+      }, "image/webp", 0.8);
+    };
+    img.onerror = () => resolve(file);
+    img.src = URL.createObjectURL(file);
+  });
+};
 
 export interface LinkItem {
   id: string;
@@ -112,6 +135,15 @@ export default function BoardWriteClient({
     });
 
     if (res.success && res.postId) {
+      // 썸네일 업로드 (webp 자동 변환 처리)
+      if (thumbnailFile) {
+        const webpFile = await convertToWebp(thumbnailFile);
+        const fd = new FormData();
+        fd.append("file", webpFile);
+        fd.append("post_id", res.postId);
+        await uploadBoardThumbnail(fd);
+      }
+
       // 첨부파일 업로드
       for (let i = 0; i < attachedFiles.length; i++) {
         const fd = new FormData();

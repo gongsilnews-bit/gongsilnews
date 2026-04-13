@@ -174,6 +174,37 @@ export async function uploadBoardAttachment(formData: FormData) {
   return { success: true, url: urlData.publicUrl };
 }
 
+/* ── 썸네일 업로드 및 반영 ── */
+export async function uploadBoardThumbnail(formData: FormData) {
+  const file = formData.get("file") as File;
+  const postId = formData.get("post_id") as string;
+
+  if (!file || !postId) return { success: false, error: "파일 또는 게시글ID 없음" };
+
+  const ext = file.name.split(".").pop() || "webp";
+  const path = `boards/${postId}/thumb_${Date.now()}.${ext}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from("article-media")
+    .upload(path, file, { upsert: true });
+  if (uploadError) return { success: false, error: uploadError.message };
+
+  const { data: urlData } = supabase.storage
+    .from("article-media")
+    .getPublicUrl(path);
+
+  // 업로드 후 바로 board_posts 에 썸네일 주소 업데이트
+  const { error: dbError } = await supabase
+    .from("board_posts")
+    .update({ thumbnail_url: urlData.publicUrl })
+    .eq("id", postId);
+    
+  if (dbError) return { success: false, error: dbError.message };
+
+  return { success: true, url: urlData.publicUrl };
+}
+
+
 /* ── 댓글 목록 조회 ── */
 export async function getBoardComments(postId: string) {
   const { data, error } = await supabase
