@@ -29,6 +29,7 @@ export default function GongsilPage() {
 
   const [dbVacancies, setDbVacancies] = useState<any[]>([]);
   const [mapError, setMapError] = useState<string | null>(null);
+  const [showGalleryModal, setShowGalleryModal] = useState(false);
 
   const mapRef = useRef<HTMLDivElement>(null);
   const kakaoMapRef = useRef<any>(null);
@@ -341,7 +342,6 @@ export default function GongsilPage() {
                 const isActiveAndShowing = activeProperty === prop.id && showDetail;
                 const addrText = [prop.dong, prop.building_name].filter(Boolean).join(" ");
                 const priceText = getPriceText(prop);
-                const tagColor = prop.commission_type === '공동수수료' ? "#2e7d32" : "#1a73e8";
 
                 return (
                   <div key={prop.id} 
@@ -363,22 +363,26 @@ export default function GongsilPage() {
                       borderLeft: activeProperty === prop.id ? "4px solid #1a73e8" : "4px solid transparent",
                       background: activeProperty === prop.id ? "#eaf4ff" : "#fff",
                     }}>
-                    <div style={{ flex: 1, paddingRight: 15, minWidth: 0 }}>
-                      <div style={{ fontSize: 14, fontWeight: "bold", color: "#111", marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{addrText || "주소 없음"}</div>
-                      <div style={{ fontSize: 16, fontWeight: 800, color: "#1a73e8", marginBottom: 2 }}>{priceText}</div>
-                      <div style={{ fontSize: 13, color: "#555", marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{prop.property_type} · {prop.direction || "방향없음"} · {prop.exclusive_m2 ? `${prop.exclusive_m2}㎡` : "면적미상"}</div>
-                      <div style={{ fontSize: 12, color: "#666", marginBottom: 6, display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-                        룸 {prop.room_count || 0}개, 욕실 {prop.bathroom_count || 0}개
+                    <div style={{ flex: 1, paddingRight: prop.images?.[0] ? 15 : 0, minWidth: 0 }}>
+                      <div style={{ fontSize: 15, fontWeight: "bold", color: "#111", marginBottom: 4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{addrText || "주소 없음"}</div>
+                      <div style={{ fontSize: 16, fontWeight: 800, color: "#1a73e8", marginBottom: 4 }}>{priceText}</div>
+                      <div style={{ fontSize: 13, color: "#555", marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {prop.property_type} <span style={{ color: "#ddd", margin: "0 4px" }}>|</span> {prop.direction || "방향없음"} <span style={{ color: "#ddd", margin: "0 4px" }}>|</span> {prop.exclusive_m2 ? `${prop.exclusive_m2}㎡` : "면적미상"}
+                      </div>
+                      <div style={{ fontSize: 12, color: "#666", marginBottom: 8, display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                        {[`룸 ${prop.room_count || 0}개`, `욕실 ${prop.bathroom_count || 0}개`, ...(prop.options || [])].filter(Boolean).join(", ")}
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: "auto" }}>
-                        <span style={{ display: "inline-block", fontSize: 11, color: tagColor, fontWeight: "bold", border: `1px solid ${tagColor}`, borderRadius: 3, padding: "2px 6px" }}>{prop.commission_type || "중개"}</span>
-                        <span style={{ fontSize: 11, color: "#e53e3e", fontWeight: "bold" }}>{prop.vacancy_no}</span>
-                        <span style={{ fontSize: 11, color: "#aaa" }}>{new Date(prop.created_at).toLocaleDateString('ko-KR', {month: '2-digit', day: '2-digit'})}</span>
+                        <span style={{ display: "inline-block", fontSize: 12, color: "#fa5252", border: "1px solid #fa5252", padding: "1px 5px" }}>{prop.commission_type || "중개"}</span>
+                        <span style={{ fontSize: 13, color: "#fa5252", fontWeight: "bold" }}>{prop.vacancy_no}</span>
+                        <span style={{ fontSize: 13, color: "#aaa" }}>{new Date(prop.created_at).toLocaleDateString('ko-KR', {year: 'numeric', month: '2-digit', day: '2-digit'}).replace(/\s/g, '')}</span>
                       </div>
                     </div>
-                    <div style={{ width: 90, height: 90, borderRadius: 6, overflow: "hidden", background: "#f0f0f0", flexShrink: 0, marginLeft: 5 }}>
-                      {prop.images?.[0] ? <img src={prop.images[0]} style={{width:'100%', height:'100%', objectFit:'cover'}} /> : <div style={{ width: "100%", height: "100%", background: "#ddd" }}></div>}
-                    </div>
+                    {prop.images?.[0] && (
+                      <div style={{ width: 110, height: 110, borderRadius: 6, overflow: "hidden", background: "#f0f0f0", flexShrink: 0, marginLeft: 5 }}>
+                        <img src={prop.images[0]} style={{width:'100%', height:'100%', objectFit:'cover'}} />
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -401,7 +405,7 @@ export default function GongsilPage() {
             <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden" }}>
               {/* 갤러리 */}
               <div style={{ position: "relative", width: "100%", height: 200, background: "#f0f0f0" }}>
-                {images[galleryIndex] ? <img src={images[galleryIndex]} style={{width:'100%', height:'100%', objectFit:'cover'}} /> : <div style={{ width: "100%", height: "100%", background: "#c0c0c0", display: "flex", alignItems: "center", justifyContent: "center", color: "#666" }}>이미지 없음</div>}
+                {images[galleryIndex] ? <img src={images[galleryIndex]} onClick={() => setShowGalleryModal(true)} style={{width:'100%', height:'100%', objectFit:'cover', cursor: 'pointer'}} /> : <div style={{ width: "100%", height: "100%", background: "#c0c0c0", display: "flex", alignItems: "center", justifyContent: "center", color: "#666" }}>이미지 없음</div>}
                 {images.length > 1 && (
                   <>
                     <button onClick={() => setGalleryIndex(Math.max(0, galleryIndex - 1))} style={{ position: "absolute", top: "50%", left: 0, transform: "translateY(-50%)", background: "rgba(0,0,0,0.2)", color: "#fff", border: "none", fontSize: 18, padding: "10px 6px", cursor: "pointer", borderRadius: "0 4px 4px 0" }}>〈</button>
@@ -415,8 +419,8 @@ export default function GongsilPage() {
               <div style={{ padding: "40px 20px 20px 20px", borderBottom: "1px solid #f0f0f0" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, paddingRight: 30 }}>
                   <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                    <span style={{ fontSize: 11, fontWeight: "bold", color: "#ff5a5f", border: "1px solid #ff5a5f", padding: "2px 4px", borderRadius: 2 }}>확인매물</span>
-                    <span style={{ color: "#e53e3e", fontSize: 11, fontWeight: "bold" }}>{prop.commission_type} {prop.vacancy_no}</span>
+                    <span style={{ fontSize: 13, fontWeight: "bold", color: "#ff5a5f", border: "1px solid #ff5a5f", padding: "2px 6px", borderRadius: 2 }}>{prop.commission_type || "법정수수료"}</span>
+                    <span style={{ color: "#e53e3e", fontSize: 14, fontWeight: "bold" }}>{prop.vacancy_no}</span>
                     <span style={{ fontSize: 12, color: "#888" }}>{new Date(prop.created_at).toLocaleDateString()}</span>
                   </div>
                   <div style={{ display: "flex", gap: 10, fontSize: 11 }}>
@@ -428,8 +432,8 @@ export default function GongsilPage() {
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <h1 style={{ fontSize: 26, fontWeight: 800, color: "#1f5edb", margin: 0 }}>{getPriceText(prop)}</h1>
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <button style={{ background: "none", border: "1.5px solid #ddd", borderRadius: 6, width: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#666", fontSize: 17 }} title="찜하기">🔖</button>
-                    <button style={{ background: "none", border: "1.5px solid #ddd", borderRadius: 6, width: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#666", fontSize: 17 }} title="공유">🔗</button>
+                    <button style={{ background: "none", border: "1px solid #ddd", borderRadius: 6, width: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#666" }} title="관심매물"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg></button>
+                    <button style={{ background: "none", border: "1px solid #ddd", borderRadius: 6, width: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#666" }} title="공유하기"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg></button>
                   </div>
                 </div>
                 <div style={{ fontSize: 13, color: "#555", marginTop: 4, marginBottom: 12 }}>{prop.property_type} · {prop.direction || "방향없음"} · 공급/전용 면적: {prop.supply_m2 || 0}㎡ / {prop.exclusive_m2 || 0}㎡</div>
@@ -575,15 +579,21 @@ export default function GongsilPage() {
                       onMouseEnter={(e) => { e.currentTarget.style.background = "#f9fbff"; }}
                       onMouseLeave={(e) => { e.currentTarget.style.background = "#fff"; }}
                     >
-                      <div style={{ flex: 1, paddingRight: 12, minWidth: 0 }}>
-                        <div style={{ fontSize: 14, fontWeight: "bold", color: "#111", marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{vp.building_name || vp.dong}</div>
-                        <div style={{ fontSize: 16, fontWeight: 800, color: "#1a73e8", marginBottom: 2 }}>{getPriceText(vp)}</div>
-                        <div style={{ fontSize: 13, color: "#555", marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{vp.property_type} · {vp.direction || "방향없음"}</div>
-                        <div style={{ fontSize: 12, color: "#666", marginBottom: 6, display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden" }}>룸 {vp.room_count || 0}개, 욕실 {vp.bathroom_count || 0}개</div>
+                      <div style={{ flex: 1, paddingRight: vp.images?.[0] ? 12 : 0, minWidth: 0 }}>
+                        <div style={{ fontSize: 15, fontWeight: "bold", color: "#111", marginBottom: 4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{vp.building_name || vp.dong}</div>
+                        <div style={{ fontSize: 16, fontWeight: 800, color: "#1a73e8", marginBottom: 4 }}>{getPriceText(vp)}</div>
+                        <div style={{ fontSize: 13, color: "#555", marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          {vp.property_type} <span style={{ color: "#ddd", margin: "0 4px" }}>|</span> {vp.direction || "방향없음"} <span style={{ color: "#ddd", margin: "0 4px" }}>|</span> {vp.exclusive_m2 ? `${vp.exclusive_m2}㎡` : "면적미상"}
+                        </div>
+                        <div style={{ fontSize: 12, color: "#666", marginBottom: 8, display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                          {[`룸 ${vp.room_count || 0}개`, `욕실 ${vp.bathroom_count || 0}개`, ...(vp.options || [])].filter(Boolean).join(", ")}
+                        </div>
                       </div>
-                      <div style={{ width: 80, height: 80, borderRadius: 6, overflow: "hidden", background: "#f0f0f0", flexShrink: 0 }}>
-                        {vp.images?.[0] ? <img src={vp.images[0]} style={{width:'100%', height:'100%', objectFit:'cover'}} /> : <div style={{ width: "100%", height: "100%", background: "#ddd" }}></div>}
-                      </div>
+                      {vp.images?.[0] && (
+                        <div style={{ width: 80, height: 80, borderRadius: 6, overflow: "hidden", background: "#f0f0f0", flexShrink: 0 }}>
+                          <img src={vp.images[0]} style={{width:'100%', height:'100%', objectFit:'cover'}} />
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -618,6 +628,23 @@ export default function GongsilPage() {
               <span style={{ fontSize: 18, fontWeight: "bold", color: "#111" }}>{getPriceText(prop)}</span>
               <button style={{ background: "#1a73e8", color: "#fff", border: "none", padding: "10px 28px", borderRadius: 4, fontSize: 15, fontWeight: "bold", cursor: "pointer" }}>연락처 보기</button>
             </div>
+            
+            {/* 갤러리 풀스크린 모달 */}
+            {showGalleryModal && images[0] && (
+              <div style={{ position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh", background: "rgba(0,0,0,0.9)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <button onClick={() => setShowGalleryModal(false)} style={{ position: "absolute", top: 20, right: 30, background: "none", border: "none", color: "#fff", fontSize: 40, cursor: "pointer", zIndex: 10000 }}>×</button>
+                <div style={{ position: "relative", width: "80%", maxWidth: 1000, height: "80%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <img src={images[galleryIndex]} style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
+                  {images.length > 1 && (
+                    <>
+                      <button onClick={(e) => { e.stopPropagation(); setGalleryIndex(Math.max(0, galleryIndex - 1)); }} style={{ position: "absolute", top: "50%", left: -60, transform: "translateY(-50%)", background: "rgba(255,255,255,0.1)", color: "#fff", border: "none", width: 50, height: 50, borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, zIndex: 10000 }}>〈</button>
+                      <button onClick={(e) => { e.stopPropagation(); setGalleryIndex(Math.min(images.length - 1, galleryIndex + 1)); }} style={{ position: "absolute", top: "50%", right: -60, transform: "translateY(-50%)", background: "rgba(255,255,255,0.1)", color: "#fff", border: "none", width: 50, height: 50, borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, zIndex: 10000 }}>〉</button>
+                      <div style={{ position: "absolute", bottom: -40, left: "50%", transform: "translateX(-50%)", color: "#fff", fontSize: 16, fontWeight: "bold", background: "rgba(255,255,255,0.2)", padding: "4px 16px", borderRadius: 20 }}>{galleryIndex + 1} / {images.length}</div>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
             );
           }
