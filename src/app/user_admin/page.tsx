@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
 import MemberRegisterForm from "@/components/admin/MemberRegisterForm";
 import VacancyRegisterForm from "@/components/admin/VacancyRegisterForm";
+import { getVacancies, deleteVacancy, getVacancyDetail } from "@/app/actions/vacancy";
 
 /* ──────────────────────────────────────────────
    SVG 아이콘 컴포넌트 (부동산관리자와 동일)
@@ -68,6 +69,13 @@ export default function UserAdminPage() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>("로딩중...");
   const [userPhone, setUserPhone] = useState<string>("");
+  const [dbVacancies, setDbVacancies] = useState<any[]>([]);
+  const [editingVacancy, setEditingVacancy] = useState<any>(null);
+
+  const fetchVacancies = async (ownerId: string) => {
+    const res = await getVacancies({ ownerId });
+    if (res.success) setDbVacancies(res.data || []);
+  };
 
   useEffect(() => {
     async function fetchUser() {
@@ -80,11 +88,12 @@ export default function UserAdminPage() {
           setMemberId(data.id);
           setUserName(data.name || "이름없음");
           setUserPhone(data.phone || "");
+          fetchVacancies(data.id);
         }
       }
     }
     fetchUser();
-  }, []);
+  }, [showRegisterForm]);
 
   const now = new Date();
   const timeStr = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`;
@@ -275,12 +284,13 @@ export default function UserAdminPage() {
           <div style={{ flex: 1, padding: 0, overflowY: "auto", background: bg }}>
             <div style={{ padding: "16px 32px 0 32px" }}>
               <VacancyRegisterForm 
-                onBack={() => setShowRegisterForm(false)} 
+                onBack={() => { setShowRegisterForm(false); setEditingVacancy(null); }} 
+                userRole="user" 
                 darkMode={darkMode} 
-                userRole="user"
-                initialClientName={userName !== "로딩중..." ? userName : ""}
-                initialClientPhone={userPhone}
+                initialClientName={userName !== "로딩중..." ? userName : ""} 
+                initialClientPhone={userPhone} 
                 ownerId={memberId || ""}
+                editData={editingVacancy}
               />
             </div>
           </div>
@@ -290,7 +300,7 @@ export default function UserAdminPage() {
             {/* 타이틀 */}
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
               <h1 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: 0 }}>공실관리</h1>
-              <span style={{ fontSize: 13, color: "#ef4444", fontWeight: 600 }}>(광고 204건 / 전체 204건)</span>
+              <span style={{ fontSize: 13, color: "#ef4444", fontWeight: 600 }}>(광고 {dbVacancies.filter(v => v.status === 'ACTIVE').length}건 / 전체 {dbVacancies.length}건)</span>
             </div>
 
             {/* 메인 카드 */}
@@ -363,13 +373,33 @@ export default function UserAdminPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {[
-                      { id: "1/1612/133", adLabel: "광고중", adDays: "14일", type: "단독/다세대구", addr: "도곡동 탑데스하임", phone: "010-8831-9450", deal: "매매", price: "6억", rooms: "1 / 244.55m² / -", date: "04.07", owner: "김미숙", ownerPhone: "010-5555-5555" },
-                      { id: "377952561", adLabel: "광고중", adDays: "5468", type: "다세대/빌라/연립", addr: "논현동 논현 4번지왕상", phone: "010-0555-0555", deal: "매매", price: "10억", rooms: "3 / m² / -", date: "04.08", owner: "김미숙", ownerPhone: "010-5555-5555" },
-                      { id: "71079848", adLabel: "광고중", adDays: "5484", type: "다가구", addr: "녹번동 관악드림타운", phone: "010-8831-9450", deal: "매매", price: "11억 5000", rooms: "3 / 159.83m² / 8층", date: "04.04", owner: "김미숙", ownerPhone: "010-8831-9450" },
-                      { id: "2971428573", adLabel: "광고중", adDays: "14963", type: "다가구", addr: "노원동 동부센트레빌", phone: "010-8631-9450", deal: "매매", price: "10억", rooms: "3 / 58m² / -", date: "04.04", owner: "김미숙", ownerPhone: "010-8631-9450" },
-                    ].map((row, idx) => (
-                      <tr key={idx} style={{ borderBottom: `1px solid ${darkMode ? "#333" : "#f3f4f6"}`, transition: "background 0.15s" }}
+                    {dbVacancies.length === 0 ? (
+                      <tr>
+                        <td colSpan={10} style={{ padding: 40, textAlign: "center", color: textSecondary, fontSize: 14 }}>등록된 공실이 없습니다.</td>
+                      </tr>
+                    ) : dbVacancies.map((row, idx) => {
+                      const formatAmount = (amt: number) => {
+                        if (!amt) return "";
+                        const manwon = Math.round(amt / 10000);
+                        if (manwon >= 10000) {
+                          const eok = Math.floor(manwon / 10000);
+                          const rest = manwon % 10000;
+                          return `${eok}억${rest ? ` ${rest}` : ""}`;
+                        }
+                        return `${manwon}`;
+                      };
+                      const monthlyManwon = row.monthly_rent ? Math.round(row.monthly_rent / 10000) : 0;
+                      const priceText = row.trade_type === "매매" ? `매매 ${formatAmount(row.deposit)}`
+                        : row.trade_type === "전세" ? `전세 ${formatAmount(row.deposit)}`
+                        : `${formatAmount(row.deposit)}/${monthlyManwon}`;
+                      const addrText = [row.dong, row.building_name].filter(Boolean).join(" ") || [row.sido, row.sigungu, row.dong].filter(Boolean).join(" ");
+                      const dateStr = row.created_at ? new Date(row.created_at).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' }) : "";
+                      const isActive = row.status === 'ACTIVE';
+                      const isPending = row.status === 'PENDING';
+                      const daysSinceCreated = row.created_at ? Math.floor((Date.now() - new Date(row.created_at).getTime()) / 86400000) : 0;
+
+                      return (
+                      <tr key={row.id} style={{ borderBottom: `1px solid ${darkMode ? "#333" : "#f3f4f6"}`, transition: "background 0.15s" }}
                         onMouseEnter={(e) => { e.currentTarget.style.background = darkMode ? "#3a3b3f" : "#f1f3f5"; }}
                         onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
                       >
@@ -377,53 +407,67 @@ export default function UserAdminPage() {
                           <input type="checkbox" style={{ accentColor: "#3b82f6" }} />
                         </td>
                         <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>
-                          <div style={{ fontWeight: 700 }}>1</div>
-                          <div style={{ fontSize: 13, color: "#9ca3af", marginTop: 2 }}>{row.id}</div>
+                          <div style={{ fontWeight: 700 }}>{idx + 1}</div>
+                          <div style={{ fontSize: 13, color: "#9ca3af", marginTop: 2 }}>{row.vacancy_no}</div>
                         </td>
                         <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
-                          <span style={{ display: "inline-block", padding: "4px 8px", borderRadius: 4, background: darkMode ? "#1a2e1a" : "#d1fae5", color: darkMode ? "#4ade80" : "#065f46", fontWeight: 700, fontSize: 13 }}>{row.adLabel}</span>
-                          <div style={{ fontSize: 13, color: textSecondary, marginTop: 4, fontWeight: 600 }}>{row.adDays}</div>
+                          {isPending ? (
+                            <span style={{ display: "inline-block", padding: "4px 8px", borderRadius: 4, background: darkMode ? "#2e2a1a" : "#fef3c7", color: darkMode ? "#fbbf24" : "#92400e", fontWeight: 700, fontSize: 13 }}>대기중</span>
+                          ) : isActive ? (
+                            <span style={{ display: "inline-block", padding: "4px 8px", borderRadius: 4, background: darkMode ? "#1a2e1a" : "#d1fae5", color: darkMode ? "#4ade80" : "#065f46", fontWeight: 700, fontSize: 13 }}>광고중</span>
+                          ) : (
+                            <span style={{ display: "inline-block", padding: "4px 8px", borderRadius: 4, background: darkMode ? "#2e1a1a" : "#fee2e2", color: darkMode ? "#fca5a5" : "#b91c1c", fontWeight: 700, fontSize: 13 }}>광고종료</span>
+                          )}
+                          <div style={{ fontSize: 13, color: textSecondary, marginTop: 4, fontWeight: 600 }}>{daysSinceCreated}일</div>
                         </td>
-                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 15, fontWeight: 600, color: textPrimary }}>{row.type}</td>
+                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 15, fontWeight: 600, color: textPrimary }}>{row.sub_category || row.property_type}</td>
                         <td style={{ padding: "16px 10px", verticalAlign: "middle" }}>
-                          <div style={{ fontWeight: 700, color: textPrimary, fontSize: 15, marginBottom: 4 }}>{row.addr}</div>
-                          <div style={{ fontSize: 14, color: textSecondary }}>{row.phone}</div>
+                          <div style={{ fontWeight: 700, color: textPrimary, fontSize: 15, marginBottom: 4 }}>{addrText}</div>
+                          <div style={{ fontSize: 14, color: textSecondary }}>{row.client_phone || ""}</div>
                         </td>
                         <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
-                          <span style={{ color: darkMode ? "#fca5a5" : "#ef4444", fontWeight: 600, fontSize: 15 }}>{row.deal} {row.price}</span>
+                          <span style={{ color: darkMode ? "#fca5a5" : "#ef4444", fontWeight: 600, fontSize: 15 }}>{priceText}</span>
                         </td>
-                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>{row.rooms}</td>
-                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>{row.date}</td>
+                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>
+                          {row.room_count || "-"} / {row.exclusive_m2 ? `${row.exclusive_m2}m²` : "m²"} / {row.current_floor || "-"}
+                        </td>
+                        <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>{dateStr}</td>
                         <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
-                          <div style={{ fontWeight: 700, fontSize: 15, color: textPrimary, marginBottom: 2 }}>{row.owner}</div>
-                          <div style={{ fontSize: 14, color: textSecondary }}>{row.ownerPhone}</div>
+                          <div style={{ fontWeight: 700, fontSize: 15, color: textPrimary, marginBottom: 2 }}>{row.client_name || userName}</div>
+                          <div style={{ fontSize: 14, color: textSecondary }}>{row.client_phone || ""}</div>
                         </td>
                         <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
                           <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
-                            <button style={{ height: 30, padding: "0 12px", background: darkMode ? "#374151" : "#4b5563", color: "#fff", border: "none", borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
+                            <button onClick={async () => {
+                              const res = await getVacancyDetail(row.id);
+                              if (res.success) {
+                                setEditingVacancy(res.data);
+                                setShowRegisterForm(true);
+                              }
+                            }} style={{ height: 30, padding: "0 12px", background: darkMode ? "#374151" : "#4b5563", color: "#fff", border: "none", borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
                               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                               수정
                             </button>
-                            <button style={{ height: 30, padding: "0 12px", background: darkMode ? "#2c2d31" : "#fff", color: "#9ca3af", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
+                            <button onClick={async () => {
+                              if (!confirm("이 공실을 삭제하시겠습니까?")) return;
+                              const res = await deleteVacancy(row.id);
+                              if (res.success && memberId) fetchVacancies(memberId);
+                            }} style={{ height: 30, padding: "0 12px", background: darkMode ? "#2c2d31" : "#fff", color: "#9ca3af", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
                               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                               삭제
                             </button>
                           </div>
                         </td>
                       </tr>
-                    ))}
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
 
               {/* 페이징 */}
               <div style={{ padding: "16px 24px", display: "flex", justifyContent: "center", gap: 4, borderTop: `1px solid ${border}` }}>
-                <button style={{ width: 32, height: 32, border: `1px solid ${border}`, borderRadius: 4, background: darkMode ? "#2c2d31" : "#fff", color: textSecondary, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>&lt;</button>
                 <button style={{ width: 32, height: 32, border: "none", borderRadius: 4, background: "#3b82f6", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>1</button>
-                {[2,3].map(n => (
-                  <button key={n} style={{ width: 32, height: 32, border: `1px solid ${border}`, borderRadius: 4, background: darkMode ? "#2c2d31" : "#fff", color: textSecondary, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>{n}</button>
-                ))}
-                <button style={{ width: 32, height: 32, border: `1px solid ${border}`, borderRadius: 4, background: darkMode ? "#2c2d31" : "#fff", color: textSecondary, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>&gt;</button>
               </div>
             </div>
           </div>
