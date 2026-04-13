@@ -146,7 +146,7 @@ export async function getVacancies(options?: {
   try {
     let query = supabase
       .from('vacancies')
-      .select('*, members!vacancies_owner_id_fkey(name, email, role, phone, agency_name), vacancy_photos(url, sort_order)')
+      .select('*, members!vacancies_owner_id_fkey(name, email, role), vacancy_photos(url, sort_order)')
       .order('created_at', { ascending: false });
 
     // 역할별 필터
