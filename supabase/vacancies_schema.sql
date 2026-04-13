@@ -19,9 +19,9 @@ CREATE TABLE IF NOT EXISTS vacancies (
 
   -- 거래 정보
   trade_type      TEXT NOT NULL,
-  deposit         INTEGER DEFAULT 0,
-  monthly_rent    INTEGER DEFAULT 0,
-  maintenance_fee INTEGER DEFAULT 0,
+  deposit         BIGINT DEFAULT 0,
+  monthly_rent    BIGINT DEFAULT 0,
+  maintenance_fee BIGINT DEFAULT 0,
 
   -- 중개보수
   commission_type TEXT DEFAULT '법정수수료',

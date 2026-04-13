@@ -3,7 +3,7 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { geocodeAddress } from "@/app/actions/geocode";
 import { createClient } from "@/utils/supabase/client";
-import { createVacancy, uploadVacancyPhoto, saveVacancyPhoto } from "@/app/actions/vacancy";
+import { createVacancy, uploadVacancyPhoto, saveVacancyPhoto, updateVacancy } from "@/app/actions/vacancy";
 
 /* ──────────────────────────────────────────────
    공실등록 폼 컴포넌트 (register.html 1:1 복제)
@@ -18,6 +18,7 @@ interface VacancyRegisterFormProps {
   initialClientName?: string;
   initialClientPhone?: string;
   ownerId?: string;
+  editData?: any;
 }
 
 // ── 1차→2차 카테고리 매핑 (원본 register.html에서 추출) ──
@@ -32,7 +33,7 @@ const SUB_CATEGORIES: Record<string, string[]> = {
 // 상업용 카테고리 (해당층/전체층 표시, 방/욕실/방향 숨김)
 const COMMERCIAL_CATEGORY = "상가·사무실·건물·공장·토지";
 
-export default function VacancyRegisterForm({ onBack, darkMode = false, userRole = "admin", initialClientName = "", initialClientPhone = "", ownerId = "" }: VacancyRegisterFormProps) {
+export default function VacancyRegisterForm({ onBack, darkMode = false, userRole = "admin", initialClientName = "", initialClientPhone = "", ownerId = "", editData }: VacancyRegisterFormProps) {
   // ── 상태 관리 ──
   const [propertyType, setPropertyType] = useState<string>("아파트·오피스텔");
   const [subCategory, setSubCategory] = useState<string>("아파트");
@@ -98,6 +99,50 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
     if (initialClientName) setClientName(initialClientName);
     if (initialClientPhone) setClientPhone(initialClientPhone);
   }, [initialClientName, initialClientPhone]);
+
+  // ── 수정 모드: editData가 있으면 폼 채우기 ──
+  useEffect(() => {
+    if (!editData) return;
+    if (editData.property_type) setPropertyType(editData.property_type);
+    if (editData.sub_category) setSubCategory(editData.sub_category);
+    if (editData.trade_type) setTradeType(editData.trade_type);
+    if (editData.commission_type) setCommissionType(editData.commission_type);
+    if (editData.commission_amount) setCommissionAmount(editData.commission_amount);
+    if (editData.commission_etc) setCommissionEtc(editData.commission_etc);
+    if (editData.parking) setParking(editData.parking);
+    if (editData.move_in_date) setMoveInDate(editData.move_in_date);
+    if (editData.owner_relation) setOwnerRelation(editData.owner_relation);
+    if (editData.room_count) setRoomCount(String(editData.room_count));
+    if (editData.bath_count) setBathCount(String(editData.bath_count));
+    if (editData.direction) setDirection(editData.direction);
+    if (editData.current_floor) setCurrentFloor(editData.current_floor);
+    if (editData.total_floor) setTotalFloor(editData.total_floor);
+    if (editData.deposit) setDeposit(String(editData.deposit / 10000));
+    if (editData.monthly_rent) setMonthly(String(editData.monthly_rent / 10000));
+    if (editData.maintenance_fee) setMaintenance(String(editData.maintenance_fee / 10000));
+    if (editData.supply_m2) { setSupplyM2(String(editData.supply_m2)); setSupplyPy((Number(editData.supply_m2) * 0.3025).toFixed(1)); }
+    if (editData.exclusive_m2) { setExclusiveM2(String(editData.exclusive_m2)); setExclusivePy((Number(editData.exclusive_m2) * 0.3025).toFixed(1)); }
+    if (editData.sido) setSido(editData.sido);
+    if (editData.sigungu) setSigungu(editData.sigungu);
+    if (editData.dong) setDong(editData.dong);
+    if (editData.detail_addr) setDetailAddr(editData.detail_addr);
+    if (editData.building_name) setBuildingName(editData.building_name);
+    if (editData.apt_dong) setAptDong(editData.apt_dong);
+    if (editData.hosu) setHosu(editData.hosu);
+    if (editData.address_exposure) setAddressExposure(editData.address_exposure);
+    if (editData.options) setSelectedOptions(editData.options);
+    if (editData.description) setDescription(editData.description);
+    if (editData.client_name) setClientName(editData.client_name);
+    if (editData.client_phone) setClientPhone(editData.client_phone);
+    if (editData.realtor_commission) setRealtorCommission(editData.realtor_commission);
+    if (editData.exposure_type) setExposureType(editData.exposure_type);
+    if (editData.landlord_name) setLandlordName(editData.landlord_name);
+    if (editData.landlord_phone) setLandlordPhone(editData.landlord_phone);
+    if (editData.landlord_memo) setLandlordMemo(editData.landlord_memo);
+    if (editData.lat && editData.lng) setCoords({ lat: editData.lat, lng: editData.lng });
+    if (editData.infrastructure) setInfrastructure(editData.infrastructure);
+    if (editData.consent !== undefined) setConsent(editData.consent);
+  }, [editData]);
 
   // 부동산 회원 전용 (Landlord/Realtor info)
   const [realtorCommission, setRealtorCommission] = useState("공동중개 0%");
@@ -361,7 +406,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
     <div style={{ flex: 1, background: bg, position: "relative" }}>
       {/* ── 타이틀 ── */}
       <div style={{ textAlign: "center", padding: "28px 0 20px", borderBottom: `1px solid ${border}`, background: cardBg }}>
-        <h1 style={{ fontSize: 20, fontWeight: 800, color: textPrimary, margin: 0 }}>공실등록</h1>
+        <h1 style={{ fontSize: 20, fontWeight: 800, color: textPrimary, margin: 0 }}>{editData ? "공실수정" : "공실등록"}</h1>
       </div>
 
       {/* ── 3단 레이아웃 ── */}
@@ -1065,7 +1110,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                   alert("시/도, 시/군/구, 읍/면/동/리는 필수입니다.");
                   return;
                 }
-                if (!clientName || !clientPhone) {
+                if (userRole !== 'realtor' && (!clientName || !clientPhone)) {
                   alert("의뢰인 이름과 연락처는 필수입니다.");
                   return;
                 }
@@ -1074,15 +1119,15 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                 try {
                   const roleMap: Record<string, string> = { admin: 'ADMIN', realtor: 'REALTOR', user: 'USER' };
 
-                  const result = await createVacancy({
-                    owner_id: ownerId,
+                  const vacancyPayload = {
+                    owner_id: ownerId || editData?.owner_id,
                     owner_role: roleMap[userRole] || 'USER',
                     property_type: propertyType,
                     sub_category: subCategory,
                     trade_type: tradeType,
-                    deposit: parseInt(deposit) || 0,
-                    monthly_rent: parseInt(monthly) || 0,
-                    maintenance_fee: parseInt(maintenance) || 0,
+                    deposit: (parseInt(deposit) || 0) * 10000,
+                    monthly_rent: (parseInt(monthly) || 0) * 10000,
+                    maintenance_fee: (parseInt(maintenance) || 0) * 10000,
                     commission_type: commissionType,
                     commission_amount: commissionAmount || undefined,
                     commission_etc: commissionEtc || undefined,
@@ -1117,7 +1162,17 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                     landlord_memo: userRole === 'realtor' ? landlordMemo : undefined,
                     consent,
                     infrastructure: Object.keys(infrastructure).length > 0 ? infrastructure : undefined,
-                  });
+                  };
+
+                  let result;
+                  if (editData?.id) {
+                    // 수정 모드
+                    const res = await updateVacancy(editData.id, vacancyPayload);
+                    result = { success: res.success, id: editData.id, error: res.error };
+                  } else {
+                    // 신규 등록
+                    result = await createVacancy(vacancyPayload);
+                  }
 
                   if (!result.success) {
                     alert("등록 실패: " + result.error);
@@ -1160,7 +1215,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
               onMouseEnter={(e) => { if (!submitting) e.currentTarget.style.opacity = "0.9"; }}
               onMouseLeave={(e) => { e.currentTarget.style.opacity = "1"; }}
             >
-              {submitting ? "등록 중..." : "공실 등록하기"}
+              {submitting ? (editData ? "수정 중..." : "등록 중...") : (editData ? "공실 수정하기" : "공실 등록하기")}
             </button>
           </div>
         </div>
