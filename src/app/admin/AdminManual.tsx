@@ -2,7 +2,7 @@ import React from "react";
 
 export default function AdminManual() {
   return (
-    <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'row', gap: 24, padding: 24, background: '#f8fafc', alignItems: 'flex-start' }}>
+    <div style={{ flex: 1, overflowY: 'auto', background: '#f8fafc' }}>\n      <div style={{ display: 'flex', flexDirection: 'row', gap: 24, padding: 24, alignItems: 'flex-start', minHeight: 'min-content' }}>
       <style>{`
         .manual-section { margin-bottom: 64px; }
         .pages-header { font-size: 24px; font-weight: 800; color: #1e293b; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 2px solid #e2e8f0; }
@@ -15,7 +15,7 @@ export default function AdminManual() {
         .kbd { background: #e2e8f0; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 13px; margin: 0 4px; }
         .admin-sidebar-nav { position: sticky; top: 24px; width: 240px; min-width: 240px; background: #fff; padding: 24px; border-radius: 12px; border: 1px solid #e2e8f0; height: calc(100vh - 48px); overflow-y: auto; }
         .admin-sidebar-nav ul { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; }
-        .admin-sidebar-nav li { width: 50%; }
+        .admin-sidebar-nav li { width: 48%; } /* 2 columns is best for 240px */
         .admin-sidebar-nav li.menu-text { width: 100%; font-weight: 700; color: #1e293b; margin-top: 16px; margin-bottom: 8px; font-size: 15px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;}
         .admin-sidebar-nav li a { color: #64748b; text-decoration: none; display: block; padding: 4px 0; font-size: 14px; transition: color 0.2s; }
         .admin-sidebar-nav li a:hover { color: #0284c7; font-weight: 600; }
@@ -1233,6 +1233,7 @@ export default function AdminManual() {
 </aside>
 </div>
 
+    </div>
     </div>
   );
 }
