@@ -31,6 +31,12 @@ export default function NewsLocalPage() {
   const infoWindowRef = useRef<any>(null);
   const clusterModeRef = useRef(false);
   const updateVisibleArticlesRef = useRef<() => void>(() => {});
+  const showDetailRef = useRef(showDetail);
+  const activeArticleIdRef = useRef(activeArticleId);
+  
+  useEffect(() => { showDetailRef.current = showDetail; }, [showDetail]);
+  useEffect(() => { activeArticleIdRef.current = activeArticleId; }, [activeArticleId]);
+
 
   /* ── 유틸: 날짜 포맷 ── */
   const formatDate = (dateStr: string) => {
@@ -119,6 +125,20 @@ export default function NewsLocalPage() {
     }
   }, []);
 
+  /* ── InfoWindow 내 버튼 텍스트 동기화 ── */
+  useEffect(() => {
+    const btn = document.getElementById("overlay-toggle-btn");
+    if (btn) {
+      if (showDetail) {
+        btn.innerHTML = "기사닫기 ✕";
+        btn.style.color = "#d32f2f";
+      } else {
+        btn.innerHTML = "기사 보러가기 &gt;";
+        btn.style.color = "#ff8e15";
+      }
+    }
+  }, [showDetail, activeArticleId]);
+
   /* ── 지도에서 특정 기사 위치에 커스텀 오버레이 표시 ── */
   const showArticleOnMap = useCallback((article: any) => {
     if (!kakaoMapRef.current || !article.lat || !article.lng) return;
@@ -131,7 +151,7 @@ export default function NewsLocalPage() {
     // 글로벌 함수 등록 (HTML에서 호출)
     (window as any).__openArticleDetail = (id: string) => {
       // 이미 열려있는 같은 기사면 닫기
-      if (activeArticleId === id && showDetail) {
+      if (activeArticleIdRef.current === id && showDetailRef.current) {
         setShowDetail(false);
       } else {
         handleSelectArticle(id, true);
@@ -151,7 +171,7 @@ export default function NewsLocalPage() {
         
         <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 12px; border-top: 1px solid #f0f0f0;">
           <span style="font-size: 12px; color: #a1a1aa; white-space: nowrap;">${formatDate(article.published_at || article.created_at)} · ${article.author_name || '공실뉴스'}</span>
-          <span onclick="window.__openArticleDetail('${article.id}')" style="font-size: 13px; font-weight: bold; color: #ff8e15; cursor: pointer; white-space: nowrap;">기사 보러가기 &gt;</span>
+          <span id="overlay-toggle-btn" onclick="window.__openArticleDetail('${article.id}')" style="font-size: 13px; font-weight: bold; color: ${(activeArticleIdRef.current === article.id && showDetailRef.current) ? '#d32f2f' : '#ff8e15'}; cursor: pointer; white-space: nowrap;">${(activeArticleIdRef.current === article.id && showDetailRef.current) ? '기사닫기 ✕' : '기사 보러가기 &gt;'}</span>
         </div>
         
         <!-- 꼬리 부분 (삼각형) - 라인 없이 이어진 느낌 구현 -->

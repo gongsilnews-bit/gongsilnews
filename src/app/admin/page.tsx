@@ -671,7 +671,7 @@ export default function AdminPage() {
             {/* 타이틀 + 버튼 */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
               <h1 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: 0 }}>게시판 리스트 및 설정</h1>
-              <button onClick={() => { setEditingBoardId(null); setBoardId(""); setBoardName(""); setBoardSubtitle(""); setBoardSkinType("LIST"); setBoardCategories(""); setShowBoardModal(true); }} style={{ height: 38, padding: "0 18px", background: "#374151", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>+ 새 게시판 생성</button>
+              <button onClick={() => { setEditingBoardId(null); setBoardId(""); setBoardName(""); setBoardSubtitle(""); setBoardSkinType("LIST"); setBoardCategories(""); setPermList(0); setPermRead(0); setPermWrite(9); setShowBoardModal(true); }} style={{ height: 38, padding: "0 18px", background: "#374151", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>+ 새 게시판 생성</button>
             </div>
 
             {/* 메인 카드 */}
@@ -717,12 +717,15 @@ export default function AdminPage() {
                         <td style={{ padding: "16px 20px", textAlign: "center", verticalAlign: "middle" }}>
                           <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
                             <button onClick={() => {
-                              setEditingBoardId(row.board_id);
+                              setEditingBoardId(row.id);
                               setBoardId(row.board_id);
                               setBoardName(row.name || "");
                               setBoardSubtitle(row.subtitle || row.description || "");
                               setBoardSkinType(row.skin_type || "LIST");
                               setBoardCategories(row.categories || "");
+                              setPermList(row.perm_list ?? 0);
+                              setPermRead(row.perm_read ?? 0);
+                              setPermWrite(row.perm_write ?? 9);
                               setShowBoardModal(true);
                             }} style={{ height: 30, padding: "0 12px", background: "#4b5563", color: "#fff", border: "none", borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
                               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -1451,6 +1454,7 @@ export default function AdminPage() {
                   return;
                 }
                 const res = await saveBoard({
+                  id: editingBoardId || undefined,
                   board_id: boardId,
                   name: boardName,
                   subtitle: boardSubtitle,
