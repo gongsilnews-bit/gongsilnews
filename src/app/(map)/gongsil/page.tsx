@@ -59,7 +59,11 @@ export default function GongsilPage() {
     async function fetchVacancies() {
       const res = await getVacancies({ all: true });
       if (res.success) {
-        setDbVacancies(res.data?.filter(v => v.status === 'ACTIVE' && v.lat && v.lng) || []);
+        const withImages = (res.data || []).map((v: any) => ({
+          ...v,
+          images: v.vacancy_photos ? v.vacancy_photos.sort((a:any, b:any)=>a.sort_order - b.sort_order).map((p:any) => p.url) : []
+        }));
+        setDbVacancies(withImages.filter((v: any) => v.status === 'ACTIVE' && v.lat && v.lng));
       }
     }
     fetchVacancies();

@@ -141,16 +141,7 @@ export async function getVacancies(options?: {
   try {
     let query = supabase
       .from('vacancies')
-      .select(`
-        id, vacancy_no, property_type, sub_category, trade_type,
-        deposit, monthly_rent, maintenance_fee,
-        sido, sigungu, dong, detail_addr, building_name, apt_dong, hosu,
-        status, owner_role, exposure_type,
-        client_name, client_phone,
-        created_at, updated_at,
-        owner_id,
-        members!vacancies_owner_id_fkey(name, email, role)
-      `)
+      .select('*, members!vacancies_owner_id_fkey(name, email, role, phone, agency_name), vacancy_photos(url, sort_order)')
       .order('created_at', { ascending: false });
 
     // 역할별 필터
