@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { getVacancies } from "@/app/actions/vacancy";
 
@@ -28,16 +28,164 @@ export default function GongsilPage() {
   const [galleryIndex, setGalleryIndex] = useState(0);
 
   const [dbVacancies, setDbVacancies] = useState<any[]>([]);
+  const [mapError, setMapError] = useState<string | null>(null);
+
+  const mapRef = useRef<HTMLDivElement>(null);
+  const kakaoMapRef = useRef<any>(null);
+  const clustererRef = useRef<any>(null);
+  const markersRef = useRef<any[]>([]);
+  const infoWindowRef = useRef<any>(null);
+
+  // Close info window
+  const closeInfoWindow = useCallback(() => {
+    if (infoWindowRef.current) {
+      if (typeof infoWindowRef.current.close === 'function') {
+        infoWindowRef.current.close();
+      } else if (typeof infoWindowRef.current.setMap === 'function') {
+        infoWindowRef.current.setMap(null);
+      }
+      infoWindowRef.current = null;
+    }
+  }, []);
+
+  const showArticleOnMap = useCallback((prop: any) => {
+    if (!kakaoMapRef.current || !prop.lat || !prop.lng) return;
+    const kakao = (window as any).kakao;
+    const position = new kakao.maps.LatLng(prop.lat, prop.lng);
+    kakaoMapRef.current.panTo(position);
+  }, []);
 
   useEffect(() => {
     async function fetchVacancies() {
       const res = await getVacancies({ all: true });
       if (res.success) {
-        setDbVacancies(res.data?.filter(v => v.status === 'ACTIVE') || []);
+        setDbVacancies(res.data?.filter(v => v.status === 'ACTIVE' && v.lat && v.lng) || []);
       }
     }
     fetchVacancies();
   }, []);
+
+  // Initialize Kakao Map
+  useEffect(() => {
+    const loadKakaoMap = () => {
+      const kakao = (window as any).kakao;
+      if (!kakao || !kakao.maps || !mapRef.current) return;
+
+      const renderMap = () => {
+        let initialLat = 37.498095;
+        let initialLng = 127.027610;
+
+        const validProp = dbVacancies.find(a => a.lat && a.lng);
+        if (validProp) { initialLat = validProp.lat; initialLng = validProp.lng; }
+
+        if (!kakaoMapRef.current) {
+          kakaoMapRef.current = new kakao.maps.Map(mapRef.current, {
+            center: new kakao.maps.LatLng(initialLat, initialLng),
+            level: 6,
+          });
+
+          // Initialize clusterer
+          clustererRef.current = new kakao.maps.MarkerClusterer({
+            map: kakaoMapRef.current,
+            averageCenter: true,
+            minLevel: 4,
+            gridSize: 60,
+            calculator: [5, 10, 30, 50],
+            texts: (count: number) => count.toString(),
+            styles: [
+              { width: '38px', height: '38px', background: 'rgba(26, 115, 232, 0.85)', color: '#fff', textAlign: 'center', lineHeight: '38px', borderRadius: '50%', fontWeight: 'bold', fontSize: '14px', border: '3px solid rgba(255,255,255,0.7)', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' },
+              { width: '44px', height: '44px', background: 'rgba(21, 101, 192, 0.88)', color: '#fff', textAlign: 'center', lineHeight: '44px', borderRadius: '50%', fontWeight: 'bold', fontSize: '15px', border: '3px solid rgba(255,255,255,0.7)', boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }
+            ]
+          });
+
+          // Cluster click
+          kakao.maps.event.addListener(clustererRef.current, 'clusterclick', (cluster: any) => {
+            const level = kakaoMapRef.current.getLevel() - 1;
+            kakaoMapRef.current.setLevel(level, {anchor: cluster.getCenter()});
+          });
+        }
+
+        // Clear existing markers
+        if (clustererRef.current) clustererRef.current.clear();
+        markersRef.current = [];
+
+        const newMarkers: any[] = [];
+        dbVacancies.forEach(prop => {
+          if (!prop.lat || !prop.lng) return;
+          const position = new kakao.maps.LatLng(prop.lat, prop.lng);
+
+          const size = 32;
+          const svgStr = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="%231a73e8" stroke="white" stroke-width="2.5"/><text x="50%25" y="54%25" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="13" font-weight="bold" font-family="sans-serif">1</text></svg>`;
+          const markerImage = new kakao.maps.MarkerImage(
+            `data:image/svg+xml,${svgStr}`,
+            new kakao.maps.Size(size, size),
+            { offset: new kakao.maps.Point(size / 2, size / 2) }
+          );
+
+          const hoverSize = 40;
+          const hoverSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${hoverSize}" height="${hoverSize}"><circle cx="${hoverSize/2}" cy="${hoverSize/2}" r="${hoverSize/2 - 2}" fill="%230d47a1" stroke="white" stroke-width="3"/><text x="50%25" y="54%25" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="15" font-weight="bold" font-family="sans-serif">1</text></svg>`;
+          const hoverImage = new kakao.maps.MarkerImage(
+            `data:image/svg+xml,${hoverSvg}`,
+            new kakao.maps.Size(hoverSize, hoverSize),
+            { offset: new kakao.maps.Point(hoverSize / 2, hoverSize / 2) }
+          );
+
+          const marker = new kakao.maps.Marker({ position, image: markerImage });
+
+          kakao.maps.event.addListener(marker, 'mouseover', () => {
+            marker.setImage(hoverImage);
+            marker.setZIndex(100);
+          });
+          kakao.maps.event.addListener(marker, 'mouseout', () => {
+            marker.setImage(markerImage);
+            marker.setZIndex(0);
+          });
+
+          kakao.maps.event.addListener(marker, 'click', () => {
+            setActiveProperty(prop.id);
+            setShowDetail(true);
+            setActiveDetailTab("info");
+            setGalleryIndex(0);
+            showArticleOnMap(prop);
+          });
+
+          newMarkers.push(marker);
+          markersRef.current.push(marker);
+        });
+
+        if (clustererRef.current && newMarkers.length > 0) {
+          clustererRef.current.addMarkers(newMarkers);
+        }
+
+        setTimeout(() => {
+          if (kakaoMapRef.current && !activeProperty) {
+            kakaoMapRef.current.relayout();
+            kakaoMapRef.current.setCenter(new kakao.maps.LatLng(initialLat, initialLng));
+          }
+        }, 500);
+      };
+
+      kakao.maps.load(() => renderMap());
+    };
+
+    if (!(window as any).kakao || !(window as any).kakao.maps) {
+      if (!document.getElementById("kakao-map-script")) {
+        const script = document.createElement("script");
+        const kakaoApiKey = process.env.NEXT_PUBLIC_KAKAO_APP_KEY || "435d3602201a49ea712e5f5a36fe6efc";
+        script.id = "kakao-map-script";
+        script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoApiKey}&libraries=services,clusterer&autoload=false`;
+        script.onerror = () => setMapError("카카오맵 JS 키가 유효하지 않거나 등록되지 않았습니다.");
+        document.head.appendChild(script);
+        script.onload = loadKakaoMap;
+      } else {
+        const checkReady = setInterval(() => {
+          if ((window as any).kakao && (window as any).kakao.maps) { clearInterval(checkReady); loadKakaoMap(); }
+        }, 100);
+      }
+    } else {
+      loadKakaoMap();
+    }
+  }, [dbVacancies, showArticleOnMap, activeProperty]);
 
   const formatAmount = (amt: number) => {
     if (!amt) return "";
@@ -191,6 +339,7 @@ export default function GongsilPage() {
                         setShowDetail(true); 
                         setActiveDetailTab("info"); 
                         setGalleryIndex(0); 
+                        showArticleOnMap(prop);
                       }
                     }}
                     style={{
@@ -472,9 +621,14 @@ export default function GongsilPage() {
             <div style={{ width: 1, height: 12, background: "#ddd" }}></div>
             <span style={{ fontWeight: "bold", padding: "5px 10px", cursor: "pointer", color: "#1a73e8" }}>검색 🔍</span>
           </div>
-          {/* 지도 placeholder */}
-          <div style={{ width: "100%", height: "100%", background: "#e8eaed", display: "flex", alignItems: "center", justifyContent: "center", color: "#999", fontSize: 18 }}>
-            🗺️ 카카오맵 영역 (향후 연동)
+          <div ref={mapRef} style={{ width: "100%", height: "100%", background: "#e8eaed" }}>
+            {mapError && (
+              <div style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", background: "#ffefef", color: "#d32f2f", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, zIndex: 10 }}>
+                <span style={{ fontSize: 40 }}>⚠️</span>
+                <span style={{ fontSize: 16, fontWeight: "bold" }}>지도 로드 오류</span>
+                <span style={{ fontSize: 14 }}>{mapError}</span>
+              </div>
+            )}
           </div>
         </div>
       </main>
