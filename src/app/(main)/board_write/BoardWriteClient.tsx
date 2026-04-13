@@ -5,6 +5,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { saveBoardPost, uploadBoardAttachment } from "@/app/actions/board";
 
+export interface LinkItem {
+  id: string;
+  type: "YOUTUBE" | "DRIVE" | "LINK";
+  label: string;
+  url: string;
+}
+
 export default function BoardWriteClient({
   board,
   editPostId,
@@ -33,9 +40,30 @@ export default function BoardWriteClient({
   const [category, setCategory] = useState(initCategory);
   const [title, setTitle] = useState(initTitle);
   const [content, setContent] = useState(editPost?.content || "");
-  const [youtubeUrl, setYoutubeUrl] = useState(editPost?.youtube_url || "");
-  const [driveUrl, setDriveUrl] = useState(editPost?.drive_url || "");
-  const [externalUrl, setExternalUrl] = useState(editPost?.external_url || "");
+
+  // 링크 데이터 초기화 로직
+  const initLinks = (): LinkItem[] => {
+    let parsed: LinkItem[] = [];
+    try {
+      if (editPost?.external_url && editPost.external_url.startsWith("[")) {
+        parsed = JSON.parse(editPost.external_url);
+      }
+    } catch(e) {}
+    if (parsed.length === 0) {
+      if (editPost?.youtube_url) parsed.push({ id: "legacy_yt", type: "YOUTUBE", label: "유튜브 영상", url: editPost.youtube_url });
+      if (editPost?.drive_url) parsed.push({ id: "legacy_dr", type: "DRIVE", label: "구글 드라이브", url: editPost.drive_url });
+      if (editPost?.external_url && !editPost.external_url.startsWith("[")) parsed.push({ id: "legacy_ex", type: "LINK", label: "외부 링크", url: editPost.external_url });
+    }
+    return parsed;
+  };
+
+  const [externalLinks, setExternalLinks] = useState<LinkItem[]>(initLinks());
+  
+  // 새 항목 추가용 상태
+  const [newLinkType, setNewLinkType] = useState<"YOUTUBE"|"DRIVE"|"LINK">("YOUTUBE");
+  const [newLinkLabel, setNewLinkLabel] = useState("");
+  const [newLinkUrl, setNewLinkUrl] = useState("");
+
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(editPost?.thumbnail_url || null);
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -62,14 +90,17 @@ export default function BoardWriteClient({
 
     const fullTitle = category ? `[${category}] ${title}` : title;
 
+    const firstYt = externalLinks.find(l => l.type === "YOUTUBE")?.url;
+    const firstDrive = externalLinks.find(l => l.type === "DRIVE")?.url;
+
     const res = await saveBoardPost({
       ...(isEditMode ? { id: editPostId! } : {}),
       board_id: boardId,
       title: fullTitle,
       content,
-      youtube_url: youtubeUrl || undefined,
-      drive_url: driveUrl || undefined,
-      external_url: externalUrl || undefined,
+      youtube_url: firstYt || undefined,
+      drive_url: firstDrive || undefined,
+      external_url: externalLinks.length > 0 ? JSON.stringify(externalLinks) : undefined,
       author_name: editPost?.author_name || "관리자",
     });
 
@@ -149,40 +180,81 @@ export default function BoardWriteClient({
             🔗 <span>영상 스킨(video_album) 및 자료실 스킨(file_album) 전용 간편 등록 필드입니다. HTML 복붙 없이 주소만 넣으세요.</span>
           </div>
 
-          {/* YouTube */}
-          <div style={{ marginBottom: 16 }}>
-            <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#508bf5", marginBottom: 6 }}>YouTube 영상 링크 (선택)</label>
-            <input
-              type="url"
-              placeholder="예: https://youtu.be/..."
-              value={youtubeUrl}
-              onChange={e => setYoutubeUrl(e.target.value)}
-              style={{ width: "100%", height: 42, padding: "0 14px", fontSize: 14, border: "1px solid #d1d5db", borderRadius: 6, outline: "none", boxSizing: "border-box" }}
-            />
-          </div>
-
-          {/* 구글 드라이브 + 외부 링크 */}
-          <div style={{ display: "flex", gap: 16, marginBottom: 16 }}>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#22c55e", marginBottom: 6 }}>구글 드라이브 다운로드 링크 (선택)</label>
+          {/* 다중 외부 링크 매니저 */}
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#333", marginBottom: 8 }}>외부 링크 자료 추가 (여러 개 등록 가능)</label>
+            <div style={{ display: "flex", gap: 8, marginBottom: 16, alignItems: "center", flexWrap: "wrap" }}>
+              <select
+                value={newLinkType}
+                onChange={e => setNewLinkType(e.target.value as any)}
+                style={{ height: 42, padding: "0 14px", fontSize: 14, border: "1px solid #d1d5db", borderRadius: 6, outline: "none", cursor: "pointer" }}
+              >
+                <option value="YOUTUBE">🎬 YouTube 영상</option>
+                <option value="DRIVE">📁 구글 드라이브 다운로드</option>
+                <option value="LINK">🔗 일반 외부링크</option>
+              </select>
+              <input
+                type="text"
+                placeholder={newLinkType === "YOUTUBE" ? "예: 유튜브 (또는 공백)" : "라벨 (기획서 다운 등)"}
+                value={newLinkLabel}
+                onChange={e => setNewLinkLabel(e.target.value)}
+                style={{ width: 150, height: 42, padding: "0 10px", fontSize: 14, border: "1px solid #d1d5db", borderRadius: 6, outline: "none" }}
+              />
               <input
                 type="url"
-                placeholder="예: https://drive.google.com/file/d/..."
-                value={driveUrl}
-                onChange={e => setDriveUrl(e.target.value)}
-                style={{ width: "100%", height: 42, padding: "0 14px", fontSize: 14, border: "1px solid #d1d5db", borderRadius: 6, outline: "none", boxSizing: "border-box" }}
+                placeholder={
+                  newLinkType === "YOUTUBE" ? "https://youtu.be/..." :
+                  newLinkType === "DRIVE" ? "https://drive.google.com/..." : "https://..."
+                }
+                value={newLinkUrl}
+                onChange={e => setNewLinkUrl(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    if (!newLinkUrl.trim()) return alert("URL을 입력해주세요.");
+                    setExternalLinks([...externalLinks, { id: Date.now().toString(), type: newLinkType, label: newLinkLabel, url: newLinkUrl }]);
+                    setNewLinkLabel("");
+                    setNewLinkUrl("");
+                  }
+                }}
+                style={{ flex: 1, minWidth: 200, height: 42, padding: "0 14px", fontSize: 14, border: "1px solid #d1d5db", borderRadius: 6, outline: "none" }}
               />
+              <button
+                type="button"
+                onClick={() => {
+                  if (!newLinkUrl.trim()) return alert("URL을 입력해주세요.");
+                  setExternalLinks([...externalLinks, { id: Date.now().toString(), type: newLinkType, label: newLinkLabel, url: newLinkUrl }]);
+                  setNewLinkLabel("");
+                  setNewLinkUrl("");
+                }}
+                style={{ padding: "0 18px", height: 42, background: "#102c57", color: "#fff", border: "none", borderRadius: 6, fontSize: 14, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}
+              >
+                + 추가
+              </button>
             </div>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#f59e0b", marginBottom: 6 }}>외부 참조 링크 (선택)</label>
-              <input
-                type="url"
-                placeholder="클릭 시 이동할 외부 URL을 입력하세요."
-                value={externalUrl}
-                onChange={e => setExternalUrl(e.target.value)}
-                style={{ width: "100%", height: 42, padding: "0 14px", fontSize: 14, border: "1px solid #d1d5db", borderRadius: 6, outline: "none", boxSizing: "border-box" }}
-              />
-            </div>
+            
+            {/* 등록된 링크 리스트 */}
+            {externalLinks.length > 0 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {externalLinks.map((link) => (
+                  <div key={link.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "#fff", border: "1px solid #e2e8f0", padding: "12px 16px", borderRadius: 8 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12, overflow: "hidden" }}>
+                      {link.type === "YOUTUBE" && <span style={{ color: "#ef4444", fontSize: 20, display: "flex", padding: 8, background: "#fef2f2", borderRadius: 8 }}>🎬</span>}
+                      {link.type === "DRIVE" && <span style={{ color: "#22c55e", fontSize: 20, display: "flex", padding: 8, background: "#f0fdf4", borderRadius: 8 }}>📁</span>}
+                      {link.type === "LINK" && <span style={{ color: "#3b82f6", fontSize: 20, display: "flex", padding: 8, background: "#eff6ff", borderRadius: 8 }}>🔗</span>}
+                      
+                      <div style={{ display: "flex", flexDirection: "column", overflow: "hidden" }}>
+                         <span style={{ fontSize: 13, fontWeight: 700, color: "#1e293b", marginBottom: 2 }}>
+                           {link.label || (link.type === "YOUTUBE" ? "유튜브 시청" : link.type === "DRIVE" ? "공유 드라이브" : "외부 자료 가기")}
+                         </span>
+                         <span style={{ fontSize: 13, color: "#64748b", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>{link.url}</span>
+                      </div>
+                    </div>
+                    <button type="button" onClick={() => setExternalLinks(externalLinks.filter(l => l.id !== link.id))} style={{ background: "none", border: "none", color: "#94a3b8", fontSize: 22, cursor: "pointer", padding: "0 8px", lineHeight: 1 }}>&times;</button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* 썸네일 */}
