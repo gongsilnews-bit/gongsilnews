@@ -90,8 +90,15 @@ export default function BoardWriteClient({
 
     const fullTitle = category ? `[${category}] ${title}` : title;
 
-    const firstYt = externalLinks.find(l => l.type === "YOUTUBE")?.url;
-    const firstDrive = externalLinks.find(l => l.type === "DRIVE")?.url;
+    // 편의 기능: 사용자가 인풋창에 입력만 하고 '추가'를 누르지 않고 제출해도 자동으로 포함
+    const currentLinks = [...externalLinks];
+    if (newLinkUrl.trim() !== "") {
+      currentLinks.push({ id: Date.now().toString() + "_auto", type: newLinkType, label: newLinkLabel, url: newLinkUrl });
+      // 상태는 여기서 굳이 업데이트하지 않고 제출 프로세스 속도 향상
+    }
+
+    const firstYt = currentLinks.find(l => l.type === "YOUTUBE")?.url;
+    const firstDrive = currentLinks.find(l => l.type === "DRIVE")?.url;
 
     const res = await saveBoardPost({
       ...(isEditMode ? { id: editPostId! } : {}),
@@ -100,7 +107,7 @@ export default function BoardWriteClient({
       content,
       youtube_url: firstYt || undefined,
       drive_url: firstDrive || undefined,
-      external_url: externalLinks.length > 0 ? JSON.stringify(externalLinks) : undefined,
+      external_url: currentLinks.length > 0 ? JSON.stringify(currentLinks) : undefined,
       author_name: editPost?.author_name || "관리자",
     });
 

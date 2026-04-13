@@ -226,7 +226,7 @@ export default function BoardReadClient({
                     }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 15, fontWeight: 800, color: "#1e293b", marginBottom: 4 }}>{link.label || "구글 드라이브 자료 다운로드"}</div>
-                        <div style={{ fontSize: 13, color: "#64748b", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>{link.url}</div>
+                        <div style={{ fontSize: 13, color: "#64748b" }}>이 게시물에 관련된 구글 드라이브 파일을 다운로드합니다.</div>
                       </div>
                       <a
                         href={link.url}
@@ -234,7 +234,7 @@ export default function BoardReadClient({
                         rel="noopener noreferrer"
                         style={{
                           display: "inline-flex", alignItems: "center", gap: 8,
-                          background: "#508bf5", color: "#fff", padding: "10px 20px",
+                          background: "#508bf5", color: "#fff", padding: "11px 22px",
                           borderRadius: 6, fontSize: 14, fontWeight: 700,
                           textDecoration: "none", whiteSpace: "nowrap"
                         }}
@@ -244,7 +244,7 @@ export default function BoardReadClient({
                           <polyline points="7 10 12 15 17 10"/>
                           <line x1="12" y1="15" x2="12" y2="3"/>
                         </svg>
-                        드라이브 열기
+                        구글 드라이브 다운로드
                       </a>
                     </div>
                   ))}
@@ -257,7 +257,7 @@ export default function BoardReadClient({
                     }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 15, fontWeight: 800, color: "#1e293b", marginBottom: 4 }}>{link.label || "외부 데이터 링크"}</div>
-                        <div style={{ fontSize: 13, color: "#64748b", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>{link.url}</div>
+                        <div style={{ fontSize: 13, color: "#64748b" }}>게시된 외부 링크 자료로 연결합니다.</div>
                       </div>
                       <a
                         href={link.url}
@@ -265,12 +265,12 @@ export default function BoardReadClient({
                         rel="noopener noreferrer"
                         style={{
                           display: "inline-flex", alignItems: "center", gap: 8,
-                          background: "#fff", border: "1px solid #d1d5db", color: "#333",
-                          padding: "10px 20px", borderRadius: 6, fontSize: 14, fontWeight: 700,
+                          background: "#f8fafc", border: "1px solid #e2e8f0", color: "#333",
+                          padding: "11px 22px", borderRadius: 6, fontSize: 14, fontWeight: 600,
                           textDecoration: "none", whiteSpace: "nowrap"
                         }}
                       >
-                        🔗 방문하기
+                        🔗 외부 링크 방문
                       </a>
                     </div>
                   ))}
