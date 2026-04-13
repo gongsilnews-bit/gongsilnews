@@ -92,6 +92,9 @@ export default function AdminPage() {
   const [boardSubtitle, setBoardSubtitle] = useState("");
   const [boardSkinType, setBoardSkinType] = useState("LIST");
   const [boardCategories, setBoardCategories] = useState("");
+  const [permList, setPermList] = useState<number>(0);
+  const [permRead, setPermRead] = useState<number>(0);
+  const [permWrite, setPermWrite] = useState<number>(9);
   const [editingBoardId, setEditingBoardId] = useState<string | null>(null);
   const [showMemberRegister, setShowMemberRegister] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
@@ -1405,24 +1408,24 @@ export default function AdminPage() {
               {/* 5열: 권한 설정 */}
               <div style={{ display: "flex", gap: 12 }}>
                 {[
-                  { label: "목록 열람 권한", val: "1레벨 (일반회원 이상)" },
-                  { label: "내용 읽기/다운로드 권한", val: "5레벨 (기자/제휴 이상)" },
-                  { label: "글쓰기 권한", val: "9레벨 (관리자 전용)" }
+                  { label: "목록 열람 권한", val: permList, setter: setPermList },
+                  { label: "내용 읽기/다운로드 권한", val: permRead, setter: setPermRead },
+                  { label: "글쓰기 권한", val: permWrite, setter: setPermWrite }
                 ].map((col, i) => (
                   <div key={i} style={{ flex: 1 }}>
                     <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: textSecondary, marginBottom: 6, letterSpacing: "-0.5px" }}>
                       {col.label}
                     </label>
                     <div style={{ position: "relative" }}>
-                      <select defaultValue={col.val} style={{
+                      <select value={col.val} onChange={(e) => col.setter(Number(e.target.value))} style={{
                         width: "100%", height: 38, padding: "0 28px 0 10px", fontSize: 12,
                         border: `1px solid ${border}`, borderRadius: 6, background: darkMode ? "#111" : "#fff",
                         color: textPrimary, outline: "none", fontFamily: "inherit", appearance: "none", cursor: "pointer"
                       }} onFocus={(e) => e.target.style.borderColor = "#3b82f6"} onBlur={(e) => e.target.style.borderColor = border}>
-                        <option>비회원 + 전체</option>
-                        <option>1레벨 (일반회원 이상)</option>
-                        <option>5레벨 (기자/제휴 이상)</option>
-                        <option>9레벨 (관리자 전용)</option>
+                        <option value={0}>비회원 + 전체</option>
+                        <option value={1}>1레벨 (일반회원 이상)</option>
+                        <option value={5}>5레벨 (기자/제휴 이상)</option>
+                        <option value={9}>9레벨 (관리자 전용)</option>
                       </select>
                       <svg style={{ position: "absolute", right: 8, top: 12, pointerEvents: "none", color: "#9ca3af" }} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
                     </div>
@@ -1453,9 +1456,9 @@ export default function AdminPage() {
                   subtitle: boardSubtitle,
                   skin_type: boardSkinType,
                   categories: boardCategories,
-                  perm_list: "전체",
-                  perm_read: "전체",
-                  perm_write: "관리자",
+                  perm_list: permList,
+                  perm_read: permRead,
+                  perm_write: permWrite,
                 });
                 if (res.success) {
                   alert("게시판 설정이 저장되었습니다.");
