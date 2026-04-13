@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
 import MemberRegisterForm from "@/components/admin/MemberRegisterForm";
+import VacancyRegisterForm from "@/components/admin/VacancyRegisterForm";
 
 /* ──────────────────────────────────────────────
    SVG 아이콘 컴포넌트 (부동산관리자와 동일)
@@ -265,6 +266,12 @@ export default function UserAdminPage() {
             ) : (
               <div style={{ textAlign: "center", padding: 40, color: textSecondary }}>사용자 정보를 불러오는 중입니다...</div>
             )}
+          </div>
+        ) : activeMenu === "gongsil" ? (
+          <div style={{ flex: 1, padding: 0, overflowY: "auto", background: bg }}>
+            <div style={{ padding: "16px 32px 0 32px" }}>
+              <VacancyRegisterForm onBack={() => setActiveMenu("dashboard")} />
+            </div>
           </div>
         ) : (
           <div style={{ flex: 1, margin: 16, marginBottom: 0, background: cardBg, borderTopLeftRadius: 12, borderTopRightRadius: 12, boxShadow: "0 4px 6px rgba(0,0,0,0.05)", display: "flex", alignItems: "center", justifyContent: "center" }}>

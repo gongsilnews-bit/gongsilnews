@@ -163,40 +163,37 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signup', onGo
           ) : (
             /* ━━━ 일반 모드 (회원가입/로그인) ━━━ */
             <div style={{ padding: '28px 32px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              {/* 로고 원형 */}
-              <div style={{ width: 64, height: 64, borderRadius: '50%', border: '1px solid #eee', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-                <span style={{ color: '#1e56a0', fontWeight: 800, fontSize: 14, letterSpacing: -0.5 }}>공실뉴스</span>
-              </div>
-
-              <h3 style={{ fontSize: 18, fontWeight: 900, color: '#111', marginBottom: 8, textAlign: 'center', margin: '0 0 8px 0' }}>
-                {activeTab === 'signup' ? '공실뉴스 회원이 되어 보세요' : '공실뉴스에 로그인하세요'}
-              </h3>
-              <p style={{ fontSize: 13, color: '#888', textAlign: 'center', marginBottom: 28, lineHeight: 1.6, margin: '0 0 28px 0' }}>
-                {activeTab === 'signup'
-                  ? <>지금 바로 공실뉴스 회원으로 가입하시고, 독점 혜택을<br />누려보세요</>
-                  : '회원 전용 서비스를 이용하시려면 로그인해 주세요'}
-              </p>
-
-              {/* 혜택 리스트 */}
               {activeTab === 'signup' && (
-                <ul style={{ width: '100%', listStyle: 'none', padding: 0, margin: '0 0 28px 0' }}>
-                  {['프리미엄 부동산 뉴스와 분석 보고서 접근', '동네별 실시간 공실 및 매물 동향 최신 정보', '공실뉴스만의 독자적인 부동산 지수 열람', '온/오프라인 세미나 우선 참가 기회'].map((item, i) => (
-                    <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13, color: '#444', marginBottom: i < 3 ? 12 : 0 }}>
-                      <span style={{ color: '#1e56a0', fontWeight: 'bold', marginTop: 2 }}>•</span>
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
+                <>
+                  {/* 로고 원형 */}
+                  <div style={{ width: 64, height: 64, borderRadius: '50%', border: '1px solid #eee', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                    <span style={{ color: '#1e56a0', fontWeight: 800, fontSize: 14, letterSpacing: -0.5 }}>공실뉴스</span>
+                  </div>
 
-              {/* 안내 문구 */}
-              <p style={{ fontSize: 12, color: '#888', marginBottom: 16, textAlign: 'center', margin: '0 0 16px 0' }}>
-                {activeTab === 'signup' ? (
-                  <>이미 회원이시면 <button onClick={() => setActiveTab('login')} style={{ fontWeight: 'bold', color: '#555', cursor: 'pointer', background: 'none', border: 'none', padding: 0, fontSize: 12, fontFamily: 'inherit' }}>로그인</button>을 클릭해 주세요</>
-                ) : (
-                  <>아직 회원이 아니시면 <button onClick={() => setActiveTab('signup')} style={{ fontWeight: 'bold', color: '#555', cursor: 'pointer', background: 'none', border: 'none', padding: 0, fontSize: 12, fontFamily: 'inherit' }}>회원가입</button>을 클릭해 주세요</>
-                )}
-              </p>
+                  <h3 style={{ fontSize: 18, fontWeight: 900, color: '#111', marginBottom: 8, textAlign: 'center', margin: '0 0 8px 0' }}>
+                    공실뉴스 회원이 되어 보세요
+                  </h3>
+                  
+                  <p style={{ fontSize: 13, color: '#888', textAlign: 'center', marginBottom: 28, lineHeight: 1.6, margin: '0 0 28px 0' }}>
+                    지금 바로 공실뉴스 회원으로 가입하시고, 독점 혜택을<br />누려보세요
+                  </p>
+
+                  {/* 혜택 리스트 */}
+                  <ul style={{ width: '100%', listStyle: 'none', padding: 0, margin: '0 0 28px 0' }}>
+                    {['프리미엄 부동산 뉴스와 분석 보고서 접근', '동네별 실시간 공실 및 매물 동향 최신 정보', '공실뉴스만의 독자적인 부동산 지수 열람', '온/오프라인 세미나 우선 참가 기회'].map((item, i) => (
+                      <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13, color: '#444', marginBottom: i < 3 ? 12 : 0 }}>
+                        <span style={{ color: '#1e56a0', fontWeight: 'bold', marginTop: 2 }}>•</span>
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  {/* 안내 문구 */}
+                  <p style={{ fontSize: 12, color: '#888', marginBottom: 24, textAlign: 'center', margin: '0 0 24px 0' }}>
+                    이미 회원이시면 <button onClick={() => setActiveTab('login')} style={{ fontWeight: 'bold', color: '#555', cursor: 'pointer', background: 'none', border: 'none', padding: 0, fontSize: 12, fontFamily: 'inherit' }}>로그인</button>을 클릭해 주세요
+                  </p>
+                </>
+              )}
 
               {/* ━━━ 소셜 로그인 버튼 ━━━ */}
               <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 10 }}>

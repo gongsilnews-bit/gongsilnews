@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
 import MemberRegisterForm from "@/components/admin/MemberRegisterForm";
+import VacancyRegisterForm from "@/components/admin/VacancyRegisterForm";
 
 /* ──────────────────────────────────────────────
    SVG 아이콘 컴포넌트 (원본 user_admin.html 1:1 복제)
@@ -306,6 +307,12 @@ export default function RealtyAdminPage() {
             ) : (
               <div style={{ textAlign: "center", padding: 40, color: textSecondary }}>사용자 정보를 불러오는 중입니다...</div>
             )}
+          </div>
+        ) : activeMenu === "gongsil" ? (
+          <div style={{ flex: 1, padding: 0, overflowY: "auto", background: bg }}>
+            <div style={{ padding: "16px 32px 0 32px" }}>
+              <VacancyRegisterForm onBack={() => setActiveMenu("dashboard")} />
+            </div>
           </div>
         ) : (
           /* 다른 메뉴 선택 시 placeholder */
