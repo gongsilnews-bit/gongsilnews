@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { getVacancies, getAgencyInfo } from "@/app/actions/vacancy";
 import { getVacancyComments, createVacancyComment } from "@/app/actions/vacancyComments";
@@ -53,7 +54,8 @@ const MAINT_PRESETS = [
   { label: "30만 이상", min: 300000, max: Infinity },
 ];
 
-export default function GongsilPage() {
+function GongsilPageInner() {
+  const searchParams = useSearchParams();
   const [activeCategory, setActiveCategory] = useState("apart");
   const [activePills, setActivePills] = useState<string[]>(["아파트"]);
   const [activeProperty, setActiveProperty] = useState<number | null>(1);
@@ -263,6 +265,34 @@ export default function GongsilPage() {
     }
     fetchVacancies();
   }, []);
+
+  // Handle ?id=X from main page navigation
+  useEffect(() => {
+    const idParam = searchParams.get("id");
+    if (idParam && dbVacancies.length > 0) {
+      const targetId = Number(idParam);
+      const target = dbVacancies.find(v => v.id === targetId);
+      if (target) {
+        setActiveProperty(targetId);
+        setShowDetail(true);
+        setActiveDetailTab("info");
+        // Find the correct category and select it
+        const catEntry = Object.entries(CATEGORY_TO_PROPERTY_TYPE).find(([, pType]) => pType === target.property_type);
+        if (catEntry) {
+          setActiveCategory(catEntry[0]);
+          setActivePills(target.sub_category ? [target.sub_category] : []);
+        }
+        // Pan map to the vacancy
+        if (target.lat && target.lng && kakaoMapRef.current) {
+          const kakao = (window as any).kakao;
+          if (kakao?.maps) {
+            kakaoMapRef.current.panTo(new kakao.maps.LatLng(target.lat, target.lng));
+            kakaoMapRef.current.setLevel(5);
+          }
+        }
+      }
+    }
+  }, [searchParams, dbVacancies]);
 
   // On activeProperty change, reset detail scroll position
   useEffect(() => {
@@ -681,7 +711,7 @@ export default function GongsilPage() {
 
                 {/* ── 거래방식 ── */}
                 {f === "거래방식" && activeFilterDropdown === "거래방식" && (
-                  <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, background: "#fff", border: "1px solid #ddd", borderRadius: 4, boxShadow: "0 4px 16px rgba(0,0,0,0.1)", width: 240, zIndex: 1000, padding: "16px" }}>
+                  <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, background: "#fff", border: "1px solid #ddd", borderRadius: 4, boxShadow: "0 4px 16px rgba(0,0,0,0.15)", width: 240, zIndex: 9000, padding: "16px" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
                       <span style={{ fontSize: 15, fontWeight: "bold", color: "#111" }}>거래방식</span>
                       <button onClick={() => setActiveFilterDropdown(null)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#999", padding: 0, lineHeight: 1 }}>✕</button>
@@ -702,7 +732,7 @@ export default function GongsilPage() {
 
                 {/* ── 가격대 (네이버 스타일 그리드) ── */}
                 {(f === "가격대" || f === "분양가/보증금") && activeFilterDropdown === f && (
-                  <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, background: "#fff", border: "1px solid #ddd", borderRadius: 4, boxShadow: "0 4px 16px rgba(0,0,0,0.1)", width: 380, zIndex: 1000, padding: "16px" }}>
+                  <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, background: "#fff", border: "1px solid #ddd", borderRadius: 4, boxShadow: "0 4px 16px rgba(0,0,0,0.15)", width: 380, zIndex: 9000, padding: "16px" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                       <span style={{ fontSize: 15, fontWeight: "bold", color: "#111" }}>매매가/전세가/보증금</span>
                       <button onClick={() => setActiveFilterDropdown(null)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#999", padding: 0, lineHeight: 1 }}>✕</button>
@@ -749,7 +779,7 @@ export default function GongsilPage() {
 
                 {/* ── 면적 (네이버 스타일 그리드) ── */}
                 {f === "면적" && activeFilterDropdown === "면적" && (
-                  <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, background: "#fff", border: "1px solid #ddd", borderRadius: 4, boxShadow: "0 4px 16px rgba(0,0,0,0.1)", width: 360, zIndex: 1000, padding: "16px" }}>
+                  <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, background: "#fff", border: "1px solid #ddd", borderRadius: 4, boxShadow: "0 4px 16px rgba(0,0,0,0.15)", width: 360, zIndex: 9000, padding: "16px" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                       <span style={{ fontSize: 15, fontWeight: "bold", color: "#111" }}>면적</span>
                       <button onClick={() => setActiveFilterDropdown(null)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#999", padding: 0, lineHeight: 1 }}>✕</button>
@@ -783,7 +813,7 @@ export default function GongsilPage() {
 
                 {/* ── 관리비 ── */}
                 {f === "관리비" && activeFilterDropdown === "관리비" && (
-                  <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, background: "#fff", border: "1px solid #ddd", borderRadius: 4, boxShadow: "0 4px 16px rgba(0,0,0,0.1)", width: 220, zIndex: 1000, padding: "16px" }}>
+                  <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, background: "#fff", border: "1px solid #ddd", borderRadius: 4, boxShadow: "0 4px 16px rgba(0,0,0,0.15)", width: 220, zIndex: 9000, padding: "16px" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                       <span style={{ fontSize: 15, fontWeight: "bold", color: "#111" }}>관리비</span>
                       <button onClick={() => setActiveFilterDropdown(null)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#999", padding: 0, lineHeight: 1 }}>✕</button>
@@ -804,7 +834,7 @@ export default function GongsilPage() {
 
                 {/* ── 방/욕실수 ── */}
                 {f === "방/욕실수" && activeFilterDropdown === "방/욕실수" && (
-                  <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, background: "#fff", border: "1px solid #ddd", borderRadius: 4, boxShadow: "0 4px 16px rgba(0,0,0,0.1)", width: 280, zIndex: 1000, padding: "16px" }}>
+                  <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, background: "#fff", border: "1px solid #ddd", borderRadius: 4, boxShadow: "0 4px 16px rgba(0,0,0,0.15)", width: 280, zIndex: 9000, padding: "16px" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
                       <span style={{ fontSize: 15, fontWeight: "bold", color: "#111" }}>방/욕실수</span>
                       <button onClick={() => setActiveFilterDropdown(null)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#999", padding: 0, lineHeight: 1 }}>✕</button>
@@ -831,7 +861,7 @@ export default function GongsilPage() {
 
                 {/* ── 방향 ── */}
                 {f === "방향" && activeFilterDropdown === "방향" && (
-                  <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, background: "#fff", border: "1px solid #ddd", borderRadius: 4, boxShadow: "0 4px 16px rgba(0,0,0,0.1)", width: 280, zIndex: 1000, padding: "16px" }}>
+                  <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, background: "#fff", border: "1px solid #ddd", borderRadius: 4, boxShadow: "0 4px 16px rgba(0,0,0,0.15)", width: 280, zIndex: 9000, padding: "16px" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                       <span style={{ fontSize: 15, fontWeight: "bold", color: "#111" }}>방향</span>
                       <button onClick={() => setActiveFilterDropdown(null)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#999", padding: 0, lineHeight: 1 }}>✕</button>
@@ -1355,5 +1385,13 @@ export default function GongsilPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function GongsilPage() {
+  return (
+    <Suspense fallback={<div style={{ height: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>로딩 중...</div>}>
+      <GongsilPageInner />
+    </Suspense>
   );
 }
