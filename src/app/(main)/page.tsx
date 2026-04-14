@@ -1,12 +1,6 @@
 import Script from "next/script";
 import { getVacanciesForMap } from "@/app/actions/vacancy";
 
-import QuickFloatingMenu from "@/components/common/QuickFloatingMenu";
-import MarketTickerBar from "@/components/home/MarketTickerBar";
-import HeroMapSection from "@/components/home/HeroMapSection";
-import HeroSideContent from "@/components/home/HeroSideContent";
-import CategoryNewsGrid from "@/components/home/CategoryNewsGrid";
-import PremiumDroneSection from "@/components/home/PremiumDroneSection";
 import NoticeBoardGroup from "@/components/home/NoticeBoardGroup";
 import SpecialLectureBanner from "@/components/home/SpecialLectureBanner";
 import ChatbotBanner from "@/components/home/ChatbotBanner";

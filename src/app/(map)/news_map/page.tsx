@@ -230,7 +230,7 @@ export default function NewsLocalPage() {
   // Preload Kakao Map script immediately on mount
   const [mapLoaded, setMapLoaded] = useState(false);
   useEffect(() => {
-    if ((window as any).kakao && (window as any).kakao.maps) {
+    if ((window as any).kakao && (window as any).kakao.maps && typeof (window as any).kakao.maps.LatLng === "function") {
       setMapLoaded(true);
       return;
     }
@@ -249,7 +249,7 @@ export default function NewsLocalPage() {
       };
     } else {
       const check = setInterval(() => {
-        if ((window as any).kakao && (window as any).kakao.maps) {
+        if ((window as any).kakao && (window as any).kakao.maps && typeof (window as any).kakao.maps.LatLng === "function") {
           clearInterval(check);
           setMapLoaded(true);
         }

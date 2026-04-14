@@ -84,11 +84,11 @@ export default function HeroMapSection({ initialVacancies }: { initialVacancies?
   // Preload Kakao Map script immediately on mount
   const [mapLoaded, setMapLoaded] = useState(false);
   useEffect(() => {
-    if ((window as any).kakao && (window as any).kakao.maps) {
+    if ((window as any).kakao && (window as any).kakao.maps && typeof (window as any).kakao.maps.LatLng === "function") {
       setMapLoaded(true);
       return;
     }
-    const scriptId = "kakao-map-script-hero";
+    const scriptId = "kakao-map-script";
     if (!document.getElementById(scriptId)) {
       const script = document.createElement("script");
       const kakaoApiKey = process.env.NEXT_PUBLIC_KAKAO_APP_KEY || "435d3602201a49ea712e5f5a36fe6efc";
@@ -102,7 +102,7 @@ export default function HeroMapSection({ initialVacancies }: { initialVacancies?
       };
     } else {
       const check = setInterval(() => {
-        if ((window as any).kakao && (window as any).kakao.maps) {
+        if ((window as any).kakao && (window as any).kakao.maps && typeof (window as any).kakao.maps.LatLng === "function") {
           clearInterval(check);
           setMapLoaded(true);
         }
@@ -373,3 +373,5 @@ export default function HeroMapSection({ initialVacancies }: { initialVacancies?
     </div>
   );
 }
+
+// touch
