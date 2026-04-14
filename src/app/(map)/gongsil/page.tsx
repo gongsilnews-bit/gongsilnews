@@ -186,7 +186,7 @@ export default function GongsilPage() {
 
   const fetchComments = useCallback(async (vacancyId: string) => {
     const res = await getVacancyComments(vacancyId);
-    if (res.success) setComments(res.data);
+    if (res.success) setComments(res.data || []);
   }, []);
 
   const handleCommentSubmit = async () => {
