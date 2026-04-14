@@ -174,7 +174,7 @@ export default function MapSearchBar({ onSearchCoord, mapCenterRegion, themeColo
   return (
     <>
       <style>{`
-        #wishFloatingFilter { display: flex; position: absolute; top: 15px; left: 20px; z-index: 1000; background: #fff; padding: 5px 15px; border-radius: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border: 1px solid #ddd; align-items: center; gap: 10px; font-size: 14px; color: #333; transition: box-shadow 0.2s; }
+        #wishFloatingFilter { display: flex; position: absolute; top: 250px; left: 20px; z-index: 100; background: #fff; padding: 5px 15px; border-radius: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border: 1px solid #ddd; align-items: center; gap: 10px; font-size: 14px; color: #333; transition: box-shadow 0.2s; }
         #wishFloatingFilter:hover { box-shadow: 0 6px 15px rgba(0,0,0,0.15); }
         .wish-select { background: none; border: none; cursor: pointer; font-weight: bold; padding: 5px 10px; }
         .wish-select::after { content: ' ▼'; font-size: 10px; color: #999; }
@@ -206,7 +206,7 @@ export default function MapSearchBar({ onSearchCoord, mapCenterRegion, themeColo
 
       {/* 지역 선택 캐스케이딩 패널 */}
       {activePanel === "region" && (
-        <div ref={regionRef} style={{ position: "absolute", top: 70, left: 20, zIndex: 1001, background: "#fff", width: 380, borderRadius: 8, boxShadow: "0 4px 15px rgba(0,0,0,0.2)", overflow: "hidden" }}>
+        <div ref={regionRef} style={{ position: "absolute", top: 305, left: 20, zIndex: 101, background: "#fff", width: 380, borderRadius: 8, boxShadow: "0 4px 15px rgba(0,0,0,0.2)", overflow: "hidden" }}>
           <div style={{ display: "flex", borderBottom: "1px solid #ccc", background: "#f9f9f9" }}>
             <button className={`region-tab ${activeTab === "sido" ? "active" : ""}`} onClick={() => setActiveTab("sido")}>시/도</button>
             <button className={`region-tab ${activeTab === "gugun" ? "active" : ""}`} onClick={() => setActiveTab("gugun")}>시/군/구</button>
@@ -259,7 +259,7 @@ export default function MapSearchBar({ onSearchCoord, mapCenterRegion, themeColo
 
       {/* 지도 검색 입력 패널 */}
       {activePanel === "search" && (
-        <div ref={searchRef} style={{ position: "absolute", top: 70, left: 20, zIndex: 1001, background: "#fff", padding: 15, borderRadius: 8, boxShadow: "0 4px 15px rgba(0,0,0,0.2)", width: 320 }}>
+        <div ref={searchRef} style={{ position: "absolute", top: 305, left: 20, zIndex: 101, background: "#fff", padding: 15, borderRadius: 8, boxShadow: "0 4px 15px rgba(0,0,0,0.2)", width: 320 }}>
           <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
             <input 
               type="text" 
