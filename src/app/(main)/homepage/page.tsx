@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { getVacancies } from "@/app/actions/vacancy";
 
 const CATEGORY_OPTIONS = [
@@ -36,6 +37,7 @@ const SORT_OPTIONS = [
 const BRAND = "#2845B3";
 
 export default function HomepagePage() {
+  const router = useRouter();
   const [vacancies, setVacancies] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [category, setCategory] = useState("");
@@ -249,7 +251,7 @@ export default function HomepagePage() {
               </div>
             ) : (
               paged.map((v, idx) => (
-                <div key={v.id} style={{ display: "flex", gap: 16, padding: "16px 0", borderBottom: idx < paged.length - 1 ? "1px solid #e5e7eb" : "none", alignItems: "flex-start" }}>
+                <div key={v.id} onClick={() => router.push(`/homepage/${v.id}`)} style={{ display: "flex", gap: 16, padding: "16px 0", borderBottom: idx < paged.length - 1 ? "1px solid #e5e7eb" : "none", alignItems: "flex-start", cursor: "pointer", transition: "background 0.15s" }} onMouseEnter={e => (e.currentTarget.style.background = "#f9fafb")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
                   {/* Thumbnail */}
                   <div style={{ width: 110, height: 85, borderRadius: 6, overflow: "hidden", flexShrink: 0, background: "#f3f4f6", border: "1px solid #e5e7eb" }}>
                     {v.photos?.length > 0 ? (
