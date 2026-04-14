@@ -258,7 +258,7 @@ export async function getAgencyInfo(ownerId: string) {
 export async function getVacanciesForMap(options?: any) {
   const supabase = getAdminClient();
   try {
-    let query = supabase.from('vacancies').select('id, property_type, trade_type, deposit, monthly_rent, exclusive_m2, supply_m2, direction, room_count, bath_count, commission_comment, commission_type, lat, lng, options, dong, building_name, hosu, address, title, client_phone, landlord_phone, status, vacancy_no, created_at, realtor_commission, members!vacancies_owner_id_fkey(name, email, role), vacancy_photos(url, sort_order)').eq('status', 'ACTIVE').not('lat', 'is', null).not('lng', 'is', null).order('created_at', { ascending: false });
+    let query = supabase.from('vacancies').select('*, vacancy_photos(url, sort_order)').eq('status', 'ACTIVE').not('lat', 'is', null).not('lng', 'is', null).order('created_at', { ascending: false });
     const { data, error } = await query;
     if (error) return { success: false, error: error.message };
     return { success: true, data: data || [] };
