@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
-import { getVacancies } from "@/app/actions/vacancy";
+import { getVacancies, getAgencyInfo } from "@/app/actions/vacancy";
 
 // 카테고리 설정 데이터
 const CATEGORY_CONFIG: Record<string, { name: string; pills: string[]; basicFilters: string[]; detailFilters: string[]; showToggle: boolean; pillStyle?: string }> = {
@@ -30,8 +30,11 @@ export default function GongsilPage() {
   const [dbVacancies, setDbVacancies] = useState<any[]>([]);
   const [mapError, setMapError] = useState<string | null>(null);
   const [showGalleryModal, setShowGalleryModal] = useState(false);
+  const [agencyInfo, setAgencyInfo] = useState<any>(null);
 
   const mapRef = useRef<HTMLDivElement>(null);
+  const itemMapRef = useRef<HTMLDivElement>(null);
+  const roadviewRef = useRef<HTMLDivElement>(null);
   const kakaoMapRef = useRef<any>(null);
   const clustererRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
@@ -79,6 +82,49 @@ export default function GongsilPage() {
     }
     fetchVacancies();
   }, []);
+
+  useEffect(() => {
+    if (showDetail && activeProperty && activeDetailTab === "realtor") {
+      const prop = dbVacancies.find(v => v.id === activeProperty);
+      if (prop?.owner_id && prop?.owner_role === 'REALTOR') {
+        getAgencyInfo(prop.owner_id).then(res => {
+          if (res.success) setAgencyInfo(res.data);
+          else setAgencyInfo(null);
+        });
+      } else {
+        setAgencyInfo(null);
+      }
+    }
+  }, [showDetail, activeProperty, activeDetailTab, dbVacancies]);
+
+  useEffect(() => {
+    if (showDetail && activeProperty && activeDetailTab === "info") {
+      const prop = dbVacancies.find(v => v.id === activeProperty);
+      if (prop?.lat && prop?.lng && (window as any).kakao?.maps) {
+        const kakao = (window as any).kakao;
+        const pos = new kakao.maps.LatLng(prop.lat, prop.lng);
+        
+        // 지도 초기화
+        if (itemMapRef.current) {
+          const map = new kakao.maps.Map(itemMapRef.current, { center: pos, level: 3 });
+          new kakao.maps.Marker({ position: pos, map: map });
+        }
+        
+        // 로드뷰 초기화
+        if (roadviewRef.current) {
+          const rv = new kakao.maps.Roadview(roadviewRef.current);
+          const rvClient = new kakao.maps.RoadviewClient();
+          rvClient.getNearestPanoId(pos, 50, (panoId: any) => {
+            if (panoId) {
+              rv.setPanoId(panoId, pos);
+            } else {
+              if (roadviewRef.current) roadviewRef.current.innerHTML = '<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#999; font-size:13px;">해당 위치의 로드뷰가 제공되지 않습니다.</div>';
+            }
+          });
+        }
+      }
+    }
+  }, [showDetail, activeProperty, activeDetailTab, dbVacancies]);
 
   // Initialize Kakao Map
   useEffect(() => {
@@ -457,35 +503,41 @@ export default function GongsilPage() {
               {activeDetailTab === "info" && (
                 <>
                 <div style={{ display: "grid", gridTemplateColumns: "110px 1fr", borderBottom: "10px solid #f5f5f5" }}>
-                  <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "flex-start", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>매물번호</div>
-                  <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.vacancy_no}</div>
-                  <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "flex-start", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>소재지</div>
+                  <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>매물번호</div>
+                  <div style={{ fontSize: 14, color: "#222", fontWeight: "bold", padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.vacancy_no}</div>
+                  <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>소재지</div>
                   <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{[prop.sido, prop.sigungu, prop.dong, prop.detail_addr].filter(Boolean).join(" ")}</div>
-                  <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "flex-start", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>매물특성</div>
-                  <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.memo || "-"}</div>
-                  <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "flex-start", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>공급/전용면적</div>
-                  <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.supply_m2 || 0}㎡ / {prop.exclusive_m2 || 0}㎡</div>
-                  <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "flex-start", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>해당층/총층</div>
+                  <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>매물특성</div>
+                  <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.building_name || "-"}</div>
+                  <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>공급/전용면적</div>
+                  <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.supply_m2 ? `${prop.supply_m2}m²(${prop.supply_py || 0}평)` : "-"} / {prop.exclusive_m2 ? `${prop.exclusive_m2}m²(${prop.exclusive_py || 0}평)` : "-"}</div>
+                  <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>해당층/총층</div>
                   <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.current_floor || "-"} / {prop.total_floor || "-"}</div>
-                  <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "flex-start", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>방/욕실수</div>
+                  <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>방/욕실수</div>
                   <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.room_count || 0}개 / {prop.bathroom_count || 0}개</div>
-                  <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "flex-start", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>방향</div>
+                  <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>방향</div>
                   <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.direction || "-"}</div>
+                  <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>주차가능 여부</div>
+                  <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.parking || "없음"}</div>
+                  <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>입주가능일</div>
+                  <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.move_in_date || "즉시입주(공실)"}</div>
+                  <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>관리비</div>
+                  <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.maintenance_fee ? `${prop.maintenance_fee / 10000}만원` : "없음"}</div>
+                  <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "flex-start", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>상세설명</div>
+                  <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all", whiteSpace: "pre-line" }}>{prop.description || "-"}</div>
                 </div>
 
                 {/* ──── 위치정보 ──── */}
-                <div style={{ padding: "20px 20px 0" }}>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: "#222", marginTop: 10, marginBottom: 12 }}>위치정보</div>
-                  <div style={{ width: "100%", height: 200, borderRadius: 8, marginBottom: 20, background: "#e8eaed", display: "flex", alignItems: "center", justifyContent: "center", color: "#999", fontSize: 14, border: "1px solid #eee" }}>
-                    🗺️ 카카오맵 (위치정보)
+                <div style={{ padding: "30px 20px 0" }}>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: "#222", marginBottom: 12 }}>위치정보</div>
+                  <div ref={itemMapRef} style={{ width: "100%", height: 300, borderRadius: 8, marginBottom: 20, background: "#e8eaed", display: "flex", alignItems: "center", justifyContent: "center", color: "#999", fontSize: 14, border: "1px solid #eee", overflow: "hidden" }}>
                   </div>
                 </div>
 
                 {/* ──── 로드뷰 ──── */}
                 <div style={{ padding: "0 20px" }}>
                   <div style={{ fontSize: 16, fontWeight: 800, color: "#222", marginBottom: 12 }}>로드뷰</div>
-                  <div style={{ width: "100%", height: 200, borderRadius: 8, marginBottom: 20, background: "#e8eaed", display: "flex", alignItems: "center", justifyContent: "center", color: "#999", fontSize: 14, border: "1px solid #eee" }}>
-                    🛣️ 카카오 로드뷰
+                  <div ref={roadviewRef} style={{ width: "100%", height: 300, borderRadius: 8, marginBottom: 20, background: "#e8eaed", display: "flex", alignItems: "center", justifyContent: "center", color: "#999", fontSize: 14, border: "1px solid #eee", overflow: "hidden" }}>
                   </div>
                 </div>
 
@@ -551,25 +603,33 @@ export default function GongsilPage() {
               {/* 등록자정보 탭 */}
               {activeDetailTab === "realtor" && (
                 <>
-                <div style={{ padding: "24px 20px", background: "#fff" }}>
-                  <div style={{ fontSize: 16, fontWeight: "bold", color: "#111", marginBottom: 12 }}>{prop.members ? prop.members.agency_name || prop.members.name : prop.client_name}</div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6, background: "#fafafa", padding: 16, borderRadius: 8, border: "1px solid #eee" }}>
-                    <span style={{ fontWeight: "bold", fontSize: 15, color: "#222" }}>{prop.members ? prop.members.name : prop.client_name}</span>
-                    <span style={{ fontSize: 14, fontWeight: "bold", color: "#1f5edb", marginTop: 4 }}>{prop.members ? prop.members.phone : prop.client_phone}</span>
+                <div style={{ padding: "30px 20px", background: "#fff" }}>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: "#111", marginBottom: 20 }}>{agencyInfo ? agencyInfo.agency_name : (prop.members ? prop.members.agency_name || prop.members.name : prop.client_name)}</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 30 }}>
+                    <span style={{ fontSize: 14, color: "#555" }}>대표 {agencyInfo ? agencyInfo.representative : (prop.members ? prop.members.name : prop.client_name)} <span style={{color:"#ccc", margin:"0 6px"}}>|</span> 등록번호 {agencyInfo?.biz_number || '-'}</span>
+                    <span style={{ fontSize: 14, color: "#555" }}>{agencyInfo?.address || '-'}</span>
+                    <span style={{ fontSize: 14, fontWeight: "bold", color: "#1a73e8", marginTop: 4, display: "flex", alignItems: "center", gap: 6 }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                      전화 {agencyInfo?.tel ? `${agencyInfo.tel}, ` : ''}{prop.members ? prop.members.phone : prop.client_phone}
+                    </span>
                   </div>
-                  <div style={{ marginTop: 24 }}>
-                    <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 12, color: "#111" }}>공실등록현황</div>
-                    <div style={{ display: "flex", gap: 8, borderBottom: "2px solid #1a73e8", paddingBottom: 8 }}>
-                        <span style={{ fontSize: 13, color: "#1a73e8", fontWeight: "bold", padding: "4px 8px" }}>
-                          해당 사용자의 정보가 제한적입니다.
-                        </span>
+                  
+                  <div>
+                    <div style={{ display: "flex", background: "#f9f9f9", borderRadius: 8, overflow: "hidden", border: "1px solid #eee" }}>
+                      <div style={{ flex: 1, padding: "16px 20px", fontSize: 14, fontWeight: "bold", color: "#111", borderRight: "1px solid #eee", display: "flex", alignItems: "center" }}>공실등록현황</div>
+                      <div style={{ display: "flex", alignItems: "center", padding: "0 20px", gap: 16, fontSize: 13, color: "#666" }}>
+                        <span>매매 <strong style={{color:"#111"}}>{dbVacancies.filter(v => v.owner_id === prop.owner_id && v.trade_type === '매매').length}</strong></span><span style={{width:1,height:12,background:"#ddd"}}></span>
+                        <span>전세 <strong style={{color:"#111"}}>{dbVacancies.filter(v => v.owner_id === prop.owner_id && v.trade_type === '전세').length}</strong></span><span style={{width:1,height:12,background:"#ddd"}}></span>
+                        <span>월세 <strong style={{color:"#111"}}>{dbVacancies.filter(v => v.owner_id === prop.owner_id && v.trade_type === '월세').length}</strong></span><span style={{width:1,height:12,background:"#ddd"}}></span>
+                        <span>단기 <strong style={{color:"#111"}}>{dbVacancies.filter(v => v.owner_id === prop.owner_id && v.trade_type === '단기').length}</strong></span>
+                      </div>
                     </div>
                   </div>
                 </div>
 
                 {/* ──── 등록 물건 리스트 ──── */}
                 <div style={{ borderTop: "10px solid #f5f5f5" }}>
-                  {dbVacancies.slice(0, 5).map((vp) => (
+                  {dbVacancies.filter(v => v.owner_id === prop.owner_id).slice(0, 10).map((vp) => (
                     <div key={vp.id} onClick={() => { setActiveProperty(vp.id); setActiveDetailTab("info"); setGalleryIndex(0); }}
                       style={{
                         display: "flex", justifyContent: "space-between", alignItems: "flex-start",

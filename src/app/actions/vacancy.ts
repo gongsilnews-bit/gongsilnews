@@ -241,3 +241,15 @@ export async function deleteVacancy(vacancyId: string) {
     return { success: false, error: error.message };
   }
 }
+
+// ── 중개소 정보 조회 ──
+export async function getAgencyInfo(ownerId: string) {
+  const supabase = getAdminClient();
+  try {
+    const { data, error } = await supabase.from('agencies').select('*').eq('owner_id', ownerId).single();
+    if (error) return { success: false, error: error.message };
+    return { success: true, data };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
