@@ -37,8 +37,8 @@ export default function HeroMapSection() {
     
     if (markersRef.current && (window as any).kakao?.maps) {
        const size = 36;
-       const normalSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="%234b89ff" stroke="white" stroke-width="2"/><text x="50%25" y="52%25" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="13" font-weight="bold" font-family="sans-serif">1</text></svg>`;
-       const activeSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="white" stroke="%234b89ff" stroke-width="2"/><text x="50%25" y="52%25" text-anchor="middle" dominant-baseline="middle" fill="%234b89ff" font-size="13" font-weight="bold" font-family="sans-serif">1</text></svg>`;
+       const normalSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="%234b89ff" stroke="white" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="14" font-weight="bold" font-family="sans-serif">1</text></svg>`;
+       const activeSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="white" stroke="%234b89ff" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="%234b89ff" font-size="14" font-weight="bold" font-family="sans-serif">1</text></svg>`;
 
        markersRef.current.forEach((marker: any) => {
           const idStr = markerIdMapRef.current.get(marker);
@@ -137,8 +137,8 @@ export default function HeroMapSection() {
           const strId = String(prop.id);
           const isSelected = selectedClusterIdsRef.current?.includes(strId);
 
-          const normalSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="%234b89ff" stroke="white" stroke-width="2"/><text x="50%25" y="52%25" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="13" font-weight="bold" font-family="sans-serif">1</text></svg>`;
-          const activeSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="white" stroke="%234b89ff" stroke-width="2"/><text x="50%25" y="52%25" text-anchor="middle" dominant-baseline="middle" fill="%234b89ff" font-size="13" font-weight="bold" font-family="sans-serif">1</text></svg>`;
+          const normalSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="%234b89ff" stroke="white" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="14" font-weight="bold" font-family="sans-serif">1</text></svg>`;
+          const activeSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="white" stroke="%234b89ff" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="%234b89ff" font-size="14" font-weight="bold" font-family="sans-serif">1</text></svg>`;
           const svgStr = isSelected ? activeSvg : normalSvg;
 
           const marker = new kakao.maps.Marker({

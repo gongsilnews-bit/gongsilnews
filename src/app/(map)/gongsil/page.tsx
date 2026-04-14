@@ -91,8 +91,8 @@ function GongsilPageInner() {
     // Update Single Markers reactively
     if (markersRef.current && (window as any).kakao?.maps) {
        const size = 42;
-       const normalSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="%234b89ff" stroke="white" stroke-width="2"/><text x="50%25" y="52%25" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="15" font-weight="bold" font-family="sans-serif">1</text></svg>`;
-       const activeSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="white" stroke="%234b89ff" stroke-width="2"/><text x="50%25" y="52%25" text-anchor="middle" dominant-baseline="middle" fill="%234b89ff" font-size="15" font-weight="bold" font-family="sans-serif">1</text></svg>`;
+       const normalSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="%234b89ff" stroke="white" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="16" font-weight="bold" font-family="sans-serif">1</text></svg>`;
+       const activeSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="white" stroke="%234b89ff" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="%234b89ff" font-size="16" font-weight="bold" font-family="sans-serif">1</text></svg>`;
 
        markersRef.current.forEach((marker: any) => {
           const idStr = markerIdMapRef.current.get(marker);
@@ -514,8 +514,8 @@ function GongsilPageInner() {
           const strId = String(prop.id);
           const isSelected = selectedClusterIdsRef.current?.includes(strId) || String(activeProperty) === strId;
           
-          const normalSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="%234b89ff" stroke="white" stroke-width="2"/><text x="50%25" y="52%25" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="15" font-weight="bold" font-family="sans-serif">1</text></svg>`;
-          const activeSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="white" stroke="%234b89ff" stroke-width="2"/><text x="50%25" y="52%25" text-anchor="middle" dominant-baseline="middle" fill="%234b89ff" font-size="15" font-weight="bold" font-family="sans-serif">1</text></svg>`;
+          const normalSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="%234b89ff" stroke="white" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="16" font-weight="bold" font-family="sans-serif">1</text></svg>`;
+          const activeSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="white" stroke="%234b89ff" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="%234b89ff" font-size="16" font-weight="bold" font-family="sans-serif">1</text></svg>`;
           const svgStr = isSelected ? activeSvg : normalSvg;
           
           const markerImage = new kakao.maps.MarkerImage(
@@ -525,7 +525,7 @@ function GongsilPageInner() {
           );
 
           const hoverSize = 48;
-          const hoverSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${hoverSize}" height="${hoverSize}"><circle cx="${hoverSize/2}" cy="${hoverSize/2}" r="${hoverSize/2 - 2}" fill="%234b89ff" stroke="white" stroke-width="2"/><text x="50%25" y="52%25" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="16" font-weight="bold" font-family="sans-serif">1</text></svg>`;
+          const hoverSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${hoverSize}" height="${hoverSize}"><circle cx="${hoverSize/2}" cy="${hoverSize/2}" r="${hoverSize/2 - 2}" fill="%234b89ff" stroke="white" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="17" font-weight="bold" font-family="sans-serif">1</text></svg>`;
           const hoverImage = new kakao.maps.MarkerImage(
             `data:image/svg+xml,${hoverSvg}`,
             new kakao.maps.Size(hoverSize, hoverSize),
