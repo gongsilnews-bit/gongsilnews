@@ -2,7 +2,7 @@ import { Suspense } from 'react';
 import NewsMapClient from './NewsMapClient';
 import { getArticles } from '@/app/actions/article';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 
 export const metadata = {
   title: '우리동네뉴스 지도 | 공실뉴스',

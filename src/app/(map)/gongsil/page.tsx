@@ -2,7 +2,7 @@ import { Suspense } from 'react';
 import GongsilClient from './GongsilClient';
 import { getVacancies } from '@/app/actions/vacancy';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 
 export const metadata = {
   title: '공실열람 | 공실뉴스',

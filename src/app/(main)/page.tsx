@@ -1,7 +1,7 @@
 import Script from "next/script";
 import { getVacanciesForMap } from "@/app/actions/vacancy";
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 
 import QuickFloatingMenu from "@/components/common/QuickFloatingMenu";
 import MarketTickerBar from "@/components/home/MarketTickerBar";
