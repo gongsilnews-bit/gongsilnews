@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { getVacancies } from "@/app/actions/vacancy";
+import { getVacanciesForMap } from "@/app/actions/vacancy";
 
 const CATEGORY_OPTIONS = [
   { label: "전체", value: "" },
@@ -60,7 +60,7 @@ export default function HeroMapSection() {
   // Fetch vacancies from DB via server action
   useEffect(() => {
     const fetchData = async () => {
-      const res = await getVacancies({ all: true });
+      const res = await getVacanciesForMap();
       if (res.success) {
         const withImages = (res.data || []).map((v: any) => ({
           ...v,
@@ -71,6 +71,35 @@ export default function HeroMapSection() {
       }
     };
     fetchData();
+  }, []);
+
+  // Preload Kakao Map script immediately on mount
+  const [mapLoaded, setMapLoaded] = useState(false);
+  useEffect(() => {
+    if ((window as any).kakao && (window as any).kakao.maps) {
+      setMapLoaded(true);
+      return;
+    }
+    const scriptId = "kakao-map-script-hero";
+    if (!document.getElementById(scriptId)) {
+      const script = document.createElement("script");
+      const kakaoApiKey = process.env.NEXT_PUBLIC_KAKAO_APP_KEY || "435d3602201a49ea712e5f5a36fe6efc";
+      script.id = scriptId;
+      script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoApiKey}&libraries=services,clusterer&autoload=false`;
+      document.head.appendChild(script);
+      script.onload = () => {
+        (window as any).kakao.maps.load(() => {
+          setMapLoaded(true);
+        });
+      };
+    } else {
+      const check = setInterval(() => {
+        if ((window as any).kakao && (window as any).kakao.maps) {
+          clearInterval(check);
+          setMapLoaded(true);
+        }
+      }, 100);
+    }
   }, []);
 
   const filteredVacancies = useMemo(() => {
@@ -97,147 +126,123 @@ export default function HeroMapSection() {
       : `${formatAmount(row.deposit)}/${Math.round((row.monthly_rent || 0) / 10000)}만`;
   };
 
-  // Initialize Kakao Map
+  // 1. Initialize empty Kakao Map as soon as SDK loads
   useEffect(() => {
-    if (filteredVacancies.length === 0) return;
+    if (!mapLoaded) return;
+    const kakao = (window as any).kakao;
+    const container = mapRef.current;
+    if (!container || kakaoMapRef.current) return;
 
-    const loadMap = () => {
-      const kakao = (window as any).kakao;
-      if (!kakao || !kakao.maps) return;
+    // Default to Seoul
+    const map = new kakao.maps.Map(container, {
+      center: new kakao.maps.LatLng(37.498095, 127.027610),
+      level: 7,
+    });
+    kakaoMapRef.current = map;
 
-      kakao.maps.load(() => {
-        const container = mapRef.current;
-        if (!container) return;
+    // Initially set bounds and update on move
+    setMapBounds(map.getBounds());
+    kakao.maps.event.addListener(map, 'idle', () => {
+      setMapBounds(map.getBounds());
+    });
+  }, [mapLoaded]);
 
-        // Center on first vacancy or default Seoul
-        const firstWithCoords = filteredVacancies.find(v => v.lat && v.lng);
-        const centerLat = firstWithCoords?.lat || 37.5665;
-        const centerLng = firstWithCoords?.lng || 126.978;
+  // 2. Add markers and clusterer when map is ready AND data is loaded
+  useEffect(() => {
+    if (!kakaoMapRef.current || filteredVacancies.length === 0) return;
 
-        if (!kakaoMapRef.current) {
-          const map = new kakao.maps.Map(container, {
-            center: new kakao.maps.LatLng(centerLat, centerLng),
-            level: 7,
-          });
-          kakaoMapRef.current = map;
-        }
+    const kakao = (window as any).kakao;
+    const map = kakaoMapRef.current;
 
-        const map = kakaoMapRef.current;
+    // Clear old markers
+    if (clustererRef.current) clustererRef.current.clear();
+    markersRef.current = [];
+    markerIdMapRef.current.clear();
 
-        // Clear old markers
-        if (clustererRef.current) clustererRef.current.clear();
-        markersRef.current = [];
-        markerIdMapRef.current.clear();
+    const newMarkers: any[] = [];
+    filteredVacancies.forEach(prop => {
+      if (!prop.lat || !prop.lng) return;
+      const position = new kakao.maps.LatLng(prop.lat, prop.lng);
+      const size = 36;
+      const strId = String(prop.id);
+      const isSelected = selectedClusterIdsRef.current?.includes(strId);
 
-        const newMarkers: any[] = [];
-        filteredVacancies.forEach(prop => {
-          if (!prop.lat || !prop.lng) return;
-          const position = new kakao.maps.LatLng(prop.lat, prop.lng);
-          const size = 36;
-          const strId = String(prop.id);
-          const isSelected = selectedClusterIdsRef.current?.includes(strId);
+      const normalSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="%234b89ff" stroke="white" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="14" font-weight="bold" font-family="sans-serif">1</text></svg>`;
+      const activeSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="white" stroke="%234b89ff" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="%234b89ff" font-size="14" font-weight="bold" font-family="sans-serif">1</text></svg>`;
+      const svgStr = isSelected ? activeSvg : normalSvg;
 
-          const normalSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="%234b89ff" stroke="white" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="14" font-weight="bold" font-family="sans-serif">1</text></svg>`;
-          const activeSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="white" stroke="%234b89ff" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="%234b89ff" font-size="14" font-weight="bold" font-family="sans-serif">1</text></svg>`;
-          const svgStr = isSelected ? activeSvg : normalSvg;
-
-          const marker = new kakao.maps.Marker({
-            position,
-            image: new kakao.maps.MarkerImage(`data:image/svg+xml,${svgStr}`, new kakao.maps.Size(size, size), { offset: new kakao.maps.Point(size / 2, size / 2) }),
-            title: strId
-          });
-          markerIdMapRef.current.set(marker, strId);
-
-          kakao.maps.event.addListener(marker, 'click', () => {
-             setSelectedClusterIds([strId]);
-             setShowList(true);
-          });
-
-          newMarkers.push(marker);
-        });
-
-        markersRef.current = newMarkers;
-
-        const clusterer = new kakao.maps.MarkerClusterer({
-          map,
-          markers: newMarkers,
-          gridSize: 60,
-          minLevel: 4,
-          minClusterSize: 2,
-          disableClickZoom: true,
-          calculator: [10, 30, 50],
-          styles: [
-            { width: "44px", height: "44px", background: "#4b89ff", borderRadius: "50%", color: "#fff", textAlign: "center", lineHeight: "44px", fontSize: "15px", fontWeight: "bold", border: "3px solid rgba(255,255,255,0.8)", boxShadow: "0 2px 8px rgba(0,0,0,0.3)" },
-            { width: "54px", height: "54px", background: "#3a6fe0", borderRadius: "50%", color: "#fff", textAlign: "center", lineHeight: "54px", fontSize: "17px", fontWeight: "bold", border: "3px solid rgba(255,255,255,0.8)", boxShadow: "0 2px 8px rgba(0,0,0,0.3)" },
-            { width: "64px", height: "64px", background: "#2856b8", borderRadius: "50%", color: "#fff", textAlign: "center", lineHeight: "64px", fontSize: "19px", fontWeight: "bold", border: "3px solid rgba(255,255,255,0.8)", boxShadow: "0 2px 8px rgba(0,0,0,0.3)" },
-          ],
-        });
-        clustererRef.current = clusterer;
-
-        // Cluster click -> Filter list without zooming
-        kakao.maps.event.addListener(clusterer, 'clusterclick', (cluster: any) => {
-          const markers = cluster.getMarkers();
-          const ids = markers.flatMap((m: any) => {
-             const pos = m.getPosition();
-             return dbVacanciesRef.current.filter((v: any) => Math.abs(v.lat - pos.getLat()) < 0.00001 && Math.abs(v.lng - pos.getLng()) < 0.00001).map((v: any) => String(v.id));
-          });
-          setSelectedClusterIds(Array.from(new Set(ids)));
-          setShowList(true);
-        });
-
-        // Retain cluster styling
-        kakao.maps.event.addListener(clusterer, 'clustered', (clusters: any[]) => {
-           if (!selectedClusterIdsRef.current || selectedClusterIdsRef.current.length === 0) return;
-           clusters.forEach(cluster => {
-              const markers = cluster.getMarkers();
-              if (markers.length < 2) return;
-              const ids = markers.flatMap((m: any) => {
-                 const pos = m.getPosition();
-                 return dbVacanciesRef.current.filter((v: any) => Math.abs(v.lat - pos.getLat()) < 0.00001 && Math.abs(v.lng - pos.getLng()) < 0.00001).map((v: any) => String(v.id));
-              });
-              const isMatch = ids.some((id: any) => id && selectedClusterIdsRef.current?.includes(id));
-              if (isMatch) {
-                 const overlay = cluster.getClusterMarker().getContent();
-                 if (overlay && overlay.style) {
-                     overlay.style.background = '#ffffff';
-                     overlay.style.color = '#4b89ff';
-                     overlay.style.border = '2px solid #4b89ff';
-                     overlay.style.zIndex = '999';
-                 }
-              }
-           });
-        });
-
-        // Fit bounds
-        if (newMarkers.length > 0) {
-          const bounds = new kakao.maps.LatLngBounds();
-          newMarkers.forEach(m => bounds.extend(m.getPosition()));
-          map.setBounds(bounds);
-        }
-
-        // Initially set bounds and update on move
-        setMapBounds(map.getBounds());
-        kakao.maps.event.addListener(map, 'idle', () => {
-           setMapBounds(map.getBounds());
-        });
+      const marker = new kakao.maps.Marker({
+        position,
+        image: new kakao.maps.MarkerImage(`data:image/svg+xml,${svgStr}`, new kakao.maps.Size(size, size), { offset: new kakao.maps.Point(size / 2, size / 2) }),
+        title: strId
       });
-    };
+      markerIdMapRef.current.set(marker, strId);
 
-    if (!(window as any).kakao || !(window as any).kakao.maps) {
-      if (!document.getElementById("kakao-map-script-home")) {
-        const script = document.createElement("script");
-        const kakaoApiKey = process.env.NEXT_PUBLIC_KAKAO_APP_KEY || "435d3602201a49ea712e5f5a36fe6efc";
-        script.id = "kakao-map-script-home";
-        script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoApiKey}&libraries=services,clusterer&autoload=false`;
-        document.head.appendChild(script);
-        script.onload = loadMap;
-      } else {
-        const check = setInterval(() => {
-          if ((window as any).kakao && (window as any).kakao.maps) { clearInterval(check); loadMap(); }
-        }, 100);
-      }
-    } else {
-      loadMap();
+      kakao.maps.event.addListener(marker, 'click', () => {
+          setSelectedClusterIds([strId]);
+          setShowList(true);
+      });
+
+      newMarkers.push(marker);
+    });
+
+    markersRef.current = newMarkers;
+
+    const clusterer = new kakao.maps.MarkerClusterer({
+      map,
+      markers: newMarkers,
+      gridSize: 60,
+      minLevel: 4,
+      minClusterSize: 2,
+      disableClickZoom: true,
+      calculator: [10, 30, 50],
+      styles: [
+        { width: "44px", height: "44px", background: "#4b89ff", borderRadius: "50%", color: "#fff", textAlign: "center", lineHeight: "44px", fontSize: "15px", fontWeight: "bold", border: "3px solid rgba(255,255,255,0.8)", boxShadow: "0 2px 8px rgba(0,0,0,0.3)" },
+        { width: "54px", height: "54px", background: "#3a6fe0", borderRadius: "50%", color: "#fff", textAlign: "center", lineHeight: "54px", fontSize: "17px", fontWeight: "bold", border: "3px solid rgba(255,255,255,0.8)", boxShadow: "0 2px 8px rgba(0,0,0,0.3)" },
+        { width: "64px", height: "64px", background: "#2856b8", borderRadius: "50%", color: "#fff", textAlign: "center", lineHeight: "64px", fontSize: "19px", fontWeight: "bold", border: "3px solid rgba(255,255,255,0.8)", boxShadow: "0 2px 8px rgba(0,0,0,0.3)" },
+      ],
+    });
+    clustererRef.current = clusterer;
+
+    // Cluster click -> Filter list without zooming
+    kakao.maps.event.addListener(clusterer, 'clusterclick', (cluster: any) => {
+      const markers = cluster.getMarkers();
+      const ids = markers.flatMap((m: any) => {
+          const pos = m.getPosition();
+          return dbVacanciesRef.current.filter((v: any) => Math.abs(v.lat - pos.getLat()) < 0.00001 && Math.abs(v.lng - pos.getLng()) < 0.00001).map((v: any) => String(v.id));
+      });
+      setSelectedClusterIds(Array.from(new Set(ids)));
+      setShowList(true);
+    });
+
+    // Retain cluster styling
+    kakao.maps.event.addListener(clusterer, 'clustered', (clusters: any[]) => {
+        if (!selectedClusterIdsRef.current || selectedClusterIdsRef.current.length === 0) return;
+        clusters.forEach(cluster => {
+          const markers = cluster.getMarkers();
+          if (markers.length < 2) return;
+          const ids = markers.flatMap((m: any) => {
+              const pos = m.getPosition();
+              return dbVacanciesRef.current.filter((v: any) => Math.abs(v.lat - pos.getLat()) < 0.00001 && Math.abs(v.lng - pos.getLng()) < 0.00001).map((v: any) => String(v.id));
+          });
+          const isMatch = ids.some((id: any) => id && selectedClusterIdsRef.current?.includes(id));
+          if (isMatch) {
+              const overlay = cluster.getClusterMarker().getContent();
+              if (overlay && overlay.style) {
+                  overlay.style.background = '#ffffff';
+                  overlay.style.color = '#4b89ff';
+                  overlay.style.border = '2px solid #4b89ff';
+                  overlay.style.zIndex = '999';
+              }
+          }
+        });
+    });
+
+    // Fit bounds
+    if (newMarkers.length > 0) {
+      const bounds = new kakao.maps.LatLngBounds();
+      newMarkers.forEach(m => bounds.extend(m.getPosition()));
+      map.setBounds(bounds);
     }
   }, [filteredVacancies]);
 

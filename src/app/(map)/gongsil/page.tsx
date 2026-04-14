@@ -59,8 +59,8 @@ function GongsilPageInner() {
   const searchParams = useSearchParams();
   const [activeCategory, setActiveCategory] = useState("apart");
   const [activePills, setActivePills] = useState<string[]>(["아파트"]);
-  const [activeProperty, setActiveProperty] = useState<number | null>(1);
-  const [prevPropertyId, setPrevPropertyId] = useState<number | null>(null);
+  const [activeProperty, setActiveProperty] = useState<string | number | null>(null);
+  const [prevPropertyId, setPrevPropertyId] = useState<string | number | null>(null);
   const [showDetail, setShowDetail] = useState(true);
   const [activeDetailTab, setActiveDetailTab] = useState<"info" | "realtor">("info");
   const [showDetailFilters, setShowDetailFilters] = useState(false);
@@ -271,10 +271,9 @@ function GongsilPageInner() {
   useEffect(() => {
     const idParam = searchParams.get("id");
     if (idParam && dbVacancies.length > 0) {
-      const targetId = Number(idParam);
-      const target = dbVacancies.find(v => v.id === targetId);
+      const target = dbVacancies.find(v => String(v.id) === String(idParam));
       if (target) {
-        setActiveProperty(targetId);
+        setActiveProperty(target.id);
         setShowDetail(true);
         setActiveDetailTab("info");
         // Find the correct category and select it
@@ -291,6 +290,8 @@ function GongsilPageInner() {
             kakaoMapRef.current.setLevel(5);
           }
         }
+        // Also ensure marker is selected visibly in the map cluster logic
+        setSelectedClusterIds([String(target.id)]);
       }
     }
   }, [searchParams, dbVacancies]);
