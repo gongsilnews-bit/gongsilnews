@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { getVacancies } from "@/app/actions/vacancy";
 
@@ -36,20 +36,42 @@ const SORT_OPTIONS = [
 
 const BRAND = "#2845B3";
 
+// Extract unique sigungu list from GeoJSON data
+function extractSigunguList(geojson: any): string[] {
+  if (!geojson?.features) return [];
+  const set = new Set<string>();
+  geojson.features.forEach((f: any) => {
+    const sggnm = f.properties?.sggnm;
+    if (sggnm) set.add(sggnm);
+  });
+  return Array.from(set).sort();
+}
+
+// Count vacancies whose dong matches a feature
+function countVacanciesInDong(vacancies: any[], dongName: string): number {
+  // adm_nm format: "서울특별시 종로구 사직동" → extract last part
+  const dong = dongName.split(" ").pop() || "";
+  return vacancies.filter(v => v.dong && v.dong.includes(dong.replace(/동$/, ""))).length;
+}
+
 export default function HomepagePage() {
   const router = useRouter();
   const [vacancies, setVacancies] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [category, setCategory] = useState("");
   const [tradeType, setTradeType] = useState("");
-  const [sido, setSido] = useState("시도선택");
+  const [sido, setSido] = useState("서울특별시");
+  const [sigungu, setSigungu] = useState(""); // 구 선택
+  const [selectedDong, setSelectedDong] = useState(""); // 블럭(동) 선택
   const [sortBy, setSortBy] = useState("latest");
   const [currentPage, setCurrentPage] = useState(1);
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [geoData, setGeoData] = useState<any>(null);
+  const [sigunguList, setSigunguList] = useState<string[]>([]);
   const mapRef = useRef<HTMLDivElement>(null);
   const kakaoMapRef = useRef<any>(null);
-  const clustererRef = useRef<any>(null);
-  const markersRef = useRef<any[]>([]);
+  const polygonsRef = useRef<any[]>([]);
+  const overlaysRef = useRef<any[]>([]);
   const ITEMS_PER_PAGE = 10;
 
   // Fetch vacancies
@@ -72,6 +94,19 @@ export default function HomepagePage() {
     }
     load();
   }, []);
+
+  // Load GeoJSON
+  useEffect(() => {
+    if (sido === "서울특별시") {
+      fetch("/geo/seoul.geojson")
+        .then(r => r.json())
+        .then(data => {
+          setGeoData(data);
+          setSigunguList(extractSigunguList(data));
+        })
+        .catch(() => {});
+    }
+  }, [sido]);
 
   // Load Kakao Map
   useEffect(() => {
@@ -97,48 +132,105 @@ export default function HomepagePage() {
     });
   }, [mapLoaded]);
 
+  // Render polygons on map when sigungu changes
+  const renderPolygons = useCallback(() => {
+    if (!kakaoMapRef.current || !mapLoaded || !geoData) return;
+    const kakao = (window as any).kakao;
+    const map = kakaoMapRef.current;
+
+    // Clear existing
+    polygonsRef.current.forEach(p => p.setMap(null));
+    overlaysRef.current.forEach(o => o.setMap(null));
+    polygonsRef.current = [];
+    overlaysRef.current = [];
+
+    // Filter features by selected sigungu
+    const features = sigungu
+      ? geoData.features.filter((f: any) => f.properties.sggnm === sigungu)
+      : [];
+
+    if (features.length === 0) return;
+
+    const bounds = new kakao.maps.LatLngBounds();
+
+    features.forEach((feature: any) => {
+      const admNm = feature.properties.adm_nm || "";
+      const dongName = admNm.split(" ").pop() || "";
+      const coords = feature.geometry.coordinates;
+      const isMulti = feature.geometry.type === "MultiPolygon";
+      const polygonPaths = isMulti ? coords : [coords];
+
+      polygonPaths.forEach((polyCoords: any) => {
+        const path = polyCoords[0].map((c: number[]) => {
+          const latlng = new kakao.maps.LatLng(c[1], c[0]);
+          bounds.extend(latlng);
+          return latlng;
+        });
+
+        const isSelected = selectedDong === dongName;
+        const polygon = new kakao.maps.Polygon({
+          path,
+          strokeWeight: isSelected ? 3 : 2,
+          strokeColor: isSelected ? "#c53030" : "#004c80",
+          strokeOpacity: 0.8,
+          fillColor: isSelected ? "#fed7d7" : "#3182ce",
+          fillOpacity: isSelected ? 0.5 : 0.2,
+        });
+        polygon.setMap(map);
+        polygonsRef.current.push(polygon);
+
+        // Hover effect
+        kakao.maps.event.addListener(polygon, "mouseover", () => {
+          if (selectedDong !== dongName) polygon.setOptions({ fillOpacity: 0.45, fillColor: "#63b3ed" });
+        });
+        kakao.maps.event.addListener(polygon, "mouseout", () => {
+          if (selectedDong !== dongName) polygon.setOptions({ fillOpacity: 0.2, fillColor: "#3182ce" });
+        });
+
+        // Click → filter
+        kakao.maps.event.addListener(polygon, "click", () => {
+          setSelectedDong(prev => prev === dongName ? "" : dongName);
+          setCurrentPage(1);
+        });
+      });
+
+      // Label overlay at center
+      const allCoords = (isMulti ? coords[0][0] : coords[0]) as number[][];
+      const cLat = allCoords.reduce((s: number, c: number[]) => s + c[1], 0) / allCoords.length;
+      const cLng = allCoords.reduce((s: number, c: number[]) => s + c[0], 0) / allCoords.length;
+      const count = countVacanciesInDong(vacancies, admNm);
+
+      const overlayContent = document.createElement("div");
+      overlayContent.style.cssText = `padding:3px 8px;background:rgba(255,255,255,0.92);border:1px solid #4a90d9;border-radius:4px;font-size:11px;font-weight:700;color:#1a365d;white-space:nowrap;pointer-events:none;box-shadow:0 1px 4px rgba(0,0,0,0.15);`;
+      overlayContent.innerHTML = `${dongName}${count > 0 ? ` <span style="color:#e53e3e">(${count})</span>` : ""}`;
+
+      const overlay = new kakao.maps.CustomOverlay({
+        position: new kakao.maps.LatLng(cLat, cLng),
+        content: overlayContent,
+        yAnchor: 0.5,
+      });
+      overlay.setMap(map);
+      overlaysRef.current.push(overlay);
+    });
+
+    map.setBounds(bounds);
+  }, [mapLoaded, geoData, sigungu, selectedDong, vacancies]);
+
+  useEffect(() => { renderPolygons(); }, [renderPolygons]);
+
   // Filtered
   const filtered = useMemo(() => {
     let list = vacancies;
     if (category) list = list.filter(v => v.property_type === category);
     if (tradeType) list = list.filter(v => v.trade_type === tradeType);
     if (sido && sido !== "시도선택") list = list.filter(v => v.sido === sido);
+    if (sigungu) list = list.filter(v => v.sigungu === sigungu);
+    if (selectedDong) list = list.filter(v => v.dong && v.dong.includes(selectedDong.replace(/동$/, "")));
     if (sortBy === "price_asc") list = [...list].sort((a, b) => (a.deposit || 0) - (b.deposit || 0));
     else if (sortBy === "price_desc") list = [...list].sort((a, b) => (b.deposit || 0) - (a.deposit || 0));
     else list = [...list].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     return list;
-  }, [vacancies, category, tradeType, sido, sortBy]);
-
-  // Render markers on map
-  useEffect(() => {
-    if (!kakaoMapRef.current || !mapLoaded) return;
-    const kakao = (window as any).kakao;
-    const map = kakaoMapRef.current;
-    if (clustererRef.current) clustererRef.current.clear();
-    markersRef.current = [];
-    const geo = filtered.filter(v => v.lat && v.lng);
-    const newMarkers = geo.map(v => {
-      const sz = 36;
-      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${sz}" height="${sz}"><circle cx="${sz/2}" cy="${sz/2}" r="${sz/2-2}" fill="%232845B3" stroke="white" stroke-width="2"/><text x="50%25" y="50%25" text-anchor="middle" dominant-baseline="central" fill="white" font-size="13" font-weight="bold" font-family="sans-serif">1</text></svg>`;
-      return new kakao.maps.Marker({
-        position: new kakao.maps.LatLng(v.lat, v.lng),
-        image: new kakao.maps.MarkerImage(`data:image/svg+xml,${svg}`, new kakao.maps.Size(sz, sz), { offset: new kakao.maps.Point(sz/2, sz/2) }),
-      });
-    });
-    markersRef.current = newMarkers;
-    const cl = new kakao.maps.MarkerClusterer({
-      map, markers: newMarkers, gridSize: 60, minLevel: 4, minClusterSize: 2, disableClickZoom: true,
-      styles: [
-        { width: "44px", height: "44px", background: BRAND, borderRadius: "50%", color: "#fff", textAlign: "center", lineHeight: "38px", fontSize: "15px", fontWeight: "bold", border: "3px solid rgba(255,255,255,0.8)", boxShadow: "0 2px 8px rgba(0,0,0,0.25)" },
-      ],
-    });
-    clustererRef.current = cl;
-    if (newMarkers.length > 0) {
-      const b = new kakao.maps.LatLngBounds();
-      newMarkers.forEach(m => b.extend(m.getPosition()));
-      map.setBounds(b);
-    }
-  }, [filtered, mapLoaded]);
+  }, [vacancies, category, tradeType, sido, sigungu, selectedDong, sortBy]);
 
   // Pagination
   const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
@@ -187,7 +279,7 @@ export default function HomepagePage() {
           </div>
           <div style={{ display: "flex", alignItems: "stretch", border: "1px solid #d1d5db", borderRadius: 4, overflow: "hidden" }}>
             <span style={{ padding: "8px 14px", background: "#e53e3e", color: "#fff", fontSize: 13, fontWeight: 700, whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 4 }}>📍 시도선택</span>
-            <select value={sido} onChange={e => { setSido(e.target.value); setCurrentPage(1); }} style={{ ...selectStyle, border: "none", borderRadius: 0, minWidth: 120 }}>
+            <select value={sido} onChange={e => { setSido(e.target.value); setSigungu(""); setSelectedDong(""); setCurrentPage(1); }} style={{ ...selectStyle, border: "none", borderRadius: 0, minWidth: 120 }}>
               {SIDO_LIST.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>
@@ -200,14 +292,36 @@ export default function HomepagePage() {
           </button>
         </div>
 
-        {/* ── 2. Map ── */}
-        <div ref={mapRef} style={{ width: "100%", height: 420, borderRadius: 8, border: "1px solid #d1d5db", marginBottom: 16, background: "#e8eaed", position: "relative" }}>
-          {!mapLoaded && (
-            <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", color: "#888", fontSize: 14 }}>
-              <span style={{ display: "inline-block", width: 24, height: 24, border: "3px solid #ddd", borderTop: `3px solid ${BRAND}`, borderRadius: "50%", animation: "spin 1s linear infinite", marginRight: 10 }}></span>
-              지도 로딩 중...
-            </div>
-          )}
+        {/* ── 2. Map + Sigungu Sidebar ── */}
+        <div style={{ display: "flex", gap: 0, marginBottom: 16 }}>
+          <div ref={mapRef} style={{ flex: 1, height: 480, borderRadius: "8px 0 0 8px", border: "1px solid #d1d5db", borderRight: "none", background: "#e8eaed", position: "relative" }}>
+            {!mapLoaded && (
+              <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", color: "#888", fontSize: 14 }}>
+                <span style={{ display: "inline-block", width: 24, height: 24, border: "3px solid #ddd", borderTop: `3px solid ${BRAND}`, borderRadius: "50%", animation: "spin 1s linear infinite", marginRight: 10 }}></span>
+                지도 로딩 중...
+              </div>
+            )}
+            {/* Selected dong badge */}
+            {selectedDong && (
+              <div style={{ position: "absolute", top: 12, left: 12, zIndex: 10, display: "flex", alignItems: "center", gap: 8, background: "#fff", border: `2px solid ${BRAND}`, borderRadius: 20, padding: "6px 16px", boxShadow: "0 2px 8px rgba(0,0,0,0.15)" }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: BRAND }}>📍 {selectedDong}</span>
+                <span onClick={() => { setSelectedDong(""); setCurrentPage(1); }} style={{ fontSize: 11, color: "#888", cursor: "pointer", fontWeight: 600 }}>✕ 초기화</span>
+              </div>
+            )}
+          </div>
+
+          {/* Sigungu Sidebar */}
+          <div style={{ width: 160, height: 480, border: "1px solid #d1d5db", borderRadius: "0 8px 8px 0", background: "#fff", overflowY: "auto" }}>
+            <div style={{ padding: "10px 14px", borderBottom: `2px solid ${BRAND}`, fontSize: 13, fontWeight: 800, color: BRAND, textAlign: "center" }}>시도선택</div>
+            {sigunguList.map(sg => (
+              <div key={sg} onClick={() => { setSigungu(prev => prev === sg ? "" : sg); setSelectedDong(""); setCurrentPage(1); }}
+                style={{ padding: "8px 14px", fontSize: 13, cursor: "pointer", borderBottom: "1px solid #f0f0f0", fontWeight: sigungu === sg ? 700 : 400, color: sigungu === sg ? BRAND : "#374151", background: sigungu === sg ? "#eff6ff" : "transparent", transition: "all 0.15s" }}
+                onMouseEnter={e => { if (sigungu !== sg) e.currentTarget.style.background = "#f9fafb"; }}
+                onMouseLeave={e => { if (sigungu !== sg) e.currentTarget.style.background = "transparent"; }}
+              >{sg}</div>
+            ))}
+            {sigunguList.length === 0 && <div style={{ padding: 16, fontSize: 12, color: "#aaa", textAlign: "center" }}>시도를 선택하세요</div>}
+          </div>
         </div>
 
         {/* ── 3. Filter tabs ── */}
@@ -221,6 +335,12 @@ export default function HomepagePage() {
                 {t.label}
               </button>
             ))}
+            {selectedDong && (
+              <span style={{ fontSize: 12, fontWeight: 600, color: "#e53e3e", marginLeft: 8, display: "flex", alignItems: "center", gap: 4 }}>
+                📍 {sigungu} {selectedDong} 선택됨
+                <span onClick={() => { setSelectedDong(""); setCurrentPage(1); }} style={{ cursor: "pointer", textDecoration: "underline" }}>해제</span>
+              </span>
+            )}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <span style={{ fontSize: 13, color: "#6b7280" }}>총 <strong style={{ color: BRAND }}>{filtered.length}</strong>건</span>
@@ -237,7 +357,6 @@ export default function HomepagePage() {
 
         {/* ── 5. Listings + Sidebar ── */}
         <div style={{ display: "flex", gap: 24 }}>
-          {/* Left - listings */}
           <div style={{ flex: 1, minWidth: 0 }}>
             {loading ? (
               <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "80px 0", color: "#888" }}>
@@ -252,7 +371,6 @@ export default function HomepagePage() {
             ) : (
               paged.map((v, idx) => (
                 <div key={v.id} onClick={() => router.push(`/homepage/${v.id}`)} style={{ display: "flex", gap: 16, padding: "16px 0", borderBottom: idx < paged.length - 1 ? "1px solid #e5e7eb" : "none", alignItems: "flex-start", cursor: "pointer", transition: "background 0.15s" }} onMouseEnter={e => (e.currentTarget.style.background = "#f9fafb")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-                  {/* Thumbnail */}
                   <div style={{ width: 110, height: 85, borderRadius: 6, overflow: "hidden", flexShrink: 0, background: "#f3f4f6", border: "1px solid #e5e7eb" }}>
                     {v.photos?.length > 0 ? (
                       <img src={v.photos[0]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
@@ -260,8 +378,6 @@ export default function HomepagePage() {
                       <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#bbb", fontSize: 12 }}>No Photo</div>
                     )}
                   </div>
-
-                  {/* Info */}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                       <span style={{ fontSize: 15, fontWeight: 700, color: "#111", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v.building_name || v.dong || "매물"}</span>
@@ -276,14 +392,11 @@ export default function HomepagePage() {
                       {v.area_m2 ? ` · ${v.area_m2}m²` : ""}
                       {v.rooms ? ` · 방${v.rooms}개` : ""}
                       {v.bathrooms ? `, 욕실${v.bathrooms}개` : ""}
-                      {v.options?.length > 0 ? ` · ${v.options.join(", ")}` : ""}
                     </div>
                     <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 4 }}>
                       📍 {v.sido || ""} {v.sigungu || ""} {v.dong || ""}
                     </div>
                   </div>
-
-                  {/* Right side - phone + commission */}
                   <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", justifyContent: "center", gap: 6, minWidth: 130 }}>
                     {v.realtor_commission && (
                       <span style={{ fontSize: 11, fontWeight: 600, color: "#ea580c", border: "1px solid #fed7aa", padding: "2px 8px", borderRadius: 3, background: "#fff7ed" }}>{v.realtor_commission}</span>
@@ -334,7 +447,6 @@ export default function HomepagePage() {
         </div>
       </div>
 
-      {/* Spinner keyframe */}
       <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
     </div>
   );
