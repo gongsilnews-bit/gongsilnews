@@ -25,28 +25,22 @@ const CATEGORY_TO_PROPERTY_TYPE: Record<string, string> = {
   sale: "분양",
 };
 
-// 가격대 프리셋 (단위: 원)
-const PRICE_PRESETS = [
-  { label: "전체", min: 0, max: Infinity },
-  { label: "1천만 이하", min: 0, max: 10000000 },
-  { label: "1천만~5천만", min: 10000000, max: 50000000 },
-  { label: "5천만~1억", min: 50000000, max: 100000000 },
-  { label: "1억~3억", min: 100000000, max: 300000000 },
-  { label: "3억~5억", min: 300000000, max: 500000000 },
-  { label: "5억~10억", min: 500000000, max: 1000000000 },
-  { label: "10억 이상", min: 1000000000, max: Infinity },
+// 가격 그리드 버튼 (네이버 부동산 스타일, 단위: 원)
+const PRICE_GRID = [
+  { label: "1천", val: 10000000 }, { label: "3천", val: 30000000 }, { label: "5천", val: 50000000 },
+  { label: "1억", val: 100000000 }, { label: "2억", val: 200000000 }, { label: "3억", val: 300000000 },
+  { label: "4억", val: 400000000 }, { label: "5억", val: 500000000 }, { label: "6억", val: 600000000 },
+  { label: "7억", val: 700000000 }, { label: "8억", val: 800000000 }, { label: "9억", val: 900000000 },
+  { label: "10억", val: 1000000000 }, { label: "12억", val: 1200000000 }, { label: "15억", val: 1500000000 },
+  { label: "20억", val: 2000000000 }, { label: "30억", val: 3000000000 }, { label: "30억~", val: -1 },
 ];
 
-// 면적 프리셋 (전용면적 ㎡)
-const AREA_PRESETS = [
-  { label: "전체", min: 0, max: Infinity },
-  { label: "10㎡ 이하", min: 0, max: 10 },
-  { label: "10~30㎡", min: 10, max: 30 },
-  { label: "30~60㎡", min: 30, max: 60 },
-  { label: "60~85㎡", min: 60, max: 85 },
-  { label: "85~100㎡", min: 85, max: 100 },
-  { label: "100~135㎡", min: 100, max: 135 },
-  { label: "135㎡ 이상", min: 135, max: Infinity },
+// 면적 그리드 버튼 (평 단위, 내부에서 ㎡로 환산)
+const AREA_GRID = [
+  { label: "10평", m2: 33 }, { label: "20평", m2: 66 }, { label: "30평", m2: 99 }, { label: "40평", m2: 132 },
+  { label: "50평", m2: 165 }, { label: "60평", m2: 198 }, { label: "70평", m2: 231 }, { label: "80평", m2: 264 },
+  { label: "100평", m2: 330 }, { label: "150평", m2: 495 }, { label: "200평", m2: 660 },
+  { label: "300평", m2: 990 }, { label: "500평", m2: 1650 }, { label: "500평~", m2: -1 },
 ];
 
 // 관리비 프리셋 (원)
@@ -70,14 +64,16 @@ export default function GongsilPage() {
   const [activeFilterDropdown, setActiveFilterDropdown] = useState<string | null>(null);
   const [galleryIndex, setGalleryIndex] = useState(0);
 
-  // ── 실제 필터 상태 ──
-  const [filterTradeTypes, setFilterTradeTypes] = useState<string[]>([]);  // 빈 배열 = 전체
-  const [filterPriceIdx, setFilterPriceIdx] = useState(0);  // PRICE_PRESETS index, 0 = 전체
-  const [filterAreaIdx, setFilterAreaIdx] = useState(0);    // AREA_PRESETS index, 0 = 전체
-  const [filterMaintIdx, setFilterMaintIdx] = useState(0);  // MAINT_PRESETS index, 0 = 전체
-  const [filterRoomCount, setFilterRoomCount] = useState<number | null>(null);  // null = 전체
+  // ── 실제 필터 상태 (네이버 부동산 스타일) ──
+  const [filterTradeTypes, setFilterTradeTypes] = useState<string[]>([]);
+  const [filterPriceMin, setFilterPriceMin] = useState<number | null>(null);
+  const [filterPriceMax, setFilterPriceMax] = useState<number | null>(null);
+  const [filterAreaMin, setFilterAreaMin] = useState<number | null>(null);  // ㎡ 단위
+  const [filterAreaMax, setFilterAreaMax] = useState<number | null>(null);
+  const [filterMaintIdx, setFilterMaintIdx] = useState(0);
+  const [filterRoomCount, setFilterRoomCount] = useState<number | null>(null);
   const [filterBathCount, setFilterBathCount] = useState<number | null>(null);
-  const [filterDirection, setFilterDirection] = useState<string | null>(null);  // null = 전체
+  const [filterDirection, setFilterDirection] = useState<string | null>(null);
 
   const [dbVacancies, setDbVacancies] = useState<any[]>([]);
   const [selectedClusterIds, setSelectedClusterIds] = useState<string[] | null>(null);
@@ -133,16 +129,24 @@ export default function GongsilPage() {
       list = list.filter(v => filterTradeTypes.includes(v.trade_type));
     }
 
-    // 4) 가격대 필터 (deposit 기준)
-    if (filterPriceIdx > 0) {
-      const p = PRICE_PRESETS[filterPriceIdx];
-      list = list.filter(v => (v.deposit || 0) >= p.min && (v.deposit || 0) < (p.max === Infinity ? Number.MAX_SAFE_INTEGER : p.max));
+    // 4) 가격대 필터 (deposit 기준, min/max)
+    if (filterPriceMin !== null || filterPriceMax !== null) {
+      list = list.filter(v => {
+        const dep = v.deposit || 0;
+        if (filterPriceMin !== null && dep < filterPriceMin) return false;
+        if (filterPriceMax !== null && dep > filterPriceMax) return false;
+        return true;
+      });
     }
 
-    // 5) 면적 필터 (전용면적 기준)
-    if (filterAreaIdx > 0) {
-      const a = AREA_PRESETS[filterAreaIdx];
-      list = list.filter(v => (v.exclusive_m2 || 0) >= a.min && (v.exclusive_m2 || 0) < (a.max === Infinity ? 99999 : a.max));
+    // 5) 면적 필터 (전용면적 기준, ㎡ min/max)
+    if (filterAreaMin !== null || filterAreaMax !== null) {
+      list = list.filter(v => {
+        const area = v.exclusive_m2 || v.supply_m2 || 0;
+        if (filterAreaMin !== null && area < filterAreaMin) return false;
+        if (filterAreaMax !== null && area > filterAreaMax) return false;
+        return true;
+      });
     }
 
     // 6) 관리비 필터
@@ -167,7 +171,7 @@ export default function GongsilPage() {
     }
 
     return list;
-  }, [dbVacancies, activeCategory, activePills, filterTradeTypes, filterPriceIdx, filterAreaIdx, filterMaintIdx, filterRoomCount, filterBathCount, filterDirection]);
+  }, [dbVacancies, activeCategory, activePills, filterTradeTypes, filterPriceMin, filterPriceMax, filterAreaMin, filterAreaMax, filterMaintIdx, filterRoomCount, filterBathCount, filterDirection]);
 
   // ── 지도 범위 / 클러스터 선택 적용 ──
   const displayVacancies = React.useMemo(() => {
@@ -579,8 +583,10 @@ export default function GongsilPage() {
 
   const resetAllFilters = () => {
     setFilterTradeTypes([]);
-    setFilterPriceIdx(0);
-    setFilterAreaIdx(0);
+    setFilterPriceMin(null);
+    setFilterPriceMax(null);
+    setFilterAreaMin(null);
+    setFilterAreaMax(null);
     setFilterMaintIdx(0);
     setFilterRoomCount(null);
     setFilterBathCount(null);
@@ -605,7 +611,21 @@ export default function GongsilPage() {
     setFilterTradeTypes(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]);
   };
 
-  const hasActiveFilters = filterTradeTypes.length > 0 || filterPriceIdx > 0 || filterAreaIdx > 0 || filterMaintIdx > 0 || filterRoomCount !== null || filterBathCount !== null || filterDirection !== null;
+  const hasActiveFilters = filterTradeTypes.length > 0 || filterPriceMin !== null || filterPriceMax !== null || filterAreaMin !== null || filterAreaMax !== null || filterMaintIdx > 0 || filterRoomCount !== null || filterBathCount !== null || filterDirection !== null;
+
+  // 가격 표시 헬퍼
+  const formatPriceLabel = (val: number | null) => {
+    if (val === null) return "";
+    if (val >= 100000000) return `${val / 100000000}억`;
+    if (val >= 10000000) return `${val / 10000000}천`;
+    return `${val / 10000}만`;
+  };
+  const priceFilterLabel = (filterPriceMin !== null || filterPriceMax !== null)
+    ? `가격대 ${formatPriceLabel(filterPriceMin) || "~"}~${formatPriceLabel(filterPriceMax) || ""}`
+    : "가격대";
+  const areaFilterLabel = (filterAreaMin !== null || filterAreaMax !== null)
+    ? `면적 ${filterAreaMin ? Math.round(filterAreaMin / 3.3) + "평" : "~"}~${filterAreaMax ? Math.round(filterAreaMax / 3.3) + "평" : ""}`
+    : "면적";
 
   return (
     <div style={{ height: "100vh", display: "flex", flexDirection: "column", overflow: "hidden", fontFamily: "'Pretendard', sans-serif" }}>
@@ -641,153 +661,189 @@ export default function GongsilPage() {
             ))}
             <div style={{ width: 1, height: 16, background: "#e0e0e0", margin: "0 8px", flexShrink: 0 }}></div>
             {config.basicFilters.map((f) => {
-              // 각 필터별 활성 상태 감지
               const isFilterActive = (
                 (f === "거래방식" && filterTradeTypes.length > 0) ||
-                (f === "가격대" && filterPriceIdx > 0) || (f === "분양가/보증금" && filterPriceIdx > 0) ||
-                (f === "면적" && filterAreaIdx > 0) ||
+                ((f === "가격대" || f === "분양가/보증금") && (filterPriceMin !== null || filterPriceMax !== null)) ||
+                (f === "면적" && (filterAreaMin !== null || filterAreaMax !== null)) ||
                 (f === "관리비" && filterMaintIdx > 0) ||
                 (f === "방/욕실수" && (filterRoomCount !== null || filterBathCount !== null)) ||
                 (f === "방향" && filterDirection !== null)
               );
+              const btnLabel = (f === "가격대" || f === "분양가/보증금") ? priceFilterLabel : f === "면적" ? areaFilterLabel : f;
 
               return (
               <div key={f} style={{ position: "relative" }}>
                 <button 
                   onClick={() => setActiveFilterDropdown(activeFilterDropdown === f ? null : f)}
-                  style={{ background: isFilterActive ? "#e8f0fe" : "none", border: isFilterActive ? "1px solid #1a73e8" : "none", fontSize: 13, color: isFilterActive ? "#1a73e8" : "#555", fontWeight: isFilterActive || activeFilterDropdown === f ? "bold" : "normal", cursor: "pointer", padding: "6px 12px", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", borderRadius: 20, flexShrink: 0, fontFamily: "inherit" }}>
-                  {f} <span style={{ fontSize: 10, color: isFilterActive ? "#1a73e8" : "#999" }}>▼</span>
+                  style={{ background: isFilterActive ? "#fff" : "#fff", border: `1px solid ${isFilterActive ? "#1a73e8" : "#ccc"}`, fontSize: 13, color: isFilterActive ? "#1a73e8" : "#555", fontWeight: isFilterActive || activeFilterDropdown === f ? "bold" : "normal", cursor: "pointer", padding: "6px 14px", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", borderRadius: 4, flexShrink: 0, fontFamily: "inherit" }}>
+                  {btnLabel} <span style={{ fontSize: 10, marginLeft: 2 }}>▼</span>
                 </button>
 
-                {/* ── 거래방식 드롭다운 ── */}
+                {/* ── 거래방식 ── */}
                 {f === "거래방식" && activeFilterDropdown === "거래방식" && (
-                  <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, background: "#fff", border: "1px solid #ddd", borderRadius: 8, boxShadow: "0 4px 16px rgba(0,0,0,0.12)", width: 220, zIndex: 1000 }}>
-                    <div style={{ padding: "12px 16px", borderBottom: "1px solid #eee", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: 14, fontWeight: "bold", color: "#111" }}>거래방식</span>
-                      <button onClick={() => setActiveFilterDropdown(null)} style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: "#999", padding: 0, lineHeight: 1 }}>✕</button>
+                  <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, background: "#fff", border: "1px solid #ddd", borderRadius: 4, boxShadow: "0 4px 16px rgba(0,0,0,0.1)", width: 240, zIndex: 1000, padding: "16px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                      <span style={{ fontSize: 15, fontWeight: "bold", color: "#111" }}>거래방식</span>
+                      <button onClick={() => setActiveFilterDropdown(null)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#999", padding: 0, lineHeight: 1 }}>✕</button>
                     </div>
-                    <div style={{ padding: "12px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                       {["매매", "전세", "월세", "단기임대"].map(type => (
-                        <label key={type} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 14, color: "#333", fontWeight: 500 }}>
-                          <input type="checkbox" checked={filterTradeTypes.includes(type)} onChange={() => toggleTradeType(type)} style={{ width: 16, height: 16, accentColor: "#1a73e8", cursor: "pointer" }} />
+                        <label key={type} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontSize: 14, color: "#333" }}>
+                          <input type="checkbox" checked={filterTradeTypes.includes(type)} onChange={() => toggleTradeType(type)} style={{ width: 18, height: 18, accentColor: "#1a73e8", cursor: "pointer" }} />
                           {type}
                         </label>
                       ))}
                     </div>
-                    <div style={{ padding: "8px 16px", borderTop: "1px solid #eee", display: "flex", gap: 8 }}>
-                      <button onClick={() => { setFilterTradeTypes([]); }} style={{ flex: 1, padding: "8px", background: "#f5f5f5", border: "1px solid #ddd", borderRadius: 4, cursor: "pointer", fontSize: 13, color: "#666" }}>초기화</button>
-                      <button onClick={() => setActiveFilterDropdown(null)} style={{ flex: 1, padding: "8px", background: "#1a73e8", border: "none", borderRadius: 4, cursor: "pointer", fontSize: 13, color: "#fff", fontWeight: "bold" }}>적용</button>
+                    <div style={{ fontSize: 12, color: "#999", marginTop: 14, display: "flex", alignItems: "center", gap: 4 }}>
+                      <span>ⓘ</span> 중복선택이 가능합니다.
                     </div>
                   </div>
                 )}
 
-                {/* ── 가격대 / 분양가/보증금 드롭다운 ── */}
+                {/* ── 가격대 (네이버 스타일 그리드) ── */}
                 {(f === "가격대" || f === "분양가/보증금") && activeFilterDropdown === f && (
-                  <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, background: "#fff", border: "1px solid #ddd", borderRadius: 8, boxShadow: "0 4px 16px rgba(0,0,0,0.12)", width: 240, zIndex: 1000 }}>
-                    <div style={{ padding: "12px 16px", borderBottom: "1px solid #eee", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: 14, fontWeight: "bold", color: "#111" }}>{f}</span>
-                      <button onClick={() => setActiveFilterDropdown(null)} style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: "#999", padding: 0, lineHeight: 1 }}>✕</button>
+                  <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, background: "#fff", border: "1px solid #ddd", borderRadius: 4, boxShadow: "0 4px 16px rgba(0,0,0,0.1)", width: 380, zIndex: 1000, padding: "16px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                      <span style={{ fontSize: 15, fontWeight: "bold", color: "#111" }}>매매가/전세가/보증금</span>
+                      <button onClick={() => setActiveFilterDropdown(null)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#999", padding: 0, lineHeight: 1 }}>✕</button>
                     </div>
-                    <div style={{ padding: "10px 16px", display: "flex", flexDirection: "column", gap: 6 }}>
-                      {PRICE_PRESETS.map((p, idx) => (
-                        <label key={idx} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, color: filterPriceIdx === idx ? "#1a73e8" : "#333", fontWeight: filterPriceIdx === idx ? "bold" : "normal", padding: "4px 0" }}>
-                          <input type="radio" name="priceFilter" checked={filterPriceIdx === idx} onChange={() => setFilterPriceIdx(idx)} style={{ accentColor: "#1a73e8", cursor: "pointer" }} />
-                          {p.label}
-                        </label>
-                      ))}
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 4, marginBottom: 12 }}>
+                      {PRICE_GRID.map((p, idx) => {
+                        const isMin = filterPriceMin === p.val;
+                        const isMax = filterPriceMax === p.val || (p.val === -1 && filterPriceMax === null && filterPriceMin !== null);
+                        const isInRange = filterPriceMin !== null && filterPriceMax !== null && p.val >= filterPriceMin && p.val <= filterPriceMax && p.val !== -1;
+                        const isActive = isMin || isMax || isInRange;
+                        return (
+                          <button key={idx} onClick={() => {
+                            if (filterPriceMin === null) { setFilterPriceMin(p.val === -1 ? 3000000000 : p.val); }
+                            else if (filterPriceMax === null) {
+                              const maxVal = p.val === -1 ? null : p.val;
+                              if (maxVal !== null && maxVal < filterPriceMin) { setFilterPriceMax(filterPriceMin); setFilterPriceMin(maxVal); }
+                              else { setFilterPriceMax(maxVal); }
+                            } else { setFilterPriceMin(p.val === -1 ? 3000000000 : p.val); setFilterPriceMax(null); }
+                          }}
+                          style={{ padding: "8px 4px", border: `1px solid ${isActive ? "#1a73e8" : "#e0e0e0"}`, borderRadius: 2, background: isActive ? "#e8f0fe" : "#fff", fontSize: 13, color: isActive ? "#1a73e8" : "#333", cursor: "pointer", fontWeight: isActive ? "bold" : "normal", textAlign: "center" }}>
+                            {p.label}
+                          </button>
+                        );
+                      })}
                     </div>
-                    <div style={{ padding: "8px 16px", borderTop: "1px solid #eee" }}>
-                      <button onClick={() => setActiveFilterDropdown(null)} style={{ width: "100%", padding: "8px", background: "#1a73e8", border: "none", borderRadius: 4, cursor: "pointer", fontSize: 13, color: "#fff", fontWeight: "bold" }}>적용</button>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+                      <div style={{ flex: 1, display: "flex", alignItems: "center", border: "1px solid #ddd", borderRadius: 4, overflow: "hidden" }}>
+                        <button onClick={() => setFilterPriceMin(prev => prev ? Math.max(0, prev - 10000000) : null)} style={{ padding: "6px 10px", background: "#f5f5f5", border: "none", cursor: "pointer", fontSize: 14 }}>−</button>
+                        <span style={{ flex: 1, textAlign: "center", fontSize: 13, padding: "6px", color: filterPriceMin ? "#111" : "#aaa" }}>{filterPriceMin ? formatPriceLabel(filterPriceMin) : "최소"}</span>
+                        <button onClick={() => setFilterPriceMin(prev => (prev || 0) + 10000000)} style={{ padding: "6px 10px", background: "#f5f5f5", border: "none", cursor: "pointer", fontSize: 14 }}>+</button>
+                      </div>
+                      <span style={{ color: "#999" }}>~</span>
+                      <div style={{ flex: 1, display: "flex", alignItems: "center", border: "1px solid #ddd", borderRadius: 4, overflow: "hidden" }}>
+                        <button onClick={() => setFilterPriceMax(prev => prev ? Math.max(0, prev - 10000000) : null)} style={{ padding: "6px 10px", background: "#f5f5f5", border: "none", cursor: "pointer", fontSize: 14 }}>−</button>
+                        <span style={{ flex: 1, textAlign: "center", fontSize: 13, padding: "6px", color: filterPriceMax ? "#111" : "#aaa" }}>{filterPriceMax ? formatPriceLabel(filterPriceMax) : "최대"}</span>
+                        <button onClick={() => setFilterPriceMax(prev => (prev || 0) + 10000000)} style={{ padding: "6px 10px", background: "#f5f5f5", border: "none", cursor: "pointer", fontSize: 14 }}>+</button>
+                      </div>
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      <button onClick={() => { setFilterPriceMin(null); setFilterPriceMax(null); }} style={{ background: "none", border: "none", fontSize: 13, color: "#888", cursor: "pointer" }}>⟲ 조건삭제</button>
                     </div>
                   </div>
                 )}
 
-                {/* ── 면적 드롭다운 ── */}
+                {/* ── 면적 (네이버 스타일 그리드) ── */}
                 {f === "면적" && activeFilterDropdown === "면적" && (
-                  <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, background: "#fff", border: "1px solid #ddd", borderRadius: 8, boxShadow: "0 4px 16px rgba(0,0,0,0.12)", width: 240, zIndex: 1000 }}>
-                    <div style={{ padding: "12px 16px", borderBottom: "1px solid #eee", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: 14, fontWeight: "bold", color: "#111" }}>전용면적</span>
-                      <button onClick={() => setActiveFilterDropdown(null)} style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: "#999", padding: 0, lineHeight: 1 }}>✕</button>
+                  <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, background: "#fff", border: "1px solid #ddd", borderRadius: 4, boxShadow: "0 4px 16px rgba(0,0,0,0.1)", width: 360, zIndex: 1000, padding: "16px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                      <span style={{ fontSize: 15, fontWeight: "bold", color: "#111" }}>면적</span>
+                      <button onClick={() => setActiveFilterDropdown(null)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#999", padding: 0, lineHeight: 1 }}>✕</button>
                     </div>
-                    <div style={{ padding: "10px 16px", display: "flex", flexDirection: "column", gap: 6 }}>
-                      {AREA_PRESETS.map((a, idx) => (
-                        <label key={idx} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, color: filterAreaIdx === idx ? "#1a73e8" : "#333", fontWeight: filterAreaIdx === idx ? "bold" : "normal", padding: "4px 0" }}>
-                          <input type="radio" name="areaFilter" checked={filterAreaIdx === idx} onChange={() => setFilterAreaIdx(idx)} style={{ accentColor: "#1a73e8", cursor: "pointer" }} />
-                          {a.label}
-                        </label>
-                      ))}
+                    <div style={{ fontSize: 13, color: "#1a73e8", textAlign: "center", marginBottom: 8, fontWeight: "bold" }}>
+                      {filterAreaMin || filterAreaMax ? `${filterAreaMin ? Math.round(filterAreaMin / 3.3) + "평" : "~"} ~ ${filterAreaMax ? Math.round(filterAreaMax / 3.3) + "평" : ""}` : "전체 면적"}
                     </div>
-                    <div style={{ padding: "8px 16px", borderTop: "1px solid #eee" }}>
-                      <button onClick={() => setActiveFilterDropdown(null)} style={{ width: "100%", padding: "8px", background: "#1a73e8", border: "none", borderRadius: 4, cursor: "pointer", fontSize: 13, color: "#fff", fontWeight: "bold" }}>적용</button>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 4, marginBottom: 12 }}>
+                      {AREA_GRID.map((a, idx) => {
+                        const isActive = (filterAreaMin === a.m2) || (filterAreaMax === a.m2) || (filterAreaMin !== null && filterAreaMax !== null && a.m2 >= filterAreaMin && a.m2 <= filterAreaMax && a.m2 !== -1);
+                        return (
+                          <button key={idx} onClick={() => {
+                            if (a.m2 === -1) { setFilterAreaMin(1650); setFilterAreaMax(null); return; }
+                            if (filterAreaMin === null) { setFilterAreaMin(a.m2); }
+                            else if (filterAreaMax === null) {
+                              if (a.m2 < filterAreaMin) { setFilterAreaMax(filterAreaMin); setFilterAreaMin(a.m2); }
+                              else { setFilterAreaMax(a.m2); }
+                            } else { setFilterAreaMin(a.m2); setFilterAreaMax(null); }
+                          }}
+                          style={{ padding: "8px 4px", border: `1px solid ${isActive ? "#1a73e8" : "#e0e0e0"}`, borderRadius: 2, background: isActive ? "#e8f0fe" : "#fff", fontSize: 13, color: isActive ? "#1a73e8" : "#333", cursor: "pointer", fontWeight: isActive ? "bold" : "normal", textAlign: "center" }}>
+                            {a.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      <button onClick={() => { setFilterAreaMin(null); setFilterAreaMax(null); }} style={{ background: "none", border: "none", fontSize: 13, color: "#888", cursor: "pointer" }}>⟲ 조건삭제</button>
                     </div>
                   </div>
                 )}
 
-                {/* ── 관리비  드롭다운 ── */}
+                {/* ── 관리비 ── */}
                 {f === "관리비" && activeFilterDropdown === "관리비" && (
-                  <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, background: "#fff", border: "1px solid #ddd", borderRadius: 8, boxShadow: "0 4px 16px rgba(0,0,0,0.12)", width: 220, zIndex: 1000 }}>
-                    <div style={{ padding: "12px 16px", borderBottom: "1px solid #eee", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: 14, fontWeight: "bold", color: "#111" }}>관리비</span>
-                      <button onClick={() => setActiveFilterDropdown(null)} style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: "#999", padding: 0, lineHeight: 1 }}>✕</button>
+                  <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, background: "#fff", border: "1px solid #ddd", borderRadius: 4, boxShadow: "0 4px 16px rgba(0,0,0,0.1)", width: 220, zIndex: 1000, padding: "16px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                      <span style={{ fontSize: 15, fontWeight: "bold", color: "#111" }}>관리비</span>
+                      <button onClick={() => setActiveFilterDropdown(null)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#999", padding: 0, lineHeight: 1 }}>✕</button>
                     </div>
-                    <div style={{ padding: "10px 16px", display: "flex", flexDirection: "column", gap: 6 }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                       {MAINT_PRESETS.map((m, idx) => (
-                        <label key={idx} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, color: filterMaintIdx === idx ? "#1a73e8" : "#333", fontWeight: filterMaintIdx === idx ? "bold" : "normal", padding: "4px 0" }}>
+                        <label key={idx} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, color: filterMaintIdx === idx ? "#1a73e8" : "#333", fontWeight: filterMaintIdx === idx ? "bold" : "normal" }}>
                           <input type="radio" name="maintFilter" checked={filterMaintIdx === idx} onChange={() => setFilterMaintIdx(idx)} style={{ accentColor: "#1a73e8", cursor: "pointer" }} />
                           {m.label}
                         </label>
                       ))}
                     </div>
-                    <div style={{ padding: "8px 16px", borderTop: "1px solid #eee" }}>
-                      <button onClick={() => setActiveFilterDropdown(null)} style={{ width: "100%", padding: "8px", background: "#1a73e8", border: "none", borderRadius: 4, cursor: "pointer", fontSize: 13, color: "#fff", fontWeight: "bold" }}>적용</button>
+                    <div style={{ textAlign: "right", marginTop: 10 }}>
+                      <button onClick={() => { setFilterMaintIdx(0); }} style={{ background: "none", border: "none", fontSize: 13, color: "#888", cursor: "pointer" }}>⟲ 조건삭제</button>
                     </div>
                   </div>
                 )}
 
-                {/* ── 방/욕실수 드롭다운 ── */}
+                {/* ── 방/욕실수 ── */}
                 {f === "방/욕실수" && activeFilterDropdown === "방/욕실수" && (
-                  <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, background: "#fff", border: "1px solid #ddd", borderRadius: 8, boxShadow: "0 4px 16px rgba(0,0,0,0.12)", width: 260, zIndex: 1000 }}>
-                    <div style={{ padding: "12px 16px", borderBottom: "1px solid #eee", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: 14, fontWeight: "bold", color: "#111" }}>방/욕실수</span>
-                      <button onClick={() => setActiveFilterDropdown(null)} style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: "#999", padding: 0, lineHeight: 1 }}>✕</button>
+                  <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, background: "#fff", border: "1px solid #ddd", borderRadius: 4, boxShadow: "0 4px 16px rgba(0,0,0,0.1)", width: 280, zIndex: 1000, padding: "16px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                      <span style={{ fontSize: 15, fontWeight: "bold", color: "#111" }}>방/욕실수</span>
+                      <button onClick={() => setActiveFilterDropdown(null)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#999", padding: 0, lineHeight: 1 }}>✕</button>
                     </div>
-                    <div style={{ padding: "12px 16px" }}>
-                      <div style={{ fontSize: 13, fontWeight: "bold", color: "#555", marginBottom: 8 }}>방 개수</div>
-                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 14 }}>
-                        <button onClick={() => setFilterRoomCount(null)} style={{ padding: "6px 14px", borderRadius: 20, border: filterRoomCount === null ? "1px solid #1a73e8" : "1px solid #ddd", background: filterRoomCount === null ? "#e8f0fe" : "#fff", fontSize: 13, color: filterRoomCount === null ? "#1a73e8" : "#555", cursor: "pointer", fontWeight: filterRoomCount === null ? "bold" : "normal" }}>전체</button>
-                        {[1,2,3,4,5].map(n => (
-                          <button key={n} onClick={() => setFilterRoomCount(n)} style={{ padding: "6px 14px", borderRadius: 20, border: filterRoomCount === n ? "1px solid #1a73e8" : "1px solid #ddd", background: filterRoomCount === n ? "#e8f0fe" : "#fff", fontSize: 13, color: filterRoomCount === n ? "#1a73e8" : "#555", cursor: "pointer", fontWeight: filterRoomCount === n ? "bold" : "normal" }}>{n}개+</button>
-                        ))}
-                      </div>
-                      <div style={{ fontSize: 13, fontWeight: "bold", color: "#555", marginBottom: 8 }}>욕실 수</div>
-                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                        <button onClick={() => setFilterBathCount(null)} style={{ padding: "6px 14px", borderRadius: 20, border: filterBathCount === null ? "1px solid #1a73e8" : "1px solid #ddd", background: filterBathCount === null ? "#e8f0fe" : "#fff", fontSize: 13, color: filterBathCount === null ? "#1a73e8" : "#555", cursor: "pointer", fontWeight: filterBathCount === null ? "bold" : "normal" }}>전체</button>
-                        {[1,2,3].map(n => (
-                          <button key={n} onClick={() => setFilterBathCount(n)} style={{ padding: "6px 14px", borderRadius: 20, border: filterBathCount === n ? "1px solid #1a73e8" : "1px solid #ddd", background: filterBathCount === n ? "#e8f0fe" : "#fff", fontSize: 13, color: filterBathCount === n ? "#1a73e8" : "#555", cursor: "pointer", fontWeight: filterBathCount === n ? "bold" : "normal" }}>{n}개+</button>
-                        ))}
-                      </div>
-                    </div>
-                    <div style={{ padding: "8px 16px", borderTop: "1px solid #eee" }}>
-                      <button onClick={() => setActiveFilterDropdown(null)} style={{ width: "100%", padding: "8px", background: "#1a73e8", border: "none", borderRadius: 4, cursor: "pointer", fontSize: 13, color: "#fff", fontWeight: "bold" }}>적용</button>
-                    </div>
-                  </div>
-                )}
-
-                {/* ── 방향 드롭다운 ── */}
-                {f === "방향" && activeFilterDropdown === "방향" && (
-                  <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, background: "#fff", border: "1px solid #ddd", borderRadius: 8, boxShadow: "0 4px 16px rgba(0,0,0,0.12)", width: 260, zIndex: 1000 }}>
-                    <div style={{ padding: "12px 16px", borderBottom: "1px solid #eee", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: 14, fontWeight: "bold", color: "#111" }}>방향</span>
-                      <button onClick={() => setActiveFilterDropdown(null)} style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: "#999", padding: 0, lineHeight: 1 }}>✕</button>
-                    </div>
-                    <div style={{ padding: "12px 16px", display: "flex", gap: 6, flexWrap: "wrap" }}>
-                      <button onClick={() => setFilterDirection(null)} style={{ padding: "6px 14px", borderRadius: 20, border: filterDirection === null ? "1px solid #1a73e8" : "1px solid #ddd", background: filterDirection === null ? "#e8f0fe" : "#fff", fontSize: 13, color: filterDirection === null ? "#1a73e8" : "#555", cursor: "pointer", fontWeight: filterDirection === null ? "bold" : "normal" }}>전체</button>
-                      {["남향", "남동향", "남서향", "동향", "서향", "북향", "북동향", "북서향"].map(d => (
-                        <button key={d} onClick={() => setFilterDirection(d)} style={{ padding: "6px 14px", borderRadius: 20, border: filterDirection === d ? "1px solid #1a73e8" : "1px solid #ddd", background: filterDirection === d ? "#e8f0fe" : "#fff", fontSize: 13, color: filterDirection === d ? "#1a73e8" : "#555", cursor: "pointer", fontWeight: filterDirection === d ? "bold" : "normal" }}>{d}</button>
+                    <div style={{ fontSize: 13, fontWeight: "bold", color: "#555", marginBottom: 8 }}>방 개수</div>
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
+                      <button onClick={() => setFilterRoomCount(null)} style={{ padding: "6px 14px", borderRadius: 4, border: filterRoomCount === null ? "1px solid #1a73e8" : "1px solid #e0e0e0", background: filterRoomCount === null ? "#e8f0fe" : "#fff", fontSize: 13, color: filterRoomCount === null ? "#1a73e8" : "#555", cursor: "pointer", fontWeight: filterRoomCount === null ? "bold" : "normal" }}>전체</button>
+                      {[1,2,3,4,5].map(n => (
+                        <button key={n} onClick={() => setFilterRoomCount(n)} style={{ padding: "6px 14px", borderRadius: 4, border: filterRoomCount === n ? "1px solid #1a73e8" : "1px solid #e0e0e0", background: filterRoomCount === n ? "#e8f0fe" : "#fff", fontSize: 13, color: filterRoomCount === n ? "#1a73e8" : "#555", cursor: "pointer", fontWeight: filterRoomCount === n ? "bold" : "normal" }}>{n}개+</button>
                       ))}
                     </div>
-                    <div style={{ padding: "8px 16px", borderTop: "1px solid #eee" }}>
-                      <button onClick={() => setActiveFilterDropdown(null)} style={{ width: "100%", padding: "8px", background: "#1a73e8", border: "none", borderRadius: 4, cursor: "pointer", fontSize: 13, color: "#fff", fontWeight: "bold" }}>적용</button>
+                    <div style={{ fontSize: 13, fontWeight: "bold", color: "#555", marginBottom: 8 }}>욕실 수</div>
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      <button onClick={() => setFilterBathCount(null)} style={{ padding: "6px 14px", borderRadius: 4, border: filterBathCount === null ? "1px solid #1a73e8" : "1px solid #e0e0e0", background: filterBathCount === null ? "#e8f0fe" : "#fff", fontSize: 13, color: filterBathCount === null ? "#1a73e8" : "#555", cursor: "pointer", fontWeight: filterBathCount === null ? "bold" : "normal" }}>전체</button>
+                      {[1,2,3].map(n => (
+                        <button key={n} onClick={() => setFilterBathCount(n)} style={{ padding: "6px 14px", borderRadius: 4, border: filterBathCount === n ? "1px solid #1a73e8" : "1px solid #e0e0e0", background: filterBathCount === n ? "#e8f0fe" : "#fff", fontSize: 13, color: filterBathCount === n ? "#1a73e8" : "#555", cursor: "pointer", fontWeight: filterBathCount === n ? "bold" : "normal" }}>{n}개+</button>
+                      ))}
+                    </div>
+                    <div style={{ textAlign: "right", marginTop: 12 }}>
+                      <button onClick={() => { setFilterRoomCount(null); setFilterBathCount(null); }} style={{ background: "none", border: "none", fontSize: 13, color: "#888", cursor: "pointer" }}>⟲ 조건삭제</button>
+                    </div>
+                  </div>
+                )}
+
+                {/* ── 방향 ── */}
+                {f === "방향" && activeFilterDropdown === "방향" && (
+                  <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, background: "#fff", border: "1px solid #ddd", borderRadius: 4, boxShadow: "0 4px 16px rgba(0,0,0,0.1)", width: 280, zIndex: 1000, padding: "16px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                      <span style={{ fontSize: 15, fontWeight: "bold", color: "#111" }}>방향</span>
+                      <button onClick={() => setActiveFilterDropdown(null)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#999", padding: 0, lineHeight: 1 }}>✕</button>
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
+                      <button onClick={() => setFilterDirection(null)} style={{ padding: "8px", borderRadius: 4, border: filterDirection === null ? "1px solid #1a73e8" : "1px solid #e0e0e0", background: filterDirection === null ? "#e8f0fe" : "#fff", fontSize: 13, color: filterDirection === null ? "#1a73e8" : "#555", cursor: "pointer", fontWeight: filterDirection === null ? "bold" : "normal" }}>전체</button>
+                      {["남향", "남동향", "남서향", "동향", "서향", "북향", "북동향", "북서향"].map(d => (
+                        <button key={d} onClick={() => setFilterDirection(d)} style={{ padding: "8px", borderRadius: 4, border: filterDirection === d ? "1px solid #1a73e8" : "1px solid #e0e0e0", background: filterDirection === d ? "#e8f0fe" : "#fff", fontSize: 13, color: filterDirection === d ? "#1a73e8" : "#555", cursor: "pointer", fontWeight: filterDirection === d ? "bold" : "normal" }}>{d}</button>
+                      ))}
+                    </div>
+                    <div style={{ textAlign: "right", marginTop: 10 }}>
+                      <button onClick={() => setFilterDirection(null)} style={{ background: "none", border: "none", fontSize: 13, color: "#888", cursor: "pointer" }}>⟲ 조건삭제</button>
                     </div>
                   </div>
                 )}
