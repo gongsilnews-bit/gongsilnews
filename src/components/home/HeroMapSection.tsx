@@ -12,7 +12,7 @@ const CATEGORY_OPTIONS = [
   { label: "분양", value: "분양" },
 ];
 
-export default function HeroMapSection() {
+export default function HeroMapSection({ initialVacancies }: { initialVacancies?: any[] }) {
   const router = useRouter();
   const [vacancies, setVacancies] = useState<any[]>([]);
   const [category, setCategory] = useState("");
@@ -57,21 +57,29 @@ export default function HeroMapSection() {
     }
   }, [selectedClusterIds]);
 
-  // Fetch vacancies from DB via server action
+  // Fetch vacancies from DB via server action if not provided via props
   useEffect(() => {
-    const fetchData = async () => {
-      const res = await getVacanciesForMap();
-      if (res.success) {
-        const withImages = (res.data || []).map((v: any) => ({
-          ...v,
-          photos: v.vacancy_photos ? [...v.vacancy_photos].sort((a: any, b: any) => a.sort_order - b.sort_order).map((p: any) => p.url) : [],
-        }));
-        const filtered = withImages.filter((v: any) => v.status === 'ACTIVE' && v.lat && v.lng);
-        setVacancies(filtered);
-      }
+    const processData = (data: any[]) => {
+      const withImages = data.map((v: any) => ({
+        ...v,
+        photos: v.vacancy_photos ? [...v.vacancy_photos].sort((a: any, b: any) => a.sort_order - b.sort_order).map((p: any) => p.url) : [],
+      }));
+      const filtered = withImages.filter((v: any) => v.status === 'ACTIVE' && v.lat && v.lng);
+      setVacancies(filtered);
     };
-    fetchData();
-  }, []);
+
+    if (initialVacancies && initialVacancies.length > 0) {
+      processData(initialVacancies);
+    } else {
+      const fetchData = async () => {
+        const res = await getVacanciesForMap();
+        if (res.success && res.data) {
+          processData(res.data);
+        }
+      };
+      fetchData();
+    }
+  }, [initialVacancies]);
 
   // Preload Kakao Map script immediately on mount
   const [mapLoaded, setMapLoaded] = useState(false);
