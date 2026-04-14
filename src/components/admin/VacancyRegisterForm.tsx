@@ -403,7 +403,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
   const progress = Math.round((doneCount / checkItems.length) * 100);
 
   return (
-    <div style={{ flex: 1, background: bg, position: "relative" }}>
+    <div style={{ flex: 1, background: bg, position: "relative", overflowY: "auto", height: "100%" }}>
       {/* ── 타이틀 ── */}
       <div style={{ textAlign: "center", padding: "28px 0 20px", borderBottom: `1px solid ${border}`, background: cardBg }}>
         <h1 style={{ fontSize: 20, fontWeight: 800, color: textPrimary, margin: 0 }}>{editData ? "공실수정" : "공실등록"}</h1>
@@ -552,25 +552,26 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
               <span style={{ color: textSecondary, fontSize: 14, flexShrink: 0 }}>만원</span>
             </div>
 
-            {/* 동적 필드: 주거형 = 방/욕실/방향, 상업형 = 해당층/전체층 */}
-            {isCommercial ? (
-              <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
-                <div style={{ flex: 1 }}>
-                  <label style={labelStyle}>해당층</label>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <input type="number" placeholder="예: 3" value={currentFloor} onChange={(e) => setCurrentFloor(e.target.value)} style={inputStyle} />
-                    <span style={{ color: textSecondary, fontSize: 14, flexShrink: 0 }}>층</span>
-                  </div>
-                </div>
-                <div style={{ flex: 1 }}>
-                  <label style={labelStyle}>전체층</label>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <input type="number" placeholder="예: 5" value={totalFloor} onChange={(e) => setTotalFloor(e.target.value)} style={inputStyle} />
-                    <span style={{ color: textSecondary, fontSize: 14, flexShrink: 0 }}>층</span>
-                  </div>
+            {/* 공통 필드: 해당층 / 전체층 */}
+            <div style={{ display: "flex", gap: 24, marginBottom: isCommercial ? 24 : 16 }}>
+              <div style={{ flex: 1 }}>
+                <label style={labelStyle}>해당층</label>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <input type="text" placeholder="예: 3, 저층, 고층" value={currentFloor} onChange={(e) => setCurrentFloor(e.target.value)} style={inputStyle} />
+                  {(!currentFloor || !isNaN(Number(currentFloor))) && <span style={{ color: textSecondary, fontSize: 14, flexShrink: 0 }}>층</span>}
                 </div>
               </div>
-            ) : (
+              <div style={{ flex: 1 }}>
+                <label style={labelStyle}>전체층</label>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <input type="number" placeholder="예: 5" value={totalFloor} onChange={(e) => setTotalFloor(e.target.value)} style={inputStyle} />
+                  <span style={{ color: textSecondary, fontSize: 14, flexShrink: 0 }}>층</span>
+                </div>
+              </div>
+            </div>
+
+            {/* 동적 필드: 주거형 = 방/욕실/방향 */}
+            {!isCommercial && (
               <>
                 <div style={{ display: "flex", gap: 24, marginBottom: 16 }}>
                   <div style={{ flex: 1 }}>
@@ -933,22 +934,15 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                 <label style={labelStyle}>중개수수료 {reqMark}</label>
                 <div style={{ border: `1px solid ${border}`, borderRadius: 10, padding: "20px 24px", marginBottom: 24 }}>
                   <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                    <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontSize: 14, fontWeight: 600, color: textPrimary }}>
-                      <input type="radio" name="commissionType" checked={commissionType === "법정수수료"} onChange={() => setCommissionType("법정수수료")} style={{ accentColor: "#3b82f6", width: 18, height: 18 }} />
-                      법정수수료 지급
-                    </label>
-                    <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontSize: 14, color: textPrimary }}>
-                      <input type="radio" name="commissionType" checked={commissionType === "금액직접"} onChange={() => setCommissionType("금액직접")} style={{ accentColor: "#3b82f6", width: 18, height: 18 }} />
-                      <input type="text" placeholder="" value={commissionAmount} onChange={(e) => setCommissionAmount(e.target.value)} disabled={commissionType !== "금액직접"}
-                        style={{ ...inputStyle, width: 120, height: 36, padding: "0 12px", opacity: commissionType === "금액직접" ? 1 : 0.4 }} />
-                      <span style={{ fontSize: 14, color: textSecondary }}>만</span>
-                    </label>
-                    <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontSize: 14, color: textPrimary }}>
-                      <input type="radio" name="commissionType" checked={commissionType === "기타"} onChange={() => setCommissionType("기타")} style={{ accentColor: "#3b82f6", width: 18, height: 18 }} />
-                      기타
-                      <input type="text" placeholder="" value={commissionEtc} onChange={(e) => setCommissionEtc(e.target.value)} disabled={commissionType !== "기타"}
-                        style={{ ...inputStyle, flex: 1, height: 36, padding: "0 12px", opacity: commissionType === "기타" ? 1 : 0.4 }} />
-                    </label>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "default", fontSize: 14, fontWeight: 600, color: textPrimary, flexShrink: 0 }}>
+                        {/* 일반회원은 법정수수료 고정 */}
+                        <input type="radio" checked readOnly style={{ accentColor: "#3b82f6", width: 18, height: 18 }} />
+                        법정수수료 지급
+                      </label>
+                      <input type="text" placeholder="예: 추가사항 입력 (선택)" value={commissionEtc} onChange={(e) => setCommissionEtc(e.target.value)}
+                        style={{ ...inputStyle, flex: 1, height: 36, padding: "0 12px", background: darkMode ? "#1a1b1e" : "#f9fafb" }} />
+                    </div>
                   </div>
                   <div style={{ marginTop: 16, background: darkMode ? "#1e3a5f" : "#eff6ff", borderRadius: 8, padding: "12px 16px", fontSize: 12, color: "#3b82f6", lineHeight: 1.6 }}>
                     ⓘ 매물의뢰서 작성자는 법정수수료를 지급하는 것에 대하여 동의하며, 중개수수료 지급관련 민원이 발생될 경우 <strong>공실뉴스</strong> 매물 등록에 제한이 될 수 있음을 확인합니다.
@@ -982,8 +976,8 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                 {/* ── 중개보수 지급 / 노출 선택 ── */}
                 <div style={{ marginBottom: 24 }}>
                   <label style={labelStyle}>중개보수 지급 <span style={{ color: "#ef4444" }}>*</span></label>
-                  <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
-                    {["공동중개 0%", "물건수수료지급 20%", "물건수수료지급 60%", "물건수수료지급 100%"].map(opt => (
+                  <div style={{ display: "flex", gap: 8, marginBottom: 24, flexWrap: "wrap" }}>
+                    {["공동중개", "수수료25%", "수수료50%", "수수료75%", "수수료100%"].map(opt => (
                       <button
                         key={opt} type="button" onClick={() => setRealtorCommission(opt)}
                         style={{
@@ -1138,8 +1132,8 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                     room_count: isCommercial ? undefined : parseInt(roomCount) || 1,
                     bath_count: isCommercial ? undefined : parseInt(bathCount) || 1,
                     direction: isCommercial ? undefined : direction,
-                    current_floor: isCommercial ? currentFloor : undefined,
-                    total_floor: isCommercial ? totalFloor : undefined,
+                    current_floor: currentFloor || undefined,
+                    total_floor: totalFloor || undefined,
                     parking,
                     move_in_date: moveInDate,
                     options: selectedOptions,

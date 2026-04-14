@@ -5,9 +5,10 @@ import React, { useState, useEffect, useRef } from "react";
 interface MapSearchBarProps {
   onSearchCoord: (lat: number, lng: number, zoomLevel?: number) => void;
   mapCenterRegion?: { sido: string; gugun: string; dong: string } | null;
+  themeColor?: string;
 }
 
-export default function MapSearchBar({ onSearchCoord, mapCenterRegion }: MapSearchBarProps) {
+export default function MapSearchBar({ onSearchCoord, mapCenterRegion, themeColor = "#ff8e15" }: MapSearchBarProps) {
   const [activePanel, setActivePanel] = useState<"region" | "search" | null>(null);
   const [activeTab, setActiveTab] = useState<"sido" | "gugun" | "dong">("sido");
 
@@ -178,9 +179,9 @@ export default function MapSearchBar({ onSearchCoord, mapCenterRegion }: MapSear
         .wish-select { background: none; border: none; cursor: pointer; font-weight: bold; padding: 5px 10px; }
         .wish-select::after { content: ' ▼'; font-size: 10px; color: #999; }
         .region-tab { flex:1; padding:12px; background:transparent; border:none; cursor:pointer; font-weight:bold; font-size:14px; color:#666; transition:all 0.2s; border-bottom:2px solid transparent; }
-        .region-tab.active { color:#ff8e15; border-bottom:2px solid #ff8e15; background:#fff; }
+        .region-tab.active { color:${themeColor}; border-bottom:2px solid ${themeColor}; background:#fff; }
         .reg-item-btn { padding:8px 5px; background:#fff; border:1px solid #eee; border-radius:4px; font-size:13px; color:#444; cursor:pointer; transition:all 0.2s; text-align:center; }
-        .reg-item-btn:hover { background:#ff8e15; color:#fff; border-color:#ff8e15; }
+        .reg-item-btn:hover { background:${themeColor}; color:#fff; border-color:${themeColor}; }
         .region-close-btn:hover { background:#ddd !important; }
       `}</style>
 
@@ -198,7 +199,7 @@ export default function MapSearchBar({ onSearchCoord, mapCenterRegion }: MapSear
           {selectedDong}
         </span>
         <div style={{ width: 1, height: 12, background: "#ccc" }}></div>
-        <span className="wish-select" style={{ color: "#ff8e15" }} onClick={() => setActivePanel(activePanel === "search" ? null : "search")}>
+        <span className="wish-select" style={{ color: themeColor }} onClick={() => setActivePanel(activePanel === "search" ? null : "search")}>
           검색 🔍
         </span>
       </div>
@@ -268,7 +269,7 @@ export default function MapSearchBar({ onSearchCoord, mapCenterRegion }: MapSear
               onKeyDown={(e) => e.key === "Enter" && executeMapKeywordSearch()}
               style={{ flex: 1, padding: 8, border: "1px solid #ccc", borderRadius: 4, outline: "none", fontSize: 13 }} 
             />
-            <button onClick={executeMapKeywordSearch} style={{ padding: "8px 12px", background: "#ff8e15", color: "#fff", border: "none", borderRadius: 4, cursor: "pointer", fontWeight: "bold", fontSize: 13 }}>
+            <button onClick={executeMapKeywordSearch} style={{ padding: "8px 12px", background: themeColor, color: "#fff", border: "none", borderRadius: 4, cursor: "pointer", fontWeight: "bold", fontSize: 13 }}>
               이동
             </button>
           </div>

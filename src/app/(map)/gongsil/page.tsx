@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { getVacancies, getAgencyInfo } from "@/app/actions/vacancy";
+import { getVacancyComments, createVacancyComment } from "@/app/actions/vacancyComments";
+import MapSearchBar from "@/components/MapSearchBar";
 
 // 카테고리 설정 데이터
 const CATEGORY_CONFIG: Record<string, { name: string; pills: string[]; basicFilters: string[]; detailFilters: string[]; showToggle: boolean; pillStyle?: string }> = {
@@ -21,6 +23,7 @@ export default function GongsilPage() {
   const [activeCategory, setActiveCategory] = useState("apart");
   const [activePills, setActivePills] = useState<string[]>(["아파트"]);
   const [activeProperty, setActiveProperty] = useState<number | null>(1);
+  const [prevPropertyId, setPrevPropertyId] = useState<number | null>(null);
   const [showDetail, setShowDetail] = useState(true);
   const [activeDetailTab, setActiveDetailTab] = useState<"info" | "realtor">("info");
   const [showDetailFilters, setShowDetailFilters] = useState(false);
@@ -28,9 +31,75 @@ export default function GongsilPage() {
   const [galleryIndex, setGalleryIndex] = useState(0);
 
   const [dbVacancies, setDbVacancies] = useState<any[]>([]);
+  const [selectedClusterIds, setSelectedClusterIds] = useState<string[] | null>(null);
+  const selectedClusterIdsRef = useRef<string[] | null>(null);
+  const dbVacanciesRef = useRef<any[]>([]);
+  const [mapBounds, setMapBounds] = useState<any>(null);
+  const [mapCenterRegion, setMapCenterRegion] = useState<{ sido: string; gugun: string; dong: string } | null>(null);
+
+  useEffect(() => {
+    selectedClusterIdsRef.current = selectedClusterIds;
+    
+    // Update Single Markers reactively
+    if (markersRef.current && (window as any).kakao?.maps) {
+       const size = 42;
+       const normalSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="%234b89ff" stroke="white" stroke-width="2"/><text x="50%25" y="52%25" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="15" font-weight="bold" font-family="sans-serif">1</text></svg>`;
+       const activeSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="white" stroke="%234b89ff" stroke-width="2"/><text x="50%25" y="52%25" text-anchor="middle" dominant-baseline="middle" fill="%234b89ff" font-size="15" font-weight="bold" font-family="sans-serif">1</text></svg>`;
+
+       markersRef.current.forEach((marker: any) => {
+          const idStr = markerIdMapRef.current.get(marker);
+          const isSelected = selectedClusterIds && idStr && selectedClusterIds.includes(idStr);
+          marker.setImage(new (window as any).kakao.maps.MarkerImage(
+             `data:image/svg+xml,${isSelected ? activeSvg : normalSvg}`,
+             new (window as any).kakao.maps.Size(size, size),
+             { offset: new (window as any).kakao.maps.Point(size / 2, size / 2) }
+          ));
+          marker.setZIndex(isSelected ? 99 : 0);
+       });
+    }
+
+    // Force cluster redraw to recreate and re-apply active styles via clustered event cleanly!
+    if (clustererRef.current) {
+       clustererRef.current.redraw();
+    }
+  }, [selectedClusterIds]);
+
+  const displayVacancies = React.useMemo(() => {
+    let filtered = dbVacancies;
+    if (selectedClusterIds) {
+      filtered = filtered.filter(v => selectedClusterIds.includes(String(v.id)));
+    } else if (mapBounds && (window as any).kakao?.maps) {
+      filtered = filtered.filter(v => {
+        if (!v.lat || !v.lng) return false;
+        const pos = new (window as any).kakao.maps.LatLng(v.lat, v.lng);
+        return mapBounds.contain(pos);
+      });
+    }
+    return filtered;
+  }, [dbVacancies, selectedClusterIds, mapBounds]);
+
   const [mapError, setMapError] = useState<string | null>(null);
   const [showGalleryModal, setShowGalleryModal] = useState(false);
   const [agencyInfo, setAgencyInfo] = useState<any>(null);
+
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [comments, setComments] = useState<any[]>([]);
+  const [newComment, setNewComment] = useState("");
+  const [isSecret, setIsSecret] = useState(true);
+
+  // SVG Option Helper Function
+  const getOptionSvg = (name: string) => {
+    if (name.includes("에어컨")) return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#222" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 8h16v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8z"></path><line x1="8" y1="16" x2="8" y2="20"></line><line x1="16" y1="16" x2="16" y2="20"></line><line x1="12" y1="16" x2="12" y2="21"></line><path d="M4 8V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2"></path></svg>;
+    if (name.includes("싱크대") || name.includes("주방")) return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#222" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="10" width="18" height="10" rx="2"></rect><path d="M8 10V6a2 2 0 0 1 4-2a2 2 0 0 1 4 2v4"></path><line x1="12" y1="10" x2="12" y2="20"></line><line x1="6" y1="10" x2="6" y2="20"></line><line x1="18" y1="10" x2="18" y2="20"></line></svg>;
+    if (name.includes("옷장") || name.includes("붙박이장")) return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#222" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"></rect><line x1="12" y1="4" x2="12" y2="20"></line><rect x="8" y="10" width="1" height="4"></rect><rect x="15" y="10" width="1" height="4"></rect></svg>;
+    if (name.includes("TV") || name.includes("티비")) return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#222" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"></rect><polyline points="17 2 12 7 7 2"></polyline></svg>;
+    if (name.includes("세탁기")) return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#222" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"></rect><circle cx="12" cy="13" r="4"></circle><line x1="8" y1="6" x2="10" y2="6"></line></svg>;
+    if (name.includes("침대")) return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#222" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 4v16"></path><path d="M2 8h18a2 2 0 0 1 2 2v10"></path><path d="M2 17h20"></path><path d="M6 8v9"></path></svg>;
+    if (name.includes("냉장고")) return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#222" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"></rect><line x1="5" y1="10" x2="19" y2="10"></line><line x1="9" y1="5" x2="9" y2="8"></line><line x1="9" y1="13" x2="9" y2="16"></line></svg>;
+    if (name.includes("보안") || name.includes("도어락")) return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#222" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>;
+    if (name.includes("주차")) return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#222" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><path d="M9 17V7h4a3 3 0 0 1 0 6H9"></path></svg>;
+    return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#222" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>;
+  };
 
   const mapRef = useRef<HTMLDivElement>(null);
   const itemMapRef = useRef<HTMLDivElement>(null);
@@ -38,6 +107,7 @@ export default function GongsilPage() {
   const kakaoMapRef = useRef<any>(null);
   const clustererRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
+  const markerIdMapRef = useRef<Map<any, string>>(new Map());
   const infoWindowRef = useRef<any>(null);
 
   // Close info window
@@ -73,6 +143,7 @@ export default function GongsilPage() {
           const filtered = withImages.filter((v: any) => v.status === 'ACTIVE' && v.lat && v.lng);
           console.log("Filtered active vacancies with coords:", filtered);
           setDbVacancies(filtered);
+          dbVacanciesRef.current = filtered;
         } else {
           console.error("fetch failed:", res.error);
         }
@@ -82,6 +153,12 @@ export default function GongsilPage() {
     }
     fetchVacancies();
   }, []);
+
+  // On activeProperty change, reset detail scroll position
+  useEffect(() => {
+    const el = document.getElementById("detail-scroll-container");
+    if (el) el.scrollTop = 0;
+  }, [activeProperty, showDetail]);
 
   useEffect(() => {
     if (showDetail && activeProperty && activeDetailTab === "realtor") {
@@ -98,9 +175,49 @@ export default function GongsilPage() {
   }, [showDetail, activeProperty, activeDetailTab, dbVacancies]);
 
   useEffect(() => {
-    if (showDetail && activeProperty && activeDetailTab === "info") {
+    async function initUser() {
+      const { createClient } = await import("@supabase/supabase-js");
+      const client = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+      const { data } = await client.auth.getUser();
+      if (data?.user) setCurrentUser(data.user);
+    }
+    initUser();
+  }, []);
+
+  const fetchComments = useCallback(async (vacancyId: string) => {
+    const res = await getVacancyComments(vacancyId);
+    if (res.success) setComments(res.data);
+  }, []);
+
+  const handleCommentSubmit = async () => {
+    if (!activeProperty || !newComment.trim()) return;
+    if (!currentUser) return alert('로그인 후 이용 가능합니다.');
+    
+    // API 호출
+    const authorNameValue = currentUser.user_metadata?.name || currentUser.email?.split("@")[0] || "회원";
+    
+    const res = await createVacancyComment({
+      vacancy_id: String(activeProperty),
+      author_id: currentUser.id,
+      author_name: authorNameValue,
+      content: newComment.trim(),
+      is_secret: isSecret
+    });
+
+    if (res.success) {
+      setNewComment("");
+      fetchComments(String(activeProperty));
+    } else {
+      console.error("Comment submit error:", res.error);
+      alert('코멘트 등록 중 오류가 발생했습니다. ' + (res.error || ''));
+    }
+  };
+
+  useEffect(() => {
+    if (showDetail && activeProperty) {
       const prop = dbVacancies.find(v => v.id === activeProperty);
-      if (prop?.lat && prop?.lng && (window as any).kakao?.maps) {
+      if (prop?.id) fetchComments(prop.id.toString());
+      if (activeDetailTab === "info" && prop?.lat && prop?.lng && (window as any).kakao?.maps) {
         const kakao = (window as any).kakao;
         const pos = new kakao.maps.LatLng(prop.lat, prop.lng);
         
@@ -145,69 +262,153 @@ export default function GongsilPage() {
             level: 6,
           });
 
+          kakao.maps.event.addListener(kakaoMapRef.current, 'idle', () => {
+            setMapBounds(kakaoMapRef.current.getBounds());
+
+            // Reverse Geocoder for the center
+            const center = kakaoMapRef.current.getCenter();
+            const geocoder = new kakao.maps.services.Geocoder();
+            geocoder.coord2RegionCode(center.getLng(), center.getLat(), (result: any, status: any) => {
+              if (status === kakao.maps.services.Status.OK) {
+                const bCode = result.find((res: any) => res.region_type === 'B');
+                if (bCode) {
+                  setMapCenterRegion({
+                    sido: bCode.region_1depth_name,
+                    gugun: bCode.region_2depth_name,
+                    dong: bCode.region_3depth_name,
+                  });
+                }
+              }
+            });
+          });
+
+          // removed kakao.maps.event.addListener(kakaoMapRef.current, 'click') to prevent overriding marker clicks
+
+          kakao.maps.event.addListener(kakaoMapRef.current, 'dragstart', () => {
+             setSelectedClusterIds(null);
+          });
+
+          kakao.maps.event.addListener(kakaoMapRef.current, 'zoom_start', () => {
+             setSelectedClusterIds(null);
+          });
+
           // Initialize clusterer
           clustererRef.current = new kakao.maps.MarkerClusterer({
             map: kakaoMapRef.current,
             averageCenter: true,
             minLevel: 4,
             gridSize: 60,
-            calculator: [5, 10, 30, 50],
+            disableClickZoom: true,
+            calculator: [10, 30, 50],
             texts: (count: number) => count.toString(),
             styles: [
-              { width: '38px', height: '38px', background: 'rgba(26, 115, 232, 0.85)', color: '#fff', textAlign: 'center', lineHeight: '38px', borderRadius: '50%', fontWeight: 'bold', fontSize: '14px', border: '3px solid rgba(255,255,255,0.7)', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' },
-              { width: '44px', height: '44px', background: 'rgba(21, 101, 192, 0.88)', color: '#fff', textAlign: 'center', lineHeight: '44px', borderRadius: '50%', fontWeight: 'bold', fontSize: '15px', border: '3px solid rgba(255,255,255,0.7)', boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }
+              { width: '42px', height: '42px', background: 'rgba(75, 137, 255, 1)', color: '#fff', textAlign: 'center', lineHeight: '38px', borderRadius: '50%', fontWeight: 'bold', fontSize: '15px', border: '2px solid #ffffff', boxShadow: '0 3px 8px rgba(0,0,0,0.2)' }
             ]
           });
 
-          // Cluster click
+          kakao.maps.event.addListener(clustererRef.current, 'clusterover', (cluster: any) => {
+            const overlay = cluster.getClusterMarker().getContent();
+            if (overlay && overlay.style) {
+               overlay.style.transform = "scale(1.15)";
+               overlay.style.transition = "transform 0.2s";
+               overlay.style.zIndex = "100";
+            }
+          });
+          kakao.maps.event.addListener(clustererRef.current, 'clusterout', (cluster: any) => {
+            const overlay = cluster.getClusterMarker().getContent();
+            if (overlay && overlay.style) {
+               overlay.style.transform = "scale(1)";
+               overlay.style.zIndex = "0";
+            }
+          });
+
+          // Cluster click -> Filter list without zooming
           kakao.maps.event.addListener(clustererRef.current, 'clusterclick', (cluster: any) => {
-            const level = kakaoMapRef.current.getLevel() - 1;
-            kakaoMapRef.current.setLevel(level, {anchor: cluster.getCenter()});
+            const markers = cluster.getMarkers();
+            const ids = markers.flatMap((m: any) => {
+               const pos = m.getPosition();
+               return dbVacanciesRef.current.filter((v: any) => Math.abs(v.lat - pos.getLat()) < 0.00001 && Math.abs(v.lng - pos.getLng()) < 0.00001).map((v: any) => String(v.id));
+            });
+            setSelectedClusterIds(Array.from(new Set(ids)));
+            setShowDetail(false);
+          });
+
+          // Retain cluster styling after map pans/zooms redraws
+          kakao.maps.event.addListener(clustererRef.current, 'clustered', (clusters: any[]) => {
+             if (!selectedClusterIdsRef.current || selectedClusterIdsRef.current.length === 0) return;
+             
+             clusters.forEach(cluster => {
+                const markers = cluster.getMarkers();
+                if (markers.length < 2) return;
+
+                const ids = markers.flatMap((m: any) => {
+                   const pos = m.getPosition();
+                   return dbVacanciesRef.current.filter((v: any) => Math.abs(v.lat - pos.getLat()) < 0.00001 && Math.abs(v.lng - pos.getLng()) < 0.00001).map((v: any) => String(v.id));
+                });
+                const isMatch = ids.some((id: any) => id && selectedClusterIdsRef.current?.includes(id));
+                if (isMatch) {
+                   const overlay = cluster.getClusterMarker().getContent();
+                   if (overlay && overlay.style) {
+                       overlay.style.background = '#ffffff';
+                       overlay.style.color = '#4b89ff';
+                       overlay.style.border = '2px solid #4b89ff';
+                       overlay.style.zIndex = '999';
+                   }
+                }
+             });
           });
         }
 
         // Clear existing markers
         if (clustererRef.current) clustererRef.current.clear();
         markersRef.current = [];
+        markerIdMapRef.current.clear();
 
         const newMarkers: any[] = [];
         dbVacancies.forEach(prop => {
           if (!prop.lat || !prop.lng) return;
           const position = new kakao.maps.LatLng(prop.lat, prop.lng);
 
-          const size = 32;
-          const svgStr = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="%231a73e8" stroke="white" stroke-width="2.5"/><text x="50%25" y="54%25" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="13" font-weight="bold" font-family="sans-serif">1</text></svg>`;
+          const size = 42;
+          const strId = String(prop.id);
+          const isSelected = selectedClusterIdsRef.current?.includes(strId) || String(activeProperty) === strId;
+          
+          const normalSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="%234b89ff" stroke="white" stroke-width="2"/><text x="50%25" y="52%25" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="15" font-weight="bold" font-family="sans-serif">1</text></svg>`;
+          const activeSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="white" stroke="%234b89ff" stroke-width="2"/><text x="50%25" y="52%25" text-anchor="middle" dominant-baseline="middle" fill="%234b89ff" font-size="15" font-weight="bold" font-family="sans-serif">1</text></svg>`;
+          const svgStr = isSelected ? activeSvg : normalSvg;
+          
           const markerImage = new kakao.maps.MarkerImage(
             `data:image/svg+xml,${svgStr}`,
             new kakao.maps.Size(size, size),
             { offset: new kakao.maps.Point(size / 2, size / 2) }
           );
 
-          const hoverSize = 40;
-          const hoverSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${hoverSize}" height="${hoverSize}"><circle cx="${hoverSize/2}" cy="${hoverSize/2}" r="${hoverSize/2 - 2}" fill="%230d47a1" stroke="white" stroke-width="3"/><text x="50%25" y="54%25" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="15" font-weight="bold" font-family="sans-serif">1</text></svg>`;
+          const hoverSize = 48;
+          const hoverSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${hoverSize}" height="${hoverSize}"><circle cx="${hoverSize/2}" cy="${hoverSize/2}" r="${hoverSize/2 - 2}" fill="%234b89ff" stroke="white" stroke-width="2"/><text x="50%25" y="52%25" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="16" font-weight="bold" font-family="sans-serif">1</text></svg>`;
           const hoverImage = new kakao.maps.MarkerImage(
             `data:image/svg+xml,${hoverSvg}`,
             new kakao.maps.Size(hoverSize, hoverSize),
             { offset: new kakao.maps.Point(hoverSize / 2, hoverSize / 2) }
           );
 
-          const marker = new kakao.maps.Marker({ position, image: markerImage });
+          const marker = new kakao.maps.Marker({ position, image: markerImage, title: strId });
+          markerIdMapRef.current.set(marker, strId);
 
           kakao.maps.event.addListener(marker, 'mouseover', () => {
             marker.setImage(hoverImage);
             marker.setZIndex(100);
           });
           kakao.maps.event.addListener(marker, 'mouseout', () => {
-            marker.setImage(markerImage);
-            marker.setZIndex(0);
+            // Re-evaluate selection state since map doesn't auto re-render single markers immediately without dependency triggering
+            const currentSelected = selectedClusterIdsRef.current?.includes(strId) || String(activeProperty) === strId;
+            const updatedNormal = currentSelected ? activeSvg : normalSvg;
+            marker.setImage(new kakao.maps.MarkerImage(`data:image/svg+xml,${updatedNormal}`, new kakao.maps.Size(size, size), { offset: new kakao.maps.Point(size/2, size/2) }));
+            marker.setZIndex(currentSelected ? 99 : 0);
           });
 
           kakao.maps.event.addListener(marker, 'click', () => {
-            setActiveProperty(prop.id);
-            setShowDetail(true);
-            setActiveDetailTab("info");
-            setGalleryIndex(0);
-            showArticleOnMap(prop);
+            setSelectedClusterIds([strId]);
+            setShowDetail(false);
           });
 
           newMarkers.push(marker);
@@ -381,10 +582,12 @@ export default function GongsilPage() {
         {/* 좌측 사이드바: 매물 리스트 (380px) */}
         <aside style={{ width: 380, minWidth: 380, height: "100%", background: "#fff", borderRight: "1px solid #eee", display: "flex", flexDirection: "column", zIndex: 20 }}>
             <div style={{ padding: "15px 20px", fontWeight: 800, fontSize: 15, color: "#111", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #eee", flexShrink: 0 }}>
-              <span>현재 지도 화면 {dbVacancies.length}개</span>
+              <span>{selectedClusterIds && selectedClusterIds.length > 0 ? "선택된 공실" : "지도위의 공실"} {displayVacancies.length}개</span>
             </div>
             <div style={{ flex: 1, overflowY: "auto", padding: 0, background: "#fff" }}>
-              {dbVacancies.map((prop) => {
+              {displayVacancies.length === 0 ? (
+                 <div style={{ padding: "40px", textAlign: "center", color: "#888", fontSize: 14 }}>조건에 맞는 매물이 없습니다.</div>
+              ) : displayVacancies.map((prop) => {
                 const isActiveAndShowing = activeProperty === prop.id && showDetail;
                 const addrText = [prop.dong, prop.building_name].filter(Boolean).join(" ");
                 const priceText = getPriceText(prop);
@@ -395,6 +598,7 @@ export default function GongsilPage() {
                       if (isActiveAndShowing) {
                         setShowDetail(false);
                       } else {
+                        setPrevPropertyId(null);
                         setActiveProperty(prop.id); 
                         setShowDetail(true); 
                         setActiveDetailTab("info"); 
@@ -419,7 +623,7 @@ export default function GongsilPage() {
                         {[`룸 ${prop.room_count || 0}개`, `욕실 ${prop.bathroom_count || 0}개`, ...(prop.options || [])].filter(Boolean).join(", ")}
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: "auto" }}>
-                        <span style={{ display: "inline-block", fontSize: 12, color: "#fa5252", border: "1px solid #fa5252", padding: "1px 5px" }}>{prop.commission_type || "중개"}</span>
+                        <span style={{ display: "inline-block", fontSize: 12, color: "#fa5252", border: "1px solid #fa5252", padding: "1px 5px" }}>{prop.realtor_commission || prop.commission_type || "법정수수료"}</span>
                         <span style={{ fontSize: 13, color: "#fa5252", fontWeight: "bold" }}>{prop.vacancy_no}</span>
                         <span style={{ fontSize: 13, color: "#aaa" }}>{new Date(prop.created_at).toLocaleDateString('ko-KR', {year: 'numeric', month: '2-digit', day: '2-digit'}).replace(/\s/g, '')}</span>
                       </div>
@@ -448,24 +652,61 @@ export default function GongsilPage() {
             {/* 닫기 버튼 */}
             <button onClick={() => setShowDetail(false)} style={{ position: "absolute", top: 15, right: 15, width: 30, height: 30, background: "rgba(255,255,255,0.8)", border: "1px solid #ddd", borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, fontWeight: "bold", color: "#333", zIndex: 100 }}>×</button>
 
-            <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden" }}>
-              {/* 갤러리 */}
-              <div style={{ position: "relative", width: "100%", height: 200, background: "#f0f0f0" }}>
-                {images[galleryIndex] ? <img src={images[galleryIndex]} onClick={() => setShowGalleryModal(true)} style={{width:'100%', height:'100%', objectFit:'cover', cursor: 'pointer'}} /> : <div style={{ width: "100%", height: "100%", background: "#c0c0c0", display: "flex", alignItems: "center", justifyContent: "center", color: "#666" }}>이미지 없음</div>}
-                {images.length > 1 && (
-                  <>
-                    <button onClick={() => setGalleryIndex(Math.max(0, galleryIndex - 1))} style={{ position: "absolute", top: "50%", left: 0, transform: "translateY(-50%)", background: "rgba(0,0,0,0.2)", color: "#fff", border: "none", fontSize: 18, padding: "10px 6px", cursor: "pointer", borderRadius: "0 4px 4px 0" }}>〈</button>
-                    <button onClick={() => setGalleryIndex(Math.min(images.length - 1, galleryIndex + 1))} style={{ position: "absolute", top: "50%", right: 0, transform: "translateY(-50%)", background: "rgba(0,0,0,0.2)", color: "#fff", border: "none", fontSize: 18, padding: "10px 6px", cursor: "pointer", borderRadius: "4px 0 0 4px" }}>〉</button>
-                    <div style={{ position: "absolute", bottom: 15, right: 15, background: "rgba(0,0,0,0.6)", color: "#fff", fontSize: 11, padding: "4px 12px", borderRadius: 20 }}>{galleryIndex + 1}/{images.length}</div>
-                  </>
-                )}
+            {/* 뒤로가기 버튼 탭 */}
+            {prevPropertyId && (
+              <div 
+                onClick={() => {
+                  setActiveProperty(prevPropertyId);
+                  setActiveDetailTab("realtor");
+                  setPrevPropertyId(null);
+                }}
+                style={{
+                  position: "absolute",
+                  left: -28,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  width: 28,
+                  height: 60,
+                  background: "#fff",
+                  border: "1px solid #eee",
+                  borderRight: "none",
+                  borderRadius: "6px 0 0 6px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  boxShadow: "-3px 0 6px rgba(0,0,0,0.04)",
+                  zIndex: 26,
+                  color: "#666",
+                  fontSize: 20,
+                  fontWeight: "bold",
+                }}
+                title="등록자 정보(이전 매물)로 돌아가기"
+              >
+                ‹
               </div>
+            )}
+
+            <div id="detail-scroll-container" style={{ flex: 1, overflowY: "auto", overflowX: "hidden" }}>
+              {/* 갤러리 */}
+              {prop.images && prop.images.length > 0 && prop.images[0] && (
+                <div style={{ position: "relative", width: "100%", height: 200, background: "#f0f0f0" }}>
+                  <img src={images[galleryIndex]} onClick={() => setShowGalleryModal(true)} style={{width:'100%', height:'100%', objectFit:'cover', cursor: 'pointer'}} />
+                  {images.length > 1 && (
+                    <>
+                      <button onClick={() => setGalleryIndex(Math.max(0, galleryIndex - 1))} style={{ position: "absolute", top: "50%", left: 0, transform: "translateY(-50%)", background: "rgba(0,0,0,0.2)", color: "#fff", border: "none", fontSize: 18, padding: "10px 6px", cursor: "pointer", borderRadius: "0 4px 4px 0" }}>〈</button>
+                      <button onClick={() => setGalleryIndex(Math.min(images.length - 1, galleryIndex + 1))} style={{ position: "absolute", top: "50%", right: 0, transform: "translateY(-50%)", background: "rgba(0,0,0,0.2)", color: "#fff", border: "none", fontSize: 18, padding: "10px 6px", cursor: "pointer", borderRadius: "4px 0 0 4px" }}>〉</button>
+                      <div style={{ position: "absolute", bottom: 15, right: 15, background: "rgba(0,0,0,0.6)", color: "#fff", fontSize: 11, padding: "4px 12px", borderRadius: 20 }}>{galleryIndex + 1}/{images.length}</div>
+                    </>
+                  )}
+                </div>
+              )}
 
               {/* 헤더 정보 */}
               <div style={{ padding: "40px 20px 20px 20px", borderBottom: "1px solid #f0f0f0" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, paddingRight: 30 }}>
                   <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                    <span style={{ fontSize: 13, fontWeight: "bold", color: "#ff5a5f", border: "1px solid #ff5a5f", padding: "2px 6px", borderRadius: 2 }}>{prop.commission_type || "법정수수료"}</span>
+                    <span style={{ fontSize: 13, fontWeight: "bold", color: "#ff5a5f", border: "1px solid #ff5a5f", padding: "2px 6px", borderRadius: 2 }}>{prop.realtor_commission || prop.commission_type || "법정수수료"}</span>
                     <span style={{ color: "#e53e3e", fontSize: 14, fontWeight: "bold" }}>{prop.vacancy_no}</span>
                     <span style={{ fontSize: 12, color: "#888" }}>{new Date(prop.created_at).toLocaleDateString()}</span>
                   </div>
@@ -541,60 +782,96 @@ export default function GongsilPage() {
                   </div>
                 </div>
 
-                {/* ──── 옵션 (3탭: 옵션/관리비/시간정보) ──── */}
-                <div style={{ padding: "0 20px 20px" }}>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: "#222", marginBottom: 20 }}>옵션</div>
-                  {/* 탭 아이콘 3개 */}
-                  <div style={{ display: "flex", gap: 0, marginBottom: 20, borderBottom: "1px solid #eee" }}>
-                    {[
-                      { icon: "🛒", label: "옵션" },
-                      { icon: "🏛", label: "관리비" },
-                      { icon: "⏰", label: "시간정보" },
-                    ].map((tab, idx) => (
-                      <div key={idx} style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "14px 28px", cursor: "pointer", borderBottom: idx === 0 ? "2px solid #333" : "2px solid transparent", color: idx === 0 ? "#333" : "#bbb", fontSize: 22, transition: "all 0.2s" }} title={tab.label}>
-                        {tab.icon}
-                      </div>
-                    ))}
-                  </div>
-                  {/* 옵션 아이콘 그리드 */}
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 20 }}>
-                    {[
-                      { icon: "❄️", name: "에어컨" },
-                      { icon: "🍳", name: "싱크대" },
-                      { icon: "🚿", name: "붙박이장" },
-                      { icon: "🔒", name: "보안시스템" },
-                      { icon: "🅿️", name: "주차기능" },
-                      { icon: "📺", name: "TV" },
-                    ].map((opt, idx) => (
-                      <div key={idx} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, width: 64 }}>
-                        <div style={{ width: 44, height: 44, borderRadius: 8, background: "#f5f5f5", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 }}>{opt.icon}</div>
-                        <span style={{ fontSize: 11, color: "#666", textAlign: "center", whiteSpace: "nowrap" }}>{opt.name}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* ──── 댓글상담 ──── */}
-                <div style={{ marginTop: 20, borderTop: "1px solid #f0f0f0", padding: "20px 20px 30px" }}>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: "#222", marginBottom: 15, display: "flex", alignItems: "center", gap: 8 }}>
-                    댓글상담 <span style={{ color: "#1a73e8", fontSize: 15 }}>0개</span>
-                  </div>
-                  {/* 입력 영역 */}
-                  <div style={{ marginBottom: 25, border: "1px solid #ddd", borderRadius: 6, overflow: "hidden", background: "#fff" }}>
-                    <textarea
-                      placeholder={"가격을 제안하거나, 궁금한 점을 남겨보세요. 작성자에게 중개사인 알고 답변 수 있는 1:1 비공개 상담입니다."}
-                      style={{ width: "100%", minHeight: 80, border: "none", outline: "none", padding: "14px 15px", fontSize: 14, color: "#333", resize: "vertical", fontFamily: "inherit", background: "#fff", boxSizing: "border-box" }}
-                    />
-                    <div style={{ padding: "10px 15px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#fafafa", borderTop: "1px solid #eee" }}>
-                      <span style={{ fontSize: 13, color: "#888", display: "flex", alignItems: "center", gap: 4 }}>
-                        <span style={{ color: "#1a73e8" }}>🔒</span> 비밀댓글 자동적용
-                      </span>
-                      <button style={{ background: "#1a73e8", color: "#fff", border: "none", padding: "8px 24px", borderRadius: 4, fontWeight: "bold", cursor: "pointer", fontSize: 14, fontFamily: "inherit" }}>등록</button>
+                {/* ──── 옵션 ──── */}
+                {prop.options && prop.options.length > 0 && (
+                  <div style={{ padding: "10px 20px 20px" }}>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: "#222", marginBottom: 20 }}>옵션</div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 30 }}>
+                      {prop.options.map((optName: string, idx: number) => (
+                        <div key={idx} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, minWidth: 50 }}>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 44, height: 44 }}>
+                            {getOptionSvg(optName)}
+                          </div>
+                          <span style={{ fontSize: 13, color: "#333", fontWeight: "bold", textAlign: "center", whiteSpace: "nowrap" }}>{optName}</span>
+                        </div>
+                      ))}
                     </div>
                   </div>
+                )}
+
+                {/* ──── 주변환경 (인프라) ──── */}
+                {prop.infrastructure && Object.keys(prop.infrastructure).length > 0 && (
+                  <div style={{ padding: "10px 20px 20px" }}>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: "#222", marginBottom: 20, borderTop: "1px dashed #eee", paddingTop: 20 }}>주변환경</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                      {Object.entries(prop.infrastructure).map(([catName, places]: [string, any]) => (
+                        <div key={catName} style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                          <span style={{ fontSize: 13, fontWeight: "bold", color: "#666", width: 65, flexShrink: 0, marginTop: 4 }}>
+                            {catName}
+                          </span>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, flex: 1 }}>
+                            {(places as string[]).map((place: string, idx: number) => (
+                              <div key={idx} style={{ fontSize: 13, color: "#333", background: "#f5f5f5", padding: "4px 10px", borderRadius: 4 }}>
+                                {place}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* ──── 댓글상담 ──── */}
+                <div style={{ marginTop: 20, borderTop: "10px solid #f5f5f5", padding: "30px 20px 40px" }}>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: "#222", marginBottom: 15, display: "flex", alignItems: "center", gap: 8 }}>
+                    댓글상담 <span style={{ color: "#1a73e8", fontSize: 15 }}>{comments.length}개</span>
+                  </div>
+                  
+                  {/* 입력 영역 */}
+                  <div style={{ marginBottom: 30, border: "1px solid #ddd", borderRadius: 6, overflow: "hidden", background: "#fff", position: "relative" }}>
+                    <textarea
+                      value={newComment}
+                      onChange={(e) => setNewComment(e.target.value)}
+                      placeholder={currentUser ? "가격을 제안하거나, 궁금한 점을 남겨보세요. 등작자와의 1:1 상담입니다." : "로그인 후 이용하실 수 있습니다."}
+                      style={{ width: "100%", minHeight: 90, border: "none", outline: "none", padding: "14px 15px", fontSize: 14, color: "#333", resize: "vertical", fontFamily: "inherit", background: "#fff", boxSizing: "border-box" }}
+                      disabled={!currentUser}
+                    />
+                    <div style={{ padding: "10px 15px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#fafafa", borderTop: "1px solid #eee" }}>
+                      <label style={{ fontSize: 13, color: "#555", display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontWeight: "bold" }}>
+                        <input type="checkbox" checked={isSecret} onChange={(e) => setIsSecret(e.target.checked)} style={{ width: 16, height: 16 }} />
+                        비밀글
+                      </label>
+                      <button onClick={handleCommentSubmit} disabled={!currentUser || !newComment.trim()} style={{ background: currentUser && newComment.trim() ? "#1a73e8" : "#ccc", color: "#fff", border: "none", padding: "8px 24px", borderRadius: 4, fontWeight: "bold", cursor: currentUser && newComment.trim() ? "pointer" : "default", fontSize: 14, fontFamily: "inherit" }}>등록</button>
+                    </div>
+                  </div>
+
                   {/* 댓글 리스트 */}
-                  <div style={{ textAlign: "center", padding: 30, color: "#888", fontSize: 13 }}>
-                    아직 등록된 문의가 없습니다.
+                  <div>
+                    {comments.length === 0 ? (
+                      <div style={{ textAlign: "center", padding: 30, color: "#888", fontSize: 13 }}>아직 등록된 문의가 없습니다.</div>
+                    ) : (
+                      <div style={{ display: "flex", flexDirection: "column" }}>
+                        {comments.map((cm) => {
+                          const isCommentOwner = currentUser?.id === cm.author_id;
+                          const isPropertyOwner = currentUser?.id === prop.owner_id;
+                          const canView = !cm.is_secret || isCommentOwner || isPropertyOwner;
+
+                          return (
+                            <div key={cm.id} style={{ padding: "16px 0", borderBottom: "1px solid #f0f0f0" }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                                <span style={{ fontWeight: "bold", fontSize: 14, color: "#222" }}>{cm.author_name}</span>
+                                <span style={{ fontSize: 12, color: "#999" }}>{new Date(cm.created_at).toLocaleString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
+                                {cm.is_secret && <span style={{ fontSize: 12, color: "#ff5a5f", border: "1px solid #ff5a5f", padding: "1px 4px", borderRadius: 3, fontWeight: "bold" }}>비밀글</span>}
+                              </div>
+                              <div style={{ fontSize: 14, color: canView ? "#333" : "#aaa", lineHeight: 1.5, whiteSpace: "pre-line" }}>
+                                {canView ? cm.content : "XXX (등록자와 작성자만 볼 수 있는 비밀글입니다)"}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 </div>
                 </>
@@ -604,13 +881,21 @@ export default function GongsilPage() {
               {activeDetailTab === "realtor" && (
                 <>
                 <div style={{ padding: "30px 20px", background: "#fff" }}>
-                  <div style={{ fontSize: 18, fontWeight: 800, color: "#111", marginBottom: 20 }}>{agencyInfo ? agencyInfo.agency_name : (prop.members ? prop.members.agency_name || prop.members.name : prop.client_name)}</div>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: "#111", marginBottom: 20 }}>{agencyInfo ? agencyInfo.name : (prop.members ? prop.members.name : prop.client_name)}</div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 30 }}>
-                    <span style={{ fontSize: 14, color: "#555" }}>대표 {agencyInfo ? agencyInfo.representative : (prop.members ? prop.members.name : prop.client_name)} <span style={{color:"#ccc", margin:"0 6px"}}>|</span> 등록번호 {agencyInfo?.biz_number || '-'}</span>
-                    <span style={{ fontSize: 14, color: "#555" }}>{agencyInfo?.address || '-'}</span>
+                    {agencyInfo ? (
+                      <>
+                        <span style={{ fontSize: 14, color: "#555" }}>대표 {agencyInfo.ceo_name} <span style={{color:"#ccc", margin:"0 6px"}}>|</span> 등록번호 {agencyInfo.reg_num || '-'}</span>
+                        <span style={{ fontSize: 14, color: "#555" }}>{[agencyInfo.address, agencyInfo.address_detail].filter(Boolean).join(" ") || '-'}</span>
+                      </>
+                    ) : (
+                      <>
+                        <span style={{ fontSize: 14, color: "#555" }}>일반회원 <span style={{color:"#ccc", margin:"0 6px"}}>|</span> {prop.members ? prop.members.name : prop.client_name}</span>
+                      </>
+                    )}
                     <span style={{ fontSize: 14, fontWeight: "bold", color: "#1a73e8", marginTop: 4, display: "flex", alignItems: "center", gap: 6 }}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-                      전화 {agencyInfo?.tel ? `${agencyInfo.tel}, ` : ''}{prop.members ? prop.members.phone : prop.client_phone}
+                      전화 {agencyInfo?.phone ? `${agencyInfo.phone}${agencyInfo?.cell && agencyInfo.cell !== agencyInfo.phone ? `, ${agencyInfo.cell}` : ''}` : (prop.client_phone || prop.members?.phone || "미등록")}
                     </span>
                   </div>
                   
@@ -630,7 +915,7 @@ export default function GongsilPage() {
                 {/* ──── 등록 물건 리스트 ──── */}
                 <div style={{ borderTop: "10px solid #f5f5f5" }}>
                   {dbVacancies.filter(v => v.owner_id === prop.owner_id).slice(0, 10).map((vp) => (
-                    <div key={vp.id} onClick={() => { setActiveProperty(vp.id); setActiveDetailTab("info"); setGalleryIndex(0); }}
+                    <div key={vp.id} onClick={() => { setPrevPropertyId(activeProperty); setActiveProperty(vp.id); setActiveDetailTab("info"); setGalleryIndex(0); }}
                       style={{
                         display: "flex", justifyContent: "space-between", alignItems: "flex-start",
                         padding: "16px 20px", cursor: "pointer", transition: "background 0.15s",
@@ -659,24 +944,55 @@ export default function GongsilPage() {
                 </div>
 
                 {/* ──── 댓글상담 (등록자정보 탭 하단) ──── */}
-                <div style={{ marginTop: 0, borderTop: "1px solid #f0f0f0", padding: "20px 20px 30px" }}>
+                <div style={{ marginTop: 0, borderTop: "1px solid #f0f0f0", padding: "20px 20px 40px" }}>
                   <div style={{ fontSize: 16, fontWeight: 800, color: "#222", marginBottom: 15, display: "flex", alignItems: "center", gap: 8 }}>
-                    댓글상담 <span style={{ color: "#1a73e8", fontSize: 15 }}>0개</span>
+                    댓글상담 <span style={{ color: "#1a73e8", fontSize: 15 }}>{comments.length}개</span>
                   </div>
-                  <div style={{ marginBottom: 25, border: "1px solid #ddd", borderRadius: 6, overflow: "hidden", background: "#fff" }}>
+                  
+                  {/* 입력 영역 */}
+                  <div style={{ marginBottom: 30, border: "1px solid #ddd", borderRadius: 6, overflow: "hidden", background: "#fff", position: "relative" }}>
                     <textarea
-                      placeholder={"가격을 제안하거나, 궁금한 점을 남겨보세요. 작성자에게 중개사인 알고 답변 수 있는 1:1 비공개 상담입니다."}
-                      style={{ width: "100%", minHeight: 80, border: "none", outline: "none", padding: "14px 15px", fontSize: 14, color: "#333", resize: "vertical", fontFamily: "inherit", background: "#fff", boxSizing: "border-box" }}
+                      value={newComment}
+                      onChange={(e) => setNewComment(e.target.value)}
+                      placeholder={currentUser ? "가격을 제안하거나, 궁금한 점을 남겨보세요. 등록자와의 1:1 상담입니다." : "로그인 후 이용하실 수 있습니다."}
+                      style={{ width: "100%", minHeight: 90, border: "none", outline: "none", padding: "14px 15px", fontSize: 14, color: "#333", resize: "vertical", fontFamily: "inherit", background: "#fff", boxSizing: "border-box" }}
+                      disabled={!currentUser}
                     />
                     <div style={{ padding: "10px 15px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#fafafa", borderTop: "1px solid #eee" }}>
-                      <span style={{ fontSize: 13, color: "#888", display: "flex", alignItems: "center", gap: 4 }}>
-                        <span style={{ color: "#1a73e8" }}>🔒</span> 비밀댓글 자동적용
-                      </span>
-                      <button style={{ background: "#1a73e8", color: "#fff", border: "none", padding: "8px 24px", borderRadius: 4, fontWeight: "bold", cursor: "pointer", fontSize: 14, fontFamily: "inherit" }}>등록</button>
+                      <label style={{ fontSize: 13, color: "#555", display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontWeight: "bold" }}>
+                        <input type="checkbox" checked={isSecret} onChange={(e) => setIsSecret(e.target.checked)} style={{ width: 16, height: 16 }} />
+                        비밀글
+                      </label>
+                      <button onClick={handleCommentSubmit} disabled={!currentUser || !newComment.trim()} style={{ background: currentUser && newComment.trim() ? "#1a73e8" : "#ccc", color: "#fff", border: "none", padding: "8px 24px", borderRadius: 4, fontWeight: "bold", cursor: currentUser && newComment.trim() ? "pointer" : "default", fontSize: 14, fontFamily: "inherit" }}>등록</button>
                     </div>
                   </div>
-                  <div style={{ textAlign: "center", padding: 30, color: "#888", fontSize: 13 }}>
-                    아직 등록된 문의가 없습니다.
+
+                  {/* 댓글 리스트 */}
+                  <div>
+                    {comments.length === 0 ? (
+                      <div style={{ textAlign: "center", padding: 30, color: "#888", fontSize: 13 }}>아직 등록된 문의가 없습니다.</div>
+                    ) : (
+                      <div style={{ display: "flex", flexDirection: "column" }}>
+                        {comments.map((cm) => {
+                          const isCommentOwner = currentUser?.id === cm.author_id;
+                          const isPropertyOwner = currentUser?.id === prop.owner_id;
+                          const canView = !cm.is_secret || isCommentOwner || isPropertyOwner;
+
+                          return (
+                            <div key={cm.id} style={{ padding: "16px 0", borderBottom: "1px solid #f0f0f0" }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                                <span style={{ fontWeight: "bold", fontSize: 14, color: "#222" }}>{cm.author_name}</span>
+                                <span style={{ fontSize: 12, color: "#999" }}>{new Date(cm.created_at).toLocaleString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
+                                {cm.is_secret && <span style={{ fontSize: 12, color: "#ff5a5f", border: "1px solid #ff5a5f", padding: "1px 4px", borderRadius: 3, fontWeight: "bold" }}>비밀글</span>}
+                              </div>
+                              <div style={{ fontSize: 14, color: canView ? "#333" : "#aaa", lineHeight: 1.5, whiteSpace: "pre-line" }}>
+                                {canView ? cm.content : "XXX (등록자와 작성자만 볼 수 있는 비밀글입니다)"}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 </div>
                 </>
@@ -691,9 +1007,9 @@ export default function GongsilPage() {
             
             {/* 갤러리 풀스크린 모달 */}
             {showGalleryModal && images[0] && (
-              <div style={{ position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh", background: "rgba(0,0,0,0.9)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <button onClick={() => setShowGalleryModal(false)} style={{ position: "absolute", top: 20, right: 30, background: "none", border: "none", color: "#fff", fontSize: 40, cursor: "pointer", zIndex: 10000 }}>×</button>
-                <div style={{ position: "relative", width: "80%", maxWidth: 1000, height: "80%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <div onClick={() => setShowGalleryModal(false)} style={{ position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh", background: "rgba(0,0,0,0.9)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <div onClick={(e) => e.stopPropagation()} style={{ position: "relative", width: "80%", maxWidth: 1000, height: "80%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <button onClick={() => setShowGalleryModal(false)} style={{ position: "absolute", top: -50, right: -40, background: "none", border: "none", color: "#fff", fontSize: 40, cursor: "pointer", zIndex: 10000 }}>×</button>
                   <img src={images[galleryIndex]} style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
                   {images.length > 1 && (
                     <>
@@ -712,16 +1028,18 @@ export default function GongsilPage() {
 
         {/* 우측: 지도 영역 */}
         <div style={{ flex: 1, height: "100%", position: "relative", minWidth: 0, background: "#eee" }}>
-          {/* 지도 위 플로팅 필터 */}
-          <div style={{ display: "flex", position: "absolute", top: 15, left: 20, zIndex: 10, background: "#fff", padding: "5px 15px", borderRadius: 30, boxShadow: "0 4px 10px rgba(0,0,0,0.1)", border: "1px solid #ddd", alignItems: "center", gap: 10, fontSize: 14, color: "#333" }}>
-            <span style={{ fontWeight: "bold", padding: "5px 10px", cursor: "pointer" }}>위치 파악중 ▼</span>
-            <div style={{ width: 1, height: 12, background: "#ddd" }}></div>
-            <span style={{ fontWeight: "bold", padding: "5px 10px", cursor: "pointer" }}>- ▼</span>
-            <div style={{ width: 1, height: 12, background: "#ddd" }}></div>
-            <span style={{ fontWeight: "bold", padding: "5px 10px", cursor: "pointer" }}>- ▼</span>
-            <div style={{ width: 1, height: 12, background: "#ddd" }}></div>
-            <span style={{ fontWeight: "bold", padding: "5px 10px", cursor: "pointer", color: "#1a73e8" }}>검색 🔍</span>
-          </div>
+          
+          <MapSearchBar 
+            mapCenterRegion={mapCenterRegion}
+            onSearchCoord={(lat, lng, zoomLevel) => {
+              if (!kakaoMapRef.current) return;
+              const kakao = (window as any).kakao;
+              if (zoomLevel) kakaoMapRef.current.setLevel(zoomLevel);
+              kakaoMapRef.current.panTo(new kakao.maps.LatLng(lat, lng));
+            }}
+            themeColor="#1a73e8"
+          />
+
           <div ref={mapRef} style={{ width: "100%", height: "100%", background: "#e8eaed" }}>
             {mapError && (
               <div style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", background: "#ffefef", color: "#d32f2f", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, zIndex: 10 }}>
