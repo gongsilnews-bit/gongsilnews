@@ -396,15 +396,12 @@ export default function NewsLocalPage() {
       clustererRef.current.addMarkers(newMarkers);
     }
 
-    // relayout 안전 실행
+    // 사이드바 처리를 위해 렌더링 직후 데이터 갱신
     setTimeout(() => {
       if (map) {
-        map.relayout();
-        map.setCenter(new kakao.maps.LatLng(initialLat, initialLng));
-        // 초기 로딩 후 현재 뷰포트 기사 필터링
-        setTimeout(() => updateVisibleArticlesRef.current(), 200);
+        updateVisibleArticlesRef.current();
       }
-    }, 500);
+    }, 50);
 
   }, [geoArticles, showArticleOnMap, closeInfoWindow]);
 

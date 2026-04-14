@@ -594,13 +594,6 @@ function GongsilPageInner() {
       clustererRef.current.addMarkers(newMarkers);
     }
 
-    setTimeout(() => {
-      if (map && !activeProperty) {
-        map.relayout();
-        map.setCenter(new kakao.maps.LatLng(initialLat, initialLng));
-      }
-    }, 500);
-
   }, [filteredVacancies, showArticleOnMap, activeProperty]);
 
   const formatAmount = (amt: number) => {
