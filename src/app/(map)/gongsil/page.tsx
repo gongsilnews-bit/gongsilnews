@@ -6,6 +6,7 @@ import Link from "next/link";
 import { getVacancies, getAgencyInfo } from "@/app/actions/vacancy";
 import { getVacancyComments, createVacancyComment } from "@/app/actions/vacancyComments";
 import MapSearchBar from "@/components/MapSearchBar";
+import MapTopAuthButtons from "@/components/MapTopAuthButtons";
 
 // 카테고리 설정 데이터
 const CATEGORY_CONFIG: Record<string, { name: string; pills: string[]; basicFilters: string[]; detailFilters: string[]; showToggle: boolean; pillStyle?: string }> = {
@@ -672,6 +673,7 @@ function GongsilPageInner() {
               {cfg.name}
             </button>
           ))}
+          <MapTopAuthButtons />
         </div>
 
         {/* Tier 2: 서브 필터(Pills + 드롭다운) */}
@@ -1371,6 +1373,7 @@ function GongsilPageInner() {
               kakaoMapRef.current.panTo(new kakao.maps.LatLng(lat, lng));
             }}
             themeColor="#1a73e8"
+            isPushedDown={activeFilterDropdown !== null}
           />
 
           <div ref={mapRef} style={{ width: "100%", height: "100%", background: "#e8eaed" }}>

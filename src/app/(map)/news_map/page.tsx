@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { getArticles, getArticleDetail, incrementArticleView } from "@/app/actions/article";
 import MapSearchBar from "@/components/MapSearchBar";
+import MapTopAuthButtons from "@/components/MapTopAuthButtons";
 
 export default function NewsLocalPage() {
   /* ── 상태 ── */
@@ -453,6 +454,7 @@ export default function NewsLocalPage() {
             </>)}
           </select>
         </div>
+        <MapTopAuthButtons />
       </header>
 
       {/* ===== 메인 (좌 사이드바 + 우 지도) ===== */}

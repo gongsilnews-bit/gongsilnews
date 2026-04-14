@@ -26,6 +26,7 @@ export default function HeroMapSection() {
 
   const [selectedClusterIds, setSelectedClusterIds] = useState<string[] | null>(null);
   const selectedClusterIdsRef = useRef<string[] | null>(null);
+  const [mapBounds, setMapBounds] = useState<any>(null);
 
   useEffect(() => {
     dbVacanciesRef.current = vacancies;
@@ -36,14 +37,14 @@ export default function HeroMapSection() {
     
     if (markersRef.current && (window as any).kakao?.maps) {
        const size = 36;
-       const normalSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="\${size}" height="\${size}"><circle cx="\${size/2}" cy="\${size/2}" r="\${size/2 - 2}" fill="%234b89ff" stroke="white" stroke-width="2"/><text x="50%25" y="52%25" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="13" font-weight="bold" font-family="sans-serif">1</text></svg>`;
-       const activeSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="\${size}" height="\${size}"><circle cx="\${size/2}" cy="\${size/2}" r="\${size/2 - 2}" fill="white" stroke="%234b89ff" stroke-width="2"/><text x="50%25" y="52%25" text-anchor="middle" dominant-baseline="middle" fill="%234b89ff" font-size="13" font-weight="bold" font-family="sans-serif">1</text></svg>`;
+       const normalSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="%234b89ff" stroke="white" stroke-width="2"/><text x="50%25" y="52%25" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="13" font-weight="bold" font-family="sans-serif">1</text></svg>`;
+       const activeSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="white" stroke="%234b89ff" stroke-width="2"/><text x="50%25" y="52%25" text-anchor="middle" dominant-baseline="middle" fill="%234b89ff" font-size="13" font-weight="bold" font-family="sans-serif">1</text></svg>`;
 
        markersRef.current.forEach((marker: any) => {
           const idStr = markerIdMapRef.current.get(marker);
           const isSelected = selectedClusterIds && idStr && selectedClusterIds.includes(idStr);
           marker.setImage(new (window as any).kakao.maps.MarkerImage(
-             `data:image/svg+xml,\${isSelected ? activeSvg : normalSvg}`,
+             `data:image/svg+xml,${isSelected ? activeSvg : normalSvg}`,
              new (window as any).kakao.maps.Size(size, size),
              { offset: new (window as any).kakao.maps.Point(size / 2, size / 2) }
           ));
@@ -136,13 +137,13 @@ export default function HeroMapSection() {
           const strId = String(prop.id);
           const isSelected = selectedClusterIdsRef.current?.includes(strId);
 
-          const normalSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="\${size}" height="\${size}"><circle cx="\${size/2}" cy="\${size/2}" r="\${size/2 - 2}" fill="%234b89ff" stroke="white" stroke-width="2"/><text x="50%25" y="52%25" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="13" font-weight="bold" font-family="sans-serif">1</text></svg>`;
-          const activeSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="\${size}" height="\${size}"><circle cx="\${size/2}" cy="\${size/2}" r="\${size/2 - 2}" fill="white" stroke="%234b89ff" stroke-width="2"/><text x="50%25" y="52%25" text-anchor="middle" dominant-baseline="middle" fill="%234b89ff" font-size="13" font-weight="bold" font-family="sans-serif">1</text></svg>`;
+          const normalSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="%234b89ff" stroke="white" stroke-width="2"/><text x="50%25" y="52%25" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="13" font-weight="bold" font-family="sans-serif">1</text></svg>`;
+          const activeSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="white" stroke="%234b89ff" stroke-width="2"/><text x="50%25" y="52%25" text-anchor="middle" dominant-baseline="middle" fill="%234b89ff" font-size="13" font-weight="bold" font-family="sans-serif">1</text></svg>`;
           const svgStr = isSelected ? activeSvg : normalSvg;
 
           const marker = new kakao.maps.Marker({
             position,
-            image: new kakao.maps.MarkerImage(`data:image/svg+xml,\${svgStr}`, new kakao.maps.Size(size, size), { offset: new kakao.maps.Point(size / 2, size / 2) }),
+            image: new kakao.maps.MarkerImage(`data:image/svg+xml,${svgStr}`, new kakao.maps.Size(size, size), { offset: new kakao.maps.Point(size / 2, size / 2) }),
             title: strId
           });
           markerIdMapRef.current.set(marker, strId);
@@ -163,6 +164,7 @@ export default function HeroMapSection() {
           gridSize: 60,
           minLevel: 4,
           minClusterSize: 2,
+          disableClickZoom: true,
           calculator: [10, 30, 50],
           styles: [
             { width: "44px", height: "44px", background: "#4b89ff", borderRadius: "50%", color: "#fff", textAlign: "center", lineHeight: "44px", fontSize: "15px", fontWeight: "bold", border: "3px solid rgba(255,255,255,0.8)", boxShadow: "0 2px 8px rgba(0,0,0,0.3)" },
@@ -212,6 +214,12 @@ export default function HeroMapSection() {
           newMarkers.forEach(m => bounds.extend(m.getPosition()));
           map.setBounds(bounds);
         }
+
+        // Initially set bounds and update on move
+        setMapBounds(map.getBounds());
+        kakao.maps.event.addListener(map, 'idle', () => {
+           setMapBounds(map.getBounds());
+        });
       });
     };
 
@@ -273,9 +281,16 @@ export default function HeroMapSection() {
           </div>
 
           {(() => {
-            const displayVacancies = selectedClusterIds && selectedClusterIds.length > 0
-              ? filteredVacancies.filter(v => selectedClusterIds.includes(String(v.id)))
-              : filteredVacancies;
+            let displayVacancies = filteredVacancies;
+            if (selectedClusterIds && selectedClusterIds.length > 0) {
+              displayVacancies = filteredVacancies.filter(v => selectedClusterIds.includes(String(v.id)));
+            } else if (mapBounds && (window as any).kakao?.maps) {
+              displayVacancies = filteredVacancies.filter(v => {
+                if (!v.lat || !v.lng) return false;
+                const pos = new (window as any).kakao.maps.LatLng(v.lat, v.lng);
+                return mapBounds.contain(pos);
+              });
+            }
 
             if (displayVacancies.length === 0) {
               return (
