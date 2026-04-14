@@ -227,9 +227,119 @@ export default function NewsLocalPage() {
   useEffect(() => { clusterModeRef.current = clusterMode; }, [clusterMode]);
   useEffect(() => { updateVisibleArticlesRef.current = updateVisibleArticles; }, [updateVisibleArticles]);
 
-  /* ── 카카오맵 초기화 및 마커 렌더링 ── */
+  // Preload Kakao Map script immediately on mount
+  const [mapLoaded, setMapLoaded] = useState(false);
   useEffect(() => {
-    const loadKakaoMap = () => {
+    if ((window as any).kakao && (window as any).kakao.maps) {
+      setMapLoaded(true);
+      return;
+    }
+    const scriptId = "kakao-map-script";
+    if (!document.getElementById(scriptId)) {
+      const script = document.createElement("script");
+      const kakaoApiKey = process.env.NEXT_PUBLIC_KAKAO_APP_KEY || "435d3602201a49ea712e5f5a36fe6efc";
+      script.id = scriptId;
+      script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoApiKey}&libraries=services,clusterer&autoload=false`;
+      script.onerror = () => setMapError("카카오맵 JS 키가 유효하지 않거나 등록되지 않았습니다.");
+      document.head.appendChild(script);
+      script.onload = () => {
+        (window as any).kakao.maps.load(() => {
+          setMapLoaded(true);
+        });
+      };
+    } else {
+      const check = setInterval(() => {
+        if ((window as any).kakao && (window as any).kakao.maps) {
+          clearInterval(check);
+          setMapLoaded(true);
+        }
+      }, 100);
+    }
+  }, []);
+
+  /* ── 1. 빈 지도 즉시 렌더링 ── */
+  useEffect(() => {
+    if (!mapLoaded) return;
+    const kakao = (window as any).kakao;
+    if (!mapRef.current || kakaoMapRef.current) return;
+
+    kakaoMapRef.current = new kakao.maps.Map(mapRef.current, {
+      center: new kakao.maps.LatLng(37.498095, 127.027610),
+      level: 8,
+    });
+
+    const map = kakaoMapRef.current;
+
+    // 지도 이동/줌 완료 시 → 현재 뷰포트에 보이는 기사만 사이드바에 표시 + 주소 파악
+    kakao.maps.event.addListener(map, 'idle', () => {
+      if (!clusterModeRef.current) {
+        updateVisibleArticlesRef.current();
+      }
+      
+      // 중심 좌표로 주소 역지오코딩
+      if (kakao.maps.services && kakao.maps.services.Geocoder) {
+        const center = map.getCenter();
+        const geocoder = new kakao.maps.services.Geocoder();
+        geocoder.coord2RegionCode(center.getLng(), center.getLat(), (result: any, status: any) => {
+          if (status === kakao.maps.services.Status.OK) {
+            const hResult = result.find((r: any) => r.region_type === 'H') || result[0];
+            if (hResult) {
+              setMapCenterRegion({
+                sido: hResult.region_1depth_name,
+                gugun: hResult.region_2depth_name,
+                dong: hResult.region_3depth_name
+              });
+            }
+          }
+        });
+      }
+    });
+  }, [mapLoaded]);
+
+  /* ── 2. 데이터가 불러와지면 마커 렌더링 ── */
+  useEffect(() => {
+    if (!kakaoMapRef.current || geoArticles.length === 0) return;
+
+    const kakao = (window as any).kakao;
+    const map = kakaoMapRef.current;
+
+    let initialLat = 37.498095;
+    let initialLng = 127.027610;
+
+    const validArt = geoArticles.find(a => a.lat && a.lng);
+    if (validArt) { initialLat = validArt.lat; initialLng = validArt.lng; }
+
+    if (!clustererRef.current) {
+        clustererRef.current = new kakao.maps.MarkerClusterer({
+          map: map,
+          averageCenter: true,
+          minLevel: 4,
+          gridSize: 60,
+          calculator: [5, 10, 30, 50],
+          texts: (count: number) => count.toString(),
+          styles: [
+            { width: '38px', height: '38px', background: 'rgba(255, 142, 21, 0.85)', color: '#fff', textAlign: 'center', lineHeight: '38px', borderRadius: '50%', fontWeight: 'bold', fontSize: '14px', border: '3px solid rgba(255,255,255,0.7)', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' },
+            { width: '44px', height: '44px', background: 'rgba(255, 130, 0, 0.88)', color: '#fff', textAlign: 'center', lineHeight: '44px', borderRadius: '50%', fontWeight: 'bold', fontSize: '15px', border: '3px solid rgba(255,255,255,0.7)', boxShadow: '0 2px 8px rgba(0,0,0,0.2)' },
+            { width: '52px', height: '52px', background: 'rgba(230, 115, 0, 0.9)', color: '#fff', textAlign: 'center', lineHeight: '52px', borderRadius: '50%', fontWeight: 'bold', fontSize: '16px', border: '3px solid rgba(255,255,255,0.7)', boxShadow: '0 3px 10px rgba(0,0,0,0.25)' },
+            { width: '60px', height: '60px', background: 'rgba(204, 102, 0, 0.92)', color: '#fff', textAlign: 'center', lineHeight: '60px', borderRadius: '50%', fontWeight: 'bold', fontSize: '17px', border: '3px solid rgba(255,255,255,0.7)', boxShadow: '0 3px 12px rgba(0,0,0,0.3)' },
+            { width: '70px', height: '70px', background: 'rgba(178, 89, 0, 0.95)', color: '#fff', textAlign: 'center', lineHeight: '70px', borderRadius: '50%', fontWeight: 'bold', fontSize: '19px', border: '3px solid rgba(255,255,255,0.7)', boxShadow: '0 4px 14px rgba(0,0,0,0.35)' }
+          ]
+        });
+
+        // 클러스터 클릭 이벤트: 해당 클러스터의 기사들만 사이드바에 표시
+        kakao.maps.event.addListener(clustererRef.current, 'clusterclick', (cluster: any) => {
+          const clusterMarkers = cluster.getMarkers();
+          const clusterArticleIds = clusterMarkers.map((m: any) => m._articleId).filter(Boolean);
+          const matched = geoArticles.filter(a => clusterArticleIds.includes(a.id));
+          if (matched.length > 0) {
+            setFilteredArticles(matched);
+            setClusterMode(true);
+            setActiveArticleId(null);
+            setShowDetail(false);
+            closeInfoWindow();
+          }
+        });
+    }
       const kakao = (window as any).kakao;
       if (!kakao || !kakao.maps || !mapRef.current) return;
 
@@ -313,92 +423,71 @@ export default function NewsLocalPage() {
           });
         }
 
-        // 기존 마커 제거
-        if (clustererRef.current) clustererRef.current.clear();
-        markersRef.current = [];
+    // 기존 마커 제거
+    if (clustererRef.current) clustererRef.current.clear();
+    markersRef.current = [];
 
-        const newMarkers: any[] = [];
-        geoArticles.forEach(art => {
-          if (!art.lat || !art.lng) return;
-          const position = new kakao.maps.LatLng(art.lat, art.lng);
+    const newMarkers: any[] = [];
+    geoArticles.forEach(art => {
+      if (!art.lat || !art.lng) return;
+      const position = new kakao.maps.LatLng(art.lat, art.lng);
 
-          // 오렌지색 원 커스텀 마커 이미지 (SVG → DataURL)
-          const size = 32;
-          const svgStr = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="%23ff8e15" stroke="white" stroke-width="2.5"/><text x="50%25" y="54%25" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="13" font-weight="bold" font-family="sans-serif">1</text></svg>`;
-          const markerImage = new kakao.maps.MarkerImage(
-            `data:image/svg+xml,${svgStr}`,
-            new kakao.maps.Size(size, size),
-            { offset: new kakao.maps.Point(size / 2, size / 2) }
-          );
+      // 오렌지색 원 커스텀 마커 이미지 (SVG → DataURL)
+      const size = 32;
+      const svgStr = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="%23ff8e15" stroke="white" stroke-width="2.5"/><text x="50%25" y="54%25" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="13" font-weight="bold" font-family="sans-serif">1</text></svg>`;
+      const markerImage = new kakao.maps.MarkerImage(
+        `data:image/svg+xml,${svgStr}`,
+        new kakao.maps.Size(size, size),
+        { offset: new kakao.maps.Point(size / 2, size / 2) }
+      );
 
-          const marker = new kakao.maps.Marker({ position, image: markerImage });
+      const marker = new kakao.maps.Marker({ position, image: markerImage });
 
-          // 마커에 기사 ID 연결 (클러스터 필터에 사용)
-          (marker as any)._articleId = art.id;
+      // 마커에 기사 ID 연결 (클러스터 필터에 사용)
+      (marker as any)._articleId = art.id;
 
-          // 마우스 오버 → 살짝 키운 원 마커 이미지
-          const hoverSize = 40;
-          const hoverSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${hoverSize}" height="${hoverSize}"><circle cx="${hoverSize/2}" cy="${hoverSize/2}" r="${hoverSize/2 - 2}" fill="%23e67300" stroke="white" stroke-width="3"/><text x="50%25" y="54%25" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="15" font-weight="bold" font-family="sans-serif">1</text></svg>`;
-          const hoverImage = new kakao.maps.MarkerImage(
-            `data:image/svg+xml,${hoverSvg}`,
-            new kakao.maps.Size(hoverSize, hoverSize),
-            { offset: new kakao.maps.Point(hoverSize / 2, hoverSize / 2) }
-          );
+      // 마우스 오버 → 살짝 키운 원 마커 이미지
+      const hoverSize = 40;
+      const hoverSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${hoverSize}" height="${hoverSize}"><circle cx="${hoverSize/2}" cy="${hoverSize/2}" r="${hoverSize/2 - 2}" fill="%23e67300" stroke="white" stroke-width="3"/><text x="50%25" y="54%25" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="15" font-weight="bold" font-family="sans-serif">1</text></svg>`;
+      const hoverImage = new kakao.maps.MarkerImage(
+        `data:image/svg+xml,${hoverSvg}`,
+        new kakao.maps.Size(hoverSize, hoverSize),
+        { offset: new kakao.maps.Point(hoverSize / 2, hoverSize / 2) }
+      );
 
-          kakao.maps.event.addListener(marker, 'mouseover', () => {
-            marker.setImage(hoverImage);
-            marker.setZIndex(100);
-          });
-          kakao.maps.event.addListener(marker, 'mouseout', () => {
-            marker.setImage(markerImage);
-            marker.setZIndex(0);
-          });
+      kakao.maps.event.addListener(marker, 'mouseover', () => {
+        marker.setImage(hoverImage);
+        marker.setZIndex(100);
+      });
+      kakao.maps.event.addListener(marker, 'mouseout', () => {
+        marker.setImage(markerImage);
+        marker.setZIndex(0);
+      });
 
-          // 개별 마커 클릭 → 말풍선 표시
-          kakao.maps.event.addListener(marker, 'click', () => {
-            showArticleOnMap(art);
-            setActiveArticleId(art.id);
-          });
+      // 개별 마커 클릭 → 말풍선 표시
+      kakao.maps.event.addListener(marker, 'click', () => {
+        showArticleOnMap(art);
+        setActiveArticleId(art.id);
+      });
 
-          newMarkers.push(marker);
-          markersRef.current.push(marker);
-        });
+      newMarkers.push(marker);
+      markersRef.current.push(marker);
+    });
 
-        if (clustererRef.current && newMarkers.length > 0) {
-          clustererRef.current.addMarkers(newMarkers);
-        }
-
-        // relayout 안전 실행
-        setTimeout(() => {
-          if (kakaoMapRef.current) {
-            kakaoMapRef.current.relayout();
-            kakaoMapRef.current.setCenter(new kakao.maps.LatLng(initialLat, initialLng));
-            // 초기 로딩 후 현재 뷰포트 기사 필터링
-            setTimeout(() => updateVisibleArticlesRef.current(), 200);
-          }
-        }, 500);
-      };
-
-      kakao.maps.load(() => renderMap());
-    };
-
-    if (!(window as any).kakao || !(window as any).kakao.maps) {
-      if (!document.getElementById("kakao-map-script")) {
-        const script = document.createElement("script");
-        const kakaoApiKey = process.env.NEXT_PUBLIC_KAKAO_APP_KEY || "435d3602201a49ea712e5f5a36fe6efc";
-        script.id = "kakao-map-script";
-        script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoApiKey}&libraries=services,clusterer&autoload=false`;
-        script.onerror = () => setMapError("카카오맵 JS 키가 유효하지 않거나 등록되지 않았습니다.");
-        document.head.appendChild(script);
-        script.onload = loadKakaoMap;
-      } else {
-        const checkReady = setInterval(() => {
-          if ((window as any).kakao && (window as any).kakao.maps) { clearInterval(checkReady); loadKakaoMap(); }
-        }, 100);
-      }
-    } else {
-      loadKakaoMap();
+    if (clustererRef.current && newMarkers.length > 0) {
+      clustererRef.current.addMarkers(newMarkers);
     }
+
+    // relayout 안전 실행
+    setTimeout(() => {
+      if (map) {
+        map.relayout();
+        map.setCenter(new kakao.maps.LatLng(initialLat, initialLng));
+        // 초기 로딩 후 현재 뷰포트 기사 필터링
+        setTimeout(() => updateVisibleArticlesRef.current(), 200);
+      }
+    }, 500);
+
   }, [geoArticles, showArticleOnMap, closeInfoWindow]);
 
   /* ── 전체보기 (클러스터 필터 해제, 뷰포트 기반으로 복원) ── */

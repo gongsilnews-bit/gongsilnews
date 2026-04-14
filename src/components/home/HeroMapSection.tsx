@@ -267,9 +267,9 @@ export default function HeroMapSection() {
       {showList && (
         <div style={{ display: "block", position: "absolute", top: 15, left: 15, width: 330, background: "#fff", borderRadius: 10, boxShadow: "0 4px 16px rgba(0,0,0,0.2)", zIndex: 99999, maxHeight: "calc(100% - 30px)", overflowY: "auto" }}>
           <div style={{ padding: "12px 15px", borderBottom: "1px solid #eee", display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, background: "#fff", zIndex: 999999, borderRadius: "10px 10px 0 0" }}>
-            <h3 style={{ margin: 0, fontSize: 16, color: "var(--brand-blue)", display: "flex", alignItems: "center", fontWeight: 800, cursor: "pointer", letterSpacing: "-0.5px" }} onClick={() => router.push("/gongsil")}>
+            <h3 style={{ margin: 0, fontSize: 16, color: "#111", display: "flex", alignItems: "center", fontWeight: 800, cursor: "pointer", letterSpacing: "-0.5px" }} onClick={() => router.push("/gongsil")}>
               실시간 공실
-              <svg style={{ marginLeft: 4 }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              <svg style={{ marginLeft: 4, color: "#1a73e8" }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
             </h3>
             <div style={{ display: "flex", gap: 8 }}>
               <select
