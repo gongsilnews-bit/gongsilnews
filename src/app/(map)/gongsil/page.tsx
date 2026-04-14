@@ -16,8 +16,48 @@ const CATEGORY_CONFIG: Record<string, { name: string; pills: string[]; basicFilt
   wish: { name: "MY관심공실", pills: [], basicFilters: [], detailFilters: [], showToggle: false },
 };
 
-// 더미 매물 데이터
-// 삭제됨: 더미데이터
+// 카테고리 키 → DB property_type 매핑
+const CATEGORY_TO_PROPERTY_TYPE: Record<string, string> = {
+  apart: "아파트·오피스텔",
+  villa: "빌라·주택",
+  one: "원룸·투룸(풀옵션)",
+  biz: "상가·사무실·건물·공장·토지",
+  sale: "분양",
+};
+
+// 가격대 프리셋 (단위: 원)
+const PRICE_PRESETS = [
+  { label: "전체", min: 0, max: Infinity },
+  { label: "1천만 이하", min: 0, max: 10000000 },
+  { label: "1천만~5천만", min: 10000000, max: 50000000 },
+  { label: "5천만~1억", min: 50000000, max: 100000000 },
+  { label: "1억~3억", min: 100000000, max: 300000000 },
+  { label: "3억~5억", min: 300000000, max: 500000000 },
+  { label: "5억~10억", min: 500000000, max: 1000000000 },
+  { label: "10억 이상", min: 1000000000, max: Infinity },
+];
+
+// 면적 프리셋 (전용면적 ㎡)
+const AREA_PRESETS = [
+  { label: "전체", min: 0, max: Infinity },
+  { label: "10㎡ 이하", min: 0, max: 10 },
+  { label: "10~30㎡", min: 10, max: 30 },
+  { label: "30~60㎡", min: 30, max: 60 },
+  { label: "60~85㎡", min: 60, max: 85 },
+  { label: "85~100㎡", min: 85, max: 100 },
+  { label: "100~135㎡", min: 100, max: 135 },
+  { label: "135㎡ 이상", min: 135, max: Infinity },
+];
+
+// 관리비 프리셋 (원)
+const MAINT_PRESETS = [
+  { label: "전체", min: 0, max: Infinity },
+  { label: "5만 이하", min: 0, max: 50000 },
+  { label: "5~10만", min: 50000, max: 100000 },
+  { label: "10~20만", min: 100000, max: 200000 },
+  { label: "20~30만", min: 200000, max: 300000 },
+  { label: "30만 이상", min: 300000, max: Infinity },
+];
 
 export default function GongsilPage() {
   const [activeCategory, setActiveCategory] = useState("apart");
@@ -29,6 +69,15 @@ export default function GongsilPage() {
   const [showDetailFilters, setShowDetailFilters] = useState(false);
   const [activeFilterDropdown, setActiveFilterDropdown] = useState<string | null>(null);
   const [galleryIndex, setGalleryIndex] = useState(0);
+
+  // ── 실제 필터 상태 ──
+  const [filterTradeTypes, setFilterTradeTypes] = useState<string[]>([]);  // 빈 배열 = 전체
+  const [filterPriceIdx, setFilterPriceIdx] = useState(0);  // PRICE_PRESETS index, 0 = 전체
+  const [filterAreaIdx, setFilterAreaIdx] = useState(0);    // AREA_PRESETS index, 0 = 전체
+  const [filterMaintIdx, setFilterMaintIdx] = useState(0);  // MAINT_PRESETS index, 0 = 전체
+  const [filterRoomCount, setFilterRoomCount] = useState<number | null>(null);  // null = 전체
+  const [filterBathCount, setFilterBathCount] = useState<number | null>(null);
+  const [filterDirection, setFilterDirection] = useState<string | null>(null);  // null = 전체
 
   const [dbVacancies, setDbVacancies] = useState<any[]>([]);
   const [selectedClusterIds, setSelectedClusterIds] = useState<string[] | null>(null);
@@ -64,8 +113,65 @@ export default function GongsilPage() {
     }
   }, [selectedClusterIds]);
 
+  // ── 카테고리 + Pills + 드롭다운 필터를 모두 적용한 전체 목록 ──
+  const filteredVacancies = React.useMemo(() => {
+    let list = dbVacancies;
+
+    // 1) property_type 필터 (메인 카테고리 탭)
+    const dbPropType = CATEGORY_TO_PROPERTY_TYPE[activeCategory];
+    if (dbPropType) {
+      list = list.filter(v => v.property_type === dbPropType);
+    }
+
+    // 2) sub_category 필터 (Pills)
+    if (activePills.length > 0) {
+      list = list.filter(v => activePills.includes(v.sub_category));
+    }
+
+    // 3) 거래방식 필터
+    if (filterTradeTypes.length > 0) {
+      list = list.filter(v => filterTradeTypes.includes(v.trade_type));
+    }
+
+    // 4) 가격대 필터 (deposit 기준)
+    if (filterPriceIdx > 0) {
+      const p = PRICE_PRESETS[filterPriceIdx];
+      list = list.filter(v => (v.deposit || 0) >= p.min && (v.deposit || 0) < (p.max === Infinity ? Number.MAX_SAFE_INTEGER : p.max));
+    }
+
+    // 5) 면적 필터 (전용면적 기준)
+    if (filterAreaIdx > 0) {
+      const a = AREA_PRESETS[filterAreaIdx];
+      list = list.filter(v => (v.exclusive_m2 || 0) >= a.min && (v.exclusive_m2 || 0) < (a.max === Infinity ? 99999 : a.max));
+    }
+
+    // 6) 관리비 필터
+    if (filterMaintIdx > 0) {
+      const m = MAINT_PRESETS[filterMaintIdx];
+      list = list.filter(v => (v.maintenance_fee || 0) >= m.min && (v.maintenance_fee || 0) < (m.max === Infinity ? 99999999 : m.max));
+    }
+
+    // 7) 방 개수
+    if (filterRoomCount !== null) {
+      list = list.filter(v => (v.room_count || 0) >= filterRoomCount);
+    }
+
+    // 8) 욕실 개수
+    if (filterBathCount !== null) {
+      list = list.filter(v => (v.bath_count || 0) >= filterBathCount);
+    }
+
+    // 9) 방향
+    if (filterDirection) {
+      list = list.filter(v => v.direction === filterDirection);
+    }
+
+    return list;
+  }, [dbVacancies, activeCategory, activePills, filterTradeTypes, filterPriceIdx, filterAreaIdx, filterMaintIdx, filterRoomCount, filterBathCount, filterDirection]);
+
+  // ── 지도 범위 / 클러스터 선택 적용 ──
   const displayVacancies = React.useMemo(() => {
-    let filtered = dbVacancies;
+    let filtered = filteredVacancies;
     if (selectedClusterIds) {
       filtered = filtered.filter(v => selectedClusterIds.includes(String(v.id)));
     } else if (mapBounds && (window as any).kakao?.maps) {
@@ -76,7 +182,7 @@ export default function GongsilPage() {
       });
     }
     return filtered;
-  }, [dbVacancies, selectedClusterIds, mapBounds]);
+  }, [filteredVacancies, selectedClusterIds, mapBounds]);
 
   const [mapError, setMapError] = useState<string | null>(null);
   const [showGalleryModal, setShowGalleryModal] = useState(false);
@@ -365,7 +471,7 @@ export default function GongsilPage() {
         markerIdMapRef.current.clear();
 
         const newMarkers: any[] = [];
-        dbVacancies.forEach(prop => {
+        filteredVacancies.forEach(prop => {
           if (!prop.lat || !prop.lng) return;
           const position = new kakao.maps.LatLng(prop.lat, prop.lng);
 
@@ -447,7 +553,7 @@ export default function GongsilPage() {
     } else {
       loadKakaoMap();
     }
-  }, [dbVacancies, showArticleOnMap, activeProperty]);
+  }, [filteredVacancies, showArticleOnMap, activeProperty]);
 
   const formatAmount = (amt: number) => {
     if (!amt) return "";
@@ -471,18 +577,35 @@ export default function GongsilPage() {
   const config = CATEGORY_CONFIG[activeCategory];
   const isOfficePill = (p: string) => p.includes("오피스텔");
 
+  const resetAllFilters = () => {
+    setFilterTradeTypes([]);
+    setFilterPriceIdx(0);
+    setFilterAreaIdx(0);
+    setFilterMaintIdx(0);
+    setFilterRoomCount(null);
+    setFilterBathCount(null);
+    setFilterDirection(null);
+    setActiveFilterDropdown(null);
+  };
+
   const handleCategoryChange = (key: string) => {
     setActiveCategory(key);
     const c = CATEGORY_CONFIG[key];
     setActivePills(key === "wish" ? [] : [c.pills[0] || ""]);
     setShowDetail(false);
     setShowDetailFilters(false);
-    setActiveFilterDropdown(null);
+    resetAllFilters();
   };
 
   const togglePill = (p: string) => {
     setActivePills((prev) => prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p]);
   };
+
+  const toggleTradeType = (t: string) => {
+    setFilterTradeTypes(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]);
+  };
+
+  const hasActiveFilters = filterTradeTypes.length > 0 || filterPriceIdx > 0 || filterAreaIdx > 0 || filterMaintIdx > 0 || filterRoomCount !== null || filterBathCount !== null || filterDirection !== null;
 
   return (
     <div style={{ height: "100vh", display: "flex", flexDirection: "column", overflow: "hidden", fontFamily: "'Pretendard', sans-serif" }}>
@@ -517,42 +640,166 @@ export default function GongsilPage() {
               </button>
             ))}
             <div style={{ width: 1, height: 16, background: "#e0e0e0", margin: "0 8px", flexShrink: 0 }}></div>
-            {config.basicFilters.map((f) => (
+            {config.basicFilters.map((f) => {
+              // 각 필터별 활성 상태 감지
+              const isFilterActive = (
+                (f === "거래방식" && filterTradeTypes.length > 0) ||
+                (f === "가격대" && filterPriceIdx > 0) || (f === "분양가/보증금" && filterPriceIdx > 0) ||
+                (f === "면적" && filterAreaIdx > 0) ||
+                (f === "관리비" && filterMaintIdx > 0) ||
+                (f === "방/욕실수" && (filterRoomCount !== null || filterBathCount !== null)) ||
+                (f === "방향" && filterDirection !== null)
+              );
+
+              return (
               <div key={f} style={{ position: "relative" }}>
                 <button 
                   onClick={() => setActiveFilterDropdown(activeFilterDropdown === f ? null : f)}
-                  style={{ background: "none", border: "none", fontSize: 13, color: activeFilterDropdown === f ? "#111" : "#555", fontWeight: activeFilterDropdown === f ? "bold" : "normal", cursor: "pointer", padding: "8px 12px", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", borderRadius: 4, flexShrink: 0, fontFamily: "inherit" }}>
-                  {f} <span style={{ fontSize: 10, color: activeFilterDropdown === f ? "#111" : "#999" }}>▼</span>
+                  style={{ background: isFilterActive ? "#e8f0fe" : "none", border: isFilterActive ? "1px solid #1a73e8" : "none", fontSize: 13, color: isFilterActive ? "#1a73e8" : "#555", fontWeight: isFilterActive || activeFilterDropdown === f ? "bold" : "normal", cursor: "pointer", padding: "6px 12px", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", borderRadius: 20, flexShrink: 0, fontFamily: "inherit" }}>
+                  {f} <span style={{ fontSize: 10, color: isFilterActive ? "#1a73e8" : "#999" }}>▼</span>
                 </button>
-                {/* 드롭다운 레이어 */}
+
+                {/* ── 거래방식 드롭다운 ── */}
                 {f === "거래방식" && activeFilterDropdown === "거래방식" && (
-                  <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, background: "#fff", border: "1px solid #444", borderRadius: 4, boxShadow: "0 4px 12px rgba(0,0,0,0.15)", width: 220, zIndex: 1000 }}>
+                  <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, background: "#fff", border: "1px solid #ddd", borderRadius: 8, boxShadow: "0 4px 16px rgba(0,0,0,0.12)", width: 220, zIndex: 1000 }}>
                     <div style={{ padding: "12px 16px", borderBottom: "1px solid #eee", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <span style={{ fontSize: 14, fontWeight: "bold", color: "#111" }}>거래방식</span>
                       <button onClick={() => setActiveFilterDropdown(null)} style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: "#999", padding: 0, lineHeight: 1 }}>✕</button>
                     </div>
-                    <div style={{ padding: "12px 16px", display: "flex", flexDirection: "column", gap: 12 }}>
-                      {["전체", "매매", "전세", "월세", "단기임대"].map(type => (
+                    <div style={{ padding: "12px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
+                      {["매매", "전세", "월세", "단기임대"].map(type => (
                         <label key={type} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 14, color: "#333", fontWeight: 500 }}>
-                          <input type="checkbox" defaultChecked style={{ width: 16, height: 16, accentColor: "#5b779a", cursor: "pointer" }} />
+                          <input type="checkbox" checked={filterTradeTypes.includes(type)} onChange={() => toggleTradeType(type)} style={{ width: 16, height: 16, accentColor: "#1a73e8", cursor: "pointer" }} />
                           {type}
                         </label>
                       ))}
                     </div>
-                    <div style={{ padding: "12px 16px", background: "#f9f9f9", borderTop: "1px solid #eee", fontSize: 12, color: "#888", display: "flex", alignItems: "center", gap: 4, borderBottomLeftRadius: 4, borderBottomRightRadius: 4 }}>
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-                      중복선택이 가능합니다.
+                    <div style={{ padding: "8px 16px", borderTop: "1px solid #eee", display: "flex", gap: 8 }}>
+                      <button onClick={() => { setFilterTradeTypes([]); }} style={{ flex: 1, padding: "8px", background: "#f5f5f5", border: "1px solid #ddd", borderRadius: 4, cursor: "pointer", fontSize: 13, color: "#666" }}>초기화</button>
+                      <button onClick={() => setActiveFilterDropdown(null)} style={{ flex: 1, padding: "8px", background: "#1a73e8", border: "none", borderRadius: 4, cursor: "pointer", fontSize: 13, color: "#fff", fontWeight: "bold" }}>적용</button>
+                    </div>
+                  </div>
+                )}
+
+                {/* ── 가격대 / 분양가/보증금 드롭다운 ── */}
+                {(f === "가격대" || f === "분양가/보증금") && activeFilterDropdown === f && (
+                  <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, background: "#fff", border: "1px solid #ddd", borderRadius: 8, boxShadow: "0 4px 16px rgba(0,0,0,0.12)", width: 240, zIndex: 1000 }}>
+                    <div style={{ padding: "12px 16px", borderBottom: "1px solid #eee", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: 14, fontWeight: "bold", color: "#111" }}>{f}</span>
+                      <button onClick={() => setActiveFilterDropdown(null)} style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: "#999", padding: 0, lineHeight: 1 }}>✕</button>
+                    </div>
+                    <div style={{ padding: "10px 16px", display: "flex", flexDirection: "column", gap: 6 }}>
+                      {PRICE_PRESETS.map((p, idx) => (
+                        <label key={idx} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, color: filterPriceIdx === idx ? "#1a73e8" : "#333", fontWeight: filterPriceIdx === idx ? "bold" : "normal", padding: "4px 0" }}>
+                          <input type="radio" name="priceFilter" checked={filterPriceIdx === idx} onChange={() => setFilterPriceIdx(idx)} style={{ accentColor: "#1a73e8", cursor: "pointer" }} />
+                          {p.label}
+                        </label>
+                      ))}
+                    </div>
+                    <div style={{ padding: "8px 16px", borderTop: "1px solid #eee" }}>
+                      <button onClick={() => setActiveFilterDropdown(null)} style={{ width: "100%", padding: "8px", background: "#1a73e8", border: "none", borderRadius: 4, cursor: "pointer", fontSize: 13, color: "#fff", fontWeight: "bold" }}>적용</button>
+                    </div>
+                  </div>
+                )}
+
+                {/* ── 면적 드롭다운 ── */}
+                {f === "면적" && activeFilterDropdown === "면적" && (
+                  <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, background: "#fff", border: "1px solid #ddd", borderRadius: 8, boxShadow: "0 4px 16px rgba(0,0,0,0.12)", width: 240, zIndex: 1000 }}>
+                    <div style={{ padding: "12px 16px", borderBottom: "1px solid #eee", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: 14, fontWeight: "bold", color: "#111" }}>전용면적</span>
+                      <button onClick={() => setActiveFilterDropdown(null)} style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: "#999", padding: 0, lineHeight: 1 }}>✕</button>
+                    </div>
+                    <div style={{ padding: "10px 16px", display: "flex", flexDirection: "column", gap: 6 }}>
+                      {AREA_PRESETS.map((a, idx) => (
+                        <label key={idx} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, color: filterAreaIdx === idx ? "#1a73e8" : "#333", fontWeight: filterAreaIdx === idx ? "bold" : "normal", padding: "4px 0" }}>
+                          <input type="radio" name="areaFilter" checked={filterAreaIdx === idx} onChange={() => setFilterAreaIdx(idx)} style={{ accentColor: "#1a73e8", cursor: "pointer" }} />
+                          {a.label}
+                        </label>
+                      ))}
+                    </div>
+                    <div style={{ padding: "8px 16px", borderTop: "1px solid #eee" }}>
+                      <button onClick={() => setActiveFilterDropdown(null)} style={{ width: "100%", padding: "8px", background: "#1a73e8", border: "none", borderRadius: 4, cursor: "pointer", fontSize: 13, color: "#fff", fontWeight: "bold" }}>적용</button>
+                    </div>
+                  </div>
+                )}
+
+                {/* ── 관리비  드롭다운 ── */}
+                {f === "관리비" && activeFilterDropdown === "관리비" && (
+                  <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, background: "#fff", border: "1px solid #ddd", borderRadius: 8, boxShadow: "0 4px 16px rgba(0,0,0,0.12)", width: 220, zIndex: 1000 }}>
+                    <div style={{ padding: "12px 16px", borderBottom: "1px solid #eee", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: 14, fontWeight: "bold", color: "#111" }}>관리비</span>
+                      <button onClick={() => setActiveFilterDropdown(null)} style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: "#999", padding: 0, lineHeight: 1 }}>✕</button>
+                    </div>
+                    <div style={{ padding: "10px 16px", display: "flex", flexDirection: "column", gap: 6 }}>
+                      {MAINT_PRESETS.map((m, idx) => (
+                        <label key={idx} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, color: filterMaintIdx === idx ? "#1a73e8" : "#333", fontWeight: filterMaintIdx === idx ? "bold" : "normal", padding: "4px 0" }}>
+                          <input type="radio" name="maintFilter" checked={filterMaintIdx === idx} onChange={() => setFilterMaintIdx(idx)} style={{ accentColor: "#1a73e8", cursor: "pointer" }} />
+                          {m.label}
+                        </label>
+                      ))}
+                    </div>
+                    <div style={{ padding: "8px 16px", borderTop: "1px solid #eee" }}>
+                      <button onClick={() => setActiveFilterDropdown(null)} style={{ width: "100%", padding: "8px", background: "#1a73e8", border: "none", borderRadius: 4, cursor: "pointer", fontSize: 13, color: "#fff", fontWeight: "bold" }}>적용</button>
+                    </div>
+                  </div>
+                )}
+
+                {/* ── 방/욕실수 드롭다운 ── */}
+                {f === "방/욕실수" && activeFilterDropdown === "방/욕실수" && (
+                  <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, background: "#fff", border: "1px solid #ddd", borderRadius: 8, boxShadow: "0 4px 16px rgba(0,0,0,0.12)", width: 260, zIndex: 1000 }}>
+                    <div style={{ padding: "12px 16px", borderBottom: "1px solid #eee", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: 14, fontWeight: "bold", color: "#111" }}>방/욕실수</span>
+                      <button onClick={() => setActiveFilterDropdown(null)} style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: "#999", padding: 0, lineHeight: 1 }}>✕</button>
+                    </div>
+                    <div style={{ padding: "12px 16px" }}>
+                      <div style={{ fontSize: 13, fontWeight: "bold", color: "#555", marginBottom: 8 }}>방 개수</div>
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 14 }}>
+                        <button onClick={() => setFilterRoomCount(null)} style={{ padding: "6px 14px", borderRadius: 20, border: filterRoomCount === null ? "1px solid #1a73e8" : "1px solid #ddd", background: filterRoomCount === null ? "#e8f0fe" : "#fff", fontSize: 13, color: filterRoomCount === null ? "#1a73e8" : "#555", cursor: "pointer", fontWeight: filterRoomCount === null ? "bold" : "normal" }}>전체</button>
+                        {[1,2,3,4,5].map(n => (
+                          <button key={n} onClick={() => setFilterRoomCount(n)} style={{ padding: "6px 14px", borderRadius: 20, border: filterRoomCount === n ? "1px solid #1a73e8" : "1px solid #ddd", background: filterRoomCount === n ? "#e8f0fe" : "#fff", fontSize: 13, color: filterRoomCount === n ? "#1a73e8" : "#555", cursor: "pointer", fontWeight: filterRoomCount === n ? "bold" : "normal" }}>{n}개+</button>
+                        ))}
+                      </div>
+                      <div style={{ fontSize: 13, fontWeight: "bold", color: "#555", marginBottom: 8 }}>욕실 수</div>
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                        <button onClick={() => setFilterBathCount(null)} style={{ padding: "6px 14px", borderRadius: 20, border: filterBathCount === null ? "1px solid #1a73e8" : "1px solid #ddd", background: filterBathCount === null ? "#e8f0fe" : "#fff", fontSize: 13, color: filterBathCount === null ? "#1a73e8" : "#555", cursor: "pointer", fontWeight: filterBathCount === null ? "bold" : "normal" }}>전체</button>
+                        {[1,2,3].map(n => (
+                          <button key={n} onClick={() => setFilterBathCount(n)} style={{ padding: "6px 14px", borderRadius: 20, border: filterBathCount === n ? "1px solid #1a73e8" : "1px solid #ddd", background: filterBathCount === n ? "#e8f0fe" : "#fff", fontSize: 13, color: filterBathCount === n ? "#1a73e8" : "#555", cursor: "pointer", fontWeight: filterBathCount === n ? "bold" : "normal" }}>{n}개+</button>
+                        ))}
+                      </div>
+                    </div>
+                    <div style={{ padding: "8px 16px", borderTop: "1px solid #eee" }}>
+                      <button onClick={() => setActiveFilterDropdown(null)} style={{ width: "100%", padding: "8px", background: "#1a73e8", border: "none", borderRadius: 4, cursor: "pointer", fontSize: 13, color: "#fff", fontWeight: "bold" }}>적용</button>
+                    </div>
+                  </div>
+                )}
+
+                {/* ── 방향 드롭다운 ── */}
+                {f === "방향" && activeFilterDropdown === "방향" && (
+                  <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, background: "#fff", border: "1px solid #ddd", borderRadius: 8, boxShadow: "0 4px 16px rgba(0,0,0,0.12)", width: 260, zIndex: 1000 }}>
+                    <div style={{ padding: "12px 16px", borderBottom: "1px solid #eee", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: 14, fontWeight: "bold", color: "#111" }}>방향</span>
+                      <button onClick={() => setActiveFilterDropdown(null)} style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: "#999", padding: 0, lineHeight: 1 }}>✕</button>
+                    </div>
+                    <div style={{ padding: "12px 16px", display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      <button onClick={() => setFilterDirection(null)} style={{ padding: "6px 14px", borderRadius: 20, border: filterDirection === null ? "1px solid #1a73e8" : "1px solid #ddd", background: filterDirection === null ? "#e8f0fe" : "#fff", fontSize: 13, color: filterDirection === null ? "#1a73e8" : "#555", cursor: "pointer", fontWeight: filterDirection === null ? "bold" : "normal" }}>전체</button>
+                      {["남향", "남동향", "남서향", "동향", "서향", "북향", "북동향", "북서향"].map(d => (
+                        <button key={d} onClick={() => setFilterDirection(d)} style={{ padding: "6px 14px", borderRadius: 20, border: filterDirection === d ? "1px solid #1a73e8" : "1px solid #ddd", background: filterDirection === d ? "#e8f0fe" : "#fff", fontSize: 13, color: filterDirection === d ? "#1a73e8" : "#555", cursor: "pointer", fontWeight: filterDirection === d ? "bold" : "normal" }}>{d}</button>
+                      ))}
+                    </div>
+                    <div style={{ padding: "8px 16px", borderTop: "1px solid #eee" }}>
+                      <button onClick={() => setActiveFilterDropdown(null)} style={{ width: "100%", padding: "8px", background: "#1a73e8", border: "none", borderRadius: 4, cursor: "pointer", fontSize: 13, color: "#fff", fontWeight: "bold" }}>적용</button>
                     </div>
                   </div>
                 )}
               </div>
-            ))}
+              );
+            })}
             {config.showToggle && (
               <button onClick={() => setShowDetailFilters(!showDetailFilters)} style={{ background: "none", border: "none", fontSize: 13, fontWeight: "bold", color: "#1a73e8", cursor: "pointer", padding: "8px 12px", whiteSpace: "nowrap", flexShrink: 0, fontFamily: "inherit" }}>
                 {showDetailFilters ? "상세조건검색 닫기 ✕" : "상세매물검색 +"}
               </button>
             )}
-            <button style={{ background: "none", border: "none", fontSize: 13, color: "#666", cursor: "pointer", padding: "8px 12px", whiteSpace: "nowrap", marginLeft: "auto", flexShrink: 0, fontFamily: "inherit" }}>↻ 초기화</button>
+            <button onClick={resetAllFilters} style={{ background: hasActiveFilters ? "#fff3f3" : "none", border: hasActiveFilters ? "1px solid #e74c3c" : "none", fontSize: 13, color: hasActiveFilters ? "#e74c3c" : "#666", fontWeight: hasActiveFilters ? "bold" : "normal", cursor: "pointer", padding: "6px 12px", whiteSpace: "nowrap", marginLeft: "auto", flexShrink: 0, fontFamily: "inherit", borderRadius: 20 }}>↻ 초기화</button>
           </div>
         )}
 
