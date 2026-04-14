@@ -302,37 +302,44 @@ export default function HeroMapSection() {
 
             return displayVacancies.slice(0, 20).map((item) => {
               const photoUrl = item.photos?.[0] || null;
+              const addrText = [item.dong, item.building_name, item.hosu].filter(Boolean).join(" ") || item.address || item.title || "매물";
+              const typeText = [item.property_type, item.direction, item.exclusive_m2 ? `${item.exclusive_m2}㎡` : null].filter(Boolean).join(" | ");
+              const optionsStr = [`룸 ${item.room_count || 0}개`, `욕실 ${item.bath_count || 0}개`, ...(item.options || [])].filter(Boolean).join(", ");
+              const phoneText = item.client_phone || item.landlord_phone || (item.members?.phone) || "연락처 비공개";
+              
               return (
                 <div
                   key={item.id}
                   onClick={() => handleVacancyClick(item.id)}
-                  style={{ padding: 12, borderBottom: "1px solid #f0f0f0", cursor: "pointer", display: "flex", alignItems: "flex-start", justifyContent: "space-between", transition: "background 0.2s" }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "#f8f9ff")}
+                  style={{ padding: "16px", borderBottom: "1px solid #f2f2f2", cursor: "pointer", display: "flex", alignItems: "flex-start", justifyContent: "space-between", transition: "background 0.2s" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "#f9f9f9")}
                   onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
                 >
-                  <div style={{ flex: 1, overflow: "hidden" }}>
-                    <h4 style={{ margin: "0 0 4px 0", fontSize: 13, color: "#222", fontWeight: 800, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                      {item.title || item.address || "매물"}
+                  <div style={{ flex: 1, overflow: "hidden", paddingRight: photoUrl ? 12 : 0 }}>
+                    <h4 style={{ margin: "0 0 6px 0", fontSize: 15, color: "#111", fontWeight: 800, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {addrText}
                     </h4>
-                    <div style={{ color: "#508bf5", fontWeight: 800, fontSize: 14, marginBottom: 4 }}>
+                    <div style={{ color: "#1a73e8", fontWeight: 800, fontSize: 16, marginBottom: 6 }}>
                       {getPriceText(item)}
                     </div>
-                    <div style={{ color: "#666", fontSize: 10.5, marginBottom: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                      {item.property_type} | {item.direction || ""} | {item.exclusive_m2 || item.supply_m2 || ""}m²
+                    <div style={{ color: "#666", fontSize: 13, marginBottom: 4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {item.property_type} <span style={{ color: "#ddd", margin: "0 4px" }}>|</span> {item.direction || "방향없음"} <span style={{ color: "#ddd", margin: "0 4px" }}>|</span> {item.exclusive_m2 ? `${item.exclusive_m2}㎡` : "면적미상"}
                     </div>
-                    <div style={{ color: "#666", fontSize: 10.5, marginBottom: 6, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                      룸 {item.room_count || 0}개, 욕실 {item.bath_count || 0}개
+                    <div style={{ color: "#666", fontSize: 12, marginBottom: 10, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {optionsStr}
                     </div>
-                    {item.commission_comment && (
-                      <div style={{ display: "inline-flex", gap: 4, alignItems: "center", fontSize: 10 }}>
-                        <span style={{ fontSize: 11, fontWeight: "bold", color: "#ff5a5f", border: "1px solid #ff5a5f", background: "#fff", padding: "2px 4px", borderRadius: 2 }}>
-                          {item.commission_comment}
-                        </span>
-                      </div>
-                    )}
+                    
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: "bold" }}>
+                      <span style={{ color: "#e74c3c", border: "1px solid #e74c3c", padding: "2px 6px", borderRadius: 2, fontSize: 11 }}>
+                        {item.commission_comment || item.commission_type || "공동중개"}
+                      </span>
+                      <span style={{ color: "#c0392b" }}>
+                        {phoneText}
+                      </span>
+                    </div>
                   </div>
                   {photoUrl && (
-                    <div style={{ width: 60, height: 60, borderRadius: 6, marginLeft: 8, flexShrink: 0, border: "1px solid #eee", overflow: "hidden" }}>
+                    <div style={{ width: 80, height: 80, borderRadius: 8, flexShrink: 0, border: "1px solid #eee", overflow: "hidden" }}>
                       <img src={photoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     </div>
                   )}
