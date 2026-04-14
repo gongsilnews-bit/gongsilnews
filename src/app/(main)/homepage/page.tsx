@@ -174,7 +174,7 @@ export default function HomepagePage() {
           strokeColor: isSelected ? "#c53030" : "#004c80",
           strokeOpacity: 0.8,
           fillColor: isSelected ? "#fed7d7" : "#3182ce",
-          fillOpacity: isSelected ? 0.5 : 0.2,
+          fillOpacity: isSelected ? 0.5 : 0.3,
         });
         polygon.setMap(map);
         polygonsRef.current.push(polygon);
