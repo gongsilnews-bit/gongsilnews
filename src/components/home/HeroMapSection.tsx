@@ -265,11 +265,21 @@ export default function HeroMapSection({ initialVacancies }: { initialVacancies?
 
       <button className="map-btn" onClick={() => {
         setSelectedClusterIds(null);
-        if (kakaoMapRef.current) {
-          const map = kakaoMapRef.current;
-          map.relayout();
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition((pos) => {
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            if (kakaoMapRef.current) {
+               const kakao = (window as any).kakao;
+               kakaoMapRef.current.panTo(new kakao.maps.LatLng(lat, lng));
+            }
+          }, () => {
+             alert('위치 정보를 가져올 수 없습니다. 브라우저 설정에서 위치 정보 엑세스 권한을 허용해 주세요.');
+          }, { enableHighAccuracy: true });
+        } else {
+           alert('현재 브라우저에서는 위치 기반 검색 기능을 지원하지 않습니다.');
         }
-      }}>현위치에서 재검색</button>
+      }}>내 위치에서 검색</button>
       
       {/* Property List Overlay */}
       {showList && (
