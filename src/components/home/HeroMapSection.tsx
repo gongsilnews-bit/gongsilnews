@@ -252,7 +252,7 @@ export default function HeroMapSection({ initialVacancies }: { initialVacancies?
       newMarkers.forEach(m => bounds.extend(m.getPosition()));
       map.setBounds(bounds);
     }
-  }, [filteredVacancies]);
+  }, [filteredVacancies, mapLoaded]);
 
   const handleVacancyClick = (id: string | number) => {
     router.push(`/gongsil?id=${id}`);

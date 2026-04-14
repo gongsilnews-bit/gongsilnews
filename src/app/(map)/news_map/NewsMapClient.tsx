@@ -402,7 +402,7 @@ export default function NewsMapClient({ initialArticles, initialPopularArticles 
       }
     }, 50);
 
-  }, [geoArticles, showArticleOnMap, closeInfoWindow]);
+  }, [geoArticles, showArticleOnMap, closeInfoWindow, mapLoaded]);
 
   /* ── 전체보기 (클러스터 필터 해제, 뷰포트 기반으로 복원) ── */
   const handleShowAll = useCallback(() => {

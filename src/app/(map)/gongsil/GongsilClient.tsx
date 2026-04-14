@@ -582,7 +582,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
       clustererRef.current.addMarkers(newMarkers);
     }
 
-  }, [filteredVacancies, showArticleOnMap, activeProperty]);
+  }, [filteredVacancies, showArticleOnMap, activeProperty, mapLoaded]);
 
   const formatAmount = (amt: number) => {
     if (!amt) return "";
