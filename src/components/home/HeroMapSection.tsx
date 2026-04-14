@@ -205,9 +205,9 @@ export default function HeroMapSection({ initialVacancies }: { initialVacancies?
       disableClickZoom: true,
       calculator: [10, 30, 50],
       styles: [
-        { width: "44px", height: "44px", background: "#4b89ff", borderRadius: "50%", color: "#fff", textAlign: "center", lineHeight: "44px", fontSize: "15px", fontWeight: "bold", border: "3px solid rgba(255,255,255,0.8)", boxShadow: "0 2px 8px rgba(0,0,0,0.3)" },
-        { width: "54px", height: "54px", background: "#3a6fe0", borderRadius: "50%", color: "#fff", textAlign: "center", lineHeight: "54px", fontSize: "17px", fontWeight: "bold", border: "3px solid rgba(255,255,255,0.8)", boxShadow: "0 2px 8px rgba(0,0,0,0.3)" },
-        { width: "64px", height: "64px", background: "#2856b8", borderRadius: "50%", color: "#fff", textAlign: "center", lineHeight: "64px", fontSize: "19px", fontWeight: "bold", border: "3px solid rgba(255,255,255,0.8)", boxShadow: "0 2px 8px rgba(0,0,0,0.3)" },
+        { width: "44px", height: "44px", background: "#4b89ff", borderRadius: "50%", color: "#fff", textAlign: "center", lineHeight: "38px", fontSize: "15px", fontWeight: "bold", border: "3px solid rgba(255,255,255,0.8)", boxShadow: "0 2px 8px rgba(0,0,0,0.3)" },
+        { width: "54px", height: "54px", background: "#3a6fe0", borderRadius: "50%", color: "#fff", textAlign: "center", lineHeight: "48px", fontSize: "17px", fontWeight: "bold", border: "3px solid rgba(255,255,255,0.8)", boxShadow: "0 2px 8px rgba(0,0,0,0.3)" },
+        { width: "64px", height: "64px", background: "#2856b8", borderRadius: "50%", color: "#fff", textAlign: "center", lineHeight: "58px", fontSize: "19px", fontWeight: "bold", border: "3px solid rgba(255,255,255,0.8)", boxShadow: "0 2px 8px rgba(0,0,0,0.3)" },
       ],
     });
     clustererRef.current = clusterer;
