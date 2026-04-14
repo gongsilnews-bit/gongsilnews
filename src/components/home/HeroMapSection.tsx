@@ -260,10 +260,10 @@ export default function HeroMapSection() {
       
       {/* Property List Overlay */}
       {showList && (
-        <div style={{ display: "block", position: "absolute", top: 15, left: 15, width: 280, background: "#fff", borderRadius: 10, boxShadow: "0 4px 16px rgba(0,0,0,0.2)", zIndex: 99999, maxHeight: "calc(100% - 30px)", overflowY: "auto" }}>
+        <div style={{ display: "block", position: "absolute", top: 15, left: 15, width: 330, background: "#fff", borderRadius: 10, boxShadow: "0 4px 16px rgba(0,0,0,0.2)", zIndex: 99999, maxHeight: "calc(100% - 30px)", overflowY: "auto" }}>
           <div style={{ padding: "12px 15px", borderBottom: "1px solid #eee", display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, background: "#fff", zIndex: 999999, borderRadius: "10px 10px 0 0" }}>
-            <h3 style={{ margin: 0, fontSize: 15, color: "var(--brand-blue)", display: "flex", alignItems: "center", fontWeight: 800, cursor: "pointer" }} onClick={() => router.push("/gongsil")}>
-              우리동네공실
+            <h3 style={{ margin: 0, fontSize: 16, color: "var(--brand-blue)", display: "flex", alignItems: "center", fontWeight: 800, cursor: "pointer", letterSpacing: "-0.5px" }} onClick={() => router.push("/gongsil")}>
+              실시간공실
               <svg style={{ marginLeft: 4 }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
             </h3>
             <div style={{ display: "flex", gap: 8 }}>
@@ -316,30 +316,30 @@ export default function HeroMapSection() {
                   onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
                 >
                   <div style={{ flex: 1, overflow: "hidden", paddingRight: photoUrl ? 12 : 0 }}>
-                    <h4 style={{ margin: "0 0 6px 0", fontSize: 15, color: "#111", fontWeight: 800, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    <h4 style={{ margin: "0 0 4px 0", fontSize: 14, color: "#111", fontWeight: 800, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", letterSpacing: "-0.5px" }}>
                       {addrText}
                     </h4>
-                    <div style={{ color: "#1a73e8", fontWeight: 800, fontSize: 16, marginBottom: 6 }}>
+                    <div style={{ color: "#1a73e8", fontWeight: 800, fontSize: 15, marginBottom: 4, letterSpacing: "-0.5px" }}>
                       {getPriceText(item)}
                     </div>
-                    <div style={{ color: "#666", fontSize: 13, marginBottom: 4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    <div style={{ color: "#666", fontSize: 11.5, marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", letterSpacing: "-0.3px" }}>
                       {item.property_type} <span style={{ color: "#ddd", margin: "0 4px" }}>|</span> {item.direction || "방향없음"} <span style={{ color: "#ddd", margin: "0 4px" }}>|</span> {item.exclusive_m2 ? `${item.exclusive_m2}㎡` : "면적미상"}
                     </div>
-                    <div style={{ color: "#666", fontSize: 12, marginBottom: 10, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    <div style={{ color: "#666", fontSize: 11, marginBottom: 8, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", letterSpacing: "-0.3px" }}>
                       {optionsStr}
                     </div>
                     
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: "bold" }}>
-                      <span style={{ color: "#e74c3c", border: "1px solid #e74c3c", padding: "2px 6px", borderRadius: 2, fontSize: 11 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: "bold" }}>
+                      <span style={{ color: "#e74c3c", border: "1px solid #e74c3c", padding: "1px 4px", borderRadius: 2, fontSize: 10, whiteSpace: "nowrap", letterSpacing: "-0.5px" }}>
                         {item.commission_comment || item.commission_type || "공동중개"}
                       </span>
-                      <span style={{ color: "#c0392b" }}>
+                      <span style={{ color: "#c0392b", whiteSpace: "nowrap", letterSpacing: "-0.2px" }}>
                         {phoneText}
                       </span>
                     </div>
                   </div>
                   {photoUrl && (
-                    <div style={{ width: 80, height: 80, borderRadius: 8, flexShrink: 0, border: "1px solid #eee", overflow: "hidden" }}>
+                    <div style={{ width: 80, height: 80, borderRadius: 6, flexShrink: 0, border: "1px solid #eee", overflow: "hidden" }}>
                       <img src={photoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     </div>
                   )}
