@@ -60,7 +60,7 @@ export default function HomepageViewPage() {
   const scrollToRef = (ref: React.RefObject<HTMLDivElement | null>, tabItem: string) => {
     setActiveTab(tabItem);
     if (ref.current) {
-      const y = ref.current.getBoundingClientRect().top + window.scrollY - 130;
+      const y = ref.current.getBoundingClientRect().top + window.scrollY - 300;
       window.scrollTo({ top: y, behavior: 'smooth' });
     }
   };
@@ -200,59 +200,62 @@ export default function HomepageViewPage() {
               </div>
             )}
 
-            {/* Row 1: Badges & Links */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 16, marginBottom: 12 }}>
-               <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                 <span style={{ fontSize: 13, fontWeight: 800, color: "#fa5252", border: "1px solid #fa5252", padding: "4px 12px", background: "#fff", borderRadius: 4 }}>{vacancy.realtor_commission || "법정수수료"}</span>
-                 <span style={{ fontSize: 13, color: "#888", fontWeight: 600 }}>등록 {vacancy.created_at ? new Date(vacancy.created_at).toLocaleDateString("ko-KR") : ""}</span>
-               </div>
-               <div style={{ display: "flex", gap: 12 }}>
-                  <span style={{ fontSize: 13, color: "#fa5252", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>🚨 허위매물신고</span>
-                  <span style={{ fontSize: 13, color: "#999", cursor: "pointer" }}>인쇄</span>
-               </div>
-            </div>
+            {/* ── Sticky Header Wrapper ── */}
+            <div style={{ position: "sticky", top: 60, zIndex: 50, background: "#fff", paddingBottom: 0, borderBottom: "1px solid #e5e7eb", margin: "0 -24px", padding: "16px 24px 0 24px" }}>
+              {/* Row 1: Badges & Links */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                 <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                   <span style={{ fontSize: 13, fontWeight: 800, color: "#fa5252", border: "1px solid #fa5252", padding: "4px 12px", background: "#fff", borderRadius: 4 }}>{vacancy.realtor_commission || "법정수수료"}</span>
+                   <span style={{ fontSize: 13, color: "#888", fontWeight: 600 }}>등록 {vacancy.created_at ? new Date(vacancy.created_at).toLocaleDateString("ko-KR") : ""}</span>
+                 </div>
+                 <div style={{ display: "flex", gap: 12 }}>
+                    <span style={{ fontSize: 13, color: "#fa5252", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>🚨 허위매물신고</span>
+                    <span style={{ fontSize: 13, color: "#999", cursor: "pointer" }}>인쇄</span>
+                 </div>
+              </div>
 
-            {/* Row 2: Title/Price & Buttons */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 16 }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 15, color: "#555", marginBottom: 6, fontWeight: 600 }}>{vacancy.dong} {vacancy.building_name || "단독/다가구"}</div>
-                <div style={{ fontSize: 32, fontWeight: 900, color: "#111", letterSpacing: "-1px" }}>
-                  {vacancy.trade_type} {getPriceText(vacancy)}
+              {/* Row 2: Title/Price & Buttons */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 16 }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 15, color: "#555", marginBottom: 6, fontWeight: 600 }}>{vacancy.dong} {vacancy.building_name || "단독/다가구"}</div>
+                  <div style={{ fontSize: 32, fontWeight: 900, color: "#111", letterSpacing: "-1px", lineHeight: 1.1 }}>
+                    {vacancy.trade_type} {getPriceText(vacancy)}
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 8, paddingBottom: 4 }}>
+                  <button style={{ width: 44, height: 44, borderRadius: 8, border: "1px solid #e2e8f0", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#64748b", transition: "0.2s" }} onMouseEnter={e=>e.currentTarget.style.background="#f1f5f9"} onMouseLeave={e=>e.currentTarget.style.background="#fff"} title="찜하기">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"></path></svg>
+                  </button>
+                  <button style={{ width: 44, height: 44, borderRadius: 8, border: "1px solid #e2e8f0", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#64748b", transition: "0.2s" }} onMouseEnter={e=>e.currentTarget.style.background="#f1f5f9"} onMouseLeave={e=>e.currentTarget.style.background="#fff"} title="공유하기">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"></line><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"></line></svg>
+                  </button>
                 </div>
               </div>
-              <div style={{ display: "flex", gap: 8, paddingBottom: 4 }}>
-                <button style={{ width: 44, height: 44, borderRadius: 8, border: "1px solid #e2e8f0", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#64748b", transition: "0.2s" }} onMouseEnter={e=>e.currentTarget.style.background="#f1f5f9"} onMouseLeave={e=>e.currentTarget.style.background="#fff"} title="찜하기">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"></path></svg>
-                </button>
-                <button style={{ width: 44, height: 44, borderRadius: 8, border: "1px solid #e2e8f0", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#64748b", transition: "0.2s" }} onMouseEnter={e=>e.currentTarget.style.background="#f1f5f9"} onMouseLeave={e=>e.currentTarget.style.background="#fff"} title="공유하기">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"></line><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"></line></svg>
-                </button>
+              
+              {/* Row 3: Detail Specs */}
+              <div style={{ paddingBottom: 20 }}>
+                <div style={{ fontSize: 14, color: "#666", marginBottom: 8 }}>
+                  아파트 · 오피스텔 · 방/욕실수 {vacancy.rooms || 0}/{vacancy.bathrooms || 0} · 공급/전용 {Math.round((vacancy.area_m2 || 0)*1.3)}m²/{vacancy.area_m2 || 0}m²
+                </div>
+                <div style={{ fontSize: 14, color: "#888", display: "flex", gap: 16 }}>
+                  <span>총 <strong style={{ color: "#333" }}>{vacancy.photos?.length || 0}</strong>개</span>
+                  <span>주차 {vacancy.parking_spots || "불가"}</span>
+                  <span>에어컨, 렌지, 세탁기 등</span>
+                </div>
               </div>
-            </div>
-            
-            {/* Row 3: Detail Specs */}
-            <div style={{ paddingBottom: 20 }}>
-              <div style={{ fontSize: 14, color: "#666", marginBottom: 8 }}>
-                아파트 · 오피스텔 · 방/욕실수 {vacancy.rooms || 0}/{vacancy.bathrooms || 0} · 공급/전용 {Math.round((vacancy.area_m2 || 0)*1.3)}m²/{vacancy.area_m2 || 0}m²
-              </div>
-              <div style={{ fontSize: 14, color: "#888", display: "flex", gap: 16 }}>
-                <span>총 <strong style={{ color: "#333" }}>{vacancy.photos?.length || 0}</strong>개</span>
-                <span>주차 {vacancy.parking_spots || "불가"}</span>
-                <span>에어컨, 렌지, 세탁기 등</span>
-              </div>
-            </div>
 
-            {/* Tabs (Visual) */}
-            <div style={{ display: "flex", marginBottom: 30, alignItems: "stretch", position: "sticky", top: 80, zIndex: 50, background: '#fff' }}>
-              <div onClick={() => scrollToRef(infoRef, 'info')} style={{ flex: 1, textAlign: "center", padding: "16px 0", fontWeight: "bold", fontSize: 16, color: activeTab === 'info' ? "#111" : "#888", background: activeTab === 'info' ? "#fff" : "#f8fafc", borderTop: activeTab === 'info' ? "2px solid #111" : "1px solid #e5e7eb", borderLeft: "1px solid #e5e7eb", borderRight: "1px solid #e5e7eb", borderBottom: activeTab === 'info' ? "1px solid #fff" : "1px solid #e5e7eb", cursor: "pointer", zIndex: activeTab === 'info' ? 1 : 0, marginTop: activeTab === 'info' ? 0 : 1 }}>매물정보</div>
-              <div onClick={() => scrollToRef(locationRef, 'location')} style={{ flex: 1, textAlign: "center", padding: "16px 0", fontWeight: "bold", fontSize: 16, color: activeTab === 'location' ? "#111" : "#888", background: activeTab === 'location' ? "#fff" : "#f8fafc", borderTop: activeTab === 'location' ? "2px solid #111" : "1px solid #e5e7eb", borderLeft: activeTab === 'location' ? "1px solid #e5e7eb" : "none", borderRight: activeTab === 'location' ? "1px solid #e5e7eb" : "none", borderBottom: activeTab === 'location' ? "1px solid #fff" : "1px solid #e5e7eb", cursor: "pointer", zIndex: activeTab === 'location' ? 1 : 0, marginTop: activeTab === 'location' ? 0 : 1 }}>위치</div>
-              <div onClick={() => scrollToRef(envRef, 'env')} style={{ flex: 1, textAlign: "center", padding: "16px 0", fontWeight: "bold", fontSize: 16, color: activeTab === 'env' ? "#111" : "#888", background: activeTab === 'env' ? "#fff" : "#f8fafc", borderTop: activeTab === 'env' ? "2px solid #111" : "1px solid #e5e7eb", borderLeft: activeTab === 'env' ? "1px solid #e5e7eb" : "none", borderRight: "1px solid #e5e7eb", borderBottom: activeTab === 'env' ? "1px solid #fff" : "1px solid #e5e7eb", cursor: "pointer", zIndex: activeTab === 'env' ? 1 : 0, marginTop: activeTab === 'env' ? 0 : 1 }}>주변환경</div>
+              {/* Tabs (Visual) */}
+              <div style={{ display: "flex", alignItems: "stretch", transform: "translateY(1px)" }}>
+                <div onClick={() => scrollToRef(infoRef, 'info')} style={{ flex: 1, textAlign: "center", padding: "16px 0", fontWeight: "bold", fontSize: 16, color: activeTab === 'info' ? "#111" : "#888", background: activeTab === 'info' ? "#fff" : "#f8fafc", borderTop: activeTab === 'info' ? "2px solid #111" : "1px solid transparent", borderLeft: "1px solid transparent", borderRight: "1px solid transparent", borderBottom: activeTab === 'info' ? "1px solid #fff" : "1px solid transparent", cursor: "pointer", zIndex: activeTab === 'info' ? 1 : 0 }}>매물정보</div>
+                <div onClick={() => scrollToRef(locationRef, 'location')} style={{ flex: 1, textAlign: "center", padding: "16px 0", fontWeight: "bold", fontSize: 16, color: activeTab === 'location' ? "#111" : "#888", background: activeTab === 'location' ? "#fff" : "#f8fafc", borderTop: activeTab === 'location' ? "2px solid #111" : "1px solid transparent", borderLeft: activeTab === 'location' ? "1px solid #e5e7eb" : "none", borderRight: activeTab === 'location' ? "1px solid #e5e7eb" : "none", borderBottom: activeTab === 'location' ? "1px solid #fff" : "1px solid transparent", cursor: "pointer", zIndex: activeTab === 'location' ? 1 : 0 }}>위치</div>
+                <div onClick={() => scrollToRef(envRef, 'env')} style={{ flex: 1, textAlign: "center", padding: "16px 0", fontWeight: "bold", fontSize: 16, color: activeTab === 'env' ? "#111" : "#888", background: activeTab === 'env' ? "#fff" : "#f8fafc", borderTop: activeTab === 'env' ? "2px solid #111" : "1px solid transparent", borderLeft: "1px solid transparent", borderRight: "1px solid transparent", borderBottom: activeTab === 'env' ? "1px solid #fff" : "1px solid transparent", cursor: "pointer", zIndex: activeTab === 'env' ? 1 : 0 }}>주변환경</div>
+              </div>
             </div>
 
             {/* 사진 표시 (리스트 위치 이동됨) */}
 
             {/* ── 매물정보 Table ── */}
-            <div ref={infoRef} style={{ background: "#fff", marginBottom: 50, scrollMarginTop: 130 }}>
+            <div ref={infoRef} style={{ background: "#fff", marginBottom: 50, scrollMarginTop: 300, paddingTop: 30 }}>
               <TRow label="매물번호" value={String(vacancy.id).split('-')[0].toUpperCase()} />
               <TRow label="소재지" value={`${vacancy.sido} ${vacancy.sigungu} ${vacancy.dong} ${vacancy.detail_addr || ""}`} />
               <TRow label="매물특징" value={vacancy.building_name || "특징 없음"} />
@@ -285,7 +288,7 @@ export default function HomepageViewPage() {
 
             {/* ── 위치정보 및 로드뷰 ── */}
             {vacancy.lat && vacancy.lng && (
-              <div ref={locationRef} style={{ marginBottom: 50, scrollMarginTop: 130 }}>
+              <div ref={locationRef} style={{ marginBottom: 50, scrollMarginTop: 300 }}>
                 <h3 style={{ fontSize: 18, fontWeight: "bold", color: "#111", marginBottom: 16 }}>위치정보</h3>
                 <div ref={mapRef} style={{ width: "100%", height: 350, border: "1px solid #ddd", marginBottom: 40 }}></div>
                 
@@ -296,7 +299,7 @@ export default function HomepageViewPage() {
 
             {/* ── 주변환경 ── */}
             {vacancy.infrastructure && Object.keys(vacancy.infrastructure).length > 0 && (
-              <div ref={envRef} style={{ marginBottom: 50, scrollMarginTop: 130 }}>
+              <div ref={envRef} style={{ marginBottom: 50, scrollMarginTop: 300 }}>
                 <h3 style={{ fontSize: 18, fontWeight: "bold", color: "#111", marginBottom: 16 }}>주변환경</h3>
                 <div style={{ display: "flex", flexDirection: "column", gap: 16, borderTop: "2px solid #111", paddingTop: 20 }}>
                   {Object.entries(vacancy.infrastructure).map(([label, tags]) => {
