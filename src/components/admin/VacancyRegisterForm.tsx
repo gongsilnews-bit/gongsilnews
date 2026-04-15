@@ -1224,24 +1224,53 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                 );
               }
 
+              if (userRole === "admin" && !editData) {
+                return (
+                  <button
+                    type="button"
+                    disabled={submitting}
+                    onClick={() => handleSubmit("ACTIVE")}
+                    style={{
+                      width: "100%", height: 56, border: "none", borderRadius: 10,
+                      background: submitting ? "#9ca3af" : "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                      color: "#fff", fontSize: 18, fontWeight: 800,
+                      cursor: submitting ? "not-allowed" : "pointer",
+                      marginTop: 32
+                    }}
+                  >
+                    {submitting ? "등록 중..." : "✓ 공실 등록하기 (바로 발행)"}
+                  </button>
+                );
+              }
+
               return (
-                <button
-                  type="button"
-                  disabled={submitting}
-                  onClick={() => handleSubmit()}
-                  style={{
-                    width: "100%", height: 56, border: "none", borderRadius: 10,
-                    background: submitting ? "#9ca3af" : "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
-                    color: "#fff", fontSize: 18, fontWeight: 800,
-                    cursor: submitting ? "not-allowed" : "pointer",
-                    letterSpacing: 1, marginTop: 32,
-                    transition: "opacity 0.2s, transform 0.1s",
-                  }}
-                  onMouseEnter={(e) => { if (!submitting) e.currentTarget.style.opacity = "0.9"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.opacity = "1"; }}
-                >
-                  {submitting ? (editData ? "수정 중..." : "등록 중...") : (editData ? "공실 수정하기" : "공실 등록하기")}
-                </button>
+                <div style={{ display: "flex", gap: 12, marginTop: 32 }}>
+                  <button
+                    type="button"
+                    disabled={submitting}
+                    onClick={() => handleSubmit("DRAFT")}
+                    style={{
+                      flex: 1, padding: "18px 0", borderRadius: 10, border: "none",
+                      background: darkMode ? "#4b5563" : "#64748b", color: "#fff",
+                      fontSize: 16, fontWeight: 700, cursor: submitting ? "not-allowed" : "pointer",
+                    }}
+                  >
+                    임시저장 (작성중)
+                  </button>
+                  <button
+                    type="button"
+                    disabled={submitting}
+                    onClick={() => handleSubmit("PENDING")}
+                    style={{
+                      flex: 1, padding: "18px 0", borderRadius: 10, border: "none",
+                      background: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)", color: "#fff",
+                      fontSize: 16, fontWeight: 700, cursor: submitting ? "not-allowed" : "pointer",
+                      boxShadow: "0 4px 12px rgba(37, 99, 235, 0.2)"
+                    }}
+                  >
+                    {submitting ? "처리 중..." : "✓ 승인신청"}
+                  </button>
+                </div>
               );
             })()}
           </div>
