@@ -59,8 +59,9 @@ export default function LectureWritePage() {
   const [title, setTitle] = useState("");
   const [subtitle, setSubtitle] = useState("");
   const [description, setDescription] = useState("");
-  const [thumbnailUrl, setThumbnailUrl] = useState("");
-  const [thumbnailUploading, setThumbnailUploading] = useState(false);
+  const [images, setImages] = useState<string[]>([]);
+  const [coverIndex, setCoverIndex] = useState(0);
+  const [photoUploading, setPhotoUploading] = useState(false);
 
   /* ── 에디터 ── */
   const editorRef = useRef<HTMLDivElement>(null);
@@ -107,7 +108,16 @@ export default function LectureWritePage() {
             setTitle(d.title || "");
             setSubtitle(d.subtitle || "");
             setDescription(d.description || "");
-            setThumbnailUrl(d.thumbnail_url || "");
+            // 이미지 배열 복원
+            const loadedImages: string[] = d.images || [];
+            if (d.thumbnail_url && !loadedImages.includes(d.thumbnail_url)) {
+              loadedImages.unshift(d.thumbnail_url);
+            }
+            setImages(loadedImages);
+            if (d.thumbnail_url && loadedImages.length > 0) {
+              const idx = loadedImages.indexOf(d.thumbnail_url);
+              setCoverIndex(idx >= 0 ? idx : 0);
+            }
             setInstructorName(d.instructor_name || "");
             setInstructorBio(d.instructor_bio || "");
             setInstructorPhoto(d.instructor_photo || "");
@@ -243,27 +253,50 @@ export default function LectureWritePage() {
     if (editorFileRef.current) editorFileRef.current.value = "";
   };
 
-  /* ── 썸네일 업로드 (WebP 압축) ── */
-  const handleThumbnailUpload = async (files: FileList | null) => {
+  /* ── 사진 여러장 업로드 (WebP 압축) ── */
+  const handlePhotoUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
-    setThumbnailUploading(true);
-    try {
-      const compressed = await compressToWebP(files[0]);
-      const formData = new FormData();
-      formData.append("file", compressed);
-      formData.append("lecture_id", loadId || "temp");
-      formData.append("type", "thumbnail");
-      const res = await uploadLectureImage(formData);
-      if (res.success && res.url) {
-        setThumbnailUrl(res.url);
-      } else {
-        alert("썸네일 업로드 실패: " + (res.error || "알 수 없는 오류"));
+    setPhotoUploading(true);
+    const newUrls: string[] = [];
+    for (const rawFile of Array.from(files)) {
+      if (!rawFile.type.startsWith('image/')) continue;
+      try {
+        const compressed = await compressToWebP(rawFile);
+        const formData = new FormData();
+        formData.append("file", compressed);
+        formData.append("lecture_id", loadId || "temp");
+        formData.append("type", "thumbnail");
+        const res = await uploadLectureImage(formData);
+        if (res.success && res.url) {
+          newUrls.push(res.url);
+        } else {
+          alert("업로드 실패: " + (res.error || ""));
+        }
+      } catch (e: any) {
+        alert("오류: " + e.message);
       }
-    } catch (e: any) {
-      alert("업로드 오류: " + e.message);
     }
-    setThumbnailUploading(false);
+    if (newUrls.length > 0) {
+      setImages(prev => {
+        const next = [...prev, ...newUrls];
+        if (prev.length === 0) setCoverIndex(0);
+        return next;
+      });
+    }
+    setPhotoUploading(false);
   };
+
+  const removePhoto = (idx: number) => {
+    setImages(prev => {
+      const next = prev.filter((_, i) => i !== idx);
+      // 커버 인덱스 보정
+      if (coverIndex === idx) setCoverIndex(0);
+      else if (coverIndex > idx) setCoverIndex(ci => ci - 1);
+      return next;
+    });
+  };
+
+  const setCover = (idx: number) => setCoverIndex(idx);
 
   /* ── 챕터/레슨 핸들러 ── */
   const addChapter = () => {
@@ -329,7 +362,8 @@ export default function LectureWritePage() {
         title,
         subtitle,
         description,
-        thumbnail_url: thumbnailUrl,
+        thumbnail_url: images.length > 0 ? images[coverIndex] || images[0] : "",
+        images,
         instructor_name: instructorName,
         instructor_bio: instructorBio,
         instructor_photo: instructorPhoto,
@@ -377,7 +411,7 @@ export default function LectureWritePage() {
 
   return (
     <div style={{ display: "flex", height: "100vh", width: "100vw", fontFamily: "'Pretendard Variable', -apple-system, sans-serif", background: "#f5f6f8" }}>
-      <AdminSidebar activeMenu="study" onMenuChange={() => {}} />
+      <AdminSidebar activeMenu="study" />
 
       <main style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
         {/* Header */}
@@ -527,36 +561,68 @@ export default function LectureWritePage() {
               </div>
             </div>
 
-            {/* ========== 2. 썸네일 ========== */}
+            {/* ========== 2. 강의 이미지 (여러장 + 대표이미지 선택) ========== */}
             <div style={sectionStyle}>
-              <div style={sectionTitleStyle}><span style={{ fontSize: 20 }}>🖼️</span> 강의 썸네일</div>
-              <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
-                <div style={{
-                  width: 320, aspectRatio: "16/9",
-                  background: thumbnailUrl ? `url(${thumbnailUrl}) center/cover` : "#f3f4f6",
-                  borderRadius: 10, border: "2px dashed #d1d5db",
-                  display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0,
-                }}>
-                  {!thumbnailUrl && (
-                    <span style={{ color: "#9ca3af", fontSize: 14, fontWeight: 600 }}>
-                      {thumbnailUploading ? "업로드 중..." : "썸네일 미리보기"}
-                    </span>
-                  )}
+              <div style={{ ...sectionTitleStyle, justifyContent: "space-between" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: 20 }}>🖼️</span> 강의 이미지
+                  <span style={{ fontSize: 13, fontWeight: 500, color: "#6b7280" }}>
+                    ({images.length}장{images.length > 0 ? ` · 대표: ${coverIndex + 1}번` : ""})
+                  </span>
                 </div>
-                <div style={{ flex: 1 }}>
-                  <label style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "10px 20px", background: "#3b82f6", color: "#fff", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
-                    📎 이미지 업로드 (WebP 자동 압축)
-                    <input type="file" accept="image/*" onChange={(e) => handleThumbnailUpload(e.target.files)} style={{ display: "none" }} />
-                  </label>
-                  <p style={{ fontSize: 12, color: "#9ca3af", marginTop: 10, lineHeight: "1.5" }}>
-                    권장 사이즈: 1280 × 720 (16:9)<br />
-                    모든 이미지는 WebP로 자동 변환/압축됩니다.
-                  </p>
-                  {thumbnailUrl && (
-                    <button onClick={() => setThumbnailUrl("")} style={{ marginTop: 8, padding: "6px 14px", fontSize: 12, color: "#ef4444", border: "1px solid #fca5a5", borderRadius: 6, background: "#fff", cursor: "pointer", fontWeight: 600 }}>🗑️ 삭제</button>
-                  )}
-                </div>
+                <label style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 18px", background: "#3b82f6", color: "#fff", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: photoUploading ? "not-allowed" : "pointer", opacity: photoUploading ? 0.6 : 1 }}>
+                  {photoUploading ? "⏳ 업로드 중..." : "📎 사진 추가 (여러장 선택 가능)"}
+                  <input type="file" accept="image/*" multiple onChange={(e) => handlePhotoUpload(e.target.files)} style={{ display: "none" }} disabled={photoUploading} />
+                </label>
               </div>
+
+              {images.length === 0 ? (
+                <div style={{ padding: "50px 0", textAlign: "center", border: "2px dashed #d1d5db", borderRadius: 12, background: "#fafbfc" }}>
+                  <div style={{ fontSize: 36, marginBottom: 12 }}>📷</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: "#6b7280" }}>사진을 업로드하세요</div>
+                  <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 6 }}>여러 장 업로드 후 대표 이미지를 선택할 수 있습니다 · WebP 자동 압축</div>
+                </div>
+              ) : (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12 }}>
+                  {images.map((url, idx) => (
+                    <div key={idx} style={{
+                      position: "relative", aspectRatio: "16/9", borderRadius: 10, overflow: "hidden",
+                      border: coverIndex === idx ? "3px solid #f59e0b" : "2px solid #e5e7eb",
+                      boxShadow: coverIndex === idx ? "0 0 0 2px rgba(245,158,11,0.3)" : "none",
+                      transition: "all 0.2s",
+                    }}>
+                      <img src={url} alt={`강의 이미지 ${idx + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+
+                      {/* 대표이미지 뱃지 */}
+                      {coverIndex === idx && (
+                        <div style={{ position: "absolute", top: 8, left: 8, padding: "3px 10px", background: "#f59e0b", color: "#fff", borderRadius: 20, fontSize: 11, fontWeight: 800, display: "flex", alignItems: "center", gap: 3, boxShadow: "0 2px 6px rgba(0,0,0,0.2)" }}>
+                          ⭐ 대표
+                        </div>
+                      )}
+
+                      {/* 호버 오버레이 */}
+                      <div style={{
+                        position: "absolute", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, opacity: 0, transition: "opacity 0.2s",
+                      }}
+                        onMouseEnter={(e) => { e.currentTarget.style.opacity = "1"; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.opacity = "0"; }}>
+                        {coverIndex !== idx && (
+                          <button onClick={() => setCover(idx)} style={{ padding: "6px 14px", background: "#f59e0b", color: "#fff", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                            ⭐ 대표로 설정
+                          </button>
+                        )}
+                        <button onClick={() => removePhoto(idx)} style={{ padding: "6px 14px", background: "#ef4444", color: "#fff", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                          🗑️ 삭제
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <p style={{ fontSize: 12, color: "#9ca3af", marginTop: 12, lineHeight: "1.5" }}>
+                💡 사진 위에 마우스를 올려 "⭐ 대표로 설정" 클릭 → 메인 화면/상세 페이지에 대표 이미지로 표시됩니다.
+              </p>
             </div>
 
             {/* ========== 3. 강사 정보 ========== */}

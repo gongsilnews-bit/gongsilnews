@@ -14,7 +14,7 @@ const CATEGORY_CONFIG: Record<string, { name: string; pills: string[]; basicFilt
   villa: { name: "빌라·주택", pills: ["빌라/연립", "단독/다가구", "전원주택", "상가주택"], basicFilters: ["거래방식", "가격대", "면적", "방/욕실수", "사용승인일", "방향", "기타옵션"], detailFilters: [], showToggle: false },
   one: { name: "원룸·투룸", pills: ["원룸", "투룸", "오피스텔만 보기"], basicFilters: ["거래방식", "가격대", "관리비", "기타옵션"], detailFilters: [], showToggle: false },
   biz: { name: "상가·업무·공장·토지", pills: ["상가", "사무실", "공장/창고", "지식산업센터", "건물", "토지"], basicFilters: ["거래방식", "가격대", "면적", "층수", "관리비", "기타옵션"], detailFilters: [], showToggle: false },
-  sale: { name: "분양", pills: ["아파트", "오피스텔", "빌라", "도시형생활주택", "생활숙박시설", "상가/업무"], basicFilters: ["분양단계", "분양형태", "분양가/보증금", "면적", "세대수", "입주예정", "청약가능통장", "브랜드"], detailFilters: [], showToggle: false },
+  sale: { name: "분양", pills: ["아파트", "오피스텔", "빌라", "도시형생활주택", "생활숙박시설", "상가/업무"], basicFilters: ["분양단계", "분양형태", "분양가/보증금", "면적", "세대수"], detailFilters: [], showToggle: false },
   wish: { name: "MY관심공실", pills: [], basicFilters: [], detailFilters: [], showToggle: false },
 };
 
@@ -123,6 +123,9 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   const [filterYearMax, setFilterYearMax] = useState<number | null>(null);
   const [filterUnitMin, setFilterUnitMin] = useState<number | null>(null);
   const [filterUnitMax, setFilterUnitMax] = useState<number | null>(null);
+  const [filterFloor, setFilterFloor] = useState<string | null>(null);
+  const [filterSaleStage, setFilterSaleStage] = useState<string[]>([]);
+  const [filterSaleType, setFilterSaleType] = useState<string[]>([]);
 
   const [selectedClusterIds, setSelectedClusterIds] = useState<string[] | null>(null);
   const selectedClusterIdsRef = useRef<string[] | null>(null);
@@ -693,6 +696,9 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     setFilterYearMax(null);
     setFilterUnitMin(null);
     setFilterUnitMax(null);
+    setFilterFloor(null);
+    setFilterSaleStage([]);
+    setFilterSaleType([]);
     setActiveFilterDropdown(null);
   };
 
@@ -778,7 +784,10 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                 (f === "방/욕실수" && (filterRoomCount !== null || filterBathCount !== null)) ||
                 (f === "방향" && filterDirection !== null) ||
                 (f === "사용승인일" && (filterYearMin !== null || filterYearMax !== null)) ||
-                (f === "세대수" && (filterUnitMin !== null || filterUnitMax !== null))
+                (f === "세대수" && (filterUnitMin !== null || filterUnitMax !== null)) ||
+                (f === "층수" && filterFloor !== null) ||
+                (f === "분양단계" && filterSaleStage.length > 0) ||
+                (f === "분양형태" && filterSaleType.length > 0)
               );
               const btnLabel = (f === "가격대" || f === "분양가/보증금") ? priceFilterLabel : f === "면적" ? areaFilterLabel : f === "사용승인일" ? yearFilterLabel : f === "세대수" ? unitFilterLabel : f;
 
@@ -1075,6 +1084,70 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                     <div style={{ textAlign: "right" }}>
                       <button onClick={() => { setFilterUnitMin(null); setFilterUnitMax(null); }} style={{ background: "none", border: "none", fontSize: 13, color: "#888", cursor: "pointer" }}>⟲ 조건삭제</button>
                     </div>
+                  </div>
+                )}
+
+                {/* ── 층수 (라디오 선택) ── */}
+                {f === "층수" && activeFilterDropdown === "층수" && (
+                  <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, background: "#fff", border: "1px solid #ddd", borderRadius: 4, boxShadow: "0 4px 16px rgba(0,0,0,0.15)", width: 200, zIndex: 9000, padding: "16px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                      <span style={{ fontSize: 15, fontWeight: "bold", color: "#111" }}>층수</span>
+                      <button onClick={() => setActiveFilterDropdown(null)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#999", padding: 0, lineHeight: 1 }}>✕</button>
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                      {[{ label: "전체", val: null }, { label: "1층", val: "1층" }, { label: "저층", val: "저층" }, { label: "중간층", val: "중간층" }, { label: "고층", val: "고층" }, { label: "탑층", val: "탑층" }].map((opt) => (
+                        <label key={opt.label} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 14, color: filterFloor === opt.val ? "#1a73e8" : "#333", fontWeight: filterFloor === opt.val ? "bold" : "normal" }}>
+                          <input type="radio" name="floorFilter" checked={filterFloor === opt.val} onChange={() => setFilterFloor(opt.val)} style={{ accentColor: "#1a73e8", cursor: "pointer" }} />
+                          {opt.label}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* ── 분양단계 (체크박스) ── */}
+                {f === "분양단계" && activeFilterDropdown === "분양단계" && (
+                  <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, background: "#fff", border: "1px solid #ddd", borderRadius: 4, boxShadow: "0 4px 16px rgba(0,0,0,0.15)", width: 220, zIndex: 9000, padding: "16px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                      <span style={{ fontSize: 15, fontWeight: "bold", color: "#111" }}>분양단계</span>
+                      <button onClick={() => setActiveFilterDropdown(null)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#999", padding: 0, lineHeight: 1 }}>✕</button>
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                      <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 14, color: filterSaleStage.length === 0 ? "#1a73e8" : "#333", fontWeight: filterSaleStage.length === 0 ? "bold" : "normal" }}>
+                        <input type="checkbox" checked={filterSaleStage.length === 0} onChange={() => setFilterSaleStage([])} style={{ accentColor: "#1a73e8", cursor: "pointer" }} />
+                        전체
+                      </label>
+                      {["분양중", "청약중", "분양계획"].map((s) => (
+                        <label key={s} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 14, color: filterSaleStage.includes(s) ? "#1a73e8" : "#333", fontWeight: filterSaleStage.includes(s) ? "bold" : "normal" }}>
+                          <input type="checkbox" checked={filterSaleStage.includes(s)} onChange={() => setFilterSaleStage(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s])} style={{ accentColor: "#1a73e8", cursor: "pointer" }} />
+                          {s}
+                        </label>
+                      ))}
+                    </div>
+                    <div style={{ fontSize: 12, color: "#aaa", marginTop: 10 }}>ⓘ 중복선택이 가능합니다.</div>
+                  </div>
+                )}
+
+                {/* ── 분양형태 (체크박스) ── */}
+                {f === "분양형태" && activeFilterDropdown === "분양형태" && (
+                  <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, background: "#fff", border: "1px solid #ddd", borderRadius: 4, boxShadow: "0 4px 16px rgba(0,0,0,0.15)", width: 220, zIndex: 9000, padding: "16px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                      <span style={{ fontSize: 15, fontWeight: "bold", color: "#111" }}>분양형태</span>
+                      <button onClick={() => setActiveFilterDropdown(null)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#999", padding: 0, lineHeight: 1 }}>✕</button>
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                      <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 14, color: filterSaleType.length === 0 ? "#1a73e8" : "#333", fontWeight: filterSaleType.length === 0 ? "bold" : "normal" }}>
+                        <input type="checkbox" checked={filterSaleType.length === 0} onChange={() => setFilterSaleType([])} style={{ accentColor: "#1a73e8", cursor: "pointer" }} />
+                        전체
+                      </label>
+                      {["민간분양", "공공분양", "임대분양"].map((t) => (
+                        <label key={t} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 14, color: filterSaleType.includes(t) ? "#1a73e8" : "#333", fontWeight: filterSaleType.includes(t) ? "bold" : "normal" }}>
+                          <input type="checkbox" checked={filterSaleType.includes(t)} onChange={() => setFilterSaleType(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])} style={{ accentColor: "#1a73e8", cursor: "pointer" }} />
+                          {t}
+                        </label>
+                      ))}
+                    </div>
+                    <div style={{ fontSize: 12, color: "#aaa", marginTop: 10 }}>ⓘ 중복선택이 가능합니다.</div>
                   </div>
                 )}
               </div>

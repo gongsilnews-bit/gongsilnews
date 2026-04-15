@@ -22,6 +22,7 @@ export async function saveLecture(data: {
   subtitle?: string;
   description?: string;
   thumbnail_url?: string;
+  images?: string[];
   instructor_name?: string;
   instructor_bio?: string;
   instructor_photo?: string;
@@ -65,6 +66,7 @@ export async function saveLecture(data: {
       subtitle: data.subtitle || null,
       description: data.description || null,
       thumbnail_url: data.thumbnail_url || null,
+      images: data.images || [],
       instructor_name: data.instructor_name || null,
       instructor_bio: data.instructor_bio || null,
       instructor_photo: data.instructor_photo || null,
