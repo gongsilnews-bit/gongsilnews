@@ -40,6 +40,13 @@ export default function PremiumDroneCarousel({ posts }: { posts: any[] }) {
     return m ? `https://img.youtube.com/vi/${m[1]}/mqdefault.jpg` : null;
   };
 
+  const getDriveThumb = (url: string) => {
+    if (!url) return null;
+    const m = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+    const id = m ? m[1] : (url.match(/id=([a-zA-Z0-9_-]+)/) ? url.match(/id=([a-zA-Z0-9_-]+)/)![1] : null);
+    return id ? `https://drive.google.com/thumbnail?id=${id}&sz=w800-h600` : null;
+  };
+
   return (
     <div style={{ position: "relative" }}>
       {/* 화살표 버튼 */}
@@ -79,7 +86,7 @@ export default function PremiumDroneCarousel({ posts }: { posts: any[] }) {
         <style>{`.hide-scroll::-webkit-scrollbar { display: none; }`}</style>
         
         {posts.map((item, i) => {
-          const thumb = item.thumbnail_url || getYoutubeThumb(item.youtube_url) || "https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&q=80&w=600&h=337";
+          const thumb = item.thumbnail_url || getYoutubeThumb(item.youtube_url) || getDriveThumb(item.drive_url) || "https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&q=80&w=600&h=337";
           return (
             <Link 
               key={item.id} 

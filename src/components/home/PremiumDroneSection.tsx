@@ -2,7 +2,7 @@ import { getBoardPosts } from "@/app/actions/board";
 import PremiumDroneCarousel from "./PremiumDroneCarousel";
 
 export default async function PremiumDroneSection() {
-  const { data } = await getBoardPosts("pds");
+  const { data } = await getBoardPosts("drone");
   let posts = data?.slice(0, 12) || [];
 
   if (posts.length === 0) {
