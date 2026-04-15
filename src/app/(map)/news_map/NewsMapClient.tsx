@@ -55,12 +55,19 @@ export default function NewsMapClient({ initialArticles, initialPopularArticles 
     return `입력 ${d.getFullYear()}. ${String(d.getMonth() + 1).padStart(2, "0")}. ${String(d.getDate()).padStart(2, "0")}. ${ampm} ${h12}:${String(d.getMinutes()).padStart(2, "0")}:${String(d.getSeconds()).padStart(2, "0")}`;
   };
   const stripHtml = (html: string) => html ? html.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim() : "";
-  const extractYoutubeId = (url: string): string | null => {
-    if (!url) return null;
-    const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([\w-]{11})/);
-    return m ? m[1] : null;
+  const extractYoutubeId = (url?: string, html?: string): string | null => {
+    const rx = /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([\w-]{11})/;
+    if (url) {
+      const m = url.match(rx);
+      if (m) return m[1];
+    }
+    if (html) {
+      const m = html.match(rx);
+      if (m) return m[1];
+    }
+    return null;
   };
-  const youtubeId = articleDetail ? extractYoutubeId(articleDetail.youtube_url) : null;
+  const youtubeId = articleDetail ? extractYoutubeId(articleDetail.youtube_url, articleDetail.content) : null;
 
   /* ── 기사 목록 가져오기 (섹션 변경 시) ── */
   const isFirstRender = useRef(true);
@@ -593,7 +600,7 @@ export default function NewsMapClient({ initialArticles, initialPopularArticles 
                 <div style={{ paddingTop: 0, marginTop: 30 }}>
                   {articleDetail.subtitle && <div className="article-subtitle-box map-subtitle-box">{articleDetail.subtitle}</div>}
                   <div className="article-body">
-                    {youtubeId && !(articleDetail.content && articleDetail.content.includes('youtube.com/embed')) ? (
+                    {youtubeId ? (
                       <div className="article-img-wrap">
                         <div style={{ position: "relative", width: "100%", paddingBottom: articleDetail.is_shorts ? "177.78%" : "56.25%", maxWidth: articleDetail.is_shorts ? 315 : "100%", margin: "0 auto", height: 0, overflow: "hidden", borderRadius: 8 }}>
                           <iframe src={`https://www.youtube.com/embed/${youtubeId}`} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none", borderRadius: 8 }} allowFullScreen />
@@ -605,7 +612,12 @@ export default function NewsMapClient({ initialArticles, initialPopularArticles 
                       </div>
                     ) : null}
 
-                    {articleDetail.content && <div dangerouslySetInnerHTML={{ __html: articleDetail.content }} />}
+                    {articleDetail.content && <div suppressHydrationWarning dangerouslySetInnerHTML={{ 
+                      __html: articleDetail.content
+                        .replace(/<p[^>]*>\s*(?:<br>\s*)*<iframe[^>]*youtube\.com\/embed[^>]*>.*?<\/iframe>(?:\s*<br>\s*)*\s*<\/p>/gi, '')
+                        .replace(/<div(?:(?!class="article-body")[^>]*)?>\s*(?:<br>\s*)*<iframe[^>]*youtube\.com\/embed[^>]*>.*?<\/iframe>(?:\s*<br>\s*)*\s*<\/div>/gi, '')
+                        .replace(/<iframe[^>]*youtube\.com\/embed[^>]*>.*?<\/iframe>/gi, '') 
+                    }} />}
                   </div>
 
                   {articleDetail.article_keywords && articleDetail.article_keywords.length > 0 && (
