@@ -65,11 +65,26 @@ export default function NewsListLayout({ category, title, initialArticles, initi
     return html.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim();
   };
 
-  // YouTube URL에서 썸네일 추출
-  const getYoutubeThumbnail = (url: string) => {
-    if (!url) return null;
-    const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|shorts\/))([\w-]{11})/);
-    return match ? `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg` : null;
+  // YouTube 추출 유틸리티
+  const extractYoutubeIdInfo = (article: Article) => {
+    // 1순위: 명시적 유튜브 URL
+    if (article.youtube_url) {
+      const match = article.youtube_url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|shorts\/))([\w-]{11})/);
+      if (match) return { id: match[1], hasVideo: true };
+    }
+    // 2순위: 본문(content) 내장 iframe 또는 링크
+    if (article.content) {
+      const match = article.content.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|shorts\/))([\w-]{11})/);
+      if (match) return { id: match[1], hasVideo: true };
+    }
+    return { id: null, hasVideo: false };
+  };
+
+  // 썸네일 URL 결정
+  const getThumbnailSrc = (article: Article, ytInfo: { id: string | null; hasVideo: boolean }) => {
+    if (article.thumbnail_url) return article.thumbnail_url;
+    if (ytInfo.id) return `https://img.youtube.com/vi/${ytInfo.id}/hqdefault.jpg`;
+    return null;
   };
 
   // 추천공실 (더미 유지 — 매물 DB 연동 시 교체)
@@ -90,25 +105,22 @@ export default function NewsListLayout({ category, title, initialArticles, initi
             </div>
 
             {/* 기사 카드 리스트 — 서버에서 미리 받아와서 즉시 표시 */}
-            {pagedArticles.length > 0 ? pagedArticles.map((article) => (
+            {pagedArticles.length > 0 ? pagedArticles.map((article) => {
+              const ytInfo = extractYoutubeIdInfo(article);
+              const thumbSrc = getThumbnailSrc(article, ytInfo);
+              const showImgArea = Boolean(thumbSrc);
+
+              return (
               <Link key={article.id} href={`/news/${article.article_no || article.id}`} style={{ textDecoration: "none", color: "inherit" }}>
                 <div className="an-card">
-                  {(article.thumbnail_url || article.youtube_url) && (
+                  {showImgArea && (
                     <div className="an-img" style={{ position: "relative", flexShrink: 0 }}>
-                      {article.thumbnail_url ? (
-                        <img
-                          src={article.thumbnail_url}
-                          alt={article.title}
-                          style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 6 }}
-                        />
-                      ) : article.youtube_url ? (
-                        <img
-                          src={getYoutubeThumbnail(article.youtube_url) || ""}
-                          alt={article.title}
-                          style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 6 }}
-                        />
-                      ) : null}
-                      {article.youtube_url && (
+                      <img
+                        src={thumbSrc as string}
+                        alt={article.title}
+                        style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 6 }}
+                      />
+                      {ytInfo.hasVideo && (
                         <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 44, height: 44, background: "rgba(0,0,0,0.4)", borderRadius: "50%", border: "2.5px solid white", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 5 }}>
                           <svg viewBox="0 0 24 24" width="24" height="24" fill="white" style={{ marginLeft: 4 }}><path d="M8 5v14l11-7z"/></svg>
                         </div>
@@ -129,7 +141,7 @@ export default function NewsListLayout({ category, title, initialArticles, initi
                   </div>
                 </div>
               </Link>
-            )) : (
+            )}) : (
               <div style={{ padding: "60px 0", textAlign: "center", color: "#888", fontSize: 15 }}>
                 해당 카테고리에 등록된 기사가 없습니다.
               </div>

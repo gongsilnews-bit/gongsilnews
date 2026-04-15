@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 
 import { incrementArticleView } from "@/app/actions/article";
@@ -11,7 +11,7 @@ interface NewsReadContentProps {
 }
 
 export default function NewsReadContent({ article, popularArticles }: NewsReadContentProps) {
-  const [scrollProgress, setScrollProgress] = useState(0);
+  const scrollBarRef = useRef<HTMLDivElement>(null);
   const [commentText, setCommentText] = useState("");
   const [viewCount, setViewCount] = useState(article.view_count || 0);
 
@@ -39,12 +39,15 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
     }
   }, [article.id]);
 
+  // 스크롤 진행 바 — DOM 직접 조작 (리렌더링 방지 → iframe 깜빡임 해결)
   useEffect(() => {
     const handleScroll = () => {
       const scrollTop = window.scrollY;
       const docHeight = document.documentElement.scrollHeight - window.innerHeight;
       const progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
-      setScrollProgress(progress);
+      if (scrollBarRef.current) {
+        scrollBarRef.current.style.width = `${progress}%`;
+      }
     };
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
@@ -61,7 +64,7 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
   // 유튜브 ID 추출
   const extractYoutubeId = (url: string): string | null => {
     if (!url) return null;
-    const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([\w-]{11})/);
+    const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([\\w-]{11})/);
     return m ? m[1] : null;
   };
 
@@ -71,7 +74,7 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
   return (
     <>
       {/* 스크롤 진행 표시 바 */}
-      <div className="scroll-progress" style={{ width: `${scrollProgress}%` }}></div>
+      <div ref={scrollBarRef} className="scroll-progress" style={{ width: 0 }}></div>
 
       <main className="container px-20" style={{ position: "relative" }}>
         <div className="news-layout">
