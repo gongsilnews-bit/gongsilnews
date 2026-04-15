@@ -10,11 +10,12 @@ interface VacancySectionProps extends AdminSectionProps {
   ownerId: string;
   ownerName?: string;
   ownerPhone?: string;
+  initialData?: any[];
 }
 
-export default function VacancySection({ theme, role, ownerId, ownerName, ownerPhone }: VacancySectionProps) {
+export default function VacancySection({ theme, role, ownerId, ownerName, ownerPhone, initialData }: VacancySectionProps) {
   const { bg, cardBg, textPrimary, textSecondary, darkMode, border } = theme;
-  const [dbVacancies, setDbVacancies] = useState<any[]>([]);
+  const [dbVacancies, setDbVacancies] = useState<any[]>(initialData || []);
   const [editingVacancy, setEditingVacancy] = useState<any>(null);
   const [showRegisterForm, setShowRegisterForm] = useState(false);
 
@@ -26,7 +27,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
   };
 
   useEffect(() => {
-    fetchAllVacancies();
+    if (!initialData) fetchAllVacancies();
   }, [showRegisterForm]);
 
   if (showRegisterForm) {

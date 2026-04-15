@@ -11,9 +11,9 @@ const REJECT_REASONS = [
   "기타 사유 (직접 입력)"
 ];
 
-export default function ArticleSection({ theme }: AdminSectionProps) {
+export default function ArticleSection({ theme, initialData }: AdminSectionProps & { initialData?: any[] }) {
   const { bg, cardBg, textPrimary, textSecondary, darkMode, border } = theme;
-  const [dbArticles, setDbArticles] = useState<any[]>([]);
+  const [dbArticles, setDbArticles] = useState<any[]>(initialData || []);
   const [articleFilter, setArticleFilter] = useState("전체");
   const [checkedArticleIds, setCheckedArticleIds] = useState<string[]>([]);
   const [showRejectModal, setShowRejectModal] = useState(false);
@@ -21,7 +21,7 @@ export default function ArticleSection({ theme }: AdminSectionProps) {
   const [selectedArticleIdsForReject, setSelectedArticleIdsForReject] = useState<string[]>([]);
 
   useEffect(() => {
-    getArticles().then(res => { if (res.success) setDbArticles(res.data || []); });
+    if (!initialData) getArticles().then(res => { if (res.success) setDbArticles(res.data || []); });
   }, []);
 
   const filtered = dbArticles.filter(a => {

@@ -8,17 +8,18 @@ import { adminGetMembers, adminSoftDeleteMember, adminRestoreMember, adminHardDe
 interface MemberSectionProps extends AdminSectionProps {
   activeSubmenu: "members_list" | "dormant";
   onSubmenuChange?: (submenu: string) => void;
+  initialData?: any[];
 }
 
-export default function MemberSection({ theme, activeSubmenu, onSubmenuChange }: MemberSectionProps) {
+export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, initialData }: MemberSectionProps) {
   const { bg, cardBg, textPrimary, textSecondary, darkMode, border } = theme;
-  const [dbMembers, setDbMembers] = useState<any[]>([]);
+  const [dbMembers, setDbMembers] = useState<any[]>(initialData || []);
   const [checkedMemberIds, setCheckedMemberIds] = useState<string[]>([]);
   const [showMemberRegister, setShowMemberRegister] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
 
   useEffect(() => {
-    adminGetMembers().then(res => { if (res?.success && res.data) setDbMembers(res.data); });
+    if (!initialData) adminGetMembers().then(res => { if (res?.success && res.data) setDbMembers(res.data); });
   }, []);
 
   if (showMemberRegister) {

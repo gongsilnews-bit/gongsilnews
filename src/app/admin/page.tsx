@@ -1,9 +1,13 @@
 "use client";
 
-import React, { useState, useEffect, lazy, Suspense } from "react";
+import React, { useState, useEffect, lazy, Suspense, useRef, useCallback } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { computeTheme, MenuItem } from "@/components/admin/sections/types";
 import { IconDashboard, IconMembers, IconBuilding, IconArticle, IconStudy, IconEdit, IconBoard, IconAd, IconPlugin, IconStats, IconSettings, IconManual } from "@/components/admin/sections/AdminIcons";
+import { getVacancies } from "@/app/actions/vacancy";
+import { adminGetMembers } from "@/app/admin/actions";
+import { getArticles } from "@/app/actions/article";
+import AdminLoadingFallback from "@/components/admin/sections/AdminSkeletons";
 
 /* ── Lazy-loaded 섹션 ── */
 const DashboardSection = lazy(() => import("@/components/admin/sections/DashboardSection"));
@@ -30,11 +34,9 @@ const ADMIN_MENU: MenuItem[] = [
   { key: "manual", label: "매뉴얼", icon: <IconManual /> },
 ];
 
-const LoadingSpinner = () => (
-  <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
-    <div style={{ fontSize: 16, color: "#9ca3af" }}>로딩중...</div>
-  </div>
-);
+/* ── 데이터 프리페치 매핑 ── */
+const DATA_KEYS = ["gongsil", "members", "article"] as const;
+type DataKey = typeof DATA_KEYS[number];
 
 export default function AdminPage() {
   const [activeMenu, setActiveMenu] = useState("dashboard");
@@ -43,6 +45,33 @@ export default function AdminPage() {
   const [darkMode, setDarkMode] = useState(false);
   const [adminUserId, setAdminUserId] = useState("");
 
+  /* ── 프리페치 데이터 저장소 ── */
+  const [prefetchedData, setPrefetchedData] = useState<Record<string, any[]>>({});
+  const fetchingRef = useRef<Set<string>>(new Set());
+
+  /* ── 단일 섹션 데이터 프리페치 ── */
+  const prefetchSection = useCallback(async (key: string) => {
+    if (prefetchedData[key] || fetchingRef.current.has(key)) return;
+    fetchingRef.current.add(key);
+    try {
+      let data: any[] = [];
+      if (key === "gongsil") {
+        const res = await getVacancies({ all: true });
+        if (res.success) data = res.data || [];
+      } else if (key === "members") {
+        const res = await adminGetMembers();
+        if (res?.success) data = res.data || [];
+      } else if (key === "article") {
+        const res = await getArticles();
+        if (res.success) data = res.data || [];
+      }
+      setPrefetchedData(prev => ({ ...prev, [key]: data }));
+    } finally {
+      fetchingRef.current.delete(key);
+    }
+  }, [prefetchedData]);
+
+  /* ── 초기 로드: 모든 데이터 섹션 병렬 프리페치 ── */
   useEffect(() => {
     async function fetchUser() {
       const supabase = createClient();
@@ -58,7 +87,18 @@ export default function AdminPage() {
         setActiveMenu(menuParam);
       }
     }
+
+    // 모든 데이터 섹션 병렬 프리페치
+    Promise.all(DATA_KEYS.map(k => prefetchSection(k)));
   }, []);
+
+  /* ── 사이드바 호버 시 프리페치 ── */
+  const handleMenuHover = useCallback((key: string) => {
+    setHoveredMenu(key);
+    if (DATA_KEYS.includes(key as DataKey)) {
+      prefetchSection(key);
+    }
+  }, [prefetchSection]);
 
   const theme = computeTheme(darkMode);
   const sidebarBg = darkMode ? "#000" : "#111111";
@@ -73,7 +113,7 @@ export default function AdminPage() {
         <ul style={{ listStyle: "none", margin: 0, padding: "16px 0", flex: 1, overflowY: "auto", scrollbarWidth: "none" as const }}>
           {ADMIN_MENU.map((item) => (
             <li key={item.key} style={{ margin: 0, position: "relative", ...(item.dividerBefore ? { marginTop: 20, borderTop: "1px solid rgba(255,255,255,0.08)" } : {}) }}
-              onMouseEnter={() => setHoveredMenu(item.key)}
+              onMouseEnter={() => handleMenuHover(item.key)}
               onMouseLeave={() => setHoveredMenu(null)}>
               <button
                 onClick={() => {
@@ -132,11 +172,11 @@ export default function AdminPage() {
         </header>
 
         {/* 콘텐츠 영역 */}
-        <Suspense fallback={<LoadingSpinner />}>
+        <Suspense fallback={<AdminLoadingFallback />}>
           {activeMenu === "dashboard" && <DashboardSection theme={theme} role="admin" />}
-          {activeMenu === "members" && <MemberSection theme={theme} activeSubmenu={activeSubmenu as "members_list" | "dormant"} onSubmenuChange={setActiveSubmenu} />}
-          {activeMenu === "gongsil" && <VacancySection theme={theme} role="admin" ownerId={adminUserId} />}
-          {activeMenu === "article" && <ArticleSection theme={theme} />}
+          {activeMenu === "members" && <MemberSection theme={theme} activeSubmenu={activeSubmenu as "members_list" | "dormant"} onSubmenuChange={setActiveSubmenu} initialData={prefetchedData["members"]} />}
+          {activeMenu === "gongsil" && <VacancySection theme={theme} role="admin" ownerId={adminUserId} initialData={prefetchedData["gongsil"]} />}
+          {activeMenu === "article" && <ArticleSection theme={theme} initialData={prefetchedData["article"]} />}
           {activeMenu === "study" && <StudySection theme={theme} />}
           {activeMenu === "board" && <BoardSection theme={theme} />}
           {activeMenu === "manual" && <AdminManual />}
