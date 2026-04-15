@@ -83,7 +83,10 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
       <div style={{ background: cardBg, borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", overflow: "hidden" }}>
         {/* 필터 탭 */}
         <div style={{ display: "flex", borderBottom: `1px solid ${border}`, background: darkMode ? "#2c2d31" : "#fafafa", padding: "0 16px" }}>
-          {["전체", "승인대기", "광고중", "작성중", "반려"].map(tab => {
+          {["전체", "승인대기", "광고중", "작성중", "반려"].filter(tab => {
+            if (role === "realtor" && (tab === "승인대기" || tab === "반려")) return false;
+            return true;
+          }).map(tab => {
             let count = 0;
             if (tab === "전체") count = dbVacancies.length;
             else if (tab === "승인대기") count = dbVacancies.filter(v => v.status === "PENDING").length;
