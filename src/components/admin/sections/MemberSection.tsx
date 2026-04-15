@@ -43,10 +43,36 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
   return (
     <div style={{ flex: 1, overflowY: "auto", padding: "20px 28px", background: bg }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 20 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: 0 }}>{isDormant ? "휴지통" : "회원목록"}</h1>
+        <h1 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: 0 }}>회원관리</h1>
         <span style={{ fontSize: 13, fontWeight: 600, color: textSecondary }}>
           ( <span>관리자 1명</span> / <span>부동산회원 1명</span> / <span>일반 1명</span> / 전체 3명 )
         </span>
+      </div>
+
+      {/* 서브메뉴 탭 */}
+      <div style={{ display: "flex", borderBottom: `1px solid ${border}`, marginBottom: 20, gap: 24 }}>
+        {[
+          { key: "members_list", label: "회원목록" },
+          { key: "dormant", label: "휴지통" }
+        ].map(tab => (
+          <button
+            key={tab.key}
+            onClick={() => onSubmenuChange?.(tab.key)}
+            style={{
+              padding: "0 4px 12px",
+              background: "none",
+              border: "none",
+              borderBottom: activeSubmenu === tab.key ? "3px solid #3b82f6" : "3px solid transparent",
+              color: activeSubmenu === tab.key ? "#3b82f6" : textSecondary,
+              fontSize: 16,
+              fontWeight: activeSubmenu === tab.key ? 800 : 600,
+              cursor: "pointer",
+              transition: "all 0.2s"
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
       <div style={{ background: cardBg, borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", overflow: "hidden" }}>
