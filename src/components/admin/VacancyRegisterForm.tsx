@@ -1112,8 +1112,8 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                   const roleMap: Record<string, string> = { admin: 'ADMIN', realtor: 'REALTOR', user: 'USER' };
 
                   const vacancyPayload: any = {
-                    owner_id: ownerId || editData?.owner_id,
-                    owner_role: roleMap[userRole] || 'USER',
+                    owner_id: editData?.owner_id || ownerId,
+                    owner_role: editData?.owner_role || roleMap[userRole] || 'USER',
                     property_type: propertyType,
                     sub_category: subCategory,
                     trade_type: tradeType,
