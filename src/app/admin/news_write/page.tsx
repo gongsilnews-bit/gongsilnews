@@ -13,7 +13,7 @@ type FormType = "일반" | "카드뉴스" | "갤러리";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import MemberSidebarProxy from "@/components/admin/MemberSidebarProxy";
 
-export default function NewsWritePage() {
+export default function NewsWritePage({ initialIsMemberMode = false }: { initialIsMemberMode?: boolean } = {}) {
   const router = useRouter();
 
   /* ─── 상태 ─── */
@@ -54,7 +54,7 @@ export default function NewsWritePage() {
   const [loadArticleId, setLoadArticleId] = useState<string | null>(null);
 
   /* ── 회원 모드 (URL 파라미터: role=member) ── */
-  const [isMemberMode, setIsMemberMode] = useState(false);
+  const [isMemberMode, setIsMemberMode] = useState(initialIsMemberMode);
   const [memberReturnPath, setMemberReturnPath] = useState("/admin?menu=article");
   const [memberAuthorId, setMemberAuthorId] = useState<string | null>(null);
 
