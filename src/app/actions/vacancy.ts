@@ -57,6 +57,8 @@ export async function createVacancy(data: {
   landlord_memo?: string;
   consent?: boolean;
   infrastructure?: Record<string, string[]>;
+  approval_year?: number;
+  total_units?: number;
 }) {
   const supabase = getAdminClient();
 

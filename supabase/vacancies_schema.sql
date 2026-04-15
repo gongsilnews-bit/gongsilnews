@@ -48,6 +48,10 @@ CREATE TABLE IF NOT EXISTS vacancies (
   move_in_date    TEXT DEFAULT '즉시입주(공실)',
   options         TEXT[] DEFAULT '{}',
 
+  -- 건물 정보
+  approval_year   INTEGER,          -- 사용승인 연도 (예: 2015)
+  total_units     INTEGER,          -- 총 세대수
+
   -- 위치/주소
   sido            TEXT,
   sigungu         TEXT,

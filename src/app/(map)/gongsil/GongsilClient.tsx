@@ -10,10 +10,10 @@ import MapTopAuthButtons from "@/components/MapTopAuthButtons";
 
 // 카테고리 설정 데이터
 const CATEGORY_CONFIG: Record<string, { name: string; pills: string[]; basicFilters: string[]; detailFilters: string[]; showToggle: boolean; pillStyle?: string }> = {
-  apart: { name: "아파트·오피스텔", pills: ["아파트", "아파트분양권", "재건축", "오피스텔", "오피스텔분양권", "재개발"], basicFilters: ["거래방식", "가격대", "면적", "사용승인일", "세대수"], detailFilters: ["층수", "방/욕실수", "방향", "융자금", "기타옵션"], showToggle: true },
-  villa: { name: "빌라·주택", pills: ["빌라/연립", "단독/다가구", "전원주택", "상가주택"], basicFilters: ["거래방식", "가격대", "면적", "방/욕실수", "사용승인일", "방향", "융자금", "기타옵션"], detailFilters: [], showToggle: false },
+  apart: { name: "아파트·오피스텔", pills: ["아파트", "아파트분양권", "재건축", "오피스텔", "오피스텔분양권", "재개발"], basicFilters: ["거래방식", "가격대", "면적", "사용승인일", "세대수"], detailFilters: ["층수", "방/욕실수", "방향", "기타옵션"], showToggle: true },
+  villa: { name: "빌라·주택", pills: ["빌라/연립", "단독/다가구", "전원주택", "상가주택"], basicFilters: ["거래방식", "가격대", "면적", "방/욕실수", "사용승인일", "방향", "기타옵션"], detailFilters: [], showToggle: false },
   one: { name: "원룸·투룸", pills: ["원룸", "투룸", "오피스텔만 보기"], basicFilters: ["거래방식", "가격대", "관리비", "기타옵션"], detailFilters: [], showToggle: false },
-  biz: { name: "상가·업무·공장·토지", pills: ["상가", "사무실", "공장/창고", "지식산업센터", "건물", "토지"], basicFilters: ["거래방식", "가격대", "면적", "층수", "융자금", "관리비", "기타옵션"], detailFilters: [], showToggle: false },
+  biz: { name: "상가·업무·공장·토지", pills: ["상가", "사무실", "공장/창고", "지식산업센터", "건물", "토지"], basicFilters: ["거래방식", "가격대", "면적", "층수", "관리비", "기타옵션"], detailFilters: [], showToggle: false },
   sale: { name: "분양", pills: ["아파트", "오피스텔", "빌라", "도시형생활주택", "생활숙박시설", "상가/업무"], basicFilters: ["분양단계", "분양형태", "분양가/보증금", "면적", "세대수"], detailFilters: ["입주예정", "청약가능통장", "브랜드"], showToggle: true },
   wish: { name: "MY관심공실", pills: [], basicFilters: [], detailFilters: [], showToggle: false },
 };
@@ -43,6 +43,25 @@ const AREA_GRID = [
   { label: "50평", m2: 165 }, { label: "60평", m2: 198 }, { label: "70평", m2: 231 }, { label: "80평", m2: 264 },
   { label: "100평", m2: 330 }, { label: "150평", m2: 495 }, { label: "200평", m2: 660 },
   { label: "300평", m2: 990 }, { label: "500평", m2: 1650 }, { label: "500평~", m2: -1 },
+];
+
+// 사용승인일 그리드 (연도 단위, 1960~2026)
+const YEAR_GRID = (() => {
+  const years: { label: string; val: number }[] = [];
+  for (let y = 1960; y <= 2026; y += 5) {
+    years.push({ label: `${y}년`, val: y });
+  }
+  // Ensure 2026 is included
+  if (years[years.length - 1].val !== 2026) years.push({ label: "2026년", val: 2026 });
+  return years;
+})();
+
+// 세대수 그리드 (50~4000)
+const UNIT_GRID = [
+  { label: "50세대", val: 50 }, { label: "100세대", val: 100 }, { label: "200세대", val: 200 },
+  { label: "300세대", val: 300 }, { label: "500세대", val: 500 }, { label: "700세대", val: 700 },
+  { label: "1000세대", val: 1000 }, { label: "1500세대", val: 1500 }, { label: "2000세대", val: 2000 },
+  { label: "2500세대", val: 2500 }, { label: "3000세대", val: 3000 }, { label: "4000세대", val: 4000 },
 ];
 
 // 관리비 프리셋 (원)
@@ -100,6 +119,10 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   const [filterRoomCount, setFilterRoomCount] = useState<number | null>(null);
   const [filterBathCount, setFilterBathCount] = useState<number | null>(null);
   const [filterDirection, setFilterDirection] = useState<string | null>(null);
+  const [filterYearMin, setFilterYearMin] = useState<number | null>(null);
+  const [filterYearMax, setFilterYearMax] = useState<number | null>(null);
+  const [filterUnitMin, setFilterUnitMin] = useState<number | null>(null);
+  const [filterUnitMax, setFilterUnitMax] = useState<number | null>(null);
 
   const [selectedClusterIds, setSelectedClusterIds] = useState<string[] | null>(null);
   const selectedClusterIdsRef = useRef<string[] | null>(null);
@@ -214,8 +237,30 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
       list = list.filter(v => v.direction === filterDirection);
     }
 
+    // 10) 사용승인일 (연도 필터)
+    if (filterYearMin !== null || filterYearMax !== null) {
+      list = list.filter(v => {
+        const year = v.approval_year || 0;
+        if (!year) return false;
+        if (filterYearMin !== null && year < filterYearMin) return false;
+        if (filterYearMax !== null && year > filterYearMax) return false;
+        return true;
+      });
+    }
+
+    // 11) 세대수 필터
+    if (filterUnitMin !== null || filterUnitMax !== null) {
+      list = list.filter(v => {
+        const units = v.total_units || 0;
+        if (!units) return false;
+        if (filterUnitMin !== null && units < filterUnitMin) return false;
+        if (filterUnitMax !== null && units > filterUnitMax) return false;
+        return true;
+      });
+    }
+
     return list;
-  }, [dbVacancies, activeCategory, activePills, filterTradeTypes, filterPriceMin, filterPriceMax, filterAreaMin, filterAreaMax, filterMaintIdx, filterRoomCount, filterBathCount, filterDirection, wishTab, recentViews]);
+  }, [dbVacancies, activeCategory, activePills, filterTradeTypes, filterPriceMin, filterPriceMax, filterAreaMin, filterAreaMax, filterMaintIdx, filterRoomCount, filterBathCount, filterDirection, filterYearMin, filterYearMax, filterUnitMin, filterUnitMax, wishTab, recentViews]);
 
   // ── 지도 범위 / 클러스터 선택 적용 ──
   const displayVacancies = React.useMemo(() => {
@@ -644,6 +689,10 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     setFilterRoomCount(null);
     setFilterBathCount(null);
     setFilterDirection(null);
+    setFilterYearMin(null);
+    setFilterYearMax(null);
+    setFilterUnitMin(null);
+    setFilterUnitMax(null);
     setActiveFilterDropdown(null);
   };
 
@@ -664,7 +713,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     setFilterTradeTypes(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]);
   };
 
-  const hasActiveFilters = filterTradeTypes.length > 0 || filterPriceMin !== null || filterPriceMax !== null || filterAreaMin !== null || filterAreaMax !== null || filterMaintIdx > 0 || filterRoomCount !== null || filterBathCount !== null || filterDirection !== null;
+  const hasActiveFilters = filterTradeTypes.length > 0 || filterPriceMin !== null || filterPriceMax !== null || filterAreaMin !== null || filterAreaMax !== null || filterMaintIdx > 0 || filterRoomCount !== null || filterBathCount !== null || filterDirection !== null || filterYearMin !== null || filterYearMax !== null || filterUnitMin !== null || filterUnitMax !== null;
 
   // 가격 표시 헬퍼
   const formatPriceLabel = (val: number | null) => {
@@ -679,6 +728,12 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   const areaFilterLabel = (filterAreaMin !== null || filterAreaMax !== null)
     ? `면적 ${filterAreaMin ? Math.round(filterAreaMin / 3.3) + "평" : "~"}~${filterAreaMax ? Math.round(filterAreaMax / 3.3) + "평" : ""}`
     : "면적";
+  const yearFilterLabel = (filterYearMin !== null || filterYearMax !== null)
+    ? `사용승인일 ${filterYearMin || "~"}~${filterYearMax || ""}`
+    : "사용승인일";
+  const unitFilterLabel = (filterUnitMin !== null || filterUnitMax !== null)
+    ? `세대수 ${filterUnitMin || "~"}~${filterUnitMax || ""}`
+    : "세대수";
 
   return (
     <div style={{ height: "100vh", display: "flex", flexDirection: "column", overflow: "hidden", fontFamily: "'Pretendard', sans-serif" }}>
@@ -721,9 +776,11 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                 (f === "면적" && (filterAreaMin !== null || filterAreaMax !== null)) ||
                 (f === "관리비" && filterMaintIdx > 0) ||
                 (f === "방/욕실수" && (filterRoomCount !== null || filterBathCount !== null)) ||
-                (f === "방향" && filterDirection !== null)
+                (f === "방향" && filterDirection !== null) ||
+                (f === "사용승인일" && (filterYearMin !== null || filterYearMax !== null)) ||
+                (f === "세대수" && (filterUnitMin !== null || filterUnitMax !== null))
               );
-              const btnLabel = (f === "가격대" || f === "분양가/보증금") ? priceFilterLabel : f === "면적" ? areaFilterLabel : f;
+              const btnLabel = (f === "가격대" || f === "분양가/보증금") ? priceFilterLabel : f === "면적" ? areaFilterLabel : f === "사용승인일" ? yearFilterLabel : f === "세대수" ? unitFilterLabel : f;
 
               return (
               <div key={f} style={{ position: "relative" }}>
@@ -785,15 +842,38 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
                       <div style={{ flex: 1, display: "flex", alignItems: "center", border: "1px solid #ddd", borderRadius: 4, overflow: "hidden" }}>
                         <button onClick={() => setFilterPriceMin(prev => prev ? Math.max(0, prev - 10000000) : null)} style={{ padding: "6px 10px", background: "#f5f5f5", border: "none", cursor: "pointer", fontSize: 14 }}>−</button>
-                        <span style={{ flex: 1, textAlign: "center", fontSize: 13, padding: "6px", color: filterPriceMin ? "#111" : "#aaa" }}>{filterPriceMin ? formatPriceLabel(filterPriceMin) : "최소"}</span>
+                        <input
+                          type="number"
+                          placeholder="최소"
+                          value={filterPriceMin !== null ? Math.round(filterPriceMin / 10000) : ""}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            if (v === "" || v === "0") { setFilterPriceMin(null); }
+                            else { setFilterPriceMin(parseInt(v, 10) * 10000); }
+                          }}
+                          style={{ flex: 1, textAlign: "center", fontSize: 13, padding: "6px 4px", border: "none", outline: "none", width: 60, color: "#111", background: "transparent" }}
+                        />
                         <button onClick={() => setFilterPriceMin(prev => (prev || 0) + 10000000)} style={{ padding: "6px 10px", background: "#f5f5f5", border: "none", cursor: "pointer", fontSize: 14 }}>+</button>
                       </div>
-                      <span style={{ color: "#999" }}>~</span>
+                      <span style={{ color: "#999", fontSize: 13 }}>~</span>
                       <div style={{ flex: 1, display: "flex", alignItems: "center", border: "1px solid #ddd", borderRadius: 4, overflow: "hidden" }}>
                         <button onClick={() => setFilterPriceMax(prev => prev ? Math.max(0, prev - 10000000) : null)} style={{ padding: "6px 10px", background: "#f5f5f5", border: "none", cursor: "pointer", fontSize: 14 }}>−</button>
-                        <span style={{ flex: 1, textAlign: "center", fontSize: 13, padding: "6px", color: filterPriceMax ? "#111" : "#aaa" }}>{filterPriceMax ? formatPriceLabel(filterPriceMax) : "최대"}</span>
+                        <input
+                          type="number"
+                          placeholder="최대"
+                          value={filterPriceMax !== null ? Math.round(filterPriceMax / 10000) : ""}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            if (v === "" || v === "0") { setFilterPriceMax(null); }
+                            else { setFilterPriceMax(parseInt(v, 10) * 10000); }
+                          }}
+                          style={{ flex: 1, textAlign: "center", fontSize: 13, padding: "6px 4px", border: "none", outline: "none", width: 60, color: "#111", background: "transparent" }}
+                        />
                         <button onClick={() => setFilterPriceMax(prev => (prev || 0) + 10000000)} style={{ padding: "6px 10px", background: "#f5f5f5", border: "none", cursor: "pointer", fontSize: 14 }}>+</button>
                       </div>
+                    </div>
+                    <div style={{ fontSize: 11, color: "#aaa", marginBottom: 10, textAlign: "center" }}>
+                      직접 입력: 만원 단위 (예: 1억 = 10000, 5천만 = 5000)
                     </div>
                     <div style={{ textAlign: "right" }}>
                       <button onClick={() => { setFilterPriceMin(null); setFilterPriceMax(null); }} style={{ background: "none", border: "none", fontSize: 13, color: "#888", cursor: "pointer" }}>⟲ 조건삭제</button>
@@ -898,6 +978,102 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                     </div>
                     <div style={{ textAlign: "right", marginTop: 10 }}>
                       <button onClick={() => setFilterDirection(null)} style={{ background: "none", border: "none", fontSize: 13, color: "#888", cursor: "pointer" }}>⟲ 조건삭제</button>
+                    </div>
+                  </div>
+                )}
+
+                {/* ── 사용승인일 (연도 그리드 선택) ── */}
+                {f === "사용승인일" && activeFilterDropdown === "사용승인일" && (
+                  <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, background: "#fff", border: "1px solid #ddd", borderRadius: 4, boxShadow: "0 4px 16px rgba(0,0,0,0.15)", width: 380, zIndex: 9000, padding: "16px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                      <span style={{ fontSize: 15, fontWeight: "bold", color: "#111" }}>사용승인일</span>
+                      <button onClick={() => setActiveFilterDropdown(null)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#999", padding: 0, lineHeight: 1 }}>✕</button>
+                    </div>
+                    <div style={{ fontSize: 13, color: "#1a73e8", textAlign: "center", marginBottom: 8, fontWeight: "bold" }}>
+                      {filterYearMin || filterYearMax ? `${filterYearMin || "~"}년 ~ ${filterYearMax || ""}년` : "전체 연도"}
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 4, marginBottom: 12 }}>
+                      {YEAR_GRID.map((a, idx) => {
+                        const isActive = (filterYearMin === a.val) || (filterYearMax === a.val) || (filterYearMin !== null && filterYearMax !== null && a.val >= filterYearMin && a.val <= filterYearMax);
+                        return (
+                          <button key={idx} onClick={() => {
+                            if (filterYearMin === null) { setFilterYearMin(a.val); }
+                            else if (filterYearMax === null) {
+                              if (a.val < filterYearMin) { setFilterYearMax(filterYearMin); setFilterYearMin(a.val); }
+                              else { setFilterYearMax(a.val); }
+                            } else { setFilterYearMin(a.val); setFilterYearMax(null); }
+                          }}
+                          style={{ padding: "8px 4px", border: `1px solid ${isActive ? "#1a73e8" : "#e0e0e0"}`, borderRadius: 2, background: isActive ? "#e8f0fe" : "#fff", fontSize: 13, color: isActive ? "#1a73e8" : "#333", cursor: "pointer", fontWeight: isActive ? "bold" : "normal", textAlign: "center" }}>
+                            {a.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      <button onClick={() => { setFilterYearMin(null); setFilterYearMax(null); }} style={{ background: "none", border: "none", fontSize: 13, color: "#888", cursor: "pointer" }}>⟲ 조건삭제</button>
+                    </div>
+                  </div>
+                )}
+
+                {/* ── 세대수 (그리드 선택) ── */}
+                {f === "세대수" && activeFilterDropdown === "세대수" && (
+                  <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, background: "#fff", border: "1px solid #ddd", borderRadius: 4, boxShadow: "0 4px 16px rgba(0,0,0,0.15)", width: 380, zIndex: 9000, padding: "16px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                      <span style={{ fontSize: 15, fontWeight: "bold", color: "#111" }}>세대수</span>
+                      <button onClick={() => setActiveFilterDropdown(null)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#999", padding: 0, lineHeight: 1 }}>✕</button>
+                    </div>
+                    <div style={{ fontSize: 13, color: "#1a73e8", textAlign: "center", marginBottom: 8, fontWeight: "bold" }}>
+                      {filterUnitMin || filterUnitMax ? `${filterUnitMin || "~"} ~ ${filterUnitMax || ""}세대` : "전체 세대수"}
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 4, marginBottom: 12 }}>
+                      {UNIT_GRID.map((u, idx) => {
+                        const isActive = (filterUnitMin === u.val) || (filterUnitMax === u.val) || (filterUnitMin !== null && filterUnitMax !== null && u.val >= filterUnitMin && u.val <= filterUnitMax);
+                        return (
+                          <button key={idx} onClick={() => {
+                            if (filterUnitMin === null) { setFilterUnitMin(u.val); }
+                            else if (filterUnitMax === null) {
+                              if (u.val < filterUnitMin) { setFilterUnitMax(filterUnitMin); setFilterUnitMin(u.val); }
+                              else { setFilterUnitMax(u.val); }
+                            } else { setFilterUnitMin(u.val); setFilterUnitMax(null); }
+                          }}
+                          style={{ padding: "8px 4px", border: `1px solid ${isActive ? "#1a73e8" : "#e0e0e0"}`, borderRadius: 2, background: isActive ? "#e8f0fe" : "#fff", fontSize: 13, color: isActive ? "#1a73e8" : "#333", cursor: "pointer", fontWeight: isActive ? "bold" : "normal", textAlign: "center" }}>
+                            {u.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                      <div style={{ flex: 1, display: "flex", alignItems: "center", border: "1px solid #ddd", borderRadius: 4, overflow: "hidden" }}>
+                        <input
+                          type="number"
+                          placeholder="최소"
+                          value={filterUnitMin !== null ? filterUnitMin : ""}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            if (v === "" || v === "0") { setFilterUnitMin(null); }
+                            else { setFilterUnitMin(parseInt(v, 10)); }
+                          }}
+                          style={{ flex: 1, textAlign: "center", fontSize: 13, padding: "8px 4px", border: "none", outline: "none", width: 60, color: "#111" }}
+                        />
+                      </div>
+                      <span style={{ color: "#999", fontSize: 13 }}>~</span>
+                      <div style={{ flex: 1, display: "flex", alignItems: "center", border: "1px solid #ddd", borderRadius: 4, overflow: "hidden" }}>
+                        <input
+                          type="number"
+                          placeholder="최대"
+                          value={filterUnitMax !== null ? filterUnitMax : ""}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            if (v === "" || v === "0") { setFilterUnitMax(null); }
+                            else { setFilterUnitMax(parseInt(v, 10)); }
+                          }}
+                          style={{ flex: 1, textAlign: "center", fontSize: 13, padding: "8px 4px", border: "none", outline: "none", width: 60, color: "#111" }}
+                        />
+                      </div>
+                      <span style={{ fontSize: 12, color: "#888", flexShrink: 0 }}>세대</span>
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      <button onClick={() => { setFilterUnitMin(null); setFilterUnitMax(null); }} style={{ background: "none", border: "none", fontSize: 13, color: "#888", cursor: "pointer" }}>⟲ 조건삭제</button>
                     </div>
                   </div>
                 )}
