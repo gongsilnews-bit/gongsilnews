@@ -1190,7 +1190,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                   }
 
                   if (customStatus) {
-                     alert(customStatus === "ACTIVE" ? "매물이 승인(발행) 되었습니다." : "매물이 반려 처리되었습니다.");
+                     alert(customStatus === "ACTIVE" ? "매물이 발행(등록) 되었습니다." : "매물이 반려 처리되었습니다.");
                   } else {
                      const statusMsg = userRole === 'user'
                        ? '공실이 등록되었습니다! 관리자 승인 후 광고가 시작됩니다.'
@@ -1239,6 +1239,25 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                     }}
                   >
                     {submitting ? "등록 중..." : "✓ 공실 등록하기 (바로 발행)"}
+                  </button>
+                );
+              }
+
+              if (userRole === "realtor") {
+                return (
+                  <button
+                    type="button"
+                    disabled={submitting}
+                    onClick={() => handleSubmit("ACTIVE")}
+                    style={{
+                      width: "100%", height: 56, border: "none", borderRadius: 10,
+                      background: submitting ? "#9ca3af" : "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
+                      color: "#fff", fontSize: 18, fontWeight: 800,
+                      cursor: submitting ? "not-allowed" : "pointer",
+                      marginTop: 32
+                    }}
+                  >
+                    {submitting ? "저장 중..." : (editData ? "✓ 공실 수정하기" : "✓ 공실 등록하기")}
                   </button>
                 );
               }
