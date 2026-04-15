@@ -60,7 +60,7 @@ export default function HomepageViewPage() {
   const scrollToRef = (ref: React.RefObject<HTMLDivElement | null>, tabItem: string) => {
     setActiveTab(tabItem);
     if (ref.current) {
-      const y = ref.current.getBoundingClientRect().top + window.scrollY - 350;
+      const y = ref.current.getBoundingClientRect().top + window.scrollY - 200;
       window.scrollTo({ top: y, behavior: 'smooth' });
     }
   };
@@ -200,8 +200,8 @@ export default function HomepageViewPage() {
               </div>
             )}
 
-            {/* ── Sticky Header Wrapper ── */}
-            <div style={{ position: "sticky", top: 130, zIndex: 50, background: "#fff", paddingBottom: 0, borderBottom: "1px solid #e5e7eb", margin: "0 -24px", padding: "16px 24px 0 24px" }}>
+            {/* ── Header Info (scrolls away) ── */}
+            <div style={{ background: "#fff", margin: "0 -24px", padding: "16px 24px 0 24px", borderBottom: "1px solid #e5e7eb" }}>
               {/* Row 1: Badges & Links */}
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                  <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
@@ -243,8 +243,10 @@ export default function HomepageViewPage() {
                   <span>에어컨, 렌지, 세탁기 등</span>
                 </div>
               </div>
+            </div>
 
-              {/* Tabs (Visual) */}
+            {/* ── Sticky Tabs Only ── */}
+            <div style={{ position: "sticky", top: 130, zIndex: 50, background: "#fff", margin: "0 -24px", padding: "0 24px", borderBottom: "1px solid #e5e7eb" }}>
               <div style={{ display: "flex", alignItems: "stretch", transform: "translateY(1px)" }}>
                 <div onClick={() => scrollToRef(infoRef, 'info')} style={{ flex: 1, textAlign: "center", padding: "16px 0", fontWeight: "bold", fontSize: 16, color: activeTab === 'info' ? "#111" : "#888", background: activeTab === 'info' ? "#fff" : "#f8fafc", borderTop: activeTab === 'info' ? "2px solid #111" : "1px solid transparent", borderLeft: "1px solid transparent", borderRight: "1px solid transparent", borderBottom: activeTab === 'info' ? "1px solid #fff" : "1px solid transparent", cursor: "pointer", zIndex: activeTab === 'info' ? 1 : 0 }}>매물정보</div>
                 <div onClick={() => scrollToRef(locationRef, 'location')} style={{ flex: 1, textAlign: "center", padding: "16px 0", fontWeight: "bold", fontSize: 16, color: activeTab === 'location' ? "#111" : "#888", background: activeTab === 'location' ? "#fff" : "#f8fafc", borderTop: activeTab === 'location' ? "2px solid #111" : "1px solid transparent", borderLeft: activeTab === 'location' ? "1px solid #e5e7eb" : "none", borderRight: activeTab === 'location' ? "1px solid #e5e7eb" : "none", borderBottom: activeTab === 'location' ? "1px solid #fff" : "1px solid transparent", cursor: "pointer", zIndex: activeTab === 'location' ? 1 : 0 }}>위치</div>
@@ -255,7 +257,7 @@ export default function HomepageViewPage() {
             {/* 사진 표시 (리스트 위치 이동됨) */}
 
             {/* ── 매물정보 Table ── */}
-            <div ref={infoRef} style={{ background: "#fff", marginBottom: 50, scrollMarginTop: 350, paddingTop: 30 }}>
+            <div ref={infoRef} style={{ background: "#fff", marginBottom: 50, scrollMarginTop: 200, paddingTop: 30 }}>
               <TRow label="매물번호" value={String(vacancy.id).split('-')[0].toUpperCase()} />
               <TRow label="소재지" value={`${vacancy.sido} ${vacancy.sigungu} ${vacancy.dong} ${vacancy.detail_addr || ""}`} />
               <TRow label="매물특징" value={vacancy.building_name || "특징 없음"} />
@@ -296,7 +298,7 @@ export default function HomepageViewPage() {
 
             {/* ── 위치정보 및 로드뷰 ── */}
             {vacancy.lat && vacancy.lng && (
-              <div ref={locationRef} style={{ marginBottom: 50, scrollMarginTop: 350 }}>
+              <div ref={locationRef} style={{ marginBottom: 50, scrollMarginTop: 200 }}>
                 <h3 style={{ fontSize: 18, fontWeight: "bold", color: "#111", marginBottom: 16 }}>위치정보</h3>
                 <div ref={mapRef} style={{ width: "100%", height: 350, border: "1px solid #ddd", marginBottom: 40 }}></div>
                 
@@ -307,7 +309,7 @@ export default function HomepageViewPage() {
 
             {/* ── 주변환경 ── */}
             {vacancy.infrastructure && Object.keys(vacancy.infrastructure).length > 0 && (
-              <div ref={envRef} style={{ marginBottom: 50, scrollMarginTop: 350 }}>
+              <div ref={envRef} style={{ marginBottom: 50, scrollMarginTop: 200 }}>
                 <h3 style={{ fontSize: 18, fontWeight: "bold", color: "#111", marginBottom: 16 }}>주변환경</h3>
                 <div style={{ display: "flex", flexDirection: "column", gap: 16, borderTop: "2px solid #111", paddingTop: 20 }}>
                   {Object.entries(vacancy.infrastructure).map(([label, tags]) => {
