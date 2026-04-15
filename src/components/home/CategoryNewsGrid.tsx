@@ -113,8 +113,6 @@ export default async function CategoryNewsGrid() {
         .vid-thumb { position: relative; width: 100%; padding-bottom: 56.25%; background: #000; border-radius: 8px; overflow: hidden; margin-bottom: 12px; }
         .vid-thumb img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; objectFit: cover; opacity: 0.8; transition: opacity 0.2s; }
         .vid-item:hover .vid-thumb img { opacity: 1; }
-        .vid-play { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 48px; height: 48px; background: rgba(0,0,0,0.6); borderRadius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid white; z-index: 2; pointer-events: none; }
-        .vid-play svg { margin-left: 4px; }
         .vid-title { font-size: 16px; font-weight: 700; line-height: 1.4; color: #111; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
       `}</style>
       
@@ -151,9 +149,7 @@ export default async function CategoryNewsGrid() {
                 <Link key={i} href={`/news/${item.article_no || item.id}`} className="vid-item">
                   <div className="vid-thumb">
                     <img src={thumbSrc !== "https://via.placeholder.com/300x200?text=No+Image" ? thumbSrc : "https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&q=80&w=600&h=337"} alt={item.title} />
-                    <div className="vid-play">
-                       <svg viewBox="0 0 24 24" width="24" height="24" fill="white"><path d="M8 5v14l11-7z"/></svg>
-                    </div>
+                    <div className="vid-play"></div>
                   </div>
                   <div className="vid-title">{item.title}</div>
                 </Link>
