@@ -331,6 +331,6 @@ export default function MapSearchBar({ onSearchCoord, onRegionSelect, mapCenterR
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }
