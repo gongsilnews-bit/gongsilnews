@@ -330,9 +330,9 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
   const AmountKeypad = ({ value, setter }: { value: string, setter: (val: string) => void }) => (
     <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
       {[
-        { label: "+50억", val: 50000 },
-        { label: "+5억", val: 5000 },
-        { label: "+1억", val: 1000 },
+        { label: "+50억", val: 500000 },
+        { label: "+5억", val: 50000 },
+        { label: "+1억", val: 10000 },
         { label: "+5000만", val: 5000 },
         { label: "+1000만", val: 1000 },
         { label: "+500만", val: 500 },
