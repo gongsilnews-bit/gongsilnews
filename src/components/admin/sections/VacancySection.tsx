@@ -27,6 +27,25 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
     if (res.success) setDbVacancies(res.data || []);
   };
 
+  const handleRequestApproval = async () => {
+    const checked = Array.from(document.querySelectorAll('.vacancy-checkbox:checked')).map((el: any) => el.value);
+    if (checked.length === 0) { alert("승인신청할 매물을 선택하세요."); return; }
+    
+    const invalid = checked.some(id => {
+      const v = dbVacancies.find(x => x.id === id);
+      return v && v.status !== "REJECTED";
+    });
+    
+    if (invalid) { alert("반려된 공실만 승인신청할 수 있습니다."); return; }
+    
+    if (confirm(`선택한 ${checked.length}건의 반려된 공실을 승인신청하시겠습니까?`)) {
+      for (const id of checked) { await updateVacancyStatus(id, "PENDING"); }
+      fetchAllVacancies();
+      // 체크박스 해제
+      document.querySelectorAll('.vacancy-checkbox').forEach((box: any) => box.checked = false);
+    }
+  };
+
   useEffect(() => {
     if (!initialData) fetchAllVacancies();
   }, [showRegisterForm]);
@@ -88,6 +107,17 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
         {/* 액션 버튼 영역 */}
         <div style={{ padding: "16px 24px", borderBottom: `1px solid ${border}`, display: "flex", gap: 10, alignItems: "center" }}>
           <button onClick={() => setShowRegisterForm(true)} style={{ height: 36, padding: "0 16px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>+ 공실등록</button>
+
+          {role !== "admin" && (
+            <>
+              <button onClick={handleRequestApproval} style={{ height: 36, padding: "0 16px", background: "#8b5cf6", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+                📋 승인신청
+              </button>
+              <span style={{ fontSize: 12, color: textSecondary, marginLeft: 4 }}>
+                ※ 반려 공실만 승인신청 가능
+              </span>
+            </>
+          )}
           
           {role === "admin" && (
             <>
