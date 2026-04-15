@@ -157,7 +157,10 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
                     <td></td>
                     <td style={{ padding: "16px 10px", textAlign: "right", verticalAlign: "middle" }}>
                       <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-                        <button onClick={() => { setSelectedMemberId(member.id); setShowMemberRegister(true); }} style={{ height: 30, padding: "0 12px", background: "#4b5563", color: "#fff", border: "none", borderRadius: 4, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>수정</button>
+                        <button onClick={() => { setSelectedMemberId(member.id); setShowMemberRegister(true); }} style={{ height: 30, padding: "0 12px", background: darkMode ? "#374151" : "#4b5563", color: "#fff", border: "none", borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                          수정
+                        </button>
                         <button onClick={async () => {
                           if (isDormant) {
                             if (confirm("영구 삭제하시겠습니까? 되돌릴 수 없습니다.")) {
@@ -172,8 +175,11 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
                               else alert("삭제 실패: " + res.error);
                             }
                           }
-                        }} style={{ height: 30, padding: "0 12px", background: darkMode ? "#2c2d31" : "#fff", color: isDormant ? "#ef4444" : "#9ca3af", border: `1px solid ${isDormant ? "#ef4444" : (darkMode ? "#444" : "#d1d5db")}`, borderRadius: 4, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>{isDormant ? "영구삭제" : "삭제"}</button>
-                        <button style={{ height: 30, padding: "0 12px", background: darkMode ? "#2c2d31" : "#fff", color: "#6b7280", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 4, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>수정내역</button>
+                        }} style={{ height: 30, padding: "0 12px", background: darkMode ? "#2c2d31" : "#fff", color: isDormant ? "#ef4444" : "#9ca3af", border: `1px solid ${isDormant ? "#ef4444" : (darkMode ? "#444" : "#d1d5db")}`, borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                          {isDormant ? "영구삭제" : "삭제"}
+                        </button>
+                        <button style={{ height: 30, padding: "0 12px", background: darkMode ? "#2c2d31" : "#fff", color: "#6b7280", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>수정내역</button>
                       </div>
                     </td>
                   </tr>

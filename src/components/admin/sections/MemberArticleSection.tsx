@@ -74,7 +74,8 @@ export default function MemberArticleSection({ theme, memberId, memberName, memb
     return <span style={{ padding: "4px 8px", background: s.bg, color: "#fff", borderRadius: 4, fontSize: 12, fontWeight: 700 }}>{s.label}</span>;
   };
 
-  const writeUrl = `/admin/news_write?role=member&author_id=${memberId}&author_name=${encodeURIComponent(memberName)}${memberEmail ? `&author_email=${encodeURIComponent(memberEmail)}` : ""}&return=${role === "realtor" ? "realty_admin" : "user_admin"}`;
+  const basePath = role === "realtor" ? "/realty_admin" : "/user_admin";
+  const writeUrl = `${basePath}/news_write?role=member&author_id=${memberId}&author_name=${encodeURIComponent(memberName)}${memberEmail ? `&author_email=${encodeURIComponent(memberEmail)}` : ""}&return=${role === "realtor" ? "realty_admin" : "user_admin"}`;
 
   return (
     <div style={{ flex: 1, overflowY: "auto", padding: "20px 28px", background: bg }}>
@@ -153,7 +154,7 @@ export default function MemberArticleSection({ theme, memberId, memberName, memb
                   </td>
                   <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", color: textSecondary }}>{a.section1 || "-"}</td>
                   <td style={{ padding: "16px 10px", textAlign: "left", verticalAlign: "middle" }}>
-                    <a href={`/admin/news_write?id=${a.id}&role=member&return=${role === "realtor" ? "realty_admin" : "user_admin"}`}
+                    <a href={`${basePath}/news_write?id=${a.id}&role=member&return=${role === "realtor" ? "realty_admin" : "user_admin"}`}
                       style={{ fontWeight: 700, fontSize: 15, color: textPrimary, textDecoration: "none" }}>
                       {a.title || "(제목 없음)"}
                     </a>
@@ -168,7 +169,7 @@ export default function MemberArticleSection({ theme, memberId, memberName, memb
                   </td>
                   <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
                     <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
-                      <a href={`/admin/news_write?id=${a.id}&role=member&return=${role === "realtor" ? "realty_admin" : "user_admin"}`}
+                      <a href={`${basePath}/news_write?id=${a.id}&role=member&return=${role === "realtor" ? "realty_admin" : "user_admin"}`}
                         style={{ padding: "6px 12px", background: "#3b4363", color: "#fff", textDecoration: "none", borderRadius: 4, fontSize: 12, fontWeight: 600 }}>
                         {a.status === "DRAFT" || a.status === "REJECTED" ? "수정" : "보기"}
                       </a>

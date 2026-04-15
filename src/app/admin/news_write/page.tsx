@@ -11,6 +11,7 @@ type StatusType = "DRAFT" | "PENDING" | "APPROVED" | "REJECTED" | string;
 type FormType = "일반" | "카드뉴스" | "갤러리";
 
 import AdminSidebar from "@/components/admin/AdminSidebar";
+import MemberSidebarProxy from "@/components/admin/MemberSidebarProxy";
 
 export default function NewsWritePage() {
   const router = useRouter();
@@ -1226,7 +1227,7 @@ export default function NewsWritePage() {
 
   return (
     <div style={{ display: "flex", height: "100vh", width: "100vw", fontFamily: "'Pretendard Variable', -apple-system, sans-serif", background: pageBg, overflow: "hidden" }}>
-      <AdminSidebar activeMenu="article" />
+      {!isMemberMode ? <AdminSidebar activeMenu="article" /> : <MemberSidebarProxy activeMenu="article" returnPath={memberReturnPath} />}
       <main style={{ flex: 1, display: "flex", flexDirection: "column", background: pageBg, overflow: "hidden" }}>
         {/* ═══ 상단 헤더 ═══ */}
       <header style={{
@@ -1246,6 +1247,13 @@ export default function NewsWritePage() {
           <button style={{ width: 36, height: 36, borderRadius: "50%", border: `1px solid ${border}`, background: "none", cursor: "pointer", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center", color: textSecondary }}>🌙</button>
           {/* 로그아웃 */}
           <button style={{ padding: "8px 16px", background: textPrimary, color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>로그아웃</button>
+          
+          {isMemberMode && (
+            <button onClick={() => router.push(memberReturnPath)} style={{ padding: "8px 16px", background: "#f3f4f6", color: textPrimary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+              목록으로
+            </button>
+          )}
+
           {/* 공실페이지 가기 */}
           <button onClick={() => router.push("/")} style={{ padding: "8px 16px", background: cardBg, color: textPrimary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
             <span style={{ fontSize: 14 }}>⚙</span> 공실페이지 가기
