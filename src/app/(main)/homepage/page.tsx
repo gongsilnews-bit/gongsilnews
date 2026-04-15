@@ -821,7 +821,17 @@ export default function HomepagePage() {
                           { l1: "매물특징", v1: v.building_name || "특징 없음", l2: "주차가능 여부", v2: v.parking_spots ? `${v.parking_spots}대` : "불가" },
                           { l1: "공급/전용면적", v1: `${Math.round((v.area_m2 || 0) * 1.3)}m² / ${v.area_m2 || 0}m²`, l2: "입주가능일", v2: v.move_in_date || "1개월 이내" },
                           { l1: "해당층/총층", v1: `${v.floor || "해당층"} / ${v.total_floors || "전체층"}`, l2: "관리비", v2: v.maintenance_fee ? `${Math.round(v.maintenance_fee/10000)}만원` : "10만원" },
-                          { l1: "등록자명", v1: (() => { const m = v.members; if (!m) return v.client_name || "-"; return m.name || v.client_name || "-"; })(), l2: "연락처", v2: v.client_phone || "-" }
+                          { l1: "등록자명", v1: (() => {
+                            const m = v.members;
+                            if (!m) return v.client_name || "-";
+                            if (m.role === 'REALTOR' && m.agencies && m.agencies.length > 0) return m.agencies[0].agency_name || m.name || v.client_name || "-";
+                            return m.name || v.client_name || "-";
+                          })(), l2: "연락처", v2: (() => {
+                            const m = v.members;
+                            if (!m) return v.client_phone || "-";
+                            if (m.role === 'REALTOR' && m.agencies && m.agencies.length > 0) return m.agencies[0].phone || m.phone || v.client_phone || "-";
+                            return m.phone || v.client_phone || "-";
+                          })() }
                         ].map((row, i, arr) => (
                           <div key={i} style={{ display: "contents" }}>
                             <div style={{ background: "#f8f9fa", padding: "12px 16px", fontWeight: "bold", color: "#555", borderBottom: i === arr.length - 1 ? "none" : "1px solid #f1f5f9", display: "flex", alignItems: "center" }}>{row.l1}</div>

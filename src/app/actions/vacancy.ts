@@ -141,7 +141,7 @@ export async function getVacancies(options?: {
   try {
     let query = supabase
       .from('vacancies')
-      .select('*, members!vacancies_owner_id_fkey(name, email, role), vacancy_photos(url, sort_order)')
+      .select('*, members!vacancies_owner_id_fkey(name, email, role, phone, agencies(name, phone)), vacancy_photos(url, sort_order)')
       .order('created_at', { ascending: false });
 
     // 역할별 필터
@@ -157,9 +157,13 @@ export async function getVacancies(options?: {
     }
 
     const { data, error } = await query;
-    if (error) return { success: false, error: error.message };
+    if (error) {
+      console.error("DEBUG SUPABASE ERROR:", error);
+      return { success: false, error: error.message };
+    }
     return { success: true, data: data || [] };
   } catch (error: any) {
+    console.error("DEBUG TRY/CATCH ERROR:", error);
     return { success: false, error: error.message };
   }
 }

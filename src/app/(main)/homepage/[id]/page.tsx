@@ -266,7 +266,10 @@ export default function HomepageViewPage() {
               <TRow label="등록자명" value={(() => {
                 const m = vacancy.members;
                 if (!m) return vacancy.client_name || "-";
-                const name = m.name || vacancy.client_name || "-";
+                let name = m.name || vacancy.client_name || "-";
+                  if (m.role === 'REALTOR' && m.agencies && m.agencies.length > 0) {
+                    name = m.agencies[0].name || name;
+                  }
                 const tag = m.role === "REALTOR" ? "부동산" : m.role === "ADMIN" ? "관리자" : "일반";
                 return <span>{name} <span style={{ fontSize: 11, padding: "2px 6px", borderRadius: 4, marginLeft: 6, background: m.role === "REALTOR" ? "#dbeafe" : "#f3f4f6", color: m.role === "REALTOR" ? "#1e40af" : "#6b7280", fontWeight: 600 }}>{tag}</span></span>;
               })()} />
@@ -275,7 +278,12 @@ export default function HomepageViewPage() {
               <TRow label="주차가능 여부" value={vacancy.parking_spots ? `${vacancy.parking_spots}대` : "불가"} />
               <TRow label="입주가능일" value={vacancy.move_in_date || "즉시입주"} />
               <TRow label="관리비" value={vacancy.maintenance_fee ? `${Math.round(vacancy.maintenance_fee/10000)}만원` : "없음"} />
-              <TRow label="연락처" value={vacancy.client_phone || (vacancy.members?.email) || "-"} />
+              <TRow label="연락처" value={(() => {
+                const m = vacancy.members;
+                if (!m) return vacancy.client_phone || "-";
+                if (m.role === 'REALTOR' && m.agencies && m.agencies.length > 0) return m.agencies[0].phone || m.phone || vacancy.client_phone || "-";
+                return m.phone || vacancy.client_phone || "-";
+              })()} />
               <TRow label="상세설명" value={vacancy.description || "상세내용 없음"} />
             </div>
 
