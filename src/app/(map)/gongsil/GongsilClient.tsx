@@ -1417,7 +1417,6 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
             }}
             themeColor="#1a73e8"
             isPushedDown={activeFilterDropdown !== null}
-            isShiftedRight={showDetail && activeProperty !== null}
           />
 
           <div ref={mapRef} style={{ width: "100%", height: "100%", background: "#e8eaed" }}>

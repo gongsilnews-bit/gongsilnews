@@ -1,0 +1,2 @@
+﻿src/app/(map)/gongsil/GongsilClient.tsx(1420,13): error TS2322: Type '{ mapCenterRegion: { sido: string; gugun: string; dong: string; } | null; onSearchCoord: (lat: number, lng: number, zoomLevel: number | undefined) => void; themeColor: string; isPushedDown: boolean; isShiftedRight: boolean; }' is not assignable to type 'IntrinsicAttributes & MapSearchBarProps'.
+  Property 'isShiftedRight' does not exist on type 'IntrinsicAttributes & MapSearchBarProps'.
