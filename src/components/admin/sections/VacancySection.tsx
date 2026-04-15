@@ -18,6 +18,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
   const [dbVacancies, setDbVacancies] = useState<any[]>(initialData || []);
   const [editingVacancy, setEditingVacancy] = useState<any>(null);
   const [showRegisterForm, setShowRegisterForm] = useState(false);
+  const [activeTab, setActiveTab] = useState("전체");
 
   const fetchAllVacancies = async () => {
     const res = role === "admin"
@@ -43,6 +44,14 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
       />
     );
   }
+  const filteredVacancies = dbVacancies.filter(v => {
+    if (activeTab === "전체") return true;
+    if (activeTab === "승인대기") return v.status === "PENDING";
+    if (activeTab === "광고중") return v.status === "ACTIVE";
+    if (activeTab === "작성중") return v.status === "DRAFT";
+    if (activeTab === "반려") return v.status === "REJECTED";
+    return true;
+  });
 
   return (
     <div style={{ flex: 1, overflowY: "auto", padding: "20px 28px", background: bg }}>
@@ -51,6 +60,41 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
         <h1 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: 0 }}>공실관리</h1>
         <span style={{ fontSize: 13, color: "#ef4444", fontWeight: 600 }}>(광고 {dbVacancies.filter(v => v.status === 'ACTIVE').length}건 / 전체 {dbVacancies.length}건)</span>
       </div>
+
+      {/* 탭 네비게이션 (최고관리자용) */}
+      {role === "admin" && (
+        <div style={{ display: "flex", gap: 32, borderBottom: `1px solid ${border}`, marginBottom: 20 }}>
+          {["전체", "승인대기", "광고중", "작성중", "반려"].map(tab => {
+            const count = dbVacancies.filter(v => {
+              if (tab === "전체") return true;
+              if (tab === "승인대기") return v.status === "PENDING";
+              if (tab === "광고중") return v.status === "ACTIVE";
+              if (tab === "작성중") return v.status === "DRAFT";
+              if (tab === "반려") return v.status === "REJECTED";
+              return false;
+            }).length;
+
+            return (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                style={{
+                  background: "transparent", border: "none", fontSize: 15, fontWeight: activeTab === tab ? 800 : 500,
+                  color: activeTab === tab ? "#3b82f6" : textSecondary, cursor: "pointer",
+                  paddingBottom: 12, borderBottom: activeTab === tab ? "3px solid #3b82f6" : "3px solid transparent",
+                  position: "relative",
+                  display: "flex", alignItems: "center", gap: 6, transition: "color 0.2s"
+                }}
+              >
+                {tab}
+                {tab === "승인대기" && count > 0 && (
+                  <span style={{ background: "#ef4444", color: "#fff", fontSize: 11, fontWeight: 800, padding: "2px 6px", borderRadius: 10 }}>{count}</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* 메인 카드 */}
       <div style={{ background: cardBg, borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", overflow: "hidden" }}>
@@ -111,10 +155,10 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
               </tr>
             </thead>
             <tbody>
-              {dbVacancies.length === 0 ? (
-                <tr><td colSpan={10} style={{ padding: 40, textAlign: "center", color: textSecondary, fontSize: 14 }}>등록된 공실이 없습니다.</td></tr>
-              ) : dbVacancies.map((row, idx) => {
-                const formatAmount = (amt: number) => {
+              {filteredVacancies.length === 0 ? (
+                <tr><td colSpan={10} style={{ padding: 40, textAlign: "center", color: textSecondary, fontSize: 14 }}>조건에 맞는 공실이 없습니다.</td></tr>
+              ) : filteredVacancies.map((row, idx) => {
+                  const formatAmount = (amt: number) => {
                   if (!amt) return "";
                   const manwon = Math.round(amt / 10000);
                   if (manwon >= 10000) {
@@ -160,6 +204,10 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                           ) : (
                             <span style={{ display: "inline-block", padding: "4px 8px", borderRadius: 4, background: darkMode ? "#2e2a1a" : "#fef3c7", color: darkMode ? "#fbbf24" : "#92400e", fontWeight: 700, fontSize: 13 }}>대기중</span>
                           )
+                        ) : row.status === 'REJECTED' ? (
+                          <span style={{ display: "inline-block", padding: "4px 8px", borderRadius: 4, background: darkMode ? "#3b1e1e" : "#fef2f2", color: darkMode ? "#f87171" : "#ef4444", fontWeight: 700, fontSize: 13 }}>반려됨</span>
+                        ) : row.status === 'DRAFT' ? (
+                          <span style={{ display: "inline-block", padding: "4px 8px", borderRadius: 4, background: darkMode ? "#2d3748" : "#f1f5f9", color: darkMode ? "#a0aec0" : "#64748b", fontWeight: 700, fontSize: 13 }}>작성중</span>
                         ) : (
                           <button onClick={async () => {
                             const msg = isActive ? "광고를 종료하시겠습니까?" : "광고하시겠습니까?";
@@ -174,6 +222,10 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                       ) : (
                         isPending ? (
                           <span style={{ display: "inline-block", padding: "4px 8px", borderRadius: 4, background: darkMode ? "#2e2a1a" : "#fef3c7", color: darkMode ? "#fbbf24" : "#92400e", fontWeight: 700, fontSize: 13 }}>대기중</span>
+                        ) : row.status === 'REJECTED' ? (
+                          <span style={{ display: "inline-block", padding: "4px 8px", borderRadius: 4, background: darkMode ? "#3b1e1e" : "#fef2f2", color: darkMode ? "#f87171" : "#ef4444", fontWeight: 700, fontSize: 13 }}>반려됨</span>
+                        ) : row.status === 'DRAFT' ? (
+                          <span style={{ display: "inline-block", padding: "4px 8px", borderRadius: 4, background: darkMode ? "#2d3748" : "#f1f5f9", color: darkMode ? "#a0aec0" : "#64748b", fontWeight: 700, fontSize: 13 }}>작성중</span>
                         ) : isActive ? (
                           <span style={{ display: "inline-block", padding: "4px 8px", borderRadius: 4, background: darkMode ? "#1a2e1a" : "#d1fae5", color: darkMode ? "#4ade80" : "#065f46", fontWeight: 700, fontSize: 13 }}>광고중</span>
                         ) : (
