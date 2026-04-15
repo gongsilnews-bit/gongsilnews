@@ -6,7 +6,7 @@ import AuthModal from "./AuthModal";
 import SignupCompleteModal from "./SignupCompleteModal";
 import { createClient } from "@/utils/supabase/client";
 
-export default function MapTopAuthButtons() {
+export default function MapTopAuthButtons({ themeColor = "#1a73e8" }: { themeColor?: string }) {
   const router = useRouter();
   
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -130,13 +130,13 @@ export default function MapTopAuthButtons() {
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <button 
               onClick={() => { setAuthTab('login'); setIsAuthModalOpen(true); }} 
-              style={{ background: "#fff", border: "1px solid #1a73e8", color: "#1a73e8", padding: "5px 14px", borderRadius: "4px", fontSize: "13px", fontWeight: "bold", cursor: "pointer" }}
+              style={{ background: "#fff", border: `1px solid ${themeColor}`, color: themeColor, padding: "5px 14px", borderRadius: "4px", fontSize: "13px", fontWeight: "bold", cursor: "pointer" }}
             >
               로그인
             </button>
             <button 
               onClick={() => { setAuthTab('signup'); setIsAuthModalOpen(true); }} 
-              style={{ background: "#1a73e8", border: "1px solid #1a73e8", color: "#fff", padding: "5px 14px", borderRadius: "4px", fontSize: "13px", fontWeight: "bold", cursor: "pointer" }}
+              style={{ background: themeColor, border: `1px solid ${themeColor}`, color: "#fff", padding: "5px 14px", borderRadius: "4px", fontSize: "13px", fontWeight: "bold", cursor: "pointer" }}
             >
               회원가입
             </button>
