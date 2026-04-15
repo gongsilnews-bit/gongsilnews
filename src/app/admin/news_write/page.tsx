@@ -1132,6 +1132,9 @@ export default function NewsWritePage() {
             is_shorts: isShortsRatio,
             published_at: publishedAt,
             keywords,
+            location_name: location,
+            lat: articleCoords?.lat,
+            lng: articleCoords?.lng,
             thumbnail_url: finalThumbnailUrl || undefined,
             reject_reason: overrideRejectReason || undefined,
           });
