@@ -1091,11 +1091,9 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
 
 
 
-            {/* ── 공실 등록하기 버튼 ── */}
-            <button
-              type="button"
-              disabled={submitting}
-              onClick={async () => {
+            {/* ── 공실 등록하기 / 승인 / 반려 / 수정저장 버튼 ── */}
+            {(() => {
+              const handleSubmit = async (customStatus?: string) => {
                 if (!propertyType || !tradeType) {
                   alert("매물 분류와 거래유형은 필수입니다.");
                   return;
@@ -1113,7 +1111,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                 try {
                   const roleMap: Record<string, string> = { admin: 'ADMIN', realtor: 'REALTOR', user: 'USER' };
 
-                  const vacancyPayload = {
+                  const vacancyPayload: any = {
                     owner_id: ownerId || editData?.owner_id,
                     owner_role: roleMap[userRole] || 'USER',
                     property_type: propertyType,
@@ -1158,6 +1156,10 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                     infrastructure: Object.keys(infrastructure).length > 0 ? infrastructure : undefined,
                   };
 
+                  if (customStatus) {
+                    vacancyPayload.status = customStatus;
+                  }
+
                   let result;
                   if (editData?.id) {
                     // 수정 모드
@@ -1169,7 +1171,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                   }
 
                   if (!result.success) {
-                    alert("등록 실패: " + result.error);
+                    alert((editData ? "수정" : "등록") + " 실패: " + result.error);
                     return;
                   }
 
@@ -1187,30 +1189,61 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                     }
                   }
 
-                  const statusMsg = userRole === 'user'
-                    ? '공실이 등록되었습니다! 관리자 승인 후 광고가 시작됩니다.'
-                    : '공실 등록이 완료되었습니다!';
-                  alert(statusMsg);
+                  if (customStatus) {
+                     alert(customStatus === "ACTIVE" ? "매물이 승인(발행) 되었습니다." : "매물이 반려 처리되었습니다.");
+                  } else {
+                     const statusMsg = userRole === 'user'
+                       ? '공실이 등록되었습니다! 관리자 승인 후 광고가 시작됩니다.'
+                       : (editData ? '공실 수정이 완료되었습니다!' : '공실 등록이 완료되었습니다!');
+                     alert(statusMsg);
+                  }
                   onBack();
                 } catch (err: any) {
                   alert("오류 발생: " + err.message);
                 } finally {
                   setSubmitting(false);
                 }
-              }}
-              style={{
-                width: "100%", height: 56, border: "none", borderRadius: 10,
-                background: submitting ? "#9ca3af" : "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
-                color: "#fff", fontSize: 18, fontWeight: 800,
-                cursor: submitting ? "not-allowed" : "pointer",
-                letterSpacing: 1, marginTop: 32,
-                transition: "opacity 0.2s, transform 0.1s",
-              }}
-              onMouseEnter={(e) => { if (!submitting) e.currentTarget.style.opacity = "0.9"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.opacity = "1"; }}
-            >
-              {submitting ? (editData ? "수정 중..." : "등록 중...") : (editData ? "공실 수정하기" : "공실 등록하기")}
-            </button>
+              };
+
+              if (userRole === "admin" && editData) {
+                return (
+                  <div style={{ display: "flex", gap: 12, marginTop: 32 }}>
+                    <button type="button" disabled={submitting} onClick={() => handleSubmit("ACTIVE")}
+                      style={{ flex: 1, height: 56, background: "#10b981", color: "#fff", border: "none", borderRadius: 10, fontSize: 16, fontWeight: 800, cursor: submitting ? "not-allowed" : "pointer" }}>
+                      ✔ 승인 (바로 발행)
+                    </button>
+                    <button type="button" disabled={submitting} onClick={() => handleSubmit("REJECTED")}
+                      style={{ flex: 1, height: 56, background: "#ef4444", color: "#fff", border: "none", borderRadius: 10, fontSize: 16, fontWeight: 800, cursor: submitting ? "not-allowed" : "pointer" }}>
+                      반려 (보류)
+                    </button>
+                    <button type="button" disabled={submitting} onClick={() => handleSubmit()}
+                      style={{ flex: 1, height: 56, background: darkMode ? "#4b5563" : "#475569", color: "#fff", border: "none", borderRadius: 10, fontSize: 16, fontWeight: 800, cursor: submitting ? "not-allowed" : "pointer" }}>
+                      수정저장
+                    </button>
+                  </div>
+                );
+              }
+
+              return (
+                <button
+                  type="button"
+                  disabled={submitting}
+                  onClick={() => handleSubmit()}
+                  style={{
+                    width: "100%", height: 56, border: "none", borderRadius: 10,
+                    background: submitting ? "#9ca3af" : "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
+                    color: "#fff", fontSize: 18, fontWeight: 800,
+                    cursor: submitting ? "not-allowed" : "pointer",
+                    letterSpacing: 1, marginTop: 32,
+                    transition: "opacity 0.2s, transform 0.1s",
+                  }}
+                  onMouseEnter={(e) => { if (!submitting) e.currentTarget.style.opacity = "0.9"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.opacity = "1"; }}
+                >
+                  {submitting ? (editData ? "수정 중..." : "등록 중...") : (editData ? "공실 수정하기" : "공실 등록하기")}
+                </button>
+              );
+            })()}
           </div>
         </div>
 
