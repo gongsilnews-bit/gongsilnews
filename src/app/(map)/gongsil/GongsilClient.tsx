@@ -1400,6 +1400,13 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
         {/* 우측: 지도 영역 */}
         <div style={{ flex: 1, height: "100%", position: "relative", minWidth: 0, background: "#eee" }}>
           
+          {/* 서울블럭지도 / 지도검색 Floating Header at Top Right */}
+          <div style={{ position: "absolute", top: 16, right: 16, zIndex: 10, display: "flex", alignItems: "baseline", gap: 10, background: "rgba(255,255,255,0.95)", padding: "8px 14px", borderRadius: 6, boxShadow: "0 2px 10px rgba(0,0,0,0.1)", border: "1px solid #e5e7eb" }}>
+            <Link href="/homepage" style={{ fontSize: 13, fontWeight: 600, color: "#6b7280", textDecoration: "none" }}>서울블럭지도</Link>
+            <span style={{ color: "#d1d5db", fontSize: 14 }}>|</span>
+            <h2 style={{ fontSize: 16, fontWeight: 800, color: "#2845B3", margin: 0 }}>지도검색</h2>
+          </div>
+
           <MapSearchBar 
             mapCenterRegion={mapCenterRegion}
             onSearchCoord={(lat, lng, zoomLevel) => {

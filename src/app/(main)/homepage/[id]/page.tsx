@@ -9,6 +9,38 @@ const LABEL: React.CSSProperties = { width: 120, fontSize: 13, fontWeight: 700, 
 const VAL: React.CSSProperties = { flex: 1, fontSize: 13, color: "#111", padding: "10px 14px" };
 const ROW: React.CSSProperties = { display: "flex", borderBottom: "1px solid #e5e7eb" };
 
+const OptionIcon = ({ name }: { name: string }) => {
+  const sz = 26;
+  const str = 1.8;
+  switch (name) {
+    case "에어컨":
+      return <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={str} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="6" width="18" height="8" rx="2"/><path d="M7 14v4"/><path d="M17 14v4"/><path d="M12 14v4"/></svg>;
+    case "침대":
+      return <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={str} strokeLinecap="round" strokeLinejoin="round"><path d="M2 4v16"/><path d="M2 8h18a2 2 0 0 1 2 2v10"/><path d="M2 17h20"/><path d="M6 8v9"/></svg>;
+    case "도어락":
+    case "전자도어락":
+      return <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={str} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>;
+    case "전자렌지":
+    case "전자레인지":
+      return <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={str} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M17 10h.01"/><path d="M17 14h.01"/><path d="M7 12h5"/></svg>;
+    case "비데":
+      return <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={str} strokeLinecap="round" strokeLinejoin="round"><path d="M9 22H15C20 22 22 20 22 15V9C22 4 20 2 15 2H9C4 2 2 4 2 9V15C2 20 4 22 9 22Z"/><path d="M7 12.5L10 15.5L17 8.5"/></svg>;
+    case "TV":
+      return <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={str} strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"/><polyline points="17 2 12 7 7 2"/></svg>;
+    case "옷장":
+      return <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={str} strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M12 2v20"/><path d="M8 12h.01"/><path d="M16 12h.01"/></svg>;
+    case "세탁기":
+      return <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={str} strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><circle cx="12" cy="13" r="5"/><path d="M8 6h.01"/><path d="M10 6h.01"/></svg>;
+    case "냉장고":
+      return <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={str} strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M5 10h14"/><path d="M9 14v2"/><path d="M9 5v2"/></svg>;
+    case "가스레인지":
+    case "인덕션":
+      return <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={str} strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="6" width="16" height="14" rx="2"/><path d="M4 10h16"/><circle cx="8" cy="15" r="2"/><circle cx="16" cy="15" r="2"/></svg>;
+    default:
+      return <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={str} strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>;
+  }
+};
+
 export default function HomepageViewPage() {
   const params = useParams();
   const router = useRouter();
@@ -57,6 +89,7 @@ export default function HomepageViewPage() {
         }
       }
       setLoading(false);
+      setTimeout(() => window.scrollTo(0, 0), 10);
     }
     load();
   }, [id]);
@@ -139,7 +172,7 @@ export default function HomepageViewPage() {
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "24px 16px" }}>
 
         {/* Breadcrumb */}
-        <div style={{ fontSize: 13, color: "#888", marginBottom: 16 }}>
+        <div style={{ fontSize: 13, color: "#888", marginBottom: 16, paddingLeft: 24 }}>
           <span style={{ cursor: "pointer", color: BRAND, fontWeight: 600 }} onClick={() => router.push("/homepage")}>매물목록</span>
           <span style={{ margin: "0 8px" }}>›</span>
           <span>{vacancy.building_name || vacancy.dong || "매물 상세"}</span>
@@ -151,22 +184,54 @@ export default function HomepageViewPage() {
           {/* Left Column */}
           <div style={{ flex: 1, minWidth: 0, background: "#fff", padding: "0 24px", borderRadius: 8, boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
 
-            {/* Title + Price */}
-            <div style={{ padding: "30px 0 20px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                   <span style={{ fontSize: 11, fontWeight: "bold", color: "#e53e3e", border: "1px solid #fed7d7", padding: "4px 8px", background: "#fff5f5", borderRadius: 4 }}>법정수수료</span>
-                   <span style={{ fontSize: 13, color: "#888" }}>등록 {vacancy.created_at ? new Date(vacancy.created_at).toLocaleDateString("ko-KR") : ""}</span>
-                </div>
-                <div style={{ display: "flex", gap: 12 }}>
-                   <span style={{ fontSize: 13, color: "#ea580c", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>🚨 허위매물신고</span>
-                   <span style={{ fontSize: 13, color: "#555", cursor: "pointer" }}>인쇄</span>
+            {/* 사진 슬라이더 (맨 앞으로 이동) */}
+            {photos.length > 0 && (
+              <div style={{ position: "relative", marginTop: 24, marginBottom: 20, width: "100%", height: 450, borderRadius: 8, overflow: "hidden", background: "#f1f5f9" }}>
+                <img src={photos[photoIdx]} alt={`사진 ${photoIdx + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                {photos.length > 1 && (
+                  <>
+                    <button onClick={() => setPhotoIdx((prev) => (prev > 0 ? prev - 1 : photos.length - 1))} style={{ position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)", background: "rgba(0,0,0,0.5)", color: "#fff", border: "none", width: 44, height: 44, borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, transition: "0.2s" }} onMouseEnter={e => e.currentTarget.style.background="rgba(0,0,0,0.8)"} onMouseLeave={e => e.currentTarget.style.background="rgba(0,0,0,0.5)"}>‹</button>
+                    <button onClick={() => setPhotoIdx((prev) => (prev < photos.length - 1 ? prev + 1 : 0))} style={{ position: "absolute", right: 16, top: "50%", transform: "translateY(-50%)", background: "rgba(0,0,0,0.5)", color: "#fff", border: "none", width: 44, height: 44, borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, transition: "0.2s" }} onMouseEnter={e => e.currentTarget.style.background="rgba(0,0,0,0.8)"} onMouseLeave={e => e.currentTarget.style.background="rgba(0,0,0,0.5)"}>›</button>
+                    <div style={{ position: "absolute", bottom: 16, right: 16, background: "rgba(0,0,0,0.6)", color: "#fff", padding: "6px 14px", borderRadius: 20, fontSize: 13, fontWeight: "bold", zIndex: 10 }}>
+                      {photoIdx + 1} / {photos.length}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* Row 1: Badges & Links */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 16, marginBottom: 12 }}>
+               <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                 <span style={{ fontSize: 13, fontWeight: 800, color: "#fa5252", border: "1px solid #fa5252", padding: "4px 12px", background: "#fff", borderRadius: 4 }}>{vacancy.realtor_commission || "법정수수료"}</span>
+                 <span style={{ fontSize: 13, color: "#888", fontWeight: 600 }}>등록 {vacancy.created_at ? new Date(vacancy.created_at).toLocaleDateString("ko-KR") : ""}</span>
+               </div>
+               <div style={{ display: "flex", gap: 12 }}>
+                  <span style={{ fontSize: 13, color: "#fa5252", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>🚨 허위매물신고</span>
+                  <span style={{ fontSize: 13, color: "#999", cursor: "pointer" }}>인쇄</span>
+               </div>
+            </div>
+
+            {/* Row 2: Title/Price & Buttons */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 16 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 15, color: "#555", marginBottom: 6, fontWeight: 600 }}>{vacancy.dong} {vacancy.building_name || "단독/다가구"}</div>
+                <div style={{ fontSize: 32, fontWeight: 900, color: "#111", letterSpacing: "-1px" }}>
+                  {vacancy.trade_type} {getPriceText(vacancy)}
                 </div>
               </div>
-              <div style={{ fontSize: 15, color: "#555", marginBottom: 6, fontWeight: 600 }}>{vacancy.dong} {vacancy.building_name || "단독/다가구"}</div>
-              <div style={{ fontSize: 32, fontWeight: 900, color: "#1a73e8", marginBottom: 12, letterSpacing: "-1px" }}>
-                {vacancy.trade_type} {getPriceText(vacancy)}
+              <div style={{ display: "flex", gap: 8, paddingBottom: 4 }}>
+                <button style={{ width: 44, height: 44, borderRadius: 8, border: "1px solid #e2e8f0", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#64748b", transition: "0.2s" }} onMouseEnter={e=>e.currentTarget.style.background="#f1f5f9"} onMouseLeave={e=>e.currentTarget.style.background="#fff"} title="찜하기">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"></path></svg>
+                </button>
+                <button style={{ width: 44, height: 44, borderRadius: 8, border: "1px solid #e2e8f0", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#64748b", transition: "0.2s" }} onMouseEnter={e=>e.currentTarget.style.background="#f1f5f9"} onMouseLeave={e=>e.currentTarget.style.background="#fff"} title="공유하기">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"></line><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"></line></svg>
+                </button>
               </div>
+            </div>
+            
+            {/* Row 3: Detail Specs */}
+            <div style={{ paddingBottom: 20 }}>
               <div style={{ fontSize: 14, color: "#666", marginBottom: 8 }}>
                 아파트 · 오피스텔 · 방/욕실수 {vacancy.rooms || 0}/{vacancy.bathrooms || 0} · 공급/전용 {Math.round((vacancy.area_m2 || 0)*1.3)}m²/{vacancy.area_m2 || 0}m²
               </div>
@@ -178,18 +243,13 @@ export default function HomepageViewPage() {
             </div>
 
             {/* Tabs (Visual) */}
-            <div style={{ display: "flex", marginBottom: 30, alignItems: "stretch", position: "sticky", top: 60, zIndex: 50 }}>
+            <div style={{ display: "flex", marginBottom: 30, alignItems: "stretch", position: "sticky", top: 80, zIndex: 50, background: '#fff' }}>
               <div onClick={() => scrollToRef(infoRef, 'info')} style={{ flex: 1, textAlign: "center", padding: "16px 0", fontWeight: "bold", fontSize: 16, color: activeTab === 'info' ? "#111" : "#888", background: activeTab === 'info' ? "#fff" : "#f8fafc", borderTop: activeTab === 'info' ? "2px solid #111" : "1px solid #e5e7eb", borderLeft: "1px solid #e5e7eb", borderRight: "1px solid #e5e7eb", borderBottom: activeTab === 'info' ? "1px solid #fff" : "1px solid #e5e7eb", cursor: "pointer", zIndex: activeTab === 'info' ? 1 : 0, marginTop: activeTab === 'info' ? 0 : 1 }}>매물정보</div>
               <div onClick={() => scrollToRef(locationRef, 'location')} style={{ flex: 1, textAlign: "center", padding: "16px 0", fontWeight: "bold", fontSize: 16, color: activeTab === 'location' ? "#111" : "#888", background: activeTab === 'location' ? "#fff" : "#f8fafc", borderTop: activeTab === 'location' ? "2px solid #111" : "1px solid #e5e7eb", borderLeft: activeTab === 'location' ? "1px solid #e5e7eb" : "none", borderRight: activeTab === 'location' ? "1px solid #e5e7eb" : "none", borderBottom: activeTab === 'location' ? "1px solid #fff" : "1px solid #e5e7eb", cursor: "pointer", zIndex: activeTab === 'location' ? 1 : 0, marginTop: activeTab === 'location' ? 0 : 1 }}>위치</div>
               <div onClick={() => scrollToRef(envRef, 'env')} style={{ flex: 1, textAlign: "center", padding: "16px 0", fontWeight: "bold", fontSize: 16, color: activeTab === 'env' ? "#111" : "#888", background: activeTab === 'env' ? "#fff" : "#f8fafc", borderTop: activeTab === 'env' ? "2px solid #111" : "1px solid #e5e7eb", borderLeft: activeTab === 'env' ? "1px solid #e5e7eb" : "none", borderRight: "1px solid #e5e7eb", borderBottom: activeTab === 'env' ? "1px solid #fff" : "1px solid #e5e7eb", cursor: "pointer", zIndex: activeTab === 'env' ? 1 : 0, marginTop: activeTab === 'env' ? 0 : 1 }}>주변환경</div>
             </div>
 
-            {/* 사진 표시 (리스트 상단에 사진이 있으면 출력) */}
-            {photos.length > 0 && (
-              <div style={{ marginBottom: 30 }}>
-                <img src={photos[0]} alt="메인사진" style={{ width: "100%", height: 400, objectFit: "cover", borderRadius: 8 }} />
-              </div>
-            )}
+            {/* 사진 표시 (리스트 위치 이동됨) */}
 
             {/* ── 매물정보 Table ── */}
             <div ref={infoRef} style={{ background: "#fff", marginBottom: 50, scrollMarginTop: 130 }}>
@@ -213,7 +273,9 @@ export default function HomepageViewPage() {
                 <div style={{ display: "flex", gap: 30, flexWrap: "wrap", padding: "20px 0" }}>
                   {vacancy.options.map((opt: string) => (
                     <div key={opt} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-                       <div style={{ width: 60, height: 60, borderRadius: "50%", background: "#f8f9fa", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, border: "1px solid #eee" }}>✓</div>
+                       <div style={{ width: 60, height: 60, borderRadius: "50%", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", color: "#333" }}>
+                         <OptionIcon name={opt} />
+                       </div>
                        <span style={{ fontSize: 14, color: "#444", fontWeight: 600 }}>{opt}</span>
                     </div>
                   ))}
@@ -256,22 +318,30 @@ export default function HomepageViewPage() {
             )}
 
             {/* ── 댓글상담 ── */}
-            <div style={{ background: "#f8f9fa", padding: 30, borderRadius: 12, border: "1px solid #e5e7eb", marginBottom: 40 }}>
-              <div style={{ fontSize: 16, fontWeight: "bold", marginBottom: 16 }}>
-                댓글상담 <span style={{ color: "#1a73e8" }}>1</span>개
+            <div style={{ marginTop: 20, borderTop: "2px solid #111", paddingTop: "30px", paddingBottom: "40px", marginBottom: 50 }}>
+              <div style={{ fontSize: 16, fontWeight: 800, color: "#222", marginBottom: 15, display: "flex", alignItems: "center", gap: 8 }}>
+                댓글상담 <span style={{ color: "#1a73e8", fontSize: 15 }}>0개</span>
               </div>
-              <div style={{ background: "#fff", border: "1px solid #d1d5db", borderRadius: 6, overflow: "hidden", marginBottom: 30 }}>
-                <textarea placeholder="로그인 후 이용하실 수 있습니다." style={{ width: "100%", height: 100, border: "none", padding: "16px", outline: "none", resize: "none", fontSize: 15 }} disabled></textarea>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 16px", background: "#f8fafc", borderTop: "1px solid #e2e8f0" }}>
-                  <label style={{ fontSize: 14, color: "#475569", display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}><input type="checkbox" style={{ zoom: 1.2 }} /> 비밀글</label>
-                  <button style={{ background: "#cbd5e1", color: "#fff", border: "none", padding: "8px 24px", borderRadius: 4, cursor: "pointer", fontWeight: "bold", fontSize: 14 }}>등록</button>
+              
+              {/* 입력 영역 */}
+              <div style={{ marginBottom: 30, border: "1px solid #ddd", borderRadius: 6, overflow: "hidden", background: "#fff", position: "relative" }}>
+                <textarea
+                  placeholder="로그인 후 이용하실 수 있습니다."
+                  style={{ width: "100%", minHeight: 90, border: "none", outline: "none", padding: "14px 15px", fontSize: 14, color: "#333", resize: "vertical", fontFamily: "inherit", background: "#fff", boxSizing: "border-box" }}
+                  disabled
+                />
+                <div style={{ padding: "10px 15px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#fafafa", borderTop: "1px solid #eee" }}>
+                  <label style={{ fontSize: 13, color: "#555", display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontWeight: "bold" }}>
+                    <input type="checkbox" style={{ width: 16, height: 16 }} />
+                    비밀글
+                  </label>
+                  <button disabled style={{ background: "#ccc", color: "#fff", border: "none", padding: "8px 24px", borderRadius: 4, fontWeight: "bold", cursor: "default", fontSize: 14, fontFamily: "inherit" }}>등록</button>
                 </div>
               </div>
 
-              {/* Mock comment */}
-              <div style={{ borderBottom: "1px solid #e2e8f0", paddingBottom: 20, marginBottom: 20 }}>
-                <div style={{ fontSize: 14, fontWeight: "bold", color: "#1e293b", marginBottom: 8 }}>공실뉴스 <span style={{ color: "#94a3b8", fontWeight: "normal", fontSize: 12, marginLeft: 10 }}>2026. 04. 14. 오전 10:17</span></div>
-                <div style={{ fontSize: 15, color: "#334155", lineHeight: 1.5 }}>해당 매물 관심있습니다. 연락바랍니다.</div>
+              {/* 댓글 리스트 */}
+              <div>
+                <div style={{ textAlign: "center", padding: 30, color: "#888", fontSize: 13 }}>아직 등록된 문의가 없습니다.</div>
               </div>
             </div>
 

@@ -38,6 +38,27 @@ const SORT_OPTIONS = [
 
 const BRAND = "#2845B3";
 
+const ThumbnailRoadview = ({ lat, lng }: { lat: number, lng: number }) => {
+  const rvRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!rvRef.current) return;
+    const kakao = (window as any).kakao;
+    if (!kakao?.maps?.Roadview) return;
+    const rv = new kakao.maps.Roadview(rvRef.current);
+    const rvClient = new kakao.maps.RoadviewClient();
+    const pos = new kakao.maps.LatLng(lat, lng);
+    rvClient.getNearestPanoId(pos, 50, (panoId: any) => {
+      if (panoId) rv.setPanoId(panoId, pos);
+      else if (rvRef.current) rvRef.current.innerHTML = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#bbb;font-size:12px;background:#f3f4f6;">No Photo</div>';
+    });
+  }, [lat, lng]);
+  return (
+    <div style={{ width: "100%", height: "100%", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
+      <div ref={rvRef} style={{ width: 300, height: 300, flexShrink: 0, background: "#f3f4f6" }} />
+    </div>
+  );
+};
+
 // Extract unique sigungu list from GeoJSON data
 function extractSigunguList(geojson: any): string[] {
   if (!geojson?.features) return [];
@@ -95,6 +116,7 @@ export default function HomepagePage() {
   const [geoData, setGeoData] = useState<any>(null);
   const [customBlocks, setCustomBlocks] = useState<any[]>([]);
   const [sigunguList, setSigunguList] = useState<string[]>([]);
+  const [mapCenterRegion, setMapCenterRegion] = useState<{ sido: string; gugun: string; dong: string } | null>(null);
   const mapRef = useRef<HTMLDivElement>(null);
   const kakaoMapRef = useRef<any>(null);
   const prevSigunguRef = useRef(""); // 시군구 변경 감지용
@@ -192,6 +214,28 @@ export default function HomepagePage() {
     // Set zoom restrictions based on the requirement for block maps
     kakaoMapRef.current.setMinLevel(4); // Max zoom in (1 block clearly fills the center)
     kakaoMapRef.current.setMaxLevel(8); // Max zoom out (Multiple blocks outline visible)
+
+    kakao.maps.event.addListener(kakaoMapRef.current, 'idle', () => {
+      const center = kakaoMapRef.current.getCenter();
+      const geocoder = new kakao.maps.services.Geocoder();
+      geocoder.coord2RegionCode(center.getLng(), center.getLat(), (result: any, status: any) => {
+        if (status === kakao.maps.services.Status.OK) {
+          const bCode = result.find((res: any) => res.region_type === 'B');
+          if (bCode) {
+            if (bCode.region_1depth_name !== '서울특별시') {
+              alert("현재 페이지는 서울 전용 지역 검색 페이지입니다. 전국 지도검색으로 이동하시기 바랍니다.");
+              window.location.href = "/gongsil";
+              return;
+            }
+            setMapCenterRegion({
+              sido: bCode.region_1depth_name,
+              gugun: bCode.region_2depth_name,
+              dong: bCode.region_3depth_name,
+            });
+          }
+        }
+      });
+    });
   }, [mapLoaded]);
 
   // Render polygons on map when sigungu changes
@@ -265,6 +309,7 @@ export default function HomepagePage() {
         // Click → filter
         kakao.maps.event.addListener(polygon, "click", () => {
           setSelectedDongs(prev => prev.includes(dongName) ? prev.filter(d => d !== dongName) : [...prev, dongName]);
+          setMapCenterRegion({ sido, gugun: sigungu, dong: dongName });
           setCurrentPage(1);
         });
       });
@@ -309,6 +354,7 @@ export default function HomepagePage() {
       });
       kakao.maps.event.addListener(polygon, "click", () => {
         setSelectedDongs(prev => prev.includes(block.name) ? prev.filter(d => d !== block.name) : [...prev, block.name]);
+        setMapCenterRegion({ sido, gugun: block.sigungu || sigungu, dong: block.name });
         setCurrentPage(1);
       });
     });
@@ -401,18 +447,18 @@ export default function HomepagePage() {
 
   return (
     <div style={{ background: "#fff", minHeight: "100vh" }}>
-      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "24px 16px" }}>
-
-        {/* ── 1. Header Tabs ── */}
-        <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 16, paddingBottom: 8 }}>
-          <h2 style={{ fontSize: 20, fontWeight: 800, color: BRAND, margin: 0 }}>서울블럭지도</h2>
-          <span style={{ color: "#d1d5db", fontSize: 18 }}>|</span>
-          <a href="/gongsil" style={{ fontSize: 16, fontWeight: 600, color: "#6b7280", textDecoration: "none" }}>지도검색</a>
-        </div>
+      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 16px 24px 16px" }}>
 
         {/* ── 2. Map Container ── */}
         <div style={{ marginBottom: 0 }}>
-          <div ref={mapRef} style={{ width: "100%", height: 500, borderRadius: 8, border: "1px solid #d1d5db", background: "#e8eaed", position: "relative", overflow: "hidden" }}>
+          <div ref={mapRef} style={{ width: "100%", height: 500, borderRadius: "0 0 8px 8px", border: "1px solid #d1d5db", borderTop: "none", background: "#e8eaed", position: "relative", overflow: "hidden" }}>
+            
+            {/* 서울블럭지도 / 지도검색 Floating Header at Top Right */}
+            <div style={{ position: "absolute", top: 16, right: 16, zIndex: 10, display: "flex", alignItems: "baseline", gap: 10, background: "rgba(255,255,255,0.95)", padding: "8px 14px", borderRadius: 6, boxShadow: "0 2px 10px rgba(0,0,0,0.1)", border: "1px solid #e5e7eb" }}>
+              <h2 style={{ fontSize: 16, fontWeight: 800, color: BRAND, margin: 0 }}>서울블럭지도</h2>
+              <span style={{ color: "#d1d5db", fontSize: 14 }}>|</span>
+              <a href="/gongsil" style={{ fontSize: 13, fontWeight: 600, color: "#6b7280", textDecoration: "none" }}>지도검색</a>
+            </div>
             {!mapLoaded && (
               <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", color: "#888", fontSize: 14 }}>
                 <span style={{ display: "inline-block", width: 24, height: 24, border: "3px solid #ddd", borderTop: `3px solid ${BRAND}`, borderRadius: "50%", animation: "spin 1s linear infinite", marginRight: 10 }}></span>
@@ -430,6 +476,7 @@ export default function HomepagePage() {
             `}</style>
             {mapLoaded && (
               <MapSearchBar 
+                mapCenterRegion={mapCenterRegion}
                 onSearchCoord={handleSearchCoord} 
                 onRegionSelect={(sSido, sGugun, sDong) => {
                   if (sSido && sSido !== "시/도 선택") setSido(sSido);
@@ -482,7 +529,7 @@ export default function HomepagePage() {
             <select 
               value={category} 
               onChange={e => setCategory(e.target.value)}
-              style={{ padding: "8px 12px", border: "1px solid #ccc", borderRadius: 4, fontSize: 14, outline: "none", cursor: "pointer", color: "#333" }}
+              style={{ width: category ? Math.max(110, category.length * 14 + 50) : 110, padding: "8px 12px", border: "1px solid #ccc", borderRadius: 4, fontSize: 14, outline: "none", cursor: "pointer", color: "#333" }}
             >
               <option value="">전체물건 ▼</option>
               {["아파트·오피스텔", "빌라·주택", "원룸·투룸(풀옵션)", "상가·사무실·건물·공장·토지", "분양"].map(item => (
@@ -530,8 +577,8 @@ export default function HomepagePage() {
               </div>
             )}
 
-            <button style={{ padding: "7px 16px", border: `1px solid #111`, background: "#fff", color: "#111", fontSize: 14, borderRadius: 4, cursor: "pointer", fontWeight: 700 }}>
-              검색 🔍
+            <button style={{ padding: "6px 16px", background: "#1a365d", border: "1px solid #1a365d", borderRadius: 4, color: "#fff", fontSize: 13, fontWeight: "bold", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+              검색 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
             </button>
           </div>
 
@@ -706,18 +753,23 @@ export default function HomepagePage() {
                   <div style={{ width: 130, height: 100, overflow: "hidden", flexShrink: 0, background: "#f3f4f6", border: "1px solid #e5e7eb" }}>
                     {v.photos?.length > 0 ? (
                       <img src={v.photos[0]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ) : v.lat && v.lng && mapLoaded ? (
+                      <ThumbnailRoadview lat={v.lat} lng={v.lng} />
                     ) : (
                       <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#bbb", fontSize: 12 }}>No Photo</div>
                     )}
                   </div>
-
                   {/* 3. Main Info */}
                   <div style={{ flex: 1, minWidth: 0, paddingLeft: 20 }}>
-                    <div style={{ display: "inline-block", background: "#3b82f6", color: "#fff", fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 12, marginBottom: 6 }}>
-                      공실매물 {v.created_at ? fmtDate(v.created_at) : ""}
+                    <div style={{ display: "flex", gap: 6, marginBottom: 4, alignItems: "center" }}>
+                      <span style={{ display: "inline-block", background: "#fff", color: "#fa5252", border: "1px solid #fa5252", fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 4 }}>
+                        {v.realtor_commission || "법정수수료"}
+                      </span>
+                      <span style={{ display: "inline-block", fontSize: 11, color: "#fa5252", border: "1px solid #fa5252", padding: "2px 6px", fontWeight: "bold", borderRadius: 4, background: "#fff" }}>
+                        {v.owner_role === 'REALTOR' || v.members?.role === 'REALTOR' ? '부동산' : '일반'}
+                      </span>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-                      <span style={{ fontSize: 11, color: "#1d4ed8", border: "1px solid #1d4ed8", padding: "1px 4px", fontWeight: "bold" }}>VIP</span>
                       <span style={{ fontSize: 16, fontWeight: 700, color: "#111", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {v.building_name || `${v.sigungu || ""} ${v.dong || ""} 매물`} {v.property_type && `(${v.property_type})`}
                       </span>
@@ -726,7 +778,7 @@ export default function HomepagePage() {
                     <div style={{ fontSize: 13, color: "#555", lineHeight: 1.5 }}>
                       공급 {v.area_m2 ? Math.round(v.area_m2 * 1.2) : 0}m²({v.area_m2 ? Math.round(v.area_m2 * 1.2 / 3.3) : 0}P) / 
                       전용 {v.area_m2 || 0}m²({v.area_m2 ? Math.round(v.area_m2 / 3.3) : 0}P) 
-                      <span style={{ color: "#3b82f6", marginLeft: 4 }}>{v.property_type}{v.sub_category ? `/${v.sub_category}` : ""}</span> 공실
+                      <span style={{ color: "#1a365d", marginLeft: 4 }}>{v.property_type}{v.sub_category ? `/${v.sub_category}` : ""}</span> 공실
                     </div>
                     <div style={{ fontSize: 13, color: "#777", marginTop: 2 }}>
                       {v.floor || "해당층"}/{v.total_floors || "전체층"}, 
@@ -761,8 +813,8 @@ export default function HomepagePage() {
 
                   {/* Expanded Details */}
                   {expandedIds.includes(v.id) && (
-                    <div style={{ padding: "0 24px 24px 24px", background: "#fff", cursor: "default" }} onClick={e => e.stopPropagation()}>
-                      <div style={{ borderTop: "1px solid #e2e8f0", borderBottom: "1px solid #e2e8f0", display: "grid", gridTemplateColumns: "120px 1fr 120px 1fr", fontSize: 14 }}>
+                    <div style={{ padding: "0 24px 24px 40px", background: "#fff", cursor: "default" }} onClick={e => e.stopPropagation()}>
+                      <div style={{ borderTop: "1px solid #e2e8f0", borderBottom: "1px solid #e2e8f0", borderLeft: "1px solid #e2e8f0", display: "grid", gridTemplateColumns: "130px 1fr 130px 1fr", fontSize: 14 }}>
                         {[
                           { l1: "매물번호", v1: String(v.id).split('-')[0].toUpperCase(), l2: "방/욕실수", v2: `${v.rooms || 0}개 / ${v.bathrooms || 0}개` },
                           { l1: "소재지", v1: `${v.sido} ${v.sigungu} ${v.dong} ${v.detail_addr || ""}`.trim(), l2: "방향", v2: v.direction || "남향" },
@@ -815,12 +867,7 @@ export default function HomepagePage() {
           </div>
         </div>
 
-        {/* ── 7. Bottom links ── */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 16, padding: "32px 0", borderTop: "1px solid #e5e7eb", marginTop: 32 }}>
-          {["공공데이터포털", "서울특별시", "국토교통부 실거래가"].map((t) => (
-            <span key={t} style={{ padding: "8px 20px", border: "1px solid #d1d5db", borderRadius: 20, fontSize: 13, color: "#6b7280", cursor: "pointer", fontWeight: 500 }}>{t}</span>
-          ))}
-        </div>
+        {/* Removed duplicate bottom links */}
       </div>
 
       <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
