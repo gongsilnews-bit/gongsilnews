@@ -123,10 +123,9 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
               <div className="article-subtitle-box">{article.subtitle}</div>
             )}
 
-            {/* 기사 본문 */}
             <div className="article-body">
-              {/* 대표 이미지 또는 동영상 — 본문에 이미 포함된 경우 중복 표시 안 함 */}
-              {hasYoutube && !(article.content && article.content.includes('youtube.com/embed')) ? (
+              {/* 대표 이미지 또는 동영상 */}
+              {hasYoutube ? (
                 <div className="article-img-wrap">
                   <div style={{
                     position: "relative",
@@ -148,7 +147,7 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
                     )}
                   </div>
                 </div>
-              ) : !hasYoutube && article.thumbnail_url && !(article.content && article.content.includes(article.thumbnail_url)) ? (
+              ) : !hasYoutube && article.thumbnail_url ? (
                 <div className="article-img-wrap">
                   <img
                     src={article.thumbnail_url}
@@ -158,9 +157,9 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
                 </div>
               ) : null}
 
-              {/* 본문 HTML 렌더링 */}
+              {/* 본문 HTML 렌더링 (유튜브 iframe 중복 제거) */}
               {article.content && (
-                <div suppressHydrationWarning dangerouslySetInnerHTML={{ __html: article.content }} />
+                <div suppressHydrationWarning dangerouslySetInnerHTML={{ __html: article.content.replace(/<iframe[^>]*youtube\.com\/embed[^>]*>.*?<\/iframe>/gi, '') }} />
               )}
             </div>
 
