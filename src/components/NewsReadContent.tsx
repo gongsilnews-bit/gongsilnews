@@ -137,12 +137,10 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
                   <div style={{
                     position: "relative",
                     width: "100%",
-                    paddingBottom: article.is_shorts ? "177.78%" : "56.25%",
                     maxWidth: article.is_shorts ? 315 : "100%",
+                    aspectRatio: article.is_shorts ? "9 / 16" : "16 / 9",
                     margin: "0 auto",
-                    height: 0,
                     overflow: "hidden",
-
                   }}>
                     {mounted && (
                       <iframe
