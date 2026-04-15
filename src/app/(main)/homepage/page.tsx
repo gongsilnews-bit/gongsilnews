@@ -82,12 +82,16 @@ export default function HomepagePage() {
 
   const [category, setCategory] = useState("");
   const [tradeType, setTradeType] = useState("");
+  const [maxSalePrice, setMaxSalePrice] = useState("");
+  const [maxDeposit, setMaxDeposit] = useState("");
+  const [maxMonthlyRent, setMaxMonthlyRent] = useState("");
   const [sido, setSido] = useState("서울특별시");
   const [sigungu, setSigungu] = useState(""); // 구 선택
   const [selectedDongs, setSelectedDongs] = useState<string[]>([]); // 블럭(동) 복수 선택
   const [sortBy, setSortBy] = useState("latest");
   const [currentPage, setCurrentPage] = useState(1);
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [expandedIds, setExpandedIds] = useState<string[]>([]);
   const [geoData, setGeoData] = useState<any>(null);
   const [customBlocks, setCustomBlocks] = useState<any[]>([]);
   const [sigunguList, setSigunguList] = useState<string[]>([]);
@@ -108,7 +112,7 @@ export default function HomepagePage() {
         let active = [];
         if (res.success && res.data) {
           active = res.data
-            .filter((v: any) => v.status === "ACTIVE")
+            // .filter((v: any) => v.status === "ACTIVE") // 일단 모든 물건 표시 요청에 따라 임시 주석 처리
             .map((v: any) => ({
               ...v,
               photos: v.vacancy_photos
@@ -324,21 +328,43 @@ export default function HomepagePage() {
     let list = vacancies;
     if (category) list = list.filter(v => v.property_type === category);
     if (tradeType) list = list.filter(v => v.trade_type === tradeType);
-    if (sido && sido !== "시도선택") list = list.filter(v => v.sido === sido);
-    if (sigungu) list = list.filter(v => v.sigungu === sigungu);
-    if (selectedDongs.length > 0) {
-      list = list.filter(v => 
-        selectedDongs.some(dong => 
-          (v.dong && v.dong.includes(dong.replace(/동$/, ""))) || 
-          (v.building_name && v.building_name.includes(dong))
-        )
-      );
+    
+    // Price filters
+    if (tradeType === "매매" && maxSalePrice) {
+      const ms = parseInt(maxSalePrice);
+      if (!isNaN(ms)) list = list.filter(v => (v.deposit || 0) / 10000 <= ms);
     }
+    if ((tradeType === "전세" || tradeType === "월세" || tradeType === "단기임대") && maxDeposit) {
+      const md = parseInt(maxDeposit);
+      if (!isNaN(md)) list = list.filter(v => (v.deposit || 0) / 10000 <= md);
+    }
+    if ((tradeType === "월세" || tradeType === "단기임대") && maxMonthlyRent) {
+      const mr = parseInt(maxMonthlyRent);
+      if (!isNaN(mr)) list = list.filter(v => (v.monthly_rent || 0) / 10000 <= mr);
+    }
+
+    // 사용자가 명시적으로 구/동을 선택했을 때만 지역 필터링을 적용하여 초기에는 전체 매물이 나오도록 함
+    const isRegionSelected = sigungu || selectedDongs.length > 0;
+    
+    if (isRegionSelected) {
+      if (sido && sido !== "시도선택") list = list.filter(v => v.sido === sido);
+      if (sigungu) list = list.filter(v => v.sigungu === sigungu);
+      if (selectedDongs.length > 0) {
+        list = list.filter(v => 
+          selectedDongs.some(dong => 
+            (v.dong && v.dong.includes(dong.replace(/동$/, ""))) || 
+            (v.building_name && v.building_name.includes(dong))
+          )
+        );
+      }
+    }
+
     if (sortBy === "price_asc") list = [...list].sort((a, b) => (a.deposit || 0) - (b.deposit || 0));
     else if (sortBy === "price_desc") list = [...list].sort((a, b) => (b.deposit || 0) - (a.deposit || 0));
+    else if (sortBy === "sale_desc") list = [...list].sort((a, b) => (b.trade_type === "매매" ? b.deposit || 0 : 0) - (a.trade_type === "매매" ? a.deposit || 0 : 0));
     else list = [...list].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     return list;
-  }, [vacancies, category, tradeType, sido, sigungu, selectedDongs, sortBy]);
+  }, [vacancies, category, tradeType, sido, sigungu, selectedDongs, sortBy, maxSalePrice, maxDeposit, maxMonthlyRent]);
 
   // Pagination
   const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
@@ -420,17 +446,11 @@ export default function HomepagePage() {
             )}
             
             {/* Bottom Right Floating Badge & Chips */}
-            <div style={{ position: "absolute", bottom: 16, right: 16, zIndex: 10, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8, maxWidth: "80%" }}>
-              <div style={{ display: "flex", alignItems: "center", background: "#1a365d", color: "#fff", padding: "8px 16px", borderRadius: 4, boxShadow: "0 2px 8px rgba(0,0,0,0.2)" }}>
-                <span style={{ fontSize: 13, fontWeight: 600 }}>총 <strong style={{ color: "#fbbf24" }}>{selectedDongs.length}</strong>개의 블록이 선택되었습니다.</span>
-                <button onClick={() => { setSelectedDongs([]); setCurrentPage(1); }} style={{ marginLeft: 12, display: "flex", alignItems: "center", gap: 4, background: "#fff", color: "#1a365d", border: "1px solid #ccc", padding: "4px 8px", fontSize: 12, fontWeight: 700, borderRadius: 2, cursor: "pointer" }}>
-                  ↻ 지도초기화
-                </button>
-              </div>
+            <div style={{ position: "absolute", bottom: 16, right: 16, zIndex: 10, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8, maxWidth: 500 }}>
               
               {/* Selected Blocks List inside Map */}
               {selectedDongs.length > 0 && (
-                <div style={{ display: "flex", flexDirection: "row-reverse", flexWrap: "wrap", gap: 8, width: "100%", justifyContent: "flex-end" }}>
+                <div style={{ display: "flex", flexDirection: "row", flexWrap: "wrap", gap: 8, width: "100%", justifyContent: "flex-end" }}>
                   {selectedDongs.map(dong => (
                     <div key={dong} style={{ display: "flex", alignItems: "center", gap: 6, background: "#fff", border: `1px solid #d1d5db`, padding: "4px 10px", fontSize: 12, color: "#374151", boxShadow: "0 2px 5px rgba(0,0,0,0.15)", borderRadius: 2 }}>
                       <span style={{ fontWeight: 600 }}>{dong}</span>
@@ -439,60 +459,97 @@ export default function HomepagePage() {
                   ))}
                 </div>
               )}
+
+              <div style={{ display: "flex", alignItems: "center", background: "#1a365d", color: "#fff", padding: "8px 16px", borderRadius: 4, boxShadow: "0 2px 8px rgba(0,0,0,0.2)" }}>
+                <span style={{ fontSize: 13, fontWeight: 600 }}>총 <strong style={{ color: "#fbbf24" }}>{selectedDongs.length}</strong>개의 블록이 선택되었습니다.</span>
+                <button onClick={() => { setSelectedDongs([]); setCurrentPage(1); }} style={{ marginLeft: 12, display: "flex", alignItems: "center", gap: 4, background: "#fff", color: "#1a365d", border: "1px solid #ccc", padding: "4px 8px", fontSize: 12, fontWeight: 700, borderRadius: 2, cursor: "pointer" }}>
+                  ↻ 지도초기화
+                </button>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* ── 3. Compact Search & Control Toolbar ── */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: isDetailSearchOpen ? "none" : "2px solid #1a365d", paddingBottom: 16, marginBottom: isDetailSearchOpen ? 0 : 16, marginTop: 16 }}>
-          {/* Left Side (Previously Right): Search Results & Sort */}
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ fontSize: 15, fontWeight: 700, color: "#374151", marginRight: 8 }}>총 <span style={{ color: "#1a365d" }}>{filtered.length}</span>건 결과</span>
-            <button style={{ padding: "8px 14px", background: "#fff", border: "1px solid #d1d5db", fontSize: 14, cursor: "pointer", borderRadius: 2 }}>검색결과 모두 펼쳐보기</button>
-            <button style={{ padding: "8px 14px", background: "#fff", border: "1px solid #d1d5db", fontSize: 14, cursor: "pointer", borderRadius: 2 }}>정확도 순으로</button>
-            <button style={{ padding: "8px 14px", background: "#fff", border: "1px solid #d1d5db", fontSize: 14, cursor: "pointer", borderRadius: 2 }}>최신 순으로</button>
-            <button style={{ padding: "8px 14px", background: "#fff", border: "1px solid #d1d5db", fontSize: 14, cursor: "pointer", borderRadius: 2 }}>가격 순서로</button>
-          </div>
+        {/* ── 3. Dynamic Interactive Toolbar matched with layout ── */}
+        <div style={{ display: "flex", gap: 24, borderBottom: isDetailSearchOpen ? "none" : `2px solid #e5e7eb`, marginBottom: isDetailSearchOpen ? 0 : 16, marginTop: 16 }}>
+          
+          {/* Left Toolbar (Matches list width perfectly: calc(100% - 250px) with gap 24 in flex below) */}
+          <div style={{ flex: 1, minWidth: 0, paddingBottom: 16, display: "flex", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+            <div style={{ fontSize: 20, fontWeight: 800, color: "#111", marginRight: 16 }}>
+              총 <span style={{ color: "#e53e3e" }}>{filtered.length}</span>건 검색
+            </div>
+            
+            <select 
+              value={category} 
+              onChange={e => setCategory(e.target.value)}
+              style={{ padding: "8px 12px", border: "1px solid #ccc", borderRadius: 4, fontSize: 14, outline: "none", cursor: "pointer", color: "#333" }}
+            >
+              <option value="">전체물건 ▼</option>
+              {["아파트·오피스텔", "빌라·주택", "원룸·투룸(풀옵션)", "상가·사무실·건물·공장·토지", "분양"].map(item => (
+                <option key={item} value={item}>{item}</option>
+              ))}
+            </select>
+            
+            <select 
+              value={tradeType} 
+              onChange={e => {
+                setTradeType(e.target.value);
+                setMaxSalePrice(""); setMaxDeposit(""); setMaxMonthlyRent("");
+              }}
+              style={{ padding: "8px 12px", border: "1px solid #ccc", borderRadius: 4, fontSize: 14, outline: "none", cursor: "pointer", color: "#333" }}
+            >
+              <option value="">거래방식 ▼</option>
+              <option value="매매">매매</option>
+              <option value="전세">전세</option>
+              <option value="월세">월세</option>
+              <option value="단기임대">단기</option>
+            </select>
 
-          {/* Right Side (Previously Left): Dropdowns & Search Toggle */}
-          <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-            <div ref={dropdownRef1} style={{ position: "relative" }}>
-              <button onClick={() => setIsPropertyTypeDropdownOpen(!isPropertyTypeDropdownOpen)} style={{ background: "#fff", border: "1px solid #d1d5db", padding: "8px 16px", borderRadius: 4, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontWeight: 600, color: "#374151" }}>
-                {category || "전체물건"} ▼
-              </button>
-              {isPropertyTypeDropdownOpen && (
-                <div style={{ position: "absolute", top: "100%", right: 0, marginTop: 4, background: "#fff", border: "1px solid #ccc", borderRadius: 4, boxShadow: "0 4px 12px rgba(0,0,0,0.15)", width: 180, zIndex: 100 }}>
-                  {["전체물건", "아파트/주상복합", "오피스텔", "원룸/투룸/주택", "상가/사무실"].map(item => (
-                    <div key={item} style={{ padding: "10px 16px", fontSize: 13, cursor: "pointer", borderBottom: "1px solid #eee", color: "#333", background: category === item || (item === "전체물건" && !category) ? "#f0f7ff" : "transparent" }} onClick={() => { setCategory(item === "전체물건" ? "" : item); setIsPropertyTypeDropdownOpen(false); }}>{item}</div>
-                  ))}
-                </div>
-              )}
-            </div>
+            {/* Dynamic Inputs based on Trade Type */}
+            {tradeType === "매매" && (
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ fontSize: 14, fontWeight: 600, color: "#333" }}>매매가</span>
+                <input type="number" placeholder="금액" value={maxSalePrice} onChange={e => setMaxSalePrice(e.target.value)} style={{ width: 100, padding: "8px", border: "1px solid #ccc", borderRadius: 4, fontSize: 14 }} />
+                <span style={{ fontSize: 14, color: "#333" }}>만원 이하</span>
+              </div>
+            )}
             
-            <div ref={dropdownRef2} style={{ position: "relative" }}>
-              <button onClick={() => setIsTradeTypeDropdownOpen(!isTradeTypeDropdownOpen)} style={{ background: "#fff", border: "1px solid #d1d5db", padding: "8px 16px", borderRadius: 4, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontWeight: 600, color: "#374151" }}>
-                거래방식 ▼
-              </button>
-              {isTradeTypeDropdownOpen && (
-                <div style={{ position: "absolute", top: "100%", right: 0, marginTop: 4, background: "#fff", border: "1px solid #ccc", borderRadius: 4, boxShadow: "0 4px 12px rgba(0,0,0,0.15)", width: 140, zIndex: 100 }}>
-                  {["매매", "전세", "월세", "단기임대"].map(item => (
-                    <label key={item} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 16px", fontSize: 13, cursor: "pointer", borderBottom: "1px solid #eee", color: "#333", margin: 0 }}>
-                      <input type="checkbox" style={{ zoom: 1.2 }} /> {item}
-                    </label>
-                  ))}
-                  <div style={{ padding: "8px", textAlign: "center", background: "#f9f9f9" }}>
-                    <button style={{ padding: "4px 12px", fontSize: 12, border: "1px solid #ccc", background: "#fff", cursor: "pointer", borderRadius: 2 }} onClick={() => setIsTradeTypeDropdownOpen(false)}>닫기 x</button>
-                  </div>
-                </div>
-              )}
-            </div>
+            {(tradeType === "전세" || tradeType === "월세" || tradeType === "단기임대") && (
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ fontSize: 14, fontWeight: 600, color: "#333" }}>보증금</span>
+                <input type="number" placeholder="금액" value={maxDeposit} onChange={e => setMaxDeposit(e.target.value)} style={{ width: 100, padding: "8px", border: "1px solid #ccc", borderRadius: 4, fontSize: 14 }} />
+                <span style={{ fontSize: 14, color: "#333" }}>만원 이하</span>
+              </div>
+            )}
             
-            <button style={{ background: "#fff", color: "#111", border: "1px solid #111", padding: "8px 24px", fontSize: 14, borderRadius: 4, cursor: "pointer", fontWeight: "bold" }}>
+            {(tradeType === "월세" || tradeType === "단기임대") && (
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ fontSize: 14, fontWeight: 600, color: "#333" }}>월세</span>
+                <input type="number" placeholder="금액" value={maxMonthlyRent} onChange={e => setMaxMonthlyRent(e.target.value)} style={{ width: 100, padding: "8px", border: "1px solid #ccc", borderRadius: 4, fontSize: 14 }} />
+                <span style={{ fontSize: 14, color: "#333" }}>만원 이하</span>
+              </div>
+            )}
+
+            <button style={{ padding: "7px 16px", border: `1px solid #111`, background: "#fff", color: "#111", fontSize: 14, borderRadius: 4, cursor: "pointer", fontWeight: 700 }}>
               검색 🔍
             </button>
-            <button onClick={() => setIsDetailSearchOpen(!isDetailSearchOpen)} style={{ background: "transparent", color: "#1a365d", border: "none", padding: "8px 8px", fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, fontWeight: "bold" }}>
-              {isDetailSearchOpen ? "상세검색 닫기 ▲" : "상세검색 열기 ▼"}
+          </div>
+
+          {/* Right Toolbar (Matches Ad Sidebar Area width 250px perfectly) */}
+          <div style={{ width: 250, flexShrink: 0, paddingBottom: 16, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+            <button onClick={() => setIsDetailSearchOpen(!isDetailSearchOpen)} style={{ background: "transparent", color: "#111", border: "none", fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", fontWeight: 700, padding: 0 }}>
+              상세검색 열기 {isDetailSearchOpen ? "▲" : "▼"}
             </button>
+            <select 
+              value={sortBy} 
+              onChange={e => setSortBy(e.target.value)}
+              style={{ flex: 1, padding: "8px", border: "none", borderBottom: "1px solid #e5e7eb", borderRadius: 0, fontSize: 14, outline: "none", cursor: "pointer", fontWeight: 600, color: "#333" }}
+            >
+              <option value="latest">최신 등록순</option>
+              <option value="price_asc">보증금 낮은순</option>
+              <option value="price_desc">보증금 높은순</option>
+              <option value="sale_desc">매매가 높은순</option>
+            </select>
           </div>
         </div>
 
@@ -635,9 +692,10 @@ export default function HomepagePage() {
                 검색 조건에 해당하는 매물이 없습니다.
               </div>
             ) : (
-              <div style={{ borderTop: "2px solid #374151" }}>
+              <div style={{ borderTop: "1px solid #e5e7eb" }}>
                 {paged.map((v, idx) => (
-                <div key={v.id} onClick={() => router.push(`/homepage/${v.id}`)} style={{ display: "flex", padding: "16px 0", borderBottom: "1px solid #d1d5db", borderLeft: "1px solid #d1d5db", borderRight: "1px solid #d1d5db", alignItems: "center", cursor: "pointer", transition: "background 0.15s", background: "#fff" }} onMouseEnter={e => (e.currentTarget.style.background = "#f8fafc")} onMouseLeave={e => (e.currentTarget.style.background = "#fff")}>
+                <div key={v.id} style={{ borderBottom: "1px solid #e5e7eb", borderLeft: "1px solid #e5e7eb", borderRight: "1px solid #e5e7eb", background: "#fff" }}>
+                  <div onClick={() => { setExpandedIds(prev => prev.includes(v.id) ? prev.filter(x => x !== v.id) : [...prev, v.id]); }} style={{ display: "flex", padding: "16px 0", alignItems: "center", cursor: "pointer", transition: "background 0.15s" }} onMouseEnter={e => (e.currentTarget.style.background = "#f8fafc")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
                   
                   {/* 1. Checkbox */}
                   <div style={{ width: 40, display: "flex", justifyContent: "center", alignItems: "center", flexShrink: 0 }}>
@@ -693,15 +751,35 @@ export default function HomepagePage() {
                     <button onClick={e => e.stopPropagation()} style={{ width: 110, background: "#1a365d", color: "#fff", border: "none", padding: "7px 0", fontSize: 13, fontWeight: "bold", borderRadius: 4, cursor: "pointer" }}>
                       연락처보기
                     </button>
-                    <div style={{ display: "flex", gap: 4 }}>
-                      <button onClick={(e) => { e.stopPropagation(); router.push(`/homepage/${v.id}`); }} style={{ width: 53, background: "#fff", color: "#555", border: "1px solid #cbd5e1", padding: "4px 0", fontSize: 11, cursor: "pointer" }}>
+                    <div style={{ display: "flex", width: 110 }}>
+                      <button onClick={(e) => { e.stopPropagation(); router.push(`/homepage/${v.id}`); }} style={{ width: "100%", background: "#fff", color: "#555", border: "1px solid #cbd5e1", padding: "4px 0", fontSize: 11, cursor: "pointer" }}>
                         상세보기
-                      </button>
-                      <button onClick={e => e.stopPropagation()} style={{ width: 53, background: "#fff", color: "#555", border: "1px solid #cbd5e1", padding: "4px 0", fontSize: 11, cursor: "pointer" }}>
-                        수정신고
                       </button>
                     </div>
                   </div>
+                  </div>
+
+                  {/* Expanded Details */}
+                  {expandedIds.includes(v.id) && (
+                    <div style={{ padding: "0 24px 24px 24px", background: "#fff", cursor: "default" }} onClick={e => e.stopPropagation()}>
+                      <div style={{ borderTop: "1px solid #e2e8f0", borderBottom: "1px solid #e2e8f0", display: "grid", gridTemplateColumns: "120px 1fr 120px 1fr", fontSize: 14 }}>
+                        {[
+                          { l1: "매물번호", v1: String(v.id).split('-')[0].toUpperCase(), l2: "방/욕실수", v2: `${v.rooms || 0}개 / ${v.bathrooms || 0}개` },
+                          { l1: "소재지", v1: `${v.sido} ${v.sigungu} ${v.dong} ${v.detail_addr || ""}`.trim(), l2: "방향", v2: v.direction || "남향" },
+                          { l1: "매물특징", v1: v.building_name || "특징 없음", l2: "주차가능 여부", v2: v.parking_spots ? `${v.parking_spots}대` : "불가" },
+                          { l1: "공급/전용면적", v1: `${Math.round((v.area_m2 || 0) * 1.3)}m² / ${v.area_m2 || 0}m²`, l2: "입주가능일", v2: v.move_in_date || "1개월 이내" },
+                          { l1: "해당층/총층", v1: `${v.floor || "해당층"} / ${v.total_floors || "전체층"}`, l2: "관리비", v2: v.maintenance_fee ? `${Math.round(v.maintenance_fee/10000)}만원` : "10만원" }
+                        ].map((row, i) => (
+                          <div key={i} style={{ display: "contents" }}>
+                            <div style={{ background: "#f8f9fa", padding: "12px 16px", fontWeight: "bold", color: "#555", borderBottom: i === 4 ? "none" : "1px solid #f1f5f9", display: "flex", alignItems: "center" }}>{row.l1}</div>
+                            <div style={{ padding: "12px 16px", color: "#111", borderBottom: i === 4 ? "none" : "1px solid #f1f5f9", display: "flex", alignItems: "center" }}>{row.v1}</div>
+                            <div style={{ background: "#f8f9fa", padding: "12px 16px", fontWeight: "bold", color: "#555", borderBottom: i === 4 ? "none" : "1px solid #f1f5f9", borderLeft: "1px solid #f1f5f9", display: "flex", alignItems: "center" }}>{row.l2}</div>
+                            <div style={{ padding: "12px 16px", color: "#111", borderBottom: i === 4 ? "none" : "1px solid #f1f5f9", display: "flex", alignItems: "center" }}>{row.v2}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
                 ))}
               </div>

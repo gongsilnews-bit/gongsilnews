@@ -20,6 +20,18 @@ export default function HomepageViewPage() {
   const [otherListings, setOtherListings] = useState<any[]>([]);
   const mapRef = useRef<HTMLDivElement>(null);
   const roadviewRef = useRef<HTMLDivElement>(null);
+  const infoRef = useRef<HTMLDivElement>(null);
+  const locationRef = useRef<HTMLDivElement>(null);
+  const envRef = useRef<HTMLDivElement>(null);
+  const [activeTab, setActiveTab] = useState('info');
+
+  const scrollToRef = (ref: React.RefObject<HTMLDivElement | null>, tabItem: string) => {
+    setActiveTab(tabItem);
+    if (ref.current) {
+      const y = ref.current.getBoundingClientRect().top + window.scrollY - 130;
+      window.scrollTo({ top: y, behavior: 'smooth' });
+    }
+  };
 
   const TRow = ({ label, value }: { label: string; value: React.ReactNode }) => (
     <div style={{ display: "flex", borderBottom: "1px solid #eee" }}>
@@ -102,7 +114,7 @@ export default function HomepageViewPage() {
 
   if (loading) {
     return (
-      <div style={{ minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f8f9fa" }}>
+      <div style={{ minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#fff" }}>
         <span style={{ display: "inline-block", width: 32, height: 32, border: "3px solid #ddd", borderTop: `3px solid ${BRAND}`, borderRadius: "50%", animation: "spin 1s linear infinite", marginRight: 12 }}></span>
         <span style={{ color: "#888", fontSize: 15 }}>매물 상세정보를 불러오고 있습니다...</span>
         <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
@@ -112,7 +124,7 @@ export default function HomepageViewPage() {
 
   if (!vacancy) {
     return (
-      <div style={{ minHeight: "60vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "#f8f9fa" }}>
+      <div style={{ minHeight: "60vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "#fff" }}>
         <span style={{ fontSize: 48, marginBottom: 16 }}>🏠</span>
         <p style={{ fontSize: 16, color: "#888" }}>해당 매물을 찾을 수 없습니다.</p>
         <button onClick={() => router.push("/homepage")} style={{ marginTop: 16, padding: "10px 24px", background: BRAND, color: "#fff", borderRadius: 6, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>목록으로 돌아가기</button>
@@ -123,7 +135,7 @@ export default function HomepageViewPage() {
   const photos = vacancy.photos || [];
 
   return (
-    <div style={{ background: "#f8f9fa", minHeight: "100vh" }}>
+    <div style={{ background: "#fff", minHeight: "100vh" }}>
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "24px 16px" }}>
 
         {/* Breadcrumb */}
@@ -140,7 +152,7 @@ export default function HomepageViewPage() {
           <div style={{ flex: 1, minWidth: 0, background: "#fff", padding: "0 24px", borderRadius: 8, boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
 
             {/* Title + Price */}
-            <div style={{ padding: "30px 0 20px", borderBottom: "1px solid #111" }}>
+            <div style={{ padding: "30px 0 20px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                 <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
                    <span style={{ fontSize: 11, fontWeight: "bold", color: "#e53e3e", border: "1px solid #fed7d7", padding: "4px 8px", background: "#fff5f5", borderRadius: 4 }}>법정수수료</span>
@@ -166,10 +178,10 @@ export default function HomepageViewPage() {
             </div>
 
             {/* Tabs (Visual) */}
-            <div style={{ display: "flex", background: "#fff", borderBottom: "1px solid #eee", marginBottom: 30 }}>
-              <div style={{ flex: 1, textAlign: "center", padding: "16px 0", fontWeight: "bold", fontSize: 16, color: "#111", borderBottom: "3px solid #111", cursor: "pointer" }}>매물정보</div>
-              <div style={{ flex: 1, textAlign: "center", padding: "16px 0", fontWeight: "bold", fontSize: 16, color: "#888", cursor: "pointer" }}>위치</div>
-              <div style={{ flex: 1, textAlign: "center", padding: "16px 0", fontWeight: "bold", fontSize: 16, color: "#888", cursor: "pointer" }}>주변환경</div>
+            <div style={{ display: "flex", marginBottom: 30, alignItems: "stretch", position: "sticky", top: 60, zIndex: 50 }}>
+              <div onClick={() => scrollToRef(infoRef, 'info')} style={{ flex: 1, textAlign: "center", padding: "16px 0", fontWeight: "bold", fontSize: 16, color: activeTab === 'info' ? "#111" : "#888", background: activeTab === 'info' ? "#fff" : "#f8fafc", borderTop: activeTab === 'info' ? "2px solid #111" : "1px solid #e5e7eb", borderLeft: "1px solid #e5e7eb", borderRight: "1px solid #e5e7eb", borderBottom: activeTab === 'info' ? "1px solid #fff" : "1px solid #e5e7eb", cursor: "pointer", zIndex: activeTab === 'info' ? 1 : 0, marginTop: activeTab === 'info' ? 0 : 1 }}>매물정보</div>
+              <div onClick={() => scrollToRef(locationRef, 'location')} style={{ flex: 1, textAlign: "center", padding: "16px 0", fontWeight: "bold", fontSize: 16, color: activeTab === 'location' ? "#111" : "#888", background: activeTab === 'location' ? "#fff" : "#f8fafc", borderTop: activeTab === 'location' ? "2px solid #111" : "1px solid #e5e7eb", borderLeft: activeTab === 'location' ? "1px solid #e5e7eb" : "none", borderRight: activeTab === 'location' ? "1px solid #e5e7eb" : "none", borderBottom: activeTab === 'location' ? "1px solid #fff" : "1px solid #e5e7eb", cursor: "pointer", zIndex: activeTab === 'location' ? 1 : 0, marginTop: activeTab === 'location' ? 0 : 1 }}>위치</div>
+              <div onClick={() => scrollToRef(envRef, 'env')} style={{ flex: 1, textAlign: "center", padding: "16px 0", fontWeight: "bold", fontSize: 16, color: activeTab === 'env' ? "#111" : "#888", background: activeTab === 'env' ? "#fff" : "#f8fafc", borderTop: activeTab === 'env' ? "2px solid #111" : "1px solid #e5e7eb", borderLeft: activeTab === 'env' ? "1px solid #e5e7eb" : "none", borderRight: "1px solid #e5e7eb", borderBottom: activeTab === 'env' ? "1px solid #fff" : "1px solid #e5e7eb", cursor: "pointer", zIndex: activeTab === 'env' ? 1 : 0, marginTop: activeTab === 'env' ? 0 : 1 }}>주변환경</div>
             </div>
 
             {/* 사진 표시 (리스트 상단에 사진이 있으면 출력) */}
@@ -180,8 +192,8 @@ export default function HomepageViewPage() {
             )}
 
             {/* ── 매물정보 Table ── */}
-            <div style={{ background: "#fff", borderTop: "2px solid #111", marginBottom: 50 }}>
-              <TRow label="매물번호" value={vacancy.id} />
+            <div ref={infoRef} style={{ background: "#fff", marginBottom: 50, scrollMarginTop: 130 }}>
+              <TRow label="매물번호" value={String(vacancy.id).split('-')[0].toUpperCase()} />
               <TRow label="소재지" value={`${vacancy.sido} ${vacancy.sigungu} ${vacancy.dong} ${vacancy.detail_addr || ""}`} />
               <TRow label="매물특징" value={vacancy.building_name || "특징 없음"} />
               <TRow label="공급/전용면적" value={`${Math.round((vacancy.area_m2 || 0) * 1.3)}m² / ${vacancy.area_m2 || 0}m²`} />
@@ -193,17 +205,6 @@ export default function HomepageViewPage() {
               <TRow label="관리비" value={vacancy.maintenance_fee ? `${Math.round(vacancy.maintenance_fee/10000)}만원` : "없음"} />
               <TRow label="상세설명" value={vacancy.description || "상세내용 없음"} />
             </div>
-
-            {/* ── 위치정보 및 로드뷰 ── */}
-            {vacancy.lat && vacancy.lng && (
-              <div style={{ marginBottom: 50 }}>
-                <h3 style={{ fontSize: 18, fontWeight: "bold", color: "#111", marginBottom: 16 }}>위치정보</h3>
-                <div ref={mapRef} style={{ width: "100%", height: 350, border: "1px solid #ddd", marginBottom: 40 }}></div>
-                
-                <h3 style={{ fontSize: 18, fontWeight: "bold", color: "#111", marginBottom: 16 }}>로드뷰</h3>
-                <div ref={roadviewRef} style={{ width: "100%", height: 350, border: "1px solid #ddd" }}></div>
-              </div>
-            )}
 
             {/* ── 옵션 ── */}
             {vacancy.options && vacancy.options.length > 0 && (
@@ -220,9 +221,20 @@ export default function HomepageViewPage() {
               </div>
             )}
 
+            {/* ── 위치정보 및 로드뷰 ── */}
+            {vacancy.lat && vacancy.lng && (
+              <div ref={locationRef} style={{ marginBottom: 50, scrollMarginTop: 130 }}>
+                <h3 style={{ fontSize: 18, fontWeight: "bold", color: "#111", marginBottom: 16 }}>위치정보</h3>
+                <div ref={mapRef} style={{ width: "100%", height: 350, border: "1px solid #ddd", marginBottom: 40 }}></div>
+                
+                <h3 style={{ fontSize: 18, fontWeight: "bold", color: "#111", marginBottom: 16 }}>로드뷰</h3>
+                <div ref={roadviewRef} style={{ width: "100%", height: 350, border: "1px solid #ddd" }}></div>
+              </div>
+            )}
+
             {/* ── 주변환경 ── */}
             {vacancy.infrastructure && Object.keys(vacancy.infrastructure).length > 0 && (
-              <div style={{ marginBottom: 50 }}>
+              <div ref={envRef} style={{ marginBottom: 50, scrollMarginTop: 130 }}>
                 <h3 style={{ fontSize: 18, fontWeight: "bold", color: "#111", marginBottom: 16 }}>주변환경</h3>
                 <div style={{ display: "flex", flexDirection: "column", gap: 16, borderTop: "2px solid #111", paddingTop: 20 }}>
                   {Object.entries(vacancy.infrastructure).map(([label, tags]) => {
@@ -266,52 +278,91 @@ export default function HomepageViewPage() {
           </div>
 
           {/* ── Right Sidebar ── */}
-          <div style={{ width: 300, flexShrink: 0 }}>
+          <div style={{ width: 340, flexShrink: 0 }}>
             <div style={{ position: "sticky", top: 80 }}>
 
               {/* 중개사무소 정보 */}
-              <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8, marginBottom: 16, overflow: "hidden" }}>
-                <div style={{ padding: "14px 18px", borderBottom: `2px solid ${BRAND}`, fontWeight: 800, fontSize: 15, color: BRAND }}>🏢 중개사무소</div>
-                <div style={{ padding: 18 }}>
-                  {vacancy.realtor_commission && (
-                    <div style={{ marginBottom: 12 }}>
-                      <span style={{ fontSize: 11, fontWeight: 600, color: "#ea580c", border: "1px solid #fed7aa", padding: "3px 10px", borderRadius: 4, background: "#fff7ed" }}>{vacancy.realtor_commission}</span>
-                    </div>
-                  )}
-                  {vacancy.client_phone && (
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 16px", background: "#f0f7ff", borderRadius: 6, marginBottom: 8 }}>
-                      <span style={{ fontSize: 18 }}>📞</span>
-                      <span style={{ fontSize: 16, fontWeight: 800, color: "#1d4ed8" }}>{vacancy.client_phone}</span>
-                    </div>
-                  )}
-                  <button onClick={() => { if (vacancy.client_phone) window.location.href = `tel:${vacancy.client_phone}`; }} style={{ width: "100%", padding: "12px 0", background: BRAND, color: "#fff", borderRadius: 6, fontSize: 14, fontWeight: 700, cursor: "pointer", border: "none", marginTop: 4 }}>
-                    전화 문의하기
+              <div style={{ marginBottom: 24 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #111", paddingBottom: 12, marginBottom: 16 }}>
+                  <div style={{ fontWeight: 700, fontSize: 20, color: "#111" }}>중개사무소</div>
+                  <div style={{ display: "flex", gap: 6, fontSize: 13, fontWeight: 600 }}>
+                    <span style={{ border: "1px solid #1a365d", background: "#1a365d", color: "#fff", padding: "4px 8px", cursor: "pointer", borderRadius: 2 }}>오시는길</span>
+                  </div>
+                </div>
+                
+                <div style={{ padding: "0 4px" }}>
+                  <div style={{ fontSize: 21, fontWeight: 800, color: "#111", marginBottom: 14 }}>
+                    청실두꺼비공인중개사사무소
+                  </div>
+                  
+                  <div style={{ fontSize: 16, color: "#555", lineHeight: 1.6, marginBottom: 18 }}>
+                    대표 김민경<br/>
+                    등록번호 11680-2017-00179<br/>
+                    서울특별시 강남구 남부순환로 2917 133호<br/>
+                    (대치동 626,청실상가)
+                  </div>
+                  
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 18, fontWeight: 800, color: "#111", marginBottom: 22 }}>
+                    <span style={{ fontSize: 18 }}>📞</span>
+                    02-564-7500 / 010-8456-2730
+                  </div>
+                  
+                  <div style={{ fontSize: 15, color: "#555", display: "flex", alignItems: "center", gap: 10, marginBottom: 22 }}>
+                    <span style={{ color: "#6b7280", fontWeight: 500 }}>매매 <span style={{ color: "#374151" }}>10</span></span>
+                    <span style={{ color: "#e5e7eb" }}>|</span> 
+                    <span style={{ color: "#6b7280", fontWeight: 500 }}>전세 <span style={{ color: "#374151" }}>3</span></span>
+                    <span style={{ color: "#e5e7eb" }}>|</span> 
+                    <span style={{ color: "#6b7280", fontWeight: 500 }}>월세 <span style={{ color: "#374151" }}>9</span></span>
+                    <span style={{ color: "#e5e7eb" }}>|</span> 
+                    <span style={{ color: "#6b7280", fontWeight: 500 }}>단기 <span style={{ color: "#374151" }}>0</span></span>
+                  </div>
+                  
+                  <button onClick={() => { if (vacancy?.client_phone) window.location.href = `tel:${vacancy.client_phone}`; }} style={{ width: "100%", padding: "14px 0", background: "#f8fafc", color: "#111", borderRadius: 8, fontSize: 16, fontWeight: 700, cursor: "pointer", border: "1px solid #e2e8f0", transition: "0.2s" }} onMouseEnter={e => e.currentTarget.style.background = "#f1f5f9"} onMouseLeave={e => e.currentTarget.style.background = "#f8fafc"}>
+                    공실내놔요
                   </button>
                 </div>
               </div>
 
-              {/* 같은 지역 다른 매물 */}
-              {otherListings.length > 0 && (
-                <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8, overflow: "hidden" }}>
-                  <div style={{ padding: "14px 18px", borderBottom: `2px solid ${BRAND}`, fontWeight: 800, fontSize: 15, color: BRAND }}>🏠 같은 지역 매물</div>
-                  <div style={{ padding: "8px 0" }}>
-                    {otherListings.map((v: any) => (
-                      <div key={v.id} onClick={() => router.push(`/homepage/${v.id}`)} style={{ display: "flex", gap: 10, padding: "10px 18px", cursor: "pointer", borderBottom: "1px solid #f5f5f5", transition: "background 0.15s" }} onMouseEnter={e => (e.currentTarget.style.background = "#f9fafb")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-                        <div style={{ width: 64, height: 48, borderRadius: 4, overflow: "hidden", flexShrink: 0, background: "#f3f4f6" }}>
-                          {v.photos?.length > 0 ? <img src={v.photos[0]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#ccc", fontSize: 10 }}>No</div>}
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 12, fontWeight: 700, color: "#111", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginBottom: 2 }}>{v.building_name || v.dong}</div>
-                          <div style={{ fontSize: 12, fontWeight: 800, color: "#c53030" }}>
-                            <span style={{ fontSize: 10, background: getPriceBg(v), color: "#fff", padding: "1px 5px", borderRadius: 2, marginRight: 4 }}>{getPriceLabel(v)}</span>
-                            {getPriceText(v)}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+              {/* ── 추천 공실 ── */}
+              <div style={{ background: "#fff", marginBottom: 40 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #111", paddingBottom: 10, marginBottom: 16 }}>
+                  <h3 style={{ fontSize: 17, fontWeight: "bold", color: "#111", margin: 0 }}>추천 공실</h3>
+                  <span style={{ fontSize: 12, color: "#888", cursor: "pointer" }}>더보기 {'>'}</span>
                 </div>
-              )}
+                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                  {[
+                    { id: 1, title: "관악드림타운 132동 8층호", price: "매매 11억 5000", details: "면적 82.01m²(25.1평) / 59.83m²(18.1평)\n방 3개, 욕실 1개", badge: "공동중개" },
+                    { id: 2, title: "동부센트레빌 101동 101호", price: "매매 10억", details: "면적 84m²(25.4평) / 59m²(17.8평)\n방 3개, 욕실 1개", badge: "공동중개" }
+                  ].map(item => (
+                    <div key={item.id} style={{ display: "flex", gap: 16, cursor: "pointer", borderBottom: "1px solid #f1f5f9", paddingBottom: 16 }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 15, fontWeight: "bold", color: "#111", marginBottom: 4 }}>{item.title}</div>
+                        <div style={{ fontSize: 17, fontWeight: "bold", color: "#2563eb", marginBottom: 6 }}>{item.price}</div>
+                        <div style={{ fontSize: 13, color: "#666", whiteSpace: "pre-wrap", lineHeight: 1.4, marginBottom: 6 }}>{item.details}</div>
+                        <span style={{ fontSize: 11, color: "#ea580c", border: "1px solid #fed7aa", padding: "2px 6px", borderRadius: 2, fontWeight: 600 }}>{item.badge}</span>
+                      </div>
+                      <div style={{ width: 70, height: 70, background: "#f1f5f9", borderRadius: 4, flexShrink: 0 }}></div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* ── 많이 본 뉴스 ── */}
+              <div style={{ background: "#fff", marginBottom: 40 }}>
+                <h3 style={{ fontSize: 17, fontWeight: "bold", color: "#111", borderBottom: "1px solid #111", paddingBottom: 10, margin: "0 0 16px 0" }}>많이 본 뉴스</h3>
+                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                  {[
+                    "“너도 에어비앤비 해볼까?”… 오피스텔·학세권 달러 겟 약올랐던 '신세자' 될 수도",
+                    "관악구 대단지 관악드림타운 네이버 전세 매물 0건?",
+                    "서울 아파트 공시가 18.7% 급등… '한강벨트' 보유세 50% 이상 오를 듯"
+                  ].map((news, idx) => (
+                    <div key={idx} style={{ display: "flex", gap: 12, cursor: "pointer" }}>
+                      <span style={{ fontSize: 18, fontWeight: 900, color: "#111", fontStyle: "italic" }}>{idx + 1}</span>
+                      <span style={{ fontSize: 15, color: "#333", lineHeight: 1.4, fontWeight: 600, wordBreak: "keep-all" }}>{news}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </div>
