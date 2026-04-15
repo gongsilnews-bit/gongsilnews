@@ -139,6 +139,7 @@ export default function MemberArticleSection({ theme, memberId, memberName, memb
                 <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 40 }}>
                   <input type="checkbox" style={{ accentColor: "#3b82f6" }} onChange={(e) => setCheckedIds(e.target.checked ? filtered.map(a => a.id) : [])} checked={filtered.length > 0 && checkedIds.length === filtered.length} />
                 </th>
+                <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 60 }}>번호</th>
                 <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 80 }}>상태</th>
                 <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 100 }}>섹션</th>
                 <th style={{ padding: "12px 10px", textAlign: "left", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}` }}>기사 제목</th>
@@ -160,6 +161,9 @@ export default function MemberArticleSection({ theme, memberId, memberName, memb
                       if (e.target.checked) setCheckedIds(prev => [...prev, a.id]);
                       else setCheckedIds(prev => prev.filter(id => id !== a.id));
                     }} />
+                  </td>
+                  <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", color: textSecondary, fontSize: 12 }}>
+                    {a.article_no || '-'}
                   </td>
                   <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
                     {statusBadge(a.status)}
