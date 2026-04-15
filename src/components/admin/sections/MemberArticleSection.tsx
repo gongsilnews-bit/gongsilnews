@@ -53,10 +53,10 @@ export default function MemberArticleSection({ theme, memberId, memberName, memb
     else alert("오류: " + res.error);
   };
 
-  /* 삭제: DRAFT만 가능 */
+  /* 삭제 */
   const handleDelete = async (id: string) => {
     const a = articles.find(x => x.id === id);
-    if (!a || a.status !== "DRAFT") { alert("작성중 상태의 기사만 삭제할 수 있습니다."); return; }
+    if (!a) return;
     if (!confirm("기사를 삭제하시겠습니까?")) return;
     const res = await deleteArticle(id);
     if (res.success) await fetchArticles();
@@ -169,17 +169,20 @@ export default function MemberArticleSection({ theme, memberId, memberName, memb
                     {a.created_at ? new Date(a.created_at).toISOString().split("T")[0] : "-"}
                   </td>
                   <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
-                    <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
+                    <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
                       <a href={`${basePath}/news_write?id=${a.id}&return=${returnParam}`}
-                        style={{ padding: "6px 12px", background: "#3b4363", color: "#fff", textDecoration: "none", borderRadius: 4, fontSize: 12, fontWeight: 600 }}>
-                        {a.status === "DRAFT" || a.status === "REJECTED" ? "수정" : "보기"}
+                        style={{ height: 30, padding: "0 12px", background: darkMode ? "#374151" : "#4b5563", color: "#fff", border: "none", borderRadius: 4, fontSize: 12, fontWeight: 600, textDecoration: "none", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
+                        {a.status === "DRAFT" || a.status === "REJECTED" ? (
+                          <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> 수정</>
+                        ) : (
+                          "보기"
+                        )}
                       </a>
-                      {a.status === "DRAFT" && (
-                        <button onClick={() => handleDelete(a.id)}
-                          style={{ padding: "6px 12px", background: darkMode ? "#2c2d31" : "#fff", border: `1px solid ${border}`, color: textSecondary, borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
-                          삭제
-                        </button>
-                      )}
+                      <button onClick={() => handleDelete(a.id)}
+                        style={{ height: 30, padding: "0 12px", background: darkMode ? "#2c2d31" : "#fff", color: "#9ca3af", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                        삭제
+                      </button>
                     </div>
                   </td>
                 </tr>

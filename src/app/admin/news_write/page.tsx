@@ -174,6 +174,7 @@ export default function NewsWritePage() {
             if (d.series) setSeries(d.series);
             if (d.author_name) setReporterName(d.author_name);
             if (d.author_email) setReporterEmail(d.author_email);
+            if (d.author_id) setMemberAuthorId(d.author_id);
             if (d.title) setTitle(d.title);
             if (d.subtitle) setSubtitle(d.subtitle);
             if (d.youtube_url) setYoutubeUrl(d.youtube_url);
