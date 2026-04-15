@@ -19,6 +19,14 @@ export default function HomepageViewPage() {
   const [mapLoaded, setMapLoaded] = useState(false);
   const [otherListings, setOtherListings] = useState<any[]>([]);
   const mapRef = useRef<HTMLDivElement>(null);
+  const roadviewRef = useRef<HTMLDivElement>(null);
+
+  const TRow = ({ label, value }: { label: string; value: React.ReactNode }) => (
+    <div style={{ display: "flex", borderBottom: "1px solid #eee" }}>
+      <div style={{ width: 140, background: "#f9f9f9", padding: "16px", fontSize: 14, fontWeight: "bold", color: "#555", display: "flex", alignItems: "center" }}>{label}</div>
+      <div style={{ flex: 1, padding: "16px", fontSize: 14, color: "#111", display: "flex", alignItems: "center", lineHeight: 1.5 }}>{value}</div>
+    </div>
+  );
 
   useEffect(() => {
     async function load() {
@@ -62,6 +70,19 @@ export default function HomepageViewPage() {
     const pos = new kakao.maps.LatLng(vacancy.lat, vacancy.lng);
     const map = new kakao.maps.Map(mapRef.current, { center: pos, level: 3 });
     new kakao.maps.Marker({ position: pos, map });
+
+    if (roadviewRef.current) {
+      const roadview = new kakao.maps.Roadview(roadviewRef.current);
+      const roadviewClient = new kakao.maps.RoadviewClient();
+      roadviewClient.getNearestPanoId(pos, 50, (panoId: number | null) => {
+        if (panoId) {
+          roadview.setPanoId(panoId, pos);
+        } else {
+          // If no roadview available, hide it
+          roadviewRef.current!.style.display = "none";
+        }
+      });
+    }
   }, [mapLoaded, vacancy]);
 
   const formatAmount = (amt: number) => {
@@ -116,86 +137,132 @@ export default function HomepageViewPage() {
         <div style={{ display: "flex", gap: 24 }}>
 
           {/* Left Column */}
-          <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ flex: 1, minWidth: 0, background: "#fff", padding: "0 24px", borderRadius: 8, boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
 
             {/* Title + Price */}
-            <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8, padding: 24, marginBottom: 16 }}>
-              <div style={{ fontSize: 12, color: "#999", marginBottom: 6 }}>
-                등록일 {vacancy.created_at ? new Date(vacancy.created_at).toLocaleDateString("ko-KR") : ""}
-                {vacancy.property_type && <span style={{ marginLeft: 8 }}>| {vacancy.property_type}{vacancy.sub_category ? `/${vacancy.sub_category}` : ""}</span>}
+            <div style={{ padding: "30px 0 20px", borderBottom: "1px solid #111" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                   <span style={{ fontSize: 11, fontWeight: "bold", color: "#e53e3e", border: "1px solid #fed7d7", padding: "4px 8px", background: "#fff5f5", borderRadius: 4 }}>법정수수료</span>
+                   <span style={{ fontSize: 13, color: "#888" }}>등록 {vacancy.created_at ? new Date(vacancy.created_at).toLocaleDateString("ko-KR") : ""}</span>
+                </div>
+                <div style={{ display: "flex", gap: 12 }}>
+                   <span style={{ fontSize: 13, color: "#ea580c", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>🚨 허위매물신고</span>
+                   <span style={{ fontSize: 13, color: "#555", cursor: "pointer" }}>인쇄</span>
+                </div>
               </div>
-              <h1 style={{ fontSize: 22, fontWeight: 800, color: "#111", marginBottom: 12, letterSpacing: "-0.5px" }}>
-                {vacancy.building_name || vacancy.dong || "매물 상세"}
-              </h1>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={{ background: getPriceBg(vacancy), color: "#fff", fontSize: 13, fontWeight: 700, padding: "4px 12px", borderRadius: 4 }}>{getPriceLabel(vacancy)}</span>
-                <span style={{ fontSize: 28, fontWeight: 900, color: "#c53030", letterSpacing: "-1px" }}>{getPriceText(vacancy)}</span>
+              <div style={{ fontSize: 15, color: "#555", marginBottom: 6, fontWeight: 600 }}>{vacancy.dong} {vacancy.building_name || "단독/다가구"}</div>
+              <div style={{ fontSize: 32, fontWeight: 900, color: "#1a73e8", marginBottom: 12, letterSpacing: "-1px" }}>
+                {vacancy.trade_type} {getPriceText(vacancy)}
               </div>
-              {/* Action icons */}
-              <div style={{ display: "flex", gap: 20, marginTop: 16, paddingTop: 16, borderTop: "1px solid #f0f0f0" }}>
-                {[{ icon: "🔗", label: "공유" }, { icon: "🖨️", label: "인쇄" }, { icon: "⭐", label: "관심매물" }].map(a => (
-                  <span key={a.label} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 13, color: "#888", cursor: "pointer" }}>{a.icon} {a.label}</span>
-                ))}
+              <div style={{ fontSize: 14, color: "#666", marginBottom: 8 }}>
+                아파트 · 오피스텔 · 방/욕실수 {vacancy.rooms || 0}/{vacancy.bathrooms || 0} · 공급/전용 {Math.round((vacancy.area_m2 || 0)*1.3)}m²/{vacancy.area_m2 || 0}m²
+              </div>
+              <div style={{ fontSize: 14, color: "#888", display: "flex", gap: 16 }}>
+                <span>총 <strong style={{ color: "#333" }}>{vacancy.photos?.length || 0}</strong>개</span>
+                <span>주차 {vacancy.parking_spots || "불가"}</span>
+                <span>에어컨, 렌지, 세탁기 등</span>
               </div>
             </div>
+
+            {/* Tabs (Visual) */}
+            <div style={{ display: "flex", background: "#fff", borderBottom: "1px solid #eee", marginBottom: 30 }}>
+              <div style={{ flex: 1, textAlign: "center", padding: "16px 0", fontWeight: "bold", fontSize: 16, color: "#111", borderBottom: "3px solid #111", cursor: "pointer" }}>매물정보</div>
+              <div style={{ flex: 1, textAlign: "center", padding: "16px 0", fontWeight: "bold", fontSize: 16, color: "#888", cursor: "pointer" }}>위치</div>
+              <div style={{ flex: 1, textAlign: "center", padding: "16px 0", fontWeight: "bold", fontSize: 16, color: "#888", cursor: "pointer" }}>주변환경</div>
+            </div>
+
+            {/* 사진 표시 (리스트 상단에 사진이 있으면 출력) */}
+            {photos.length > 0 && (
+              <div style={{ marginBottom: 30 }}>
+                <img src={photos[0]} alt="메인사진" style={{ width: "100%", height: 400, objectFit: "cover", borderRadius: 8 }} />
+              </div>
+            )}
 
             {/* ── 매물정보 Table ── */}
-            <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8, marginBottom: 16, overflow: "hidden" }}>
-              <div style={{ padding: "14px 18px", borderBottom: `2px solid ${BRAND}`, fontWeight: 800, fontSize: 16, color: BRAND }}>📋 매물정보</div>
-              <div style={ROW}><div style={LABEL}>매물번호</div><div style={VAL}>{vacancy.id}</div></div>
-              <div style={ROW}><div style={LABEL}>소재지</div><div style={VAL}>{vacancy.sido} {vacancy.sigungu} {vacancy.dong} {vacancy.detail_addr || ""}</div></div>
-              <div style={ROW}><div style={LABEL}>매물종류</div><div style={VAL}>{vacancy.property_type}{vacancy.sub_category ? ` / ${vacancy.sub_category}` : ""}</div></div>
-              <div style={ROW}><div style={LABEL}>거래유형</div><div style={VAL}>{vacancy.trade_type}</div></div>
-              <div style={ROW}><div style={LABEL}>보증금/월세</div><div style={VAL}>
-                {vacancy.trade_type === "매매" ? `매매가 ${formatAmount(vacancy.deposit)}만원` :
-                 vacancy.trade_type === "전세" ? `전세 ${formatAmount(vacancy.deposit)}만원` :
-                 `보증금 ${formatAmount(vacancy.deposit)}만원 / 월 ${vacancy.monthly_rent ? Math.round(vacancy.monthly_rent / 10000).toLocaleString() : "0"}만원`}
-              </div></div>
-              {vacancy.maintenance_fee && <div style={ROW}><div style={LABEL}>관리비</div><div style={VAL}>{Math.round(vacancy.maintenance_fee / 10000).toLocaleString()}만원</div></div>}
-              {vacancy.area_m2 && <div style={ROW}><div style={LABEL}>전용면적</div><div style={VAL}>{vacancy.area_m2}m² ({(vacancy.area_m2 * 0.3025).toFixed(1)}평)</div></div>}
-              {vacancy.rooms && <div style={ROW}><div style={LABEL}>방/욕실</div><div style={VAL}>방 {vacancy.rooms}개{vacancy.bathrooms ? `, 욕실 ${vacancy.bathrooms}개` : ""}</div></div>}
-              {vacancy.floor_info && <div style={ROW}><div style={LABEL}>층수</div><div style={VAL}>{vacancy.floor_info}</div></div>}
-              {vacancy.move_in_date && <div style={ROW}><div style={LABEL}>입주가능일</div><div style={VAL}>{vacancy.move_in_date}</div></div>}
-              {vacancy.parking && <div style={ROW}><div style={LABEL}>주차</div><div style={VAL}>{vacancy.parking}</div></div>}
-              {vacancy.options?.length > 0 && <div style={ROW}><div style={LABEL}>옵션</div><div style={VAL}>{vacancy.options.join(", ")}</div></div>}
-              {vacancy.description && <div style={ROW}><div style={LABEL}>상세설명</div><div style={VAL}>{vacancy.description}</div></div>}
+            <div style={{ background: "#fff", borderTop: "2px solid #111", marginBottom: 50 }}>
+              <TRow label="매물번호" value={vacancy.id} />
+              <TRow label="소재지" value={`${vacancy.sido} ${vacancy.sigungu} ${vacancy.dong} ${vacancy.detail_addr || ""}`} />
+              <TRow label="매물특징" value={vacancy.building_name || "특징 없음"} />
+              <TRow label="공급/전용면적" value={`${Math.round((vacancy.area_m2 || 0) * 1.3)}m² / ${vacancy.area_m2 || 0}m²`} />
+              <TRow label="해당층/총층" value={`${vacancy.floor || "해당층"} / ${vacancy.total_floors || "전체층"}`} />
+              <TRow label="방/욕실수" value={`${vacancy.rooms || 0}개 / ${vacancy.bathrooms || 0}개`} />
+              <TRow label="방향" value={vacancy.direction || "방향정보 없음"} />
+              <TRow label="주차가능 여부" value={vacancy.parking_spots ? `${vacancy.parking_spots}대` : "불가"} />
+              <TRow label="입주가능일" value={vacancy.move_in_date || "즉시입주"} />
+              <TRow label="관리비" value={vacancy.maintenance_fee ? `${Math.round(vacancy.maintenance_fee/10000)}만원` : "없음"} />
+              <TRow label="상세설명" value={vacancy.description || "상세내용 없음"} />
             </div>
 
-            {/* ── 사진정보 ── */}
-            {photos.length > 0 && (
-              <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8, marginBottom: 16, overflow: "hidden" }}>
-                <div style={{ padding: "14px 18px", borderBottom: `2px solid ${BRAND}`, fontWeight: 800, fontSize: 16, color: BRAND }}>📷 사진정보</div>
-                <div style={{ position: "relative", background: "#111" }}>
-                  <img src={photos[photoIdx]} alt={`사진 ${photoIdx + 1}`} style={{ width: "100%", height: 460, objectFit: "contain", display: "block" }} />
-                  {photos.length > 1 && (
-                    <>
-                      <button onClick={() => setPhotoIdx(Math.max(0, photoIdx - 1))} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", width: 40, height: 40, borderRadius: "50%", background: "rgba(0,0,0,0.5)", color: "#fff", fontSize: 20, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", border: "none" }}>‹</button>
-                      <button onClick={() => setPhotoIdx(Math.min(photos.length - 1, photoIdx + 1))} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", width: 40, height: 40, borderRadius: "50%", background: "rgba(0,0,0,0.5)", color: "#fff", fontSize: 20, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", border: "none" }}>›</button>
-                      <div style={{ position: "absolute", bottom: 12, left: "50%", transform: "translateX(-50%)", background: "rgba(0,0,0,0.6)", color: "#fff", padding: "4px 14px", borderRadius: 12, fontSize: 12, fontWeight: 600 }}>{photoIdx + 1} / {photos.length}</div>
-                    </>
-                  )}
-                </div>
-                {/* Thumbnails */}
-                {photos.length > 1 && (
-                  <div style={{ display: "flex", gap: 6, padding: 12, overflowX: "auto" }}>
-                    {photos.map((p: string, i: number) => (
-                      <img key={i} src={p} alt="" onClick={() => setPhotoIdx(i)} style={{ width: 72, height: 54, objectFit: "cover", borderRadius: 4, cursor: "pointer", border: i === photoIdx ? `3px solid ${BRAND}` : "3px solid transparent", opacity: i === photoIdx ? 1 : 0.6, transition: "all 0.15s" }} />
-                    ))}
-                  </div>
-                )}
+            {/* ── 위치정보 및 로드뷰 ── */}
+            {vacancy.lat && vacancy.lng && (
+              <div style={{ marginBottom: 50 }}>
+                <h3 style={{ fontSize: 18, fontWeight: "bold", color: "#111", marginBottom: 16 }}>위치정보</h3>
+                <div ref={mapRef} style={{ width: "100%", height: 350, border: "1px solid #ddd", marginBottom: 40 }}></div>
+                
+                <h3 style={{ fontSize: 18, fontWeight: "bold", color: "#111", marginBottom: 16 }}>로드뷰</h3>
+                <div ref={roadviewRef} style={{ width: "100%", height: 350, border: "1px solid #ddd" }}></div>
               </div>
             )}
 
-            {/* ── 위치정보 (Map) ── */}
-            {vacancy.lat && vacancy.lng && (
-              <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8, marginBottom: 16, overflow: "hidden" }}>
-                <div style={{ padding: "14px 18px", borderBottom: `2px solid ${BRAND}`, fontWeight: 800, fontSize: 16, color: BRAND }}>📍 위치정보</div>
-                <div ref={mapRef} style={{ width: "100%", height: 360, background: "#e8eaed" }}></div>
-                <div style={{ padding: "10px 18px", fontSize: 13, color: "#666", background: "#fafafa", borderTop: "1px solid #e5e7eb" }}>
-                  {vacancy.sido} {vacancy.sigungu} {vacancy.dong} {vacancy.detail_addr || ""}
+            {/* ── 옵션 ── */}
+            {vacancy.options && vacancy.options.length > 0 && (
+              <div style={{ marginBottom: 50 }}>
+                <h3 style={{ fontSize: 18, fontWeight: "bold", color: "#111", marginBottom: 16 }}>옵션</h3>
+                <div style={{ display: "flex", gap: 30, flexWrap: "wrap", padding: "20px 0" }}>
+                  {vacancy.options.map((opt: string) => (
+                    <div key={opt} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+                       <div style={{ width: 60, height: 60, borderRadius: "50%", background: "#f8f9fa", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, border: "1px solid #eee" }}>✓</div>
+                       <span style={{ fontSize: 14, color: "#444", fontWeight: 600 }}>{opt}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
+
+            {/* ── 주변환경 ── */}
+            {vacancy.infrastructure && Object.keys(vacancy.infrastructure).length > 0 && (
+              <div style={{ marginBottom: 50 }}>
+                <h3 style={{ fontSize: 18, fontWeight: "bold", color: "#111", marginBottom: 16 }}>주변환경</h3>
+                <div style={{ display: "flex", flexDirection: "column", gap: 16, borderTop: "2px solid #111", paddingTop: 20 }}>
+                  {Object.entries(vacancy.infrastructure).map(([label, tags]) => {
+                    const tagList = Array.isArray(tags) ? tags : [];
+                    if (tagList.length === 0) return null;
+                    return (
+                      <div key={label} style={{ display: "flex", alignItems: "center" }}>
+                        <div style={{ width: 120, fontSize: 15, fontWeight: "bold", color: "#666" }}>{label}</div>
+                        <div style={{ flex: 1, display: "flex", gap: 10, flexWrap: "wrap" }}>
+                          {tagList.map((tag: any) => (
+                            <span key={tag} style={{ background: "#f1f5f9", color: "#475569", fontSize: 13, padding: "6px 16px", borderRadius: 20, fontWeight: 600 }}>{String(tag)}</span>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* ── 댓글상담 ── */}
+            <div style={{ background: "#f8f9fa", padding: 30, borderRadius: 12, border: "1px solid #e5e7eb", marginBottom: 40 }}>
+              <div style={{ fontSize: 16, fontWeight: "bold", marginBottom: 16 }}>
+                댓글상담 <span style={{ color: "#1a73e8" }}>1</span>개
+              </div>
+              <div style={{ background: "#fff", border: "1px solid #d1d5db", borderRadius: 6, overflow: "hidden", marginBottom: 30 }}>
+                <textarea placeholder="로그인 후 이용하실 수 있습니다." style={{ width: "100%", height: 100, border: "none", padding: "16px", outline: "none", resize: "none", fontSize: 15 }} disabled></textarea>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 16px", background: "#f8fafc", borderTop: "1px solid #e2e8f0" }}>
+                  <label style={{ fontSize: 14, color: "#475569", display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}><input type="checkbox" style={{ zoom: 1.2 }} /> 비밀글</label>
+                  <button style={{ background: "#cbd5e1", color: "#fff", border: "none", padding: "8px 24px", borderRadius: 4, cursor: "pointer", fontWeight: "bold", fontSize: 14 }}>등록</button>
+                </div>
+              </div>
+
+              {/* Mock comment */}
+              <div style={{ borderBottom: "1px solid #e2e8f0", paddingBottom: 20, marginBottom: 20 }}>
+                <div style={{ fontSize: 14, fontWeight: "bold", color: "#1e293b", marginBottom: 8 }}>공실뉴스 <span style={{ color: "#94a3b8", fontWeight: "normal", fontSize: 12, marginLeft: 10 }}>2026. 04. 14. 오전 10:17</span></div>
+                <div style={{ fontSize: 15, color: "#334155", lineHeight: 1.5 }}>해당 매물 관심있습니다. 연락바랍니다.</div>
+              </div>
+            </div>
+
           </div>
 
           {/* ── Right Sidebar ── */}

@@ -69,6 +69,27 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   const [activeFilterDropdown, setActiveFilterDropdown] = useState<string | null>(null);
   const [galleryIndex, setGalleryIndex] = useState(0);
 
+  const [wishTab, setWishTab] = useState<"wish" | "recent">("wish");
+  const [recentViews, setRecentViews] = useState<number[]>([]);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('gongsil_recent_views');
+    if (saved) {
+      try { setRecentViews(JSON.parse(saved)); } catch (e) {}
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeProperty) {
+      setRecentViews(prev => {
+        const id = Number(activeProperty);
+        const newViews = [id, ...prev.filter(x => x !== id)].slice(0, 50);
+        localStorage.setItem('gongsil_recent_views', JSON.stringify(newViews));
+        return newViews;
+      });
+    }
+  }, [activeProperty]);
+
   // ── 실제 필터 상태 (네이버 부동산 스타일) ──
   const [filterTradeTypes, setFilterTradeTypes] = useState<string[]>([]);
   const [filterPriceMin, setFilterPriceMin] = useState<number | null>(null);
@@ -129,6 +150,13 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   const filteredVacancies = React.useMemo(() => {
     let list = dbVacancies;
 
+    if (activeCategory === "wish") {
+      if (wishTab === "recent") {
+        return recentViews.map(id => dbVacancies.find(v => Number(v.id) === id)).filter(Boolean) as any[];
+      }
+      return [];
+    }
+
     // 1) property_type 필터 (메인 카테고리 탭)
     const dbPropType = CATEGORY_TO_PROPERTY_TYPE[activeCategory];
     if (dbPropType) {
@@ -187,7 +215,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     }
 
     return list;
-  }, [dbVacancies, activeCategory, activePills, filterTradeTypes, filterPriceMin, filterPriceMax, filterAreaMin, filterAreaMax, filterMaintIdx, filterRoomCount, filterBathCount, filterDirection]);
+  }, [dbVacancies, activeCategory, activePills, filterTradeTypes, filterPriceMin, filterPriceMax, filterAreaMin, filterAreaMax, filterMaintIdx, filterRoomCount, filterBathCount, filterDirection, wishTab, recentViews]);
 
   // ── 지도 범위 / 클러스터 선택 적용 ──
   const displayVacancies = React.useMemo(() => {
@@ -885,14 +913,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
           </div>
         )}
 
-        {/* MY관심공실 전용 탭 */}
-        {activeCategory === "wish" && (
-          <div style={{ display: "flex", width: "100%", borderBottom: "1px solid #eee" }}>
-            {["찜한물건", "최근본물건"].map((tab) => (
-              <div key={tab} style={{ flex: 1, padding: "12px 0", textAlign: "center", border: "1px solid #eee", background: tab === "찜한물건" ? "#1a73e8" : "#fff", fontSize: 13, cursor: "pointer", color: tab === "찜한물건" ? "#fff" : "#666", fontWeight: "bold" }}>{tab}</div>
-            ))}
-          </div>
-        )}
+        {/* MY관심공실 전용 탭 (사이드바로 이동됨) */}
 
         {/* 상세 필터 행 */}
         {showDetailFilters && config.detailFilters.length > 0 && (
@@ -910,13 +931,49 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
       <main style={{ display: "flex", flex: 1, minHeight: 0, position: "relative" }}>
         {/* 좌측 사이드바: 매물 리스트 (380px) */}
         <aside style={{ width: 380, minWidth: 380, height: "100%", background: "#fff", borderRight: "1px solid #eee", display: "flex", flexDirection: "column", zIndex: 20 }}>
+          {activeCategory === "wish" ? (
+            <>
+              <div style={{ display: "flex", width: "100%" }}>
+                {["찜한물건", "최근본물건"].map((tab) => {
+                  const isTabActive = (tab === "찜한물건" && wishTab === "wish") || (tab === "최근본물건" && wishTab === "recent");
+                  return (
+                    <div key={tab} 
+                      onClick={() => setWishTab(tab === "찜한물건" ? "wish" : "recent")}
+                      style={{ flex: 1, padding: "14px 0", textAlign: "center", borderTop: "1px solid transparent", borderBottom: isTabActive ? "none" : "1px solid #e0e0e0", background: isTabActive ? "#1a73e8" : "#f5f5f5", fontSize: 14, cursor: "pointer", color: isTabActive ? "#fff" : "#666", fontWeight: isTabActive ? "bold" : "normal" }}
+                    >
+                      {tab}
+                    </div>
+                  );
+                })}
+              </div>
+              <div style={{ padding: "12px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #f5f5f5" }}>
+                 <div style={{ display: "flex", gap: 10, fontSize: 12, color: "#999" }}>
+                    <span style={{ color: "#1a73e8", fontWeight: "bold", cursor: "pointer" }}>등록취소</span>
+                    <span style={{ cursor: "pointer" }}>가나다순</span>
+                    <span style={{ cursor: "pointer" }}>세대수순</span>
+                    <span style={{ cursor: "pointer" }}>최근접수순</span>
+                 </div>
+                 <div style={{ fontSize: 12, color: "#999", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path></svg>
+                    편집
+                 </div>
+              </div>
+              <div style={{ padding: "15px 20px 5px", fontWeight: "bold", fontSize: 14, color: "#111" }}>
+                현재 지도 화면 {displayVacancies.length}개
+              </div>
+            </>
+          ) : (
             <div style={{ padding: "15px 20px", fontWeight: 800, fontSize: 15, color: "#111", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #eee", flexShrink: 0 }}>
               <span>{selectedClusterIds && selectedClusterIds.length > 0 ? "선택된 공실" : "지도위의 공실"} {displayVacancies.length}개</span>
             </div>
-            <div style={{ flex: 1, overflowY: "auto", padding: 0, background: "#fff" }}>
-              {displayVacancies.length === 0 ? (
-                 <div style={{ padding: "40px", textAlign: "center", color: "#888", fontSize: 14 }}>조건에 맞는 매물이 없습니다.</div>
-              ) : displayVacancies.map((prop) => {
+          )}
+
+          <div style={{ flex: 1, overflowY: "auto", padding: 0, background: "#fff" }}>
+            {displayVacancies.length === 0 ? (
+               <div style={{ padding: "60px 40px", textAlign: "center", color: "#888", fontSize: 14 }}>
+                 {activeCategory === "wish" ? (wishTab === "wish" ? "현재 등록된 관심 매물이 없습니다." : "최근 본 매물이 없습니다.") : "조건에 맞는 매물이 없습니다."}
+               </div>
+            ) : displayVacancies.map((prop) => {
                 const isActiveAndShowing = activeProperty === prop.id && showDetail;
                 const addrText = [prop.dong, prop.building_name].filter(Boolean).join(" ");
                 const priceText = getPriceText(prop);
@@ -977,7 +1034,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
             const tagColor = prop.commission_type === '공동수수료' ? "#2e7d32" : "#1a73e8";
             
             return (
-          <div style={{ width: 600, minWidth: 600, flexShrink: 0, background: "#fff", display: "flex", flexDirection: "column", position: "relative", borderRight: "1px solid #eee", zIndex: 25, boxShadow: "5px 0 15px rgba(0,0,0,0.05)", height: "100%" }}>
+          <div style={{ position: "absolute", left: 380, top: 0, width: 600, height: "100%", background: "#fff", display: "flex", flexDirection: "column", borderRight: "1px solid #eee", zIndex: 30, boxShadow: "5px 0 15px rgba(0,0,0,0.15)" }}>
             {/* 닫기 버튼 */}
             <button onClick={() => setShowDetail(false)} style={{ position: "absolute", top: 15, right: 15, width: 30, height: 30, background: "rgba(255,255,255,0.8)", border: "1px solid #ddd", borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, fontWeight: "bold", color: "#333", zIndex: 100 }}>×</button>
 

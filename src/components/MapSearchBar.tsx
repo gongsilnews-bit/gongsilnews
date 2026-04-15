@@ -4,12 +4,13 @@ import React, { useState, useEffect, useRef } from "react";
 
 interface MapSearchBarProps {
   onSearchCoord: (lat: number, lng: number, zoomLevel?: number) => void;
+  onRegionSelect?: (sido: string, gugun: string, dong: string) => void;
   mapCenterRegion?: { sido: string; gugun: string; dong: string } | null;
   themeColor?: string;
   isPushedDown?: boolean;
 }
 
-export default function MapSearchBar({ onSearchCoord, mapCenterRegion, themeColor = "#ff8e15", isPushedDown = false }: MapSearchBarProps) {
+export default function MapSearchBar({ onSearchCoord, onRegionSelect, mapCenterRegion, themeColor = "#ff8e15", isPushedDown = false }: MapSearchBarProps) {
   const [activePanel, setActivePanel] = useState<"region" | "search" | null>(null);
   const [activeTab, setActiveTab] = useState<"sido" | "gugun" | "dong">("sido");
 
@@ -131,6 +132,7 @@ export default function MapSearchBar({ onSearchCoord, mapCenterRegion, themeColo
     loadRegGugun(code);
     setActiveTab("gugun");
     moveToMapSearchByKeyword(name, 8);
+    onRegionSelect?.(name, "", "");
   };
 
   const onRegSelectGugun = (code: string, name: string) => {
@@ -140,12 +142,14 @@ export default function MapSearchBar({ onSearchCoord, mapCenterRegion, themeColo
     loadRegDong(code);
     setActiveTab("dong");
     moveToMapSearchByKeyword(`${selectedSido} ${name}`, 6);
+    onRegionSelect?.(selectedSido, name, "");
   };
 
   const onRegSelectDong = (name: string) => {
     setSelectedDong(name);
     moveToMapSearchByKeyword(`${selectedSido} ${selectedGugun} ${name}`, 4);
     setActivePanel(null); // Close panel after final selection
+    onRegionSelect?.(selectedSido, selectedGugun, name);
   };
 
   const executeMapKeywordSearch = () => {

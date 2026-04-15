@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { getVacancies } from "@/app/actions/vacancy";
+import { getMapBlocks } from "@/app/actions/map_blocks";
+import MapSearchBar from "@/components/MapSearchBar";
 
 const CATEGORY_OPTIONS = [
   { label: "전체", value: "" },
@@ -58,18 +60,40 @@ export default function HomepagePage() {
   const router = useRouter();
   const [vacancies, setVacancies] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isDetailSearchOpen, setIsDetailSearchOpen] = useState(false);
+  const [isPropertyTypeDropdownOpen, setIsPropertyTypeDropdownOpen] = useState(false);
+  const [isTradeTypeDropdownOpen, setIsTradeTypeDropdownOpen] = useState(false);
+
+  const dropdownRef1 = useRef<HTMLDivElement>(null);
+  const dropdownRef2 = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef1.current && !dropdownRef1.current.contains(e.target as Node)) {
+        setIsPropertyTypeDropdownOpen(false);
+      }
+      if (dropdownRef2.current && !dropdownRef2.current.contains(e.target as Node)) {
+        setIsTradeTypeDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const [category, setCategory] = useState("");
   const [tradeType, setTradeType] = useState("");
   const [sido, setSido] = useState("서울특별시");
   const [sigungu, setSigungu] = useState(""); // 구 선택
-  const [selectedDong, setSelectedDong] = useState(""); // 블럭(동) 선택
+  const [selectedDongs, setSelectedDongs] = useState<string[]>([]); // 블럭(동) 복수 선택
   const [sortBy, setSortBy] = useState("latest");
   const [currentPage, setCurrentPage] = useState(1);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [geoData, setGeoData] = useState<any>(null);
+  const [customBlocks, setCustomBlocks] = useState<any[]>([]);
   const [sigunguList, setSigunguList] = useState<string[]>([]);
   const mapRef = useRef<HTMLDivElement>(null);
   const kakaoMapRef = useRef<any>(null);
+  const prevSigunguRef = useRef(""); // 시군구 변경 감지용
   const polygonsRef = useRef<any[]>([]);
   const overlaysRef = useRef<any[]>([]);
   const ITEMS_PER_PAGE = 10;
@@ -78,19 +102,27 @@ export default function HomepagePage() {
   useEffect(() => {
     async function load() {
       setLoading(true);
-      const res = await getVacancies({ all: true });
-      if (res.success && res.data) {
-        const active = res.data
-          .filter((v: any) => v.status === "ACTIVE")
-          .map((v: any) => ({
-            ...v,
-            photos: v.vacancy_photos
-              ? [...v.vacancy_photos].sort((a: any, b: any) => a.sort_order - b.sort_order).map((p: any) => p.url)
-              : [],
-          }));
+      try {
+        const res = await getVacancies({ all: true });
+        
+        let active = [];
+        if (res.success && res.data) {
+          active = res.data
+            .filter((v: any) => v.status === "ACTIVE")
+            .map((v: any) => ({
+              ...v,
+              photos: v.vacancy_photos
+                ? [...v.vacancy_photos].sort((a: any, b: any) => a.sort_order - b.sort_order).map((p: any) => p.url)
+                : [],
+            }));
+        }
+
         setVacancies(active);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     }
     load();
   }, []);
@@ -107,6 +139,29 @@ export default function HomepagePage() {
         .catch(() => {});
     }
   }, [sido]);
+
+  // Load Custom Blocks
+  useEffect(() => {
+    async function loadCustom() {
+      const res = await getMapBlocks({ sido: sido === "시도선택" ? undefined : sido });
+      if (res.success && res.data) {
+        setCustomBlocks(res.data);
+      }
+    }
+    loadCustom();
+  }, [sido]);
+
+  const handleSearchCoord = useCallback((lat: number, lng: number, zoomLevel?: number) => {
+    if (kakaoMapRef.current) {
+      const kakao = (window as any).kakao;
+      if (!kakao || !kakao.maps) return;
+      const moveLatLon = new kakao.maps.LatLng(lat, lng);
+      kakaoMapRef.current.setCenter(moveLatLon);
+      if (typeof zoomLevel === 'number') {
+        kakaoMapRef.current.setLevel(zoomLevel);
+      }
+    }
+  }, []);
 
   // Load Kakao Map
   useEffect(() => {
@@ -128,8 +183,11 @@ export default function HomepagePage() {
     if (!mapLoaded || !mapRef.current || kakaoMapRef.current) return;
     const kakao = (window as any).kakao;
     kakaoMapRef.current = new kakao.maps.Map(mapRef.current, {
-      center: new kakao.maps.LatLng(37.498095, 127.02761), level: 7,
+      center: new kakao.maps.LatLng(37.498095, 127.02761), level: 6,
     });
+    // Set zoom restrictions based on the requirement for block maps
+    kakaoMapRef.current.setMinLevel(4); // Max zoom in (1 block clearly fills the center)
+    kakaoMapRef.current.setMaxLevel(8); // Max zoom out (Multiple blocks outline visible)
   }, [mapLoaded]);
 
   // Render polygons on map when sigungu changes
@@ -144,18 +202,24 @@ export default function HomepagePage() {
     polygonsRef.current = [];
     overlaysRef.current = [];
 
-    // Filter features by selected sigungu
-    const features = sigungu
-      ? geoData.features.filter((f: any) => f.properties.sggnm === sigungu)
-      : [];
+    // Load all features and blocks for the entire Sido
+    const features = geoData.features || [];
+    const activeCustomBlocks = customBlocks || [];
 
-    if (features.length === 0) return;
+    if (features.length === 0 && activeCustomBlocks.length === 0) return;
 
     const bounds = new kakao.maps.LatLngBounds();
+    let hasBounds = false;
 
     features.forEach((feature: any) => {
       const admNm = feature.properties.adm_nm || "";
       const dongName = admNm.split(" ").pop() || "";
+      const sggnm = feature.properties.sggnm || "";
+      const isSigunguMatch = sigungu ? (sggnm === sigungu || admNm.includes(sigungu)) : true;
+      
+      // If a custom block exists with the same name, skip GeoJSON to avoid overlapping darker layers
+      if (activeCustomBlocks.some(b => b.name === dongName)) return;
+
       const coords = feature.geometry.coordinates;
       const isMulti = feature.geometry.type === "MultiPolygon";
       const polygonPaths = isMulti ? coords : [coords];
@@ -163,58 +227,95 @@ export default function HomepagePage() {
       polygonPaths.forEach((polyCoords: any) => {
         const path = polyCoords[0].map((c: number[]) => {
           const latlng = new kakao.maps.LatLng(c[1], c[0]);
-          bounds.extend(latlng);
+          if (isSigunguMatch) {
+            bounds.extend(latlng);
+            hasBounds = true;
+          }
           return latlng;
         });
 
-        const isSelected = selectedDong === dongName;
+        const isSelected = selectedDongs.includes(dongName);
         const polygon = new kakao.maps.Polygon({
           path,
           strokeWeight: isSelected ? 3 : 2,
           strokeColor: isSelected ? "#c53030" : "#004c80",
-          strokeOpacity: 0.8,
+          strokeOpacity: isSelected ? 0.8 : 0.01,
           fillColor: isSelected ? "#fed7d7" : "#3182ce",
-          fillOpacity: isSelected ? 0.5 : 0.3,
+          fillOpacity: isSelected ? 0.3 : 0.01,
         });
         polygon.setMap(map);
         polygonsRef.current.push(polygon);
 
         // Hover effect
         kakao.maps.event.addListener(polygon, "mouseover", () => {
-          if (selectedDong !== dongName) polygon.setOptions({ fillOpacity: 0.45, fillColor: "#63b3ed" });
+          if (!selectedDongs.includes(dongName)) {
+            polygon.setOptions({ fillColor: "#718096", fillOpacity: 0.4, strokeOpacity: 0.6 });
+          }
         });
         kakao.maps.event.addListener(polygon, "mouseout", () => {
-          if (selectedDong !== dongName) polygon.setOptions({ fillOpacity: 0.2, fillColor: "#3182ce" });
+          if (!selectedDongs.includes(dongName)) {
+            polygon.setOptions({ fillColor: "#3182ce", fillOpacity: 0.01, strokeOpacity: 0.01 });
+          }
         });
 
         // Click → filter
         kakao.maps.event.addListener(polygon, "click", () => {
-          setSelectedDong(prev => prev === dongName ? "" : dongName);
+          setSelectedDongs(prev => prev.includes(dongName) ? prev.filter(d => d !== dongName) : [...prev, dongName]);
           setCurrentPage(1);
         });
       });
-
-      // Label overlay at center
-      const allCoords = (isMulti ? coords[0][0] : coords[0]) as number[][];
-      const cLat = allCoords.reduce((s: number, c: number[]) => s + c[1], 0) / allCoords.length;
-      const cLng = allCoords.reduce((s: number, c: number[]) => s + c[0], 0) / allCoords.length;
-      const count = countVacanciesInDong(vacancies, admNm);
-
-      const overlayContent = document.createElement("div");
-      overlayContent.style.cssText = `padding:3px 8px;background:rgba(255,255,255,0.92);border:1px solid #4a90d9;border-radius:4px;font-size:11px;font-weight:700;color:#1a365d;white-space:nowrap;pointer-events:none;box-shadow:0 1px 4px rgba(0,0,0,0.15);`;
-      overlayContent.innerHTML = `${dongName}${count > 0 ? ` <span style="color:#e53e3e">(${count})</span>` : ""}`;
-
-      const overlay = new kakao.maps.CustomOverlay({
-        position: new kakao.maps.LatLng(cLat, cLng),
-        content: overlayContent,
-        yAnchor: 0.5,
-      });
-      overlay.setMap(map);
-      overlaysRef.current.push(overlay);
     });
 
-    map.setBounds(bounds);
-  }, [mapLoaded, geoData, sigungu, selectedDong, vacancies]);
+    // Handle Custom Blocks (from DB)
+    activeCustomBlocks.forEach(block => {
+      if (!block.coordinates || block.coordinates.length < 3) return;
+      
+      const isSigunguMatch = sigungu ? block.sigungu === sigungu : true;
+
+      const path = block.coordinates.map((c: any) => {
+        const latlng = new kakao.maps.LatLng(c.lat, c.lng);
+        if (isSigunguMatch) {
+          bounds.extend(latlng);
+          hasBounds = true;
+        }
+        return latlng;
+      });
+
+      const isSelected = selectedDongs.includes(block.name);
+      const polygon = new kakao.maps.Polygon({
+        path,
+        strokeWeight: isSelected ? 3 : 2,
+        strokeColor: isSelected ? "#c53030" : (block.color || "#004c80"),
+        strokeOpacity: isSelected ? 0.8 : 0.01,
+        fillColor: isSelected ? "#fed7d7" : (block.color || "#3182ce"),
+        fillOpacity: isSelected ? 0.3 : 0.01,
+      });
+      polygon.setMap(map);
+      polygonsRef.current.push(polygon);
+
+      kakao.maps.event.addListener(polygon, "mouseover", () => {
+        if (!selectedDongs.includes(block.name)) {
+          polygon.setOptions({ fillColor: "#718096", fillOpacity: 0.4, strokeOpacity: 0.6 });
+        }
+      });
+      kakao.maps.event.addListener(polygon, "mouseout", () => {
+        if (!selectedDongs.includes(block.name)) {
+          polygon.setOptions({ fillColor: (block.color || "#3182ce"), fillOpacity: 0.01, strokeOpacity: 0.01 });
+        }
+      });
+      kakao.maps.event.addListener(polygon, "click", () => {
+        setSelectedDongs(prev => prev.includes(block.name) ? prev.filter(d => d !== block.name) : [...prev, block.name]);
+        setCurrentPage(1);
+      });
+    });
+
+    if (prevSigunguRef.current !== sigungu) {
+      if (hasBounds) {
+        map.setBounds(bounds);
+      }
+      prevSigunguRef.current = sigungu;
+    }
+  }, [mapLoaded, geoData, customBlocks, sigungu, selectedDongs, vacancies]);
 
   useEffect(() => { renderPolygons(); }, [renderPolygons]);
 
@@ -225,12 +326,19 @@ export default function HomepagePage() {
     if (tradeType) list = list.filter(v => v.trade_type === tradeType);
     if (sido && sido !== "시도선택") list = list.filter(v => v.sido === sido);
     if (sigungu) list = list.filter(v => v.sigungu === sigungu);
-    if (selectedDong) list = list.filter(v => v.dong && v.dong.includes(selectedDong.replace(/동$/, "")));
+    if (selectedDongs.length > 0) {
+      list = list.filter(v => 
+        selectedDongs.some(dong => 
+          (v.dong && v.dong.includes(dong.replace(/동$/, ""))) || 
+          (v.building_name && v.building_name.includes(dong))
+        )
+      );
+    }
     if (sortBy === "price_asc") list = [...list].sort((a, b) => (a.deposit || 0) - (b.deposit || 0));
     else if (sortBy === "price_desc") list = [...list].sort((a, b) => (b.deposit || 0) - (a.deposit || 0));
     else list = [...list].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     return list;
-  }, [vacancies, category, tradeType, sido, sigungu, selectedDong, sortBy]);
+  }, [vacancies, category, tradeType, sido, sigungu, selectedDongs, sortBy]);
 
   // Pagination
   const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
@@ -266,94 +374,252 @@ export default function HomepagePage() {
   });
 
   return (
-    <div style={{ background: "#f8f9fa", minHeight: "100vh" }}>
+    <div style={{ background: "#fff", minHeight: "100vh" }}>
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "24px 16px" }}>
 
-        {/* ── 1. Search Filter Bar ── */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
-          <div style={{ display: "flex", alignItems: "stretch", border: "1px solid #d1d5db", borderRadius: 4, overflow: "hidden" }}>
-            <span style={{ padding: "8px 14px", background: BRAND, color: "#fff", fontSize: 13, fontWeight: 700, whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 4 }}>📋 매물종류</span>
-            <select value={category} onChange={e => { setCategory(e.target.value); setCurrentPage(1); }} style={{ ...selectStyle, border: "none", borderRadius: 0, minWidth: 140 }}>
-              {CATEGORY_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-            </select>
-          </div>
-          <div style={{ display: "flex", alignItems: "stretch", border: "1px solid #d1d5db", borderRadius: 4, overflow: "hidden" }}>
-            <span style={{ padding: "8px 14px", background: "#e53e3e", color: "#fff", fontSize: 13, fontWeight: 700, whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 4 }}>📍 시도선택</span>
-            <select value={sido} onChange={e => { setSido(e.target.value); setSigungu(""); setSelectedDong(""); setCurrentPage(1); }} style={{ ...selectStyle, border: "none", borderRadius: 0, minWidth: 120 }}>
-              {SIDO_LIST.map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
-          </div>
-          <div style={{ display: "flex", alignItems: "stretch", border: "1px solid #d1d5db", borderRadius: 4, overflow: "hidden", flex: 1, minWidth: 200 }}>
-            <input type="text" placeholder="단지명 / 주소 검색" style={{ padding: "8px 14px", fontSize: 14, outline: "none", border: "none", flex: 1 }} />
-            <button style={{ padding: "8px 16px", background: "#f3f4f6", borderLeft: "1px solid #d1d5db", fontSize: 13, color: "#555", cursor: "pointer", fontWeight: 600 }}>검색</button>
-          </div>
-          <button style={{ display: "flex", alignItems: "center", gap: 4, padding: "8px 16px", border: "1px solid #d1d5db", borderRadius: 4, background: "#fff", fontSize: 13, cursor: "pointer", fontWeight: 600, color: "#374151" }}>
-            🔍 상세검색 ▾
-          </button>
+        {/* ── 1. Header Tabs ── */}
+        <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 16, paddingBottom: 8 }}>
+          <h2 style={{ fontSize: 20, fontWeight: 800, color: BRAND, margin: 0 }}>서울블럭지도</h2>
+          <span style={{ color: "#d1d5db", fontSize: 18 }}>|</span>
+          <a href="/gongsil" style={{ fontSize: 16, fontWeight: 600, color: "#6b7280", textDecoration: "none" }}>지도검색</a>
         </div>
 
-        {/* ── 2. Map + Sigungu Sidebar ── */}
-        <div style={{ display: "flex", gap: 0, marginBottom: 16 }}>
-          <div ref={mapRef} style={{ flex: 1, height: 480, borderRadius: "8px 0 0 8px", border: "1px solid #d1d5db", borderRight: "none", background: "#e8eaed", position: "relative" }}>
+        {/* ── 2. Map Container ── */}
+        <div style={{ marginBottom: 0 }}>
+          <div ref={mapRef} style={{ width: "100%", height: 500, borderRadius: 8, border: "1px solid #d1d5db", background: "#e8eaed", position: "relative", overflow: "hidden" }}>
             {!mapLoaded && (
               <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", color: "#888", fontSize: 14 }}>
                 <span style={{ display: "inline-block", width: 24, height: 24, border: "3px solid #ddd", borderTop: `3px solid ${BRAND}`, borderRadius: "50%", animation: "spin 1s linear infinite", marginRight: 10 }}></span>
                 지도 로딩 중...
               </div>
             )}
-            {/* Selected dong badge */}
-            {selectedDong && (
-              <div style={{ position: "absolute", top: 12, left: 12, zIndex: 10, display: "flex", alignItems: "center", gap: 8, background: "#fff", border: `2px solid ${BRAND}`, borderRadius: 20, padding: "6px 16px", boxShadow: "0 2px 8px rgba(0,0,0,0.15)" }}>
-                <span style={{ fontSize: 13, fontWeight: 700, color: BRAND }}>📍 {selectedDong}</span>
-                <span onClick={() => { setSelectedDong(""); setCurrentPage(1); }} style={{ fontSize: 11, color: "#888", cursor: "pointer", fontWeight: 600 }}>✕ 초기화</span>
+
+            {/* MapSearchBar (Real Functionality) */}
+            <style>{`
+              #wishFloatingFilter {
+                left: 16px !important;
+                transform: none !important;
+                top: 16px !important;
+              }
+            `}</style>
+            {mapLoaded && (
+              <MapSearchBar 
+                onSearchCoord={handleSearchCoord} 
+                onRegionSelect={(sSido, sGugun, sDong) => {
+                  if (sSido && sSido !== "시/도 선택") setSido(sSido);
+                  if (sGugun && sGugun !== "-") setSigungu(sGugun);
+                  else setSigungu("");
+                  
+                  if (sDong && sDong !== "-") {
+                    setSelectedDongs(prev => prev.includes(sDong) ? prev : [...prev, sDong]);
+                  }
+                }}
+                themeColor="#1a73e8" 
+                isPushedDown={false} 
+              />
+            )}
+            
+            {/* Bottom Right Floating Badge & Chips */}
+            <div style={{ position: "absolute", bottom: 16, right: 16, zIndex: 10, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8, maxWidth: "80%" }}>
+              <div style={{ display: "flex", alignItems: "center", background: "#1a365d", color: "#fff", padding: "8px 16px", borderRadius: 4, boxShadow: "0 2px 8px rgba(0,0,0,0.2)" }}>
+                <span style={{ fontSize: 13, fontWeight: 600 }}>총 <strong style={{ color: "#fbbf24" }}>{selectedDongs.length}</strong>개의 블록이 선택되었습니다.</span>
+                <button onClick={() => { setSelectedDongs([]); setCurrentPage(1); }} style={{ marginLeft: 12, display: "flex", alignItems: "center", gap: 4, background: "#fff", color: "#1a365d", border: "1px solid #ccc", padding: "4px 8px", fontSize: 12, fontWeight: 700, borderRadius: 2, cursor: "pointer" }}>
+                  ↻ 지도초기화
+                </button>
               </div>
-            )}
-          </div>
-
-          {/* Sigungu Sidebar */}
-          <div style={{ width: 160, height: 480, border: "1px solid #d1d5db", borderRadius: "0 8px 8px 0", background: "#fff", overflowY: "auto" }}>
-            <div style={{ padding: "10px 14px", borderBottom: `2px solid ${BRAND}`, fontSize: 13, fontWeight: 800, color: BRAND, textAlign: "center" }}>시도선택</div>
-            {sigunguList.map(sg => (
-              <div key={sg} onClick={() => { setSigungu(prev => prev === sg ? "" : sg); setSelectedDong(""); setCurrentPage(1); }}
-                style={{ padding: "8px 14px", fontSize: 13, cursor: "pointer", borderBottom: "1px solid #f0f0f0", fontWeight: sigungu === sg ? 700 : 400, color: sigungu === sg ? BRAND : "#374151", background: sigungu === sg ? "#eff6ff" : "transparent", transition: "all 0.15s" }}
-                onMouseEnter={e => { if (sigungu !== sg) e.currentTarget.style.background = "#f9fafb"; }}
-                onMouseLeave={e => { if (sigungu !== sg) e.currentTarget.style.background = "transparent"; }}
-              >{sg}</div>
-            ))}
-            {sigunguList.length === 0 && <div style={{ padding: 16, fontSize: 12, color: "#aaa", textAlign: "center" }}>시도를 선택하세요</div>}
+              
+              {/* Selected Blocks List inside Map */}
+              {selectedDongs.length > 0 && (
+                <div style={{ display: "flex", flexDirection: "row-reverse", flexWrap: "wrap", gap: 8, width: "100%", justifyContent: "flex-end" }}>
+                  {selectedDongs.map(dong => (
+                    <div key={dong} style={{ display: "flex", alignItems: "center", gap: 6, background: "#fff", border: `1px solid #d1d5db`, padding: "4px 10px", fontSize: 12, color: "#374151", boxShadow: "0 2px 5px rgba(0,0,0,0.15)", borderRadius: 2 }}>
+                      <span style={{ fontWeight: 600 }}>{dong}</span>
+                      <span onClick={() => { setSelectedDongs(prev => prev.filter(d => d !== dong)); setCurrentPage(1); }} style={{ cursor: "pointer", color: "#888", fontWeight: 800, fontSize: 10 }}>✕</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* ── 3. Filter tabs ── */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginRight: 4 }}>매물종류전체</span>
-            <span style={{ color: "#d1d5db" }}>|</span>
-            <span style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginRight: 8 }}>거래전체</span>
-            {TRADE_OPTIONS.map(t => (
-              <button key={t.value} onClick={() => { setTradeType(t.value); setCurrentPage(1); }} style={btnStyle(tradeType === t.value)}>
-                {t.label}
+        {/* ── 3. Compact Search & Control Toolbar ── */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: isDetailSearchOpen ? "none" : "2px solid #1a365d", paddingBottom: 16, marginBottom: isDetailSearchOpen ? 0 : 16, marginTop: 16 }}>
+          {/* Left Side (Previously Right): Search Results & Sort */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 15, fontWeight: 700, color: "#374151", marginRight: 8 }}>총 <span style={{ color: "#1a365d" }}>{filtered.length}</span>건 결과</span>
+            <button style={{ padding: "8px 14px", background: "#fff", border: "1px solid #d1d5db", fontSize: 14, cursor: "pointer", borderRadius: 2 }}>검색결과 모두 펼쳐보기</button>
+            <button style={{ padding: "8px 14px", background: "#fff", border: "1px solid #d1d5db", fontSize: 14, cursor: "pointer", borderRadius: 2 }}>정확도 순으로</button>
+            <button style={{ padding: "8px 14px", background: "#fff", border: "1px solid #d1d5db", fontSize: 14, cursor: "pointer", borderRadius: 2 }}>최신 순으로</button>
+            <button style={{ padding: "8px 14px", background: "#fff", border: "1px solid #d1d5db", fontSize: 14, cursor: "pointer", borderRadius: 2 }}>가격 순서로</button>
+          </div>
+
+          {/* Right Side (Previously Left): Dropdowns & Search Toggle */}
+          <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+            <div ref={dropdownRef1} style={{ position: "relative" }}>
+              <button onClick={() => setIsPropertyTypeDropdownOpen(!isPropertyTypeDropdownOpen)} style={{ background: "#fff", border: "1px solid #d1d5db", padding: "8px 16px", borderRadius: 4, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontWeight: 600, color: "#374151" }}>
+                {category || "전체물건"} ▼
               </button>
-            ))}
-            {selectedDong && (
-              <span style={{ fontSize: 12, fontWeight: 600, color: "#e53e3e", marginLeft: 8, display: "flex", alignItems: "center", gap: 4 }}>
-                📍 {sigungu} {selectedDong} 선택됨
-                <span onClick={() => { setSelectedDong(""); setCurrentPage(1); }} style={{ cursor: "pointer", textDecoration: "underline" }}>해제</span>
-              </span>
-            )}
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <span style={{ fontSize: 13, color: "#6b7280" }}>총 <strong style={{ color: BRAND }}>{filtered.length}</strong>건</span>
-            <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={selectStyle}>
-              {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-            </select>
+              {isPropertyTypeDropdownOpen && (
+                <div style={{ position: "absolute", top: "100%", right: 0, marginTop: 4, background: "#fff", border: "1px solid #ccc", borderRadius: 4, boxShadow: "0 4px 12px rgba(0,0,0,0.15)", width: 180, zIndex: 100 }}>
+                  {["전체물건", "아파트/주상복합", "오피스텔", "원룸/투룸/주택", "상가/사무실"].map(item => (
+                    <div key={item} style={{ padding: "10px 16px", fontSize: 13, cursor: "pointer", borderBottom: "1px solid #eee", color: "#333", background: category === item || (item === "전체물건" && !category) ? "#f0f7ff" : "transparent" }} onClick={() => { setCategory(item === "전체물건" ? "" : item); setIsPropertyTypeDropdownOpen(false); }}>{item}</div>
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            <div ref={dropdownRef2} style={{ position: "relative" }}>
+              <button onClick={() => setIsTradeTypeDropdownOpen(!isTradeTypeDropdownOpen)} style={{ background: "#fff", border: "1px solid #d1d5db", padding: "8px 16px", borderRadius: 4, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontWeight: 600, color: "#374151" }}>
+                거래방식 ▼
+              </button>
+              {isTradeTypeDropdownOpen && (
+                <div style={{ position: "absolute", top: "100%", right: 0, marginTop: 4, background: "#fff", border: "1px solid #ccc", borderRadius: 4, boxShadow: "0 4px 12px rgba(0,0,0,0.15)", width: 140, zIndex: 100 }}>
+                  {["매매", "전세", "월세", "단기임대"].map(item => (
+                    <label key={item} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 16px", fontSize: 13, cursor: "pointer", borderBottom: "1px solid #eee", color: "#333", margin: 0 }}>
+                      <input type="checkbox" style={{ zoom: 1.2 }} /> {item}
+                    </label>
+                  ))}
+                  <div style={{ padding: "8px", textAlign: "center", background: "#f9f9f9" }}>
+                    <button style={{ padding: "4px 12px", fontSize: 12, border: "1px solid #ccc", background: "#fff", cursor: "pointer", borderRadius: 2 }} onClick={() => setIsTradeTypeDropdownOpen(false)}>닫기 x</button>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <button style={{ background: "#fff", color: "#111", border: "1px solid #111", padding: "8px 24px", fontSize: 14, borderRadius: 4, cursor: "pointer", fontWeight: "bold" }}>
+              검색 🔍
+            </button>
+            <button onClick={() => setIsDetailSearchOpen(!isDetailSearchOpen)} style={{ background: "transparent", color: "#1a365d", border: "none", padding: "8px 8px", fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, fontWeight: "bold" }}>
+              {isDetailSearchOpen ? "상세검색 닫기 ▲" : "상세검색 열기 ▼"}
+            </button>
           </div>
         </div>
 
-        {/* ── 4. 매물목록 header ── */}
-        <div style={{ borderBottom: `3px solid ${BRAND}`, paddingBottom: 8, marginBottom: 0 }}>
-          <h2 style={{ fontSize: 18, fontWeight: 800, color: "#111" }}>매물목록</h2>
+        {/* ── 4. Complex Legacy Filter Section (Collapsible) ── */}
+        {isDetailSearchOpen && (
+          <div style={{ border: "1px solid #8ba4b9", borderTop: "2px solid #1a365d", borderBottom: "2px solid #1a365d", marginBottom: 24, borderRadius: "0 0 4px 4px" }}>
+          {/* Top Categories Row */}
+          <style>{`
+            .legacy-filter-col {
+              padding: 10px; text-align: center; font-size: 15px; font-weight: 700; 
+              cursor: pointer; transition: all 0.2s ease; position: relative;
+            }
+            .legacy-filter-col:hover {
+              background: #1a365d !important;
+              color: #fff !important;
+              transform: scale(1.06);
+              box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+              z-index: 10;
+            }
+          `}</style>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr 1.5fr 1fr 1.5fr", background: "#f1f6fa", borderBottom: "1px solid #c2d3e4" }}>
+            {[
+              { label: "매물구분", active: false },
+              { label: "거래구분", active: false },
+              { label: "룸갯수", active: false },
+              { label: "층 구분", active: false },
+              { label: "준공년도", active: false },
+              { label: "주차대수", active: false },
+              { label: "추가설비", active: false, noBorder: true }
+            ].map((col, i) => (
+              <div key={i} className="legacy-filter-col"
+                style={{ 
+                  color: col.active ? "#fff" : "#1e3a5f", 
+                  background: col.active ? "#3b5998" : "transparent",
+                  borderRight: col.noBorder ? "none" : "1px solid #c2d3e4", 
+                }}>
+                {col.label}
+              </div>
+            ))}
+          </div>
+
+          {/* Options Row */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr 1.5fr 1fr 1.5fr", background: "#fff", borderBottom: "1px solid #8ba4b9" }}>
+            <div style={{ padding: "12px", borderRight: "1px solid #e2e8f0", fontSize: 14, color: "#555", display: "flex", flexDirection: "column", gap: 6 }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 4, color: "#2563eb", fontWeight: 700 }}><input type="checkbox" defaultChecked /> 전체</label>
+              <label style={{ display: "flex", alignItems: "center", gap: 4 }}><input type="checkbox" /> 아파트</label>
+              <label style={{ display: "flex", alignItems: "center", gap: 4 }}><input type="checkbox" /> 오피스텔</label>
+              <label style={{ display: "flex", alignItems: "center", gap: 4 }}><input type="checkbox" /> 빌라/주택</label>
+              <label style={{ display: "flex", alignItems: "center", gap: 4 }}><input type="checkbox" /> 원룸/투룸</label>
+              <label style={{ display: "flex", alignItems: "center", gap: 4 }}><input type="checkbox" /> 상가</label>
+              <label style={{ display: "flex", alignItems: "center", gap: 4 }}><input type="checkbox" /> 사무실</label>
+            </div>
+            <div style={{ padding: "12px", borderRight: "1px solid #e2e8f0", fontSize: 14, color: "#555", display: "flex", flexDirection: "column", gap: 6 }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 4, color: "#2563eb", fontWeight: 700 }}><input type="checkbox" defaultChecked /> 전체</label>
+              <label style={{ display: "flex", alignItems: "center", gap: 4 }}><input type="checkbox" /> 매매</label>
+              <label style={{ display: "flex", alignItems: "center", gap: 4 }}><input type="checkbox" /> 전세</label>
+              <label style={{ display: "flex", alignItems: "center", gap: 4 }}><input type="checkbox" /> 월세</label>
+              <label style={{ display: "flex", alignItems: "center", gap: 4 }}><input type="checkbox" /> 단기임대</label>
+            </div>
+            <div style={{ padding: "12px", borderRight: "1px solid #e2e8f0", fontSize: 14, color: "#555", display: "flex", flexDirection: "column", gap: 6 }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 4, color: "#2563eb", fontWeight: 700 }}><input type="checkbox" defaultChecked /> 전체</label>
+              <label style={{ display: "flex", alignItems: "center", gap: 4 }}><input type="checkbox" /> 1개</label>
+              <label style={{ display: "flex", alignItems: "center", gap: 4 }}><input type="checkbox" /> 1.5개</label>
+              <label style={{ display: "flex", alignItems: "center", gap: 4 }}><input type="checkbox" /> 2개</label>
+              <label style={{ display: "flex", alignItems: "center", gap: 4 }}><input type="checkbox" /> 3개</label>
+              <label style={{ display: "flex", alignItems: "center", gap: 4 }}><input type="checkbox" /> 4개 이상</label>
+            </div>
+            <div style={{ padding: "12px", borderRight: "1px solid #e2e8f0", fontSize: 14, color: "#555", display: "flex", flexDirection: "column", gap: 6 }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 4, color: "#2563eb", fontWeight: 700 }}><input type="checkbox" defaultChecked /> 전체</label>
+              <label style={{ display: "flex", alignItems: "center", gap: 4 }}><input type="checkbox" /> 1층</label>
+              <label style={{ display: "flex", alignItems: "center", gap: 4 }}><input type="checkbox" /> 1층외 지상</label>
+              <label style={{ display: "flex", alignItems: "center", gap: 4 }}><input type="checkbox" /> 1층+지상</label>
+              <label style={{ display: "flex", alignItems: "center", gap: 4 }}><input type="checkbox" /> 반지하</label>
+              <label style={{ display: "flex", alignItems: "center", gap: 4 }}><input type="checkbox" /> 지하</label>
+              <label style={{ display: "flex", alignItems: "center", gap: 4 }}><input type="checkbox" /> 옥탑</label>
+            </div>
+            <div style={{ padding: "12px", borderRight: "1px solid #e2e8f0", fontSize: 14, color: "#555", display: "flex", flexDirection: "column", gap: 6 }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 4, color: "#2563eb", fontWeight: 700 }}><input type="checkbox" defaultChecked /> 전체</label>
+              <label style={{ display: "flex", alignItems: "center", gap: 4 }}><input type="checkbox" /> 2020년 이후</label>
+              <label style={{ display: "flex", alignItems: "center", gap: 4 }}><input type="checkbox" /> 2015년 이후</label>
+              <label style={{ display: "flex", alignItems: "center", gap: 4 }}><input type="checkbox" /> 2010년 이후</label>
+              <label style={{ display: "flex", alignItems: "center", gap: 4 }}><input type="checkbox" /> 2005년 이후</label>
+              <label style={{ display: "flex", alignItems: "center", gap: 4 }}><input type="checkbox" /> 2005년 이전</label>
+            </div>
+            <div style={{ padding: "12px", borderRight: "1px solid #e2e8f0", fontSize: 14, color: "#555", display: "flex", flexDirection: "column", gap: 6 }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 4, color: "#2563eb", fontWeight: 700 }}><input type="checkbox" defaultChecked /> 전체</label>
+              <label style={{ display: "flex", alignItems: "center", gap: 4 }}><input type="checkbox" /> 1대 이상</label>
+              <label style={{ display: "flex", alignItems: "center", gap: 4 }}><input type="checkbox" /> 2대 이상</label>
+              <label style={{ display: "flex", alignItems: "center", gap: 4 }}><input type="checkbox" /> 5대 이상</label>
+              <label style={{ display: "flex", alignItems: "center", gap: 4 }}><input type="checkbox" /> 10대 이상</label>
+            </div>
+            <div style={{ padding: "12px", fontSize: 14, color: "#555", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, alignContent: "start" }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 4 }}><input type="checkbox" /> 엘리베이터</label>
+              <label style={{ display: "flex", alignItems: "center", gap: 4 }}><input type="checkbox" /> 테라스/루프탑</label>
+              <label style={{ display: "flex", alignItems: "center", gap: 4 }}><input type="checkbox" /> 냉난방기</label>
+              <label style={{ display: "flex", alignItems: "center", gap: 4 }}><input type="checkbox" /> 풀옵션</label>
+              <label style={{ display: "flex", alignItems: "center", gap: 4 }}><input type="checkbox" /> 탕비실</label>
+              <label style={{ display: "flex", alignItems: "center", gap: 4 }}><input type="checkbox" /> 화장실 외부</label>
+            </div>
+          </div>
+
+          {/* Input Row and Close Details Toolbar */}
+          <div style={{ padding: "12px", background: "#f8fafc", display: "flex", flexWrap: "wrap", gap: 16, alignItems: "center", fontSize: 14, color: "#555", justifyContent: "space-between" }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "center" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontWeight: 700 }}>보증금</span>
+                <input type="text" style={{ width: 80, border: "1px solid #cbd5e1", padding: "6px" }} /> 만원 ~ 
+                <input type="text" style={{ width: 80, border: "1px solid #cbd5e1", padding: "6px" }} /> 만원
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontWeight: 700 }}>월세</span>
+                <input type="text" style={{ width: 80, border: "1px solid #cbd5e1", padding: "6px" }} /> 만원 ~ 
+                <input type="text" style={{ width: 80, border: "1px solid #cbd5e1", padding: "6px" }} /> 만원
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontWeight: 700 }}>전용면적</span>
+                <input type="text" style={{ width: 60, border: "1px solid #cbd5e1", padding: "6px" }} /> 평 ~ 
+                <input type="text" style={{ width: 60, border: "1px solid #cbd5e1", padding: "6px" }} /> 평
+              </div>
+            </div>
+            {/* 우측 하단 상세검색 닫기 버튼 */}
+            <button onClick={() => setIsDetailSearchOpen(false)} style={{ padding: "8px 18px", background: "#fff", border: "1px solid #d1d5db", fontSize: 13, cursor: "pointer", borderRadius: 4, display: "flex", alignItems: "center", gap: 4, fontWeight: "bold", color: "#111", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
+              상세검색닫기 X
+            </button>
+          </div>
         </div>
+        )}
 
         {/* ── 5. Listings + Sidebar ── */}
         <div style={{ display: "flex", gap: 24 }}>
@@ -369,44 +635,76 @@ export default function HomepagePage() {
                 검색 조건에 해당하는 매물이 없습니다.
               </div>
             ) : (
-              paged.map((v, idx) => (
-                <div key={v.id} onClick={() => router.push(`/homepage/${v.id}`)} style={{ display: "flex", gap: 16, padding: "16px 0", borderBottom: idx < paged.length - 1 ? "1px solid #e5e7eb" : "none", alignItems: "flex-start", cursor: "pointer", transition: "background 0.15s" }} onMouseEnter={e => (e.currentTarget.style.background = "#f9fafb")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-                  <div style={{ width: 110, height: 85, borderRadius: 6, overflow: "hidden", flexShrink: 0, background: "#f3f4f6", border: "1px solid #e5e7eb" }}>
+              <div style={{ borderTop: "2px solid #374151" }}>
+                {paged.map((v, idx) => (
+                <div key={v.id} onClick={() => router.push(`/homepage/${v.id}`)} style={{ display: "flex", padding: "16px 0", borderBottom: "1px solid #d1d5db", borderLeft: "1px solid #d1d5db", borderRight: "1px solid #d1d5db", alignItems: "center", cursor: "pointer", transition: "background 0.15s", background: "#fff" }} onMouseEnter={e => (e.currentTarget.style.background = "#f8fafc")} onMouseLeave={e => (e.currentTarget.style.background = "#fff")}>
+                  
+                  {/* 1. Checkbox */}
+                  <div style={{ width: 40, display: "flex", justifyContent: "center", alignItems: "center", flexShrink: 0 }}>
+                    <input type="checkbox" onClick={e => e.stopPropagation()} style={{ zoom: 1.3, cursor: "pointer" }} />
+                  </div>
+
+                  {/* 2. Photo */}
+                  <div style={{ width: 130, height: 100, overflow: "hidden", flexShrink: 0, background: "#f3f4f6", border: "1px solid #e5e7eb" }}>
                     {v.photos?.length > 0 ? (
                       <img src={v.photos[0]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     ) : (
                       <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#bbb", fontSize: 12 }}>No Photo</div>
                     )}
                   </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                      <span style={{ fontSize: 15, fontWeight: 700, color: "#111", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v.building_name || v.dong || "매물"}</span>
-                      {v.created_at && <span style={{ fontSize: 11, color: "#999", whiteSpace: "nowrap" }}>등록 {fmtDate(v.created_at)}</span>}
+
+                  {/* 3. Main Info */}
+                  <div style={{ flex: 1, minWidth: 0, paddingLeft: 20 }}>
+                    <div style={{ display: "inline-block", background: "#3b82f6", color: "#fff", fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 12, marginBottom: 6 }}>
+                      공실매물 {v.created_at ? fmtDate(v.created_at) : ""}
                     </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                      <span style={{ background: getPriceBg(v), color: "#fff", fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 3 }}>{getPriceLabel(v)}</span>
-                      <span style={{ fontSize: 16, fontWeight: 800, color: "#c53030" }}>{getPriceText(v)}</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                      <span style={{ fontSize: 11, color: "#1d4ed8", border: "1px solid #1d4ed8", padding: "1px 4px", fontWeight: "bold" }}>VIP</span>
+                      <span style={{ fontSize: 16, fontWeight: 700, color: "#111", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {v.building_name || `${v.sigungu || ""} ${v.dong || ""} 매물`} {v.property_type && `(${v.property_type})`}
+                      </span>
+                      <span style={{ background: "#fbbf24", color: "#fff", fontSize: 10, fontWeight: "bold", padding: "1px 4px", borderRadius: 2 }}>N</span>
                     </div>
-                    <div style={{ fontSize: 12, color: "#6b7280", lineHeight: 1.6 }}>
-                      {v.property_type}{v.sub_category ? `/${v.sub_category}` : ""}
-                      {v.area_m2 ? ` · ${v.area_m2}m²` : ""}
-                      {v.rooms ? ` · 방${v.rooms}개` : ""}
-                      {v.bathrooms ? `, 욕실${v.bathrooms}개` : ""}
+                    <div style={{ fontSize: 13, color: "#555", lineHeight: 1.5 }}>
+                      공급 {v.area_m2 ? Math.round(v.area_m2 * 1.2) : 0}m²({v.area_m2 ? Math.round(v.area_m2 * 1.2 / 3.3) : 0}P) / 
+                      전용 {v.area_m2 || 0}m²({v.area_m2 ? Math.round(v.area_m2 / 3.3) : 0}P) 
+                      <span style={{ color: "#3b82f6", marginLeft: 4 }}>{v.property_type}{v.sub_category ? `/${v.sub_category}` : ""}</span> 공실
                     </div>
-                    <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 4 }}>
-                      📍 {v.sido || ""} {v.sigungu || ""} {v.dong || ""}
+                    <div style={{ fontSize: 13, color: "#777", marginTop: 2 }}>
+                      {v.floor || "해당층"}/{v.total_floors || "전체층"}, 
+                      {v.parking_spots ? ` 주차${v.parking_spots}` : " 주차불가"}, 
+                      {v.completion_year ? ` ${v.completion_year}년` : " 연식미상"}, 
+                      {v.realtor_commission ? ` ${v.realtor_commission}` : " 무권리"}
                     </div>
                   </div>
-                  <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", justifyContent: "center", gap: 6, minWidth: 130 }}>
-                    {v.realtor_commission && (
-                      <span style={{ fontSize: 11, fontWeight: 600, color: "#ea580c", border: "1px solid #fed7aa", padding: "2px 8px", borderRadius: 3, background: "#fff7ed" }}>{v.realtor_commission}</span>
-                    )}
-                    {v.client_phone && (
-                      <span style={{ fontSize: 13, fontWeight: 700, color: "#1d4ed8", display: "flex", alignItems: "center", gap: 4 }}>📞 {v.client_phone}</span>
-                    )}
+
+                  {/* 4. Price */}
+                  <div style={{ width: 160, flexShrink: 0, textAlign: "center", borderLeft: "1px solid #f1f5f9", borderRight: "1px solid #f1f5f9", padding: "0 10px" }}>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: "#111", marginBottom: 6 }}>
+                      {getPriceLabel(v)} {getPriceText(v).replace('만', '').replace('억', '')}
+                    </div>
+                    <div style={{ fontSize: 12, color: "#888" }}>
+                      관리비 {Math.floor((v.maintenance_fee || 0)/10000)}만
+                    </div>
+                  </div>
+
+                  {/* 5. Actions */}
+                  <div style={{ width: 140, flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, paddingRight: 10 }}>
+                    <button onClick={e => e.stopPropagation()} style={{ width: 110, background: "#1a365d", color: "#fff", border: "none", padding: "7px 0", fontSize: 13, fontWeight: "bold", borderRadius: 4, cursor: "pointer" }}>
+                      연락처보기
+                    </button>
+                    <div style={{ display: "flex", gap: 4 }}>
+                      <button onClick={(e) => { e.stopPropagation(); router.push(`/homepage/${v.id}`); }} style={{ width: 53, background: "#fff", color: "#555", border: "1px solid #cbd5e1", padding: "4px 0", fontSize: 11, cursor: "pointer" }}>
+                        상세보기
+                      </button>
+                      <button onClick={e => e.stopPropagation()} style={{ width: 53, background: "#fff", color: "#555", border: "1px solid #cbd5e1", padding: "4px 0", fontSize: 11, cursor: "pointer" }}>
+                        수정신고
+                      </button>
+                    </div>
                   </div>
                 </div>
-              ))
+                ))}
+              </div>
             )}
 
             {/* ── 6. Pagination ── */}
@@ -427,12 +725,12 @@ export default function HomepagePage() {
           </div>
 
           {/* Right: Sidebar */}
-          <div style={{ width: 180, flexShrink: 0 }}>
+          <div style={{ width: 250, flexShrink: 0 }}>
             <div style={{ position: "sticky", top: 80 }}>
-              <div style={{ border: "1px solid #e5e7eb", borderRadius: 8, background: "#fff", height: 260, display: "flex", alignItems: "center", justifyContent: "center", color: "#aaa", fontSize: 13, fontWeight: 600, marginBottom: 16 }}>
+              <div style={{ border: "1px solid #e5e7eb", background: "#fff", height: 260, display: "flex", alignItems: "center", justifyContent: "center", color: "#aaa", fontSize: 13, fontWeight: 600, marginBottom: 16 }}>
                 광고 배너 영역
               </div>
-              <div style={{ border: "1px solid #e5e7eb", borderRadius: 8, background: "#fff", height: 260, display: "flex", alignItems: "center", justifyContent: "center", color: "#aaa", fontSize: 13, fontWeight: 600 }}>
+              <div style={{ border: "1px solid #e5e7eb", background: "#fff", height: 260, display: "flex", alignItems: "center", justifyContent: "center", color: "#aaa", fontSize: 13, fontWeight: 600 }}>
                 광고 배너 영역
               </div>
             </div>
