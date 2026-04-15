@@ -11,6 +11,7 @@ import AdminLoadingFallback from "@/components/admin/sections/AdminSkeletons";
 /* ── Lazy-loaded 섹션 ── */
 const DashboardSection = lazy(() => import("@/components/admin/sections/DashboardSection"));
 const VacancySection = lazy(() => import("@/components/admin/sections/VacancySection"));
+const MemberArticleSection = lazy(() => import("@/components/admin/sections/MemberArticleSection"));
 
 /* ── 일반회원 관리자 메뉴 ── */
 const USER_MENU: MenuItem[] = [
@@ -132,12 +133,13 @@ export default function UserAdminPage() {
         <Suspense fallback={<AdminLoadingFallback />}>
           {activeMenu === "dashboard" && <DashboardSection theme={theme} role="user" />}
           {activeMenu === "gongsil" && memberId && <VacancySection theme={theme} role="user" ownerId={memberId} ownerName={userName !== "로딩중..." ? userName : ""} ownerPhone={userPhone} initialData={prefetchedData["gongsil"]} />}
+          {activeMenu === "article" && memberId && <MemberArticleSection theme={theme} memberId={memberId} memberName={userName} memberEmail={userEmail || undefined} role="user" />}
           {activeMenu === "settings" && (
             <div style={{ flex: 1, padding: "20px 28px", overflowY: "auto", background: theme.cardBg, margin: 16, marginBottom: 0, borderTopLeftRadius: 12, borderTopRightRadius: 12, boxShadow: "0 4px 6px rgba(0,0,0,0.05)" }}>
               {memberId ? <MemberRegisterForm editMemberId={memberId} onBack={() => setActiveMenu("dashboard")} /> : <div style={{ textAlign: "center", padding: 40, color: theme.textSecondary }}>사용자 정보를 불러오는 중입니다...</div>}
             </div>
           )}
-          {["article", "study", "customer", "comment", "manual"].includes(activeMenu) && (
+          {["study", "customer", "comment", "manual"].includes(activeMenu) && (
             <div style={{ flex: 1, margin: 16, marginBottom: 0, background: theme.cardBg, borderTopLeftRadius: 12, borderTopRightRadius: 12, boxShadow: "0 4px 6px rgba(0,0,0,0.05)", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <div style={{ textAlign: "center", color: "#9ca3af" }}>
                 <div style={{ fontSize: 48, marginBottom: 16 }}>🚧</div>

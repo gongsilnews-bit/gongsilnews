@@ -173,6 +173,24 @@ export async function getArticles(filters?: {
   return await getArticlesCached(filters);
 }
 
+/* ── 회원 본인 기사만 조회 (author_id 필터링) ── */
+export async function getMyArticles(authorId: string) {
+  const supabase = getAdminClient();
+  try {
+    const { data, error } = await supabase
+      .from("articles")
+      .select("*, article_keywords(keyword)")
+      .eq("is_deleted", false)
+      .eq("author_id", authorId)
+      .order("created_at", { ascending: false });
+
+    if (error) return { success: false, error: error.message };
+    return { success: true, data };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
 /* ── 기사 상세 조회 (캐싱 적용) ── */
 const getArticleDetailCached = unstable_cache(
   async (articleIdentifier: string) => {

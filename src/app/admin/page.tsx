@@ -136,12 +136,14 @@ export default function AdminPage() {
                 </span>
                 {item.label}
               </button>
-              {/* 서브메뉴 */}
-              {item.submenus && activeMenu === item.key && (
-                <div style={{ background: "rgba(255,255,255,0.06)" }}>
+              {/* 서브메뉴 (플라이아웃) */}
+              {item.submenus && hoveredMenu === item.key && (
+                <div style={{ position: "absolute", left: 80, top: 0, background: darkMode ? "#25262b" : "#fff", borderRadius: "0 8px 8px 0", boxShadow: "4px 4px 16px rgba(0,0,0,0.15)", minWidth: 140, zIndex: 100, overflow: "hidden", border: `1px solid ${darkMode ? "#444" : "#e5e7eb"}` }}>
                   {item.submenus.map(sub => (
-                    <button key={sub.key} onClick={() => setActiveSubmenu(sub.key)}
-                      style={{ display: "block", width: "100%", border: "none", background: activeSubmenu === sub.key ? "rgba(255,255,255,0.12)" : "none", color: activeSubmenu === sub.key ? "#fff" : "rgba(255,255,255,0.5)", fontSize: 10, fontWeight: 600, padding: "10px 0", cursor: "pointer", fontFamily: "inherit" }}>
+                    <button key={sub.key} onClick={() => { setActiveMenu(item.key); setActiveSubmenu(sub.key); }}
+                      style={{ display: "block", width: "100%", border: "none", background: activeMenu === item.key && activeSubmenu === sub.key ? (darkMode ? "rgba(255,255,255,0.12)" : "#f1f5f9") : "none", color: activeMenu === item.key && activeSubmenu === sub.key ? (darkMode ? "#fff" : "#111") : (darkMode ? "#ccc" : "#555"), fontSize: 13, fontWeight: 600, padding: "12px 20px", cursor: "pointer", fontFamily: "inherit", textAlign: "left", transition: "background 0.15s" }}
+                      onMouseEnter={e => { if (!(activeMenu === item.key && activeSubmenu === sub.key)) e.currentTarget.style.background = darkMode ? "rgba(255,255,255,0.06)" : "#f8fafc"; }}
+                      onMouseLeave={e => { if (!(activeMenu === item.key && activeSubmenu === sub.key)) e.currentTarget.style.background = "none"; }}>
                       {sub.label}
                     </button>
                   ))}
