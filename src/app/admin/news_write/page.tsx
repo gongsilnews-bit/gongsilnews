@@ -115,19 +115,36 @@ export default function NewsWritePage() {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       const articleId = params.get("id");
-      /* ── 회원 모드 감지 ── */
-      const urlRole = params.get("role");
-      if (urlRole === "member") {
-        setIsMemberMode(true);
-        const returnPath = params.get("return");
-        if (returnPath) setMemberReturnPath(`/${returnPath}`);
-        const urlAuthorId = params.get("author_id");
-        if (urlAuthorId) setMemberAuthorId(urlAuthorId);
-        const urlAuthorName = params.get("author_name");
-        if (urlAuthorName) setReporterName(decodeURIComponent(urlAuthorName));
-        const urlAuthorEmail = params.get("author_email");
-        if (urlAuthorEmail) setReporterEmail(decodeURIComponent(urlAuthorEmail));
-      }
+      /* ── 작성자 정보 및 멤버 모드 감지 (Session) ── */
+      const returnPath = params.get("return");
+      if (returnPath) setMemberReturnPath(`/${returnPath}`);
+
+      const fetchCurrentUser = async () => {
+        const supabase = createClient();
+        const { data: authData } = await supabase.auth.getUser();
+        if (authData?.user?.id) {
+          const { data: m } = await supabase.from('members').select('name, email, role').eq('id', authData.user.id).single();
+          if (m) {
+            // 새 글 쓰기일 때만 초기값 세팅 (기존 글 수정 시에는 DB 정보로 덮어씌워짐)
+            if (!articleId) {
+              setReporterName(m.name || "작성자");
+              setReporterEmail(m.email || "");
+            }
+            if (m.role === 'REALTOR' || m.role === 'USER') {
+              setIsMemberMode(true);
+              setMemberAuthorId(authData.user.id);
+              // 만약 returnPath가 URL에 없었다면, 권한에 맞게 강제지정
+              if (!returnPath) {
+                setMemberReturnPath(m.role === 'REALTOR' ? '/realty_admin' : '/user_admin');
+              }
+            } else {
+              setIsMemberMode(false);
+            }
+          }
+        }
+      };
+      
+      fetchCurrentUser();
       if (articleId) {
         setLoadArticleId(articleId);
         getArticleDetail(articleId).then(res => {
