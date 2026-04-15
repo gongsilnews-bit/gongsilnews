@@ -154,7 +154,7 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
                     )}
                   </div>
                 </div>
-              ) : !hasYoutube && article.thumbnail_url ? (
+              ) : !hasYoutube && article.thumbnail_url && !(article.content && article.content.includes(article.thumbnail_url)) ? (
                 <div className="article-img-wrap">
                   <img
                     src={article.thumbnail_url}
@@ -164,9 +164,14 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
                 </div>
               ) : null}
 
-              {/* 본문 HTML 렌더링 (유튜브 iframe 중복 제거) */}
+              {/* 본문 HTML 렌더링 (유튜브 iframe 중복 제거 및 감싸는 빈 태그 제거) */}
               {article.content && (
-                <div suppressHydrationWarning dangerouslySetInnerHTML={{ __html: article.content.replace(/<iframe[^>]*youtube\.com\/embed[^>]*>.*?<\/iframe>/gi, '') }} />
+                <div suppressHydrationWarning dangerouslySetInnerHTML={{ 
+                  __html: article.content
+                    .replace(/<p[^>]*>\s*(?:<br>\s*)*<iframe[^>]*youtube\.com\/embed[^>]*>.*?<\/iframe>(?:\s*<br>\s*)*\s*<\/p>/gi, '')
+                    .replace(/<div(?:(?!class="article-body")[^>]*)?>\s*(?:<br>\s*)*<iframe[^>]*youtube\.com\/embed[^>]*>.*?<\/iframe>(?:\s*<br>\s*)*\s*<\/div>/gi, '')
+                    .replace(/<iframe[^>]*youtube\.com\/embed[^>]*>.*?<\/iframe>/gi, '') 
+                }} />
               )}
             </div>
 
