@@ -59,10 +59,12 @@ export default function NewsListLayout({ category, title, initialArticles, initi
     return `${yyyy}. ${mm}. ${dd}. ${ampm} ${String(h12).padStart(2, "0")}:${min}`;
   };
 
-  // 본문에서 텍스트만 추출 (HTML 태그 제거)
+  // 본문에서 텍스트만 추출 (기사 복사 시 딸려온 팝업 X버튼 등 제거)
   const stripHtml = (html: string) => {
     if (!html) return "";
-    return html.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim();
+    let text = html.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim();
+    text = text.replace(/^(?:X|×|✕)(?=[가-힣\[\(])/i, "").trim();
+    return text;
   };
 
   // YouTube 추출 유틸리티

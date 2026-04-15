@@ -20,7 +20,7 @@ export default async function Home() {
     <>
       <Script 
         src={`//dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_APP_KEY || "435d3602201a49ea712e5f5a36fe6efc"}&libraries=services,clusterer&autoload=false`}
-        strategy="beforeInteractive"
+        strategy="afterInteractive"
       />
       <main className="container px-20" style={{ position: "relative" }}>
         

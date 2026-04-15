@@ -1,37 +1,121 @@
-export default function CategoryNewsGrid() {
-  const newsCategories = [
-    { title: "부동산·주식·재테크" },
-    { title: "우리동네부동산", isVideo: true },
-    { title: "정치·경제·사회" },
-    { title: "세무·법률", flex: 1 },
-    { title: "여행·건강·생활", flex: 1 },
-  ];
+import Link from "next/link";
+import { getArticles } from "@/app/actions/article";
+
+export default async function CategoryNewsGrid() {
+  // 섹션별 기사 가져오기 (최신순 2개씩)
+  const [financeRes, mapRes, politicsRes, lawRes, lifeRes] = await Promise.all([
+    getArticles({ status: "APPROVED", section1: "뉴스/칼럼", section2: "부동산·주식·재테크", limit: 10 }),
+    getArticles({ status: "APPROVED", section1: "우리동네부동산", limit: 30 }), // 비디오 필터링을 위해 여유있게 가져옴
+    getArticles({ status: "APPROVED", section1: "뉴스/칼럼", section2: "정치·경제·사회", limit: 10 }),
+    getArticles({ status: "APPROVED", section1: "뉴스/칼럼", section2: "세무·법률", limit: 10 }),
+    getArticles({ status: "APPROVED", section1: "뉴스/칼럼", section2: "여행·건강·생활", limit: 10 }),
+  ]);
+
+  const rawFinanceArts = financeRes.success ? financeRes.data || [] : [];
+  const rawMapArts = mapRes.success ? mapRes.data || [] : [];
+  const rawPoliticsArts = politicsRes.success ? politicsRes.data || [] : [];
+  const rawLawArts = lawRes.success ? lawRes.data || [] : [];
+  const rawLifeArts = lifeRes.success ? lifeRes.data || [] : [];
+
+  // 날짜 포맷팅
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return "";
+    const d = new Date(dateStr);
+    return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
+  };
+
+  // 본문에서 텍스트만 추출 (기사 복사 시 딸려온 팝업 X버튼 등 제거)
+  const stripHtml = (html: string) => {
+    if (!html) return "";
+    let text = html.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim();
+    // 맨 앞에 X나 × 기호가 오고 그 뒤에 바로 한글이나 괄호가 오면 삭제 (광고창 닫기 버튼 찌꺼기)
+    text = text.replace(/^(?:X|×|✕)(?=[가-힣\[\(])/i, "").trim();
+    return text;
+  };
+
+  // YouTube 추출 유틸리티
+  const extractYoutubeIdInfo = (article: any) => {
+    if (article.youtube_url) {
+      const match = article.youtube_url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|shorts\/))([\w-]{11})/);
+      if (match) return { id: match[1], hasVideo: true };
+    }
+    if (article.content) {
+      const match = article.content.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|shorts\/))([\w-]{11})/);
+      if (match) return { id: match[1], hasVideo: true };
+    }
+    return { id: null, hasVideo: false };
+  };
+
+  const getThumbnailSrc = (article: any, ytInfo: { id: string | null; hasVideo: boolean }) => {
+    if (article.thumbnail_url) return article.thumbnail_url;
+    if (ytInfo.id) return `https://img.youtube.com/vi/${ytInfo.id}/hqdefault.jpg`;
+    return "https://via.placeholder.com/300x200?text=No+Image";
+  };
+
+  // 필터링 적용 (사진이나 동영상이 있는 기사만)
+  const filterMedia = (arts: any[]) => arts.filter(a => a.thumbnail_url || extractYoutubeIdInfo(a).hasVideo).slice(0, 2);
+
+  const financeArts = filterMedia(rawFinanceArts);
+  const politicsArts = filterMedia(rawPoliticsArts);
+  const lawArts = filterMedia(rawLawArts);
+  const lifeArts = filterMedia(rawLifeArts);
+  
+  // 공통 기사 렌더링 함수 (2단 리스트용) 전에 mapArts 필터링
+  const mapArts = rawMapArts.filter((item: any) => extractYoutubeIdInfo(item).hasVideo).slice(0, 3);
+
+  // 공통 기사 렌더링 함수 (2단 리스트용)
+  const renderArticleList = (articles: any[]) => {
+    if (articles.length === 0) {
+      return <div style={{ padding: "40px 0", color: "#999", fontSize: 14 }}>등록된 기사가 없습니다.</div>;
+    }
+    return articles.map((item, i) => {
+      const ytInfo = extractYoutubeIdInfo(item);
+      const thumbSrc = getThumbnailSrc(item, ytInfo);
+      return (
+        <Link key={i} href={`/news/${item.article_no || item.id}`} style={{ textDecoration: "none", color: "inherit", display: "block", marginBottom: 24 }}>
+          <div className="hi-item" style={{ alignItems: "flex-start", display: "flex", gap: "20px" }}>
+            <div className="hi-img" style={{ position: "relative", width: "160px", height: "100px", flexShrink: 0 }}>
+              <img src={thumbSrc !== "https://via.placeholder.com/300x200?text=No+Image" ? thumbSrc : "https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&q=80&w=600&h=337"} alt={item.title} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 4 }} />
+              {ytInfo.hasVideo && (
+                <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 32, height: 32, background: "rgba(0,0,0,0.5)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="white" style={{ marginLeft: 2 }}><path d="M8 5v14l11-7z"/></svg>
+                </div>
+              )}
+            </div>
+            <div className="hi-txt" style={{ flex: 1, display: "flex", flexDirection: "column", height: "100px", overflow: "hidden" }}>
+              <h3 style={{ margin: "0 0 8px 0", fontSize: "16px", fontWeight: "bold", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", lineHeight: 1.2 }}>{item.title}</h3>
+              <p style={{ margin: 0, fontSize: "14px", color: "#666", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: 1.4, height: "2.8em" }}>{stripHtml(item.content || "")}</p>
+              <div style={{ fontSize: "12px", color: "#999", marginTop: "auto" }}>{formatDate(item.published_at || item.created_at)} · {item.author_name || "공실뉴스"}</div>
+            </div>
+          </div>
+        </Link>
+      );
+    });
+  };
 
   return (
     <>
+      <style>{`
+        .video-grid { display: flex; gap: 20px; }
+        .vid-item { flex: 1; display: flex; flex-direction: column; cursor: pointer; transition: transform 0.2s; text-decoration: none; color: inherit; }
+        .vid-item:hover { transform: translateY(-3px); }
+        .vid-thumb { position: relative; width: 100%; padding-bottom: 56.25%; background: #000; border-radius: 8px; overflow: hidden; margin-bottom: 12px; }
+        .vid-thumb img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; objectFit: cover; opacity: 0.8; transition: opacity 0.2s; }
+        .vid-item:hover .vid-thumb img { opacity: 1; }
+        .vid-play { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 48px; height: 48px; background: rgba(0,0,0,0.6); borderRadius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid white; z-index: 2; pointer-events: none; }
+        .vid-play svg { margin-left: 4px; }
+        .vid-title { font-size: 16px; font-weight: 700; line-height: 1.4; color: #111; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+      `}</style>
+      
       {/* 5. Hot Issue: 부동산·주식·재테크 */}
       <div className="mt-50 mb-50">
         <div className="sec-title-wrap">
-          <h2 className="sec-title">부동산·주식·재테크</h2>
+          <Link href="/news_finance" style={{ textDecoration: "none" }}><h2 className="sec-title">부동산·주식·재테크 &gt;</h2></Link>
         </div>
         <div className="hot-issue-wrap">
           <div className="hi-left">
             <div className="hi-list">
-              {[
-                { title: '대법원, 신반포2차 재건축 상가 분쟁에 마침표..."조합원 전원 동의 불필요"', desc: '대법원, 상가 산정 비율 관련 소송서 조합 승소 판결...\'전원 동의\' 족쇄 풀었다...' },
-                { title: '서울 아파트 공시가 18.7% 급등... "한강벨트" 보유세 50% 이상 오를 듯', desc: '서울 공동주택 공시가 \'어깨\' 단계에서 18.7% 급등...건전 공동주택(3.7%) 3배 수준...' },
-              ].map((item, i) => (
-                <div key={i} className="hi-item">
-                  <div className="hi-img" style={{ position: "relative" }}>
-                    <div style={{ width: "100%", height: "100%", background: "#ddd", borderRadius: 4 }}></div>
-                  </div>
-                  <div className="hi-txt">
-                    <h3>{item.title}</h3>
-                    <p>{item.desc}</p>
-                    <div style={{ fontSize: 12, color: "#999", marginTop: 8 }}>2026.04.05</div>
-                  </div>
-                </div>
-              ))}
+              {renderArticleList(financeArts)}
             </div>
           </div>
           <div className="hi-right">
@@ -45,43 +129,40 @@ export default function CategoryNewsGrid() {
       {/* 6. Video News: 우리동네부동산 */}
       <div className="video-wrap mb-50">
         <div className="sec-title-wrap">
-          <h2 className="sec-title">우리동네부동산</h2>
+          <Link href="/news_map" style={{ textDecoration: "none" }}><h2 className="sec-title">우리동네부동산 &gt;</h2></Link>
         </div>
         <div className="video-grid">
-          {["우리동네 생활", "강남역 도보권, 다용도 투자 가치 매물 동향", "강남3구 아파트, 서울 집값 상승을 이끌다"].map((title, i) => (
-            <div key={i} className="vid-item">
-              <div className="vid-thumb">
-                <div className="vid-play"></div>
-              </div>
-              <div className="vid-title">{title}</div>
-            </div>
-          ))}
+          {mapArts.length > 0 ? (
+            mapArts.map((item, i) => {
+              const ytInfo = extractYoutubeIdInfo(item);
+              const thumbSrc = getThumbnailSrc(item, ytInfo);
+              return (
+                <Link key={i} href={`/news/${item.article_no || item.id}`} className="vid-item">
+                  <div className="vid-thumb">
+                    <img src={thumbSrc !== "https://via.placeholder.com/300x200?text=No+Image" ? thumbSrc : "https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&q=80&w=600&h=337"} alt={item.title} />
+                    <div className="vid-play">
+                       <svg viewBox="0 0 24 24" width="24" height="24" fill="white"><path d="M8 5v14l11-7z"/></svg>
+                    </div>
+                  </div>
+                  <div className="vid-title">{item.title}</div>
+                </Link>
+              );
+            })
+          ) : (
+            <div style={{ color: "#999", padding: "40px 0", width: "100%", textAlign: "center" }}>등록된 우리동네 기사가 없습니다.</div>
+          )}
         </div>
       </div>
 
       {/* 7-2. 정치·경제·사회 */}
       <div className="mt-50 mb-50">
         <div className="sec-title-wrap">
-          <h2 className="sec-title">정치·경제·사회</h2>
+          <Link href="/news_politics" style={{ textDecoration: "none" }}><h2 className="sec-title">정치·경제·사회 &gt;</h2></Link>
         </div>
         <div className="hot-issue-wrap">
           <div className="hi-left">
             <div className="hi-list">
-              {[
-                { title: '이란, "공격 중단" 하루 만에 번복... 중동 확전 위기 최고조', desc: '이란 대통령, 핵무기 시설 용인 불안감...' },
-                { title: '중동 지정학적 리스크 격화, "고유가-주가 하락" 한국 경제 어떻게 되나', desc: '중동 분쟁 심화로 국제 유가 급등 전망 가능...' },
-              ].map((item, i) => (
-                <div key={i} className="hi-item">
-                  <div className="hi-img" style={{ position: "relative" }}>
-                    <div style={{ width: "100%", height: "100%", background: "#ddd", borderRadius: 4 }}></div>
-                  </div>
-                  <div className="hi-txt">
-                    <h3>{item.title}</h3>
-                    <p>{item.desc}</p>
-                    <div style={{ fontSize: 12, color: "#999", marginTop: 8 }}>2026.04.05</div>
-                  </div>
-                </div>
-              ))}
+              {renderArticleList(politicsArts)}
             </div>
           </div>
           <div className="hi-right">
@@ -97,46 +178,18 @@ export default function CategoryNewsGrid() {
         <div className="hot-issue-wrap" style={{ gap: 40 }}>
           <div className="hi-left" style={{ flex: 1 }}>
             <div className="sec-title-wrap">
-              <h2 className="sec-title">세무·법률</h2>
+              <Link href="/news_law" style={{ textDecoration: "none" }}><h2 className="sec-title">세무·법률 &gt;</h2></Link>
             </div>
             <div className="hi-list">
-              {[
-                { title: '"사망 전 10년 기록 더 본다"...상속세 쟁점 타격 포인트 7가지', desc: '사망 전 상속세 레이더...' },
-                { title: '부모님 자산 형태에 따른 세무 가이드', desc: '"부모님 명의든, 그냥 내줘 손색해"...' },
-              ].map((item, i) => (
-                <div key={i} className="hi-item">
-                  <div className="hi-img" style={{ position: "relative" }}>
-                    <div style={{ width: "100%", height: "100%", background: "#ddd", borderRadius: 4 }}></div>
-                  </div>
-                  <div className="hi-txt">
-                    <h3>{item.title}</h3>
-                    <p>{item.desc}</p>
-                    <div style={{ fontSize: 12, color: "#999", marginTop: 8 }}>2026.04.05</div>
-                  </div>
-                </div>
-              ))}
+              {renderArticleList(lawArts)}
             </div>
           </div>
           <div className="hi-left" style={{ flex: 1 }}>
             <div className="sec-title-wrap">
-              <h2 className="sec-title">여행·건강·생활</h2>
+               <Link href="/news_life" style={{ textDecoration: "none" }}><h2 className="sec-title">여행·건강·생활 &gt;</h2></Link>
             </div>
             <div className="hi-list">
-              {[
-                { title: '어디서나 진료... 비대면 진료 의료 패러다임 전환', desc: '의원급이상 비대면진료...' },
-                { title: '"AI 가이드와 함께"...북한산, 스마트 관광으로 진화', desc: '국내 명산의 스마트 트래킹...' },
-              ].map((item, i) => (
-                <div key={i} className="hi-item">
-                  <div className="hi-img" style={{ position: "relative" }}>
-                    <div style={{ width: "100%", height: "100%", background: "#ddd", borderRadius: 4 }}></div>
-                  </div>
-                  <div className="hi-txt">
-                    <h3>{item.title}</h3>
-                    <p>{item.desc}</p>
-                    <div style={{ fontSize: 12, color: "#999", marginTop: 8 }}>2026.04.05</div>
-                  </div>
-                </div>
-              ))}
+              {renderArticleList(lifeArts)}
             </div>
           </div>
         </div>
