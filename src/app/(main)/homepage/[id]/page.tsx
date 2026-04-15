@@ -261,11 +261,19 @@ export default function HomepageViewPage() {
               <TRow label="매물특징" value={vacancy.building_name || "특징 없음"} />
               <TRow label="공급/전용면적" value={`${Math.round((vacancy.area_m2 || 0) * 1.3)}m² / ${vacancy.area_m2 || 0}m²`} />
               <TRow label="해당층/총층" value={`${vacancy.floor || "해당층"} / ${vacancy.total_floors || "전체층"}`} />
+              <TRow label="등록자명" value={(() => {
+                const m = vacancy.members;
+                if (!m) return vacancy.client_name || "-";
+                const name = m.name || vacancy.client_name || "-";
+                const tag = m.role === "REALTOR" ? "부동산" : m.role === "ADMIN" ? "관리자" : "일반";
+                return <span>{name} <span style={{ fontSize: 11, padding: "2px 6px", borderRadius: 4, marginLeft: 6, background: m.role === "REALTOR" ? "#dbeafe" : "#f3f4f6", color: m.role === "REALTOR" ? "#1e40af" : "#6b7280", fontWeight: 600 }}>{tag}</span></span>;
+              })()} />
               <TRow label="방/욕실수" value={`${vacancy.rooms || 0}개 / ${vacancy.bathrooms || 0}개`} />
               <TRow label="방향" value={vacancy.direction || "방향정보 없음"} />
               <TRow label="주차가능 여부" value={vacancy.parking_spots ? `${vacancy.parking_spots}대` : "불가"} />
               <TRow label="입주가능일" value={vacancy.move_in_date || "즉시입주"} />
               <TRow label="관리비" value={vacancy.maintenance_fee ? `${Math.round(vacancy.maintenance_fee/10000)}만원` : "없음"} />
+              <TRow label="연락처" value={vacancy.client_phone || (vacancy.members?.email) || "-"} />
               <TRow label="상세설명" value={vacancy.description || "상세내용 없음"} />
             </div>
 
