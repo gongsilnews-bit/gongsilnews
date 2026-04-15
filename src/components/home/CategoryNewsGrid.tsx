@@ -168,7 +168,7 @@ export default async function CategoryNewsGrid() {
       {/* 7-2. 정치·경제·사회 + 세무·법률 (2단 병렬 한 칸씩 당김) */}
       <div className="mt-50 mb-50">
         <div className="hot-issue-wrap" style={{ gap: 40 }}>
-          <div className="hi-left" style={{ flex: 1 }}>
+          <div className="hi-left" style={{ flex: 1, minWidth: 0, width: "calc(50% - 20px)" }}>
             <div className="sec-title-wrap">
               <Link href="/news_politics" style={{ textDecoration: "none" }}><h2 className="sec-title">정치·경제·사회 &gt;</h2></Link>
             </div>
@@ -176,7 +176,7 @@ export default async function CategoryNewsGrid() {
               {renderArticleList(politicsArts)}
             </div>
           </div>
-          <div className="hi-left" style={{ flex: 1 }}>
+          <div className="hi-left" style={{ flex: 1, minWidth: 0, width: "calc(50% - 20px)" }}>
             <div className="sec-title-wrap">
               <Link href="/news_law" style={{ textDecoration: "none" }}><h2 className="sec-title">세무·법률 &gt;</h2></Link>
             </div>
@@ -190,7 +190,7 @@ export default async function CategoryNewsGrid() {
       {/* 7-3. 여행·건강·생활 + 기타 (2단 병렬 한 칸씩 당김) */}
       <div className="mt-50 mb-50">
         <div className="hot-issue-wrap" style={{ gap: 40 }}>
-          <div className="hi-left" style={{ flex: 1 }}>
+          <div className="hi-left" style={{ flex: 1, minWidth: 0, width: "calc(50% - 20px)" }}>
             <div className="sec-title-wrap">
                <Link href="/news_life" style={{ textDecoration: "none" }}><h2 className="sec-title">여행·건강·생활 &gt;</h2></Link>
             </div>
@@ -198,7 +198,7 @@ export default async function CategoryNewsGrid() {
               {renderArticleList(lifeArts)}
             </div>
           </div>
-          <div className="hi-left" style={{ flex: 1 }}>
+          <div className="hi-left" style={{ flex: 1, minWidth: 0, width: "calc(50% - 20px)" }}>
             <div className="sec-title-wrap">
                <Link href="/news_etc" style={{ textDecoration: "none" }}><h2 className="sec-title">기타 &gt;</h2></Link>
             </div>
