@@ -184,9 +184,8 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                     <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
                       <input type="checkbox" className="vacancy-checkbox" value={row.id} style={{ accentColor: "#3b82f6" }} />
                     </td>
-                    <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>
-                      <div style={{ fontWeight: 700 }}>{idx + 1}</div>
-                      <div style={{ fontSize: 13, color: "#9ca3af", marginTop: 2 }}>{row.vacancy_no}</div>
+                    <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 13, color: textSecondary }}>
+                      {row.vacancy_no || '-'}
                     </td>
                     <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
                       {canToggleStatus ? (
