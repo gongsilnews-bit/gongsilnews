@@ -146,13 +146,19 @@ export default function NewsWritePage() {
             if (d.location_name) setLocation(d.location_name);
             if (d.content) {
               setContent(d.content);
-              if (editorRef.current) editorRef.current.innerHTML = d.content;
+              if (editorRef.current) {
+                editorRef.current.innerHTML = d.content;
+              }
             }
+
             if (d.article_keywords) {
               setKeywords(d.article_keywords.map((k: any) => k.keyword));
             }
+
+            // [기존 DB 파일(사진) 불러오기]
+            let existingPhotos: any[] = [];
             if (d.article_media) {
-              const existingPhotos = d.article_media
+              existingPhotos = d.article_media
                 .filter((m: any) => m.media_type === "PHOTO")
                 .map((m: any) => ({
                   file: null,
@@ -164,18 +170,43 @@ export default function NewsWritePage() {
                   captionAlign: "center",
                   mediaId: m.id
                 }));
-              setPhotoFiles(existingPhotos);
+            }
 
-              const existingVideos = d.article_media
-                .filter((m: any) => m.media_type === "VIDEO")
-                .map((m: any) => ({
-                  url: m.url,
-                  videoId: m.url.includes("v=") ? m.url.split("v=")[1].split("&")[0] : (m.url.split("/").pop() || ""),
-                  caption: m.caption || "",
-                  isShorts: false,
-                  isCover: false
-                }));
-              setVideoItems(existingVideos);
+            // [에디터 DOM 파싱을 통한 상태 복원 - DB에 부분 누락된 영상/사진 살리기]
+            if (editorRef.current) {
+              const domPhotos = Array.from(editorRef.current.querySelectorAll('.inserted-photo')).map(wrapper => {
+                const img = wrapper.querySelector('img');
+                return {
+                  file: null,
+                  preview: img ? img.src : '',
+                  caption: wrapper.querySelector('p')?.textContent || '',
+                  isCover: d.thumbnail_url === (img ? img.src : ''),
+                  size: 600, align: 'center', captionAlign: 'center'
+                };
+              });
+
+              // DB photo와 DOM photo 병합 (DB 정보 우선)
+              if (existingPhotos.length === 0 && domPhotos.length > 0) {
+                existingPhotos = domPhotos;
+              }
+
+              const domVideos = Array.from(editorRef.current.querySelectorAll('.inserted-video')).map(wrapper => {
+                const iframe = wrapper.querySelector('iframe');
+                let vId = '';
+                if (iframe && iframe.src) {
+                  const match = iframe.src.match(/embed\/([^?]+)/);
+                  if (match) vId = match[1];
+                }
+                return {
+                  url: iframe ? iframe.src : '',
+                  videoId: vId,
+                  caption: wrapper.querySelector('p')?.textContent || '',
+                  isShorts: false, isCover: false
+                };
+              });
+
+              setPhotoFiles(existingPhotos);
+              setVideoItems(domVideos);
             }
           }
         });
@@ -1485,6 +1516,21 @@ export default function NewsWritePage() {
                 borderBottomLeftRadius: 6, borderBottomRightRadius: 6,
               }}
               onInput={(e) => setContent(e.currentTarget.innerHTML || "")}
+              onClick={(e) => {
+                const target = e.target as HTMLElement;
+                if (target.classList.contains('editor-media-delete')) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const wrapper = target.closest('.inserted-photo, .inserted-video') as HTMLElement;
+                  if (wrapper) {
+                    const nextSib = wrapper.nextSibling;
+                    if (nextSib && nextSib.nodeName === 'BR') nextSib.remove();
+                    wrapper.remove();
+                    if (editorRef.current) setContent(editorRef.current.innerHTML || '');
+                    syncSidebarFromEditor();
+                  }
+                }
+              }}
               onMouseUp={saveSelection}
               onKeyUp={saveSelection}
               onFocus={saveSelection}
