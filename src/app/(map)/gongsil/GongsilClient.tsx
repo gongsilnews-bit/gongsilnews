@@ -1034,7 +1034,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
             const tagColor = prop.commission_type === '공동수수료' ? "#2e7d32" : "#1a73e8";
             
             return (
-          <div style={{ position: "absolute", left: 380, top: 0, width: 600, height: "100%", background: "#fff", display: "flex", flexDirection: "column", borderRight: "1px solid #eee", zIndex: 30, boxShadow: "5px 0 15px rgba(0,0,0,0.15)" }}>
+          <div style={{ position: "absolute", left: 380, top: 0, width: 600, height: "100%", background: "#fff", display: "flex", flexDirection: "column", borderRight: "1px solid #eee", zIndex: 110, boxShadow: "5px 0 15px rgba(0,0,0,0.15)" }}>
             {/* 닫기 버튼 */}
             <button onClick={() => setShowDetail(false)} style={{ position: "absolute", top: 15, right: 15, width: 30, height: 30, background: "rgba(255,255,255,0.8)", border: "1px solid #ddd", borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, fontWeight: "bold", color: "#333", zIndex: 100 }}>×</button>
 
@@ -1391,22 +1391,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
               <button style={{ background: "#1a73e8", color: "#fff", border: "none", padding: "10px 28px", borderRadius: 4, fontSize: 15, fontWeight: "bold", cursor: "pointer" }}>연락처 보기</button>
             </div>
             
-            {/* 갤러리 풀스크린 모달 */}
-            {showGalleryModal && images[0] && (
-              <div onClick={() => setShowGalleryModal(false)} style={{ position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh", background: "rgba(0,0,0,0.9)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <div onClick={(e) => e.stopPropagation()} style={{ position: "relative", width: "80%", maxWidth: 1000, height: "80%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <button onClick={() => setShowGalleryModal(false)} style={{ position: "absolute", top: -50, right: -40, background: "none", border: "none", color: "#fff", fontSize: 40, cursor: "pointer", zIndex: 10000 }}>×</button>
-                  <img src={images[galleryIndex]} style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
-                  {images.length > 1 && (
-                    <>
-                      <button onClick={(e) => { e.stopPropagation(); setGalleryIndex(Math.max(0, galleryIndex - 1)); }} style={{ position: "absolute", top: "50%", left: -60, transform: "translateY(-50%)", background: "rgba(255,255,255,0.1)", color: "#fff", border: "none", width: 50, height: 50, borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, zIndex: 10000 }}>〈</button>
-                      <button onClick={(e) => { e.stopPropagation(); setGalleryIndex(Math.min(images.length - 1, galleryIndex + 1)); }} style={{ position: "absolute", top: "50%", right: -60, transform: "translateY(-50%)", background: "rgba(255,255,255,0.1)", color: "#fff", border: "none", width: 50, height: 50, borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, zIndex: 10000 }}>〉</button>
-                      <div style={{ position: "absolute", bottom: -40, left: "50%", transform: "translateX(-50%)", color: "#fff", fontSize: 16, fontWeight: "bold", background: "rgba(255,255,255,0.2)", padding: "4px 16px", borderRadius: 20 }}>{galleryIndex + 1} / {images.length}</div>
-                    </>
-                  )}
-                </div>
-              </div>
-            )}
+
           </div>
             );
           }
@@ -1425,6 +1410,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
             }}
             themeColor="#1a73e8"
             isPushedDown={activeFilterDropdown !== null}
+            isShiftedRight={showDetail && activeProperty !== null}
           />
 
           <div ref={mapRef} style={{ width: "100%", height: "100%", background: "#e8eaed" }}>
@@ -1438,6 +1424,30 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
           </div>
         </div>
       </main>
+
+      {/* 갤러리 풀스크린 모달 (z-index 문제 해결을 위해 최상위로 이동) */}
+      {showGalleryModal && activeProperty !== null && (() => {
+        const prop = dbVacancies.find(v => v.id === activeProperty);
+        const images = prop?.images || [];
+        if (images.length === 0) return null;
+        return (
+          <div onClick={() => setShowGalleryModal(false)} style={{ position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh", background: "rgba(0,0,0,0.9)", zIndex: 99999, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <button onClick={() => setShowGalleryModal(false)} style={{ position: "absolute", top: 20, right: 30, background: "none", border: "none", color: "#fff", fontSize: 50, cursor: "pointer", zIndex: 100000, fontWeight: 300, lineHeight: 1 }}>×</button>
+            
+            <div onClick={(e) => e.stopPropagation()} style={{ position: "relative", width: "80%", maxWidth: 1000, height: "80%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <img src={images[galleryIndex]} style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
+              {images.length > 1 && (
+                <>
+                  <button onClick={(e) => { e.stopPropagation(); setGalleryIndex(Math.max(0, galleryIndex - 1)); }} style={{ position: "absolute", top: "50%", left: -80, transform: "translateY(-50%)", background: "rgba(255,255,255,0.15)", color: "#fff", border: "none", width: 60, height: 60, borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, zIndex: 10000 }}>〈</button>
+                  <button onClick={(e) => { e.stopPropagation(); setGalleryIndex(Math.min(images.length - 1, galleryIndex + 1)); }} style={{ position: "absolute", top: "50%", right: -80, transform: "translateY(-50%)", background: "rgba(255,255,255,0.15)", color: "#fff", border: "none", width: 60, height: 60, borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, zIndex: 10000 }}>〉</button>
+                  <div style={{ position: "absolute", bottom: -50, left: "50%", transform: "translateX(-50%)", color: "#fff", fontSize: 16, fontWeight: "bold", background: "rgba(255,255,255,0.2)", padding: "6px 20px", borderRadius: 20 }}>{galleryIndex + 1} / {images.length}</div>
+                </>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+
     </div>
   );
 }
