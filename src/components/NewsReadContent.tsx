@@ -14,6 +14,11 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
   const scrollBarRef = useRef<HTMLDivElement>(null);
   const [commentText, setCommentText] = useState("");
   const [viewCount, setViewCount] = useState(article.view_count || 0);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // 날짜 포맷
   const formatDate = (dateStr: string) => {
@@ -133,12 +138,14 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
                     overflow: "hidden",
 
                   }}>
-                    <iframe
-                      src={`https://www.youtube.com/embed/${youtubeId}`}
-                      style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" }}
-                      allowFullScreen
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    />
+                    {mounted && (
+                      <iframe
+                        src={`https://www.youtube.com/embed/${youtubeId}`}
+                        style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" }}
+                        allowFullScreen
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      />
+                    )}
                   </div>
                 </div>
               ) : !hasYoutube && article.thumbnail_url && !(article.content && article.content.includes(article.thumbnail_url)) ? (
@@ -153,7 +160,7 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
 
               {/* 본문 HTML 렌더링 */}
               {article.content && (
-                <div dangerouslySetInnerHTML={{ __html: article.content }} />
+                <div suppressHydrationWarning dangerouslySetInnerHTML={{ __html: article.content }} />
               )}
             </div>
 
