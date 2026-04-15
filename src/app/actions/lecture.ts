@@ -273,31 +273,40 @@ export async function updateLectureStatus(lectureId: string, newStatus: string) 
   }
 }
 
-// ── 강의 썸네일 업로드 ──
-export async function uploadLectureThumbnail(formData: FormData) {
+// ── 강의 이미지 업로드 (썸네일 + 에디터 인라인) ──
+// 버킷: "lecture-media" (Supabase Storage에서 미리 생성 필요)
+export async function uploadLectureImage(formData: FormData) {
   const file = formData.get("file") as File;
   const lectureId = formData.get("lecture_id") as string;
+  const imageType = (formData.get("type") as string) || "content"; // "thumbnail" | "content"
 
   if (!file) return { success: false, error: "파일이 누락되었습니다." };
 
   const supabase = getAdminClient();
   try {
     const ext = file.name.split(".").pop() || "webp";
-    const path = `lectures/${lectureId || "temp"}/${Date.now()}.${ext}`;
+    const folder = imageType === "thumbnail" ? "thumbnails" : "content";
+    const path = `${folder}/${lectureId || "temp"}/${Date.now()}.${ext}`;
 
     const { error: uploadError } = await supabase.storage
-      .from("article-media")
+      .from("lecture-media")
       .upload(path, file, { upsert: true });
     if (uploadError) return { success: false, error: uploadError.message };
 
     const { data: urlData } = supabase.storage
-      .from("article-media")
+      .from("lecture-media")
       .getPublicUrl(path);
 
     return { success: true, url: urlData.publicUrl };
   } catch (err: any) {
     return { success: false, error: err.message };
   }
+}
+
+// 하위호환: 기존 uploadLectureThumbnail → uploadLectureImage로 위임
+export async function uploadLectureThumbnail(formData: FormData) {
+  formData.set("type", "thumbnail");
+  return uploadLectureImage(formData);
 }
 
 // ── 리뷰 작성 ──
