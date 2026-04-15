@@ -176,10 +176,47 @@ export default function MapSearchBar({ onSearchCoord, onRegionSelect, mapCenterR
     setActivePanel(null);
   };
 
+  const [position, setPosition] = useState({ x: 20, y: 15 });
+  const isDragging = useRef(false);
+  const dragStartOffset = useRef({ x: 0, y: 0 });
+  const [isDragActive, setIsDragActive] = useState(false);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if ((e.target as Element).closest('.wish-select') || (e.target as Element).closest('.region-close-btn')) return;
+    isDragging.current = true;
+    setIsDragActive(true);
+    dragStartOffset.current = {
+      x: e.clientX - position.x,
+      y: e.clientY - position.y
+    };
+    document.body.style.userSelect = 'none';
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging.current) return;
+      setPosition({
+        x: e.clientX - dragStartOffset.current.x,
+        y: e.clientY - dragStartOffset.current.y
+      });
+    };
+    const handleMouseUp = () => {
+      isDragging.current = false;
+      setIsDragActive(false);
+      document.body.style.userSelect = '';
+    };
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, []);
+
   return (
-    <>
+    <div style={{ position: "absolute", top: position.y, left: position.x, zIndex: 9 }}>
       <style>{`
-        #wishFloatingFilter { display: flex; position: absolute; top: ${isPushedDown ? '310px' : '15px'}; left: 20px; z-index: 100; background: #fff; padding: 5px 15px; border-radius: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border: 1px solid #ddd; align-items: center; gap: 10px; font-size: 14px; color: #333; transition: top 0.3s ease, box-shadow 0.2s; }
+        #wishFloatingFilter { display: flex; background: #fff; padding: 5px 15px; border-radius: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border: 1px solid #ddd; align-items: center; gap: 10px; font-size: 14px; color: #333; transition: box-shadow 0.2s; cursor: ${isDragActive ? 'grabbing' : 'grab'}; }
         #wishFloatingFilter:hover { box-shadow: 0 6px 15px rgba(0,0,0,0.15); }
         .wish-select { background: none; border: none; cursor: pointer; font-weight: bold; padding: 5px 10px; }
         .wish-select::after { content: ' ▼'; font-size: 10px; color: #999; }
@@ -191,7 +228,7 @@ export default function MapSearchBar({ onSearchCoord, onRegionSelect, mapCenterR
       `}</style>
 
       {/* 지도 통합 플로팅 검색 바 */}
-      <div id="wishFloatingFilter">
+      <div id="wishFloatingFilter" onMouseDown={handleMouseDown}>
         <span className="wish-select" onClick={() => { setActivePanel("region"); setActiveTab("sido"); }}>
           {selectedSido}
         </span>
@@ -211,7 +248,7 @@ export default function MapSearchBar({ onSearchCoord, onRegionSelect, mapCenterR
 
       {/* 지역 선택 캐스케이딩 패널 */}
       {activePanel === "region" && (
-        <div ref={regionRef} style={{ position: "absolute", top: isPushedDown ? 365 : 70, left: 20, zIndex: 101, background: "#fff", width: 380, borderRadius: 8, boxShadow: "0 4px 15px rgba(0,0,0,0.2)", overflow: "hidden", transition: "top 0.3s ease" }}>
+        <div ref={regionRef} style={{ position: "absolute", top: 45, left: 0, zIndex: 101, background: "#fff", width: 380, borderRadius: 8, boxShadow: "0 4px 15px rgba(0,0,0,0.2)", overflow: "hidden" }}>
           <div style={{ display: "flex", borderBottom: "1px solid #ccc", background: "#f9f9f9" }}>
             <button className={`region-tab ${activeTab === "sido" ? "active" : ""}`} onClick={() => setActiveTab("sido")}>시/도</button>
             <button className={`region-tab ${activeTab === "gugun" ? "active" : ""}`} onClick={() => setActiveTab("gugun")}>시/군/구</button>
@@ -264,7 +301,7 @@ export default function MapSearchBar({ onSearchCoord, onRegionSelect, mapCenterR
 
       {/* 지도 검색 입력 패널 */}
       {activePanel === "search" && (
-        <div ref={searchRef} style={{ position: "absolute", top: isPushedDown ? 365 : 70, left: 20, zIndex: 101, background: "#fff", padding: 15, borderRadius: 8, boxShadow: "0 4px 15px rgba(0,0,0,0.2)", width: 320, transition: "top 0.3s ease" }}>
+        <div ref={searchRef} style={{ position: "absolute", top: 45, left: 0, zIndex: 101, background: "#fff", padding: 15, borderRadius: 8, boxShadow: "0 4px 15px rgba(0,0,0,0.2)", width: 320 }}>
           <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
             <input 
               type="text" 
