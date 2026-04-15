@@ -118,3 +118,51 @@ src/components/admin/sections/
 
 - `npx next build` → **Exit code 0** ✅
 - TypeScript 에러 없음 ✅
+
+---
+
+## 9. 성능 최적화 — 데이터 로딩 속도 개선
+
+### 문제점
+관리자 페이지의 섹션(공실관리, 회원관리, 기사관리) 데이터가 **4단계에 걸쳐 늦게 표시**되는 현상:
+
+```
+1단계: 셸(사이드바+헤더) 렌더링     ← 즉시
+2단계: React.lazy() JS 청크 다운로드  ← 네트워크 지연
+3단계: useEffect → Supabase API 호출  ← 네트워크 지연
+4단계: 데이터 도착 → 테이블 렌더링    ← 최종 표시
+```
+
+### 적용한 3가지 전략
+
+| # | 전략 | 설명 | 적용 대상 |
+|---|------|------|----------|
+| 1 | **병렬 프리페치** | 페이지 마운트 시 `Promise.all`로 공실/회원/기사 데이터 동시 로드, `initialData` prop으로 섹션에 주입 → useEffect 스킵 | admin, realty_admin, user_admin |
+| 2 | **호버 프리페치** | 사이드바 메뉴 hover 시 해당 섹션 데이터 미리 fetch → 클릭 전 데이터 준비 완료 | admin, realty_admin, user_admin |
+| 3 | **스켈레톤 UI** | "로딩중..." 텍스트 → 테이블 뼈대 shimmer 애니메이션으로 교체 | admin, realty_admin, user_admin |
+
+### 변경 파일
+
+| 파일 | 변경 내용 |
+|------|----------|
+| `admin/page.tsx` | prefetchSection + handleMenuHover + AdminLoadingFallback + initialData prop 전달 |
+| `realty_admin/page.tsx` | 동일 패턴 적용 (공실 데이터 프리페치) |
+| `user_admin/page.tsx` | 동일 패턴 적용 (공실 데이터 프리페치) |
+| `sections/AdminSkeletons.tsx` | **[신규]** shimmer 애니메이션 스켈레톤 (TableSkeleton, KpiSkeleton, AdminLoadingFallback) |
+| `sections/VacancySection.tsx` | `initialData?: any[]` prop 추가, 존재 시 useEffect 스킵 |
+| `sections/MemberSection.tsx` | `initialData?: any[]` prop 추가, 존재 시 useEffect 스킵 |
+| `sections/ArticleSection.tsx` | `initialData?: any[]` prop 추가, 존재 시 useEffect 스킵 |
+
+### 체감 효과
+
+| 항목 | Before | After |
+|------|--------|-------|
+| 데이터 표시까지 단계 | 4단계 (순차) | **1~2단계** (병렬) |
+| 탭 전환 시 빈 화면 | 있음 (useEffect 대기) | **없음** (프리페치 완료) |
+| 로딩 중 화면 | "로딩중..." 텍스트 | shimmer 테이블 스켈레톤 |
+| 호버 → 클릭 시 지연 | 있음 | **거의 0** (hover에서 이미 fetch) |
+
+### 빌드 검증
+
+- `npx next build` → **Exit code 0** ✅
+- 3개 관리자 페이지 모두 동일 패턴 적용 완료 ✅

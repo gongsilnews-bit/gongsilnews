@@ -1,10 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, lazy, Suspense } from "react";
+import React, { useState, useEffect, lazy, Suspense, useRef, useCallback } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { computeTheme, MenuItem } from "@/components/admin/sections/types";
 import { IconDashboard, IconBuilding, IconArticle, IconStudy, IconCustomer, IconComment, IconManual, IconSettings } from "@/components/admin/sections/AdminIcons";
 import MemberRegisterForm from "@/components/admin/MemberRegisterForm";
+import { getVacancies } from "@/app/actions/vacancy";
+import AdminLoadingFallback from "@/components/admin/sections/AdminSkeletons";
 
 /* ── Lazy-loaded 섹션 ── */
 const DashboardSection = lazy(() => import("@/components/admin/sections/DashboardSection"));
@@ -22,12 +24,6 @@ const REALTY_MENU: MenuItem[] = [
   { key: "settings", label: "정보설정", icon: <IconSettings />, separated: true },
 ];
 
-const LoadingSpinner = () => (
-  <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
-    <div style={{ fontSize: 16, color: "#9ca3af" }}>로딩중...</div>
-  </div>
-);
-
 export default function RealtyAdminPage() {
   const [activeMenu, setActiveMenu] = useState("dashboard");
   const [hoveredMenu, setHoveredMenu] = useState<string | null>(null);
@@ -36,6 +32,23 @@ export default function RealtyAdminPage() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>("로딩중...");
   const [agencyStatus, setAgencyStatus] = useState<string>("PENDING");
+
+  /* ── 프리페치 데이터 저장소 ── */
+  const [prefetchedData, setPrefetchedData] = useState<Record<string, any[]>>({});
+  const fetchingRef = useRef<Set<string>>(new Set());
+
+  const prefetchSection = useCallback(async (key: string, ownerId?: string) => {
+    if (prefetchedData[key] || fetchingRef.current.has(key)) return;
+    fetchingRef.current.add(key);
+    try {
+      if (key === "gongsil" && ownerId) {
+        const res = await getVacancies({ ownerId });
+        if (res.success) setPrefetchedData(prev => ({ ...prev, gongsil: res.data || [] }));
+      }
+    } finally {
+      fetchingRef.current.delete(key);
+    }
+  }, [prefetchedData]);
 
   useEffect(() => {
     async function fetchUser() {
@@ -49,11 +62,21 @@ export default function RealtyAdminPage() {
           setUserName(data.name || "이름없음");
           const { data: agencyData } = await supabase.from("agencies").select("status").eq("owner_id", data.id).single();
           if (agencyData && agencyData.status) setAgencyStatus(agencyData.status);
+          // 공실 데이터 프리페치
+          prefetchSection("gongsil", data.id);
         }
       }
     }
     fetchUser();
   }, []);
+
+  /* ── 사이드바 호버 시 프리페치 ── */
+  const handleMenuHover = useCallback((key: string) => {
+    setHoveredMenu(key);
+    if (key === "gongsil" && memberId) {
+      prefetchSection("gongsil", memberId);
+    }
+  }, [prefetchSection, memberId]);
 
   const theme = computeTheme(darkMode);
   const sidebarBg = darkMode ? "#1e2a42" : "#1a3a6b";
@@ -68,7 +91,7 @@ export default function RealtyAdminPage() {
         <ul style={{ listStyle: "none", margin: 0, padding: "16px 0", flex: 1, overflowY: "auto", scrollbarWidth: "none" as const }}>
           {REALTY_MENU.map((item) => (
             <li key={item.key} style={{ margin: 0, position: "relative", ...(item.separated ? { marginTop: 20, borderTop: "1px solid rgba(255,255,255,0.15)" } : {}) }}
-              onMouseEnter={() => setHoveredMenu(item.key)} onMouseLeave={() => setHoveredMenu(null)}>
+              onMouseEnter={() => handleMenuHover(item.key)} onMouseLeave={() => setHoveredMenu(null)}>
               <button onClick={() => setActiveMenu(item.key)}
                 style={{
                   display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
@@ -109,9 +132,9 @@ export default function RealtyAdminPage() {
           </div>
         </header>
 
-        <Suspense fallback={<LoadingSpinner />}>
+        <Suspense fallback={<AdminLoadingFallback />}>
           {activeMenu === "dashboard" && <DashboardSection theme={theme} role="realtor" agencyStatus={agencyStatus} />}
-          {activeMenu === "gongsil" && memberId && <VacancySection theme={theme} role="realtor" ownerId={memberId} ownerName={userName} />}
+          {activeMenu === "gongsil" && memberId && <VacancySection theme={theme} role="realtor" ownerId={memberId} ownerName={userName} initialData={prefetchedData["gongsil"]} />}
           {activeMenu === "settings" && (
             <div style={{ flex: 1, padding: "20px 28px", overflowY: "auto", background: theme.cardBg, margin: 16, marginBottom: 0, borderTopLeftRadius: 12, borderTopRightRadius: 12, boxShadow: "0 4px 6px rgba(0,0,0,0.05)" }}>
               {memberId ? <MemberRegisterForm editMemberId={memberId} onBack={() => setActiveMenu("dashboard")} /> : <div style={{ textAlign: "center", padding: 40, color: theme.textSecondary }}>사용자 정보를 불러오는 중입니다...</div>}
