@@ -45,13 +45,25 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
       <div style={{ background: cardBg, borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", overflow: "hidden" }}>
         {/* 필터 탭 */}
         <div style={{ display: "flex", borderBottom: `1px solid ${border}`, background: darkMode ? "#2c2d31" : "#fafafa", padding: "0 16px" }}>
-          {["전체", "승인대기", "발행됨", "작성중", "반려"].map(tab => (
-            <button key={tab} onClick={() => { setArticleFilter(tab); setCheckedArticleIds([]); }}
-              style={{ border: "none", background: "none", padding: "16px 20px", fontSize: 14, fontWeight: articleFilter === tab ? 800 : 600, color: articleFilter === tab ? "#3b82f6" : textSecondary, borderBottom: articleFilter === tab ? "3px solid #3b82f6" : "3px solid transparent", cursor: "pointer" }}>
-              {tab}
-              {tab === "승인대기" && <span style={{ marginLeft: 6, background: "#ef4444", color: "#fff", padding: "2px 6px", borderRadius: 10, fontSize: 11 }}>{dbArticles.filter(a => a.status === 'PENDING').length}</span>}
-            </button>
-          ))}
+          {["전체", "승인대기", "발행됨", "작성중", "반려"].map(tab => {
+            let count = 0;
+            if (tab === "전체") count = dbArticles.length;
+            else if (tab === "승인대기") count = dbArticles.filter(a => a.status === 'PENDING').length;
+            else if (tab === "발행됨") count = dbArticles.filter(a => a.status === 'APPROVED').length;
+            else if (tab === "작성중") count = dbArticles.filter(a => a.status === 'DRAFT').length;
+            else if (tab === "반려") count = dbArticles.filter(a => a.status === 'REJECTED').length;
+
+            return (
+              <button key={tab} onClick={() => { setArticleFilter(tab); setCheckedArticleIds([]); }}
+                style={{ border: "none", background: "none", padding: "16px 20px", fontSize: 14, fontWeight: articleFilter === tab ? 800 : 600, color: articleFilter === tab ? "#3b82f6" : textSecondary, borderBottom: articleFilter === tab ? "3px solid #3b82f6" : "3px solid transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+                {tab}
+                <span style={{ 
+                  background: tab === "전체" ? "#e5e7eb" : tab === "승인대기" ? "#ef4444" : tab === "발행됨" ? "#10b981" : tab === "작성중" ? "#9ca3af" : "#f59e0b",
+                  color: tab === "전체" ? "#4b5563" : "#fff", padding: "2px 8px", borderRadius: 10, fontSize: 11, fontWeight: 700 
+                }}>{count}</span>
+              </button>
+            );
+          })}
         </div>
 
         {/* 액션 버튼 */}
