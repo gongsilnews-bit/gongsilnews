@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { AdminSectionProps } from "./types";
 import VacancyRegisterForm from "@/components/admin/VacancyRegisterForm";
-import { getVacancies, updateVacancyStatus, deleteVacancy, getVacancyDetail } from "@/app/actions/vacancy";
+import { getVacancies, updateVacancyStatus, updateVacancy, deleteVacancy, getVacancyDetail } from "@/app/actions/vacancy";
 
 interface VacancySectionProps extends AdminSectionProps {
   role: "admin" | "realtor" | "user";
@@ -61,77 +61,68 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
         <span style={{ fontSize: 13, color: "#ef4444", fontWeight: 600 }}>(광고 {dbVacancies.filter(v => v.status === 'ACTIVE').length}건 / 전체 {dbVacancies.length}건)</span>
       </div>
 
-      {/* 탭 네비게이션 (최고관리자용) */}
-      {role === "admin" && (
-        <div style={{ display: "flex", gap: 32, borderBottom: `1px solid ${border}`, marginBottom: 20 }}>
+      <div style={{ background: cardBg, borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", overflow: "hidden" }}>
+        {/* 필터 탭 */}
+        <div style={{ display: "flex", borderBottom: `1px solid ${border}`, background: darkMode ? "#2c2d31" : "#fafafa", padding: "0 16px" }}>
           {["전체", "승인대기", "광고중", "작성중", "반려"].map(tab => {
-            const count = dbVacancies.filter(v => {
-              if (tab === "전체") return true;
-              if (tab === "승인대기") return v.status === "PENDING";
-              if (tab === "광고중") return v.status === "ACTIVE";
-              if (tab === "작성중") return v.status === "DRAFT";
-              if (tab === "반려") return v.status === "REJECTED";
-              return false;
-            }).length;
+            let count = 0;
+            if (tab === "전체") count = dbVacancies.length;
+            else if (tab === "승인대기") count = dbVacancies.filter(v => v.status === "PENDING").length;
+            else if (tab === "광고중") count = dbVacancies.filter(v => v.status === "ACTIVE").length;
+            else if (tab === "작성중") count = dbVacancies.filter(v => v.status === "DRAFT").length;
+            else if (tab === "반려") count = dbVacancies.filter(v => v.status === "REJECTED").length;
 
             return (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                style={{
-                  background: "transparent", border: "none", fontSize: 15, fontWeight: activeTab === tab ? 800 : 500,
-                  color: activeTab === tab ? "#3b82f6" : textSecondary, cursor: "pointer",
-                  paddingBottom: 12, borderBottom: activeTab === tab ? "3px solid #3b82f6" : "3px solid transparent",
-                  position: "relative",
-                  display: "flex", alignItems: "center", gap: 6, transition: "color 0.2s"
-                }}
-              >
+              <button key={tab} onClick={() => setActiveTab(tab)}
+                style={{ border: "none", background: "none", padding: "16px 20px", fontSize: 14, fontWeight: activeTab === tab ? 800 : 600, color: activeTab === tab ? "#3b82f6" : textSecondary, borderBottom: activeTab === tab ? "3px solid #3b82f6" : "3px solid transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
                 {tab}
-                {tab === "승인대기" && count > 0 && (
-                  <span style={{ background: "#ef4444", color: "#fff", fontSize: 11, fontWeight: 800, padding: "2px 6px", borderRadius: 10 }}>{count}</span>
-                )}
+                <span style={{ 
+                  background: tab === "전체" ? "#e5e7eb" : tab === "승인대기" ? "#8b5cf6" : tab === "광고중" ? "#10b981" : tab === "작성중" ? "#9ca3af" : "#ef4444",
+                  color: tab === "전체" ? "#4b5563" : "#fff", padding: "2px 8px", borderRadius: 10, fontSize: 11, fontWeight: 700 
+                }}>{count}</span>
               </button>
             );
           })}
-        </div>
-      )}
-
-      {/* 메인 카드 */}
-      <div style={{ background: cardBg, borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", overflow: "hidden" }}>
-        {/* 필터 영역 */}
-        <div style={{ padding: "20px 24px", borderBottom: `1px solid ${border}`, display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <label style={{ fontSize: 13, fontWeight: 600, color: textSecondary, whiteSpace: "nowrap" }}>매물번호</label>
-            <input type="text" placeholder="매물번호 입력" style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", width: 140 }} />
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <label style={{ fontSize: 13, fontWeight: 600, color: textSecondary, whiteSpace: "nowrap" }}>매물종류</label>
-            <select style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", minWidth: 80 }}>
-              <option>전체</option>
-            </select>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <label style={{ fontSize: 13, fontWeight: 600, color: textSecondary, whiteSpace: "nowrap" }}>매물구분</label>
-            <select style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", minWidth: 80 }}>
-              <option>전체</option>
-            </select>
-          </div>
-          <input type="text" placeholder="전체내용 입력하세요." style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", flex: 1, minWidth: 180 }} />
-          <button style={{ height: 36, padding: "0 18px", background: darkMode ? "#2c2d31" : "#374151", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-            검색
-          </button>
-          <button style={{ height: 36, padding: "0 14px", background: darkMode ? "#2c2d31" : "#fff", color: textSecondary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>초기화</button>
         </div>
 
         {/* 액션 버튼 영역 */}
         <div style={{ padding: "16px 24px", borderBottom: `1px solid ${border}`, display: "flex", gap: 10, alignItems: "center" }}>
           <button onClick={() => setShowRegisterForm(true)} style={{ height: 36, padding: "0 16px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>+ 공실등록</button>
-          <button style={{ height: 36, padding: "0 16px", background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+          
+          {role === "admin" && (
+            <>
+              <button onClick={async () => {
+                const checked = Array.from(document.querySelectorAll('.vacancy-checkbox:checked')).map((el: any) => el.value);
+                if (checked.length === 0) { alert("승인할 매물을 선택하세요."); return; }
+                if (confirm(`선택한 ${checked.length}건의 공실을 일괄 광고(승인)하시겠습니까?`)) {
+                  for (const id of checked) { await updateVacancyStatus(id, 'ACTIVE'); }
+                  fetchAllVacancies();
+                }
+              }} style={{ height: 36, padding: "0 16px", background: "#10b981", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>✓ 선택 승인</button>
+              <button onClick={async () => {
+                const checked = Array.from(document.querySelectorAll('.vacancy-checkbox:checked')).map((el: any) => el.value);
+                if (checked.length === 0) { alert("반려할 매물을 선택하세요."); return; }
+                const reason = prompt("반려 사유를 입력하세요 (취소 시 처리 안 됨)");
+                if (reason) {
+                   for (const id of checked) { await updateVacancy(id, { status: 'REJECTED', reject_reason: reason }); }
+                   fetchAllVacancies();
+                }
+              }} style={{ height: 36, padding: "0 16px", background: "#ef4444", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>🚫 선택 반려</button>
+            </>
+          )}
+
+          <button onClick={() => alert("준비 중인 기능입니다.")} style={{ height: 36, padding: "0 16px", background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
             엑셀 대량등록
           </button>
-          <button style={{ height: 36, padding: "0 16px", background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+          <button onClick={async () => {
+             const checked = Array.from(document.querySelectorAll('.vacancy-checkbox:checked')).map((el: any) => el.value);
+             if (checked.length === 0) { alert("삭제할 매물을 선택하세요."); return; }
+             if (confirm(`선택한 ${checked.length}건의 매물을 삭제하시겠습니까?`)) {
+               for (const id of checked) { await deleteVacancy(id); }
+               fetchAllVacancies();
+             }
+          }} style={{ height: 36, padding: "0 16px", background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
             선택삭제
           </button>
@@ -142,7 +133,12 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 1100 }}>
             <thead>
               <tr style={{ background: darkMode ? "#2c2d31" : "#f9fafb" }}>
-                <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 40 }}><input type="checkbox" style={{ accentColor: "#3b82f6" }} /></th>
+                <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 40 }}>
+                  <input type="checkbox" style={{ accentColor: "#3b82f6" }} onChange={e => {
+                     const allBoxes = document.querySelectorAll('.vacancy-checkbox');
+                     allBoxes.forEach((box: any) => box.checked = e.target.checked);
+                  }} />
+                </th>
                 <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 90 }}>번호</th>
                 <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 90 }}>광고설정</th>
                 <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 90 }}>매물종류</th>
@@ -185,7 +181,9 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                     onMouseEnter={(e) => { e.currentTarget.style.background = darkMode ? "#3a3b3f" : "#f1f3f5"; }}
                     onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
                   >
-                    <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}><input type="checkbox" style={{ accentColor: "#3b82f6" }} /></td>
+                    <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
+                      <input type="checkbox" className="vacancy-checkbox" value={row.id} style={{ accentColor: "#3b82f6" }} />
+                    </td>
                     <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>
                       <div style={{ fontWeight: 700 }}>{idx + 1}</div>
                       <div style={{ fontSize: 13, color: "#9ca3af", marginTop: 2 }}>{row.vacancy_no}</div>
