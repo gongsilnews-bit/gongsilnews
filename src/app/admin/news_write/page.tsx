@@ -135,7 +135,7 @@ export default function NewsWritePage() {
               setMemberAuthorId(authData.user.id);
               // 만약 returnPath가 URL에 없었다면, 권한에 맞게 강제지정
               if (!returnPath) {
-                setMemberReturnPath(m.role === 'REALTOR' ? '/realty_admin' : '/user_admin');
+                setMemberReturnPath(m.role === 'REALTOR' ? '/realty_admin?menu=article' : '/user_admin?menu=article');
               }
             } else {
               setIsMemberMode(false);

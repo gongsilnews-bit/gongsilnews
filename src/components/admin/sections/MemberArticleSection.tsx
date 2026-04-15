@@ -75,8 +75,8 @@ export default function MemberArticleSection({ theme, memberId, memberName, memb
   };
 
   const basePath = role === "realtor" ? "/realty_admin" : "/user_admin";
-  const returnParam = role === "realtor" ? "realty_admin" : "user_admin";
-  const writeUrl = `${basePath}/news_write?return=${returnParam}`;
+  const returnParam = role === "realtor" ? "realty_admin?menu=article" : "user_admin?menu=article";
+  const writeUrl = `${basePath}/news_write?return=${encodeURIComponent(returnParam)}`;
 
   return (
     <div style={{ flex: 1, overflowY: "auto", padding: "20px 28px", background: bg }}>

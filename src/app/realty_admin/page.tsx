@@ -25,8 +25,27 @@ const REALTY_MENU: MenuItem[] = [
   { key: "settings", label: "정보설정", icon: <IconSettings />, separated: true },
 ];
 
+import { useRouter, useSearchParams } from "next/navigation";
+
 export default function RealtyAdminPage() {
-  const [activeMenu, setActiveMenu] = useState("dashboard");
+  return (
+    <Suspense fallback={<AdminLoadingFallback />}>
+      <RealtyAdminContent />
+    </Suspense>
+  );
+}
+
+function RealtyAdminContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const menuParam = searchParams.get("menu");
+
+  let initialMenu = "dashboard";
+  if (menuParam && REALTY_MENU.some(m => m.key === menuParam)) {
+    initialMenu = menuParam;
+  }
+
+  const [activeMenu, setActiveMenu] = useState(initialMenu);
   const [hoveredMenu, setHoveredMenu] = useState<string | null>(null);
   const [darkMode, setDarkMode] = useState(false);
   const [memberId, setMemberId] = useState<string | null>(null);
@@ -93,7 +112,7 @@ export default function RealtyAdminPage() {
           {REALTY_MENU.map((item) => (
             <li key={item.key} style={{ margin: 0, position: "relative", ...(item.separated ? { marginTop: 20, borderTop: "1px solid rgba(255,255,255,0.15)" } : {}) }}
               onMouseEnter={() => handleMenuHover(item.key)} onMouseLeave={() => setHoveredMenu(null)}>
-              <button onClick={() => setActiveMenu(item.key)}
+              <button onClick={() => { setActiveMenu(item.key); router.push(`?menu=${item.key}`, { scroll: false }); }}
                 style={{
                   display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
                   padding: "18px 0", textDecoration: "none", width: "100%", border: "none", cursor: "pointer",

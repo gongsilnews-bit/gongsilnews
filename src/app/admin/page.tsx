@@ -38,8 +38,27 @@ const ADMIN_MENU: MenuItem[] = [
 const DATA_KEYS = ["gongsil", "members", "article"] as const;
 type DataKey = typeof DATA_KEYS[number];
 
+import { useRouter, useSearchParams } from "next/navigation";
+
 export default function AdminPage() {
-  const [activeMenu, setActiveMenu] = useState("dashboard");
+  return (
+    <Suspense fallback={<AdminLoadingFallback />}>
+      <AdminContent />
+    </Suspense>
+  );
+}
+
+function AdminContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const menuParam = searchParams.get("menu");
+
+  let initialMenu = "dashboard";
+  if (menuParam && ADMIN_MENU.some(m => m.key === menuParam)) {
+    initialMenu = menuParam;
+  }
+  
+  const [activeMenu, setActiveMenu] = useState(initialMenu);
   const [activeSubmenu, setActiveSubmenu] = useState("members_list");
   const [hoveredMenu, setHoveredMenu] = useState<string | null>(null);
   const [darkMode, setDarkMode] = useState(false);
@@ -80,14 +99,6 @@ export default function AdminPage() {
     }
     fetchUser();
 
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      const menuParam = params.get("menu");
-      if (menuParam && ADMIN_MENU.some(m => m.key === menuParam)) {
-        setActiveMenu(menuParam);
-      }
-    }
-
     // 모든 데이터 섹션 병렬 프리페치
     Promise.all(DATA_KEYS.map(k => prefetchSection(k)));
   }, []);
@@ -119,6 +130,7 @@ export default function AdminPage() {
                 onClick={() => {
                   setActiveMenu(item.key);
                   if (item.submenus) setActiveSubmenu(item.submenus[0].key);
+                  router.push(`?menu=${item.key}`, { scroll: false });
                 }}
                 style={{
                   display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
