@@ -1153,7 +1153,7 @@ export default function NewsWritePage() {
         }
 
         alert("✅ 기사가 저장되었습니다!");
-        router.push("/admin");
+        router.push("/admin?menu=article");
       } else {
         alert("❌ 저장 실패: " + result.error);
       }

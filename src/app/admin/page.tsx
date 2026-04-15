@@ -50,6 +50,14 @@ export default function AdminPage() {
       if (user) setAdminUserId(user.id);
     }
     fetchUser();
+
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const menuParam = params.get("menu");
+      if (menuParam && ADMIN_MENU.some(m => m.key === menuParam)) {
+        setActiveMenu(menuParam);
+      }
+    }
   }, []);
 
   const theme = computeTheme(darkMode);
