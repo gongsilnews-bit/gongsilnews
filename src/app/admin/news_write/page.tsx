@@ -52,6 +52,11 @@ export default function NewsWritePage() {
   const [attachFiles, setAttachFiles] = useState<{ file: File; name: string }[]>([]);
   const [loadArticleId, setLoadArticleId] = useState<string | null>(null);
 
+  /* ── 회원 모드 (URL 파라미터: role=member) ── */
+  const [isMemberMode, setIsMemberMode] = useState(false);
+  const [memberReturnPath, setMemberReturnPath] = useState("/admin?menu=article");
+  const [memberAuthorId, setMemberAuthorId] = useState<string | null>(null);
+
   /* ── 관련기사 관련 상태 ── */
   const [relatedArticles, setRelatedArticles] = useState<{id: string, title: string, section1: string, published_at: string}[]>([]);
   const [showRelatedArticleModal, setShowRelatedArticleModal] = useState(false);
@@ -109,6 +114,19 @@ export default function NewsWritePage() {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       const articleId = params.get("id");
+      /* ── 회원 모드 감지 ── */
+      const urlRole = params.get("role");
+      if (urlRole === "member") {
+        setIsMemberMode(true);
+        const returnPath = params.get("return");
+        if (returnPath) setMemberReturnPath(`/${returnPath}`);
+        const urlAuthorId = params.get("author_id");
+        if (urlAuthorId) setMemberAuthorId(urlAuthorId);
+        const urlAuthorName = params.get("author_name");
+        if (urlAuthorName) setReporterName(decodeURIComponent(urlAuthorName));
+        const urlAuthorEmail = params.get("author_email");
+        if (urlAuthorEmail) setReporterEmail(decodeURIComponent(urlAuthorEmail));
+      }
       if (articleId) {
         setLoadArticleId(articleId);
         getArticleDetail(articleId).then(res => {
@@ -1089,7 +1107,7 @@ export default function NewsWritePage() {
 
       const result = await saveArticle({
         id: loadArticleId || undefined,
-        author_id: currentUserId || undefined,
+        author_id: memberAuthorId || currentUserId || undefined,
         author_name: reporterName,
         author_email: reporterEmail,
         status: finalStatus,
@@ -1152,7 +1170,7 @@ export default function NewsWritePage() {
         if (htmlChanged || finalThumbnailUrl !== thumbnailUrl || finalStatus !== status) {
           await saveArticle({
             id: articleId,
-            author_id: currentUserId || undefined,
+            author_id: memberAuthorId || currentUserId || undefined,
             author_name: reporterName,
             author_email: reporterEmail,
             status: finalStatus, form_type: formType,
@@ -1184,7 +1202,7 @@ export default function NewsWritePage() {
         }
 
         alert("✅ 기사가 저장되었습니다!");
-        router.push("/admin?menu=article");
+        router.push(isMemberMode ? memberReturnPath : "/admin?menu=article");
       } else {
         alert("❌ 저장 실패: " + result.error);
       }
@@ -1323,7 +1341,7 @@ export default function NewsWritePage() {
                 <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 16, height: 16, borderRadius: "50%", border: `1px solid ${textMuted}`, fontSize: 10, color: textMuted, cursor: "help" }}>ⓘ</span>
               </label>
               <div style={{ display: "flex", gap: 0, background: "#f3f4f6", borderRadius: 8, padding: 3 }}>
-                {(["작성중", "승인신청", "반려"] as StatusType[]).map(s => (
+                {(isMemberMode ? ["작성중", "승인신청"] as StatusType[] : ["작성중", "승인신청", "반려"] as StatusType[]).map(s => (
                   <button key={s} onClick={() => setStatus(s)} style={{
                     padding: "8px 18px", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer",
                     background: status === s ? "#1f2937" : "transparent",
