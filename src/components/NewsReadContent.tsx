@@ -93,7 +93,7 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
               <div className="meta-info">
                 <span style={{ color: "#111", fontWeight: "bold" }}>{article.author_name || "공실뉴스"}</span>
                 <span className="meta-divider"></span>
-                <span>{formatDate(article.published_at || article.created_at)}</span>
+                <span suppressHydrationWarning>{formatDate(article.published_at || article.created_at)}</span>
                 <span className="meta-divider"></span>
                 <span>조회수 {viewCount}</span>
               </div>
