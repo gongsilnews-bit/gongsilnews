@@ -116,31 +116,19 @@ button { border: none; background: none; cursor: pointer; font-family: inherit; 
     position: sticky;
     top: -1px;
     z-index: 9999999;
-    transition: all 0.5s cubic-bezier(0.68, -0.2, 0.265, 1.55);
 }
 .header.is-sticky {
-    padding-top: 10px;
-    background: rgba(255, 255, 255, 1);
     box-shadow: 0 4px 20px rgba(0,0,0,0.06);
-    border-bottom: 2px solid #111111;
 }
 .header-top {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 24px;
-    transition: all 0.5s cubic-bezier(0.68, -0.2, 0.265, 1.55);
-}
-.header.is-sticky .header-top {
-    margin-bottom: 12px;
 }
 .header img.ht-logo {
     height: 50px;
     cursor: pointer;
-    transition: all 0.5s cubic-bezier(0.68, -0.2, 0.265, 1.55);
-}
-.header.is-sticky img.ht-logo {
-    height: 32px;
 }
 .ht-left, .ht-right { flex: 1; }
 .ht-right { display: flex; justify-content: flex-end; }
@@ -156,10 +144,6 @@ button { border: none; background: none; cursor: pointer; font-family: inherit; 
 
 .header-bottom {
     padding-bottom: 16px;
-    transition: all 0.5s cubic-bezier(0.68, -0.2, 0.265, 1.55);
-}
-.header.is-sticky .header-bottom {
-    padding-bottom: 10px;
 }
 .gnb-new {
     display: flex;

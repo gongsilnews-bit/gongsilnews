@@ -3,12 +3,15 @@ import { getArticles } from "@/app/actions/article";
 
 export default async function CategoryNewsGrid() {
   // 섹션별 기사 가져오기 (최신순 2개씩)
-  const [financeRes, mapRes, politicsRes, lawRes, lifeRes] = await Promise.all([
+  const [financeRes, mapRes, politicsRes, lawRes, lifeRes, itRes, sportsRes, peopleRes] = await Promise.all([
     getArticles({ status: "APPROVED", section1: "뉴스/칼럼", section2: "부동산·주식·재테크", limit: 10 }),
-    getArticles({ status: "APPROVED", section1: "우리동네부동산", limit: 30 }), // 비디오 필터링을 위해 여유있게 가져옴
+    getArticles({ status: "APPROVED", section1: "우리동네부동산", limit: 30 }),
     getArticles({ status: "APPROVED", section1: "뉴스/칼럼", section2: "정치·경제·사회", limit: 10 }),
     getArticles({ status: "APPROVED", section1: "뉴스/칼럼", section2: "세무·법률", limit: 10 }),
     getArticles({ status: "APPROVED", section1: "뉴스/칼럼", section2: "여행·건강·생활", limit: 10 }),
+    getArticles({ status: "APPROVED", section1: "뉴스/칼럼", section2: "IT·가전·가구", limit: 10 }),
+    getArticles({ status: "APPROVED", section1: "뉴스/칼럼", section2: "스포츠·연예·Car", limit: 10 }),
+    getArticles({ status: "APPROVED", section1: "뉴스/칼럼", section2: "인물·미션·기타", limit: 10 }),
   ]);
 
   const rawFinanceArts = financeRes.success ? financeRes.data || [] : [];
@@ -16,6 +19,13 @@ export default async function CategoryNewsGrid() {
   const rawPoliticsArts = politicsRes.success ? politicsRes.data || [] : [];
   const rawLawArts = lawRes.success ? lawRes.data || [] : [];
   const rawLifeArts = lifeRes.success ? lifeRes.data || [] : [];
+  
+  const rawEtcArts = [
+    ...(itRes.success ? itRes.data || [] : []),
+    ...(sportsRes.success ? sportsRes.data || [] : []),
+    ...(peopleRes.success ? peopleRes.data || [] : []),
+  ];
+  rawEtcArts.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
   // 날짜 포맷팅
   const formatDate = (dateStr: string) => {
@@ -59,6 +69,7 @@ export default async function CategoryNewsGrid() {
   const politicsArts = filterMedia(rawPoliticsArts);
   const lawArts = filterMedia(rawLawArts);
   const lifeArts = filterMedia(rawLifeArts);
+  const etcArts = filterMedia(rawEtcArts);
   
   // 공통 기사 렌더링 함수 (2단 리스트용) 전에 mapArts 필터링
   const mapArts = rawMapArts.filter((item: any) => extractYoutubeIdInfo(item).hasVideo).slice(0, 3);
@@ -154,28 +165,17 @@ export default async function CategoryNewsGrid() {
         </div>
       </div>
 
-      {/* 7-2. 정치·경제·사회 */}
+      {/* 7-2. 정치·경제·사회 + 세무·법률 (2단 병렬 한 칸씩 당김) */}
       <div className="mt-50 mb-50">
-        <div className="sec-title-wrap">
-          <Link href="/news_politics" style={{ textDecoration: "none" }}><h2 className="sec-title">정치·경제·사회 &gt;</h2></Link>
-        </div>
-        <div className="hot-issue-wrap">
-          <div className="hi-left">
+        <div className="hot-issue-wrap" style={{ gap: 40 }}>
+          <div className="hi-left" style={{ flex: 1 }}>
+            <div className="sec-title-wrap">
+              <Link href="/news_politics" style={{ textDecoration: "none" }}><h2 className="sec-title">정치·경제·사회 &gt;</h2></Link>
+            </div>
             <div className="hi-list">
               {renderArticleList(politicsArts)}
             </div>
           </div>
-          <div className="hi-right">
-            <div className="box-placeholder">
-              <span style={{ color: "#999" }}>광고 또는 비디오 박스 영역</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 7-3. 세무·법률 + 여행·건강·생활 (2단 병렬) */}
-      <div className="mt-50 mb-50">
-        <div className="hot-issue-wrap" style={{ gap: 40 }}>
           <div className="hi-left" style={{ flex: 1 }}>
             <div className="sec-title-wrap">
               <Link href="/news_law" style={{ textDecoration: "none" }}><h2 className="sec-title">세무·법률 &gt;</h2></Link>
@@ -184,12 +184,26 @@ export default async function CategoryNewsGrid() {
               {renderArticleList(lawArts)}
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* 7-3. 여행·건강·생활 + 기타 (2단 병렬 한 칸씩 당김) */}
+      <div className="mt-50 mb-50">
+        <div className="hot-issue-wrap" style={{ gap: 40 }}>
           <div className="hi-left" style={{ flex: 1 }}>
             <div className="sec-title-wrap">
                <Link href="/news_life" style={{ textDecoration: "none" }}><h2 className="sec-title">여행·건강·생활 &gt;</h2></Link>
             </div>
             <div className="hi-list">
               {renderArticleList(lifeArts)}
+            </div>
+          </div>
+          <div className="hi-left" style={{ flex: 1 }}>
+            <div className="sec-title-wrap">
+               <Link href="/news_etc" style={{ textDecoration: "none" }}><h2 className="sec-title">기타 &gt;</h2></Link>
+            </div>
+            <div className="hi-list">
+              {renderArticleList(etcArts)}
             </div>
           </div>
         </div>
