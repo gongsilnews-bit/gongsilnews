@@ -7,6 +7,7 @@ function getAdminClient() {
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
   return createClient(supabaseUrl, serviceKey, {
     auth: { autoRefreshToken: false, persistSession: false },
+    global: { fetch: (url, init) => fetch(url, { ...init, cache: 'no-store' }) }
   });
 }
 
