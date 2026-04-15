@@ -67,13 +67,20 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
   ];
 
   // 유튜브 ID 추출
-  const extractYoutubeId = (url: string): string | null => {
-    if (!url) return null;
-    const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([\\w-]{11})/);
-    return m ? m[1] : null;
+  const extractYoutubeId = (url?: string, html?: string): string | null => {
+    const rx = /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([\w-]{11})/;
+    if (url) {
+      const m = url.match(rx);
+      if (m) return m[1];
+    }
+    if (html) {
+      const m = html.match(rx);
+      if (m) return m[1];
+    }
+    return null;
   };
 
-  const youtubeId = extractYoutubeId(article.youtube_url);
+  const youtubeId = extractYoutubeId(article.youtube_url, article.content);
   const hasYoutube = !!youtubeId;
 
   return (
