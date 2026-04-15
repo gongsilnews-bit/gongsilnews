@@ -161,7 +161,7 @@ const getArticlesCached = unstable_cache(
     return { success: true, data };
   },
   ["articles-list"],
-  { tags: ["articles"], revalidate: 3600 } // 1시간 기본 캐시, 작성 시 무효화
+  { tags: ["articles"], revalidate: 60 } // 1분 캐시, 작성 시 무효화
 );
 
 export async function getArticles(filters?: {

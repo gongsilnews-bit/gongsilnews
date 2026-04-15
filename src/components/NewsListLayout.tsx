@@ -65,6 +65,13 @@ export default function NewsListLayout({ category, title, initialArticles, initi
     return html.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim();
   };
 
+  // YouTube URL에서 썸네일 추출
+  const getYoutubeThumbnail = (url: string) => {
+    if (!url) return null;
+    const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|shorts\/))([\w-]{11})/);
+    return match ? `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg` : null;
+  };
+
   // 추천공실 (더미 유지 — 매물 DB 연동 시 교체)
   const recommendProps = [
     { title: "관악드림타운 132동 8층호", price: "매매 11억 5000", area: "면적 82.91㎡(25.1평) / 59.83㎡(18.1평)", detail: "룸 3개, 욕실 1개", badge: "공동중개" },
@@ -86,24 +93,28 @@ export default function NewsListLayout({ category, title, initialArticles, initi
             {pagedArticles.length > 0 ? pagedArticles.map((article) => (
               <Link key={article.id} href={`/news/${article.article_no || article.id}`} style={{ textDecoration: "none", color: "inherit" }}>
                 <div className="an-card">
-                  <div className="an-img" style={{ position: "relative", flexShrink: 0 }}>
-                    {article.thumbnail_url ? (
-                      <img
-                        src={article.thumbnail_url}
-                        alt={article.title}
-                        style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 6 }}
-                      />
-                    ) : (
-                      <div style={{ width: "100%", height: "100%", background: "#f4f6fa", borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center", color: "#bbb", fontSize: 13 }}>
-                        No Image
-                      </div>
-                    )}
-                    {article.youtube_url && (
-                      <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 44, height: 44, background: "rgba(0,0,0,0.4)", borderRadius: "50%", border: "2.5px solid white", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 5 }}>
-                        <svg viewBox="0 0 24 24" width="24" height="24" fill="white" style={{ marginLeft: 4 }}><path d="M8 5v14l11-7z"/></svg>
-                      </div>
-                    )}
-                  </div>
+                  {(article.thumbnail_url || article.youtube_url) && (
+                    <div className="an-img" style={{ position: "relative", flexShrink: 0 }}>
+                      {article.thumbnail_url ? (
+                        <img
+                          src={article.thumbnail_url}
+                          alt={article.title}
+                          style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 6 }}
+                        />
+                      ) : article.youtube_url ? (
+                        <img
+                          src={getYoutubeThumbnail(article.youtube_url) || ""}
+                          alt={article.title}
+                          style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 6 }}
+                        />
+                      ) : null}
+                      {article.youtube_url && (
+                        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 44, height: 44, background: "rgba(0,0,0,0.4)", borderRadius: "50%", border: "2.5px solid white", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 5 }}>
+                          <svg viewBox="0 0 24 24" width="24" height="24" fill="white" style={{ marginLeft: 4 }}><path d="M8 5v14l11-7z"/></svg>
+                        </div>
+                      )}
+                    </div>
+                  )}
                   <div className="an-body">
                     <div className="an-title">{article.title}</div>
                     <div className="an-desc">
