@@ -45,8 +45,14 @@ export default async function CategoryNewsGrid() {
 
   // YouTube 추출 유틸리티
   const extractYoutubeIdInfo = (article: any) => {
+    // 1순위: 명시적 유튜브 URL
     if (article.youtube_url) {
       const match = article.youtube_url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|shorts\/))([\w-]{11})/);
+      if (match) return { id: match[1], hasVideo: true };
+    }
+    // 2순위: 본문(content) 내장 iframe 또는 링크
+    if (article.content) {
+      const match = article.content.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|shorts\/))([\w-]{11})/);
       if (match) return { id: match[1], hasVideo: true };
     }
     return { id: null, hasVideo: false };
