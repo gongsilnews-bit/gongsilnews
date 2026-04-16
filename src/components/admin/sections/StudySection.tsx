@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AdminSectionProps } from "./types";
 import { getLectures, deleteLecture, updateLectureStatus } from "@/app/actions/lecture";
+import StudyWriteForm from "@/components/admin/StudyWriteForm";
 
 const STATUS_MAP: Record<string, { label: string; color: string; bg: string; border: string }> = {
   DRAFT: { label: "임시저장", color: "#6b7280", bg: "#f3f4f6", border: "#d1d5db" },
@@ -21,6 +22,10 @@ export default function StudySection({ theme }: AdminSectionProps) {
   const [filterStatus, setFilterStatus] = useState("전체");
   const [searchKw, setSearchKw] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  
+  const searchParams = useSearchParams();
+  const action = searchParams.get("action");
+  const showWriteForm = action === "write";
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -92,6 +97,10 @@ export default function StudySection({ theme }: AdminSectionProps) {
     return p.toLocaleString() + " 원";
   };
 
+  if (showWriteForm) {
+    return <StudyWriteForm />;
+  }
+
   return (
     <div style={{ flex: 1, overflowY: "auto", padding: "20px 28px", background: bg }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 20 }}>
@@ -135,7 +144,7 @@ export default function StudySection({ theme }: AdminSectionProps) {
         {/* 액션 */}
         <div style={{ padding: "16px 24px", borderBottom: `1px solid ${border}`, display: "flex", gap: 10 }}>
           <button
-            onClick={() => router.push("/admin/lecture_write")}
+            onClick={() => router.push("?menu=study&action=write")}
             style={{ height: 36, padding: "0 16px", background: "#f59e0b", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer" }}
           >
             + 새 강의 등록
@@ -184,7 +193,7 @@ export default function StudySection({ theme }: AdminSectionProps) {
                         <span style={{ display: "inline-block", padding: "4px 8px", borderRadius: 4, fontSize: 13, fontWeight: 700, color: st.color, background: st.bg, border: `1px solid ${st.border}` }}>{st.label}</span>
                       </td>
                       <td style={{ padding: "16px 10px", verticalAlign: "middle", fontWeight: 700, color: textPrimary, fontSize: 15 }}>
-                        <span style={{ cursor: "pointer" }} onClick={() => router.push(`/admin/lecture_write?id=${row.id}`)}>
+                        <span style={{ cursor: "pointer" }} onClick={() => router.push(`?menu=study&action=write&id=${row.id}`)}>
                           {row.title}
                         </span>
                       </td>
@@ -196,7 +205,7 @@ export default function StudySection({ theme }: AdminSectionProps) {
                       <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
                         <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
                           <button
-                            onClick={() => router.push(`/admin/lecture_write?id=${row.id}`)}
+                            onClick={() => router.push(`?menu=study&action=write&id=${row.id}`)}
                             style={{ height: 30, padding: "0 12px", background: darkMode ? "#374151" : "#4b5563", color: "#fff", border: "none", borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}
                           >
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>

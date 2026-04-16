@@ -510,6 +510,14 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
 
     const map = kakaoMapRef.current;
 
+    // 제한된 범위 지정 (1: 가장 확대된 상태, 9: 시/군/구 범위)
+    map.setMinLevel(1);
+    map.setMaxLevel(9);
+
+    // 우측 줌 컨트롤(네비게이션 바) 추가
+    const zoomControl = new kakao.maps.ZoomControl();
+    map.addControl(zoomControl, kakao.maps.ControlPosition.RIGHT);
+
     kakao.maps.event.addListener(map, 'idle', () => {
       setMapBounds(map.getBounds());
       // Reverse Geocoder for the center

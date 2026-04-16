@@ -53,7 +53,7 @@ const compressToWebP = (file: File, maxWidth = 1920, quality = 0.82): Promise<Fi
   });
 };
 
-export default function LectureWritePage() {
+export default function StudyWriteForm() {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -419,29 +419,22 @@ export default function LectureWritePage() {
     </button>
   );
 
+  // ArticleSection/StudySection 등 대시보드 내부 영역에 렌더링되므로, 기존의 사이드바 및 헤더, 100vh 래퍼를 제거하고 콘텐츠만 반환합니다.
   return (
-    <div style={{ display: "flex", height: "100vh", width: "100vw", fontFamily: "'Pretendard Variable', -apple-system, sans-serif", background: "#f5f6f8" }}>
-      <AdminSidebar activeMenu="study" />
+    <>
+      <div style={{ padding: "24px 32px", width: "100%", maxWidth: 1000, margin: "0 auto" }}>
 
-      <main style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-        {/* Header */}
-        <header style={{ height: 64, background: "#fff", borderBottom: "1px solid #e5e7eb", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 32px", flexShrink: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <button onClick={() => router.push("/admin?menu=study")} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 22, color: "#6b7280", display: "flex", alignItems: "center" }}>←</button>
-            <h1 style={{ fontSize: 18, fontWeight: 800, color: "#111", margin: 0 }}>{loadId ? "강의 수정" : "새 강의 등록"}</h1>
-          </div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+          <h2 style={{ fontSize: 24, fontWeight: 800, color: "#111", margin: 0 }}>{loadId ? "강의 수정" : "새 강의 등록"}</h2>
           <div style={{ display: "flex", gap: 10 }}>
-            <button onClick={() => handleSave("DRAFT")} disabled={saving} style={{ height: 40, padding: "0 20px", background: "#fff", color: "#374151", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.6 : 1 }}>💾 임시저장</button>
+            <button onClick={() => router.push("?menu=study")} style={{ height: 40, padding: "0 20px", background: "#fff", color: "#374151", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>취소</button>
+            <button onClick={() => handleSave("DRAFT")} disabled={saving} style={{ height: 40, padding: "0 20px", background: "#f3f4f6", color: "#374151", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.6 : 1 }}>💾 임시저장</button>
             <button onClick={() => handleSave("ACTIVE")} disabled={saving} style={{ height: 40, padding: "0 24px", background: "#f59e0b", color: "#fff", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.6 : 1 }}>🚀 공개 등록</button>
           </div>
-        </header>
+        </div>
 
-        {/* Content */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "24px 32px" }}>
-          <div style={{ maxWidth: 900, margin: "0 auto" }}>
-
-            {/* ========== 1. 기본 정보 ========== */}
-            <div style={sectionStyle}>
+        {/* ========== 1. 기본 정보 ========== */}
+        <div style={sectionStyle}>
               <div style={sectionTitleStyle}><span style={{ fontSize: 20 }}>📋</span> 기본 정보</div>
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
@@ -831,9 +824,7 @@ export default function LectureWritePage() {
               <button onClick={() => handleSave("DRAFT")} disabled={saving} style={{ height: 48, padding: "0 32px", background: "#fff", color: "#374151", border: "1px solid #d1d5db", borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.6 : 1 }}>💾 임시저장</button>
               <button onClick={() => handleSave("ACTIVE")} disabled={saving} style={{ height: 48, padding: "0 40px", background: "linear-gradient(135deg, #f59e0b, #d97706)", color: "#fff", border: "none", borderRadius: 10, fontSize: 15, fontWeight: 800, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.6 : 1, boxShadow: "0 4px 14px rgba(245,158,11,0.3)" }}>🚀 공개 등록</button>
             </div>
-          </div>
-        </div>
-      </main>
-    </div>
+      </div>
+    </>
   );
 }

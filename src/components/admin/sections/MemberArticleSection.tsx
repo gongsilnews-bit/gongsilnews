@@ -4,6 +4,8 @@ import React, { useState, useEffect } from "react";
 import { AdminSectionProps } from "./types";
 import { getMyArticles, adminUpdateArticleStatus, deleteArticle } from "@/app/actions/article";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import NewsWriteForm from "@/components/admin/NewsWriteForm";
 
 interface MemberArticleSectionProps extends AdminSectionProps {
   memberId: string;
@@ -19,6 +21,11 @@ export default function MemberArticleSection({ theme, memberId, memberName, memb
   const [filter, setFilter] = useState("전체");
   const [checkedIds, setCheckedIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const action = searchParams.get("action");
+  const editId = searchParams.get("id");
+  const showWriteForm = action === "write";
 
   const fetchArticles = async () => {
     setLoading(true);
@@ -75,9 +82,9 @@ export default function MemberArticleSection({ theme, memberId, memberName, memb
     return <span style={{ padding: "4px 8px", background: s.bg, color: "#fff", borderRadius: 4, fontSize: 12, fontWeight: 700 }}>{s.label}</span>;
   };
 
-  const basePath = role === "realtor" ? "/realty_admin" : "/user_admin";
-  const returnParam = role === "realtor" ? "realty_admin?menu=article" : "user_admin?menu=article";
-  const writeUrl = `${basePath}/news_write?return=${encodeURIComponent(returnParam)}`;
+  if (showWriteForm) {
+    return <NewsWriteForm />;
+  }
 
   return (
     <div style={{ flex: 1, overflowY: "auto", padding: "20px 28px", background: bg }}>
@@ -114,7 +121,7 @@ export default function MemberArticleSection({ theme, memberId, memberName, memb
 
         {/* 액션 버튼 */}
         <div style={{ padding: "16px 24px", borderBottom: `1px solid ${border}`, display: "flex", gap: 10, alignItems: "center" }}>
-          <Link href={writeUrl} style={{ display: "flex", alignItems: "center", height: 36, padding: "0 16px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", textDecoration: "none", gap: 6 }}>+ 새 기사 작성</Link>
+          <button onClick={() => router.push("?menu=article&action=write")} style={{ display: "flex", alignItems: "center", height: 36, padding: "0 16px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", textDecoration: "none", gap: 6 }}>+ 새 기사 작성</button>
           <button onClick={handleRequestApproval}
             style={{ height: 36, padding: "0 16px", background: "#8b5cf6", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
             📋 승인신청
@@ -171,10 +178,10 @@ export default function MemberArticleSection({ theme, memberId, memberName, memb
                   </td>
                   <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", color: textSecondary }}>{a.section1 || "-"}</td>
                   <td style={{ padding: "16px 10px", textAlign: "left", verticalAlign: "middle" }}>
-                    <Link href={`${basePath}/news_write?id=${a.id}&return=${returnParam}`}
-                      style={{ fontWeight: 700, fontSize: 15, color: textPrimary, textDecoration: "none" }}>
+                    <button onClick={() => router.push(`?menu=article&action=write&id=${a.id}`)}
+                      style={{ background: "none", border: "none", fontWeight: 700, fontSize: 15, color: textPrimary, textDecoration: "none", cursor: "pointer", padding: 0 }}>
                       {a.title || "(제목 없음)"}
-                    </Link>
+                    </button>
                     {a.status === "REJECTED" && a.reject_reason && (
                       <div style={{ marginTop: 4, fontSize: 12, color: "#ef4444", fontWeight: 600 }}>
                         반려 사유: {a.reject_reason}
@@ -186,10 +193,10 @@ export default function MemberArticleSection({ theme, memberId, memberName, memb
                   </td>
                   <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
                     <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
-                      <Link href={`${basePath}/news_write?id=${a.id}&return=${returnParam}`}
-                        style={{ height: 30, padding: "0 12px", background: darkMode ? "#374151" : "#4b5563", color: "#fff", border: "none", borderRadius: 4, fontSize: 12, fontWeight: 600, textDecoration: "none", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
+                      <button onClick={() => router.push(`?menu=article&action=write&id=${a.id}`)}
+                        style={{ height: 30, padding: "0 12px", background: darkMode ? "#374151" : "#4b5563", color: "#fff", border: "none", borderRadius: 4, fontSize: 12, fontWeight: 600, textDecoration: "none", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0, cursor: "pointer" }}>
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> 수정
-                      </Link>
+                      </button>
                       <button onClick={() => handleDelete(a.id)}
                         style={{ height: 30, padding: "0 12px", background: darkMode ? "#2c2d31" : "#fff", color: "#9ca3af", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>

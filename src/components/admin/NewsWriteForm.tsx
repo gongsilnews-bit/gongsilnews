@@ -11,8 +11,7 @@ import Link from "next/link";
 type StatusType = "DRAFT" | "PENDING" | "APPROVED" | "REJECTED" | string;
 type FormType = "일반" | "카드뉴스" | "갤러리";
 
-import AdminSidebar from "@/components/admin/AdminSidebar";
-import MemberSidebarProxy from "@/components/admin/MemberSidebarProxy";
+
 
 export default function NewsWritePage({ initialIsMemberMode = false }: { initialIsMemberMode?: boolean } = {}) {
   const router = useRouter();
@@ -1244,45 +1243,10 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
   const accentBlue = "#3b82f6";
   const headerBg = "#ffffff";
 
+  // 폼이 ArticleSection 안에서 렌더링되므로, 기존의 사이드바/상단헤더/전체화면높이 스타일은 제거하고 내부 컨텐츠 래퍼만 반환합니다.
   return (
-    <div style={{ display: "flex", height: "100vh", width: "100vw", fontFamily: "'Pretendard Variable', -apple-system, sans-serif", background: pageBg, overflow: "hidden" }}>
-      {!isMemberMode ? <AdminSidebar activeMenu="article" /> : <MemberSidebarProxy activeMenu="article" returnPath={memberReturnPath} />}
-      <main style={{ flex: 1, display: "flex", flexDirection: "column", background: pageBg, overflow: "hidden" }}>
-        {/* ═══ 상단 헤더 ═══ */}
-      <header style={{
-        height: 56, background: cardBg, borderBottom: `1px solid ${border}`,
-        display: "flex", alignItems: "center", padding: "0 24px", justifyContent: "space-between",
-        flexShrink: 0, zIndex: 100,
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          {/* 로고 */}
-          <div style={{ width: 36, height: 36, borderRadius: "50%", background: "linear-gradient(135deg, #f59e0b, #f97316)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="#fff"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-          </div>
-          <h1 style={{ fontSize: 18, fontWeight: 800, color: textPrimary, margin: 0 }}>기사쓰기</h1>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          {/* 다크모드 토글 */}
-          <button style={{ width: 36, height: 36, borderRadius: "50%", border: `1px solid ${border}`, background: "none", cursor: "pointer", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center", color: textSecondary }}>🌙</button>
-          {/* 로그아웃 */}
-          <button style={{ padding: "8px 16px", background: textPrimary, color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>로그아웃</button>
-          
-          {/* 목록으로 (뒤로가기) 버튼 */}
-          <Link href={isMemberMode ? memberReturnPath : "/admin?menu=article"} style={{ padding: "8px 16px", background: "#f3f4f6", color: textPrimary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", textDecoration: "none", display: "flex", alignItems: "center", gap: 4 }}>
-            목록으로
-          </Link>
-
-          {/* 공실페이지 가기 */}
-          <button onClick={() => router.push("/")} style={{ padding: "8px 16px", background: cardBg, color: textPrimary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
-            <span style={{ fontSize: 14 }}>⚙</span> 공실페이지 가기
-          </button>
-        </div>
-      </header>
-
-      {/* 컨텐츠 스크롤 영역 */}
-      <div style={{ flex: 1, overflowY: "auto" }}>
-        {/* ═══ 3컬럼 레이아웃 ═══ */}
-        <div style={{ maxWidth: 1400, margin: "0 auto", padding: "24px 16px", display: "flex", gap: 20, alignItems: "flex-start" }}>
+    <>
+    <div style={{ maxWidth: 1400, margin: "0 auto", padding: "24px 0", display: "flex", gap: 20, alignItems: "flex-start", width: "100%" }}>
 
         {/* ═══ 좌측 사이드바: 글쓰기도구 ═══ */}
         <aside style={{ width: 220, minWidth: 220, position: "sticky", top: 80, flexShrink: 0 }}>
@@ -1947,10 +1911,10 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                 </>
               )}
             </div>
+
           </div>
         </aside>
 
-      </div>
       </div>
 
       {/* ═══ 사진추가 모달 ═══ */}
@@ -2578,8 +2542,6 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
           </div>
         </div>
       )}
-
-      </main>
-    </div>
+    </>
   );
 }
