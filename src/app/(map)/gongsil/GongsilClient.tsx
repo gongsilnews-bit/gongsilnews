@@ -123,6 +123,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     });
   };
 
+  const [realtorTradeType, setRealtorTradeType] = useState<string>("전체");
+
   // ── 실제 필터 상태 (네이버 부동산 스타일) ──
   const [filterTradeTypes, setFilterTradeTypes] = useState<string[]>([]);
   const [filterPriceMin, setFilterPriceMin] = useState<number | null>(null);
@@ -1659,32 +1661,104 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
               {activeDetailTab === "realtor" && (
                 <>
                 <div style={{ padding: "30px 20px", background: "#fff" }}>
-                  <div style={{ fontSize: 18, fontWeight: 800, color: "#111", marginBottom: 20 }}>{agencyInfo ? agencyInfo.name : (prop.members ? prop.members.name : prop.client_name)}</div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 30 }}>
-                    {agencyInfo ? (
-                      <>
-                        <span style={{ fontSize: 14, color: "#555" }}>대표 {agencyInfo.ceo_name} <span style={{color:"#ccc", margin:"0 6px"}}>|</span> 등록번호 {agencyInfo.reg_num || '-'}</span>
-                        <span style={{ fontSize: 14, color: "#555" }}>{[agencyInfo.address, agencyInfo.address_detail].filter(Boolean).join(" ") || '-'}</span>
-                      </>
-                    ) : (
-                      <>
-                        <span style={{ fontSize: 14, color: "#555" }}>일반회원 <span style={{color:"#ccc", margin:"0 6px"}}>|</span> {prop.members ? prop.members.name : prop.client_name}</span>
-                      </>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 25, gap: 15 }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 18, fontWeight: 800, color: "#111", marginBottom: 12 }}>{agencyInfo ? agencyInfo.name : (prop.members ? prop.members.name : prop.client_name)}</div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 10 }}>
+                        {agencyInfo ? (
+                          <>
+                            <span style={{ fontSize: 14, color: "#555" }}>대표 {agencyInfo.ceo_name} <span style={{color:"#ccc", margin:"0 6px"}}>|</span> 등록번호 {agencyInfo.reg_num || '-'}</span>
+                            <span style={{ fontSize: 14, color: "#555" }}>{[agencyInfo.address, agencyInfo.address_detail].filter(Boolean).join(" ") || '-'}</span>
+                          </>
+                        ) : (
+                          <>
+                            <span style={{ fontSize: 14, color: "#555" }}>일반회원 <span style={{color:"#ccc", margin:"0 6px"}}>|</span> {prop.members ? prop.members.name : prop.client_name}</span>
+                          </>
+                        )}
+                        <span style={{ fontSize: 14, fontWeight: "bold", color: "#1a73e8", marginTop: 4, display: "flex", alignItems: "center", gap: 6 }}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                          전화 {agencyInfo?.phone ? `${agencyInfo.phone}${agencyInfo?.cell && agencyInfo.cell !== agencyInfo.phone ? `, ${agencyInfo.cell}` : ''}` : (prop.client_phone || prop.members?.phone || "미등록")}
+                        </span>
+                      </div>
+
+                      {/* SNS Links (Excluding API info) */}
+                      {prop.members?.sns_links && Object.keys(prop.members.sns_links).filter(k => k !== "api_info" && k !== "api_list" && prop.members.sns_links[k]?.url).length > 0 && (
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 12 }}>
+                          {Object.keys(prop.members.sns_links).filter(k => k !== "api_info" && k !== "api_list" && prop.members.sns_links[k]?.url).map(key => {
+                            const link = prop.members.sns_links[key].url;
+                            const validUrl = link.startsWith('http') ? link : `https://${link}`;
+                            
+                            // Icon mapping based on key
+                            let iconHtml;
+                            switch(key) {
+                              case 'youtube': iconHtml = <svg viewBox="0 0 24 24" fill="currentColor"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.99C18.88 4 12 4 12 4s-6.88 0-8.59.43A2.78 2.78 0 0 0 1.46 6.42C1 8.16 1 12 1 12s0 3.84.46 5.58a2.78 2.78 0 0 0 1.95 1.99C5.12 20 12 20 12 20s6.88 0 8.59-.43a2.78 2.78 0 0 0 1.95-1.99C23 15.84 23 12 23 12s0-3.84-.46-5.58zM9.54 15.55V8.45L15.82 12l-6.28 3.55z"></path></svg>; break;
+                              case 'instagram': iconHtml = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>; break;
+                              case 'facebook': iconHtml = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>; break;
+                              case 'twitter': iconHtml = <svg viewBox="0 0 24 24" fill="currentColor"><path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"></path></svg>; break;
+                              case 'blog': iconHtml = <span style={{ fontSize: 13, fontWeight: "bold" }}>BLOG</span>; break;
+                              case 'cafe': iconHtml = <span style={{ fontSize: 13, fontWeight: "bold" }}>CAFE</span>; break;
+                              case 'kakao': iconHtml = <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3c-5.5 0-10 3.5-10 7.8 0 2.8 1.8 5.2 4.4 6.5l-1 3.7c-.1.3.3.6.5.4l4.3-2.9c.6.1 1.2.1 1.8.1 5.5 0 10-3.5 10-7.8S17.5 3 12 3z"></path></svg>; break;
+                              case 'homepage': iconHtml = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>; break;
+                              case 'shopping_mall': iconHtml = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>; break;
+                              default: iconHtml = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>;
+                            }
+                            
+                            const titleNames: Record<string,string> = { homepage: "홈페이지", contact: "문의하기", shopping_mall: "쇼핑몰", blog: "블로그", cafe: "카페", youtube: "유튜브", facebook: "페이스북", twitter: "트위터", instagram: "인스타그램", kakao: "카카오", threads: "쓰레드" };
+                            const titleName = titleNames[key] || key;
+
+                            return (
+                              <a 
+                                key={key} 
+                                href={validUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                title={titleName}
+                                style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 44, height: 44, borderRadius: "50%", background: "#f8f9fa", border: "1px solid #e0e0e0", color: "#444", transition: "all 0.2s", textDecoration: "none" }}
+                                onMouseEnter={(e) => { e.currentTarget.style.background = "#eaf4ff"; e.currentTarget.style.borderColor = "#1a73e8"; e.currentTarget.style.color = "#1a73e8"; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.background = "#f8f9fa"; e.currentTarget.style.borderColor = "#e0e0e0"; e.currentTarget.style.color = "#444"; }}
+                              >
+                                <div style={{ width: 22, height: 22, display: "flex", alignItems: "center", justifyContent: "center" }}>{iconHtml}</div>
+                              </a>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 부동산 소개란 (agency_info intro) */}
+                    {agencyInfo?.intro && (
+                      <div style={{ width: 230, flexShrink: 0, padding: "12px 14px", background: "#f8f9fa", borderRadius: 8, fontSize: 13, color: "#444", border: "1px solid #eee", lineHeight: 1.5, wordBreak: "keep-all" }}>
+                        <div style={{ fontWeight: "bold", fontSize: 12, color: "#888", marginBottom: 6 }}>부동산 소개</div>
+                        {agencyInfo.intro}
+                      </div>
                     )}
-                    <span style={{ fontSize: 14, fontWeight: "bold", color: "#1a73e8", marginTop: 4, display: "flex", alignItems: "center", gap: 6 }}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-                      전화 {agencyInfo?.phone ? `${agencyInfo.phone}${agencyInfo?.cell && agencyInfo.cell !== agencyInfo.phone ? `, ${agencyInfo.cell}` : ''}` : (prop.client_phone || prop.members?.phone || "미등록")}
-                    </span>
                   </div>
                   
                   <div>
                     <div style={{ display: "flex", background: "#f9f9f9", borderRadius: 8, overflow: "hidden", border: "1px solid #eee" }}>
                       <div style={{ flex: 1, padding: "16px 20px", fontSize: 14, fontWeight: "bold", color: "#111", borderRight: "1px solid #eee", display: "flex", alignItems: "center" }}>공실등록현황</div>
                       <div style={{ display: "flex", alignItems: "center", padding: "0 20px", gap: 16, fontSize: 13, color: "#666" }}>
-                        <span>매매 <strong style={{color:"#111"}}>{dbVacancies.filter(v => v.owner_id === prop.owner_id && v.trade_type === '매매').length}</strong></span><span style={{width:1,height:12,background:"#ddd"}}></span>
-                        <span>전세 <strong style={{color:"#111"}}>{dbVacancies.filter(v => v.owner_id === prop.owner_id && v.trade_type === '전세').length}</strong></span><span style={{width:1,height:12,background:"#ddd"}}></span>
-                        <span>월세 <strong style={{color:"#111"}}>{dbVacancies.filter(v => v.owner_id === prop.owner_id && v.trade_type === '월세').length}</strong></span><span style={{width:1,height:12,background:"#ddd"}}></span>
-                        <span>단기 <strong style={{color:"#111"}}>{dbVacancies.filter(v => v.owner_id === prop.owner_id && v.trade_type === '단기').length}</strong></span>
+                        {[
+                          { label: '전체', count: dbVacancies.filter(v => v.owner_id === prop.owner_id).length },
+                          { label: '매매', count: dbVacancies.filter(v => v.owner_id === prop.owner_id && v.trade_type === '매매').length },
+                          { label: '전세', count: dbVacancies.filter(v => v.owner_id === prop.owner_id && v.trade_type === '전세').length },
+                          { label: '월세', count: dbVacancies.filter(v => v.owner_id === prop.owner_id && v.trade_type === '월세').length },
+                          { label: '단기', count: dbVacancies.filter(v => v.owner_id === prop.owner_id && v.trade_type === '단기').length }
+                        ].map((stat, i, arr) => (
+                          <React.Fragment key={stat.label}>
+                            <span 
+                              onClick={() => setRealtorTradeType(stat.label)}
+                              style={{ 
+                                cursor: "pointer", 
+                                color: realtorTradeType === stat.label ? "#1a73e8" : "#666", 
+                                fontWeight: realtorTradeType === stat.label ? "bold" : "normal"
+                              }}
+                            >
+                              {stat.label} <strong style={{color: realtorTradeType === stat.label ? "#1a73e8" : "#111"}}>{stat.count}</strong>
+                            </span>
+                            {i < arr.length - 1 && <span style={{width:1,height:12,background:"#ddd"}}></span>}
+                          </React.Fragment>
+                        ))}
                       </div>
                     </div>
                   </div>
@@ -1692,7 +1766,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
 
                 {/* ──── 등록 물건 리스트 ──── */}
                 <div style={{ borderTop: "10px solid #f5f5f5" }}>
-                  {dbVacancies.filter(v => v.owner_id === prop.owner_id).slice(0, 10).map((vp) => (
+                  {dbVacancies.filter(v => v.owner_id === prop.owner_id && (realtorTradeType === "전체" || v.trade_type === realtorTradeType)).slice(0, 10).map((vp) => (
                     <div key={vp.id} onClick={() => { setPrevPropertyId(activeProperty); setActiveProperty(vp.id); setActiveDetailTab("info"); setGalleryIndex(0); }}
                       style={{
                         display: "flex", justifyContent: "space-between", alignItems: "flex-start",

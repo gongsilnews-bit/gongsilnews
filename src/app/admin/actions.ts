@@ -38,10 +38,14 @@ export async function adminCreateMember(formData: FormData) {
     }
 
     if (authData.user) {
+      let sns_links = {};
+      try { sns_links = JSON.parse(formData.get("sns_links") as string || "{}"); } catch(e) {}
+      
       const { error: memberError } = await supabaseAdmin.from('members').upsert({
         id: authData.user.id,
         email, name, phone,
         role: role === '최고관리자' ? 'ADMIN' : role === '부동산회원' ? 'REALTOR' : 'USER',
+        sns_links,
         signup_completed: true
       }, { onConflict: 'id' });
       if (memberError) return { success: false, error: memberError.message };
@@ -58,6 +62,7 @@ export async function adminUpdateMember(memberId: string, updates: {
   name?: string;
   phone?: string;
   role?: string;
+  sns_links?: Record<string, any>;
 }) {
   const supabaseAdmin = getAdminClient();
   try {
@@ -65,6 +70,7 @@ export async function adminUpdateMember(memberId: string, updates: {
     if (updates.name !== undefined) dbUpdates.name = updates.name;
     if (updates.phone !== undefined) dbUpdates.phone = updates.phone;
     if (updates.role !== undefined) dbUpdates.role = updates.role;
+    if (updates.sns_links !== undefined) dbUpdates.sns_links = updates.sns_links;
 
     const { error } = await supabaseAdmin.from('members').update(dbUpdates).eq('id', memberId);
     if (error) return { success: false, error: error.message };

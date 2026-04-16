@@ -30,6 +30,7 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
     zipcode: "",
     address: "",
     address_detail: "",
+    intro: "",
     reg_num: "",
     biz_num: "",
     status: "PENDING"
@@ -40,6 +41,19 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [geocoding, setGeocoding] = useState(false);
+  const [activeTab, setActiveTab] = useState(0); 
+  
+  const initialSnsObj = { url: "", login_id: "", login_pw: "", login_type: "일반" };
+  const [snsLinks, setSnsLinks] = useState<Record<string, typeof initialSnsObj>>({
+    homepage: { ...initialSnsObj }, contact: { ...initialSnsObj }, shopping_mall: { ...initialSnsObj }, 
+    blog: { ...initialSnsObj }, cafe: { ...initialSnsObj }, youtube: { ...initialSnsObj }, 
+    facebook: { ...initialSnsObj }, twitter: { ...initialSnsObj }, instagram: { ...initialSnsObj }, 
+    kakao: { ...initialSnsObj }, threads: { ...initialSnsObj }
+  });
+  const snsLabels: Record<string, string> = { homepage: "홈페이지", contact: "문의하기", shopping_mall: "쇼핑몰", blog: "블로그", cafe: "카페", youtube: "유튜브", facebook: "페이스북", twitter: "트위터", instagram: "인스타그램", kakao: "카카오", threads: "쓰레드" };
+  
+  const initialApiObj = { provider: "챗GPT", key_value: "", login_id: "", login_pw: "" };
+  const [apiList, setApiList] = useState<typeof initialApiObj[]>([]);
 
   const compressToWebP = (file: File): Promise<File> => {
     if (!file.type.startsWith("image/")) return Promise.resolve(file);
@@ -88,6 +102,23 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
             created_at: res.member.created_at ? new Date(res.member.created_at).toISOString().split('T')[0] : "",
             memberNumber: res.member.memberNumber || ""
           });
+          if (res.member.sns_links) {
+            setSnsLinks(prev => {
+              const merged = { ...prev };
+              Object.keys(res.member.sns_links).forEach(k => {
+                if (k === "api_list") return; // JSON의 api_list 무시
+                if (typeof res.member.sns_links[k] === "string") {
+                  merged[k] = { ...merged[k], url: res.member.sns_links[k] };
+                } else if (res.member.sns_links[k]) {
+                  merged[k] = { ...merged[k], ...res.member.sns_links[k] };
+                }
+              });
+              return merged;
+            });
+            if (res.member.sns_links.api_list && Array.isArray(res.member.sns_links.api_list)) {
+              setApiList(res.member.sns_links.api_list);
+            }
+          }
           if (res.agency) {
             setAgencyData({
               name: res.agency.name || "",
@@ -97,6 +128,7 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
               zipcode: res.agency.zipcode || "",
               address: res.agency.address || "",
               address_detail: res.agency.address_detail || "",
+              intro: res.agency.intro || "",
               reg_num: res.agency.reg_num || "",
               biz_num: res.agency.biz_num || "",
               status: res.agency.status || "PENDING"
@@ -187,11 +219,39 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
     setFormData({ ...formData, [e.target.name]: val });
   };
 
-  const handleAgencyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAgencyChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     let val = e.target.value;
     if (["phone", "cell"].includes(e.target.name)) val = formatPhone(val);
     if (e.target.name === "biz_num") val = formatBizNum(val);
     setAgencyData({ ...agencyData, [e.target.name]: val });
+  };
+
+  const handleSnsObjChange = (key: string, field: string, value: string) => {
+    setSnsLinks(prev => ({ ...prev, [key]: { ...prev[key], [field]: value } }));
+  };
+
+  const handleCopy = async (text: string) => {
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      alert("클립보드에 복사되었습니다.");
+    } catch (err) {
+      alert("복사에 실패했습니다.");
+    }
+  };
+
+  const handleAddApi = () => {
+    setApiList([...apiList, { ...initialApiObj }]);
+  };
+
+  const handleRemoveApi = (idx: number) => {
+    setApiList(apiList.filter((_, i) => i !== idx));
+  };
+
+  const handleApiChange = (idx: number, field: string, value: string) => {
+    const newList = [...apiList];
+    (newList[idx] as any)[field] = value;
+    setApiList(newList);
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, type: "reg_cert" | "biz_cert") => {
@@ -225,6 +285,7 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
         form.append("name", formData.name);
         form.append("phone", formData.phone);
         form.append("role", formData.role);
+        form.append("sns_links", JSON.stringify({ ...snsLinks, api_list: apiList }));
 
         const memberRes = await adminCreateMember(form);
 
@@ -236,7 +297,8 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
         const updateRes = await adminUpdateMember(editMemberId, {
           name: formData.name,
           phone: formData.phone,
-          role: formData.role === '최고관리자' ? 'ADMIN' : formData.role === '부동산회원' ? 'REALTOR' : 'USER'
+          role: formData.role === '최고관리자' ? 'ADMIN' : formData.role === '부동산회원' ? 'REALTOR' : 'USER',
+          sns_links: { ...snsLinks, api_list: apiList }
         });
         if (!updateRes.success) throw new Error(updateRes.error || "회원 수정에 실패했습니다.");
       }
@@ -312,7 +374,16 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
         </h1>
       </div>
 
-      <div style={{ background: darkMode ? "#2c2d31" : "#fff", borderRadius: 12, border: `1px solid ${darkMode ? "#333" : "#e5e7eb"}`, overflow: "hidden", marginBottom: 24 }}>
+      <div style={{ display: "flex", gap: "2px", marginBottom: "20px" }}>
+        <button onClick={() => setActiveTab(0)} style={{ flex: 1, padding: "14px", background: activeTab === 0 ? (darkMode ? "#3b82f6" : "#2563eb") : (darkMode ? "#2c2d31" : "#fff"), color: activeTab === 0 ? "#fff" : (darkMode ? "#9ca3af" : "#6b7280"), border: activeTab !== 0 ? `1px solid ${darkMode ? "#333" : "#e5e7eb"}` : "none", borderBottom: activeTab === 0 ? "none" : `1px solid ${darkMode ? "#333" : "#e5e7eb"}`, borderRadius: "8px 8px 0 0", cursor: "pointer", fontWeight: "bold", transition: "all 0.2s" }}>기본정보</button>
+        {formData.role === "부동산회원" && (
+          <button onClick={() => setActiveTab(1)} style={{ flex: 1, padding: "14px", background: activeTab === 1 ? (darkMode ? "#3b82f6" : "#2563eb") : (darkMode ? "#2c2d31" : "#fff"), color: activeTab === 1 ? "#fff" : (darkMode ? "#9ca3af" : "#6b7280"), border: activeTab !== 1 ? `1px solid ${darkMode ? "#333" : "#e5e7eb"}` : "none", borderBottom: activeTab === 1 ? "none" : `1px solid ${darkMode ? "#333" : "#e5e7eb"}`, borderRadius: "8px 8px 0 0", cursor: "pointer", fontWeight: "bold", transition: "all 0.2s" }}>부동산정보</button>
+        )}
+        <button onClick={() => setActiveTab(2)} style={{ flex: 1, padding: "14px", background: activeTab === 2 ? (darkMode ? "#3b82f6" : "#2563eb") : (darkMode ? "#2c2d31" : "#fff"), color: activeTab === 2 ? "#fff" : (darkMode ? "#9ca3af" : "#6b7280"), border: activeTab !== 2 ? `1px solid ${darkMode ? "#333" : "#e5e7eb"}` : "none", borderBottom: activeTab === 2 ? "none" : `1px solid ${darkMode ? "#333" : "#e5e7eb"}`, borderRadius: "8px 8px 0 0", cursor: "pointer", fontWeight: "bold", transition: "all 0.2s" }}>마케팅정보</button>
+      </div>
+
+      {activeTab === 0 && (
+      <div style={{ background: darkMode ? "#2c2d31" : "#fff", borderBottomLeftRadius: 12, borderBottomRightRadius: 12, border: `1px solid ${darkMode ? "#333" : "#e5e7eb"}`, borderTop: "none", overflow: "hidden", marginBottom: 24 }}>
         <div style={rowStyle}>
           <div style={labelStyle}>회원번호</div>
           <div style={contentStyle}>
@@ -387,9 +458,10 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
           </div>
         </div>
       </div>
+      )}
 
-      {formData.role === "부동산회원" && (
-        <div style={{ background: darkMode ? "#2c2d31" : "#fff", borderRadius: 12, border: `1px solid ${darkMode ? "#333" : "#e5e7eb"}`, overflow: "hidden", marginBottom: 24 }}>
+      {activeTab === 1 && formData.role === "부동산회원" && (
+        <div style={{ background: darkMode ? "#2c2d31" : "#fff", borderBottomLeftRadius: 12, borderBottomRightRadius: 12, border: `1px solid ${darkMode ? "#333" : "#e5e7eb"}`, borderTop: "none", overflow: "hidden", marginBottom: 24 }}>
           
           <div style={rowStyle}>
             <div style={labelStyle}>상호(사업장명)</div>
@@ -451,6 +523,23 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
           </div>
 
           <div style={rowStyle}>
+            <div style={labelStyle}>부동산 소개<br/><span style={{fontSize: 11, color: "#888", fontWeight: "normal"}}>(100자 이내)</span></div>
+            <div style={{...contentStyle, flexDirection: "column", alignItems: "flex-end"}}>
+              <textarea 
+                name="intro" 
+                value={agencyData.intro} 
+                onChange={handleAgencyChange} 
+                maxLength={100}
+                style={{...inputStyle, width: "100%", maxWidth: "none", height: 80, padding: "10px 14px", resize: "none"}} 
+                placeholder="부동산에 대한 간단한 소개를 작성해주세요." 
+              />
+              <span style={{ fontSize: 12, color: agencyData.intro?.length >= 100 ? "#ef4444" : "#9ca3af", marginTop: 4 }}>
+                {agencyData.intro?.length || 0} / 100
+              </span>
+            </div>
+          </div>
+
+          <div style={rowStyle}>
             <div style={labelStyle}>등록번호</div>
             <div style={contentStyle}>
               <input type="text" name="reg_num" value={agencyData.reg_num} onChange={handleAgencyChange} style={{...inputStyle, maxWidth: 300}} placeholder="중개업 등록번호" />
@@ -504,6 +593,132 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
             </div>
           </div>
 
+        </div>
+      )}
+
+      {activeTab === 2 && (
+        <div style={{ background: darkMode ? "#2c2d31" : "#fff", borderBottomLeftRadius: 12, borderBottomRightRadius: 12, border: `1px solid ${darkMode ? "#333" : "#e5e7eb"}`, borderTop: "none", overflow: "hidden", marginBottom: 24 }}>
+          <div style={{ padding: "16px 20px", color: darkMode ? "#9ca3af" : "#65748b", fontSize: 13, borderBottom: `1px solid ${darkMode ? "#333" : "#e5e7eb"}`, background: darkMode ? "#333" : "#f8fafc", lineHeight: 1.5 }}>
+            아래 마케팅 항목은 원하시는 분만 입력하는 <strong style={{color: "#3b82f6"}}>선택사항</strong>입니다.<br/>
+            <span style={{color: "#ef4444", fontSize: 12}}>※ 우측에 메모하시는 ID/PW 정보는 관리자나 외부인에게 노출되지 않으며, **오직 본인만** 열람할 수 있도록 안전하게 보관됩니다.</span>
+          </div>
+
+          <div style={rowStyle}>
+            <div style={{...labelStyle, flexDirection: "column", alignItems: "flex-start", justifyContent: "center", gap: 6}}>
+              <div>API Key 메모</div>
+              <button onClick={handleAddApi} style={{ padding: "4px 10px", fontSize: 12, background: "#3b82f6", color: "#fff", border: "none", borderRadius: 4, cursor: "pointer", fontWeight: "bold" }}>+ 추가하기</button>
+            </div>
+            <div style={{ ...contentStyle, flexDirection: "column", gap: 10, alignItems: "stretch" }}>
+              {apiList.map((api, idx) => (
+                <div key={idx} style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", background: darkMode ? "#333" : "#f9fafb", padding: "10px 14px", borderRadius: 8, border: `1px solid ${darkMode ? "#444" : "#e5e7eb"}` }}>
+                  <select 
+                    value={api.provider} 
+                    onChange={(e) => handleApiChange(idx, 'provider', e.target.value)} 
+                    style={{ ...inputStyle, flex: "none", width: 120 }}
+                  >
+                    <option value="챗GPT">챗GPT</option>
+                    <option value="클로드">클로드</option>
+                    <option value="구글">구글 (Gemini)</option>
+                    <option value="기타">기타 API</option>
+                  </select>
+                  <div style={{ display: "flex", flex: 2, minWidth: 200, position: "relative" }}>
+                    <input
+                      type="text"
+                      value={api.key_value}
+                      onChange={(e) => handleApiChange(idx, 'key_value', e.target.value)}
+                      style={{ ...inputStyle, width: "100%", paddingRight: 32 }}
+                      placeholder="API Key 또는 주소"
+                    />
+                    <button 
+                      type="button"
+                      onClick={() => handleCopy(api.key_value)}
+                      title="복사하기"
+                      style={{ position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 4 }}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={darkMode ? "#9ca3af" : "#6b7280"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                      </svg>
+                    </button>
+                  </div>
+                  <input
+                    type="text"
+                    value={api.login_id}
+                    onChange={(e) => handleApiChange(idx, 'login_id', e.target.value)}
+                    style={{ ...inputStyle, flex: 1, minWidth: 100 }}
+                    placeholder="로그인 ID"
+                  />
+                  <input
+                    type="password"
+                    value={api.login_pw}
+                    onChange={(e) => handleApiChange(idx, 'login_pw', e.target.value)}
+                    style={{ ...inputStyle, flex: 1, minWidth: 100 }}
+                    placeholder="비밀번호"
+                  />
+                  <button onClick={() => handleRemoveApi(idx)} style={{ background: "#ef4444", color: "#fff", border: "none", borderRadius: 6, height: 36, padding: "0 14px", fontSize: 13, fontWeight: "bold", cursor: "pointer" }}>삭제</button>
+                </div>
+              ))}
+              {apiList.length === 0 && (
+                <span style={{ fontSize: 13, color: darkMode ? "#9ca3af" : "#6b7280", padding: "10px 0" }}>등록된 API 정보가 없습니다. 좌측의 추가 버튼을 눌러 추가해주세요.</span>
+              )}
+            </div>
+          </div>
+
+          {Object.keys(snsLabels).map((key) => {
+            const sns = snsLinks[key] || initialSnsObj;
+            return (
+              <div style={rowStyle} key={key}>
+                <div style={labelStyle}>{snsLabels[key]}</div>
+                <div style={{ ...contentStyle, gap: 8, flexWrap: "wrap" }}>
+                  <div style={{ display: "flex", flex: 2, minWidth: 200, position: "relative" }}>
+                    <input
+                      type="text"
+                      value={sns.url}
+                      onChange={(e) => handleSnsObjChange(key, 'url', e.target.value)}
+                      style={{ ...inputStyle, width: "100%", paddingRight: 32 }}
+                      placeholder={`${snsLabels[key]} 주소(URL) 입력`}
+                    />
+                    <button 
+                      type="button"
+                      onClick={() => handleCopy(sns.url)}
+                      title="복사하기"
+                      style={{ position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 4 }}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={darkMode ? "#9ca3af" : "#6b7280"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                      </svg>
+                    </button>
+                  </div>
+                  <select 
+                    value={sns.login_type} 
+                    onChange={(e) => handleSnsObjChange(key, 'login_type', e.target.value)} 
+                    style={{ ...inputStyle, flex: "none", width: 130, padding: "0 10px" }}
+                  >
+                    <option value="일반">일반/직접가입</option>
+                    <option value="네이버">네이버 가입</option>
+                    <option value="카카오">카카오 가입</option>
+                    <option value="구글">구글 가입</option>
+                    <option value="다음">다음(Daum)</option>
+                  </select>
+                  <input
+                    type="text"
+                    value={sns.login_id}
+                    onChange={(e) => handleSnsObjChange(key, 'login_id', e.target.value)}
+                    style={{ ...inputStyle, flex: 1, minWidth: 100 }}
+                    placeholder="로그인 ID (메모)"
+                  />
+                  <input
+                    type="password"
+                    value={sns.login_pw}
+                    onChange={(e) => handleSnsObjChange(key, 'login_pw', e.target.value)}
+                    style={{ ...inputStyle, flex: 1, minWidth: 120 }}
+                    placeholder="비밀번호 (메모)"
+                  />
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
 
