@@ -128,18 +128,11 @@ export default function MapTopAuthButtons({ themeColor = "#1a73e8" }: { themeCol
           </div>
         ) : (
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <button 
-              onClick={() => { setAuthTab('login'); setIsAuthModalOpen(true); }} 
-              style={{ background: "#fff", border: `1px solid ${themeColor}`, color: themeColor, padding: "5px 14px", borderRadius: "4px", fontSize: "13px", fontWeight: "bold", cursor: "pointer" }}
-            >
-              로그인
-            </button>
-            <button 
-              onClick={() => { setAuthTab('signup'); setIsAuthModalOpen(true); }} 
-              style={{ background: themeColor, border: `1px solid ${themeColor}`, color: "#fff", padding: "5px 14px", borderRadius: "4px", fontSize: "13px", fontWeight: "bold", cursor: "pointer" }}
-            >
-              회원가입
-            </button>
+            <div className="icon-tooltip-wrap" data-tooltip="회원가입/로그인">
+              <svg onClick={() => setIsAuthModalOpen(true)} style={{ cursor: "pointer", color: themeColor }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="24" height="24">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle>
+              </svg>
+            </div>
           </div>
         )}
       </div>

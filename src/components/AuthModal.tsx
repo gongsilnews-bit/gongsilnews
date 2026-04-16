@@ -95,19 +95,6 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signup', onGo
         <button onClick={onClose} style={{ position: 'absolute', top: 16, right: 20, background: 'none', border: 'none', fontSize: 24, color: '#aaa', cursor: 'pointer', zIndex: 10, lineHeight: 1, padding: 0 }}>✕</button>
 
         <div style={{ overflowY: 'auto', flex: 1 }}>
-          {/* 탭 영역 */}
-          <div style={{ display: 'flex', gap: 12, padding: '32px 32px 0 32px' }}>
-            <button onClick={() => { setActiveTab('signup'); setShowFindAccount(false); setFindResult(null); }}
-              style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '12px 0', border: `1px solid ${activeTab === 'signup' ? '#1e56a0' : '#ddd'}`, borderRadius: 6, fontWeight: 'bold', fontSize: 14, cursor: 'pointer', background: activeTab === 'signup' ? '#f4f6fa' : '#fff', color: activeTab === 'signup' ? '#1e56a0' : '#444', transition: 'all 0.2s', fontFamily: 'inherit' }}>
-              <svg style={{ width: 16, height: 16, marginRight: 6 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
-              회원가입
-            </button>
-            <button onClick={() => { setActiveTab('login'); setShowFindAccount(false); setFindResult(null); }}
-              style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '12px 0', border: `1px solid ${activeTab === 'login' ? '#1e56a0' : '#ddd'}`, borderRadius: 6, fontWeight: 'bold', fontSize: 14, cursor: 'pointer', background: activeTab === 'login' ? '#f4f6fa' : '#fff', color: activeTab === 'login' ? '#1e56a0' : '#444', transition: 'all 0.2s', fontFamily: 'inherit' }}>
-              <svg style={{ width: 16, height: 16, marginRight: 6 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
-              로그인
-            </button>
-          </div>
 
           {/* ━━━ 계정 찾기 모드 ━━━ */}
           {showFindAccount ? (
@@ -157,43 +144,34 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signup', onGo
 
               <button onClick={() => { setShowFindAccount(false); setFindResult(null); }}
                 style={{ width: '100%', padding: '10px 0', background: 'none', border: '1px solid #ddd', borderRadius: 8, fontSize: 13, color: '#666', cursor: 'pointer', fontFamily: 'inherit' }}>
-                ← 로그인으로 돌아가기
+                ← 뒤로 돌아가기
               </button>
             </div>
           ) : (
             /* ━━━ 일반 모드 (회원가입/로그인) ━━━ */
-            <div style={{ padding: '28px 32px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              {activeTab === 'signup' && (
-                <>
-                  {/* 로고 원형 */}
-                  <div style={{ width: 64, height: 64, borderRadius: '50%', border: '1px solid #eee', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-                    <span style={{ color: '#1e56a0', fontWeight: 800, fontSize: 14, letterSpacing: -0.5 }}>공실뉴스</span>
-                  </div>
+            <div style={{ padding: '40px 32px 32px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              {/* 로고 원형 */}
+              <div style={{ width: 64, height: 64, borderRadius: '50%', border: '1px solid #eee', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                <span style={{ color: '#1e56a0', fontWeight: 800, fontSize: 14, letterSpacing: -0.5 }}>공실뉴스</span>
+              </div>
 
-                  <h3 style={{ fontSize: 18, fontWeight: 900, color: '#111', marginBottom: 8, textAlign: 'center', margin: '0 0 8px 0' }}>
-                    공실뉴스 회원이 되어 보세요
-                  </h3>
-                  
-                  <p style={{ fontSize: 13, color: '#888', textAlign: 'center', marginBottom: 28, lineHeight: 1.6, margin: '0 0 28px 0' }}>
-                    지금 바로 공실뉴스 회원으로 가입하시고, 독점 혜택을<br />누려보세요
-                  </p>
+              <h3 style={{ fontSize: 18, fontWeight: 900, color: '#111', textAlign: 'center', margin: '0 0 8px 0' }}>
+                공실뉴스 시작하기
+              </h3>
+              
+              <p style={{ fontSize: 13, color: '#888', textAlign: 'center', lineHeight: 1.6, margin: '0 0 28px 0' }}>
+                로그인 및 회원가입을 통해 공실뉴스의<br />강력한 독점 혜택을 누려보세요.
+              </p>
 
-                  {/* 혜택 리스트 */}
-                  <ul style={{ width: '100%', listStyle: 'none', padding: 0, margin: '0 0 28px 0' }}>
-                    {['프리미엄 부동산 뉴스와 분석 보고서 접근', '동네별 실시간 공실 및 매물 동향 최신 정보', '공실뉴스만의 독자적인 부동산 지수 열람', '온/오프라인 세미나 우선 참가 기회'].map((item, i) => (
-                      <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13, color: '#444', marginBottom: i < 3 ? 12 : 0 }}>
-                        <span style={{ color: '#1e56a0', fontWeight: 'bold', marginTop: 2 }}>•</span>
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-
-                  {/* 안내 문구 */}
-                  <p style={{ fontSize: 12, color: '#888', marginBottom: 24, textAlign: 'center', margin: '0 0 24px 0' }}>
-                    이미 회원이시면 <button onClick={() => setActiveTab('login')} style={{ fontWeight: 'bold', color: '#555', cursor: 'pointer', background: 'none', border: 'none', padding: 0, fontSize: 12, fontFamily: 'inherit' }}>로그인</button>을 클릭해 주세요
-                  </p>
-                </>
-              )}
+              {/* 혜택 리스트 */}
+              <ul style={{ width: '100%', listStyle: 'none', margin: '0 0 28px 0', background: '#f8f9fa', borderRadius: '8px', padding: '16px 20px' }}>
+                {['프리미엄 부동산 뉴스와 분석 보고서 접근', '동네별 실시간 공실 및 매물 동향 최신 정보', '공실뉴스만의 독자적인 부동산 지수 열람'].map((item, i) => (
+                  <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 12, color: '#555', marginBottom: i < 2 ? 8 : 0 }}>
+                    <span style={{ color: '#1e56a0', fontWeight: 'bold' }}>•</span>
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
 
               {/* ━━━ 소셜 로그인 버튼 ━━━ */}
               <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -236,7 +214,7 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signup', onGo
 
               {/* 계정 찾기 링크 */}
               <button onClick={() => { setShowFindAccount(true); setFindResult(null); }}
-                style={{ marginTop: 18, background: 'none', border: 'none', fontSize: 12, color: '#999', cursor: 'pointer', fontFamily: 'inherit', padding: 0 }}
+                style={{ marginTop: 24, background: 'none', border: 'none', fontSize: 12, color: '#999', cursor: 'pointer', fontFamily: 'inherit', padding: 0 }}
                 onMouseOver={e => (e.currentTarget.style.color = '#1e56a0')}
                 onMouseOut={e => (e.currentTarget.style.color = '#999')}
               >
