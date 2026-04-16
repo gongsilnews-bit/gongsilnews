@@ -89,25 +89,39 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   const [galleryIndex, setGalleryIndex] = useState(0);
 
   const [wishTab, setWishTab] = useState<"wish" | "recent">("wish");
-  const [recentViews, setRecentViews] = useState<number[]>([]);
+  const [recentViews, setRecentViews] = useState<any[]>([]);
+  const [wishlist, setWishlist] = useState<any[]>([]);
 
   useEffect(() => {
-    const saved = localStorage.getItem('gongsil_recent_views');
-    if (saved) {
-      try { setRecentViews(JSON.parse(saved)); } catch (e) {}
+    const savedRecent = localStorage.getItem('gongsil_recent_views');
+    if (savedRecent) {
+      try { setRecentViews(JSON.parse(savedRecent)); } catch (e) {}
+    }
+    const savedWish = localStorage.getItem('gongsil_wishlist');
+    if (savedWish) {
+      try { setWishlist(JSON.parse(savedWish)); } catch (e) {}
     }
   }, []);
 
   useEffect(() => {
     if (activeProperty) {
       setRecentViews(prev => {
-        const id = Number(activeProperty);
+        const id = activeProperty;
         const newViews = [id, ...prev.filter(x => x !== id)].slice(0, 50);
         localStorage.setItem('gongsil_recent_views', JSON.stringify(newViews));
         return newViews;
       });
     }
   }, [activeProperty]);
+
+  const toggleWishlist = (id: any) => {
+    setWishlist(prev => {
+      const isWished = prev.includes(id);
+      const newWish = isWished ? prev.filter(x => x !== id) : [id, ...prev];
+      localStorage.setItem('gongsil_wishlist', JSON.stringify(newWish));
+      return newWish;
+    });
+  };
 
   // ── 실제 필터 상태 (네이버 부동산 스타일) ──
   const [filterTradeTypes, setFilterTradeTypes] = useState<string[]>([]);
@@ -179,7 +193,10 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
 
     if (activeCategory === "wish") {
       if (wishTab === "recent") {
-        return recentViews.map(id => dbVacancies.find(v => Number(v.id) === id)).filter(Boolean) as any[];
+        return recentViews.map(id => dbVacancies.find(v => v.id === id)).filter(Boolean) as any[];
+      }
+      if (wishTab === "wish") {
+        return wishlist.map(id => dbVacancies.find(v => v.id === id)).filter(Boolean) as any[];
       }
       return [];
     }
@@ -1455,7 +1472,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <h1 style={{ fontSize: 26, fontWeight: 800, color: "#1f5edb", margin: 0 }}>{getPriceText(prop)}</h1>
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <button style={{ background: "none", border: "1px solid #ddd", borderRadius: 6, width: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#666" }} title="관심매물"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg></button>
+                    <button onClick={() => toggleWishlist(prop.id)} style={{ background: "none", border: "1px solid #ddd", borderRadius: 6, width: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: wishlist.includes(prop.id) ? "#1a73e8" : "#666" }} title={wishlist.includes(prop.id) ? "관심매물 해제" : "관심매물 등록"}><svg width="18" height="18" viewBox="0 0 24 24" fill={wishlist.includes(prop.id) ? "#1a73e8" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg></button>
                     <button style={{ background: "none", border: "1px solid #ddd", borderRadius: 6, width: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#666" }} title="공유하기"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg></button>
                   </div>
                 </div>
