@@ -85,24 +85,24 @@ export default function AdminSidebar({ activeMenu, setActiveMenu, darkMode = fal
                 onClick={() => handleMenuClick(item.key)}
                 style={{
                   display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-                  padding: "12px 0", textDecoration: "none", width: "100%", border: "none", cursor: "pointer",
-                  color: activeMenu === item.key ? "#ffffff" : "rgba(255,255,255,0.65)",
-                  background: activeMenu === item.key ? "rgba(255,255,255,0.18)" : hoveredMenu === item.key ? "rgba(255,255,255,0.12)" : "none",
-                  borderLeft: activeMenu === item.key ? "3px solid #ffffff" : "3px solid transparent",
-                  fontSize: 10, fontWeight: activeMenu === item.key ? 700 : 600, gap: 4, fontFamily: "inherit",
-                  transition: "all 0.2s ease",
+                  padding: "18px 0", textDecoration: "none", width: "100%", border: "none", cursor: "pointer",
+                  color: activeMenu === item.key ? "#ffffff" : "rgba(255,255,255,0.5)",
+                  background: activeMenu === item.key ? "rgba(255,255,255,0.12)" : hoveredMenu === item.key ? "rgba(255,255,255,0.06)" : "none",
+                  borderLeft: activeMenu === item.key ? "3px solid #fff" : "3px solid transparent",
+                  fontSize: 11, fontWeight: activeMenu === item.key ? 700 : 500, gap: 6, fontFamily: "inherit",
+                  transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
                 }}
               >
                 <span style={{
-                  width: 18, height: 18,
+                  width: 22, height: 22,
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  color: activeMenu === item.key || hoveredMenu === item.key ? "#ffffff" : "rgba(255,255,255,0.65)",
-                  transition: "all 0.2s",
-                  transform: hoveredMenu === item.key ? "translateY(-2px)" : "none"
+                  color: activeMenu === item.key || hoveredMenu === item.key ? "#fff" : "rgba(255,255,255,0.5)",
+                  transition: "transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)",
+                  transform: hoveredMenu === item.key && activeMenu !== item.key ? "translateY(-3px)" : "none"
                 }}>
-                  <span style={{ width: 18, height: 18, display: "block" }}>
+                  <span style={{ width: 22, height: 22, display: "block" }}>
                     {React.cloneElement(item.icon as React.ReactElement<any>, {
-                      style: { width: 18, height: 18, stroke: activeMenu === item.key || hoveredMenu === item.key ? "#ffffff" : "rgba(255,255,255,0.65)" }
+                      style: { width: 22, height: 22, stroke: activeMenu === item.key || hoveredMenu === item.key ? "#ffffff" : "rgba(255,255,255,0.5)" }
                     })}
                   </span>
                 </span>
@@ -141,12 +141,7 @@ export default function AdminSidebar({ activeMenu, setActiveMenu, darkMode = fal
         ))}
       </ul>
 
-      {/* 하단 프로필 */}
-      <div style={{ padding: "14px 8px 18px", borderTop: `1px solid ${darkMode ? "#333" : "rgba(255,255,255,0.15)"}`, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, flexShrink: 0 }}>
-        <div style={{ width: 36, height: 36, borderRadius: "50%", background: "linear-gradient(135deg, #f5a623, #e8961a)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: 15, marginBottom: 4 }}>김</div>
-        <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? "#9ca3af" : "#fff", whiteSpace: "nowrap" }}>김미숙</div>
-        <div style={{ fontSize: 10, color: darkMode ? "#6b7280" : "rgba(255,255,255,0.6)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 74, textAlign: "center" }}>gongsilnews@...</div>
-      </div>
+
     </aside>
   );
 }
