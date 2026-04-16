@@ -466,6 +466,12 @@ export default function HomepagePage() {
               </div>
             )}
 
+            {/* Custom Zoom Control (네비게이션 바) */}
+            <div style={{ position: "absolute", right: 16, top: 70, zIndex: 10, display: "flex", flexDirection: "column", background: "#fff", borderRadius: 4, boxShadow: "0 2px 6px rgba(0,0,0,0.15)", overflow: "hidden" }}>
+               <button onClick={() => { if(kakaoMapRef.current) kakaoMapRef.current.setLevel(kakaoMapRef.current.getLevel() - 1); }} style={{ width: 36, height: 36, border: "none", borderBottom: "1px solid #e0e0e0", background: "#fff", fontSize: 20, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#666" }}>＋</button>
+               <button onClick={() => { if(kakaoMapRef.current) kakaoMapRef.current.setLevel(kakaoMapRef.current.getLevel() + 1); }} style={{ width: 36, height: 36, border: "none", background: "#fff", fontSize: 24, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1, color: "#666" }}>－</button>
+            </div>
+
             {/* MapSearchBar (Real Functionality) */}
             <style>{`
               #wishFloatingFilter {
