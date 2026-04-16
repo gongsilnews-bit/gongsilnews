@@ -404,8 +404,11 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
 
   return (
     <div style={{ flex: 1, background: bg, position: "relative", overflowY: "auto", height: "100%" }}>
-      {/* ── 타이틀 ── */}
-      <div style={{ textAlign: "center", padding: "28px 0 20px", borderBottom: `1px solid ${border}`, background: cardBg }}>
+      {/* ── 타이틀 및 백버튼 ── */}
+      <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "28px 24px 20px", borderBottom: `1px solid ${border}`, background: cardBg }}>
+        <button type="button" onClick={onBack} style={{ height: 36, padding: "0 16px", background: "#fff", color: "#4b5563", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, boxShadow: "0 1px 2px rgba(0,0,0,0.05)" }}>
+          ← 목록으로
+        </button>
         <h1 style={{ fontSize: 20, fontWeight: 800, color: textPrimary, margin: 0 }}>{editData ? "공실수정" : "공실등록"}</h1>
       </div>
 

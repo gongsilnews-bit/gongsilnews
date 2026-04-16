@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { getVacancies } from "@/app/actions/vacancy";
+import { getVacancies, getVacancyDetail } from "@/app/actions/vacancy";
 
 const BRAND = "#2845B3";
 const LABEL: React.CSSProperties = { width: 120, fontSize: 13, fontWeight: 700, color: "#555", padding: "10px 14px", background: "#f8f9fa", borderRight: "1px solid #e5e7eb", whiteSpace: "nowrap" };
@@ -75,18 +75,21 @@ export default function HomepageViewPage() {
   useEffect(() => {
     async function load() {
       setLoading(true);
-      const res = await getVacancies({ all: true });
-      if (res.success && res.data) {
-        const all = res.data.map((v: any) => ({
-          ...v,
-          photos: v.vacancy_photos ? [...v.vacancy_photos].sort((a: any, b: any) => a.sort_order - b.sort_order).map((p: any) => p.url) : [],
-        }));
-        const found = all.find((v: any) => String(v.id) === id);
-        setVacancy(found || null);
-        if (found) {
-          const others = all.filter((v: any) => v.status === "ACTIVE" && String(v.id) !== id && v.sido === found.sido).slice(0, 5);
+      const docRes = await getVacancyDetail(id);
+      if (docRes.success && docRes.data) {
+        const found = {
+          ...docRes.data,
+          photos: docRes.photos ? docRes.photos.sort((a: any, b: any) => a.sort_order - b.sort_order).map((p: any) => p.url) : []
+        };
+        setVacancy(found);
+
+        const res = await getVacancies({ all: true });
+        if (res.success && res.data) {
+          const others = res.data.filter((v: any) => v.status === "ACTIVE" && String(v.id) !== id && v.sido === found.sido).slice(0, 5);
           setOtherListings(others);
         }
+      } else {
+        setVacancy(null);
       }
       setLoading(false);
       setTimeout(() => window.scrollTo(0, 0), 10);

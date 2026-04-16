@@ -421,11 +421,16 @@ export default function StudyWriteForm() {
 
   // ArticleSection/StudySection 등 대시보드 내부 영역에 렌더링되므로, 기존의 사이드바 및 헤더, 100vh 래퍼를 제거하고 콘텐츠만 반환합니다.
   return (
-    <>
+    <div style={{ flex: 1, overflowY: "auto", height: "100%", background: "#f4f5f7" }}>
       <div style={{ padding: "24px 32px", width: "100%", maxWidth: 1000, margin: "0 auto" }}>
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-          <h2 style={{ fontSize: 24, fontWeight: 800, color: "#111", margin: 0 }}>{loadId ? "강의 수정" : "새 강의 등록"}</h2>
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <button type="button" onClick={() => router.push("?menu=study")} style={{ height: 36, padding: "0 16px", background: "#fff", color: "#4b5563", border: `1px solid #d1d5db`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, boxShadow: "0 1px 2px rgba(0,0,0,0.05)" }}>
+              ← 목록으로
+            </button>
+            <h2 style={{ fontSize: 24, fontWeight: 800, color: "#111", margin: 0 }}>{loadId ? "강의 수정" : "새 강의 등록"}</h2>
+          </div>
           <div style={{ display: "flex", gap: 10 }}>
             <button onClick={() => router.push("?menu=study")} style={{ height: 40, padding: "0 20px", background: "#fff", color: "#374151", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>취소</button>
             <button onClick={() => handleSave("DRAFT")} disabled={saving} style={{ height: 40, padding: "0 20px", background: "#f3f4f6", color: "#374151", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.6 : 1 }}>💾 임시저장</button>
@@ -825,6 +830,6 @@ export default function StudyWriteForm() {
               <button onClick={() => handleSave("ACTIVE")} disabled={saving} style={{ height: 48, padding: "0 40px", background: "linear-gradient(135deg, #f59e0b, #d97706)", color: "#fff", border: "none", borderRadius: 10, fontSize: 15, fontWeight: 800, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.6 : 1, boxShadow: "0 4px 14px rgba(245,158,11,0.3)" }}>🚀 공개 등록</button>
             </div>
       </div>
-    </>
+    </div>
   );
 }

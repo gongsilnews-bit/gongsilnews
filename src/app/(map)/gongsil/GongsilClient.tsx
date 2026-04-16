@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { getVacancies, getAgencyInfo } from "@/app/actions/vacancy";
+import { getVacancies, getAgencyInfo, getVacancyDetail } from "@/app/actions/vacancy";
 import { getVacancyComments, createVacancyComment } from "@/app/actions/vacancyComments";
 import MapSearchBar from "@/components/MapSearchBar";
 import MapTopAuthButtons from "@/components/MapTopAuthButtons";
@@ -307,6 +307,9 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   const [newComment, setNewComment] = useState("");
   const [isSecret, setIsSecret] = useState(true);
 
+  // Lazy Loading Detail Map
+  const [fullDetailsMap, setFullDetailsMap] = useState<Record<string, any>>({});
+
   // SVG Option Helper Function
   const getOptionSvg = (name: string) => {
     if (name.includes("에어컨")) return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#222" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 8h16v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8z"></path><line x1="8" y1="16" x2="8" y2="20"></line><line x1="16" y1="16" x2="16" y2="20"></line><line x1="12" y1="16" x2="12" y2="21"></line><path d="M4 8V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2"></path></svg>;
@@ -383,6 +386,21 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     const el = document.getElementById("detail-scroll-container");
     if (el) el.scrollTop = 0;
   }, [activeProperty, showDetail]);
+
+  // Fetch full details for lazy loading
+  useEffect(() => {
+    if (showDetail && activeProperty && !fullDetailsMap[activeProperty]) {
+      getVacancyDetail(String(activeProperty)).then(res => {
+        if (res.success && res.data) {
+          const detailProp = {
+            ...res.data,
+            images: res.photos ? res.photos.sort((a:any,b:any) => a.sort_order - b.sort_order).map((p:any) => p.url) : []
+          };
+          setFullDetailsMap(prev => ({ ...prev, [activeProperty]: detailProp }));
+        }
+      });
+    }
+  }, [showDetail, activeProperty]);
 
   useEffect(() => {
     if (showDetail && activeProperty && activeDetailTab === "realtor") {
@@ -1399,8 +1417,11 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
         {/* 중앙: 매물 상세 패널 (600px) */}
         {showDetail && activeProperty && (
           () => {
-            const prop = dbVacancies.find(v => v.id === activeProperty);
-            if (!prop) return null;
+            const baseProp = dbVacancies.find(v => v.id === activeProperty);
+            if (!baseProp) return null;
+            const fullProp = fullDetailsMap[activeProperty] || {};
+            const prop = { ...baseProp, ...fullProp }; // Lazy-loaded fields overlay
+
             const images = prop.images && prop.images.length > 0 ? prop.images : [""];
             const tagColor = prop.commission_type === '공동수수료' ? "#2e7d32" : "#1a73e8";
             

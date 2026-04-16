@@ -1245,8 +1245,8 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
 
   // 폼이 ArticleSection 안에서 렌더링되므로, 기존의 사이드바/상단헤더/전체화면높이 스타일은 제거하고 내부 컨텐츠 래퍼만 반환합니다.
   return (
-    <>
-    <div style={{ maxWidth: 1400, margin: "0 auto", padding: "24px 0", display: "flex", gap: 20, alignItems: "flex-start", width: "100%" }}>
+    <div style={{ flex: 1, overflowY: "auto", height: "100%", background: pageBg }}>
+      <div style={{ maxWidth: 1400, margin: "0 auto", padding: "24px 28px", display: "flex", gap: 20, alignItems: "flex-start", width: "100%" }}>
 
         {/* ═══ 좌측 사이드바: 글쓰기도구 ═══ */}
         <aside style={{ width: 220, minWidth: 220, position: "sticky", top: 80, flexShrink: 0 }}>
@@ -1322,7 +1322,12 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
         {/* ═══ 중앙 메인 폼: 기사쓰기 ═══ */}
         <main style={{ flex: 1, minWidth: 0 }}>
           <div style={{ background: cardBg, borderRadius: 12, border: `1px solid ${border}`, padding: "32px 36px" }}>
-            <h2 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: "0 0 28px 0" }}>기사쓰기</h2>
+            <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 28 }}>
+              <button type="button" onClick={() => router.push(memberReturnPath)} style={{ height: 36, padding: "0 16px", background: "#fff", color: "#4b5563", border: `1px solid #d1d5db`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, boxShadow: "0 1px 2px rgba(0,0,0,0.05)" }}>
+                ← 목록으로
+              </button>
+              <h2 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: 0 }}>기사쓰기</h2>
+            </div>
 
             {/* ── 기사검토 상태 ── */}
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
@@ -2542,6 +2547,6 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }
