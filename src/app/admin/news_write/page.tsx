@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { saveArticle, uploadArticleMedia, getPhotoLibrary, togglePhotoFavorite, getArticleDetail } from "@/app/actions/article";
 import { geocodeAddress } from "@/app/actions/geocode";
 import { createClient } from "@/utils/supabase/client";
+import Link from "next/link";
 
 /* ─── 타입 ─── */
 type StatusType = "DRAFT" | "PENDING" | "APPROVED" | "REJECTED" | string;
@@ -1266,11 +1267,10 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
           {/* 로그아웃 */}
           <button style={{ padding: "8px 16px", background: textPrimary, color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>로그아웃</button>
           
-          {isMemberMode && (
-            <button onClick={() => router.push(memberReturnPath)} style={{ padding: "8px 16px", background: "#f3f4f6", color: textPrimary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
-              목록으로
-            </button>
-          )}
+          {/* 목록으로 (뒤로가기) 버튼 */}
+          <Link href={isMemberMode ? memberReturnPath : "/admin?menu=article"} style={{ padding: "8px 16px", background: "#f3f4f6", color: textPrimary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", textDecoration: "none", display: "flex", alignItems: "center", gap: 4 }}>
+            목록으로
+          </Link>
 
           {/* 공실페이지 가기 */}
           <button onClick={() => router.push("/")} style={{ padding: "8px 16px", background: cardBg, color: textPrimary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>

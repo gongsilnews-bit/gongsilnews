@@ -77,8 +77,7 @@ export default function AdminSidebar({ activeMenu, setActiveMenu, darkMode = fal
       <ul style={{ listStyle: "none", margin: 0, padding: "16px 0", flex: 1, overflowY: "auto", scrollbarWidth: "none" as const }}>
         {MENU_ITEMS.map((item) => (
           <React.Fragment key={item.key}>
-            {item.dividerBefore && <li style={{ height: 1, background: "rgba(255,255,255,0.15)", margin: "4px 14px" }} />}
-            <li style={{ margin: 0, position: "relative" }}
+            <li style={{ margin: 0, position: "relative", ...(item.dividerBefore ? { marginTop: 20, borderTop: "1px solid rgba(255,255,255,0.08)" } : {}) }}
               onMouseEnter={() => setHoveredMenu(item.key)}
               onMouseLeave={() => setHoveredMenu(null)}>
               <button
