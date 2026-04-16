@@ -8,8 +8,7 @@ import { getLectureDetail } from "@/app/actions/lecture";
 const toEmbed = (url: string): string => {
   if (!url) return "";
   const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]+)/);
-  if (m) return `https://www.youtube.com/embed/${m[1]}?rel=0&autoplay=1`;
-  if (url.includes("youtube.com/embed")) return url + (url.includes("?") ? "&autoplay=1" : "?autoplay=1");
+  if (m) return `https://www.youtube.com/embed/${m[1]}?rel=0`;
   return url;
 };
 
@@ -216,7 +215,43 @@ export default function StudyWatchPage() {
 
             <div style={{ padding: "40px 0", minHeight: 200 }}>
               {activeTab === "notes" ? (
-                <div style={{ textAlign: "center", color: textSecondary, fontSize: 14 }}>등록된 강의 노트나 자료가 아직 없습니다.</div>
+                <>
+                  {(lecture.materials && lecture.materials.length > 0) ? (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                      <h3 style={{ fontSize: 16, fontWeight: 700, margin: "0 0 12px 0", color: textPrimary }}>📑 참고 자료 / 첨부 파일</h3>
+                      {lecture.materials.map((mat: any, idx: number) => {
+                        let icon = "🔗";
+                        switch(mat.type) {
+                          case "YOUTUBE": icon = "🎬"; break;
+                          case "DRIVE": icon = "📁"; break;
+                          case "FILE": icon = "📎"; break;
+                          case "LINK": icon = "🔗"; break;
+                        }
+                        return (
+                          <a key={idx} href={mat.url} target="_blank" rel="noopener noreferrer"
+                            style={{
+                              display: "flex", alignItems: "center", gap: 12, padding: "16px 20px",
+                              background: darkMode ? "#1f2937" : "#f8fafc",
+                              border: `1px solid ${borderColor}`, borderRadius: 8,
+                              textDecoration: "none", color: textPrimary,
+                              transition: "all 0.2s"
+                            }}
+                            onMouseOver={(e) => { e.currentTarget.style.borderColor = accent; e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.05)"; }}
+                            onMouseOut={(e) => { e.currentTarget.style.borderColor = borderColor; e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "none"; }}
+                          >
+                            <span style={{ fontSize: 24 }}>{icon}</span>
+                            <span style={{ fontSize: 15, fontWeight: 700, flex: 1 }}>{mat.label || (mat.type === "FILE" ? "첨부파일" : "참고자료")}</span>
+                            <span style={{ fontSize: 12, color: accent, fontWeight: 600, padding: "4px 10px", borderRadius: 20, background: darkMode ? "#422006" : "#fef3c7" }}>
+                              {mat.type === "FILE" ? "다운로드" : "열기"}
+                            </span>
+                          </a>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div style={{ textAlign: "center", color: textSecondary, fontSize: 14 }}>등록된 강의 노트나 자료가 아직 없습니다.</div>
+                  )}
+                </>
               ) : (
                 <div style={{ textAlign: "center", color: textSecondary, fontSize: 14 }}>등록된 질문이 없습니다. 첫 질문을 남겨보세요!</div>
               )}

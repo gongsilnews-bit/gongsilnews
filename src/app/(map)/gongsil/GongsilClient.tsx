@@ -126,6 +126,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   const [filterFloor, setFilterFloor] = useState<string | null>(null);
   const [filterSaleStage, setFilterSaleStage] = useState<string[]>([]);
   const [filterSaleType, setFilterSaleType] = useState<string[]>([]);
+  const [filterOptions, setFilterOptions] = useState<string[]>([]);
 
   const [selectedClusterIds, setSelectedClusterIds] = useState<string[] | null>(null);
   const selectedClusterIdsRef = useRef<string[] | null>(null);
@@ -699,6 +700,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     setFilterFloor(null);
     setFilterSaleStage([]);
     setFilterSaleType([]);
+    setFilterOptions([]);
     setActiveFilterDropdown(null);
   };
 
@@ -787,7 +789,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                 (f === "세대수" && (filterUnitMin !== null || filterUnitMax !== null)) ||
                 (f === "층수" && filterFloor !== null) ||
                 (f === "분양단계" && filterSaleStage.length > 0) ||
-                (f === "분양형태" && filterSaleType.length > 0)
+                (f === "분양형태" && filterSaleType.length > 0) ||
+                (f === "기타옵션" && filterOptions.length > 0)
               );
               const btnLabel = (f === "가격대" || f === "분양가/보증금") ? priceFilterLabel : f === "면적" ? areaFilterLabel : f === "사용승인일" ? yearFilterLabel : f === "세대수" ? unitFilterLabel : f;
 
@@ -1208,6 +1211,44 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                       ))}
                     </div>
                     <div style={{ fontSize: 12, color: "#aaa", marginTop: 10 }}>ⓘ 중복선택이 가능합니다.</div>
+                  </div>
+                )}
+
+                {/* ── 기타옵션 (카테고리별 다이나믹) ── */}
+                {f === "기타옵션" && activeFilterDropdown === "기타옵션" && (
+                  <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, background: "#fff", border: "1px solid #ddd", borderRadius: 4, boxShadow: "0 4px 16px rgba(0,0,0,0.15)", width: 320, zIndex: 9000, padding: "16px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                      <span style={{ fontSize: 15, fontWeight: "bold", color: "#111" }}>옵션</span>
+                      <button onClick={() => setActiveFilterDropdown(null)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#999", padding: 0, lineHeight: 1 }}>✕</button>
+                    </div>
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
+                      {(() => {
+                        let opts = ["주차", "엘리베이터"];
+                        if (activeCategory === "apart" || activeCategory === "one") {
+                          opts = ["에어컨", "세탁기", "냉장고", "가스렌지", "전자렌지", "침대", "옷장", "TV", "신발장", "비데", "도어락"];
+                        } else if (activeCategory === "biz") {
+                          opts = ["냉난방기", "수도설비", "가스설비", "화물용승강기", "보안시스템"];
+                        }
+                        return opts.map((opt) => (
+                          <button
+                            key={opt}
+                            onClick={() => setFilterOptions(prev => prev.includes(opt) ? prev.filter(o => o !== opt) : [...prev, opt])}
+                            style={{
+                              padding: "6px 14px", borderRadius: 20, fontSize: 13, cursor: "pointer",
+                              border: filterOptions.includes(opt) ? "1px solid #1a73e8" : "1px solid #e0e0e0",
+                              background: filterOptions.includes(opt) ? "#e8f0fe" : "#fff",
+                              color: filterOptions.includes(opt) ? "#1a73e8" : "#555",
+                              fontWeight: filterOptions.includes(opt) ? "bold" : "normal"
+                            }}
+                          >
+                            {opt} {filterOptions.includes(opt) && "✓"}
+                          </button>
+                        ));
+                      })()}
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      <button onClick={() => setFilterOptions([])} style={{ background: "none", border: "none", fontSize: 13, color: "#888", cursor: "pointer" }}>⟲ 조건삭제</button>
+                    </div>
                   </div>
                 )}
               </div>

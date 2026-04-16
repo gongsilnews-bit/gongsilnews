@@ -23,6 +23,11 @@ type Lesson = {
   is_preview: boolean;
   sort_order: number;
 };
+type Material = {
+  type: string;
+  label: string;
+  url: string;
+};
 
 const CATEGORIES = ["중개실무", "법률", "세무", "분양", "마케팅", "기타"];
 
@@ -81,6 +86,9 @@ export default function LectureWritePage() {
   const [durationMonths, setDurationMonths] = useState(5);
   const [totalDuration, setTotalDuration] = useState("");
 
+  /* ── 자료 첨부 ── */
+  const [materials, setMaterials] = useState<Material[]>([]);
+
   /* ── 커리큘럼 ── */
   const [chapters, setChapters] = useState<Chapter[]>([
     { chapter_no: 1, title: "", sort_order: 0, lessons: [{ lesson_no: 1, title: "", video_url: "", duration: "", is_preview: false, sort_order: 0 }] },
@@ -126,6 +134,7 @@ export default function LectureWritePage() {
             setDiscountLabel(d.discount_label || "");
             setDurationMonths(d.duration_months || 5);
             setTotalDuration(d.total_duration || "");
+            setMaterials(d.materials || []);
 
             // 에디터에 기존 HTML 로드
             if (d.description && editorRef.current) {
@@ -372,6 +381,7 @@ export default function LectureWritePage() {
         discount_label: discountLabel,
         duration_months: durationMonths,
         total_duration: totalDuration,
+        materials,
         chapters: chapters.map((ch) => ({ ...ch, lessons: ch.lessons.filter((ls) => ls.title.trim()) })).filter((ch) => ch.title.trim()),
       });
       if (res.success) {
@@ -754,6 +764,64 @@ export default function LectureWritePage() {
                     )}
                   </div>
                 ))}
+              </div>
+            </div>
+
+            {/* ========== 6. 특강 자료 (첨부 파일 및 외부 링크) ========== */}
+            <div style={sectionStyle}>
+              <div style={sectionTitleStyle}><span style={{ fontSize: 20 }}>🔗</span> 자료 첨부</div>
+              <p style={{ fontSize: 13, color: "#6b7280", marginBottom: 16 }}>영상 스킨(video_album) 및 자료실 스킨(file_album) 전용 간편 등록. 외부 링크 또는 직접 파일 첨부가 가능합니다.</p>
+              
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {materials.map((mat, mi) => (
+                  <div key={mi} style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <select value={mat.type} onChange={(e) => { const newArr=[...materials]; newArr[mi].type=e.target.value; if (e.target.value !== "FILE") newArr[mi].url=""; setMaterials(newArr); }} style={{ height: 40, padding: "0 12px", border: "1px solid #d1d5db", borderRadius: 6, width: 180 }}>
+                      <option value="YOUTUBE">🎬 YouTube 영상</option>
+                      <option value="DRIVE">📁 구글 드라이브 다운로드</option>
+                      <option value="LINK">🔗 일반 외부링크</option>
+                      <option value="FILE">📎 파일 직접 첨부</option>
+                    </select>
+                    <input type="text" value={mat.label} onChange={(e) => { const newArr=[...materials]; newArr[mi].label=e.target.value; setMaterials(newArr); }} placeholder="라벨 (예: 수업자료)" style={{ height: 40, padding: "0 12px", border: "1px solid #d1d5db", borderRadius: 6, width: 200 }} />
+                    
+                    {mat.type === "FILE" ? (
+                      mat.url ? (
+                        <div style={{ flex: 1, height: 40, display: "flex", alignItems: "center", gap: 8 }}>
+                          <span style={{ fontSize: 13, color: "#2563eb", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{mat.url.split("/").pop()}</span>
+                          <button onClick={() => { const newArr=[...materials]; newArr[mi].url=""; setMaterials(newArr); }} style={{ fontSize: 12, color: "#ef4444", background: "none", border: "none", cursor: "pointer", fontWeight: 700 }}>파일 변경</button>
+                        </div>
+                      ) : (
+                        <div style={{ flex: 1, display: "flex", alignItems: "center" }}>
+                          <label style={{ height: 40, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 16px", background: "#f3f4f6", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", color: "#374151" }}>
+                            파일 선택
+                            <input type="file" style={{ display: "none" }} onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              const formData = new FormData();
+                              formData.append("file", file);
+                              formData.append("lecture_id", loadId || "temp");
+                              formData.append("type", "material");
+                              const res = await uploadLectureImage(formData); // Using same general media upload approach
+                              if (res.success && res.url) {
+                                const newArr=[...materials]; 
+                                newArr[mi].url = res.url; 
+                                setMaterials(newArr);
+                              } else {
+                                alert("업로드 실패: " + (res.error || ""));
+                              }
+                              e.target.value = "";
+                            }} />
+                          </label>
+                        </div>
+                      )
+                    ) : (
+                      <input type="text" value={mat.url} onChange={(e) => { const newArr=[...materials]; newArr[mi].url=e.target.value; setMaterials(newArr); }} placeholder="https://..." style={{ height: 40, padding: "0 12px", border: "1px solid #d1d5db", borderRadius: 6, flex: 1 }} />
+                    )}
+                    
+                    <button onClick={() => setMaterials(materials.filter((_, i) => i !== mi))} style={{ width: 40, height: 40, border: "1px solid #fca5a5", borderRadius: 6, background: "#fff", color: "#ef4444", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} title="삭제">×</button>
+                  </div>
+                ))}
+                
+                <button onClick={() => setMaterials([...materials, { type: "LINK", label: "", url: "" }])} style={{ height: 40, background: "#1f2937", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", width: 120 }}>+ 추가</button>
               </div>
             </div>
 
