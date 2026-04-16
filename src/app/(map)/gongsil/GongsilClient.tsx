@@ -1048,6 +1048,36 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                         );
                       })}
                     </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                      <div style={{ flex: 1, display: "flex", alignItems: "center", border: "1px solid #ddd", borderRadius: 4, overflow: "hidden" }}>
+                        <input
+                          type="number"
+                          placeholder="최소(년)"
+                          value={filterYearMin !== null ? filterYearMin : ""}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            if (v === "") { setFilterYearMin(null); }
+                            else { setFilterYearMin(parseInt(v, 10)); }
+                          }}
+                          style={{ flex: 1, textAlign: "center", fontSize: 13, padding: "8px 4px", border: "none", outline: "none", width: 60, color: "#111" }}
+                        />
+                      </div>
+                      <span style={{ color: "#999", fontSize: 13 }}>~</span>
+                      <div style={{ flex: 1, display: "flex", alignItems: "center", border: "1px solid #ddd", borderRadius: 4, overflow: "hidden" }}>
+                        <input
+                          type="number"
+                          placeholder="최대(년)"
+                          value={filterYearMax !== null ? filterYearMax : ""}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            if (v === "") { setFilterYearMax(null); }
+                            else { setFilterYearMax(parseInt(v, 10)); }
+                          }}
+                          style={{ flex: 1, textAlign: "center", fontSize: 13, padding: "8px 4px", border: "none", outline: "none", width: 60, color: "#111" }}
+                        />
+                      </div>
+                      <span style={{ fontSize: 12, color: "#888", flexShrink: 0 }}>년</span>
+                    </div>
                     <div style={{ textAlign: "right" }}>
                       <button onClick={() => { setFilterYearMin(null); setFilterYearMax(null); }} style={{ background: "none", border: "none", fontSize: 13, color: "#888", cursor: "pointer" }}>⟲ 조건삭제</button>
                     </div>

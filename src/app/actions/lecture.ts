@@ -31,6 +31,7 @@ export async function saveLecture(data: {
   discount_label?: string;
   duration_months?: number;
   total_duration?: string;
+  materials?: { type: string; label?: string; url: string; }[];
   chapters?: {
     id?: string;
     chapter_no: number;
