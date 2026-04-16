@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { AdminSectionProps } from "./types";
 import VacancyRegisterForm from "@/components/admin/VacancyRegisterForm";
 import { getVacancies, updateVacancyStatus, updateVacancy, deleteVacancy, getVacancyDetail } from "@/app/actions/vacancy";
+import { useRouter, useSearchParams } from "next/navigation";
 
 interface VacancySectionProps extends AdminSectionProps {
   role: "admin" | "realtor" | "user";
@@ -15,9 +16,14 @@ interface VacancySectionProps extends AdminSectionProps {
 
 export default function VacancySection({ theme, role, ownerId, ownerName, ownerPhone, initialData }: VacancySectionProps) {
   const { bg, cardBg, textPrimary, textSecondary, darkMode, border } = theme;
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const action = searchParams.get("action");
+  const editId = searchParams.get("id");
+  
   const [dbVacancies, setDbVacancies] = useState<any[]>(initialData || []);
   const [editingVacancy, setEditingVacancy] = useState<any>(null);
-  const [showRegisterForm, setShowRegisterForm] = useState(false);
+  const showRegisterForm = action === "write";
   const [activeTab, setActiveTab] = useState("전체");
 
   const fetchAllVacancies = async () => {
@@ -50,10 +56,23 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
     if (!initialData) fetchAllVacancies();
   }, [showRegisterForm]);
 
+  useEffect(() => {
+    const fetchEditData = async () => {
+      if (editId && action === "write") {
+        const res = await getVacancyDetail(editId);
+        if (res.success) setEditingVacancy(res.data);
+      } else {
+        setEditingVacancy(null);
+      }
+    };
+    fetchEditData();
+  }, [editId, action]);
+
   if (showRegisterForm) {
+    const returnUrl = role === "realtor" ? "/realty_admin?menu=gongsil" : role === "user" ? "/user_admin?menu=gongsil" : "/admin?menu=gongsil";
     return (
       <VacancyRegisterForm
-        onBack={() => { setShowRegisterForm(false); setEditingVacancy(null); }}
+        onBack={() => { router.push(returnUrl); }}
         darkMode={darkMode}
         userRole={role}
         ownerId={ownerId}
@@ -109,7 +128,10 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
 
         {/* 액션 버튼 영역 */}
         <div style={{ padding: "16px 24px", borderBottom: `1px solid ${border}`, display: "flex", gap: 10, alignItems: "center" }}>
-          <button onClick={() => setShowRegisterForm(true)} style={{ height: 36, padding: "0 16px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>+ 공실등록</button>
+          <button onClick={() => {
+            const path = role === "realtor" ? "/realty_admin" : role === "user" ? "/user_admin" : "/admin";
+            router.push(`${path}?menu=gongsil&action=write`);
+          }} style={{ height: 36, padding: "0 16px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>+ 공실등록</button>
 
           {role === "user" && (
             <>
@@ -295,8 +317,8 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                     <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
                       <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
                         <button onClick={async () => {
-                          const res = await getVacancyDetail(row.id);
-                          if (res.success) { setEditingVacancy(res.data); setShowRegisterForm(true); }
+                          const path = role === "realtor" ? "/realty_admin" : role === "user" ? "/user_admin" : "/admin";
+                          router.push(`${path}?menu=gongsil&action=write&id=${row.id}`);
                         }} style={{ height: 30, padding: "0 12px", background: darkMode ? "#374151" : "#4b5563", color: "#fff", border: "none", borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                           수정
