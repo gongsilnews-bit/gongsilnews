@@ -16,7 +16,7 @@ export default async function NewsMapPage() {
 
   // 2. Fetch popular articles for the sidebar limits
   const popRes = await getArticles({ status: 'APPROVED', limit: 50 });
-  let initialPopularArticles = [];
+  let initialPopularArticles: any[] = [];
   if (popRes.success && popRes.data) {
     initialPopularArticles = [...popRes.data]
       .sort((a: any, b: any) => (b.view_count || 0) - (a.view_count || 0))

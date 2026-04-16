@@ -124,7 +124,7 @@ export default function PremiumDroneCarousel({ posts }: { posts: any[] }) {
                 overflow: "hidden",
                 color: "#aaa"
               }}>
-                {item.subtitle || item.content?.replace(/<[^>]*>?/gm, "").slice(0, 80) || "드론 영상 자료실입니다."}
+                {item.subtitle || "드론 영상 자료실입니다."}
               </div>
             </Link>
           );

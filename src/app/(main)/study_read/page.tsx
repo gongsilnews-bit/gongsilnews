@@ -1,10 +1,18 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getLectureDetail, getLectures } from "@/app/actions/lecture";
 
 export default function StudyReadPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: "100px", textAlign: "center", color: "#6b7280" }}>수강 신청 페이지를 불러오는 중입니다...</div>}>
+      <StudyReadContent />
+    </Suspense>
+  );
+}
+
+function StudyReadContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const lectureId = searchParams.get("id");

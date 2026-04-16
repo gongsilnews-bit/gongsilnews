@@ -36,10 +36,6 @@ export default async function NoticeBoardGroup() {
       const match = article.youtube_url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|shorts\/))([\w-]{11})/);
       if (match) return { id: match[1], hasVideo: true };
     }
-    if (article.content) {
-      const match = article.content.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|shorts\/))([\w-]{11})/);
-      if (match) return { id: match[1], hasVideo: true };
-    }
     return { id: null, hasVideo: false };
   };
 
@@ -76,7 +72,7 @@ export default async function NoticeBoardGroup() {
                     </div>
                     <div className="hi-txt" style={{ flex: 1, display: "flex", flexDirection: "column", height: "100px", overflow: "hidden" }}>
                       <h3 style={{ margin: "0 0 8px 0", fontSize: "16px", fontWeight: "bold", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", lineHeight: 1.2 }}>{item.title}</h3>
-                      <p style={{ margin: 0, fontSize: "14px", color: "#666", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: 1.4, height: "2.8em" }}>{stripHtml(item.content || "")}</p>
+                      <p style={{ margin: 0, fontSize: "14px", color: "#666", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: 1.4, height: "2.8em" }}>{item.subtitle || ""}</p>
                       <div style={{ fontSize: "12px", color: "#999", marginTop: "auto" }}>{formatDate(item.published_at || item.created_at)} · {item.author_name || "공실뉴스"}</div>
                     </div>
                   </div>
