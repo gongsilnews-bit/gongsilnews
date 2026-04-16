@@ -16,6 +16,7 @@ const ArticleSection = lazy(() => import("@/components/admin/sections/ArticleSec
 const StudySection = lazy(() => import("@/components/admin/sections/StudySection"));
 const BoardSection = lazy(() => import("@/components/admin/sections/BoardSection"));
 const MemberSection = lazy(() => import("@/components/admin/sections/MemberSection"));
+const BannerSection = lazy(() => import("@/components/admin/sections/BannerSection"));
 const AdminManual = lazy(() => import("./AdminManual"));
 
 /* ── 최고관리자 메뉴 ── */
@@ -193,8 +194,9 @@ function AdminContent() {
           {activeMenu === "article" && <ArticleSection theme={theme} initialData={prefetchedData["article"]} />}
           {activeMenu === "study" && <StudySection theme={theme} />}
           {activeMenu === "board" && <BoardSection theme={theme} />}
+          {activeMenu === "ad" && <BannerSection theme={theme} />}
           {activeMenu === "manual" && <AdminManual />}
-          {["edit", "ad", "plugin", "stats", "settings"].includes(activeMenu) && (
+          {["edit", "plugin", "stats", "settings"].includes(activeMenu) && (
             <div style={{ flex: 1, margin: 16, marginBottom: 0, background: theme.cardBg, borderTopLeftRadius: 12, borderTopRightRadius: 12, boxShadow: "0 4px 6px rgba(0,0,0,0.05)", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <div style={{ textAlign: "center", color: "#9ca3af" }}>
                 <div style={{ fontSize: 48, marginBottom: 16 }}>🚧</div>
