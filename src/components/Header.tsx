@@ -204,16 +204,16 @@ export default function Header() {
               }}>
                 {userRole === 'ADMIN' ? '최고관리자 >>' : userRole === 'REALTOR' ? '부동산회원 >>' : '일반회원 >>'}
               </div>
-              <div style={{ color: "rgba(255,255,255,0.7)", cursor: "pointer", fontWeight: "600", fontSize: "13px" }} onClick={async () => {
+              <div style={{ color: "rgba(255,255,255,0.7)", cursor: "pointer", fontWeight: "600", fontSize: "13px", whiteSpace: "nowrap" }} onClick={async () => {
                 const supabase = createClient();
                 await supabase.auth.signOut();
                 window.location.reload();
               }}>로그아웃</div>
             </div>
           ) : (
-            <div style={{ display: "flex", alignItems: "center", gap: "24px" }}>
-              <div className="icon-tooltip-wrap" data-tooltip="회원가입/로그인">
-                <svg onClick={() => { setAuthTab('signup'); setIsAuthModalOpen(true); }} style={{ cursor: "pointer" }} viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", paddingRight: "4px" }}>
+              <div className="icon-tooltip-wrap tooltip-right" data-tooltip="회원가입/로그인" style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <svg onClick={() => { setAuthTab('signup'); setIsAuthModalOpen(true); }} style={{ cursor: "pointer", flexShrink: 0 }} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
               </div>
             </div>
           )}

@@ -1460,7 +1460,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
 
         {/* 상세 필터 행 */}
         {showDetailFilters && config.detailFilters.length > 0 && (
-          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 20px", borderBottom: "1px solid #eee", overflowX: "auto", background: "#fff" }}>
+          <div className="hide-scrollbar" style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 20px", borderBottom: "1px solid #eee", overflowX: "auto", background: "#fff" }}>
             {config.detailFilters.map((f) => (
               <button key={f} style={{ background: "none", border: "none", fontSize: 13, color: "#555", cursor: "pointer", padding: "8px 12px", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", borderRadius: 4, flexShrink: 0, fontFamily: "inherit" }}>
                 {f} <span style={{ fontSize: 10, color: "#999" }}>▼</span>

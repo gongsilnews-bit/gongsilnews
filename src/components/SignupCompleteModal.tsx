@@ -2,11 +2,8 @@
 
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import DaumPostcodeEmbed from 'react-daum-postcode';
 import { createClient } from '@/utils/supabase/client';
-import { geocodeAddress } from '@/app/actions/geocode';
-import imageCompression from 'browser-image-compression';
-import { adminUploadAgencyDocument } from '@/app/admin/actions';
+import { useRouter } from 'next/navigation';
 
 interface SignupCompleteModalProps {
   isOpen: boolean;
@@ -18,29 +15,14 @@ interface SignupCompleteModalProps {
 export default function SignupCompleteModal({ isOpen, onClose, email = '', name = '' }: SignupCompleteModalProps) {
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
   
   const [role, setRole] = useState<'general' | 'realtor'>('general');
   const [formData, setFormData] = useState({
     email: email,
     name: name,
     phone: '',
-    // 부동산 회원 전용
-    compName: '',
-    ceo: '',
-    cell: '',
-    zipcode: '',
-    addr: '',
-    addrDetail: '',
-    regNum: '',
-    bizNum: '',
-    generalTel: '',
   });
-
-  const [bizFile, setBizFile] = useState<File | null>(null);
-  const [regFile, setRegFile] = useState<File | null>(null);
-  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
-
-  const [isPostcodeOpen, setIsPostcodeOpen] = useState(false);
 
   const [agreeAll, setAgreeAll] = useState(false);
   const [agreements, setAgreements] = useState({
@@ -79,63 +61,22 @@ export default function SignupCompleteModal({ isOpen, onClose, email = '', name 
   };
 
   // 전화번호 자동 하이픈 (-) 포맷터
-  const handlePhoneInput = (key: 'phone' | 'cell' | 'generalTel', val: string) => {
+  const handlePhoneInput = (val: string) => {
     let num = val.replace(/[^0-9]/g, '');
-    if (num.startsWith('02')) {
-      if (num.length > 2 && num.length <= 5) {
-        num = `${num.slice(0, 2)}-${num.slice(2)}`;
-      } else if (num.length > 5 && num.length <= 9) {
-        num = `${num.slice(0, 2)}-${num.slice(2, num.length === 9 ? 5 : 6)}-${num.slice(num.length === 9 ? 5 : 6)}`;
-      } else if (num.length > 9) {
-        num = `${num.slice(0, 2)}-${num.slice(2, 6)}-${num.slice(6, 10)}`;
-      }
-    } else {
-      if (num.length > 3 && num.length <= 7) {
-        num = `${num.slice(0, 3)}-${num.slice(3)}`;
-      } else if (num.length > 7 && num.length <= 11) {
-        num = `${num.slice(0, 3)}-${num.slice(3, 7)}-${num.slice(7, 11)}`;
-      } else if (num.length > 11) {
-        num = `${num.slice(0, 3)}-${num.slice(3, 7)}-${num.slice(7, 11)}`;
-      }
+    if (num.length > 3 && num.length <= 7) {
+      num = `${num.slice(0, 3)}-${num.slice(3)}`;
+    } else if (num.length > 7 && num.length <= 11) {
+      num = `${num.slice(0, 3)}-${num.slice(3, 7)}-${num.slice(7, 11)}`;
+    } else if (num.length > 11) {
+      num = `${num.slice(0, 3)}-${num.slice(3, 7)}-${num.slice(7, 11)}`;
     }
-    setFormData(prev => ({ ...prev, [key]: num }));
-  };
-
-  // 주소 검색 완료 핸들러
-  const handleCompletePostcode = async (data: any) => {
-    let fullAddress = data.address;
-    let extraAddress = '';
-
-    if (data.addressType === 'R') {
-      if (data.bname !== '') extraAddress += data.bname;
-      if (data.buildingName !== '') extraAddress += extraAddress !== '' ? `, ${data.buildingName}` : data.buildingName;
-      fullAddress += extraAddress !== '' ? ` (${extraAddress})` : '';
-    }
-
-    setFormData(prev => ({ ...prev, zipcode: data.zonecode, addr: fullAddress }));
-    setIsPostcodeOpen(false);
-
-    // 카카오 Geocoder REST API를 통해 실제 위경도 좌표 추출
-    try {
-      const result = await geocodeAddress(data.address);
-      if (result.success && result.lat && result.lng) {
-        setCoords({ lat: result.lat, lng: result.lng });
-        console.log(`✅ 좌표 변환 성공: ${result.lat}, ${result.lng}`);
-      } else {
-        console.warn('⚠️ 좌표 변환 실패:', result.error);
-        // 좌표 변환 실패 시에도 가입 자체는 진행 가능하도록 null 유지
-        setCoords(null);
-      }
-    } catch (err) {
-      console.error('좌표 변환 중 오류:', err);
-      setCoords(null);
-    }
+    setFormData(prev => ({ ...prev, phone: num }));
   };
 
   // 폼 제출 (회원가입 최종 처리)
   const handleSubmit = async () => {
     if (!agreeAll) return alert("약관에 모두 동의해 주세요.");
-    if (!formData.name || !formData.phone) return alert("이름과 연락처를 입력해주세요.");
+    if (!formData.name.trim() || !formData.phone.trim()) return alert("이름과 연락처를 필수로 입력해 주세요.");
 
     setLoading(true);
     const supabase = createClient();
@@ -148,78 +89,43 @@ export default function SignupCompleteModal({ isOpen, onClose, email = '', name 
       const { error: memberError } = await supabase
         .from('members')
         .update({
-          name: formData.name,
-          phone: formData.phone,
+          name: formData.name.trim(),
+          phone: formData.phone.trim(),
           role: role === 'realtor' ? 'REALTOR' : 'USER',
-          signup_completed: true,
+          signup_completed: true, 
         })
         .eq('id', user.id);
         
       if (memberError) throw memberError;
 
-      // 2. 부동산 회원가입인 경우 -> agencies 테이블 INSERT
+      // 2. 부동산 회원인 경우 -> agencies 더미 테이블 (상태: PENDING) 기본 생성
       if (role === 'realtor') {
-         if (!formData.compName || !formData.ceo || !formData.addr) {
-            throw new Error("부동산 필수 정보(상호, 대표자, 주소)를 기입해주세요.");
-         }
-         
-         let finalBizUrl = null;
-         let finalRegUrl = null;
-
-         // 이미지 압축기 (browser-image-compression 활용)
-         const uploadImage = async (file: File, prefix: string) => {
-             const comp = await imageCompression(file, { maxSizeMB: 1, maxWidthOrHeight: 1920, fileType: 'image/webp' });
-             const newFile = new File([comp], file.name, { type: 'image/webp'});
-             const path = `${user.id}/${prefix}_cert_${Date.now()}.webp`;
-             
-             const fd = new FormData();
-             fd.set('file', newFile);
-             fd.set('path', path);
-
-             const res = await adminUploadAgencyDocument(fd);
-             if (!res.success) {
-                 console.error("Storage Error:", res.error);
-                 return null;
-             }
-             return res.url;
-         };
-
-         if (bizFile) finalBizUrl = await uploadImage(bizFile, 'biz');
-         if (regFile) finalRegUrl = await uploadImage(regFile, 'reg');
-
+         // 중개업소 정보는 빈 뼈대만 만들어서 realty_admin에서 작성하도록 유도. 이미 있다면 onConflict 무시.
          const { error: agencyError } = await supabase.from('agencies')
            .insert({
               owner_id: user.id,
-              name: formData.compName,
-              ceo_name: formData.ceo,
-              phone: formData.generalTel,
-              cell: formData.cell,
-              zipcode: formData.zipcode,
-              address: formData.addr,
-              address_detail: formData.addrDetail,
-              biz_num: formData.bizNum,
-              reg_num: formData.regNum,
-              biz_cert_url: finalBizUrl,
-              reg_cert_url: finalRegUrl,
-              lat: coords?.lat || null,
-              lng: coords?.lng || null
+              name: '상호명 미등록',
+              ceo_name: '대표자명 미등록',
+              zipcode: '',
+              address: '주소 미등록',
+              address_detail: '',
+              status: 'PENDING'
            });
            
-         if (agencyError) throw agencyError;
+         if (agencyError && !agencyError.message.includes('duplicate key')) {
+           throw agencyError;
+         }
       }
 
-      if (role === 'realtor' && (!bizFile || !regFile)) {
-        alert(
-          "🎉 앗! 가입은 무사히 완료되었어요! \n\n" +
-          "🥺 하지만 아직 서류가 부족해요!\n" +
-          "나중에 마이페이지에서 필수 서류(사업자/개설등록증)를 마저 등록해 주시면,\n" +
-          "✨부동산 회원 전용 수수료 무료 공동중개✨ 기능을 마음껏 쓰실 수 있습니다!"
-        );
+      onClose(); // 모달 닫기
+
+      if (role === 'realtor') {
+        alert("부동산 회원으로 가입하셨습니다!\n정상적인 매물 등록을 위해 중개업소 정보 설정 페이지로 이동합니다.");
+        router.push('/realty_admin?menu=settings');
       } else {
         alert("🎉 가입이 완료되었습니다! 환영합니다!");
+        window.location.reload();
       }
-      onClose();
-      window.location.reload();
 
     } catch (err: any) {
       alert("❌ 처리 중 에러가 발생했습니다: " + err.message);
@@ -268,17 +174,6 @@ export default function SignupCompleteModal({ isOpen, onClose, email = '', name 
         }}
       />
 
-      {/* 우편번호 팝업 (가장 최상단) */}
-      {isPostcodeOpen && (
-        <div style={{ position: 'fixed', top: '10%', left: '50%', transform: 'translateX(-50%)', zIndex: 999999999, width: 400, maxWidth: '90%', background: '#fff', padding: 20, borderRadius: 12, boxShadow: '0 10px 30px rgba(0,0,0,0.3)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
-            <h3 style={{ margin: 0, fontSize: 16 }}>주소 검색</h3>
-            <button onClick={() => setIsPostcodeOpen(false)} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer' }}>×</button>
-          </div>
-          <DaumPostcodeEmbed onComplete={handleCompletePostcode} />
-        </div>
-      )}
-
       {/* 모달 박스 */}
       <div
         style={{
@@ -289,9 +184,9 @@ export default function SignupCompleteModal({ isOpen, onClose, email = '', name 
       >
         <div style={{ overflowY: 'auto', padding: '36px 36px 24px', flex: 1 }}>
           <h2 style={{ fontSize: 22, fontWeight: 900, color: '#111', textAlign: 'center', margin: '0 0 6px 0' }}>
-            공실뉴스 가입 마무리!
+            공실뉴스 진입!
           </h2>
-          <p style={{ fontSize: 13, color: '#888', textAlign: 'center', margin: '0 0 28px 0' }}>
+          <p style={{ fontSize: 13, color: '#888', textAlign: 'center', margin: '0 0 28px 0', lineHeight: 1.5 }}>
             원활한 서비스 이용을 위해 필수 정보를 입력해 주세요.
           </p>
 
@@ -299,10 +194,10 @@ export default function SignupCompleteModal({ isOpen, onClose, email = '', name 
           <input type="email" value={formData.email} readOnly style={{ ...inputStyle, background: '#f5f5f5', color: '#999', marginBottom: 16 }} />
 
           <label style={labelStyle}>이름 <span style={{ color: '#e53e3e' }}>*</span></label>
-          <input type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} style={{ ...inputStyle, marginBottom: 16 }} />
+          <input type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="이름을 입력해 주세요" style={{ ...inputStyle, marginBottom: 16 }} />
 
           <label style={labelStyle}>연락처 <span style={{ color: '#e53e3e' }}>*</span></label>
-          <input type="tel" value={formData.phone} onChange={e => handlePhoneInput('phone', e.target.value)} placeholder="010-0000-0000" style={{ ...inputStyle, marginBottom: 20 }} />
+          <input type="tel" value={formData.phone} onChange={e => handlePhoneInput(e.target.value)} placeholder="010-0000-0000" style={{ ...inputStyle, marginBottom: 20 }} />
 
           <label style={labelStyle}>활동 유형 <span style={{ color: '#e53e3e' }}>*</span></label>
           <div style={{ display: 'flex', gap: 12, marginBottom: 20 }}>
@@ -338,59 +233,6 @@ export default function SignupCompleteModal({ isOpen, onClose, email = '', name 
               <span style={{ fontSize: 13, fontWeight: 700, marginTop: 6 }}>부동산 회원</span>
             </button>
           </div>
-
-          {/* 부동산 회원 전용 폼 */}
-          {role === 'realtor' && (
-            <div style={{ background: '#f8f9fa', border: '1px solid #e8e8e8', borderRadius: 10, padding: '20px 18px', marginBottom: 20 }}>
-              <div style={{ fontSize: 14, fontWeight: 800, color: '#1e56a0', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 6 }}>
-                🏢 부동산 / 중개업소 정보 입력
-              </div>
-
-              <label style={{ ...labelStyle, fontSize: 12 }}>상호명 <span style={{ color: '#e53e3e' }}>*</span></label>
-              <input type="text" value={formData.compName} onChange={e => setFormData({ ...formData, compName: e.target.value })} placeholder="예: 공실공인중개사" style={{ ...inputStyle, marginBottom: 12 }} />
-
-              <label style={{ ...labelStyle, fontSize: 12 }}>대표자명 <span style={{ color: '#e53e3e' }}>*</span></label>
-              <input type="text" value={formData.ceo} onChange={e => setFormData({ ...formData, ceo: e.target.value })} placeholder="대표자 이름" style={{ ...inputStyle, marginBottom: 12 }} />
-
-              <label style={{ ...labelStyle, fontSize: 12 }}>대표 휴대번호 <span style={{ color: '#e53e3e' }}>*</span></label>
-              <input type="tel" value={formData.cell} onChange={e => handlePhoneInput('cell', e.target.value)} placeholder="010-0000-0000" style={{ ...inputStyle, marginBottom: 12 }} />
-
-              <label style={{ ...labelStyle, fontSize: 12 }}>부동산 주소 <span style={{ color: '#e53e3e' }}>*</span></label>
-              <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-                <input type="text" value={formData.zipcode} readOnly placeholder="우편번호" style={{ ...inputStyle, width: '40%', background: '#f0f0f0' }} />
-                <button onClick={() => setIsPostcodeOpen(true)} type="button" style={{ padding: '10px 16px', background: '#1e56a0', color: '#fff', border: 'none', borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', fontFamily: 'inherit' }}>주소 찾기</button>
-              </div>
-              <input type="text" value={formData.addr} readOnly placeholder="기본주소" style={{ ...inputStyle, marginBottom: 8, background: '#f0f0f0' }} />
-              <input type="text" value={formData.addrDetail} onChange={e => setFormData({ ...formData, addrDetail: e.target.value })} placeholder="상세주소 입력" style={{ ...inputStyle, marginBottom: 12 }} />
-
-              <label style={{ ...labelStyle, fontSize: 12 }}>중개등록번호</label>
-              <input type="text" value={formData.regNum} onChange={e => setFormData({ ...formData, regNum: e.target.value })} placeholder="선택 입력" style={{ ...inputStyle, marginBottom: 12 }} />
-
-              <label style={{ ...labelStyle, fontSize: 12 }}>사업자등록번호</label>
-              <input type="text" value={formData.bizNum} onChange={e => setFormData({ ...formData, bizNum: e.target.value })} placeholder="선택 입력" style={{ ...inputStyle, marginBottom: 12 }} />
-
-              <label style={{ ...labelStyle, fontSize: 12 }}>일반 사무실 번호</label>
-              <input type="tel" value={formData.generalTel} onChange={e => handlePhoneInput('generalTel', e.target.value)} placeholder="선택 입력" style={{ ...inputStyle, marginBottom: 12 }} />
-
-              {/* 사업자등록증 첨부 */}
-              <label style={{ ...labelStyle, fontSize: 12 }}>사업자등록증 첨부</label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={e => setBizFile(e.target.files?.[0] || null)}
-                style={{ marginBottom: 12, fontSize: 12, display: 'block', width: '100%' }}
-              />
-
-              {/* 중개사무소 등록증 첨부 */}
-              <label style={{ ...labelStyle, fontSize: 12 }}>중개사무소 등록증 첨부</label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={e => setRegFile(e.target.files?.[0] || null)}
-                style={{ fontSize: 12, display: 'block', width: '100%' }}
-              />
-            </div>
-          )}
 
           {/* ━━━ 약관 동의 ━━━ */}
           <div style={{ borderTop: '1px solid #eee', paddingTop: 20 }}>
