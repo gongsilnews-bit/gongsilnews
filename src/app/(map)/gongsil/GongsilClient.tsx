@@ -760,7 +760,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
         </div>
 
         {/* Tier 2: 서브 필터(Pills + 드롭다운) */}
-        {activeCategory !== "wish" && (
+        {activeCategory !== "wish" ? (
           <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 20px", borderBottom: "1px solid #e0e0e0", overflowX: "visible" }}>
             {config.pills.map((p) => (
               <button key={p} onClick={() => togglePill(p)} style={{
@@ -1160,9 +1160,21 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
             )}
             <button onClick={resetAllFilters} style={{ background: hasActiveFilters ? "#fff3f3" : "none", border: hasActiveFilters ? "1px solid #e74c3c" : "none", fontSize: 13, color: hasActiveFilters ? "#e74c3c" : "#666", fontWeight: hasActiveFilters ? "bold" : "normal", cursor: "pointer", padding: "6px 12px", whiteSpace: "nowrap", marginLeft: "auto", flexShrink: 0, fontFamily: "inherit", borderRadius: 20 }}>↻ 초기화</button>
           </div>
+        ) : (
+          <div style={{ display: "flex", alignItems: "center", gap: 0, borderBottom: "1px solid #e0e0e0" }}>
+            {["찜한물건", "최근본물건"].map((tab) => {
+              const isTabActive = (tab === "찜한물건" && wishTab === "wish") || (tab === "최근본물건" && wishTab === "recent");
+              return (
+                <button key={tab}
+                  onClick={() => setWishTab(tab === "찜한물건" ? "wish" : "recent")}
+                  style={{ flex: 1, padding: "12px 0", textAlign: "center", background: isTabActive ? "#1a73e8" : "#f5f5f5", color: isTabActive ? "#fff" : "#666", fontSize: 14, fontWeight: isTabActive ? "bold" : "normal", border: "none", cursor: "pointer", fontFamily: "inherit" }}
+                >
+                  {tab}
+                </button>
+              );
+            })}
+          </div>
         )}
-
-        {/* MY관심공실 전용 탭 (사이드바로 이동됨) */}
 
         {/* 상세 필터 행 */}
         {showDetailFilters && config.detailFilters.length > 0 && (
@@ -1182,19 +1194,6 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
         <aside style={{ width: 380, minWidth: 380, height: "100%", background: "#fff", borderRight: "1px solid #eee", display: "flex", flexDirection: "column", zIndex: 20 }}>
           {activeCategory === "wish" ? (
             <>
-              <div style={{ display: "flex", width: "100%" }}>
-                {["찜한물건", "최근본물건"].map((tab) => {
-                  const isTabActive = (tab === "찜한물건" && wishTab === "wish") || (tab === "최근본물건" && wishTab === "recent");
-                  return (
-                    <div key={tab} 
-                      onClick={() => setWishTab(tab === "찜한물건" ? "wish" : "recent")}
-                      style={{ flex: 1, padding: "14px 0", textAlign: "center", borderTop: "1px solid transparent", borderBottom: isTabActive ? "none" : "1px solid #e0e0e0", background: isTabActive ? "#1a73e8" : "#f5f5f5", fontSize: 14, cursor: "pointer", color: isTabActive ? "#fff" : "#666", fontWeight: isTabActive ? "bold" : "normal" }}
-                    >
-                      {tab}
-                    </div>
-                  );
-                })}
-              </div>
               <div style={{ padding: "12px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #f5f5f5" }}>
                  <div style={{ display: "flex", gap: 10, fontSize: 12, color: "#999" }}>
                     <span style={{ color: "#1a73e8", fontWeight: "bold", cursor: "pointer" }}>등록취소</span>
