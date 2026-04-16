@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 export default function MarketTickerBar() {
   const tickerItems = [
     { name: "매매가격지수 (서울)", value: "102.4", change: "▲ 0.15%", color: "#d32f2f" },
@@ -12,9 +14,9 @@ export default function MarketTickerBar() {
 
   return (
     <div className="ticker-bar">
-      <a href="#" className="ticker-label">
+      <Link href="/market_dashboard" className="ticker-label">
         실시간 부동산 지수 <span style={{ fontSize: 12, marginLeft: 8 }}>&gt;</span>
-      </a>
+      </Link>
       <div className="ticker-wrap">
         <div className="ticker">
           {Array.from({ length: 30 }).map((_, repeatIdx) =>

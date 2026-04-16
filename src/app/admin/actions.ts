@@ -184,8 +184,18 @@ export async function adminRestoreMember(memberId: string) {
 export async function adminHardDeleteMember(memberId: string) {
   const supabaseAdmin = getAdminClient();
   try {
-    const { error } = await supabaseAdmin.from('members').delete().eq('id', memberId);
-    if (error) return { success: false, error: error.message };
+    // 1. 연관된 데이터 우선 삭제 (외래키 제약조건 방지)
+    await supabaseAdmin.from('vacancies').delete().eq('owner_id', memberId);
+    await supabaseAdmin.from('agencies').delete().eq('owner_id', memberId);
+
+    // 2. members 테이블에서 삭제
+    const { error: dbError } = await supabaseAdmin.from('members').delete().eq('id', memberId);
+    if (dbError) return { success: false, error: dbError.message };
+
+    // 3. Supabase Auth 사용자 삭제 (완전한 계정 삭제)
+    const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(memberId);
+    if (authError) console.error("Auth User 삭제 실패:", authError.message); // Auth 삭제 실패해도 멤버 DB는 삭제됨
+
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
