@@ -61,8 +61,8 @@ export default function AdminSidebar({ activeMenu, setActiveMenu, darkMode = fal
     if (setActiveMenu) {
       setActiveMenu(key);
     } else {
-      // If we are not on the main /admin page, navigate back to /admin
-      router.push("/admin");
+      // If we are not on the main /admin page, navigate back to /admin with the correct menu
+      router.push(`/admin?menu=${key}`);
     }
   };
 

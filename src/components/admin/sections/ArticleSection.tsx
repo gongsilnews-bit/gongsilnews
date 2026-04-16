@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { AdminSectionProps } from "./types";
 import { getArticles, deleteArticle, adminUpdateArticleStatus } from "@/app/actions/article";
+import Link from "next/link";
 
 const REJECT_REASONS = [
   "사진 화질 불량 또는 이미지 누락",
@@ -68,7 +69,7 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
 
         {/* 액션 버튼 */}
         <div style={{ padding: "16px 24px", borderBottom: `1px solid ${border}`, display: "flex", gap: 10, alignItems: "center" }}>
-          <a href="/admin/news_write" style={{ display: "flex", alignItems: "center", height: 36, padding: "0 16px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", textDecoration: "none", gap: 6 }}>+ 새 기사 작성</a>
+          <Link href="/admin/news_write" style={{ display: "flex", alignItems: "center", height: 36, padding: "0 16px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", textDecoration: "none", gap: 6 }}>+ 새 기사 작성</Link>
           <button onClick={async () => {
             if (checkedArticleIds.length === 0) { alert("승인할 기사를 선택하세요."); return; }
             if (confirm(`선택한 ${checkedArticleIds.length}건의 기사를 일괄 승인(발행)하시겠습니까?`)) {
@@ -134,16 +135,16 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
                   </td>
                   <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", color: textSecondary }}>{a.section1 || '-'}</td>
                   <td style={{ padding: "16px 10px", textAlign: "left", verticalAlign: "middle" }}>
-                    <a href={`/admin/news_write?id=${a.id}`} style={{ fontWeight: 700, fontSize: 15, color: textPrimary, textDecoration: "none" }}>{a.title}</a>
+                    <Link href={`/admin/news_write?id=${a.id}`} style={{ fontWeight: 700, fontSize: 15, color: textPrimary, textDecoration: "none" }}>{a.title}</Link>
                   </td>
                   <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", color: textPrimary }}>{a.author_name || '-'}</td>
                   <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", color: textSecondary }}>{a.published_at ? new Date(a.published_at).toISOString().split('T')[0] : '-'}</td>
                   <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
                     <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
-                      <a href={`/admin/news_write?id=${a.id}`} style={{ height: 30, padding: "0 12px", background: darkMode ? "#374151" : "#4b5563", color: "#fff", border: "none", borderRadius: 4, fontSize: 12, fontWeight: 600, textDecoration: "none", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
+                      <Link href={`/admin/news_write?id=${a.id}`} style={{ height: 30, padding: "0 12px", background: darkMode ? "#374151" : "#4b5563", color: "#fff", border: "none", borderRadius: 4, fontSize: 12, fontWeight: 600, textDecoration: "none", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                         수정
-                      </a>
+                      </Link>
                       <button onClick={async () => {
                         if (confirm("기사를 삭제하시겠습니까?")) {
                           const res = await deleteArticle(a.id);

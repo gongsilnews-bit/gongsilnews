@@ -50,8 +50,9 @@ export default function MemberSidebarProxy({
             onMouseEnter={() => setHoveredMenu(item.key)} onMouseLeave={() => setHoveredMenu(null)}>
             <button onClick={() => {
               if (item.key === activeMenu) return;
-              // If they click another menu, we just redirect them back to the member root page
-              router.push(returnPath);
+              // Navigate to the proper menu based on the returnPath base
+              const basePath = returnPath.split('?')[0];
+              router.push(`${basePath}?menu=${item.key}`);
             }}
               style={{
                 display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
