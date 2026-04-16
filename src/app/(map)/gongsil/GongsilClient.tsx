@@ -118,8 +118,9 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   }, [activeProperty]);
 
   const toggleWishlist = (id: any) => {
+    const isWished = wishlist.includes(id);
+    setToastMessage(isWished ? "찜을 해제했습니다." : "찜했습니다.");
     setWishlist(prev => {
-      const isWished = prev.includes(id);
       const newWish = isWished ? prev.filter(x => x !== id) : [id, ...prev];
       localStorage.setItem('gongsil_wishlist', JSON.stringify(newWish));
       return newWish;
@@ -1654,7 +1655,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                     <button onClick={() => setShowShareDropdown(!showShareDropdown)} style={{ background: "none", border: "1px solid #ddd", borderRadius: 6, width: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: showShareDropdown ? "#1a73e8" : "#666" }} title="공유하기"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg></button>
                     {/* 공유 드롭다운 */}
                     {showShareDropdown && (
-                      <div ref={shareDropdownRef} style={{ position: "absolute", top: "100%", right: 0, marginTop: 8, background: "#fff", border: "1px solid #e0e0e0", borderRadius: 10, boxShadow: "0 6px 24px rgba(0,0,0,0.15)", width: 200, zIndex: 9999, overflow: "hidden", animation: "fadeIn 0.15s ease" }}>
+                      <div ref={shareDropdownRef} style={{ position: "absolute", top: "100%", right: 0, marginTop: 8, background: "#fff", border: "1px solid #e0e0e0", borderRadius: 10, boxShadow: "0 6px 24px rgba(0,0,0,0.15)", width: 200, zIndex: 9999, overflow: "hidden", animation: "dropdownFadeIn 0.15s ease" }}>
                         <button onClick={() => handleKakaoShare(prop)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", background: "none", border: "none", borderBottom: "1px solid #f0f0f0", cursor: "pointer", fontSize: 14, color: "#333", fontFamily: "inherit", transition: "background 0.15s" }} onMouseEnter={e => e.currentTarget.style.background = '#f8f9fa'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                           <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#FEE500", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="#3C1E1E"><path d="M12 3c-5.5 0-10 3.5-10 7.8 0 2.8 1.8 5.2 4.4 6.5l-1 3.7c-.1.3.3.6.5.4l4.3-2.9c.6.1 1.2.1 1.8.1 5.5 0 10-3.5 10-7.8S17.5 3 12 3z"></path></svg>
@@ -2096,12 +2097,15 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
 
       {/* 토스트 알림 */}
       {toastMessage && (
-        <div style={{ position: "fixed", bottom: 40, left: "50%", transform: "translateX(-50%)", background: "rgba(0,0,0,0.8)", color: "#fff", padding: "12px 28px", borderRadius: 8, fontSize: 14, fontWeight: "bold", zIndex: 999999, boxShadow: "0 4px 20px rgba(0,0,0,0.3)", animation: "fadeIn 0.2s ease", whiteSpace: "nowrap" }}>
+        <div style={{ position: "fixed", top: "30%", left: "50%", transform: "translateX(-50%)", background: "rgba(0,0,0,0.8)", color: "#fff", padding: "12px 28px", borderRadius: 8, fontSize: 14, fontWeight: "bold", zIndex: 999999, boxShadow: "0 4px 20px rgba(0,0,0,0.3)", animation: "toastFadeIn 0.2s ease", whiteSpace: "nowrap" }}>
           {toastMessage}
         </div>
       )}
 
-      <style>{`@keyframes fadeIn { from { opacity: 0; transform: translateX(-50%) translateY(10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }`}</style>
+      <style>{`
+        @keyframes toastFadeIn { from { opacity: 0; transform: translateX(-50%) translateY(-10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+        @keyframes dropdownFadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+      `}</style>
     </div>
   );
 }

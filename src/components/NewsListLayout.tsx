@@ -24,9 +24,10 @@ interface NewsListLayoutProps {
   title: string;
   initialArticles: Article[];
   initialPopular: Article[];
+  importantArticles?: Article[];
 }
 
-export default function NewsListLayout({ category, title, initialArticles, initialPopular }: NewsListLayoutProps) {
+export default function NewsListLayout({ category, title, initialArticles, initialPopular, importantArticles = [] }: NewsListLayoutProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
 
@@ -84,7 +85,12 @@ export default function NewsListLayout({ category, title, initialArticles, initi
 
   // 썸네일 URL 결정
   const getThumbnailSrc = (article: Article, ytInfo: { id: string | null; hasVideo: boolean }) => {
-    if (article.thumbnail_url) return article.thumbnail_url;
+    if (article.thumbnail_url) {
+      if (article.thumbnail_url.includes('maxresdefault.jpg')) {
+        return article.thumbnail_url.replace('maxresdefault.jpg', 'hqdefault.jpg');
+      }
+      return article.thumbnail_url;
+    }
     if (ytInfo.id) return `https://img.youtube.com/vi/${ytInfo.id}/hqdefault.jpg`;
     return null;
   };
@@ -101,6 +107,30 @@ export default function NewsListLayout({ category, title, initialArticles, initi
         <div className="news-layout">
           {/* 좌측 뉴스 리스트 */}
           <div className="news-list-area">
+            {/* 중요 기사 (상단 이미지 영역) */}
+            {importantArticles.length > 0 && (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 40 }}>
+                {importantArticles.slice(0, 3).map((article) => {
+                  const ytInfo = extractYoutubeIdInfo(article);
+                  const thumbSrc = getThumbnailSrc(article, ytInfo);
+                  return (
+                    <Link key={article.id} href={`/news/${article.article_no || article.id}`} style={{ textDecoration: "none", color: "inherit", display: "block" }}>
+                      <div style={{ borderRadius: 8, overflow: "hidden", cursor: "pointer", transition: "transform 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-4px)"} onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}>
+                        <div style={{ width: "100%", height: 140, background: "#f0f0f0", position: "relative" }}>
+                          {thumbSrc && <img src={thumbSrc} alt={article.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
+                        </div>
+                        <div style={{ padding: "12px 4px" }}>
+                          <h4 style={{ fontSize: 14, fontWeight: 700, lineHeight: 1.4, color: "#111", margin: 0, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                            {article.title}
+                          </h4>
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+
             <div className="list-header">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
               {title}

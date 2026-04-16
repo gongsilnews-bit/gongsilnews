@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { AdminSectionProps } from "./types";
-import { getArticles, deleteArticle, adminUpdateArticleStatus } from "@/app/actions/article";
+import { getArticles, deleteArticle, adminUpdateArticleStatus, adminUpdateArticleType } from "@/app/actions/article";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import NewsWriteForm from "@/components/admin/NewsWriteForm";
@@ -84,9 +84,11 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
           <button onClick={async () => {
             if (checkedArticleIds.length === 0) { alert("승인할 기사를 선택하세요."); return; }
             if (confirm(`선택한 ${checkedArticleIds.length}건의 기사를 일괄 승인(발행)하시겠습니까?`)) {
+              // 낙관적 업데이트
+              setDbArticles(prev => prev.map(a => checkedArticleIds.includes(a.id) ? { ...a, status: 'APPROVED' } : a));
               const res = await adminUpdateArticleStatus(checkedArticleIds, 'APPROVED');
-              if (res.success) { getArticles().then(r => setDbArticles(r.data || [])); setCheckedArticleIds([]); }
-              else alert("오류가 발생했습니다: " + res.error);
+              if (res.success) { setCheckedArticleIds([]); }
+              else { alert("오류가 발생했습니다: " + res.error); getArticles().then(r => setDbArticles(r.data || [])); }
             }
           }} style={{ height: 36, padding: "0 16px", background: "#10b981", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>✓ 선택 승인</button>
           <button onClick={() => {
@@ -97,8 +99,8 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
           <button onClick={async () => {
             if (checkedArticleIds.length === 0) { alert("삭제할 기사를 선택하세요."); return; }
             if (confirm(`선택한 ${checkedArticleIds.length}건의 기사를 삭제하시겠습니까?`)) {
+              setDbArticles(prev => prev.filter(a => !checkedArticleIds.includes(a.id)));
               for (const id of checkedArticleIds) { await deleteArticle(id); }
-              getArticles().then(r => setDbArticles(r.data || []));
               setCheckedArticleIds([]);
             }
           }} style={{ height: 36, padding: "0 16px", background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
@@ -117,6 +119,7 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
                 </th>
                 <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 60 }}>번호</th>
                 <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 80 }}>상태</th>
+                <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 100 }}>광고</th>
                 <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 100 }}>섹션</th>
                 <th style={{ padding: "12px 10px", textAlign: "left", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}` }}>기사 제목</th>
                 <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 100 }}>기자명</th>
@@ -144,6 +147,31 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
                     {a.status === 'REJECTED' && <span style={{ padding: "4px 8px", background: "#ef4444", color: "#fff", borderRadius: 4, fontSize: 12, fontWeight: 700 }}>반려됨</span>}
                     {a.status === 'DRAFT' && <span style={{ padding: "4px 8px", background: "#9ca3af", color: "#fff", borderRadius: 4, fontSize: 12, fontWeight: 700 }}>작성중</span>}
                   </td>
+                  <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
+                    <div style={{ display: "flex", gap: 4, justifyContent: "center" }}>
+                      <button 
+                        onClick={async () => {
+                          setDbArticles(prev => prev.map(p => p.id === a.id ? { ...p, article_type: 'NORMAL' } : p));
+                          await adminUpdateArticleType(a.id, 'NORMAL');
+                        }}
+                        style={{ width: 24, height: 24, padding: 0, border: "1px solid #ddd", borderRadius: 4, fontSize: 11, fontWeight: 700, cursor: "pointer", background: (!a.article_type || a.article_type === 'NORMAL') ? "#3b82f6" : "#fff", color: (!a.article_type || a.article_type === 'NORMAL') ? "#fff" : "#888" }}
+                      >일</button>
+                      <button 
+                        onClick={async () => {
+                          setDbArticles(prev => prev.map(p => p.id === a.id ? { ...p, article_type: 'IMPORTANT' } : p));
+                          await adminUpdateArticleType(a.id, 'IMPORTANT');
+                        }}
+                        style={{ width: 24, height: 24, padding: 0, border: "1px solid #ddd", borderRadius: 4, fontSize: 11, fontWeight: 700, cursor: "pointer", background: a.article_type === 'IMPORTANT' ? "#f59e0b" : "#fff", color: a.article_type === 'IMPORTANT' ? "#fff" : "#888" }}
+                      >중</button>
+                      <button 
+                        onClick={async () => {
+                          setDbArticles(prev => prev.map(p => p.id === a.id ? { ...p, article_type: 'HEADLINE' } : p));
+                          await adminUpdateArticleType(a.id, 'HEADLINE');
+                        }}
+                        style={{ width: 24, height: 24, padding: 0, border: "1px solid #ddd", borderRadius: 4, fontSize: 11, fontWeight: 700, cursor: "pointer", background: a.article_type === 'HEADLINE' ? "#ef4444" : "#fff", color: a.article_type === 'HEADLINE' ? "#fff" : "#888" }}
+                      >해</button>
+                    </div>
+                  </td>
                   <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", color: textSecondary }}>{a.section1 || '-'}</td>
                   <td style={{ padding: "16px 10px", textAlign: "left", verticalAlign: "middle" }}>
                     <button onClick={() => router.push(`?menu=article&action=write&id=${a.id}`)} style={{ background: "none", border: "none", fontWeight: 700, fontSize: 15, color: textPrimary, textDecoration: "none", cursor: "pointer", padding: 0 }}>{a.title}</button>
@@ -158,9 +186,9 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
                       </button>
                       <button onClick={async () => {
                         if (confirm("기사를 삭제하시겠습니까?")) {
+                          setDbArticles(prev => prev.filter(p => p.id !== a.id));
                           const res = await deleteArticle(a.id);
-                          if (res.success) getArticles().then(r => setDbArticles(r.data || []));
-                          else alert("삭제 실패: " + res.error);
+                          if (!res.success) { alert("삭제 실패: " + res.error); getArticles().then(r => setDbArticles(r.data || [])); }
                         }
                       }} style={{ height: 30, padding: "0 12px", background: darkMode ? "#2c2d31" : "#fff", color: "#9ca3af", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
@@ -192,9 +220,10 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
             <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 24 }}>
               <button onClick={() => setShowRejectModal(false)} style={{ padding: "10px 18px", background: darkMode ? "#4b5563" : "#f3f4f6", color: darkMode ? "#fff" : "#4b5563", border: "none", borderRadius: 6, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>취소</button>
               <button onClick={async () => {
+                setDbArticles(prev => prev.map(a => selectedArticleIdsForReject.includes(a.id) ? { ...a, status: 'REJECTED' } : a));
                 const res = await adminUpdateArticleStatus(selectedArticleIdsForReject, 'REJECTED', rejectReason);
-                if (res.success) { getArticles().then(r => setDbArticles(r.data || [])); setCheckedArticleIds([]); setShowRejectModal(false); }
-                else alert("처리 실패: " + res.error);
+                if (res.success) { setCheckedArticleIds([]); setShowRejectModal(false); }
+                else { alert("처리 실패: " + res.error); getArticles().then(r => setDbArticles(r.data || [])); }
               }} style={{ padding: "10px 18px", background: "#ef4444", color: "#fff", border: "none", borderRadius: 6, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>반려 처리</button>
             </div>
           </div>

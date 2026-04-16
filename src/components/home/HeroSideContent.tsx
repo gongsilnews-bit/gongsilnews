@@ -1,9 +1,8 @@
-import BannerSlot from "@/components/BannerSlot";
 import { getArticles } from "@/app/actions/article";
 import Link from "next/link";
 
 export default async function HeroSideContent() {
-  const res = await getArticles({ status: "APPROVED", limit: 5 });
+  const res = await getArticles({ status: "APPROVED", article_type: "HEADLINE", limit: 2 });
   const articles = res.data || [];
 
   const formatDate = (dateString: string) => {
@@ -15,42 +14,58 @@ export default async function HeroSideContent() {
     return `${yyyy}.${mm}.${dd}`;
   };
 
-  return (
-    <div className="hero-right" style={{ marginTop: 0 }}>
-      {/* 핫 공실뉴스 타이틀 및 라인 삭제됨 */}
-      <div className="hn-list-wrapper" style={{ height: 260, overflow: "hidden", position: "relative", marginBottom: 0 }}>
-        {articles.length > 0 ? (
-          <div className="hn-scroll-inner">
-            {[...articles, ...articles].map((item: any, idx: number) => (
-              <Link key={idx} href={`/news/${item.article_no || item.id}`} style={{ textDecoration: "none", color: "inherit", display: "block" }}>
-                <div className="hn-item">
-                  <div className="hn-img" style={{ background: `url('${item.thumbnail_url || "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80"}') center/cover`, borderRadius: 4 }}></div>
-                  <div className="hn-txt">
-                    <h4 style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: 1.4, marginBottom: 8 }}>{item.title}</h4>
-                    <span>{formatDate(item.published_at || item.created_at)}</span>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        ) : (
-          <div style={{ padding: 20, textAlign: "center", color: "#999", fontSize: 13 }}>등록된 기사가 없습니다.</div>
-        )}
-      </div>
-      <BannerSlot placement="SIDEBAR" style={{ marginTop: 16, width: "100%", borderRadius: 8, overflow: "hidden" }} />
+  const extractYoutubeIdInfo = (url?: string | null) => {
+    if (!url) return null;
+    const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|shorts\/))([\w-]{11})/);
+    return match ? match[1] : null;
+  };
 
-      <style>{`
-        .hn-scroll-inner {
-          animation: newsVScroll 25s linear infinite;
-        }
-        .hn-scroll-inner:hover {
-          animation-play-state: paused;
-        }
-        @keyframes newsVScroll {
-          0% { transform: translateY(0); }
-          100% { transform: translateY(-50%); }
-        }
-      `}</style>
+  const getThumbnailSrc = (item: any) => {
+    if (item.thumbnail_url) {
+      if (item.thumbnail_url.includes('maxresdefault.jpg')) {
+        return item.thumbnail_url.replace('maxresdefault.jpg', 'hqdefault.jpg');
+      }
+      return item.thumbnail_url;
+    }
+    let ytId = extractYoutubeIdInfo(item.youtube_url);
+    if (!ytId && item.content) {
+      ytId = extractYoutubeIdInfo(item.content);
+    }
+    if (ytId) return `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`;
+    return "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80";
+  };
+
+  return (
+    <div className="hero-right" style={{ marginTop: 0, display: "flex", flexDirection: "column", height: "100%", minHeight: 480, gap: 16 }}>
+      {articles.length > 0 ? (
+        articles.map((item: any) => (
+          <Link 
+            key={item.id} 
+            href={`/news/${item.article_no || item.id}`} 
+            style={{ 
+              textDecoration: "none", 
+              color: "#fff", 
+              display: "block", 
+              flex: 1, 
+              position: "relative", 
+              background: `url('${getThumbnailSrc(item)}') center/cover no-repeat` 
+            }}
+          >
+            <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "30px 20px 20px", background: "linear-gradient(to bottom, transparent, rgba(0,0,0,0.85))" }}>
+              <h4 style={{ fontSize: 18, fontWeight: 700, lineHeight: 1.4, marginBottom: 6, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                {item.title}
+              </h4>
+              <span style={{ fontSize: 13, color: "rgba(255,255,255,0.7)" }}>
+                {formatDate(item.published_at || item.created_at)}
+              </span>
+            </div>
+          </Link>
+        ))
+      ) : (
+        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "#999", fontSize: 14, background: "#f9f9f9", borderRadius: 8 }}>
+          등록된 기사가 없습니다.
+        </div>
+      )}
     </div>
   );
 }

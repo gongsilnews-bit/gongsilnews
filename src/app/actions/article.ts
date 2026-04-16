@@ -34,6 +34,7 @@ export async function saveArticle(data: {
   keywords: string[];
   thumbnail_url?: string;
   reject_reason?: string;
+  article_type?: string;
 }) {
   const supabase = getAdminClient();
 
@@ -76,6 +77,9 @@ export async function saveArticle(data: {
     };
     if (data.reject_reason !== undefined) {
       (articleData as any).reject_reason = data.reject_reason;
+    }
+    if (data.article_type !== undefined) {
+      (articleData as any).article_type = data.article_type;
     }
 
     let articleId = data.id;
@@ -144,17 +148,18 @@ export async function saveArticle(data: {
 
 /* ── 캐싱된 기사 목록 조회 (기본) ── */
 const getArticlesCached = unstable_cache(
-  async (filters?: { status?: string; section1?: string; section2?: string; limit?: number }) => {
+  async (filters?: { status?: string; section1?: string; section2?: string; article_type?: string; limit?: number }) => {
     const supabase = getAdminClient();
     let query = supabase
       .from("articles")
-      .select("id, article_no, status, section1, section2, title, subtitle, content, author_name, published_at, created_at, is_deleted, thumbnail_url, view_count, lat, lng, location_name, youtube_url, article_keywords(keyword)")
+      .select("id, article_no, status, section1, section2, title, subtitle, content, author_name, published_at, created_at, is_deleted, thumbnail_url, view_count, lat, lng, location_name, youtube_url, article_type, article_keywords(keyword)")
       .eq("is_deleted", false)
       .order("created_at", { ascending: false });
 
     if (filters?.status) query = query.eq("status", filters.status);
     if (filters?.section1) query = query.eq("section1", filters.section1);
     if (filters?.section2) query = query.eq("section2", filters.section2);
+    if (filters?.article_type) query = query.eq("article_type", filters.article_type);
     if (filters?.limit) query = query.limit(filters.limit);
 
     const { data, error } = await query;
@@ -169,6 +174,7 @@ export async function getArticles(filters?: {
   status?: string;
   section1?: string;
   section2?: string;
+  article_type?: string;
   limit?: number;
 }) {
   return await getArticlesCached(filters);
@@ -180,7 +186,7 @@ export async function getMyArticles(authorId: string) {
   try {
     const { data, error } = await supabase
       .from("articles")
-      .select("id, article_no, status, section1, section2, title, subtitle, content, author_name, published_at, created_at, is_deleted, thumbnail_url, view_count, lat, lng, location_name, youtube_url, article_keywords(keyword)")
+      .select("id, article_no, status, section1, section2, title, subtitle, content, author_name, published_at, created_at, is_deleted, thumbnail_url, view_count, lat, lng, location_name, youtube_url, article_type, article_keywords(keyword)")
       .eq("is_deleted", false)
       .eq("author_id", authorId)
       .order("created_at", { ascending: false });
@@ -361,6 +367,25 @@ export async function adminUpdateArticleStatus(articleIds: string[], status: 'AP
       }
       return { success: false, error: error.message };
     }
+    
+    // @ts-ignore
+    revalidateTag("articles"); // 캐시 무효화
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+/* ── 관리자 기사 노출 유형(광고) 일괄 수정 ── */
+export async function adminUpdateArticleType(articleId: string, articleType: 'NORMAL' | 'IMPORTANT' | 'HEADLINE') {
+  const supabase = getAdminClient();
+  try {
+    const { error } = await supabase
+      .from("articles")
+      .update({ article_type: articleType })
+      .eq("id", articleId);
+      
+    if (error) return { success: false, error: error.message };
     
     // @ts-ignore
     revalidateTag("articles"); // 캐시 무효화

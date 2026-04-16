@@ -238,7 +238,8 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                   url: iframe ? iframe.src : '',
                   videoId: vId,
                   caption: wrapper.querySelector('p')?.textContent || '',
-                  isShorts: false, isCover: false
+                  isShorts: false, 
+                  isCover: vId ? (d.thumbnail_url && d.thumbnail_url.includes(vId)) : false
                 };
               });
 
@@ -1115,8 +1116,8 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
       let thumbnailUrl = '';
       const coverVideo = videoItems.find(v => v.isCover);
       if (coverVideo) {
-        // YouTube 고해상도 썸네일
-        thumbnailUrl = `https://img.youtube.com/vi/${coverVideo.videoId}/maxresdefault.jpg`;
+        // YouTube 기본 고품질 썸네일 (maxresdefault는 없는 경우가 많아 hqdefault 사용)
+        thumbnailUrl = `https://img.youtube.com/vi/${coverVideo.videoId}/hqdefault.jpg`;
       }
       // 사진 대표이면 업로드 후 URL 업데이트 (아래에서 처리)
 
