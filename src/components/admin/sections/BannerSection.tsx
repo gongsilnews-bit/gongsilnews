@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { AdminSectionProps } from "./types";
 import { getBanners, createBanner, updateBanner, deleteBanner, toggleBannerActive, getBannerStats } from "@/app/actions/banner";
 
@@ -29,6 +30,11 @@ function getStatusInfo(banner: any) {
 
 export default function BannerSection({ theme }: AdminSectionProps) {
   const { bg, cardBg, textPrimary, textSecondary, darkMode, border } = theme;
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const action = searchParams.get("action");
+  
   const [banners, setBanners] = useState<any[]>([]);
   const [filter, setFilter] = useState("전체");
   const [showForm, setShowForm] = useState(false);
@@ -43,6 +49,22 @@ export default function BannerSection({ theme }: AdminSectionProps) {
     loadBanners();
   }, []);
 
+  // URL 파라미터와 컴포넌트 상태 동기화
+  useEffect(() => {
+    if (!action) {
+      setShowForm(false);
+      setShowStats(false);
+      setEditingBanner(null);
+      setImagePreview(null);
+    } else if (action === "stats") {
+      setShowStats(true);
+      setShowForm(false);
+    } else if (action === "new" || action === "edit") {
+      setShowForm(true);
+      setShowStats(false);
+    }
+  }, [action]);
+
   const loadBanners = async () => {
     const res = await getBanners();
     if (res.success) setBanners(res.data || []);
@@ -51,7 +73,6 @@ export default function BannerSection({ theme }: AdminSectionProps) {
   const loadStats = async () => {
     const res = await getBannerStats();
     if (res.success) setStats(res.data || []);
-    setShowStats(true);
   };
 
   const filtered = banners.filter(b => {
@@ -72,9 +93,7 @@ export default function BannerSection({ theme }: AdminSectionProps) {
       res = await createBanner(formData);
     }
     if (res.success) {
-      setShowForm(false);
-      setEditingBanner(null);
-      setImagePreview(null);
+      router.push(`${pathname}?menu=ad`); // 목록으로 이동
       loadBanners();
     } else {
       alert("오류: " + res.error);
@@ -100,7 +119,7 @@ export default function BannerSection({ theme }: AdminSectionProps) {
       <div style={{ flex: 1, overflowY: "auto", padding: "20px 28px", background: bg }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
           <h1 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: 0 }}>{b ? "배너 수정" : "새 배너 등록"}</h1>
-          <button onClick={() => { setShowForm(false); setEditingBanner(null); setImagePreview(null); }}
+          <button onClick={() => router.push(`${pathname}?menu=ad`)}
             style={{ padding: "8px 20px", background: darkMode ? "#374151" : "#f3f4f6", color: textPrimary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>← 목록으로</button>
         </div>
 
@@ -229,7 +248,7 @@ export default function BannerSection({ theme }: AdminSectionProps) {
           </div>
 
           <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", borderTop: `1px solid ${border}`, paddingTop: 20 }}>
-            <button type="button" onClick={() => { setShowForm(false); setEditingBanner(null); setImagePreview(null); }}
+            <button type="button" onClick={() => router.push(`${pathname}?menu=ad`)}
               style={{ padding: "12px 24px", background: darkMode ? "#374151" : "#f3f4f6", color: textPrimary, border: `1px solid ${border}`, borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>취소</button>
             <button type="submit"
               style={{ padding: "12px 28px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>{b ? "수정 저장" : "배너 등록"}</button>
@@ -245,7 +264,7 @@ export default function BannerSection({ theme }: AdminSectionProps) {
       <div style={{ flex: 1, overflowY: "auto", padding: "20px 28px", background: bg }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
           <h1 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: 0 }}>📊 배너 성과 분석</h1>
-          <button onClick={() => setShowStats(false)}
+          <button onClick={() => router.push(`${pathname}?menu=ad`)}
             style={{ padding: "8px 20px", background: darkMode ? "#374151" : "#f3f4f6", color: textPrimary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>← 목록으로</button>
         </div>
 
@@ -342,9 +361,9 @@ export default function BannerSection({ theme }: AdminSectionProps) {
 
         {/* 액션 버튼 */}
         <div style={{ padding: "16px 24px", borderBottom: `1px solid ${border}`, display: "flex", gap: 10, alignItems: "center" }}>
-          <button onClick={() => { setShowForm(true); setEditingBanner(null); }}
+          <button onClick={() => { setEditingBanner(null); router.push(`${pathname}?menu=ad&action=new`); }}
             style={{ display: "flex", alignItems: "center", height: 36, padding: "0 16px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", gap: 6 }}>+ 새 배너 등록</button>
-          <button onClick={loadStats}
+          <button onClick={() => { loadStats(); router.push(`${pathname}?menu=ad&action=stats`); }}
             style={{ display: "flex", alignItems: "center", height: 36, padding: "0 16px", background: "#8b5cf6", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", gap: 6 }}>📊 성과 분석</button>
           <button onClick={() => handleDelete(checkedIds)} disabled={checkedIds.length === 0}
             style={{ height: 36, padding: "0 16px", background: darkMode ? "#2c2d31" : "#fff", color: checkedIds.length > 0 ? "#ef4444" : "#ccc", border: `1px solid ${checkedIds.length > 0 ? "#ef4444" : border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: checkedIds.length > 0 ? "pointer" : "default", display: "flex", alignItems: "center", gap: 6 }}>
@@ -361,7 +380,7 @@ export default function BannerSection({ theme }: AdminSectionProps) {
               <div style={{ fontSize: 13, marginTop: 4 }}>새 배너를 등록해 보세요.</div>
             </div>
           ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260, 1fr))", gap: 20 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 20 }}>
               {filtered.map(b => {
                 const status = getStatusInfo(b);
                 const placeName = PLACEMENT_OPTIONS.find(p => p.value === b.placement_code)?.label || b.placement_code;
@@ -386,7 +405,7 @@ export default function BannerSection({ theme }: AdminSectionProps) {
 
                     {/* 이미지 미리보기 */}
                     <div
-                      onClick={() => { setEditingBanner(b); setShowForm(true); }}
+                      onClick={() => { setEditingBanner(b); router.push(`${pathname}?menu=ad&action=edit&id=${b.id}`); }}
                       style={{
                         width: "100%", height: 160, cursor: "pointer", overflow: "hidden",
                         display: "flex", alignItems: "center", justifyContent: "center",
@@ -415,7 +434,7 @@ export default function BannerSection({ theme }: AdminSectionProps) {
                           style={{ flex: 1, height: 32, background: b.is_active ? "#ef4444" : "#10b981", color: "#fff", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                           {b.is_active ? "⏸ 중지" : "▶ 활성"}
                         </button>
-                        <button onClick={() => { setEditingBanner(b); setShowForm(true); }} title="수정"
+                        <button onClick={() => { setEditingBanner(b); router.push(`${pathname}?menu=ad&action=edit&id=${b.id}`); }} title="수정"
                           style={{ flex: 1, height: 32, background: darkMode ? "#374151" : "#4b5563", color: "#fff", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                           ✏️ 수정
                         </button>
