@@ -217,36 +217,39 @@ export default function StudyWatchPage() {
               {activeTab === "notes" ? (
                 <>
                   {(lecture.materials && lecture.materials.length > 0) ? (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                    <div>
                       <h3 style={{ fontSize: 16, fontWeight: 700, margin: "0 0 12px 0", color: textPrimary }}>📑 참고 자료 / 첨부 파일</h3>
-                      {lecture.materials.map((mat: any, idx: number) => {
-                        let icon = "🔗";
-                        switch(mat.type) {
-                          case "YOUTUBE": icon = "🎬"; break;
-                          case "DRIVE": icon = "📁"; break;
-                          case "FILE": icon = "📎"; break;
-                          case "LINK": icon = "🔗"; break;
-                        }
-                        return (
-                          <a key={idx} href={mat.url} target="_blank" rel="noopener noreferrer"
-                            style={{
-                              display: "flex", alignItems: "center", gap: 12, padding: "16px 20px",
-                              background: darkMode ? "#1f2937" : "#f8fafc",
-                              border: `1px solid ${borderColor}`, borderRadius: 8,
-                              textDecoration: "none", color: textPrimary,
-                              transition: "all 0.2s"
-                            }}
-                            onMouseOver={(e) => { e.currentTarget.style.borderColor = accent; e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.05)"; }}
-                            onMouseOut={(e) => { e.currentTarget.style.borderColor = borderColor; e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "none"; }}
-                          >
-                            <span style={{ fontSize: 24 }}>{icon}</span>
-                            <span style={{ fontSize: 15, fontWeight: 700, flex: 1 }}>{mat.label || (mat.type === "FILE" ? "첨부파일" : "참고자료")}</span>
-                            <span style={{ fontSize: 12, color: accent, fontWeight: 600, padding: "4px 10px", borderRadius: 20, background: darkMode ? "#422006" : "#fef3c7" }}>
-                              {mat.type === "FILE" ? "다운로드" : "열기"}
-                            </span>
-                          </a>
-                        );
-                      })}
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+                        {lecture.materials.map((mat: any, idx: number) => {
+                          let icon = "🔗";
+                          switch(mat.type) {
+                            case "YOUTUBE": icon = "🎬"; break;
+                            case "DRIVE": icon = "📁"; break;
+                            case "FILE": icon = "📎"; break;
+                            case "LINK": icon = "🔗"; break;
+                          }
+                          return (
+                            <a key={idx} href={mat.url} target="_blank" rel="noopener noreferrer"
+                              style={{
+                                display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 14px",
+                                background: darkMode ? "#1f2937" : "#f8fafc",
+                                border: `1px solid ${borderColor}`, borderRadius: 8,
+                                textDecoration: "none", color: textPrimary,
+                                transition: "all 0.2s",
+                                maxWidth: 300, minWidth: 200
+                              }}
+                              onMouseOver={(e) => { e.currentTarget.style.borderColor = accent; e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.05)"; }}
+                              onMouseOut={(e) => { e.currentTarget.style.borderColor = borderColor; e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "none"; }}
+                            >
+                              <span style={{ fontSize: 18 }}>{icon}</span>
+                              <span style={{ fontSize: 13, fontWeight: 700, flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{mat.label || (mat.type === "FILE" ? "첨부파일" : "참고자료")}</span>
+                              <span style={{ fontSize: 11, color: accent, fontWeight: 600, padding: "2px 8px", borderRadius: 20, background: darkMode ? "#422006" : "#fef3c7", whiteSpace: "nowrap" }}>
+                                {mat.type === "FILE" ? "다운로드" : "열기"}
+                              </span>
+                            </a>
+                          );
+                        })}
+                      </div>
                     </div>
                   ) : (
                     <div style={{ textAlign: "center", color: textSecondary, fontSize: 14 }}>등록된 강의 노트나 자료가 아직 없습니다.</div>

@@ -76,6 +76,7 @@ export async function saveLecture(data: {
       discount_label: data.discount_label || null,
       duration_months: data.duration_months || 5,
       total_duration: data.total_duration || null,
+      materials: data.materials || [],
       updated_at: new Date().toISOString(),
     };
 
