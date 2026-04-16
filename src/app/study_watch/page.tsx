@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getLectureDetail } from "@/app/actions/lecture";
 
@@ -25,6 +25,14 @@ const saveProgress = (lectureId: string, completed: Set<string>) => {
 };
 
 export default function StudyWatchPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: "100px", textAlign: "center", color: "#6b7280" }}>수강 환경을 불러오는 중입니다...</div>}>
+      <StudyWatchContent />
+    </Suspense>
+  );
+}
+
+function StudyWatchContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const lectureId = searchParams.get("id");
