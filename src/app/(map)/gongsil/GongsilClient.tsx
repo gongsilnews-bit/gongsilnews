@@ -514,10 +514,6 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     map.setMinLevel(1);
     map.setMaxLevel(9);
 
-    // 우측 줌 컨트롤(네비게이션 바) 추가
-    const zoomControl = new kakao.maps.ZoomControl();
-    map.addControl(zoomControl, kakao.maps.ControlPosition.RIGHT);
-
     kakao.maps.event.addListener(map, 'idle', () => {
       setMapBounds(map.getBounds());
       // Reverse Geocoder for the center
@@ -1802,6 +1798,12 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                 <span style={{ fontSize: 14 }}>{mapError}</span>
               </div>
             )}
+          </div>
+          
+          {/* Custom Zoom Control (네비게이션 바) */}
+          <div style={{ position: "absolute", right: 20, top: 160, zIndex: 10, display: "flex", flexDirection: "column", background: "#fff", borderRadius: 4, boxShadow: "0 2px 6px rgba(0,0,0,0.15)", overflow: "hidden" }}>
+             <button onClick={() => { if(kakaoMapRef.current) kakaoMapRef.current.setLevel(kakaoMapRef.current.getLevel() - 1); }} style={{ width: 36, height: 36, border: "none", borderBottom: "1px solid #e0e0e0", background: "#fff", fontSize: 20, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#666" }}>＋</button>
+             <button onClick={() => { if(kakaoMapRef.current) kakaoMapRef.current.setLevel(kakaoMapRef.current.getLevel() + 1); }} style={{ width: 36, height: 36, border: "none", background: "#fff", fontSize: 24, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1, color: "#666" }}>－</button>
           </div>
         </div>
       </main>
