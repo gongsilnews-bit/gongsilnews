@@ -23,23 +23,32 @@ export async function GET(request: NextRequest) {
       process.env.SUPABASE_SERVICE_ROLE_KEY || 'stub'
     );
 
-    // members 테이블에서 이름 + 전화번호로 조회
+    // members 테이블에서 이름으로 먼저 조회
     const { data, error } = await supabaseAdmin
       .from('members')
-      .select('email, provider')
-      .eq('name', name.trim())
-      .eq('phone', phone.trim())
-      .limit(1)
-      .single();
+      .select('email, login_provider, phone')
+      .eq('name', name.trim());
 
-    if (error || !data) {
+    if (error || !data || data.length === 0) {
       return NextResponse.json({ found: false });
     }
 
+    // 전화번호 형식 무시하고 비교 (- 제거 후 비교)
+    const normalizedInputPhone = phone.replace(/[^0-9]/g, '');
+    let matchedUser = data.find(user => (user.phone || '').replace(/[^0-9]/g, '') === normalizedInputPhone);
+
+    if (!matchedUser) {
+      return NextResponse.json({ found: false });
+    }
+
+    // 만약 동일 번호 중 구글이나 카카오 등 소셜 연동 계정이 있다면 우선 반환
+    const socialUser = data.find(user => (user.phone || '').replace(/[^0-9]/g, '') === normalizedInputPhone && user.login_provider !== 'email');
+    if (socialUser) matchedUser = socialUser;
+
     return NextResponse.json({
       found: true,
-      email: maskEmail(data.email || ''),
-      provider: data.provider || 'google',
+      email: maskEmail(matchedUser.email || ''),
+      provider: matchedUser.login_provider || 'google',
     });
   } catch {
     return NextResponse.json({ found: false });

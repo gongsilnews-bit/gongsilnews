@@ -112,7 +112,12 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signup', onGo
                 style={{ width: '100%', padding: '10px 14px', border: '1px solid #ddd', borderRadius: 6, fontSize: 14, marginBottom: 14, boxSizing: 'border-box', outline: 'none', fontFamily: 'inherit' }} />
 
               <label style={{ fontSize: 13, fontWeight: 700, color: '#333', marginBottom: 6, display: 'block' }}>연락처</label>
-              <input type="tel" value={findPhone} onChange={e => setFindPhone(e.target.value)} placeholder="010-0000-0000"
+              <input type="tel" value={findPhone} onChange={e => {
+                let val = e.target.value.replace(/[^0-9]/g, '');
+                if (val.length > 3 && val.length <= 7) val = val.slice(0, 3) + '-' + val.slice(3);
+                else if (val.length > 7) val = val.slice(0, 3) + '-' + val.slice(3, 7) + '-' + val.slice(7, 11);
+                setFindPhone(val);
+              }} placeholder="010-0000-0000" maxLength={13}
                 style={{ width: '100%', padding: '10px 14px', border: '1px solid #ddd', borderRadius: 6, fontSize: 14, marginBottom: 20, boxSizing: 'border-box', outline: 'none', fontFamily: 'inherit' }} />
 
               <button onClick={handleFindAccount} disabled={findLoading}

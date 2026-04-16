@@ -1,0 +1,130 @@
+[
+  {
+    "id": "1104b5cb-24d9-47f5-a334-0a01a913714f",
+    "member_no": 12,
+    "email": "suppliant@naver.com",
+    "name": "김동현",
+    "phone": "010-8831-9450",
+    "role": "USER",
+    "login_provider": "email",
+    "status": "active",
+    "signup_completed": true,
+    "created_at": "2026-04-13T08:25:54.567509+00:00",
+    "updated_at": "2026-04-13T08:25:54.567509+00:00",
+    "is_deleted": false,
+    "sns_links": {}
+  },
+  {
+    "id": "a06ff94e-4d99-449d-b9c1-edfa5c04f7af",
+    "member_no": 14,
+    "email": "suppliant2@gmail.com",
+    "name": "김동현",
+    "phone": "010-8813-1945",
+    "role": "USER",
+    "login_provider": "google",
+    "status": "active",
+    "signup_completed": true,
+    "created_at": "2026-04-15T13:16:07.197537+00:00",
+    "updated_at": "2026-04-15T13:16:07.197537+00:00",
+    "is_deleted": false,
+    "sns_links": {}
+  },
+  {
+    "id": "bc81fa3c-88eb-4a5b-b515-3f14bf7ed7db",
+    "member_no": 11,
+    "email": "gongsilmarketing@gmail.com",
+    "name": "김동현",
+    "phone": "010-8831-9450",
+    "role": "REALTOR",
+    "login_provider": "google",
+    "status": "active",
+    "signup_completed": true,
+    "created_at": "2026-04-10T12:08:28.162666+00:00",
+    "updated_at": "2026-04-10T12:08:28.162666+00:00",
+    "is_deleted": false,
+    "sns_links": {
+      "blog": {
+        "url": "",
+        "login_id": "",
+        "login_pw": "",
+        "login_type": "일반"
+      },
+      "cafe": {
+        "url": "",
+        "login_id": "",
+        "login_pw": "",
+        "login_type": "일반"
+      },
+      "kakao": {
+        "url": "",
+        "login_id": "",
+        "login_pw": "",
+        "login_type": "일반"
+      },
+      "contact": {
+        "url": "https://forms.gle/JhG3SCMSpdLfwvWt6",
+        "login_id": "",
+        "login_pw": "",
+        "login_type": "일반"
+      },
+      "threads": {
+        "url": "",
+        "login_id": "",
+        "login_pw": "",
+        "login_type": "일반"
+      },
+      "twitter": {
+        "url": "",
+        "login_id": "",
+        "login_pw": "",
+        "login_type": "일반"
+      },
+      "youtube": {
+        "url": "https://www.youtube.com/@%EA%B3%B5%EC%8B%A4%EB%89%B4%EC%8A%A4_1555",
+        "login_id": "",
+        "login_pw": "",
+        "login_type": "일반"
+      },
+      "api_list": [],
+      "facebook": {
+        "url": "",
+        "login_id": "",
+        "login_pw": "",
+        "login_type": "일반"
+      },
+      "homepage": {
+        "url": "https://www.gongsilnews.com/",
+        "login_id": "",
+        "login_pw": "",
+        "login_type": "일반"
+      },
+      "instagram": {
+        "url": "",
+        "login_id": "",
+        "login_pw": "",
+        "login_type": "일반"
+      },
+      "shopping_mall": {
+        "url": "",
+        "login_id": "",
+        "login_pw": "",
+        "login_type": "일반"
+      }
+    }
+  },
+  {
+    "id": "3553c934-ab73-4428-a3b2-2f2cf6b84277",
+    "member_no": 15,
+    "email": "mygongsil@gmail.com",
+    "name": "김동현",
+    "phone": "010-8831-9450",
+    "role": "USER",
+    "login_provider": "google",
+    "status": "active",
+    "signup_completed": true,
+    "created_at": "2026-04-16T09:54:54.179095+00:00",
+    "updated_at": "2026-04-16T09:54:54.179095+00:00",
+    "is_deleted": false,
+    "sns_links": {}
+  }
+]
