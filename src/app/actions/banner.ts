@@ -152,15 +152,13 @@ export async function trackBannerClick(bannerId: string, referrer?: string, user
   });
 
   // click_count 증가
-  await supabase.rpc("increment_banner_click", { banner_id_param: bannerId }).catch(() => {
-    // RPC가 없으면 직접 업데이트
-    supabase.from("banners").update({ click_count: supabase.rpc ? undefined : 0 }).eq("id", bannerId);
-  });
-
-  // fallback: 직접 증가
-  const { data: current } = await supabase.from("banners").select("click_count").eq("id", bannerId).single();
-  if (current) {
-    await supabase.from("banners").update({ click_count: (current.click_count || 0) + 1 }).eq("id", bannerId);
+  const { error: rpcError } = await supabase.rpc("increment_banner_click", { banner_id_param: bannerId });
+  if (rpcError) {
+    // fallback: 직접 증가
+    const { data: current } = await supabase.from("banners").select("click_count").eq("id", bannerId).single();
+    if (current) {
+      await supabase.from("banners").update({ click_count: (current.click_count || 0) + 1 }).eq("id", bannerId);
+    }
   }
 
   return { success: true };
