@@ -628,14 +628,50 @@ export default function LectureWritePage() {
             {/* ========== 3. 강사 정보 ========== */}
             <div style={sectionStyle}>
               <div style={sectionTitleStyle}><span style={{ fontSize: 20 }}>👨‍🏫</span> 강사 정보</div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
-                <div>
+              <div style={{ display: "flex", gap: 20, marginBottom: 16 }}>
+                {/* 프로필 사진 업로드 */}
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                  <div style={{
+                    width: 100, height: 100, borderRadius: "50%", overflow: "hidden",
+                    border: "2px dashed #d1d5db", background: "#f9fafb",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    {instructorPhoto ? (
+                      <img src={instructorPhoto} alt="강사" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ) : (
+                      <span style={{ fontSize: 32, color: "#d1d5db" }}>👤</span>
+                    )}
+                  </div>
+                  <label style={{
+                    padding: "5px 14px", background: "#3b82f6", color: "#fff", borderRadius: 6,
+                    fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap",
+                  }}>
+                    📷 사진 첨부
+                    <input type="file" accept="image/*" style={{ display: "none" }} onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const compressed = await compressToWebP(file, 400, 0.85);
+                      const formData = new FormData();
+                      formData.append("file", compressed);
+                      formData.append("lecture_id", loadId || "temp");
+                      formData.append("type", "content");
+                      const res = await uploadLectureImage(formData);
+                      if (res.success && res.url) {
+                        setInstructorPhoto(res.url);
+                      } else {
+                        alert("업로드 실패: " + (res.error || ""));
+                      }
+                      e.target.value = "";
+                    }} />
+                  </label>
+                  {instructorPhoto && (
+                    <button onClick={() => setInstructorPhoto("")} style={{ fontSize: 11, color: "#ef4444", background: "none", border: "none", cursor: "pointer", fontWeight: 600 }}>삭제</button>
+                  )}
+                </div>
+                {/* 강사명 */}
+                <div style={{ flex: 1 }}>
                   <label style={labelStyle}>강사명</label>
                   <input type="text" value={instructorName} onChange={(e) => setInstructorName(e.target.value)} placeholder="예: 부동산마스터 김대표" style={inputStyle} />
-                </div>
-                <div>
-                  <label style={labelStyle}>프로필 사진 URL</label>
-                  <input type="text" value={instructorPhoto} onChange={(e) => setInstructorPhoto(e.target.value)} placeholder="https://..." style={inputStyle} />
                 </div>
               </div>
               <div>

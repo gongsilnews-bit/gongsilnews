@@ -918,6 +918,36 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                         );
                       })}
                     </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                      <div style={{ flex: 1, display: "flex", alignItems: "center", border: "1px solid #ddd", borderRadius: 4, overflow: "hidden" }}>
+                        <input
+                          type="number"
+                          placeholder="최소"
+                          value={filterAreaMin !== null ? Math.round(filterAreaMin / 3.3) : ""}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            if (v === "" || v === "0") { setFilterAreaMin(null); }
+                            else { setFilterAreaMin(Math.round(parseInt(v, 10) * 3.3)); }
+                          }}
+                          style={{ flex: 1, textAlign: "center", fontSize: 13, padding: "8px 4px", border: "none", outline: "none", width: 60, color: "#111" }}
+                        />
+                      </div>
+                      <span style={{ color: "#999", fontSize: 13 }}>~</span>
+                      <div style={{ flex: 1, display: "flex", alignItems: "center", border: "1px solid #ddd", borderRadius: 4, overflow: "hidden" }}>
+                        <input
+                          type="number"
+                          placeholder="최대"
+                          value={filterAreaMax !== null ? Math.round(filterAreaMax / 3.3) : ""}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            if (v === "" || v === "0") { setFilterAreaMax(null); }
+                            else { setFilterAreaMax(Math.round(parseInt(v, 10) * 3.3)); }
+                          }}
+                          style={{ flex: 1, textAlign: "center", fontSize: 13, padding: "8px 4px", border: "none", outline: "none", width: 60, color: "#111" }}
+                        />
+                      </div>
+                      <span style={{ fontSize: 12, color: "#888", flexShrink: 0 }}>평</span>
+                    </div>
                     <div style={{ textAlign: "right" }}>
                       <button onClick={() => { setFilterAreaMin(null); setFilterAreaMax(null); }} style={{ background: "none", border: "none", fontSize: 13, color: "#888", cursor: "pointer" }}>⟲ 조건삭제</button>
                     </div>
