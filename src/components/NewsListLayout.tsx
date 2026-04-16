@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import ImportantNewsRotate from "./ImportantNewsRotate";
 
 interface Article {
   id: string;
@@ -107,28 +108,9 @@ export default function NewsListLayout({ category, title, initialArticles, initi
         <div className="news-layout">
           {/* 좌측 뉴스 리스트 */}
           <div className="news-list-area">
-            {/* 중요 기사 (상단 이미지 영역) */}
+            {/* 중요 기사 (상단 이미지 영역, 자동 롤링) */}
             {importantArticles.length > 0 && (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 40 }}>
-                {importantArticles.slice(0, 3).map((article) => {
-                  const ytInfo = extractYoutubeIdInfo(article);
-                  const thumbSrc = getThumbnailSrc(article, ytInfo);
-                  return (
-                    <Link key={article.id} href={`/news/${article.article_no || article.id}`} style={{ textDecoration: "none", color: "inherit", display: "block" }}>
-                      <div style={{ borderRadius: 8, overflow: "hidden", cursor: "pointer", transition: "transform 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-4px)"} onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}>
-                        <div style={{ width: "100%", height: 140, background: "#f0f0f0", position: "relative" }}>
-                          {thumbSrc && <img src={thumbSrc} alt={article.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
-                        </div>
-                        <div style={{ padding: "12px 4px" }}>
-                          <h4 style={{ fontSize: 14, fontWeight: 700, lineHeight: 1.4, color: "#111", margin: 0, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-                            {article.title}
-                          </h4>
-                        </div>
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
+              <ImportantNewsRotate articles={importantArticles} />
             )}
 
             <div className="list-header">
