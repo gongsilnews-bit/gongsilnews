@@ -278,7 +278,13 @@ export async function getVacanciesForMap(options?: any) {
     let query = supabase.from('vacancies').select('*, vacancy_photos(url, sort_order)').eq('status', 'ACTIVE').not('lat', 'is', null).not('lng', 'is', null).order('created_at', { ascending: false });
     const { data, error } = await query;
     if (error) return { success: false, error: error.message };
-    return { success: true, data: data || [] };
+
+    const lightData = data?.map(v => {
+      const { infrastructure, description, ...rest } = v;
+      return rest;
+    });
+
+    return { success: true, data: lightData || [] };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
