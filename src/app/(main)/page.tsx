@@ -11,6 +11,7 @@ import CategoryNewsGrid from "@/components/home/CategoryNewsGrid";
 import PremiumDroneSection from "@/components/home/PremiumDroneSection";
 import SpecialLectureBanner from "@/components/home/SpecialLectureBanner";
 import ChatbotBanner from "@/components/home/ChatbotBanner";
+import BannerSlot from "@/components/BannerSlot";
 
 export default async function Home() {
   const { data: initialVacancies } = await getVacanciesForMap();
@@ -24,6 +25,9 @@ export default async function Home() {
       <main className="container px-20" style={{ position: "relative" }}>
         
         <QuickFloatingMenu />
+
+        {/* ========== 배너: 메인 상단 ========== */}
+        <BannerSlot placement="MAIN_TOP" style={{ borderRadius: 0 }} />
 
         {/* ========== 3. Hero Section (Map & HOT News) ========== */}
         <div className="hero-section" style={{ padding: "0 25px 0 0", border: "0.5px solid #dcdcdc", borderTop: "none", marginBottom: 0, background: "#fff" }}>
