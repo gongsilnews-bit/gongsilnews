@@ -143,11 +143,12 @@ export async function getVacancies(options?: {
   try {
     // 리스트와 마커에 필요한 필수 컬럼만 가져옵니다. 
     // infrastructure, description 같이 무거운 JSON/TEXT 컬럼 제외.
+    // 임시 원복: 컬럼 오류 방지를 위해 전체 조회( * )로 되돌림
     const selectedColumns = 'id, vacancy_no, status, property_type, sub_category, trade_type, deposit, monthly_rent, maintenance_fee, commission_type, supply_m2, supply_py, exclusive_m2, exclusive_py, room_count, bath_count, direction, current_floor, total_floor, parking, move_in_date, sido, sigungu, dong, detail_addr, building_name, lat, lng, created_at, owner_id, owner_role, realtor_commission, owner_relation, client_name, client_phone, approval_year, total_units, options, members!vacancies_owner_id_fkey(name, email, role, phone, agencies(name, phone)), vacancy_photos(url, sort_order)';
 
     let query = supabase
       .from('vacancies')
-      .select(selectedColumns)
+      .select('*, members!vacancies_owner_id_fkey(name, email, role, phone, agencies(name, phone)), vacancy_photos(url, sort_order)')
       .order('created_at', { ascending: false });
 
     // 역할별 필터
@@ -170,7 +171,15 @@ export async function getVacancies(options?: {
       console.error("DEBUG SUPABASE ERROR:", error);
       return { success: false, error: error.message };
     }
-    return { success: true, data: data || [] };
+    
+    // Lazy Loading 최적화: 브라우저 전송 시 병목을 막기 위해 무거운 데이터 제거
+    // (상세 내용은 getVacancyDetail 호출로 조회됩니다.)
+    const lightData = data?.map(v => {
+      const { infrastructure, description, ...rest } = v;
+      return rest;
+    });
+
+    return { success: true, data: lightData || [] };
   } catch (error: any) {
     console.error("DEBUG TRY/CATCH ERROR:", error);
     return { success: false, error: error.message };
