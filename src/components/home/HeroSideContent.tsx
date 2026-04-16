@@ -2,7 +2,7 @@ import { getArticles } from "@/app/actions/article";
 import HeroHeadlineRotate from "./HeroHeadlineRotate";
 
 export default async function HeroSideContent() {
-  const res = await getArticles({ status: "APPROVED", article_type: "HEADLINE", limit: 10 });
+  const res = await getArticles({ status: "APPROVED", is_headline: true, limit: 10 });
   const articles = res.data || [];
 
   return (

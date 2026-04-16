@@ -5,7 +5,7 @@ export default async function NewsPoliticsPage() {
   const [articlesRes, popularRes, importantRes] = await Promise.all([
     getArticles({ status: "APPROVED", section2: "정치·경제·사회" }),
     getArticles({ status: "APPROVED", limit: 50 }),
-    getArticles({ status: "APPROVED", article_type: "IMPORTANT", section2: "정치·경제·사회", limit: 3 })
+    getArticles({ status: "APPROVED", is_important: true, section2: "정치·경제·사회", limit: 15 })
   ]);
 
   const articles = articlesRes.success ? (articlesRes.data || []) : [];

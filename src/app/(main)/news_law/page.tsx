@@ -5,7 +5,7 @@ export default async function NewsLawPage() {
   const [articlesRes, popularRes, importantRes] = await Promise.all([
     getArticles({ status: "APPROVED", section2: "세무·법률" }),
     getArticles({ status: "APPROVED", limit: 50 }),
-    getArticles({ status: "APPROVED", article_type: "IMPORTANT", section2: "세무·법률", limit: 3 })
+    getArticles({ status: "APPROVED", is_important: true, section2: "세무·법률", limit: 15 })
   ]);
 
   const articles = articlesRes.success ? (articlesRes.data || []) : [];

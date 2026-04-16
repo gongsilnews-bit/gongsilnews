@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { AdminSectionProps } from "./types";
-import { getArticles, deleteArticle, adminUpdateArticleStatus, adminUpdateArticleType } from "@/app/actions/article";
+import { getArticles, deleteArticle, adminUpdateArticleStatus, adminUpdateArticleFlags } from "@/app/actions/article";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import NewsWriteForm from "@/components/admin/NewsWriteForm";
@@ -151,24 +151,29 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
                     <div style={{ display: "flex", gap: 4, justifyContent: "center" }}>
                       <button 
                         onClick={async () => {
-                          setDbArticles(prev => prev.map(p => p.id === a.id ? { ...p, article_type: 'NORMAL' } : p));
-                          await adminUpdateArticleType(a.id, 'NORMAL');
+                          setDbArticles(prev => prev.map(p => p.id === a.id ? { ...p, is_important: false, is_headline: false } : p));
+                          await adminUpdateArticleFlags(a.id, false, false);
                         }}
-                        style={{ width: 24, height: 24, padding: 0, border: "1px solid #ddd", borderRadius: 4, fontSize: 11, fontWeight: 700, cursor: "pointer", background: (!a.article_type || a.article_type === 'NORMAL') ? "#3b82f6" : "#fff", color: (!a.article_type || a.article_type === 'NORMAL') ? "#fff" : "#888" }}
+                        title="일반 기사"
+                        style={{ width: 24, height: 24, padding: 0, border: "1px solid #ddd", borderRadius: 4, fontSize: 11, fontWeight: 700, cursor: "pointer", background: (!a.is_important && !a.is_headline) ? "#3b82f6" : "#fff", color: (!a.is_important && !a.is_headline) ? "#fff" : "#888", transition: "all 0.2s" }}
                       >일</button>
                       <button 
                         onClick={async () => {
-                          setDbArticles(prev => prev.map(p => p.id === a.id ? { ...p, article_type: 'IMPORTANT' } : p));
-                          await adminUpdateArticleType(a.id, 'IMPORTANT');
+                          const newImportant = !a.is_important;
+                          setDbArticles(prev => prev.map(p => p.id === a.id ? { ...p, is_important: newImportant } : p));
+                          await adminUpdateArticleFlags(a.id, newImportant, !!a.is_headline);
                         }}
-                        style={{ width: 24, height: 24, padding: 0, border: "1px solid #ddd", borderRadius: 4, fontSize: 11, fontWeight: 700, cursor: "pointer", background: a.article_type === 'IMPORTANT' ? "#f59e0b" : "#fff", color: a.article_type === 'IMPORTANT' ? "#fff" : "#888" }}
+                        title="중요 기사 (카테고리 상단 노출)"
+                        style={{ width: 24, height: 24, padding: 0, border: "1px solid #ddd", borderRadius: 4, fontSize: 11, fontWeight: 700, cursor: "pointer", background: a.is_important ? "#f59e0b" : "#fff", color: a.is_important ? "#fff" : "#888", transition: "all 0.2s" }}
                       >중</button>
                       <button 
                         onClick={async () => {
-                          setDbArticles(prev => prev.map(p => p.id === a.id ? { ...p, article_type: 'HEADLINE' } : p));
-                          await adminUpdateArticleType(a.id, 'HEADLINE');
+                          const newHeadline = !a.is_headline;
+                          setDbArticles(prev => prev.map(p => p.id === a.id ? { ...p, is_headline: newHeadline } : p));
+                          await adminUpdateArticleFlags(a.id, !!a.is_important, newHeadline);
                         }}
-                        style={{ width: 24, height: 24, padding: 0, border: "1px solid #ddd", borderRadius: 4, fontSize: 11, fontWeight: 700, cursor: "pointer", background: a.article_type === 'HEADLINE' ? "#ef4444" : "#fff", color: a.article_type === 'HEADLINE' ? "#fff" : "#888" }}
+                        title="헤드라인 기사 (메인 영역 노출)"
+                        style={{ width: 24, height: 24, padding: 0, border: "1px solid #ddd", borderRadius: 4, fontSize: 11, fontWeight: 700, cursor: "pointer", background: a.is_headline ? "#ef4444" : "#fff", color: a.is_headline ? "#fff" : "#888", transition: "all 0.2s" }}
                       >해</button>
                     </div>
                   </td>

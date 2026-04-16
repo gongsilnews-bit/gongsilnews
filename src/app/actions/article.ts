@@ -34,7 +34,8 @@ export async function saveArticle(data: {
   keywords: string[];
   thumbnail_url?: string;
   reject_reason?: string;
-  article_type?: string;
+  is_important?: boolean;
+  is_headline?: boolean;
 }) {
   const supabase = getAdminClient();
 
@@ -78,8 +79,11 @@ export async function saveArticle(data: {
     if (data.reject_reason !== undefined) {
       (articleData as any).reject_reason = data.reject_reason;
     }
-    if (data.article_type !== undefined) {
-      (articleData as any).article_type = data.article_type;
+    if (data.is_important !== undefined) {
+      (articleData as any).is_important = data.is_important;
+    }
+    if (data.is_headline !== undefined) {
+      (articleData as any).is_headline = data.is_headline;
     }
 
     let articleId = data.id;
@@ -148,18 +152,19 @@ export async function saveArticle(data: {
 
 /* ── 캐싱된 기사 목록 조회 (기본) ── */
 const getArticlesCached = unstable_cache(
-  async (filters?: { status?: string; section1?: string; section2?: string; article_type?: string; limit?: number }) => {
+  async (filters?: { status?: string; section1?: string; section2?: string; is_important?: boolean; is_headline?: boolean; limit?: number }) => {
     const supabase = getAdminClient();
     let query = supabase
       .from("articles")
-      .select("id, article_no, status, section1, section2, title, subtitle, content, author_name, published_at, created_at, is_deleted, thumbnail_url, view_count, lat, lng, location_name, youtube_url, article_type, article_keywords(keyword)")
+      .select("id, article_no, status, section1, section2, title, subtitle, content, author_name, published_at, created_at, is_deleted, thumbnail_url, view_count, lat, lng, location_name, youtube_url, is_important, is_headline, article_keywords(keyword)")
       .eq("is_deleted", false)
       .order("created_at", { ascending: false });
 
     if (filters?.status) query = query.eq("status", filters.status);
     if (filters?.section1) query = query.eq("section1", filters.section1);
     if (filters?.section2) query = query.eq("section2", filters.section2);
-    if (filters?.article_type) query = query.eq("article_type", filters.article_type);
+    if (filters?.is_important !== undefined) query = query.eq("is_important", filters.is_important);
+    if (filters?.is_headline !== undefined) query = query.eq("is_headline", filters.is_headline);
     if (filters?.limit) query = query.limit(filters.limit);
 
     const { data, error } = await query;
@@ -174,7 +179,8 @@ export async function getArticles(filters?: {
   status?: string;
   section1?: string;
   section2?: string;
-  article_type?: string;
+  is_important?: boolean;
+  is_headline?: boolean;
   limit?: number;
 }) {
   return await getArticlesCached(filters);
@@ -186,7 +192,7 @@ export async function getMyArticles(authorId: string) {
   try {
     const { data, error } = await supabase
       .from("articles")
-      .select("id, article_no, status, section1, section2, title, subtitle, content, author_name, published_at, created_at, is_deleted, thumbnail_url, view_count, lat, lng, location_name, youtube_url, article_type, article_keywords(keyword)")
+      .select("id, article_no, status, section1, section2, title, subtitle, content, author_name, published_at, created_at, is_deleted, thumbnail_url, view_count, lat, lng, location_name, youtube_url, is_important, is_headline, article_keywords(keyword)")
       .eq("is_deleted", false)
       .eq("author_id", authorId)
       .order("created_at", { ascending: false });
@@ -377,12 +383,12 @@ export async function adminUpdateArticleStatus(articleIds: string[], status: 'AP
 }
 
 /* ── 관리자 기사 노출 유형(광고) 일괄 수정 ── */
-export async function adminUpdateArticleType(articleId: string, articleType: 'NORMAL' | 'IMPORTANT' | 'HEADLINE') {
+export async function adminUpdateArticleFlags(articleId: string, isImportant: boolean, isHeadline: boolean) {
   const supabase = getAdminClient();
   try {
     const { error } = await supabase
       .from("articles")
-      .update({ article_type: articleType })
+      .update({ is_important: isImportant, is_headline: isHeadline })
       .eq("id", articleId);
       
     if (error) return { success: false, error: error.message };
