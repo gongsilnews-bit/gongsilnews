@@ -1,3 +1,5 @@
+import BannerSlot from "@/components/BannerSlot";
+
 export default function HeroSideContent() {
   const hotNews = [
     { title: "부동산 규제지역 추가 해제... 주택시장 훈풍 부나", date: "2026.04.01", img: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80" },
@@ -7,9 +9,6 @@ export default function HeroSideContent() {
 
   return (
     <div className="hero-right" style={{ marginTop: 0 }}>
-      <div style={{ marginTop: 0, marginBottom: 30, width: "100%", height: 180, background: "#f0f0f0", border: "1px solid #ccc", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, fontWeight: 800, color: "#555" }}>
-        배너 1
-      </div>
       <div className="hn-header">
         <h2>HOT 공실뉴스</h2>
         <a href="#">더보기 &gt;</a>
@@ -25,6 +24,7 @@ export default function HeroSideContent() {
           </div>
         ))}
       </div>
+      <BannerSlot placement="SIDEBAR" style={{ marginTop: 16, width: "100%", borderRadius: 8, overflow: "hidden" }} />
     </div>
   );
 }

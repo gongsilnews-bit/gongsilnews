@@ -352,69 +352,84 @@ export default function BannerSection({ theme }: AdminSectionProps) {
           </button>
         </div>
 
-        {/* 테이블 */}
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 900, whiteSpace: "nowrap" }}>
-            <thead>
-              <tr style={{ background: darkMode ? "#2c2d31" : "#f9fafb" }}>
-                <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 40 }}>
-                  <input type="checkbox" style={{ accentColor: "#3b82f6" }}
-                    onChange={(e) => setCheckedIds(e.target.checked ? filtered.map(b => b.id) : [])} />
-                </th>
-                <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 60 }}>이미지</th>
-                <th style={{ padding: "12px 10px", textAlign: "left", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}` }}>배너명</th>
-                <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 80 }}>위치</th>
-                <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 70 }}>상태</th>
-                <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 80 }}>클릭수</th>
-                <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 80 }}>노출수</th>
-                <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 140 }}>기간</th>
-                <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 150 }}>관리</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.length === 0 ? (
-                <tr><td colSpan={9} style={{ padding: 40, textAlign: "center", color: textSecondary }}>등록된 배너가 없습니다.</td></tr>
-              ) : filtered.map(b => {
+        {/* 카드형 배너 목록 */}
+        <div style={{ padding: 24 }}>
+          {filtered.length === 0 ? (
+            <div style={{ padding: 60, textAlign: "center", color: textSecondary }}>
+              <div style={{ fontSize: 48, marginBottom: 12 }}>🖼️</div>
+              <div style={{ fontSize: 15, fontWeight: 600 }}>등록된 배너가 없습니다.</div>
+              <div style={{ fontSize: 13, marginTop: 4 }}>새 배너를 등록해 보세요.</div>
+            </div>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260, 1fr))", gap: 20 }}>
+              {filtered.map(b => {
                 const status = getStatusInfo(b);
                 const placeName = PLACEMENT_OPTIONS.find(p => p.value === b.placement_code)?.label || b.placement_code;
+                const periodText = b.start_time
+                  ? `${new Date(b.start_time).toLocaleDateString('ko-KR')} ~ ${b.end_time ? new Date(b.end_time).toLocaleDateString('ko-KR') : ""}`
+                  : "상시 노출";
                 return (
-                  <tr key={b.id} style={{ borderBottom: `1px solid ${darkMode ? "#333" : "#f3f4f6"}` }}>
-                    <td style={{ padding: "12px 10px", textAlign: "center" }}>
-                      <input type="checkbox" style={{ accentColor: "#3b82f6" }} checked={checkedIds.includes(b.id)}
-                        onChange={(e) => setCheckedIds(e.target.checked ? [...checkedIds, b.id] : checkedIds.filter(id => id !== b.id))} />
-                    </td>
-                    <td style={{ padding: "12px 10px", textAlign: "center" }}>
-                      <div style={{ width: 50, height: 30, borderRadius: 4, overflow: "hidden", background: "#f3f4f6", margin: "0 auto" }}>
-                        <img src={b.image_url} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  <div key={b.id} style={{
+                    background: cardBg, borderRadius: 12, overflow: "hidden",
+                    border: `1px solid ${checkedIds.includes(b.id) ? "#3b82f6" : border}`,
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.04)", transition: "all 0.2s",
+                  }}>
+                    {/* 기간 바 */}
+                    <div style={{
+                      padding: "8px 14px", fontSize: 11, fontWeight: 700, color: "#fff",
+                      background: status.label === "진행중" ? "#10b981" : status.label === "예약" ? "#f59e0b" : status.label === "종료" ? "#ef4444" : "#9ca3af",
+                      display: "flex", justifyContent: "space-between", alignItems: "center",
+                    }}>
+                      <span>{periodText}</span>
+                      <span style={{ background: "rgba(255,255,255,0.25)", padding: "2px 8px", borderRadius: 4 }}>{status.label}</span>
+                    </div>
+
+                    {/* 이미지 미리보기 */}
+                    <div
+                      onClick={() => { setEditingBanner(b); setShowForm(true); }}
+                      style={{
+                        width: "100%", height: 160, cursor: "pointer", overflow: "hidden",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        background: darkMode ? "#1a1b1e" : "#f9fafb",
+                      }}
+                    >
+                      <img src={b.image_url} alt={b.title} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                    </div>
+
+                    {/* 배너 정보 */}
+                    <div style={{ padding: "12px 14px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                        <input type="checkbox" style={{ accentColor: "#3b82f6" }} checked={checkedIds.includes(b.id)}
+                          onChange={(e) => setCheckedIds(e.target.checked ? [...checkedIds, b.id] : checkedIds.filter(id => id !== b.id))} />
+                        <span style={{ fontSize: 14, fontWeight: 700, color: textPrimary, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{b.title}</span>
                       </div>
-                    </td>
-                    <td style={{ padding: "12px 10px", fontWeight: 700, color: textPrimary }}>
-                      <button onClick={() => { setEditingBanner(b); setShowForm(true); }} style={{ background: "none", border: "none", fontWeight: 700, fontSize: 14, color: textPrimary, cursor: "pointer", padding: 0, textAlign: "left" }}>{b.title}</button>
-                    </td>
-                    <td style={{ padding: "12px 10px", textAlign: "center", fontSize: 12, color: textSecondary }}>{placeName}</td>
-                    <td style={{ padding: "12px 10px", textAlign: "center" }}>
-                      <span style={{ padding: "3px 8px", borderRadius: 4, fontSize: 11, fontWeight: 700, color: status.color, background: darkMode ? "transparent" : status.bg, border: `1px solid ${status.color}` }}>{status.label}</span>
-                    </td>
-                    <td style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: "#3b82f6" }}>{(b.click_count || 0).toLocaleString()}</td>
-                    <td style={{ padding: "12px 10px", textAlign: "center", fontWeight: 600, color: textPrimary }}>{(b.view_count || 0).toLocaleString()}</td>
-                    <td style={{ padding: "12px 10px", textAlign: "center", fontSize: 11, color: textSecondary }}>
-                      {b.start_time ? new Date(b.start_time).toLocaleDateString('ko-KR') : "상시"} ~ {b.end_time ? new Date(b.end_time).toLocaleDateString('ko-KR') : ""}
-                    </td>
-                    <td style={{ padding: "12px 10px", textAlign: "center" }}>
-                      <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
-                        <button onClick={() => handleToggle(b.id, b.is_active)}
-                          style={{ height: 28, padding: "0 10px", background: b.is_active ? "#ef4444" : "#10b981", color: "#fff", border: "none", borderRadius: 4, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>{b.is_active ? "중지" : "활성"}</button>
-                        <button onClick={() => { setEditingBanner(b); setShowForm(true); }}
-                          style={{ height: 28, padding: "0 10px", background: darkMode ? "#374151" : "#4b5563", color: "#fff", border: "none", borderRadius: 4, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>수정</button>
-                        <button onClick={() => handleDelete([b.id])}
-                          style={{ height: 28, padding: "0 10px", background: "none", color: "#9ca3af", border: `1px solid ${border}`, borderRadius: 4, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>삭제</button>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: textSecondary, marginBottom: 10 }}>
+                        <span style={{ padding: "2px 8px", background: darkMode ? "#2c2d31" : "#f3f4f6", borderRadius: 4, fontWeight: 600 }}>{placeName}</span>
+                        <span>클릭 <strong style={{ color: "#3b82f6" }}>{(b.click_count || 0).toLocaleString()}</strong></span>
+                        <span>노출 <strong style={{ color: textPrimary }}>{(b.view_count || 0).toLocaleString()}</strong></span>
                       </div>
-                    </td>
-                  </tr>
+
+                      {/* 액션 아이콘 */}
+                      <div style={{ display: "flex", gap: 6, borderTop: `1px solid ${border}`, paddingTop: 10 }}>
+                        <button onClick={() => handleToggle(b.id, b.is_active)} title={b.is_active ? "중지" : "활성"}
+                          style={{ flex: 1, height: 32, background: b.is_active ? "#ef4444" : "#10b981", color: "#fff", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                          {b.is_active ? "⏸ 중지" : "▶ 활성"}
+                        </button>
+                        <button onClick={() => { setEditingBanner(b); setShowForm(true); }} title="수정"
+                          style={{ flex: 1, height: 32, background: darkMode ? "#374151" : "#4b5563", color: "#fff", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                          ✏️ 수정
+                        </button>
+                        <button onClick={() => handleDelete([b.id])} title="삭제"
+                          style={{ flex: 1, height: 32, background: "none", color: "#9ca3af", border: `1px solid ${border}`, borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                          🗑 삭제
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 );
               })}
-            </tbody>
-          </table>
+            </div>
+          )}
         </div>
       </div>
     </div>

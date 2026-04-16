@@ -74,12 +74,14 @@ export default function BannerSlot({ placement, className, style }: BannerSlotPr
   }, [banners, currentIndex]);
 
   /* ── 클릭 핸들러 ── */
-  const handleClick = useCallback(async (banner: any) => {
-    await trackBannerClick(banner.id, window.location.href, navigator.userAgent);
+  const handleClick = useCallback((banner: any) => {
+    // 먼저 링크 열기 (동기 — 팝업 차단 방지)
     if (banner.link_url) {
       const url = banner.link_url.startsWith("http") ? banner.link_url : `https://${banner.link_url}`;
       window.open(url, banner.link_target || "_blank");
     }
+    // 클릭 추적은 백그라운드로
+    trackBannerClick(banner.id, window.location.href, navigator.userAgent);
   }, []);
 
   if (banners.length === 0) return null;
