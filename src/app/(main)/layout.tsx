@@ -1,5 +1,6 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import PopupBanner from "@/components/PopupBanner";
 
 export default function MainLayout({
   children,
@@ -9,6 +10,7 @@ export default function MainLayout({
   return (
     <>
       <Header />
+      <PopupBanner />
       {/* 하위의 모든 page.tsx 파일 내용물이 이 자리에 렌더링 됩니다 */}
       {children}
       <Footer />

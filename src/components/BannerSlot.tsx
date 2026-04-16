@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import Image from "next/image";
 import { getBannersByPlacement, trackBannerClick, trackBannerView } from "@/app/actions/banner";
 
 interface BannerSlotProps {
@@ -101,10 +102,13 @@ export default function BannerSlot({ placement, className, style }: BannerSlotPr
       }}
       onClick={() => handleClick(banner)}
     >
-      {/* 배너 이미지 */}
-      <img
+      {/* 배너 이미지 (Next.js Image → 자동 WebP 압축 + Lazy Loading) */}
+      <Image
         src={banner.image_url}
         alt={banner.title}
+        width={1200}
+        height={400}
+        sizes="100vw"
         style={{
           width: "100%",
           height: "auto",
@@ -112,6 +116,8 @@ export default function BannerSlot({ placement, className, style }: BannerSlotPr
           transition: "opacity 0.3s ease",
           opacity: isTransitioning ? 0 : 1,
         }}
+        priority={currentIndex === 0}
+        unoptimized={banner.image_url?.includes('supabase')}
       />
 
       {/* 인디케이터 (2개 이상일 때) */}
