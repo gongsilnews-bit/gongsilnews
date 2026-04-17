@@ -512,8 +512,8 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
               </div>
             )}
 
-            <div className="article-footer-bar" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <div className="article-footer-bar" style={{ display: "flex", flexDirection: "column", gap: 16, alignItems: "stretch" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", width: "100%" }}>
                 <div>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
                     <span style={{ fontWeight: 800, color: "#111", fontSize: 16 }}>{article.author_name || "공실뉴스"}</span>
