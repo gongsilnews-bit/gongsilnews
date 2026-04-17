@@ -4,7 +4,7 @@ import { getArticles } from "@/app/actions/article";
 export default async function NewsFinancePage() {
   const [articlesRes, popularRes, importantRes] = await Promise.all([
     getArticles({ status: "APPROVED", section2: "부동산·주식·재테크" }),
-    getArticles({ status: "APPROVED", limit: 50 }),
+    getArticles({ status: "APPROVED", section2: "부동산·주식·재테크", limit: 50 }),
     getArticles({ status: "APPROVED", is_important: true, section2: "부동산·주식·재테크", limit: 15 })
   ]);
 

@@ -4,7 +4,7 @@ import { getArticles } from "@/app/actions/article";
 export default async function NewsLifePage() {
   const [articlesRes, popularRes, importantRes] = await Promise.all([
     getArticles({ status: "APPROVED", section2: "여행·건강·생활" }),
-    getArticles({ status: "APPROVED", limit: 50 }),
+    getArticles({ status: "APPROVED", section2: "여행·건강·생활", limit: 50 }),
     getArticles({ status: "APPROVED", is_important: true, section2: "여행·건강·생활", limit: 15 })
   ]);
 

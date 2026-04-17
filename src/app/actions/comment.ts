@@ -64,7 +64,7 @@ export async function getComments(articleId: string, currentUserId?: string | nu
 }
 
 // 2. 댓글 등록
-export async function addComment(articleId: string, content: string, isSecret: boolean, authorId: string, authorName: string) {
+export async function addComment(articleId: string, content: string, isSecret: boolean, authorId: string, authorName: string, parentId?: string | null) {
   const supabase = getAdminClient();
   try {
     const { error } = await supabase
@@ -75,6 +75,7 @@ export async function addComment(articleId: string, content: string, isSecret: b
         author_name: authorName,
         content,
         is_secret: isSecret,
+        parent_id: parentId || null,
       });
       
     if (error) throw error;
@@ -148,3 +149,32 @@ export async function deleteComment(commentId: string, userId: string) {
     return { success: false, error: error.message };
   }
 }
+
+// 5. 댓글 수정
+export async function editComment(commentId: string, userId: string, newContent: string) {
+  const supabase = getAdminClient();
+  try {
+    // 작성자 본인 확인
+    const { data: comment } = await supabase
+      .from("article_comments")
+      .select("author_id")
+      .eq("id", commentId)
+      .single();
+
+    if (comment?.author_id !== userId) {
+      throw new Error("수정 권한이 없습니다.");
+    }
+
+    const { error } = await supabase
+      .from("article_comments")
+      .update({ content: newContent, updated_at: new Date().toISOString() })
+      .eq("id", commentId);
+      
+    if (error) throw error;
+    return { success: true };
+  } catch (error: any) {
+    console.error("댓글 수정 오류:", error);
+    return { success: false, error: error.message };
+  }
+}
+

@@ -5,8 +5,10 @@ import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
 
 import { incrementArticleView } from "@/app/actions/article";
-import { getComments, addComment, deleteComment, toggleCommentLike } from "@/app/actions/comment";
+import { getComments, addComment, deleteComment, toggleCommentLike, editComment } from "@/app/actions/comment";
+import { getArticleReactions, toggleArticleReaction } from "@/app/actions/reaction";
 import { getVacancies } from "@/app/actions/vacancy";
+import AuthModal from "./AuthModal";
 
 interface NewsReadContentProps {
   article: any;
@@ -43,6 +45,25 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
   const [currentUserName, setCurrentUserName] = useState<string | null>(null);
   const [isCommentsLoading, setIsCommentsLoading] = useState(true);
 
+  // 대댓글(답글) State
+  const [replyToCommentId, setReplyToCommentId] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState("");
+  const [isSecretReply, setIsSecretReply] = useState(false);
+
+  // 댓글 수정 State
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editingContent, setEditingContent] = useState("");
+
+  // 스티커(리액션) State
+  const [reactionCounts, setReactionCounts] = useState<any>({ INFO: 0, INTERESTING: 0, AGREE: 0, ANALYSIS: 0, RECOMMEND: 0 });
+  const [myReaction, setMyReaction] = useState<string | null>(null);
+
+  // 로그인 모달 State
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
+  // 커스텀 Confirm 모달 State
+  const [confirmDialog, setConfirmDialog] = useState<{isOpen: boolean; message: string; onConfirm: () => void} | null>(null);
+
   // 작성자 정보 및 소속 공실 State
   const [authorRole, setAuthorRole] = useState<string | null>(null);
   const [authorEmail, setAuthorEmail] = useState<string | null>(null);
@@ -62,7 +83,7 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
     });
   }, []);
 
-  // 댓글 가져오기
+  // 댓글 및 리액션 가져오기
   useEffect(() => {
     if (article?.id) {
       getComments(article.id, currentUserId).then(res => {
@@ -70,6 +91,12 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
           setComments(res.data);
         }
         setIsCommentsLoading(false);
+      });
+      getArticleReactions(article.id, currentUserId).then(res => {
+        if (res.success && res.counts) {
+          setReactionCounts(res.counts);
+          setMyReaction(res.myReaction || null);
+        }
       });
     }
   }, [article?.id, currentUserId]);
@@ -80,29 +107,100 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
     if (res.success && res.data) setComments(res.data);
   };
 
+  const loadReactions = async () => {
+    if (!article?.id) return;
+    const res = await getArticleReactions(article.id, currentUserId);
+    if (res.success && res.counts) {
+      setReactionCounts(res.counts);
+      setMyReaction(res.myReaction || null);
+    }
+  };
+
   const handleCommentSubmit = async () => {
     if (!currentUserId) {
-      alert("로그인이 필요합니다.");
+      setConfirmDialog({
+        isOpen: true,
+        message: "의견을 남기려면 로그인이 필요합니다.\n로그인 화면으로 이동할까요?",
+        onConfirm: () => setIsAuthModalOpen(true)
+      });
       return;
     }
     if (!commentText.trim()) {
-      alert("댓글 내용을 입력해주세요.");
+      setToastMessage("댓글 내용을 입력해주세요.");
       return;
     }
     
-    const res = await addComment(article.id, commentText, isSecretComment, currentUserId, currentUserName || "익명");
+    const res = await addComment(article.id, commentText, isSecretComment, currentUserId, currentUserName || "익명", null);
     if (res.success) {
       setCommentText("");
       setIsSecretComment(false);
       loadComments();
     } else {
-      alert("댓글 등록에 실패했습니다.");
+      setToastMessage("댓글 등록에 실패했습니다.");
+    }
+  };
+
+  const handleReplySubmit = async (parentId: string) => {
+    if (!currentUserId) {
+      setConfirmDialog({
+        isOpen: true,
+        message: "의견을 남기려면 로그인이 필요합니다.\n로그인 화면으로 이동할까요?",
+        onConfirm: () => setIsAuthModalOpen(true)
+      });
+      return;
+    }
+    if (!replyText.trim()) {
+      setToastMessage("답글 내용을 입력해주세요.");
+      return;
+    }
+    
+    const res = await addComment(article.id, replyText, isSecretReply, currentUserId, currentUserName || "익명", parentId);
+    if (res.success) {
+      setReplyText("");
+      setIsSecretReply(false);
+      setReplyToCommentId(null);
+      loadComments();
+    } else {
+      setToastMessage("답글 등록에 실패했습니다.");
+    }
+  };
+
+  const handleToggleReaction = async (type: string) => {
+    if (!currentUserId) {
+      setConfirmDialog({
+        isOpen: true,
+        message: "의견을 남기려면 로그인이 필요합니다.\n로그인 화면으로 이동할까요?",
+        onConfirm: () => setIsAuthModalOpen(true)
+      });
+      return;
+    }
+    const res = await toggleArticleReaction(article.id, currentUserId, type);
+    if (res.success) loadReactions();
+  };
+
+  const handleEditSubmit = async (commentId: string) => {
+    if (!currentUserId) return;
+    if (!editingContent.trim()) {
+      setToastMessage("수정할 내용을 입력해주세요.");
+      return;
+    }
+    const res = await editComment(commentId, currentUserId, editingContent);
+    if (res.success) {
+      setEditingCommentId(null);
+      setEditingContent("");
+      loadComments();
+    } else {
+      setToastMessage("댓글 수정에 실패했습니다.");
     }
   };
 
   const handleToggleLike = async (commentId: string, type: 'LIKE'|'DISLIKE') => {
     if (!currentUserId) {
-      alert("로그인이 필요합니다.");
+      setConfirmDialog({
+        isOpen: true,
+        message: "의견을 남기려면 로그인이 필요합니다.\n로그인 화면으로 이동할까요?",
+        onConfirm: () => setIsAuthModalOpen(true)
+      });
       return;
     }
     const res = await toggleCommentLike(commentId, currentUserId, type);
@@ -111,10 +209,13 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
 
   const handleDeleteComment = async (commentId: string) => {
     if (!currentUserId) return;
-    if (confirm("댓글을 삭제하시겠습니까?")) {
+    if (confirm("댓글을 삭제하시겠습니까? (삭제 시 복구할 수 없습니다.)")) {
       const res = await deleteComment(commentId, currentUserId);
-      if (res.success) loadComments();
-      else alert("삭제에 실패했습니다.");
+      if (res.success) {
+        setToastMessage("댓글이 삭제되었습니다.");
+        loadComments();
+      }
+      else setToastMessage("삭제에 실패했습니다.");
     }
   };
 
@@ -261,7 +362,7 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
   const handleKakaoShare = () => {
     const Kakao = (window as any).Kakao;
     if (!Kakao || !Kakao.isInitialized()) {
-      alert("카카오 SDK가 로드되지 않았습니다. 잠시 후 시도해 주세요.");
+      setToastMessage("카카오 SDK 로드 중입니다. 잠시 후 시도해 주세요.");
       return;
     }
     const shareUrl = `${window.location.origin}/news/${article.article_no || article.id}`;
@@ -527,9 +628,28 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
             </div>
 
             <div className="comments-section" style={{ marginTop: 60 }}>
-              <div className="comment-header">
-                <div className="comment-count" style={{ fontSize: 18, fontWeight: 800, marginBottom: 16 }}>{comments.length}개의 댓글</div>
+              <div className="comment-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 16 }}>
+                <div className="comment-count" style={{ fontSize: 18, fontWeight: 800 }}>{comments.length}개의 댓글</div>
+                {/* ── 스티커 (리액션) 툴바 ── */}
+                <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+                  {[
+                    { type: 'INFO', icon: '💡', label: '쏠쏠정보' },
+                    { type: 'INTERESTING', icon: '🤓', label: '흥미진진' },
+                    { type: 'AGREE', icon: '😊', label: '공감백배' },
+                    { type: 'ANALYSIS', icon: '✨', label: '분석탁월' },
+                    { type: 'RECOMMEND', icon: '👍', label: '후속강추' },
+                  ].map(rp => (
+                    <div key={rp.type} onClick={() => handleToggleReaction(rp.type)} style={{ display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer", gap: 4, opacity: myReaction === rp.type ? 1 : 0.6, transition: "opacity 0.2s" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <span style={{ fontSize: 20 }}>{rp.icon}</span>
+                        <span style={{ fontSize: 13, color: "#555", fontWeight: myReaction === rp.type ? "bold" : "normal" }}>{rp.label}</span>
+                      </div>
+                      <span style={{ fontSize: 14, fontWeight: "bold", color: "#111" }}>{reactionCounts[rp.type] || 0}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
+              
               <div className="comment-box" style={{ background: "#f9fafb", padding: 20, borderRadius: 12, border: "1px solid #e5e7eb", marginBottom: 30 }}>
                 <div className="comment-user-name" style={{ fontSize: 14, fontWeight: 700, marginBottom: 8, color: currentUserId ? "#111" : "#9ca3af" }}>
                   {currentUserId ? currentUserName : "로그인이 필요합니다"}
@@ -539,8 +659,17 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
                   placeholder={currentUserId ? "댓글을 남겨보세요" : "의견을 남기려면 로그인이 필요합니다."} 
                   value={commentText} 
                   onChange={(e) => setCommentText(e.target.value.slice(0, 400))}
-                  disabled={!currentUserId}
-                  style={{ width: "100%", height: 80, padding: 12, border: "1px solid #d1d5db", borderRadius: 8, resize: "none", fontSize: 14, outline: "none", fontFamily: "inherit" }}
+                  readOnly={!currentUserId}
+                  onClick={() => {
+                    if (!currentUserId) {
+                      setConfirmDialog({
+                        isOpen: true,
+                        message: "의견을 남기려면 로그인이 필요합니다.\n로그인 화면으로 이동할까요?",
+                        onConfirm: () => setIsAuthModalOpen(true)
+                      });
+                    }
+                  }}
+                  style={{ width: "100%", height: 80, padding: 12, border: "1px solid #d1d5db", borderRadius: 8, resize: "none", fontSize: 14, outline: "none", fontFamily: "inherit", background: "#fff", cursor: currentUserId ? "text" : "pointer" }}
                 />
                 <div className="comment-footer" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 12 }}>
                   <div style={{ fontSize: 13, color: "#6b7280", display: "flex", alignItems: "center", gap: 16 }}>
@@ -567,49 +696,105 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
                 <div style={{ padding: 20, textAlign: "center", color: "#9ca3af", fontSize: 14 }}>첫 댓글을 남겨보세요.</div>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                  {comments.map((comment) => {
-                    // 비밀댓글 로직: 작성자가 아니거나, 댓글 작성자가 아닌 경우 내용을 가림
-                    const isSecret = comment.is_secret;
-                    const canViewSecret = 
-                      !isSecret || 
-                      (currentUserId === comment.author_id) || 
-                      (currentUserId === article.author_id);
+                  {(() => {
+                    // 최상위 댓글 추출 및 대댓글 연결을 위한 구조화
+                    const rootComments = comments.filter(c => !c.parent_id);
+                    const getChildren = (parentId: string) => comments.filter(c => c.parent_id === parentId);
                     
-                    return (
-                      <div key={comment.id} style={{ display: "flex", flexDirection: "column", gap: 8, paddingBottom: 16, borderBottom: "1px solid #f3f4f6" }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <span style={{ fontSize: 14, fontWeight: 700 }}>
-                            {canViewSecret ? comment.author_name : "익명"}
-                            {isSecret && <span style={{ marginLeft: 6, fontSize: 11, color: "#ef4444", fontWeight: 600, border: "1px solid #fca5a5", padding: "1px 4px", borderRadius: 4 }}>비밀글</span>}
-                          </span>
-                          <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                            <span style={{ fontSize: 12, color: "#9ca3af" }}>{formatDate(comment.created_at)}</span>
-                            {currentUserId === comment.author_id && (
-                              <button onClick={() => handleDeleteComment(comment.id)} style={{ border: "none", background: "none", color: "#ef4444", fontSize: 12, cursor: "pointer", padding: 0 }}>삭제</button>
+                    const renderComment = (comment: any, depth: number = 0) => {
+                      const isSecret = comment.is_secret;
+                      const canViewSecret = !isSecret || (currentUserId === comment.author_id) || (currentUserId === article.author_id);
+                      const children = getChildren(comment.id);
+
+                      return (
+                        <div key={comment.id} style={{ paddingLeft: depth * 24, borderBottom: "1px solid #f3f4f6", paddingBottom: 16 }}>
+                          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: depth > 0 ? 16 : 0 }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                              <span style={{ fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}>
+                                {depth > 0 && <span style={{ color: "#9ca3af" }}>↳</span>}
+                                {canViewSecret ? comment.author_name : "익명"}
+                                {isSecret && <span style={{ fontSize: 11, color: "#ef4444", fontWeight: 600, border: "1px solid #fca5a5", padding: "1px 4px", borderRadius: 4 }}>비밀글</span>}
+                              </span>
+                              <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                                <span style={{ fontSize: 12, color: "#9ca3af" }}>{formatDate(comment.created_at)}</span>
+                                {currentUserId === comment.author_id && (
+                                  <div style={{ display: "flex", gap: 8 }}>
+                                    <button onClick={() => { setEditingCommentId(comment.id); setEditingContent(comment.content); }} style={{ border: "none", background: "none", color: "#6b7280", fontSize: 12, cursor: "pointer", padding: 0 }}>수정</button>
+                                    <button onClick={() => handleDeleteComment(comment.id)} style={{ border: "none", background: "none", color: "#ef4444", fontSize: 12, cursor: "pointer", padding: 0 }}>삭제</button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            
+                            {editingCommentId === comment.id ? (
+                              <div style={{ marginTop: 8, padding: 12, background: "#f9fafb", borderRadius: 8, border: "1px solid #e5e7eb" }}>
+                                <textarea 
+                                  value={editingContent} 
+                                  onChange={(e) => setEditingContent(e.target.value.slice(0, 400))}
+                                  style={{ width: "100%", height: 60, padding: 12, border: "1px solid #d1d5db", borderRadius: 8, resize: "none", fontSize: 13, outline: "none", fontFamily: "inherit", background: "#fff", marginBottom: 8 }}
+                                />
+                                <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+                                  <button onClick={() => setEditingCommentId(null)} style={{ padding: "6px 14px", background: "#fff", color: "#4b5563", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 13, fontWeight: "bold", cursor: "pointer" }}>취소</button>
+                                  <button onClick={() => handleEditSubmit(comment.id)} disabled={!editingContent.trim()} style={{ padding: "6px 14px", background: editingContent.trim() ? "#1a73e8" : "#9ca3af", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: "bold", cursor: editingContent.trim() ? "pointer" : "not-allowed" }}>저장</button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div style={{ fontSize: 14, color: canViewSecret ? "#374151" : "#9ca3af", lineHeight: 1.6, fontStyle: canViewSecret ? "normal" : "italic", whiteSpace: "pre-wrap" }}>
+                                {canViewSecret ? comment.content : "비밀 댓글입니다. (작성자와 기사 작성자만 볼 수 있습니다.)"}
+                              </div>
+                            )}
+
+                            {canViewSecret && !editingCommentId && (
+                              <div style={{ display: "flex", gap: 12, marginTop: 4, alignItems: "center" }}>
+                                <button onClick={() => handleToggleLike(comment.id, 'LIKE')} style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 8px", fontSize: 12, borderRadius: 16, border: comment.myLike === 'LIKE' ? "1px solid #3b82f6" : "1px solid #e5e7eb", background: comment.myLike === 'LIKE' ? "#eff6ff" : "#fff", color: comment.myLike === 'LIKE' ? "#3b82f6" : "#4b5563", cursor: "pointer" }}>
+                                  👍 {comment.likeCount}
+                                </button>
+                                <button onClick={() => handleToggleLike(comment.id, 'DISLIKE')} style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 8px", fontSize: 12, borderRadius: 16, border: comment.myLike === 'DISLIKE' ? "1px solid #ef4444" : "1px solid #e5e7eb", background: comment.myLike === 'DISLIKE' ? "#fef2f2" : "#fff", color: comment.myLike === 'DISLIKE' ? "#ef4444" : "#4b5563", cursor: "pointer" }}>
+                                  👎 {comment.dislikeCount}
+                                </button>
+                                <button onClick={() => {setReplyToCommentId(comment.id); setReplyText(''); setIsSecretReply(false);}} style={{ border: "none", background: "none", color: "#6b7280", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>답글</button>
+                              </div>
                             )}
                           </div>
-                        </div>
-                        
-                        <div style={{ fontSize: 14, color: canViewSecret ? "#374151" : "#9ca3af", lineHeight: 1.6, fontStyle: canViewSecret ? "normal" : "italic", whiteSpace: "pre-wrap" }}>
-                          {canViewSecret ? comment.content : "비밀 댓글입니다. (작성자와 기사 작성자만 볼 수 있습니다.)"}
-                        </div>
+                          
+                          {/* 대댓글 입력 폼 */}
+                          {replyToCommentId === comment.id && (
+                            <div style={{ marginTop: 12, padding: 16, background: "#f3f4f6", borderRadius: 8, border: "1px solid #e5e7eb" }}>
+                              <textarea 
+                                placeholder="답글을 남겨보세요" 
+                                value={replyText} 
+                                onChange={(e) => setReplyText(e.target.value.slice(0, 400))}
+                                style={{ width: "100%", height: 60, padding: 12, border: "1px solid #d1d5db", borderRadius: 8, resize: "none", fontSize: 13, outline: "none", fontFamily: "inherit", background: "#fff", marginBottom: 8 }}
+                              />
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                <label style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 4, color: "#4b5563", fontSize: 13 }}>
+                                  <input type="checkbox" checked={isSecretReply} onChange={e => setIsSecretReply(e.target.checked)} style={{ accentColor: "#508bf5" }} /> 
+                                  비밀답글
+                                </label>
+                                <div style={{ display: "flex", gap: 8 }}>
+                                  <button onClick={() => setReplyToCommentId(null)} style={{ padding: "6px 14px", background: "#fff", color: "#4b5563", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 13, fontWeight: "bold", cursor: "pointer" }}>취소</button>
+                                  <button onClick={() => handleReplySubmit(comment.id)} disabled={!replyText.trim()} style={{ padding: "6px 14px", background: replyText.trim() ? "#1a73e8" : "#9ca3af", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: "bold", cursor: replyText.trim() ? "pointer" : "not-allowed" }}>답글 등록</button>
+                                </div>
+                              </div>
+                            </div>
+                          )}
 
-                        {canViewSecret && (
-                          <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
-                            <button onClick={() => handleToggleLike(comment.id, 'LIKE')} style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 8px", fontSize: 12, borderRadius: 16, border: comment.myLike === 'LIKE' ? "1px solid #3b82f6" : "1px solid #e5e7eb", background: comment.myLike === 'LIKE' ? "#eff6ff" : "#fff", color: comment.myLike === 'LIKE' ? "#3b82f6" : "#4b5563", cursor: "pointer" }}>
-                              👍 {comment.likeCount}
-                            </button>
-                            <button onClick={() => handleToggleLike(comment.id, 'DISLIKE')} style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 8px", fontSize: 12, borderRadius: 16, border: comment.myLike === 'DISLIKE' ? "1px solid #ef4444" : "1px solid #e5e7eb", background: comment.myLike === 'DISLIKE' ? "#fef2f2" : "#fff", color: comment.myLike === 'DISLIKE' ? "#ef4444" : "#4b5563", cursor: "pointer" }}>
-                              👎 {comment.dislikeCount}
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                          {children.map(child => renderComment(child, depth + 1))}
+                        </div>
+                      );
+                    };
+
+                    return rootComments.map(c => renderComment(c, 0));
+                  })()}
                 </div>
               )}
             </div>
+
+            <AuthModal
+              isOpen={isAuthModalOpen}
+              onClose={() => setIsAuthModalOpen(false)}
+              initialTab="login"
+            />
 
             <div style={{ marginTop: 60, paddingTop: 20, borderTop: "1px solid #ccc", textAlign: "center" }}>
               <button className="back-to-list" onClick={() => window.history.back()}>목록으로 돌아가기</button>
@@ -645,11 +830,11 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
               </ul>
             </div>
 
-            {/* 추천 공실 - 부동산회원이고, 사진이 1개라도 있는 공실이 있을 때만 노출 */}
-            {authorRole === "REALTOR" && authorVacancies.filter(v => v.vacancy_photos && v.vacancy_photos.length > 0).length > 0 && (
+            {/* 추천 공실 - 부동산회원이면 등록한 공실 전체 노출 */}
+            {authorRole === "REALTOR" && authorVacancies.length > 0 && (
               <div className="sb-widget">
                 <div className="sb-title">추천 공실</div>
-                {authorVacancies.filter(v => v.vacancy_photos && v.vacancy_photos.length > 0).map((prop, i) => {
+                {authorVacancies.map((prop, i) => {
                   const title = prop.building_name || prop.detail_addr || "이름없는 공실";
                   
                   // 가격 포매팅 로직 개선 (원 단위 -> 억/만 혼합)
@@ -695,13 +880,9 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
                             <span style={{ fontSize: 12, color: "#999" }}>{createdDate}</span>
                           </div>
                         </div>
-                        {thumb ? (
+                        {thumb && (
                           <div className="prop-img-wrapper" style={{ flexShrink: 0 }}>
                             <div style={{ width: 80, height: 80, backgroundColor: "#eee", backgroundImage: `url(${thumb})`, backgroundSize: "cover", backgroundPosition: "center", borderRadius: 6, border: "1px solid #eee" }}></div>
-                          </div>
-                        ) : (
-                          <div className="prop-img-wrapper" style={{ flexShrink: 0 }}>
-                            <div style={{ width: 80, height: 80, backgroundColor: "#f4f5f7", borderRadius: 6, border: "1px solid #eee" }}></div>
                           </div>
                         )}
                       </div>
@@ -719,9 +900,31 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
           {toastMessage}
         </div>
       )}
+
+      {/* 커스텀 Confirm 모달 (귀엽고 깜찍한 블랙박스 팝업) */}
+      {confirmDialog?.isOpen && (
+        <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "rgba(0,0,0,0.4)", zIndex: 999999, display: "flex", alignItems: "center", justifyContent: "center", animation: "fadeIn 0.2s ease" }}>
+          <div style={{ background: "#222", color: "#fff", padding: "24px 32px", borderRadius: 16, boxShadow: "0 10px 30px rgba(0,0,0,0.5)", textAlign: "center", minWidth: 320, animation: "popIn 0.2s ease" }}>
+            <div style={{ fontSize: 16, fontWeight: "bold", marginBottom: 24, lineHeight: 1.5, whiteSpace: "pre-wrap" }}>
+              {confirmDialog.message}
+            </div>
+            <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
+              <button onClick={() => setConfirmDialog(null)} style={{ padding: "10px 24px", borderRadius: 24, border: "2px solid #555", background: "transparent", color: "#ccc", fontSize: 14, fontWeight: "bold", cursor: "pointer", transition: "0.2s" }} onMouseEnter={e => {e.currentTarget.style.background = "#444"; e.currentTarget.style.color = "#fff"}} onMouseLeave={e => {e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#ccc"}}>
+                아니요
+              </button>
+              <button onClick={() => { confirmDialog.onConfirm(); setConfirmDialog(null); }} style={{ padding: "10px 24px", borderRadius: 24, border: "none", background: "#f87171", color: "#fff", fontSize: 14, fontWeight: "bold", cursor: "pointer", transition: "0.2s" }} onMouseEnter={e => e.currentTarget.style.background = "#ef4444"} onMouseLeave={e => e.currentTarget.style.background = "#f87171"}>
+                네!!
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <style>{`
         @keyframes toastFadeIn { from { opacity: 0; transform: translateX(-50%) translateY(-10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
         @keyframes dropdownFadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes popIn { 0% { transform: scale(0.9); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        @keyframes fadeIn { 0% { opacity: 0; } 100% { opacity: 1; } }
       `}</style>
     </>
   );

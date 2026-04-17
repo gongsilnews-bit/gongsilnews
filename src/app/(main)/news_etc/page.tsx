@@ -6,7 +6,7 @@ export default async function NewsEtcPage({ searchParams }: { searchParams: Prom
   const cat = typeof resolvedParams.cat === 'string' ? resolvedParams.cat : undefined;
 
   let displayTitle = "기타 전체보기";
-  let categoryFilter = "기타";
+  let categoryFilter: string | string[] = ["IT·가전·가구", "스포츠·연예·Car", "인물·미션·기타"];
 
   if (cat === "it") {
     displayTitle = "IT·가전·가구";
@@ -21,7 +21,7 @@ export default async function NewsEtcPage({ searchParams }: { searchParams: Prom
 
   const [articlesRes, popularRes] = await Promise.all([
     getArticles({ status: "APPROVED", section2: categoryFilter }),
-    getArticles({ status: "APPROVED", limit: 50 }),
+    getArticles({ status: "APPROVED", section2: categoryFilter, limit: 50 }),
   ]);
 
   const articles = articlesRes.success ? (articlesRes.data || []) : [];
@@ -29,5 +29,5 @@ export default async function NewsEtcPage({ searchParams }: { searchParams: Prom
     ? [...(popularRes.data || [])].sort((a, b) => (b.view_count || 0) - (a.view_count || 0)).slice(0, 5)
     : [];
 
-  return <NewsListLayout category={categoryFilter} title={displayTitle} initialArticles={articles} initialPopular={popular} />;
+  return <NewsListLayout category={typeof categoryFilter === 'string' ? categoryFilter : "기타"} title={displayTitle} initialArticles={articles} initialPopular={popular} />;
 }

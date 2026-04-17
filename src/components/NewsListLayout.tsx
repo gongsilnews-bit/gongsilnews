@@ -177,7 +177,7 @@ export default function NewsListLayout({ category, title, initialArticles, initi
 
             {/* 많이 본 뉴스 5개 */}
             <div className="sb-widget">
-              <div className="sb-title">많이 본 뉴스</div>
+              <div className="sb-title">{title} 많이 본 뉴스</div>
               <ul className="pop-list">
                 {initialPopular.length > 0 ? initialPopular.map((item, i) => (
                   <li key={item.id} className="pop-item">
@@ -190,27 +190,6 @@ export default function NewsListLayout({ category, title, initialArticles, initi
                   <li className="pop-item" style={{ color: "#999", fontSize: 13 }}>기사가 없습니다.</li>
                 )}
               </ul>
-            </div>
-
-            {/* 추천공실 매물리스트 */}
-            <div className="sb-widget">
-              <div className="sb-title">
-                추천 공실
-                <span className="sb-title-more" onClick={() => {}}>더보기 &gt;</span>
-              </div>
-              {recommendProps.map((prop, i) => (
-                <div key={i} className="prop-item">
-                  <div className="prop-info" style={{ minWidth: 0, overflow: "hidden" }}>
-                    <div className="prop-title" style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 180 }}>{prop.title}</div>
-                    <div className="prop-price">{prop.price}</div>
-                    <div className="prop-meta">{prop.area}<br />{prop.detail}</div>
-                    <span className="prop-badge">{prop.badge}</span>
-                  </div>
-                  <div className="prop-img-wrapper" style={{ flexShrink: 0 }}>
-                    <div style={{ width: "100%", height: "100%", background: "#eee" }}></div>
-                  </div>
-                </div>
-              ))}
             </div>
           </div>
         </div>
