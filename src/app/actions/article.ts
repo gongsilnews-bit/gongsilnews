@@ -152,7 +152,7 @@ export async function saveArticle(data: {
 
 /* ── 캐싱된 기사 목록 조회 (기본) ── */
 const getArticlesCached = unstable_cache(
-  async (filters?: { status?: string; section1?: string; section2?: string; is_important?: boolean; is_headline?: boolean; limit?: number; keyword?: string }) => {
+  async (filters?: { status?: string; section1?: string; section2?: string; is_important?: boolean; is_headline?: boolean; limit?: number; keyword?: string; author_name?: string }) => {
     const supabase = getAdminClient();
     let query = supabase
       .from("articles")
@@ -165,6 +165,7 @@ const getArticlesCached = unstable_cache(
     if (filters?.section2) query = query.eq("section2", filters.section2);
     if (filters?.is_important !== undefined) query = query.eq("is_important", filters.is_important);
     if (filters?.is_headline !== undefined) query = query.eq("is_headline", filters.is_headline);
+    if (filters?.author_name) query = query.eq("author_name", filters.author_name);
     
     if (filters?.keyword) {
       // 키워드로 검색된 article_id 목록 추출
@@ -199,6 +200,7 @@ export async function getArticles(filters?: {
   is_headline?: boolean;
   limit?: number;
   keyword?: string;
+  author_name?: string;
 }) {
   return await getArticlesCached(filters);
 }

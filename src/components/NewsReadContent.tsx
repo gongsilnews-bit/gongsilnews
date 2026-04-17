@@ -45,6 +45,7 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
 
   // 작성자 정보 및 소속 공실 State
   const [authorRole, setAuthorRole] = useState<string | null>(null);
+  const [authorEmail, setAuthorEmail] = useState<string | null>(null);
   const [authorVacancies, setAuthorVacancies] = useState<any[]>([]);
 
   // 사용자 정보 가져오기
@@ -165,12 +166,13 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
         const supabase = createClient();
         const { data: member } = await supabase
           .from("members")
-          .select("role")
+          .select("role, email")
           .eq("id", article.author_id)
           .single();
         
         if (member) {
           setAuthorRole(member.role);
+          if (member.email) setAuthorEmail(member.email);
           // 부동산회원인 경우에만 추천 공실 표시를 위해 데이터 가져오기
           if (member.role === "REALTOR") {
             const res = await getVacancies({ ownerId: article.author_id });
@@ -510,11 +512,18 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
               </div>
             )}
 
-            <div className="article-footer-bar">
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={{ fontWeight: 800, color: "#111" }}>{article.author_name || "공실뉴스"}</span>
+            <div className="article-footer-bar" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+                    <span style={{ fontWeight: 800, color: "#111", fontSize: 16 }}>{article.author_name || "공실뉴스"}</span>
+                    <span style={{ color: "#666", fontSize: 14 }}>{authorRole === "ADMIN" ? "기자" : "객원기자"}</span>
+                    <Link href={`/news_all?author_name=${encodeURIComponent(article.author_name || "공실뉴스")}`} style={{ background: "#e11d48", color: "#fff", fontSize: 11, fontWeight: "bold", padding: "4px 8px", borderRadius: 4, textDecoration: "none" }}>다른기사 보기</Link>
+                  </div>
+                  {authorEmail && <div style={{ color: "#888", fontSize: 13 }}>{authorEmail}</div>}
+                </div>
+                <div style={{ color: "#888", fontSize: 13, paddingTop: 4 }}>저작권자 © 공실뉴스 무단전재 및 재배포 금지</div>
               </div>
-              <div style={{ color: "#888", fontSize: 13 }}>저작권자 © 공실뉴스 무단전재 및 재배포 금지</div>
             </div>
 
             <div className="comments-section" style={{ marginTop: 60 }}>
