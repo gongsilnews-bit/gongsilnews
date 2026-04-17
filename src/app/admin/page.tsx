@@ -91,12 +91,35 @@ function AdminContent() {
     }
   }, [prefetchedData]);
 
-  /* ── 초기 로드: 모든 데이터 섹션 병렬 프리페치 ── */
+  const [authChecked, setAuthChecked] = useState(false);
+
+  /* ── 초기 로드: 인증 확인 + 데이터 프리페치 ── */
   useEffect(() => {
     async function fetchUser() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) setAdminUserId(user.id);
+
+      // 🔐 비로그인 → 메인으로 리다이렉트
+      if (!user) {
+        window.location.href = "/";
+        return;
+      }
+
+      // 🔐 role 체크: ADMIN만 접근 가능
+      const { data: member } = await supabase
+        .from("members")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+
+      if (!member || member.role !== "ADMIN") {
+        alert("⚠️ 접근 권한이 없습니다.");
+        window.location.href = "/";
+        return;
+      }
+
+      setAdminUserId(user.id);
+      setAuthChecked(true);
     }
     fetchUser();
 
@@ -114,6 +137,18 @@ function AdminContent() {
 
   const theme = computeTheme(darkMode);
   const sidebarBg = darkMode ? "#000" : "#111111";
+
+  // 🔐 인증 확인 전까지 빈 화면 (깜빡임 방지)
+  if (!authChecked) {
+    return (
+      <div style={{ display: "flex", height: "100vh", width: "100vw", alignItems: "center", justifyContent: "center", background: "#f4f5f7", fontFamily: "'Pretendard Variable', -apple-system, sans-serif" }}>
+        <div style={{ textAlign: "center", color: "#9ca3af" }}>
+          <div style={{ fontSize: 36, marginBottom: 12 }}>🔐</div>
+          <div style={{ fontSize: 16, fontWeight: 600 }}>권한을 확인하고 있습니다...</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: "flex", height: "100vh", width: "100vw", fontFamily: "'Pretendard Variable', -apple-system, sans-serif", background: theme.bg, overflow: "hidden" }}>
