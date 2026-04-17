@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { saveArticle, uploadArticleMedia, getPhotoLibrary, togglePhotoFavorite, getArticleDetail } from "@/app/actions/article";
+import { saveArticle, getPhotoLibrary, togglePhotoFavorite, getArticleDetail } from "@/app/actions/article";
+import { uploadArticleMediaDirect } from "@/utils/uploadDirect";
 import { geocodeAddress } from "@/app/actions/geocode";
 import { createClient } from "@/utils/supabase/client";
 import Link from "next/link";
@@ -1168,13 +1169,11 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
         if (articleId && photoFiles.length > 0) {
           const uploadPromises = photoFiles.map(async (p, i) => {
             if (p.file) {
-              const formData = new FormData();
-              formData.append('file', p.file);
-              formData.append('article_id', articleId);
-              formData.append('media_type', 'PHOTO');
-              formData.append('sort_order', String(i));
-              formData.append('is_cover', p.isCover ? 'true' : 'false');
-              const uploadResult = await uploadArticleMedia(formData);
+              // 클라이언트에서 Supabase Storage로 직접 업로드 (Vercel 서버 경유 X → 속도 대폭 향상)
+              const uploadResult = await uploadArticleMediaDirect(p.file, articleId, {
+                mediaType: 'PHOTO',
+                sortOrder: i,
+              });
               return { p, uploadResult };
             }
             return { p, uploadResult: null };
@@ -1225,12 +1224,11 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
         // 첨부파일 업로드
         if (articleId && attachFiles.length > 0) {
           const attachPromises = attachFiles.map((af, i) => {
-            const formData = new FormData();
-            formData.append('file', af.file);
-            formData.append('article_id', articleId);
-            formData.append('media_type', 'FILE');
-            formData.append('sort_order', String(i));
-            return uploadArticleMedia(formData);
+            // 클라이언트에서 Supabase Storage로 직접 업로드
+            return uploadArticleMediaDirect(af.file, articleId, {
+              mediaType: 'FILE',
+              sortOrder: i,
+            });
           });
           await Promise.all(attachPromises);
         }

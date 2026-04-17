@@ -3,7 +3,8 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { geocodeAddress } from "@/app/actions/geocode";
 import { createClient } from "@/utils/supabase/client";
-import { createVacancy, uploadVacancyPhoto, saveVacancyPhoto, updateVacancy } from "@/app/actions/vacancy";
+import { createVacancy, saveVacancyPhoto, updateVacancy } from "@/app/actions/vacancy";
+import { uploadVacancyPhotoDirect } from "@/utils/uploadDirect";
 
 /* ──────────────────────────────────────────────
    공실등록 폼 컴포넌트 (register.html 1:1 복제)
@@ -1178,18 +1179,16 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                     return;
                   }
 
-                  // 사진 업로드
+                  // 사진 업로드 (클라이언트 직접 → Supabase Storage, 병렬 처리)
                   if (photos.length > 0 && result.id) {
-                    for (let i = 0; i < photos.length; i++) {
-                      const photo = photos[i];
-                      const fileForm = new FormData();
-                      fileForm.append('file', photo);
-                      fileForm.append('path', `${result.id}/${i}_${Date.now()}.webp`);
-                      const uploadRes = await uploadVacancyPhoto(fileForm);
+                    const uploadPromises = photos.map(async (photo, i) => {
+                      const storagePath = `${result.id}/${i}_${Date.now()}.webp`;
+                      const uploadRes = await uploadVacancyPhotoDirect(photo, storagePath);
                       if (uploadRes.success && uploadRes.url) {
-                        await saveVacancyPhoto(result.id, uploadRes.url, i);
+                        await saveVacancyPhoto(result.id!, uploadRes.url, i);
                       }
-                    }
+                    });
+                    await Promise.all(uploadPromises);
                   }
 
                   if (customStatus) {
