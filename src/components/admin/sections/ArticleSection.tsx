@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { AdminSectionProps } from "./types";
 import { getArticles, deleteArticle, adminUpdateArticleStatus, adminUpdateArticleFlags } from "@/app/actions/article";
+import { createClient } from "@/utils/supabase/client";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import NewsWriteForm from "@/components/admin/NewsWriteForm";
@@ -17,6 +18,7 @@ const REJECT_REASONS = [
 export default function ArticleSection({ theme, initialData }: AdminSectionProps & { initialData?: any[] }) {
   const { bg, cardBg, textPrimary, textSecondary, darkMode, border } = theme;
   const [dbArticles, setDbArticles] = useState<any[]>(initialData || []);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [articleFilter, setArticleFilter] = useState("전체");
   const [checkedArticleIds, setCheckedArticleIds] = useState<string[]>([]);
   const [showRejectModal, setShowRejectModal] = useState(false);
@@ -29,10 +31,21 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
   const showWriteForm = action === "write";
 
   useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => {
+      if (data?.user) setCurrentUserId(data.user.id);
+    });
     if (!initialData) getArticles().then(res => { if (res.success) setDbArticles(res.data || []); });
   }, []);
 
-  const filtered = dbArticles.filter(a => {
+  const baseArticles = dbArticles.filter(a => {
+    if (a.status === 'DRAFT' && (!currentUserId || a.author_id !== currentUserId)) {
+      return false; // hide other users' drafts
+    }
+    return true;
+  });
+
+  const filtered = baseArticles.filter(a => {
     if (articleFilter === "전체") return true;
     if (articleFilter === "승인대기") return a.status === 'PENDING';
     if (articleFilter === "발행됨") return a.status === 'APPROVED';
@@ -50,7 +63,7 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
       <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 20 }}>
         <h1 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: 0 }}>기사관리</h1>
         <span style={{ fontSize: 13, fontWeight: 600, color: textSecondary }}>
-          ( 승인대기 {dbArticles.filter(a => a.status === 'PENDING').length}건 / 전체 {dbArticles.length}건 )
+          ( 승인대기 {baseArticles.filter(a => a.status === 'PENDING').length}건 / 전체 {baseArticles.length}건 )
         </span>
       </div>
 
@@ -59,11 +72,11 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
         <div style={{ display: "flex", borderBottom: `1px solid ${border}`, background: darkMode ? "#2c2d31" : "#fafafa", padding: "0 16px" }}>
           {["전체", "승인대기", "발행됨", "작성중", "반려"].map(tab => {
             let count = 0;
-            if (tab === "전체") count = dbArticles.length;
-            else if (tab === "승인대기") count = dbArticles.filter(a => a.status === 'PENDING').length;
-            else if (tab === "발행됨") count = dbArticles.filter(a => a.status === 'APPROVED').length;
-            else if (tab === "작성중") count = dbArticles.filter(a => a.status === 'DRAFT').length;
-            else if (tab === "반려") count = dbArticles.filter(a => a.status === 'REJECTED').length;
+            if (tab === "전체") count = baseArticles.length;
+            else if (tab === "승인대기") count = baseArticles.filter(a => a.status === 'PENDING').length;
+            else if (tab === "발행됨") count = baseArticles.filter(a => a.status === 'APPROVED').length;
+            else if (tab === "작성중") count = baseArticles.filter(a => a.status === 'DRAFT').length;
+            else if (tab === "반려") count = baseArticles.filter(a => a.status === 'REJECTED').length;
 
             return (
               <button key={tab} onClick={() => { setArticleFilter(tab); setCheckedArticleIds([]); }}
@@ -123,7 +136,8 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
                 <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 100 }}>섹션</th>
                 <th style={{ padding: "12px 10px", textAlign: "left", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}` }}>기사 제목</th>
                 <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 100 }}>기자명</th>
-                <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 120 }}>발행일</th>
+                <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 100 }}>발행일</th>
+                <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 100 }}>수정일</th>
                 <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 150 }}>관리</th>
               </tr>
             </thead>
@@ -182,7 +196,8 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
                     <button onClick={() => router.push(`?menu=article&action=write&id=${a.id}`)} style={{ background: "none", border: "none", fontWeight: 700, fontSize: 15, color: textPrimary, textDecoration: "none", cursor: "pointer", padding: 0 }}>{a.title}</button>
                   </td>
                   <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", color: textPrimary }}>{a.author_name || '-'}</td>
-                  <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", color: textSecondary }}>{a.published_at ? new Date(a.published_at).toISOString().split('T')[0] : '-'}</td>
+                  <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", color: textSecondary, fontSize: 12 }}>{a.published_at ? new Date(a.published_at).toISOString().split('T')[0] : '-'}</td>
+                  <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", color: textSecondary, fontSize: 12 }}>{a.updated_at ? new Date(a.updated_at).toISOString().split('T')[0] : '-'}</td>
                   <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
                     <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
                       <button onClick={() => router.push(`?menu=article&action=write&id=${a.id}`)} style={{ height: 30, padding: "0 12px", background: darkMode ? "#374151" : "#4b5563", color: "#fff", border: "none", borderRadius: 4, fontSize: 12, fontWeight: 600, textDecoration: "none", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0, cursor: "pointer" }}>

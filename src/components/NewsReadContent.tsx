@@ -2,8 +2,10 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { createClient } from "@/utils/supabase/client";
 
 import { incrementArticleView } from "@/app/actions/article";
+import { getComments, addComment, deleteComment, toggleCommentLike } from "@/app/actions/comment";
 
 interface NewsReadContentProps {
   article: any;
@@ -33,6 +35,83 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
   const [showFontSizePopup, setShowFontSizePopup] = useState(false);
   const [fontSizeIndex, setFontSizeIndex] = useState(1); // 기본: 보통(16px)
 
+  // 댓글 State
+  const [comments, setComments] = useState<any[]>([]);
+  const [isSecretComment, setIsSecretComment] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentUserName, setCurrentUserName] = useState<string | null>(null);
+  const [isCommentsLoading, setIsCommentsLoading] = useState(true);
+
+  // 사용자 정보 가져오기
+  useEffect(() => {
+    import("@/utils/supabase/client").then(({ createClient }) => {
+      const supabase = createClient();
+      supabase.auth.getUser().then(({ data }) => {
+        if (data?.user) {
+          setCurrentUserId(data.user.id);
+          // 필요하면 user_metadata 에서 이름 가져오기
+          setCurrentUserName(data.user.user_metadata?.name || data.user.email?.split("@")[0] || "익명");
+        }
+      });
+    });
+  }, []);
+
+  // 댓글 가져오기
+  useEffect(() => {
+    if (article?.id) {
+      getComments(article.id, currentUserId).then(res => {
+        if (res.success && res.data) {
+          setComments(res.data);
+        }
+        setIsCommentsLoading(false);
+      });
+    }
+  }, [article?.id, currentUserId]);
+
+  const loadComments = async () => {
+    if (!article?.id) return;
+    const res = await getComments(article.id, currentUserId);
+    if (res.success && res.data) setComments(res.data);
+  };
+
+  const handleCommentSubmit = async () => {
+    if (!currentUserId) {
+      alert("로그인이 필요합니다.");
+      return;
+    }
+    if (!commentText.trim()) {
+      alert("댓글 내용을 입력해주세요.");
+      return;
+    }
+    
+    const res = await addComment(article.id, commentText, isSecretComment, currentUserId, currentUserName || "익명");
+    if (res.success) {
+      setCommentText("");
+      setIsSecretComment(false);
+      loadComments();
+    } else {
+      alert("댓글 등록에 실패했습니다.");
+    }
+  };
+
+  const handleToggleLike = async (commentId: string, type: 'LIKE'|'DISLIKE') => {
+    if (!currentUserId) {
+      alert("로그인이 필요합니다.");
+      return;
+    }
+    const res = await toggleCommentLike(commentId, currentUserId, type);
+    if (res.success) loadComments();
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (!currentUserId) return;
+    if (confirm("댓글을 삭제하시겠습니까?")) {
+      const res = await deleteComment(commentId, currentUserId);
+      if (res.success) loadComments();
+      else alert("삭제에 실패했습니다.");
+    }
+  };
+
   useEffect(() => {
     setMounted(true);
     // 찜 상태 복원
@@ -51,18 +130,16 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
     }
   }, [article.id]);
 
-  // 날짜 포맷
+  // 날짜 포맷 (YYYY.MM.DD HH:mm)
   const formatDate = (dateStr: string) => {
     if (!dateStr) return "";
     const d = new Date(dateStr);
     const yyyy = d.getFullYear();
     const mm = String(d.getMonth() + 1).padStart(2, "0");
     const dd = String(d.getDate()).padStart(2, "0");
-    const hour = d.getHours();
+    const hour = String(d.getHours()).padStart(2, "0");
     const min = String(d.getMinutes()).padStart(2, "0");
-    const ampm = hour >= 12 ? "오후" : "오전";
-    const h12 = hour > 12 ? hour - 12 : hour || 12;
-    return `입력 ${yyyy}. ${mm}. ${dd}. ${ampm} ${String(h12).padStart(2, "0")}:${min}`;
+    return `${yyyy}.${mm}.${dd} ${hour}:${min}`;
   };
 
   useEffect(() => {
@@ -281,7 +358,13 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
               <div className="meta-info">
                 <span style={{ color: "#111", fontWeight: "bold" }}>{article.author_name || "공실뉴스"}</span>
                 <span className="meta-divider"></span>
-                <span suppressHydrationWarning>{formatDate(article.published_at || article.created_at)}</span>
+                <span suppressHydrationWarning>입력 {formatDate(article.published_at || article.created_at)}</span>
+                {article.updated_at && (
+                  <>
+                    <span className="meta-divider"></span>
+                    <span suppressHydrationWarning>수정 {formatDate(article.updated_at)}</span>
+                  </>
+                )}
                 <span className="meta-divider"></span>
                 <span>조회수 {viewCount}</span>
               </div>
@@ -408,23 +491,89 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
               <div style={{ color: "#888", fontSize: 13 }}>저작권자 © 공실뉴스 무단전재 및 재배포 금지</div>
             </div>
 
-            <div className="comments-section">
+            <div className="comments-section" style={{ marginTop: 60 }}>
               <div className="comment-header">
-                <div className="comment-count">0개의 댓글</div>
-                <div style={{ fontSize: 14, color: "#555", cursor: "pointer" }}>내 댓글 〉</div>
+                <div className="comment-count" style={{ fontSize: 18, fontWeight: 800, marginBottom: 16 }}>{comments.length}개의 댓글</div>
               </div>
-              <div className="comment-box">
-                <div className="comment-user-name">로그인이 필요합니다</div>
-                <textarea className="comment-textarea" placeholder="댓글을 남겨보세요" value={commentText} onChange={(e) => setCommentText(e.target.value.slice(0, 400))} />
-                <div className="comment-footer">
-                  <div style={{ fontSize: 13, color: "#999", display: "flex", alignItems: "center", gap: 16 }}>
+              <div className="comment-box" style={{ background: "#f9fafb", padding: 20, borderRadius: 12, border: "1px solid #e5e7eb", marginBottom: 30 }}>
+                <div className="comment-user-name" style={{ fontSize: 14, fontWeight: 700, marginBottom: 8, color: currentUserId ? "#111" : "#9ca3af" }}>
+                  {currentUserId ? currentUserName : "로그인이 필요합니다"}
+                </div>
+                <textarea 
+                  className="comment-textarea" 
+                  placeholder={currentUserId ? "댓글을 남겨보세요" : "의견을 남기려면 로그인이 필요합니다."} 
+                  value={commentText} 
+                  onChange={(e) => setCommentText(e.target.value.slice(0, 400))}
+                  disabled={!currentUserId}
+                  style={{ width: "100%", height: 80, padding: 12, border: "1px solid #d1d5db", borderRadius: 8, resize: "none", fontSize: 14, outline: "none", fontFamily: "inherit" }}
+                />
+                <div className="comment-footer" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 12 }}>
+                  <div style={{ fontSize: 13, color: "#6b7280", display: "flex", alignItems: "center", gap: 16 }}>
                     <span><span style={{ fontWeight: "bold", color: "#111" }}>{commentText.length}</span> / 400</span>
-                    <label style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 4, color: "#555" }}><input type="checkbox" style={{ accentColor: "#508bf5" }} /> 비밀댓글</label>
+                    <label style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 4, color: "#4b5563" }}>
+                      <input type="checkbox" checked={isSecretComment} onChange={e => setIsSecretComment(e.target.checked)} disabled={!currentUserId} style={{ accentColor: "#508bf5" }} /> 
+                      비밀댓글
+                    </label>
                   </div>
-                  <button className="comment-submit-btn">등록</button>
+                  <button 
+                    className="comment-submit-btn" 
+                    onClick={handleCommentSubmit}
+                    disabled={!currentUserId || !commentText.trim()}
+                    style={{ padding: "8px 20px", background: currentUserId && commentText.trim() ? "#1a73e8" : "#9ca3af", color: "#fff", border: "none", borderRadius: 6, fontWeight: 700, cursor: currentUserId && commentText.trim() ? "pointer" : "not-allowed" }}
+                  >
+                    등록
+                  </button>
                 </div>
               </div>
-              <div style={{ padding: 20, textAlign: "center", color: "#999", fontSize: 14 }}>첫 댓글을 남겨보세요.</div>
+
+              {isCommentsLoading ? (
+                <div style={{ padding: 20, textAlign: "center", color: "#999", fontSize: 14 }}>댓글을 불러오는 중...</div>
+              ) : comments.length === 0 ? (
+                <div style={{ padding: 20, textAlign: "center", color: "#9ca3af", fontSize: 14 }}>첫 댓글을 남겨보세요.</div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                  {comments.map((comment) => {
+                    // 비밀댓글 로직: 작성자가 아니거나, 댓글 작성자가 아닌 경우 내용을 가림
+                    const isSecret = comment.is_secret;
+                    const canViewSecret = 
+                      !isSecret || 
+                      (currentUserId === comment.author_id) || 
+                      (currentUserId === article.author_id);
+                    
+                    return (
+                      <div key={comment.id} style={{ display: "flex", flexDirection: "column", gap: 8, paddingBottom: 16, borderBottom: "1px solid #f3f4f6" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <span style={{ fontSize: 14, fontWeight: 700 }}>
+                            {canViewSecret ? comment.author_name : "익명"}
+                            {isSecret && <span style={{ marginLeft: 6, fontSize: 11, color: "#ef4444", fontWeight: 600, border: "1px solid #fca5a5", padding: "1px 4px", borderRadius: 4 }}>비밀글</span>}
+                          </span>
+                          <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                            <span style={{ fontSize: 12, color: "#9ca3af" }}>{formatDate(comment.created_at)}</span>
+                            {currentUserId === comment.author_id && (
+                              <button onClick={() => handleDeleteComment(comment.id)} style={{ border: "none", background: "none", color: "#ef4444", fontSize: 12, cursor: "pointer", padding: 0 }}>삭제</button>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div style={{ fontSize: 14, color: canViewSecret ? "#374151" : "#9ca3af", lineHeight: 1.6, fontStyle: canViewSecret ? "normal" : "italic", whiteSpace: "pre-wrap" }}>
+                          {canViewSecret ? comment.content : "비밀 댓글입니다. (작성자와 기사 작성자만 볼 수 있습니다.)"}
+                        </div>
+
+                        {canViewSecret && (
+                          <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+                            <button onClick={() => handleToggleLike(comment.id, 'LIKE')} style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 8px", fontSize: 12, borderRadius: 16, border: comment.myLike === 'LIKE' ? "1px solid #3b82f6" : "1px solid #e5e7eb", background: comment.myLike === 'LIKE' ? "#eff6ff" : "#fff", color: comment.myLike === 'LIKE' ? "#3b82f6" : "#4b5563", cursor: "pointer" }}>
+                              👍 {comment.likeCount}
+                            </button>
+                            <button onClick={() => handleToggleLike(comment.id, 'DISLIKE')} style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 8px", fontSize: 12, borderRadius: 16, border: comment.myLike === 'DISLIKE' ? "1px solid #ef4444" : "1px solid #e5e7eb", background: comment.myLike === 'DISLIKE' ? "#fef2f2" : "#fff", color: comment.myLike === 'DISLIKE' ? "#ef4444" : "#4b5563", cursor: "pointer" }}>
+                              👎 {comment.dislikeCount}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             <div style={{ marginTop: 60, paddingTop: 20, borderTop: "1px solid #ccc", textAlign: "center" }}>

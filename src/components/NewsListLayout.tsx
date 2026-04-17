@@ -17,6 +17,7 @@ interface Article {
   youtube_url?: string;
   published_at?: string;
   created_at?: string;
+  updated_at?: string;
   view_count?: number;
 }
 
@@ -47,18 +48,16 @@ export default function NewsListLayout({ category, title, initialArticles, initi
     }
   };
 
-  // 날짜 포맷
+  // 날짜 포맷 (YYYY.MM.DD HH:mm)
   const formatDate = (dateStr: string) => {
     if (!dateStr) return "";
     const d = new Date(dateStr);
     const yyyy = d.getFullYear();
     const mm = String(d.getMonth() + 1).padStart(2, "0");
     const dd = String(d.getDate()).padStart(2, "0");
-    const hour = d.getHours();
+    const hour = String(d.getHours()).padStart(2, "0");
     const min = String(d.getMinutes()).padStart(2, "0");
-    const ampm = hour >= 12 ? "오후" : "오전";
-    const h12 = hour > 12 ? hour - 12 : hour || 12;
-    return `${yyyy}. ${mm}. ${dd}. ${ampm} ${String(h12).padStart(2, "0")}:${min}`;
+    return `${yyyy}.${mm}.${dd} ${hour}:${min}`;
   };
 
   // 본문에서 텍스트만 추출 (기사 복사 시 딸려온 팝업 X버튼 등 제거)
@@ -150,7 +149,7 @@ export default function NewsListLayout({ category, title, initialArticles, initi
                       <span style={{ color: "#508bf5", fontWeight: "bold", marginRight: 8 }}>
                         [{article.section1 || "뉴스"} &gt; {article.section2 || "전체"}]
                       </span>
-                      {formatDate(article.published_at || article.created_at || "")} · {article.author_name || "공실뉴스"}
+                      {formatDate(article.published_at || article.created_at || "")} {article.updated_at ? `(수정: ${formatDate(article.updated_at)})` : ""} · {article.author_name || "공실뉴스"}
                     </div>
                   </div>
                 </div>

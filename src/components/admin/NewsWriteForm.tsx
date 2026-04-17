@@ -77,15 +77,24 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
 
   const fetchRelatedArticles = async (searchKw: string = '') => {
     setIsRelatedArticlesLoading(true);
-    const { getArticles } = await import('@/app/actions/article');
-    const res = await getArticles({ limit: 130 }); // 최근 130건 (이미지 참조)
-    if (res.success && res.data) {
-      let data = res.data;
-      if (searchKw) {
-         data = data.filter((a: any) => a.title?.includes(searchKw));
+    const { getMyArticles } = await import('@/app/actions/article');
+    
+    const authorId = memberAuthorId || currentUserId;
+    if (authorId) {
+      const res = await getMyArticles(authorId);
+      if (res.success && res.data) {
+        let data = res.data.filter((a: any) => a.status === 'APPROVED');
+        if (searchKw) {
+           data = data.filter((a: any) => a.title?.includes(searchKw));
+        }
+        setRelatedArticlesDb(data);
+      } else {
+        setRelatedArticlesDb([]);
       }
-      setRelatedArticlesDb(data);
+    } else {
+      setRelatedArticlesDb([]);
     }
+    
     setIsRelatedArticlesLoading(false);
   };
 
@@ -1157,8 +1166,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
 
         // 사진 첨부: 신규 파일(p.file !== null)은 업로드 진행
         if (articleId && photoFiles.length > 0) {
-          for (let i = 0; i < photoFiles.length; i++) {
-            const p = photoFiles[i];
+          const uploadPromises = photoFiles.map(async (p, i) => {
             if (p.file) {
               const formData = new FormData();
               formData.append('file', p.file);
@@ -1166,22 +1174,27 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
               formData.append('media_type', 'PHOTO');
               formData.append('sort_order', String(i));
               formData.append('is_cover', p.isCover ? 'true' : 'false');
-              
               const uploadResult = await uploadArticleMedia(formData);
-              if (uploadResult.success && uploadResult.url) {
-                // 본문에 삽입된 브라우저 Blob URL을 실제 서버 Public URL로 치환
-                const localUrl = p.preview;
-                if (finalHtml.includes(localUrl)) {
-                  finalHtml = finalHtml.replaceAll(localUrl, uploadResult.url);
-                  htmlChanged = true;
-                }
-                if (p.isCover) {
-                  finalThumbnailUrl = uploadResult.url;
-                }
+              return { p, uploadResult };
+            }
+            return { p, uploadResult: null };
+          });
+          
+          const uploadResults = await Promise.all(uploadPromises);
+          
+          for (const res of uploadResults) {
+            if (res.uploadResult && res.uploadResult.success && res.uploadResult.url) {
+              const localUrl = res.p.preview;
+              if (finalHtml.includes(localUrl)) {
+                finalHtml = finalHtml.replaceAll(localUrl, res.uploadResult.url);
+                htmlChanged = true;
               }
-            } else {
+              if (res.p.isCover) {
+                finalThumbnailUrl = res.uploadResult.url;
+              }
+            } else if (!res.uploadResult) {
               // 기존에 DB에 있던 사진
-              if (p.isCover) finalThumbnailUrl = p.preview;
+              if (res.p.isCover) finalThumbnailUrl = res.p.preview;
             }
           }
         }
@@ -1211,18 +1224,19 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
 
         // 첨부파일 업로드
         if (articleId && attachFiles.length > 0) {
-          for (let i = 0; i < attachFiles.length; i++) {
+          const attachPromises = attachFiles.map((af, i) => {
             const formData = new FormData();
-            formData.append('file', attachFiles[i].file);
+            formData.append('file', af.file);
             formData.append('article_id', articleId);
             formData.append('media_type', 'FILE');
             formData.append('sort_order', String(i));
-            await uploadArticleMedia(formData);
-          }
+            return uploadArticleMedia(formData);
+          });
+          await Promise.all(attachPromises);
         }
 
         alert("✅ 기사가 저장되었습니다!");
-        router.push(isMemberMode ? memberReturnPath : "/admin?menu=article");
+        window.location.href = isMemberMode ? memberReturnPath : "/admin?menu=article";
       } else {
         alert("❌ 저장 실패: " + result.error);
       }

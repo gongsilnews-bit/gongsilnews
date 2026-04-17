@@ -151,15 +151,16 @@ export default function MemberArticleSection({ theme, memberId, memberName, memb
                 <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 80 }}>상태</th>
                 <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 100 }}>섹션</th>
                 <th style={{ padding: "12px 10px", textAlign: "left", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}` }}>기사 제목</th>
-                <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 120 }}>작성일</th>
+                <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 100 }}>작성일</th>
+                <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 100 }}>수정일</th>
                 <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 150 }}>관리</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={6} style={{ padding: 40, textAlign: "center", color: textSecondary }}>불러오는 중...</td></tr>
+                <tr><td colSpan={8} style={{ padding: 40, textAlign: "center", color: textSecondary }}>불러오는 중...</td></tr>
               ) : filtered.length === 0 ? (
-                <tr><td colSpan={6} style={{ padding: 40, textAlign: "center", color: textSecondary }}>
+                <tr><td colSpan={8} style={{ padding: 40, textAlign: "center", color: textSecondary }}>
                   {filter === "전체" ? "작성한 기사가 없습니다. '새 기사 작성' 버튼을 클릭하여 시작하세요." : "조회된 기사가 없습니다."}
                 </td></tr>
               ) : filtered.map((a) => (
@@ -188,8 +189,11 @@ export default function MemberArticleSection({ theme, memberId, memberName, memb
                       </div>
                     )}
                   </td>
-                  <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", color: textSecondary }}>
+                  <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", color: textSecondary, fontSize: 12 }}>
                     {a.created_at ? new Date(a.created_at).toISOString().split("T")[0] : "-"}
+                  </td>
+                  <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", color: textSecondary, fontSize: 12 }}>
+                    {a.updated_at ? new Date(a.updated_at).toISOString().split("T")[0] : "-"}
                   </td>
                   <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
                     <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
