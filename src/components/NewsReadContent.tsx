@@ -6,6 +6,7 @@ import { createClient } from "@/utils/supabase/client";
 
 import { incrementArticleView } from "@/app/actions/article";
 import { getComments, addComment, deleteComment, toggleCommentLike } from "@/app/actions/comment";
+import { getVacancies } from "@/app/actions/vacancy";
 
 interface NewsReadContentProps {
   article: any;
@@ -41,6 +42,10 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [currentUserName, setCurrentUserName] = useState<string | null>(null);
   const [isCommentsLoading, setIsCommentsLoading] = useState(true);
+
+  // 작성자 정보 및 소속 공실 State
+  const [authorRole, setAuthorRole] = useState<string | null>(null);
+  const [authorVacancies, setAuthorVacancies] = useState<any[]>([]);
 
   // 사용자 정보 가져오기
   useEffect(() => {
@@ -151,6 +156,33 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
       });
     }
   }, [article.id]);
+
+  // 기사 작성자의 권한 확인 및 공실 데이터 페칭
+  useEffect(() => {
+    async function fetchAuthorData() {
+      if (!article?.author_id) return;
+      try {
+        const supabase = createClient();
+        const { data: member } = await supabase
+          .from("members")
+          .select("role")
+          .eq("id", article.author_id)
+          .single();
+        
+        if (member) {
+          setAuthorRole(member.role);
+          // 부동산회원인 경우에만 추천 공실 표시를 위해 데이터 가져오기
+          if (member.role === "REALTOR") {
+            const res = await getVacancies({ ownerId: article.author_id });
+            if (res.success && res.data) {
+              setAuthorVacancies(res.data);
+            }
+          }
+        }
+      } catch (err) {}
+    }
+    fetchAuthorData();
+  }, [article?.author_id]);
 
   // 스크롤 진행 바 (리렌더링 방지)
   useEffect(() => {
@@ -319,14 +351,6 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
     printWindow.onload = () => { printWindow.focus(); printWindow.print(); };
     setTimeout(() => { printWindow.focus(); printWindow.print(); }, 1500);
   };
-
-  // 추천공실 더미
-  const recommendProps = [
-    { title: "힐데스하임", price: "매매 67억", area: "면적 288.9㎡(87.4평) / 244.55㎡(74.0평)", detail: "룸 1개, 욕실 3+개", badge: "공동중개" },
-    { title: "논현 e편한세상 101동 101호", price: "매매 10억", area: "면적 84㎡(25.4평)", detail: "룸 3개, 욕실 2개", badge: "공동중개" },
-    { title: "관악드림타운 132동 8층호", price: "매매 11억 5000", area: "면적 82.91㎡(25.1평) / 59.83㎡(18.1평)", detail: "룸 3개, 욕실 1개", badge: "공동중개" },
-    { title: "동부센트레빌 101동 101호", price: "매매 10억", area: "면적 84㎡(25.4평) / 59㎡(17.8평)", detail: "룸 3개, 욕실 1개", badge: "공동중개" },
-  ];
 
   // 유튜브 ID 추출
   const extractYoutubeId = (url?: string, html?: string): string | null => {
@@ -612,22 +636,71 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
               </ul>
             </div>
 
-            <div className="sb-widget">
-              <div className="sb-title">추천 공실<span className="sb-title-more">더보기 &gt;</span></div>
-              {recommendProps.map((prop, i) => (
-                <div key={i} className="prop-item">
-                  <div className="prop-info" style={{ minWidth: 0, overflow: "hidden" }}>
-                    <div className="prop-title" style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 180 }}>{prop.title}</div>
-                    <div className="prop-price">{prop.price}</div>
-                    <div className="prop-meta">{prop.area}<br />{prop.detail}</div>
-                    <span className="prop-badge">{prop.badge}</span>
-                  </div>
-                  <div className="prop-img-wrapper" style={{ flexShrink: 0 }}>
-                    <div style={{ width: "100%", height: "100%", background: "#eee" }}></div>
-                  </div>
-                </div>
-              ))}
-            </div>
+            {/* 추천 공실 - 부동산회원이고, 사진이 1개라도 있는 공실이 있을 때만 노출 */}
+            {authorRole === "REALTOR" && authorVacancies.filter(v => v.vacancy_photos && v.vacancy_photos.length > 0).length > 0 && (
+              <div className="sb-widget">
+                <div className="sb-title">추천 공실</div>
+                {authorVacancies.filter(v => v.vacancy_photos && v.vacancy_photos.length > 0).map((prop, i) => {
+                  const title = prop.building_name || prop.detail_addr || "이름없는 공실";
+                  
+                  // 가격 포매팅 로직 개선 (원 단위 -> 억/만 혼합)
+                  const formatMoney = (val: number) => {
+                    if (!val) return "0";
+                    if (val >= 100000000) {
+                      const uk = Math.floor(val / 100000000);
+                      const man = Math.floor((val % 100000000) / 10000);
+                      return `${uk}억${man > 0 ? ` ${man}만` : ""}`;
+                    }
+                    return `${Math.floor(val / 10000)}만`;
+                  };
+
+                  let price = prop.trade_type;
+                  if (prop.trade_type === "매매" || prop.trade_type === "전세") price += ` ${formatMoney(prop.deposit)}`;
+                  else if (prop.trade_type === "월세") price += ` ${formatMoney(prop.deposit || 0)} / ${formatMoney(prop.monthly_rent || 0)}`;
+                  
+                  const detailStr = `룸 ${prop.room_count||0}개, 욕실 ${prop.bath_count||0}개`;
+                  const thumb = prop.vacancy_photos && prop.vacancy_photos.length > 0 ? prop.vacancy_photos[0].url : "";
+                  const createdDate = prop.created_at ? new Date(prop.created_at).toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" }).replace(/\.$/, "") : "";
+
+                  return (
+                    <Link href={`/gongsil?id=${prop.id}`} target="_blank" key={prop.id || i} style={{ textDecoration: "none", color: "inherit", display: "block" }}>
+                      <div className="prop-item" style={{ padding: "16px 0", borderBottom: "1px solid #f0f0f0", display: "flex", gap: 12, cursor: "pointer", background: "#fff", transition: "background 0.15s" }} onMouseEnter={e => e.currentTarget.style.background = '#f9fafb'} onMouseLeave={e => e.currentTarget.style.background = '#fff'}>
+                        <div className="prop-info" style={{ minWidth: 0, overflow: "hidden", flex: 1, display: "flex", flexDirection: "column" }}>
+                          <div className="prop-title" style={{ fontSize: 14, fontWeight: 700, color: "#111", marginBottom: 4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{title}</div>
+                          <div className="prop-price" style={{ color: "#1a73e8", fontWeight: 800, fontSize: 18, marginBottom: 6 }}>{price}</div>
+                          <div className="prop-meta" style={{ fontSize: 12, color: "#666", marginBottom: 3 }}>
+                            {prop.property_type || "주택"} <span style={{color: "#ddd"}}>|</span> {prop.direction || "방향없음"} <span style={{color: "#ddd"}}>|</span> {prop.exclusive_m2 || 0}㎡
+                          </div>
+                          <div className="prop-meta" style={{ fontSize: 12, color: "#666", marginBottom: 10, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                            {detailStr}{prop.options && prop.options.length > 0 ? `, ${prop.options.join(", ")}` : ""}
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            {prop.commission_type && (
+                              <span style={{ fontSize: 11, color: "#ef4444", border: "1px solid #fca5a5", padding: "2px 6px", borderRadius: 2 }}>
+                                {prop.commission_type}
+                              </span>
+                            )}
+                            {prop.vacancy_no && (
+                              <span style={{ fontSize: 13, color: "#ef4444", fontWeight: 700 }}>{prop.vacancy_no}</span>
+                            )}
+                            <span style={{ fontSize: 12, color: "#999" }}>{createdDate}</span>
+                          </div>
+                        </div>
+                        {thumb ? (
+                          <div className="prop-img-wrapper" style={{ flexShrink: 0 }}>
+                            <div style={{ width: 80, height: 80, backgroundColor: "#eee", backgroundImage: `url(${thumb})`, backgroundSize: "cover", backgroundPosition: "center", borderRadius: 6, border: "1px solid #eee" }}></div>
+                          </div>
+                        ) : (
+                          <div className="prop-img-wrapper" style={{ flexShrink: 0 }}>
+                            <div style={{ width: 80, height: 80, backgroundColor: "#f4f5f7", borderRadius: 6, border: "1px solid #eee" }}></div>
+                          </div>
+                        )}
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       </main>
