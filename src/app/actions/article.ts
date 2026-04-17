@@ -152,7 +152,7 @@ export async function saveArticle(data: {
 
 /* ── 캐싱된 기사 목록 조회 (기본) ── */
 const getArticlesCached = unstable_cache(
-  async (filters?: { status?: string; section1?: string; section2?: string; is_important?: boolean; is_headline?: boolean; limit?: number }) => {
+  async (filters?: { status?: string; section1?: string; section2?: string; is_important?: boolean; is_headline?: boolean; limit?: number; keyword?: string }) => {
     const supabase = getAdminClient();
     let query = supabase
       .from("articles")
@@ -165,6 +165,22 @@ const getArticlesCached = unstable_cache(
     if (filters?.section2) query = query.eq("section2", filters.section2);
     if (filters?.is_important !== undefined) query = query.eq("is_important", filters.is_important);
     if (filters?.is_headline !== undefined) query = query.eq("is_headline", filters.is_headline);
+    
+    if (filters?.keyword) {
+      // 키워드로 검색된 article_id 목록 추출
+      const { data: kwData, error: kwError } = await supabase
+        .from("article_keywords")
+        .select("article_id")
+        .eq("keyword", filters.keyword);
+        
+      if (!kwError && kwData && kwData.length > 0) {
+        query = query.in("id", kwData.map((k: any) => k.article_id));
+      } else {
+        // 일치하는 키워드가 없는 경우 빈 배열 즉시 리턴
+        return { success: true, data: [] };
+      }
+    }
+
     if (filters?.limit) query = query.limit(filters.limit);
 
     const { data, error } = await query;
@@ -182,6 +198,7 @@ export async function getArticles(filters?: {
   is_important?: boolean;
   is_headline?: boolean;
   limit?: number;
+  keyword?: string;
 }) {
   return await getArticlesCached(filters);
 }

@@ -479,7 +479,9 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
             {article.article_keywords && article.article_keywords.length > 0 && (
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, margin: "24px 0", padding: "16px 0", borderTop: "1px solid #eee" }}>
                 {article.article_keywords.map((kw: any, i: number) => (
-                  <span key={i} style={{ padding: "6px 14px", borderRadius: 20, background: "#fff", color: "#555", fontSize: 13, fontWeight: 500, border: "1px solid #ccc" }}>#{kw.keyword}</span>
+                  <Link href={`/news_all?keyword=${encodeURIComponent(kw.keyword)}`} key={i} style={{ padding: "6px 14px", borderRadius: 20, background: "#fff", color: "#555", fontSize: 13, fontWeight: 500, border: "1px solid #ccc", textDecoration: "none", transition: "all 0.2s" }} onMouseEnter={e => e.currentTarget.style.background = '#f8f9fa'} onMouseLeave={e => e.currentTarget.style.background = '#fff'}>
+                    #{kw.keyword}
+                  </Link>
                 ))}
               </div>
             )}
