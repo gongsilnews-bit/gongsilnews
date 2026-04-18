@@ -1,33 +1,23 @@
 import Link from "next/link";
-import { getArticles } from "@/app/actions/article";
-import { getBannersByPlacement } from "@/app/actions/banner";
 import BannerSlot from "@/components/BannerSlot";
 
-export default async function CategoryNewsGrid() {
-  // 섹션별 기사 가져오기 (최신순 2개씩)
-  const [financeRes, mapRes, politicsRes, lawRes, lifeRes, itRes, sportsRes, peopleRes, { data: issueRightBanners }] = await Promise.all([
-    getArticles({ status: "APPROVED", section1: "뉴스/칼럼", section2: "부동산·주식·재테크", limit: 10 }),
-    getArticles({ status: "APPROVED", section1: "우리동네부동산", limit: 30 }),
-    getArticles({ status: "APPROVED", section1: "뉴스/칼럼", section2: "정치·경제·사회", limit: 10 }),
-    getArticles({ status: "APPROVED", section1: "뉴스/칼럼", section2: "세무·법률", limit: 10 }),
-    getArticles({ status: "APPROVED", section1: "뉴스/칼럼", section2: "여행·건강·생활", limit: 10 }),
-    getArticles({ status: "APPROVED", section1: "뉴스/칼럼", section2: "IT·가전·가구", limit: 10 }),
-    getArticles({ status: "APPROVED", section1: "뉴스/칼럼", section2: "스포츠·연예·Car", limit: 10 }),
-    getArticles({ status: "APPROVED", section1: "뉴스/칼럼", section2: "인물·미션·기타", limit: 10 }),
-    getBannersByPlacement("MAIN_ISSUE_RIGHT"),
-  ]);
+interface CategoryNewsGridProps {
+  allNewsArticles?: any[];
+  mapArticles?: any[];
+  issueRightBanners?: any[];
+}
 
-  const rawFinanceArts = financeRes.success ? financeRes.data || [] : [];
-  const rawMapArts = mapRes.success ? mapRes.data || [] : [];
-  const rawPoliticsArts = politicsRes.success ? politicsRes.data || [] : [];
-  const rawLawArts = lawRes.success ? lawRes.data || [] : [];
-  const rawLifeArts = lifeRes.success ? lifeRes.data || [] : [];
-  
-  const rawEtcArts = [
-    ...(itRes.success ? itRes.data || [] : []),
-    ...(sportsRes.success ? sportsRes.data || [] : []),
-    ...(peopleRes.success ? peopleRes.data || [] : []),
-  ];
+export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [], issueRightBanners }: CategoryNewsGridProps) {
+  // JS에서 카테고리별 분류 (DB 쿼리 8개 → 0개)
+  const rawFinanceArts = allNewsArticles.filter(a => a.section2 === "부동산·주식·재테크").slice(0, 10);
+  const rawPoliticsArts = allNewsArticles.filter(a => a.section2 === "정치·경제·사회").slice(0, 10);
+  const rawLawArts = allNewsArticles.filter(a => a.section2 === "세무·법률").slice(0, 10);
+  const rawLifeArts = allNewsArticles.filter(a => a.section2 === "여행·건강·생활").slice(0, 10);
+  const rawMapArts = mapArticles.slice(0, 30);
+
+  const rawEtcArts = allNewsArticles
+    .filter(a => ["IT·가전·가구", "스포츠·연예·Car", "인물·미션·기타"].includes(a.section2))
+    .slice(0, 30);
   rawEtcArts.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
   // 날짜 포맷팅

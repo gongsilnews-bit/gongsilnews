@@ -2,8 +2,9 @@ import Script from "next/script";
 import { getVacanciesForMap } from "@/app/actions/vacancy";
 import { getBannersByPlacement } from "@/app/actions/banner";
 import { getLectures } from "@/app/actions/lecture";
+import { getArticles } from "@/app/actions/article";
 
-export const revalidate = 60;
+export const revalidate = 300; // 5분 캐시 (60s → 300s 확장)
 
 import QuickFloatingMenu from "@/components/common/QuickFloatingMenu";
 import MarketTickerBar from "@/components/home/MarketTickerBar";
@@ -15,12 +16,28 @@ import SpecialLectureBanner from "@/components/home/SpecialLectureBanner";
 import BannerSlot from "@/components/BannerSlot";
 
 export default async function Home() {
-  const [{ data: initialVacancies }, { data: mainTopBanners }, { data: mainBottomBanners }, { data: lecturesData }] = await Promise.all([
+  // ✅ 모든 데이터를 한 번에 병렬 요청 (layout→page→component 직렬 제거)
+  const [
+    { data: initialVacancies },
+    { data: mainTopBanners },
+    { data: mainBottomBanners },
+    { data: issueRightBanners },
+    { data: lecturesData },
+    allNewsRes,
+    mapNewsRes,
+  ] = await Promise.all([
     getVacanciesForMap(),
     getBannersByPlacement("MAIN_TOP"),
     getBannersByPlacement("MAIN_BOTTOM_FULL"),
-    getLectures({ status: "ACTIVE" })
+    getBannersByPlacement("MAIN_ISSUE_RIGHT"),
+    getLectures({ status: "ACTIVE" }),
+    // ✅ 기사 8개 쿼리 → 2개로 통합
+    getArticles({ status: "APPROVED", section1: "뉴스/칼럼", limit: 100 }),
+    getArticles({ status: "APPROVED", section1: "우리동네부동산", limit: 30 }),
   ]);
+
+  const allNewsArticles = allNewsRes.success ? allNewsRes.data || [] : [];
+  const mapArticles = mapNewsRes.success ? mapNewsRes.data || [] : [];
 
   return (
     <>
@@ -44,8 +61,12 @@ export default async function Home() {
         {/* ========== 4. Ticker Section ========== */}
         <MarketTickerBar />
 
-        {/* ========== 5. Category News Grid ========== */}
-        <CategoryNewsGrid />
+        {/* ========== 5. Category News Grid (pre-fetched data) ========== */}
+        <CategoryNewsGrid
+          allNewsArticles={allNewsArticles}
+          mapArticles={mapArticles}
+          issueRightBanners={issueRightBanners}
+        />
       </main>
 
       {/* ========== 7. Premium Media ========== */}
@@ -62,3 +83,4 @@ export default async function Home() {
     </>
   );
 }
+
