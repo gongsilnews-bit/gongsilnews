@@ -50,6 +50,11 @@ export default async function Home() {
       {/* ========== 9. Lectures ========== */}
       <SpecialLectureBanner />
 
+      {/* ========== 배너: 메인 하단 ========== */}
+      <div className="container px-20">
+        <BannerSlot placement="MAIN_BOTTOM" style={{ borderRadius: 12, overflow: "hidden", marginTop: 40, marginBottom: 40 }} />
+      </div>
+
       {/* ========== 10. Floating or Promotions ========== */}
       <ChatbotBanner />
     </>

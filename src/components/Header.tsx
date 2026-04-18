@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import AuthModal from "./AuthModal";
 import SignupCompleteModal from "./SignupCompleteModal";
+import BannerSlot from "./BannerSlot";
 import { createClient } from "@/utils/supabase/client";
 
 
@@ -155,6 +156,12 @@ export default function Header() {
         </div>
       )}
 
+      {/* 0. Top Full Banner */}
+      <div style={{ width: "100%", background: "#f8f9fa", display: "flex", justifyContent: "center" }}>
+        <div style={{ maxWidth: 1920, width: "100%" }}>
+          <BannerSlot placement="TOP_FULL" style={{ borderRadius: 0 }} />
+        </div>
+      </div>
 
       {/* 1. Top Nav Bar */}
       <div className="top-bar">

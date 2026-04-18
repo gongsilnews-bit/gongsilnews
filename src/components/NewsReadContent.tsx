@@ -9,6 +9,7 @@ import { getComments, addComment, deleteComment, toggleCommentLike, editComment 
 import { getArticleReactions, toggleArticleReaction } from "@/app/actions/reaction";
 import { getVacancies } from "@/app/actions/vacancy";
 import AuthModal from "./AuthModal";
+import BannerSlot from "./BannerSlot";
 
 interface NewsReadContentProps {
   article: any;
@@ -803,10 +804,8 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
 
           {/* 사이드바 */}
           <div className="news-sidebar">
-            <div className="sb-widget">
-              <div className="sidebar-hot-title">HOT 매물/광고</div>
-              <div className="sidebar-hot-map">공실가이드맵 (지도 이미지)</div>
-              <div className="sidebar-hot-label">강남구 역삼동 신축 빌딩 (수익률 6%)</div>
+            <div style={{ marginBottom: 20 }}>
+              <BannerSlot placement="SIDEBAR" />
             </div>
 
             <div className="sb-widget">
@@ -840,19 +839,20 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
                   // 가격 포매팅 로직 개선 (원 단위 -> 억/천/백 혼합)
                   const formatMoney = (val: number) => {
                     if (!val) return "0";
-                    const manwon = Math.floor(val / 10000);
-                    if (manwon === 0) return "0";
-                    const uk = Math.floor(manwon / 10000);
-                    const rest = manwon % 10000;
+                    const m = Math.round(val / 10000);
+                    if (m === 0) return "0";
+                    const e = Math.floor(m / 10000);
+                    const r = m % 10000;
                     let result = "";
-                    if (uk > 0) result += `${uk}억`;
-                    if (rest > 0) {
-                      const cheon = Math.floor(rest / 1000);
-                      const remainder = rest % 1000;
-                      let restStr = "";
-                      if (cheon > 0) restStr += `${cheon}천`;
-                      if (remainder > 0) restStr += `${remainder}`;
-                      if (restStr) result += (result ? " " : "") + restStr;
+                    if (e > 0) result += `${e}억`;
+                    if (r > 0) {
+                      const c = Math.floor(r / 1000);
+                      const rem = r % 1000;
+                      let rest = "";
+                      if (c > 0) rest += `${c}천`;
+                      if (rem > 0) rest += `${rem}`;
+                      if (rest) result += result ? " " + rest : rest;
+                      if (e === 0 && c === 0 && rem > 0) result += "만";
                     }
                     return result || "0";
                   };

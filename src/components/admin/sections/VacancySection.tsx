@@ -212,19 +212,27 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                 <tr><td colSpan={10} style={{ padding: 40, textAlign: "center", color: textSecondary, fontSize: 14 }}>조건에 맞는 공실이 없습니다.</td></tr>
               ) : filteredVacancies.map((row, idx) => {
                   const formatAmount = (amt: number) => {
-                  if (!amt) return "";
-                  const manwon = Math.round(amt / 10000);
-                  if (manwon >= 10000) {
-                    const eok = Math.floor(manwon / 10000);
-                    const rest = manwon % 10000;
-                    return `${eok}억${rest ? ` ${rest}` : ""}`;
+                  if (!amt) return "0";
+                  const m = Math.round(amt / 10000);
+                  if (m === 0) return "0";
+                  const e = Math.floor(m / 10000);
+                  const r = m % 10000;
+                  let result = "";
+                  if (e > 0) result += `${e}억`;
+                  if (r > 0) {
+                    const c = Math.floor(r / 1000);
+                    const rem = r % 1000;
+                    let rest = "";
+                    if (c > 0) rest += `${c}천`;
+                    if (rem > 0) rest += `${rem}`;
+                    if (rest) result += result ? " " + rest : rest;
+                    if (e === 0 && c === 0 && rem > 0) result += "만";
                   }
-                  return `${manwon}`;
+                  return result || "0";
                 };
-                const monthlyManwon = row.monthly_rent ? Math.round(row.monthly_rent / 10000) : 0;
                 const priceText = row.trade_type === "매매" ? `매매 ${formatAmount(row.deposit)}`
                   : row.trade_type === "전세" ? `전세 ${formatAmount(row.deposit)}`
-                  : `${formatAmount(row.deposit)}/${monthlyManwon}`;
+                  : `${formatAmount(row.deposit)}/${formatAmount(row.monthly_rent)}`;
                 const addrText = [row.dong, row.building_name].filter(Boolean).join(" ") || [row.sido, row.sigungu, row.dong].filter(Boolean).join(" ");
                 const dateStr = row.created_at ? new Date(row.created_at).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' }) : "";
                 const isActive = row.status === 'ACTIVE';

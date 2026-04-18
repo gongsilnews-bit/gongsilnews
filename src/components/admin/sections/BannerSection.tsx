@@ -6,12 +6,135 @@ import { AdminSectionProps } from "./types";
 import { getBanners, createBanner, updateBanner, deleteBanner, toggleBannerActive, getBannerStats } from "@/app/actions/banner";
 
 const PLACEMENT_OPTIONS = [
+  { value: "TOP_FULL", label: "메인 최상단 와이드" },
   { value: "MAIN_TOP", label: "메인 상단" },
   { value: "MAIN_MIDDLE", label: "메인 중간" },
-  { value: "SIDEBAR", label: "사이드바" },
-  { value: "LIST_INLINE", label: "리스트 인라인" },
-  { value: "NEWS_DETAIL", label: "뉴스 상세" },
+  { value: "MAIN_BOTTOM", label: "메인 하단" },
+  { value: "MAIN_ISSUE_RIGHT", label: "메인 이슈 우측" },
+  { value: "SIDEBAR", label: "뉴스상세사이드바" },
+  { value: "LIST_INLINE", label: "뉴스 리스트형" },
+  { value: "LIST_SIDEBAR", label: "뉴스 리스트 사이드바" },
+  { value: "NEWS_DETAIL", label: "뉴스 상세하단" },
   { value: "POPUP", label: "팝업" },
+];
+
+const PLACEMENT_CARDS = [
+  { 
+    value: "TOP_FULL", label: "메인 최상단 와이드", size: "1920x80px",
+    icon: (selected: boolean) => (
+      <svg width="48" height="36" viewBox="0 0 100 75" fill="none" stroke="#ccc" strokeWidth="2">
+        <rect x="5" y="5" width="90" height="65" rx="4" fill="#fff" />
+        <rect x="5" y="5" width="90" height="12" fill={selected ? "#3b82f6" : "#e5e7eb"} stroke="none" />
+        <path d="M5 17 L95 17" />
+      </svg>
+    )
+  },
+  { 
+    value: "MAIN_TOP", label: "메인 상단", size: "1200x200px",
+    icon: (selected: boolean) => (
+      <svg width="48" height="36" viewBox="0 0 100 75" fill="none" stroke="#ccc" strokeWidth="2">
+        <rect x="5" y="5" width="90" height="65" rx="4" fill="#fff" />
+        <path d="M5 20 L95 20" />
+        <rect x="5" y="20" width="90" height="15" fill={selected ? "#3b82f6" : "#e5e7eb"} stroke="none" />
+      </svg>
+    )
+  },
+  { 
+    value: "MAIN_MIDDLE", label: "메인 중간", size: "1200x150px",
+    icon: (selected: boolean) => (
+      <svg width="48" height="36" viewBox="0 0 100 75" fill="none" stroke="#ccc" strokeWidth="2">
+        <rect x="5" y="5" width="90" height="65" rx="4" fill="#fff" />
+        <path d="M5 20 L95 20" />
+        <path d="M15 15 L35 15 L35 30 L15 30 Z" stroke="#e5e7eb" strokeWidth="1" fill="none" />
+        <rect x="45" y="15" width="40" height="15" rx="2" fill={selected ? "#3b82f6" : "#e5e7eb"} stroke="none" />
+      </svg>
+    )
+  },
+  { 
+    value: "MAIN_BOTTOM", label: "메인 하단", size: "1200x200px",
+    icon: (selected: boolean) => (
+      <svg width="48" height="36" viewBox="0 0 100 75" fill="none" stroke="#ccc" strokeWidth="2">
+        <rect x="5" y="5" width="90" height="65" rx="4" fill="#fff" />
+        <rect x="15" y="45" width="70" height="15" rx="2" fill={selected ? "#3b82f6" : "#e5e7eb"} stroke="none" />
+        <path d="M15 20 L85 20 M15 25 L85 25 M15 30 L60 30" stroke="#e5e7eb" strokeWidth="1" />
+      </svg>
+    )
+  },
+  { 
+    value: "MAIN_ISSUE_RIGHT", label: "메인 이슈 우측", size: "600x300px",
+    icon: (selected: boolean) => (
+      <svg width="48" height="36" viewBox="0 0 100 75" fill="none" stroke="#ccc" strokeWidth="2">
+        <rect x="5" y="5" width="90" height="65" rx="4" fill="#fff" />
+        <path d="M5 20 L95 20" />
+        <path d="M50 20 L50 70" />
+        <path d="M8 25 L45 25 M8 30 L45 30" stroke="#e5e7eb" strokeWidth="1" />
+        <rect x="55" y="25" width="35" height="35" fill={selected ? "#3b82f6" : "#e5e7eb"} stroke="none" rx="2" />
+      </svg>
+    )
+  },
+  { 
+    value: "SIDEBAR", label: "뉴스상세사이드바", size: "320x500px",
+    icon: (selected: boolean) => (
+      <svg width="48" height="36" viewBox="0 0 100 75" fill="none" stroke="#ccc" strokeWidth="2">
+        <rect x="5" y="5" width="90" height="65" rx="4" fill="#fff" />
+        <path d="M5 20 L95 20" />
+        <path d="M70 20 L70 70" />
+        <rect x="70" y="25" width="25" height="35" fill={selected ? "#3b82f6" : "#e5e7eb"} stroke="none" />
+      </svg>
+    )
+  },
+  { 
+    value: "LIST_INLINE", label: "뉴스 리스트형", size: "800x120px",
+    icon: (selected: boolean) => (
+      <svg width="48" height="36" viewBox="0 0 100 75" fill="none" stroke="#ccc" strokeWidth="2">
+        <rect x="5" y="5" width="90" height="65" rx="4" fill="#fff" />
+        <path d="M5 20 L95 20" />
+        <path d="M15 30 L85 30 M15 37 L85 37" stroke="#e5e7eb" strokeWidth="1" />
+        <rect x="15" y="42" width="70" height="10" fill={selected ? "#3b82f6" : "#e5e7eb"} stroke="none" />
+        <path d="M15 57 L85 57" stroke="#e5e7eb" strokeWidth="1" />
+      </svg>
+    )
+  },
+  { 
+    value: "LIST_SIDEBAR", label: "뉴스 리스트 사이드바", size: "320x500px",
+    icon: (selected: boolean) => (
+      <svg width="48" height="36" viewBox="0 0 100 75" fill="none" stroke="#ccc" strokeWidth="2">
+        <rect x="5" y="5" width="90" height="65" rx="4" fill="#fff" />
+        <rect x="70" y="15" width="20" height="45" rx="2" fill={selected ? "#3b82f6" : "#e5e7eb"} stroke="none" />
+        <path d="M10 20 L60 20 M10 30 L60 30 M10 40 L60 40" stroke="#e5e7eb" strokeWidth="1" />
+      </svg>
+    )
+  },
+  { 
+    value: "NEWS_DETAIL", label: "뉴스 상세하단", size: "800x150px",
+    icon: (selected: boolean) => (
+      <svg width="48" height="36" viewBox="0 0 100 75" fill="none" stroke="#ccc" strokeWidth="2">
+        <rect x="5" y="5" width="90" height="65" rx="4" fill="#fff" />
+        <path d="M5 20 L95 20" />
+        <path d="M20 30 L80 30 M20 35 L80 35 M20 40 L60 40" stroke="#e5e7eb" strokeWidth="1" />
+        <rect x="15" y="47" width="70" height="15" fill={selected ? "#3b82f6" : "#e5e7eb"} stroke="none" />
+      </svg>
+    )
+  },
+  { 
+    value: "POPUP", label: "공지 팝업", size: "500x500px",
+    icon: (selected: boolean) => (
+      <svg width="48" height="36" viewBox="0 0 100 75" fill="none" stroke="#ccc" strokeWidth="2">
+        <rect x="5" y="5" width="90" height="65" rx="4" fill="#fff" />
+        {selected && <rect x="5" y="5" width="90" height="65" rx="4" fill="rgba(0,0,0,0.5)" stroke="none" />}
+        <rect x="30" y="20" width="40" height="35" rx="2" fill={selected ? "#3b82f6" : "#e5e7eb"} stroke="none" />
+      </svg>
+    )
+  },
+  { 
+    value: "CUSTOM", label: "기타 (직접입력)", size: "자유 사이즈",
+    icon: (selected: boolean) => (
+      <svg width="48" height="36" viewBox="0 0 100 75" fill="none" stroke="#ccc" strokeWidth="2">
+        <rect x="5" y="5" width="90" height="65" rx="4" fill="#fff" strokeDasharray="4 4" />
+        <text x="50" y="42" fontSize="24" textAnchor="middle" fill={selected ? "#3b82f6" : "#ccc"} stroke="none">?</text>
+      </svg>
+    )
+  }
 ];
 
 const DEVICE_OPTIONS = [
@@ -44,6 +167,27 @@ export default function BannerSection({ theme }: AdminSectionProps) {
   const [checkedIds, setCheckedIds] = useState<string[]>([]);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // 배너 위치 선택 처리
+  const [selectedPlacement, setSelectedPlacement] = useState("MAIN_TOP");
+  const [customPlacement, setCustomPlacement] = useState("");
+
+  useEffect(() => {
+    if (showForm) {
+      if (editingBanner) {
+        if (PLACEMENT_OPTIONS.some(p => p.value === editingBanner.placement_code)) {
+          setSelectedPlacement(editingBanner.placement_code);
+          setCustomPlacement("");
+        } else {
+          setSelectedPlacement("CUSTOM");
+          setCustomPlacement(editingBanner.placement_code || "");
+        }
+      } else {
+        setSelectedPlacement("MAIN_TOP");
+        setCustomPlacement("");
+      }
+    }
+  }, [showForm, editingBanner]);
 
   useEffect(() => {
     loadBanners();
@@ -85,6 +229,15 @@ export default function BannerSection({ theme }: AdminSectionProps) {
     e.preventDefault();
     const form = e.currentTarget;
     const formData = new FormData(form);
+
+    // 타겟 카테고리 데이터 병합 (우회 저장)
+    const oldTarget = formData.get("link_target") as string;
+    const targetCats = formData.getAll("target_categories") as string[];
+    if ((selectedPlacement === "LIST_INLINE" || selectedPlacement === "LIST_SIDEBAR") && targetCats.length > 0) {
+      formData.set("link_target", `${oldTarget}|${targetCats.join(",")}`);
+    } else {
+      formData.set("link_target", oldTarget);
+    }
 
     let res;
     if (editingBanner) {
@@ -163,23 +316,79 @@ export default function BannerSection({ theme }: AdminSectionProps) {
                 style={{ width: "100%", padding: "12px 14px", border: `1px solid ${border}`, borderRadius: 8, fontSize: 14, color: textPrimary, background: darkMode ? "#1a1b1e" : "#fff", outline: "none", boxSizing: "border-box" }} />
             </div>
 
-            {/* 링크 방식 */}
+            {/* 링크 방식 및 노출 카테고리 */}
             <div>
               <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: textPrimary, marginBottom: 6 }}>링크 열기 방식</label>
-              <select name="link_target" defaultValue={b?.link_target || "_blank"}
+              <select name="link_target" defaultValue={(b?.link_target || "_blank").split("|")[0]}
                 style={{ width: "100%", padding: "12px 14px", border: `1px solid ${border}`, borderRadius: 8, fontSize: 14, color: textPrimary, background: darkMode ? "#1a1b1e" : "#fff", outline: "none", boxSizing: "border-box" }}>
                 <option value="_blank">새 창에서 열기</option>
                 <option value="_self">현재 창에서 열기</option>
               </select>
+
+              {(selectedPlacement === "LIST_INLINE" || selectedPlacement === "LIST_SIDEBAR") && (
+                <div style={{ marginTop: 16, padding: "16px", background: darkMode ? "#1a1b1e" : "#f9fafb", borderRadius: 8, border: `1px solid #3b82f6` }}>
+                  <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: textPrimary, marginBottom: 12 }}>✅ 노출 카테고리 (중복선택 가능)</label>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    {[
+                      { value: "all", label: "전체뉴스" },
+                      { value: "finance", label: "부동산·주식·재테크" },
+                      { value: "map", label: "우리동네뉴스" },                      
+                      { value: "politics", label: "정치·경제·사회" },
+                      { value: "law", label: "세무·법률" },
+                      { value: "life", label: "여행·건강·생활" },
+                      { value: "etc", label: "기타(전체)" },
+                      { value: "etc_it", label: "IT·가전·가구" },
+                      { value: "etc_sports", label: "스포츠·연예·Car" },
+                      { value: "etc_mission", label: "인물·미션·기타" },
+                    ].map(cat => {
+                      const isChecked = b?.link_target ? b.link_target.includes(cat.value) : (cat.value === "all");
+                      return (
+                        <label key={cat.value} style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
+                          <input type="checkbox" name="target_categories" value={cat.value} defaultChecked={isChecked} style={{ accentColor: "#3b82f6" }} />
+                          <span style={{ fontSize: 13, color: textPrimary }}>{cat.label}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* 노출 위치 */}
-            <div>
-              <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: textPrimary, marginBottom: 6 }}>노출 위치 *</label>
-              <select name="placement_code" defaultValue={b?.placement_code || "MAIN_TOP"} required
-                style={{ width: "100%", padding: "12px 14px", border: `1px solid ${border}`, borderRadius: 8, fontSize: 14, color: textPrimary, background: darkMode ? "#1a1b1e" : "#fff", outline: "none", boxSizing: "border-box" }}>
-                {PLACEMENT_OPTIONS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
-              </select>
+            <div style={{ gridColumn: "1 / -1" }}>
+              <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: textPrimary, marginBottom: 12 }}>노출 위치 확인 및 선택 *</label>
+              <input type="hidden" name="placement_code" value={selectedPlacement === "CUSTOM" ? customPlacement : selectedPlacement} />
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 14 }}>
+                {PLACEMENT_CARDS.map(card => {
+                  const isSelected = selectedPlacement === card.value;
+                  return (
+                    <div 
+                      key={card.value}
+                      onClick={() => setSelectedPlacement(card.value)}
+                      style={{ 
+                        border: isSelected ? `2px solid #3b82f6` : `1px solid ${border}`, 
+                        background: isSelected ? (darkMode ? "#1e3a8a" : "#eff6ff") : (darkMode ? "#1a1b1e" : "#fff"),
+                        borderRadius: 10, cursor: "pointer", display: "flex", flexDirection: "column", 
+                        alignItems: "center", justifyContent: "center", padding: "16px",
+                        transition: "all 0.15s", boxShadow: isSelected ? "0 4px 12px rgba(59, 130, 246, 0.15)" : "none"
+                      }}
+                    >
+                      {card.icon(isSelected)}
+                      <div style={{ fontSize: 14, fontWeight: 700, color: isSelected ? "#3b82f6" : textPrimary, marginTop: 12, textAlign: "center" }}>{card.label}</div>
+                      <div style={{ fontSize: 12, color: isSelected ? "#60a5fa" : textSecondary, marginTop: 4 }}>권장: {card.size}</div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {selectedPlacement === "CUSTOM" && (
+                 <div style={{ marginTop: 16, padding: "16px", background: darkMode ? "#1a1b1e" : "#f9fafb", borderRadius: 8, border: `1px solid #3b82f6` }}>
+                   <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: textPrimary, marginBottom: 6 }}>Custom 노출 위치 식별자 입력</label>
+                   <input value={customPlacement} onChange={(e) => setCustomPlacement(e.target.value)} required placeholder="예: CUSTOM_BOTTOM_1"
+                      style={{ width: "100%", padding: "12px 14px", border: `1px solid ${border}`, borderRadius: 8, fontSize: 14, color: textPrimary, background: darkMode ? "#25262b" : "#fff", outline: "none", boxSizing: "border-box" }} />
+                   <p style={{ fontSize: 12, color: textSecondary, margin: "8px 0 0 0" }}>* 개발자와 사전에 약속된 영어 코드를 입력해 주세요.</p>
+                 </div>
+              )}
             </div>
 
             {/* 기기 */}

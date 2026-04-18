@@ -856,31 +856,32 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
 
   const formatAmount = (amt: number) => {
     if (!amt) return "";
-    const manwon = Math.round(amt / 10000);
-    if (manwon === 0) return "";
+    const m = Math.round(amt / 10000);
+    if (m === 0) return "";
 
-    const eok = Math.floor(manwon / 10000);
-    const rest = manwon % 10000;
+    const e = Math.floor(m / 10000);
+    const r = m % 10000;
 
     let result = "";
-    if (eok > 0) {
-      result += `${eok}억`;
+    if (e > 0) {
+      result += `${e}억`;
     }
 
-    if (rest > 0) {
-      const cheon = Math.floor(rest / 1000);
-      const remainder = rest % 1000;
+    if (r > 0) {
+      const c = Math.floor(r / 1000);
+      const rem = r % 1000;
       
-      let restStr = "";
-      if (cheon > 0) restStr += `${cheon}천`;
-      if (remainder > 0) restStr += `${remainder}`;
+      let rest = "";
+      if (c > 0) rest += `${c}천`;
+      if (rem > 0) rest += `${rem}`;
       
-      if (restStr) {
-        result += result ? restStr : restStr; // No space, so "52억" + "5천500" = "52억5천500"
+      if (rest) {
+        result += (result && !result.endsWith(" ") ? " " : "") + rest;
+        if (e === 0 && c === 0 && rem > 0) result += "만";
       }
     }
 
-    return result;
+    return result || "";
   };
 
   const getPriceText = (row: any) => {

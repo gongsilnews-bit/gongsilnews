@@ -148,6 +148,7 @@ export default function HomepageViewPage() {
       if (c > 0) rest += `${c}천`;
       if (rem > 0) rest += `${rem}`;
       if (rest) result += result ? " " + rest : rest;
+      if (e === 0 && c === 0 && rem > 0) result += "만";
     }
     return result || "0";
   };
@@ -437,8 +438,8 @@ export default function HomepageViewPage() {
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                   {[
-                    { id: 1, title: "관악드림타운 132동 8층호", price: "매매 11억 5000", details: "면적 82.01m²(25.1평) / 59.83m²(18.1평)\n방 3개, 욕실 1개", badge: "공동중개" },
-                    { id: 2, title: "동부센트레빌 101동 101호", price: "매매 10억", details: "면적 84m²(25.4평) / 59m²(17.8평)\n방 3개, 욕실 1개", badge: "공동중개" }
+                    { id: 1, title: "관악드림타운 132동 8층호", price: "매매 11억 5천", details: "면적 82.01m²(25.1평) / 59.83m²(18.1평)\n방 3개, 욕실 1개", badge: "공동중개" },
+                    { id: 2, title: "동부센트레빌 101동 101호", price: "전세 5천", details: "면적 84m²(25.4평) / 59m²(17.8평)\n방 3개, 욕실 1개", badge: "공동중개" }
                   ].map(item => (
                     <div key={item.id} style={{ display: "flex", gap: 16, cursor: "pointer", borderBottom: "1px solid #f1f5f9", paddingBottom: 16 }}>
                       <div style={{ flex: 1 }}>

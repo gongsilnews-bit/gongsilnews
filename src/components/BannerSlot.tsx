@@ -6,11 +6,12 @@ import { getBannersByPlacement, trackBannerClick, trackBannerView } from "@/app/
 
 interface BannerSlotProps {
   placement: string;
+  category?: string;
   className?: string;
   style?: React.CSSProperties;
 }
 
-export default function BannerSlot({ placement, className, style }: BannerSlotProps) {
+export default function BannerSlot({ placement, category, className, style }: BannerSlotProps) {
   const [banners, setBanners] = useState<any[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -23,7 +24,21 @@ export default function BannerSlot({ placement, className, style }: BannerSlotPr
     async function load() {
       const res = await getBannersByPlacement(placement);
       if (res.success && res.data.length > 0) {
-        setBanners(res.data);
+        let fetched = res.data;
+        if ((placement === "LIST_INLINE" || placement === "LIST_SIDEBAR") && category) {
+          fetched = fetched.filter(b => {
+            const parts = (b.link_target || "_blank").split("|");
+            if (parts.length > 1) {
+              const targets = parts[1].split(",");
+              return targets.includes(category) || targets.includes("all");
+            }
+            return true; // if no specific targets, expose everywhere
+          });
+        }
+        // Save parsed target to ignore payload when clicking
+        fetched = fetched.map(b => ({ ...b, parsed_target: (b.link_target || "_blank").split("|")[0] }));
+        
+        setBanners(fetched);
       }
     }
     load();
@@ -78,7 +93,7 @@ export default function BannerSlot({ placement, className, style }: BannerSlotPr
     // 먼저 링크 열기 (동기 — 팝업 차단 방지)
     if (banner.link_url) {
       const url = banner.link_url.startsWith("http") ? banner.link_url : `https://${banner.link_url}`;
-      window.open(url, banner.link_target || "_blank");
+      window.open(url, banner.parsed_target || "_blank");
     }
     // 클릭 추적은 백그라운드로
     trackBannerClick(banner.id, window.location.href, navigator.userAgent);

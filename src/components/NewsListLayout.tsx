@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import ImportantNewsRotate from "./ImportantNewsRotate";
+import BannerSlot from "./BannerSlot";
 
 interface Article {
   id: string;
@@ -118,42 +119,49 @@ export default function NewsListLayout({ category, title, initialArticles, initi
             </div>
 
             {/* 기사 카드 리스트 — 서버에서 미리 받아와서 즉시 표시 */}
-            {pagedArticles.length > 0 ? pagedArticles.map((article) => {
+            {pagedArticles.length > 0 ? pagedArticles.map((article, index) => {
               const ytInfo = extractYoutubeIdInfo(article);
               const thumbSrc = getThumbnailSrc(article, ytInfo);
               const showImgArea = Boolean(thumbSrc);
 
               return (
-              <Link key={article.id} href={`/news/${article.article_no || article.id}`} style={{ textDecoration: "none", color: "inherit" }}>
-                <div className="an-card">
-                  {showImgArea && (
-                    <div className="an-img" style={{ position: "relative", flexShrink: 0 }}>
-                      <img
-                        src={thumbSrc as string}
-                        alt={article.title}
-                        style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 6 }}
-                      />
-                      {ytInfo.hasVideo && (
-                        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 44, height: 44, background: "rgba(0,0,0,0.4)", borderRadius: "50%", border: "2.5px solid white", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 5 }}>
-                          <svg viewBox="0 0 24 24" width="24" height="24" fill="white" style={{ marginLeft: 4 }}><path d="M8 5v14l11-7z"/></svg>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  <div className="an-body">
-                    <div className="an-title">{article.title}</div>
-                    <div className="an-desc">
-                      {article.subtitle || stripHtml(article.content || "").slice(0, 160)}
-                    </div>
-                    <div className="an-meta">
-                      <span style={{ color: "#508bf5", fontWeight: "bold", marginRight: 8 }}>
-                        [{article.section1 || "뉴스"} &gt; {article.section2 || "전체"}]
-                      </span>
-                      {formatDate(article.published_at || article.created_at || "")} {article.updated_at ? `(수정: ${formatDate(article.updated_at)})` : ""} · {article.author_name || "공실뉴스"}
+              <React.Fragment key={article.id}>
+                {index === 3 && (
+                  <div style={{ margin: "24px 0" }}>
+                    <BannerSlot placement="LIST_INLINE" category={category} />
+                  </div>
+                )}
+                <Link href={`/news/${article.article_no || article.id}`} style={{ textDecoration: "none", color: "inherit" }}>
+                  <div className="an-card">
+                    {showImgArea && (
+                      <div className="an-img" style={{ position: "relative", flexShrink: 0 }}>
+                        <img
+                          src={thumbSrc as string}
+                          alt={article.title}
+                          style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 6 }}
+                        />
+                        {ytInfo.hasVideo && (
+                          <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 44, height: 44, background: "rgba(0,0,0,0.4)", borderRadius: "50%", border: "2.5px solid white", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 5 }}>
+                            <svg viewBox="0 0 24 24" width="24" height="24" fill="white" style={{ marginLeft: 4 }}><path d="M8 5v14l11-7z"/></svg>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    <div className="an-body">
+                      <div className="an-title">{article.title}</div>
+                      <div className="an-desc">
+                        {article.subtitle || stripHtml(article.content || "").slice(0, 160)}
+                      </div>
+                      <div className="an-meta">
+                        <span style={{ color: "#508bf5", fontWeight: "bold", marginRight: 8 }}>
+                          [{article.section1 || "뉴스"} &gt; {article.section2 || "전체"}]
+                        </span>
+                        {formatDate(article.published_at || article.created_at || "")} {article.updated_at ? `(수정: ${formatDate(article.updated_at)})` : ""} · {article.author_name || "공실뉴스"}
+                      </div>
                     </div>
                   </div>
-                </div>
-              </Link>
+                </Link>
+              </React.Fragment>
             )}) : (
               <div style={{ padding: "60px 0", textAlign: "center", color: "#888", fontSize: 15 }}>
                 해당 카테고리에 등록된 기사가 없습니다.
@@ -173,7 +181,9 @@ export default function NewsListLayout({ category, title, initialArticles, initi
           {/* 우측 사이드바 */}
           <div className="news-sidebar">
             {/* 배너 영역 */}
-            <div className="sb-banner">배너 1</div>
+            <div style={{ marginBottom: 20 }}>
+              <BannerSlot placement="LIST_SIDEBAR" category={category} />
+            </div>
 
             {/* 많이 본 뉴스 5개 */}
             <div className="sb-widget">

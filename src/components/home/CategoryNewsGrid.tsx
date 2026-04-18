@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getArticles } from "@/app/actions/article";
+import BannerSlot from "@/components/BannerSlot";
 
 export default async function CategoryNewsGrid() {
   // 섹션별 기사 가져오기 (최신순 2개씩)
@@ -130,9 +131,7 @@ export default async function CategoryNewsGrid() {
             </div>
           </div>
           <div className="hi-right">
-            <div className="box-placeholder">
-              <span style={{ color: "#999" }}>광고 또는 비디오 박스 영역</span>
-            </div>
+            <BannerSlot placement="MAIN_ISSUE_RIGHT" style={{ height: "100%" }} />
           </div>
         </div>
       </div>
