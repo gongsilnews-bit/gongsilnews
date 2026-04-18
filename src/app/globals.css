@@ -354,7 +354,7 @@ button { border: none; background: none; cursor: pointer; font-family: inherit; 
 .hi-txt h3 { font-size: 18px; font-weight: 700; margin-bottom: 10px; line-height: 1.4; color: #111; }
 .hi-txt p { font-size: 14px; color: #666; line-height: 1.5; display:-webkit-box; -webkit-line-clamp:2; line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;}
 
-.hi-right { flex: 1; height: 260px; }
+.hi-right { flex: 1; min-height: 0; }
 
 /* 6. Video News Section */
 .video-wrap { border-top: 1px solid var(--border-light); padding-top: 40px; }

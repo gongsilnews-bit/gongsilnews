@@ -3,7 +3,7 @@
 import React, { useState, useEffect, lazy, Suspense, useRef, useCallback } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { computeTheme, MenuItem } from "@/components/admin/sections/types";
-import { IconDashboard, IconBuilding, IconArticle, IconStudy, IconCustomer, IconComment, IconManual, IconSettings } from "@/components/admin/sections/AdminIcons";
+import { IconDashboard, IconBuilding, IconArticle, IconStudy, IconCustomer, IconComment, IconManual, IconSettings, IconPoint } from "@/components/admin/sections/AdminIcons";
 import MemberRegisterForm from "@/components/admin/MemberRegisterForm";
 import { getVacancies } from "@/app/actions/vacancy";
 import AdminLoadingFallback from "@/components/admin/sections/AdminSkeletons";
@@ -12,6 +12,7 @@ import AdminLoadingFallback from "@/components/admin/sections/AdminSkeletons";
 const DashboardSection = lazy(() => import("@/components/admin/sections/DashboardSection"));
 const VacancySection = lazy(() => import("@/components/admin/sections/VacancySection"));
 const MemberArticleSection = lazy(() => import("@/components/admin/sections/MemberArticleSection"));
+const MyPointSection = lazy(() => import("@/components/admin/sections/MyPointSection"));
 
 /* ── 부동산관리자 메뉴 ── */
 const REALTY_MENU: MenuItem[] = [
@@ -21,6 +22,7 @@ const REALTY_MENU: MenuItem[] = [
   { key: "study", label: "스터디관리", icon: <IconStudy /> },
   { key: "customer", label: "고객관리", icon: <IconCustomer /> },
   { key: "comment", label: "댓글·문의", icon: <IconComment /> },
+  { key: "point", label: "포인트", icon: <IconPoint /> },
   { key: "manual", label: "매뉴얼", icon: <IconManual /> },
   { key: "settings", label: "정보설정", icon: <IconSettings />, separated: true },
 ];
@@ -188,6 +190,7 @@ function RealtyAdminContent() {
           {activeMenu === "dashboard" && <DashboardSection theme={theme} role="realtor" agencyStatus={agencyStatus} />}
           {activeMenu === "gongsil" && memberId && <VacancySection theme={theme} role="realtor" ownerId={memberId} ownerName={userName} initialData={prefetchedData["gongsil"]} />}
           {activeMenu === "article" && memberId && <MemberArticleSection theme={theme} memberId={memberId} memberName={userName} memberEmail={userEmail || undefined} role="realtor" />}
+          {activeMenu === "point" && memberId && <MyPointSection theme={theme} memberId={memberId} role="realtor" />}
           {activeMenu === "settings" && (
             <div style={{ flex: 1, padding: "20px 28px", overflowY: "auto", background: theme.cardBg, margin: 16, marginBottom: 0, borderTopLeftRadius: 12, borderTopRightRadius: 12, boxShadow: "0 4px 6px rgba(0,0,0,0.05)" }}>
               {memberId ? <MemberRegisterForm editMemberId={memberId} onBack={() => setActiveMenu("dashboard")} /> : <div style={{ textAlign: "center", padding: 40, color: theme.textSecondary }}>사용자 정보를 불러오는 중입니다...</div>}

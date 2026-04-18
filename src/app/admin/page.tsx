@@ -3,7 +3,7 @@
 import React, { useState, useEffect, lazy, Suspense, useRef, useCallback } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { computeTheme, MenuItem } from "@/components/admin/sections/types";
-import { IconDashboard, IconMembers, IconBuilding, IconArticle, IconStudy, IconEdit, IconBoard, IconAd, IconPlugin, IconStats, IconSettings, IconManual } from "@/components/admin/sections/AdminIcons";
+import { IconDashboard, IconMembers, IconBuilding, IconArticle, IconStudy, IconEdit, IconBoard, IconAd, IconPlugin, IconStats, IconSettings, IconManual, IconPoint } from "@/components/admin/sections/AdminIcons";
 import { getVacancies } from "@/app/actions/vacancy";
 import { adminGetMembers } from "@/app/admin/actions";
 import { getArticles } from "@/app/actions/article";
@@ -17,6 +17,7 @@ const StudySection = lazy(() => import("@/components/admin/sections/StudySection
 const BoardSection = lazy(() => import("@/components/admin/sections/BoardSection"));
 const MemberSection = lazy(() => import("@/components/admin/sections/MemberSection"));
 const BannerSection = lazy(() => import("@/components/admin/sections/BannerSection"));
+const PointSection = lazy(() => import("@/components/admin/sections/PointSection"));
 const AdminManual = lazy(() => import("./AdminManual"));
 
 /* ── 최고관리자 메뉴 ── */
@@ -30,6 +31,7 @@ const ADMIN_MENU: MenuItem[] = [
   { key: "board", label: "게시판", icon: <IconBoard /> },
   { key: "ad", label: "광고", icon: <IconAd /> },
   { key: "plugin", label: "플러그인", icon: <IconPlugin /> },
+  { key: "point", label: "포인트", icon: <IconPoint /> },
   { key: "stats", label: "통계", icon: <IconStats /> },
   { key: "settings", label: "환경설정", icon: <IconSettings />, dividerBefore: true },
   { key: "manual", label: "매뉴얼", icon: <IconManual /> },
@@ -230,6 +232,7 @@ function AdminContent() {
           {activeMenu === "study" && <StudySection theme={theme} />}
           {activeMenu === "board" && <BoardSection theme={theme} />}
           {activeMenu === "ad" && <BannerSection theme={theme} />}
+          {activeMenu === "point" && <PointSection theme={theme} activeSubmenu={activeSubmenu} onSubmenuChange={setActiveSubmenu} />}
           {activeMenu === "manual" && <AdminManual />}
           {["edit", "plugin", "stats", "settings"].includes(activeMenu) && (
             <div style={{ flex: 1, margin: 16, marginBottom: 0, background: theme.cardBg, borderTopLeftRadius: 12, borderTopRightRadius: 12, boxShadow: "0 4px 6px rgba(0,0,0,0.05)", display: "flex", alignItems: "center", justifyContent: "center" }}>

@@ -131,7 +131,7 @@ export default async function CategoryNewsGrid() {
             </div>
           </div>
           <div className="hi-right">
-            <BannerSlot placement="MAIN_ISSUE_RIGHT" style={{ height: "100%" }} />
+            <BannerSlot placement="MAIN_ISSUE_RIGHT" />
           </div>
         </div>
       </div>
