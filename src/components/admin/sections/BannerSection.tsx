@@ -9,7 +9,7 @@ const PLACEMENT_OPTIONS = [
   { value: "TOP_FULL", label: "메인 최상단 와이드" },
   { value: "MAIN_TOP", label: "메인 상단" },
   { value: "MAIN_MIDDLE", label: "메인 중간" },
-  { value: "MAIN_BOTTOM", label: "메인 하단" },
+  { value: "MAIN_BOTTOM_FULL", label: "메인 최하단 롤링" },
   { value: "MAIN_ISSUE_RIGHT", label: "메인 이슈 우측" },
   { value: "SIDEBAR", label: "뉴스상세사이드바" },
   { value: "LIST_INLINE", label: "뉴스 리스트형" },
@@ -51,12 +51,12 @@ const PLACEMENT_CARDS = [
     )
   },
   { 
-    value: "MAIN_BOTTOM", label: "메인 하단", size: "1200x200px",
+    value: "MAIN_BOTTOM_FULL", label: "메인 최하단 롤링", size: "1920x600px",
     icon: (selected: boolean) => (
       <svg width="48" height="36" viewBox="0 0 100 75" fill="none" stroke="#ccc" strokeWidth="2">
         <rect x="5" y="5" width="90" height="65" rx="4" fill="#fff" />
-        <rect x="15" y="45" width="70" height="15" rx="2" fill={selected ? "#3b82f6" : "#e5e7eb"} stroke="none" />
-        <path d="M15 20 L85 20 M15 25 L85 25 M15 30 L60 30" stroke="#e5e7eb" strokeWidth="1" />
+        <rect x="5" y="40" width="90" height="25" fill={selected ? "#3b82f6" : "#e5e7eb"} stroke="none" />
+        <path d="M15 15 L85 15 M15 25 L60 25" stroke="#e5e7eb" strokeWidth="1" />
       </svg>
     )
   },
@@ -151,6 +151,40 @@ function getStatusInfo(banner: any) {
   return { label: "진행중", color: "#10b981", bg: "#ecfdf5" };
 }
 
+/* ── WebP 압축 유틸리티 ── */
+async function compressImageToWebP(file: File, quality = 0.8): Promise<File> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return reject(new Error("Canvas context is not available"));
+        ctx.drawImage(img, 0, 0);
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) return reject(new Error("Blob conversion failed"));
+            const extName = file.name.replace(/\.[^/.]+$/, "");
+            const newFile = new File([blob], `${extName}.webp`, { type: "image/webp" });
+            resolve(newFile);
+          },
+          "image/webp",
+          quality
+        );
+      };
+      img.onerror = (e) => reject(e);
+      if (typeof event.target?.result === "string") {
+        img.src = event.target.result;
+      }
+    };
+    reader.onerror = (e) => reject(e);
+    reader.readAsDataURL(file);
+  });
+}
+
 export default function BannerSection({ theme }: AdminSectionProps) {
   const { bg, cardBg, textPrimary, textSecondary, darkMode, border } = theme;
   const router = useRouter();
@@ -166,6 +200,7 @@ export default function BannerSection({ theme }: AdminSectionProps) {
   const [stats, setStats] = useState<any[]>([]);
   const [checkedIds, setCheckedIds] = useState<string[]>([]);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [compressedImage, setCompressedImage] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // 배너 위치 선택 처리
@@ -200,6 +235,8 @@ export default function BannerSection({ theme }: AdminSectionProps) {
       setShowStats(false);
       setEditingBanner(null);
       setImagePreview(null);
+      setCompressedImage(null);
+      setCustomPlacement("");
     } else if (action === "stats") {
       setShowStats(true);
       setShowForm(false);
@@ -237,6 +274,11 @@ export default function BannerSection({ theme }: AdminSectionProps) {
       formData.set("link_target", `${oldTarget}|${targetCats.join(",")}`);
     } else {
       formData.set("link_target", oldTarget);
+    }
+
+    // 압축된 WebP 이미지 파일로 교체
+    if (compressedImage) {
+      formData.set("image", compressedImage);
     }
 
     let res;
@@ -301,9 +343,22 @@ export default function BannerSection({ theme }: AdminSectionProps) {
                   )}
                 </div>
                 <input ref={fileInputRef} type="file" name="image" accept="image/*" style={{ display: "none" }}
-                  onChange={(e) => {
+                  onChange={async (e) => {
                     const file = e.target.files?.[0];
-                    if (file) setImagePreview(URL.createObjectURL(file));
+                    if (file) {
+                      try {
+                        const webpFile = await compressImageToWebP(file, 0.85); // 85% 품질로 WebP 압축
+                        setCompressedImage(webpFile);
+                        setImagePreview(URL.createObjectURL(webpFile));
+                      } catch (error) {
+                        console.error("WebP 압축 실패:", error);
+                        alert("이미지 압축 중 오류가 발생했습니다. 원본이 사용됩니다.");
+                        setCompressedImage(null);
+                        setImagePreview(URL.createObjectURL(file));
+                      }
+                    } else {
+                      setCompressedImage(null);
+                    }
                   }} />
                 {b?.image_url && <input type="hidden" name="image_url" value={b.image_url} />}
               </div>

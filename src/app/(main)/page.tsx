@@ -50,9 +50,9 @@ export default async function Home() {
       {/* ========== 9. Lectures ========== */}
       <SpecialLectureBanner />
 
-      {/* ========== 배너: 메인 하단 ========== */}
-      <div className="container px-20">
-        <BannerSlot placement="MAIN_BOTTOM" style={{ borderRadius: 12, overflow: "hidden", marginTop: 40, marginBottom: 40 }} />
+      {/* ========== 배너: 메인 최하단 롤링 (Full Width) ========== */}
+      <div style={{ width: "100%", maxWidth: 1920, margin: "40px auto 40px auto" }}>
+        <BannerSlot placement="MAIN_BOTTOM_FULL" style={{ borderRadius: 0, overflow: "hidden" }} />
       </div>
 
       {/* ========== 10. Floating or Promotions ========== */}
