@@ -10,7 +10,6 @@ import HeroSideContent from "@/components/home/HeroSideContent";
 import CategoryNewsGrid from "@/components/home/CategoryNewsGrid";
 import PremiumDroneSection from "@/components/home/PremiumDroneSection";
 import SpecialLectureBanner from "@/components/home/SpecialLectureBanner";
-import ChatbotBanner from "@/components/home/ChatbotBanner";
 import BannerSlot from "@/components/BannerSlot";
 
 export default async function Home() {
@@ -50,13 +49,9 @@ export default async function Home() {
       {/* ========== 9. Lectures ========== */}
       <SpecialLectureBanner />
 
-      {/* ========== 배너: 메인 최하단 롤링 (Full Width) ========== */}
       <div style={{ width: "100%", maxWidth: 1920, margin: "40px auto 40px auto" }}>
         <BannerSlot placement="MAIN_BOTTOM_FULL" style={{ borderRadius: 0, overflow: "hidden" }} />
       </div>
-
-      {/* ========== 10. Floating or Promotions ========== */}
-      <ChatbotBanner />
     </>
   );
 }
