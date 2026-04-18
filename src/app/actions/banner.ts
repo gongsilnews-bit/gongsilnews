@@ -57,7 +57,9 @@ export async function createBanner(formData: FormData) {
     imageUrl = publicData.publicUrl;
   }
 
-  if (!imageUrl) return { success: false, error: "이미지가 필요합니다." };
+  if (!imageUrl && formData.get("placement_code") !== "HEADER_TEXT") {
+    return { success: false, error: "이미지가 필요합니다." };
+  }
 
   const bannerData = {
     title: formData.get("title") as string,

@@ -7,6 +7,7 @@ import { getBanners, createBanner, updateBanner, deleteBanner, toggleBannerActiv
 
 const PLACEMENT_OPTIONS = [
   { value: "TOP_FULL", label: "메인 최상단 와이드" },
+  { value: "HEADER_TEXT", label: "헤더 우측 텍스트 (줄글)" },
   { value: "MAIN_TOP", label: "메인 상단" },
   { value: "MAIN_MIDDLE", label: "메인 중간" },
   { value: "MAIN_BOTTOM_FULL", label: "메인 최하단 롤링" },
@@ -26,6 +27,17 @@ const PLACEMENT_CARDS = [
         <rect x="5" y="5" width="90" height="65" rx="4" fill="#fff" />
         <rect x="5" y="5" width="90" height="12" fill={selected ? "#3b82f6" : "#e5e7eb"} stroke="none" />
         <path d="M5 17 L95 17" />
+      </svg>
+    )
+  },
+  { 
+    value: "HEADER_TEXT", label: "헤더 텍스트", size: "텍스트전용",
+    icon: (selected: boolean) => (
+      <svg width="48" height="36" viewBox="0 0 100 75" fill="none" stroke="#ccc" strokeWidth="2">
+        <rect x="5" y="5" width="90" height="65" rx="4" fill="#fff" />
+        <rect x="15" y="15" width="30" height="10" fill="#e5e7eb" stroke="none" />
+        <rect x="55" y="15" width="30" height="10" fill={selected ? "#3b82f6" : "#cbd5e1"} stroke="none" />
+        <path d="M15 35 L85 35 M15 45 L60 45" stroke="#e5e7eb" strokeWidth="1" />
       </svg>
     )
   },
@@ -329,11 +341,18 @@ export default function BannerSection({ theme }: AdminSectionProps) {
 
             {/* 이미지 */}
             <div style={{ gridColumn: "1 / -1" }}>
-              <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: textPrimary, marginBottom: 6 }}>배너 이미지 *</label>
+              <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: textPrimary, marginBottom: 6 }}>
+                {(b?.placement_code === "HEADER_TEXT" || selectedPlacement === "HEADER_TEXT") ? "텍스트 배너 (이미지 불필요)" : "배너 이미지 *"}
+              </label>
               <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-                <div onClick={() => fileInputRef.current?.click()}
-                  style={{ width: 200, height: 100, border: `2px dashed ${border}`, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", overflow: "hidden", background: darkMode ? "#1a1b1e" : "#fafafa" }}>
-                  {(imagePreview || b?.image_url) ? (
+                <div onClick={() => {
+                  if (b?.placement_code === "HEADER_TEXT" || selectedPlacement === "HEADER_TEXT") return;
+                  fileInputRef.current?.click();
+                }}
+                  style={{ width: 200, height: 100, border: `2px dashed ${border}`, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", cursor: (b?.placement_code === "HEADER_TEXT" || selectedPlacement === "HEADER_TEXT") ? "not-allowed" : "pointer", overflow: "hidden", background: (b?.placement_code === "HEADER_TEXT" || selectedPlacement === "HEADER_TEXT") ? (darkMode ? "#333" : "#eee") : (darkMode ? "#1a1b1e" : "#fafafa") }}>
+                  {(b?.placement_code === "HEADER_TEXT" || selectedPlacement === "HEADER_TEXT") ? (
+                    <div style={{ textAlign: "center", color: textSecondary, fontSize: 12 }}>텍스트 배너는<br/>이미지가 필요 없습니다.</div>
+                  ) : (imagePreview || b?.image_url) ? (
                     <img src={imagePreview || b?.image_url} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   ) : (
                     <div style={{ textAlign: "center", color: textSecondary, fontSize: 12 }}>

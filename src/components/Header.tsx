@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import AuthModal from "./AuthModal";
 import SignupCompleteModal from "./SignupCompleteModal";
 import BannerSlot from "./BannerSlot";
+import HeaderTextBanner from "./HeaderTextBanner";
 import { createClient } from "@/utils/supabase/client";
 
 
@@ -15,9 +16,6 @@ export default function Header() {
   const headerRef = useRef<HTMLElement>(null);
   const searchWrapRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const txtBannerListRef = useRef<HTMLUListElement>(null);
-  const txtDropdownRef = useRef<HTMLDivElement>(null);
-  const txtContainerRef = useRef<HTMLDivElement>(null);
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authTab, setAuthTab] = useState<'signup' | 'login'>('signup');
@@ -41,51 +39,8 @@ export default function Header() {
     };
     window.addEventListener("scroll", handleScroll);
 
-    const bannerList = txtBannerListRef.current;
-    const container = txtContainerRef.current;
-    const dropdown = txtDropdownRef.current;
-    let tickerInterval: NodeJS.Timeout;
-
-    if (bannerList && container && dropdown) {
-      const items = bannerList.querySelectorAll("li");
-      if (items.length > 1) {
-        let idx = 0;
-        const itemHeight = 24;
-        const firstClone = items[0].cloneNode(true) as HTMLElement;
-        bannerList.appendChild(firstClone);
-        const totalItems = items.length + 1;
-
-        function startTicker() {
-          tickerInterval = setInterval(() => {
-            idx++;
-            bannerList!.style.transition = "transform 0.5s ease-in-out";
-            bannerList!.style.transform = `translateY(-${idx * itemHeight}px)`;
-            if (idx === totalItems - 1) {
-              setTimeout(() => {
-                bannerList!.style.transition = "none";
-                bannerList!.style.transform = `translateY(0)`;
-                idx = 0;
-              }, 500);
-            }
-          }, 3000);
-        }
-
-        startTicker();
-
-        container.addEventListener("mouseenter", () => {
-          clearInterval(tickerInterval);
-          dropdown.style.display = "block";
-        });
-        container.addEventListener("mouseleave", () => {
-          startTicker();
-          dropdown.style.display = "none";
-        });
-      }
-    }
-
     return () => {
       window.removeEventListener("scroll", handleScroll);
-      clearInterval(tickerInterval);
     };
   }, []);
 
@@ -236,24 +191,7 @@ export default function Header() {
               <img src="/logo.png" className="ht-logo" alt="부동산 정보채널 공실뉴스" onClick={() => window.location.href = "/"} />
             </div>
             <div className="ht-right">
-              <div className="txt-banner-container" ref={txtContainerRef}>
-                <div className="txt-banner-wrap">
-                  <ul ref={txtBannerListRef} style={{ listStyle: "none", margin: 0, padding: 0, textAlign: "right", width: "100%" }}>
-                    <li style={{ height: 24, display: "flex", alignItems: "center", justifyContent: "flex-end" }}><a href="#" className="free-banner">AI 전계부터, 한경ALICE</a></li>
-                    <li style={{ height: 24, display: "flex", alignItems: "center", justifyContent: "flex-end" }}><a href="#" className="free-banner">국내 최대 투자 축제, KIW</a></li>
-                    <li style={{ height: 24, display: "flex", alignItems: "center", justifyContent: "flex-end" }}><a href="#" className="free-banner">한경지수, KEDI 오픈</a></li>
-                    <li style={{ height: 24, display: "flex", alignItems: "center", justifyContent: "flex-end" }}><a href="#" className="free-banner">두뇌를 깨울 시간, ALICE Q</a></li>
-                  </ul>
-                </div>
-                <div className="txt-dropdown" ref={txtDropdownRef} style={{ display: "none" }}>
-                  <ul style={{ listStyle: "none", margin: 0, padding: 0, textAlign: "left" }}>
-                    <li style={{ borderBottom: "1px solid #eee" }}><a href="#">AI 전계부터, 한경ALICE</a></li>
-                    <li style={{ borderBottom: "1px solid #eee" }}><a href="#">국내 최대 투자 축제, KIW</a></li>
-                    <li style={{ borderBottom: "1px solid #eee" }}><a href="#">한경지수, KEDI 오픈</a></li>
-                    <li><a href="#">두뇌를 깨울 시간, ALICE Q</a></li>
-                  </ul>
-                </div>
-              </div>
+              <HeaderTextBanner />
             </div>
           </div>
           <div className="header-bottom">
