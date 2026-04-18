@@ -14,6 +14,9 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
   const pathname = usePathname();
   const router = useRouter();
   const headerRef = useRef<HTMLElement>(null);
+  const txtDropdownRef = useRef<HTMLDivElement>(null);
+  const txtContainerRef = useRef<HTMLDivElement>(null);
+  const placeholderRef = useRef<HTMLDivElement>(null);
   const searchWrapRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -31,9 +34,15 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
     const handleScroll = () => {
       if (headerRef.current) {
         if (window.scrollY > 40) {
+          if (!headerRef.current.classList.contains("is-sticky") && placeholderRef.current) {
+            placeholderRef.current.style.height = `${headerRef.current.offsetHeight}px`;
+          }
           headerRef.current.classList.add("is-sticky");
         } else {
           headerRef.current.classList.remove("is-sticky");
+          if (placeholderRef.current && window.scrollY <= 40) {
+            placeholderRef.current.style.height = "0px";
+          }
         }
       }
     };
@@ -182,7 +191,8 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
         </div>
       </div>
 
-      {/* 2. Main Header */}
+      {/* 2. Main Header Placeholder & Header */}
+      <div ref={placeholderRef} style={{ width: "100%", height: 0 }} />
       <header className="header" ref={headerRef}>
         <div className="container px-20">
           <div className="header-top">

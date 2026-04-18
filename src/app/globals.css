@@ -126,11 +126,13 @@ button { border: none; background: none; cursor: pointer; font-family: inherit; 
     background: rgba(255, 255, 255, 1);
     border-bottom: 2px solid #111111;
     padding-top: 24px;
-    position: sticky;
-    top: -1px;
     z-index: 9999999;
 }
 .header.is-sticky {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
     box-shadow: 0 4px 20px rgba(0,0,0,0.06);
 }
 .header-top {
