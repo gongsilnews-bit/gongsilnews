@@ -683,7 +683,7 @@ export default function NewsMapClient({ initialArticles, initialPopularArticles 
           </div>
 
           {/* 내 위치에서 검색 버튼 */}
-          <button className="map-btn" onClick={() => {
+          <button className="map-btn" style={{ background: "#ff8e15", left: "50%" }} onClick={() => {
             setClusterMode(false);
             setActiveArticleId(null);
             setShowDetail(false);
