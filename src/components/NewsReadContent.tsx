@@ -837,15 +837,24 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
                 {authorVacancies.map((prop, i) => {
                   const title = prop.building_name || prop.detail_addr || "이름없는 공실";
                   
-                  // 가격 포매팅 로직 개선 (원 단위 -> 억/만 혼합)
+                  // 가격 포매팅 로직 개선 (원 단위 -> 억/천/백 혼합)
                   const formatMoney = (val: number) => {
                     if (!val) return "0";
-                    if (val >= 100000000) {
-                      const uk = Math.floor(val / 100000000);
-                      const man = Math.floor((val % 100000000) / 10000);
-                      return `${uk}억${man > 0 ? ` ${man}만` : ""}`;
+                    const manwon = Math.floor(val / 10000);
+                    if (manwon === 0) return "0";
+                    const uk = Math.floor(manwon / 10000);
+                    const rest = manwon % 10000;
+                    let result = "";
+                    if (uk > 0) result += `${uk}억`;
+                    if (rest > 0) {
+                      const cheon = Math.floor(rest / 1000);
+                      const remainder = rest % 1000;
+                      let restStr = "";
+                      if (cheon > 0) restStr += `${cheon}천`;
+                      if (remainder > 0) restStr += `${remainder}`;
+                      if (restStr) result += (result ? " " : "") + restStr;
                     }
-                    return `${Math.floor(val / 10000)}만`;
+                    return result || "0";
                   };
 
                   let price = prop.trade_type;

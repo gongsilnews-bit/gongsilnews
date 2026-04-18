@@ -275,6 +275,10 @@ export default function NewsMapClient({ initialArticles, initialPopularArticles 
     });
 
     const map = kakaoMapRef.current;
+    
+    // 확대(줌인) / 축소(줌아웃) 범위 제한 (최대 줌아웃 9)
+    map.setMinLevel(3);
+    map.setMaxLevel(9);
 
     // 지도 이동/줌 완료 시 → 현재 뷰포트에 보이는 기사만 사이드바에 표시 + 주소 파악
     kakao.maps.event.addListener(map, 'idle', () => {
@@ -677,6 +681,30 @@ export default function NewsMapClient({ initialArticles, initialPopularArticles 
               </div>
             )}
           </div>
+
+          {/* 내 위치에서 검색 버튼 */}
+          <button className="map-btn" onClick={() => {
+            setClusterMode(false);
+            setActiveArticleId(null);
+            setShowDetail(false);
+            if (typeof closeInfoWindow === 'function') {
+                closeInfoWindow();
+            }
+            if (navigator.geolocation) {
+              navigator.geolocation.getCurrentPosition((pos) => {
+                const lat = pos.coords.latitude;
+                const lng = pos.coords.longitude;
+                if (kakaoMapRef.current) {
+                   const kakao = (window as any).kakao;
+                   kakaoMapRef.current.panTo(new kakao.maps.LatLng(lat, lng));
+                }
+              }, () => {
+                 alert('위치 정보를 가져올 수 없습니다. 브라우저 설정에서 위치 정보 엑세스 권한을 허용해 주세요.');
+              }, { enableHighAccuracy: true });
+            } else {
+               alert('현재 브라우저에서는 위치 기반 검색 기능을 지원하지 않습니다.');
+            }
+          }}>내 위치에서 검색</button>
           
           {/* 🔍 지도 지역/검색어 오버레이 UI */}
           <MapSearchBar onSearchCoord={panMapTo} mapCenterRegion={mapCenterRegion} />

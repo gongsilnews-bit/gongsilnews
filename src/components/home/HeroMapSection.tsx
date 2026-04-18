@@ -117,21 +117,29 @@ export default function HeroMapSection({ initialVacancies }: { initialVacancies?
 
   // Format price
   const formatAmount = (amt: number) => {
-    if (!amt) return "";
-    const manwon = Math.round(amt / 10000);
-    if (manwon >= 10000) {
-      const eok = Math.floor(manwon / 10000);
-      const rest = manwon % 10000;
-      return `${eok}억${rest ? ` ${rest}` : ""}`;
+    if (!amt) return "0";
+    const m = Math.round(amt / 10000);
+    if (m === 0) return "0";
+    const e = Math.floor(m / 10000);
+    const r = m % 10000;
+    let result = "";
+    if (e > 0) result += `${e}억`;
+    if (r > 0) {
+      const c = Math.floor(r / 1000);
+      const rem = r % 1000;
+      let rest = "";
+      if (c > 0) rest += `${c}천`;
+      if (rem > 0) rest += `${rem}`;
+      if (rest) result += result ? " " + rest : rest;
     }
-    return `${manwon}만`;
+    return result || "0";
   };
 
   const getPriceText = (row: any) => {
     if (!row) return "";
     return row.trade_type === "매매" ? `매매 ${formatAmount(row.deposit)}`
       : row.trade_type === "전세" ? `전세 ${formatAmount(row.deposit)}`
-      : `${formatAmount(row.deposit)}/${Math.round((row.monthly_rent || 0) / 10000)}만`;
+      : `${formatAmount(row.deposit)}/${formatAmount(row.monthly_rent)}`;
   };
 
   // 1. Initialize empty Kakao Map as soon as SDK loads
@@ -146,6 +154,11 @@ export default function HeroMapSection({ initialVacancies }: { initialVacancies?
       center: new kakao.maps.LatLng(37.498095, 127.027610),
       level: 7,
     });
+    
+    // 확대(줌인) / 축소(줌아웃) 범위 제한
+    map.setMinLevel(3); // 스크린샷 참고: 너무 가깝게 확대되지 않도록 제한
+    map.setMaxLevel(7); // 스크린샷 참고: 너무 멀게 축소되지 않도록 제한
+    
     kakaoMapRef.current = map;
 
     // Initially set bounds and update on move

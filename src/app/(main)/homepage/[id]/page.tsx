@@ -136,16 +136,28 @@ export default function HomepageViewPage() {
   const formatAmount = (amt: number) => {
     if (!amt) return "0";
     const m = Math.round(amt / 10000);
-    if (m >= 10000) { const e = Math.floor(m / 10000); const r = m % 10000; return `${e}억${r ? ` ${r.toLocaleString()}` : ""}`; }
-    return `${m.toLocaleString()}`;
+    if (m === 0) return "0";
+    const e = Math.floor(m / 10000);
+    const r = m % 10000;
+    let result = "";
+    if (e > 0) result += `${e}억`;
+    if (r > 0) {
+      const c = Math.floor(r / 1000);
+      const rem = r % 1000;
+      let rest = "";
+      if (c > 0) rest += `${c}천`;
+      if (rem > 0) rest += `${rem}`;
+      if (rest) result += result ? " " + rest : rest;
+    }
+    return result || "0";
   };
 
   const getPriceLabel = (v: any) => v?.trade_type === "매매" ? "매매" : v?.trade_type === "전세" ? "전세" : "월세";
   const getPriceBg = (v: any) => v?.trade_type === "매매" ? "#e53e3e" : v?.trade_type === "전세" ? "#2b6cb0" : "#2f855a";
   const getPriceText = (v: any) => {
     if (!v) return "";
-    if (v.trade_type === "매매" || v.trade_type === "전세") return `${formatAmount(v.deposit)}`;
-    return `${formatAmount(v.deposit)} / ${v.monthly_rent ? Math.round(v.monthly_rent / 10000).toLocaleString() : "0"}`;
+    if (v.trade_type === "매매" || v.trade_type === "전세") return formatAmount(v.deposit);
+    return `${formatAmount(v.deposit)} / ${formatAmount(v.monthly_rent)}`;
   };
 
   if (loading) {

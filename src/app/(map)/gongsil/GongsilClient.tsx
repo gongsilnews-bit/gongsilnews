@@ -682,9 +682,9 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
 
     const map = kakaoMapRef.current;
 
-    // 제한된 범위 지정 (1: 가장 확대된 상태, 9: 시/군/구 범위)
-    map.setMinLevel(1);
-    map.setMaxLevel(9);
+    // 제한된 범위 지정 (3: 가장 확대된 상태, 7: 시/군/구 범위)
+    map.setMinLevel(3);
+    map.setMaxLevel(7);
 
     kakao.maps.event.addListener(map, 'idle', () => {
       setMapBounds(map.getBounds());
@@ -857,12 +857,30 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   const formatAmount = (amt: number) => {
     if (!amt) return "";
     const manwon = Math.round(amt / 10000);
-    if (manwon >= 10000) {
-      const eok = Math.floor(manwon / 10000);
-      const rest = manwon % 10000;
-      return `${eok}억${rest ? ` ${rest}` : ""}`;
+    if (manwon === 0) return "";
+
+    const eok = Math.floor(manwon / 10000);
+    const rest = manwon % 10000;
+
+    let result = "";
+    if (eok > 0) {
+      result += `${eok}억`;
     }
-    return `${manwon}만`;
+
+    if (rest > 0) {
+      const cheon = Math.floor(rest / 1000);
+      const remainder = rest % 1000;
+      
+      let restStr = "";
+      if (cheon > 0) restStr += `${cheon}천`;
+      if (remainder > 0) restStr += `${remainder}`;
+      
+      if (restStr) {
+        result += result ? restStr : restStr; // No space, so "52억" + "5천500" = "52억5천500"
+      }
+    }
+
+    return result;
   };
 
   const getPriceText = (row: any) => {
@@ -2063,6 +2081,25 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
               </div>
             )}
           </div>
+
+          {/* 내 위치에서 검색 버튼 */}
+          <button className="map-btn" onClick={() => {
+            setSelectedClusterIds(null);
+            if (navigator.geolocation) {
+              navigator.geolocation.getCurrentPosition((pos) => {
+                const lat = pos.coords.latitude;
+                const lng = pos.coords.longitude;
+                if (kakaoMapRef.current) {
+                   const kakao = (window as any).kakao;
+                   kakaoMapRef.current.panTo(new kakao.maps.LatLng(lat, lng));
+                }
+              }, () => {
+                 alert('위치 정보를 가져올 수 없습니다. 브라우저 설정에서 위치 정보 엑세스 권한을 허용해 주세요.');
+              }, { enableHighAccuracy: true });
+            } else {
+               alert('현재 브라우저에서는 위치 기반 검색 기능을 지원하지 않습니다.');
+            }
+          }}>내 위치에서 검색</button>
           
           {/* Custom Zoom Control (네비게이션 바) */}
           <div style={{ position: "absolute", right: 20, top: 160, zIndex: 10, display: "flex", flexDirection: "column", background: "#fff", borderRadius: 4, boxShadow: "0 2px 6px rgba(0,0,0,0.15)", overflow: "hidden" }}>
