@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { getArticles } from "@/app/actions/article";
+import { getBannersByPlacement } from "@/app/actions/banner";
 import BannerSlot from "@/components/BannerSlot";
 
 export default async function CategoryNewsGrid() {
   // 섹션별 기사 가져오기 (최신순 2개씩)
-  const [financeRes, mapRes, politicsRes, lawRes, lifeRes, itRes, sportsRes, peopleRes] = await Promise.all([
+  const [financeRes, mapRes, politicsRes, lawRes, lifeRes, itRes, sportsRes, peopleRes, { data: issueRightBanners }] = await Promise.all([
     getArticles({ status: "APPROVED", section1: "뉴스/칼럼", section2: "부동산·주식·재테크", limit: 10 }),
     getArticles({ status: "APPROVED", section1: "우리동네부동산", limit: 30 }),
     getArticles({ status: "APPROVED", section1: "뉴스/칼럼", section2: "정치·경제·사회", limit: 10 }),
@@ -13,6 +14,7 @@ export default async function CategoryNewsGrid() {
     getArticles({ status: "APPROVED", section1: "뉴스/칼럼", section2: "IT·가전·가구", limit: 10 }),
     getArticles({ status: "APPROVED", section1: "뉴스/칼럼", section2: "스포츠·연예·Car", limit: 10 }),
     getArticles({ status: "APPROVED", section1: "뉴스/칼럼", section2: "인물·미션·기타", limit: 10 }),
+    getBannersByPlacement("MAIN_ISSUE_RIGHT"),
   ]);
 
   const rawFinanceArts = financeRes.success ? financeRes.data || [] : [];
@@ -131,7 +133,7 @@ export default async function CategoryNewsGrid() {
             </div>
           </div>
           <div className="hi-right">
-            <BannerSlot placement="MAIN_ISSUE_RIGHT" />
+            <BannerSlot placement="MAIN_ISSUE_RIGHT" initialBanners={issueRightBanners} />
           </div>
         </div>
       </div>
