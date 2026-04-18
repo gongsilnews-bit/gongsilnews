@@ -1,5 +1,7 @@
 import Script from "next/script";
 import { getVacanciesForMap } from "@/app/actions/vacancy";
+import { getBannersByPlacement } from "@/app/actions/banner";
+import { getLectures } from "@/app/actions/lecture";
 
 export const revalidate = 60;
 
@@ -13,7 +15,12 @@ import SpecialLectureBanner from "@/components/home/SpecialLectureBanner";
 import BannerSlot from "@/components/BannerSlot";
 
 export default async function Home() {
-  const { data: initialVacancies } = await getVacanciesForMap();
+  const [{ data: initialVacancies }, { data: mainTopBanners }, { data: mainBottomBanners }, { data: lecturesData }] = await Promise.all([
+    getVacanciesForMap(),
+    getBannersByPlacement("MAIN_TOP"),
+    getBannersByPlacement("MAIN_BOTTOM_FULL"),
+    getLectures({ status: "ACTIVE" })
+  ]);
 
   return (
     <>
@@ -26,7 +33,7 @@ export default async function Home() {
         <QuickFloatingMenu />
 
         {/* ========== 배너: 메인 상단 ========== */}
-        <BannerSlot placement="MAIN_TOP" style={{ borderRadius: 0 }} />
+        <BannerSlot placement="MAIN_TOP" style={{ borderRadius: 0 }} initialBanners={mainTopBanners} />
 
         {/* ========== 3. Hero Section (Map & HOT News) ========== */}
         <div className="hero-section" style={{ padding: "0 25px 0 0", border: "0.5px solid #dcdcdc", borderTop: "none", marginBottom: 0, background: "#fff" }}>
@@ -47,10 +54,10 @@ export default async function Home() {
 
 
       {/* ========== 9. Lectures ========== */}
-      <SpecialLectureBanner />
+      <SpecialLectureBanner initialLectures={lecturesData} />
 
       <div style={{ width: "100%", maxWidth: 1920, margin: "40px auto 40px auto" }}>
-        <BannerSlot placement="MAIN_BOTTOM_FULL" style={{ borderRadius: 0, overflow: "hidden" }} />
+        <BannerSlot placement="MAIN_BOTTOM_FULL" style={{ borderRadius: 0, overflow: "hidden" }} initialBanners={mainBottomBanners} />
       </div>
     </>
   );

@@ -9,10 +9,25 @@ interface BannerSlotProps {
   category?: string;
   className?: string;
   style?: React.CSSProperties;
+  initialBanners?: any[];
 }
 
-export default function BannerSlot({ placement, category, className, style }: BannerSlotProps) {
-  const [banners, setBanners] = useState<any[]>([]);
+export default function BannerSlot({ placement, category, className, style, initialBanners }: BannerSlotProps) {
+  const [banners, setBanners] = useState<any[]>(() => {
+    if (!initialBanners) return [];
+    let fetched = initialBanners;
+    if ((placement === "LIST_INLINE" || placement === "LIST_SIDEBAR") && category) {
+      fetched = fetched.filter(b => {
+        const parts = (b.link_target || "_blank").split("|");
+        if (parts.length > 1) {
+          const targets = parts[1].split(",");
+          return targets.includes(category) || targets.includes("all");
+        }
+        return true;
+      });
+    }
+    return fetched.map(b => ({ ...b, parsed_target: (b.link_target || "_blank").split("|")[0] }));
+  });
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -21,6 +36,8 @@ export default function BannerSlot({ placement, category, className, style }: Ba
 
   /* ── 배너 데이터 로드 ── */
   useEffect(() => {
+    if (initialBanners !== undefined) return;
+    
     async function load() {
       const res = await getBannersByPlacement(placement);
       if (res.success && res.data.length > 0) {
@@ -32,17 +49,15 @@ export default function BannerSlot({ placement, category, className, style }: Ba
               const targets = parts[1].split(",");
               return targets.includes(category) || targets.includes("all");
             }
-            return true; // if no specific targets, expose everywhere
+            return true;
           });
         }
-        // Save parsed target to ignore payload when clicking
         fetched = fetched.map(b => ({ ...b, parsed_target: (b.link_target || "_blank").split("|")[0] }));
-        
         setBanners(fetched);
       }
     }
     load();
-  }, [placement]);
+  }, [placement, category, initialBanners]);
 
   /* ── 자동 롤링 ── */
   useEffect(() => {

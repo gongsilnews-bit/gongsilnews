@@ -10,7 +10,7 @@ import HeaderTextBanner from "./HeaderTextBanner";
 import { createClient } from "@/utils/supabase/client";
 
 
-export default function Header() {
+export default function Header({ topFullBanners, headerTextBanners }: { topFullBanners?: any[], headerTextBanners?: any[] }) {
   const pathname = usePathname();
   const router = useRouter();
   const headerRef = useRef<HTMLElement>(null);
@@ -114,7 +114,7 @@ export default function Header() {
       {/* 0. Top Full Banner */}
       <div style={{ width: "100%", background: "#f8f9fa", display: "flex", justifyContent: "center" }}>
         <div style={{ maxWidth: 1920, width: "100%" }}>
-          <BannerSlot placement="TOP_FULL" style={{ borderRadius: 0 }} />
+          <BannerSlot placement="TOP_FULL" style={{ borderRadius: 0 }} initialBanners={topFullBanners} />
         </div>
       </div>
 
@@ -191,7 +191,7 @@ export default function Header() {
               <img src="/logo.png" className="ht-logo" alt="부동산 정보채널 공실뉴스" onClick={() => window.location.href = "/"} />
             </div>
             <div className="ht-right">
-              <HeaderTextBanner />
+              <HeaderTextBanner initialBanners={headerTextBanners} />
             </div>
           </div>
           <div className="header-bottom">

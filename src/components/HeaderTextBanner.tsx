@@ -3,8 +3,8 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { getBannersByPlacement, trackBannerClick, trackBannerView } from "@/app/actions/banner";
 
-export default function HeaderTextBanner() {
-  const [banners, setBanners] = useState<any[]>([]);
+export default function HeaderTextBanner({ initialBanners }: { initialBanners?: any[] }) {
+  const [banners, setBanners] = useState<any[]>(initialBanners || []);
   const containerRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -12,6 +12,8 @@ export default function HeaderTextBanner() {
   const viewedRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
+    if (initialBanners !== undefined) return;
+    
     async function load() {
       const res = await getBannersByPlacement("HEADER_TEXT");
       if (res.success && res.data.length > 0) {
@@ -19,7 +21,7 @@ export default function HeaderTextBanner() {
       }
     }
     load();
-  }, []);
+  }, [initialBanners]);
 
   // 노출 추적 (간단하게 컴포넌트 마운트 시 보이는 배너들 추적)
   useEffect(() => {

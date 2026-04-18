@@ -4,11 +4,12 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getLectures } from "@/app/actions/lecture";
 
-export default function SpecialLectureBanner() {
-  const [lectures, setLectures] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+export default function SpecialLectureBanner({ initialLectures }: { initialLectures?: any[] }) {
+  const [lectures, setLectures] = useState<any[]>(initialLectures || []);
+  const [loading, setLoading] = useState(initialLectures === undefined);
 
   useEffect(() => {
+    if (initialLectures !== undefined) return;
     const fetchLectures = async () => {
       const res = await getLectures({ status: "ACTIVE" });
       if (res.success && res.data && res.data.length > 0) {
