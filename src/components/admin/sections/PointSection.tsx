@@ -25,7 +25,7 @@ const SETTING_LABELS: Record<string, { label: string; unit: string; desc: string
   CHARGE_RATIO: { label: "결제 포인트 비율", unit: "P/원", desc: "1원당 지급되는 포인트" },
 };
 
-export default function PointSection({ theme, activeSubmenu = "settings", onSubmenuChange }: PointSectionProps) {
+export default function PointSection({ theme, activeSubmenu = "members", onSubmenuChange }: PointSectionProps) {
   const { bg, cardBg, textPrimary, textSecondary, darkMode, border } = theme;
   const [tab, setTab] = useState(activeSubmenu);
 
@@ -97,9 +97,9 @@ export default function PointSection({ theme, activeSubmenu = "settings", onSubm
   }
 
   const tabs = [
-    { key: "settings", label: "⚙️ 정책 설정" },
     { key: "members", label: "👥 회원 현황" },
     { key: "transactions", label: "📋 거래 내역" },
+    { key: "settings", label: "⚙️ 정책 설정" },
   ];
 
   const inputStyle: React.CSSProperties = {

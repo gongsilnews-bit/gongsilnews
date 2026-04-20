@@ -66,13 +66,9 @@ export default function BannerSlot({ placement, category, className, style, init
     const rotatingBanners = banners.filter(b => b.auto_rotate);
     if (rotatingBanners.length === 0 && banners.length <= 1) return;
 
-    const interval = banners[currentIndex]?.rotate_interval || 5;
+    const interval = banners[currentIndex]?.rotate_interval || 3;
     timerRef.current = setInterval(() => {
-      setIsTransitioning(true);
-      setTimeout(() => {
-        setCurrentIndex(prev => (prev + 1) % banners.length);
-        setIsTransitioning(false);
-      }, 300);
+      setCurrentIndex(prev => (prev + 1) % banners.length);
     }, interval * 1000);
 
     return () => {
@@ -145,8 +141,6 @@ export default function BannerSlot({ placement, category, className, style, init
           width: "100%",
           height: "auto",
           display: "block",
-          transition: "opacity 0.3s ease",
-          opacity: isTransitioning ? 0 : 1,
         }}
         priority={currentIndex === 0}
         unoptimized={banner.image_url?.includes('supabase')}

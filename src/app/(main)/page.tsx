@@ -50,7 +50,9 @@ export default async function Home() {
         <QuickFloatingMenu />
 
         {/* ========== 배너: 메인 상단 ========== */}
-        <BannerSlot placement="MAIN_TOP" style={{ borderRadius: 0 }} initialBanners={mainTopBanners} />
+        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+          <BannerSlot placement="MAIN_TOP" style={{ borderRadius: 0 }} initialBanners={mainTopBanners} />
+        </div>
 
         {/* ========== 3. Hero Section (Map & HOT News) ========== */}
         <div className="hero-section" style={{ padding: "0 25px 0 0", border: "0.5px solid #dcdcdc", borderTop: "none", marginBottom: 0, background: "#fff" }}>
@@ -77,7 +79,7 @@ export default async function Home() {
       {/* ========== 9. Lectures ========== */}
       <SpecialLectureBanner initialLectures={lecturesData} />
 
-      <div style={{ width: "100%", maxWidth: 1920, margin: "40px auto 40px auto" }}>
+      <div style={{ width: "100%", maxWidth: 1200, margin: "40px auto 40px auto" }}>
         <BannerSlot placement="MAIN_BOTTOM_FULL" style={{ borderRadius: 0, overflow: "hidden" }} initialBanners={mainBottomBanners} />
       </div>
     </>
