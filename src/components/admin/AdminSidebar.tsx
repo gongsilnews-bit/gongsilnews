@@ -41,7 +41,7 @@ const MENU_ITEMS: MenuItem[] = [
   { key: "ad", label: "광고", icon: <IconAd />, dividerBefore: true },
   { key: "plugin", label: "부동산홈페이지", icon: <IconPlugin /> },
   { key: "stats", label: "통계", icon: <IconStats /> },
-  { key: "settings", label: "환경설정", icon: <IconSettings />, dividerBefore: true },
+  { key: "settings", label: "정보설정", icon: <IconSettings />, dividerBefore: true },
   { key: "manual", label: "매뉴얼", icon: <IconManual /> },
 ];
 

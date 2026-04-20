@@ -234,7 +234,7 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
                   <ul>
                     <li><a href="/board?id=drone">드론영상</a></li>
                     <li><a href="/board?id=app">APP(앱)</a></li>
-                    <li><a href="/board?id=design">디자인</a></li>
+                    <li><a href="/board?id=prompt">AI 프롬프트</a></li>
                     <li><a href="/board?id=sound">음원</a></li>
                     <li><a href="/board?id=doc">계약서/양식</a></li>
                   </ul>
