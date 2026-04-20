@@ -39,9 +39,46 @@ export async function extractPropertyInfoFromImage(base64Data: string, mimeType:
 
     const apiKey = geminiApi.key_value;
 
-    // 3. Gemini 연동
+    // 3. 사용 가능한 모델 자동 탐색 (404 오류 방지)
+    let modelName = "gemini-1.5-flash"; // 기본값
+    try {
+      const modelsRes = await fetch("https://generativelanguage.googleapis.com/v1beta/models?key=" + apiKey);
+      if (modelsRes.ok) {
+        const modelsJson = await modelsRes.json();
+        if (modelsJson.models) {
+          const names = modelsJson.models.map((m: any) => m.name);
+          console.log("=== Available Gemini Models ===", names);
+          
+          let picked = false;
+          if (names.includes("models/gemini-2.0-flash-exp")) { modelName = "gemini-2.0-flash-exp"; picked = true; }
+          else if (names.includes("models/gemini-2.0-flash")) { modelName = "gemini-2.0-flash"; picked = true; }
+          else if (names.includes("models/gemini-1.5-flash")) { modelName = "gemini-1.5-flash"; picked = true; }
+          else if (names.includes("models/gemini-1.5-flash-latest")) { modelName = "gemini-1.5-flash-latest"; picked = true; }
+          else if (names.includes("models/gemini-1.5-pro")) { modelName = "gemini-1.5-pro"; picked = true; }
+          else if (names.includes("models/gemini-1.5-pro-latest")) { modelName = "gemini-1.5-pro-latest"; picked = true; }
+          else if (names.includes("models/gemini-pro-vision")) { modelName = "gemini-pro-vision"; picked = true; }
+          
+          if (!picked && modelsJson.models.length > 0) {
+            const fallback = modelsJson.models.find((m: any) => 
+               m.supportedGenerationMethods?.includes("generateContent") && 
+               (m.name.includes("flash") || m.name.includes("pro"))
+            ) || modelsJson.models.find((m: any) => m.supportedGenerationMethods?.includes("generateContent"));
+            
+            if (fallback) {
+              modelName = fallback.name.replace("models/", "");
+            }
+          }
+        }
+      }
+    } catch(e) { 
+      console.error("Error fetching Gemini models list", e); 
+    }
+
+    console.log("Selected Gemini Model:", modelName);
+
+    // 4. Gemini 연동
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: modelName });
 
     const prompt = `
 이 사진은 부동산 매물을 홍보하는 전단지 또는 메신저 캡처본입니다.
