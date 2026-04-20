@@ -454,7 +454,7 @@ export default function NewsMapClient({ initialArticles, initialPopularArticles 
               <option value="아파트·오피스텔">아파트·오피스텔</option>
               <option value="빌라·주택">빌라·주택</option>
               <option value="원룸·투룸">원룸·투룸</option>
-              <option value="상가·업무·공장·토지">상가·업무·공장·토지</option>
+              <option value="상가·사무실·공장·토지">상가·사무실·공장·토지</option>
               <option value="분양">분양</option>
             </>)}
             {section1 === "뉴스/칼럼" && (<>
@@ -683,7 +683,7 @@ export default function NewsMapClient({ initialArticles, initialPopularArticles 
           </div>
 
           {/* 내 위치에서 검색 버튼 */}
-          <button className="map-btn" style={{ background: "#ff8e15", left: "50%" }} onClick={() => {
+          <button className="map-btn" style={{ background: "#ff8e15", left: "50%", zIndex: 1000 }} onClick={() => {
             setClusterMode(false);
             setActiveArticleId(null);
             setShowDetail(false);

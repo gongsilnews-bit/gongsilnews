@@ -53,19 +53,23 @@ export default function PremiumDroneCarousel({ posts }: { posts: any[] }) {
       {canScrollLeft && (
         <button 
           onClick={() => scroll("left")}
-          style={{ position: "absolute", left: -20, top: "80px", transform: "translateY(-50%)", zIndex: 10, background: "rgba(0,0,0,0.5)", borderRadius: "50%", padding: "5px", border: "none", color: "#fff", cursor: "pointer", opacity: 0.8, display: "flex" }}
+          style={{ position: "absolute", left: "-24px", top: "90px", transform: "translateY(-50%)", zIndex: 20, width: "48px", height: "48px", background: "#fff", borderRadius: "50%", padding: "0", border: "1px solid #e5e7eb", boxShadow: "0 4px 16px rgba(0,0,0,0.15)", color: "#333", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}
+          onMouseOver={e => { e.currentTarget.style.transform = "translateY(-50%) scale(1.05)"; e.currentTarget.style.color = "#1e56a0"; }}
+          onMouseOut={e => { e.currentTarget.style.transform = "translateY(-50%) scale(1)"; e.currentTarget.style.color = "#333"; }}
           title="이전"
         >
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
         </button>
       )}
       {canScrollRight && (
         <button 
           onClick={() => scroll("right")}
-          style={{ position: "absolute", right: -20, top: "80px", transform: "translateY(-50%)", zIndex: 10, background: "rgba(0,0,0,0.5)", borderRadius: "50%", padding: "5px", border: "none", color: "#fff", cursor: "pointer", opacity: 0.8, display: "flex" }}
+          style={{ position: "absolute", right: "-24px", top: "90px", transform: "translateY(-50%)", zIndex: 20, width: "48px", height: "48px", background: "#fff", borderRadius: "50%", padding: "0", border: "1px solid #e5e7eb", boxShadow: "0 4px 16px rgba(0,0,0,0.15)", color: "#333", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}
+          onMouseOver={e => { e.currentTarget.style.transform = "translateY(-50%) scale(1.05)"; e.currentTarget.style.color = "#1e56a0"; }}
+          onMouseOut={e => { e.currentTarget.style.transform = "translateY(-50%) scale(1)"; e.currentTarget.style.color = "#333"; }}
           title="다음"
         >
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
         </button>
       )}
 

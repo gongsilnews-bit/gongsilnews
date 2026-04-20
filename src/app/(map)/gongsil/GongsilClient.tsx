@@ -13,7 +13,7 @@ const CATEGORY_CONFIG: Record<string, { name: string; pills: string[]; basicFilt
   apart: { name: "아파트·오피스텔", pills: ["아파트", "아파트분양권", "재건축", "오피스텔", "오피스텔분양권", "재개발"], basicFilters: ["거래방식", "가격대", "면적", "사용승인일", "세대수", "층수", "방/욕실수", "방향", "기타옵션"], detailFilters: [], showToggle: false },
   villa: { name: "빌라·주택", pills: ["빌라/연립", "단독/다가구", "전원주택", "상가주택"], basicFilters: ["거래방식", "가격대", "면적", "방/욕실수", "사용승인일", "방향", "기타옵션"], detailFilters: [], showToggle: false },
   one: { name: "원룸·투룸", pills: ["원룸", "투룸", "오피스텔만 보기"], basicFilters: ["거래방식", "가격대", "관리비", "기타옵션"], detailFilters: [], showToggle: false },
-  biz: { name: "상가·업무·공장·토지", pills: ["상가", "사무실", "공장/창고", "지식산업센터", "건물", "토지"], basicFilters: ["거래방식", "가격대", "면적", "층수", "관리비", "기타옵션"], detailFilters: [], showToggle: false },
+  biz: { name: "상가·사무실·공장·토지", pills: ["상가", "사무실", "공장/창고", "지식산업센터", "건물", "토지"], basicFilters: ["거래방식", "가격대", "면적", "층수", "관리비", "기타옵션"], detailFilters: [], showToggle: false },
   sale: { name: "분양", pills: ["아파트", "오피스텔", "빌라", "도시형생활주택", "생활숙박시설", "상가/업무"], basicFilters: ["분양단계", "분양형태", "분양가/보증금", "면적", "세대수"], detailFilters: [], showToggle: false },
   wish: { name: "MY관심공실", pills: [], basicFilters: [], detailFilters: [], showToggle: false },
 };
@@ -1599,7 +1599,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
             const tagColor = prop.commission_type === '공동수수료' ? "#2e7d32" : "#1a73e8";
             
             return (
-          <div style={{ position: "absolute", left: 380, top: 0, width: 600, height: "100%", background: "#fff", display: "flex", flexDirection: "column", borderRight: "1px solid #eee", zIndex: 110, boxShadow: "5px 0 15px rgba(0,0,0,0.15)" }}>
+          <div style={{ position: "absolute", left: 380, top: 0, width: 600, height: "100%", background: "#fff", display: "flex", flexDirection: "column", borderRight: "1px solid #eee", zIndex: 1100, boxShadow: "5px 0 15px rgba(0,0,0,0.15)" }}>
             {/* 닫기 버튼 */}
             <button onClick={() => setShowDetail(false)} style={{ position: "absolute", top: 15, right: 15, width: 30, height: 30, background: "rgba(255,255,255,0.8)", border: "1px solid #ddd", borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, fontWeight: "bold", color: "#333", zIndex: 100 }}>×</button>
 
@@ -2084,7 +2084,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
           </div>
 
           {/* 내 위치에서 검색 버튼 */}
-          <button className="map-btn" onClick={() => {
+          <button className="map-btn" style={{ zIndex: 1000 }} onClick={() => {
             setSelectedClusterIds(null);
             if (navigator.geolocation) {
               navigator.geolocation.getCurrentPosition((pos) => {

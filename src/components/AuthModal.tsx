@@ -156,28 +156,32 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signup', onGo
             /* ━━━ 일반 모드 (회원가입/로그인) ━━━ */
             <div style={{ padding: '40px 32px 32px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
               {/* 로고 원형 */}
-              <div style={{ width: 64, height: 64, borderRadius: '50%', border: '1px solid #eee', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
-                <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <div style={{ width: 80, height: 80, borderRadius: '50%', border: '1px solid #eee', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 24, boxShadow: '0 2px 6px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
+                <svg width="64" height="64" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <circle cx="24" cy="24" r="24" fill="#222222" />
                   <circle cx="24" cy="24" r="16" fill="#FFFFFF" />
-                  <path d="M20 16L31 24L20 32V16Z" fill="#F59E0B" stroke="#222222" strokeWidth="3" strokeLinejoin="round" />
+                  <path d="M19 15.34L34 24L19 32.66Z" fill="#F59E0B" stroke="#222222" strokeWidth="3" strokeLinejoin="round" />
                 </svg>
               </div>
 
-              <h3 style={{ fontSize: 18, fontWeight: 900, color: '#111', textAlign: 'center', margin: '0 0 8px 0' }}>
-                공실뉴스 시작하기
+              <h3 style={{ fontSize: 20, fontWeight: 900, color: '#111', textAlign: 'center', margin: '0 0 8px 0', letterSpacing: '-0.3px' }}>
+                <span style={{ color: '#1e56a0' }}>11만</span> 부동산 무료 정보채널
               </h3>
               
-              <p style={{ fontSize: 13, color: '#888', textAlign: 'center', lineHeight: 1.6, margin: '0 0 28px 0' }}>
-                로그인 및 회원가입을 통해 공실뉴스의<br />강력한 독점 혜택을 누려보세요.
+              <p style={{ fontSize: 13, color: '#888', textAlign: 'center', lineHeight: 1.6, margin: '0 0 26px 0' }}>
+                단 한 번의 가입으로 중개 실무에 꼭 필요한<br />특별한 혜택들을 모두 무료로 누려보세요.
               </p>
 
               {/* 혜택 리스트 */}
-              <ul style={{ width: '100%', listStyle: 'none', margin: '0 0 28px 0', background: '#f8f9fa', borderRadius: '8px', padding: '16px 20px' }}>
-                {['프리미엄 부동산 뉴스와 분석 보고서 접근', '동네별 실시간 공실 및 매물 동향 최신 정보', '공실뉴스만의 독자적인 부동산 지수 열람'].map((item, i) => (
-                  <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 12, color: '#555', marginBottom: i < 2 ? 8 : 0 }}>
-                    <span style={{ color: '#1e56a0', fontWeight: 'bold' }}>•</span>
-                    <span>{item}</span>
+              <ul style={{ width: '100%', listStyle: 'none', margin: '0 0 28px 0', background: '#f4f6fa', borderRadius: '10px', padding: '18px 20px', border: '1px solid #eef0f5' }}>
+                {[
+                  <><strong style={{color: '#111', fontWeight: 800}}>로컬 부동산이 직접 전달하는</strong> 시세 현황 뉴스</>,
+                  <><strong style={{color: '#111', fontWeight: 800}}>중개사에게 꼭 필요한</strong> AI 유튜브 특강 시청</>,
+                  <><strong style={{color: '#111', fontWeight: 800}}>대한민국 부동산 누구나 가입하는</strong> 100% 무료 공동중개망</>
+                ].map((item, i) => (
+                  <li key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, color: '#555', marginBottom: i < 2 ? 14 : 0, letterSpacing: '-0.3px' }}>
+                    <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#1e56a0', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 900, flexShrink: 0 }}>✓</div>
+                    <span style={{ lineHeight: 1.4 }}>{item}</span>
                   </li>
                 ))}
               </ul>
