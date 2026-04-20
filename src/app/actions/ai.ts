@@ -39,47 +39,7 @@ export async function extractPropertyInfoFromImage(base64Data: string, mimeType:
 
     const apiKey = geminiApi.key_value;
 
-    // 3. 사용 가능한 모델 자동 탐색 (404 오류 방지)
-    let modelName = "gemini-1.5-flash"; // 기본값
-    try {
-      const modelsRes = await fetch("https://generativelanguage.googleapis.com/v1beta/models?key=" + apiKey);
-      if (modelsRes.ok) {
-        const modelsJson = await modelsRes.json();
-        if (modelsJson.models) {
-          const names = modelsJson.models.map((m: any) => m.name);
-          console.log("=== Available Gemini Models ===", names);
-          
-          let picked = false;
-          if (names.includes("models/gemini-2.0-flash-exp")) { modelName = "gemini-2.0-flash-exp"; picked = true; }
-          else if (names.includes("models/gemini-2.0-flash")) { modelName = "gemini-2.0-flash"; picked = true; }
-          else if (names.includes("models/gemini-1.5-flash")) { modelName = "gemini-1.5-flash"; picked = true; }
-          else if (names.includes("models/gemini-1.5-flash-latest")) { modelName = "gemini-1.5-flash-latest"; picked = true; }
-          else if (names.includes("models/gemini-1.5-pro")) { modelName = "gemini-1.5-pro"; picked = true; }
-          else if (names.includes("models/gemini-1.5-pro-latest")) { modelName = "gemini-1.5-pro-latest"; picked = true; }
-          else if (names.includes("models/gemini-pro-vision")) { modelName = "gemini-pro-vision"; picked = true; }
-          
-          if (!picked && modelsJson.models.length > 0) {
-            const fallback = modelsJson.models.find((m: any) => 
-               m.supportedGenerationMethods?.includes("generateContent") && 
-               (m.name.includes("flash") || m.name.includes("pro"))
-            ) || modelsJson.models.find((m: any) => m.supportedGenerationMethods?.includes("generateContent"));
-            
-            if (fallback) {
-              modelName = fallback.name.replace("models/", "");
-            }
-          }
-        }
-      }
-    } catch(e) { 
-      console.error("Error fetching Gemini models list", e); 
-    }
-
-    console.log("Selected Gemini Model:", modelName);
-
-    // 4. Gemini 연동
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: modelName });
-
+    // 3. 공용 프롬프트 및 이미지 파라미터 준비
     const prompt = `
 이 사진은 부동산 매물을 홍보하는 전단지 또는 메신저 캡처본입니다.
 사진에 표시된 내용을 분석하여 공실 등록을 위해 필요한 아래의 형식(JSON)으로 반환해주세요. 
@@ -111,17 +71,46 @@ JSON 구조:
       }
     ];
 
-    const result = await model.generateContent([prompt, ...imageParts]);
-    const responseText = result.response.text();
-    
-    // JSON 문자열 파싱 (안전 처리)
-    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      console.error(responseText);
-      return { success: false, error: "분석된 응답 형식을 처리할 수 없습니다." };
+    const genAI = new GoogleGenerativeAI(apiKey);
+
+    // 4. 강건한 에러 폴백 처리: 최신 모델부터 구형 모델까지 순차적으로 시도하여 권한이 있는 모델을 찾아냅니다.
+    const candidates = [
+       "gemini-2.0-flash",
+       "gemini-2.0-flash-exp",
+       "gemini-1.5-flash",
+       "gemini-1.5-flash-latest",
+       "gemini-1.5-pro",
+       "gemini-1.5-pro-latest",
+       "gemini-pro-vision"
+    ];
+
+    let lastError = "사용 가능한 모델이 없습니다.";
+    let parsedData = null;
+
+    for (const modelName of candidates) {
+       try {
+          console.log(`Trying Gemini model: ${modelName}...`);
+          const model = genAI.getGenerativeModel({ model: modelName });
+          const result = await model.generateContent([prompt, ...imageParts]);
+          const responseText = result.response.text();
+          
+          const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+             parsedData = JSON.parse(jsonMatch[0]);
+             console.log(`Success with Gemini model: ${modelName}!`);
+             break; // 성공 시 루프 탈출
+          } else {
+             lastError = "AI가 유효한 JSON을 반환하지 않았습니다.";
+          }
+       } catch (err: any) {
+          console.log(`Gemini model [${modelName}] failed: ${err.message}`);
+          lastError = err.message;
+       }
     }
 
-    const parsedData = JSON.parse(jsonMatch[0]);
+    if (!parsedData) {
+       return { success: false, error: lastError + " (모든 호환 모델 시도 실패)" };
+    }
 
     return {
       success: true,

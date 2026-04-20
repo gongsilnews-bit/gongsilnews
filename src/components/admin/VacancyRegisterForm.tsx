@@ -7,6 +7,7 @@ import { createVacancy, saveVacancyPhoto, updateVacancy } from "@/app/actions/va
 import { getPhotoLibrary, togglePhotoFavorite } from "@/app/actions/article";
 import { uploadVacancyPhotoDirect } from "@/utils/uploadDirect";
 import { extractPropertyInfoFromImage } from "@/app/actions/ai";
+import { generatePropertyDescription } from "@/app/actions/gemini";
 
 /* ──────────────────────────────────────────────
    공실등록 폼 컴포넌트 (register.html 1:1 복제)
@@ -93,6 +94,43 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
 
   // 전달사항
   const [description, setDescription] = useState("");
+  const [isAIGenerating, setIsAIGenerating] = useState(false);
+
+  const handleGenerateAI = async () => {
+    setIsAIGenerating(true);
+    try {
+      const payload = {
+        propertyType,
+        subCategory,
+        tradeType,
+        deposit,
+        monthly,
+        maintenance,
+        currentFloor,
+        totalFloor,
+        exclusivePy,
+        supplyPy,
+        roomCount,
+        bathCount,
+        direction,
+        selectedOptions,
+        parking,
+        moveInDate,
+        infrastructure
+      };
+      const res = await generatePropertyDescription(payload);
+      if (res.success && res.text) {
+        setDescription(res.text);
+      } else {
+        alert(res.error || "AI 마법사 생성에 실패했습니다.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("AI 마법사 생성 중 오류가 발생했습니다.");
+    } finally {
+      setIsAIGenerating(false);
+    }
+  };
 
   // 의뢰인
   const [clientName, setClientName] = useState(initialClientName);
