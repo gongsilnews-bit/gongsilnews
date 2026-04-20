@@ -30,6 +30,11 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
   const editId = searchParams.get("id");
   const showWriteForm = action === "write";
 
+  const [searchArticleNo, setSearchArticleNo] = useState("");
+  const [searchSection, setSearchSection] = useState("전체");
+  const [searchKeyword, setSearchKeyword] = useState("");
+  const [activeFilters, setActiveFilters] = useState({ articleNo: "", section: "전체", keyword: "" });
+
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data }) => {
@@ -46,11 +51,19 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
   });
 
   const filtered = baseArticles.filter(a => {
-    if (articleFilter === "전체") return true;
-    if (articleFilter === "승인대기") return a.status === 'PENDING';
-    if (articleFilter === "발행됨") return a.status === 'APPROVED';
-    if (articleFilter === "작성중") return a.status === 'DRAFT';
-    if (articleFilter === "반려") return a.status === 'REJECTED';
+    if (articleFilter === "승인대기" && a.status !== 'PENDING') return false;
+    if (articleFilter === "발행됨" && a.status !== 'APPROVED') return false;
+    if (articleFilter === "작성중" && a.status !== 'DRAFT') return false;
+    if (articleFilter === "반려" && a.status !== 'REJECTED') return false;
+
+    // search filters
+    if (activeFilters.articleNo && String(a.article_no) !== activeFilters.articleNo) return false;
+    if (activeFilters.section !== "전체" && a.section1 !== activeFilters.section) return false;
+    if (activeFilters.keyword) {
+      const k = activeFilters.keyword.toLowerCase();
+      if (!(a.title && a.title.toLowerCase().includes(k)) && 
+          !(a.author_name && a.author_name.toLowerCase().includes(k))) return false;
+    }
     return true;
   });
 
@@ -89,6 +102,23 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
               </button>
             );
           })}
+        </div>
+
+        {/* 필터 검색 바 */}
+        <div style={{ padding: "16px 24px", borderBottom: `1px solid ${border}`, display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <label style={{ fontSize: 13, fontWeight: 600, color: textSecondary, whiteSpace: "nowrap" }}>기사번호</label>
+            <input type="text" value={searchArticleNo} onChange={e => setSearchArticleNo(e.target.value)} onKeyDown={e => e.key === 'Enter' && setActiveFilters({ articleNo: searchArticleNo, section: searchSection, keyword: searchKeyword })} placeholder="번호 검색" style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", width: 130 }} />
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <label style={{ fontSize: 13, fontWeight: 600, color: textSecondary, whiteSpace: "nowrap" }}>섹션</label>
+            <select value={searchSection} onChange={e => setSearchSection(e.target.value)} style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", minWidth: 100 }}>
+              <option value="전체">전체</option><option value="부동산뉴스">부동산뉴스</option><option value="분양정보">분양정보</option><option value="지역소식">지역소식</option><option value="인테리어">인테리어</option>
+            </select>
+          </div>
+          <input type="text" value={searchKeyword} onChange={e => setSearchKeyword(e.target.value)} onKeyDown={e => e.key === 'Enter' && setActiveFilters({ articleNo: searchArticleNo, section: searchSection, keyword: searchKeyword })} placeholder="기사 제목 또는 기자명 검색" style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", flex: 1, minWidth: 180 }} />
+          <button onClick={() => setActiveFilters({ articleNo: searchArticleNo, section: searchSection, keyword: searchKeyword })} style={{ height: 36, padding: "0 18px", background: darkMode ? "#2c2d31" : "#374151", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>검색</button>
+          <button onClick={() => { setSearchArticleNo(""); setSearchSection("전체"); setSearchKeyword(""); setActiveFilters({ articleNo: "", section: "전체", keyword: "" }); }} style={{ height: 36, padding: "0 14px", background: darkMode ? "#2c2d31" : "#fff", color: textSecondary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>초기화</button>
         </div>
 
         {/* 액션 버튼 */}

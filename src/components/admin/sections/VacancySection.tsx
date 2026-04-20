@@ -26,6 +26,11 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
   const showRegisterForm = action === "write";
   const [activeTab, setActiveTab] = useState("전체");
 
+  const [searchVacancyNo, setSearchVacancyNo] = useState("");
+  const [searchType, setSearchType] = useState("전체");
+  const [searchKeyword, setSearchKeyword] = useState("");
+  const [activeFilters, setActiveFilters] = useState({ vacancyNo: "", type: "전체", keyword: "" });
+
   const fetchAllVacancies = async () => {
     const res = role === "admin"
       ? await getVacancies({ all: true })
@@ -82,12 +87,22 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
       />
     );
   }
-  const filteredVacancies = dbVacancies.filter(v => {
-    if (activeTab === "전체") return true;
-    if (activeTab === "승인대기") return v.status === "PENDING";
-    if (activeTab === "광고중") return v.status === "ACTIVE";
-    if (activeTab === "작성중") return v.status === "DRAFT";
-    if (activeTab === "반려") return v.status === "REJECTED";
+  let filteredVacancies = dbVacancies.filter(v => {
+    // tab filter
+    if (activeTab === "승인대기" && v.status !== "PENDING") return false;
+    if (activeTab === "광고중" && v.status !== "ACTIVE") return false;
+    if (activeTab === "작성중" && v.status !== "DRAFT") return false;
+    if (activeTab === "반려" && v.status !== "REJECTED") return false;
+    
+    // search filters
+    if (activeFilters.vacancyNo && !(v.vacancy_no || "").includes(activeFilters.vacancyNo)) return false;
+    if (activeFilters.type !== "전체" && v.trade_type !== activeFilters.type) return false;
+    if (activeFilters.keyword) {
+      const k = activeFilters.keyword.toLowerCase();
+      const addr = [v.sido, v.sigungu, v.dong, v.building_name].filter(Boolean).join(" ").toLowerCase();
+      const ownerOptions = [v.client_name, v.client_phone, v.members?.name].filter(Boolean).map(String).map(s => s.toLowerCase());
+      if (!addr.includes(k) && !ownerOptions.some(o => o.includes(k))) return false;
+    }
     return true;
   });
 
@@ -124,6 +139,23 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
               </button>
             );
           })}
+        </div>
+
+        {/* 필터 검색 바 */}
+        <div style={{ padding: "16px 24px", borderBottom: `1px solid ${border}`, display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <label style={{ fontSize: 13, fontWeight: 600, color: textSecondary, whiteSpace: "nowrap" }}>매물번호</label>
+            <input type="text" value={searchVacancyNo} onChange={e => setSearchVacancyNo(e.target.value)} onKeyDown={e => e.key === 'Enter' && setActiveFilters({ vacancyNo: searchVacancyNo, type: searchType, keyword: searchKeyword })} placeholder="번호 검색" style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", width: 130 }} />
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <label style={{ fontSize: 13, fontWeight: 600, color: textSecondary, whiteSpace: "nowrap" }}>거래구분</label>
+            <select value={searchType} onChange={e => setSearchType(e.target.value)} style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", minWidth: 80 }}>
+              <option value="전체">전체</option><option value="매매">매매</option><option value="전세">전세</option><option value="월세">월세</option>
+            </select>
+          </div>
+          <input type="text" value={searchKeyword} onChange={e => setSearchKeyword(e.target.value)} onKeyDown={e => e.key === 'Enter' && setActiveFilters({ vacancyNo: searchVacancyNo, type: searchType, keyword: searchKeyword })} placeholder="주소, 등록자 또는 연락처 검색" style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", flex: 1, minWidth: 180 }} />
+          <button onClick={() => setActiveFilters({ vacancyNo: searchVacancyNo, type: searchType, keyword: searchKeyword })} style={{ height: 36, padding: "0 18px", background: darkMode ? "#2c2d31" : "#374151", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>검색</button>
+          <button onClick={() => { setSearchVacancyNo(""); setSearchType("전체"); setSearchKeyword(""); setActiveFilters({ vacancyNo: "", type: "전체", keyword: "" }); }} style={{ height: 36, padding: "0 14px", background: darkMode ? "#2c2d31" : "#fff", color: textSecondary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>초기화</button>
         </div>
 
         {/* 액션 버튼 영역 */}
