@@ -299,7 +299,14 @@ export default function BannerSection({ theme }: AdminSectionProps) {
     } else {
       res = await createBanner(formData);
     }
+    
     if (res.success) {
+      alert(editingBanner ? "배너가 수정되었습니다." : "배너가 등록되었습니다.");
+      setEditingBanner(null);
+      setImagePreview(null);
+      setCompressedImage(null);
+      setCustomPlacement("");
+      setShowForm(false);
       router.push(`${pathname}?menu=ad`); // 목록으로 이동
       loadBanners();
     } else {

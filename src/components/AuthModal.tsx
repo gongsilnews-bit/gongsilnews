@@ -156,8 +156,12 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signup', onGo
             /* ━━━ 일반 모드 (회원가입/로그인) ━━━ */
             <div style={{ padding: '40px 32px 32px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
               {/* 로고 원형 */}
-              <div style={{ width: 64, height: 64, borderRadius: '50%', border: '1px solid #eee', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-                <span style={{ color: '#1e56a0', fontWeight: 800, fontSize: 14, letterSpacing: -0.5 }}>공실뉴스</span>
+              <div style={{ width: 64, height: 64, borderRadius: '50%', border: '1px solid #eee', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
+                <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="24" cy="24" r="24" fill="#222222" />
+                  <circle cx="24" cy="24" r="16" fill="#FFFFFF" />
+                  <path d="M20 16L31 24L20 32V16Z" fill="#F59E0B" stroke="#222222" strokeWidth="3" strokeLinejoin="round" />
+                </svg>
               </div>
 
               <h3 style={{ fontSize: 18, fontWeight: 900, color: '#111', textAlign: 'center', margin: '0 0 8px 0' }}>
@@ -196,25 +200,15 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signup', onGo
                   Google 계정으로 시작하기
                 </button>
 
-                {/* 카카오 + 네이버 (두 번째 줄, 반반) */}
-                <div style={{ display: 'flex', gap: 10 }}>
-                  <button onClick={() => handleOAuthLogin('kakao')}
-                    style={{ flex: 1, background: '#FEE500', border: 'none', borderRadius: 8, padding: '12px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontWeight: 'bold', fontSize: 13, color: '#000', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s' }}
-                    onMouseOver={e => (e.currentTarget.style.background = '#f5dc00')}
-                    onMouseOut={e => (e.currentTarget.style.background = '#FEE500')}
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#3C1E1E" d="M12 3C6.48 3 2 6.36 2 10.44c0 2.62 1.75 4.93 4.38 6.24l-1.12 4.16c-.1.36.3.65.6.44l4.94-3.26c.39.04.79.06 1.2.06 5.52 0 10-3.36 10-7.64C22 6.36 17.52 3 12 3z"/></svg>
-                    카카오
-                  </button>
-                  <button onClick={() => alert('네이버 로그인은 현재 준비 중입니다. 구글이나 카카오를 이용해주세요!')}
-                    style={{ flex: 1, background: '#03C75A', border: 'none', borderRadius: 8, padding: '12px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontWeight: 'bold', fontSize: 13, color: '#fff', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s' }}
-                    onMouseOver={e => (e.currentTarget.style.background = '#02b350')}
-                    onMouseOut={e => (e.currentTarget.style.background = '#03C75A')}
-                  >
-                    <span style={{ fontWeight: 900, fontSize: 15, lineHeight: 1 }}>N</span>
-                    네이버
-                  </button>
-                </div>
+                {/* 카카오 */}
+                <button onClick={() => handleOAuthLogin('kakao')}
+                  style={{ width: '100%', background: '#FEE500', border: 'none', borderRadius: 8, padding: '13px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, fontWeight: 'bold', fontSize: 15, color: '#000', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s' }}
+                  onMouseOver={e => (e.currentTarget.style.background = '#f5dc00')}
+                  onMouseOut={e => (e.currentTarget.style.background = '#FEE500')}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#3C1E1E" d="M12 3C6.48 3 2 6.36 2 10.44c0 2.62 1.75 4.93 4.38 6.24l-1.12 4.16c-.1.36.3.65.6.44l4.94-3.26c.39.04.79.06 1.2.06 5.52 0 10-3.36 10-7.64C22 6.36 17.52 3 12 3z"/></svg>
+                  카카오 계정으로 시작하기
+                </button>
               </div>
 
               {/* 계정 찾기 링크 */}

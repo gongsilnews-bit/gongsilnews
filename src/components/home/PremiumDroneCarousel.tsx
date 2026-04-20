@@ -111,8 +111,11 @@ export default function PremiumDroneCarousel({ posts }: { posts: any[] }) {
               >
                 {/* 비디오 아이콘 */}
                 {(item.youtube_url || item.drive_url) && (
-                  <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: "40px", height: "40px", background: "rgba(0,0,0,0.6)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", border: "2px solid #fff" }}>
-                    <div style={{ width: 0, height: 0, borderLeft: "10px solid #fff", borderTop: "7px solid transparent", borderBottom: "7px solid transparent", marginLeft: "4px" }}></div>
+                  <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)" }}>
+                    <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <circle cx="24" cy="24" r="24" fill="rgba(0, 0, 0, 0.5)" />
+                      <path d="M20 15L33 24L20 33V15Z" fill="#FFFFFF" />
+                    </svg>
                   </div>
                 )}
               </div>

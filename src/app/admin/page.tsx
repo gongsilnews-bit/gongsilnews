@@ -30,7 +30,7 @@ const ADMIN_MENU: MenuItem[] = [
   { key: "edit", label: "편집", icon: <IconEdit /> },
   { key: "board", label: "게시판", icon: <IconBoard /> },
   { key: "ad", label: "광고", icon: <IconAd /> },
-  { key: "plugin", label: "플러그인", icon: <IconPlugin /> },
+  { key: "plugin", label: "부동산홈페이지", icon: <IconPlugin /> },
   { key: "point", label: "포인트", icon: <IconPoint /> },
   { key: "stats", label: "통계", icon: <IconStats /> },
   { key: "settings", label: "환경설정", icon: <IconSettings />, dividerBefore: true },

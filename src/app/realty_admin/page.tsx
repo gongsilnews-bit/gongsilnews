@@ -3,7 +3,7 @@
 import React, { useState, useEffect, lazy, Suspense, useRef, useCallback } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { computeTheme, MenuItem } from "@/components/admin/sections/types";
-import { IconDashboard, IconBuilding, IconArticle, IconStudy, IconCustomer, IconComment, IconManual, IconSettings, IconPoint } from "@/components/admin/sections/AdminIcons";
+import { IconDashboard, IconBuilding, IconArticle, IconStudy, IconCustomer, IconComment, IconManual, IconSettings, IconPoint, IconHomepage } from "@/components/admin/sections/AdminIcons";
 import MemberRegisterForm from "@/components/admin/MemberRegisterForm";
 import { getVacancies } from "@/app/actions/vacancy";
 import AdminLoadingFallback from "@/components/admin/sections/AdminSkeletons";
@@ -23,6 +23,7 @@ const REALTY_MENU: MenuItem[] = [
   { key: "customer", label: "고객관리", icon: <IconCustomer /> },
   { key: "comment", label: "댓글·문의", icon: <IconComment /> },
   { key: "point", label: "포인트", icon: <IconPoint /> },
+  { key: "homepage", label: "홈페이지", icon: <IconHomepage /> },
   { key: "manual", label: "매뉴얼", icon: <IconManual /> },
   { key: "settings", label: "정보설정", icon: <IconSettings />, separated: true },
 ];
@@ -196,7 +197,7 @@ function RealtyAdminContent() {
               {memberId ? <MemberRegisterForm editMemberId={memberId} onBack={() => setActiveMenu("dashboard")} /> : <div style={{ textAlign: "center", padding: 40, color: theme.textSecondary }}>사용자 정보를 불러오는 중입니다...</div>}
             </div>
           )}
-          {["study", "customer", "comment", "manual"].includes(activeMenu) && (
+          {["study", "customer", "comment", "homepage", "manual"].includes(activeMenu) && (
             <div style={{ flex: 1, margin: 16, marginBottom: 0, background: theme.cardBg, borderTopLeftRadius: 12, borderTopRightRadius: 12, boxShadow: "0 4px 6px rgba(0,0,0,0.05)", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <div style={{ textAlign: "center", color: "#9ca3af" }}>
                 <div style={{ fontSize: 48, marginBottom: 16 }}>🚧</div>
