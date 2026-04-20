@@ -282,35 +282,62 @@ export default function BoardClient({ board, initialPosts }: { board: any, initi
               <div className="pagination" style={{ display: "flex", gap: "4px" }}>
                 <button 
                   className="page-btn" 
+                  onClick={() => handlePageChange(1)} 
+                  disabled={currentPage === 1}
+                  style={{ padding: "6px 10px", border: "1px solid #ddd", background: currentPage === 1 ? "#f9f9f9" : "#fff", color: currentPage === 1 ? "#aaa" : "#555", cursor: currentPage === 1 ? "not-allowed" : "pointer" }}
+                >
+                  &lt;&lt;
+                </button>
+                <button 
+                  className="page-btn" 
                   onClick={() => handlePageChange(p => Math.max(1, p - 1))} 
                   disabled={currentPage === 1}
-                  style={{ padding: "6px 14px", border: "1px solid #ddd", background: currentPage === 1 ? "#f9f9f9" : "#fff", color: currentPage === 1 ? "#aaa" : "#555", cursor: currentPage === 1 ? "not-allowed" : "pointer" }}
+                  style={{ padding: "6px 10px", border: "1px solid #ddd", background: currentPage === 1 ? "#f9f9f9" : "#fff", color: currentPage === 1 ? "#aaa" : "#555", cursor: currentPage === 1 ? "not-allowed" : "pointer" }}
                 >
-                  &lt; 이전
+                  &lt;
                 </button>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
-                  <button 
-                    key={p} 
-                    onClick={() => handlePageChange(p)} 
-                    style={{ 
-                      padding: "6px 12px", minWidth: 32,
-                      border: "1px solid #ddd", 
-                      background: currentPage === p ? "#111" : "#fff", 
-                      color: currentPage === p ? "#fff" : "#555",
-                      fontWeight: currentPage === p ? "bold" : "normal",
-                      cursor: "pointer"
-                    }}
-                  >
-                    {p}
-                  </button>
-                ))}
+
+                {(() => {
+                  const PAGE_GROUP_SIZE = 10;
+                  const currentGroup = Math.ceil(currentPage / PAGE_GROUP_SIZE);
+                  const startPage = (currentGroup - 1) * PAGE_GROUP_SIZE + 1;
+                  const endPage = Math.min(startPage + PAGE_GROUP_SIZE - 1, totalPages);
+                  const pages = [];
+                  for (let i = startPage; i <= endPage; i++) pages.push(i);
+                  
+                  return pages.map(p => (
+                    <button 
+                      key={p} 
+                      onClick={() => handlePageChange(p)} 
+                      style={{ 
+                        padding: "6px 12px", minWidth: 32,
+                        border: "1px solid #ddd", 
+                        background: currentPage === p ? "#111" : "#fff", 
+                        color: currentPage === p ? "#fff" : "#555",
+                        fontWeight: currentPage === p ? "bold" : "normal",
+                        cursor: "pointer"
+                      }}
+                    >
+                      {p}
+                    </button>
+                  ));
+                })()}
+
                 <button 
                   className="page-btn" 
                   onClick={() => handlePageChange(p => Math.min(totalPages, p + 1))} 
                   disabled={currentPage === totalPages}
-                  style={{ padding: "6px 14px", border: "1px solid #ddd", background: currentPage === totalPages ? "#f9f9f9" : "#fff", color: currentPage === totalPages ? "aaa" : "#555", cursor: currentPage === totalPages ? "not-allowed" : "pointer" }}
+                  style={{ padding: "6px 10px", border: "1px solid #ddd", background: currentPage === totalPages ? "#f9f9f9" : "#fff", color: currentPage === totalPages ? "aaa" : "#555", cursor: currentPage === totalPages ? "not-allowed" : "pointer" }}
                 >
-                  다음 &gt;
+                  &gt;
+                </button>
+                <button 
+                  className="page-btn" 
+                  onClick={() => handlePageChange(totalPages)} 
+                  disabled={currentPage === totalPages}
+                  style={{ padding: "6px 10px", border: "1px solid #ddd", background: currentPage === totalPages ? "#f9f9f9" : "#fff", color: currentPage === totalPages ? "aaa" : "#555", cursor: currentPage === totalPages ? "not-allowed" : "pointer" }}
+                >
+                  &gt;&gt;
                 </button>
               </div>
             </div>
