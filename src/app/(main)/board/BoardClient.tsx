@@ -87,6 +87,12 @@ export default function BoardClient({ board, initialPosts }: { board: any, initi
   const [currentPage, setCurrentPage] = useState(initialPage);
   const itemsPerPage = 12;
 
+  // URL 파라미터가 변경(뒤로가기 등)될 때 상태 동기화
+  React.useEffect(() => {
+    setActiveTab(searchParams.get('tab') || "전체");
+    setCurrentPage(parseInt(searchParams.get('page') || "1", 10) || 1);
+  }, [searchParams]);
+
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
     setCurrentPage(1);

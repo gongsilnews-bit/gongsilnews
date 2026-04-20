@@ -4,7 +4,9 @@ import React, { useState, useCallback, useEffect } from "react";
 import { geocodeAddress } from "@/app/actions/geocode";
 import { createClient } from "@/utils/supabase/client";
 import { createVacancy, saveVacancyPhoto, updateVacancy } from "@/app/actions/vacancy";
+import { getPhotoLibrary, togglePhotoFavorite } from "@/app/actions/article";
 import { uploadVacancyPhotoDirect } from "@/utils/uploadDirect";
+import { extractPropertyInfoFromImage } from "@/app/actions/ai";
 
 /* ──────────────────────────────────────────────
    공실등록 폼 컴포넌트 (register.html 1:1 복제)
@@ -96,6 +98,10 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
   const [clientName, setClientName] = useState(initialClientName);
   const [clientPhone, setClientPhone] = useState(initialClientPhone);
 
+  // AI 연동
+  const aiFileRef = React.useRef<HTMLInputElement>(null);
+  const [parsingAi, setParsingAi] = useState(false);
+
   useEffect(() => {
     if (initialClientName) setClientName(initialClientName);
     if (initialClientPhone) setClientPhone(initialClientPhone);
@@ -172,6 +178,128 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
 
   // 사진
   const [photos, setPhotos] = useState<File[]>([]);
+
+  /* ── 이전 매물 모달 상태 ── */
+  const [showPrevMenuModal, setShowPrevMenuModal] = useState(false);
+  const [prevVacancies, setPrevVacancies] = useState<any[]>([]);
+  const [isPrevLoading, setIsPrevLoading] = useState(false);
+
+  const openPrevMenuModal = async () => {
+    setShowPrevMenuModal(true);
+    setIsPrevLoading(true);
+    const supabase = createClient();
+    let query = supabase.from('vacancies').select('*').order('created_at', { ascending: false }).limit(30);
+    if (ownerId && userRole !== "admin") {
+      query = query.eq('owner_id', ownerId);
+    }
+    const { data } = await query;
+    setPrevVacancies(data || []);
+    setIsPrevLoading(false);
+  };
+
+  const handleSelectPrevVacancy = (editData: any) => {
+    if (editData.property_type) setPropertyType(editData.property_type);
+    if (editData.sub_category) setSubCategory(editData.sub_category);
+    if (editData.trade_type) setTradeType(editData.trade_type);
+    if (editData.commission_type) setCommissionType(editData.commission_type);
+    if (editData.commission_amount) setCommissionAmount(editData.commission_amount);
+    if (editData.commission_etc) setCommissionEtc(editData.commission_etc);
+    if (editData.parking) setParking(editData.parking);
+    if (editData.move_in_date) setMoveInDate(editData.move_in_date);
+    if (editData.owner_relation) setOwnerRelation(editData.owner_relation);
+    if (editData.room_count) setRoomCount(String(editData.room_count));
+    if (editData.bath_count) setBathCount(String(editData.bath_count));
+    if (editData.direction) setDirection(editData.direction);
+    if (editData.current_floor) setCurrentFloor(editData.current_floor);
+    if (editData.total_floor) setTotalFloor(editData.total_floor);
+    if (editData.deposit) setDeposit(String(editData.deposit / 10000));
+    if (editData.monthly_rent) setMonthly(String(editData.monthly_rent / 10000));
+    if (editData.maintenance_fee) setMaintenance(String(editData.maintenance_fee / 10000));
+    if (editData.supply_m2) { setSupplyM2(String(editData.supply_m2)); setSupplyPy((Number(editData.supply_m2) * 0.3025).toFixed(1)); }
+    if (editData.exclusive_m2) { setExclusiveM2(String(editData.exclusive_m2)); setExclusivePy((Number(editData.exclusive_m2) * 0.3025).toFixed(1)); }
+    if (editData.sido) setSido(editData.sido);
+    if (editData.sigungu) setSigungu(editData.sigungu);
+    if (editData.dong) setDong(editData.dong);
+    if (editData.detail_addr) setDetailAddr(editData.detail_addr);
+    if (editData.building_name) setBuildingName(editData.building_name);
+    if (editData.apt_dong) setAptDong(editData.apt_dong);
+    if (editData.hosu) setHosu(editData.hosu);
+    if (editData.address_exposure) setAddressExposure(editData.address_exposure);
+    if (editData.options) setSelectedOptions(editData.options);
+    if (editData.description) setDescription(editData.description);
+    if (editData.client_name) setClientName(editData.client_name);
+    if (editData.client_phone) setClientPhone(editData.client_phone);
+    if (editData.realtor_commission) setRealtorCommission(editData.realtor_commission);
+    if (editData.exposure_type) setExposureType(editData.exposure_type);
+    if (editData.landlord_name) setLandlordName(editData.landlord_name);
+    if (editData.landlord_phone) setLandlordPhone(editData.landlord_phone);
+    if (editData.landlord_memo) setLandlordMemo(editData.landlord_memo);
+    if (editData.lat && editData.lng) setCoords({ lat: editData.lat, lng: editData.lng });
+    if (editData.infrastructure) setInfrastructure(editData.infrastructure);
+    if (editData.consent !== undefined) setConsent(editData.consent);
+    
+    setShowPrevMenuModal(false);
+  };
+
+  /* ── 포토DB 모달 상태 ── */
+  const [showPhotoDbModal, setShowPhotoDbModal] = useState(false);
+  const [photoDbTab, setPhotoDbTab] = useState<'전체사진' | '즐겨찾기'>('전체사진');
+  const [photoDbSearch, setPhotoDbSearch] = useState('');
+  const [photoDbItems, setPhotoDbItems] = useState<any[]>([]);
+  const [isPhotoDbLoading, setIsPhotoDbLoading] = useState(false);
+
+  const openPhotoDbModal = () => {
+    setShowPhotoDbModal(true);
+    setPhotoDbTab('전체사진');
+    setPhotoDbSearch('');
+    fetchPhotoDb('', false);
+  };
+  const fetchPhotoDb = async (searchStr: string, favOnly: boolean) => {
+    setIsPhotoDbLoading(true);
+    const res = await getPhotoLibrary({ search: searchStr, isFavorite: favOnly });
+    if (res.success && res.data) {
+      setPhotoDbItems(res.data);
+    } else {
+      setPhotoDbItems([]);
+    }
+    setIsPhotoDbLoading(false);
+  };
+  useEffect(() => {
+    if (showPhotoDbModal) {
+      fetchPhotoDb(photoDbSearch, photoDbTab === '즐겨찾기');
+    }
+  }, [photoDbTab]);
+
+  const handlePhotoDbSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    fetchPhotoDb(photoDbSearch, photoDbTab === '즐겨찾기');
+  };
+
+  const handleToggleFav = async (e: React.MouseEvent, photoId: string, currentFav: boolean) => {
+    e.stopPropagation();
+    const res = await togglePhotoFavorite(photoId, !currentFav);
+    if (res.success) {
+      setPhotoDbItems(prev => prev.map(p => p.id === photoId ? { ...p, is_favorite: !currentFav } : p));
+      if (photoDbTab === '즐겨찾기') {
+        fetchPhotoDb(photoDbSearch, true); 
+      }
+    } else {
+      alert("상태 변경에 실패했습니다.");
+    }
+  };
+
+  const handleSelectFromPhotoDb = async (photo: any) => {
+    setShowPhotoDbModal(false);
+    try {
+      const response = await fetch(photo.url);
+      const blob = await response.blob();
+      const ext = photo.filename ? photo.filename.split('.').pop() : 'webp';
+      const file = new File([blob], photo.filename || `db_photo_${Date.now()}.${ext}`, { type: blob.type });
+      addPhotos([file]);
+    } catch (err) {
+      alert("사진을 불러오는 중 오류가 발생했습니다.");
+    }
+  };
 
   // ── WebP 압축 ──
   const compressToWebP = (file: File): Promise<File> => {
@@ -422,16 +550,68 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
             <h2 style={{ fontSize: 17, fontWeight: 800, color: textPrimary, margin: "0 0 8px", borderBottom: `2px solid ${textPrimary}`, paddingBottom: 12 }}>빠른 입력 / 도구</h2>
 
             {/* 이전 매물 불러오기 */}
-            <button type="button" style={{ width: "100%", height: 48, border: `1px solid ${border}`, borderRadius: 8, background: cardBg, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 14, fontWeight: 600, color: textPrimary, marginTop: 16 }}>
+            <button type="button" onClick={openPrevMenuModal} style={{ width: "100%", height: 48, border: `1px solid ${border}`, borderRadius: 8, background: cardBg, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 14, fontWeight: 600, color: textPrimary, marginTop: 16 }}>
               ↻ 이전 매물 불러오기
             </button>
 
             {/* 이미지로 등록하기 */}
-            <button type="button" style={{ width: "100%", height: 56, border: "none", borderRadius: 8, background: darkMode ? "#1e3a5f" : "#dbeafe", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, padding: "0 16px", marginTop: 10 }}>
-              <span style={{ fontSize: 22 }}>🖼️</span>
+            <input type="file" ref={aiFileRef} hidden onChange={async (e) => {
+              if (e.target.files && e.target.files[0]) {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = async () => {
+                  const base64Params = (reader.result as string).split(',');
+                  if (base64Params.length !== 2) return;
+                  const base64Data = base64Params[1];
+                  const mimeType = file.type;
+                  
+                  setParsingAi(true);
+                  try {
+                    const res = await extractPropertyInfoFromImage(base64Data, mimeType, ownerId);
+                    if (!res.success || !res.data) {
+                      alert('이미지 분석 실패: ' + (res.error || "알 수 없는 오류"));
+                      return;
+                    }
+                    
+                    const p = res.data;
+                    if (p.property_type) {
+                      setPropertyType(p.property_type);
+                      setSubCategory(SUB_CATEGORIES[p.property_type]?.[0] || "");
+                    }
+                    if (p.trade_type) setTradeType(p.trade_type);
+                    if (p.deposit) setDeposit(String(p.deposit));
+                    if (p.monthly_rent) setMonthly(String(p.monthly_rent));
+                    if (p.maintenance_fee) setMaintenance(String(p.maintenance_fee));
+                    if (p.current_floor) setCurrentFloor(String(p.current_floor));
+                    if (p.total_floor) setTotalFloor(String(p.total_floor));
+                    if (p.room_count) setRoomCount(String(p.room_count));
+                    if (p.bath_count) setBathCount(String(p.bath_count));
+                    if (p.supply_m2) {
+                      setSupplyM2(String(p.supply_m2));
+                      setSupplyPy((Number(p.supply_m2) * 0.3025).toFixed(1));
+                    }
+                    if (p.exclusive_m2) {
+                      setExclusiveM2(String(p.exclusive_m2));
+                      setExclusivePy((Number(p.exclusive_m2) * 0.3025).toFixed(1));
+                    }
+                    if (p.description) setDescription(p.description);
+                    
+                    alert('이미지 분석을 통해 매물 정보가 자동으로 채워졌습니다!');
+                  } catch(err: any) {
+                    alert('오류 발생: ' + err.message);
+                  } finally {
+                    setParsingAi(false);
+                    if(aiFileRef.current) aiFileRef.current.value = "";
+                  }
+                };
+                reader.readAsDataURL(file);
+              }
+            }} accept="image/*" />
+            <button type="button" onClick={() => aiFileRef.current?.click()} disabled={parsingAi} style={{ width: "100%", height: 56, border: "none", borderRadius: 8, background: darkMode ? "#3b2f1e" : "#fef3c7", cursor: parsingAi ? "wait" : "pointer", display: "flex", alignItems: "center", gap: 10, padding: "0 16px", marginTop: 10, transition: "opacity 0.2s", opacity: parsingAi ? 0.6 : 1 }} onMouseEnter={e => { if(!parsingAi) e.currentTarget.style.opacity = "0.8" }} onMouseLeave={e => { if(!parsingAi) e.currentTarget.style.opacity = "1" }}>
+              <span style={{ fontSize: 22 }}>✨</span>
               <div style={{ textAlign: "left" }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "#1d4ed8" }}>이미지로 등록하기</div>
-                <div style={{ fontSize: 11, color: "#6b7280" }}>전단지, 매신저 캡처 자동 분석</div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: "#d97706" }}>{parsingAi ? "AI 분석 중..." : "이미지로 등록하기"}</div>
+                <div style={{ fontSize: 11, color: "#b45309", marginTop: 2 }}>{parsingAi ? "잠시만 기다려주세요..." : "전단지, 매신저 캡처 자동 분석"}</div>
               </div>
             </button>
 
@@ -1305,8 +1485,8 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
 
             {/* 포토DB 간편검색 */}
             <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "16px 0 20px" }}>
-              <input type="text" placeholder="포토DB 간편검색" style={{ ...inputStyle, height: 40, flex: 1 }} />
-              <button type="button" style={{ width: 40, height: 40, border: `1px solid ${border}`, borderRadius: 8, background: cardBg, cursor: "pointer", fontSize: 18, display: "flex", alignItems: "center", justifyContent: "center" }}>🔍</button>
+              <input type="text" placeholder="포토DB 간편검색" value={photoDbSearch} onChange={e => setPhotoDbSearch(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handlePhotoDbSearch(e); } }} onClick={openPhotoDbModal} style={{ ...inputStyle, height: 40, flex: 1 }} />
+              <button type="button" onClick={openPhotoDbModal} style={{ width: 40, height: 40, border: `1px solid ${border}`, borderRadius: 8, background: cardBg, cursor: "pointer", fontSize: 18, display: "flex", alignItems: "center", justifyContent: "center" }}>🔍</button>
             </div>
 
             {/* 사진 등록 */}
@@ -1371,6 +1551,153 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
           </div>
         </div>
       </div>
+
+      {/* ═══ 포토DB 모달 ═══ */}
+      {showPhotoDbModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+          background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          backdropFilter: 'blur(2px)', zIndex: 9999
+        }}>
+          <div style={{
+            background: '#fff', borderRadius: 16, width: 800, maxWidth: '90%', maxHeight: '90%', display: "flex", flexDirection: "column",
+            boxShadow: '0 10px 25px rgba(0,0,0,0.2)', overflow: 'hidden', animation: 'scaleUp 0.3s ease-out'
+          }}>
+            {/* 헤더 */}
+            <div style={{ background: '#3b82f6', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 20 }}>🖼️</span>
+                <span style={{ fontSize: 18, fontWeight: 800, color: '#fff' }}>포토DB</span>
+              </div>
+              <button type="button" onClick={() => setShowPhotoDbModal(false)}
+                style={{ background: 'none', border: 'none', color: '#fff', fontSize: 20, cursor: 'pointer' }}>✕</button>
+            </div>
+
+            {/* 검색바 & 탭 */}
+            <div style={{ padding: '20px 24px 0 24px' }}>
+              <form onSubmit={handlePhotoDbSearch} style={{ display: "flex", gap: 10, marginBottom: 20 }}>
+                <input type="text" placeholder="사진 설명 또는 파일명으로 검색"
+                  value={photoDbSearch} onChange={e => setPhotoDbSearch(e.target.value)}
+                  style={{ flex: 1, padding: "12px 16px", border: `1px solid ${border}`, borderRadius: 8, fontSize: 14, outline: "none" }} />
+                <button type="submit" style={{ padding: "0 24px", background: "#374151", color: "#fff", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>검색</button>
+              </form>
+
+              <div style={{ display: "flex", gap: 24, borderBottom: `1px solid ${border}` }}>
+                {['전체사진', '즐겨찾기'].map(tab => (
+                  <button key={tab} type="button" onClick={() => setPhotoDbTab(tab as any)}
+                    style={{
+                      background: "none", border: "none", borderBottom: photoDbTab === tab ? "3px solid #f97316" : "3px solid transparent",
+                      padding: "8px 4px", fontSize: 15, fontWeight: photoDbTab === tab ? 800 : 600,
+                      color: photoDbTab === tab ? "#f97316" : textSecondary, cursor: "pointer", transition: "all 0.2s"
+                    }}>
+                    {tab === '즐겨찾기' && <span style={{ color: '#f59e0b', marginRight: 4 }}>⭐</span>}
+                    {tab}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 메인 리스트 영역 */}
+            <div style={{ flex: 1, overflowY: "auto", padding: "20px 24px", background: "#f9fafb" }}>
+              {isPhotoDbLoading ? (
+                <div style={{ textAlign: "center", padding: "40px", color: textSecondary }}>⏳ 불러오는 중...</div>
+              ) : photoDbItems.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "60px 0", color: textSecondary }}>저장된 사진이 없습니다.</div>
+              ) : (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 16 }}>
+                  {photoDbItems.map(photo => (
+                    <div key={photo.id} style={{ 
+                      background: "#fff", borderRadius: 8, border: `1px solid ${border}`, overflow: "hidden", 
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.05)", cursor: "pointer", transition: "transform 0.2s"
+                    }}
+                    onMouseOver={e => e.currentTarget.style.transform = "translateY(-4px)"}
+                    onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}
+                    onClick={() => handleSelectFromPhotoDb(photo)}>
+                      <div style={{ position: "relative", width: "100%", paddingTop: "100%", background: "#f3f4f6" }}>
+                        <img src={photo.url} alt="" style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+                        {/* 즐겨찾기 별모양 버튼 */}
+                        <button type="button" onClick={(e) => handleToggleFav(e, photo.id, photo.is_favorite)}
+                          style={{
+                            position: "absolute", top: 6, right: 6, width: 28, height: 28, background: "rgba(255,255,255,0.9)",
+                            borderRadius: "50%", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
+                            boxShadow: "0 1px 4px rgba(0,0,0,0.2)"
+                          }}>
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill={photo.is_favorite ? "#f59e0b" : "none"} stroke={photo.is_favorite ? "#f59e0b" : "#9ca3af"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                          </svg>
+                        </button>
+                      </div>
+                      <div style={{ padding: "8px", fontSize: 11, color: textSecondary }}>
+                        <div style={{ fontWeight: 600, color: textPrimary, marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{photo.filename || "무제"}</div>
+                        <div style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{photo.caption || "설명 없음"}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ 이전 매물 불러오기 모달 ═══ */}
+      {showPrevMenuModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+          background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          backdropFilter: 'blur(2px)', zIndex: 9999
+        }}>
+          <div style={{
+            background: '#fff', borderRadius: 16, width: 800, maxWidth: '90%', maxHeight: '80%', display: "flex", flexDirection: "column",
+            boxShadow: '0 10px 25px rgba(0,0,0,0.2)', overflow: 'hidden', animation: 'scaleUp 0.3s ease-out'
+          }}>
+            {/* 헤더 */}
+            <div style={{ background: '#3b82f6', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 20 }}>↻</span>
+                <span style={{ fontSize: 18, fontWeight: 800, color: '#fff' }}>이전 매물 불러오기</span>
+              </div>
+              <button type="button" onClick={() => setShowPrevMenuModal(false)}
+                style={{ background: 'none', border: 'none', color: '#fff', fontSize: 20, cursor: 'pointer' }}>✕</button>
+            </div>
+
+            {/* 리스트 영역 */}
+            <div style={{ flex: 1, overflowY: "auto", padding: "20px 24px", background: "#f9fafb" }}>
+              {isPrevLoading ? (
+                <div style={{ textAlign: "center", padding: "40px", color: textSecondary }}>⏳ 불러오는 중...</div>
+              ) : prevVacancies.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "60px 0", color: textSecondary }}>이전 매물이 없습니다.</div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  {prevVacancies.map(v => (
+                    <div key={v.id} style={{
+                      background: "#fff", borderRadius: 8, border: `1px solid ${border}`, padding: "16px",
+                      display: "flex", alignItems: "center", justifyContent: "space-between",
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.05)", cursor: "pointer", transition: "transform 0.2s"
+                    }}
+                    onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"}
+                    onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}
+                    onClick={() => handleSelectPrevVacancy(v)}>
+                      <div>
+                        <div style={{ fontSize: 15, fontWeight: 700, color: textPrimary, marginBottom: 4 }}>
+                          [{v.property_type}] {v.sub_category} ({v.trade_type})
+                        </div>
+                        <div style={{ fontSize: 13, color: textSecondary }}>
+                          {v.sido} {v.sigungu} {v.dong} {v.detail_addr}
+                        </div>
+                      </div>
+                      <button style={{ padding: "8px 16px", background: "#f97316", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                        불러오기
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
