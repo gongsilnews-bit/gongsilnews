@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { saveBoardComment, deleteBoardComment, deleteBoardPost } from "@/app/actions/board";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { createClient } from "@/utils/supabase/client";
 
 // YouTube URL에서 embed URL 생성 (공유버튼 ?si= 등 모든 형식)
 function getYoutubeEmbedUrl(url: string): string | null {
@@ -27,14 +28,36 @@ export default function BoardReadClient({
   nextPost: any;
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const boardId = board?.board_id || post?.board_id || "";
   const boardName = board?.name || "게시판";
   const tabs = board?.categories ? ["전체", ...board.categories.split(",").map((c: string) => c.trim())] : ["전체"];
+
+  const pageParam = searchParams.get('page') || '1';
+  const tabParam = searchParams.get('tab') || '전체';
+  const listUrl = `/board?id=${boardId}&page=${pageParam}&tab=${encodeURIComponent(tabParam)}`;
+
+  const getReadUrl = (targetPostId: string) => {
+    return `/board_read?id=${targetPostId}&board_id=${boardId}&page=${pageParam}&tab=${encodeURIComponent(tabParam)}`;
+  };
 
   const [comments, setComments] = useState(initialComments);
   const [commentText, setCommentText] = useState("");
   const [guestName, setGuestName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase.from('members').select('role').eq('id', user.id).single();
+        setCurrentUser({ ...user, role: data?.role });
+      }
+    };
+    fetchUser();
+  }, []);
 
   // 카테고리 뱃지 추출
   const catMatch = post.title.match(/^\[([^\]]+)\]/);
@@ -77,15 +100,21 @@ export default function BoardReadClient({
   const handleCommentSubmit = async () => {
     if (!commentText.trim()) return;
     setIsSubmitting(true);
+    
+    const authorName = currentUser 
+      ? currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0]
+      : guestName || "게스트";
+
     const res = await saveBoardComment({
       post_id: post.id,
-      author_name: guestName || "게스트",
+      author_id: currentUser?.id,
+      author_name: authorName,
       content: commentText,
     });
     if (res.success) {
       setComments([...comments, {
         id: Date.now().toString(),
-        author_name: guestName || "게스트",
+        author_name: authorName,
         content: commentText,
         created_at: new Date().toISOString(),
       }]);
@@ -144,7 +173,7 @@ export default function BoardReadClient({
           <div style={{ fontSize: 14, color: "#999", marginBottom: 16, display: "flex", alignItems: "center", gap: 6 }}>
             <Link href="/" style={{ color: "#999", textDecoration: "none" }}>홈</Link>
             <span style={{ color: "#ccc" }}>›</span>
-            <Link href={`/board?id=${boardId}`} style={{ color: "#999", textDecoration: "none" }}>자료실</Link>
+            <Link href={listUrl} style={{ color: "#999", textDecoration: "none" }}>자료실</Link>
             <span style={{ color: "#ccc" }}>›</span>
             <span style={{ color: "#333", fontWeight: 600 }}>{boardName}</span>
           </div>
@@ -328,7 +357,7 @@ export default function BoardReadClient({
               <div style={{ width: 90, flexShrink: 0, background: "#fafafa", borderRight: "1px solid #f0f0f0", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: "#555" }}>▲ 이전글</div>
               <div style={{ flex: 1, padding: "14px 20px", fontSize: 14, color: prevPost ? "#333" : "#bbb", display: "flex", alignItems: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", cursor: prevPost ? "pointer" : "default" }}>
                 {prevPost ? (
-                  <Link href={`/board_read?id=${prevPost.id}&board_id=${boardId}`} style={{ color: "#333", textDecoration: "none" }}>
+                  <Link href={getReadUrl(prevPost.id)} style={{ color: "#333", textDecoration: "none" }}>
                     {prevPost.title}
                   </Link>
                 ) : "이전 게시글이 없습니다."}
@@ -338,7 +367,7 @@ export default function BoardReadClient({
               <div style={{ width: 90, flexShrink: 0, background: "#fafafa", borderRight: "1px solid #f0f0f0", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: "#555" }}>▼ 다음글</div>
               <div style={{ flex: 1, padding: "14px 20px", fontSize: 14, color: nextPost ? "#333" : "#bbb", display: "flex", alignItems: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", cursor: nextPost ? "pointer" : "default" }}>
                 {nextPost ? (
-                  <Link href={`/board_read?id=${nextPost.id}&board_id=${boardId}`} style={{ color: "#333", textDecoration: "none" }}>
+                  <Link href={getReadUrl(nextPost.id)} style={{ color: "#333", textDecoration: "none" }}>
                     {nextPost.title}
                   </Link>
                 ) : "다음 게시글이 없습니다."}
@@ -353,9 +382,13 @@ export default function BoardReadClient({
               <button style={{ border: "1px solid #e5e7eb", background: "#f9fafb", color: "#555", padding: "10px 18px", borderRadius: 6, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>차단</button>
             </div>
             <div style={{ display: "flex", gap: 10 }}>
-              <Link href={`/board?id=${boardId}`} style={{ border: "1px solid #d1d5db", background: "#fff", color: "#555", padding: "10px 22px", borderRadius: 6, fontSize: 14, fontWeight: 600, textDecoration: "none", display: "inline-block" }}>목록</Link>
-              <Link href={`/board_write?board_id=${boardId}&post_id=${post.id}`} style={{ border: "1px solid #d1d5db", background: "#fff", color: "#555", padding: "10px 18px", borderRadius: 6, fontSize: 14, fontWeight: 600, textDecoration: "none", display: "inline-block" }}>수정</Link>
-              <button onClick={handleDelete} style={{ border: "1px solid #fca5a5", background: "#fff5f5", color: "#dc2626", padding: "10px 18px", borderRadius: 6, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>삭제</button>
+              <Link href={listUrl} style={{ border: "1px solid #d1d5db", background: "#fff", color: "#555", padding: "10px 22px", borderRadius: 6, fontSize: 14, fontWeight: 600, textDecoration: "none", display: "inline-block" }}>목록</Link>
+              {(currentUser?.role === 'ADMIN' || currentUser?.id === post.author_id) && (
+                <>
+                  <Link href={`/board_write?board_id=${boardId}&post_id=${post.id}`} style={{ border: "1px solid #d1d5db", background: "#fff", color: "#555", padding: "10px 18px", borderRadius: 6, fontSize: 14, fontWeight: 600, textDecoration: "none", display: "inline-block" }}>수정</Link>
+                  <button onClick={handleDelete} style={{ border: "1px solid #fca5a5", background: "#fff5f5", color: "#dc2626", padding: "10px 18px", borderRadius: 6, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>삭제</button>
+                </>
+              )}
               <Link href={`/board_write?board_id=${boardId}`} style={{ background: "#102c57", color: "#fff", padding: "10px 24px", borderRadius: 6, fontSize: 14, fontWeight: 700, textDecoration: "none", display: "inline-block" }}>글쓰기</Link>
             </div>
           </div>
@@ -366,7 +399,9 @@ export default function BoardReadClient({
 
             {/* 댓글 입력 */}
             <div style={{ border: "1px solid #e5e7eb", borderRadius: 8, padding: 16, marginBottom: 24 }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "#374151", marginBottom: 6 }}>gongsilnews님</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#374151", marginBottom: 6 }}>
+                {currentUser ? (currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0]) : "게스트"}님
+              </div>
               <textarea
                 style={{ width: "100%", height: 80, border: "none", resize: "none", fontSize: 15, outline: "none", background: "transparent", color: "#333", fontFamily: "inherit", boxSizing: "border-box" }}
                 placeholder="게시물에 대한 의견을 남겨보세요. 바르고 고운 말을 사용해주세요."

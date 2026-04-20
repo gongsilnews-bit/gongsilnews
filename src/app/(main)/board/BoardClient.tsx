@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { saveBoardPost } from "@/app/actions/board";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 
 // YouTube URL에서 썸네일 이미지 추출
 function getYoutubeThumbnail(url: string): string | null {
@@ -69,13 +70,46 @@ function hasVideoLink(p: any, skinType: string): boolean {
 }
 
 export default function BoardClient({ board, initialPosts }: { board: any, initialPosts: any[] }) {
-  const [activeTab, setActiveTab] = useState("전체");
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const initialTab = searchParams.get('tab') || "전체";
+  const initialPage = parseInt(searchParams.get('page') || "1", 10) || 1;
+
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [postTitle, setPostTitle] = useState("");
   const [postContent, setPostContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [posts, setPosts] = useState(initialPosts);
+  const [currentPage, setCurrentPage] = useState(initialPage);
+  const itemsPerPage = 12;
+
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    setCurrentPage(1);
+    const params = new URLSearchParams(searchParams);
+    params.set("tab", tab);
+    params.set("page", "1");
+    params.set("id", board.board_id);
+    router.replace(`${pathname}?${params.toString()}`);
+  };
+
+  const handlePageChange = (p: number | ((prev: number) => number)) => {
+    const newPage = typeof p === 'function' ? p(currentPage) : p;
+    setCurrentPage(newPage);
+    const params = new URLSearchParams(searchParams);
+    params.set("page", newPage.toString());
+    params.set("tab", activeTab);
+    params.set("id", board.board_id);
+    router.replace(`${pathname}?${params.toString()}`);
+  };
+
+  const getReadUrl = (postId: string) => {
+    return `/board_read?id=${postId}&board_id=${board.board_id}&page=${currentPage}&tab=${encodeURIComponent(activeTab)}`;
+  };
 
   // 카테고리 탭 파싱 (예: "드론,아파트,빌딩")
   const tabs = ["전체"];
@@ -136,6 +170,11 @@ export default function BoardClient({ board, initialPosts }: { board: any, initi
     return p.title.includes(`[${activeTab}]`); // 간단한 태그 기반 필터 구현
   });
 
+  const totalItems = filteredPosts.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const visiblePosts = filteredPosts.slice(startIndex, startIndex + itemsPerPage);
+  
   const isListType = board.skin_type === "LIST";
 
   return (
@@ -162,7 +201,7 @@ export default function BoardClient({ board, initialPosts }: { board: any, initi
                 <div 
                   key={tab} 
                   className={`b-tab ${activeTab === tab ? "active" : ""}`}
-                  onClick={() => setActiveTab(tab)}
+                  onClick={() => handleTabChange(tab)}
                 >
                   {tab}
                 </div>
@@ -184,11 +223,11 @@ export default function BoardClient({ board, initialPosts }: { board: any, initi
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredPosts.length > 0 ? filteredPosts.map((p, i) => (
+                  {visiblePosts.length > 0 ? visiblePosts.map((p, i) => (
                     <tr key={p.id}>
-                      <td>{filteredPosts.length - i}</td>
+                      <td>{totalItems - startIndex - i}</td>
                       <td className="subject">
-                        <Link href={`/board_read?id=${p.id}`} style={{ display: "block" }}>
+                        <Link href={getReadUrl(p.id)} style={{ display: "block" }}>
                           {/* 카테고리 뱃지는 정규식으로 추출하거나 title에서 추출해서 표시 */}
                           {p.title.match(/^\[([^\]]+)\]/) && (
                             <span className="cat-badge">{p.title.match(/^\[([^\]]+)\]/)?.[0]}</span>
@@ -210,8 +249,8 @@ export default function BoardClient({ board, initialPosts }: { board: any, initi
             ) : (
               // 썸네일형 스킨 (그리드 형태)
               <div className="b-grid">
-                {filteredPosts.length > 0 ? filteredPosts.map((p, i) => (
-                  <Link href={`/board_read?id=${p.id}`} key={p.id} style={{ display: "block", textDecoration: "none", color: "inherit", border: "1px solid #eee", borderRadius: 8, overflow: "hidden", cursor: "pointer" }}>
+                {visiblePosts.length > 0 ? visiblePosts.map((p, i) => (
+                  <Link href={getReadUrl(p.id)} key={p.id} style={{ display: "block", textDecoration: "none", color: "inherit", border: "1px solid #eee", borderRadius: 8, overflow: "hidden", cursor: "pointer" }}>
                     <div style={{ height: 140, background: "#222", position: "relative", overflow: "hidden" }}>
                       <img src={getPrimaryThumbnail(p)} style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.8 }} alt="thumb" />
                       {hasVideoLink(p, board.skin_type) && (
@@ -238,15 +277,44 @@ export default function BoardClient({ board, initialPosts }: { board: any, initi
             )}
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", marginTop: 40, marginBottom: 20 }}>
-            <div style={{ flex: 1, display: "flex", justifyContent: "flex-end", paddingRight: 10 }}>
-              <div className="pagination">
-                <button className="page-btn" disabled>&lt; 이전</button>
-                <span className="page-info">1 / 1</span>
-                <button className="page-btn" disabled>다음 &gt;</button>
+          <div style={{ display: "flex", alignItems: "center", marginTop: 40, marginBottom: 20, position: "relative" }}>
+            <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
+              <div className="pagination" style={{ display: "flex", gap: "4px" }}>
+                <button 
+                  className="page-btn" 
+                  onClick={() => handlePageChange(p => Math.max(1, p - 1))} 
+                  disabled={currentPage === 1}
+                  style={{ padding: "6px 14px", border: "1px solid #ddd", background: currentPage === 1 ? "#f9f9f9" : "#fff", color: currentPage === 1 ? "#aaa" : "#555", cursor: currentPage === 1 ? "not-allowed" : "pointer" }}
+                >
+                  &lt; 이전
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                  <button 
+                    key={p} 
+                    onClick={() => handlePageChange(p)} 
+                    style={{ 
+                      padding: "6px 12px", minWidth: 32,
+                      border: "1px solid #ddd", 
+                      background: currentPage === p ? "#111" : "#fff", 
+                      color: currentPage === p ? "#fff" : "#555",
+                      fontWeight: currentPage === p ? "bold" : "normal",
+                      cursor: "pointer"
+                    }}
+                  >
+                    {p}
+                  </button>
+                ))}
+                <button 
+                  className="page-btn" 
+                  onClick={() => handlePageChange(p => Math.min(totalPages, p + 1))} 
+                  disabled={currentPage === totalPages}
+                  style={{ padding: "6px 14px", border: "1px solid #ddd", background: currentPage === totalPages ? "#f9f9f9" : "#fff", color: currentPage === totalPages ? "aaa" : "#555", cursor: currentPage === totalPages ? "not-allowed" : "pointer" }}
+                >
+                  다음 &gt;
+                </button>
               </div>
             </div>
-            <div style={{ marginLeft: "auto" }}>
+            <div style={{ position: "absolute", right: 0 }}>
               <a 
                 className="b-write-btn" 
                 href={`/board_write?board_id=${board.board_id}`}
@@ -271,7 +339,7 @@ export default function BoardClient({ board, initialPosts }: { board: any, initi
               {[...posts].sort((a,b) => (b.view_count||0) - (a.view_count||0)).slice(0, 5).map((p, i) => (
                 <li className="pop-item" key={p.id || i}>
                   <span className="pop-ranking">{i + 1}</span>
-                  <Link href={`/board_read?id=${p.id}`} className="pop-title" style={{ color: "inherit", textDecoration: "none" }}>{p.title.replace(/^\[([^\]]+)\]\s*/, "")}</Link>
+                  <Link href={getReadUrl(p.id)} className="pop-title" style={{ color: "inherit", textDecoration: "none" }}>{p.title.replace(/^\[([^\]]+)\]\s*/, "")}</Link>
                 </li>
               ))}
               {posts.length === 0 && <li style={{ fontSize: 13, color: "#999" }}>게시물이 없습니다.</li>}
