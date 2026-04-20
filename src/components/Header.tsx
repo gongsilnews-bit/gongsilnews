@@ -132,9 +132,13 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
         <div className="top-bar-left">
           <div className="top-logo" onClick={() => window.location.href = "/"} style={{ cursor: "pointer" }}>공실뉴스</div>
           <div className="top-desc" style={{ marginRight: '16px' }}>11만 부동산을 위한 무료 정보 채널</div>
-          {currentUser && userRole === 'ADMIN' && (
+          {currentUser && userRole && (
             <button 
-              onClick={() => router.push('/admin')}
+              onClick={() => {
+                if (userRole === 'ADMIN') router.push('/admin');
+                else if (userRole === 'REALTOR') router.push('/realty_admin');
+                else router.push('/user_admin');
+              }}
               style={{
                 background: '#e53e3e',
                 color: '#fff',
