@@ -1,8 +1,20 @@
+import PopupBanner from "@/components/PopupBanner";
+
 export default function MapLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const isMaintenance = process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true";
+
+  if (isMaintenance) {
+    return (
+      <>
+        <PopupBanner />
+      </>
+    );
+  }
+
   return (
     <>
       {/* 

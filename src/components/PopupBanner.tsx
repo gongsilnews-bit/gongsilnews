@@ -58,6 +58,7 @@ export default function PopupBanner() {
     }
   }, []);
 
+  const isMaintenance = process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true";
   const visiblePopups = popups.filter(p => !closedIds.has(p.id));
   if (visiblePopups.length === 0) return null;
 
@@ -67,10 +68,10 @@ export default function PopupBanner() {
       <div
         style={{
           position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
-          background: "rgba(0,0,0,0.5)", zIndex: 9999998,
+          background: isMaintenance ? "#ffffff" : "rgba(0,0,0,0.5)", zIndex: 9999998,
           animation: "fadeIn 0.3s ease",
         }}
-        onClick={() => visiblePopups.forEach(p => handleClose(p.id))}
+        onClick={isMaintenance ? undefined : () => visiblePopups.forEach(p => handleClose(p.id))}
       />
 
       {/* 팝업들 */}
@@ -109,30 +110,32 @@ export default function PopupBanner() {
           </div>
 
           {/* 하단 버튼 영역 */}
-          <div style={{
-            display: "flex", justifyContent: "space-between", alignItems: "center",
-            padding: "12px 16px", background: "#f9fafb", borderTop: "1px solid #eee",
-          }}>
-            <button
-              onClick={() => handleCloseToday(popup.id)}
-              style={{
-                background: "none", border: "none", fontSize: 13, color: "#888",
-                cursor: "pointer", padding: "4px 8px", fontFamily: "inherit",
-              }}
-            >
-              오늘 하루 보지 않기
-            </button>
-            <button
-              onClick={() => handleClose(popup.id)}
-              style={{
-                background: "#111", color: "#fff", border: "none", borderRadius: 6,
-                padding: "8px 20px", fontSize: 13, fontWeight: 700, cursor: "pointer",
-                fontFamily: "inherit",
-              }}
-            >
-              닫기
-            </button>
-          </div>
+          {!isMaintenance && (
+            <div style={{
+              display: "flex", justifyContent: "space-between", alignItems: "center",
+              padding: "12px 16px", background: "#f9fafb", borderTop: "1px solid #eee",
+            }}>
+              <button
+                onClick={() => handleCloseToday(popup.id)}
+                style={{
+                  background: "none", border: "none", fontSize: 13, color: "#888",
+                  cursor: "pointer", padding: "4px 8px", fontFamily: "inherit",
+                }}
+              >
+                오늘 하루 보지 않기
+              </button>
+              <button
+                onClick={() => handleClose(popup.id)}
+                style={{
+                  background: "#111", color: "#fff", border: "none", borderRadius: 6,
+                  padding: "8px 20px", fontSize: 13, fontWeight: 700, cursor: "pointer",
+                  fontFamily: "inherit",
+                }}
+              >
+                닫기
+              </button>
+            </div>
+          )}
         </div>
       ))}
 
