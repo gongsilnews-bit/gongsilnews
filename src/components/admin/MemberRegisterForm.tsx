@@ -20,7 +20,10 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
     phone: "",
     role: "일반회원",
     created_at: "",
-    memberNumber: ""
+    memberNumber: "",
+    plan_type: "free",
+    plan_start_date: "",
+    plan_end_date: ""
   });
 
   const [agencyData, setAgencyData] = useState({
@@ -104,7 +107,10 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
             phone: res.member.phone || "",
             role: roleMap[res.member.role] || "일반회원",
             created_at: res.member.created_at ? new Date(res.member.created_at).toISOString().split('T')[0] : "",
-            memberNumber: res.member.memberNumber || ""
+            memberNumber: res.member.memberNumber || "",
+            plan_type: res.member.plan_type || "free",
+            plan_start_date: res.member.plan_start_date ? new Date(res.member.plan_start_date).toISOString().split('T')[0] : "",
+            plan_end_date: res.member.plan_end_date ? new Date(res.member.plan_end_date).toISOString().split('T')[0] : ""
           });
           if (res.member.sns_links) {
             setSnsLinks(prev => {
@@ -302,6 +308,9 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
         form.append("phone", formData.phone);
         form.append("role", formData.role);
         form.append("sns_links", JSON.stringify({ ...snsLinks, api_list: apiList }));
+        form.append("plan_type", formData.plan_type);
+        if (formData.plan_start_date) form.append("plan_start_date", formData.plan_start_date);
+        if (formData.plan_end_date) form.append("plan_end_date", formData.plan_end_date);
 
         const memberRes = await adminCreateMember(form);
 
@@ -314,7 +323,10 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
           name: formData.name,
           phone: formData.phone,
           role: formData.role === '최고관리자' ? 'ADMIN' : formData.role === '부동산회원' ? 'REALTOR' : 'USER',
-          sns_links: { ...snsLinks, api_list: apiList }
+          sns_links: { ...snsLinks, api_list: apiList },
+          plan_type: formData.plan_type,
+          plan_start_date: formData.plan_start_date || null,
+          plan_end_date: formData.plan_end_date || null
         });
         if (!updateRes.success) throw new Error(updateRes.error || "회원 수정에 실패했습니다.");
       }
@@ -445,6 +457,32 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
             </select>
           </div>
         </div>
+
+        {formData.role === "부동산회원" && (
+          <>
+            <div style={rowStyle}>
+              <div style={labelStyle}>부동산 요금제</div>
+              <div style={contentStyle}>
+                <select name="plan_type" value={formData.plan_type} onChange={handleMemberChange} style={{ height: 40, padding: "0 14px", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 6, fontSize: 14, color: darkMode ? "#e1e4e8" : "#111827", background: darkMode ? "#2c2d31" : "#fff", outline: "none", width: 180 }}>
+                  <option value="free">무료부동산 (Free)</option>
+                  <option value="news_premium">공실뉴스부동산</option>
+                  <option value="vacancy_premium">공실등록부동산</option>
+                </select>
+              </div>
+            </div>
+            {formData.plan_type !== "free" && (
+              <div style={rowStyle}>
+                <div style={labelStyle}>요금제 적용기간</div>
+                <div style={{ ...contentStyle, gap: 12, alignItems: 'center' }}>
+                  <input type="date" name="plan_start_date" value={formData.plan_start_date} onChange={handleMemberChange} style={{ ...inputStyle, flex: "none", width: 160 }} />
+                  <span style={{ fontWeight: "bold", color: darkMode ? "#ccc" : "#555" }}>~</span>
+                  <input type="date" name="plan_end_date" value={formData.plan_end_date} onChange={handleMemberChange} style={{ ...inputStyle, flex: "none", width: 160 }} />
+                  <span style={{ fontSize: 12, color: "#888", marginLeft: 8 }}>종료일이 지나면 자동으로 기본(무료) 요금제로 전환 취급됩니다.</span>
+                </div>
+              </div>
+            )}
+          </>
+        )}
 
         <div style={rowStyle}>
           <div style={labelStyle}>가입일</div>

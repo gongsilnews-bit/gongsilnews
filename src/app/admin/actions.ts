@@ -46,7 +46,10 @@ export async function adminCreateMember(formData: FormData) {
         email, name, phone,
         role: role === '최고관리자' ? 'ADMIN' : role === '부동산회원' ? 'REALTOR' : 'USER',
         sns_links,
-        signup_completed: true
+        signup_completed: true,
+        plan_type: formData.get("plan_type") as string || 'free',
+        plan_start_date: formData.get("plan_start_date") as string || null,
+        plan_end_date: formData.get("plan_end_date") as string || null,
       }, { onConflict: 'id' });
       if (memberError) return { success: false, error: memberError.message };
     }
@@ -63,6 +66,9 @@ export async function adminUpdateMember(memberId: string, updates: {
   phone?: string;
   role?: string;
   sns_links?: Record<string, any>;
+  plan_type?: string;
+  plan_start_date?: string | null;
+  plan_end_date?: string | null;
 }) {
   const supabaseAdmin = getAdminClient();
   try {
@@ -71,6 +77,9 @@ export async function adminUpdateMember(memberId: string, updates: {
     if (updates.phone !== undefined) dbUpdates.phone = updates.phone;
     if (updates.role !== undefined) dbUpdates.role = updates.role;
     if (updates.sns_links !== undefined) dbUpdates.sns_links = updates.sns_links;
+    if (updates.plan_type !== undefined) dbUpdates.plan_type = updates.plan_type;
+    if (updates.plan_start_date !== undefined) dbUpdates.plan_start_date = updates.plan_start_date;
+    if (updates.plan_end_date !== undefined) dbUpdates.plan_end_date = updates.plan_end_date;
 
     const { error } = await supabaseAdmin.from('members').update(dbUpdates).eq('id', memberId);
     if (error) return { success: false, error: error.message };

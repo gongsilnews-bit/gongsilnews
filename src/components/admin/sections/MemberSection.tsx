@@ -171,7 +171,11 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
             <tbody>
               {displayMembers.length > 0 ? displayMembers.map((member, idx) => {
                 const roleMap: any = { 'ADMIN': '최고관리자', 'REALTOR': '부동산회원', 'USER': '일반회원' };
-                const displayRole = roleMap[member.role] || member.role || '일반회원';
+                let displayRole = roleMap[member.role] || member.role || '일반회원';
+                if (member.role === 'REALTOR' && member.plan_type) {
+                  if (member.plan_type === 'news_premium') displayRole += ' (공실뉴스)';
+                  if (member.plan_type === 'vacancy_premium') displayRole += ' (공실등록)';
+                }
                 const createdDate = member.created_at ? new Date(member.created_at).toISOString().split('T')[0] : "-";
                 let agencyStatus = null;
                 if (member.agencies) agencyStatus = Array.isArray(member.agencies) ? member.agencies[0]?.status : member.agencies.status;
