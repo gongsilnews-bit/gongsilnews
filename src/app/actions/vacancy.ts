@@ -1,6 +1,7 @@
 "use server"
 
 import { createClient } from "@supabase/supabase-js"
+import { getEffectivePlan } from "@/utils/planCheck"
 
 function getAdminClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -62,6 +63,32 @@ export async function createVacancy(data: {
   const supabase = getAdminClient();
 
   try {
+    // 1. 유저의 현재 요금제 및 기간 확인
+    const { data: member } = await supabase.from('members').select('*').eq('id', data.owner_id).single();
+    if (!member) return { success: false, error: "회원 정보를 찾을 수 없습니다." };
+    
+    // 유틸리티를 통해 실제 적용 중인 플랜(만료 시 free) 판별
+    const plan = getEffectivePlan(member);
+    
+    // 2. 관리자나 공실등록부동산이 아니면 한도 체크
+    if (plan !== 'vacancy_premium' && plan !== 'admin') {
+      const { count, error: countErr } = await supabase
+        .from('vacancies')
+        .select('*', { count: 'exact', head: true })
+        .eq('owner_id', data.owner_id)
+        .neq('status', 'DELETED');
+        
+      if (countErr) return { success: false, error: "매물 개수 확인 중 오류가 발생했습니다." };
+      
+      const maxVacancies = member.max_vacancies ?? 5; // 요금제별 제한 (기본 5개)
+      if ((count || 0) >= maxVacancies) {
+        return { 
+          success: false, 
+          error: `기본 요금제의 매물 등록 한도(${maxVacancies}건)를 초과했습니다. 무제한 등록을 위해 요금제를 업그레이드해 주세요.` 
+        };
+      }
+    }
+
     // 역할에 따라 초기 상태 결정
     const status = data.owner_role === 'USER' ? 'PENDING' : 'ACTIVE';
 

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { AdminSectionProps } from "./types";
 import MemberRegisterForm from "@/components/admin/MemberRegisterForm";
-import { adminGetMembers, adminSoftDeleteMember, adminRestoreMember, adminHardDeleteMember } from "@/app/admin/actions";
+import { adminGetMembers, adminSoftDeleteMember, adminRestoreMember, adminHardDeleteMember, adminBulkUpdatePlanAndLimits } from "@/app/admin/actions";
 
 interface MemberSectionProps extends AdminSectionProps {
   activeSubmenu: "members_list" | "dormant";
@@ -19,6 +19,13 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
 
   const [searchMemberId, setSearchMemberId] = useState("");
+  const [showBulkModal, setShowBulkModal] = useState(false);
+  const [bulkData, setBulkData] = useState({
+    plan_type: "free",
+    plan_end_date: "",
+    max_vacancies: 5,
+    max_articles_per_month: 0
+  });
   const [searchRole, setSearchRole] = useState("전체");
   const [searchKeyword, setSearchKeyword] = useState("");
   const [activeFilters, setActiveFilters] = useState({ memberId: "", role: "전체", keyword: "" });
@@ -131,7 +138,13 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
               }
             }} style={{ height: 36, padding: "0 16px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>재등록</button>
           ) : (
-            <button onClick={() => { setSelectedMemberId(null); setShowMemberRegister(true); }} style={{ height: 36, padding: "0 16px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>+ 회원등록</button>
+            <>
+              <button onClick={() => { setSelectedMemberId(null); setShowMemberRegister(true); }} style={{ height: 36, padding: "0 16px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>+ 회원등록</button>
+              <button onClick={() => {
+                if (checkedMemberIds.length === 0) { alert("일괄 변경할 회원을 선택해주세요."); return; }
+                setShowBulkModal(true);
+              }} style={{ height: 36, padding: "0 16px", background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>요금제 일괄변경</button>
+            </>
           )}
           <button onClick={async () => {
             if (checkedMemberIds.length === 0) { alert("삭제할 회원을 선택해주세요."); return; }
@@ -250,6 +263,54 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
           <button style={{ width: 32, height: 32, border: "none", borderRadius: 4, background: "#4b5563", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>1</button>
         </div>
       </div>
+      
+      {showBulkModal && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ background: darkMode ? "#222" : "#fff", borderRadius: 12, width: 400, padding: 24, boxShadow: "0 10px 25px rgba(0,0,0,0.2)" }}>
+            <h2 style={{ margin: "0 0 20px 0", fontSize: 18, color: textPrimary }}>선택 회원 일괄 변경 ({checkedMemberIds.length}명)</h2>
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <div>
+                <label style={{ display: "block", fontSize: 13, color: textSecondary, marginBottom: 6 }}>요금제</label>
+                <select value={bulkData.plan_type} onChange={(e) => setBulkData({ ...bulkData, plan_type: e.target.value })} style={{ width: "100%", height: 40, border: `1px solid ${border}`, borderRadius: 6, background: darkMode ? "#333" : "#fff", color: textPrimary, padding: "0 12px" }}>
+                  <option value="free">무료부동산 (Free)</option>
+                  <option value="news_premium">공실뉴스부동산</option>
+                  <option value="vacancy_premium">공실등록부동산</option>
+                </select>
+              </div>
+              {bulkData.plan_type !== "free" && (
+                <div>
+                  <label style={{ display: "block", fontSize: 13, color: textSecondary, marginBottom: 6 }}>만료일</label>
+                  <input type="date" value={bulkData.plan_end_date} onChange={(e) => setBulkData({ ...bulkData, plan_end_date: e.target.value })} style={{ width: "100%", height: 40, border: `1px solid ${border}`, borderRadius: 6, background: darkMode ? "#333" : "#fff", color: textPrimary, padding: "0 12px" }} />
+                </div>
+              )}
+              <div style={{ display: "flex", gap: 12 }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: "block", fontSize: 13, color: textSecondary, marginBottom: 6 }}>매물 등록 한도</label>
+                  <input type="number" min={0} value={bulkData.max_vacancies} onChange={(e) => setBulkData({ ...bulkData, max_vacancies: parseInt(e.target.value || "0") })} style={{ width: "100%", height: 40, border: `1px solid ${border}`, borderRadius: 6, background: darkMode ? "#333" : "#fff", color: textPrimary, padding: "0 12px", textAlign: "right" }} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: "block", fontSize: 13, color: textSecondary, marginBottom: 6 }}>기사 작성 한도</label>
+                  <input type="number" min={0} value={bulkData.max_articles_per_month} onChange={(e) => setBulkData({ ...bulkData, max_articles_per_month: parseInt(e.target.value || "0") })} style={{ width: "100%", height: 40, border: `1px solid ${border}`, borderRadius: 6, background: darkMode ? "#333" : "#fff", color: textPrimary, padding: "0 12px", textAlign: "right" }} />
+                </div>
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 10, marginTop: 24, justifyContent: "flex-end" }}>
+              <button onClick={() => setShowBulkModal(false)} style={{ padding: "0 16px", height: 36, border: "none", background: "#f3f4f6", color: "#4b5563", borderRadius: 6, cursor: "pointer", fontWeight: 600 }}>취소</button>
+              <button onClick={async () => {
+                const res = await adminBulkUpdatePlanAndLimits(checkedMemberIds, bulkData);
+                if (res.success) {
+                  alert("일괄 변경이 완료되었습니다.");
+                  setShowBulkModal(false);
+                  setCheckedMemberIds([]);
+                  adminGetMembers().then(r => { if (r.success) setDbMembers(r.data || []) });
+                } else {
+                  alert("오류 발생: " + res.error);
+                }
+              }} style={{ padding: "0 16px", height: 36, border: "none", background: "#3b82f6", color: "#fff", borderRadius: 6, cursor: "pointer", fontWeight: 600 }}>저장</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

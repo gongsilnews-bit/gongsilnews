@@ -2,6 +2,7 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { unstable_cache, revalidateTag } from "next/cache";
+import { getEffectivePlan } from "@/utils/planCheck";
 
 function getAdminClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -87,6 +88,36 @@ export async function saveArticle(data: {
     }
 
     let articleId = data.id;
+
+    // --- [권한/요금제 검증 (신규 작성 시에만)] ---
+    if (!articleId && data.author_id) {
+      const { data: member } = await supabase.from('members').select('*').eq('id', data.author_id).single();
+      const plan = getEffectivePlan(member);
+
+      if (plan !== 'news_premium' && plan !== 'admin') {
+        return { success: false, error: "뉴스 기사 작성은 '공실뉴스부동산' 요금제 전용 기능입니다." };
+      }
+
+      if (plan === 'news_premium') {
+        const now = new Date();
+        const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+        const { count, error: countErr } = await supabase
+          .from('articles')
+          .select('id', { count: 'exact', head: true })
+          .eq('author_id', data.author_id)
+          .gte('created_at', firstDayOfMonth)
+          .eq('is_deleted', false);
+
+        if (countErr) return { success: false, error: "기사 작성 한도 확인 중 오류가 발생했습니다." };
+
+        const maxArticles = member?.max_articles_per_month || 0;
+        if (maxArticles <= 0 || (count || 0) >= maxArticles) {
+          return { success: false, error: `이번 달 기사 작성 한도(${maxArticles}건)를 초과했거나 한도가 설정되지 않았습니다.` };
+        }
+      }
+    }
+    // ---------------------------------------------
 
     if (articleId) {
       // 수정

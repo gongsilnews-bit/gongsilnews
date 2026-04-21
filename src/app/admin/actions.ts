@@ -50,6 +50,8 @@ export async function adminCreateMember(formData: FormData) {
         plan_type: formData.get("plan_type") as string || 'free',
         plan_start_date: formData.get("plan_start_date") as string || null,
         plan_end_date: formData.get("plan_end_date") as string || null,
+        max_vacancies: parseInt(formData.get("max_vacancies") as string || "5", 10),
+        max_articles_per_month: parseInt(formData.get("max_articles_per_month") as string || "0", 10)
       }, { onConflict: 'id' });
       if (memberError) return { success: false, error: memberError.message };
     }
@@ -69,6 +71,8 @@ export async function adminUpdateMember(memberId: string, updates: {
   plan_type?: string;
   plan_start_date?: string | null;
   plan_end_date?: string | null;
+  max_vacancies?: number;
+  max_articles_per_month?: number;
 }) {
   const supabaseAdmin = getAdminClient();
   try {
@@ -80,9 +84,40 @@ export async function adminUpdateMember(memberId: string, updates: {
     if (updates.plan_type !== undefined) dbUpdates.plan_type = updates.plan_type;
     if (updates.plan_start_date !== undefined) dbUpdates.plan_start_date = updates.plan_start_date;
     if (updates.plan_end_date !== undefined) dbUpdates.plan_end_date = updates.plan_end_date;
+    if (updates.max_vacancies !== undefined) dbUpdates.max_vacancies = updates.max_vacancies;
+    if (updates.max_articles_per_month !== undefined) dbUpdates.max_articles_per_month = updates.max_articles_per_month;
 
     const { error } = await supabaseAdmin.from('members').update(dbUpdates).eq('id', memberId);
     if (error) return { success: false, error: error.message };
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+// ── 요금제 및 한도 일괄 변경 ──
+export async function adminBulkUpdatePlanAndLimits(
+  memberIds: string[], 
+  updates: {
+    plan_type?: string;
+    plan_start_date?: string | null;
+    plan_end_date?: string | null;
+    max_vacancies?: number;
+    max_articles_per_month?: number;
+  }
+) {
+  const supabaseAdmin = getAdminClient();
+  try {
+    const dbUpdates: any = {};
+    if (updates.plan_type !== undefined) dbUpdates.plan_type = updates.plan_type;
+    if (updates.plan_start_date !== undefined) dbUpdates.plan_start_date = updates.plan_start_date;
+    if (updates.plan_end_date !== undefined) dbUpdates.plan_end_date = updates.plan_end_date;
+    if (updates.max_vacancies !== undefined) dbUpdates.max_vacancies = updates.max_vacancies;
+    if (updates.max_articles_per_month !== undefined) dbUpdates.max_articles_per_month = updates.max_articles_per_month;
+
+    const { error } = await supabaseAdmin.from('members').update(dbUpdates).in('id', memberIds);
+    if (error) return { success: false, error: error.message };
+    
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };

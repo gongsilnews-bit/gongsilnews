@@ -23,7 +23,9 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
     memberNumber: "",
     plan_type: "free",
     plan_start_date: "",
-    plan_end_date: ""
+    plan_end_date: "",
+    max_vacancies: 5,
+    max_articles_per_month: 0
   });
 
   const [agencyData, setAgencyData] = useState({
@@ -110,7 +112,9 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
             memberNumber: res.member.memberNumber || "",
             plan_type: res.member.plan_type || "free",
             plan_start_date: res.member.plan_start_date ? new Date(res.member.plan_start_date).toISOString().split('T')[0] : "",
-            plan_end_date: res.member.plan_end_date ? new Date(res.member.plan_end_date).toISOString().split('T')[0] : ""
+            plan_end_date: res.member.plan_end_date ? new Date(res.member.plan_end_date).toISOString().split('T')[0] : "",
+            max_vacancies: res.member.max_vacancies ?? 5,
+            max_articles_per_month: res.member.max_articles_per_month ?? 0
           });
           if (res.member.sns_links) {
             setSnsLinks(prev => {
@@ -481,6 +485,21 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
                 </div>
               </div>
             )}
+
+            <div style={rowStyle}>
+              <div style={labelStyle}>개별 등록 한도 설정</div>
+              <div style={{ ...contentStyle, gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14 }}>
+                  <span style={{ fontWeight: 600, color: darkMode ? '#ccc' : '#444' }}>매물 등록(총 건수):</span>
+                  <input type="number" name="max_vacancies" value={formData.max_vacancies} onChange={handleMemberChange} style={{ ...inputStyle, flex: "none", width: 80, textAlign: 'right' }} min={0} />
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14 }}>
+                  <span style={{ fontWeight: 600, color: darkMode ? '#ccc' : '#444' }}>뉴스 작성(월 단위):</span>
+                  <input type="number" name="max_articles_per_month" value={formData.max_articles_per_month} onChange={handleMemberChange} style={{ ...inputStyle, flex: "none", width: 80, textAlign: 'right' }} min={0} />
+                </label>
+                <div style={{ width: '100%', fontSize: 12, color: "#888" }}>0으로 설정 시 해당 기능을 사용할 수 없으며, 매우 높은 숫자 입력 시 무제한과 동일합니다. (기본값: 매물 5, 기사 0)</div>
+              </div>
+            </div>
           </>
         )}
 
