@@ -13,6 +13,7 @@ const DashboardSection = lazy(() => import("@/components/admin/sections/Dashboar
 const VacancySection = lazy(() => import("@/components/admin/sections/VacancySection"));
 const MemberArticleSection = lazy(() => import("@/components/admin/sections/MemberArticleSection"));
 const MyPointSection = lazy(() => import("@/components/admin/sections/MyPointSection"));
+const HomepageSection = lazy(() => import("@/components/admin/sections/HomepageSection"));
 
 /* ── 부동산관리자 메뉴 ── */
 const REALTY_MENU: MenuItem[] = [
@@ -55,6 +56,7 @@ function RealtyAdminContent() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>("로딩중...");
   const [agencyStatus, setAgencyStatus] = useState<string>("PENDING");
+  const [planType, setPlanType] = useState<string>("free");
 
   /* ── 프리페치 데이터 저장소 ── */
   const [prefetchedData, setPrefetchedData] = useState<Record<string, any[]>>({});
@@ -89,7 +91,7 @@ function RealtyAdminContent() {
       // 🔐 role 체크: REALTOR만 접근 가능
       const { data: member } = await supabase
         .from("members")
-        .select("id, name, role")
+        .select("id, name, role, plan_type")
         .eq("id", user.id)
         .single();
 
@@ -102,6 +104,7 @@ function RealtyAdminContent() {
       setUserEmail(user.email || null);
       setMemberId(member.id);
       setUserName(member.name || "이름없음");
+      setPlanType(member.plan_type || "free");
 
       const { data: agencyData } = await supabase.from("agencies").select("status").eq("owner_id", member.id).single();
       if (agencyData && agencyData.status) setAgencyStatus(agencyData.status);
@@ -197,7 +200,8 @@ function RealtyAdminContent() {
               {memberId ? <MemberRegisterForm editMemberId={memberId} onBack={() => setActiveMenu("dashboard")} /> : <div style={{ textAlign: "center", padding: 40, color: theme.textSecondary }}>사용자 정보를 불러오는 중입니다...</div>}
             </div>
           )}
-          {["study", "customer", "comment", "homepage", "manual"].includes(activeMenu) && (
+          {activeMenu === "homepage" && memberId && <HomepageSection theme={theme} memberId={memberId} planType={planType} />}
+          {["study", "customer", "comment", "manual"].includes(activeMenu) && (
             <div style={{ flex: 1, margin: 16, marginBottom: 0, background: theme.cardBg, borderTopLeftRadius: 12, borderTopRightRadius: 12, boxShadow: "0 4px 6px rgba(0,0,0,0.05)", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <div style={{ textAlign: "center", color: "#9ca3af" }}>
                 <div style={{ fontSize: 48, marginBottom: 16 }}>🚧</div>
