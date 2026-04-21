@@ -1135,8 +1135,21 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
             {/* ── 전달사항 ── */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-start", gap: 12, marginTop: 32, marginBottom: 10 }}>
               <label style={{ ...labelStyle, margin: 0 }}>전달사항 (특징, 입주일 등)</label>
-              <button type="button" style={{ height: 32, padding: "0 14px", border: "none", borderRadius: 8, background: darkMode ? "#3b2f1e" : "#fef3c7", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 13, fontWeight: 700, color: "#d97706", transition: "opacity 0.2s" }} onMouseEnter={e => e.currentTarget.style.opacity = "0.8"} onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
-                ✨ AI 멘트 마법사
+              <button 
+                type="button" 
+                onClick={handleGenerateAI}
+                disabled={isAIGenerating}
+                style={{ 
+                  height: 32, padding: "0 14px", border: "none", borderRadius: 8, 
+                  background: isAIGenerating ? "#e5e7eb" : (darkMode ? "#3b2f1e" : "#fef3c7"), 
+                  cursor: isAIGenerating ? "not-allowed" : "pointer", 
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 13, fontWeight: 700, 
+                  color: isAIGenerating ? "#9ca3af" : "#d97706", transition: "all 0.2s" 
+                }} 
+                onMouseEnter={e => !isAIGenerating && (e.currentTarget.style.opacity = "0.8")} 
+                onMouseLeave={e => !isAIGenerating && (e.currentTarget.style.opacity = "1")}
+              >
+                {isAIGenerating ? "⏳ 멘트 생성 중..." : "✨ AI 멘트 마법사"}
               </button>
             </div>
             <textarea

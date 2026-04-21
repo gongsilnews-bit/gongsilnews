@@ -67,7 +67,7 @@ export default function PopupBanner() {
       <div
         style={{
           position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
-          background: "rgba(0,0,0,0.5)", zIndex: 99998,
+          background: "rgba(0,0,0,0.5)", zIndex: 9999998,
           animation: "fadeIn 0.3s ease",
         }}
         onClick={() => visiblePopups.forEach(p => handleClose(p.id))}
@@ -82,7 +82,7 @@ export default function PopupBanner() {
             top: "50%",
             left: "50%",
             transform: `translate(-50%, -50%) translateY(${idx * 20}px)`,
-            zIndex: 99999 + idx,
+            zIndex: 9999999 + idx,
             background: "#fff",
             borderRadius: 12,
             boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
