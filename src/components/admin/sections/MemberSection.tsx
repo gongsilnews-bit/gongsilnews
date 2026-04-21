@@ -174,7 +174,7 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
                     checked={displayMembers.length > 0 && checkedMemberIds.length === displayMembers.length}
                     onChange={(e) => { if (e.target.checked) setCheckedMemberIds(displayMembers.map((m: any) => m.id)); else setCheckedMemberIds([]); }} />
                 </th>
-                {["회원번호","아이디","이름","연락처","회원구분","가입일","승인상태"].map((h,i) => (
+                {["회원번호","아이디","이름","연락처","회원구분","가입일","승인상태","공실","기사(mon)","홈페이지ID","종료"].map((h,i) => (
                   <th key={i} style={{ padding: "12px 10px", textAlign: i===0?"right":i===1?"left":"center" as any, fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}` }}>{h}</th>
                 ))}
                 <th style={{ width: "auto", borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}` }}></th>
@@ -195,7 +195,21 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
                 let displayStatus = member.signup_completed ? '정상' : '승인대기';
                 let statusColor = textSecondary, statusBg = "transparent";
                 if (member.role === 'REALTOR') {
-                  if (agencyStatus === 'APPROVED') { displayStatus = '정상승인'; statusColor = "#065f46"; statusBg = "#d1fae5"; }
+                  if (agencyStatus === 'APPROVED') {
+                    const oneWeekAgo = new Date();
+                    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+                    const isOld = member.created_at && new Date(member.created_at) < oneWeekAgo;
+                    
+                    if (isOld) {
+                      displayStatus = '정상';
+                      statusColor = textSecondary;
+                      statusBg = "transparent";
+                    } else {
+                      displayStatus = '정상승인';
+                      statusColor = "#065f46";
+                      statusBg = "#d1fae5";
+                    }
+                  }
                   else if (agencyStatus === 'REJECTED') { displayStatus = '서류보완 필요'; statusColor = "#b91c1c"; statusBg = "#fee2e2"; }
                   else { displayStatus = '승인대기'; statusColor = "#92400e"; statusBg = "#fef3c7"; }
                 }
@@ -221,6 +235,18 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
                     <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14 }}>
                       <span onClick={() => { setSelectedMemberId(member.id); setShowMemberRegister(true); }}
                         style={{ display: "inline-block", padding: "4px 8px", borderRadius: 4, background: statusBg, color: statusColor, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>{displayStatus}</span>
+                    </td>
+                    <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textPrimary, fontWeight: 700 }}>
+                      {member.vacancies_count ?? 0} / {member.max_vacancies ?? 5}
+                    </td>
+                    <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textPrimary, fontWeight: 700 }}>
+                      {member.articles_count ?? 0} / {member.max_articles_per_month ?? 0}
+                    </td>
+                    <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary, fontWeight: 600 }}>
+                      {member.homepage_id || '-'}
+                    </td>
+                    <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>
+                      {member.plan_end_date ? new Date(member.plan_end_date).toISOString().split('T')[0] : '-'}
                     </td>
                     <td></td>
                     <td style={{ padding: "16px 10px", textAlign: "right", verticalAlign: "middle" }}>

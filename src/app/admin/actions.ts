@@ -170,9 +170,35 @@ export async function adminUploadAgencyDocument(formData: FormData) {
 export async function adminGetMembers() {
   const supabaseAdmin = getAdminClient();
   try {
-    const { data: members, error } = await supabaseAdmin.from('members').select('*, agencies(status)').order('created_at', { ascending: false });
+    const { data: members, error } = await supabaseAdmin.from('members').select('*, agencies(*)').order('created_at', { ascending: false });
     if (error) return { success: false, error: error.message };
-    return { success: true, data: members };
+
+    const { data: vacancies } = await supabaseAdmin.from('vacancies').select('id, owner_id');
+    const now = new Date();
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    const { data: articles } = await supabaseAdmin.from('articles').select('id, author_id').gte('created_at', firstDayOfMonth).eq('is_deleted', false);
+
+    const data = members.map((m: any) => {
+      const vCount = vacancies?.filter((v: any) => v.owner_id === m.id).length || 0;
+      const aCount = articles?.filter((a: any) => a.author_id === m.id).length || 0;
+      
+      let homepage_id = '';
+      if (m.agencies) {
+         const ag = Array.isArray(m.agencies) ? m.agencies[0] : m.agencies;
+         if (ag) {
+           homepage_id = ag.homepage_id || ag.subdomain || ag.domain || ag.site_id || '';
+         }
+      }
+
+      return {
+        ...m,
+        vacancies_count: vCount,
+        articles_count: aCount,
+        homepage_id
+      }
+    });
+
+    return { success: true, data };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
