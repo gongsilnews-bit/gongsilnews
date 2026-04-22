@@ -145,6 +145,10 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
     if (initialClientPhone) setClientPhone(initialClientPhone);
   }, [initialClientName, initialClientPhone]);
 
+  // ── 테마 관리 ──
+  const [selectedThemes, setSelectedThemes] = useState<string[]>([]);
+  const [customThemeInput, setCustomThemeInput] = useState("");
+
   // ── 수정 모드: editData가 있으면 폼 채우기 ──
   useEffect(() => {
     if (!editData) return;
@@ -176,6 +180,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
     if (editData.hosu) setHosu(editData.hosu);
     if (editData.address_exposure) setAddressExposure(editData.address_exposure);
     if (editData.options) setSelectedOptions(editData.options);
+    if (editData.themes) setSelectedThemes(editData.themes);
     if (editData.description) setDescription(editData.description);
     if (editData.client_name) setClientName(editData.client_name);
     if (editData.client_phone) setClientPhone(editData.client_phone);
@@ -264,6 +269,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
     if (editData.hosu) setHosu(editData.hosu);
     if (editData.address_exposure) setAddressExposure(editData.address_exposure);
     if (editData.options) setSelectedOptions(editData.options);
+    if (editData.themes) setSelectedThemes(editData.themes);
     if (editData.description) setDescription(editData.description);
     if (editData.client_name) setClientName(editData.client_name);
     if (editData.client_phone) setClientPhone(editData.client_phone);
@@ -454,6 +460,30 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
     if (customOptionInput && customOptionInput.trim() && !currentOptionList.includes(customOptionInput.trim())) {
       setSelectedOptions(prev => [...prev, customOptionInput.trim()]);
       setCustomOptionInput("");
+    }
+  };
+
+  const currentThemeList = React.useMemo(() => {
+    if (propertyType === "아파트·오피스텔") {
+      return Array.from(new Set(["신축급", "올수리", "한강뷰", "역세권", "풀옵션", ...selectedThemes]));
+    } else if (propertyType === "원룸·투룸(풀옵션)") {
+      return Array.from(new Set(["가성비", "단기임대", "주차편리", "대로변안전", "여성안심", ...selectedThemes]));
+    } else if (propertyType === "상가·사무실·건물·공장·토지") {
+      return Array.from(new Set(["무권리", "코너자리", "유동인구많음", "주차대수많음", "인테리어잘됨", "층고높음", "대로변", ...selectedThemes]));
+    } else if (propertyType === "빌라·주택") {
+      return Array.from(new Set(["테라스", "복층", "마당있음", "투자용", ...selectedThemes]));
+    }
+    return Array.from(new Set(["급매", "추천매물", ...selectedThemes]));
+  }, [propertyType, selectedThemes]);
+
+  const toggleTheme = (theme: string) => {
+    setSelectedThemes(prev => prev.includes(theme) ? prev.filter(t => t !== theme) : [...prev, theme]);
+  };
+
+  const addCustomTheme = () => {
+    if (customThemeInput && customThemeInput.trim() && !currentThemeList.includes(customThemeInput.trim())) {
+      setSelectedThemes(prev => [...prev, customThemeInput.trim()]);
+      setCustomThemeInput("");
     }
   };
 
@@ -890,6 +920,39 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                     <input type="text" placeholder="+ 옵션 직접 입력" value={customOptionInput} onChange={e => setCustomOptionInput(e.target.value)} onKeyDown={e => e.key === "Enter" && (e.preventDefault(), addCustomOption())}
                       style={{ flex: 1, padding: "8px 12px", border: `1px dashed ${border}`, borderRadius: 20, fontSize: 13, background: "transparent", outline: "none", color: textPrimary }} />
                     <button type="button" onClick={addCustomOption} style={{ marginLeft: 8, padding: "6px 12px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 20, fontSize: 13, cursor: "pointer" }}>추가</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* ── 테마 섹션 ── */}
+            <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
+              <div style={{ flex: 1 }}>
+                <label style={{ ...labelStyle, display: "flex", alignItems: "center", gap: 6 }}>
+                  테마 (해시태그) <span style={{ fontSize: 12, fontWeight: 500, color: textSecondary }}>홈페이지 및 목록에 노출됩니다</span>
+                </label>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 10, background: darkMode ? "#1a1b1e" : "#f0fdf4", padding: 16, borderRadius: 8, border: `1px solid ${darkMode ? "#333" : "#bbf7d0"}` }}>
+                  {currentThemeList.map(theme => (
+                    <button
+                      key={theme}
+                      type="button"
+                      onClick={() => toggleTheme(theme)}
+                      style={{
+                        padding: "6px 14px", borderRadius: 20, fontSize: 13, cursor: "pointer",
+                        border: selectedThemes.includes(theme) ? "1px solid #10b981" : `1px solid ${border}`,
+                        background: selectedThemes.includes(theme) ? (darkMode ? "#064e3b" : "#d1fae5") : cardBg,
+                        color: selectedThemes.includes(theme) ? "#10b981" : textSecondary,
+                        fontWeight: selectedThemes.includes(theme) ? 700 : 500,
+                        transition: "all 0.2s"
+                      }}
+                    >
+                      # {theme} {selectedThemes.includes(theme) && "✓"}
+                    </button>
+                  ))}
+                  <div style={{ display: "flex", alignItems: "center", width: "100%", marginTop: 8 }}>
+                    <input type="text" placeholder="+ 테마 직접 입력" value={customThemeInput} onChange={e => setCustomThemeInput(e.target.value)} onKeyDown={e => e.key === "Enter" && (e.preventDefault(), addCustomTheme())}
+                      style={{ flex: 1, padding: "8px 12px", border: `1px dashed ${darkMode ? "#444" : "#86efac"}`, borderRadius: 20, fontSize: 13, background: "transparent", outline: "none", color: textPrimary }} />
+                    <button type="button" onClick={addCustomTheme} style={{ marginLeft: 8, padding: "6px 12px", background: "#10b981", color: "#fff", border: "none", borderRadius: 20, fontSize: 13, cursor: "pointer" }}>추가</button>
                   </div>
                 </div>
               </div>
@@ -1370,6 +1433,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                     parking,
                     move_in_date: moveInDate,
                     options: selectedOptions,
+                    themes: selectedThemes,
                     sido, sigungu, dong,
                     detail_addr: detailAddr || undefined,
                     building_name: buildingName || undefined,

@@ -15,6 +15,7 @@ const MemberArticleSection = lazy(() => import("@/components/admin/sections/Memb
 const MyPointSection = lazy(() => import("@/components/admin/sections/MyPointSection"));
 const HomepageSection = lazy(() => import("@/components/admin/sections/HomepageSection"));
 const CustomerSection = lazy(() => import("@/components/admin/sections/CustomerSection"));
+const CommentSection = lazy(() => import("@/components/admin/sections/CommentSection"));
 
 /* ── 부동산관리자 메뉴 ── */
 const REALTY_MENU: MenuItem[] = [
@@ -203,7 +204,8 @@ function RealtyAdminContent() {
           )}
           {activeMenu === "homepage" && memberId && <HomepageSection theme={theme} memberId={memberId} planType={planType} />}
           {activeMenu === "customer" && memberId && <CustomerSection theme={theme} role="realtor" memberId={memberId} />}
-          {["study", "comment", "manual"].includes(activeMenu) && (
+          {activeMenu === "comment" && memberId && <CommentSection theme={theme} role="realtor" memberId={memberId} />}
+          {["study", "manual"].includes(activeMenu) && (
             <div style={{ flex: 1, margin: 16, marginBottom: 0, background: theme.cardBg, borderTopLeftRadius: 12, borderTopRightRadius: 12, boxShadow: "0 4px 6px rgba(0,0,0,0.05)", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <div style={{ textAlign: "center", color: "#9ca3af" }}>
                 <div style={{ fontSize: 48, marginBottom: 16 }}>🚧</div>
