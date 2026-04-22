@@ -9,40 +9,81 @@ import {
   uploadHomepageFile,
 } from "@/app/actions/homepage";
 
+import HomepageBasicTab from "./homepage/HomepageBasicTab";
+import HomepageBrandingTab from "./homepage/HomepageBrandingTab";
+import HomepageCompanyTab from "./homepage/HomepageCompanyTab";
+import HomepageSnsTab from "./homepage/HomepageSnsTab";
+import HomepageMenuTab from "./homepage/HomepageMenuTab";
+import HomepageBannerTab from "./homepage/HomepageBannerTab";
+import HomepageNewsTab from "./homepage/HomepageNewsTab";
+import HomepagePopupTab from "./homepage/HomepagePopupTab";
+import HomepagePreview from "./homepage/HomepagePreview";
+
 interface HomepageSectionProps {
   theme: AdminTheme;
   memberId: string;
   planType: string;
 }
 
+const TABS = [
+  { key: "basic", label: "기본설정", icon: "📋" },
+  { key: "branding", label: "브랜딩", icon: "🎨" },
+  { key: "company", label: "회사정보", icon: "🏢" },
+  { key: "sns", label: "SNS", icon: "🔗" },
+  { key: "menu", label: "메뉴구성", icon: "📂" },
+  { key: "banner", label: "배너", icon: "🖼️" },
+  { key: "popup", label: "팝업", icon: "📢" },
+  { key: "news", label: "뉴스연동", icon: "📰" },
+];
+
 export default function HomepageSection({ theme, memberId, planType }: HomepageSectionProps) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [activeTab, setActiveTab] = useState("basic");
+  
+  // 패널 크기 조절 및 뷰 모드
+  const [rightWidth, setRightWidth] = useState<number | null>(null);
+  const [viewMode, setViewMode] = useState<"pc" | "mobile">("pc");
+  const isResizing = useRef(false);
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<Record<string, any>>({
     subdomain: "",
     theme_name: "office",
-    logo_url: "" as string | null,
-    favicon_url: "" as string | null,
+    logo_url: null,
+    favicon_url: null,
     site_title: "",
     contact_phone: "",
     company_intro: "",
     is_active: true,
+    address: "",
+    address_detail: "",
+    business_hours: "",
+    sns_blog: "",
+    sns_instagram: "",
+    sns_youtube: "",
+    sns_kakao: "",
+    menu_config: {},
+    banners: [],
+    popup_image: null,
+    popup_link: "",
+    popup_is_active: false,
+    news_display_count: 10,
+    news_enabled: true,
   });
 
   const [subdomainStatus, setSubdomainStatus] = useState<"idle" | "checking" | "available" | "taken">("idle");
   const subdomainTimer = useRef<NodeJS.Timeout | null>(null);
 
-  // 파일 상태
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [faviconFile, setFaviconFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [faviconPreview, setFaviconPreview] = useState<string | null>(null);
 
   const isFree = planType === "free";
+  const darkMode = theme.darkMode;
 
-  // ── WebP 압축 유틸 ──
+  // ── WebP 압축 ──
   const compressToWebP = (file: File, maxW = 800, maxH = 800, quality = 0.85): Promise<File> => {
     if (!file.type.startsWith("image/")) return Promise.resolve(file);
     return new Promise((resolve) => {
@@ -79,7 +120,8 @@ export default function HomepageSection({ theme, memberId, planType }: HomepageS
     async function load() {
       const res = await getHomepageSettings(memberId);
       if (res.success && res.data) {
-        setFormData({
+        setFormData((prev) => ({
+          ...prev,
           subdomain: res.data.subdomain || "",
           theme_name: res.data.theme_name || "office",
           logo_url: res.data.logo_url || null,
@@ -88,7 +130,21 @@ export default function HomepageSection({ theme, memberId, planType }: HomepageS
           contact_phone: res.data.contact_phone || "",
           company_intro: res.data.company_intro || "",
           is_active: res.data.is_active ?? true,
-        });
+          address: res.data.address || "",
+          address_detail: res.data.address_detail || "",
+          business_hours: res.data.business_hours || "",
+          sns_blog: res.data.sns_blog || "",
+          sns_instagram: res.data.sns_instagram || "",
+          sns_youtube: res.data.sns_youtube || "",
+          sns_kakao: res.data.sns_kakao || "",
+          menu_config: res.data.menu_config || {},
+          banners: res.data.banners || [],
+          popup_image: res.data.popup_image || null,
+          popup_link: res.data.popup_link || "",
+          popup_is_active: res.data.popup_is_active ?? false,
+          news_display_count: res.data.news_display_count ?? 10,
+          news_enabled: res.data.news_enabled ?? true,
+        }));
         if (res.data.logo_url) setLogoPreview(res.data.logo_url);
         if (res.data.favicon_url) setFaviconPreview(res.data.favicon_url);
       }
@@ -97,14 +153,44 @@ export default function HomepageSection({ theme, memberId, planType }: HomepageS
     load();
   }, [memberId]);
 
-  // ── 서브도메인 중복 검사 (디바운스) ──
+  // ── 패널 드래그 리사이즈 ──
+  const startResize = (e: React.MouseEvent) => {
+    isResizing.current = true;
+    document.body.style.cursor = "col-resize";
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing.current) return;
+      // 오른쪽 패널 너비 계산
+      const newWidth = window.innerWidth - e.clientX;
+      setRightWidth(newWidth);
+      
+      // 일정 크기 이하로 줄어들면 자동으로 모바일 뷰로 전환
+      if (newWidth < 600) setViewMode("mobile");
+      else if (newWidth > 650) setViewMode("pc");
+    };
+    
+    const handleMouseUp = () => {
+      if (isResizing.current) {
+        isResizing.current = false;
+        document.body.style.cursor = "default";
+      }
+    };
+    
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, []);
+
+  // ── 서브도메인 중복 검사 (자동, 디바운스) ──
   const checkSubdomain = useCallback(
     (value: string) => {
       if (subdomainTimer.current) clearTimeout(subdomainTimer.current);
-      if (!value || value.length < 2) {
-        setSubdomainStatus("idle");
-        return;
-      }
+      if (!value || value.length < 2) { setSubdomainStatus("idle"); return; }
       setSubdomainStatus("checking");
       subdomainTimer.current = setTimeout(async () => {
         const res = await checkSubdomainAvailable(value, memberId);
@@ -118,18 +204,27 @@ export default function HomepageSection({ theme, memberId, planType }: HomepageS
     [memberId]
   );
 
-  const formatPhone = (v: string) => {
-    const raw = v.replace(/[^0-9]/g, "");
-    if (!raw) return "";
-    if (raw.startsWith("02")) {
-      if (raw.length <= 2) return raw;
-      if (raw.length <= 5) return `${raw.slice(0, 2)}-${raw.slice(2)}`;
-      if (raw.length <= 9) return `${raw.slice(0, 2)}-${raw.slice(2, 5)}-${raw.slice(5)}`;
-      return `${raw.slice(0, 2)}-${raw.slice(2, 6)}-${raw.slice(6, 10)}`;
+  // ── 서브도메인 중복 검사 (명시적 클릭) ──
+  const handleCheckSubdomainClick = async () => {
+    const value = formData.subdomain;
+    if (!value || value.length < 2) { 
+      alert("서브도메인을 2자 이상 입력해주세요.");
+      return; 
     }
-    if (raw.length <= 3) return raw;
-    if (raw.length <= 7) return `${raw.slice(0, 3)}-${raw.slice(3)}`;
-    return `${raw.slice(0, 3)}-${raw.slice(3, 7)}-${raw.slice(7, 11)}`;
+    if (subdomainTimer.current) clearTimeout(subdomainTimer.current);
+    setSubdomainStatus("checking");
+    const res = await checkSubdomainAvailable(value, memberId);
+    if (res.success) {
+      setSubdomainStatus(res.available ? "available" : "taken");
+      if (res.available) {
+        alert("✔️ 사용 가능한 서브도메인입니다.");
+      } else {
+        alert("❌ 이미 사용 중인 서브도메인입니다. 다른 주소를 입력해주세요.");
+      }
+    } else {
+      setSubdomainStatus("idle");
+      alert("⚠️ 중복 확인 중 오류가 발생했습니다.");
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -138,56 +233,39 @@ export default function HomepageSection({ theme, memberId, planType }: HomepageS
       value = value.toLowerCase().replace(/[^a-z0-9-]/g, "");
       checkSubdomain(value);
     }
-    if (name === "contact_phone") value = formatPhone(value);
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleFormUpdate = (updates: Record<string, any>) => {
+    setFormData((prev) => ({ ...prev, ...updates }));
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, type: "logo" | "favicon") => {
     if (e.target.files && e.target.files[0]) {
       const originalFile = e.target.files[0];
-      // WebP 압축 (로고: 최대 400px, 파비콘: 최대 128px)
       const maxSize = type === "favicon" ? 128 : 400;
       const compressed = await compressToWebP(originalFile, maxSize, maxSize, 0.85);
       const previewUrl = URL.createObjectURL(compressed);
-      if (type === "logo") {
-        setLogoFile(compressed);
-        setLogoPreview(previewUrl);
-      } else {
-        setFaviconFile(compressed);
-        setFaviconPreview(previewUrl);
-      }
+      if (type === "logo") { setLogoFile(compressed); setLogoPreview(previewUrl); }
+      else { setFaviconFile(compressed); setFaviconPreview(previewUrl); }
     }
   };
 
   const handleFileRemove = (type: "logo" | "favicon") => {
-    if (type === "logo") {
-      setLogoFile(null);
-      setLogoPreview(null);
-      setFormData((prev) => ({ ...prev, logo_url: null }));
-    } else {
-      setFaviconFile(null);
-      setFaviconPreview(null);
-      setFormData((prev) => ({ ...prev, favicon_url: null }));
-    }
+    if (type === "logo") { setLogoFile(null); setLogoPreview(null); setFormData((prev) => ({ ...prev, logo_url: null })); }
+    else { setFaviconFile(null); setFaviconPreview(null); setFormData((prev) => ({ ...prev, favicon_url: null })); }
   };
 
   // ── 저장 ──
   const handleSave = async () => {
-    if (!formData.subdomain) {
-      alert("서브도메인 주소를 입력해주세요.");
-      return;
-    }
-    if (subdomainStatus === "taken") {
-      alert("이미 사용 중인 서브도메인입니다. 다른 주소를 입력해주세요.");
-      return;
-    }
+    if (!formData.subdomain) { alert("서브도메인 주소를 입력해주세요."); return; }
+    if (subdomainStatus === "taken") { alert("이미 사용 중인 서브도메인입니다."); return; }
 
     setSaving(true);
     try {
       let logoUrl = formData.logo_url;
       let faviconUrl = formData.favicon_url;
 
-      // 로고 업로드 (WebP 압축 완료 상태)
       if (logoFile) {
         const fd = new FormData();
         fd.append("file", logoFile);
@@ -196,7 +274,6 @@ export default function HomepageSection({ theme, memberId, planType }: HomepageS
         if (res.success && res.url) logoUrl = res.url;
       }
 
-      // 파비콘 업로드 (WebP 압축 완료 상태)
       if (faviconFile) {
         const fd = new FormData();
         fd.append("file", faviconFile);
@@ -214,37 +291,28 @@ export default function HomepageSection({ theme, memberId, planType }: HomepageS
         contact_phone: formData.contact_phone,
         company_intro: formData.company_intro,
         is_active: formData.is_active,
+        // 새 필드들 (DB 컬럼 추가 후 활성화)
+        // address: formData.address,
+        // address_detail: formData.address_detail,
+        // business_hours: formData.business_hours,
+        // sns_blog: formData.sns_blog,
+        // sns_instagram: formData.sns_instagram,
+        // sns_youtube: formData.sns_youtube,
+        // sns_kakao: formData.sns_kakao,
+        // menu_config: formData.menu_config,
+        // banners: formData.banners,
+        // news_display_count: formData.news_display_count,
+        // news_enabled: formData.news_enabled,
       });
 
-      if (!saveRes.success) {
-        alert("저장 실패: " + saveRes.error);
-      } else {
-        setSaved(true);
-        setTimeout(() => setSaved(false), 3000);
-      }
+      if (!saveRes.success) { alert("저장 실패: " + saveRes.error); }
+      else { setSaved(true); setTimeout(() => setSaved(false), 3000); }
     } catch (err: any) {
       alert("오류: " + err.message);
     } finally {
       setSaving(false);
     }
   };
-
-  // ── 스타일 ──
-  const darkMode = theme.darkMode;
-  const inputStyle: React.CSSProperties = {
-    flex: 1, minHeight: 40, height: 40, padding: "0 14px",
-    border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`,
-    borderRadius: 6, fontSize: 14, color: darkMode ? "#e1e4e8" : "#111827",
-    background: darkMode ? "#2c2d31" : "#fff", outline: "none", boxSizing: "border-box",
-  };
-  const disabledStyle: React.CSSProperties = { ...inputStyle, background: darkMode ? "#333" : "#f3f4f6", color: darkMode ? "#666" : "#9ca3af", cursor: "not-allowed" };
-  const labelStyle: React.CSSProperties = {
-    width: 180, fontSize: 13, fontWeight: 700, color: darkMode ? "#e1e4e8" : "#111827",
-    flexShrink: 0, padding: "16px 20px", display: "flex", alignItems: "center",
-    background: darkMode ? "#25262b" : "#f9fafb", borderRight: `1px solid ${darkMode ? "#333" : "#e5e7eb"}`,
-  };
-  const rowStyle: React.CSSProperties = { display: "flex", borderBottom: `1px solid ${darkMode ? "#333" : "#e5e7eb"}` };
-  const contentStyle: React.CSSProperties = { flex: 1, padding: "16px 20px", display: "flex", alignItems: "center" };
 
   if (loading) {
     return (
@@ -257,276 +325,143 @@ export default function HomepageSection({ theme, memberId, planType }: HomepageS
     );
   }
 
-  const themes = [
-    { key: "office", label: "오피스형", desc: "깔끔한 사무실 중심 레이아웃", emoji: "🏢" },
-    { key: "apartment", label: "아파트형", desc: "아파트·주거 전문 레이아웃", emoji: "🏠" },
-  ];
-
   return (
-    <div style={{ flex: 1, overflowY: "auto", padding: "20px 28px", background: darkMode ? "#1a1b1e" : "#f4f5f7" }}>
-      {/* 타이틀 */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <h1 style={{ fontSize: 22, fontWeight: 800, color: theme.textPrimary, margin: 0 }}>🌐 홈페이지 설정</h1>
-          {isFree && (
-            <span style={{ fontSize: 12, fontWeight: 700, padding: "4px 10px", borderRadius: 20, background: "#fef3c7", color: "#92400e", border: "1px solid #fde68a" }}>
-              무료 요금제 — 일부 기능 제한
-            </span>
+    <div style={{ flex: 1, display: "flex", overflow: "hidden", background: darkMode ? "#1a1b1e" : "#f4f5f7" }}>
+      {/* ===== 좌측: 탭 + 설정 영역 ===== */}
+      <div style={{ flex: 1, overflowY: "auto", padding: "20px 24px", minWidth: 280 }}>
+        {/* 타이틀 */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <h1 style={{ fontSize: 20, fontWeight: 800, color: theme.textPrimary, margin: 0 }}>🌐 홈페이지 관리</h1>
+            {isFree && (
+              <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 20, background: "#fef3c7", color: "#92400e", border: "1px solid #fde68a" }}>
+                무료 요금제
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* 탭 네비게이션 */}
+        <div style={{
+          display: "flex", gap: 0, marginBottom: 16,
+          borderBottom: `2px solid ${darkMode ? "#333" : "#e5e7eb"}`,
+          overflowX: "auto",
+        }}>
+          {TABS.map((tab) => (
+            <button key={tab.key} onClick={() => setActiveTab(tab.key)}
+              style={{
+                padding: "10px 14px", fontSize: 12, fontWeight: activeTab === tab.key ? 700 : 500,
+                color: activeTab === tab.key ? "#3b82f6" : theme.textSecondary,
+                background: "none", border: "none", cursor: "pointer",
+                borderBottom: activeTab === tab.key ? "2px solid #3b82f6" : "2px solid transparent",
+                marginBottom: -2, transition: "all 0.2s", whiteSpace: "nowrap",
+                display: "flex", alignItems: "center", gap: 4,
+              }}>
+              <span style={{ fontSize: 14 }}>{tab.icon}</span>
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* 탭 컨텐츠 */}
+        <div style={{ marginBottom: 20 }}>
+          {activeTab === "basic" && (
+            <HomepageBasicTab theme={theme} formData={formData} onChange={handleChange}
+              onFormUpdate={handleFormUpdate} subdomainStatus={subdomainStatus} 
+              onCheckSubdomain={handleCheckSubdomainClick} isFree={isFree} />
+          )}
+          {activeTab === "branding" && (
+            <HomepageBrandingTab theme={theme} formData={formData} onFormUpdate={handleFormUpdate}
+              logoPreview={logoPreview} faviconPreview={faviconPreview}
+              onFileChange={handleFileChange} onFileRemove={handleFileRemove} isFree={isFree} />
+          )}
+          {activeTab === "company" && (
+            <HomepageCompanyTab theme={theme} formData={formData} onChange={handleChange} onFormUpdate={handleFormUpdate} />
+          )}
+          {activeTab === "sns" && (
+            <HomepageSnsTab theme={theme} formData={formData} onChange={handleChange} />
+          )}
+          {activeTab === "menu" && (
+            <HomepageMenuTab theme={theme} formData={formData} onFormUpdate={handleFormUpdate} />
+          )}
+          {activeTab === "banner" && (
+            <HomepageBannerTab theme={theme} formData={formData} memberId={memberId} onFormUpdate={handleFormUpdate} />
+          )}
+          {activeTab === "popup" && (
+            <HomepagePopupTab theme={theme} formData={formData} memberId={memberId} onFormUpdate={handleFormUpdate} onChange={handleChange} />
+          )}
+          {activeTab === "news" && (
+            <HomepageNewsTab theme={theme} formData={formData} memberId={memberId} onFormUpdate={handleFormUpdate} />
           )}
         </div>
-        {formData.subdomain && (
-          <a
-            href={`http://${formData.subdomain}.gongsilnews.com`}
-            target="_blank"
-            rel="noopener noreferrer"
+
+        {/* 무료 요금제 안내 */}
+        {isFree && (
+          <div style={{
+            padding: "12px 16px", marginBottom: 12, borderRadius: 8,
+            background: darkMode ? "rgba(234,179,8,0.1)" : "#fffbeb",
+            border: `1px solid ${darkMode ? "#78350f" : "#fde68a"}`,
+            fontSize: 12, color: darkMode ? "#fcd34d" : "#92400e", lineHeight: 1.5,
+          }}>
+            💡 <strong>무료 요금제</strong>에서는 기본 템플릿(오피스형)과 공실뉴스 로고가 자동 적용됩니다.
+          </div>
+        )}
+
+        {/* 저장 버튼 */}
+        <div style={{ display: "flex", gap: 12, justifyContent: "center", padding: "8px 0 16px" }}>
+          <button onClick={handleSave} disabled={saving}
             style={{
-              fontSize: 13, fontWeight: 600, color: "#3b82f6", textDecoration: "none",
-              padding: "8px 16px", border: "1px solid #3b82f6", borderRadius: 6,
-              display: "flex", alignItems: "center", gap: 6, transition: "all 0.2s",
+              padding: "12px 40px", fontSize: 14, fontWeight: 800, color: "#fff",
+              background: saving ? "#93c5fd" : "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)",
+              border: "none", borderRadius: 10, cursor: saving ? "not-allowed" : "pointer",
+              boxShadow: "0 4px 14px rgba(59,130,246,0.3)", transition: "all 0.2s",
+              display: "flex", alignItems: "center", gap: 8,
+            }}>
+            {saving ? "⏳ 저장 중..." : saved ? "✅ 저장 완료!" : "💾 홈페이지 설정 저장"}
+          </button>
+        </div>
+      </div>
+
+      {/* ===== 화면 크기 조절 스플리터 ===== */}
+      <div 
+         onMouseDown={startResize}
+         style={{ 
+           width: 6, background: darkMode ? "#333" : "#cbd5e1", cursor: "col-resize", 
+           zIndex: 10, transition: "background 0.2s" 
+         }}
+         onMouseEnter={(e) => e.currentTarget.style.background = "#3b82f6"}
+         onMouseLeave={(e) => e.currentTarget.style.background = darkMode ? "#333" : "#cbd5e1"}
+      />
+
+      {/* ===== 우측: 실시간 미리보기 (리사이즈 가능) ===== */}
+      <div style={{
+        width: rightWidth === null ? "50%" : rightWidth,
+        flexShrink: 0, padding: "20px 24px 20px 12px", minWidth: 380,
+        display: "flex", flexDirection: "column", gap: 16
+      }}>
+        <HomepagePreview 
+          theme={theme} 
+          formData={formData} 
+          logoPreview={logoPreview} 
+          onElementClick={(tabKey) => setActiveTab(tabKey)} 
+          viewMode={viewMode}
+          setViewMode={setViewMode}
+        />
+        
+        {formData.subdomain && (
+          <a href={`http://${formData.subdomain}.gongsilnews.com`} target="_blank" rel="noopener noreferrer"
+            style={{ 
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+              padding: "14px 20px", background: "#f8fafc", border: `1px solid ${darkMode ? "#444" : "#e2e8f0"}`,
+              borderRadius: 12, textDecoration: "none", color: "#3b82f6", fontSize: 14, fontWeight: 700,
+              boxShadow: "0 2px 4px rgba(0,0,0,0.05)", transition: "all 0.2s", flexShrink: 0
             }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "#eff6ff"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "#f8fafc"; }}
           >
-            🔗 내 홈페이지 미리보기
+            🔗 내 홈페이지 바로가기
           </a>
         )}
-      </div>
-
-      {/* 폼 본체 */}
-      <div style={{ background: darkMode ? "#2c2d31" : "#fff", borderRadius: 12, border: `1px solid ${darkMode ? "#333" : "#e5e7eb"}`, overflow: "hidden", marginBottom: 24 }}>
-
-        {/* 1. 서브도메인 */}
-        <div style={rowStyle}>
-          <div style={labelStyle}>서브도메인 주소</div>
-          <div style={{ ...contentStyle, gap: 8, flexWrap: "wrap" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 0, flex: 1, minWidth: 260 }}>
-              <input
-                type="text"
-                name="subdomain"
-                value={formData.subdomain}
-                onChange={handleChange}
-                style={{ ...inputStyle, borderTopRightRadius: 0, borderBottomRightRadius: 0, borderRight: "none", minWidth: 120 }}
-                placeholder="my-office"
-                maxLength={30}
-              />
-              <span style={{
-                height: 40, padding: "0 14px", display: "flex", alignItems: "center",
-                background: darkMode ? "#333" : "#f3f4f6", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`,
-                borderTopRightRadius: 6, borderBottomRightRadius: 6,
-                fontSize: 13, color: darkMode ? "#9ca3af" : "#6b7280", fontWeight: 600, whiteSpace: "nowrap",
-              }}>
-                .gongsilnews.com
-              </span>
-            </div>
-            {subdomainStatus === "checking" && <span style={{ fontSize: 12, color: "#3b82f6" }}>⏳ 확인 중...</span>}
-            {subdomainStatus === "available" && <span style={{ fontSize: 12, color: "#10b981", fontWeight: 600 }}>✅ 사용 가능</span>}
-            {subdomainStatus === "taken" && <span style={{ fontSize: 12, color: "#ef4444", fontWeight: 600 }}>❌ 이미 사용 중</span>}
-            <div style={{ width: "100%", fontSize: 12, color: darkMode ? "#666" : "#9ca3af" }}>
-              영문 소문자, 숫자, 하이픈(-) 사용 가능 · 2~30자
-            </div>
-          </div>
-        </div>
-
-        {/* 2. 템플릿 선택 */}
-        <div style={rowStyle}>
-          <div style={labelStyle}>
-            템플릿 선택
-            {isFree && <span style={{ fontSize: 10, color: "#ef4444", marginLeft: 4 }}>🔒</span>}
-          </div>
-          <div style={{ ...contentStyle, gap: 16 }}>
-            {themes.map((t) => (
-              <button
-                key={t.key}
-                onClick={() => !isFree && setFormData((p) => ({ ...p, theme_name: t.key }))}
-                disabled={isFree}
-                style={{
-                  flex: 1, padding: "20px 16px", borderRadius: 10, cursor: isFree ? "not-allowed" : "pointer",
-                  background: formData.theme_name === t.key
-                    ? (darkMode ? "rgba(59,130,246,0.15)" : "#eff6ff")
-                    : (darkMode ? "#333" : "#f9fafb"),
-                  border: formData.theme_name === t.key
-                    ? "2px solid #3b82f6"
-                    : `1px solid ${darkMode ? "#444" : "#e5e7eb"}`,
-                  textAlign: "center", transition: "all 0.2s",
-                  opacity: isFree ? 0.5 : 1,
-                }}
-              >
-                <div style={{ fontSize: 32, marginBottom: 8 }}>{t.emoji}</div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: theme.textPrimary, marginBottom: 4 }}>{t.label}</div>
-                <div style={{ fontSize: 12, color: theme.textSecondary }}>{t.desc}</div>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* 3. 로고 업로드 */}
-        <div style={rowStyle}>
-          <div style={labelStyle}>
-            로고 이미지
-            {isFree && <span style={{ fontSize: 10, color: "#ef4444", marginLeft: 4 }}>🔒</span>}
-          </div>
-          <div style={{ ...contentStyle, gap: 16 }}>
-            {isFree ? (
-              <span style={{ fontSize: 13, color: theme.textSecondary }}>유료 요금제에서 사용 가능합니다.</span>
-            ) : (
-              <>
-                {logoPreview && (
-                  <div style={{ position: "relative", display: "inline-block" }}>
-                    <img
-                      src={logoPreview}
-                      alt="로고 미리보기"
-                      style={{ height: 48, maxWidth: 200, objectFit: "contain", borderRadius: 6, border: `1px solid ${darkMode ? "#444" : "#e5e7eb"}`, background: "#fff", padding: 4 }}
-                    />
-                    <button
-                      onClick={() => handleFileRemove("logo")}
-                      style={{ position: "absolute", top: -8, right: -8, width: 22, height: 22, borderRadius: "50%", background: "#ef4444", color: "#fff", border: "2px solid #fff", fontSize: 13, fontWeight: "bold", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", lineHeight: 1 }}
-                    >
-                      &times;
-                    </button>
-                  </div>
-                )}
-                {!logoPreview && (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, "logo")} style={{ fontSize: 14 }} />
-                    <span style={{ fontSize: 12, color: theme.textSecondary }}>추천: 가로 200px 이상 PNG/SVG</span>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* 4. 파비콘 업로드 */}
-        <div style={rowStyle}>
-          <div style={labelStyle}>파비콘 (탭 아이콘)</div>
-          <div style={{ ...contentStyle, gap: 16 }}>
-            {faviconPreview && (
-              <div style={{ position: "relative", display: "inline-block" }}>
-                <img
-                  src={faviconPreview}
-                  alt="파비콘 미리보기"
-                  style={{ width: 32, height: 32, objectFit: "contain", borderRadius: 4, border: `1px solid ${darkMode ? "#444" : "#e5e7eb"}`, background: "#fff", padding: 2 }}
-                />
-                <button
-                  onClick={() => handleFileRemove("favicon")}
-                  style={{ position: "absolute", top: -8, right: -8, width: 22, height: 22, borderRadius: "50%", background: "#ef4444", color: "#fff", border: "2px solid #fff", fontSize: 13, fontWeight: "bold", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", lineHeight: 1 }}
-                >
-                  &times;
-                </button>
-              </div>
-            )}
-            {!faviconPreview && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, "favicon")} style={{ fontSize: 14 }} />
-                <span style={{ fontSize: 12, color: theme.textSecondary }}>추천: 32×32 또는 64×64 PNG</span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* 5. 사이트 제목 */}
-        <div style={rowStyle}>
-          <div style={labelStyle}>사이트 제목</div>
-          <div style={contentStyle}>
-            <input
-              type="text"
-              name="site_title"
-              value={formData.site_title}
-              onChange={handleChange}
-              style={inputStyle}
-              placeholder="브라우저 탭에 표시될 이름 (예: 공실뉴스 부동산)"
-              maxLength={50}
-            />
-          </div>
-        </div>
-
-        {/* 6. 대표 연락처 */}
-        <div style={rowStyle}>
-          <div style={labelStyle}>대표 연락처</div>
-          <div style={contentStyle}>
-            <input
-              type="text"
-              name="contact_phone"
-              value={formData.contact_phone}
-              onChange={handleChange}
-              style={{ ...inputStyle, maxWidth: 240 }}
-              placeholder="02-000-0000"
-            />
-          </div>
-        </div>
-
-        {/* 7. 회사 소개글 */}
-        <div style={rowStyle}>
-          <div style={{ ...labelStyle, alignItems: "flex-start", paddingTop: 20 }}>회사 소개글</div>
-          <div style={{ ...contentStyle, flexDirection: "column", alignItems: "stretch", gap: 6 }}>
-            <textarea
-              name="company_intro"
-              value={formData.company_intro}
-              onChange={handleChange}
-              style={{ ...inputStyle, height: 120, padding: "12px 14px", resize: "vertical" as const }}
-              placeholder="홈페이지 '회사소개' 메뉴에 표시됩니다. 중개사무소를 소개하는 글을 작성해주세요."
-              maxLength={1000}
-            />
-            <span style={{ fontSize: 12, color: (formData.company_intro?.length || 0) >= 1000 ? "#ef4444" : theme.textSecondary, alignSelf: "flex-end" }}>
-              {formData.company_intro?.length || 0} / 1,000
-            </span>
-          </div>
-        </div>
-
-        {/* 8. 홈페이지 활성화 토글 */}
-        <div style={{ ...rowStyle, borderBottom: "none" }}>
-          <div style={labelStyle}>홈페이지 활성화</div>
-          <div style={{ ...contentStyle, gap: 12 }}>
-            <button
-              onClick={() => setFormData((p) => ({ ...p, is_active: !p.is_active }))}
-              style={{
-                width: 52, height: 28, borderRadius: 14, border: "none", cursor: "pointer",
-                background: formData.is_active ? "#3b82f6" : (darkMode ? "#555" : "#d1d5db"),
-                position: "relative", transition: "background 0.3s",
-              }}
-            >
-              <div style={{
-                width: 22, height: 22, borderRadius: "50%", background: "#fff",
-                position: "absolute", top: 3,
-                left: formData.is_active ? 27 : 3,
-                transition: "left 0.3s", boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
-              }} />
-            </button>
-            <span style={{ fontSize: 14, color: formData.is_active ? "#10b981" : theme.textSecondary, fontWeight: 600 }}>
-              {formData.is_active ? "활성화됨" : "비활성화됨"}
-            </span>
-            <span style={{ fontSize: 12, color: theme.textSecondary }}>
-              비활성화하면 방문자에게 &quot;준비 중&quot; 페이지가 표시됩니다.
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* 하단 안내 및 저장 버튼 */}
-      {isFree && (
-        <div style={{
-          padding: "16px 20px", marginBottom: 16, borderRadius: 10,
-          background: darkMode ? "rgba(234,179,8,0.1)" : "#fffbeb",
-          border: `1px solid ${darkMode ? "#78350f" : "#fde68a"}`,
-          fontSize: 13, color: darkMode ? "#fcd34d" : "#92400e", lineHeight: 1.6,
-        }}>
-          💡 <strong>무료 요금제</strong>에서는 기본 템플릿(오피스형)과 공실뉴스 로고가 자동 적용됩니다.
-          유료 요금제로 업그레이드하시면 자유로운 테마 선택과 커스텀 로고 설정이 가능합니다.
-        </div>
-      )}
-
-      <div style={{ display: "flex", gap: 12, justifyContent: "center", padding: "8px 0 20px" }}>
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          style={{
-            padding: "14px 48px", fontSize: 15, fontWeight: 800, color: "#fff",
-            background: saving ? "#93c5fd" : "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)",
-            border: "none", borderRadius: 10, cursor: saving ? "not-allowed" : "pointer",
-            boxShadow: "0 4px 14px rgba(59,130,246,0.3)", transition: "all 0.2s",
-            display: "flex", alignItems: "center", gap: 8,
-          }}
-        >
-          {saving ? "⏳ 저장 중..." : saved ? "✅ 저장 완료!" : "💾 홈페이지 설정 저장"}
-        </button>
       </div>
     </div>
   );
