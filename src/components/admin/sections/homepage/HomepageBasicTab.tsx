@@ -30,8 +30,8 @@ export default function HomepageBasicTab({ theme, formData, onChange, onFormUpda
   const contentStyle: React.CSSProperties = { flex: 1, padding: "16px 20px", display: "flex", alignItems: "center" };
 
   const themes = [
-    { key: "office", label: "Templete01 오피스텔형", desc: "깔끔한 사무실 중심 레이아웃", emoji: "🏢", sampleUrl: "https://templete01.gongsilnews.com/" },
-    { key: "apartment", label: "Templete02 일반룸형", desc: "원룸·주거 전문 레이아웃", emoji: "🏠", sampleUrl: "https://templete02.gongsilnews.com/" },
+    { key: "template01", label: "Templete01 오피스텔형", desc: "깔끔한 사무실 중심 레이아웃", emoji: "🏢", sampleUrl: "https://templete01.gongsilnews.com/" },
+    { key: "template02", label: "Templete02 일반룸형", desc: "원룸·주거 전문 레이아웃", emoji: "🏠", sampleUrl: "https://templete02.gongsilnews.com/" },
   ];
 
   return (

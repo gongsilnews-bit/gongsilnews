@@ -46,7 +46,7 @@ export default function HomepageSection({ theme, memberId, planType }: HomepageS
 
   const [formData, setFormData] = useState<Record<string, any>>({
     subdomain: "",
-    theme_name: "office",
+    theme_name: "template01",
     logo_url: null,
     favicon_url: null,
     site_title: "",
@@ -250,7 +250,7 @@ export default function HomepageSection({ theme, memberId, planType }: HomepageS
 
       const saveRes = await saveHomepageSettings(memberId, {
         subdomain: formData.subdomain,
-        theme_name: isFree ? "office" : formData.theme_name,
+        theme_name: isFree ? "template01" : formData.theme_name,
         logo_url: isFree ? null : logoUrl,
         favicon_url: faviconUrl,
         site_title: formData.site_title,
@@ -373,7 +373,7 @@ export default function HomepageSection({ theme, memberId, planType }: HomepageS
           </div>
         )}
 
-        {/* 저장 버튼 */}
+        {/* 하단 액션 버튼 */}
         <div style={{ display: "flex", gap: 12, justifyContent: "center", padding: "8px 0 16px" }}>
           <button onClick={handleSave} disabled={saving}
             style={{
@@ -385,6 +385,30 @@ export default function HomepageSection({ theme, memberId, planType }: HomepageS
             }}>
             {saving ? "⏳ 저장 중..." : saved ? "✅ 저장 완료!" : "💾 홈페이지 설정 저장"}
           </button>
+
+          {formData.subdomain && (
+            <a href={`http://${formData.subdomain}.gongsilnews.com`} target="_blank" rel="noopener noreferrer"
+              style={{
+                padding: "12px 30px", fontSize: 14, fontWeight: 800, color: darkMode ? "#93c5fd" : "#3b82f6",
+                background: darkMode ? "#2c2d31" : "#f8fafc", 
+                border: `2px solid ${darkMode ? "#444" : "#e2e8f0"}`,
+                borderRadius: 10, cursor: "pointer", textDecoration: "none",
+                transition: "all 0.2s", display: "flex", alignItems: "center", gap: 8,
+              }}
+              onMouseEnter={(e) => { 
+                e.currentTarget.style.background = darkMode ? "#3b82f6" : "#eff6ff"; 
+                e.currentTarget.style.color = darkMode ? "#fff" : "#2563eb";
+                e.currentTarget.style.borderColor = darkMode ? "#3b82f6" : "#bfdbfe"; 
+              }}
+              onMouseLeave={(e) => { 
+                e.currentTarget.style.background = darkMode ? "#2c2d31" : "#f8fafc"; 
+                e.currentTarget.style.color = darkMode ? "#93c5fd" : "#3b82f6";
+                e.currentTarget.style.borderColor = darkMode ? "#444" : "#e2e8f0"; 
+              }}
+            >
+              🚀 내 홈페이지 바로가기
+            </a>
+          )}
         </div>
       </div>
 
