@@ -17,7 +17,7 @@ import HomepageMenuTab from "./homepage/HomepageMenuTab";
 import HomepageBannerTab from "./homepage/HomepageBannerTab";
 import HomepageNewsTab from "./homepage/HomepageNewsTab";
 import HomepagePopupTab from "./homepage/HomepagePopupTab";
-import HomepagePreview from "./homepage/HomepagePreview";
+
 
 interface HomepageSectionProps {
   theme: AdminTheme;
@@ -42,10 +42,7 @@ export default function HomepageSection({ theme, memberId, planType }: HomepageS
   const [saved, setSaved] = useState(false);
   const [activeTab, setActiveTab] = useState("basic");
   
-  // 패널 크기 조절 및 뷰 모드
-  const [rightWidth, setRightWidth] = useState<number | null>(null);
-  const [viewMode, setViewMode] = useState<"pc" | "mobile">("pc");
-  const isResizing = useRef(false);
+
 
   const [formData, setFormData] = useState<Record<string, any>>({
     subdomain: "",
@@ -153,38 +150,7 @@ export default function HomepageSection({ theme, memberId, planType }: HomepageS
     load();
   }, [memberId]);
 
-  // ── 패널 드래그 리사이즈 ──
-  const startResize = (e: React.MouseEvent) => {
-    isResizing.current = true;
-    document.body.style.cursor = "col-resize";
-  };
 
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!isResizing.current) return;
-      // 오른쪽 패널 너비 계산
-      const newWidth = window.innerWidth - e.clientX;
-      setRightWidth(newWidth);
-      
-      // 일정 크기 이하로 줄어들면 자동으로 모바일 뷰로 전환
-      if (newWidth < 600) setViewMode("mobile");
-      else if (newWidth > 650) setViewMode("pc");
-    };
-    
-    const handleMouseUp = () => {
-      if (isResizing.current) {
-        isResizing.current = false;
-        document.body.style.cursor = "default";
-      }
-    };
-    
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
-    return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
-    };
-  }, []);
 
   // ── 서브도메인 중복 검사 (자동, 디바운스) ──
   const checkSubdomain = useCallback(
@@ -422,47 +388,7 @@ export default function HomepageSection({ theme, memberId, planType }: HomepageS
         </div>
       </div>
 
-      {/* ===== 화면 크기 조절 스플리터 ===== */}
-      <div 
-         onMouseDown={startResize}
-         style={{ 
-           width: 6, background: darkMode ? "#333" : "#cbd5e1", cursor: "col-resize", 
-           zIndex: 10, transition: "background 0.2s" 
-         }}
-         onMouseEnter={(e) => e.currentTarget.style.background = "#3b82f6"}
-         onMouseLeave={(e) => e.currentTarget.style.background = darkMode ? "#333" : "#cbd5e1"}
-      />
 
-      {/* ===== 우측: 실시간 미리보기 (리사이즈 가능) ===== */}
-      <div style={{
-        width: rightWidth === null ? "50%" : rightWidth,
-        flexShrink: 0, padding: "20px 24px 20px 12px", minWidth: 380,
-        display: "flex", flexDirection: "column", gap: 16
-      }}>
-        <HomepagePreview 
-          theme={theme} 
-          formData={formData} 
-          logoPreview={logoPreview} 
-          onElementClick={(tabKey) => setActiveTab(tabKey)} 
-          viewMode={viewMode}
-          setViewMode={setViewMode}
-        />
-        
-        {formData.subdomain && (
-          <a href={`http://${formData.subdomain}.gongsilnews.com`} target="_blank" rel="noopener noreferrer"
-            style={{ 
-              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-              padding: "14px 20px", background: "#f8fafc", border: `1px solid ${darkMode ? "#444" : "#e2e8f0"}`,
-              borderRadius: 12, textDecoration: "none", color: "#3b82f6", fontSize: 14, fontWeight: 700,
-              boxShadow: "0 2px 4px rgba(0,0,0,0.05)", transition: "all 0.2s", flexShrink: 0
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = "#eff6ff"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = "#f8fafc"; }}
-          >
-            🔗 내 홈페이지 바로가기
-          </a>
-        )}
-      </div>
     </div>
   );
 }

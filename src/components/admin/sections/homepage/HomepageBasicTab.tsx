@@ -30,8 +30,8 @@ export default function HomepageBasicTab({ theme, formData, onChange, onFormUpda
   const contentStyle: React.CSSProperties = { flex: 1, padding: "16px 20px", display: "flex", alignItems: "center" };
 
   const themes = [
-    { key: "office", label: "오피스형", desc: "깔끔한 사무실 중심 레이아웃", emoji: "🏢" },
-    { key: "apartment", label: "아파트형", desc: "아파트·주거 전문 레이아웃", emoji: "🏠" },
+    { key: "office", label: "Templete01 오피스텔형", desc: "깔끔한 사무실 중심 레이아웃", emoji: "🏢", sampleUrl: "https://templete01.gongsilnews.com/" },
+    { key: "apartment", label: "Templete02 일반룸형", desc: "원룸·주거 전문 레이아웃", emoji: "🏠", sampleUrl: "https://templete02.gongsilnews.com/" },
   ];
 
   return (
@@ -73,22 +73,65 @@ export default function HomepageBasicTab({ theme, formData, onChange, onFormUpda
         </div>
         <div style={{ ...contentStyle, gap: 16 }}>
           {themes.map((t) => (
-            <button key={t.key}
-              onClick={() => !isFree && onFormUpdate({ theme_name: t.key })}
-              disabled={isFree}
-              style={{
-                flex: 1, padding: "20px 16px", borderRadius: 10, cursor: isFree ? "not-allowed" : "pointer",
-                background: formData.theme_name === t.key
-                  ? (darkMode ? "rgba(59,130,246,0.15)" : "#eff6ff")
-                  : (darkMode ? "#333" : "#f9fafb"),
-                border: formData.theme_name === t.key
-                  ? "2px solid #3b82f6" : `1px solid ${darkMode ? "#444" : "#e5e7eb"}`,
-                textAlign: "center", transition: "all 0.2s", opacity: isFree ? 0.5 : 1,
-              }}>
-              <div style={{ fontSize: 32, marginBottom: 8 }}>{t.emoji}</div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: theme.textPrimary, marginBottom: 4 }}>{t.label}</div>
-              <div style={{ fontSize: 12, color: theme.textSecondary }}>{t.desc}</div>
-            </button>
+            <div key={t.key} style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
+              <button
+                onClick={() => !isFree && onFormUpdate({ theme_name: t.key })}
+                disabled={isFree}
+                style={{
+                  padding: "16px", borderRadius: 10, cursor: isFree ? "not-allowed" : "pointer",
+                  background: formData.theme_name === t.key
+                    ? (darkMode ? "rgba(59,130,246,0.15)" : "#eff6ff")
+                    : (darkMode ? "#333" : "#f9fafb"),
+                  border: formData.theme_name === t.key
+                    ? "2px solid #3b82f6" : `1px solid ${darkMode ? "#444" : "#e5e7eb"}`,
+                  textAlign: "center", transition: "all 0.2s", opacity: isFree ? 0.5 : 1,
+                  display: "flex", flexDirection: "column", alignItems: "center", width: "100%"
+                }}>
+                
+                {/* 라이브 썸네일 (iframe 스케일링) */}
+                <div 
+                  onClick={(e) => { 
+                    e.stopPropagation(); 
+                    window.open(t.sampleUrl, '_blank'); 
+                  }}
+                  title="클릭하여 샘플 홈페이지만 새 창에서 보기"
+                  style={{ 
+                    width: "100%", height: 160, overflow: "hidden", position: "relative", 
+                    borderRadius: 6, marginBottom: 16, background: "#fff",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.1)", cursor: "zoom-in"
+                  }}>
+                  <iframe src={t.sampleUrl} tabIndex={-1} scrolling="no" style={{ 
+                    width: "400%", height: "400%", transform: "scale(0.25)", 
+                    transformOrigin: "0 0", border: "none", pointerEvents: "none" 
+                  }} />
+                  <div style={{ 
+                    position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 1, 
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    background: "rgba(0,0,0,0)", transition: "background 0.2s"
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "rgba(0,0,0,0.2)";
+                    if (e.currentTarget.firstChild) (e.currentTarget.firstChild as HTMLElement).style.opacity = "1";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "rgba(0,0,0,0)";
+                    if (e.currentTarget.firstChild) (e.currentTarget.firstChild as HTMLElement).style.opacity = "0";
+                  }}>
+                    <span style={{ 
+                      padding: "8px 16px", background: "rgba(0,0,0,0.8)", color: "#fff", 
+                      borderRadius: 20, fontSize: 13, fontWeight: 700, opacity: 0, transition: "opacity 0.2s"
+                    }}>
+                      🔍 샘플 미리보기
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{ fontSize: 16, fontWeight: 800, color: theme.textPrimary, marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}>
+                  {t.emoji} {t.label}
+                </div>
+                <div style={{ fontSize: 13, color: theme.textSecondary }}>{t.desc}</div>
+              </button>
+            </div>
           ))}
         </div>
       </div>
