@@ -25,6 +25,7 @@ export interface TalkItem {
   isRead: boolean;
   isReplied: boolean;
   createdAt: string;
+  parentId?: string;
 }
 
 /**
@@ -46,7 +47,7 @@ export async function getAllTalkItems(memberId?: string): Promise<{ success: boo
     // 2. 공실 댓글 조회
     let vacancyQuery = supabase
       .from("vacancy_comments")
-      .select("id, vacancy_id, author_id, author_name, content, is_secret, created_at")
+      .select("id, vacancy_id, author_id, author_name, content, is_secret, created_at, parent_id")
       .order("created_at", { ascending: false })
       .limit(100);
 
@@ -90,6 +91,7 @@ export async function getAllTalkItems(memberId?: string): Promise<{ success: boo
       isRead: true,
       isReplied: !!c.parent_id,
       createdAt: c.created_at,
+      parentId: c.parent_id ? `article_${c.parent_id}` : undefined,
     }));
 
     const vacancyTalks: TalkItem[] = (vacancyRes.data || []).map(c => ({
@@ -102,8 +104,9 @@ export async function getAllTalkItems(memberId?: string): Promise<{ success: boo
       content: c.content,
       isSecret: c.is_secret || false,
       isRead: true,
-      isReplied: false,
+      isReplied: !!c.parent_id,
       createdAt: c.created_at,
+      parentId: c.parent_id ? `vacancy_${c.parent_id}` : undefined,
     }));
 
     // 6. 합치고 최신순 정렬
@@ -120,6 +123,9 @@ export async function getAllTalkItems(memberId?: string): Promise<{ success: boo
         .eq("owner_id", memberId);
       const myVacancyIds = new Set((myVacancies || []).map(v => v.id));
 
+      // 내가 쓴 댓글 ID 모음 (답글 타겟 검사용)
+      const myMessageIds = new Set(allTalks.filter(t => t.authorId === memberId).map(t => t.id));
+
       // 내가 기자인 기사 ID 목록 가져오기
       const { data: myArticles } = await supabase
         .from("articles")
@@ -127,20 +133,26 @@ export async function getAllTalkItems(memberId?: string): Promise<{ success: boo
         .eq("author_id", memberId);
       const myArticleIds = new Set((myArticles || []).map(a => a.id));
 
-      // 내가 참여한 방(sourceId) 찾기: 내가 댓글을 달았거나, 내 매물이거나, 내 기사인 경우
-      const mySourceIds = new Set<string>();
+      // 1. 내가 주인이면(내 매물/내 기사) -> 해당 방의 전체 메시지 보임
+      // 2. 일반 댓글러면 -> "방 단위"가 아니라 "내가 쓴 메시지이거나, 내 메시지에 달린 답글"만 보임
+      const mySourceIdsAsOwner = new Set<string>();
       allTalks.forEach(t => {
         if (
-          t.authorId === memberId ||
           (t.sourceType === "vacancy" && myVacancyIds.has(t.sourceId)) ||
           (t.sourceType === "article" && myArticleIds.has(t.sourceId))
         ) {
-          mySourceIds.add(t.sourceId);
+          mySourceIdsAsOwner.add(t.sourceId);
         }
       });
 
-      // 내가 참여한 방의 '모든' 메시지를 반환 (관리자 답글 등 포함)
-      result = allTalks.filter(t => mySourceIds.has(t.sourceId));
+      result = allTalks.filter(t => {
+        if (mySourceIdsAsOwner.has(t.sourceId)) return true;
+        
+        // 주인이 아니면, 권한 체크 (내가 썼거나, 내 글에 대한 답글이거나)
+        if (t.authorId === memberId) return true;
+        if (t.parentId && myMessageIds.has(t.parentId)) return true;
+        return false;
+      });
     }
 
     return { success: true, data: result };
@@ -161,6 +173,7 @@ export async function replyToTalk(params: {
   authorName: string;
   content: string;
   isSecret?: boolean;
+  parentId?: string;
 }): Promise<{ success: boolean; error?: string }> {
   const supabase = getAdminClient();
   try {
@@ -173,6 +186,7 @@ export async function replyToTalk(params: {
           author_name: params.authorName,
           content: params.content,
           is_secret: params.isSecret || false,
+          parent_id: params.parentId ? params.parentId.split("_")[1] : undefined,
         });
       if (error) throw error;
     } else {
@@ -184,6 +198,7 @@ export async function replyToTalk(params: {
           author_name: params.authorName,
           content: params.content,
           is_secret: params.isSecret || false,
+          parent_id: params.parentId ? params.parentId.split("_")[1] : undefined,
         });
       if (error) throw error;
     }

@@ -67,6 +67,8 @@ export default function CommentSection({ theme, role, memberId }: CommentSection
   const [replyText, setReplyText] = useState("");
   const [sending, setSending] = useState(false);
   const [isSecretReply, setIsSecretReply] = useState(false);
+  const [replyTarget, setReplyTarget] = useState<TalkItem | null>(null);
+  const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [currentUserName, setCurrentUserName] = useState<string>("관리자");
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -231,9 +233,11 @@ export default function CommentSection({ theme, role, memberId }: CommentSection
         authorName: currentUserName,
         content: replyText.trim(),
         isSecret: isSecretReply,
+        parentId: replyTarget?.id,
       });
       if (res.success) {
         setReplyText("");
+        setReplyTarget(null);
         // 데이터 새로고침
         await fetchTalkData();
         // 해당 방 다시 선택 (새 메시지 포함)
@@ -390,7 +394,11 @@ export default function CommentSection({ theme, role, memberId }: CommentSection
               {selectedRoom.messages.map((msg) => {
                 const isMe = currentUserId ? msg.authorId === currentUserId : false;
                 return (
-                  <div key={msg.id} style={{ display: "flex", flexDirection: isMe ? "row-reverse" : "row", gap: 10, alignItems: "flex-start" }}>
+                  <div key={msg.id} 
+                    onMouseEnter={() => setHoveredMessageId(msg.id)}
+                    onMouseLeave={() => setHoveredMessageId(null)}
+                    style={{ display: "flex", flexDirection: isMe ? "row-reverse" : "row", gap: 10, alignItems: "flex-start" }}
+                  >
                     {!isMe && (
                       <div style={{ width: 40, height: 40, borderRadius: "50%", background: darkMode ? "#374151" : "#e5e7eb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>👤</div>
                     )}
@@ -402,6 +410,9 @@ export default function CommentSection({ theme, role, memberId }: CommentSection
                         <span style={{ fontSize: 13, fontWeight: 700, color: textPrimary }}>{msg.authorName}</span>
                         {msg.isSecret && <span style={{ fontSize: 11 }}>🔒</span>}
                         <span style={{ fontSize: 11, color: textSecondary }}>{new Date(msg.createdAt).toLocaleString("ko-KR", { year: "numeric", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
+                        {hoveredMessageId === msg.id && (
+                           <button onClick={() => setReplyTarget(msg)} style={{ background: "none", border: `1px solid ${darkMode ? "#4b5563" : "#d1d5db"}`, borderRadius: 4, fontSize: 11, padding: "2px 6px", cursor: "pointer", color: textSecondary }}>답글</button>
+                        )}
                       </div>
                       <div style={{
                         padding: "12px 16px", fontSize: 14, lineHeight: 1.7, color: isMe ? "#fff" : textPrimary,
@@ -409,6 +420,17 @@ export default function CommentSection({ theme, role, memberId }: CommentSection
                         borderRadius: isMe ? "14px 0 14px 14px" : "0 14px 14px 14px",
                         boxShadow: "0 1px 3px rgba(0,0,0,0.1)", wordBreak: "break-word"
                       }}>
+                        {msg.parentId && (() => {
+                          const parentMsg = selectedRoom.messages.find(m => m.id === msg.parentId);
+                          if (parentMsg) {
+                            return (
+                              <div style={{ background: isMe ? "rgba(255,255,255,0.2)" : (darkMode ? "rgba(0,0,0,0.2)" : "rgba(0,0,0,0.05)"), padding: "6px 10px", borderRadius: 6, fontSize: 12, marginBottom: 8, borderLeft: `3px solid ${isMe ? "#fff" : (darkMode ? "#4b5563" : "#9ca3af")}` }}>
+                                <strong>{parentMsg.authorName}</strong>: {parentMsg.content.length > 30 ? parentMsg.content.substring(0, 30) + "..." : parentMsg.content}
+                              </div>
+                            );
+                          }
+                          return null;
+                        })()}
                         {msg.content}
                       </div>
                     </div>
@@ -420,6 +442,14 @@ export default function CommentSection({ theme, role, memberId }: CommentSection
 
             {/* 답글 입력창 (하단 고정) */}
             <div style={{ padding: "16px 24px", borderTop: `1px solid ${border}`, background: darkMode ? "#2c2d31" : "#f8fafc", display: "flex", flexDirection: "column", gap: 12 }}>
+              {replyTarget && (
+                <div style={{ background: darkMode ? "#1f2023" : "#f3f4f6", padding: "10px 14px", borderRadius: 8, display: "flex", justifyContent: "space-between", alignItems: "center", borderLeft: "4px solid #3b82f6" }}>
+                  <div style={{ fontSize: 12, color: textSecondary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <strong style={{ color: textPrimary }}>{replyTarget.authorName}</strong>님에게 답글: {replyTarget.content}
+                  </div>
+                  <button onClick={() => setReplyTarget(null)} style={{ background: "none", border: "none", fontSize: 16, cursor: "pointer", color: textSecondary }}>&times;</button>
+                </div>
+              )}
               <textarea
                 value={replyText} onChange={(e) => setReplyText(e.target.value)}
                 onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleReply(); } }}
