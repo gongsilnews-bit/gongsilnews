@@ -20,8 +20,15 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
   /* ─── 상태 ─── */
   const [status, setStatus] = useState<StatusType>("DRAFT");
   const [formType, setFormType] = useState<FormType>("일반");
-  const [publishDate, setPublishDate] = useState("2026-03-24");
-  const [publishTime, setPublishTime] = useState("00:00");
+  const [publishDate, setPublishDate] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  });
+  const [publishTime, setPublishTime] = useState(() => {
+    const d = new Date();
+    return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  });
+  const [isReserved, setIsReserved] = useState(false);
   const [section1, setSection1] = useState("");
   const [section2, setSection2] = useState("");
   const [series, setSeries] = useState("");
@@ -178,6 +185,10 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
               const hh = String(dt.getHours()).padStart(2,'0');
               const _min = String(dt.getMinutes()).padStart(2,'0');
               setPublishTime(`${hh}:${_min}`);
+              // 미래 시간이면 예약 체크박스 자동 설정
+              if (dt.getTime() > Date.now()) {
+                setIsReserved(true);
+              }
             }
             if (d.section1) setSection1(d.section1);
             if (d.section2) setSection2(d.section2);
@@ -1118,8 +1129,15 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
     try {
       // 노출시간 조합
       let publishedAt: string | null = null;
-      if (publishDate) {
+      if (isReserved && publishDate) {
         publishedAt = `${publishDate}T${publishTime || "00:00"}:00`;
+      } else {
+        // 예약이 아닌 경우, 신규 작성이면 현재 시간 부여, 수정이면 기존 입력값 유지
+        if (loadArticleId) {
+          publishedAt = `${publishDate}T${publishTime || "00:00"}:00`;
+        } else {
+          publishedAt = new Date().toISOString();
+        }
       }
 
       // 대표 이미지 URL 결정
@@ -1266,7 +1284,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
           <div style={{ background: cardBg, borderRadius: 12, border: `1px solid ${border}`, padding: "20px 16px" }}>
             <h3 style={{ fontSize: 15, fontWeight: 800, color: textPrimary, margin: "0 0 16px 0" }}>글쓰기도구</h3>
 
-            {/* 6개 아이콘 그리드 */}
+            {/* 3개 아이콘 그리드 */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 4, marginBottom: 20 }}>
               {/* 사진 */}
               <button onClick={openPhotoModal} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "12px 4px", border: "none", background: "none", cursor: "pointer", borderRadius: 8 }}>
@@ -1282,33 +1300,12 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                 </svg>
                 <span style={{ fontSize: 11, fontWeight: 600, color: textSecondary }}>영상</span>
               </button>
-              {/* 파일 */}
-              <button style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "12px 4px", border: "none", background: "none", cursor: "pointer", borderRadius: 8 }}>
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={textSecondary} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/>
-                </svg>
-                <span style={{ fontSize: 11, fontWeight: 600, color: textSecondary }}>파일</span>
-              </button>
               {/* 포토DB */}
               <button onClick={openPhotoDbModal} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "12px 4px", border: "none", background: "none", cursor: "pointer", borderRadius: 8 }}>
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={textSecondary} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="2" y="2" width="20" height="20" rx="2"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/>
                 </svg>
                 <span style={{ fontSize: 11, fontWeight: 600, color: textSecondary }}>포토DB</span>
-              </button>
-              {/* 임시보관함 */}
-              <button style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "12px 4px", border: "none", background: "none", cursor: "pointer", borderRadius: 8 }}>
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={textSecondary} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7L2 7"/><path d="M10 12h4"/>
-                </svg>
-                <span style={{ fontSize: 11, fontWeight: 600, color: textSecondary }}>임시보관함</span>
-              </button>
-              {/* 사진편집 */}
-              <button style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "12px 4px", border: "none", background: "none", cursor: "pointer", borderRadius: 8 }}>
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={textSecondary} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
-                </svg>
-                <span style={{ fontSize: 11, fontWeight: 600, color: textSecondary }}>사진편집</span>
               </button>
             </div>
 
@@ -1384,12 +1381,15 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                 노출시간
                 <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 16, height: 16, borderRadius: "50%", border: `1px solid ${textMuted}`, fontSize: 10, color: textMuted, cursor: "help" }}>ⓘ</span>
               </label>
-              <input type="date" value={publishDate} onChange={e => setPublishDate(e.target.value)}
-                style={{ padding: "10px 14px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 14, color: textPrimary, background: cardBg, outline: "none", fontFamily: "inherit" }} />
+              <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 14, fontWeight: 600, color: textPrimary, marginRight: 8 }}>
+                <input type="checkbox" checked={isReserved} onChange={e => setIsReserved(e.target.checked)} style={{ transform: "scale(1.2)", accentColor: "#3b82f6" }} />
+                예약
+              </label>
+              <input type="date" value={publishDate} onChange={e => setPublishDate(e.target.value)} disabled={!isReserved && !loadArticleId}
+                style={{ padding: "10px 14px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 14, color: (!isReserved && !loadArticleId) ? textMuted : textPrimary, background: (!isReserved && !loadArticleId) ? "#f3f4f6" : cardBg, outline: "none", fontFamily: "inherit" }} />
               <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
-                <span style={{ position: "absolute", left: 12, fontSize: 13, color: textMuted }}>오전</span>
-                <input type="time" value={publishTime} onChange={e => setPublishTime(e.target.value)}
-                  style={{ padding: "10px 14px 10px 40px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 14, color: textPrimary, background: cardBg, outline: "none", fontFamily: "inherit" }} />
+                <input type="time" value={publishTime} onChange={e => setPublishTime(e.target.value)} disabled={!isReserved && !loadArticleId}
+                  style={{ padding: "10px 14px 10px 14px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 14, color: (!isReserved && !loadArticleId) ? textMuted : textPrimary, background: (!isReserved && !loadArticleId) ? "#f3f4f6" : cardBg, outline: "none", fontFamily: "inherit" }} />
               </div>
             </div>
 
@@ -1890,45 +1890,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
               )}
             </div>
 
-            {/* ── 파일 섹션 ── */}
-            <div>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-                <span style={{ fontSize: 14, fontWeight: 700, color: textPrimary }}>파일</span>
-                <button onClick={() => setFileCollapsed(!fileCollapsed)} style={{ width: 24, height: 24, border: `1px solid ${border}`, borderRadius: 4, background: cardBg, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: textMuted }}>
-                  {fileCollapsed ? "+" : "−"}
-                </button>
-              </div>
-              {!fileCollapsed && (
-                <>
-                  <input type="file" id="file-upload" multiple hidden
-                    onChange={e => handleFileSelect(e.target.files)} />
-                  <div 
-                    onClick={() => document.getElementById('file-upload')?.click()}
-                    onDragOver={e => { e.preventDefault(); e.currentTarget.style.borderColor = '#3b82f6'; }}
-                    onDragLeave={e => { e.currentTarget.style.borderColor = '#d1d5db'; }}
-                    onDrop={e => { e.preventDefault(); e.currentTarget.style.borderColor = '#d1d5db'; handleFileSelect(e.dataTransfer.files); }}
-                    style={{
-                      border: `2px dashed #d1d5db`, borderRadius: 8, padding: "18px 16px",
-                      textAlign: "center", color: textMuted, fontSize: 12, lineHeight: 1.6, cursor: "pointer",
-                      background: "#fdfdfd", transition: "border-color 0.2s",
-                    }}>
-                    📎 마우스로 파일을 끌어오거나, 클릭해주세요.<br />
-                    <span style={{ fontSize: 11, color: "#b0b0b0" }}>(허용용량 2MB)</span>
-                  </div>
-                  {attachFiles.length > 0 && (
-                    <div style={{ marginTop: 8 }}>
-                      {attachFiles.map((f, i) => (
-                        <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 0", fontSize: 12, color: textSecondary }}>
-                          <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>📄 {f.name}</span>
-                          <button type="button" onClick={() => removeFile(i)}
-                            style={{ background: "none", border: "none", color: "#ef4444", fontSize: 11, cursor: "pointer" }}>✕</button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
+
 
           </div>
         </aside>
