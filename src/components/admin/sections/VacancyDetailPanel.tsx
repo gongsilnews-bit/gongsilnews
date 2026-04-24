@@ -18,7 +18,7 @@ interface VacancyDetailPanelProps {
 export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: VacancyDetailPanelProps) {
   const [vacancy, setVacancy] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [deviceMode, setDeviceMode] = useState<"pc" | "tablet" | "mobile">("tablet");
+  const [deviceMode, setDeviceMode] = useState<"pc" | "tablet" | "mobile">("pc");
   const [activeTab, setActiveTab] = useState<"info" | "realtor">("info");
   
   const [galleryIndex, setGalleryIndex] = useState(0);
@@ -212,7 +212,11 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
     return `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())}.`;
   };
 
-  const getDeviceClass = () => deviceMode !== "pc" ? `gdv-${deviceMode}` : "";
+  const getDeviceClass = () => {
+    if (deviceMode === "tablet") return "gdv-tablet";
+    if (deviceMode === "mobile") return "gdv-mobile";
+    return "gdv-pc";
+  };
 
   return (
     <div className="gdv-root gdv-page-body" style={{ flex: 1, overflowY: 'auto', height: '100%' }}>
