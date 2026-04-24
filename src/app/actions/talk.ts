@@ -121,3 +121,47 @@ export async function getAllTalkItems(memberId?: string): Promise<{ success: boo
     return { success: false, error: error.message };
   }
 }
+
+/**
+ * 공실Talk: 댓글 답글 저장
+ * sourceType에 따라 article_comments 또는 vacancy_comments 테이블에 INSERT
+ */
+export async function replyToTalk(params: {
+  sourceType: "article" | "vacancy";
+  sourceId: string;
+  authorId: string;
+  authorName: string;
+  content: string;
+  isSecret?: boolean;
+}): Promise<{ success: boolean; error?: string }> {
+  const supabase = getAdminClient();
+  try {
+    if (params.sourceType === "article") {
+      const { error } = await supabase
+        .from("article_comments")
+        .insert({
+          article_id: params.sourceId,
+          author_id: params.authorId,
+          author_name: params.authorName,
+          content: params.content,
+          is_secret: params.isSecret || false,
+        });
+      if (error) throw error;
+    } else {
+      const { error } = await supabase
+        .from("vacancy_comments")
+        .insert({
+          vacancy_id: params.sourceId,
+          author_id: params.authorId,
+          author_name: params.authorName,
+          content: params.content,
+          is_secret: params.isSecret || false,
+        });
+      if (error) throw error;
+    }
+    return { success: true };
+  } catch (error: any) {
+    console.error("공실Talk 답글 저장 오류:", error);
+    return { success: false, error: error.message };
+  }
+}

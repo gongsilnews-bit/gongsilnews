@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { AdminTheme } from "./types";
-import { getAllTalkItems, TalkItem } from "@/app/actions/talk";
+import { getAllTalkItems, replyToTalk, TalkItem } from "@/app/actions/talk";
+import { createClient } from "@/utils/supabase/client";
 
 interface CommentSectionProps {
   theme: AdminTheme;
@@ -64,46 +65,97 @@ export default function CommentSection({ theme, role, memberId }: CommentSection
   const [selectedRoom, setSelectedRoom] = useState<TalkRoom | null>(null);
   const [loading, setLoading] = useState(true);
   const [replyText, setReplyText] = useState("");
+  const [sending, setSending] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentUserName, setCurrentUserName] = useState<string>("관리자");
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // 실제 댓글 데이터 조회 → 채팅방 단위로 그룹핑
+  // 현재 로그인 사용자 정보 가져오기
   useEffect(() => {
-    async function fetchTalkData() {
-      setLoading(true);
-      try {
-        const res = await getAllTalkItems(role === "admin" ? undefined : memberId);
-        if (res.success && res.data) {
-          const roomMap = new Map<string, TalkRoom>();
-          for (const item of res.data) {
-            const key = `${item.sourceType}_${item.sourceId}`;
-            if (!roomMap.has(key)) {
-              roomMap.set(key, {
-                sourceType: item.sourceType,
-                sourceId: item.sourceId,
-                sourceTitle: item.sourceTitle,
-                messages: [],
-                lastMessage: item,
-                unreadCount: 0,
-              });
-            }
-            roomMap.get(key)!.messages.push(item);
-          }
-          const roomList = Array.from(roomMap.values()).map(room => {
-            room.messages.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-            room.lastMessage = room.messages[room.messages.length - 1];
-            return room;
-          });
-          roomList.sort((a, b) => new Date(b.lastMessage.createdAt).getTime() - new Date(a.lastMessage.createdAt).getTime());
-          setCommentRooms(roomList);
-        }
-      } catch (err) {
-        console.error("공실Talk 데이터 로드 실패:", err);
-      } finally {
-        setLoading(false);
+    async function fetchCurrentUser() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setCurrentUserId(user.id);
+        const { data: member } = await supabase.from("members").select("name").eq("id", user.id).single();
+        setCurrentUserName(member?.name || user.email?.split("@")[0] || "관리자");
       }
     }
+    fetchCurrentUser();
+  }, []);
+
+  // 실제 댓글 데이터 조회 → 채팅방 단위로 그룹핑
+  const fetchTalkData = useCallback(async (isBackground = false) => {
+    if (!isBackground) setLoading(true);
+    try {
+      const res = await getAllTalkItems(role === "admin" ? undefined : memberId);
+      if (res.success && res.data) {
+        const roomMap = new Map<string, TalkRoom>();
+        for (const item of res.data) {
+          const key = `${item.sourceType}_${item.sourceId}`;
+          if (!roomMap.has(key)) {
+            roomMap.set(key, {
+              sourceType: item.sourceType,
+              sourceId: item.sourceId,
+              sourceTitle: item.sourceTitle,
+              messages: [],
+              lastMessage: item,
+              unreadCount: 0,
+            });
+          }
+          roomMap.get(key)!.messages.push(item);
+        }
+        const roomList = Array.from(roomMap.values()).map(room => {
+          room.messages.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+          room.lastMessage = room.messages[room.messages.length - 1];
+          return room;
+        });
+        roomList.sort((a, b) => new Date(b.lastMessage.createdAt).getTime() - new Date(a.lastMessage.createdAt).getTime());
+        setCommentRooms(roomList);
+      }
+    } catch (err) {
+      console.error("공실Talk 데이터 로드 실패:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [role, memberId]);
+
+  useEffect(() => {
     fetchTalkData();
   }, [role, memberId]);
+
+  // ★ Supabase Realtime 구독 → 새 댓글이 들어오면 자동 새로고침
+  useEffect(() => {
+    const supabase = createClient();
+    
+    const channel = supabase
+      .channel("gongsil-talk-realtime")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "article_comments" }, () => {
+        fetchTalkData(true);
+      })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "vacancy_comments" }, () => {
+        fetchTalkData(true);
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchTalkData]);
+
+  // ★ commentRooms가 업데이트되면 현재 열려있는 채팅방도 자동 동기화
+  const selectedRoomRef = useRef(selectedRoom);
+  selectedRoomRef.current = selectedRoom;
+  useEffect(() => {
+    if (selectedRoomRef.current) {
+      const updated = commentRooms.find(
+        r => r.sourceType === selectedRoomRef.current!.sourceType && r.sourceId === selectedRoomRef.current!.sourceId
+      );
+      if (updated && updated.messages.length !== selectedRoomRef.current.messages.length) {
+        setSelectedRoom(updated);
+      }
+    }
+  }, [commentRooms]);
 
   // 채팅방 열면 스크롤 하단으로
   useEffect(() => {
@@ -160,10 +212,32 @@ export default function CommentSection({ theme, role, memberId }: CommentSection
     return `${d.getMonth() + 1}.${d.getDate()}`;
   };
 
-  const handleReply = () => {
-    if (!replyText.trim() || !selectedRoom) return;
-    alert(`답글이 등록되었습니다.\n내용: ${replyText}`);
-    setReplyText("");
+  const handleReply = async () => {
+    if (!replyText.trim() || !selectedRoom || !currentUserId || selectedRoom.sourceType === "inquiry") return;
+    setSending(true);
+    try {
+      const res = await replyToTalk({
+        sourceType: selectedRoom.sourceType,
+        sourceId: selectedRoom.sourceId,
+        authorId: currentUserId,
+        authorName: currentUserName,
+        content: replyText.trim(),
+      });
+      if (res.success) {
+        setReplyText("");
+        // 데이터 새로고침
+        await fetchTalkData();
+        // 해당 방 다시 선택 (새 메시지 포함)
+        const updatedRoom = commentRooms.find(r => r.sourceType === selectedRoom.sourceType && r.sourceId === selectedRoom.sourceId);
+        if (updatedRoom) setSelectedRoom(updatedRoom);
+      } else {
+        alert("답글 저장에 실패했습니다: " + res.error);
+      }
+    } catch (err) {
+      alert("답글 저장 중 오류가 발생했습니다.");
+    } finally {
+      setSending(false);
+    }
   };
 
   const totalRooms = commentRooms.length + inquiryRooms.length;
@@ -305,7 +379,7 @@ export default function CommentSection({ theme, role, memberId }: CommentSection
             {/* 대화 영역 */}
             <div style={{ flex: 1, padding: "24px", overflowY: "auto", background: darkMode ? "#222" : "#f0f2f5", display: "flex", flexDirection: "column", gap: 20 }}>
               {selectedRoom.messages.map((msg) => {
-                const isMe = msg.authorName === "공실뉴스";
+                const isMe = currentUserId ? msg.authorId === currentUserId : false;
                 return (
                   <div key={msg.id} style={{ display: "flex", flexDirection: isMe ? "row-reverse" : "row", gap: 10, alignItems: "flex-start" }}>
                     {!isMe && (
@@ -344,8 +418,8 @@ export default function CommentSection({ theme, role, memberId }: CommentSection
                 style={{ width: "100%", height: 80, padding: "12px", borderRadius: 8, border: `1px solid ${border}`, background: darkMode ? "#1f2023" : "#fff", color: textPrimary, outline: "none", resize: "none", fontFamily: "inherit", fontSize: 14 }}
               />
               <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center" }}>
-                <button onClick={handleReply} style={{ background: "#3b82f6", color: "#fff", border: "none", padding: "10px 24px", borderRadius: 6, fontWeight: 700, cursor: "pointer", fontSize: 14 }}>
-                  답글 전송
+                <button onClick={handleReply} disabled={sending || !replyText.trim()} style={{ background: sending ? "#93c5fd" : "#3b82f6", color: "#fff", border: "none", padding: "10px 24px", borderRadius: 6, fontWeight: 700, cursor: sending ? "not-allowed" : "pointer", fontSize: 14 }}>
+                  {sending ? "전송 중..." : "답글 전송"}
                 </button>
               </div>
             </div>
