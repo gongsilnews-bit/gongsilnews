@@ -543,6 +543,11 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
         // 지도 초기화
         if (itemMapRef.current) {
           const map = new kakao.maps.Map(itemMapRef.current, { center: pos, level: useCircle ? 5 : 3 });
+          // 줌인/줌아웃 범위 제한 (너무 가깝거나 너무 멀리 이동 방지)
+          if (useCircle) {
+            map.setMinLevel(5);
+            map.setMaxLevel(8);
+          }
           if (useCircle) {
             // 파란 반투명 원 (300m)
             new kakao.maps.Circle({
