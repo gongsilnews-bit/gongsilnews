@@ -18,8 +18,7 @@
 
 .gdv-page-body {
   padding: 24px;
-  max-width: 1280px;
-  margin: 0 auto;
+  margin: 0;
 }
 
 /* ── 기기 미리보기 디바이스 버튼 ── */
@@ -43,6 +42,10 @@
   border: 1px solid #eee;
   transition: max-width 0.3s ease, border-radius 0.3s ease, box-shadow 0.3s ease;
 }
+.gdv-preview-frame.gdv-pc {
+  max-width: 720px !important;
+  margin: 0 auto;
+}
 .gdv-preview-frame.gdv-tablet {
   max-width: 768px !important; 
 }
@@ -50,9 +53,6 @@
   max-width: 375px !important; 
   border: 8px solid #333; border-radius: 36px;
   box-shadow: 0 10px 40px rgba(0,0,0,0.15);
-}
-.gdv-preview-frame.gdv-pc {
-  max-width: 100% !important;
 }
 
 /* ── 갤러리 ── */
