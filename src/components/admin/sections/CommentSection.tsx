@@ -66,6 +66,7 @@ export default function CommentSection({ theme, role, memberId }: CommentSection
   const [loading, setLoading] = useState(true);
   const [replyText, setReplyText] = useState("");
   const [sending, setSending] = useState(false);
+  const [isSecretReply, setIsSecretReply] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [currentUserName, setCurrentUserName] = useState<string>("관리자");
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -212,6 +213,13 @@ export default function CommentSection({ theme, role, memberId }: CommentSection
     return `${d.getMonth() + 1}.${d.getDate()}`;
   };
 
+  // 채팅방 변경 시 이전 마지막 메시지가 비밀글이면 자동 비밀글 설정
+  useEffect(() => {
+    if (selectedRoom) {
+      setIsSecretReply(selectedRoom.lastMessage?.isSecret || false);
+    }
+  }, [selectedRoom?.sourceId, selectedRoom?.sourceType]);
+
   const handleReply = async () => {
     if (!replyText.trim() || !selectedRoom || !currentUserId || selectedRoom.sourceType === "inquiry") return;
     setSending(true);
@@ -222,6 +230,7 @@ export default function CommentSection({ theme, role, memberId }: CommentSection
         authorId: currentUserId,
         authorName: currentUserName,
         content: replyText.trim(),
+        isSecret: isSecretReply,
       });
       if (res.success) {
         setReplyText("");
@@ -417,7 +426,11 @@ export default function CommentSection({ theme, role, memberId }: CommentSection
                 placeholder={`메시지를 입력하세요...`}
                 style={{ width: "100%", height: 80, padding: "12px", borderRadius: 8, border: `1px solid ${border}`, background: darkMode ? "#1f2023" : "#fff", color: textPrimary, outline: "none", resize: "none", fontFamily: "inherit", fontSize: 14 }}
               />
-              <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 13, color: textSecondary }}>
+                  <input type="checkbox" checked={isSecretReply} onChange={(e) => setIsSecretReply(e.target.checked)} />
+                  🔒 비밀글로 답하기
+                </label>
                 <button onClick={handleReply} disabled={sending || !replyText.trim()} style={{ background: sending ? "#93c5fd" : "#3b82f6", color: "#fff", border: "none", padding: "10px 24px", borderRadius: 6, fontWeight: 700, cursor: sending ? "not-allowed" : "pointer", fontSize: 14 }}>
                   {sending ? "전송 중..." : "답글 전송"}
                 </button>
