@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { AdminTheme } from "./types";
-import { CommentDetailPanel, InteractiveData } from "./comment/CommentDetailPanel";
 import { getAllTalkItems, TalkItem } from "@/app/actions/talk";
 
 interface CommentSectionProps {
@@ -11,35 +10,60 @@ interface CommentSectionProps {
   memberId?: string;
 }
 
+/** 채팅방 단위 (기사/매물 하나 = 채팅방 하나) */
+interface TalkRoom {
+  sourceType: "vacancy" | "article";
+  sourceId: string;
+  sourceTitle: string;
+  messages: TalkItem[];
+  lastMessage: TalkItem;
+  unreadCount: number;
+}
+
 export default function CommentSection({ theme, role, memberId }: CommentSectionProps) {
   const { bg, cardBg, textPrimary, textSecondary, darkMode, border } = theme;
   
   const [activeTab, setActiveTab] = useState("전체");
   const [searchKeyword, setSearchKeyword] = useState("");
-  const [showUnreadOnly, setShowUnreadOnly] = useState(false);
-  const [selectedInteraction, setSelectedInteraction] = useState<InteractiveData | null>(null);
-  const [interactions, setInteractions] = useState<InteractiveData[]>([]);
+  const [rooms, setRooms] = useState<TalkRoom[]>([]);
+  const [selectedRoom, setSelectedRoom] = useState<TalkRoom | null>(null);
   const [loading, setLoading] = useState(true);
+  const [replyText, setReplyText] = useState("");
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // 실제 데이터 조회
+  // 실제 데이터 조회 → 채팅방 단위로 그룹핑
   useEffect(() => {
     async function fetchTalkData() {
       setLoading(true);
       try {
         const res = await getAllTalkItems(role === "admin" ? undefined : memberId);
         if (res.success && res.data) {
-          const mapped: InteractiveData[] = res.data.map(item => ({
-            id: item.id,
-            sourceType: item.sourceType,
-            sourceTitle: item.sourceTitle,
-            authorName: item.authorName,
-            content: item.content,
-            isSecret: item.isSecret,
-            isRead: item.isRead,
-            isReplied: item.isReplied,
-            createdAt: item.createdAt,
-          }));
-          setInteractions(mapped);
+          // sourceId 기준으로 그룹핑
+          const roomMap = new Map<string, TalkRoom>();
+          for (const item of res.data) {
+            const key = `${item.sourceType}_${item.sourceId}`;
+            if (!roomMap.has(key)) {
+              roomMap.set(key, {
+                sourceType: item.sourceType,
+                sourceId: item.sourceId,
+                sourceTitle: item.sourceTitle,
+                messages: [],
+                lastMessage: item,
+                unreadCount: 0,
+              });
+            }
+            roomMap.get(key)!.messages.push(item);
+          }
+          // 각 채팅방의 메시지를 시간순(오래된→최신) 정렬
+          const roomList = Array.from(roomMap.values()).map(room => {
+            room.messages.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+            room.lastMessage = room.messages[room.messages.length - 1];
+            room.unreadCount = room.messages.filter(m => !m.isRead).length;
+            return room;
+          });
+          // 마지막 메시지 기준 최신순 정렬
+          roomList.sort((a, b) => new Date(b.lastMessage.createdAt).getTime() - new Date(a.lastMessage.createdAt).getTime());
+          setRooms(roomList);
         }
       } catch (err) {
         console.error("공실Talk 데이터 로드 실패:", err);
@@ -50,195 +74,222 @@ export default function CommentSection({ theme, role, memberId }: CommentSection
     fetchTalkData();
   }, [role, memberId]);
 
+  // 채팅방 열면 스크롤을 맨 밑으로
+  useEffect(() => {
+    if (selectedRoom && chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [selectedRoom]);
+
   // 필터 로직
-  const filteredList = interactions.filter(item => {
-    if (activeTab === "공실 매물" && item.sourceType !== "vacancy") return false;
-    if (activeTab === "뉴스 기사" && item.sourceType !== "article") return false;
-    if (showUnreadOnly && item.isRead) return false;
-    
+  const filteredRooms = rooms.filter(room => {
+    if (activeTab === "공실 매물" && room.sourceType !== "vacancy") return false;
+    if (activeTab === "뉴스 기사" && room.sourceType !== "article") return false;
     if (searchKeyword) {
       const kw = searchKeyword.toLowerCase();
-      if (!item.authorName.toLowerCase().includes(kw) && !item.content.toLowerCase().includes(kw) && !item.sourceTitle.toLowerCase().includes(kw)) {
-        return false;
-      }
+      if (!room.sourceTitle.toLowerCase().includes(kw) && !room.lastMessage.content.toLowerCase().includes(kw) && !room.lastMessage.authorName.toLowerCase().includes(kw)) return false;
     }
     return true;
   });
 
   const getSourceBadge = (type: string) => {
     switch (type) {
-      case "vacancy": return <span style={{ padding: "4px 8px", background: darkMode ? "rgba(217, 119, 6, 0.2)" : "#fef3c7", color: "#d97706", borderRadius: 4, fontSize: 11, fontWeight: 800 }}>공실 파크</span>;
-      case "article": return <span style={{ padding: "4px 8px", background: darkMode ? "rgba(37, 99, 235, 0.2)" : "#dbeafe", color: "#2563eb", borderRadius: 4, fontSize: 11, fontWeight: 800 }}>공실 뉴스</span>;
+      case "vacancy": return <span style={{ padding: "3px 6px", background: darkMode ? "rgba(217, 119, 6, 0.2)" : "#fef3c7", color: "#d97706", borderRadius: 4, fontSize: 10, fontWeight: 800 }}>공실 매물</span>;
+      case "article": return <span style={{ padding: "3px 6px", background: darkMode ? "rgba(37, 99, 235, 0.2)" : "#dbeafe", color: "#2563eb", borderRadius: 4, fontSize: 10, fontWeight: 800 }}>뉴스 기사</span>;
       default: return null;
     }
   };
 
-  const handleRowClick = (item: InteractiveData) => {
-    if (!item.isRead) {
-      setInteractions(prev => prev.map(p => p.id === item.id ? { ...p, isRead: true } : p));
-    }
-    setSelectedInteraction({ ...item, isRead: true });
+  const formatTime = (dateStr: string) => {
+    const d = new Date(dateStr);
+    const now = new Date();
+    const diff = now.getTime() - d.getTime();
+    if (diff < 60000) return "방금 전";
+    if (diff < 3600000) return `${Math.floor(diff / 60000)}분 전`;
+    if (diff < 86400000) return `${d.getHours()}:${String(d.getMinutes()).padStart(2,"0")}`;
+    return `${d.getMonth()+1}.${d.getDate()}`;
   };
 
-  const handleReply = (id: string, text: string, isSecret: boolean) => {
-    alert(`답글이 등록되었습니다. (비밀글: ${isSecret})\n내용: ${text}`);
-    setInteractions(prev => prev.map(p => p.id === id ? { ...p, isReplied: true } : p));
-    setSelectedInteraction(null);
-  };
+  const vacancyRoomCount = rooms.filter(r => r.sourceType === "vacancy").length;
+  const articleRoomCount = rooms.filter(r => r.sourceType === "article").length;
 
-  const vacancyCount = interactions.filter(i => i.sourceType === "vacancy").length;
-  const articleCount = interactions.filter(i => i.sourceType === "article").length;
+  const handleReply = () => {
+    if (!replyText.trim() || !selectedRoom) return;
+    alert(`답글이 등록되었습니다.\n내용: ${replyText}`);
+    setReplyText("");
+  };
 
   return (
-    <div style={{ flex: 1, overflowY: "auto", padding: "20px 28px", background: bg }}>
-      {/* 화면 타이틀 */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 24 }}>
-        <div>
-          <h1 style={{ fontSize: 24, fontWeight: 800, color: textPrimary, margin: "0 0 8px 0", display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-              <span style={{ fontSize: 26 }}>💬</span>
-              <span>공실</span><span style={{ color: "#3b82f6" }}>Talk</span>
-            </span>
-          </h1>
-          <p style={{ fontSize: 14, color: textSecondary, margin: 0 }}>
-            {role === "admin" 
-              ? "공실뉴스 플랫폼 전체의 모든 대화와 댓글을 한 곳에서 통합 관리합니다."
-              : "내 공실과 기사에 달린 댓글, 문의를 확인하고 회원과 소통하세요."
-            }
-          </p>
-        </div>
-        <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-          <span style={{ fontSize: 13, color: textSecondary }}>
-            전체 <strong style={{ color: textPrimary }}>{interactions.length}</strong>건
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: bg }}>
+      {/* 상단 타이틀 */}
+      <div style={{ padding: "20px 28px 0", flexShrink: 0 }}>
+        <h1 style={{ fontSize: 24, fontWeight: 800, color: textPrimary, margin: "0 0 6px 0", display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ fontSize: 26 }}>💬</span>
+          <span>공실</span><span style={{ color: "#3b82f6" }}>Talk</span>
+          <span style={{ fontSize: 13, fontWeight: 500, color: textSecondary, marginLeft: 8 }}>
+            {role === "admin" ? "플랫폼 전체 대화" : "내 공실/기사 대화"}
           </span>
-        </div>
+        </h1>
       </div>
 
-      {/* 메인 컨테이너 */}
-      <div style={{ background: cardBg, borderRadius: 12, boxShadow: "0 4px 6px rgba(0,0,0,0.05)", border: `1px solid ${border}`, overflow: "hidden" }}>
+      {/* 메인 2단 레이아웃 */}
+      <div style={{ flex: 1, display: "flex", margin: "16px 28px 0", gap: 0, overflow: "hidden", borderRadius: 12, border: `1px solid ${border}`, boxShadow: "0 4px 6px rgba(0,0,0,0.05)" }}>
         
-        {/* 상단 탭 */}
-        <div style={{ display: "flex", borderBottom: `1px solid ${border}`, background: darkMode ? "#2c2d31" : "#f8fafc" }}>
-          {[
-            { label: "전체", count: interactions.length },
-            { label: "공실 매물", count: vacancyCount },
-            { label: "뉴스 기사", count: articleCount },
-          ].map(tab => (
-            <button key={tab.label} onClick={() => setActiveTab(tab.label)} style={{
-              flex: 1, height: 48, background: "none", border: "none",
-              borderBottom: activeTab === tab.label ? "2px solid #3b82f6" : "2px solid transparent",
-              color: activeTab === tab.label ? "#3b82f6" : textSecondary,
-              fontSize: 14, fontWeight: activeTab === tab.label ? 800 : 600,
-              cursor: "pointer", transition: "all 0.2s", display: "flex", alignItems: "center", justifyContent: "center", gap: 6
-            }}>
-              {tab.label}
-              <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 6px", borderRadius: 10, background: activeTab === tab.label ? "#3b82f6" : (darkMode ? "#374151" : "#e5e7eb"), color: activeTab === tab.label ? "#fff" : textSecondary }}>
-                {tab.count}
-              </span>
-            </button>
-          ))}
-        </div>
-
-        {/* 필터 및 액션 바 */}
-        <div style={{ padding: "16px 24px", borderBottom: `1px solid ${border}`, display: "flex", gap: 16, alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ display: "flex", gap: 12, alignItems: "center", flex: 1 }}>
-            <input type="text" value={searchKeyword} onChange={e => setSearchKeyword(e.target.value)} 
-              placeholder="작성자, 내용, 관련 글 제목 검색" 
-              style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#1f2023" : "#fff", outline: "none", flex: 1, maxWidth: 300 }} 
-            />
-            <button style={{ height: 36, padding: "0 16px", background: darkMode ? "#374151" : "#e5e7eb", color: textPrimary, border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>검색</button>
+        {/* ===== 좌측: 채팅방 리스트 ===== */}
+        <div style={{ width: selectedRoom ? 380 : "100%", transition: "width 0.3s", borderRight: selectedRoom ? `1px solid ${border}` : "none", display: "flex", flexDirection: "column", background: cardBg, flexShrink: 0 }}>
+          
+          {/* 탭 */}
+          <div style={{ display: "flex", borderBottom: `1px solid ${border}`, background: darkMode ? "#2c2d31" : "#f8fafc", flexShrink: 0 }}>
+            {[
+              { label: "전체", count: rooms.length },
+              { label: "공실 매물", count: vacancyRoomCount },
+              { label: "뉴스 기사", count: articleRoomCount },
+            ].map(tab => (
+              <button key={tab.label} onClick={() => setActiveTab(tab.label)} style={{
+                flex: 1, height: 44, background: "none", border: "none",
+                borderBottom: activeTab === tab.label ? "2px solid #3b82f6" : "2px solid transparent",
+                color: activeTab === tab.label ? "#3b82f6" : textSecondary,
+                fontSize: 13, fontWeight: activeTab === tab.label ? 800 : 600,
+                cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 4
+              }}>
+                {tab.label}
+                <span style={{ fontSize: 10, fontWeight: 700, padding: "1px 5px", borderRadius: 8, background: activeTab === tab.label ? "#3b82f6" : (darkMode ? "#374151" : "#e5e7eb"), color: activeTab === tab.label ? "#fff" : textSecondary }}>{tab.count}</span>
+              </button>
+            ))}
           </div>
 
-          <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, fontWeight: 600, color: textPrimary }}>
-            <input type="checkbox" checked={showUnreadOnly} onChange={e => setShowUnreadOnly(e.target.checked)} style={{ accentColor: "#3b82f6", width: 16, height: 16 }} />
-            안 읽은 문의만 보기
-          </label>
+          {/* 검색 */}
+          <div style={{ padding: "12px 16px", borderBottom: `1px solid ${border}`, flexShrink: 0 }}>
+            <input type="text" value={searchKeyword} onChange={e => setSearchKeyword(e.target.value)}
+              placeholder="제목, 작성자, 내용 검색"
+              style={{ width: "100%", height: 34, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#1f2023" : "#fff", outline: "none" }}
+            />
+          </div>
+
+          {/* 채팅방 목록 */}
+          <div style={{ flex: 1, overflowY: "auto" }}>
+            {loading ? (
+              <div style={{ padding: 40, textAlign: "center", color: textSecondary, fontSize: 14 }}>💬 불러오는 중...</div>
+            ) : filteredRooms.length === 0 ? (
+              <div style={{ padding: 40, textAlign: "center", color: textSecondary, fontSize: 14 }}>
+                <div style={{ fontSize: 32, marginBottom: 8 }}>🔍</div>대화가 없습니다.
+              </div>
+            ) : filteredRooms.map(room => (
+              <div key={`${room.sourceType}_${room.sourceId}`}
+                onClick={() => setSelectedRoom(room)}
+                style={{
+                  padding: "14px 16px", borderBottom: `1px solid ${darkMode ? "#333" : "#f3f4f6"}`,
+                  cursor: "pointer", transition: "background 0.15s",
+                  background: selectedRoom?.sourceId === room.sourceId && selectedRoom?.sourceType === room.sourceType
+                    ? (darkMode ? "rgba(59,130,246,0.1)" : "#eff6ff")
+                    : "transparent",
+                  display: "flex", gap: 12, alignItems: "flex-start"
+                }}
+                onMouseEnter={e => { if (!(selectedRoom?.sourceId === room.sourceId && selectedRoom?.sourceType === room.sourceType)) e.currentTarget.style.background = darkMode ? "#2c2d31" : "#f8fafc"; }}
+                onMouseLeave={e => { if (!(selectedRoom?.sourceId === room.sourceId && selectedRoom?.sourceType === room.sourceType)) e.currentTarget.style.background = "transparent"; }}
+              >
+                {/* 아이콘 */}
+                <div style={{ width: 42, height: 42, borderRadius: "50%", background: room.sourceType === "vacancy" ? "#fef3c7" : "#dbeafe", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>
+                  {room.sourceType === "vacancy" ? "🏢" : "📰"}
+                </div>
+                {/* 내용 */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+                      {getSourceBadge(room.sourceType)}
+                      <span style={{ fontSize: 13, fontWeight: 700, color: textPrimary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{room.sourceTitle}</span>
+                    </div>
+                    <span style={{ fontSize: 11, color: textSecondary, flexShrink: 0 }}>{formatTime(room.lastMessage.createdAt)}</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: 12, color: textSecondary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
+                      <strong style={{ color: textPrimary }}>{room.lastMessage.authorName}</strong>: {room.lastMessage.content}
+                    </span>
+                    {/* NEW 뱃지 (메시지 수) */}
+                    <span style={{ flexShrink: 0, marginLeft: 8, fontSize: 11, fontWeight: 800, padding: "2px 7px", borderRadius: 10, background: "#ef4444", color: "#fff", minWidth: 20, textAlign: "center" }}>
+                      {room.messages.length}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
-        {/* 리스트 테이블 */}
-        <div style={{ overflowX: "auto" }}>
-          {loading ? (
-            <div style={{ padding: 60, textAlign: "center", color: textSecondary }}>
-              <div style={{ fontSize: 32, marginBottom: 12 }}>💬</div>
-              <div style={{ fontSize: 14, fontWeight: 600 }}>공실Talk 데이터를 불러오고 있습니다...</div>
+        {/* ===== 우측: Talk 대화 패널 ===== */}
+        {selectedRoom && (
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", background: darkMode ? "#1f2023" : "#f0f2f5", minWidth: 0 }}>
+            
+            {/* 헤더 */}
+            <div style={{ padding: "14px 20px", borderBottom: `1px solid ${border}`, background: cardBg, display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
+                  {getSourceBadge(selectedRoom.sourceType)}
+                  <span style={{ fontSize: 11, color: textSecondary }}>대화 {selectedRoom.messages.length}건</span>
+                </div>
+                <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: textPrimary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{selectedRoom.sourceTitle}</h3>
+              </div>
+              <button onClick={() => setSelectedRoom(null)} style={{ background: "none", border: "none", fontSize: 22, color: textSecondary, cursor: "pointer", padding: "4px 8px" }}>&times;</button>
             </div>
-          ) : (
-            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 800 }}>
-              <thead style={{ background: darkMode ? "#232428" : "#f9fafb", borderBottom: `1px solid ${border}` }}>
-                <tr>
-                  <th style={{ padding: "14px 24px", textAlign: "left", fontSize: 13, color: textSecondary, fontWeight: 700, width: "12%" }}>분류</th>
-                  <th style={{ padding: "14px 12px", textAlign: "left", fontSize: 13, color: textSecondary, fontWeight: 700, width: "20%" }}>관련 글 / 매물</th>
-                  <th style={{ padding: "14px 12px", textAlign: "left", fontSize: 13, color: textSecondary, fontWeight: 700 }}>내용 요약</th>
-                  <th style={{ padding: "14px 12px", textAlign: "center", fontSize: 13, color: textSecondary, fontWeight: 700, width: "12%" }}>작성자</th>
-                  <th style={{ padding: "14px 12px", textAlign: "center", fontSize: 13, color: textSecondary, fontWeight: 700, width: "12%" }}>등록일</th>
-                  <th style={{ padding: "14px 24px", textAlign: "center", fontSize: 13, color: textSecondary, fontWeight: 700, width: "10%" }}>상태</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredList.length === 0 ? (
-                  <tr><td colSpan={6} style={{ padding: 60, textAlign: "center", color: textSecondary, fontSize: 14 }}>
-                    <div style={{ fontSize: 32, marginBottom: 8 }}>🔍</div>
-                    조건에 맞는 대화가 없습니다.
-                  </td></tr>
-                ) : filteredList.map(item => {
-                  const isUnread = !item.isRead;
-                  return (
-                    <tr key={item.id} onClick={() => handleRowClick(item)} style={{ 
-                      borderBottom: `1px solid ${darkMode ? "#333" : "#f3f4f6"}`, 
-                      cursor: "pointer", transition: "background 0.2s",
-                      background: isUnread ? (darkMode ? "rgba(59, 130, 246, 0.05)" : "#eff6ff") : "transparent"
-                    }} onMouseEnter={e => e.currentTarget.style.background = darkMode ? "#2c2d31" : "#f8fafc"} onMouseLeave={e => e.currentTarget.style.background = isUnread ? (darkMode ? "rgba(59, 130, 246, 0.05)" : "#eff6ff") : "transparent"}>
-                      
-                      <td style={{ padding: "16px 24px", verticalAlign: "middle" }}>
-                        {getSourceBadge(item.sourceType)}
-                        {isUnread && <span style={{ marginLeft: 6, display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: "#ef4444" }} title="새로운 문의/댓글" />}
-                      </td>
-                      
-                      <td style={{ padding: "16px 12px", verticalAlign: "middle", fontSize: 13, color: textSecondary, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 150 }}>
-                        {item.sourceTitle}
-                      </td>
 
-                      <td style={{ padding: "16px 12px", verticalAlign: "middle" }}>
-                        <div style={{ fontSize: 14, fontWeight: isUnread ? 700 : 500, color: textPrimary, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: 1.5 }}>
-                          {item.isSecret && <span title="비밀글" style={{ marginRight: 6 }}>🔒</span>}
-                          {item.content}
-                        </div>
-                      </td>
+            {/* 대화 영역 */}
+            <div style={{ flex: 1, overflowY: "auto", padding: "20px", display: "flex", flexDirection: "column", gap: 16 }}>
+              {selectedRoom.messages.map((msg, idx) => {
+                const isMe = msg.authorName === "공실뉴스"; // 관리자 본인 판별 (간이)
+                return (
+                  <div key={msg.id} style={{ display: "flex", flexDirection: isMe ? "row-reverse" : "row", gap: 8, alignItems: "flex-start" }}>
+                    {/* 아바타 */}
+                    {!isMe && (
+                      <div style={{ width: 36, height: 36, borderRadius: "50%", background: darkMode ? "#374151" : "#e5e7eb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>👤</div>
+                    )}
+                    <div style={{ maxWidth: "70%", display: "flex", flexDirection: "column", alignItems: isMe ? "flex-end" : "flex-start" }}>
+                      {/* 이름 + 시간 */}
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: textPrimary }}>{msg.authorName}</span>
+                        {msg.isSecret && <span style={{ fontSize: 11 }}>🔒</span>}
+                        <span style={{ fontSize: 11, color: textSecondary }}>{new Date(msg.createdAt).toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
+                      </div>
+                      {/* 말풍선 */}
+                      <div style={{
+                        padding: "10px 14px", fontSize: 14, lineHeight: 1.6, color: isMe ? "#fff" : textPrimary,
+                        background: isMe ? "#3b82f6" : (darkMode ? "#2c2d31" : "#fff"),
+                        borderRadius: isMe ? "12px 0 12px 12px" : "0 12px 12px 12px",
+                        boxShadow: "0 1px 2px rgba(0,0,0,0.08)", wordBreak: "break-word"
+                      }}>
+                        {msg.content}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+              <div ref={chatEndRef} />
+            </div>
 
-                      <td style={{ padding: "16px 12px", textAlign: "center", verticalAlign: "middle", fontSize: 13, color: textSecondary }}>
-                        {item.authorName}
-                      </td>
+            {/* 입력창 */}
+            <div style={{ padding: "12px 20px", borderTop: `1px solid ${border}`, background: cardBg, display: "flex", gap: 10, alignItems: "flex-end", flexShrink: 0 }}>
+              <textarea
+                value={replyText} onChange={e => setReplyText(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleReply(); }}}
+                placeholder="메시지를 입력하세요..."
+                style={{ flex: 1, height: 42, padding: "10px 14px", borderRadius: 8, border: `1px solid ${border}`, background: darkMode ? "#1f2023" : "#fff", color: textPrimary, outline: "none", resize: "none", fontFamily: "inherit", fontSize: 14 }}
+                rows={1}
+              />
+              <button onClick={handleReply} style={{ height: 42, padding: "0 20px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer", fontSize: 14, whiteSpace: "nowrap" }}>전송</button>
+            </div>
+          </div>
+        )}
 
-                      <td style={{ padding: "16px 12px", textAlign: "center", verticalAlign: "middle", fontSize: 12, color: textSecondary }}>
-                        {new Date(item.createdAt).toLocaleDateString()}
-                      </td>
-
-                      <td style={{ padding: "16px 24px", textAlign: "center", verticalAlign: "middle" }}>
-                        {item.isReplied ? (
-                          <span style={{ fontSize: 11, fontWeight: 700, color: "#10b981", border: "1px solid #10b981", padding: "2px 8px", borderRadius: 12 }}>답변완료</span>
-                        ) : (
-                          <span style={{ fontSize: 11, fontWeight: 700, color: textSecondary, border: `1px solid ${textSecondary}`, padding: "2px 8px", borderRadius: 12 }}>답변대기</span>
-                        )}
-                      </td>
-
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          )}
-        </div>
+        {/* 선택 안 했을 때 안내 */}
+        {!selectedRoom && !loading && rooms.length > 0 && (
+          <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", background: darkMode ? "#1f2023" : "#f0f2f5" }}>
+            <div style={{ textAlign: "center", color: textSecondary }}>
+              <div style={{ fontSize: 48, marginBottom: 16 }}>💬</div>
+              <div style={{ fontSize: 16, fontWeight: 600 }}>대화를 선택하세요</div>
+              <div style={{ fontSize: 13, marginTop: 4 }}>좌측 목록에서 Talk방을 클릭하면 대화가 표시됩니다.</div>
+            </div>
+          </div>
+        )}
       </div>
-
-      {/* 우측 상세 패널 */}
-      {selectedInteraction && (
-        <CommentDetailPanel 
-          theme={theme} 
-          interaction={selectedInteraction} 
-          onClose={() => setSelectedInteraction(null)} 
-          onReply={handleReply}
-        />
-      )}
     </div>
   );
 }
