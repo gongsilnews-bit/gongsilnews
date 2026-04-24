@@ -164,7 +164,7 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
   };
 
   const copyShareLink = () => {
-    const url = `${window.location.origin}/board/detail/${vacancyId}`;
+    const url = `${window.location.origin}/gongsil?id=${vacancyId}`;
     if (navigator.clipboard) navigator.clipboard.writeText(url).then(() => alert('공유 URL이 복사되었습니다.'));
   };
 
@@ -176,23 +176,38 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
   const propName = vacancy.building_name || vacancy.property_type || '공실매물';
   const isAdOn = vacancy.status === 'ACTIVE' || vacancy.status === 'PENDING';
   
-  const formatPrice = (val: number) => {
-    if (!val) return '0';
-    if (val >= 10000) {
-      const uk = Math.floor(val / 10000);
-      const man = val % 10000;
-      return man > 0 ? `${uk}억 ${man}` : `${uk}억`;
+  // Use the exact same formatAmount as GongsilClient (deposit is stored in 원)
+  const formatAmount = (amt: number) => {
+    if (!amt) return '';
+    const m = Math.round(amt / 10000); // 원 → 만원
+    if (m === 0) return '';
+    const e = Math.floor(m / 10000); // 만원 → 억
+    const r = m % 10000;
+    let result = '';
+    if (e > 0) result += `${e}억`;
+    if (r > 0) {
+      const c = Math.floor(r / 1000);
+      const rem = r % 1000;
+      let rest = '';
+      if (c > 0) rest += `${c}천`;
+      if (rem > 0) rest += `${rem}`;
+      if (rest) {
+        result += (result && !result.endsWith(' ') ? ' ' : '') + rest;
+        if (e === 0 && c === 0 && rem > 0) result += '만';
+      }
     }
-    return val.toLocaleString();
+    return result || '';
   };
   const priceStr = () => {
-    const d = formatPrice(vacancy.deposit || 0);
-    if (vacancy.trade_type === '매매' || vacancy.trade_type === '전세') return `${vacancy.trade_type} ${d}`;
-    return `${vacancy.trade_type} ${d}/${vacancy.monthly_rent || 0}`;
+    const monthlyManwon = vacancy.monthly_rent ? Math.round(vacancy.monthly_rent / 10000) : 0;
+    if (vacancy.trade_type === '매매') return `매매 ${formatAmount(vacancy.deposit)}`;
+    if (vacancy.trade_type === '전세') return `전세 ${formatAmount(vacancy.deposit)}`;
+    return `${formatAmount(vacancy.deposit)}/${monthlyManwon}만`;
   };
 
-  const supArea = vacancy.supply_area ? parseFloat(vacancy.supply_area) : 0;
-  const excArea = vacancy.dedicated_area ? parseFloat(vacancy.dedicated_area) : (vacancy.exclusive_m2 ? parseFloat(vacancy.exclusive_m2) : 0);
+  // Use exact same field names as public listing
+  const supArea = vacancy.supply_m2 ? parseFloat(vacancy.supply_m2) : 0;
+  const excArea = vacancy.exclusive_m2 ? parseFloat(vacancy.exclusive_m2) : 0;
   const fmtM2 = (m2: number) => m2 ? `${m2}㎡(${(m2 / 3.3058).toFixed(1)}평)` : '';
   let areaDisplay = '-';
   if (supArea && excArea) areaDisplay = `${fmtM2(supArea)} / ${fmtM2(excArea)}`;
@@ -201,7 +216,7 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
 
   const subInfoParts = [];
   if (vacancy.property_type) subInfoParts.push(vacancy.property_type);
-  if (vacancy.room_direction) subInfoParts.push(vacancy.room_direction);
+  if (vacancy.direction) subInfoParts.push(vacancy.direction);
   if (areaDisplay !== '-') subInfoParts.push(`공급/전용 면적: ${areaDisplay}`);
   const subInfo = subInfoParts.join(' | ');
 
@@ -271,7 +286,7 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
               <div className="gdv-prop-desc-row">
                 <span>룸 {vacancy.room_count || '-'}개</span>
                 <span style={{ color: '#ddd' }}>|</span>
-                <span>주차 {vacancy.parking_count || (vacancy.parking ? '가능' : '정보없음')}</span>
+                <span>주차 {vacancy.parking || '정보없음'}</span>
                 <span style={{ color: '#ddd' }}>|</span>
                 <span>{Array.isArray(vacancy.options) ? vacancy.options.slice(0, 3).join(', ') : (vacancy.options || '옵션 미확인')}</span>
               </div>
@@ -305,10 +320,10 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
                   <div className="gdv-info-label">공급/전용면적</div><div className="gdv-info-value">{areaDisplay}</div>
                   <div className="gdv-info-label">해당층/총층</div><div className="gdv-info-value">{vacancy.current_floor||'-'}층 / {vacancy.total_floor||'-'}층</div>
                   <div className="gdv-info-label">방/욕실수</div><div className="gdv-info-value">{vacancy.room_count||'-'}개 / {vacancy.bathroom_count||'-'}개</div>
-                  <div className="gdv-info-label">방향</div><div className="gdv-info-value">{vacancy.room_direction || '-'}</div>
-                  <div className="gdv-info-label">주차가능 여부</div><div className="gdv-info-value">{vacancy.parking_count || (vacancy.parking ? '가능' : '-')}</div>
-                  <div className="gdv-info-label">입주가능일</div><div className="gdv-info-value">{vacancy.move_in_date || '협의가능'}</div>
-                  <div className="gdv-info-label">관리비</div><div className="gdv-info-value">{vacancy.maintenance_fee ? vacancy.maintenance_fee + '만원' : '-'}</div>
+                  <div className="gdv-info-label">방향</div><div className="gdv-info-value">{vacancy.direction || '-'}</div>
+                  <div className="gdv-info-label">주차가능 여부</div><div className="gdv-info-value">{vacancy.parking || '없음'}</div>
+                  <div className="gdv-info-label">입주가능일</div><div className="gdv-info-value">{vacancy.move_in_date || '즉시입주(공실)'}</div>
+                  <div className="gdv-info-label">관리비</div><div className="gdv-info-value">{vacancy.maintenance_fee ? (vacancy.maintenance_fee / 10000) + '만원' : '없음'}</div>
                   <div className="gdv-info-label">상세설명</div><div className="gdv-info-value gdv-info-desc">{vacancy.description || ''}</div>
                 </div>
 
