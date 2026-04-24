@@ -221,7 +221,7 @@ function AdminContent() {
       </aside>
 
       {/* ===== 우측 메인 영역 ===== */}
-      <main style={{ flex: 1, display: "flex", flexDirection: "column", background: theme.bg, overflow: "hidden" }}>
+      <main style={{ flex: 1, display: "flex", flexDirection: "column", background: theme.bg, overflow: "auto" }}>
         {/* 상단 헤더 */}
         <header style={{ height: 64, background: theme.headerBg, borderBottom: `1px solid ${theme.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 32px", boxShadow: "0 1px 3px rgba(0,0,0,0.02)", flexShrink: 0, zIndex: 5 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: "6px 12px", borderRadius: 6, transition: "background 0.2s" }}
