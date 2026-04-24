@@ -14,6 +14,7 @@ interface MemberRegisterFormProps {
 
 export default function MemberRegisterForm({ onBack, darkMode = false, editMemberId = null, isAdmin = false, initialTab = 0 }: MemberRegisterFormProps) {
   const [loading, setLoading] = useState(false);
+  const [initialFetchDone, setInitialFetchDone] = useState(!editMemberId);
   const [formData, setFormData] = useState({
     email: "",
     name: "",
@@ -41,6 +42,8 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
     biz_num: "",
     status: "PENDING"
   });
+
+  const [originalAgencyData, setOriginalAgencyData] = useState<any>(null);
 
   const [files, setFiles] = useState<{ reg_cert?: File; biz_cert?: File }>({});
   const [filePreviews, setFilePreviews] = useState<{ reg_cert?: string; biz_cert?: string }>({});
@@ -148,6 +151,13 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
               biz_num: res.agency.biz_num || "",
               status: res.agency.status || "PENDING"
             });
+            setOriginalAgencyData({
+              name: res.agency.name || "",
+              ceo_name: res.agency.ceo_name || "",
+              address: res.agency.address || "",
+              reg_num: res.agency.reg_num || "",
+              biz_num: res.agency.biz_num || ""
+            });
             setFilePreviews({
               reg_cert: res.agency.reg_cert_url || undefined,
               biz_cert: res.agency.biz_cert_url || undefined
@@ -159,6 +169,7 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
           }
         }
         setLoading(false);
+        setInitialFetchDone(true);
       });
     }
 
@@ -353,13 +364,33 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
           if (uploadRes.success) bizCertUrl = uploadRes.url || null;
         }
 
+        const isCoreRealtorDataChanged = !isAdmin && agencyData.status === "APPROVED" && (
+          files.reg_cert !== undefined || files.biz_cert !== undefined ||
+          (originalAgencyData && (
+            agencyData.name !== originalAgencyData.name ||
+            agencyData.ceo_name !== originalAgencyData.ceo_name ||
+            agencyData.reg_num !== originalAgencyData.reg_num ||
+            agencyData.biz_num !== originalAgencyData.biz_num ||
+            agencyData.address !== originalAgencyData.address
+          ))
+        );
+
+        let finalStatus = agencyData.status;
+        if (isAdmin) {
+          finalStatus = agencyData.status;
+        } else if (requestApproval) {
+          finalStatus = "PENDING";
+        } else if (isCoreRealtorDataChanged) {
+          finalStatus = "PENDING";
+        }
+
         const finalAgencyData = {
           ...agencyData,
           reg_cert_url: regCertUrl,
           biz_cert_url: bizCertUrl,
           lat: coords?.lat || null,
           lng: coords?.lng || null,
-          status: isAdmin ? agencyData.status : (requestApproval ? "PENDING" : agencyData.status)
+          status: finalStatus
         };
 
         const agencyRes = await adminUpdateAgency(memberId, finalAgencyData);
@@ -368,7 +399,28 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
         }
       }
 
-      alert(editMemberId ? "회원 수정이 완료되었습니다." : "회원 등록이 완료되었습니다.");
+      if (!isAdmin && agencyData.status === "APPROVED" && formData.role === "부동산회원") {
+        // Find if we downgraded
+        const wasDowngraded = isAdmin ? false : (!requestApproval && (
+          files.reg_cert !== undefined || files.biz_cert !== undefined ||
+          (originalAgencyData && (
+            agencyData.name !== originalAgencyData.name ||
+            agencyData.ceo_name !== originalAgencyData.ceo_name ||
+            agencyData.reg_num !== originalAgencyData.reg_num ||
+            agencyData.biz_num !== originalAgencyData.biz_num ||
+            agencyData.address !== originalAgencyData.address
+          ))
+        ));
+
+        if (wasDowngraded) {
+          alert("중요 회원정보(주소, 등록번호, 서류 등)가 변경되어 다시 [승인대기] 상태로 전환되었습니다.\n관리자 재승인 완료 시 정상 이용이 가능합니다.");
+        } else {
+          alert(editMemberId ? "회원 수정이 완료되었습니다." : "회원 등록이 완료되었습니다.");
+        }
+      } else {
+        alert(editMemberId ? "회원 수정이 완료되었습니다." : "회원 등록이 완료되었습니다.");
+      }
+      
       onBack();
     } catch (err: any) {
       alert(err.message);
@@ -407,6 +459,14 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
       }
     }
   };
+
+  if (!initialFetchDone) {
+    return (
+      <div style={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center", minHeight: 400, color: darkMode ? "#9ca3af" : "#6b7280", fontSize: 15, fontWeight: 600 }}>
+        회원 정보를 불러오는 중입니다...
+      </div>
+    );
+  }
 
   return (
     <div onKeyDown={handleKeyDown} style={{ flex: 1, overflowY: "auto", padding: "20px 28px", background: darkMode ? "#1a1b1e" : "#f4f5f7" }}>
@@ -463,11 +523,15 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
         <div style={rowStyle}>
           <div style={labelStyle}>회원구분</div>
           <div style={contentStyle}>
-            <select name="role" value={formData.role} onChange={handleMemberChange} style={{ height: 40, padding: "0 14px", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 6, fontSize: 14, color: darkMode ? "#e1e4e8" : "#111827", background: darkMode ? "#2c2d31" : "#fff", outline: "none", width: 160 }}>
-              <option value="일반회원">일반회원</option>
-              <option value="부동산회원">부동산회원</option>
-              {isAdmin && <option value="최고관리자">최고관리자</option>}
-            </select>
+            {isAdmin ? (
+              <select name="role" value={formData.role} onChange={handleMemberChange} style={{ height: 40, padding: "0 14px", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 6, fontSize: 14, color: darkMode ? "#e1e4e8" : "#111827", background: darkMode ? "#2c2d31" : "#fff", outline: "none", width: 160 }}>
+                <option value="일반회원">일반회원</option>
+                <option value="부동산회원">부동산회원</option>
+                <option value="최고관리자">최고관리자</option>
+              </select>
+            ) : (
+              <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? "#3b82f6" : "#2563eb", background: darkMode ? "#1e3a8a" : "#dbeafe", padding: "4px 10px", borderRadius: 6 }}>{formData.role}</span>
+            )}
           </div>
         </div>
 
@@ -562,7 +626,7 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
           <div style={{ ...rowStyle, borderTop: "none" }}>
             <div style={{ ...labelStyle, flexWrap: "wrap", flexDirection: "column", alignItems: "flex-start", gap: 4, justifyContent: "center", lineHeight: 1.2 }}>
               상호(사업장명)
-              {!agencyData.name && agencyData.status !== "APPROVED" && (
+              {!agencyData.name && (
                 <span style={{ fontSize: 11, color: "#ef4444", fontWeight: "bold" }}>🚨 필수입력 누락</span>
               )}
             </div>
@@ -574,7 +638,7 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
           <div style={rowStyle}>
             <div style={{ ...labelStyle, flexWrap: "wrap", flexDirection: "column", alignItems: "flex-start", gap: 4, justifyContent: "center", lineHeight: 1.2 }}>
               대표자명
-              {!agencyData.ceo_name && agencyData.status !== "APPROVED" && (
+              {!agencyData.ceo_name && (
                 <span style={{ fontSize: 11, color: "#ef4444", fontWeight: "bold" }}>🚨 필수입력 누락</span>
               )}
             </div>
@@ -586,7 +650,7 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
           <div style={rowStyle}>
             <div style={{ ...labelStyle, flexWrap: "wrap", flexDirection: "column", alignItems: "flex-start", gap: 4, justifyContent: "center", lineHeight: 1.2 }}>
               대표자 연락처
-              {!agencyData.cell && agencyData.status !== "APPROVED" && (
+              {!agencyData.cell && (
                 <span style={{ fontSize: 11, color: "#ef4444", fontWeight: "bold" }}>🚨 필수입력 누락</span>
               )}
             </div>
@@ -598,7 +662,7 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
           <div style={rowStyle}>
             <div style={{ ...labelStyle, flexWrap: "wrap", flexDirection: "column", alignItems: "flex-start", gap: 4, justifyContent: "center", lineHeight: 1.2 }}>
               사무실 전화
-              {!agencyData.phone && agencyData.status !== "APPROVED" && (
+              {!agencyData.phone && (
                 <span style={{ fontSize: 11, color: "#ef4444", fontWeight: "bold" }}>🚨 필수입력 누락</span>
               )}
             </div>
@@ -610,7 +674,7 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
           <div style={rowStyle}>
             <div style={{ ...labelStyle, flexWrap: "wrap", flexDirection: "column", alignItems: "flex-start", gap: 4, justifyContent: "center", lineHeight: 1.2 }}>
               사무실 주소
-              {!agencyData.address && agencyData.status !== "APPROVED" && (
+              {!agencyData.address && (
                 <span style={{ fontSize: 11, color: "#ef4444", fontWeight: "bold" }}>🚨 필수입력 누락</span>
               )}
             </div>
@@ -646,7 +710,7 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
           <div style={rowStyle}>
             <div style={{ ...labelStyle, flexWrap: "wrap", flexDirection: "column", alignItems: "flex-start", gap: 4, justifyContent: "center", lineHeight: 1.2 }}>
               <div>부동산 소개<br/><span style={{fontSize: 11, color: "#888", fontWeight: "normal"}}>(100자 이내)</span></div>
-              {!agencyData.intro && agencyData.status !== "APPROVED" && (
+              {!agencyData.intro && (
                 <span style={{ fontSize: 11, color: "#ef4444", fontWeight: "bold" }}>🚨 필수입력 누락</span>
               )}
             </div>
@@ -668,7 +732,7 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
           <div style={rowStyle}>
             <div style={{ ...labelStyle, flexWrap: "wrap", flexDirection: "column", alignItems: "flex-start", gap: 4, justifyContent: "center", lineHeight: 1.2 }}>
               등록번호
-              {!agencyData.reg_num && agencyData.status !== "APPROVED" && (
+              {!agencyData.reg_num && (
                 <span style={{ fontSize: 11, color: "#ef4444", fontWeight: "bold" }}>🚨 필수입력 누락</span>
               )}
             </div>
@@ -680,7 +744,7 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
           <div style={rowStyle}>
             <div style={{ ...labelStyle, flexWrap: "wrap", flexDirection: "column", alignItems: "flex-start", gap: 4, justifyContent: "center", lineHeight: 1.2 }}>
               등록증 사본 첨부
-              {!filePreviews.reg_cert && agencyData.status !== "APPROVED" && (
+              {!filePreviews.reg_cert && !files.reg_cert && (
                 <span style={{ fontSize: 11, color: "#ef4444", fontWeight: "bold" }}>🚨 필수첨부 누락</span>
               )}
             </div>
@@ -705,7 +769,7 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
           <div style={rowStyle}>
             <div style={{ ...labelStyle, flexWrap: "wrap", flexDirection: "column", alignItems: "flex-start", gap: 4, justifyContent: "center", lineHeight: 1.2 }}>
               사업자등록번호
-              {!agencyData.biz_num && agencyData.status !== "APPROVED" && (
+              {!agencyData.biz_num && (
                 <span style={{ fontSize: 11, color: "#ef4444", fontWeight: "bold" }}>🚨 필수입력 누락</span>
               )}
             </div>
@@ -717,7 +781,7 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
           <div style={rowStyle}>
             <div style={{ ...labelStyle, flexWrap: "wrap", flexDirection: "column", alignItems: "flex-start", gap: 4, justifyContent: "center", lineHeight: 1.2 }}>
               사업자등록증 첨부
-              {!filePreviews.biz_cert && agencyData.status !== "APPROVED" && (
+              {!filePreviews.biz_cert && !files.biz_cert && (
                 <span style={{ fontSize: 11, color: "#ef4444", fontWeight: "bold" }}>🚨 필수첨부 누락</span>
               )}
             </div>

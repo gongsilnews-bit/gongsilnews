@@ -110,6 +110,23 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
         </span>
       </div>
 
+      {/* 필터 (상단으로 분리) */}
+      <div style={{ background: cardBg, borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", padding: "16px 24px", marginBottom: 20, display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <label style={{ fontSize: 13, fontWeight: 600, color: textSecondary, whiteSpace: "nowrap" }}>회원번호</label>
+          <input type="text" value={searchMemberId} onChange={e => setSearchMemberId(e.target.value)} onKeyDown={e => { if(e.key === 'Enter') { setActiveFilters({ memberId: searchMemberId, role: searchRole, keyword: searchKeyword }); if (searchMemberId || searchKeyword || searchRole !== "전체") onSubmenuChange?.("members_list"); } }} placeholder="번호 검색" style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", width: 130 }} />
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <label style={{ fontSize: 13, fontWeight: 600, color: textSecondary, whiteSpace: "nowrap" }}>회원구분</label>
+          <select value={searchRole} onChange={e => setSearchRole(e.target.value)} style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", minWidth: 80 }}>
+            <option value="전체">전체</option><option value="최고관리자">최고관리자</option><option value="부동산회원">부동산회원</option><option value="일반회원">일반회원</option>
+          </select>
+        </div>
+        <input type="text" value={searchKeyword} onChange={e => setSearchKeyword(e.target.value)} onKeyDown={e => { if(e.key === 'Enter') { setActiveFilters({ memberId: searchMemberId, role: searchRole, keyword: searchKeyword }); if (searchMemberId || searchKeyword || searchRole !== "전체") onSubmenuChange?.("members_list"); } }} placeholder="이름 또는 이메일 검색" style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", flex: 1, minWidth: 180 }} />
+        <button onClick={() => { setActiveFilters({ memberId: searchMemberId, role: searchRole, keyword: searchKeyword }); if (searchMemberId || searchKeyword || searchRole !== "전체") onSubmenuChange?.("members_list"); }} style={{ height: 36, padding: "0 18px", background: darkMode ? "#2c2d31" : "#374151", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>검색</button>
+        <button onClick={() => { setSearchMemberId(""); setSearchRole("전체"); setSearchKeyword(""); setActiveFilters({ memberId: "", role: "전체", keyword: "" }); onSubmenuChange?.("members_list"); }} style={{ height: 36, padding: "0 14px", background: darkMode ? "#2c2d31" : "#fff", color: textSecondary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>초기화</button>
+      </div>
+
       {/* 서브메뉴 탭 */}
       <div style={{ display: "flex", borderBottom: `1px solid ${border}`, marginBottom: 20, gap: 24 }}>
         {[
@@ -121,7 +138,11 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
         ].map(tab => (
           <button
             key={tab.key}
-            onClick={() => onSubmenuChange?.(tab.key)}
+            onClick={() => {
+              setActiveFilters({ memberId: "", role: "전체", keyword: "" });
+              setSearchMemberId(""); setSearchRole("전체"); setSearchKeyword("");
+              onSubmenuChange?.(tab.key);
+            }}
             style={{
               display: "flex", alignItems: "center", gap: 6,
               padding: "0 4px 12px",
@@ -148,23 +169,6 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
       </div>
 
       <div style={{ background: cardBg, borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", overflow: "hidden" }}>
-        {/* 필터 */}
-        <div style={{ padding: "20px 24px", borderBottom: `1px solid ${border}`, display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <label style={{ fontSize: 13, fontWeight: 600, color: textSecondary, whiteSpace: "nowrap" }}>회원번호</label>
-            <input type="text" value={searchMemberId} onChange={e => setSearchMemberId(e.target.value)} onKeyDown={e => e.key === 'Enter' && setActiveFilters({ memberId: searchMemberId, role: searchRole, keyword: searchKeyword })} placeholder="번호 검색" style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", width: 130 }} />
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <label style={{ fontSize: 13, fontWeight: 600, color: textSecondary, whiteSpace: "nowrap" }}>회원구분</label>
-            <select value={searchRole} onChange={e => setSearchRole(e.target.value)} style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", minWidth: 80 }}>
-              <option value="전체">전체</option><option value="최고관리자">최고관리자</option><option value="부동산회원">부동산회원</option><option value="일반회원">일반회원</option>
-            </select>
-          </div>
-          <input type="text" value={searchKeyword} onChange={e => setSearchKeyword(e.target.value)} onKeyDown={e => e.key === 'Enter' && setActiveFilters({ memberId: searchMemberId, role: searchRole, keyword: searchKeyword })} placeholder="이름 또는 이메일 검색" style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", flex: 1, minWidth: 180 }} />
-          <button onClick={() => setActiveFilters({ memberId: searchMemberId, role: searchRole, keyword: searchKeyword })} style={{ height: 36, padding: "0 18px", background: darkMode ? "#2c2d31" : "#374151", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>검색</button>
-          <button onClick={() => { setSearchMemberId(""); setSearchRole("전체"); setSearchKeyword(""); setActiveFilters({ memberId: "", role: "전체", keyword: "" }); }} style={{ height: 36, padding: "0 14px", background: darkMode ? "#2c2d31" : "#fff", color: textSecondary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>초기화</button>
-        </div>
-
         {/* 액션 */}
         <div style={{ padding: "16px 24px", borderBottom: `1px solid ${border}`, display: "flex", gap: 10, alignItems: "center" }}>
           {isDormant ? (

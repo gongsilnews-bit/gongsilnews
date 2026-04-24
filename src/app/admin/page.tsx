@@ -75,6 +75,8 @@ function AdminContent() {
   const [hoveredMenu, setHoveredMenu] = useState<string | null>(null);
   const [darkMode, setDarkMode] = useState(false);
   const [adminUserId, setAdminUserId] = useState("");
+  const [adminUserName, setAdminUserName] = useState("공실뉴스");
+  const [adminUserEmail, setAdminUserEmail] = useState("");
 
   /* ── 프리페치 데이터 저장소 ── */
   const [prefetchedData, setPrefetchedData] = useState<Record<string, any[]>>({});
@@ -119,7 +121,7 @@ function AdminContent() {
       // 🔐 role 체크: ADMIN만 접근 가능
       const { data: member } = await supabase
         .from("members")
-        .select("role")
+        .select("role, name, email")
         .eq("id", user.id)
         .single();
 
@@ -130,6 +132,9 @@ function AdminContent() {
       }
 
       setAdminUserId(user.id);
+      if (member.name) setAdminUserName(member.name);
+      if (member.email || user.email) setAdminUserEmail(member.email || user.email || "");
+      
       setAuthChecked(true);
     }
     fetchUser();
@@ -218,9 +223,11 @@ function AdminContent() {
         {/* 상단 헤더 */}
         <header style={{ height: 64, background: theme.headerBg, borderBottom: `1px solid ${theme.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 32px", boxShadow: "0 1px 3px rgba(0,0,0,0.02)", flexShrink: 0, zIndex: 5 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: "6px 12px", borderRadius: 6, transition: "background 0.2s" }}
+            onClick={() => { setActiveMenu("settings"); router.push('?menu=settings'); }}
             onMouseEnter={(e) => { e.currentTarget.style.background = darkMode ? "#2c2d31" : "#f3f4f6"; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}>
-            <span style={{ fontWeight: 800, fontSize: 17, color: theme.textPrimary }}>공실뉴스</span>
+            <span style={{ fontWeight: 800, fontSize: 17, color: theme.textPrimary }}>{adminUserName}</span>
+            {adminUserEmail && <span style={{ fontSize: 14, color: darkMode ? "#aaa" : "#666" }}>{adminUserEmail}</span>}
             <span style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 4, marginLeft: 4, background: darkMode ? "#1e3a5f" : "#dbeafe", color: "#3b82f6" }}>최고관리자</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>

@@ -209,7 +209,10 @@ export async function adminGetMemberDetail(memberId: string) {
   const supabaseAdmin = getAdminClient();
   try {
     const { data: member, error: memberError } = await supabaseAdmin.from('members').select('*').eq('id', memberId).single();
-    if (memberError) return { success: false, error: memberError.message };
+    if (memberError) {
+      console.error("adminGetMemberDetail memberError:", memberError);
+      return { success: false, error: memberError.message };
+    }
 
     let agency = null;
     if (member.role === 'REALTOR' || member.role === '부동산회원') {
@@ -217,11 +220,16 @@ export async function adminGetMemberDetail(memberId: string) {
       if (agencyData) agency = agencyData;
     }
 
-    const { count } = await supabaseAdmin.from('members').select('*', { count: 'exact', head: true }).lte('created_at', member.created_at);
+    const countRes = await supabaseAdmin.from('members').select('*', { count: 'exact', head: true }).lte('created_at', member.created_at);
+    if (countRes.error) {
+      console.error("adminGetMemberDetail countError:", countRes.error);
+    }
+    const count = countRes.count;
     member.memberNumber = String(count || 1).padStart(6, '0');
 
     return { success: true, member, agency };
   } catch (error: any) {
+    console.error("adminGetMemberDetail catch block error:", error);
     return { success: false, error: error.message };
   }
 }
