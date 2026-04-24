@@ -522,27 +522,61 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
         const kakao = (window as any).kakao;
         const pos = new kakao.maps.LatLng(prop.lat, prop.lng);
         
+        // 주소 비공개 + 일반건물 판별
+        const isPrivateAddr = prop.address_exposure && prop.address_exposure !== '번지공개';
+        const isApt = isApartmentType(prop.property_type) || isApartmentType(prop.sub_category);
+        const useCircle = isPrivateAddr && !isApt;
+        
         // 지도 초기화
         if (itemMapRef.current) {
-          const map = new kakao.maps.Map(itemMapRef.current, { center: pos, level: 3 });
-          new kakao.maps.Marker({ position: pos, map: map });
+          const map = new kakao.maps.Map(itemMapRef.current, { center: pos, level: useCircle ? 5 : 3 });
+          if (useCircle) {
+            // 파란 반투명 원 (300m)
+            new kakao.maps.Circle({
+              center: pos,
+              radius: 300,
+              strokeWeight: 2,
+              strokeColor: '#3b82f6',
+              strokeOpacity: 0.6,
+              strokeStyle: 'solid',
+              fillColor: '#3b82f6',
+              fillOpacity: 0.15,
+              map: map
+            });
+          } else {
+            new kakao.maps.Marker({ position: pos, map: map });
+          }
         }
         
         // 로드뷰 초기화
         if (roadviewRef.current) {
           const rv = new kakao.maps.Roadview(roadviewRef.current);
           const rvClient = new kakao.maps.RoadviewClient();
-          rvClient.getNearestPanoId(pos, 50, (panoId: any) => {
-            if (panoId) {
-              rv.setPanoId(panoId, pos);
-            } else {
-              if (roadviewRef.current) roadviewRef.current.innerHTML = '<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#999; font-size:13px;">해당 위치의 로드뷰가 제공되지 않습니다.</div>';
-            }
-          });
+          
+          if (useCircle && agencyInfo?.lat && agencyInfo?.lng) {
+            // 비공개 일반건물 → 중개업소 좌표 로드뷰
+            const agencyPos = new kakao.maps.LatLng(agencyInfo.lat, agencyInfo.lng);
+            rvClient.getNearestPanoId(agencyPos, 50, (panoId: any) => {
+              if (panoId) {
+                rv.setPanoId(panoId, agencyPos);
+              } else {
+                if (roadviewRef.current) roadviewRef.current.innerHTML = '<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#999; font-size:13px;">중개업소 위치의 로드뷰가 제공되지 않습니다.</div>';
+              }
+            });
+          } else {
+            // 정상 로드뷰
+            rvClient.getNearestPanoId(pos, 50, (panoId: any) => {
+              if (panoId) {
+                rv.setPanoId(panoId, pos);
+              } else {
+                if (roadviewRef.current) roadviewRef.current.innerHTML = '<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#999; font-size:13px;">해당 위치의 로드뷰가 제공되지 않습니다.</div>';
+              }
+            });
+          }
         }
       }
     }
-  }, [showDetail, activeProperty, activeDetailTab, dbVacancies]);
+  }, [showDetail, activeProperty, activeDetailTab, dbVacancies, agencyInfo]);
 
   // Preload Kakao Map script immediately on mount
   const [mapLoaded, setMapLoaded] = useState(false);
@@ -1899,7 +1933,9 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
               <div style={{ padding: "40px 20px 20px 20px", borderBottom: "1px solid #f0f0f0" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, paddingRight: 30 }}>
                   <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                    <span style={{ fontSize: 13, fontWeight: "bold", color: "#ff5a5f", border: "1px solid #ff5a5f", padding: "2px 6px", borderRadius: 2 }}>{prop.realtor_commission || prop.commission_type || "법정수수료"}</span>
+                    {userLevel >= 2 && (
+                      <span style={{ fontSize: 13, fontWeight: "bold", color: "#ff5a5f", border: "1px solid #ff5a5f", padding: "2px 6px", borderRadius: 2 }}>{prop.realtor_commission || prop.commission_type || "법정수수료"}</span>
+                    )}
                     <span style={{ color: "#e53e3e", fontSize: 14, fontWeight: "bold" }}>{prop.vacancy_no}</span>
                     <span style={{ fontSize: 12, color: "#888" }}>{new Date(prop.created_at).toLocaleDateString()}</span>
                   </div>
