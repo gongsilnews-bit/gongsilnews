@@ -527,11 +527,14 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     }
   };
 
+  // Preload Kakao Map flag (moved up since detail map init also uses it)
+  const [mapLoaded, setMapLoaded] = useState(false);
+
   useEffect(() => {
     if (showDetail && activeProperty) {
       const prop = dbVacancies.find(v => v.id === activeProperty);
       if (prop?.id) fetchComments(prop.id.toString());
-      if (activeDetailTab === "info" && prop?.lat && prop?.lng && (window as any).kakao?.maps) {
+      if (activeDetailTab === "info" && prop?.lat && prop?.lng && mapLoaded && (window as any).kakao?.maps) {
         const kakao = (window as any).kakao;
         const pos = new kakao.maps.LatLng(prop.lat, prop.lng);
         
@@ -594,10 +597,9 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
         }
       }
     }
-  }, [showDetail, activeProperty, activeDetailTab, dbVacancies, agencyInfo]);
+  }, [showDetail, activeProperty, activeDetailTab, dbVacancies, agencyInfo, mapLoaded]);
 
-  // Preload Kakao Map script immediately on mount
-  const [mapLoaded, setMapLoaded] = useState(false);
+
   useEffect(() => {
     if ((window as any).kakao && (window as any).kakao.maps && typeof (window as any).kakao.maps.LatLng === "function") {
       setMapLoaded(true);

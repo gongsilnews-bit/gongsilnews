@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useRef, useCallback } from "react";
-import { getVacancyDetail, updateVacancyStatus, deleteVacancy } from "@/app/actions/vacancy";
+import { getVacancyDetail, getAgencyInfo, getVacancies, updateVacancyStatus, deleteVacancy } from "@/app/actions/vacancy";
 import { createClient } from "@/utils/supabase/client";
 import "./vacancy-detail.css";
 
@@ -27,10 +27,15 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
 
   // Realtor info
   const [realtorInfo, setRealtorInfo] = useState<any>(null);
+  const [agencyInfo, setAgencyInfo] = useState<any>(null);
 
   // Comment section (inquiry)
   const [inquiryInput, setInquiryInput] = useState("");
   const [inquiries, setInquiries] = useState<any[]>([]);
+
+  // Owner's other vacancies for registrant tab
+  const [ownerVacancies, setOwnerVacancies] = useState<any[]>([]);
+  const [realtorTradeType, setRealtorTradeType] = useState("전체");
 
   const mapRef = useRef<HTMLDivElement>(null);
   const roadviewRef = useRef<HTMLDivElement>(null);
@@ -62,13 +67,25 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
     if (res.success) {
       setVacancy(res.data);
       // Load realtor info
-      if (res.data?.user_id) {
-        const { data: member } = await supabase.from("members").select("*").eq("id", res.data.user_id).maybeSingle();
+      if (res.data?.owner_id) {
+        const { data: member } = await supabase.from("members").select("*").eq("id", res.data.owner_id).maybeSingle();
         if (member) setRealtorInfo(member);
+        // Also load agency info for realtors
+        if (member?.role === 'realtor' || res.data.owner_role === 'REALTOR') {
+          const agencyRes = await getAgencyInfo(res.data.owner_id);
+          if (agencyRes.success) setAgencyInfo(agencyRes.data);
+        }
       }
     }
     if (commentsData) setComments(commentsData);
     if (inquiryData) setInquiries(inquiryData);
+
+    // Fetch owner's other vacancies for registrant tab
+    if (res.success && res.data?.owner_id) {
+      const vacRes = await getVacancies({ ownerId: res.data.owner_id, all: false });
+      if (vacRes.success) setOwnerVacancies(vacRes.data || []);
+    }
+
     setLoading(false);
   };
 
@@ -237,7 +254,7 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
     <div className="gdv-root gdv-page-body" style={{ flex: 1, overflowY: 'auto', height: '100%' }}>
       <div style={{ display: 'flex', gap: '30px', width: '100%', alignItems: 'flex-start' }}>
         
-        {/* Left Column */}
+        {/* Left Column — Preview */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', justifyContent: 'center', paddingBottom: '15px' }}>
             <div className="gdv-device-btns">
@@ -337,7 +354,14 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
             ) : (
               <div style={{ padding: '20px 0' }}>
                 <div className="gdv-realtor-card">
-                  {realtorInfo ? (
+                  {agencyInfo ? (
+                    <>
+                      <div className="gdv-rc-name">{agencyInfo.name || vacancy.client_name || '-'}</div>
+                      <div className="gdv-rc-sub">대표 {agencyInfo.ceo_name || '-'}{agencyInfo.reg_num ? ` | 등록번호 ${agencyInfo.reg_num}` : ''}</div>
+                      <div className="gdv-rc-sub">{[agencyInfo.address, agencyInfo.address_detail].filter(Boolean).join(' ') || '-'}</div>
+                      <div className="gdv-rc-phone">☎ {[agencyInfo.phone, agencyInfo.cell].filter(Boolean).join(', ') || vacancy.client_phone || '-'}</div>
+                    </>
+                  ) : realtorInfo ? (
                     realtorInfo.role === 'realtor' ? (
                       <>
                         <div className="gdv-rc-name">{realtorInfo.company_name || vacancy.client_name || '-'}</div>
@@ -360,6 +384,81 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
                     </>
                   )}
                 </div>
+
+                {/* SNS Links */}
+                {realtorInfo?.sns_links && Object.keys(realtorInfo.sns_links).filter(k => k !== 'api_info' && k !== 'api_list' && realtorInfo.sns_links[k]?.url).length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 16, padding: '0 4px' }}>
+                    {Object.keys(realtorInfo.sns_links).filter(k => k !== 'api_info' && k !== 'api_list' && realtorInfo.sns_links[k]?.url).map(key => {
+                      const link = realtorInfo.sns_links[key].url;
+                      const validUrl = link.startsWith('http') ? link : `https://${link}`;
+                      const titleNames: Record<string,string> = { homepage: '홈페이지', contact: '문의하기', shopping_mall: '쇼핑몰', blog: '블로그', cafe: '카페', youtube: '유튜브', facebook: '페이스북', twitter: '트위터', instagram: '인스타그램', kakao: '카카오', threads: '쓰레드' };
+                      return (
+                        <a key={key} href={validUrl} target="_blank" rel="noopener noreferrer" title={titleNames[key] || key}
+                          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '6px 14px', borderRadius: 20, background: '#f8f9fa', border: '1px solid #e0e0e0', color: '#444', fontSize: 13, fontWeight: 600, textDecoration: 'none', transition: 'all 0.2s' }}>
+                          {titleNames[key] || key}
+                        </a>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Agency Intro */}
+                {agencyInfo?.intro && (
+                  <div style={{ marginTop: 16, padding: '12px 14px', background: '#f8f9fa', borderRadius: 8, fontSize: 13, color: '#444', border: '1px solid #eee', lineHeight: 1.5, wordBreak: 'keep-all' }}>
+                    <div style={{ fontWeight: 'bold', fontSize: 12, color: '#888', marginBottom: 6 }}>부동산 소개</div>
+                    {agencyInfo.intro}
+                  </div>
+                )}
+
+                {/* Vacancy Stats */}
+                {ownerVacancies.length > 0 && (
+                  <div style={{ marginTop: 20 }}>
+                    <div style={{ display: 'flex', background: '#f9f9f9', borderRadius: 8, overflow: 'hidden', border: '1px solid #eee' }}>
+                      <div style={{ flex: 'none', padding: '12px 16px', fontSize: 13, fontWeight: 'bold', color: '#111', borderRight: '1px solid #eee', display: 'flex', alignItems: 'center' }}>공실등록현황</div>
+                      <div style={{ display: 'flex', alignItems: 'center', padding: '0 16px', gap: 12, fontSize: 12, color: '#666', flexWrap: 'wrap' }}>
+                        {[
+                          { label: '전체', count: ownerVacancies.length },
+                          { label: '매매', count: ownerVacancies.filter(v => v.trade_type === '매매').length },
+                          { label: '전세', count: ownerVacancies.filter(v => v.trade_type === '전세').length },
+                          { label: '월세', count: ownerVacancies.filter(v => v.trade_type === '월세').length },
+                        ].map((stat, i, arr) => (
+                          <React.Fragment key={stat.label}>
+                            <span onClick={() => setRealtorTradeType(stat.label)}
+                              style={{ cursor: 'pointer', color: realtorTradeType === stat.label ? '#1a73e8' : '#666', fontWeight: realtorTradeType === stat.label ? 'bold' : 'normal' }}>
+                              {stat.label} <strong style={{color: realtorTradeType === stat.label ? '#1a73e8' : '#111'}}>{stat.count}</strong>
+                            </span>
+                            {i < arr.length - 1 && <span style={{width:1,height:12,background:'#ddd',display:'inline-block'}}></span>}
+                          </React.Fragment>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Owner's Property List */}
+                {ownerVacancies.length > 0 && (
+                  <div style={{ marginTop: 16, border: '1px solid #eee', borderRadius: 8, overflow: 'hidden' }}>
+                    {ownerVacancies
+                      .filter(v => realtorTradeType === '전체' || v.trade_type === realtorTradeType)
+                      .slice(0, 10)
+                      .map((vp: any) => (
+                      <div key={vp.id}
+                        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '14px 16px', borderBottom: '1px solid #f0f0f0', background: vp.id === vacancyId ? '#eaf4ff' : '#fff' }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 14, fontWeight: 'bold', color: '#111', marginBottom: 3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{vp.building_name || vp.dong || '매물'}</div>
+                          <div style={{ fontSize: 14, fontWeight: 800, color: '#1a73e8', marginBottom: 3 }}>{(() => {
+                            const dep = vp.deposit || 0;
+                            const monthly = vp.monthly_rent ? Math.round(vp.monthly_rent / 10000) : 0;
+                            if (vp.trade_type === '매매') return `매매 ${formatAmount(dep)}`;
+                            if (vp.trade_type === '전세') return `전세 ${formatAmount(dep)}`;
+                            return `${formatAmount(dep)}/${monthly}만`;
+                          })()}</div>
+                          <div style={{ fontSize: 12, color: '#555' }}>{vp.property_type} | {vp.direction || '방향없음'} | {vp.exclusive_m2 ? `${vp.exclusive_m2}㎡` : '면적미상'}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
@@ -400,7 +499,7 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
         </div>
 
         {/* Right Column (Sidebar) */}
-        <div className="gdv-sidebar-wrap">
+        <div className="gdv-sidebar-wrap" style={{ marginRight: 220 }}>
           {/* Memo */}
           <div className="gdv-sidebar-card">
             <div className="gdv-sidebar-card-title">📝 공실기록</div>

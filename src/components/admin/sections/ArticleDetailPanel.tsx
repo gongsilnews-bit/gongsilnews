@@ -278,7 +278,7 @@ export default function ArticleDetailPanel({ articleId, onBack, onEdit }: Articl
       </div>
 
       {/* Sidebar */}
-      <div className="adp-sidebar">
+      <div className="adp-sidebar" style={{ marginRight: 220 }}>
         <div className="adp-sidebar-card">
           <div className="adp-sidebar-title">📝 기사 서비스 로그</div>
           <textarea className="adp-memo-textarea" placeholder="이 기사에 서비스 메모를 남겨주세요..." value={memo} onChange={e => setMemo(e.target.value)} />

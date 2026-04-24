@@ -11,7 +11,7 @@
 
 /* ── Preview Frame ── */
 .adp-frame { background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); padding: 32px; margin: 0 auto; transition: max-width 0.3s ease; }
-.adp-frame.adp-pc { max-width: 720px; }
+.adp-frame.adp-pc { max-width: 720px; margin-left: calc(50% - 360px + 100px); }
 .adp-frame.adp-tablet { max-width: 768px; }
 .adp-frame.adp-mobile { max-width: 375px; border: 8px solid #333; border-radius: 36px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); }
 

@@ -45,6 +45,7 @@
 .gdv-preview-frame.gdv-pc {
   max-width: 720px !important;
   margin: 0 auto;
+  margin-left: calc(50% - 360px + 100px);
 }
 .gdv-preview-frame.gdv-tablet {
   max-width: 768px !important; 
@@ -120,7 +121,7 @@
 .gdv-rc-phone { font-size: 16px; font-weight: 900; color: var(--blue); margin-top: 10px; }
 
 /* ── 사이드바 ── */
-.gdv-sidebar-wrap { width:280px; flex-shrink:0; position: sticky; top: 24px; align-self: flex-start; }
+.gdv-sidebar-wrap { width: 280px; flex-shrink: 0; position: sticky; top: 24px; align-self: flex-start; margin-right: 60px; }
 .gdv-sidebar-card { background: #fff; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); padding: 20px; margin-bottom: 16px; }
 .gdv-sidebar-card-title { font-size: 14px; font-weight: bold; color: #111; margin-bottom: 12px; display:flex; align-items:center; gap:6px; }
 .gdv-sidebar-memo-footer { text-align: right; margin-top: 8px; }
