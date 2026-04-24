@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from "react";
 import { adminCreateMember, adminUpdateAgency, adminUploadAgencyDocument, adminGetMemberDetail, adminUpdateMember } from "@/app/admin/actions";
 import { geocodeAddress } from "@/app/actions/geocode";
-import RealtorSearchModal, { RealtorInfo } from "@/components/admin/RealtorSearchModal";
 
 interface MemberRegisterFormProps {
   onBack: () => void;
@@ -49,9 +48,7 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
   const [geocoding, setGeocoding] = useState(false);
   const [activeTab, setActiveTab] = useState(0); 
 
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [isManual, setIsManual] = useState(false);
-  
+
   const initialSnsObj = { url: "", login_id: "", login_pw: "", login_type: "일반" };
   const [snsLinks, setSnsLinks] = useState<Record<string, typeof initialSnsObj>>({
     homepage: { ...initialSnsObj }, contact: { ...initialSnsObj }, shopping_mall: { ...initialSnsObj }, 
@@ -240,18 +237,6 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
     setAgencyData({ ...agencyData, [e.target.name]: val });
   };
 
-  const handleRealtorSelect = (info: RealtorInfo) => {
-    setAgencyData(prev => ({
-      ...prev,
-      name: info.compName,
-      ceo_name: info.ceo,
-      address: info.addr,
-      reg_num: info.regNum
-    }));
-    setIsSearchOpen(false);
-    setIsManual(false); // API로 가져온 경우 자동 수동 모드 해제 (읽기 전용화)
-  };
-
   const handleSnsObjChange = (key: string, field: string, value: string) => {
     setSnsLinks(prev => ({ ...prev, [key]: { ...prev[key], [field]: value } }));
   };
@@ -336,10 +321,8 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
       }
 
       if (formData.role === "부동산회원" && memberId) {
-        if (isManual) {
-          if (!files.reg_cert && !filePreviews.reg_cert) throw new Error("직접 입력(수동) 시 개설등록증 사본 첨부가 필수입니다.");
-          if (!files.biz_cert && !filePreviews.biz_cert) throw new Error("직접 입력(수동) 시 사업자등록증 사본 첨부가 필수입니다.");
-        }
+        if (!files.reg_cert && !filePreviews.reg_cert) throw new Error("개설등록증 사본 첨부가 필수입니다.");
+        if (!files.biz_cert && !filePreviews.biz_cert) throw new Error("사업자등록증 사본 첨부가 필수입니다.");
 
         let regCertUrl = filePreviews.reg_cert?.startsWith("http") ? filePreviews.reg_cert : null;
         let bizCertUrl = filePreviews.biz_cert?.startsWith("http") ? filePreviews.biz_cert : null;
@@ -541,44 +524,17 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
       {activeTab === 1 && formData.role === "부동산회원" && (
         <div style={{ background: darkMode ? "#2c2d31" : "#fff", borderBottomLeftRadius: 12, borderBottomRightRadius: 12, border: `1px solid ${darkMode ? "#333" : "#e5e7eb"}`, borderTop: "none", overflow: "hidden", marginBottom: 24 }}>
           
-          {/* API 검색 영역 */}
-          <div style={{ padding: "20px 24px", borderBottom: `1px solid ${darkMode ? "#333" : "#e5e7eb"}`, background: darkMode ? "#25262b" : "#f8fafc", display: "flex", flexDirection: "column", gap: 12 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: darkMode ? "#e1e4e8" : "#111827" }}>
-              ✅ 국토부 연동: 안전한 중개업소 인증을 위해 데이터베이스 검색을 이용해 주세요.
-            </div>
-            <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-              <button 
-                onClick={() => setIsSearchOpen(true)}
-                style={{ padding: "12px 24px", background: "#1e56a0", color: "#fff", border: "none", borderRadius: 8, fontSize: 15, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, boxShadow: "0 2px 6px rgba(30,86,160,0.2)" }}
-              >
-                🌐 국가 DB에서 내 중개사무소 검색 (권장)
-              </button>
-              <button 
-                onClick={() => setIsManual(true)}
-                style={{ padding: "12px 20px", background: "none", color: darkMode ? "#a1a1aa" : "#64748b", border: `1px solid ${darkMode ? "#555" : "#cbd5e1"}`, borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
-              >
-                검색되지 않으시나요? 직접 입력하기
-              </button>
-            </div>
-            {!isManual && (
-               <div style={{ fontSize: 12, color: "#3b82f6" }}>* 검색을 통해 입력하면 검증된 정보로 등록되며 주요 정보가 임의로 수정되지 않습니다.</div>
-            )}
-            {isManual && (
-               <div style={{ fontSize: 12, color: "#ef4444" }}>* [직접 입력]을 활성화했습니다. 이 경우 정보 검증을 위해 반드시 사업자등록증 및 개설등록증 사본을 모두 첨부해야 합니다.</div>
-            )}
-          </div>
-
-          <div style={rowStyle}>
+          <div style={{ ...rowStyle, borderTop: "none" }}>
             <div style={labelStyle}>상호(사업장명)</div>
             <div style={contentStyle}>
-              <input type="text" name="name" value={agencyData.name} onChange={handleAgencyChange} readOnly={!isManual} style={!isManual ? readOnlyStyle : {...inputStyle, maxWidth: 300}} placeholder="중개업소명 입력" />
+              <input type="text" name="name" value={agencyData.name} onChange={handleAgencyChange} style={{...inputStyle, maxWidth: 300}} placeholder="중개업소명 입력" />
             </div>
           </div>
 
           <div style={rowStyle}>
             <div style={labelStyle}>대표자명</div>
             <div style={contentStyle}>
-              <input type="text" name="ceo_name" value={agencyData.ceo_name} onChange={handleAgencyChange} readOnly={!isManual} style={!isManual ? readOnlyStyle : {...inputStyle, maxWidth: 300}} />
+              <input type="text" name="ceo_name" value={agencyData.ceo_name} onChange={handleAgencyChange} style={{...inputStyle, maxWidth: 300}} />
             </div>
           </div>
 
@@ -600,10 +556,10 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
             <div style={labelStyle}>사무실 주소</div>
             <div style={{...contentStyle, flexDirection: "column", gap: 10, alignItems: "stretch"}}>
               <div style={{ display: "flex", gap: 8 }}>
-                <input type="text" name="zipcode" value={agencyData.zipcode} onChange={handleAgencyChange} style={!isManual ? readOnlyStyle : {...inputStyle, width: 120, flex: "none"}} placeholder="우편번호" readOnly />
-                {isManual && <button type="button" onClick={openDaumPostcode} style={{ height: 40, padding: "0 16px", background: "#374151", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>우편번호 검색</button>}
+                <input type="text" name="zipcode" value={agencyData.zipcode} onChange={handleAgencyChange} style={{...readOnlyStyle, width: 120, flex: "none"}} placeholder="우편번호" readOnly />
+                <button type="button" onClick={openDaumPostcode} style={{ height: 40, padding: "0 16px", background: "#374151", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>우편번호 검색</button>
               </div>
-              <input type="text" name="address" value={agencyData.address} onChange={handleAgencyChange} style={!isManual ? readOnlyStyle : {...inputStyle, width: "100%", maxWidth: "none" }} placeholder="기본주소" readOnly={!isManual} />
+              <input type="text" name="address" value={agencyData.address} onChange={handleAgencyChange} style={{...readOnlyStyle, width: "100%", maxWidth: "none" }} placeholder="기본주소" readOnly />
               <div style={{ display: "flex", gap: 12, alignItems: "center", width: "100%", maxWidth: "none" }}>
                 <span style={{ fontSize: 13, color: darkMode ? "#9ca3af" : "#6b7280", flexShrink: 0 }}>상세주소</span>
                 <input type="text" name="address_detail" value={agencyData.address_detail} onChange={handleAgencyChange} style={{...inputStyle, flex: 1}} placeholder="상세주소 입력" />
@@ -647,7 +603,7 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
           <div style={rowStyle}>
             <div style={labelStyle}>등록번호</div>
             <div style={contentStyle}>
-              <input type="text" name="reg_num" value={agencyData.reg_num} onChange={handleAgencyChange} readOnly={!isManual} style={!isManual ? readOnlyStyle : {...inputStyle, maxWidth: 300}} placeholder="중개업 등록번호" />
+              <input type="text" name="reg_num" value={agencyData.reg_num} onChange={handleAgencyChange} style={{...inputStyle, maxWidth: 300}} placeholder="중개업 등록번호" />
             </div>
           </div>
 
@@ -850,14 +806,6 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
           </button>
           <img src={previewImage} alt="크게 보기" style={{ maxWidth: "90%", maxHeight: "90%", objectFit: "contain", borderRadius: 8, boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)" }} />
         </div>
-      )}
-
-      {isSearchOpen && (
-        <RealtorSearchModal 
-          isOpen={isSearchOpen} 
-          onClose={() => setIsSearchOpen(false)} 
-          onSelect={handleRealtorSelect}
-        />
       )}
 
     </div>
