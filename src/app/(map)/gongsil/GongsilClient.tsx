@@ -941,13 +941,12 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
               <button 
                 onClick={(e) => {
                   e.preventDefault();
-                  setReplyTarget(comment);
-                  setIsSecret(comment.is_secret);
-                  setTimeout(() => {
-                    const textInput = document.getElementById("gongsil-comment-input");
-                    if (textInput) textInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    textInput?.focus();
-                  }, 100);
+                  if (replyTarget?.id === comment.id) {
+                    setReplyTarget(null);
+                  } else {
+                    setReplyTarget(comment);
+                    setIsSecret(comment.is_secret); // 부모 답글 비밀 여부 연동
+                  }
                 }}
                 style={{ background: "none", border: "none", padding: 0, fontSize: 13, color: "#666", cursor: "pointer", fontWeight: "bold" }}
               >
@@ -956,6 +955,42 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
             )}
           </div>
           
+          {/* 인라인 답글 폼 */}
+          {replyTarget && replyTarget.id === comment.id && (
+            <div style={{ marginTop: 16, background: "#f8f9fa", borderRadius: 8, border: "1px solid #e5e7eb", padding: 16 }}>
+              <textarea
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value.substring(0, 400))}
+                placeholder="답글을 남겨보세요"
+                style={{ 
+                  width: "100%", height: 80, border: "1px solid #d1d5db", borderRadius: 4, padding: "12px", 
+                  fontSize: 14, outline: "none", resize: "vertical", marginBottom: 12, boxSizing: "border-box", fontFamily: "inherit" 
+                }}
+              />
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 13, color: "#555" }}>
+                  <input type="checkbox" checked={isSecret} onChange={(e) => setIsSecret(e.target.checked)} style={{ width: 14, height: 14 }} />
+                  비밀답글
+                </label>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button 
+                    onClick={() => setReplyTarget(null)}
+                    style={{ padding: "8px 16px", background: "#fff", color: "#555", border: "1px solid #d1d5db", borderRadius: 4, fontWeight: "bold", cursor: "pointer", fontSize: 13 }}
+                  >
+                    취소
+                  </button>
+                  <button 
+                    onClick={handleCommentSubmit}
+                    disabled={!newComment.trim()}
+                    style={{ padding: "8px 16px", background: newComment.trim() ? "#9ca3af" : "#cbd5e1", color: "#fff", border: "none", borderRadius: 4, fontWeight: "bold", cursor: newComment.trim() ? "pointer" : "default", fontSize: 13 }}
+                  >
+                    답글 등록
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* 대댓글 렌더링 */}
           <div>
             {children.map(child => renderComment(child, depth + 1))}
@@ -973,54 +1008,48 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
         </div>
         
         {/* 입력창 (일반 기사 형태) */}
-        <div style={{ border: "1px solid #e5e7eb", borderRadius: 8, padding: 20, marginBottom: 40, background: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
-          <div style={{ fontSize: 14, fontWeight: "bold", color: "#111", marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
-            {currentUser ? (currentUser.user_metadata?.full_name || currentUser.user_metadata?.name || currentUser.email?.split('@')[0] || "회원") : "비회원"}
-            
-            {/* 답글 타겟 표시 */}
-            {replyTarget && (
-              <span style={{ fontSize: 12, color: "#2563eb", fontWeight: "normal", display: "flex", alignItems: "center", gap: 4, background: "#dbeafe", padding: "2px 8px", borderRadius: 4 }}>
-                {replyTarget.author_name}님에게 답글 작성 중 
-                <button onClick={() => setReplyTarget(null)} style={{ background: "none", border: "none", color: "#3b82f6", cursor: "pointer", fontSize: 14, lineHeight: 1, padding: 0 }}>&times;</button>
-              </span>
-            )}
-          </div>
-          
-          <textarea
-            id="gongsil-comment-input"
-            value={newComment}
-            onChange={(e) => setNewComment(e.target.value.substring(0, 400))}
-            placeholder={currentUser ? "가격을 제안하거나, 궁금한 점을 남겨보세요. 등록자와의 1:1 상담입니다." : "로그인 후 이용하실 수 있습니다."}
-            disabled={!currentUser}
-            style={{ 
-              width: "100%", height: 80, border: "1px solid #e5e7eb", borderRadius: 6, padding: "12px", 
-              fontSize: 14, outline: "none", resize: "vertical", marginBottom: 16, boxSizing: "border-box", fontFamily: "inherit" 
-            }}
-          />
-          
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-              <span style={{ fontSize: 13, color: "#666", fontWeight: "bold" }}>
-                <span style={{ color: "#111" }}>{newComment.length}</span> / 400
-              </span>
-              <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 13, color: "#555" }}>
-                <input type="checkbox" checked={isSecret} onChange={(e) => setIsSecret(e.target.checked)} style={{ width: 14, height: 14 }} />
-                비밀댓글
-              </label>
+        {!replyTarget && (
+          <div style={{ border: "1px solid #e5e7eb", borderRadius: 8, padding: 20, marginBottom: 40, background: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+            <div style={{ fontSize: 14, fontWeight: "bold", color: "#111", marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
+              {currentUser ? (currentUser.user_metadata?.full_name || currentUser.user_metadata?.name || currentUser.email?.split('@')[0] || "회원") : "비회원"}
             </div>
-            <button 
-              onClick={handleCommentSubmit} 
-              disabled={!currentUser || !newComment.trim()} 
+            
+            <textarea
+              id="gongsil-comment-input"
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value.substring(0, 400))}
+              placeholder={currentUser ? "가격을 제안하거나, 궁금한 점을 남겨보세요. 등록자와의 1:1 상담입니다." : "로그인 후 이용하실 수 있습니다."}
+              disabled={!currentUser}
               style={{ 
-                padding: "8px 24px", background: currentUser && newComment.trim() ? "#9ca3af" : "#cbd5e1", // 기사의 등록버튼 색상
-                color: "#fff", border: "none", borderRadius: 4, fontWeight: "bold", 
-                cursor: currentUser && newComment.trim() ? "pointer" : "default", fontSize: 14 
+                width: "100%", height: 80, border: "1px solid #e5e7eb", borderRadius: 6, padding: "12px", 
+                fontSize: 14, outline: "none", resize: "vertical", marginBottom: 16, boxSizing: "border-box", fontFamily: "inherit" 
               }}
-            >
-              등록
-            </button>
+            />
+            
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                <span style={{ fontSize: 13, color: "#666", fontWeight: "bold" }}>
+                  <span style={{ color: "#111" }}>{newComment.length}</span> / 400
+                </span>
+                <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 13, color: "#555" }}>
+                  <input type="checkbox" checked={isSecret} onChange={(e) => setIsSecret(e.target.checked)} style={{ width: 14, height: 14 }} />
+                  비밀댓글
+                </label>
+              </div>
+              <button 
+                onClick={handleCommentSubmit} 
+                disabled={!currentUser || !newComment.trim()} 
+                style={{ 
+                  padding: "8px 24px", background: currentUser && newComment.trim() ? "#9ca3af" : "#cbd5e1", // 기사의 등록버튼 색상
+                  color: "#fff", border: "none", borderRadius: 4, fontWeight: "bold", 
+                  cursor: currentUser && newComment.trim() ? "pointer" : "default", fontSize: 14 
+                }}
+              >
+                등록
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* 댓글 리스트 */}
         <div>
