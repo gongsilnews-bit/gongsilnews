@@ -1,0 +1,95 @@
+/* ── Article Detail Panel (Admin Preview) ── */
+/* Prefix: .adp- = article-detail-panel */
+
+.adp-wrapper { display: flex; gap: 24px; padding: 20px 28px; background: #f8f9fa; min-height: 100%; }
+.adp-main { flex: 1; min-width: 0; }
+
+/* ── Device Toggle ── */
+.adp-device-bar { display: flex; justify-content: center; gap: 8px; margin-bottom: 20px; }
+.adp-device-btn { width: 36px; height: 36px; border-radius: 8px; border: 1px solid #ddd; background: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; transition: all 0.2s; }
+.adp-device-btn.adp-active { background: #3b82f6; color: #fff; border-color: #3b82f6; }
+
+/* ── Preview Frame ── */
+.adp-frame { background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); padding: 32px; margin: 0 auto; transition: max-width 0.3s ease; }
+.adp-frame.adp-pc { max-width: 720px; }
+.adp-frame.adp-tablet { max-width: 768px; }
+.adp-frame.adp-mobile { max-width: 375px; border: 8px solid #333; border-radius: 36px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); }
+
+/* ── Breadcrumb ── */
+.adp-breadcrumb { font-size: 13px; color: #888; margin-bottom: 16px; }
+
+/* ── Title ── */
+.adp-title { font-size: 24px; font-weight: 800; color: #111; line-height: 1.4; margin-bottom: 16px; word-break: keep-all; }
+
+/* ── Meta ── */
+.adp-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px; color: #888; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid #eee; }
+.adp-meta-author { color: #111; font-weight: 700; }
+.adp-meta-divider { width: 1px; height: 12px; background: #ddd; display: inline-block; }
+
+/* ── Toolbar ── */
+.adp-toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #eee; }
+.adp-toolbar-btn { height: 34px; padding: 0 14px; border: 1px solid #ddd; border-radius: 6px; background: #fff; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px; white-space: nowrap; transition: all 0.15s; font-family: inherit; }
+.adp-toolbar-btn:hover { background: #f5f5f5; }
+.adp-toolbar-btn.adp-blue { background: #3b82f6; color: #fff; border-color: #3b82f6; }
+.adp-toolbar-btn.adp-green { background: #10b981; color: #fff; border-color: #10b981; }
+.adp-toolbar-btn.adp-red { background: #ef4444; color: #fff; border-color: #ef4444; }
+
+/* ── Article Body ── */
+.adp-body { font-size: 16px; line-height: 1.8; color: #333; word-break: break-word; margin-bottom: 24px; }
+.adp-body img { max-width: 100%; height: auto; border-radius: 8px; margin: 16px 0; }
+.adp-body iframe { max-width: 100%; border-radius: 8px; }
+.adp-body p { margin-bottom: 12px; }
+.adp-body blockquote { border-left: 4px solid #3b82f6; margin: 16px 0; padding: 12px 16px; background: #f0f7ff; color: #333; }
+
+/* ── YouTube Embed ── */
+.adp-youtube-wrap { position: relative; width: 100%; aspect-ratio: 16 / 9; margin-bottom: 20px; overflow: hidden; border-radius: 8px; }
+.adp-youtube-wrap iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
+.adp-youtube-wrap.adp-shorts { max-width: 315px; aspect-ratio: 9 / 16; margin: 0 auto 20px; }
+
+/* ── Thumbnail ── */
+.adp-thumbnail { width: 100%; max-height: 500px; object-fit: cover; border-radius: 8px; margin-bottom: 20px; }
+
+/* ── Keywords ── */
+.adp-keywords { display: flex; flex-wrap: wrap; gap: 8px; margin: 24px 0; padding: 16px 0; border-top: 1px solid #eee; }
+.adp-keyword-tag { padding: 6px 14px; border-radius: 20px; background: #fff; color: #555; font-size: 13px; font-weight: 500; border: 1px solid #ccc; text-decoration: none; transition: background 0.2s; cursor: default; }
+
+/* ── Reactions ── */
+.adp-reactions { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+.adp-reaction-item { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.adp-reaction-icon { font-size: 20px; }
+.adp-reaction-label { font-size: 12px; color: #555; }
+.adp-reaction-count { font-size: 14px; font-weight: bold; color: #111; }
+
+/* ── Author Footer ── */
+.adp-author-footer { display: flex; justify-content: space-between; align-items: flex-start; padding: 20px 0; border-top: 1px solid #eee; margin-bottom: 40px; }
+.adp-author-name { font-weight: 800; color: #111; font-size: 16px; }
+.adp-author-role { color: #666; font-size: 14px; margin-left: 8px; }
+.adp-copyright { color: #888; font-size: 13px; }
+
+/* ── Comments ── */
+.adp-comments { margin-top: 40px; }
+.adp-comments-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 16px; }
+.adp-comments-count { font-size: 18px; font-weight: 800; color: #111; }
+.adp-comment-box { background: #f9fafb; padding: 20px; border-radius: 12px; border: 1px solid #e5e7eb; margin-bottom: 30px; }
+.adp-comment-textarea { width: 100%; height: 80px; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; resize: none; font-size: 14px; outline: none; font-family: inherit; background: #fff; }
+.adp-comment-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; }
+.adp-comment-submit { padding: 8px 20px; background: #1a73e8; color: #fff; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; font-family: inherit; }
+.adp-comment-submit:disabled { background: #9ca3af; cursor: not-allowed; }
+
+.adp-comment-item { padding-bottom: 16px; border-bottom: 1px solid #f3f4f6; margin-bottom: 16px; }
+.adp-comment-author { font-size: 14px; font-weight: 700; color: #111; }
+.adp-comment-date { font-size: 12px; color: #9ca3af; }
+.adp-comment-content { font-size: 14px; color: #374151; line-height: 1.6; white-space: pre-wrap; margin-top: 6px; }
+.adp-comment-actions { display: flex; gap: 12px; margin-top: 6px; align-items: center; }
+.adp-like-btn { display: flex; align-items: center; gap: 4px; padding: 4px 8px; font-size: 12px; border-radius: 16px; border: 1px solid #e5e7eb; background: #fff; color: #4b5563; cursor: pointer; }
+
+/* ── Sidebar ── */
+.adp-sidebar { width: 280px; flex-shrink: 0; position: sticky; top: 24px; align-self: flex-start; margin-left: auto; }
+.adp-sidebar-card { background: #fff; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); padding: 20px; margin-bottom: 16px; }
+.adp-sidebar-title { font-size: 14px; font-weight: bold; color: #111; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+.adp-memo-textarea { width: 100%; height: 80px; border: 1px solid #ddd; border-radius: 8px; padding: 10px; font-size: 13px; resize: none; outline: none; font-family: inherit; }
+.adp-memo-footer { text-align: right; margin-top: 8px; }
+.adp-memo-btn { background: #111; color: #fff; border: none; padding: 6px 16px; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer; }
+.adp-log-item { padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
+.adp-log-title { font-size: 13px; color: #333; font-weight: 600; }
+.adp-log-date { font-size: 11px; color: #999; margin-top: 2px; }

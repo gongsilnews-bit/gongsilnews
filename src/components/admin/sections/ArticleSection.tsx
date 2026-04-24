@@ -7,6 +7,7 @@ import { createClient } from "@/utils/supabase/client";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import NewsWriteForm from "@/components/admin/NewsWriteForm";
+import ArticleDetailPanel from "./ArticleDetailPanel";
 
 const REJECT_REASONS = [
   "사진 화질 불량 또는 이미지 누락",
@@ -66,6 +67,10 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
     }
     return true;
   });
+
+  if (action === "detail" && editId) {
+    return <ArticleDetailPanel articleId={editId} onBack={() => router.push('?menu=article')} onEdit={() => router.push(`?menu=article&action=write&id=${editId}`)} />;
+  }
 
   if (showWriteForm) {
     return <NewsWriteForm />;
@@ -228,7 +233,7 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
                   </td>
                   <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", color: textSecondary }}>{a.section1 || '-'}</td>
                   <td style={{ padding: "16px 10px", textAlign: "left", verticalAlign: "middle" }}>
-                    <button onClick={() => router.push(`?menu=article&action=write&id=${a.id}`)} style={{ background: "none", border: "none", fontWeight: 700, fontSize: 15, color: textPrimary, textDecoration: "none", cursor: "pointer", padding: 0 }}>{a.title}</button>
+                    <button onClick={() => router.push(`?menu=article&action=detail&id=${a.id}`)} style={{ background: "none", border: "none", fontWeight: 700, fontSize: 15, color: textPrimary, textDecoration: "none", cursor: "pointer", padding: 0 }}>{a.title}</button>
                   </td>
                   <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", color: textPrimary }}>{a.author_name || '-'}</td>
                   <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", color: textSecondary, fontSize: 12 }}>{a.published_at ? new Date(a.published_at).toISOString().split('T')[0] : '-'}</td>
