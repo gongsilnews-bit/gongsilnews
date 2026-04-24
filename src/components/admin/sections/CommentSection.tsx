@@ -410,9 +410,6 @@ export default function CommentSection({ theme, role, memberId }: CommentSection
                         <span style={{ fontSize: 13, fontWeight: 700, color: textPrimary }}>{msg.authorName}</span>
                         {msg.isSecret && <span style={{ fontSize: 11 }}>🔒</span>}
                         <span style={{ fontSize: 11, color: textSecondary }}>{new Date(msg.createdAt).toLocaleString("ko-KR", { year: "numeric", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
-                        {hoveredMessageId === msg.id && (
-                           <button onClick={() => setReplyTarget(msg)} style={{ background: "none", border: `1px solid ${darkMode ? "#4b5563" : "#d1d5db"}`, borderRadius: 4, fontSize: 11, padding: "2px 6px", cursor: "pointer", color: textSecondary }}>답글</button>
-                        )}
                       </div>
                       <div style={{
                         padding: "12px 16px", fontSize: 14, lineHeight: 1.7, color: isMe ? "#fff" : textPrimary,
@@ -434,6 +431,34 @@ export default function CommentSection({ theme, role, memberId }: CommentSection
                         {msg.content}
                       </div>
                     </div>
+                    {hoveredMessageId === msg.id && (
+                      <div style={{ display: "flex", alignItems: "flex-end", paddingBottom: 6 }}>
+                        <div style={{ 
+                          display: "flex", 
+                          background: darkMode ? "#374151" : "#fff", 
+                          border: `1px solid ${darkMode ? "#4b5563" : "#e5e7eb"}`, 
+                          borderRadius: 8, 
+                          overflow: "hidden",
+                          boxShadow: "0 2px 4px rgba(0,0,0,0.05)" 
+                        }}>
+                          <button 
+                            onClick={() => setReplyTarget(msg)} 
+                            title="답글 달기"
+                            style={{ 
+                              background: "transparent", border: "none",
+                              width: 32, height: 32, 
+                              display: "flex", alignItems: "center", justifyContent: "center", 
+                              cursor: "pointer", 
+                            }}
+                          >
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={textSecondary} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="9 14 4 9 9 4"></polyline>
+                              <path d="M20 20v-7a4 4 0 0 0-4-4H4"></path>
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })}
