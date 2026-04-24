@@ -268,15 +268,9 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
               <div className="gdv-prop-meta-row">
                 <div>
                   <span className="gdv-tag-confirm">
-                    {(() => {
-                      const bf = vacancy.brokerage_fee || '';
-                      if (bf.includes('100') || bf.includes('양타')) return '수수료100%';
-                      if (bf.includes('50') || bf.includes('단타')) return '수수료50%';
-                      if (bf.includes('25')) return '수수료25%';
-                      if (bf.includes('공동')) return '공동중개';
-                      return '수수료협의';
-                    })()}
+                    {vacancy.realtor_commission || vacancy.commission_type || '법정수수료'}
                   </span>
+                  <span style={{ fontSize: 13, color: '#fa5252', fontWeight: 'bold' }}>{vacancy.vacancy_no}</span>
                   <span className="gdv-prop-date">{fmtDate(vacancy.created_at)}</span>
                 </div>
               </div>
@@ -315,6 +309,7 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
               <div>
                 {/* Info Grid */}
                 <div className="gdv-info-grid">
+                  <div className="gdv-info-label">매물번호</div><div className="gdv-info-value">{vacancy.vacancy_no || '-'}</div>
                   <div className="gdv-info-label">소재지</div><div className="gdv-info-value">{[vacancy.sido, vacancy.sigungu, vacancy.dong, vacancy.detail_address].filter(Boolean).join(' ')}</div>
                   <div className="gdv-info-label">매물특징</div><div className="gdv-info-value">{propName}</div>
                   <div className="gdv-info-label">공급/전용면적</div><div className="gdv-info-value">{areaDisplay}</div>
