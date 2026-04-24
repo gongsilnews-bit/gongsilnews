@@ -128,3 +128,26 @@
 .gdv-log-title { font-size: 13px; color: #333; line-height: 1.4; margin-bottom: 2px; word-break: break-word; }
 .gdv-log-meta { font-size: 11px; color: #aaa; }
 .gdv-log-empty { color: #aaa; text-align: center; padding: 10px; font-size: 13px; }
+
+/* ── 지도 / 로드뷰 패널 ── */
+.gdv-extra-section { padding: 20px 0; border-bottom: 1px solid #eee; }
+.gdv-extra-title { font-size: 15px; font-weight: 800; margin-bottom: 12px; color: #111; }
+.gdv-map-box { width: 100%; height: 240px; border-radius: 6px; background: #e5e5e5; display:flex; align-items:center; justify-content:center; color:#999; font-size:13px; overflow: hidden; }
+
+/* ── 댓글(1:1 문의) 영역 ── */
+.gdv-comment-section { margin-top: 30px; }
+.gdv-comment-header { font-size: 16px; font-weight: 800; margin-bottom: 14px; color: #111; }
+.gdv-comment-input-box { border: 1px solid #ddd; border-radius: 8px; padding: 14px; background: #fff; margin-bottom: 20px; }
+.gdv-comment-input-box textarea { width: 100%; height: 70px; border: none; outline: none; resize: none; font-family: inherit; font-size: 13px; margin-bottom: 10px; background: transparent; }
+.gdv-comment-btn-row { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #eee; padding-top: 10px; }
+.gdv-comment-submit { background: #444; color: #fff; border: none; padding: 6px 20px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 12px; }
+.gdv-comment-submit:hover { background: #333; }
+
+.gdv-reply-item { padding: 14px 0; border-bottom: 1px solid #eee; }
+.gdv-reply-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.gdv-reply-author { font-size: 13px; font-weight: bold; color: #333; }
+.gdv-reply-date { font-size: 11px; color: #aaa; }
+.gdv-reply-content { font-size: 13px; color: #444; line-height: 1.5; white-space: pre-wrap; }
+.gdv-reply-answer-box { background: #f8f9fa; border-left: 3px solid #1a73e8; padding: 12px; margin-top: 10px; border-radius: 4px; }
+.gdv-reply-answer-lbl { font-size: 12px; font-weight: bold; color: #111; margin-bottom: 4px; }
+.gdv-reply-answer-txt { font-size: 13px; color: #444; line-height: 1.5; white-space: pre-wrap; }
