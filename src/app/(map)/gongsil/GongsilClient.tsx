@@ -1178,6 +1178,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     setActivePills(key === "wish" ? [] : [c.pills[0] || ""]);
     setShowDetail(false);
     setShowDetailFilters(false);
+    setSelectedClusterIds(null);
+    selectedClusterIdsRef.current = null;
     resetAllFilters();
   };
 
