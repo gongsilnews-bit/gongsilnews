@@ -47,6 +47,14 @@ function UserAdminContent() {
     initialMenu = menuParam;
   }
   const [activeMenu, setActiveMenu] = useState(initialMenu);
+
+  useEffect(() => {
+    if (menuParam && USER_MENU.some(m => m.key === menuParam)) {
+      setActiveMenu(menuParam);
+    } else {
+      setActiveMenu("dashboard");
+    }
+  }, [menuParam]);
   const [hoveredMenu, setHoveredMenu] = useState<string | null>(null);
   const [darkMode, setDarkMode] = useState(false);
   const [memberId, setMemberId] = useState<string | null>(null);

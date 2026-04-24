@@ -52,12 +52,21 @@ function RealtyAdminContent() {
   }
 
   const [activeMenu, setActiveMenu] = useState(initialMenu);
+
+  useEffect(() => {
+    if (menuParam && REALTY_MENU.some(m => m.key === menuParam)) {
+      setActiveMenu(menuParam);
+    } else {
+      setActiveMenu("dashboard");
+    }
+  }, [menuParam]);
   const [hoveredMenu, setHoveredMenu] = useState<string | null>(null);
   const [darkMode, setDarkMode] = useState(false);
   const [memberId, setMemberId] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>("로딩중...");
   const [agencyStatus, setAgencyStatus] = useState<string>("PENDING");
+  const [showDocWarning, setShowDocWarning] = useState(false);
   const [planType, setPlanType] = useState<string>("free");
 
   /* ── 프리페치 데이터 저장소 ── */
@@ -108,8 +117,11 @@ function RealtyAdminContent() {
       setUserName(member.name || "이름없음");
       setPlanType(member.plan_type || "free");
 
-      const { data: agencyData } = await supabase.from("agencies").select("status").eq("owner_id", member.id).single();
-      if (agencyData && agencyData.status) setAgencyStatus(agencyData.status);
+      const { data: agencyData } = await supabase.from("agencies").select("status, biz_cert_url, reg_cert_url").eq("owner_id", member.id).single();
+      if (agencyData) {
+        if (agencyData.status) setAgencyStatus(agencyData.status);
+        if (!agencyData.biz_cert_url || !agencyData.reg_cert_url) setShowDocWarning(true);
+      }
 
       // 공실 데이터 프리페치
       prefetchSection("gongsil", member.id);
@@ -177,13 +189,22 @@ function RealtyAdminContent() {
       <main style={{ flex: 1, display: "flex", flexDirection: "column", background: theme.bg, overflow: "hidden" }}>
         <header style={{ height: 64, background: theme.headerBg, borderBottom: `1px solid ${theme.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 32px", boxShadow: "0 1px 3px rgba(0,0,0,0.02)", flexShrink: 0, zIndex: 5 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: "6px 12px", borderRadius: 6, transition: "background 0.2s" }}
+            onClick={() => { setActiveMenu("settings"); router.push('?menu=settings'); }}
             onMouseEnter={(e) => { e.currentTarget.style.background = darkMode ? "#2c2d31" : "#f3f4f6"; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}>
             <span style={{ fontWeight: 800, fontSize: 17, color: theme.textPrimary }}>{userName}</span>
             <span style={{ fontSize: 14, color: darkMode ? "#aaa" : "#666" }}>{userEmail || "로딩중..."}</span>
-            <span style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 4, marginLeft: 4, background: "#ebf5ff", color: "#3b82f6" }}>부동산회원(유료)</span>
+            {planType === 'free' ? (
+              <span style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 4, marginLeft: 4, background: "#f3f4f6", color: "#4b5563" }}>무료부동산(Free)</span>
+            ) : (
+              <span style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 4, marginLeft: 4, background: "#ebf5ff", color: "#3b82f6" }}>
+                {planType === 'news_basic' || planType === 'news_premium' ? '공실뉴스' : planType === 'vacancy_basic' || planType === 'vacancy_premium' ? '공실등록' : '부동산회원(유료)'}
+              </span>
+            )}
             {agencyStatus === "REJECTED" && <span style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 4, marginLeft: 4, color: "#be123c", background: "#fee2e2", border: "1px solid #ef4444", display: "inline-flex", alignItems: "center", gap: 4 }}>🚨 보완요청 확인요망</span>}
             {agencyStatus === "PENDING" && <span style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 4, marginLeft: 4, color: "#92400e", background: "#fef3c7", border: "1px solid #fde68a" }}>⏳ 승인 대기중</span>}
+            {agencyStatus === "APPROVED" && <span style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 4, marginLeft: 4, color: "#166534", background: "#dcfce7", border: "1px solid #bbf7d0" }}>✅ 정상승인</span>}
+            {showDocWarning && <span onClick={() => { setActiveMenu("settings"); router.push('?menu=settings&tab=agency'); }} style={{ cursor: "pointer", fontSize: 13, fontWeight: 700, padding: "4px 12px", borderRadius: 20, marginLeft: 8, color: "#c53030", background: "#fff5f5", border: "1px solid #fed7d7" }}>⚠️ 소장님! 아직 필수 서류를 다 내시지 않았어요! 👉 (여기를 클릭해서 서류를 제출해주세요)</span>}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
             <button onClick={() => setDarkMode(!darkMode)} style={{ background: darkMode ? "#2c2d31" : "none", border: `1px solid ${darkMode ? "#444" : "#e5e7eb"}`, borderRadius: 8, width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 18, color: darkMode ? "#e1e4e8" : "#555" }} title="다크모드 전환">{darkMode ? "☀️" : "🌙"}</button>
@@ -199,7 +220,7 @@ function RealtyAdminContent() {
           {activeMenu === "point" && memberId && <MyPointSection theme={theme} memberId={memberId} role="realtor" />}
           {activeMenu === "settings" && (
             <div style={{ flex: 1, padding: "20px 28px", overflowY: "auto", background: theme.cardBg, margin: 16, marginBottom: 0, borderTopLeftRadius: 12, borderTopRightRadius: 12, boxShadow: "0 4px 6px rgba(0,0,0,0.05)" }}>
-              {memberId ? <MemberRegisterForm editMemberId={memberId} onBack={() => setActiveMenu("dashboard")} /> : <div style={{ textAlign: "center", padding: 40, color: theme.textSecondary }}>사용자 정보를 불러오는 중입니다...</div>}
+              {memberId ? <MemberRegisterForm editMemberId={memberId} onBack={() => setActiveMenu("dashboard")} initialTab={searchParams.get("tab") === "agency" ? 1 : 0} /> : <div style={{ textAlign: "center", padding: 40, color: theme.textSecondary }}>사용자 정보를 불러오는 중입니다...</div>}
             </div>
           )}
           {activeMenu === "homepage" && memberId && <HomepageSection theme={theme} memberId={memberId} planType={planType} />}

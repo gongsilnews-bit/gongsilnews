@@ -115,7 +115,7 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
           <span style={{ fontSize: '14px', color: '#c53030', fontWeight: 700 }}>
             소장님! 아직 필수 서류(사업자/개설등록증)를 다 내시지 않았어요! 서류 제출하셔야 공동중계를 무료로 쓰실 수 있어요 👉 
           </span>
-          <Link href="/mypage" style={{ textDecoration: 'underline', color: '#e53e3e', fontSize: '14px', fontWeight: 800 }}>마이페이지로 가기</Link>
+          <Link href="/realty_admin?menu=settings" style={{ textDecoration: 'underline', color: '#e53e3e', fontSize: '14px', fontWeight: 800 }}>정보설정으로 가기</Link>
           <button onClick={() => setShowDocWarning(false)} style={{ background: 'none', border: 'none', marginLeft: '10px', cursor: 'pointer', color: '#c53030' }}>✕</button>
         </div>
       )}

@@ -63,6 +63,14 @@ function AdminContent() {
   }
   
   const [activeMenu, setActiveMenu] = useState(initialMenu);
+
+  useEffect(() => {
+    if (menuParam && ADMIN_MENU.some(m => m.key === menuParam)) {
+      setActiveMenu(menuParam);
+    } else {
+      setActiveMenu("dashboard");
+    }
+  }, [menuParam]);
   const [activeSubmenu, setActiveSubmenu] = useState("members_list");
   const [hoveredMenu, setHoveredMenu] = useState<string | null>(null);
   const [darkMode, setDarkMode] = useState(false);

@@ -6,7 +6,7 @@ import MemberRegisterForm from "@/components/admin/MemberRegisterForm";
 import { adminGetMembers, adminSoftDeleteMember, adminRestoreMember, adminHardDeleteMember, adminBulkUpdatePlanAndLimits } from "@/app/admin/actions";
 
 interface MemberSectionProps extends AdminSectionProps {
-  activeSubmenu: "members_list" | "dormant";
+  activeSubmenu: string;
   onSubmenuChange?: (submenu: string) => void;
   initialData?: any[];
 }
@@ -49,8 +49,37 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
     );
   }
 
-  const isDormant = activeSubmenu === "dormant";
-  let displayMembers = isDormant ? dbMembers.filter(m => m.is_deleted) : dbMembers.filter(m => !m.is_deleted);
+  const processedMembers = dbMembers.map(m => {
+    let agencyStatus = null;
+    if (m.agencies) agencyStatus = Array.isArray(m.agencies) ? m.agencies[0]?.status : m.agencies.status;
+    let computedStatus = m.signup_completed ? '정상' : '승인대기';
+    if (m.role === 'REALTOR') {
+      if (agencyStatus === 'APPROVED') computedStatus = '정상';
+      else if (agencyStatus === 'REJECTED') computedStatus = '서류보완';
+      else computedStatus = '승인대기';
+    }
+    return { ...m, computedStatus };
+  });
+
+  const counts = {
+    all: processedMembers.filter(m => !m.is_deleted).length,
+    approved: processedMembers.filter(m => !m.is_deleted && m.computedStatus === '정상').length,
+    pending: processedMembers.filter(m => !m.is_deleted && m.computedStatus === '승인대기').length,
+    rejected: processedMembers.filter(m => !m.is_deleted && m.computedStatus === '서류보완').length,
+    dormant: processedMembers.filter(m => m.is_deleted).length,
+  };
+
+  const currentTab = activeSubmenu === "members_list" ? "all" : activeSubmenu;
+  const isDormant = currentTab === "dormant";
+
+  let displayMembers = processedMembers.filter(m => {
+    if (currentTab === 'dormant') return m.is_deleted;
+    if (m.is_deleted) return false;
+    if (currentTab === 'approved') return m.computedStatus === '정상';
+    if (currentTab === 'pending') return m.computedStatus === '승인대기';
+    if (currentTab === 'rejected') return m.computedStatus === '서류보완';
+    return true; // "all"
+  });
 
   if (activeFilters.memberId) {
     displayMembers = displayMembers.filter(m => {
@@ -84,25 +113,36 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
       {/* 서브메뉴 탭 */}
       <div style={{ display: "flex", borderBottom: `1px solid ${border}`, marginBottom: 20, gap: 24 }}>
         {[
-          { key: "members_list", label: "회원목록" },
-          { key: "dormant", label: "휴지통" }
+          { key: "all", label: "전체", count: counts.all, color: "#3b82f6", activeColor: "#2563eb" },
+          { key: "approved", label: "승인완료", count: counts.approved, color: "#10b981", activeColor: "#059669" },
+          { key: "pending", label: "승인대기", count: counts.pending, color: "#8b5cf6", activeColor: "#7c3aed" },
+          { key: "rejected", label: "서류보완", count: counts.rejected, color: "#ef4444", activeColor: "#dc2626" },
+          { key: "dormant", label: "휴지통", count: counts.dormant, color: "#6b7280", activeColor: "#4b5563" }
         ].map(tab => (
           <button
             key={tab.key}
             onClick={() => onSubmenuChange?.(tab.key)}
             style={{
+              display: "flex", alignItems: "center", gap: 6,
               padding: "0 4px 12px",
               background: "none",
               border: "none",
-              borderBottom: activeSubmenu === tab.key ? "3px solid #3b82f6" : "3px solid transparent",
-              color: activeSubmenu === tab.key ? "#3b82f6" : textSecondary,
-              fontSize: 16,
-              fontWeight: activeSubmenu === tab.key ? 800 : 600,
+              borderBottom: currentTab === tab.key ? `3px solid ${tab.activeColor}` : "3px solid transparent",
+              color: currentTab === tab.key ? tab.activeColor : textSecondary,
+              fontSize: 15,
+              fontWeight: currentTab === tab.key ? 800 : 700,
               cursor: "pointer",
               transition: "all 0.2s"
             }}
           >
             {tab.label}
+            <span style={{
+              background: tab.key === "all" && currentTab !== "all" ? (darkMode ? "#333" : "#e5e7eb") : tab.color,
+              color: tab.key === "all" && currentTab !== "all" ? textSecondary : "#fff",
+              padding: "2px 8px", borderRadius: 12, fontSize: 12, fontWeight: 800, transition: "all 0.2s"
+            }}>
+              {tab.count}
+            </span>
           </button>
         ))}
       </div>
@@ -183,35 +223,25 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
             </thead>
             <tbody>
               {displayMembers.length > 0 ? displayMembers.map((member, idx) => {
-                const roleMap: any = { 'ADMIN': '최고관리자', 'REALTOR': '부동산회원', 'USER': '일반회원' };
+                const roleMap: any = { 'ADMIN': '최고관리자', 'REALTOR': '무료부동산', 'USER': '일반회원' };
                 let displayRole = roleMap[member.role] || member.role || '일반회원';
                 if (member.role === 'REALTOR' && member.plan_type) {
-                  if (member.plan_type === 'news_premium') displayRole += ' (공실뉴스)';
-                  if (member.plan_type === 'vacancy_premium') displayRole += ' (공실등록)';
+                  if (member.plan_type === 'news_premium') displayRole = '공실뉴스';
+                  else if (member.plan_type === 'vacancy_premium') displayRole = '공실등록';
                 }
                 const createdDate = member.created_at ? new Date(member.created_at).toISOString().split('T')[0] : "-";
-                let agencyStatus = null;
-                if (member.agencies) agencyStatus = Array.isArray(member.agencies) ? member.agencies[0]?.status : member.agencies.status;
-                let displayStatus = member.signup_completed ? '정상' : '승인대기';
+                
+                let displayStatus = member.computedStatus;
                 let statusColor = textSecondary, statusBg = "transparent";
-                if (member.role === 'REALTOR') {
-                  if (agencyStatus === 'APPROVED') {
-                    const oneWeekAgo = new Date();
-                    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-                    const isOld = member.created_at && new Date(member.created_at) < oneWeekAgo;
-                    
-                    if (isOld) {
-                      displayStatus = '정상';
-                      statusColor = textSecondary;
-                      statusBg = "transparent";
-                    } else {
-                      displayStatus = '정상승인';
-                      statusColor = "#065f46";
-                      statusBg = "#d1fae5";
-                    }
-                  }
-                  else if (agencyStatus === 'REJECTED') { displayStatus = '서류보완 필요'; statusColor = "#b91c1c"; statusBg = "#fee2e2"; }
-                  else { displayStatus = '승인대기'; statusColor = "#92400e"; statusBg = "#fef3c7"; }
+                if (displayStatus === '정상') {
+                  statusColor = "#065f46"; 
+                  statusBg = "#d1fae5"; 
+                } else if (displayStatus === '서류보완') {
+                  statusColor = "#b91c1c"; 
+                  statusBg = "#fee2e2"; 
+                } else if (displayStatus === '승인대기') {
+                  statusColor = "#92400e"; 
+                  statusBg = "#fef3c7"; 
                 }
 
                 return (
@@ -246,7 +276,7 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
                       {member.homepage_id || '-'}
                     </td>
                     <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>
-                      {member.plan_end_date ? new Date(member.plan_end_date).toISOString().split('T')[0] : '-'}
+                      {member.plan_type !== 'free' && member.plan_end_date ? new Date(member.plan_end_date).toISOString().split('T')[0] : '-'}
                     </td>
                     <td></td>
                     <td style={{ padding: "16px 10px", textAlign: "right", verticalAlign: "middle" }}>

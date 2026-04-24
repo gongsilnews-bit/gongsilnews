@@ -9,9 +9,10 @@ interface MemberRegisterFormProps {
   darkMode?: boolean;
   editMemberId?: string | null;
   isAdmin?: boolean;
+  initialTab?: number;
 }
 
-export default function MemberRegisterForm({ onBack, darkMode = false, editMemberId = null, isAdmin = false }: MemberRegisterFormProps) {
+export default function MemberRegisterForm({ onBack, darkMode = false, editMemberId = null, isAdmin = false, initialTab = 0 }: MemberRegisterFormProps) {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
@@ -46,8 +47,11 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [geocoding, setGeocoding] = useState(false);
-  const [activeTab, setActiveTab] = useState(0); 
+  const [activeTab, setActiveTab] = useState(initialTab); 
 
+  useEffect(() => {
+    setActiveTab(initialTab);
+  }, [initialTab]);
 
   const initialSnsObj = { url: "", login_id: "", login_pw: "", login_type: "일반" };
   const [snsLinks, setSnsLinks] = useState<Record<string, typeof initialSnsObj>>({
@@ -279,7 +283,16 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
     setFilePreviews((prev) => ({ ...prev, [type]: null }));
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e?: React.MouseEvent | React.FormEvent, requestApproval: boolean = false) => {
+    if (e) e.preventDefault();
+    if (requestApproval) {
+      if (!agencyData.name || !agencyData.ceo_name || !agencyData.cell || !agencyData.phone || !agencyData.address || !agencyData.intro || !agencyData.reg_num || !agencyData.biz_num || (!files.reg_cert && !filePreviews.reg_cert) || (!files.biz_cert && !filePreviews.biz_cert)) {
+        alert("필수 정보를 모두 입력하고 서류를 첨부해야 승인대기 신청이 가능합니다.");
+        setActiveTab(1);
+        return;
+      }
+    }
+
     if (!formData.email || !formData.name || !formData.role) {
       alert("회원ID, 이름, 회원구분은 필수 항목입니다.");
       return;
@@ -321,9 +334,6 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
       }
 
       if (formData.role === "부동산회원" && memberId) {
-        if (!files.reg_cert && !filePreviews.reg_cert) throw new Error("개설등록증 사본 첨부가 필수입니다.");
-        if (!files.biz_cert && !filePreviews.biz_cert) throw new Error("사업자등록증 사본 첨부가 필수입니다.");
-
         let regCertUrl = filePreviews.reg_cert?.startsWith("http") ? filePreviews.reg_cert : null;
         let bizCertUrl = filePreviews.biz_cert?.startsWith("http") ? filePreviews.biz_cert : null;
 
@@ -349,7 +359,7 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
           biz_cert_url: bizCertUrl,
           lat: coords?.lat || null,
           lng: coords?.lng || null,
-          status: isAdmin ? agencyData.status : (agencyData.status === "APPROVED" ? "APPROVED" : "PENDING")
+          status: isAdmin ? agencyData.status : (requestApproval ? "PENDING" : agencyData.status)
         };
 
         const agencyRes = await adminUpdateAgency(memberId, finalAgencyData);
@@ -382,8 +392,24 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
   const rowStyle = { display: "flex", borderBottom: `1px solid ${darkMode ? "#333" : "#e5e7eb"}` };
   const contentStyle = { flex: 1, padding: "16px 20px", display: "flex", alignItems: "center" };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Enter') {
+      const target = e.target as HTMLElement;
+      if (target.tagName.toLowerCase() === 'textarea' || target.tagName.toLowerCase() === 'button') return;
+      e.preventDefault();
+      
+      const focusableElements = 'input:not([disabled]):not([readonly]), select:not([disabled])';
+      const elements = Array.from(document.querySelectorAll(focusableElements)) as HTMLElement[];
+      const index = elements.indexOf(target);
+      
+      if (index > -1 && index < elements.length - 1) {
+        elements[index + 1].focus();
+      }
+    }
+  };
+
   return (
-    <div style={{ flex: 1, overflowY: "auto", padding: "20px 28px", background: darkMode ? "#1a1b1e" : "#f4f5f7" }}>
+    <div onKeyDown={handleKeyDown} style={{ flex: 1, overflowY: "auto", padding: "20px 28px", background: darkMode ? "#1a1b1e" : "#f4f5f7" }}>
       {/* 타이틀 및 백버튼 */}
       <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 24 }}>
         <button onClick={onBack} style={{ height: 36, padding: "0 16px", background: "#fff", color: "#4b5563", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, boxShadow: "0 1px 2px rgba(0,0,0,0.05)" }}>
@@ -440,7 +466,7 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
             <select name="role" value={formData.role} onChange={handleMemberChange} style={{ height: 40, padding: "0 14px", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 6, fontSize: 14, color: darkMode ? "#e1e4e8" : "#111827", background: darkMode ? "#2c2d31" : "#fff", outline: "none", width: 160 }}>
               <option value="일반회원">일반회원</option>
               <option value="부동산회원">부동산회원</option>
-              <option value="최고관리자">최고관리자</option>
+              {isAdmin && <option value="최고관리자">최고관리자</option>}
             </select>
           </div>
         </div>
@@ -450,7 +476,7 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
             <div style={rowStyle}>
               <div style={labelStyle}>부동산 요금제</div>
               <div style={contentStyle}>
-                <select name="plan_type" value={formData.plan_type} onChange={handleMemberChange} style={{ height: 40, padding: "0 14px", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 6, fontSize: 14, color: darkMode ? "#e1e4e8" : "#111827", background: darkMode ? "#2c2d31" : "#fff", outline: "none", width: 180 }}>
+                <select name="plan_type" value={formData.plan_type} onChange={handleMemberChange} disabled={!isAdmin} style={{ height: 40, padding: "0 14px", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 6, fontSize: 14, color: darkMode ? "#e1e4e8" : "#111827", background: darkMode ? "#2c2d31" : "#fff", outline: "none", width: 180 }}>
                   <option value="free">무료부동산 (Free)</option>
                   <option value="news_premium">공실뉴스부동산</option>
                   <option value="vacancy_premium">공실등록부동산</option>
@@ -461,9 +487,9 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
               <div style={rowStyle}>
                 <div style={labelStyle}>요금제 적용기간</div>
                 <div style={{ ...contentStyle, gap: 12, alignItems: 'center' }}>
-                  <input type="date" name="plan_start_date" value={formData.plan_start_date} onChange={handleMemberChange} style={{ ...inputStyle, flex: "none", width: 160 }} />
+                  <input type="date" name="plan_start_date" value={formData.plan_start_date} onChange={handleMemberChange} disabled={!isAdmin} style={{ ...inputStyle, flex: "none", width: 160 }} />
                   <span style={{ fontWeight: "bold", color: darkMode ? "#ccc" : "#555" }}>~</span>
-                  <input type="date" name="plan_end_date" value={formData.plan_end_date} onChange={handleMemberChange} style={{ ...inputStyle, flex: "none", width: 160 }} />
+                  <input type="date" name="plan_end_date" value={formData.plan_end_date} onChange={handleMemberChange} disabled={!isAdmin} style={{ ...inputStyle, flex: "none", width: 160 }} />
                   <span style={{ fontSize: 12, color: "#888", marginLeft: 8 }}>종료일이 지나면 자동으로 기본(무료) 요금제로 전환 취급됩니다.</span>
                 </div>
               </div>
@@ -474,11 +500,11 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
               <div style={{ ...contentStyle, gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14 }}>
                   <span style={{ fontWeight: 600, color: darkMode ? '#ccc' : '#444' }}>매물 등록(총 건수):</span>
-                  <input type="number" name="max_vacancies" value={formData.max_vacancies} onChange={handleMemberChange} style={{ ...inputStyle, flex: "none", width: 80, textAlign: 'right' }} min={0} />
+                  <input type="number" name="max_vacancies" value={formData.max_vacancies} onChange={handleMemberChange} disabled={!isAdmin} style={{ ...inputStyle, flex: "none", width: 80, textAlign: 'right' }} min={0} />
                 </label>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14 }}>
                   <span style={{ fontWeight: 600, color: darkMode ? '#ccc' : '#444' }}>뉴스 작성(월 단위):</span>
-                  <input type="number" name="max_articles_per_month" value={formData.max_articles_per_month} onChange={handleMemberChange} style={{ ...inputStyle, flex: "none", width: 80, textAlign: 'right' }} min={0} />
+                  <input type="number" name="max_articles_per_month" value={formData.max_articles_per_month} onChange={handleMemberChange} disabled={!isAdmin} style={{ ...inputStyle, flex: "none", width: 80, textAlign: 'right' }} min={0} />
                 </label>
                 <div style={{ width: '100%', fontSize: 12, color: "#888" }}>0으로 설정 시 해당 기능을 사용할 수 없으며, 매우 높은 숫자 입력 시 무제한과 동일합니다. (기본값: 매물 5, 기사 0)</div>
               </div>
@@ -502,14 +528,23 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
                 </select>
               ) : (
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span style={{ fontSize: 14, fontWeight: 700, padding: "4px 10px", borderRadius: 4, ...((agencyData.status === "APPROVED") ? { background: "#d1fae5", color: "#065f46" } : (agencyData.status === "REJECTED") ? { background: "#fee2e2", color: "#b91c1c" } : { background: "#fef3c7", color: "#92400e" }) }}>
+                  <span 
+                    onClick={() => { if (agencyData.status === "REJECTED") setActiveTab(1); }}
+                    style={{ 
+                      fontSize: 14, fontWeight: 700, padding: "4px 10px", borderRadius: 4, 
+                      cursor: agencyData.status === "REJECTED" ? "pointer" : "default",
+                      ...((agencyData.status === "APPROVED") ? { background: "#d1fae5", color: "#065f46" } : (agencyData.status === "REJECTED") ? { background: "#fee2e2", color: "#b91c1c" } : { background: "#fef3c7", color: "#92400e" }) 
+                    }}
+                  >
                     {agencyData.status === "APPROVED" ? "정상승인" : agencyData.status === "REJECTED" ? "서류보완 필요" : "승인대기"}
                   </span>
                   {agencyData.status === "PENDING" && (
                     <span style={{ fontSize: 13, color: darkMode ? "#a1a1aa" : "#6b7280" }}>서류를 꼼꼼히 확인하고 있어요! 조금만 기다려주세요 🐰</span>
                   )}
                   {agencyData.status === "REJECTED" && (
-                    <span style={{ fontSize: 13, color: darkMode ? "#fca5a5" : "#ef4444", fontWeight: 600 }}>앗! 제출하신 서류가 조금 부족해요 😭 아래에서 다시 첨부해주세요!</span>
+                    <span onClick={() => setActiveTab(1)} style={{ fontSize: 13, color: darkMode ? "#fca5a5" : "#ef4444", fontWeight: 600, cursor: "pointer" }}>
+                      앗! 제출하신 정보가 다소 부족해요 😭 <span style={{ textDecoration: "underline" }}>여기를 눌러서 마저 입력해주세요!</span>
+                    </span>
                   )}
                 </div>
               )
@@ -525,35 +560,60 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
         <div style={{ background: darkMode ? "#2c2d31" : "#fff", borderBottomLeftRadius: 12, borderBottomRightRadius: 12, border: `1px solid ${darkMode ? "#333" : "#e5e7eb"}`, borderTop: "none", overflow: "hidden", marginBottom: 24 }}>
           
           <div style={{ ...rowStyle, borderTop: "none" }}>
-            <div style={labelStyle}>상호(사업장명)</div>
+            <div style={{ ...labelStyle, flexWrap: "wrap", flexDirection: "column", alignItems: "flex-start", gap: 4, justifyContent: "center", lineHeight: 1.2 }}>
+              상호(사업장명)
+              {!agencyData.name && agencyData.status !== "APPROVED" && (
+                <span style={{ fontSize: 11, color: "#ef4444", fontWeight: "bold" }}>🚨 필수입력 누락</span>
+              )}
+            </div>
             <div style={contentStyle}>
               <input type="text" name="name" value={agencyData.name} onChange={handleAgencyChange} style={{...inputStyle, maxWidth: 300}} placeholder="중개업소명 입력" />
             </div>
           </div>
 
           <div style={rowStyle}>
-            <div style={labelStyle}>대표자명</div>
+            <div style={{ ...labelStyle, flexWrap: "wrap", flexDirection: "column", alignItems: "flex-start", gap: 4, justifyContent: "center", lineHeight: 1.2 }}>
+              대표자명
+              {!agencyData.ceo_name && agencyData.status !== "APPROVED" && (
+                <span style={{ fontSize: 11, color: "#ef4444", fontWeight: "bold" }}>🚨 필수입력 누락</span>
+              )}
+            </div>
             <div style={contentStyle}>
               <input type="text" name="ceo_name" value={agencyData.ceo_name} onChange={handleAgencyChange} style={{...inputStyle, maxWidth: 300}} />
             </div>
           </div>
 
           <div style={rowStyle}>
-            <div style={labelStyle}>대표자 연락처</div>
+            <div style={{ ...labelStyle, flexWrap: "wrap", flexDirection: "column", alignItems: "flex-start", gap: 4, justifyContent: "center", lineHeight: 1.2 }}>
+              대표자 연락처
+              {!agencyData.cell && agencyData.status !== "APPROVED" && (
+                <span style={{ fontSize: 11, color: "#ef4444", fontWeight: "bold" }}>🚨 필수입력 누락</span>
+              )}
+            </div>
             <div style={contentStyle}>
               <input type="text" name="cell" value={agencyData.cell} onChange={handleAgencyChange} style={{...inputStyle, maxWidth: 300}} placeholder="010-0000-0000" />
             </div>
           </div>
 
           <div style={rowStyle}>
-            <div style={labelStyle}>사무실 전화</div>
+            <div style={{ ...labelStyle, flexWrap: "wrap", flexDirection: "column", alignItems: "flex-start", gap: 4, justifyContent: "center", lineHeight: 1.2 }}>
+              사무실 전화
+              {!agencyData.phone && agencyData.status !== "APPROVED" && (
+                <span style={{ fontSize: 11, color: "#ef4444", fontWeight: "bold" }}>🚨 필수입력 누락</span>
+              )}
+            </div>
             <div style={contentStyle}>
               <input type="text" name="phone" value={agencyData.phone} onChange={handleAgencyChange} style={{...inputStyle, maxWidth: 300}} />
             </div>
           </div>
 
           <div style={rowStyle}>
-            <div style={labelStyle}>사무실 주소</div>
+            <div style={{ ...labelStyle, flexWrap: "wrap", flexDirection: "column", alignItems: "flex-start", gap: 4, justifyContent: "center", lineHeight: 1.2 }}>
+              사무실 주소
+              {!agencyData.address && agencyData.status !== "APPROVED" && (
+                <span style={{ fontSize: 11, color: "#ef4444", fontWeight: "bold" }}>🚨 필수입력 누락</span>
+              )}
+            </div>
             <div style={{...contentStyle, flexDirection: "column", gap: 10, alignItems: "stretch"}}>
               <div style={{ display: "flex", gap: 8 }}>
                 <input type="text" name="zipcode" value={agencyData.zipcode} onChange={handleAgencyChange} style={{...readOnlyStyle, width: 120, flex: "none"}} placeholder="우편번호" readOnly />
@@ -584,7 +644,12 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
           </div>
 
           <div style={rowStyle}>
-            <div style={labelStyle}>부동산 소개<br/><span style={{fontSize: 11, color: "#888", fontWeight: "normal"}}>(100자 이내)</span></div>
+            <div style={{ ...labelStyle, flexWrap: "wrap", flexDirection: "column", alignItems: "flex-start", gap: 4, justifyContent: "center", lineHeight: 1.2 }}>
+              <div>부동산 소개<br/><span style={{fontSize: 11, color: "#888", fontWeight: "normal"}}>(100자 이내)</span></div>
+              {!agencyData.intro && agencyData.status !== "APPROVED" && (
+                <span style={{ fontSize: 11, color: "#ef4444", fontWeight: "bold" }}>🚨 필수입력 누락</span>
+              )}
+            </div>
             <div style={{...contentStyle, flexDirection: "column", alignItems: "flex-end"}}>
               <textarea 
                 name="intro" 
@@ -601,14 +666,24 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
           </div>
 
           <div style={rowStyle}>
-            <div style={labelStyle}>등록번호</div>
+            <div style={{ ...labelStyle, flexWrap: "wrap", flexDirection: "column", alignItems: "flex-start", gap: 4, justifyContent: "center", lineHeight: 1.2 }}>
+              등록번호
+              {!agencyData.reg_num && agencyData.status !== "APPROVED" && (
+                <span style={{ fontSize: 11, color: "#ef4444", fontWeight: "bold" }}>🚨 필수입력 누락</span>
+              )}
+            </div>
             <div style={contentStyle}>
               <input type="text" name="reg_num" value={agencyData.reg_num} onChange={handleAgencyChange} style={{...inputStyle, maxWidth: 300}} placeholder="중개업 등록번호" />
             </div>
           </div>
 
           <div style={rowStyle}>
-            <div style={labelStyle}>등록증 사본 첨부</div>
+            <div style={{ ...labelStyle, flexWrap: "wrap", flexDirection: "column", alignItems: "flex-start", gap: 4, justifyContent: "center", lineHeight: 1.2 }}>
+              등록증 사본 첨부
+              {!filePreviews.reg_cert && agencyData.status !== "APPROVED" && (
+                <span style={{ fontSize: 11, color: "#ef4444", fontWeight: "bold" }}>🚨 필수첨부 누락</span>
+              )}
+            </div>
             <div style={{ ...contentStyle, gap: 16 }}>
               {filePreviews.reg_cert && (
                 <div style={{ position: "relative", display: "inline-block" }}>
@@ -628,14 +703,24 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
           </div>
 
           <div style={rowStyle}>
-            <div style={labelStyle}>사업자등록번호</div>
+            <div style={{ ...labelStyle, flexWrap: "wrap", flexDirection: "column", alignItems: "flex-start", gap: 4, justifyContent: "center", lineHeight: 1.2 }}>
+              사업자등록번호
+              {!agencyData.biz_num && agencyData.status !== "APPROVED" && (
+                <span style={{ fontSize: 11, color: "#ef4444", fontWeight: "bold" }}>🚨 필수입력 누락</span>
+              )}
+            </div>
             <div style={contentStyle}>
               <input type="text" name="biz_num" value={agencyData.biz_num} onChange={handleAgencyChange} style={{...inputStyle, maxWidth: 300}} placeholder="000-00-00000" />
             </div>
           </div>
 
           <div style={rowStyle}>
-            <div style={labelStyle}>사업자등록증 첨부</div>
+            <div style={{ ...labelStyle, flexWrap: "wrap", flexDirection: "column", alignItems: "flex-start", gap: 4, justifyContent: "center", lineHeight: 1.2 }}>
+              사업자등록증 첨부
+              {!filePreviews.biz_cert && agencyData.status !== "APPROVED" && (
+                <span style={{ fontSize: 11, color: "#ef4444", fontWeight: "bold" }}>🚨 필수첨부 누락</span>
+              )}
+            </div>
             <div style={{ ...contentStyle, gap: 16 }}>
               {filePreviews.biz_cert && (
                 <div style={{ position: "relative", display: "inline-block" }}>
@@ -785,7 +870,12 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
 
       {/* 액션 버튼 */}
       <div style={{ display: "flex", gap: 10, paddingBottom: 60 }}>
-        <button onClick={handleSubmit} disabled={loading} style={{ height: 42, padding: "0 24px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 14, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1 }}>
+        {formData.role === "부동산회원" && !isAdmin && agencyData.status === "REJECTED" && (
+          <button onClick={(e) => handleSubmit(e, true)} disabled={loading} style={{ height: 42, padding: "0 24px", background: "#10b981", color: "#fff", border: "none", borderRadius: 6, fontSize: 14, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1 }}>
+            {loading ? "처리 중..." : "승인대기 신청"}
+          </button>
+        )}
+        <button onClick={(e) => handleSubmit(e, false)} disabled={loading} style={{ height: 42, padding: "0 24px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 14, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1 }}>
           {loading ? "등록 중..." : "저장"}
         </button>
         <button onClick={onBack} style={{ height: 42, padding: "0 24px", background: darkMode ? "#2c2d31" : "#fff", color: darkMode ? "#e1e4e8" : "#111827", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 6, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
