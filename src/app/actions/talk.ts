@@ -111,9 +111,26 @@ export async function getAllTalkItems(memberId?: string): Promise<{ success: boo
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     // 7. memberId 필터 (부동산/일반 유저용)
-    const result = memberId 
-      ? allTalks.filter(t => t.authorId === memberId)
-      : allTalks;
+    let result = allTalks;
+    if (memberId) {
+      // 내가 소유한 매물 ID 목록 가져오기
+      const { data: myVacancies } = await supabase
+        .from("vacancies")
+        .select("id")
+        .eq("owner_id", memberId);
+      const myVacancyIds = new Set((myVacancies || []).map(v => v.id));
+
+      // 내가 참여한 방(sourceId) 찾기: 내가 댓글을 달았거나, 내 매물인 경우
+      const mySourceIds = new Set<string>();
+      allTalks.forEach(t => {
+        if (t.authorId === memberId || (t.sourceType === "vacancy" && myVacancyIds.has(t.sourceId))) {
+          mySourceIds.add(t.sourceId);
+        }
+      });
+
+      // 내가 참여한 방의 '모든' 메시지를 반환 (관리자 답글 등 포함)
+      result = allTalks.filter(t => mySourceIds.has(t.sourceId));
+    }
 
     return { success: true, data: result };
   } catch (error: any) {
