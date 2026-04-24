@@ -40,8 +40,8 @@ export async function getVacancyUserData(userId: string) {
 
 export async function toggleWishlistToDB(userId: string, vacancyId: string, isWished: boolean) {
   const supabase = getAdminClient();
-  const vId = parseInt(vacancyId, 10);
-  if (isNaN(vId)) return { success: false, error: "Invalid vacancy_id" };
+  const vId = vacancyId;
+  if (!vId) return { success: false, error: "Invalid vacancy_id" };
 
   try {
     if (isWished) {
@@ -59,8 +59,8 @@ export async function toggleWishlistToDB(userId: string, vacancyId: string, isWi
 
 export async function addRecentViewToDB(userId: string, vacancyId: string) {
   const supabase = getAdminClient();
-  const vId = parseInt(vacancyId, 10);
-  if (isNaN(vId)) return { success: false, error: "Invalid vacancy_id" };
+  const vId = vacancyId;
+  if (!vId) return { success: false, error: "Invalid vacancy_id" };
 
   try {
     // Check if it exists

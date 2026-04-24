@@ -2,7 +2,7 @@
 CREATE TABLE IF NOT EXISTS public.vacancy_wishlist (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  vacancy_id BIGINT NOT NULL REFERENCES public.vacancies(id) ON DELETE CASCADE,
+  vacancy_id UUID NOT NULL REFERENCES public.vacancies(id) ON DELETE CASCADE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(user_id, vacancy_id)
 );
@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS public.vacancy_wishlist (
 CREATE TABLE IF NOT EXISTS public.vacancy_recent_views (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  vacancy_id BIGINT NOT NULL REFERENCES public.vacancies(id) ON DELETE CASCADE,
+  vacancy_id UUID NOT NULL REFERENCES public.vacancies(id) ON DELETE CASCADE,
   viewed_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(user_id, vacancy_id)
 );
