@@ -185,8 +185,8 @@ export default function CommentSection({ theme, role, memberId }: CommentSection
       {/* 메인 2단 레이아웃 */}
       <div style={{ flex: 1, display: "flex", margin: "16px 28px 0", gap: 0, overflow: "hidden", borderRadius: 12, border: `1px solid ${border}`, boxShadow: "0 4px 6px rgba(0,0,0,0.05)" }}>
         
-        {/* ===== 좌측: 채팅방 리스트 ===== */}
-        <div style={{ width: selectedRoom ? 380 : "100%", transition: "width 0.3s", borderRight: selectedRoom ? `1px solid ${border}` : "none", display: "flex", flexDirection: "column", background: cardBg, flexShrink: 0 }}>
+        {/* ===== 좌측: 채팅방 리스트 (항상 전체 폭) ===== */}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", background: cardBg }}>
           
           {/* 탭: 전체 / 댓글 / 문의Talk */}
           <div style={{ display: "flex", borderBottom: `1px solid ${border}`, background: darkMode ? "#2c2d31" : "#f8fafc", flexShrink: 0 }}>
@@ -270,43 +270,61 @@ export default function CommentSection({ theme, role, memberId }: CommentSection
             })}
           </div>
         </div>
+        </div>
 
-        {/* ===== 우측: Talk 대화 패널 ===== */}
-        {selectedRoom && (
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", background: darkMode ? "#1f2023" : "#f0f2f5", minWidth: 0 }}>
-            
+        {/* ===== 우측: Talk 대화 오버레이 패널 ===== */}
+      {selectedRoom && (
+        <div style={{
+          position: "fixed", top: 0, right: 0, width: "100vw", height: "100vh",
+          background: "rgba(0,0,0,0.3)", zIndex: 9999,
+          display: "flex", justifyContent: "flex-end"
+        }}>
+          <div style={{ flex: 1 }} onClick={() => setSelectedRoom(null)} />
+          
+          <div style={{
+            width: 520, background: cardBg,
+            boxShadow: "-4px 0 15px rgba(0,0,0,0.1)",
+            display: "flex", flexDirection: "column",
+            animation: "slideInRight 0.3s ease-out"
+          }}>
             {/* 헤더 */}
-            <div style={{ padding: "14px 20px", borderBottom: `1px solid ${border}`, background: cardBg, display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
-              <div style={{ minWidth: 0 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
+            <div style={{ padding: "20px 24px", borderBottom: `1px solid ${border}`, background: darkMode ? "#2c2d31" : "#f8fafc", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
                   {getSourceBadge(selectedRoom.sourceType, "md")}
-                  <span style={{ fontSize: 12, color: textSecondary }}>대화 {selectedRoom.messages.length}건</span>
+                  <span style={{ fontSize: 12, color: textSecondary, fontWeight: 600 }}>대화 {selectedRoom.messages.length}건</span>
                 </div>
-                <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: textPrimary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{selectedRoom.sourceTitle}</h3>
+                <h2 style={{ margin: "0 0 6px 0", fontSize: 18, color: textPrimary, fontWeight: 700, lineHeight: 1.4 }}>{selectedRoom.sourceTitle}</h2>
+                <div style={{ fontSize: 13, color: textSecondary }}>
+                  {selectedRoom.sourceType === "inquiry" ? "회원 간 1:1 대화" : "댓글 대화 스레드"}
+                </div>
               </div>
-              <button onClick={() => setSelectedRoom(null)} style={{ background: "none", border: "none", fontSize: 22, color: textSecondary, cursor: "pointer", padding: "4px 8px" }}>&times;</button>
+              <button onClick={() => setSelectedRoom(null)} style={{ background: "none", border: "none", fontSize: 24, color: textSecondary, cursor: "pointer" }}>&times;</button>
             </div>
 
             {/* 대화 영역 */}
-            <div style={{ flex: 1, overflowY: "auto", padding: "20px", display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ flex: 1, padding: "24px", overflowY: "auto", background: darkMode ? "#222" : "#f0f2f5", display: "flex", flexDirection: "column", gap: 20 }}>
               {selectedRoom.messages.map((msg) => {
                 const isMe = msg.authorName === "공실뉴스";
                 return (
-                  <div key={msg.id} style={{ display: "flex", flexDirection: isMe ? "row-reverse" : "row", gap: 8, alignItems: "flex-start" }}>
+                  <div key={msg.id} style={{ display: "flex", flexDirection: isMe ? "row-reverse" : "row", gap: 10, alignItems: "flex-start" }}>
                     {!isMe && (
-                      <div style={{ width: 36, height: 36, borderRadius: "50%", background: darkMode ? "#374151" : "#e5e7eb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>👤</div>
+                      <div style={{ width: 40, height: 40, borderRadius: "50%", background: darkMode ? "#374151" : "#e5e7eb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>👤</div>
                     )}
-                    <div style={{ maxWidth: "70%", display: "flex", flexDirection: "column", alignItems: isMe ? "flex-end" : "flex-start" }}>
+                    {isMe && (
+                      <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#3b82f6", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 800, flexShrink: 0 }}>ME</div>
+                    )}
+                    <div style={{ maxWidth: "75%", display: "flex", flexDirection: "column", alignItems: isMe ? "flex-end" : "flex-start" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4, flexDirection: isMe ? "row-reverse" : "row" }}>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: textPrimary }}>{msg.authorName}</span>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: textPrimary }}>{msg.authorName}</span>
                         {msg.isSecret && <span style={{ fontSize: 11 }}>🔒</span>}
-                        <span style={{ fontSize: 11, color: textSecondary }}>{new Date(msg.createdAt).toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
+                        <span style={{ fontSize: 11, color: textSecondary }}>{new Date(msg.createdAt).toLocaleString("ko-KR", { year: "numeric", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
                       </div>
                       <div style={{
-                        padding: "10px 14px", fontSize: 14, lineHeight: 1.6, color: isMe ? "#fff" : textPrimary,
+                        padding: "12px 16px", fontSize: 14, lineHeight: 1.7, color: isMe ? "#fff" : textPrimary,
                         background: isMe ? "#3b82f6" : (darkMode ? "#2c2d31" : "#fff"),
-                        borderRadius: isMe ? "12px 0 12px 12px" : "0 12px 12px 12px",
-                        boxShadow: "0 1px 2px rgba(0,0,0,0.08)", wordBreak: "break-word"
+                        borderRadius: isMe ? "14px 0 14px 14px" : "0 14px 14px 14px",
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.1)", wordBreak: "break-word"
                       }}>
                         {msg.content}
                       </div>
@@ -317,31 +335,24 @@ export default function CommentSection({ theme, role, memberId }: CommentSection
               <div ref={chatEndRef} />
             </div>
 
-            {/* 입력창 */}
-            <div style={{ padding: "12px 20px", borderTop: `1px solid ${border}`, background: cardBg, display: "flex", gap: 10, alignItems: "flex-end", flexShrink: 0 }}>
+            {/* 답글 입력창 (하단 고정) */}
+            <div style={{ padding: "16px 24px", borderTop: `1px solid ${border}`, background: darkMode ? "#2c2d31" : "#f8fafc", display: "flex", flexDirection: "column", gap: 12 }}>
               <textarea
-                value={replyText} onChange={e => setReplyText(e.target.value)}
+                value={replyText} onChange={(e) => setReplyText(e.target.value)}
                 onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleReply(); } }}
-                placeholder="메시지를 입력하세요..."
-                style={{ flex: 1, height: 42, padding: "10px 14px", borderRadius: 8, border: `1px solid ${border}`, background: darkMode ? "#1f2023" : "#fff", color: textPrimary, outline: "none", resize: "none", fontFamily: "inherit", fontSize: 14 }}
-                rows={1}
+                placeholder={`메시지를 입력하세요...`}
+                style={{ width: "100%", height: 80, padding: "12px", borderRadius: 8, border: `1px solid ${border}`, background: darkMode ? "#1f2023" : "#fff", color: textPrimary, outline: "none", resize: "none", fontFamily: "inherit", fontSize: 14 }}
               />
-              <button onClick={handleReply} style={{ height: 42, padding: "0 20px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer", fontSize: 14, whiteSpace: "nowrap" }}>전송</button>
+              <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center" }}>
+                <button onClick={handleReply} style={{ background: "#3b82f6", color: "#fff", border: "none", padding: "10px 24px", borderRadius: 6, fontWeight: 700, cursor: "pointer", fontSize: 14 }}>
+                  답글 전송
+                </button>
+              </div>
             </div>
           </div>
-        )}
-
-        {/* 선택 안 했을 때 안내 */}
-        {!selectedRoom && !loading && (
-          <div style={{ flex: 1, display: selectedRoom || filteredRooms.length === 0 ? "none" : "flex", alignItems: "center", justifyContent: "center", background: darkMode ? "#1f2023" : "#f0f2f5" }}>
-            <div style={{ textAlign: "center", color: textSecondary }}>
-              <div style={{ fontSize: 48, marginBottom: 16 }}>💬</div>
-              <div style={{ fontSize: 16, fontWeight: 600 }}>대화를 선택하세요</div>
-              <div style={{ fontSize: 13, marginTop: 4 }}>좌측 목록에서 Talk방을 클릭하면 대화가 표시됩니다.</div>
-            </div>
-          </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
+
