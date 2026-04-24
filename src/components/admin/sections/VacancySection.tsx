@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { AdminSectionProps } from "./types";
 import VacancyRegisterForm from "@/components/admin/VacancyRegisterForm";
+import VacancyDetailPanel from "./VacancyDetailPanel";
 import { getVacancies, updateVacancyStatus, updateVacancy, deleteVacancy, getVacancyDetail } from "@/app/actions/vacancy";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -84,6 +85,22 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
         editData={editingVacancy}
         {...(role === "user" && ownerName ? { initialClientName: ownerName } : {})}
         {...(role === "user" && ownerPhone ? { initialClientPhone: ownerPhone } : {})}
+      />
+    );
+  }
+
+  if (action === "detail" && editId) {
+    return (
+      <VacancyDetailPanel
+        vacancyId={editId}
+        onBack={() => {
+          const path = role === "realtor" ? "/realty_admin" : role === "user" ? "/user_admin" : "/admin";
+          router.push(`${path}?menu=gongsil`);
+        }}
+        onEdit={() => {
+          const path = role === "realtor" ? "/realty_admin" : role === "user" ? "/user_admin" : "/admin";
+          router.push(`${path}?menu=gongsil&action=write&id=${editId}`);
+        }}
       />
     );
   }
@@ -345,7 +362,10 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                       <div style={{ fontSize: 13, color: textSecondary, marginTop: 4, fontWeight: 600 }}>{daysSinceCreated}일</div>
                     </td>
                     <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 15, fontWeight: 600, color: textPrimary }}>{row.sub_category || row.property_type}</td>
-                    <td style={{ padding: "16px 10px", verticalAlign: "middle" }}>
+                    <td style={{ padding: "16px 10px", verticalAlign: "middle", cursor: "pointer" }} onClick={() => {
+                      const path = role === "realtor" ? "/realty_admin" : role === "user" ? "/user_admin" : "/admin";
+                      router.push(`${path}?menu=gongsil&action=detail&id=${row.id}`);
+                    }}>
                       <div style={{ fontWeight: 700, color: textPrimary, fontSize: 15, marginBottom: 4 }}>{addrText}</div>
                       <div style={{ fontSize: 14, color: textSecondary }}>{row.client_phone || ""}</div>
                     </td>

@@ -1,0 +1,130 @@
+/* legacy-gongsil-detail.css */
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.8/dist/web/variable/pretendardvariable.css');
+
+.gdv-root {
+  --primary: #1a73e8;
+  --blue: #1a73e8;
+  --green: #16a34a;
+  --red: #ef4444;
+  --border: #e5e7eb;
+  --bg: #f4f5f7;
+  --text: #222;
+  --sub: #666;
+  font-family: 'Pretendard Variable', -apple-system, system-ui, sans-serif;
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.gdv-page-body {
+  padding: 24px;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+/* ── 기기 미리보기 디바이스 버튼 ── */
+.gdv-device-btns { display: flex; gap: 4px; background: #fff; padding: 6px 8px; border-radius: 6px; border: 1px solid #ddd; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+.gdv-device-btn {
+  padding: 4px 16px; border-radius: 4px; border: none;
+  background: transparent; cursor: pointer; font-size: 16px; transition: background .15s;
+}
+.gdv-device-btn.gdv-active { background: #0bc2c2; color: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.1); }
+.gdv-device-btn:hover:not(.gdv-active) { background: #f3f4f6; }
+
+/* ── 기기 미리보기 프레임 ── */
+.gdv-preview-frame {
+  width: 100%;
+  max-width: 480px; 
+  margin: 0 auto; 
+  padding: 24px 20px;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 2px 20px rgba(0,0,0,0.06);
+  border: 1px solid #eee;
+  transition: max-width 0.3s ease, border-radius 0.3s ease, box-shadow 0.3s ease;
+}
+.gdv-preview-frame.gdv-tablet {
+  max-width: 768px !important; 
+}
+.gdv-preview-frame.gdv-mobile {
+  max-width: 375px !important; 
+  border: 8px solid #333; border-radius: 36px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+}
+
+/* ── 갤러리 ── */
+.gdv-gallery-wrap { position: relative; width: 100%; height: 260px; background: #f0f0f0; overflow: hidden; margin-bottom: 20px; border-radius: 8px; }
+.gdv-gallery-wrap img { width: 100%; height: 100%; object-fit: cover; }
+.gdv-gallery-nav-btn {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  background: rgba(0,0,0,0.4); color: #fff; border: none;
+  font-size: 18px; padding: 10px 8px; cursor: pointer; border-radius: 4px;
+}
+.gdv-gallery-nav-btn:hover { background: rgba(0,0,0,0.7); }
+.gdv-gallery-nav-btn.gdv-prev { left: 8px; }
+.gdv-gallery-nav-btn.gdv-next { right: 8px; }
+.gdv-gallery-count {
+  position: absolute; bottom: 10px; right: 10px; background: rgba(0,0,0,0.6); color: #fff;
+  font-size: 11px; font-weight: bold; padding: 4px 10px; border-radius: 20px;
+}
+
+/* ── 헤더 타이틀 ── */
+.gdv-prop-meta-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; font-size: 12px; }
+.gdv-tag-confirm { font-size: 11px; font-weight: bold; color: #ff5a5f; border: 1px solid #ff5a5f; padding: 2px 5px; border-radius: 2px; display:inline-block; }
+.gdv-prop-date { color: #aaa; margin-left: 6px; }
+.gdv-prop-name { font-size: 16px; color: #333; font-weight: 700; margin-bottom: 4px; }
+.gdv-prop-price { font-size: 28px; font-weight: 800; color: var(--primary); margin-bottom: 8px; }
+.gdv-prop-subinfo { font-size: 13px; color: #555; }
+.gdv-prop-desc-row { font-size: 14px; color: #444; margin-top: 10px; display:flex; gap:12px; align-items:center; }
+
+/* ── 가로 툴바 ── */
+.gdv-article-toolbar {
+  display: flex; gap: 6px; flex-wrap: wrap; margin: 20px 0; padding: 12px 0;
+  border-top: 1px solid #ddd; border-bottom: 1px solid #ddd;
+  justify-content: flex-end; align-items: center;
+}
+.gdv-btn-toolbar {
+  padding: 6px 12px; border-radius: 4px; border: 1px solid #ccc;
+  font-size: 12px; background: #fff; color: #444; cursor: pointer; font-family: inherit; font-weight:600; display:inline-flex; align-items:center; gap:4px;
+}
+.gdv-btn-toolbar:hover { background: #f9f9f9; }
+.gdv-btn-toolbar.gdv-blue { background: var(--blue); color: #fff; border-color: var(--blue); }
+.gdv-btn-toolbar.gdv-blue:hover { background: #1557b0; }
+
+/* ── 탭 ── */
+.gdv-detail-tabs { display: flex; border-bottom: 2px solid #111; margin-top: 10px; margin-bottom: 10px; }
+.gdv-tab-item { flex: 1; text-align: center; padding: 12px 0; font-size: 14px; font-weight: bold; cursor: pointer; color: #aaa; border-bottom: 3px solid transparent; margin-bottom: -2px; }
+.gdv-tab-item.gdv-active { color: #111; border-bottom-color: #111; }
+
+/* ── 정보 테이블 ── */
+.gdv-info-grid { display: grid; grid-template-columns: 110px 1fr; margin: 0; border-top: none; border-bottom: 10px solid #f5f5f5; }
+.gdv-info-label { 
+  font-size: 13px; color: #444; background: #f4f5f7; font-weight: bold;
+  display: flex; align-items: flex-start; padding: 16px 12px 16px 20px;
+  border-bottom: 1px solid #eee;
+}
+.gdv-info-value { 
+  font-size: 13px; color: #222; font-weight: 500; 
+  padding: 16px 20px 16px 16px; border-bottom: 1px solid #eee;
+  line-height: 1.6; word-break: break-all;
+}
+.gdv-info-desc { white-space: pre-wrap; }
+
+/* ── 등록자 정보 카드 ── */
+.gdv-realtor-card { background: #fafafa; border: 1px solid #eee; padding: 20px; border-radius: 8px; text-align: left; }
+.gdv-rc-name { font-size: 18px; font-weight: 800; color: #111; margin-bottom: 6px; }
+.gdv-rc-sub { font-size: 13px; color: #666; margin-bottom: 4px; }
+.gdv-rc-phone { font-size: 16px; font-weight: 900; color: var(--blue); margin-top: 10px; }
+
+/* ── 사이드바 ── */
+.gdv-sidebar-wrap { width:280px; flex-shrink:0; }
+.gdv-sidebar-card { background: #fff; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); padding: 20px; margin-bottom: 16px; }
+.gdv-sidebar-card-title { font-size: 14px; font-weight: bold; color: #111; margin-bottom: 12px; display:flex; align-items:center; gap:6px; }
+.gdv-sidebar-memo-footer { text-align: right; margin-top: 8px; }
+.gdv-sidebar-log-list { list-style: none; padding: 0; margin-top: 12px; font-size: 13px; color: #555; border-top: 1px solid #f0f0f0; padding-top: 12px; }
+.gdv-log-item { margin-bottom: 12px; display: flex; gap: 10px; align-items: flex-start; }
+.gdv-log-num { font-size: 11px; color: #888; width: 18px; height: 18px; background: #eee; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.gdv-log-content { flex: 1; min-width:0; }
+.gdv-log-title { font-size: 13px; color: #333; line-height: 1.4; margin-bottom: 2px; word-break: break-word; }
+.gdv-log-meta { font-size: 11px; color: #aaa; }
+.gdv-log-empty { color: #aaa; text-align: center; padding: 10px; font-size: 13px; }
