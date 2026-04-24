@@ -2151,9 +2151,9 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                             const link = prop.members.sns_links[key].url;
                             const validUrl = link.startsWith('http') ? link : `https://${link}`;
                             
-                            // Icon mapping based on key
                             let iconHtml;
                             switch(key) {
+                              case 'contact': iconHtml = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>; break;
                               case 'youtube': iconHtml = <svg viewBox="0 0 24 24" fill="currentColor"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.99C18.88 4 12 4 12 4s-6.88 0-8.59.43A2.78 2.78 0 0 0 1.46 6.42C1 8.16 1 12 1 12s0 3.84.46 5.58a2.78 2.78 0 0 0 1.95 1.99C5.12 20 12 20 12 20s6.88 0 8.59-.43a2.78 2.78 0 0 0 1.95-1.99C23 15.84 23 12 23 12s0-3.84-.46-5.58zM9.54 15.55V8.45L15.82 12l-6.28 3.55z"></path></svg>; break;
                               case 'instagram': iconHtml = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>; break;
                               case 'facebook': iconHtml = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>; break;
@@ -2229,7 +2229,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
 
                 {/* ──── 등록 물건 리스트 ──── */}
                 <div style={{ borderTop: "10px solid #f5f5f5" }}>
-                  {dbVacancies.filter(v => v.owner_id === prop.owner_id && (realtorTradeType === "전체" || v.trade_type === realtorTradeType)).slice(0, 10).map((vp) => (
+                  {dbVacancies.filter(v => v.owner_id === prop.owner_id && (realtorTradeType === "전체" || v.trade_type === realtorTradeType)).map((vp) => (
                     <div key={vp.id} onClick={() => { setPrevPropertyId(activeProperty); setActiveProperty(vp.id); setActiveDetailTab("info"); setGalleryIndex(0); }}
                       style={{
                         display: "flex", justifyContent: "space-between", alignItems: "flex-start",
