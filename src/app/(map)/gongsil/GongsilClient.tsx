@@ -9,6 +9,7 @@ import { getVacancyUserData, toggleWishlistToDB, addRecentViewToDB } from "@/app
 import { getPermissionLevel } from "@/utils/permissionCheck";
 import MapSearchBar from "@/components/MapSearchBar";
 import MapTopAuthButtons from "@/components/MapTopAuthButtons";
+import AuthModal from "@/components/AuthModal";
 
 // 카테고리 설정 데이터
 const CATEGORY_CONFIG: Record<string, { name: string; pills: string[]; basicFilters: string[]; detailFilters: string[]; showToggle: boolean; pillStyle?: string }> = {
@@ -104,6 +105,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   const [isSecret, setIsSecret] = useState(true);
   const [replyTarget, setReplyTarget] = useState<any>(null);
   const [hoveredMessageId, setHoveredMessageId] = useState<any>(null);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   useEffect(() => {
     let localRecent: any[] = [];
@@ -1808,7 +1810,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                   <div key={prop.id} 
                     onClick={() => { 
                       if (isMasked) {
-                        window.location.href = '/signup';
+                        setIsAuthModalOpen(true);
                         return;
                       }
                       if (isActiveAndShowing) {
@@ -1849,7 +1851,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                         <span style={{ fontSize: 13, color: "#fa5252", fontWeight: "bold" }}>{prop.vacancy_no}</span>
                         <span style={{ fontSize: 13, color: "#aaa" }}>{new Date(prop.created_at).toLocaleDateString('ko-KR', {year: 'numeric', month: '2-digit', day: '2-digit'}).replace(/\s/g, '')}</span>
                         {isMasked && (
-                          <span style={{ fontSize: 11, color: "#3b82f6", fontWeight: 700, background: "#eef6ff", padding: "3px 8px", borderRadius: 4 }}>🔒 부동산회원 가입 시 무료 열람</span>
+                          <span onClick={(e) => { e.stopPropagation(); setIsAuthModalOpen(true); }} style={{ fontSize: 11, color: "#3b82f6", fontWeight: 700, background: "#eef6ff", padding: "3px 8px", borderRadius: 4, cursor: "pointer" }}>🔒 부동산회원 가입 시 무료 열람</span>
                         )}
                       </div>
                     </div>
@@ -2318,6 +2320,12 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
           {toastMessage}
         </div>
       )}
+
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        initialTab="signup"
+      />
 
       <style>{`
         @keyframes toastFadeIn { from { opacity: 0; transform: translateX(-50%) translateY(-10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
