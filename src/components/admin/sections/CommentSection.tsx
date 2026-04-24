@@ -12,7 +12,7 @@ interface CommentSectionProps {
 
 /** 채팅방 단위 (기사/매물 하나 = 채팅방 하나) */
 interface TalkRoom {
-  sourceType: "vacancy" | "article";
+  sourceType: "vacancy" | "article" | "inquiry";
   sourceId: string;
   sourceTitle: string;
   messages: TalkItem[];
@@ -20,25 +20,59 @@ interface TalkRoom {
   unreadCount: number;
 }
 
+/** 더미 문의Talk 데이터 */
+const DUMMY_INQUIRY_ROOMS: TalkRoom[] = [
+  {
+    sourceType: "inquiry", sourceId: "inq_1",
+    sourceTitle: "강남수산 부동산",
+    messages: [
+      { id: "inq_msg_1", sourceType: "vacancy", sourceId: "inq_1", sourceTitle: "강남수산 부동산", authorId: "u1", authorName: "강남수산", content: "안녕하세요! 역삼동 테헤란로 사무실 아직 나와있나요?", isSecret: false, isRead: true, isReplied: false, createdAt: "2026-04-23T10:30:00Z" },
+      { id: "inq_msg_2", sourceType: "vacancy", sourceId: "inq_1", sourceTitle: "강남수산 부동산", authorId: "admin", authorName: "공실뉴스", content: "네! 현재 공실 상태입니다. 방문 가능하세요?", isSecret: false, isRead: true, isReplied: true, createdAt: "2026-04-23T10:35:00Z" },
+      { id: "inq_msg_3", sourceType: "vacancy", sourceId: "inq_1", sourceTitle: "강남수산 부동산", authorId: "u1", authorName: "강남수산", content: "이번주 금요일 오후 2시에 가능할까요?", isSecret: false, isRead: false, isReplied: false, createdAt: "2026-04-23T11:00:00Z" },
+    ],
+    lastMessage: { id: "inq_msg_3", sourceType: "vacancy", sourceId: "inq_1", sourceTitle: "강남수산 부동산", authorId: "u1", authorName: "강남수산", content: "이번주 금요일 오후 2시에 가능할까요?", isSecret: false, isRead: false, isReplied: false, createdAt: "2026-04-23T11:00:00Z" },
+    unreadCount: 1,
+  },
+  {
+    sourceType: "inquiry", sourceId: "inq_2",
+    sourceTitle: "꼬마빌딩최고",
+    messages: [
+      { id: "inq_msg_4", sourceType: "article", sourceId: "inq_2", sourceTitle: "꼬마빌딩최고", authorId: "u2", authorName: "꼬마빌딩최고", content: "기사에서 언급한 서초동 매물 정보 좀 더 알 수 있을까요?", isSecret: false, isRead: true, isReplied: false, createdAt: "2026-04-22T14:20:00Z" },
+      { id: "inq_msg_5", sourceType: "article", sourceId: "inq_2", sourceTitle: "꼬마빌딩최고", authorId: "admin", authorName: "공실뉴스", content: "네, DM으로 상세 정보 보내드리겠습니다!", isSecret: false, isRead: true, isReplied: true, createdAt: "2026-04-22T15:00:00Z" },
+    ],
+    lastMessage: { id: "inq_msg_5", sourceType: "article", sourceId: "inq_2", sourceTitle: "꼬마빌딩최고", authorId: "admin", authorName: "공실뉴스", content: "네, DM으로 상세 정보 보내드리겠습니다!", isSecret: false, isRead: true, isReplied: true, createdAt: "2026-04-22T15:00:00Z" },
+    unreadCount: 0,
+  },
+  {
+    sourceType: "inquiry", sourceId: "inq_3",
+    sourceTitle: "익명의 손님",
+    messages: [
+      { id: "inq_msg_6", sourceType: "vacancy", sourceId: "inq_3", sourceTitle: "익명의 손님", authorId: "u3", authorName: "익명의 손님", content: "전화 넘 안받으시네요. 혹시 이번주 토요일에 사무실 방문하면 뵐 수 있을까요?", isSecret: true, isRead: false, isReplied: false, createdAt: "2026-04-24T09:15:00Z" },
+    ],
+    lastMessage: { id: "inq_msg_6", sourceType: "vacancy", sourceId: "inq_3", sourceTitle: "익명의 손님", authorId: "u3", authorName: "익명의 손님", content: "전화 넘 안받으시네요. 혹시 이번주 토요일에 사무실 방문하면 뵐 수 있을까요?", isSecret: true, isRead: false, isReplied: false, createdAt: "2026-04-24T09:15:00Z" },
+    unreadCount: 1,
+  },
+];
+
 export default function CommentSection({ theme, role, memberId }: CommentSectionProps) {
   const { bg, cardBg, textPrimary, textSecondary, darkMode, border } = theme;
   
   const [activeTab, setActiveTab] = useState("전체");
   const [searchKeyword, setSearchKeyword] = useState("");
-  const [rooms, setRooms] = useState<TalkRoom[]>([]);
+  const [commentRooms, setCommentRooms] = useState<TalkRoom[]>([]);
+  const [inquiryRooms] = useState<TalkRoom[]>(DUMMY_INQUIRY_ROOMS);
   const [selectedRoom, setSelectedRoom] = useState<TalkRoom | null>(null);
   const [loading, setLoading] = useState(true);
   const [replyText, setReplyText] = useState("");
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // 실제 데이터 조회 → 채팅방 단위로 그룹핑
+  // 실제 댓글 데이터 조회 → 채팅방 단위로 그룹핑
   useEffect(() => {
     async function fetchTalkData() {
       setLoading(true);
       try {
         const res = await getAllTalkItems(role === "admin" ? undefined : memberId);
         if (res.success && res.data) {
-          // sourceId 기준으로 그룹핑
           const roomMap = new Map<string, TalkRoom>();
           for (const item of res.data) {
             const key = `${item.sourceType}_${item.sourceId}`;
@@ -54,16 +88,13 @@ export default function CommentSection({ theme, role, memberId }: CommentSection
             }
             roomMap.get(key)!.messages.push(item);
           }
-          // 각 채팅방의 메시지를 시간순(오래된→최신) 정렬
           const roomList = Array.from(roomMap.values()).map(room => {
             room.messages.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
             room.lastMessage = room.messages[room.messages.length - 1];
-            room.unreadCount = room.messages.filter(m => !m.isRead).length;
             return room;
           });
-          // 마지막 메시지 기준 최신순 정렬
           roomList.sort((a, b) => new Date(b.lastMessage.createdAt).getTime() - new Date(a.lastMessage.createdAt).getTime());
-          setRooms(roomList);
+          setCommentRooms(roomList);
         }
       } catch (err) {
         console.error("공실Talk 데이터 로드 실패:", err);
@@ -74,29 +105,48 @@ export default function CommentSection({ theme, role, memberId }: CommentSection
     fetchTalkData();
   }, [role, memberId]);
 
-  // 채팅방 열면 스크롤을 맨 밑으로
+  // 채팅방 열면 스크롤 하단으로
   useEffect(() => {
     if (selectedRoom && chatEndRef.current) {
-      chatEndRef.current.scrollIntoView({ behavior: "smooth" });
+      setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
     }
   }, [selectedRoom]);
 
-  // 필터 로직
-  const filteredRooms = rooms.filter(room => {
-    if (activeTab === "공실 매물" && room.sourceType !== "vacancy") return false;
-    if (activeTab === "뉴스 기사" && room.sourceType !== "article") return false;
+  // 현재 탭에 따라 보여줄 방 결정
+  const getVisibleRooms = (): TalkRoom[] => {
+    let rooms: TalkRoom[] = [];
+    if (activeTab === "전체") rooms = [...commentRooms, ...inquiryRooms];
+    else if (activeTab === "댓글") rooms = commentRooms;
+    else if (activeTab === "문의 Talk") rooms = inquiryRooms;
+
+    rooms.sort((a, b) => new Date(b.lastMessage.createdAt).getTime() - new Date(a.lastMessage.createdAt).getTime());
+
     if (searchKeyword) {
       const kw = searchKeyword.toLowerCase();
-      if (!room.sourceTitle.toLowerCase().includes(kw) && !room.lastMessage.content.toLowerCase().includes(kw) && !room.lastMessage.authorName.toLowerCase().includes(kw)) return false;
+      rooms = rooms.filter(r => r.sourceTitle.toLowerCase().includes(kw) || r.lastMessage.content.toLowerCase().includes(kw) || r.lastMessage.authorName.toLowerCase().includes(kw));
     }
-    return true;
-  });
+    return rooms;
+  };
 
-  const getSourceBadge = (type: string) => {
+  const filteredRooms = getVisibleRooms();
+
+  const getSourceBadge = (type: string, size: "sm" | "md" = "sm") => {
+    const pad = size === "md" ? "4px 8px" : "3px 6px";
+    const fs = size === "md" ? 11 : 10;
     switch (type) {
-      case "vacancy": return <span style={{ padding: "3px 6px", background: darkMode ? "rgba(217, 119, 6, 0.2)" : "#fef3c7", color: "#d97706", borderRadius: 4, fontSize: 10, fontWeight: 800 }}>공실 매물</span>;
-      case "article": return <span style={{ padding: "3px 6px", background: darkMode ? "rgba(37, 99, 235, 0.2)" : "#dbeafe", color: "#2563eb", borderRadius: 4, fontSize: 10, fontWeight: 800 }}>뉴스 기사</span>;
+      case "vacancy": return <span style={{ padding: pad, background: darkMode ? "rgba(217, 119, 6, 0.2)" : "#fef3c7", color: "#d97706", borderRadius: 4, fontSize: fs, fontWeight: 800 }}>🏢 공실 매물</span>;
+      case "article": return <span style={{ padding: pad, background: darkMode ? "rgba(37, 99, 235, 0.2)" : "#dbeafe", color: "#2563eb", borderRadius: 4, fontSize: fs, fontWeight: 800 }}>📰 뉴스 기사</span>;
+      case "inquiry": return <span style={{ padding: pad, background: darkMode ? "rgba(5, 150, 105, 0.2)" : "#d1fae5", color: "#059669", borderRadius: 4, fontSize: fs, fontWeight: 800 }}>💬 문의 Talk</span>;
       default: return null;
+    }
+  };
+
+  const getRoomIcon = (type: string) => {
+    switch (type) {
+      case "vacancy": return { bg: "#fef3c7", icon: "🏢" };
+      case "article": return { bg: "#dbeafe", icon: "📰" };
+      case "inquiry": return { bg: "#d1fae5", icon: "💬" };
+      default: return { bg: "#e5e7eb", icon: "💬" };
     }
   };
 
@@ -106,18 +156,18 @@ export default function CommentSection({ theme, role, memberId }: CommentSection
     const diff = now.getTime() - d.getTime();
     if (diff < 60000) return "방금 전";
     if (diff < 3600000) return `${Math.floor(diff / 60000)}분 전`;
-    if (diff < 86400000) return `${d.getHours()}:${String(d.getMinutes()).padStart(2,"0")}`;
-    return `${d.getMonth()+1}.${d.getDate()}`;
+    if (diff < 86400000) return `${d.getHours()}:${String(d.getMinutes()).padStart(2, "0")}`;
+    return `${d.getMonth() + 1}.${d.getDate()}`;
   };
-
-  const vacancyRoomCount = rooms.filter(r => r.sourceType === "vacancy").length;
-  const articleRoomCount = rooms.filter(r => r.sourceType === "article").length;
 
   const handleReply = () => {
     if (!replyText.trim() || !selectedRoom) return;
     alert(`답글이 등록되었습니다.\n내용: ${replyText}`);
     setReplyText("");
   };
+
+  const totalRooms = commentRooms.length + inquiryRooms.length;
+  const totalNewInquiry = inquiryRooms.reduce((acc, r) => acc + r.unreadCount, 0);
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: bg }}>
@@ -138,22 +188,23 @@ export default function CommentSection({ theme, role, memberId }: CommentSection
         {/* ===== 좌측: 채팅방 리스트 ===== */}
         <div style={{ width: selectedRoom ? 380 : "100%", transition: "width 0.3s", borderRight: selectedRoom ? `1px solid ${border}` : "none", display: "flex", flexDirection: "column", background: cardBg, flexShrink: 0 }}>
           
-          {/* 탭 */}
+          {/* 탭: 전체 / 댓글 / 문의Talk */}
           <div style={{ display: "flex", borderBottom: `1px solid ${border}`, background: darkMode ? "#2c2d31" : "#f8fafc", flexShrink: 0 }}>
             {[
-              { label: "전체", count: rooms.length },
-              { label: "공실 매물", count: vacancyRoomCount },
-              { label: "뉴스 기사", count: articleRoomCount },
+              { label: "전체", count: totalRooms, color: "#3b82f6" },
+              { label: "댓글", count: commentRooms.length, color: "#8b5cf6" },
+              { label: "문의 Talk", count: inquiryRooms.length, color: "#059669", hasNew: totalNewInquiry > 0 },
             ].map(tab => (
-              <button key={tab.label} onClick={() => setActiveTab(tab.label)} style={{
-                flex: 1, height: 44, background: "none", border: "none",
-                borderBottom: activeTab === tab.label ? "2px solid #3b82f6" : "2px solid transparent",
-                color: activeTab === tab.label ? "#3b82f6" : textSecondary,
+              <button key={tab.label} onClick={() => { setActiveTab(tab.label); setSelectedRoom(null); }} style={{
+                flex: 1, height: 46, background: "none", border: "none",
+                borderBottom: activeTab === tab.label ? `2px solid ${tab.color}` : "2px solid transparent",
+                color: activeTab === tab.label ? tab.color : textSecondary,
                 fontSize: 13, fontWeight: activeTab === tab.label ? 800 : 600,
-                cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 4
+                cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 5
               }}>
                 {tab.label}
-                <span style={{ fontSize: 10, fontWeight: 700, padding: "1px 5px", borderRadius: 8, background: activeTab === tab.label ? "#3b82f6" : (darkMode ? "#374151" : "#e5e7eb"), color: activeTab === tab.label ? "#fff" : textSecondary }}>{tab.count}</span>
+                <span style={{ fontSize: 10, fontWeight: 700, padding: "1px 6px", borderRadius: 8, background: activeTab === tab.label ? tab.color : (darkMode ? "#374151" : "#e5e7eb"), color: activeTab === tab.label ? "#fff" : textSecondary }}>{tab.count}</span>
+                {tab.hasNew && <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#ef4444", display: "inline-block" }} />}
               </button>
             ))}
           </div>
@@ -174,45 +225,49 @@ export default function CommentSection({ theme, role, memberId }: CommentSection
               <div style={{ padding: 40, textAlign: "center", color: textSecondary, fontSize: 14 }}>
                 <div style={{ fontSize: 32, marginBottom: 8 }}>🔍</div>대화가 없습니다.
               </div>
-            ) : filteredRooms.map(room => (
-              <div key={`${room.sourceType}_${room.sourceId}`}
-                onClick={() => setSelectedRoom(room)}
-                style={{
-                  padding: "14px 16px", borderBottom: `1px solid ${darkMode ? "#333" : "#f3f4f6"}`,
-                  cursor: "pointer", transition: "background 0.15s",
-                  background: selectedRoom?.sourceId === room.sourceId && selectedRoom?.sourceType === room.sourceType
-                    ? (darkMode ? "rgba(59,130,246,0.1)" : "#eff6ff")
-                    : "transparent",
-                  display: "flex", gap: 12, alignItems: "flex-start"
-                }}
-                onMouseEnter={e => { if (!(selectedRoom?.sourceId === room.sourceId && selectedRoom?.sourceType === room.sourceType)) e.currentTarget.style.background = darkMode ? "#2c2d31" : "#f8fafc"; }}
-                onMouseLeave={e => { if (!(selectedRoom?.sourceId === room.sourceId && selectedRoom?.sourceType === room.sourceType)) e.currentTarget.style.background = "transparent"; }}
-              >
-                {/* 아이콘 */}
-                <div style={{ width: 42, height: 42, borderRadius: "50%", background: room.sourceType === "vacancy" ? "#fef3c7" : "#dbeafe", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>
-                  {room.sourceType === "vacancy" ? "🏢" : "📰"}
-                </div>
-                {/* 내용 */}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
-                      {getSourceBadge(room.sourceType)}
-                      <span style={{ fontSize: 13, fontWeight: 700, color: textPrimary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{room.sourceTitle}</span>
+            ) : filteredRooms.map(room => {
+              const roomIcon = getRoomIcon(room.sourceType);
+              const isSelected = selectedRoom?.sourceId === room.sourceId && selectedRoom?.sourceType === room.sourceType;
+              return (
+                <div key={`${room.sourceType}_${room.sourceId}`}
+                  onClick={() => setSelectedRoom(room)}
+                  style={{
+                    padding: "14px 16px", borderBottom: `1px solid ${darkMode ? "#333" : "#f3f4f6"}`,
+                    cursor: "pointer", transition: "background 0.15s",
+                    background: isSelected ? (darkMode ? "rgba(59,130,246,0.1)" : "#eff6ff") : "transparent",
+                    display: "flex", gap: 12, alignItems: "flex-start",
+                    borderLeft: isSelected ? "3px solid #3b82f6" : "3px solid transparent",
+                  }}
+                  onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = darkMode ? "#2c2d31" : "#f8fafc"; }}
+                  onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = "transparent"; }}
+                >
+                  {/* 아이콘 */}
+                  <div style={{ width: 42, height: 42, borderRadius: "50%", background: darkMode ? "rgba(255,255,255,0.1)" : roomIcon.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>
+                    {roomIcon.icon}
+                  </div>
+                  {/* 내용 */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+                        {getSourceBadge(room.sourceType)}
+                        <span style={{ fontSize: 13, fontWeight: 700, color: textPrimary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{room.sourceTitle}</span>
+                      </div>
+                      <span style={{ fontSize: 11, color: textSecondary, flexShrink: 0 }}>{formatTime(room.lastMessage.createdAt)}</span>
                     </div>
-                    <span style={{ fontSize: 11, color: textSecondary, flexShrink: 0 }}>{formatTime(room.lastMessage.createdAt)}</span>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontSize: 12, color: textSecondary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
-                      <strong style={{ color: textPrimary }}>{room.lastMessage.authorName}</strong>: {room.lastMessage.content}
-                    </span>
-                    {/* NEW 뱃지 (메시지 수) */}
-                    <span style={{ flexShrink: 0, marginLeft: 8, fontSize: 11, fontWeight: 800, padding: "2px 7px", borderRadius: 10, background: "#ef4444", color: "#fff", minWidth: 20, textAlign: "center" }}>
-                      {room.messages.length}
-                    </span>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: 12, color: textSecondary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
+                        {room.lastMessage.isSecret && <span style={{ marginRight: 4 }}>🔒</span>}
+                        <strong style={{ color: textPrimary }}>{room.lastMessage.authorName}</strong>: {room.lastMessage.content}
+                      </span>
+                      {/* 메시지 카운트 뱃지 */}
+                      <span style={{ flexShrink: 0, marginLeft: 8, fontSize: 11, fontWeight: 800, padding: "2px 7px", borderRadius: 10, background: room.unreadCount > 0 ? "#ef4444" : (room.sourceType === "article" ? "#3b82f6" : room.sourceType === "vacancy" ? "#d97706" : "#059669"), color: "#fff", minWidth: 20, textAlign: "center" }}>
+                        {room.messages.length}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
@@ -224,8 +279,8 @@ export default function CommentSection({ theme, role, memberId }: CommentSection
             <div style={{ padding: "14px 20px", borderBottom: `1px solid ${border}`, background: cardBg, display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
               <div style={{ minWidth: 0 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
-                  {getSourceBadge(selectedRoom.sourceType)}
-                  <span style={{ fontSize: 11, color: textSecondary }}>대화 {selectedRoom.messages.length}건</span>
+                  {getSourceBadge(selectedRoom.sourceType, "md")}
+                  <span style={{ fontSize: 12, color: textSecondary }}>대화 {selectedRoom.messages.length}건</span>
                 </div>
                 <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: textPrimary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{selectedRoom.sourceTitle}</h3>
               </div>
@@ -234,22 +289,19 @@ export default function CommentSection({ theme, role, memberId }: CommentSection
 
             {/* 대화 영역 */}
             <div style={{ flex: 1, overflowY: "auto", padding: "20px", display: "flex", flexDirection: "column", gap: 16 }}>
-              {selectedRoom.messages.map((msg, idx) => {
-                const isMe = msg.authorName === "공실뉴스"; // 관리자 본인 판별 (간이)
+              {selectedRoom.messages.map((msg) => {
+                const isMe = msg.authorName === "공실뉴스";
                 return (
                   <div key={msg.id} style={{ display: "flex", flexDirection: isMe ? "row-reverse" : "row", gap: 8, alignItems: "flex-start" }}>
-                    {/* 아바타 */}
                     {!isMe && (
                       <div style={{ width: 36, height: 36, borderRadius: "50%", background: darkMode ? "#374151" : "#e5e7eb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>👤</div>
                     )}
                     <div style={{ maxWidth: "70%", display: "flex", flexDirection: "column", alignItems: isMe ? "flex-end" : "flex-start" }}>
-                      {/* 이름 + 시간 */}
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4, flexDirection: isMe ? "row-reverse" : "row" }}>
                         <span style={{ fontSize: 12, fontWeight: 700, color: textPrimary }}>{msg.authorName}</span>
                         {msg.isSecret && <span style={{ fontSize: 11 }}>🔒</span>}
                         <span style={{ fontSize: 11, color: textSecondary }}>{new Date(msg.createdAt).toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
                       </div>
-                      {/* 말풍선 */}
                       <div style={{
                         padding: "10px 14px", fontSize: 14, lineHeight: 1.6, color: isMe ? "#fff" : textPrimary,
                         background: isMe ? "#3b82f6" : (darkMode ? "#2c2d31" : "#fff"),
@@ -269,7 +321,7 @@ export default function CommentSection({ theme, role, memberId }: CommentSection
             <div style={{ padding: "12px 20px", borderTop: `1px solid ${border}`, background: cardBg, display: "flex", gap: 10, alignItems: "flex-end", flexShrink: 0 }}>
               <textarea
                 value={replyText} onChange={e => setReplyText(e.target.value)}
-                onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleReply(); }}}
+                onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleReply(); } }}
                 placeholder="메시지를 입력하세요..."
                 style={{ flex: 1, height: 42, padding: "10px 14px", borderRadius: 8, border: `1px solid ${border}`, background: darkMode ? "#1f2023" : "#fff", color: textPrimary, outline: "none", resize: "none", fontFamily: "inherit", fontSize: 14 }}
                 rows={1}
@@ -280,8 +332,8 @@ export default function CommentSection({ theme, role, memberId }: CommentSection
         )}
 
         {/* 선택 안 했을 때 안내 */}
-        {!selectedRoom && !loading && rooms.length > 0 && (
-          <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", background: darkMode ? "#1f2023" : "#f0f2f5" }}>
+        {!selectedRoom && !loading && (
+          <div style={{ flex: 1, display: selectedRoom || filteredRooms.length === 0 ? "none" : "flex", alignItems: "center", justifyContent: "center", background: darkMode ? "#1f2023" : "#f0f2f5" }}>
             <div style={{ textAlign: "center", color: textSecondary }}>
               <div style={{ fontSize: 48, marginBottom: 16 }}>💬</div>
               <div style={{ fontSize: 16, fontWeight: 600 }}>대화를 선택하세요</div>
