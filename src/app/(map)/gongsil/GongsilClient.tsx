@@ -81,8 +81,13 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   /* ── State & Refs ── */
   const searchParams = useSearchParams();
   const [dbVacancies, setDbVacancies] = useState<any[]>(initialVacancies);
-  const [activeCategory, setActiveCategory] = useState("apart");
-  const [activePills, setActivePills] = useState<string[]>(["아파트"]);
+  const [activeCategory, setActiveCategory] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('gongsil_category') || 'all';
+    }
+    return 'all';
+  });
+  const [activePills, setActivePills] = useState<string[]>([]);
   const [activeProperty, setActiveProperty] = useState<string | number | null>(null);
   const [prevPropertyId, setPrevPropertyId] = useState<string | number | null>(null);
   const [showDetail, setShowDetail] = useState(true);
@@ -246,14 +251,14 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
       return [];
     }
 
-    // 1) property_type 필터 (메인 카테고리 탭)
+    // 1) property_type 필터 (메인 카테고리 탭) - 'all'이면 전체 표시
     const dbPropType = CATEGORY_TO_PROPERTY_TYPE[activeCategory];
     if (dbPropType) {
       list = list.filter(v => v.property_type === dbPropType);
     }
 
-    // 2) sub_category 필터 (Pills)
-    if (activePills.length > 0) {
+    // 2) sub_category 필터 (Pills) - 'all'이면 무시
+    if (activeCategory !== 'all' && activePills.length > 0) {
       list = list.filter(v => activePills.includes(v.sub_category));
     }
 
@@ -1153,7 +1158,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     );
   };
 
-  const config = CATEGORY_CONFIG[activeCategory];
+  const config = CATEGORY_CONFIG[activeCategory] || { name: "전체", pills: [], basicFilters: [], detailFilters: [], showToggle: false };
   const isOfficePill = (p: string) => p.includes("오피스텔");
 
   const resetAllFilters = () => {
@@ -1178,14 +1183,22 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   };
 
   const handleCategoryChange = (key: string) => {
-    setActiveCategory(key);
-    const c = CATEGORY_CONFIG[key];
-    setActivePills(key === "wish" ? [] : [c.pills[0] || ""]);
+    // 같은 탭을 다시 누르면 전체로 복귀
+    const newKey = activeCategory === key ? 'all' : key;
+    setActiveCategory(newKey);
+    if (newKey === 'all') {
+      setActivePills([]);
+    } else {
+      const c = CATEGORY_CONFIG[newKey];
+      setActivePills(newKey === 'wish' ? [] : [c.pills[0] || '']);
+    }
     setShowDetail(false);
     setShowDetailFilters(false);
     setSelectedClusterIds(null);
     selectedClusterIdsRef.current = null;
     resetAllFilters();
+    // 카테고리 기억 (localStorage)
+    localStorage.setItem('gongsil_category', newKey);
   };
 
   const togglePill = (p: string) => {
@@ -1237,7 +1250,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
         </div>
 
         {/* Tier 2: 서브 필터(Pills + 드롭다운) */}
-        {activeCategory !== "wish" && (
+        {activeCategory !== "wish" && activeCategory !== "all" && (
           <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 20px", borderBottom: "1px solid #e0e0e0", overflowX: "visible" }}>
             {config.pills.map((p) => (
               <button key={p} onClick={() => togglePill(p)} style={{

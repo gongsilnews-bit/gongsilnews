@@ -20,15 +20,21 @@ export default async function BoardReadPage({
     );
   }
 
-  const [postRes, boardRes, commentsRes] = await Promise.all([
+  const [postRes, commentsRes] = await Promise.all([
     getBoardPost(postId),
-    boardId ? getBoard(boardId) : Promise.resolve({ success: false, data: null }),
     getBoardComments(postId),
   ]);
 
   const post = postRes.success ? postRes.data : null;
-  const board = boardRes.success ? (boardRes as any).data : null;
   const comments = commentsRes.success ? commentsRes.data : [];
+
+  // board_id가 URL에 없으면 post.board_id로 fallback 조회
+  const resolvedBoardId = boardId || post?.board_id || "";
+  let board = null;
+  if (resolvedBoardId) {
+    const boardRes = await getBoard(resolvedBoardId);
+    board = boardRes.success ? (boardRes as any).data : null;
+  }
 
   // 이전/다음 글
   let prevPost = null;

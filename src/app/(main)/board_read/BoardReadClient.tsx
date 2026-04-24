@@ -145,7 +145,7 @@ export default function BoardReadClient({
     return <div style={{ padding: 100, textAlign: "center", color: "#666" }}>권한을 확인하는 중입니다...</div>;
   }
 
-  if (!canAccessBoard(userLevel, board.perm_read ?? 0)) {
+  if (board && !canAccessBoard(userLevel, board.perm_read ?? 0)) {
     return (
       <div style={{ padding: 100, textAlign: "center" }}>
         <h2 style={{ fontSize: 20, color: "#ef4444", marginBottom: 12 }}>접근 권한이 없습니다</h2>
@@ -410,7 +410,7 @@ export default function BoardReadClient({
                   <button onClick={handleDelete} style={{ border: "1px solid #fca5a5", background: "#fff5f5", color: "#dc2626", padding: "10px 18px", borderRadius: 6, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>삭제</button>
                 </>
               )}
-              {canAccessBoard(userLevel, board.perm_write ?? 5) && (
+              {canAccessBoard(userLevel, board?.perm_write ?? 5) && (
                 <Link href={`/board_write?board_id=${boardId}`} style={{ background: "#102c57", color: "#fff", padding: "10px 24px", borderRadius: 6, fontSize: 14, fontWeight: 700, textDecoration: "none", display: "inline-block" }}>글쓰기</Link>
               )}
             </div>
@@ -421,7 +421,7 @@ export default function BoardReadClient({
             <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 20, color: "#111" }}>{comments.length}개의 댓글</div>
 
             {/* 댓글 입력 */}
-            {canAccessBoard(userLevel, board.perm_reply ?? 1) ? (
+            {canAccessBoard(userLevel, board?.perm_reply ?? 1) ? (
               <div style={{ border: "1px solid #e5e7eb", borderRadius: 8, padding: 16, marginBottom: 24 }}>
                 <div style={{ fontSize: 14, fontWeight: 700, color: "#374151", marginBottom: 6 }}>
                   {currentUser ? (currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0]) : "게스트"}님
