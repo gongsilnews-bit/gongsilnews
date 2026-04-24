@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { getVacancies, getAgencyInfo, getVacancyDetail } from "@/app/actions/vacancy";
 import { getVacancyComments, createVacancyComment } from "@/app/actions/vacancyComments";
+import { getVacancyUserData, toggleWishlistToDB, addRecentViewToDB } from "@/app/actions/vacancyUserData";
 import MapSearchBar from "@/components/MapSearchBar";
 import MapTopAuthButtons from "@/components/MapTopAuthButtons";
 
@@ -95,16 +96,42 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   const [recentViews, setRecentViews] = useState<any[]>([]);
   const [wishlist, setWishlist] = useState<any[]>([]);
 
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [comments, setComments] = useState<any[]>([]);
+  const [newComment, setNewComment] = useState("");
+  const [isSecret, setIsSecret] = useState(true);
+  const [replyTarget, setReplyTarget] = useState<any>(null);
+  const [hoveredMessageId, setHoveredMessageId] = useState<any>(null);
+
   useEffect(() => {
+    let localRecent: any[] = [];
+    let localWish: any[] = [];
     const savedRecent = localStorage.getItem('gongsil_recent_views');
     if (savedRecent) {
-      try { setRecentViews(JSON.parse(savedRecent)); } catch (e) {}
+      try { localRecent = JSON.parse(savedRecent); setRecentViews(localRecent); } catch (e) {}
     }
     const savedWish = localStorage.getItem('gongsil_wishlist');
     if (savedWish) {
-      try { setWishlist(JSON.parse(savedWish)); } catch (e) {}
+      try { localWish = JSON.parse(savedWish); setWishlist(localWish); } catch (e) {}
     }
-  }, []);
+
+    if (currentUser) {
+      getVacancyUserData(currentUser.id).then(res => {
+        if (res.success) {
+          // Merge local + DB, preferring DB, deduplicated
+          const mergedWish = Array.from(new Set([...(res.wishlist || []), ...localWish]));
+          const mergedRecent = Array.from(new Set([...(res.recentViews || []), ...localRecent])).slice(0, 50);
+          
+          setWishlist(mergedWish);
+          setRecentViews(mergedRecent);
+          localStorage.setItem('gongsil_wishlist', JSON.stringify(mergedWish));
+          localStorage.setItem('gongsil_recent_views', JSON.stringify(mergedRecent));
+          
+          // Optionally, sync local to DB here lazily if we had a batch update, but we'll skip for simplicity.
+        }
+      });
+    }
+  }, [currentUser]); // currentUser가 설정되면 DB 값을 가져와 로컬과 병합
 
   useEffect(() => {
     if (activeProperty) {
@@ -114,17 +141,25 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
         localStorage.setItem('gongsil_recent_views', JSON.stringify(newViews));
         return newViews;
       });
+      if (currentUser) {
+        addRecentViewToDB(currentUser.id, String(activeProperty));
+      }
     }
-  }, [activeProperty]);
+  }, [activeProperty, currentUser]);
 
   const toggleWishlist = (id: any) => {
     const isWished = wishlist.includes(id);
     setToastMessage(isWished ? "찜을 해제했습니다." : "찜했습니다.");
+    
     setWishlist(prev => {
       const newWish = isWished ? prev.filter(x => x !== id) : [id, ...prev];
       localStorage.setItem('gongsil_wishlist', JSON.stringify(newWish));
       return newWish;
     });
+
+    if (currentUser) {
+      toggleWishlistToDB(currentUser.id, String(id), !isWished);
+    }
   };
 
   const [realtorTradeType, setRealtorTradeType] = useState<string>("전체");
@@ -292,6 +327,12 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   // ── 지도 범위 / 클러스터 선택 적용 ──
   const displayVacancies = React.useMemo(() => {
     let filtered = filteredVacancies;
+
+    // MY관심공실인 경우, 지도 범위와 상관없이 모든 대상 항목을 그대로 보여줍니다.
+    if (activeCategory === "wish") {
+      return filtered;
+    }
+
     if (selectedClusterIds) {
       filtered = filtered.filter(v => selectedClusterIds.includes(String(v.id)));
     } else if (mapBounds && (window as any).kakao?.maps) {
@@ -302,18 +343,11 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
       });
     }
     return filtered;
-  }, [filteredVacancies, selectedClusterIds, mapBounds]);
+  }, [filteredVacancies, selectedClusterIds, mapBounds, activeCategory]);
 
   const [mapError, setMapError] = useState<string | null>(null);
   const [showGalleryModal, setShowGalleryModal] = useState(false);
   const [agencyInfo, setAgencyInfo] = useState<any>(null);
-
-  const [currentUser, setCurrentUser] = useState<any>(null);
-  const [comments, setComments] = useState<any[]>([]);
-  const [newComment, setNewComment] = useState("");
-  const [isSecret, setIsSecret] = useState(true);
-  const [replyTarget, setReplyTarget] = useState<any>(null);
-  const [hoveredMessageId, setHoveredMessageId] = useState<any>(null);
 
   // Lazy Loading Detail Map
   const [fullDetailsMap, setFullDetailsMap] = useState<Record<string, any>>({});
