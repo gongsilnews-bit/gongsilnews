@@ -5,6 +5,7 @@ import Link from "next/link";
 import { saveBoardComment, deleteBoardComment, deleteBoardPost } from "@/app/actions/board";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
+import { getPermissionLevel, canAccessBoard } from "@/utils/permissionCheck";
 
 // YouTube URL에서 embed URL 생성 (공유버튼 ?si= 등 모든 형식)
 function getYoutubeEmbedUrl(url: string): string | null {
@@ -46,15 +47,21 @@ export default function BoardReadClient({
   const [guestName, setGuestName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [userLevel, setUserLevel] = useState<number>(0);
+  const [isLevelChecking, setIsLevelChecking] = useState(true);
 
   useEffect(() => {
     const fetchUser = async () => {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data } = await supabase.from('members').select('role').eq('id', user.id).single();
-        setCurrentUser({ ...user, role: data?.role });
+        const { data } = await supabase.from('members').select('role, plan_type').eq('id', user.id).single();
+        if (data) {
+          setCurrentUser({ ...user, role: data.role });
+          setUserLevel(getPermissionLevel(data));
+        }
       }
+      setIsLevelChecking(false);
     };
     fetchUser();
   }, []);
@@ -133,6 +140,20 @@ export default function BoardReadClient({
       alert("삭제 실패: " + res.error);
     }
   };
+
+  if (isLevelChecking) {
+    return <div style={{ padding: 100, textAlign: "center", color: "#666" }}>권한을 확인하는 중입니다...</div>;
+  }
+
+  if (!canAccessBoard(userLevel, board.perm_read ?? 0)) {
+    return (
+      <div style={{ padding: 100, textAlign: "center" }}>
+        <h2 style={{ fontSize: 20, color: "#ef4444", marginBottom: 12 }}>접근 권한이 없습니다</h2>
+        <p style={{ color: "#666" }}>읽기 레벨: <strong>{board.perm_read ?? 0}레벨 이상</strong> (현재 내 레벨: {userLevel}레벨)</p>
+        <button onClick={() => router.push(listUrl)} style={{ marginTop: 24, padding: "10px 24px", background: "#333", color: "#fff", border: "none", borderRadius: 4, cursor: "pointer" }}>목록으로 돌아가기</button>
+      </div>
+    );
+  }
 
   return (
     <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 20px" }}>
@@ -389,7 +410,9 @@ export default function BoardReadClient({
                   <button onClick={handleDelete} style={{ border: "1px solid #fca5a5", background: "#fff5f5", color: "#dc2626", padding: "10px 18px", borderRadius: 6, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>삭제</button>
                 </>
               )}
-              <Link href={`/board_write?board_id=${boardId}`} style={{ background: "#102c57", color: "#fff", padding: "10px 24px", borderRadius: 6, fontSize: 14, fontWeight: 700, textDecoration: "none", display: "inline-block" }}>글쓰기</Link>
+              {canAccessBoard(userLevel, board.perm_write ?? 5) && (
+                <Link href={`/board_write?board_id=${boardId}`} style={{ background: "#102c57", color: "#fff", padding: "10px 24px", borderRadius: 6, fontSize: 14, fontWeight: 700, textDecoration: "none", display: "inline-block" }}>글쓰기</Link>
+              )}
             </div>
           </div>
 
@@ -398,15 +421,16 @@ export default function BoardReadClient({
             <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 20, color: "#111" }}>{comments.length}개의 댓글</div>
 
             {/* 댓글 입력 */}
-            <div style={{ border: "1px solid #e5e7eb", borderRadius: 8, padding: 16, marginBottom: 24 }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "#374151", marginBottom: 6 }}>
-                {currentUser ? (currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0]) : "게스트"}님
-              </div>
-              <textarea
-                style={{ width: "100%", height: 80, border: "none", resize: "none", fontSize: 15, outline: "none", background: "transparent", color: "#333", fontFamily: "inherit", boxSizing: "border-box" }}
-                placeholder="게시물에 대한 의견을 남겨보세요. 바르고 고운 말을 사용해주세요."
-                maxLength={400}
-                value={commentText}
+            {canAccessBoard(userLevel, board.perm_reply ?? 1) ? (
+              <div style={{ border: "1px solid #e5e7eb", borderRadius: 8, padding: 16, marginBottom: 24 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#374151", marginBottom: 6 }}>
+                  {currentUser ? (currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0]) : "게스트"}님
+                </div>
+                <textarea
+                  style={{ width: "100%", height: 80, border: "none", resize: "none", fontSize: 15, outline: "none", background: "transparent", color: "#333", fontFamily: "inherit", boxSizing: "border-box" }}
+                  placeholder="게시물에 대한 의견을 남겨보세요. 바르고 고운 말을 사용해주세요."
+                  maxLength={400}
+                  value={commentText}
                 onChange={e => setCommentText(e.target.value)}
               />
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 10, borderTop: "1px solid #eee", paddingTop: 10 }}>
@@ -420,6 +444,7 @@ export default function BoardReadClient({
                 </button>
               </div>
             </div>
+            ) : null}
 
             {/* 댓글 목록 */}
             {comments.map((c: any) => (

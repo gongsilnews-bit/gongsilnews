@@ -4,6 +4,8 @@ import React, { useState, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { saveBoardPost, uploadBoardAttachment, uploadBoardThumbnail } from "@/app/actions/board";
+import { createClient } from "@/utils/supabase/client";
+import { getPermissionLevel, canAccessBoard } from "@/utils/permissionCheck";
 
 const convertToWebp = (file: File): Promise<File> => {
   return new Promise((resolve) => {
@@ -95,6 +97,24 @@ export default function BoardWriteClient({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [userLevel, setUserLevel] = useState<number>(0);
+  const [isLevelChecking, setIsLevelChecking] = useState(true);
+
+  React.useEffect(() => {
+    const fetchUser = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase.from('members').select('role, plan_type').eq('id', user.id).single();
+        if (data) {
+          setUserLevel(getPermissionLevel(data));
+        }
+      }
+      setIsLevelChecking(false);
+    };
+    fetchUser();
+  }, []);
+
   const handleThumbnailClick = () => fileInputRef.current?.click();
   const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -159,6 +179,20 @@ export default function BoardWriteClient({
     }
     setIsSubmitting(false);
   };
+
+  if (isLevelChecking) {
+    return <div style={{ padding: 100, textAlign: "center", color: "#666" }}>권한을 확인하는 중입니다...</div>;
+  }
+
+  if (!canAccessBoard(userLevel, board.perm_write ?? 5)) {
+    return (
+      <div style={{ padding: 100, textAlign: "center" }}>
+        <h2 style={{ fontSize: 20, color: "#ef4444", marginBottom: 12 }}>접근 권한이 없습니다</h2>
+        <p style={{ color: "#666" }}>쓰기 레벨: <strong>{board.perm_write ?? 5}레벨 이상</strong> (현재 내 레벨: {userLevel}레벨)</p>
+        <button onClick={() => router.push(`/board?id=${boardId}`)} style={{ marginTop: 24, padding: "10px 24px", background: "#333", color: "#fff", border: "none", borderRadius: 4, cursor: "pointer" }}>목록으로 돌아가기</button>
+      </div>
+    );
+  }
 
   return (
     <div style={{

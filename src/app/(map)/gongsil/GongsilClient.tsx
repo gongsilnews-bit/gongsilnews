@@ -6,6 +6,7 @@ import Link from "next/link";
 import { getVacancies, getAgencyInfo, getVacancyDetail } from "@/app/actions/vacancy";
 import { getVacancyComments, createVacancyComment } from "@/app/actions/vacancyComments";
 import { getVacancyUserData, toggleWishlistToDB, addRecentViewToDB } from "@/app/actions/vacancyUserData";
+import { getPermissionLevel } from "@/utils/permissionCheck";
 import MapSearchBar from "@/components/MapSearchBar";
 import MapTopAuthButtons from "@/components/MapTopAuthButtons";
 
@@ -97,6 +98,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   const [wishlist, setWishlist] = useState<any[]>([]);
 
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [userLevel, setUserLevel] = useState<number>(0);
   const [comments, setComments] = useState<any[]>([]);
   const [newComment, setNewComment] = useState("");
   const [isSecret, setIsSecret] = useState(true);
@@ -458,12 +460,25 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     }
   }, [showDetail, activeProperty, activeDetailTab, dbVacancies]);
 
+  // 집합건물 판별 헬퍼
+  const isApartmentType = (type: string | undefined) =>
+    ['아파트', '오피스텔', '아파트분양권', '오피스텔분양권'].some(t => type?.includes(t));
+
   useEffect(() => {
     async function initUser() {
       const { createClient } = await import("@/utils/supabase/client");
       const client = createClient();
       const { data } = await client.auth.getUser();
-      if (data?.user) setCurrentUser(data.user);
+      if (data?.user) {
+        setCurrentUser(data.user);
+        // 회원 레벨 산출
+        const { data: memberData } = await client.from('members').select('role, plan_type').eq('id', data.user.id).single();
+        if (memberData) {
+          setUserLevel(getPermissionLevel(memberData));
+        } else {
+          setUserLevel(1); // 인증은 됐지만 members 없으면 일반회원 취급
+        }
+      }
     }
     initUser();
   }, []);
@@ -1746,10 +1761,17 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                 const isActiveAndShowing = activeProperty === prop.id && showDetail;
                 const addrText = [prop.dong, prop.building_name].filter(Boolean).join(" ");
                 const priceText = getPriceText(prop);
+                // 마스킹 판별: 부동산노출 전용 + 부동산회원 미만
+                const isMasked = prop.exposure_type === '부동산노출' && userLevel < 2;
+                const showCommission = userLevel >= 2; // 중개보수는 부동산회원 이상만
 
                 return (
                   <div key={prop.id} 
                     onClick={() => { 
+                      if (isMasked) {
+                        setToastMessage("부동산회원 가입 시 무료로 열람할 수 있습니다 🏠");
+                        return;
+                      }
                       if (isActiveAndShowing) {
                         setShowDetail(false);
                       } else {
@@ -1769,21 +1791,34 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                       background: activeProperty === prop.id ? "#eaf4ff" : "#fff",
                     }}>
                     <div style={{ flex: 1, paddingRight: prop.images?.[0] ? 15 : 0, minWidth: 0 }}>
-                      <div style={{ fontSize: 15, fontWeight: "bold", color: "#111", marginBottom: 4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{addrText || "주소 없음"}</div>
-                      <div style={{ fontSize: 16, fontWeight: 800, color: "#1a73e8", marginBottom: 4 }}>{priceText}</div>
-                      <div style={{ fontSize: 13, color: "#555", marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                        {prop.property_type} <span style={{ color: "#ddd", margin: "0 4px" }}>|</span> {prop.direction || "방향없음"} <span style={{ color: "#ddd", margin: "0 4px" }}>|</span> {prop.exclusive_m2 ? `${prop.exclusive_m2}㎡` : "면적미상"}
-                      </div>
-                      <div style={{ fontSize: 12, color: "#666", marginBottom: 8, display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-                        {[`룸 ${prop.room_count || 0}개`, `욕실 ${prop.bathroom_count || 0}개`, ...(prop.options || [])].filter(Boolean).join(", ")}
-                      </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: "auto" }}>
-                        <span style={{ display: "inline-block", fontSize: 12, color: "#fa5252", border: "1px solid #fa5252", padding: "1px 5px" }}>{prop.realtor_commission || prop.commission_type || "법정수수료"}</span>
-                        <span style={{ fontSize: 13, color: "#fa5252", fontWeight: "bold" }}>{prop.vacancy_no}</span>
-                        <span style={{ fontSize: 13, color: "#aaa" }}>{new Date(prop.created_at).toLocaleDateString('ko-KR', {year: 'numeric', month: '2-digit', day: '2-digit'}).replace(/\s/g, '')}</span>
-                      </div>
+                      {isMasked ? (
+                        <>
+                          <div style={{ fontSize: 15, fontWeight: "bold", color: "#bbb", marginBottom: 4, letterSpacing: 2 }}>XXX XXXX XXXX</div>
+                          <div style={{ fontSize: 16, fontWeight: 800, color: "#ccc", marginBottom: 4, letterSpacing: 2 }}>XXXX XXX</div>
+                          <div style={{ fontSize: 13, color: "#ccc", marginBottom: 2, letterSpacing: 2 }}>XX · XXXX · XX㎡</div>
+                          <div style={{ fontSize: 11, color: "#3b82f6", marginTop: 8, fontWeight: 700, background: "#eef6ff", padding: "4px 8px", borderRadius: 4, display: "inline-block" }}>🔒 부동산회원 가입 시 무료 열람</div>
+                        </>
+                      ) : (
+                        <>
+                          <div style={{ fontSize: 15, fontWeight: "bold", color: "#111", marginBottom: 4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{addrText || "주소 없음"}</div>
+                          <div style={{ fontSize: 16, fontWeight: 800, color: "#1a73e8", marginBottom: 4 }}>{priceText}</div>
+                          <div style={{ fontSize: 13, color: "#555", marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                            {prop.property_type} <span style={{ color: "#ddd", margin: "0 4px" }}>|</span> {prop.direction || "방향없음"} <span style={{ color: "#ddd", margin: "0 4px" }}>|</span> {prop.exclusive_m2 ? `${prop.exclusive_m2}㎡` : "면적미상"}
+                          </div>
+                          <div style={{ fontSize: 12, color: "#666", marginBottom: 8, display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                            {[`룸 ${prop.room_count || 0}개`, `욕실 ${prop.bathroom_count || 0}개`, ...(prop.options || [])].filter(Boolean).join(", ")}
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: "auto" }}>
+                            {showCommission && (
+                              <span style={{ display: "inline-block", fontSize: 12, color: "#fa5252", border: "1px solid #fa5252", padding: "1px 5px" }}>{prop.realtor_commission || prop.commission_type || "법정수수료"}</span>
+                            )}
+                            <span style={{ fontSize: 13, color: "#fa5252", fontWeight: "bold" }}>{prop.vacancy_no}</span>
+                            <span style={{ fontSize: 13, color: "#aaa" }}>{new Date(prop.created_at).toLocaleDateString('ko-KR', {year: 'numeric', month: '2-digit', day: '2-digit'}).replace(/\s/g, '')}</span>
+                          </div>
+                        </>
+                      )}
                     </div>
-                    {prop.images?.[0] && (
+                    {prop.images?.[0] && !isMasked && (
                       <div style={{ width: 110, height: 110, borderRadius: 6, overflow: "hidden", background: "#f0f0f0", flexShrink: 0, marginLeft: 5 }}>
                         <img src={prop.images[0]} style={{width:'100%', height:'100%', objectFit:'cover'}} />
                       </div>
@@ -2149,7 +2184,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
             {/* 하단 고정 바 */}
             <div style={{ width: "100%", height: 75, flexShrink: 0, background: "#fff", borderTop: "1px solid #e0e0e0", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 20px", boxSizing: "border-box", boxShadow: "0 -4px 12px rgba(0,0,0,0.05)", zIndex: 10 }}>
               <span style={{ fontSize: 18, fontWeight: "bold", color: "#111" }}>{getPriceText(prop)}</span>
-              <button style={{ background: "#1a73e8", color: "#fff", border: "none", padding: "10px 28px", borderRadius: 4, fontSize: 15, fontWeight: "bold", cursor: "pointer" }}>연락처 보기</button>
+              <button onClick={() => { setActiveDetailTab("realtor"); setTimeout(() => { const el = document.getElementById("detail-scroll-container"); if (el) el.scrollTo({ top: 0, behavior: "smooth" }); }, 100); }} style={{ background: "#1a73e8", color: "#fff", border: "none", padding: "10px 28px", borderRadius: 4, fontSize: 15, fontWeight: "bold", cursor: "pointer" }}>연락처 보기</button>
             </div>
             
 

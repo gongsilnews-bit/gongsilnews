@@ -324,6 +324,8 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
         form.append("plan_type", formData.plan_type);
         if (formData.plan_start_date) form.append("plan_start_date", formData.plan_start_date);
         if (formData.plan_end_date) form.append("plan_end_date", formData.plan_end_date);
+        form.append("max_vacancies", String(formData.max_vacancies));
+        form.append("max_articles_per_month", String(formData.max_articles_per_month));
 
         const memberRes = await adminCreateMember(form);
 
@@ -339,7 +341,9 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
           sns_links: { ...snsLinks, api_list: apiList },
           plan_type: formData.plan_type,
           plan_start_date: formData.plan_start_date || null,
-          plan_end_date: formData.plan_end_date || null
+          plan_end_date: formData.plan_end_date || null,
+          max_vacancies: Number(formData.max_vacancies) || 0,
+          max_articles_per_month: Number(formData.max_articles_per_month) || 0
         });
         if (!updateRes.success) throw new Error(updateRes.error || "회원 수정에 실패했습니다.");
       }

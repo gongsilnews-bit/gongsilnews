@@ -4,6 +4,8 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { saveBoardPost } from "@/app/actions/board";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import { createClient } from "@/utils/supabase/client";
+import { getPermissionLevel, canAccessBoard, getLevelName } from "@/utils/permissionCheck";
 
 // YouTube URL에서 썸네일 이미지 추출
 function getYoutubeThumbnail(url: string): string | null {
@@ -85,6 +87,31 @@ export default function BoardClient({ board, initialPosts }: { board: any, initi
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [posts, setPosts] = useState(initialPosts);
   const [currentPage, setCurrentPage] = useState(initialPage);
+  
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 2500);
+  };
+  
+  const [userLevel, setUserLevel] = useState<number>(0);
+  const [isLevelChecking, setIsLevelChecking] = useState(true);
+
+  React.useEffect(() => {
+    const fetchUserLevel = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase.from('members').select('role, plan_type').eq('id', user.id).single();
+        if (data) {
+          setUserLevel(getPermissionLevel(data));
+        }
+      }
+      setIsLevelChecking(false);
+    };
+    fetchUserLevel();
+  }, []);
   const itemsPerPage = 12;
 
   // URL 파라미터가 변경(뒤로가기 등)될 때 상태 동기화
@@ -183,6 +210,20 @@ export default function BoardClient({ board, initialPosts }: { board: any, initi
   
   const isListType = board.skin_type === "LIST";
 
+  if (isLevelChecking) {
+    return <div style={{ padding: 100, textAlign: "center", color: "#666" }}>권한을 확인하는 중입니다...</div>;
+  }
+
+  if (!canAccessBoard(userLevel, board.perm_list ?? 0)) {
+    return (
+      <div style={{ padding: 100, textAlign: "center" }}>
+        <h2 style={{ fontSize: 20, color: "#ef4444", marginBottom: 12 }}>접근 권한이 없습니다</h2>
+        <p style={{ color: "#666" }}>목록 보기 레벨: <strong>{board.perm_list ?? 0}레벨 이상</strong> (현재 내 레벨: {userLevel}레벨)</p>
+        <button onClick={() => router.push('/')} style={{ marginTop: 24, padding: "10px 24px", background: "#333", color: "#fff", border: "none", borderRadius: 4, cursor: "pointer" }}>메인으로 돌아가기</button>
+      </div>
+    );
+  }
+
   return (
     <>
       <main className="container px-20 b-layout" style={{ position: "relative", minHeight: "80vh" }}>
@@ -233,7 +274,16 @@ export default function BoardClient({ board, initialPosts }: { board: any, initi
                     <tr key={p.id}>
                       <td>{totalItems - startIndex - i}</td>
                       <td className="subject">
-                        <Link href={getReadUrl(p.id)} style={{ display: "block" }}>
+                        <Link 
+                          href={canAccessBoard(userLevel, board.perm_read ?? 0) ? getReadUrl(p.id) : "#"} 
+                          onClick={(e) => {
+                            if (!canAccessBoard(userLevel, board.perm_read ?? 0)) {
+                              e.preventDefault();
+                              showToast(`${getLevelName(board.perm_read ?? 0)}부터 열람하실 수 있습니다.. 🤍`);
+                            }
+                          }}
+                          style={{ display: "block" }}
+                        >
                           {/* 카테고리 뱃지는 정규식으로 추출하거나 title에서 추출해서 표시 */}
                           {p.title.match(/^\[([^\]]+)\]/) && (
                             <span className="cat-badge">{p.title.match(/^\[([^\]]+)\]/)?.[0]}</span>
@@ -256,7 +306,17 @@ export default function BoardClient({ board, initialPosts }: { board: any, initi
               // 썸네일형 스킨 (그리드 형태)
               <div className="b-grid">
                 {visiblePosts.length > 0 ? visiblePosts.map((p, i) => (
-                  <Link href={getReadUrl(p.id)} key={p.id} style={{ display: "block", textDecoration: "none", color: "inherit", border: "1px solid #eee", borderRadius: 8, overflow: "hidden", cursor: "pointer" }}>
+                  <div 
+                    key={p.id} 
+                    onClick={() => {
+                      if (!canAccessBoard(userLevel, board.perm_read ?? 0)) {
+                        showToast(`${getLevelName(board.perm_read ?? 0)}부터 열람하실 수 있습니다.. 🤍`);
+                      } else {
+                        router.push(getReadUrl(p.id));
+                      }
+                    }}
+                    style={{ display: "block", textDecoration: "none", color: "inherit", border: "1px solid #eee", borderRadius: 8, overflow: "hidden", cursor: "pointer" }}
+                  >
                     <div style={{ height: 140, background: "#222", position: "relative", overflow: "hidden" }}>
                       <img src={getPrimaryThumbnail(p)} style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.8 }} alt="thumb" />
                       {hasVideoLink(p, board.skin_type) && (
@@ -275,7 +335,7 @@ export default function BoardClient({ board, initialPosts }: { board: any, initi
                         <span>조회 {p.view_count || 0} · {new Date(p.created_at).toLocaleDateString()}</span>
                       </div>
                     </div>
-                  </Link>
+                  </div>
                 )) : (
                   <div style={{ gridColumn: "1 / -1", padding: 40, textAlign: "center", color: "#999", border: "1px solid #eee", borderRadius: 8 }}>등록된 게시물이 없습니다.</div>
                 )}
@@ -347,15 +407,17 @@ export default function BoardClient({ board, initialPosts }: { board: any, initi
                 </button>
               </div>
             </div>
-            <div style={{ position: "absolute", right: 0 }}>
-              <a 
-                className="b-write-btn" 
-                href={`/board_write?board_id=${board.board_id}`}
-                style={{ background: "#102c57", color: "#fff", textDecoration: "none", display: "inline-block" }}
-              >
-                글쓰기
-              </a>
-            </div>
+            {canAccessBoard(userLevel, board.perm_write ?? 5) && (
+              <div style={{ position: "absolute", right: 0 }}>
+                <a 
+                  className="b-write-btn" 
+                  href={`/board_write?board_id=${board.board_id}`}
+                  style={{ background: "#102c57", color: "#fff", textDecoration: "none", display: "inline-block" }}
+                >
+                  글쓰기
+                </a>
+              </div>
+            )}
           </div>
 
         </div>
@@ -444,6 +506,19 @@ export default function BoardClient({ board, initialPosts }: { board: any, initi
           </div>
         </div>
       )}
+
+      {toastMessage && (
+        <div style={{ position: "fixed", top: "25%", left: "50%", transform: "translateX(-50%)", background: "rgba(0,0,0,0.85)", color: "#fff", padding: "14px 32px", borderRadius: 10, fontSize: 16, fontWeight: "bold", zIndex: 999999, boxShadow: "0 4px 20px rgba(0,0,0,0.3)", whiteSpace: "nowrap", animation: "toastFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)" }}>
+          {toastMessage}
+        </div>
+      )}
+
+      <style>{`
+        @keyframes toastFadeIn { 
+          from { opacity: 0; transform: translate(-50%, 15px); } 
+          to { opacity: 1; transform: translate(-50%, 0); } 
+        }
+      `}</style>
     </>
   );
 }

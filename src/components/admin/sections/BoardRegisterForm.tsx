@@ -20,7 +20,7 @@ export default function BoardRegisterForm({ onBack, darkMode = false, editBoardI
     columns_count: 3,
     perm_list: 0,
     perm_read: 0,
-    perm_write: 9,
+    perm_write: 5,
     categories: "",
     // -- Mock properties -- //
     perm_reply: 1,
@@ -53,7 +53,7 @@ export default function BoardRegisterForm({ onBack, darkMode = false, editBoardI
             columns_count: res.data.columns_count || 3,
             perm_list: res.data.perm_list ?? 0,
             perm_read: res.data.perm_read ?? 0,
-            perm_write: res.data.perm_write ?? 9,
+            perm_write: res.data.perm_write ?? 5,
             categories: res.data.categories || "",
             perm_reply: res.data.perm_reply ?? 1,
             perm_download: res.data.perm_download ?? 1,
@@ -137,10 +137,12 @@ export default function BoardRegisterForm({ onBack, darkMode = false, editBoardI
   const contentStyle = { flex: 1, padding: "16px 20px", display: "flex", alignItems: "center" };
 
   const permissionOptions = [
-    { label: "비회원 + 전체", value: 0 },
+    { label: "0레벨 (비회원 이상)", value: 0 },
     { label: "1레벨 (일반회원 이상)", value: 1 },
-    { label: "5레벨 (기자/제휴 이상)", value: 5 },
-    { label: "9레벨 (관리자 전용)", value: 9 },
+    { label: "2레벨 (무료부동산회원 이상)", value: 2 },
+    { label: "3레벨 (공실뉴스부동산 이상)", value: 3 },
+    { label: "4레벨 (공실등록부동산 이상)", value: 4 },
+    { label: "5레벨 (최고관리자 이상)", value: 5 },
   ];
 
   const renderRadio = (label1: string, label2: string, name: string, value: boolean) => (
@@ -221,23 +223,7 @@ export default function BoardRegisterForm({ onBack, darkMode = false, editBoardI
           </div>
         </div>
 
-        <div style={rowStyle}>
-          <div style={labelStyle}>답변권한 ⓘ</div>
-          <div style={contentStyle}>
-            <select name="perm_reply" value={formData.perm_reply} onChange={handleChange} style={{ ...inputStyle, maxWidth: 250 }}>
-              {permissionOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-            </select>
-          </div>
-        </div>
 
-        <div style={rowStyle}>
-          <div style={labelStyle}>다운로드권한 ⓘ</div>
-          <div style={contentStyle}>
-            <select name="perm_download" value={formData.perm_download} onChange={handleChange} style={{ ...inputStyle, maxWidth: 250 }}>
-              {permissionOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-            </select>
-          </div>
-        </div>
 
         <div style={rowStyle}>
           <div style={labelStyle}>스킨 선택 ⓘ</div>
