@@ -283,7 +283,7 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
               <button className="gdv-btn-toolbar" onClick={onEdit}>✏️ 수정</button>
               <button className="gdv-btn-toolbar" onClick={async () => { if(confirm('이 공실을 삭제하시겠습니까?')) { await deleteVacancy(vacancyId); onBack(); } }}>🗑️ 삭제</button>
               <button className="gdv-btn-toolbar" onClick={copyShareLink}>🔗 주소복사</button>
-              <button className="gdv-btn-toolbar" onClick={() => window.open(`/board/detail/${vacancyId}`)}>💻 미리보기</button>
+              <button className="gdv-btn-toolbar" onClick={() => window.open(`/gongsil?id=${vacancyId}`)}>💻 미리보기</button>
               <button className={`gdv-btn-toolbar ${isAdOn ? 'gdv-blue' : ''}`} onClick={toggleStatus}>
                 {isAdOn ? '광고중' : '광고종료'}
               </button>
