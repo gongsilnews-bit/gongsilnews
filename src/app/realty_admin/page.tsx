@@ -24,7 +24,7 @@ const REALTY_MENU: MenuItem[] = [
   { key: "article", label: "기사관리", icon: <IconArticle /> },
   { key: "study", label: "스터디관리", icon: <IconStudy /> },
   { key: "customer", label: "고객관리", icon: <IconCustomer /> },
-  { key: "comment", label: "댓글·문의", icon: <IconComment /> },
+  { key: "comment", label: "공실Talk", icon: <IconComment /> },
   { key: "point", label: "포인트", icon: <IconPoint /> },
   { key: "homepage", label: "홈페이지", icon: <IconHomepage /> },
   { key: "manual", label: "매뉴얼", icon: <IconManual /> },

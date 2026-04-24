@@ -23,7 +23,7 @@ export default function CommentSection({ theme, role, memberId }: CommentSection
   const filteredList = interactions.filter(item => {
     if (activeTab === "공실 매물" && item.sourceType !== "vacancy") return false;
     if (activeTab === "뉴스 기사" && item.sourceType !== "article") return false;
-    if (activeTab === "홈페이지 문의" && item.sourceType !== "homepage") return false;
+
     if (showUnreadOnly && item.isRead) return false;
     
     if (searchKeyword) {
@@ -64,11 +64,16 @@ export default function CommentSection({ theme, role, memberId }: CommentSection
       {/* 화면 타이틀 */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 24 }}>
         <div>
-          <h1 style={{ fontSize: 24, fontWeight: 800, color: textPrimary, margin: "0 0 8px 0" }}>댓글·문의 관리</h1>
+          <h1 style={{ fontSize: 24, fontWeight: 800, color: textPrimary, margin: "0 0 8px 0", display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+              <span style={{ fontSize: 26 }}>💬</span>
+              <span>공실</span><span style={{ color: "#3b82f6" }}>Talk</span>
+            </span>
+          </h1>
           <p style={{ fontSize: 14, color: textSecondary, margin: 0 }}>
             {role === "admin" 
-              ? "공실뉴스 플랫폼 전체의 모든 댓글과 문의를 한 곳에서 통합 관리합니다."
-              : "내가 올린 공실과 기사에 달린 댓글, 그리고 내 홈페이지에 들어온 1:1 문의를 한 곳에서 관리합니다."
+              ? "공실뉴스 플랫폼 전체의 모든 대화와 댓글을 한 곳에서 통합 관리합니다."
+              : "내 공실과 기사에 달린 댓글, 문의를 확인하고 회원과 소통하세요."
             }
           </p>
         </div>
@@ -79,7 +84,7 @@ export default function CommentSection({ theme, role, memberId }: CommentSection
         
         {/* 상단 탭 */}
         <div style={{ display: "flex", borderBottom: `1px solid ${border}`, background: darkMode ? "#2c2d31" : "#f8fafc" }}>
-          {["전체", "공실 매물", "뉴스 기사", "홈페이지 문의"].map(tab => (
+          {["전체", "공실 매물", "뉴스 기사"].map(tab => (
             <button key={tab} onClick={() => setActiveTab(tab)} style={{
               flex: 1, height: 48, background: "none", border: "none",
               borderBottom: activeTab === tab ? "2px solid #3b82f6" : "2px solid transparent",
