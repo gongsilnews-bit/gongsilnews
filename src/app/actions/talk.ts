@@ -120,10 +120,21 @@ export async function getAllTalkItems(memberId?: string): Promise<{ success: boo
         .eq("owner_id", memberId);
       const myVacancyIds = new Set((myVacancies || []).map(v => v.id));
 
-      // 내가 참여한 방(sourceId) 찾기: 내가 댓글을 달았거나, 내 매물인 경우
+      // 내가 기자인 기사 ID 목록 가져오기
+      const { data: myArticles } = await supabase
+        .from("articles")
+        .select("id")
+        .eq("author_id", memberId);
+      const myArticleIds = new Set((myArticles || []).map(a => a.id));
+
+      // 내가 참여한 방(sourceId) 찾기: 내가 댓글을 달았거나, 내 매물이거나, 내 기사인 경우
       const mySourceIds = new Set<string>();
       allTalks.forEach(t => {
-        if (t.authorId === memberId || (t.sourceType === "vacancy" && myVacancyIds.has(t.sourceId))) {
+        if (
+          t.authorId === memberId ||
+          (t.sourceType === "vacancy" && myVacancyIds.has(t.sourceId)) ||
+          (t.sourceType === "article" && myArticleIds.has(t.sourceId))
+        ) {
           mySourceIds.add(t.sourceId);
         }
       });
