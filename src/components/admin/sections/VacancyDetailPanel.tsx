@@ -215,7 +215,7 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
   const getDeviceClass = () => deviceMode !== "pc" ? `gdv-${deviceMode}` : "";
 
   return (
-    <div className="gdv-root gdv-page-body">
+    <div className="gdv-root gdv-page-body" style={{ flex: 1, overflowY: 'auto', height: '100%' }}>
       <div style={{ display: 'flex', gap: '30px', width: '100%', alignItems: 'flex-start' }}>
         
         {/* Left Column */}
