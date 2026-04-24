@@ -147,10 +147,19 @@ export default function BoardReadClient({
 
   if (board && !canAccessBoard(userLevel, board.perm_read ?? 0)) {
     return (
-      <div style={{ padding: 100, textAlign: "center" }}>
-        <h2 style={{ fontSize: 20, color: "#ef4444", marginBottom: 12 }}>접근 권한이 없습니다</h2>
-        <p style={{ color: "#666" }}>읽기 레벨: <strong>{board.perm_read ?? 0}레벨 이상</strong> (현재 내 레벨: {userLevel}레벨)</p>
-        <button onClick={() => router.push(listUrl)} style={{ marginTop: 24, padding: "10px 24px", background: "#333", color: "#fff", border: "none", borderRadius: 4, cursor: "pointer" }}>목록으로 돌아가기</button>
+      <div style={{ padding: "80px 20px", textAlign: "center", maxWidth: 500, margin: "0 auto" }}>
+        <div style={{ fontSize: 48, marginBottom: 20 }}>🔒</div>
+        <h2 style={{ fontSize: 22, fontWeight: 800, color: "#111", marginBottom: 16 }}>공실뉴스부동산 회원만 열람할 수 있습니다</h2>
+        <p style={{ fontSize: 15, color: "#666", lineHeight: 1.6, marginBottom: 8 }}>
+          이 게시물은 <strong style={{ color: "#1a73e8" }}>공실뉴스 부동산 회원</strong> 전용 콘텐츠입니다.
+        </p>
+        <p style={{ fontSize: 14, color: "#999", marginBottom: 32 }}>
+          부동산 회원으로 가입하시면 모든 자료를 무료로 열람하실 수 있습니다.
+        </p>
+        <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
+          <button onClick={() => router.push(listUrl)} style={{ padding: "12px 28px", background: "#f5f5f5", color: "#555", border: "1px solid #ddd", borderRadius: 8, fontSize: 15, fontWeight: 600, cursor: "pointer" }}>목록으로 돌아가기</button>
+          <button onClick={() => router.push("/signup")} style={{ padding: "12px 28px", background: "#1a73e8", color: "#fff", border: "none", borderRadius: 8, fontSize: 15, fontWeight: 700, cursor: "pointer" }}>회원가입하기</button>
+        </div>
       </div>
     );
   }

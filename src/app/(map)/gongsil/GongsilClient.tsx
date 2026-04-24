@@ -87,7 +87,13 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     }
     return 'all';
   });
-  const [activePills, setActivePills] = useState<string[]>([]);
+  const [activePills, setActivePills] = useState<string[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('gongsil_pills');
+      if (saved) try { return JSON.parse(saved); } catch {}
+    }
+    return [];
+  });
   const [activeProperty, setActiveProperty] = useState<string | number | null>(null);
   const [prevPropertyId, setPrevPropertyId] = useState<string | number | null>(null);
   const [showDetail, setShowDetail] = useState(true);
@@ -1188,9 +1194,21 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     setActiveCategory(newKey);
     if (newKey === 'all') {
       setActivePills([]);
+      localStorage.setItem('gongsil_pills', '[]');
     } else {
-      const c = CATEGORY_CONFIG[newKey];
-      setActivePills(newKey === 'wish' ? [] : [c.pills[0] || '']);
+      // 저장된 pills가 있으면 복원, 없으면 첫번째 pill 기본
+      const savedPillsKey = `gongsil_pills_${newKey}`;
+      const savedPills = localStorage.getItem(savedPillsKey);
+      let pills: string[] = [];
+      if (savedPills) {
+        try { pills = JSON.parse(savedPills); } catch {}
+      }
+      if (pills.length === 0) {
+        const c = CATEGORY_CONFIG[newKey];
+        pills = newKey === 'wish' ? [] : [c.pills[0] || ''];
+      }
+      setActivePills(pills);
+      localStorage.setItem('gongsil_pills', JSON.stringify(pills));
     }
     setShowDetail(false);
     setShowDetailFilters(false);
@@ -1202,7 +1220,13 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   };
 
   const togglePill = (p: string) => {
-    setActivePills((prev) => prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p]);
+    setActivePills((prev) => {
+      const next = prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p];
+      // pills 선택 기억
+      localStorage.setItem('gongsil_pills', JSON.stringify(next));
+      localStorage.setItem(`gongsil_pills_${activeCategory}`, JSON.stringify(next));
+      return next;
+    });
   };
 
   const toggleTradeType = (t: string) => {
