@@ -135,27 +135,29 @@ export default function ArticleDetailPanel({ articleId, onBack, onEdit }: Articl
         </div>
 
         <div className={`adp-frame adp-${device}`}>
-          {/* Breadcrumb */}
-          <div className="adp-breadcrumb">
-            🏠 HOME &gt; {article.section1 || '뉴스'} &gt; {article.section2 || '전체'}
+          {/* Breadcrumb — same as public page */}
+          <div className="detail-breadcrumb">
+            [{article.section1 || '뉴스'} &gt; {article.section2 || '전체'}]
           </div>
 
-          {/* Title */}
-          <h1 className="adp-title">{article.title}</h1>
+          {/* Title — same as public page */}
+          <h1 className="detail-title">{article.title}</h1>
 
-          {/* Meta */}
-          <div className="adp-meta">
-            <span className="adp-meta-author">{article.author_name || '공실뉴스'}</span>
-            <span className="adp-meta-divider" />
-            <span>입력 {formatDate(article.published_at || article.created_at)}</span>
-            {article.updated_at && article.updated_at !== article.created_at && (
-              <>
-                <span className="adp-meta-divider" />
-                <span>수정 {formatDate(article.updated_at)}</span>
-              </>
-            )}
-            <span className="adp-meta-divider" />
-            <span>조회수 {article.view_count || 0}</span>
+          {/* Meta — same as public page */}
+          <div className="detail-meta">
+            <div className="meta-info">
+              <span style={{ color: '#111', fontWeight: 'bold' }}>{article.author_name || '공실뉴스'}</span>
+              <span className="meta-divider" />
+              <span>입력 {formatDate(article.published_at || article.created_at)}</span>
+              {article.updated_at && article.updated_at !== article.created_at && (
+                <>
+                  <span className="meta-divider" />
+                  <span>수정 {formatDate(article.updated_at)}</span>
+                </>
+              )}
+              <span className="meta-divider" />
+              <span>조회수 {article.view_count || 0}</span>
+            </div>
           </div>
 
           {/* Admin Toolbar */}
@@ -172,34 +174,39 @@ export default function ArticleDetailPanel({ articleId, onBack, onEdit }: Articl
             )}
           </div>
 
-          {/* Subtitle */}
+          {/* Subtitle — same as public page */}
           {article.subtitle && (
-            <div style={{ background: '#f8f9fa', padding: '16px 20px', borderRadius: 8, marginBottom: 20, color: '#333', fontSize: 15, lineHeight: 1.7, borderLeft: '4px solid #3b82f6' }}>
-              {article.subtitle}
-            </div>
+            <div className="article-subtitle-box">{article.subtitle}</div>
           )}
 
-          {/* YouTube Embed */}
-          {hasYoutube && (
-            <div className={`adp-youtube-wrap ${article.is_shorts ? 'adp-shorts' : ''}`}>
-              <iframe src={`https://www.youtube.com/embed/${youtubeId}`} allowFullScreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" />
-            </div>
-          )}
+          {/* Article Body — same as public page */}
+          <div className="article-body" style={{ fontSize: 17, lineHeight: 1.8 }}>
+            {/* YouTube Embed */}
+            {hasYoutube && (
+              <div className="article-img-wrap">
+                <div style={{ position: 'relative', width: '100%', maxWidth: article.is_shorts ? 315 : '100%', aspectRatio: article.is_shorts ? '9 / 16' : '16 / 9', margin: '0 auto', overflow: 'hidden' }}>
+                  <iframe src={`https://www.youtube.com/embed/${youtubeId}`} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }} allowFullScreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" />
+                </div>
+              </div>
+            )}
 
-          {/* Thumbnail (only if no YouTube and not in content) */}
-          {!hasYoutube && article.thumbnail_url && !(article.content && article.content.includes(article.thumbnail_url)) && (
-            <img className="adp-thumbnail" src={article.thumbnail_url} alt={article.title} />
-          )}
+            {/* Thumbnail (only if no YouTube and not in content) */}
+            {!hasYoutube && article.thumbnail_url && !(article.content && article.content.includes(article.thumbnail_url)) && (
+              <div className="article-img-wrap">
+                <img src={article.thumbnail_url} alt={article.title} style={{ width: '100%', maxHeight: 500, objectFit: 'cover' }} />
+              </div>
+            )}
 
-          {/* Article Body */}
-          {article.content && (
-            <div className="adp-body" dangerouslySetInnerHTML={{
-              __html: article.content
-                .replace(/<p[^>]*>\s*(?:<br>\s*)*<iframe[^>]*youtube\.com\/embed[^>]*>.*?<\/iframe>(?:\s*<br>\s*)*\s*<\/p>/gi, '')
-                .replace(/<div(?:(?!class="article-body")[^>]*)?>\\s*(?:<br>\s*)*<iframe[^>]*youtube\.com\/embed[^>]*>.*?<\/iframe>(?:\s*<br>\s*)*\s*<\/div>/gi, '')
-                .replace(/<iframe[^>]*youtube\.com\/embed[^>]*>.*?<\/iframe>/gi, '')
-            }} />
-          )}
+            {/* Content HTML */}
+            {article.content && (
+              <div dangerouslySetInnerHTML={{
+                __html: article.content
+                  .replace(/<p[^>]*>\s*(?:<br>\s*)*<iframe[^>]*youtube\.com\/embed[^>]*>.*?<\/iframe>(?:\s*<br>\s*)*\s*<\/p>/gi, '')
+                  .replace(/<div(?:(?!class="article-body")[^>]*)?>\s*(?:<br>\s*)*<iframe[^>]*youtube\.com\/embed[^>]*>.*?<\/iframe>(?:\s*<br>\s*)*\s*<\/div>/gi, '')
+                  .replace(/<iframe[^>]*youtube\.com\/embed[^>]*>.*?<\/iframe>/gi, '')
+              }} />
+            )}
+          </div>
 
           {/* Keywords */}
           {article.article_keywords && article.article_keywords.length > 0 && (
@@ -231,16 +238,17 @@ export default function ArticleDetailPanel({ articleId, onBack, onEdit }: Articl
             </div>
           </div>
 
-          {/* Author Footer */}
-          <div className="adp-author-footer">
-            <div>
-              <span className="adp-author-name">{article.author_name || '공실뉴스'}</span>
-              <span className="adp-author-role">추천·공감</span>
-              <span style={{ color: '#999', fontSize: 13, marginLeft: 12 }}>
-                이메일쓰기 공실뉴스 인기기사를 보려면 공유
-              </span>
+          {/* Author Footer — same as public page */}
+          <div className="article-footer-bar" style={{ display: 'flex', flexDirection: 'column', gap: 16, alignItems: 'stretch' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+                  <span style={{ fontWeight: 800, color: '#111', fontSize: 16 }}>{article.author_name || '공실뉴스'}</span>
+                  <span style={{ color: '#666', fontSize: 14 }}>기자</span>
+                </div>
+              </div>
+              <div style={{ color: '#888', fontSize: 13, paddingTop: 4 }}>저작권자 © 공실뉴스 무단전재 및 재배포 금지</div>
             </div>
-            <div className="adp-copyright">저작권자 © 공실뉴스 무단전재 및 재배포 금지</div>
           </div>
 
           {/* Comments Section */}
