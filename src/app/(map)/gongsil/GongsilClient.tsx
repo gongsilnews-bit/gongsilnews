@@ -426,8 +426,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
 
   useEffect(() => {
     async function initUser() {
-      const { createClient } = await import("@supabase/supabase-js");
-      const client = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+      const { createClient } = await import("@/utils/supabase/client");
+      const client = createClient();
       const { data } = await client.auth.getUser();
       if (data?.user) setCurrentUser(data.user);
     }
