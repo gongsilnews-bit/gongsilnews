@@ -312,6 +312,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   const [comments, setComments] = useState<any[]>([]);
   const [newComment, setNewComment] = useState("");
   const [isSecret, setIsSecret] = useState(true);
+  const [replyTarget, setReplyTarget] = useState<any>(null);
+  const [hoveredMessageId, setHoveredMessageId] = useState<any>(null);
 
   // Lazy Loading Detail Map
   const [fullDetailsMap, setFullDetailsMap] = useState<Record<string, any>>({});
@@ -449,11 +451,13 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
       author_id: currentUser.id,
       author_name: authorNameValue,
       content: newComment.trim(),
-      is_secret: isSecret
+      is_secret: isSecret,
+      parent_id: replyTarget?.id || undefined
     });
 
     if (res.success) {
       setNewComment("");
+      setReplyTarget(null);
       fetchComments(String(activeProperty));
     } else {
       console.error("Comment submit error:", res.error);
@@ -890,6 +894,135 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     return row.trade_type === "매매" ? `매매 ${formatAmount(row.deposit)}`
       : row.trade_type === "전세" ? `전세 ${formatAmount(row.deposit)}`
       : `${formatAmount(row.deposit)}/${monthlyManwon}만`;
+  };
+
+  const renderCommentArea = (prop: any) => {
+    return (
+      <div style={{ marginTop: 20, borderTop: "10px solid #f5f5f5", padding: "30px 20px 40px" }}>
+        <div style={{ fontSize: 16, fontWeight: 800, color: "#222", marginBottom: 15, display: "flex", alignItems: "center", gap: 8 }}>
+          댓글상담 <span style={{ color: "#1a73e8", fontSize: 15 }}>{comments.length}개</span>
+        </div>
+        
+        {/* 입력 및 답글 타겟 표시 영역 */}
+        <div style={{ marginBottom: 30, border: "1px solid #ddd", borderRadius: 6, overflow: "hidden", background: "#fff", position: "relative" }}>
+          {replyTarget && (
+            <div style={{ padding: "10px 15px", background: "#f8f9fa", borderBottom: "1px solid #eee", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ fontSize: 12, color: "#666" }}>
+                <span style={{ fontWeight: 700, color: "#1a73e8" }}>{replyTarget.author_name}</span>님에게 답글 작성 중...
+              </div>
+              <button 
+                onClick={() => setReplyTarget(null)}
+                style={{ background: "none", border: "none", color: "#999", cursor: "pointer", fontSize: 16, lineHeight: 1 }}
+              >&times;</button>
+            </div>
+          )}
+          <textarea
+            value={newComment}
+            onChange={(e) => setNewComment(e.target.value)}
+            placeholder={currentUser ? "가격을 제안하거나, 궁금한 점을 남겨보세요. 등록자와의 1:1 상담입니다." : "로그인 후 이용하실 수 있습니다."}
+            style={{ width: "100%", minHeight: 90, border: "none", outline: "none", padding: "14px 15px", fontSize: 14, color: "#333", resize: "vertical", fontFamily: "inherit", background: "#fff", boxSizing: "border-box" }}
+            disabled={!currentUser}
+          />
+          <div style={{ padding: "10px 15px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#fafafa", borderTop: "1px solid #eee" }}>
+            <label style={{ fontSize: 13, color: "#555", display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontWeight: "bold" }}>
+              <input type="checkbox" checked={isSecret} onChange={(e) => setIsSecret(e.target.checked)} style={{ width: 16, height: 16 }} />
+              비밀글
+            </label>
+            <button onClick={handleCommentSubmit} disabled={!currentUser || !newComment.trim()} style={{ background: currentUser && newComment.trim() ? "#1a73e8" : "#ccc", color: "#fff", border: "none", padding: "8px 24px", borderRadius: 4, fontWeight: "bold", cursor: currentUser && newComment.trim() ? "pointer" : "default", fontSize: 14, fontFamily: "inherit" }}>등록</button>
+          </div>
+        </div>
+
+        {/* 댓글 리스트 */}
+        <div>
+          {comments.length === 0 ? (
+            <div style={{ textAlign: "center", padding: 30, color: "#888", fontSize: 13 }}>아직 등록된 문의가 없습니다.</div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+              {comments.map((cm) => {
+                const isCommentOwner = currentUser?.id === cm.author_id;
+                const isPropertyOwner = currentUser?.id === prop.owner_id;
+                const canView = !cm.is_secret || isCommentOwner || isPropertyOwner;
+
+                // Kakao Talk style bubble rendering
+                return (
+                  <div key={cm.id} 
+                    onMouseEnter={() => setHoveredMessageId(cm.id)}
+                    onMouseLeave={() => setHoveredMessageId(null)}
+                    style={{ padding: 0 }}
+                  >
+                    <div style={{ display: "flex", flexDirection: isCommentOwner ? "row-reverse" : "row", gap: 10, alignItems: "flex-start" }}>
+                      {!isCommentOwner && (
+                        <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#e5e7eb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>👤</div>
+                      )}
+                      {isCommentOwner && (
+                        <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#3b82f6", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 800, flexShrink: 0 }}>ME</div>
+                      )}
+                      
+                      <div style={{ maxWidth: "80%", display: "flex", flexDirection: "column", alignItems: isCommentOwner ? "flex-end" : "flex-start" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4, flexDirection: isCommentOwner ? "row-reverse" : "row" }}>
+                          <span style={{ fontSize: 13, fontWeight: "bold", color: "#222" }}>{cm.author_name}</span>
+                          <span style={{ fontSize: 11, color: "#999" }}>{new Date(cm.created_at).toLocaleString('ko-KR', { year: '2-digit', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
+                          {cm.is_secret && <span style={{ fontSize: 10, color: "#ff5a5f", border: "1px solid #ff5a5f", padding: "1px 4px", borderRadius: 3, fontWeight: "bold" }}>비밀글</span>}
+                        </div>
+                        
+                        <div style={{
+                          padding: "12px 16px", fontSize: 14, lineHeight: 1.5, color: isCommentOwner ? "#fff" : (canView ? "#333" : "#aaa"),
+                          background: isCommentOwner ? "#3b82f6" : "#f1f3f5",
+                          borderRadius: isCommentOwner ? "14px 0 14px 14px" : "0 14px 14px 14px",
+                          boxShadow: "0 1px 3px rgba(0,0,0,0.05)", wordBreak: "break-word"
+                        }}>
+                          {canView ? (
+                            <>
+                              {cm.parent_id && (() => {
+                                const parentMsg = comments.find(m => m.id === cm.parent_id);
+                                if (parentMsg) {
+                                  return (
+                                    <div style={{ background: isCommentOwner ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.05)", padding: "6px 10px", borderRadius: 6, fontSize: 12, marginBottom: 8, borderLeft: `3px solid ${isCommentOwner ? "#fff" : "#9ca3af"}` }}>
+                                      <strong style={{ opacity: 0.9 }}>{parentMsg.author_name}</strong>: {parentMsg.content.length > 30 ? parentMsg.content.substring(0, 30) + "..." : parentMsg.content}
+                                    </div>
+                                  );
+                                }
+                                return null;
+                              })()}
+                              {cm.content}
+                            </>
+                          ) : (
+                            "등록자와 작성자만 볼 수 있는 비밀글입니다"
+                          )}
+                        </div>
+                      </div>
+                      
+                      {hoveredMessageId === cm.id && currentUser && canView && (
+                        <div style={{ display: "flex", alignItems: "flex-end", paddingBottom: 6 }}>
+                          <button 
+                            onClick={(e) => { 
+                              e.preventDefault(); 
+                              setReplyTarget(cm); 
+                              setIsSecret(cm.is_secret); // 답글 시 기본적으로 부모글의 비밀 여부 따름
+                              setTimeout(() => {
+                                const container = document.getElementById("detail-scroll-container");
+                                if (container) container.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
+                              }, 100);
+                            }}
+                            title="답글 달기"
+                            style={{ 
+                              background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8,
+                              width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", 
+                              cursor: "pointer", fontSize: 16, boxShadow: "0 2px 4px rgba(0,0,0,0.05)" 
+                            }}>
+                            ↩️
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    );
   };
 
   const config = CATEGORY_CONFIG[activeCategory];
@@ -1791,57 +1924,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                 )}
 
                 {/* ──── 댓글상담 ──── */}
-                <div style={{ marginTop: 20, borderTop: "10px solid #f5f5f5", padding: "30px 20px 40px" }}>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: "#222", marginBottom: 15, display: "flex", alignItems: "center", gap: 8 }}>
-                    댓글상담 <span style={{ color: "#1a73e8", fontSize: 15 }}>{comments.length}개</span>
-                  </div>
-                  
-                  {/* 입력 영역 */}
-                  <div style={{ marginBottom: 30, border: "1px solid #ddd", borderRadius: 6, overflow: "hidden", background: "#fff", position: "relative" }}>
-                    <textarea
-                      value={newComment}
-                      onChange={(e) => setNewComment(e.target.value)}
-                      placeholder={currentUser ? "가격을 제안하거나, 궁금한 점을 남겨보세요. 등작자와의 1:1 상담입니다." : "로그인 후 이용하실 수 있습니다."}
-                      style={{ width: "100%", minHeight: 90, border: "none", outline: "none", padding: "14px 15px", fontSize: 14, color: "#333", resize: "vertical", fontFamily: "inherit", background: "#fff", boxSizing: "border-box" }}
-                      disabled={!currentUser}
-                    />
-                    <div style={{ padding: "10px 15px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#fafafa", borderTop: "1px solid #eee" }}>
-                      <label style={{ fontSize: 13, color: "#555", display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontWeight: "bold" }}>
-                        <input type="checkbox" checked={isSecret} onChange={(e) => setIsSecret(e.target.checked)} style={{ width: 16, height: 16 }} />
-                        비밀글
-                      </label>
-                      <button onClick={handleCommentSubmit} disabled={!currentUser || !newComment.trim()} style={{ background: currentUser && newComment.trim() ? "#1a73e8" : "#ccc", color: "#fff", border: "none", padding: "8px 24px", borderRadius: 4, fontWeight: "bold", cursor: currentUser && newComment.trim() ? "pointer" : "default", fontSize: 14, fontFamily: "inherit" }}>등록</button>
-                    </div>
-                  </div>
-
-                  {/* 댓글 리스트 */}
-                  <div>
-                    {comments.length === 0 ? (
-                      <div style={{ textAlign: "center", padding: 30, color: "#888", fontSize: 13 }}>아직 등록된 문의가 없습니다.</div>
-                    ) : (
-                      <div style={{ display: "flex", flexDirection: "column" }}>
-                        {comments.map((cm) => {
-                          const isCommentOwner = currentUser?.id === cm.author_id;
-                          const isPropertyOwner = currentUser?.id === prop.owner_id;
-                          const canView = !cm.is_secret || isCommentOwner || isPropertyOwner;
-
-                          return (
-                            <div key={cm.id} style={{ padding: "16px 0", borderBottom: "1px solid #f0f0f0" }}>
-                              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-                                <span style={{ fontWeight: "bold", fontSize: 14, color: "#222" }}>{cm.author_name}</span>
-                                <span style={{ fontSize: 12, color: "#999" }}>{new Date(cm.created_at).toLocaleString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
-                                {cm.is_secret && <span style={{ fontSize: 12, color: "#ff5a5f", border: "1px solid #ff5a5f", padding: "1px 4px", borderRadius: 3, fontWeight: "bold" }}>비밀글</span>}
-                              </div>
-                              <div style={{ fontSize: 14, color: canView ? "#333" : "#aaa", lineHeight: 1.5, whiteSpace: "pre-line" }}>
-                                {canView ? cm.content : "XXX (등록자와 작성자만 볼 수 있는 비밀글입니다)"}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                </div>
+                {renderCommentArea(prop)}
                 </>
               )}
 
@@ -1984,57 +2067,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                 </div>
 
                 {/* ──── 댓글상담 (등록자정보 탭 하단) ──── */}
-                <div style={{ marginTop: 0, borderTop: "1px solid #f0f0f0", padding: "20px 20px 40px" }}>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: "#222", marginBottom: 15, display: "flex", alignItems: "center", gap: 8 }}>
-                    댓글상담 <span style={{ color: "#1a73e8", fontSize: 15 }}>{comments.length}개</span>
-                  </div>
-                  
-                  {/* 입력 영역 */}
-                  <div style={{ marginBottom: 30, border: "1px solid #ddd", borderRadius: 6, overflow: "hidden", background: "#fff", position: "relative" }}>
-                    <textarea
-                      value={newComment}
-                      onChange={(e) => setNewComment(e.target.value)}
-                      placeholder={currentUser ? "가격을 제안하거나, 궁금한 점을 남겨보세요. 등록자와의 1:1 상담입니다." : "로그인 후 이용하실 수 있습니다."}
-                      style={{ width: "100%", minHeight: 90, border: "none", outline: "none", padding: "14px 15px", fontSize: 14, color: "#333", resize: "vertical", fontFamily: "inherit", background: "#fff", boxSizing: "border-box" }}
-                      disabled={!currentUser}
-                    />
-                    <div style={{ padding: "10px 15px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#fafafa", borderTop: "1px solid #eee" }}>
-                      <label style={{ fontSize: 13, color: "#555", display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontWeight: "bold" }}>
-                        <input type="checkbox" checked={isSecret} onChange={(e) => setIsSecret(e.target.checked)} style={{ width: 16, height: 16 }} />
-                        비밀글
-                      </label>
-                      <button onClick={handleCommentSubmit} disabled={!currentUser || !newComment.trim()} style={{ background: currentUser && newComment.trim() ? "#1a73e8" : "#ccc", color: "#fff", border: "none", padding: "8px 24px", borderRadius: 4, fontWeight: "bold", cursor: currentUser && newComment.trim() ? "pointer" : "default", fontSize: 14, fontFamily: "inherit" }}>등록</button>
-                    </div>
-                  </div>
-
-                  {/* 댓글 리스트 */}
-                  <div>
-                    {comments.length === 0 ? (
-                      <div style={{ textAlign: "center", padding: 30, color: "#888", fontSize: 13 }}>아직 등록된 문의가 없습니다.</div>
-                    ) : (
-                      <div style={{ display: "flex", flexDirection: "column" }}>
-                        {comments.map((cm) => {
-                          const isCommentOwner = currentUser?.id === cm.author_id;
-                          const isPropertyOwner = currentUser?.id === prop.owner_id;
-                          const canView = !cm.is_secret || isCommentOwner || isPropertyOwner;
-
-                          return (
-                            <div key={cm.id} style={{ padding: "16px 0", borderBottom: "1px solid #f0f0f0" }}>
-                              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-                                <span style={{ fontWeight: "bold", fontSize: 14, color: "#222" }}>{cm.author_name}</span>
-                                <span style={{ fontSize: 12, color: "#999" }}>{new Date(cm.created_at).toLocaleString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
-                                {cm.is_secret && <span style={{ fontSize: 12, color: "#ff5a5f", border: "1px solid #ff5a5f", padding: "1px 4px", borderRadius: 3, fontWeight: "bold" }}>비밀글</span>}
-                              </div>
-                              <div style={{ fontSize: 14, color: canView ? "#333" : "#aaa", lineHeight: 1.5, whiteSpace: "pre-line" }}>
-                                {canView ? cm.content : "XXX (등록자와 작성자만 볼 수 있는 비밀글입니다)"}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                </div>
+                {renderCommentArea(prop)}
                 </>
               )}
             </div>

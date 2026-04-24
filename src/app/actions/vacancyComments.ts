@@ -35,6 +35,7 @@ export async function createVacancyComment(data: {
   author_name: string;
   content: string;
   is_secret: boolean;
+  parent_id?: string;
 }) {
   const supabase = getAdminClient();
   try {
@@ -45,7 +46,8 @@ export async function createVacancyComment(data: {
         author_id: data.author_id,
         author_name: data.author_name,
         content: data.content,
-        is_secret: data.is_secret
+        is_secret: data.is_secret,
+        parent_id: data.parent_id
       })
       .select()
       .single();
