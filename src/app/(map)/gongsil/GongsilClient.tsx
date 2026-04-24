@@ -1846,7 +1846,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                 return (
                   <div key={prop.id} 
                     onClick={() => { 
-                      if (isMasked) {
+                      if (userLevel < 2) {
                         setIsAuthModalOpen(true);
                         return;
                       }
