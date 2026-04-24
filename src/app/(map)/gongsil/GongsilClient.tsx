@@ -1803,7 +1803,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                   <div key={prop.id} 
                     onClick={() => { 
                       if (isMasked) {
-                        setToastMessage("부동산회원 가입 시 무료로 열람할 수 있습니다 🏠");
+                        window.location.href = '/signup';
                         return;
                       }
                       if (isActiveAndShowing) {
@@ -1825,34 +1825,30 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                       background: activeProperty === prop.id ? "#eaf4ff" : "#fff",
                     }}>
                     <div style={{ flex: 1, paddingRight: prop.images?.[0] ? 15 : 0, minWidth: 0 }}>
-                      {isMasked ? (
-                        <>
-                          <div style={{ fontSize: 15, fontWeight: "bold", color: "#bbb", marginBottom: 4, letterSpacing: 2 }}>XXX XXXX XXXX</div>
-                          <div style={{ fontSize: 16, fontWeight: 800, color: "#ccc", marginBottom: 4, letterSpacing: 2 }}>XXXX XXX</div>
-                          <div style={{ fontSize: 13, color: "#ccc", marginBottom: 2, letterSpacing: 2 }}>XX · XXXX · XX㎡</div>
-                          <div style={{ fontSize: 11, color: "#3b82f6", marginTop: 8, fontWeight: 700, background: "#eef6ff", padding: "4px 8px", borderRadius: 4, display: "inline-block" }}>🔒 부동산회원 가입 시 무료 열람</div>
-                        </>
-                      ) : (
-                        <>
-                          <div style={{ fontSize: 15, fontWeight: "bold", color: "#111", marginBottom: 4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{addrText || "주소 없음"}</div>
-                          <div style={{ fontSize: 16, fontWeight: 800, color: "#1a73e8", marginBottom: 4 }}>{priceText}</div>
-                          <div style={{ fontSize: 13, color: "#555", marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                            {prop.property_type} <span style={{ color: "#ddd", margin: "0 4px" }}>|</span> {prop.direction || "방향없음"} <span style={{ color: "#ddd", margin: "0 4px" }}>|</span> {prop.exclusive_m2 ? `${prop.exclusive_m2}㎡` : "면적미상"}
-                          </div>
-                          <div style={{ fontSize: 12, color: "#666", marginBottom: 8, display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-                            {[`룸 ${prop.room_count || 0}개`, `욕실 ${prop.bathroom_count || 0}개`, ...(prop.options || [])].filter(Boolean).join(", ")}
-                          </div>
-                          <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: "auto" }}>
-                            {showCommission && (
-                              <span style={{ display: "inline-block", fontSize: 12, color: "#fa5252", border: "1px solid #fa5252", padding: "1px 5px" }}>{prop.realtor_commission || prop.commission_type || "법정수수료"}</span>
-                            )}
-                            <span style={{ fontSize: 13, color: "#fa5252", fontWeight: "bold" }}>{prop.vacancy_no}</span>
-                            <span style={{ fontSize: 13, color: "#aaa" }}>{new Date(prop.created_at).toLocaleDateString('ko-KR', {year: 'numeric', month: '2-digit', day: '2-digit'}).replace(/\s/g, '')}</span>
-                          </div>
-                        </>
-                      )}
+                      {/* 주소 영역: 마스킹 시 글자수에 맞춰 X로 대체 */}
+                      <div style={{ fontSize: 15, fontWeight: "bold", color: isMasked ? "#bbb" : "#111", marginBottom: 4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", letterSpacing: isMasked ? 1 : 0 }}>
+                        {isMasked ? (addrText || "주소 없음").replace(/[^\s]/g, "X") : (addrText || "주소 없음")}
+                      </div>
+                      {/* 가격, 면적, 옵션: 항상 정상 표시 */}
+                      <div style={{ fontSize: 16, fontWeight: 800, color: "#1a73e8", marginBottom: 4 }}>{priceText}</div>
+                      <div style={{ fontSize: 13, color: "#555", marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {prop.property_type} <span style={{ color: "#ddd", margin: "0 4px" }}>|</span> {prop.direction || "방향없음"} <span style={{ color: "#ddd", margin: "0 4px" }}>|</span> {prop.exclusive_m2 ? `${prop.exclusive_m2}㎡` : "면적미상"}
+                      </div>
+                      <div style={{ fontSize: 12, color: "#666", marginBottom: 8, display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                        {[`룸 ${prop.room_count || 0}개`, `욕실 ${prop.bathroom_count || 0}개`, ...(prop.options || [])].filter(Boolean).join(", ")}
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: "auto", flexWrap: "wrap" }}>
+                        {showCommission && (
+                          <span style={{ display: "inline-block", fontSize: 12, color: "#fa5252", border: "1px solid #fa5252", padding: "1px 5px" }}>{prop.realtor_commission || prop.commission_type || "법정수수료"}</span>
+                        )}
+                        <span style={{ fontSize: 13, color: "#fa5252", fontWeight: "bold" }}>{prop.vacancy_no}</span>
+                        <span style={{ fontSize: 13, color: "#aaa" }}>{new Date(prop.created_at).toLocaleDateString('ko-KR', {year: 'numeric', month: '2-digit', day: '2-digit'}).replace(/\s/g, '')}</span>
+                        {isMasked && (
+                          <span style={{ fontSize: 11, color: "#3b82f6", fontWeight: 700, background: "#eef6ff", padding: "3px 8px", borderRadius: 4 }}>🔒 부동산회원 가입 시 무료 열람</span>
+                        )}
+                      </div>
                     </div>
-                    {prop.images?.[0] && !isMasked && (
+                    {prop.images?.[0] && (
                       <div style={{ width: 110, height: 110, borderRadius: 6, overflow: "hidden", background: "#f0f0f0", flexShrink: 0, marginLeft: 5 }}>
                         <img src={prop.images[0]} style={{width:'100%', height:'100%', objectFit:'cover'}} />
                       </div>
