@@ -801,9 +801,15 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     });
   }, [mapLoaded]);
 
-  // 2. Render Markers and Clusters after Map and Data are available
   useEffect(() => {
-    if (!kakaoMapRef.current || filteredVacancies.length === 0) return;
+    if (!kakaoMapRef.current) return;
+
+    // 기존 마커를 항상 먼저 제거 (빈 카테고리 전환 시에도 지도 정리)
+    if (clustererRef.current) clustererRef.current.clear();
+    markersRef.current = [];
+    markerIdMapRef.current.clear();
+
+    if (filteredVacancies.length === 0) return;
 
     const kakao = (window as any).kakao;
     const map = kakaoMapRef.current;
@@ -880,10 +886,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     }
 
 
-    // Clear existing markers
-    if (clustererRef.current) clustererRef.current.clear();
-    markersRef.current = [];
-    markerIdMapRef.current.clear();
+
 
     const newMarkers: any[] = [];
     filteredVacancies.forEach(prop => {
