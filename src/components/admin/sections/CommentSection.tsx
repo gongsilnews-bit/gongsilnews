@@ -7,7 +7,7 @@ import { CommentDetailPanel, MOCK_INTERACTIONS, InteractiveData } from "./commen
 interface CommentSectionProps {
   theme: AdminTheme;
   role: "admin" | "realtor" | "user";
-  memberId: string;
+  memberId?: string;
 }
 
 export default function CommentSection({ theme, role, memberId }: CommentSectionProps) {
@@ -65,7 +65,12 @@ export default function CommentSection({ theme, role, memberId }: CommentSection
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 24 }}>
         <div>
           <h1 style={{ fontSize: 24, fontWeight: 800, color: textPrimary, margin: "0 0 8px 0" }}>댓글·문의 관리</h1>
-          <p style={{ fontSize: 14, color: textSecondary, margin: 0 }}>내가 올린 공실과 기사에 달린 댓글, 그리고 내 홈페이지에 들어온 1:1 문의를 한 곳에서 관리합니다.</p>
+          <p style={{ fontSize: 14, color: textSecondary, margin: 0 }}>
+            {role === "admin" 
+              ? "공실뉴스 플랫폼 전체의 모든 댓글과 문의를 한 곳에서 통합 관리합니다."
+              : "내가 올린 공실과 기사에 달린 댓글, 그리고 내 홈페이지에 들어온 1:1 문의를 한 곳에서 관리합니다."
+            }
+          </p>
         </div>
       </div>
 
