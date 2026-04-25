@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { getVacancies } from "@/app/actions/vacancy";
 import { getMapBlocks } from "@/app/actions/map_blocks";
 import MapSearchBar from "@/components/MapSearchBar";
+import { getPermissionLevel } from "@/utils/permissionCheck";
+import AuthModal from "@/components/AuthModal";
 
 const CATEGORY_OPTIONS = [
   { label: "전체", value: "" },
@@ -113,6 +115,8 @@ export default function HomepagePage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [expandedIds, setExpandedIds] = useState<string[]>([]);
+  const [userLevel, setUserLevel] = useState<number>(0);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [geoData, setGeoData] = useState<any>(null);
   const [customBlocks, setCustomBlocks] = useState<any[]>([]);
   const [sigunguList, setSigunguList] = useState<string[]>([]);
@@ -123,6 +127,24 @@ export default function HomepagePage() {
   const polygonsRef = useRef<any[]>([]);
   const overlaysRef = useRef<any[]>([]);
   const ITEMS_PER_PAGE = 10;
+
+  // 유저 인증 상태 + 권한 레벨 감지
+  useEffect(() => {
+    async function initUser() {
+      const { createClient } = await import("@/utils/supabase/client");
+      const client = createClient();
+      const { data } = await client.auth.getUser();
+      if (data?.user) {
+        const { data: memberData } = await client.from('members').select('role, plan_type').eq('id', data.user.id).single();
+        if (memberData) {
+          setUserLevel(getPermissionLevel(memberData));
+        } else {
+          setUserLevel(1);
+        }
+      }
+    }
+    initUser();
+  }, []);
 
   // Fetch vacancies
   useEffect(() => {
@@ -759,9 +781,16 @@ export default function HomepagePage() {
               </div>
             ) : (
               <div style={{ borderTop: "1px solid #e5e7eb" }}>
-                {paged.map((v, idx) => (
+                {paged.map((v, idx) => {
+                  const isMasked = v.exposure_type === '부동산노출' && userLevel < 2;
+                  const showCommission = userLevel >= 2;
+                  const addrText = v.building_name || `${v.sigungu || ""} ${v.dong || ""} 매물`;
+                  return (
                 <div key={v.id} style={{ borderBottom: "1px solid #e5e7eb", borderLeft: "1px solid #e5e7eb", borderRight: "1px solid #e5e7eb", background: "#fff" }}>
-                  <div onClick={() => { setExpandedIds(prev => prev.includes(v.id) ? prev.filter(x => x !== v.id) : [...prev, v.id]); }} style={{ display: "flex", padding: "16px 0", alignItems: "center", cursor: "pointer", transition: "background 0.15s" }} onMouseEnter={e => (e.currentTarget.style.background = "#f8fafc")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                  <div onClick={() => { 
+                    if (isMasked) { setIsAuthModalOpen(true); return; }
+                    setExpandedIds(prev => prev.includes(v.id) ? prev.filter(x => x !== v.id) : [...prev, v.id]); 
+                  }} style={{ display: "flex", padding: "16px 0", alignItems: "center", cursor: "pointer", transition: "background 0.15s" }} onMouseEnter={e => (e.currentTarget.style.background = "#f8fafc")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
                   
                   {/* 1. Checkbox */}
                   <div style={{ width: 40, display: "flex", justifyContent: "center", alignItems: "center", flexShrink: 0 }}>
@@ -781,16 +810,21 @@ export default function HomepagePage() {
                   {/* 3. Main Info */}
                   <div style={{ flex: 1, minWidth: 0, paddingLeft: 20 }}>
                     <div style={{ display: "flex", gap: 6, marginBottom: 4, alignItems: "center" }}>
-                      <span style={{ display: "inline-block", background: "#fff", color: "#fa5252", border: "1px solid #fa5252", fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 4 }}>
-                        {v.realtor_commission || "법정수수료"}
-                      </span>
+                      {showCommission && (
+                        <span style={{ display: "inline-block", background: "#fff", color: "#fa5252", border: "1px solid #fa5252", fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 4 }}>
+                          {v.realtor_commission || "법정수수료"}
+                        </span>
+                      )}
                       <span style={{ display: "inline-block", fontSize: 11, color: "#fa5252", border: "1px solid #fa5252", padding: "2px 6px", fontWeight: "bold", borderRadius: 4, background: "#fff" }}>
                         {v.owner_role === 'REALTOR' || v.members?.role === 'REALTOR' ? '부동산' : '일반'}
                       </span>
+                      {isMasked && (
+                        <span onClick={(e) => { e.stopPropagation(); setIsAuthModalOpen(true); }} style={{ fontSize: 11, color: "#3b82f6", fontWeight: 700, background: "#eef6ff", padding: "3px 8px", borderRadius: 4, cursor: "pointer" }}>🔒 부동산회원 가입 시 무료 열람</span>
+                      )}
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-                      <span style={{ fontSize: 16, fontWeight: 700, color: "#111", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {v.building_name || `${v.sigungu || ""} ${v.dong || ""} 매물`} {v.property_type && `(${v.property_type})`}
+                      <span style={{ fontSize: 16, fontWeight: 700, color: isMasked ? "#bbb" : "#111", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", letterSpacing: isMasked ? 1 : 0 }}>
+                        {isMasked ? addrText.replace(/[^\s]/g, "X") : addrText} {v.property_type && `(${v.property_type})`}
                       </span>
                       <span style={{ background: "#fbbf24", color: "#fff", fontSize: 10, fontWeight: "bold", padding: "1px 4px", borderRadius: 2 }}>N</span>
                     </div>
@@ -863,7 +897,7 @@ export default function HomepagePage() {
                     </div>
                   )}
                 </div>
-                ))}
+                );})}
               </div>
             )}
 
@@ -901,6 +935,7 @@ export default function HomepagePage() {
       </div>
 
       <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+      {isAuthModalOpen && <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />}
     </div>
   );
 }

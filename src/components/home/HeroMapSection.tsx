@@ -2,6 +2,8 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { getVacanciesForMap } from "@/app/actions/vacancy";
+import { getPermissionLevel } from "@/utils/permissionCheck";
+import AuthModal from "@/components/AuthModal";
 
 const CATEGORY_OPTIONS = [
   { label: "전체", value: "" },
@@ -16,6 +18,8 @@ export default function HeroMapSection({ initialVacancies }: { initialVacancies?
   const router = useRouter();
   const [vacancies, setVacancies] = useState<any[]>([]);
   const [category, setCategory] = useState("");
+  const [userLevel, setUserLevel] = useState<number>(0);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [showList, setShowList] = useState(true);
   const mapRef = useRef<any>(null);
   const kakaoMapRef = useRef<any>(null);
@@ -80,6 +84,24 @@ export default function HeroMapSection({ initialVacancies }: { initialVacancies?
       fetchData();
     }
   }, [initialVacancies]);
+
+  // 유저 인증 상태 + 권한 레벨 감지
+  useEffect(() => {
+    async function initUser() {
+      const { createClient } = await import("@/utils/supabase/client");
+      const client = createClient();
+      const { data } = await client.auth.getUser();
+      if (data?.user) {
+        const { data: memberData } = await client.from('members').select('role, plan_type').eq('id', data.user.id).single();
+        if (memberData) {
+          setUserLevel(getPermissionLevel(memberData));
+        } else {
+          setUserLevel(1);
+        }
+      }
+    }
+    initUser();
+  }, []);
 
   // Preload Kakao Map script immediately on mount
   const [mapLoaded, setMapLoaded] = useState(false);
@@ -340,21 +362,28 @@ export default function HeroMapSection({ initialVacancies }: { initialVacancies?
             return displayVacancies.slice(0, 20).map((item) => {
               const photoUrl = item.photos?.[0] || null;
               const addrText = [item.dong, item.building_name, item.hosu].filter(Boolean).join(" ") || item.address || item.title || "매물";
-              const typeText = [item.property_type, item.direction, item.exclusive_m2 ? `${item.exclusive_m2}㎡` : null].filter(Boolean).join(" | ");
               const optionsStr = [`룸 ${item.room_count || 0}개`, `욕실 ${item.bath_count || 0}개`, ...(item.options || [])].filter(Boolean).join(", ");
-              const phoneText = item.client_phone || item.landlord_phone || (item.members?.phone) || "연락처 비공개";
+              // 마스킹 판별: 공실열람(GongsilClient)과 동일한 규칙
+              const isMasked = item.exposure_type === '부동산노출' && userLevel < 2;
+              const showCommission = userLevel >= 2;
               
               return (
                 <div
                   key={item.id}
-                  onClick={() => handleVacancyClick(item.id)}
+                  onClick={() => {
+                    if (isMasked) {
+                      setIsAuthModalOpen(true);
+                      return;
+                    }
+                    handleVacancyClick(item.id);
+                  }}
                   style={{ padding: "16px", borderBottom: "1px solid #f2f2f2", cursor: "pointer", display: "flex", alignItems: "flex-start", justifyContent: "space-between", transition: "background 0.2s" }}
                   onMouseEnter={(e) => (e.currentTarget.style.background = "#f9f9f9")}
                   onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
                 >
                   <div style={{ flex: 1, overflow: "hidden", paddingRight: photoUrl ? 12 : 0 }}>
-                    <h4 style={{ margin: "0 0 4px 0", fontSize: 14, color: "#111", fontWeight: 800, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", letterSpacing: "-0.5px" }}>
-                      {addrText}
+                    <h4 style={{ margin: "0 0 4px 0", fontSize: 14, color: isMasked ? "#bbb" : "#111", fontWeight: 800, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", letterSpacing: isMasked ? 1 : -0.5 }}>
+                      {isMasked ? addrText.replace(/[^\s]/g, "X") : addrText}
                     </h4>
                     <div style={{ color: "#1a73e8", fontWeight: 800, fontSize: 15, marginBottom: 4, letterSpacing: "-0.5px" }}>
                       {getPriceText(item)}
@@ -367,12 +396,15 @@ export default function HeroMapSection({ initialVacancies }: { initialVacancies?
                     </div>
                     
                     <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: "bold" }}>
-                      <span style={{ color: "#e74c3c", border: "1px solid #e74c3c", padding: "1px 4px", borderRadius: 2, fontSize: 10, whiteSpace: "nowrap", letterSpacing: "-0.5px" }}>
-                        {item.commission_comment || item.commission_type || "공동중개"}
-                      </span>
-                      <span style={{ color: "#c0392b", whiteSpace: "nowrap", letterSpacing: "-0.2px" }}>
-                        {phoneText}
-                      </span>
+                      {showCommission && (
+                        <span style={{ color: "#e74c3c", border: "1px solid #e74c3c", padding: "1px 4px", borderRadius: 2, fontSize: 10, whiteSpace: "nowrap", letterSpacing: "-0.5px" }}>
+                          {item.commission_comment || item.commission_type || "공동중개"}
+                        </span>
+                      )}
+                      <span style={{ fontSize: 13, color: "#aaa" }}>{new Date(item.created_at).toLocaleDateString('ko-KR', {year: 'numeric', month: '2-digit', day: '2-digit'}).replace(/\s/g, '')}</span>
+                      {isMasked && (
+                        <span onClick={(e) => { e.stopPropagation(); setIsAuthModalOpen(true); }} style={{ fontSize: 11, color: "#3b82f6", fontWeight: 700, background: "#eef6ff", padding: "3px 8px", borderRadius: 4, cursor: "pointer" }}>🔒 부동산회원 가입 시 무료 열람</span>
+                      )}
                     </div>
                   </div>
                   {photoUrl && (
@@ -394,6 +426,7 @@ export default function HeroMapSection({ initialVacancies }: { initialVacancies?
           📋 매물 목록 보기
         </button>
       )}
+      {isAuthModalOpen && <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />}
     </div>
   );
 }

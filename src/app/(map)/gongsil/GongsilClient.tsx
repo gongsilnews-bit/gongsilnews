@@ -1853,7 +1853,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                 return (
                   <div key={prop.id} 
                     onClick={() => { 
-                      if (userLevel < 2) {
+                      // 비공개 물건(부동산노출)은 부동산회원만 열람 가능
+                      if (isMasked) {
                         setIsAuthModalOpen(true);
                         return;
                       }
@@ -2126,7 +2127,15 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                 <div style={{ padding: "30px 20px", background: "#fff" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 25, gap: 15 }}>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 18, fontWeight: 800, color: "#111", marginBottom: 12 }}>{agencyInfo ? agencyInfo.name : (prop.members ? prop.members.name : prop.client_name)}</div>
+                      <div style={{ fontSize: 18, fontWeight: 800, color: "#111", marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
+                        {agencyInfo ? agencyInfo.name : (prop.members ? prop.members.name : prop.client_name)}
+                        <a href={`/gongsil-talk/${prop.owner_id || ''}`} title="공실Talk" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, borderRadius: "50%", background: "#2c2c2c", textDecoration: "none", cursor: "pointer", transition: "all 0.2s", flexShrink: 0 }}
+                          onMouseEnter={(e) => { e.currentTarget.style.transform = "scale(1.1)"; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
+                        >
+                          <svg viewBox="0 0 24 24" width="14" height="14" fill="#d4a017"><polygon points="8,5 20,12 8,19" /></svg>
+                        </a>
+                      </div>
                       <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 10 }}>
                         {agencyInfo ? (
                           <>
@@ -2184,6 +2193,26 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                               </a>
                             );
                           })}
+                        </div>
+                      )}
+
+                      {/* 오시는길 아이콘 (다음 로드뷰 연결) */}
+                      {agencyInfo?.address && (
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 10 }}>
+                          <a 
+                            href={agencyInfo.lat && agencyInfo.lng ? `https://map.kakao.com/link/roadview/${agencyInfo.lat},${agencyInfo.lng}` : `https://map.kakao.com/link/search/${encodeURIComponent(agencyInfo.address)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title="오시는길"
+                            style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 44, height: 44, borderRadius: "50%", background: "#f8f9fa", border: "1px solid #e0e0e0", color: "#444", transition: "all 0.2s", textDecoration: "none" }}
+                            onMouseEnter={(e) => { e.currentTarget.style.background = "#eaf4ff"; e.currentTarget.style.borderColor = "#1a73e8"; e.currentTarget.style.color = "#1a73e8"; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.background = "#f8f9fa"; e.currentTarget.style.borderColor = "#e0e0e0"; e.currentTarget.style.color = "#444"; }}
+                          >
+                            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                              <circle cx="12" cy="10" r="3"></circle>
+                            </svg>
+                          </a>
                         </div>
                       )}
                     </div>

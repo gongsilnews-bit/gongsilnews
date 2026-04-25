@@ -30,7 +30,6 @@ const ADMIN_MENU: MenuItem[] = [
   { key: "article", label: "기사관리", icon: <IconArticle /> },
   { key: "comment", label: "공실Talk", icon: <IconComment /> },
   { key: "study", label: "스터디관리", icon: <IconStudy /> },
-  { key: "edit", label: "편집", icon: <IconEdit /> },
   { key: "board", label: "게시판", icon: <IconBoard /> },
   { key: "ad", label: "광고", icon: <IconAd /> },
   { key: "plugin", label: "부동산홈페이지", icon: <IconPlugin /> },
@@ -258,7 +257,7 @@ function AdminContent() {
               {adminUserId ? <MemberRegisterForm editMemberId={adminUserId} onBack={() => setActiveMenu("dashboard")} /> : <div style={{ textAlign: "center", padding: 40, color: theme.textSecondary }}>사용자 정보를 불러오는 중입니다...</div>}
             </div>
           )}
-          {["edit", "plugin", "stats"].includes(activeMenu) && (
+          {["plugin", "stats"].includes(activeMenu) && (
             <div style={{ flex: 1, margin: 16, marginBottom: 0, background: theme.cardBg, borderTopLeftRadius: 12, borderTopRightRadius: 12, boxShadow: "0 4px 6px rgba(0,0,0,0.05)", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <div style={{ textAlign: "center", color: "#9ca3af" }}>
                 <div style={{ fontSize: 48, marginBottom: 16 }}>🚧</div>

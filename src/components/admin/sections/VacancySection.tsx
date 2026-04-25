@@ -131,7 +131,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
       {/* 타이틀 */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
         <h1 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: 0 }}>공실관리</h1>
-        <span style={{ fontSize: 13, color: "#ef4444", fontWeight: 600 }}>(광고 {dbVacancies.filter(v => v.status === 'ACTIVE').length}건 / 전체 {dbVacancies.length}건)</span>
+        <span style={{ fontSize: 13, color: "#111", fontWeight: 600 }}>(광고 {dbVacancies.filter(v => v.status === 'ACTIVE').length}건 / 전체 {dbVacancies.length}건)</span>
       </div>
 
       {/* 필터 검색 바 (독립 컨테이너로 위로 분리) */}

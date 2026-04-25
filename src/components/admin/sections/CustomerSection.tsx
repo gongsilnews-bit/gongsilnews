@@ -18,6 +18,7 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
   const [activeTab, setActiveTab] = useState("전체");
   const [searchKeyword, setSearchKeyword] = useState("");
   const [searchTypes, setSearchTypes] = useState<string[]>(["전체"]);
+  const [activeFilters, setActiveFilters] = useState({ keyword: "", types: ["전체"] });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | string | null>(null);
 
@@ -41,10 +42,10 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
     // 탭 필터링
     if (activeTab !== "전체" && c.status !== activeTab) return false;
     // 유형 다중 필터링
-    if (!searchTypes.includes("전체") && !searchTypes.includes(c.type)) return false;
+    if (!activeFilters.types.includes("전체") && !activeFilters.types.includes(c.type)) return false;
     // 검색어 필터링
-    if (searchKeyword) {
-      const kw = searchKeyword.toLowerCase();
+    if (activeFilters.keyword) {
+      const kw = activeFilters.keyword.toLowerCase();
       if (!c.name.includes(kw) && !c.phone.includes(kw)) return false;
     }
     return true;
@@ -73,10 +74,62 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
       {/* 타이틀 */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
         <h1 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: 0 }}>고객관리</h1>
-        <span style={{ fontSize: 13, color: "#ef4444", fontWeight: 600 }}>
+        <span style={{ fontSize: 13, color: "#111", fontWeight: 600 }}>
           (진행중 {dbCustomers.filter(c => c.status === "진행중").length}명 / 
           전체 {dbCustomers.length}명)
         </span>
+      </div>
+
+      {/* 필터 검색 바 (독립 컨테이너로 위로 분리) */}
+      <div style={{ padding: "16px 24px", background: cardBg, borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", marginBottom: 20, display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: textPrimary, whiteSpace: "nowrap", marginRight: 4 }}>고객 구분</span>
+          {["전체", "매수", "임차(전월세)", "매도", "임대(전월세)"].map(type => (
+            <button 
+              key={type}
+              onClick={() => toggleSearchType(type)}
+              style={{ 
+                height: 34, padding: "0 14px", borderRadius: 20, 
+                fontSize: 13, fontWeight: searchTypes.includes(type) ? 700 : 600, 
+                cursor: "pointer", transition: "all 0.2s",
+                border: `1px solid ${searchTypes.includes(type) ? "#3b82f6" : border}`,
+                background: searchTypes.includes(type) ? (darkMode ? "rgba(59, 130, 246, 0.2)" : "#eff6ff") : (darkMode ? "#2c2d31" : "#fff"),
+                color: searchTypes.includes(type) ? "#3b82f6" : textSecondary
+              }}
+            >
+              {type === "전체" ? "전체" : type === "매수" ? "매수" : type === "임차(전월세)" ? "임차(월세/전세)" : type === "매도" ? "매도" : "임대(월세/전세)"}
+            </button>
+          ))}
+        </div>
+        
+        <input type="text" value={searchKeyword} onChange={e => setSearchKeyword(e.target.value)} 
+          onKeyDown={e => { 
+            if(e.key === 'Enter') { 
+              setActiveFilters({ keyword: searchKeyword, types: searchTypes }); 
+              if (searchKeyword || !searchTypes.includes("전체")) setActiveTab("전체"); 
+            } 
+          }}
+          placeholder="고객 이름 또는 연락처 검색" 
+          style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", flex: 1, minWidth: 180 }} 
+        />
+        <button 
+          onClick={() => { 
+            setActiveFilters({ keyword: searchKeyword, types: searchTypes }); 
+            if (searchKeyword || !searchTypes.includes("전체")) setActiveTab("전체"); 
+          }} 
+          style={{ height: 36, padding: "0 18px", background: darkMode ? "#2c2d31" : "#374151", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+          검색
+        </button>
+        <button 
+          onClick={() => { 
+            setSearchKeyword(""); 
+            setSearchTypes(["전체"]); 
+            setActiveFilters({ keyword: "", types: ["전체"] }); 
+            setActiveTab("전체"); 
+          }} 
+          style={{ height: 36, padding: "0 14px", background: darkMode ? "#2c2d31" : "#fff", color: textSecondary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+          초기화
+        </button>
       </div>
 
       <div style={{ background: cardBg, borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", overflow: "hidden" }}>
@@ -92,7 +145,11 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
             const badgeTextColor = tab === "전체" ? "#4b5563" : "#fff";
 
             return (
-              <button key={tab} onClick={() => setActiveTab(tab)}
+              <button key={tab} onClick={() => {
+                  setActiveTab(tab);
+                  setActiveFilters({ keyword: "", types: ["전체"] });
+                  setSearchKeyword(""); setSearchTypes(["전체"]);
+                }}
                 style={{ 
                   border: "none", background: "none", padding: "16px 20px", fontSize: 14, 
                   fontWeight: activeTab === tab ? 800 : 600, 
@@ -107,36 +164,6 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
               </button>
             );
           })}
-        </div>
-
-        {/* 필터 검색 바 */}
-        <div style={{ padding: "16px 24px", borderBottom: `1px solid ${border}`, display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ fontSize: 13, fontWeight: 700, color: textPrimary, whiteSpace: "nowrap", marginRight: 4 }}>고객 구분</span>
-            {["전체", "매수", "임차(전월세)", "매도", "임대(전월세)"].map(type => (
-              <button 
-                key={type}
-                onClick={() => toggleSearchType(type)}
-                style={{ 
-                  height: 34, padding: "0 14px", borderRadius: 20, 
-                  fontSize: 13, fontWeight: searchTypes.includes(type) ? 700 : 600, 
-                  cursor: "pointer", transition: "all 0.2s",
-                  border: `1px solid ${searchTypes.includes(type) ? "#3b82f6" : border}`,
-                  background: searchTypes.includes(type) ? (darkMode ? "rgba(59, 130, 246, 0.2)" : "#eff6ff") : (darkMode ? "#2c2d31" : "#fff"),
-                  color: searchTypes.includes(type) ? "#3b82f6" : textSecondary
-                }}
-              >
-                {type === "전체" ? "전체" : type === "매수" ? "매수" : type === "임차(전월세)" ? "임차(월세/전세)" : type === "매도" ? "매도" : "임대(월세/전세)"}
-              </button>
-            ))}
-          </div>
-          
-          <input type="text" value={searchKeyword} onChange={e => setSearchKeyword(e.target.value)} 
-            placeholder="고객 이름 또는 연락처 검색" 
-            style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", flex: 1, minWidth: 180 }} 
-          />
-          <button style={{ height: 36, padding: "0 18px", background: darkMode ? "#2c2d31" : "#374151", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>검색</button>
-          <button onClick={() => { setSearchKeyword(""); setSearchTypes(["전체"]); }} style={{ height: 36, padding: "0 14px", background: darkMode ? "#2c2d31" : "#fff", color: textSecondary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>초기화</button>
         </div>
 
         {/* 액션 버튼 영역 */}
