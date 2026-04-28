@@ -2129,11 +2129,12 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: 18, fontWeight: 800, color: "#111", marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
                         {agencyInfo ? agencyInfo.name : (prop.members ? prop.members.name : prop.client_name)}
-                        <a href={`/gongsil-talk/${prop.owner_id || ''}`} title="공실Talk" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, borderRadius: "50%", background: "#2c2c2c", textDecoration: "none", cursor: "pointer", transition: "all 0.2s", flexShrink: 0 }}
-                          onMouseEnter={(e) => { e.currentTarget.style.transform = "scale(1.1)"; }}
-                          onMouseLeave={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
+                        <a href={`/gongsil-talk/${prop.owner_id || ''}`} title="공실Talk" style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px", borderRadius: 4, background: "#f8f9fa", border: "1px solid #e0e0e0", textDecoration: "none", cursor: "pointer", transition: "all 0.2s", color: "#444", fontSize: 13, fontWeight: "600", flexShrink: 0 }}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = "#eaf4ff"; e.currentTarget.style.borderColor = "#1a73e8"; e.currentTarget.style.color = "#1a73e8"; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = "#f8f9fa"; e.currentTarget.style.borderColor = "#e0e0e0"; e.currentTarget.style.color = "#444"; }}
                         >
-                          <svg viewBox="0 0 24 24" width="14" height="14" fill="#d4a017"><polygon points="8,5 20,12 8,19" /></svg>
+                          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                          공실Talk
                         </a>
                       </div>
                       <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 10 }}>
@@ -2153,10 +2154,11 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                         </span>
                       </div>
 
-                      {/* SNS Links (Excluding API info) */}
-                      {prop.members?.sns_links && Object.keys(prop.members.sns_links).filter(k => k !== "api_info" && k !== "api_list" && prop.members.sns_links[k]?.url).length > 0 && (
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 12 }}>
-                          {Object.keys(prop.members.sns_links).filter(k => k !== "api_info" && k !== "api_list" && prop.members.sns_links[k]?.url).map(key => {
+                      {/* 그룹 컨테이너 (SNS + 오시는길) */}
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 12 }}>
+                        {/* SNS Links (Excluding API info) */}
+                        {prop.members?.sns_links && Object.keys(prop.members.sns_links).filter(k => k !== "api_info" && k !== "api_list" && prop.members.sns_links[k]?.url).length > 0 && (
+                          Object.keys(prop.members.sns_links).filter(k => k !== "api_info" && k !== "api_list" && prop.members.sns_links[k]?.url).map(key => {
                             const link = prop.members.sns_links[key].url;
                             const validUrl = link.startsWith('http') ? link : `https://${link}`;
                             
@@ -2192,13 +2194,11 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                 <div style={{ width: 22, height: 22, display: "flex", alignItems: "center", justifyContent: "center" }}>{iconHtml}</div>
                               </a>
                             );
-                          })}
-                        </div>
-                      )}
+                          })
+                        )}
 
-                      {/* 오시는길 아이콘 (다음 로드뷰 연결) */}
-                      {agencyInfo?.address && (
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 10 }}>
+                        {/* 오시는길 아이콘 (다음 로드뷰 연결) */}
+                        {agencyInfo?.address && (
                           <a 
                             href={agencyInfo.lat && agencyInfo.lng ? `https://map.kakao.com/link/roadview/${agencyInfo.lat},${agencyInfo.lng}` : `https://map.kakao.com/link/search/${encodeURIComponent(agencyInfo.address)}`}
                             target="_blank"
@@ -2213,8 +2213,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                               <circle cx="12" cy="10" r="3"></circle>
                             </svg>
                           </a>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
 
                     {/* 부동산 소개란 (agency_info intro) */}
