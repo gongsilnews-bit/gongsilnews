@@ -1,38 +1,25 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { createBrowserClient } from "@supabase/ssr";
 import ProfileCardPopover from "./ProfileCardPopover";
 import CreateRoomModal from "./CreateRoomModal";
-
-/* ──────────────────────── 더미 데이터 (추후 Supabase 연동) ──────────────────────── */
-const DUMMY_ROOMS = [
-  { id: "1", type: "group", title: "강남 상가 교류방", members: 32, lastMsg: "급매물 정보 공유합니다. 강남역 1번출구 상가 32평...", lastTime: "오후 3:14", unread: 3, avatar: "🏢" },
-  { id: "2", type: "group", title: "서초구 소장 모임", members: 18, lastMsg: "다음 주 목요일 정기 모임 참석하실 분?", lastTime: "오후 2:30", unread: 0, avatar: "🤝" },
-  { id: "3", type: "group", title: "급매물 공유방", members: 45, lastMsg: "마포구 오피스텔 급매 나왔습니다", lastTime: "오후 1:20", unread: 12, avatar: "🔥" },
-  { id: "4", type: "private", title: "김동현 소장님", members: 2, lastMsg: "네, 내일 오후에 현장 같이 볼까요?", lastTime: "오전 11:45", unread: 1, avatar: "👤" },
-  { id: "5", type: "private", title: "박미영 대표", members: 2, lastMsg: "계약서 확인 부탁드립니다", lastTime: "어제", unread: 0, avatar: "👤" },
-  { id: "6", type: "group", title: "송파구 오피스 정보", members: 21, lastMsg: "잠실 새내역 오피스 공실률이 많이 낮아졌네요", lastTime: "어제", unread: 0, avatar: "🏙️" },
-];
-
-const DUMMY_MESSAGES = [
-  { id: "m1", authorName: "미소탑공인", avatar: "🏠", content: "강남역 근처 상가 32평 급매물 나왔습니다.\n관심있으신 분 연락주세요!", time: "오후 2:56", isMe: false, role: "owner" },
-  { id: "m2", authorName: "나", content: "네 감사합니다. 위치 좀 더 알려주실 수 있나요?", time: "오후 3:01", isMe: true },
-  { id: "m3", authorName: "박소장", avatar: "👤", content: "저도 관심있습니다. 평당가 얼마인가요?", time: "오후 3:05", isMe: false },
-  { id: "m4", authorName: "미소탑공인", avatar: "🏠", content: "평당 2,800만원 수준입니다.\n현재 임차인 없이 깨끗한 상태입니다.", time: "오후 3:08", isMe: false, role: "owner" },
-  { id: "m5", authorName: "나", content: "좋습니다! 내일 오후에 현장 방문 가능할까요?", time: "오후 3:10", isMe: true },
-  { id: "m6", authorName: "미소탑공인", avatar: "🏠", content: "네, 내일 오후 2시에 현장에서 뵙겠습니다.", time: "오후 3:14", isMe: false, role: "owner" },
-];
-
-const DUMMY_CONTACTS = [
-  { id: "c1", name: "김동현 소장님", company: "우정공인중개사무소", avatar: "👤", status: "강남구 상가 전문" },
-  { id: "c2", name: "미소탑공인", company: "미소탑공인중개사", avatar: "🏠", status: "역삼동 10년차" },
-  { id: "c3", name: "박미영 대표", company: "원앤원중개법인", avatar: "👤", status: "오피스/상가 매매" },
-  { id: "c4", name: "이상윤 소장", company: "브루시 부동산", avatar: "👤", status: "서초구 전문" },
-  { id: "c5", name: "최은숙 대표", company: "독일집공인", avatar: "👤", status: "송파구 아파트" },
-];
+import { getMyRooms, getRoomMessages, sendMessage, createRoom as createRoomAction, findOrCreateDM, type TalkRoom, type TalkMessage } from "@/app/actions/talkActions";
 
 type LnbTab = "contacts" | "chats" | "notifications" | "settings";
+
+const formatTime = (dateStr: string) => {
+  const d = new Date(dateStr);
+  const now = new Date();
+  const diff = now.getTime() - d.getTime();
+  if (diff < 60000) return "방금";
+  if (diff < 3600000) return `${Math.floor(diff / 60000)}분 전`;
+  if (diff < 86400000) {
+    const h = d.getHours(); const m = String(d.getMinutes()).padStart(2, "0");
+    return `${h >= 12 ? "오후" : "오전"} ${h > 12 ? h - 12 : h}:${m}`;
+  }
+  return `${d.getMonth() + 1}.${d.getDate()}`;
+};
 
 export default function GongsilTalkOverlay() {
   const [isOpen, setIsOpen] = useState(false);
@@ -42,12 +29,84 @@ export default function GongsilTalkOverlay() {
   const [messageInput, setMessageInput] = useState("");
   const [profileCard, setProfileCard] = useState<{ anchorEl: HTMLElement; name: string; agencyName?: string; ceoName?: string; phone?: string; profileImage?: string; userId?: string; role?: string; bio?: string } | null>(null);
   const [showCreateRoom, setShowCreateRoom] = useState(false);
-  const [customRooms, setCustomRooms] = useState<typeof DUMMY_ROOMS>([]);
   const [overlayHeight, setOverlayHeight] = useState(680);
   const [overlayWidth, setOverlayWidth] = useState(720);
   const isDragging = useRef(false);
   const startY = useRef(0);
   const startHeight = useRef(680);
+
+  // ────── 실제 Supabase 데이터 ──────
+  const [rooms, setRooms] = useState<TalkRoom[]>([]);
+  const [messages, setMessages] = useState<TalkMessage[]>([]);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentUserName, setCurrentUserName] = useState("나");
+  const [currentUserRole, setCurrentUserRole] = useState<string>("general");
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // 로그인 사용자 정보
+  useEffect(() => {
+    const supabase = createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        setCurrentUserId(user.id);
+        supabase.from("members").select("name, membership_type").eq("id", user.id).single().then(({ data }) => {
+          if (data?.name) setCurrentUserName(data.name);
+          if (data?.membership_type) setCurrentUserRole(data.membership_type);
+        });
+      }
+    });
+  }, []);
+
+  // 채팅방 목록 로드
+  const loadRooms = useCallback(async () => {
+    if (!currentUserId) return;
+    const res = await getMyRooms(currentUserId);
+    if (res.success && res.data) setRooms(res.data);
+  }, [currentUserId]);
+
+  useEffect(() => { if (currentUserId) loadRooms(); }, [currentUserId, loadRooms]);
+
+  // 메시지 로드
+  const loadMessages = useCallback(async (roomId: string) => {
+    const res = await getRoomMessages(roomId);
+    if (res.success && res.data) {
+      setMessages(res.data);
+      setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+    }
+  }, []);
+
+  useEffect(() => { if (selectedRoom) loadMessages(selectedRoom); }, [selectedRoom, loadMessages]);
+
+  // Supabase Realtime 구독
+  useEffect(() => {
+    const supabase = createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+    const channel = supabase
+      .channel("talk-messages-realtime")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "talk_messages" }, (payload) => {
+        const newMsg = payload.new as TalkMessage;
+        // 현재 열린 방이면 메시지 추가
+        if (newMsg.room_id === selectedRoom) {
+          setMessages(prev => [...prev, newMsg]);
+          setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+        }
+        // 방 목록 갱신
+        loadRooms();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [selectedRoom, loadRooms]);
+
+  // 메시지 전송
+  const handleSend = async () => {
+    if (!messageInput.trim() || !selectedRoom || !currentUserId) return;
+    const text = messageInput.trim();
+    setMessageInput("");
+    await sendMessage(selectedRoom, currentUserId, currentUserName, text);
+  };
+
+  const totalUnread = rooms.reduce((a, r) => a + (r.unread_count || 0), 0);
+  const filteredRooms = chatFilter === "unread" ? rooms.filter(r => (r.unread_count || 0) > 0) : rooms;
+  const currentRoom = rooms.find(r => r.id === selectedRoom);
 
   const handleResizeStart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -106,37 +165,23 @@ export default function GongsilTalkOverlay() {
     }
   }, [selectedRoom]);
 
-  const [dmTarget, setDmTarget] = useState<{ userId: string; userName: string; profileImage?: string } | null>(null);
-
-  // 공실Talk 버튼 이벤트 리스너
+  // 공실Talk 버튼 이벤트 리스너 (1:1 DM)
   useEffect(() => {
-    const handler = (e: Event) => {
+    const handler = async (e: Event) => {
       const detail = (e as CustomEvent).detail;
-      if (detail?.userId) {
-        setDmTarget(detail);
+      if (detail?.userId && currentUserId) {
         setIsOpen(true);
         setActiveTab("chats");
-        // DM 방 ID는 dm-{userId}
-        setSelectedRoom(`dm-${detail.userId}`);
+        const res = await findOrCreateDM(currentUserId, currentUserName, detail.userId, detail.userName);
+        if (res.success && res.roomId) {
+          await loadRooms();
+          setSelectedRoom(res.roomId);
+        }
       }
     };
     window.addEventListener("openGongsilTalk", handler);
     return () => window.removeEventListener("openGongsilTalk", handler);
-  }, []);
-
-  // DM 대상이 있으면 DUMMY_ROOMS에 동적 추가
-  const baseRooms = [...customRooms, ...DUMMY_ROOMS];
-  const allRooms = dmTarget
-    ? [
-        ...baseRooms.filter(r => r.id !== `dm-${dmTarget.userId}`),
-        { id: `dm-${dmTarget.userId}`, type: "private", title: dmTarget.userName, members: 2, lastMsg: "1:1 대화를 시작합니다", lastTime: "방금", unread: 0, avatar: "💬" }
-      ]
-    : baseRooms;
-
-  const filteredRooms = chatFilter === "unread" ? allRooms.filter(r => r.unread > 0) : allRooms;
-  const currentRoom = allRooms.find(r => r.id === selectedRoom);
-  const totalUnread = allRooms.reduce((a, r) => a + r.unread, 0);
-  const isDmRoom = selectedRoom?.startsWith("dm-");
+  }, [currentUserId, currentUserName, loadRooms]);
 
   const NAVY = "#1a2e50";
   const BLUE = "#508bf5";
@@ -280,6 +325,9 @@ export default function GongsilTalkOverlay() {
             </div>
 
             <div style={{ flex: 1, overflowY: "auto" }}>
+              {activeTab === "chats" && filteredRooms.length === 0 && (
+                <div style={{ padding: "40px 14px", textAlign: "center", color: "#bbb", fontSize: 13 }}>💬 채팅방이 없습니다<br/><span style={{ fontSize: 11 }}>+ 버튼으로 새 채팅방을 만들어보세요</span></div>
+              )}
               {activeTab === "chats" && filteredRooms.map(room => (
                 <div key={room.id} onClick={() => setSelectedRoom(room.id)}
                   style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", cursor: "pointer", background: selectedRoom === room.id ? "#ebf5ff" : "transparent", transition: "background 0.15s" }}
@@ -291,15 +339,12 @@ export default function GongsilTalkOverlay() {
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 2 }}>
                       <span style={{ fontWeight: 700, fontSize: 13, color: "#111", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {room.title}
-                        {room.type === "group" && <span style={{ color: "#aaa", fontWeight: 400, marginLeft: 3, fontSize: 11 }}>{room.members}</span>}
+                        {room.type === "group" && <span style={{ color: "#aaa", fontWeight: 400, marginLeft: 3, fontSize: 11 }}>{room.member_count}</span>}
                       </span>
-                      <span style={{ fontSize: 10, color: "#aaa", flexShrink: 0, marginLeft: 6 }}>{room.lastTime}</span>
+                      <span style={{ fontSize: 10, color: "#aaa", flexShrink: 0, marginLeft: 6 }}>{room.last_message_time ? formatTime(room.last_message_time) : ""}</span>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                      <p style={{ fontSize: 12, color: "#888", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0, paddingRight: 6 }}>{room.lastMsg}</p>
-                      {room.unread > 0 && (
-                        <span style={{ background: "#ef4444", color: "#fff", fontSize: 10, fontWeight: 700, borderRadius: 8, minWidth: 18, height: 18, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 5px", flexShrink: 0 }}>{room.unread}</span>
-                      )}
+                      <p style={{ fontSize: 12, color: "#888", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0, paddingRight: 6 }}>{room.last_message || ""}</p>
                     </div>
                   </div>
                 </div>
@@ -310,20 +355,10 @@ export default function GongsilTalkOverlay() {
                   <div style={{ padding: "8px 14px", borderBottom: "1px solid #f0f0f0" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                       <div style={{ width: 44, height: 44, borderRadius: "50%", background: "#e8f0fe", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>👤</div>
-                      <div><div style={{ fontWeight: 700, fontSize: 14, color: "#111" }}>내 프로필</div><div style={{ fontSize: 11, color: "#aaa" }}>공실뉴스 회원</div></div>
+                      <div><div style={{ fontWeight: 700, fontSize: 14, color: "#111" }}>{currentUserName}</div><div style={{ fontSize: 11, color: "#aaa" }}>공실뉴스 회원</div></div>
                     </div>
                   </div>
-                  <div style={{ padding: "10px 14px 4px", fontSize: 11, color: "#aaa", fontWeight: 600 }}>친구 {DUMMY_CONTACTS.length}</div>
-                  {DUMMY_CONTACTS.map(c => (
-                    <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 14px", cursor: "pointer" }}
-                      onMouseEnter={e => e.currentTarget.style.background = "#f9fafb"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                      <div
-                        onClick={(e) => { e.stopPropagation(); setProfileCard({ anchorEl: e.currentTarget as HTMLElement, name: c.name, agencyName: c.company, bio: c.status, role: "REALTOR" }); }}
-                        style={{ width: 36, height: 36, borderRadius: "50%", background: "#f0f4f8", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, flexShrink: 0, cursor: "pointer" }}
-                      >{c.avatar}</div>
-                      <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontWeight: 600, fontSize: 13, color: "#222" }}>{c.name}</div><div style={{ fontSize: 11, color: "#999" }}>{c.status}</div></div>
-                    </div>
-                  ))}
+                  <div style={{ padding: "40px 14px", textAlign: "center", color: "#bbb", fontSize: 13 }}>👥 채팅방 멤버들과 대화해보세요</div>
                 </>
               )}
 
@@ -340,7 +375,7 @@ export default function GongsilTalkOverlay() {
                 <div style={{ height: 48, background: "#fff", borderBottom: "1px solid #e5e7eb", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 14px", flexShrink: 0 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                     <h3 style={{ fontWeight: 800, fontSize: 14, color: "#111", margin: 0 }}>{currentRoom.title}</h3>
-                    {currentRoom.type === "group" && <span style={{ fontSize: 12, color: "#aaa" }}>{currentRoom.members}</span>}
+                    {currentRoom.type === "group" && <span style={{ fontSize: 12, color: "#aaa" }}>{currentRoom.member_count}</span>}
                   </div>
                   <div style={{ display: "flex", gap: 2 }}>
                     <button style={{ width: 30, height: 30, borderRadius: 6, background: "transparent", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#888" }}>
@@ -358,46 +393,54 @@ export default function GongsilTalkOverlay() {
                 </div>
 
                 <div style={{ flex: 1, overflowY: "auto", padding: "16px 14px" }}>
-                  {DUMMY_MESSAGES.map(msg => (
-                    <div key={msg.id} style={{ display: "flex", justifyContent: msg.isMe ? "flex-end" : "flex-start", marginBottom: 14 }}>
-                      {!msg.isMe && (
-                        <div style={{ display: "flex", gap: 6, maxWidth: "75%" }}>
-                          <div
-                            onClick={(e) => setProfileCard({ anchorEl: e.currentTarget as HTMLElement, name: msg.authorName, agencyName: msg.authorName, role: "REALTOR", bio: msg.role === "owner" ? "방장" : undefined })}
-                            style={{ width: 32, height: 32, borderRadius: "50%", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0, boxShadow: "0 1px 2px rgba(0,0,0,0.08)", cursor: "pointer" }}
-                          >{msg.avatar}</div>
-                          <div>
-                            <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 3 }}>
-                              <span style={{ fontSize: 12, fontWeight: 700, color: "#444" }}>{msg.authorName}</span>
-                              {msg.role === "owner" && <span style={{ fontSize: 10 }}>👑</span>}
+                  {messages.map(msg => {
+                    const isMe = msg.sender_id === currentUserId;
+                    const initial = (msg.sender_name || "?")[0];
+                    return (
+                      <div key={msg.id} style={{ display: "flex", justifyContent: isMe ? "flex-end" : "flex-start", marginBottom: 14 }}>
+                        {!isMe && (
+                          <div style={{ display: "flex", gap: 6, maxWidth: "75%" }}>
+                            <div
+                              onClick={(e) => setProfileCard({ anchorEl: e.currentTarget as HTMLElement, name: msg.sender_name, userId: msg.sender_id, role: "REALTOR" })}
+                              style={{ width: 32, height: 32, borderRadius: "50%", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0, boxShadow: "0 1px 2px rgba(0,0,0,0.08)", cursor: "pointer", overflow: "hidden" }}
+                            >
+                              {msg.sender_profile_image ? <img src={msg.sender_profile_image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : initial}
                             </div>
-                            <div style={{ background: "#fff", borderRadius: "4px 16px 16px 16px", padding: "8px 12px", boxShadow: "0 1px 2px rgba(0,0,0,0.05)" }}>
-                              <p style={{ fontSize: 13, color: "#222", lineHeight: 1.5, margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{msg.content}</p>
+                            <div>
+                              <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 3 }}>
+                                <span style={{ fontSize: 12, fontWeight: 700, color: "#444" }}>{msg.sender_name}</span>
+                              </div>
+                              <div style={{ background: "#fff", borderRadius: "4px 16px 16px 16px", padding: "8px 12px", boxShadow: "0 1px 2px rgba(0,0,0,0.05)" }}>
+                                <p style={{ fontSize: 13, color: "#222", lineHeight: 1.5, margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{msg.content}</p>
+                              </div>
+                              <span style={{ fontSize: 10, color: "#999", marginTop: 3, marginLeft: 2, display: "inline-block" }}>{formatTime(msg.created_at)}</span>
                             </div>
-                            <span style={{ fontSize: 10, color: "#999", marginTop: 3, marginLeft: 2, display: "inline-block" }}>{msg.time}</span>
                           </div>
-                        </div>
-                      )}
-                      {msg.isMe && (
-                        <div style={{ maxWidth: "75%" }}>
-                          <div style={{ background: NAVY, borderRadius: "16px 4px 16px 16px", padding: "8px 12px", boxShadow: "0 1px 2px rgba(0,0,0,0.08)" }}>
-                            <p style={{ fontSize: 13, color: "#fff", lineHeight: 1.5, margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{msg.content}</p>
+                        )}
+                        {isMe && (
+                          <div style={{ maxWidth: "75%" }}>
+                            <div style={{ background: NAVY, borderRadius: "16px 4px 16px 16px", padding: "8px 12px", boxShadow: "0 1px 2px rgba(0,0,0,0.08)" }}>
+                              <p style={{ fontSize: 13, color: "#fff", lineHeight: 1.5, margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{msg.content}</p>
+                            </div>
+                            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 3, marginRight: 2 }}>
+                              <span style={{ fontSize: 10, color: "#999" }}>{formatTime(msg.created_at)}</span>
+                            </div>
                           </div>
-                          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 3, marginRight: 2 }}>
-                            <span style={{ fontSize: 10, color: "#999" }}>{msg.time}</span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                        )}
+                      </div>
+                    );
+                  })}
+                  <div ref={chatEndRef} />
                 </div>
 
                 <div style={{ background: "#fff", borderTop: "1px solid #e5e7eb", padding: 10, display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
                   <button style={{ width: 34, height: 34, borderRadius: "50%", background: NAVY, display: "flex", alignItems: "center", justifyContent: "center", border: "none", cursor: "pointer", flexShrink: 0, color: "#fff" }}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                   </button>
-                  <input type="text" value={messageInput} onChange={e => setMessageInput(e.target.value)} placeholder="메시지를 입력하세요" style={{ flex: 1, background: "#f3f4f6", borderRadius: 18, padding: "8px 14px", fontSize: 13, border: "none", outline: "none", color: "#222" }} />
-                  <button style={{ padding: "8px 16px", borderRadius: 18, background: BLUE, color: "#fff", fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer", flexShrink: 0 }}>전송</button>
+                  <input type="text" value={messageInput} onChange={e => setMessageInput(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+                    placeholder="메시지를 입력하세요" style={{ flex: 1, background: "#f3f4f6", borderRadius: 18, padding: "8px 14px", fontSize: 13, border: "none", outline: "none", color: "#222" }} />
+                  <button onClick={handleSend} style={{ padding: "8px 16px", borderRadius: 18, background: BLUE, color: "#fff", fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer", flexShrink: 0 }}>전송</button>
                 </div>
               </>
             ) : null}
@@ -423,12 +466,15 @@ export default function GongsilTalkOverlay() {
       <CreateRoomModal
         isOpen={showCreateRoom}
         onClose={() => setShowCreateRoom(false)}
-        userRole="news_premium"
-        onCreateRoom={(room) => {
-          const newRoom = { id: `custom-${Date.now()}`, type: room.type, title: room.title, members: 1, lastMsg: "채팅방이 생성되었습니다", lastTime: "방금", unread: 0, avatar: room.avatar };
-          setCustomRooms(prev => [newRoom, ...prev]);
-          setSelectedRoom(newRoom.id);
-          setActiveTab("chats");
+        userRole={currentUserRole}
+        onCreateRoom={async (room) => {
+          if (!currentUserId) return;
+          const res = await createRoomAction({ title: room.title, description: room.description, type: room.type, avatar: room.avatar, creatorId: currentUserId });
+          if (res.success && res.roomId) {
+            await loadRooms();
+            setSelectedRoom(res.roomId);
+            setActiveTab("chats");
+          }
         }}
       />
     </>
