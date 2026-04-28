@@ -1,0 +1,436 @@
+"use client";
+
+import { useState, useEffect, useRef } from "react";
+import { createBrowserClient } from "@supabase/ssr";
+import ProfileCardPopover from "./ProfileCardPopover";
+import CreateRoomModal from "./CreateRoomModal";
+
+/* ──────────────────────── 더미 데이터 (추후 Supabase 연동) ──────────────────────── */
+const DUMMY_ROOMS = [
+  { id: "1", type: "group", title: "강남 상가 교류방", members: 32, lastMsg: "급매물 정보 공유합니다. 강남역 1번출구 상가 32평...", lastTime: "오후 3:14", unread: 3, avatar: "🏢" },
+  { id: "2", type: "group", title: "서초구 소장 모임", members: 18, lastMsg: "다음 주 목요일 정기 모임 참석하실 분?", lastTime: "오후 2:30", unread: 0, avatar: "🤝" },
+  { id: "3", type: "group", title: "급매물 공유방", members: 45, lastMsg: "마포구 오피스텔 급매 나왔습니다", lastTime: "오후 1:20", unread: 12, avatar: "🔥" },
+  { id: "4", type: "private", title: "김동현 소장님", members: 2, lastMsg: "네, 내일 오후에 현장 같이 볼까요?", lastTime: "오전 11:45", unread: 1, avatar: "👤" },
+  { id: "5", type: "private", title: "박미영 대표", members: 2, lastMsg: "계약서 확인 부탁드립니다", lastTime: "어제", unread: 0, avatar: "👤" },
+  { id: "6", type: "group", title: "송파구 오피스 정보", members: 21, lastMsg: "잠실 새내역 오피스 공실률이 많이 낮아졌네요", lastTime: "어제", unread: 0, avatar: "🏙️" },
+];
+
+const DUMMY_MESSAGES = [
+  { id: "m1", authorName: "미소탑공인", avatar: "🏠", content: "강남역 근처 상가 32평 급매물 나왔습니다.\n관심있으신 분 연락주세요!", time: "오후 2:56", isMe: false, role: "owner" },
+  { id: "m2", authorName: "나", content: "네 감사합니다. 위치 좀 더 알려주실 수 있나요?", time: "오후 3:01", isMe: true },
+  { id: "m3", authorName: "박소장", avatar: "👤", content: "저도 관심있습니다. 평당가 얼마인가요?", time: "오후 3:05", isMe: false },
+  { id: "m4", authorName: "미소탑공인", avatar: "🏠", content: "평당 2,800만원 수준입니다.\n현재 임차인 없이 깨끗한 상태입니다.", time: "오후 3:08", isMe: false, role: "owner" },
+  { id: "m5", authorName: "나", content: "좋습니다! 내일 오후에 현장 방문 가능할까요?", time: "오후 3:10", isMe: true },
+  { id: "m6", authorName: "미소탑공인", avatar: "🏠", content: "네, 내일 오후 2시에 현장에서 뵙겠습니다.", time: "오후 3:14", isMe: false, role: "owner" },
+];
+
+const DUMMY_CONTACTS = [
+  { id: "c1", name: "김동현 소장님", company: "우정공인중개사무소", avatar: "👤", status: "강남구 상가 전문" },
+  { id: "c2", name: "미소탑공인", company: "미소탑공인중개사", avatar: "🏠", status: "역삼동 10년차" },
+  { id: "c3", name: "박미영 대표", company: "원앤원중개법인", avatar: "👤", status: "오피스/상가 매매" },
+  { id: "c4", name: "이상윤 소장", company: "브루시 부동산", avatar: "👤", status: "서초구 전문" },
+  { id: "c5", name: "최은숙 대표", company: "독일집공인", avatar: "👤", status: "송파구 아파트" },
+];
+
+type LnbTab = "contacts" | "chats" | "notifications" | "settings";
+
+export default function GongsilTalkOverlay() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<LnbTab>("chats");
+  const [selectedRoom, setSelectedRoom] = useState<string | null>(null);
+  const [chatFilter, setChatFilter] = useState<"all" | "unread">("all");
+  const [messageInput, setMessageInput] = useState("");
+  const [profileCard, setProfileCard] = useState<{ anchorEl: HTMLElement; name: string; agencyName?: string; ceoName?: string; phone?: string; profileImage?: string; userId?: string; role?: string; bio?: string } | null>(null);
+  const [showCreateRoom, setShowCreateRoom] = useState(false);
+  const [customRooms, setCustomRooms] = useState<typeof DUMMY_ROOMS>([]);
+  const [overlayHeight, setOverlayHeight] = useState(680);
+  const [overlayWidth, setOverlayWidth] = useState(720);
+  const isDragging = useRef(false);
+  const startY = useRef(0);
+  const startHeight = useRef(680);
+
+  const handleResizeStart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    isDragging.current = true;
+    startY.current = e.clientY;
+    startHeight.current = overlayHeight;
+    document.body.style.cursor = "ns-resize";
+    document.body.style.userSelect = "none";
+
+    const handleMove = (ev: MouseEvent) => {
+      if (!isDragging.current) return;
+      const dy = startY.current - ev.clientY;
+      const newH = Math.min(Math.max(startHeight.current + dy, 300), window.innerHeight * 0.95);
+      setOverlayHeight(newH);
+    };
+    const handleUp = () => {
+      isDragging.current = false;
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      window.removeEventListener("mousemove", handleMove);
+      window.removeEventListener("mouseup", handleUp);
+    };
+    window.addEventListener("mousemove", handleMove);
+    window.addEventListener("mouseup", handleUp);
+  };
+
+  const handleResizeLeftStart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    isDragging.current = true;
+    startY.current = e.clientX;
+    startHeight.current = overlayWidth;
+    document.body.style.cursor = "ew-resize";
+    document.body.style.userSelect = "none";
+
+    const handleMove = (ev: MouseEvent) => {
+      if (!isDragging.current) return;
+      const dx = startY.current - ev.clientX;
+      const newW = Math.min(Math.max(startHeight.current + dx, 320), 1200);
+      setOverlayWidth(newW);
+    };
+    const handleUp = () => {
+      isDragging.current = false;
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      window.removeEventListener("mousemove", handleMove);
+      window.removeEventListener("mouseup", handleUp);
+    };
+    window.addEventListener("mousemove", handleMove);
+    window.addEventListener("mouseup", handleUp);
+  };
+
+  // 채팅방 열기/닫기 시 자동 폭 조정
+  useEffect(() => {
+    if (!isDragging.current) {
+      setOverlayWidth(selectedRoom ? 720 : 320);
+    }
+  }, [selectedRoom]);
+
+  const [dmTarget, setDmTarget] = useState<{ userId: string; userName: string; profileImage?: string } | null>(null);
+
+  // 공실Talk 버튼 이벤트 리스너
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.userId) {
+        setDmTarget(detail);
+        setIsOpen(true);
+        setActiveTab("chats");
+        // DM 방 ID는 dm-{userId}
+        setSelectedRoom(`dm-${detail.userId}`);
+      }
+    };
+    window.addEventListener("openGongsilTalk", handler);
+    return () => window.removeEventListener("openGongsilTalk", handler);
+  }, []);
+
+  // DM 대상이 있으면 DUMMY_ROOMS에 동적 추가
+  const baseRooms = [...customRooms, ...DUMMY_ROOMS];
+  const allRooms = dmTarget
+    ? [
+        ...baseRooms.filter(r => r.id !== `dm-${dmTarget.userId}`),
+        { id: `dm-${dmTarget.userId}`, type: "private", title: dmTarget.userName, members: 2, lastMsg: "1:1 대화를 시작합니다", lastTime: "방금", unread: 0, avatar: "💬" }
+      ]
+    : baseRooms;
+
+  const filteredRooms = chatFilter === "unread" ? allRooms.filter(r => r.unread > 0) : allRooms;
+  const currentRoom = allRooms.find(r => r.id === selectedRoom);
+  const totalUnread = allRooms.reduce((a, r) => a + r.unread, 0);
+  const isDmRoom = selectedRoom?.startsWith("dm-");
+
+  const NAVY = "#1a2e50";
+  const BLUE = "#508bf5";
+  const LNB_BG = "#2c4a7c";
+
+  return (
+    <>
+      {/* ──── 플로팅 버튼 ──── */}
+      {!isOpen && (
+        <button
+          onClick={() => setIsOpen(true)}
+          style={{
+            position: "fixed", bottom: 24, right: 24, zIndex: 20000000,
+            width: 56, height: 56, borderRadius: "50%", background: NAVY,
+            border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+            boxShadow: "0 4px 16px rgba(0,0,0,0.25)", transition: "transform 0.2s, box-shadow 0.2s",
+          }}
+          onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.1)"; e.currentTarget.style.boxShadow = "0 6px 24px rgba(0,0,0,0.35)"; }}
+          onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.25)"; }}
+        >
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          {/* 안읽음 뱃지 */}
+          {totalUnread > 0 && (
+            <span style={{ position: "absolute", top: -2, right: -2, minWidth: 20, height: 20, background: "#ef4444", color: "#fff", fontSize: 11, fontWeight: 700, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 6px", border: "2px solid #fff" }}>
+              {totalUnread}
+            </span>
+          )}
+          {/* 라벨 */}
+          <span style={{ position: "absolute", bottom: -20, left: "50%", transform: "translateX(-50%)", fontSize: 10, fontWeight: 700, color: NAVY, whiteSpace: "nowrap" }}>공실Talk</span>
+        </button>
+      )}
+
+      {/* ──── 슬라이드 오버레이 ──── */}
+      <div style={{
+        position: "fixed", bottom: 0, right: 0, zIndex: 20000000,
+        width: isOpen ? overlayWidth : 0, height: isOpen ? overlayHeight : 0,
+        boxShadow: isOpen ? "-4px -4px 24px rgba(0,0,0,0.15)" : "none",
+        transition: isDragging.current ? "none" : "width 0.35s cubic-bezier(0.4, 0, 0.2, 1), height 0.35s cubic-bezier(0.4, 0, 0.2, 1)",
+        fontFamily: "'Pretendard', sans-serif",
+        opacity: isOpen ? 1 : 0,
+      }}>
+        {/* 좌측 리사이즈 핸들 */}
+        <div
+          onMouseDown={handleResizeLeftStart}
+          style={{ position: "absolute", left: -4, top: 0, width: 10, height: "100%", cursor: "ew-resize", zIndex: 20 }}
+        />
+        {/* 상단 리사이즈 핸들 */}
+        <div
+          onMouseDown={handleResizeStart}
+          style={{ position: "absolute", left: 0, top: -4, width: "100%", height: 10, cursor: "ns-resize", zIndex: 20, display: "flex", alignItems: "center", justifyContent: "center" }}
+        />
+        {/* 좌상단 코너 리사이즈 핸들 */}
+        <div
+          onMouseDown={(e) => {
+            e.preventDefault();
+            isDragging.current = true;
+            const sX = e.clientX, sY = e.clientY, sW = overlayWidth, sH = overlayHeight;
+            document.body.style.cursor = "nwse-resize";
+            document.body.style.userSelect = "none";
+            const move = (ev: MouseEvent) => {
+              if (!isDragging.current) return;
+              setOverlayWidth(Math.min(Math.max(sW + (sX - ev.clientX), 320), 1200));
+              setOverlayHeight(Math.min(Math.max(sH + (sY - ev.clientY), 300), window.innerHeight * 0.95));
+            };
+            const up = () => {
+              isDragging.current = false;
+              document.body.style.cursor = "";
+              document.body.style.userSelect = "";
+              window.removeEventListener("mousemove", move);
+              window.removeEventListener("mouseup", up);
+            };
+            window.addEventListener("mousemove", move);
+            window.addEventListener("mouseup", up);
+          }}
+          style={{ position: "absolute", left: -4, top: -4, width: 18, height: 18, cursor: "nwse-resize", zIndex: 30 }}
+        />
+        <div style={{ display: "flex", width: "100%", height: "100%", background: "#fff", borderRadius: "16px 0 0 0", overflow: "hidden" }}>
+
+          {/* ── LNB ── */}
+          <div style={{ width: 56, minWidth: 56, background: LNB_BG, display: "flex", flexDirection: "column", alignItems: "center", padding: "12px 0", gap: 2 }}>
+            {/* 닫기 버튼 (상단) */}
+            <button onClick={() => setIsOpen(false)} title="닫기"
+              style={{ width: 38, height: 38, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", background: "transparent", color: "rgba(255,255,255,0.5)", border: "none", cursor: "pointer", transition: "all 0.2s", marginBottom: 8 }}
+              onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.12)"; e.currentTarget.style.color = "#fff"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "rgba(255,255,255,0.5)"; }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
+            </button>
+
+            {/* 프로필 */}
+            <div style={{ width: 34, height: 34, borderRadius: "50%", background: "rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, color: "#fff", marginBottom: 12, cursor: "pointer" }}>👤</div>
+
+            {([
+              { tab: "contacts" as LnbTab, label: "친구", icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> },
+              { tab: "chats" as LnbTab, label: "채팅", icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>, badge: totalUnread },
+              { tab: "notifications" as LnbTab, label: "알림", icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg> },
+            ]).map(item => (
+              <button key={item.tab} onClick={() => setActiveTab(item.tab)} title={item.label}
+                style={{ width: 38, height: 38, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", background: activeTab === item.tab ? "rgba(255,255,255,0.25)" : "transparent", color: activeTab === item.tab ? "#fff" : "rgba(255,255,255,0.5)", border: "none", cursor: "pointer", position: "relative", transition: "all 0.2s" }}
+                onMouseEnter={e => { if (activeTab !== item.tab) { e.currentTarget.style.background = "rgba(255,255,255,0.12)"; e.currentTarget.style.color = "#fff"; } }}
+                onMouseLeave={e => { if (activeTab !== item.tab) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "rgba(255,255,255,0.5)"; } }}
+              >
+                {item.icon}
+                {item.badge && item.badge > 0 && (
+                  <span style={{ position: "absolute", top: 1, right: 1, minWidth: 14, height: 14, background: "#ef4444", color: "#fff", fontSize: 9, fontWeight: 700, borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 3px" }}>{item.badge}</span>
+                )}
+              </button>
+            ))}
+
+            <div style={{ flex: 1 }} />
+          </div>
+
+          {/* ── 중앙 리스트 ── */}
+          <div style={{ width: selectedRoom ? 260 : undefined, minWidth: 260, flex: selectedRoom ? "none" : 1, background: "#fff", borderRight: selectedRoom ? "1px solid #e5e7eb" : "none", display: "flex", flexDirection: "column" }}>
+            <div style={{ padding: "14px 14px 10px" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                <h2 style={{ fontSize: 18, fontWeight: 800, color: "#111", margin: 0 }}>
+                  {activeTab === "contacts" ? "친구" : activeTab === "chats" ? "채팅" : activeTab === "notifications" ? "알림" : "설정"}
+                </h2>
+                <div style={{ display: "flex", gap: 2 }}>
+                  <button style={{ width: 30, height: 30, borderRadius: 6, background: "transparent", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#888" }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                  </button>
+                  {activeTab === "chats" && (
+                    <button onClick={() => setShowCreateRoom(true)} style={{ width: 30, height: 30, borderRadius: 6, background: "transparent", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#888" }} title="채팅방 만들기">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                    </button>
+                  )}
+                </div>
+              </div>
+              {activeTab === "chats" && (
+                <div style={{ display: "flex", gap: 6 }}>
+                  {(["all", "unread"] as const).map(f => (
+                    <button key={f} onClick={() => setChatFilter(f)}
+                      style={{ padding: "4px 12px", borderRadius: 16, fontSize: 12, fontWeight: 700, border: "none", cursor: "pointer", background: chatFilter === f ? NAVY : "#f3f4f6", color: chatFilter === f ? "#fff" : "#555" }}>
+                      {f === "all" ? "전체" : "안읽음"}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div style={{ flex: 1, overflowY: "auto" }}>
+              {activeTab === "chats" && filteredRooms.map(room => (
+                <div key={room.id} onClick={() => setSelectedRoom(room.id)}
+                  style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", cursor: "pointer", background: selectedRoom === room.id ? "#ebf5ff" : "transparent", transition: "background 0.15s" }}
+                  onMouseEnter={e => { if (selectedRoom !== room.id) e.currentTarget.style.background = "#f9fafb"; }}
+                  onMouseLeave={e => { if (selectedRoom !== room.id) e.currentTarget.style.background = "transparent"; }}
+                >
+                  <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#f0f4f8", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>{room.avatar}</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 2 }}>
+                      <span style={{ fontWeight: 700, fontSize: 13, color: "#111", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {room.title}
+                        {room.type === "group" && <span style={{ color: "#aaa", fontWeight: 400, marginLeft: 3, fontSize: 11 }}>{room.members}</span>}
+                      </span>
+                      <span style={{ fontSize: 10, color: "#aaa", flexShrink: 0, marginLeft: 6 }}>{room.lastTime}</span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <p style={{ fontSize: 12, color: "#888", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0, paddingRight: 6 }}>{room.lastMsg}</p>
+                      {room.unread > 0 && (
+                        <span style={{ background: "#ef4444", color: "#fff", fontSize: 10, fontWeight: 700, borderRadius: 8, minWidth: 18, height: 18, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 5px", flexShrink: 0 }}>{room.unread}</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {activeTab === "contacts" && (
+                <>
+                  <div style={{ padding: "8px 14px", borderBottom: "1px solid #f0f0f0" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <div style={{ width: 44, height: 44, borderRadius: "50%", background: "#e8f0fe", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>👤</div>
+                      <div><div style={{ fontWeight: 700, fontSize: 14, color: "#111" }}>내 프로필</div><div style={{ fontSize: 11, color: "#aaa" }}>공실뉴스 회원</div></div>
+                    </div>
+                  </div>
+                  <div style={{ padding: "10px 14px 4px", fontSize: 11, color: "#aaa", fontWeight: 600 }}>친구 {DUMMY_CONTACTS.length}</div>
+                  {DUMMY_CONTACTS.map(c => (
+                    <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 14px", cursor: "pointer" }}
+                      onMouseEnter={e => e.currentTarget.style.background = "#f9fafb"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                      <div
+                        onClick={(e) => { e.stopPropagation(); setProfileCard({ anchorEl: e.currentTarget as HTMLElement, name: c.name, agencyName: c.company, bio: c.status, role: "REALTOR" }); }}
+                        style={{ width: 36, height: 36, borderRadius: "50%", background: "#f0f4f8", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, flexShrink: 0, cursor: "pointer" }}
+                      >{c.avatar}</div>
+                      <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontWeight: 600, fontSize: 13, color: "#222" }}>{c.name}</div><div style={{ fontSize: 11, color: "#999" }}>{c.status}</div></div>
+                    </div>
+                  ))}
+                </>
+              )}
+
+              {activeTab === "notifications" && (
+                <div style={{ padding: "40px 14px", textAlign: "center", color: "#bbb", fontSize: 13 }}>🔔 새로운 알림이 없습니다</div>
+              )}
+            </div>
+          </div>
+
+          {/* ── 우측 대화방 ── */}
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", background: "#d5e3f0", minWidth: 0 }}>
+            {selectedRoom && currentRoom ? (
+              <>
+                <div style={{ height: 48, background: "#fff", borderBottom: "1px solid #e5e7eb", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 14px", flexShrink: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <h3 style={{ fontWeight: 800, fontSize: 14, color: "#111", margin: 0 }}>{currentRoom.title}</h3>
+                    {currentRoom.type === "group" && <span style={{ fontSize: 12, color: "#aaa" }}>{currentRoom.members}</span>}
+                  </div>
+                  <div style={{ display: "flex", gap: 2 }}>
+                    <button style={{ width: 30, height: 30, borderRadius: 6, background: "transparent", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#888" }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                    </button>
+                    <button style={{ width: 30, height: 30, borderRadius: 6, background: "transparent", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#888" }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                    </button>
+                    <button onClick={() => setSelectedRoom(null)} title="닫기" style={{ width: 30, height: 30, borderRadius: 6, background: "transparent", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#888" }}
+                      onMouseEnter={e => e.currentTarget.style.color = "#ef4444"} onMouseLeave={e => e.currentTarget.style.color = "#888"}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
+                    </button>
+                  </div>
+                </div>
+
+                <div style={{ flex: 1, overflowY: "auto", padding: "16px 14px" }}>
+                  {DUMMY_MESSAGES.map(msg => (
+                    <div key={msg.id} style={{ display: "flex", justifyContent: msg.isMe ? "flex-end" : "flex-start", marginBottom: 14 }}>
+                      {!msg.isMe && (
+                        <div style={{ display: "flex", gap: 6, maxWidth: "75%" }}>
+                          <div
+                            onClick={(e) => setProfileCard({ anchorEl: e.currentTarget as HTMLElement, name: msg.authorName, agencyName: msg.authorName, role: "REALTOR", bio: msg.role === "owner" ? "방장" : undefined })}
+                            style={{ width: 32, height: 32, borderRadius: "50%", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0, boxShadow: "0 1px 2px rgba(0,0,0,0.08)", cursor: "pointer" }}
+                          >{msg.avatar}</div>
+                          <div>
+                            <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 3 }}>
+                              <span style={{ fontSize: 12, fontWeight: 700, color: "#444" }}>{msg.authorName}</span>
+                              {msg.role === "owner" && <span style={{ fontSize: 10 }}>👑</span>}
+                            </div>
+                            <div style={{ background: "#fff", borderRadius: "4px 16px 16px 16px", padding: "8px 12px", boxShadow: "0 1px 2px rgba(0,0,0,0.05)" }}>
+                              <p style={{ fontSize: 13, color: "#222", lineHeight: 1.5, margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{msg.content}</p>
+                            </div>
+                            <span style={{ fontSize: 10, color: "#999", marginTop: 3, marginLeft: 2, display: "inline-block" }}>{msg.time}</span>
+                          </div>
+                        </div>
+                      )}
+                      {msg.isMe && (
+                        <div style={{ maxWidth: "75%" }}>
+                          <div style={{ background: NAVY, borderRadius: "16px 4px 16px 16px", padding: "8px 12px", boxShadow: "0 1px 2px rgba(0,0,0,0.08)" }}>
+                            <p style={{ fontSize: 13, color: "#fff", lineHeight: 1.5, margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{msg.content}</p>
+                          </div>
+                          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 3, marginRight: 2 }}>
+                            <span style={{ fontSize: 10, color: "#999" }}>{msg.time}</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{ background: "#fff", borderTop: "1px solid #e5e7eb", padding: 10, display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                  <button style={{ width: 34, height: 34, borderRadius: "50%", background: NAVY, display: "flex", alignItems: "center", justifyContent: "center", border: "none", cursor: "pointer", flexShrink: 0, color: "#fff" }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  </button>
+                  <input type="text" value={messageInput} onChange={e => setMessageInput(e.target.value)} placeholder="메시지를 입력하세요" style={{ flex: 1, background: "#f3f4f6", borderRadius: 18, padding: "8px 14px", fontSize: 13, border: "none", outline: "none", color: "#222" }} />
+                  <button style={{ padding: "8px 16px", borderRadius: 18, background: BLUE, color: "#fff", fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer", flexShrink: 0 }}>전송</button>
+                </div>
+              </>
+            ) : null}
+          </div>
+        </div>
+      </div>
+      {/* 프로필 카드 팝오버 */}
+      {profileCard && (
+        <ProfileCardPopover
+          name={profileCard.name}
+          agencyName={profileCard.agencyName}
+          ceoName={profileCard.ceoName}
+          phone={profileCard.phone}
+          profileImage={profileCard.profileImage}
+          userId={profileCard.userId}
+          role={profileCard.role}
+          bio={profileCard.bio}
+          anchorEl={profileCard.anchorEl}
+          onClose={() => setProfileCard(null)}
+        />
+      )}
+      {/* 채팅방 만들기 모달 */}
+      <CreateRoomModal
+        isOpen={showCreateRoom}
+        onClose={() => setShowCreateRoom(false)}
+        userRole="news_premium"
+        onCreateRoom={(room) => {
+          const newRoom = { id: `custom-${Date.now()}`, type: room.type, title: room.title, members: 1, lastMsg: "채팅방이 생성되었습니다", lastTime: "방금", unread: 0, avatar: room.avatar };
+          setCustomRooms(prev => [newRoom, ...prev]);
+          setSelectedRoom(newRoom.id);
+          setActiveTab("chats");
+        }}
+      />
+    </>
+  );
+}

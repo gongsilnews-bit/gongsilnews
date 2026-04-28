@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import GongsilTalkOverlay from "@/components/GongsilTalkOverlay";
 
 export const metadata: Metadata = {
   title: "공실뉴스 - 부동산 중개망의 스마트한 변화",
@@ -26,7 +27,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko">
-      <body>{children}</body>
+      <body>
+        {children}
+        <GongsilTalkOverlay />
+      </body>
     </html>
   );
 }

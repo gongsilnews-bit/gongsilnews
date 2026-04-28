@@ -2145,13 +2145,13 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: 18, fontWeight: 800, color: "#111", marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
                         {agencyInfo ? agencyInfo.name : (prop.members ? prop.members.name : prop.client_name)}
-                        <a href={`/gongsil-talk/${prop.owner_id || ''}`} title="공실Talk" style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px", borderRadius: 4, background: "#f8f9fa", border: "1px solid #e0e0e0", textDecoration: "none", cursor: "pointer", transition: "all 0.2s", color: "#444", fontSize: 13, fontWeight: "600", flexShrink: 0 }}
+                        <button onClick={(e) => { e.preventDefault(); window.dispatchEvent(new CustomEvent("openGongsilTalk", { detail: { userId: prop.owner_id, userName: agencyInfo?.name || prop.members?.name || prop.client_name, profileImage: prop.members?.profile_image_url } })); }} title="공실Talk" style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px", borderRadius: 4, background: "#f8f9fa", border: "1px solid #e0e0e0", textDecoration: "none", cursor: "pointer", transition: "all 0.2s", color: "#444", fontSize: 13, fontWeight: "600", flexShrink: 0 }}
                           onMouseEnter={(e) => { e.currentTarget.style.background = "#eaf4ff"; e.currentTarget.style.borderColor = "#1a73e8"; e.currentTarget.style.color = "#1a73e8"; }}
                           onMouseLeave={(e) => { e.currentTarget.style.background = "#f8f9fa"; e.currentTarget.style.borderColor = "#e0e0e0"; e.currentTarget.style.color = "#444"; }}
                         >
                           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
                           공실Talk
-                        </a>
+                        </button>
                       </div>
                       <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 10 }}>
                         {agencyInfo ? (
