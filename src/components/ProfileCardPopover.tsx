@@ -74,7 +74,7 @@ export default function ProfileCardPopover({
   const isRealtor = role === "REALTOR" || !!agencyName;
 
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 999999 }}>
+    <div style={{ position: "fixed", inset: 0, zIndex: 30000000 }}>
       <div
         ref={cardRef}
         style={{
@@ -148,9 +148,9 @@ export default function ProfileCardPopover({
             {/* 매물보기 */}
             {isRealtor && (
               <button
-                onClick={() => {
-                  // 공실열람에서 해당 소장님 매물 필터링
-                  window.location.href = `/gongsil?owner=${userId || ""}`;
+                onClick={(e) => {
+                  e.stopPropagation();
+                  window.dispatchEvent(new CustomEvent("showRealtorCard", { detail: { userId, userName: displayName } }));
                   onClose();
                 }}
                 style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, background: "none", border: "none", cursor: "pointer", padding: 4 }}

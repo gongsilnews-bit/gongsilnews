@@ -5,6 +5,7 @@ import { createBrowserClient } from "@supabase/ssr";
 import ProfileCardPopover from "./ProfileCardPopover";
 import CreateRoomModal from "./CreateRoomModal";
 import AuthModal from "./AuthModal";
+import RealtorPropertyCard from "./RealtorPropertyCard";
 import { getMyRooms, getRoomMessages, sendMessage, createRoom as createRoomAction, findOrCreateDM, updateMyName, type TalkRoom, type TalkMessage } from "@/app/actions/talkActions";
 
 type LnbTab = "contacts" | "chats" | "notifications" | "settings";
@@ -31,11 +32,12 @@ export default function GongsilTalkOverlay() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [profileCard, setProfileCard] = useState<{ anchorEl: HTMLElement; name: string; agencyName?: string; ceoName?: string; phone?: string; profileImage?: string; userId?: string; role?: string; bio?: string } | null>(null);
   const [showCreateRoom, setShowCreateRoom] = useState(false);
-  const [overlayHeight, setOverlayHeight] = useState(680);
-  const [overlayWidth, setOverlayWidth] = useState(720);
+  const [realtorCard, setRealtorCard] = useState<{ userId: string; userName: string } | null>(null);
+  const [overlayHeight, setOverlayHeight] = useState(740);
+  const [overlayWidth, setOverlayWidth] = useState(800);
   const isDragging = useRef(false);
   const startY = useRef(0);
-  const startHeight = useRef(680);
+  const startHeight = useRef(740);
 
   // ────── 실제 Supabase 데이터 ──────
   const [rooms, setRooms] = useState<TalkRoom[]>([]);
@@ -182,7 +184,7 @@ export default function GongsilTalkOverlay() {
   // 채팅방 열기/닫기 시 자동 폭 조정
   useEffect(() => {
     if (!isDragging.current) {
-      setOverlayWidth(selectedRoom ? 720 : 320);
+      setOverlayWidth(selectedRoom ? 800 : 400);
     }
   }, [selectedRoom]);
 
@@ -207,6 +209,18 @@ export default function GongsilTalkOverlay() {
     window.addEventListener("openGongsilTalk", handler);
     return () => window.removeEventListener("openGongsilTalk", handler);
   }, [currentUserId, currentUserName, loadRooms]);
+
+  // 매물 카드 이벤트 리스너
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.userId) {
+        setRealtorCard({ userId: detail.userId, userName: detail.userName || "" });
+      }
+    };
+    window.addEventListener("showRealtorCard", handler);
+    return () => window.removeEventListener("showRealtorCard", handler);
+  }, []);
 
   const NAVY = "#1a2e50";
   const BLUE = "#508bf5";
@@ -283,13 +297,26 @@ export default function GongsilTalkOverlay() {
           }}
           style={{ position: "absolute", left: -4, top: -4, width: 18, height: 18, cursor: "nwse-resize", zIndex: 30 }}
         />
-        <div style={{ display: "flex", width: "100%", height: "100%", background: "#fff", borderRadius: "16px 0 0 0", overflow: "hidden" }}>
+        <div style={{ display: "flex", width: "100%", height: "100%", background: "#fff", borderRadius: "16px 0 0 0", overflow: "hidden", position: "relative" }}>
+          {/* 매물 카드 오버레이 — 전체 오버레이 위에 표시 */}
+          {realtorCard && (
+            <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 50, background: "rgba(0,0,0,0.2)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+              <div style={{ width: "100%", maxWidth: 420, maxHeight: "90%", display: "flex", flexDirection: "column" }}>
+                <RealtorPropertyCard
+                  userId={realtorCard.userId}
+                  userName={realtorCard.userName}
+                  onClose={() => setRealtorCard(null)}
+                  onInquiry={(text) => { setMessageInput(text); setRealtorCard(null); }}
+                />
+              </div>
+            </div>
+          )}
 
           {/* ── LNB ── */}
-          <div style={{ width: 56, minWidth: 56, background: LNB_BG, display: "flex", flexDirection: "column", alignItems: "center", padding: "12px 0", gap: 2 }}>
+          <div style={{ width: 64, minWidth: 64, background: LNB_BG, display: "flex", flexDirection: "column", alignItems: "center", padding: "14px 0", gap: 4 }}>
             {/* 닫기 버튼 (상단) */}
             <button onClick={() => setIsOpen(false)} title="닫기"
-              style={{ width: 38, height: 38, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", background: "transparent", color: "rgba(255,255,255,0.5)", border: "none", cursor: "pointer", transition: "all 0.2s", marginBottom: 8 }}
+              style={{ width: 42, height: 42, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", background: "transparent", color: "rgba(255,255,255,0.5)", border: "none", cursor: "pointer", transition: "all 0.2s", marginBottom: 8 }}
               onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.12)"; e.currentTarget.style.color = "#fff"; }}
               onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "rgba(255,255,255,0.5)"; }}
             >
@@ -297,17 +324,17 @@ export default function GongsilTalkOverlay() {
             </button>
 
             {/* 프로필 */}
-            <div onClick={() => setActiveTab("contacts")} style={{ width: 34, height: 34, borderRadius: "50%", background: "rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, color: "#fff", marginBottom: 12, cursor: "pointer", overflow: "hidden" }}>
+            <div onClick={() => setActiveTab("contacts")} style={{ width: 40, height: 40, borderRadius: "50%", background: "rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, color: "#fff", marginBottom: 12, cursor: "pointer", overflow: "hidden" }}>
               {currentUserImage ? <img src={currentUserImage} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "👤"}
             </div>
 
             {([
-              { tab: "contacts" as LnbTab, label: "친구", icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> },
-              { tab: "chats" as LnbTab, label: "채팅", icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>, badge: totalUnread },
-              { tab: "notifications" as LnbTab, label: "알림", icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg> },
+              { tab: "contacts" as LnbTab, label: "친구", icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> },
+              { tab: "chats" as LnbTab, label: "채팅", icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>, badge: totalUnread },
+              { tab: "notifications" as LnbTab, label: "알림", icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg> },
             ]).map(item => (
               <button key={item.tab} onClick={() => setActiveTab(item.tab)} title={item.label}
-                style={{ width: 38, height: 38, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", background: activeTab === item.tab ? "rgba(255,255,255,0.25)" : "transparent", color: activeTab === item.tab ? "#fff" : "rgba(255,255,255,0.5)", border: "none", cursor: "pointer", position: "relative", transition: "all 0.2s" }}
+                style={{ width: 44, height: 44, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", background: activeTab === item.tab ? "rgba(255,255,255,0.25)" : "transparent", color: activeTab === item.tab ? "#fff" : "rgba(255,255,255,0.5)", border: "none", cursor: "pointer", position: "relative", transition: "all 0.2s" }}
                 onMouseEnter={e => { if (activeTab !== item.tab) { e.currentTarget.style.background = "rgba(255,255,255,0.12)"; e.currentTarget.style.color = "#fff"; } }}
                 onMouseLeave={e => { if (activeTab !== item.tab) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "rgba(255,255,255,0.5)"; } }}
               >
@@ -322,10 +349,10 @@ export default function GongsilTalkOverlay() {
           </div>
 
           {/* ── 중앙 리스트 ── */}
-          <div style={{ width: selectedRoom ? 260 : undefined, minWidth: 260, flex: selectedRoom ? "none" : 1, background: "#fff", borderRight: selectedRoom ? "1px solid #e5e7eb" : "none", display: "flex", flexDirection: "column" }}>
-            <div style={{ padding: "14px 14px 10px" }}>
+          <div style={{ width: selectedRoom ? 340 : undefined, minWidth: 340, flex: selectedRoom ? "none" : 1, background: "#fff", borderRight: selectedRoom ? "1px solid #e5e7eb" : "none", display: "flex", flexDirection: "column" }}>
+            <div style={{ padding: "16px 16px 12px" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                <h2 style={{ fontSize: 18, fontWeight: 800, color: "#111", margin: 0 }}>
+                <h2 style={{ fontSize: 20, fontWeight: 800, color: "#111", margin: 0 }}>
                   {activeTab === "contacts" ? "친구" : activeTab === "chats" ? "채팅" : activeTab === "notifications" ? "알림" : "설정"}
                 </h2>
                 <div style={{ display: "flex", gap: 2 }}>
@@ -343,7 +370,7 @@ export default function GongsilTalkOverlay() {
                 <div style={{ display: "flex", gap: 6 }}>
                   {(["all", "unread"] as const).map(f => (
                     <button key={f} onClick={() => setChatFilter(f)}
-                      style={{ padding: "4px 12px", borderRadius: 16, fontSize: 12, fontWeight: 700, border: "none", cursor: "pointer", background: chatFilter === f ? NAVY : "#f3f4f6", color: chatFilter === f ? "#fff" : "#555" }}>
+                      style={{ padding: "5px 14px", borderRadius: 16, fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer", background: chatFilter === f ? NAVY : "#f3f4f6", color: chatFilter === f ? "#fff" : "#555" }}>
                       {f === "all" ? "전체" : "안읽음"}
                     </button>
                   ))}
@@ -357,21 +384,21 @@ export default function GongsilTalkOverlay() {
               )}
               {activeTab === "chats" && filteredRooms.map(room => (
                 <div key={room.id} onClick={() => setSelectedRoom(room.id)}
-                  style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", cursor: "pointer", background: selectedRoom === room.id ? "#ebf5ff" : "transparent", transition: "background 0.15s" }}
+                  style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", cursor: "pointer", background: selectedRoom === room.id ? "#ebf5ff" : "transparent", transition: "background 0.15s" }}
                   onMouseEnter={e => { if (selectedRoom !== room.id) e.currentTarget.style.background = "#f9fafb"; }}
                   onMouseLeave={e => { if (selectedRoom !== room.id) e.currentTarget.style.background = "transparent"; }}
                 >
-                  <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#f0f4f8", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>{room.avatar}</div>
+                  <div style={{ width: 46, height: 46, borderRadius: "50%", background: "#f0f4f8", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>{room.avatar}</div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 2 }}>
-                      <span style={{ fontWeight: 700, fontSize: 13, color: "#111", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      <span style={{ fontWeight: 700, fontSize: 14, color: "#111", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {room.title}
                         {room.type === "group" && <span style={{ color: "#aaa", fontWeight: 400, marginLeft: 3, fontSize: 11 }}>{room.member_count}</span>}
                       </span>
                       <span style={{ fontSize: 10, color: "#aaa", flexShrink: 0, marginLeft: 6 }}>{room.last_message_time ? formatTime(room.last_message_time) : ""}</span>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                      <p style={{ fontSize: 12, color: "#888", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0, paddingRight: 6 }}>{room.last_message || ""}</p>
+                      <p style={{ fontSize: 13, color: "#888", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0, paddingRight: 6 }}>{room.last_message || ""}</p>
                     </div>
                   </div>
                 </div>
@@ -433,11 +460,24 @@ export default function GongsilTalkOverlay() {
                     </div>
 
                     {/* 내 매물 현황 */}
-                    <div style={{ background: "#f8f9fa", borderRadius: 10, padding: 12 }}>
+                    <div
+                      onClick={() => {
+                        if (currentUserId) {
+                          setRealtorCard({ userId: currentUserId, userName: currentUserName });
+                          // 채팅방이 선택되지 않은 경우 임시로 열기 위해 친구탭에서 바로 보여줄 수도 있음
+                        }
+                      }}
+                      style={{ background: "#f8f9fa", borderRadius: 10, padding: 12, cursor: "pointer", transition: "background 0.15s" }}
+                      onMouseEnter={e => e.currentTarget.style.background = "#eef1f5"}
+                      onMouseLeave={e => e.currentTarget.style.background = "#f8f9fa"}
+                    >
                       <div style={{ fontSize: 12, fontWeight: 700, color: "#555", marginBottom: 6 }}>🏢 내 공실 등록 현황</div>
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                         <span style={{ fontSize: 24, fontWeight: 800, color: NAVY }}>{currentVacancyCount}</span>
-                        <span style={{ fontSize: 12, color: "#888" }}>건 등록중</span>
+                        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                          <span style={{ fontSize: 12, color: "#888" }}>건 등록중</span>
+                          <span style={{ color: "#aaa", fontSize: 14 }}>›</span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -453,8 +493,8 @@ export default function GongsilTalkOverlay() {
           </div>
 
           {/* ── 우측 대화방 ── */}
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", background: "#d5e3f0", minWidth: 0 }}>
-            {selectedRoom && currentRoom ? (
+          {selectedRoom && currentRoom && (
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", background: "#d5e3f0", minWidth: 0, position: "relative" }}>
               <>
                 <div style={{ height: 48, background: "#fff", borderBottom: "1px solid #e5e7eb", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 14px", flexShrink: 0 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -475,6 +515,8 @@ export default function GongsilTalkOverlay() {
                     </button>
                   </div>
                 </div>
+
+
 
                 <div style={{ flex: 1, overflowY: "auto", padding: "16px 14px" }}>
                   {messages.map(msg => {
@@ -527,8 +569,8 @@ export default function GongsilTalkOverlay() {
                   <button onClick={handleSend} style={{ padding: "8px 16px", borderRadius: 18, background: BLUE, color: "#fff", fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer", flexShrink: 0 }}>전송</button>
                 </div>
               </>
-            ) : null}
           </div>
+          )}
         </div>
       </div>
       {/* 프로필 카드 팝오버 */}
