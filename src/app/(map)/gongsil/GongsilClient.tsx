@@ -1018,8 +1018,16 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
         <div key={comment.id} style={{ paddingLeft: depth > 0 ? 30 : 0, paddingBottom: 20, paddingTop: 20, borderBottom: depth === 0 ? "1px solid #f0f0f0" : "none" }}>
           {/* 작성자 정보 & 날짜 */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               {depth > 0 && <span style={{ color: "#aaa", fontWeight: "bold" }}>↳</span>}
+              {/* 프로필 아바타 원형 */}
+              {comment.profile_image_url ? (
+                <img src={comment.profile_image_url} alt="" style={{ width: 28, height: 28, borderRadius: "50%", objectFit: "cover", flexShrink: 0, border: "1px solid #e5e7eb" }} />
+              ) : (
+                <div style={{ width: 28, height: 28, borderRadius: "50%", background: depth > 0 ? "#e8f0fe" : "#f0f4f8", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: depth > 0 ? "#508bf5" : "#666", flexShrink: 0 }}>
+                  {(comment.author_name || '회')[0]}
+                </div>
+              )}
               <span style={{ fontSize: 14, fontWeight: "bold", color: "#111" }}>{comment.author_name || '회원'}</span>
               {comment.is_secret && (
                 <span style={{ fontSize: 10, color: "#ef4444", border: "1px solid #fca5a5", padding: "1px 4px", borderRadius: 4, fontWeight: "bold" }}>비밀글</span>
@@ -2126,6 +2134,14 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                 <>
                 <div style={{ padding: "30px 20px", background: "#fff" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 25, gap: 15 }}>
+                    {/* 프로필 사진 */}
+                    {prop.members?.profile_image_url ? (
+                      <img src={prop.members.profile_image_url} alt="프로필" style={{ width: 72, height: 72, borderRadius: "50%", objectFit: "cover", flexShrink: 0, border: "2px solid #e5e7eb", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }} />
+                    ) : (
+                      <div style={{ width: 72, height: 72, borderRadius: "50%", background: "#e8f0fe", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, fontWeight: 700, color: "#508bf5", flexShrink: 0, border: "2px solid #e5e7eb" }}>
+                        {(agencyInfo?.name || prop.members?.name || prop.client_name || '?')[0]}
+                      </div>
+                    )}
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: 18, fontWeight: 800, color: "#111", marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
                         {agencyInfo ? agencyInfo.name : (prop.members ? prop.members.name : prop.client_name)}

@@ -18,12 +18,20 @@ export async function getVacancyComments(vacancyId: string) {
   try {
     const { data, error } = await supabase
       .from('vacancy_comments')
-      .select('*')
+      .select('*, members:author_id(profile_image_url)')
       .eq('vacancy_id', vacancyId)
       .order('created_at', { ascending: true });
 
     if (error) return { success: false, error: error.message };
-    return { success: true, data };
+    
+    // members 조인 결과를 flat하게 변환
+    const flatData = (data || []).map((c: any) => ({
+      ...c,
+      profile_image_url: c.members?.profile_image_url || null,
+      members: undefined
+    }));
+    
+    return { success: true, data: flatData };
   } catch (error: any) {
     return { success: false, error: error.message };
   }

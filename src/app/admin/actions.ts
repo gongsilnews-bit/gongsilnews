@@ -73,6 +73,7 @@ export async function adminUpdateMember(memberId: string, updates: {
   plan_end_date?: string | null;
   max_vacancies?: number;
   max_articles_per_month?: number;
+  profile_image_url?: string | null;
 }) {
   const supabaseAdmin = getAdminClient();
   try {
@@ -86,6 +87,7 @@ export async function adminUpdateMember(memberId: string, updates: {
     if (updates.plan_end_date !== undefined) dbUpdates.plan_end_date = updates.plan_end_date;
     if (updates.max_vacancies !== undefined) dbUpdates.max_vacancies = updates.max_vacancies;
     if (updates.max_articles_per_month !== undefined) dbUpdates.max_articles_per_month = updates.max_articles_per_month;
+    if (updates.profile_image_url !== undefined) dbUpdates.profile_image_url = updates.profile_image_url;
 
     const { error } = await supabaseAdmin.from('members').update(dbUpdates).eq('id', memberId);
     if (error) return { success: false, error: error.message };

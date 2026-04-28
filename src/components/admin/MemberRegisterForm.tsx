@@ -48,6 +48,8 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
   const [files, setFiles] = useState<{ reg_cert?: File; biz_cert?: File }>({});
   const [filePreviews, setFilePreviews] = useState<{ reg_cert?: string; biz_cert?: string }>({});
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [profilePhoto, setProfilePhoto] = useState<File | null>(null);
+  const [profilePhotoPreview, setProfilePhotoPreview] = useState<string | null>(null);
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [geocoding, setGeocoding] = useState(false);
   const [activeTab, setActiveTab] = useState(initialTab); 
@@ -120,6 +122,9 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
             max_vacancies: res.member.max_vacancies ?? 5,
             max_articles_per_month: res.member.max_articles_per_month ?? 0
           });
+          if (res.member.profile_image_url) {
+            setProfilePhotoPreview(res.member.profile_image_url);
+          }
           if (res.member.sns_links) {
             setSnsLinks(prev => {
               const merged = { ...prev };
@@ -334,6 +339,19 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
         }
         memberId = memberRes.userId;
       } else {
+        // 프로필 사진 업로드 처리
+        let profileImageUrl: string | null | undefined = undefined;
+        if (profilePhoto) {
+          const fileForm = new FormData();
+          fileForm.append("file", profilePhoto);
+          fileForm.append("path", `${editMemberId}/profile_${Date.now()}.webp`);
+          const uploadRes = await adminUploadAgencyDocument(fileForm);
+          if (uploadRes.success) profileImageUrl = uploadRes.url || null;
+        } else if (profilePhotoPreview === null && !profilePhoto) {
+          // 사진이 삭제된 경우
+          profileImageUrl = null;
+        }
+
         const updateRes = await adminUpdateMember(editMemberId, {
           name: formData.name,
           phone: formData.phone,
@@ -343,7 +361,8 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
           plan_start_date: formData.plan_start_date || null,
           plan_end_date: formData.plan_end_date || null,
           max_vacancies: Number(formData.max_vacancies) || 0,
-          max_articles_per_month: Number(formData.max_articles_per_month) || 0
+          max_articles_per_month: Number(formData.max_articles_per_month) || 0,
+          ...(profileImageUrl !== undefined ? { profile_image_url: profileImageUrl } : {})
         });
         if (!updateRes.success) throw new Error(updateRes.error || "회원 수정에 실패했습니다.");
       }
@@ -514,6 +533,52 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
           <div style={labelStyle}>이름</div>
           <div style={contentStyle}>
             <input type="text" name="name" value={formData.name} onChange={handleMemberChange} style={inputStyle} placeholder="이름 입력" />
+          </div>
+        </div>
+
+        {/* 프로필 사진 (선택) */}
+        <div style={rowStyle}>
+          <div style={{...labelStyle, flexDirection: "column" as const, alignItems: "flex-start", gap: 4, justifyContent: "center"}}>
+            프로필 사진
+            <span style={{ fontSize: 11, color: "#888", fontWeight: "normal" }}>(선택사항)</span>
+          </div>
+          <div style={{...contentStyle, gap: 16}}>
+            {profilePhotoPreview ? (
+              <div style={{ position: "relative", display: "inline-block" }}>
+                <img
+                  src={profilePhotoPreview}
+                  alt="프로필"
+                  style={{ width: 64, height: 64, borderRadius: "50%", objectFit: "cover", border: `2px solid ${darkMode ? "#444" : "#e5e7eb"}`, cursor: "pointer", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}
+                  onClick={() => setPreviewImage(profilePhotoPreview)}
+                />
+                <button
+                  onClick={() => { setProfilePhoto(null); setProfilePhotoPreview(null); }}
+                  style={{ position: "absolute", top: -4, right: -4, width: 22, height: 22, borderRadius: "50%", background: "#ef4444", color: "#fff", border: "2px solid #fff", fontSize: 13, fontWeight: "bold", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", lineHeight: 1 }}
+                >&times;</button>
+              </div>
+            ) : (
+              <label style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
+                <div style={{ width: 64, height: 64, borderRadius: "50%", background: darkMode ? "#333" : "#f0f4f8", border: `2px dashed ${darkMode ? "#555" : "#d1d5db"}`, display: "flex", flexDirection: "column" as const, alignItems: "center", justifyContent: "center", gap: 2, transition: "border-color 0.2s" }}
+                  onMouseEnter={e => e.currentTarget.style.borderColor = "#508bf5"}
+                  onMouseLeave={e => e.currentTarget.style.borderColor = darkMode ? "#555" : "#d1d5db"}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={darkMode ? "#888" : "#aaa"} strokeWidth="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                  <span style={{ fontSize: 10, color: "#aaa" }}>사진 추가</span>
+                </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  style={{ display: "none" }}
+                  onChange={async (e) => {
+                    if (e.target.files && e.target.files[0]) {
+                      const compressed = await compressToWebP(e.target.files[0]);
+                      setProfilePhoto(compressed);
+                      setProfilePhotoPreview(URL.createObjectURL(compressed));
+                    }
+                  }}
+                />
+              </label>
+            )}
           </div>
         </div>
 
