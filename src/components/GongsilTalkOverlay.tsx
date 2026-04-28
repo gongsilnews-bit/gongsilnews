@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { createBrowserClient } from "@supabase/ssr";
 import ProfileCardPopover from "./ProfileCardPopover";
 import CreateRoomModal from "./CreateRoomModal";
-import { getMyRooms, getRoomMessages, sendMessage, createRoom as createRoomAction, findOrCreateDM, type TalkRoom, type TalkMessage } from "@/app/actions/talkActions";
+import { getMyRooms, getRoomMessages, sendMessage, createRoom as createRoomAction, findOrCreateDM, updateMyName, type TalkRoom, type TalkMessage } from "@/app/actions/talkActions";
 
 type LnbTab = "contacts" | "chats" | "notifications" | "settings";
 
@@ -41,18 +41,37 @@ export default function GongsilTalkOverlay() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [currentUserName, setCurrentUserName] = useState("나");
   const [currentUserRole, setCurrentUserRole] = useState<string>("general");
+  const [currentUserImage, setCurrentUserImage] = useState<string | null>(null);
+  const [currentAgencyName, setCurrentAgencyName] = useState<string | null>(null);
+  const [currentVacancyCount, setCurrentVacancyCount] = useState(0);
+  const [editingNickname, setEditingNickname] = useState(false);
+  const [nicknameInput, setNicknameInput] = useState("");
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   // 로그인 사용자 정보
   useEffect(() => {
     const supabase = createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (user) {
         setCurrentUserId(user.id);
-        supabase.from("members").select("name, membership_type").eq("id", user.id).single().then(({ data }) => {
-          if (data?.name) setCurrentUserName(data.name);
-          if (data?.membership_type) setCurrentUserRole(data.membership_type);
-        });
+        // 프로필 정보 (DB칼럼 정확히 매칭)
+        const { data: member } = await supabase.from("members").select("name, membership_type, profile_image_url, role").eq("id", user.id).single();
+        if (member?.name) setCurrentUserName(member.name);
+        else if (user.email) setCurrentUserName(user.email.split("@")[0]);
+
+        if (member?.membership_type) setCurrentUserRole(member.membership_type);
+        if (member?.profile_image_url) setCurrentUserImage(member.profile_image_url);
+        if (member?.role === "ADMIN") setCurrentUserRole("ADMIN");
+
+        // 소속 부동산이 있다면 (admin action 참조: owner_id)
+        if (member?.role === "REALTOR" || member?.role === "부동산회원") {
+          const { data: agency } = await supabase.from("agencies").select("name").eq("owner_id", user.id).single();
+          if (agency?.name) setCurrentAgencyName(agency.name);
+        }
+
+        // 내 매물 수
+        const { count } = await supabase.from("vacancies").select("*", { count: "exact", head: true }).eq("owner_id", user.id);
+        setCurrentVacancyCount(count || 0);
       }
     });
   }, []);
@@ -169,13 +188,17 @@ export default function GongsilTalkOverlay() {
   useEffect(() => {
     const handler = async (e: Event) => {
       const detail = (e as CustomEvent).detail;
-      if (detail?.userId && currentUserId) {
-        setIsOpen(true);
-        setActiveTab("chats");
-        const res = await findOrCreateDM(currentUserId, currentUserName, detail.userId, detail.userName);
-        if (res.success && res.roomId) {
-          await loadRooms();
-          setSelectedRoom(res.roomId);
+      if (detail?.userId) {
+        if (currentUserId) {
+          setIsOpen(true);
+          setActiveTab("chats");
+          const res = await findOrCreateDM(currentUserId, currentUserName, detail.userId, detail.userName);
+          if (res.success && res.roomId) {
+            await loadRooms();
+            setSelectedRoom(res.roomId);
+          }
+        } else {
+          window.dispatchEvent(new CustomEvent("openAuthModal", { detail: { message: "공실Talk을 이용하려면 로그인이 필요합니다." } }));
         }
       }
     };
@@ -272,7 +295,9 @@ export default function GongsilTalkOverlay() {
             </button>
 
             {/* 프로필 */}
-            <div style={{ width: 34, height: 34, borderRadius: "50%", background: "rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, color: "#fff", marginBottom: 12, cursor: "pointer" }}>👤</div>
+            <div onClick={() => setActiveTab("contacts")} style={{ width: 34, height: 34, borderRadius: "50%", background: "rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, color: "#fff", marginBottom: 12, cursor: "pointer", overflow: "hidden" }}>
+              {currentUserImage ? <img src={currentUserImage} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "👤"}
+            </div>
 
             {([
               { tab: "contacts" as LnbTab, label: "친구", icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> },
@@ -352,12 +377,69 @@ export default function GongsilTalkOverlay() {
 
               {activeTab === "contacts" && (
                 <>
-                  <div style={{ padding: "8px 14px", borderBottom: "1px solid #f0f0f0" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <div style={{ width: 44, height: 44, borderRadius: "50%", background: "#e8f0fe", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>👤</div>
-                      <div><div style={{ fontWeight: 700, fontSize: 14, color: "#111" }}>{currentUserName}</div><div style={{ fontSize: 11, color: "#aaa" }}>공실뉴스 회원</div></div>
+                  {/* 내 프로필 카드 */}
+                  <div style={{ padding: 16, borderBottom: "1px solid #f0f0f0" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+                      <div style={{ width: 52, height: 52, borderRadius: "50%", background: "#e8f0fe", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, overflow: "hidden", flexShrink: 0 }}>
+                        {currentUserImage ? <img src={currentUserImage} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "👤"}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        {editingNickname ? (
+                          <div style={{ display: "flex", gap: 4 }}>
+                            <input value={nicknameInput} onChange={e => setNicknameInput(e.target.value)}
+                              autoFocus
+                              style={{ flex: 1, padding: "4px 8px", borderRadius: 6, border: "1px solid #ddd", fontSize: 14, fontWeight: 700, outline: "none" }}
+                              onKeyDown={async e => {
+                                if (e.key === "Enter" && nicknameInput.trim() && currentUserId) {
+                                  const renameRes = await updateMyName(currentUserId, nicknameInput.trim());
+                                  if (renameRes.success) {
+                                    setCurrentUserName(nicknameInput.trim());
+                                    setEditingNickname(false);
+                                  } else {
+                                    alert("이름 수정 실패: " + renameRes.error);
+                                  }
+                                }
+                                if (e.key === "Escape") setEditingNickname(false);
+                              }}
+                            />
+                            <button onClick={async () => {
+                              if (nicknameInput.trim() && currentUserId) {
+                                const renameRes = await updateMyName(currentUserId, nicknameInput.trim());
+                                if (renameRes.success) {
+                                  setCurrentUserName(nicknameInput.trim());
+                                  setEditingNickname(false);
+                                } else {
+                                  alert("이름 수정에 실패했습니다.");
+                                }
+                              }
+                            }} style={{ padding: "4px 10px", borderRadius: 6, background: NAVY, color: "#fff", border: "none", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>저장</button>
+                          </div>
+                        ) : (
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <span style={{ fontWeight: 800, fontSize: 15, color: "#111" }}>{currentUserName}</span>
+                            <button onClick={() => { setNicknameInput(currentUserName); setEditingNickname(true); }}
+                              style={{ width: 20, height: 20, borderRadius: 4, background: "#f3f4f6", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "#999" }}
+                              title="이름 수정"
+                            >✏️</button>
+                          </div>
+                        )}
+                        <div style={{ fontSize: 12, color: "#666", marginTop: 2 }}>{currentAgencyName || "공실뉴스 회원"}</div>
+                        <span style={{ display: "inline-block", marginTop: 4, padding: "2px 8px", borderRadius: 6, background: "#dbeafe", color: "#2563eb", fontSize: 11, fontWeight: 700 }}>
+                          {currentUserRole === "ADMIN" ? "최고관리자" : currentUserRole === "REALTOR" || currentUserRole === "부동산회원" ? "부동산회원" : "일반회원"}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* 내 매물 현황 */}
+                    <div style={{ background: "#f8f9fa", borderRadius: 10, padding: 12 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: "#555", marginBottom: 6 }}>🏢 내 공실 등록 현황</div>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                        <span style={{ fontSize: 24, fontWeight: 800, color: NAVY }}>{currentVacancyCount}</span>
+                        <span style={{ fontSize: 12, color: "#888" }}>건 등록중</span>
+                      </div>
                     </div>
                   </div>
+
                   <div style={{ padding: "40px 14px", textAlign: "center", color: "#bbb", fontSize: 13 }}>👥 채팅방 멤버들과 대화해보세요</div>
                 </>
               )}

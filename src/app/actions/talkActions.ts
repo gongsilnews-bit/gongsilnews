@@ -312,3 +312,17 @@ export async function getRoomMembers(roomId: string) {
     return { success: false, error: error.message };
   }
 }
+
+/* ═══════════════ 프로필 관리 ═══════════════ */
+
+export async function updateMyName(userId: string, newName: string): Promise<{ success: boolean; error?: string }> {
+  const supabase = getAdminClient();
+  try {
+    const { error } = await supabase.from("members").update({ name: newName }).eq("id", userId);
+    if (error) throw error;
+    return { success: true };
+  } catch (error: any) {
+    console.error("이름 수정 오류:", error);
+    return { success: false, error: error.message };
+  }
+}
