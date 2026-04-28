@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { createBrowserClient } from "@supabase/ssr";
 import ProfileCardPopover from "./ProfileCardPopover";
 import CreateRoomModal from "./CreateRoomModal";
+import AuthModal from "./AuthModal";
 import { getMyRooms, getRoomMessages, sendMessage, createRoom as createRoomAction, findOrCreateDM, updateMyName, type TalkRoom, type TalkMessage } from "@/app/actions/talkActions";
 
 type LnbTab = "contacts" | "chats" | "notifications" | "settings";
@@ -27,6 +28,7 @@ export default function GongsilTalkOverlay() {
   const [selectedRoom, setSelectedRoom] = useState<string | null>(null);
   const [chatFilter, setChatFilter] = useState<"all" | "unread">("all");
   const [messageInput, setMessageInput] = useState("");
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [profileCard, setProfileCard] = useState<{ anchorEl: HTMLElement; name: string; agencyName?: string; ceoName?: string; phone?: string; profileImage?: string; userId?: string; role?: string; bio?: string } | null>(null);
   const [showCreateRoom, setShowCreateRoom] = useState(false);
   const [overlayHeight, setOverlayHeight] = useState(680);
@@ -198,7 +200,7 @@ export default function GongsilTalkOverlay() {
             setSelectedRoom(res.roomId);
           }
         } else {
-          window.dispatchEvent(new CustomEvent("openAuthModal", { detail: { message: "공실Talk을 이용하려면 로그인이 필요합니다." } }));
+          setIsAuthModalOpen(true);
         }
       }
     };
@@ -531,16 +533,8 @@ export default function GongsilTalkOverlay() {
       </div>
       {/* 프로필 카드 팝오버 */}
       {profileCard && (
-        <ProfileCardPopover
-          name={profileCard.name}
-          agencyName={profileCard.agencyName}
-          ceoName={profileCard.ceoName}
-          phone={profileCard.phone}
-          profileImage={profileCard.profileImage}
-          userId={profileCard.userId}
-          role={profileCard.role}
-          bio={profileCard.bio}
-          anchorEl={profileCard.anchorEl}
+        <ProfileCardPopover 
+          {...profileCard}
           onClose={() => setProfileCard(null)}
         />
       )}
