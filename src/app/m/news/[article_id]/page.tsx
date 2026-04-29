@@ -1,6 +1,5 @@
 import { getArticleDetail, getArticles } from "@/app/actions/article";
 import NewsReadContent from "@/components/NewsReadContent";
-import MobileHeader from "../../_components/MobileHeader";
 
 // 1시간 주기로 재생성 (ISR)
 export const revalidate = 3600;
@@ -53,7 +52,6 @@ export default async function MobileNewsReadPage({ params }: { params: Promise<{
   if (!article) {
     return (
       <div className="flex flex-col w-full bg-white min-h-screen">
-        <MobileHeader />
         <main className="container px-4" style={{ padding: "100px 0", textAlign: "center", color: "#888" }}>
           <div style={{ fontSize: 48, marginBottom: 16 }}>📄</div>
           <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>기사를 찾을 수 없습니다.</div>
@@ -66,7 +64,6 @@ export default async function MobileNewsReadPage({ params }: { params: Promise<{
   // 모바일 전용 래퍼 클래스로 감싸주어 globals.css의 반응형 속성을 적용
   return (
     <div className="flex flex-col w-full bg-white min-h-screen mobile-news-detail-wrapper">
-      <MobileHeader />
       <NewsReadContent article={article} popularArticles={popular} />
     </div>
   );
