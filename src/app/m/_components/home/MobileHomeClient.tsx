@@ -49,6 +49,7 @@ const CATEGORIES = [
   { key: "정치·경제·사회", label: "정치·경제" },
   { key: "세무·법률", label: "세무·법률" },
   { key: "여행·건강·생활", label: "여행·생활" },
+  { key: "etc", label: "기타" },
 ];
 
 export default function MobileHomeClient(props: Props) {
