@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { getArticles } from "@/app/actions/article";
+import { getArticles, getArticleDetail, incrementArticleView } from "@/app/actions/article";
 
 const KAKAO_APP_KEY = process.env.NEXT_PUBLIC_KAKAO_APP_KEY || "435d3602201a49ea712e5f5a36fe6efc";
 
@@ -28,6 +28,30 @@ function formatDate(d: string) {
   return `${dt.getMonth() + 1}/${dt.getDate()}`;
 }
 
+function formatDateFull(dateStr: string) {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  const hour = d.getHours();
+  const ampm = hour >= 12 ? "오후" : "오전";
+  const h12 = hour > 12 ? hour - 12 : hour || 12;
+  return `입력 ${d.getFullYear()}. ${String(d.getMonth() + 1).padStart(2, "0")}. ${String(d.getDate()).padStart(2, "0")}. ${ampm} ${h12}:${String(d.getMinutes()).padStart(2, "0")}:${String(d.getSeconds()).padStart(2, "0")}`;
+}
+
+const stripHtml = (html: string) => html ? html.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim() : "";
+
+const extractYoutubeId = (url?: string, html?: string): string | null => {
+  const rx = /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([\w-]{11})/;
+  if (url) {
+    const m = url.match(rx);
+    if (m) return m[1];
+  }
+  if (html) {
+    const m = html.match(rx);
+    if (m) return m[1];
+  }
+  return null;
+};
+
 function MobileNewsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -37,6 +61,11 @@ function MobileNewsPage() {
   const [localArticles, setLocalArticles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCluster, setSelectedCluster] = useState<any[] | null>(null);
+  const [activeArticleId, setActiveArticleId] = useState<string | null>(null);
+  const [articleDetail, setArticleDetail] = useState<any>(null);
+  const [showDetail, setShowDetail] = useState(false);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [viewedArticles, setViewedArticles] = useState<Set<string>>(new Set());
   const [mapLoaded, setMapLoaded] = useState(false);
   const mapRef = useRef<HTMLDivElement>(null);
   const kakaoMapRef = useRef<any>(null);
@@ -77,6 +106,32 @@ function MobileNewsPage() {
     };
     loadLocalArticles();
   }, []);
+  // 기사 상세 조회
+  const handleSelectArticle = async (id: string) => {
+    setActiveArticleId(id);
+    setShowDetail(true);
+    setArticleDetail(null);
+    setDetailLoading(true);
+    const res = await getArticleDetail(id);
+    if (res.success && res.data) {
+      setArticleDetail(res.data);
+    }
+    setDetailLoading(false);
+  };
+
+  // 조회수 증가
+  useEffect(() => {
+    if (showDetail && articleDetail && articleDetail.id) {
+      if (!viewedArticles.has(articleDetail.id)) {
+        incrementArticleView(articleDetail.id).then((res) => {
+          if (res.success && res.view_count !== undefined) {
+            setArticleDetail((prev: any) => prev ? { ...prev, view_count: res.view_count } : prev);
+          }
+        });
+        setViewedArticles((prev) => new Set(prev).add(articleDetail.id));
+      }
+    }
+  }, [showDetail, articleDetail, viewedArticles]);
 
   // 카카오 지도 초기화
   useEffect(() => {
@@ -396,71 +451,34 @@ function MobileNewsPage() {
                 <div
                   key={article.id}
                   className="article-row"
-                  onClick={() => router.push(`/m/news/${article.article_no || article.id}`)}
+                  onClick={() => handleSelectArticle(article.id)}
                   style={{
-                    display: "flex",
-                    gap: "12px",
-                    padding: "16px 0",
-                    borderBottom: "1px solid #f3f4f6",
+                    padding: "16px 20px",
+                    borderBottom: "1px solid #f0f0f0",
                     cursor: "pointer",
-                    transition: "background 0.15s",
-                    borderRadius: "8px",
-                    margin: "0 -4px",
-                    paddingLeft: "4px",
-                    paddingRight: "4px",
+                    background: activeArticleId === article.id ? "#fff7ed" : "#fff",
+                    transition: "background 0.15s ease",
                   }}
                 >
-                  <div style={{ flex: 1 }}>
-                    <span
-                      style={{
-                        fontSize: "11px",
-                        fontWeight: 800,
-                        color: "#f97316",
-                        display: "block",
-                        marginBottom: "5px",
-                      }}
-                    >
-                      {article.section1 || "우리동네"}
+                  <div style={{ fontSize: 11, color: "#ff8e15", fontWeight: "bold", marginBottom: 5 }}>
+                    <span style={{ background: "#fff7ed", padding: "2px 6px", borderRadius: 3, border: "1px solid #ffdfb8", marginRight: 4 }}>
+                      {article.section1 || "뉴스"} &gt; {article.section2 || "전체"}
                     </span>
-                    <h4
-                      style={{
-                        fontSize: "15px",
-                        fontWeight: 700,
-                        color: "#111827",
-                        lineHeight: 1.4,
-                        marginBottom: "6px",
-                        wordBreak: "keep-all",
-                        display: "-webkit-box",
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: "vertical",
-                        overflow: "hidden",
-                      }}
-                    >
-                      {article.title}
-                    </h4>
-                    <p style={{ fontSize: "12px", color: "#9ca3af" }}>
-                      {article.author_name} · {formatDate(article.published_at || article.created_at)}
-                      {article.location_name && ` · ${article.location_name}`}
-                    </p>
+                    {article.section1 === "뉴스/칼럼" && <span style={{ color: "#ef4444" }}>NEWS</span>}
+                    {article.location_name && <span style={{ color: "#999", fontSize: 10, marginLeft: 4 }}>📍{article.location_name}</span>}
                   </div>
-                  {article.thumbnail_url && (
-                    <div
-                      style={{
-                        width: "80px",
-                        height: "64px",
-                        borderRadius: "8px",
-                        overflow: "hidden",
-                        flexShrink: 0,
-                        backgroundColor: "#e5e7eb",
-                      }}
-                    >
-                      <img
-                        src={article.thumbnail_url}
-                        alt=""
-                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                      />
-                    </div>
-                  )}
+                  <div style={{ fontSize: 15, fontWeight: 700, color: "#111", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", wordBreak: "keep-all", marginBottom: 8, lineHeight: 1.45 }}>
+                    {article.title}
+                  </div>
+                  <div style={{ fontSize: 13, color: "#666", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", marginBottom: 10, lineHeight: 1.5 }}>
+                    {article.subtitle || stripHtml(article.content || "").slice(0, 100)}
+                  </div>
+                  <div style={{ fontSize: 12, color: "#999", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span>{formatDate(article.published_at || article.created_at)} · {article.author_name || "공실뉴스"}</span>
+                    <span style={{ color: activeArticleId === article.id && showDetail ? "#d32f2f" : "#ff8e15", fontWeight: "bold", fontSize: 12 }}>
+                      {activeArticleId === article.id && showDetail ? "기사닫기 ✕" : "기사상세보기 >"}
+                    </span>
+                  </div>
                 </div>
               ))}
             </div>
@@ -472,7 +490,7 @@ function MobileNewsPage() {
           {/* 헤드라인 히어로 (APPROVED 기사 중 첫번째 큰 이미지) */}
           {articles[0] && (
             <div
-              onClick={() => router.push(`/m/news/${articles[0].article_no || articles[0].id}`)}
+              onClick={() => handleSelectArticle(articles[0].id)}
               style={{
                 position: "relative",
                 width: "100%",
@@ -555,69 +573,34 @@ function MobileNewsPage() {
                 <div
                   key={a.id}
                   className="article-row"
-                  onClick={() => router.push(`/m/news/${a.article_no || a.id}`)}
+                  onClick={() => handleSelectArticle(a.id)}
                   style={{
-                    display: "flex",
-                    gap: "12px",
                     padding: "16px 0",
-                    borderBottom: "1px solid #f3f4f6",
+                    borderBottom: "1px solid #f0f0f0",
                     cursor: "pointer",
-                    transition: "background 0.15s",
+                    background: activeArticleId === a.id ? "#fff7ed" : "#fff",
+                    transition: "background 0.15s ease",
                   }}
                 >
-                  <div style={{ flex: 1 }}>
-                    <h3
-                      style={{
-                        fontSize: "15px",
-                        fontWeight: 700,
-                        color: "#111827",
-                        lineHeight: 1.45,
-                        marginBottom: "7px",
-                        wordBreak: "keep-all",
-                        display: "-webkit-box",
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: "vertical",
-                        overflow: "hidden",
-                      }}
-                    >
-                      {a.title}
-                    </h3>
-                    <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: "#9ca3af" }}>
-                      <span
-                        style={{
-                          color: "#1a2e50",
-                          fontWeight: 700,
-                          fontSize: "11px",
-                          background: "#eef2ff",
-                          padding: "2px 6px",
-                          borderRadius: "4px",
-                        }}
-                      >
-                        {a.section1 || "뉴스"}
-                      </span>
-                      <span>{a.author_name}</span>
-                      <span>·</span>
-                      <span>{formatDate(a.published_at || a.created_at)}</span>
-                    </div>
+                  <div style={{ fontSize: 11, color: "#ff8e15", fontWeight: "bold", marginBottom: 5 }}>
+                    <span style={{ background: "#fff7ed", padding: "2px 6px", borderRadius: 3, border: "1px solid #ffdfb8", marginRight: 4 }}>
+                      {a.section1 || "뉴스"} &gt; {a.section2 || "전체"}
+                    </span>
+                    {a.section1 === "뉴스/칼럼" && <span style={{ color: "#ef4444" }}>NEWS</span>}
+                    {a.location_name && <span style={{ color: "#999", fontSize: 10, marginLeft: 4 }}>📍{a.location_name}</span>}
                   </div>
-                  {a.thumbnail_url && (
-                    <div
-                      style={{
-                        width: "84px",
-                        height: "64px",
-                        borderRadius: "8px",
-                        overflow: "hidden",
-                        flexShrink: 0,
-                        backgroundColor: "#e5e7eb",
-                      }}
-                    >
-                      <img
-                        src={a.thumbnail_url}
-                        alt=""
-                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                      />
-                    </div>
-                  )}
+                  <div style={{ fontSize: 15, fontWeight: 700, color: "#111", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", wordBreak: "keep-all", marginBottom: 8, lineHeight: 1.45 }}>
+                    {a.title}
+                  </div>
+                  <div style={{ fontSize: 13, color: "#666", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", marginBottom: 10, lineHeight: 1.5 }}>
+                    {a.subtitle || stripHtml(a.content || "").slice(0, 100)}
+                  </div>
+                  <div style={{ fontSize: 12, color: "#999", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span>{formatDate(a.published_at || a.created_at)} · {a.author_name || "공실뉴스"}</span>
+                    <span style={{ color: activeArticleId === a.id && showDetail ? "#d32f2f" : "#ff8e15", fontWeight: "bold", fontSize: 12 }}>
+                      {activeArticleId === a.id && showDetail ? "기사닫기 ✕" : "기사상세보기 >"}
+                    </span>
+                  </div>
                 </div>
               ))}
 
@@ -631,6 +614,75 @@ function MobileNewsPage() {
           )}
         </div>
       )}
+
+      {/* 기사 상세 뷰 (모바일 슬라이딩 패널) */}
+      <div className={`news-detail-panel ${showDetail ? "open" : ""}`}>
+        <button
+          onClick={() => setShowDetail(false)}
+          style={{ position: "absolute", top: 12, right: 12, background: "none", border: "none", fontSize: 28, color: "#999", cursor: "pointer", padding: 8, lineHeight: 1, zIndex: 10 }}
+        >✕</button>
+
+        {detailLoading ? (
+          <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16 }}>
+            <div style={{ width: 32, height: 32, border: "3px solid #f0f0f0", borderTop: "3px solid #ff8e15", borderRadius: "50%", animation: "spin 0.8s linear infinite" }}></div>
+            <div style={{ fontSize: 14, color: "#888", fontWeight: 500 }}>기사를 불러오는 중</div>
+          </div>
+        ) : articleDetail ? (
+          <div style={{ padding: "20px", paddingTop: "50px", paddingBottom: "80px", overflowY: "auto", height: "100%" }}>
+            <div style={{ fontSize: 13, color: "#666", marginBottom: 8, fontWeight: 600 }}>
+              [{articleDetail.section1 || "뉴스"} &gt; {articleDetail.section2 || "전체"}]
+            </div>
+
+            <h1 style={{ fontSize: 24, fontWeight: 800, color: "#111", lineHeight: 1.35, marginBottom: 16, letterSpacing: -1, wordBreak: "keep-all" }}>
+              {articleDetail.title}
+            </h1>
+
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #ddd", paddingBottom: 16, marginBottom: 24 }}>
+              <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, fontSize: 12, color: "#666" }}>
+                <span style={{ color: "#111", fontWeight: "bold" }}>{articleDetail.author_name || "공실뉴스"}</span>
+                <span style={{ display: "inline-block", width: 1, height: 10, background: "#ddd" }}></span>
+                <span>{formatDateFull(articleDetail.published_at || articleDetail.created_at)}</span>
+              </div>
+              <button
+                onClick={() => router.push(`/m/news/${articleDetail.article_no || articleDetail.id}`)}
+                style={{ fontSize: 12, fontWeight: "bold", color: "#ff8e15", border: "1px solid #ff8e15", borderRadius: 20, padding: "4px 12px", background: "none", whiteSpace: "nowrap" }}
+              >
+                원본보기
+              </button>
+            </div>
+
+            {articleDetail.subtitle && (
+              <div className="article-subtitle-box map-subtitle-box" style={{ fontSize: 14, marginBottom: 20, paddingLeft: 12, borderLeft: "3px solid #ff8e15", color: "#333", fontWeight: 600, wordBreak: "keep-all" }}>
+                {articleDetail.subtitle}
+              </div>
+            )}
+
+            <div className="article-body" style={{ fontSize: 16, lineHeight: 1.6, color: "#111" }}>
+              {extractYoutubeId(articleDetail.youtube_url, articleDetail.content) ? (
+                <div style={{ position: "relative", width: "100%", paddingBottom: articleDetail.is_shorts ? "177.78%" : "56.25%", marginBottom: 16, borderRadius: 8, overflow: "hidden" }}>
+                  <iframe src={`https://www.youtube.com/embed/${extractYoutubeId(articleDetail.youtube_url, articleDetail.content)}`} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" }} allowFullScreen />
+                </div>
+              ) : articleDetail.thumbnail_url && !(articleDetail.content && articleDetail.content.includes(articleDetail.thumbnail_url)) ? (
+                <img src={articleDetail.thumbnail_url} alt={articleDetail.title} style={{ width: "100%", borderRadius: 8, marginBottom: 16 }} />
+              ) : null}
+
+              {articleDetail.content && (
+                <div suppressHydrationWarning dangerouslySetInnerHTML={{
+                  __html: articleDetail.content
+                    .replace(/<p[^>]*>\s*(?:<br>\s*)*<iframe[^>]*youtube\.com\/embed[^>]*>.*?<\/iframe>(?:\s*<br>\s*)*\s*<\/p>/gi, '')
+                    .replace(/<div(?:(?!class="article-body")[^>]*)?>\s*(?:<br>\s*)*<iframe[^>]*youtube\.com\/embed[^>]*>.*?<\/iframe>(?:\s*<br>\s*)*\s*<\/div>/gi, '')
+                    .replace(/<iframe[^>]*youtube\.com\/embed[^>]*>.*?<\/iframe>/gi, '')
+                }} />
+              )}
+            </div>
+
+            <div style={{ marginTop: 40, paddingTop: 20, borderTop: "1px solid #eee", color: "#888", fontSize: 12, textAlign: "center" }}>
+              저작권자 © 공실뉴스 무단전재 및 재배포 금지
+            </div>
+          </div>
+        ) : null}
+      </div>
+
       <style>{`
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -647,6 +699,14 @@ function MobileNewsPage() {
         .skeleton { background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 6px; }
         @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
         .article-row:active { background: #f9fafb; }
+        .news-detail-panel {
+          position: absolute; top: 0; right: 0; width: 100%; height: 100%;
+          background: white; z-index: 50;
+          transform: translateX(100%);
+          transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+          box-shadow: -5px 0 30px rgba(0,0,0,0.15);
+        }
+        .news-detail-panel.open { transform: translateX(0); }
       `}</style>
     </div>
   );
