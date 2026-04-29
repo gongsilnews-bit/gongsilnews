@@ -35,9 +35,16 @@ export default function GongsilTalkOverlay() {
   const [realtorCard, setRealtorCard] = useState<{ userId: string; userName: string } | null>(null);
   const [overlayHeight, setOverlayHeight] = useState(740);
   const [overlayWidth, setOverlayWidth] = useState(800);
+  const [isMobilePath, setIsMobilePath] = useState(false);
   const isDragging = useRef(false);
   const startY = useRef(0);
   const startHeight = useRef(740);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setIsMobilePath(window.location.pathname.startsWith("/m"));
+    }
+  }, []);
 
   // ────── 실제 Supabase 데이터 ──────
   const [rooms, setRooms] = useState<TalkRoom[]>([]);
@@ -382,10 +389,16 @@ export default function GongsilTalkOverlay() {
           className="talk-floating-btn"
           onClick={() => setIsOpen(true)}
           style={{
-            position: "fixed", bottom: 24, right: 24, zIndex: 20000000,
+            position: "fixed", 
+            bottom: 84, // 모바일 하단 네비게이션(약 60px) 고려
+            zIndex: 20000000,
+            ...(isMobilePath 
+              ? { left: "50%", marginLeft: "140px" } // 448/2 = 224, 224 - 84 = 140px (오른쪽 정렬)
+              : { right: 24 }),
             width: 56, height: 56, borderRadius: "50%", background: NAVY,
             border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
             boxShadow: "0 4px 16px rgba(0,0,0,0.25)", transition: "transform 0.2s, box-shadow 0.2s",
+            ...((isMobilePath && typeof window !== "undefined" && window.innerWidth <= 448) ? { left: "auto", right: 24, marginLeft: 0 } : {})
           }}
           onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.1)"; e.currentTarget.style.boxShadow = "0 6px 24px rgba(0,0,0,0.35)"; }}
           onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.25)"; }}
@@ -408,10 +421,15 @@ export default function GongsilTalkOverlay() {
       <div 
         className="talk-overlay-container"
         style={{
-          position: "fixed", bottom: 0, right: 0, zIndex: 20000000,
-          width: isOpen ? overlayWidth : 0, height: isOpen ? overlayHeight : 0,
+          position: "fixed", bottom: 0, zIndex: 20000000,
+          right: isMobilePath ? "auto" : 0,
+          left: isMobilePath ? "50%" : "auto",
+          transform: isMobilePath ? "translateX(-50%)" : "none",
+          width: isOpen ? (isMobilePath ? "100%" : overlayWidth) : 0,
+          maxWidth: isMobilePath ? "448px" : "100vw",
+          height: isOpen ? (isMobilePath ? "100vh" : overlayHeight) : 0,
           boxShadow: isOpen ? "-4px -4px 24px rgba(0,0,0,0.15)" : "none",
-          transition: isDragging.current ? "none" : "width 0.35s cubic-bezier(0.4, 0, 0.2, 1), height 0.35s cubic-bezier(0.4, 0, 0.2, 1)",
+          transition: isDragging.current ? "none" : (isMobilePath ? "opacity 0.2s" : "width 0.35s cubic-bezier(0.4, 0, 0.2, 1), height 0.35s cubic-bezier(0.4, 0, 0.2, 1)"),
           fontFamily: "'Pretendard', sans-serif",
           opacity: isOpen ? 1 : 0,
         }}>
