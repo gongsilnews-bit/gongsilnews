@@ -42,6 +42,15 @@ interface Props {
   lectures: any[];
 }
 
+const CATEGORIES = [
+  { key: "all", label: "전체뉴스" },
+  { key: "local", label: "우리동네뉴스" },
+  { key: "부동산·주식·재테크", label: "부동산·재테크" },
+  { key: "정치·경제·사회", label: "정치·경제" },
+  { key: "세무·법률", label: "세무·법률" },
+  { key: "여행·건강·생활", label: "여행·생활" },
+];
+
 export default function MobileHomeClient(props: Props) {
   const { vacancies, headlineArticles, financeArticles, politicsArticles, lawArticles, lifeArticles, etcArticles, mapArticles, lectures } = props;
   const router = useRouter();
@@ -63,6 +72,45 @@ export default function MobileHomeClient(props: Props) {
         .skeleton{background:linear-gradient(90deg,#f3f4f6 25%,#e5e7eb 50%,#f3f4f6 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:6px;}
         @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
       `}</style>
+
+      {/* 네비게이션 메뉴 (뉴스 탭과 동일, 네이버식 가로 스와이프) */}
+      <div
+        className="no-scrollbar"
+        style={{
+          display: "flex",
+          overflowX: "auto",
+          backgroundColor: "#1a2e50",
+          position: "sticky",
+          top: "44px", // 모바일 헤더 높이(44px) 바로 아래 고정
+          zIndex: 40,
+          marginTop: "-1px",
+        }}
+      >
+        {CATEGORIES.map((cat) => (
+          <button
+            key={cat.key}
+            onClick={() => {
+              if (cat.key === "all") return; // 이미 전체 홈이므로
+              router.push(`/m/news?tab=${cat.key}`);
+            }}
+            style={{
+              flexShrink: 0,
+              padding: "12px 16px",
+              fontSize: "14px",
+              fontWeight: cat.key === "all" ? 800 : 500,
+              color: cat.key === "all" ? "#fff" : "rgba(255,255,255,0.6)",
+              background: "none",
+              border: "none",
+              borderBottom: cat.key === "all" ? "3px solid #ffffff" : "3px solid transparent",
+              cursor: "pointer",
+              transition: "all 0.2s",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {cat.label}
+          </button>
+        ))}
+      </div>
 
       {/* ① Hero 배너 (헤드라인 기사) */}
       {hero && (

@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState, useEffect, useRef, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { getArticles } from "@/app/actions/article";
 
 const KAKAO_APP_KEY = process.env.NEXT_PUBLIC_KAKAO_APP_KEY || "435d3602201a49ea712e5f5a36fe6efc";
@@ -27,9 +27,11 @@ function formatDate(d: string) {
   return `${dt.getMonth() + 1}/${dt.getDate()}`;
 }
 
-export default function MobileNewsPage() {
+function MobileNewsPage() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState("all");
+  const searchParams = useSearchParams();
+  const initialTab = searchParams.get("tab") || "all";
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [articles, setArticles] = useState<any[]>([]);
   const [localArticles, setLocalArticles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -256,7 +258,7 @@ export default function MobileNewsPage() {
               color: activeTab === cat.key ? "#fff" : "rgba(255,255,255,0.6)",
               background: "none",
               border: "none",
-              borderBottom: activeTab === cat.key ? "3px solid #f97316" : "3px solid transparent",
+              borderBottom: activeTab === cat.key ? "3px solid #ffffff" : "3px solid transparent",
               cursor: "pointer",
               transition: "all 0.2s",
               whiteSpace: "nowrap",
@@ -642,5 +644,13 @@ export default function MobileNewsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function MobileNewsPageWrapper() {
+  return (
+    <Suspense fallback={null}>
+      <MobileNewsPage />
+    </Suspense>
   );
 }
