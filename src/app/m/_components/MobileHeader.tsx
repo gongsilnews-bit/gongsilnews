@@ -15,8 +15,8 @@ export default function MobileHeader() {
   return (
     <>
       <header 
-        className="sticky top-0 z-50 w-full max-w-md mx-auto bg-white flex items-center justify-between px-4 h-[44px]"
-        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px', height: '44px', position: 'sticky', top: 0, zIndex: 50, backgroundColor: '#ffffff', width: '100%', maxWidth: '448px', margin: '0 auto' }}
+        className="fixed top-0 z-50 w-full max-w-md bg-white flex items-center justify-between px-4 h-[44px]"
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px', height: '44px', position: 'fixed', top: 0, left: '50%', transform: 'translateX(-50%)', zIndex: 50, backgroundColor: '#ffffff', width: '100%', maxWidth: '448px' }}
       >
         {/* 좌측 햄버거 메뉴 */}
         <button className="p-1" onClick={() => setIsMenuOpen(true)}>
