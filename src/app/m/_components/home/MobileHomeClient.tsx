@@ -2,6 +2,9 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
+
+const MiniVacancyMap = dynamic(() => import("./MiniVacancyMap"), { ssr: false });
 import { useRouter } from "next/navigation";
 
 function formatDate(d: string) {
@@ -85,37 +88,17 @@ export default function MobileHomeClient(props: Props) {
         </div>
       )}
 
-      {/* ② 실시간 공실 매물 (PC Hero Map 대응) */}
-      {vacancies.length > 0 && (
-        <div style={{ background: "#fff", marginBottom: 8 }}>
-          <div className="sec-hd">
-            <h2>실시간 공실 매물</h2>
-            <Link href="/m/gongsil" style={{ fontSize: 13, color: "#6b7280", textDecoration: "none" }}>더보기 ›</Link>
-          </div>
-          <div className="no-scrollbar" style={{ display: "flex", gap: 12, padding: "0 16px 16px", overflowX: "auto" }}>
-            {vacancies.map((v: any) => (
-              <div key={v.id} className="tap" onClick={() => router.push("/m/gongsil")}
-                style={{ flexShrink: 0, width: 148, borderRadius: 12, overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.08)", border: "1px solid #f3f4f6", background: "#fff", cursor: "pointer" }}>
-                <div style={{ width: "100%", height: 96, overflow: "hidden", background: "#e5e7eb" }}>
-                  {v.vacancy_photos?.[0]?.url
-                    ? <img src={v.vacancy_photos[0].url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                    : <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg,#1a2e50,#2d4a7a)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>🏠</div>}
-                </div>
-                <div style={{ padding: "10px 10px 12px" }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: "#f97316", background: "#fff7ed", padding: "2px 6px", borderRadius: 4, display: "inline-block", marginBottom: 6 }}>{v.trade_type || "매매"}</span>
-                  <p style={{ fontSize: 14, fontWeight: 800, color: "#111827", marginBottom: 3, lineHeight: 1.3 }}>{formatPrice(v)}</p>
-                  <p style={{ fontSize: 11, color: "#6b7280", display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{v.building_name || [v.dong, v.sigungu].filter(Boolean).join(" ")}</p>
-                </div>
-              </div>
-            ))}
-            <div className="tap" onClick={() => router.push("/m/gongsil")}
-              style={{ flexShrink: 0, width: 72, borderRadius: 12, border: "1.5px dashed #d1d5db", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, cursor: "pointer", background: "#f9fafb" }}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
-              <span style={{ fontSize: 11, color: "#9ca3af", fontWeight: 600, textAlign: "center" }}>공실{"\n"}더보기</span>
-            </div>
-          </div>
+      {/* ② 실시간 공실 매물 - 카카오 지도 미리보기 */}
+      <div style={{ background: "#fff", marginBottom: 8 }}>
+        <div className="sec-hd">
+          <h2>실시간 공실 매물</h2>
+          <Link href="/m/gongsil" style={{ fontSize: 13, color: "#6b7280", textDecoration: "none" }}>더보기 ›</Link>
         </div>
-      )}
+        <div style={{ padding: "0 16px 16px" }}>
+          <MiniVacancyMap vacancies={vacancies} />
+        </div>
+      </div>
+
 
       {/* ③ 부동산·주식·재테크 */}
       <NewsSection title="부동산·주식·재테크" href="/m/news" articles={financeArticles} />
