@@ -1135,7 +1135,53 @@ button { border: none; background: none; cursor: pointer; font-family: inherit; 
     }
     
     .mobile-news-detail-wrapper .detail-title {
-        font-size: 24px;
+        font-size: 22px;
         line-height: 1.4;
+        letter-spacing: -0.5px;
+        margin-bottom: 16px;
+    }
+
+    /* 메타 영역: 세로 스택 레이아웃 */
+    .mobile-news-detail-wrapper .detail-meta {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 14px 0;
+        font-size: 13px;
+        margin-bottom: 24px;
+    }
+
+    /* 기자명 · 입력 · 수정 · 조회수 가로 래핑 */
+    .mobile-news-detail-wrapper .meta-info {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 12px;
+        align-items: center;
+        font-size: 13px;
+        line-height: 1.6;
+        color: #555;
+    }
+
+    /* 아이콘 영역: 크게 + 간격 */
+    .mobile-news-detail-wrapper .meta-stats {
+        display: flex;
+        gap: 20px;
+        align-items: center;
+    }
+
+    .mobile-news-detail-wrapper .meta-icon svg {
+        width: 26px;
+        height: 26px;
+    }
+
+    /* 가가 텍스트 버튼 크기 */
+    .mobile-news-detail-wrapper .meta-icon {
+        font-size: 16px;
+    }
+
+    /* 브레드크럼 */
+    .mobile-news-detail-wrapper .detail-breadcrumb {
+        font-size: 13px;
+        margin-bottom: 14px;
     }
 }
