@@ -6,6 +6,7 @@ import { getAgencyInfo, getVacancyDetail } from "@/app/actions/vacancy";
 interface RealtorPropertyCardProps {
   userId: string;
   userName: string;
+  isMyProperty?: boolean;
   onClose: () => void;
   onInquiry?: (text: string) => void;
 }
@@ -28,12 +29,13 @@ const formatPrice = (deposit: number, monthlyRent?: number, tradeType?: string) 
 };
 
 // ── 매물 상세 뷰  ──
-function VacancyDetailView({ vacancy, photos, onBack, onInquiry }: { vacancy: any; photos: any[]; onBack: () => void; onInquiry?: (text: string) => void }) {
+function VacancyDetailView({ vacancy, photos, isMyProperty, onBack, onInquiry }: { vacancy: any; photos: any[]; isMyProperty?: boolean; onBack: () => void; onInquiry?: (text: string) => void }) {
   const [photoIdx, setPhotoIdx] = useState(0);
   const addr = [vacancy.sido, vacancy.sigungu, vacancy.dong, vacancy.detail_addr].filter(Boolean).join(" ");
   const price = formatPrice(vacancy.deposit, vacancy.monthly_rent, vacancy.trade_type);
 
   const specs = [
+    { label: "매물번호", value: vacancy.vacancy_no ? `${vacancy.vacancy_no}` : undefined },
     { label: "거래유형", value: vacancy.trade_type },
     { label: "매물가격", value: price },
     { label: "관리비", value: vacancy.maintenance_fee ? `${(vacancy.maintenance_fee / 10000).toLocaleString()}만원` : "-" },
@@ -46,7 +48,7 @@ function VacancyDetailView({ vacancy, photos, onBack, onInquiry }: { vacancy: an
   ].filter(s => s.value && s.value !== "-");
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+    <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
       {/* 헤더 */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", borderBottom: "1px solid #eee", flexShrink: 0 }}>
         <button onClick={onBack} style={{ width: 30, height: 30, borderRadius: 8, background: "#f3f4f6", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -120,10 +122,14 @@ function VacancyDetailView({ vacancy, photos, onBack, onInquiry }: { vacancy: an
       {onInquiry && (
         <div style={{ padding: "10px 16px", borderTop: "1px solid #eee", flexShrink: 0 }}>
           <button
-            onClick={() => onInquiry(`${vacancy.dong || ""} ${vacancy.building_name || ""} ${vacancy.trade_type} ${price} 매물 문의드립니다.`)}
+          onClick={() => {
+            const noStr = vacancy.vacancy_no ? `[매물번호 ${vacancy.vacancy_no}] ` : "";
+            const suffix = isMyProperty ? "매물 전달드립니다." : "매물 문의드립니다.";
+            onInquiry(`${noStr}${vacancy.dong || ""} ${vacancy.building_name || ""} ${vacancy.trade_type} ${price} ${suffix}`);
+          }}
             style={{ width: "100%", padding: "10px 0", borderRadius: 10, background: BLUE, color: "#fff", fontWeight: 800, fontSize: 14, border: "none", cursor: "pointer" }}
           >
-            이 매물 문의하기
+            {isMyProperty ? "이 매물 전달하기" : "이 매물 문의하기"}
           </button>
         </div>
       )}
@@ -132,7 +138,7 @@ function VacancyDetailView({ vacancy, photos, onBack, onInquiry }: { vacancy: an
 }
 
 // ── 메인 카드 ──
-export default function RealtorPropertyCard({ userId, userName, onClose, onInquiry }: RealtorPropertyCardProps) {
+export default function RealtorPropertyCard({ userId, userName, isMyProperty, onClose, onInquiry }: RealtorPropertyCardProps) {
   const [agency, setAgency] = useState<any>(null);
   const [vacancies, setVacancies] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -194,6 +200,7 @@ export default function RealtorPropertyCard({ userId, userName, onClose, onInqui
         <VacancyDetailView
           vacancy={selectedVacancy.data}
           photos={selectedVacancy.photos}
+          isMyProperty={isMyProperty}
           onBack={() => setSelectedVacancy(null)}
           onInquiry={onInquiry}
         />
@@ -298,17 +305,18 @@ export default function RealtorPropertyCard({ userId, userName, onClose, onInqui
                         {[v.property_type, area, v.direction, v.room_count ? `방${v.room_count}` : ""].filter(Boolean).join(" · ")}
                       </div>
                     </div>
-                    {onInquiry && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onInquiry(`${addr} ${v.trade_type} ${price} 매물 문의드립니다.`);
-                        }}
-                        style={{ padding: "6px 10px", borderRadius: 8, background: BLUE, color: "#fff", fontSize: 11, fontWeight: 700, border: "none", cursor: "pointer", flexShrink: 0, whiteSpace: "nowrap" }}
-                      >
-                        문의
-                      </button>
-                    )}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (onInquiry) {
+                          const noStr = v.vacancy_no ? `[매물번호 ${v.vacancy_no}] ` : "";
+                          onInquiry(`${noStr}${addr} ${v.trade_type} ${price} 매물 문의드립니다.`);
+                        }
+                      }}
+                      style={{ padding: "6px 10px", borderRadius: 8, background: BLUE, color: "#fff", fontSize: 11, fontWeight: 700, border: "none", cursor: "pointer", flexShrink: 0, whiteSpace: "nowrap", display: onInquiry ? "block" : "none" }}
+                    >
+                      문의
+                    </button>
                   </div>
                 );
               })}

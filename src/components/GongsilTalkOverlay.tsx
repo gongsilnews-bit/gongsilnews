@@ -6,7 +6,7 @@ import ProfileCardPopover from "./ProfileCardPopover";
 import CreateRoomModal from "./CreateRoomModal";
 import AuthModal from "./AuthModal";
 import RealtorPropertyCard from "./RealtorPropertyCard";
-import { getMyRooms, getRoomMessages, sendMessage, createRoom as createRoomAction, findOrCreateDM, updateMyName, type TalkRoom, type TalkMessage } from "@/app/actions/talkActions";
+import { getMyRooms, getRoomMessages, sendMessage, createRoom as createRoomAction, findOrCreateDM, updateMyName, updateMyProfileImage, uploadTalkProfileImage, getMyFriends, getMyFolders, createFriendFolder, renameFriendFolder, deleteFriendFolder, moveFriendToFolder, removeFriend, createGroupRoom, inviteToRoom, renameRoom, type TalkRoom, type TalkMessage, type TalkFriend, type TalkFriendFolder } from "@/app/actions/talkActions";
 
 type LnbTab = "contacts" | "chats" | "notifications" | "settings";
 
@@ -51,6 +51,74 @@ export default function GongsilTalkOverlay() {
   const [editingNickname, setEditingNickname] = useState(false);
   const [nicknameInput, setNicknameInput] = useState("");
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const [localUnread, setLocalUnread] = useState<Record<string, number>>({});
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const roomAvatarInputRef = useRef<HTMLInputElement>(null);
+
+  // ────── 친구 관리 ──────
+  const [friends, setFriends] = useState<TalkFriend[]>([]);
+  const [folders, setFolders] = useState<TalkFriendFolder[]>([]);
+  const [folderManagerOpen, setFolderManagerOpen] = useState(false);
+  const [newFolderName, setNewFolderName] = useState("");
+  const [editingFolderId, setEditingFolderId] = useState<string | null>(null);
+  const [editingFolderName, setEditingFolderName] = useState("");
+  const [friendMenuId, setFriendMenuId] = useState<string | null>(null);
+  const [collapsedFolders, setCollapsedFolders] = useState<Set<string>>(new Set());
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedFriendIds, setSelectedFriendIds] = useState<Set<string>>(new Set());
+  const [groupChatCreating, setGroupChatCreating] = useState(false);
+  // ── 채팅방 설정 ──
+  const [roomMenuOpen, setRoomMenuOpen] = useState(false);
+  const [showInvitePanel, setShowInvitePanel] = useState(false);
+  const [inviteSelectedIds, setInviteSelectedIds] = useState<Set<string>>(new Set());
+  const [editingRoomTitle, setEditingRoomTitle] = useState(false);
+  const [roomTitleInput, setRoomTitleInput] = useState("");
+
+  const loadFriends = useCallback(async () => {
+    if (!currentUserId) return;
+    const [fRes, foRes] = await Promise.all([getMyFriends(currentUserId), getMyFolders(currentUserId)]);
+    if (fRes.success && fRes.data) setFriends(fRes.data);
+    if (foRes.success && foRes.data) setFolders(foRes.data);
+  }, [currentUserId]);
+
+  useEffect(() => { if (currentUserId && activeTab === "contacts") loadFriends(); }, [currentUserId, activeTab, loadFriends]);
+
+  // 프로필 이미지 업로드 핸들러
+  const handleProfileImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !currentUserId) return;
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("path", `profiles/${currentUserId}_${Date.now()}`);
+    
+    const res = await uploadTalkProfileImage(formData);
+    if (res.success && res.url) {
+      await updateMyProfileImage(currentUserId, res.url);
+      setCurrentUserImage(res.url);
+      alert("프로필 이미지가 변경되었습니다.");
+    } else {
+      alert("이미지 업로드 실패: " + res.error);
+    }
+    // file input 초기화
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleRoomAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0 || !selectedRoom) return;
+    const file = e.target.files[0];
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("path", `room_profiles/${selectedRoom}_${Date.now()}`);
+    const { uploadTalkProfileImage, updateRoomAvatar } = await import("@/app/actions/talkActions");
+    const res = await uploadTalkProfileImage(formData);
+    if (res.success && res.url) {
+      await updateRoomAvatar(selectedRoom, res.url);
+      loadRooms();
+    } else {
+      alert(res.error || "업로드 실패");
+    }
+    if (roomAvatarInputRef.current) roomAvatarInputRef.current.value = "";
+  };
 
   // 로그인 사용자 정보
   useEffect(() => {
@@ -59,11 +127,13 @@ export default function GongsilTalkOverlay() {
       if (user) {
         setCurrentUserId(user.id);
         // 프로필 정보 (DB칼럼 정확히 매칭)
-        const { data: member } = await supabase.from("members").select("name, membership_type, profile_image_url, role").eq("id", user.id).single();
+        const { data: member, error } = await supabase.from("members").select("name, profile_image_url, role").eq("id", user.id).single();
+        if (error) console.error("Error fetching user profile:", error);
+        
         if (member?.name) setCurrentUserName(member.name);
         else if (user.email) setCurrentUserName(user.email.split("@")[0]);
 
-        if (member?.membership_type) setCurrentUserRole(member.membership_type);
+        if (member?.role) setCurrentUserRole(member.role);
         if (member?.profile_image_url) setCurrentUserImage(member.profile_image_url);
         if (member?.role === "ADMIN") setCurrentUserRole("ADMIN");
 
@@ -98,7 +168,17 @@ export default function GongsilTalkOverlay() {
     }
   }, []);
 
-  useEffect(() => { if (selectedRoom) loadMessages(selectedRoom); }, [selectedRoom, loadMessages]);
+  useEffect(() => { 
+    if (selectedRoom) {
+      loadMessages(selectedRoom);
+      setLocalUnread(prev => {
+        if (!prev[selectedRoom]) return prev;
+        const copy = { ...prev };
+        delete copy[selectedRoom];
+        return copy;
+      });
+    }
+  }, [selectedRoom, loadMessages]);
 
   // Supabase Realtime 구독
   useEffect(() => {
@@ -111,6 +191,9 @@ export default function GongsilTalkOverlay() {
         if (newMsg.room_id === selectedRoom) {
           setMessages(prev => [...prev, newMsg]);
           setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+        } else {
+          // 다른 방이면 안읽음 증가
+          setLocalUnread(prev => ({ ...prev, [newMsg.room_id]: (prev[newMsg.room_id] || 0) + 1 }));
         }
         // 방 목록 갱신
         loadRooms();
@@ -127,8 +210,8 @@ export default function GongsilTalkOverlay() {
     await sendMessage(selectedRoom, currentUserId, currentUserName, text);
   };
 
-  const totalUnread = rooms.reduce((a, r) => a + (r.unread_count || 0), 0);
-  const filteredRooms = chatFilter === "unread" ? rooms.filter(r => (r.unread_count || 0) > 0) : rooms;
+  const totalUnread = Object.values(localUnread).reduce((a, b) => a + b, 0);
+  const filteredRooms = chatFilter === "unread" ? rooms.filter(r => (localUnread[r.id] || 0) > 0) : rooms;
   const currentRoom = rooms.find(r => r.id === selectedRoom);
 
   const handleResizeStart = (e: React.MouseEvent) => {
@@ -226,6 +309,60 @@ export default function GongsilTalkOverlay() {
   const BLUE = "#508bf5";
   const LNB_BG = "#2c4a7c";
 
+  const renderFriendItem = (fr: TalkFriend) => {
+    const isSelected = selectedFriendIds.has(fr.friend_id);
+    return (
+    <div key={fr.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 16px", cursor: "pointer", transition: "background 0.15s", position: "relative", background: selectMode && isSelected ? "#eef4ff" : "transparent" }}
+      onMouseEnter={e => e.currentTarget.style.background = selectMode && isSelected ? "#eef4ff" : "#f9fafb"}
+      onMouseLeave={e => e.currentTarget.style.background = selectMode && isSelected ? "#eef4ff" : "transparent"}
+      onClick={(e) => {
+        if (selectMode) {
+          setSelectedFriendIds(prev => { const n = new Set(prev); if (n.has(fr.friend_id)) n.delete(fr.friend_id); else n.add(fr.friend_id); return n; });
+          return;
+        }
+        const el = e.currentTarget.querySelector(".friend-avatar") as HTMLElement;
+        if (el) setProfileCard({ anchorEl: el, name: fr.friend_name || "", userId: fr.friend_id, role: fr.friend_role, profileImage: fr.friend_profile_image, agencyName: fr.friend_agency_name });
+      }}
+    >
+      {/* 선택 모드 체크박스 */}
+      {selectMode && (
+        <div style={{ width: 20, height: 20, borderRadius: 4, border: isSelected ? "none" : "2px solid #ccc", background: isSelected ? BLUE : "#fff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.15s" }}>
+          {isSelected && <span style={{ color: "#fff", fontSize: 13, fontWeight: 800 }}>✓</span>}
+        </div>
+      )}
+      <div className="friend-avatar" style={{ width: 40, height: 40, borderRadius: "50%", background: "#e8f0fe", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0, overflow: "hidden" }}>
+        {fr.friend_profile_image ? <img src={fr.friend_profile_image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : (fr.friend_name || "?")[0]}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontWeight: 700, fontSize: 14, color: "#111", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{fr.friend_name}</div>
+        {fr.friend_agency_name && <div style={{ fontSize: 11, color: "#888", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{fr.friend_agency_name}</div>}
+      </div>
+      {/* 더보기 메뉴 */}
+      <button onClick={(e) => { e.stopPropagation(); setFriendMenuId(friendMenuId === fr.id ? null : fr.id); }} style={{ background: "none", border: "none", cursor: "pointer", color: "#bbb", fontSize: 16, padding: "4px", lineHeight: 1 }}>⋮</button>
+      {friendMenuId === fr.id && (
+        <div style={{ position: "absolute", right: 16, top: 40, background: "#fff", borderRadius: 8, boxShadow: "0 4px 16px rgba(0,0,0,0.15)", border: "1px solid #e5e7eb", zIndex: 100, minWidth: 140, overflow: "hidden" }}>
+          {folders.map(fo => (
+            <button key={fo.id} onClick={async (e) => { e.stopPropagation(); await moveFriendToFolder(fr.id, fo.id); setFriendMenuId(null); loadFriends(); }}
+              style={{ width: "100%", padding: "8px 14px", background: fr.folder_id === fo.id ? "#eaf4ff" : "none", border: "none", cursor: "pointer", fontSize: 12, color: "#333", textAlign: "left", display: "flex", alignItems: "center", gap: 6 }}
+              onMouseEnter={e => e.currentTarget.style.background = "#f3f4f6"} onMouseLeave={e => e.currentTarget.style.background = fr.folder_id === fo.id ? "#eaf4ff" : "transparent"}
+            >📁 {fo.name} {fr.folder_id === fo.id && "✓"}</button>
+          ))}
+          {fr.folder_id && (
+            <button onClick={async (e) => { e.stopPropagation(); await moveFriendToFolder(fr.id, null); setFriendMenuId(null); loadFriends(); }}
+              style={{ width: "100%", padding: "8px 14px", background: "none", border: "none", borderTop: "1px solid #f0f0f0", cursor: "pointer", fontSize: 12, color: "#888", textAlign: "left" }}
+              onMouseEnter={e => e.currentTarget.style.background = "#f3f4f6"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+            >미분류로 이동</button>
+          )}
+          <button onClick={async (e) => { e.stopPropagation(); if (currentUserId) { await removeFriend(currentUserId, fr.friend_id); setFriendMenuId(null); loadFriends(); } }}
+            style={{ width: "100%", padding: "8px 14px", background: "none", border: "none", borderTop: "1px solid #f0f0f0", cursor: "pointer", fontSize: 12, color: "#ef4444", textAlign: "left", fontWeight: 600 }}
+            onMouseEnter={e => e.currentTarget.style.background = "#fef2f2"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+          >친구 삭제</button>
+        </div>
+      )}
+    </div>
+    );
+  };
+
   return (
     <>
       {/* ──── 플로팅 버튼 ──── */}
@@ -241,7 +378,9 @@ export default function GongsilTalkOverlay() {
           onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.1)"; e.currentTarget.style.boxShadow = "0 6px 24px rgba(0,0,0,0.35)"; }}
           onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.25)"; }}
         >
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="#fff" stroke="none">
+            <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
+          </svg>
           {/* 안읽음 뱃지 */}
           {totalUnread > 0 && (
             <span style={{ position: "absolute", top: -2, right: -2, minWidth: 20, height: 20, background: "#ef4444", color: "#fff", fontSize: 11, fontWeight: 700, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 6px", border: "2px solid #fff" }}>
@@ -249,7 +388,7 @@ export default function GongsilTalkOverlay() {
             </span>
           )}
           {/* 라벨 */}
-          <span style={{ position: "absolute", bottom: -20, left: "50%", transform: "translateX(-50%)", fontSize: 10, fontWeight: 700, color: NAVY, whiteSpace: "nowrap" }}>공실Talk</span>
+          <span style={{ position: "absolute", bottom: -20, left: "50%", transform: "translateX(-50%)", fontSize: 10, fontWeight: 700, color: NAVY, whiteSpace: "nowrap" }}>TALK</span>
         </button>
       )}
 
@@ -305,6 +444,7 @@ export default function GongsilTalkOverlay() {
                 <RealtorPropertyCard
                   userId={realtorCard.userId}
                   userName={realtorCard.userName}
+                  isMyProperty={realtorCard.userId === currentUserId}
                   onClose={() => setRealtorCard(null)}
                   onInquiry={(text) => { setMessageInput(text); setRealtorCard(null); }}
                 />
@@ -330,7 +470,7 @@ export default function GongsilTalkOverlay() {
 
             {([
               { tab: "contacts" as LnbTab, label: "친구", icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> },
-              { tab: "chats" as LnbTab, label: "채팅", icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>, badge: totalUnread },
+              { tab: "chats" as LnbTab, label: "채팅", icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>, badge: totalUnread },
               { tab: "notifications" as LnbTab, label: "알림", icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg> },
             ]).map(item => (
               <button key={item.tab} onClick={() => setActiveTab(item.tab)} title={item.label}
@@ -367,13 +507,13 @@ export default function GongsilTalkOverlay() {
                 </div>
               </div>
               {activeTab === "chats" && (
-                <div style={{ display: "flex", gap: 6 }}>
-                  {(["all", "unread"] as const).map(f => (
-                    <button key={f} onClick={() => setChatFilter(f)}
-                      style={{ padding: "5px 14px", borderRadius: 16, fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer", background: chatFilter === f ? NAVY : "#f3f4f6", color: chatFilter === f ? "#fff" : "#555" }}>
-                      {f === "all" ? "전체" : "안읽음"}
-                    </button>
-                  ))}
+                <div style={{ display: "flex", gap: 6, padding: "0 16px" }}>
+                  <button onClick={() => setChatFilter("all")} style={{ padding: "5px 14px", borderRadius: 16, fontSize: 13, fontWeight: 700, border: chatFilter === "all" ? "1px solid #111" : "1px solid #e5e7eb", cursor: "pointer", background: chatFilter === "all" ? "#111" : "#fff", color: chatFilter === "all" ? "#fff" : "#555" }}>전체</button>
+                  <button onClick={() => setChatFilter("unread")} style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRadius: 16, fontSize: 13, fontWeight: 700, border: chatFilter === "unread" ? "1px solid #111" : "1px solid #e5e7eb", cursor: "pointer", background: chatFilter === "unread" ? "#fafafa" : "#fff", color: "#333" }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="#3b82f6" stroke="none"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/><circle cx="8" cy="11" r="1.5" fill="#fff"/><circle cx="12" cy="11" r="1.5" fill="#fff"/><circle cx="16" cy="11" r="1.5" fill="#fff"/></svg>
+                    안읽음
+                    {totalUnread > 0 && <span style={{ background: "#ef4444", color: "#fff", fontSize: 11, padding: "0 5px", borderRadius: 10, marginLeft: 2 }}>{totalUnread}</span>}
+                  </button>
                 </div>
               )}
             </div>
@@ -388,7 +528,9 @@ export default function GongsilTalkOverlay() {
                   onMouseEnter={e => { if (selectedRoom !== room.id) e.currentTarget.style.background = "#f9fafb"; }}
                   onMouseLeave={e => { if (selectedRoom !== room.id) e.currentTarget.style.background = "transparent"; }}
                 >
-                  <div style={{ width: 46, height: 46, borderRadius: "50%", background: "#f0f4f8", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>{room.avatar}</div>
+                  <div style={{ width: 46, height: 46, borderRadius: "50%", background: "#f0f4f8", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0, overflow: "hidden" }}>
+                    {room.avatar?.startsWith("http") ? <img src={room.avatar} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : room.avatar}
+                  </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 2 }}>
                       <span style={{ fontWeight: 700, fontSize: 14, color: "#111", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -399,6 +541,11 @@ export default function GongsilTalkOverlay() {
                     </div>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                       <p style={{ fontSize: 13, color: "#888", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0, paddingRight: 6 }}>{room.last_message || ""}</p>
+                      {localUnread[room.id] > 0 && (
+                        <span style={{ background: "#ef4444", color: "#fff", fontSize: 11, fontWeight: 700, padding: "2px 6px", borderRadius: 10, flexShrink: 0 }}>
+                          {localUnread[room.id]}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -409,8 +556,16 @@ export default function GongsilTalkOverlay() {
                   {/* 내 프로필 카드 */}
                   <div style={{ padding: 16, borderBottom: "1px solid #f0f0f0" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
-                      <div style={{ width: 52, height: 52, borderRadius: "50%", background: "#e8f0fe", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, overflow: "hidden", flexShrink: 0 }}>
+                      <input type="file" ref={fileInputRef} accept="image/*" style={{ display: "none" }} onChange={handleProfileImageUpload} />
+                      <div 
+                        onClick={() => fileInputRef.current?.click()}
+                        title="프로필 이미지 변경"
+                        style={{ width: 52, height: 52, borderRadius: "50%", background: "#e8f0fe", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, overflow: "hidden", flexShrink: 0, cursor: "pointer", position: "relative" }}
+                      >
                         {currentUserImage ? <img src={currentUserImage} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "👤"}
+                        <div style={{ position: "absolute", bottom: 0, right: 0, background: "rgba(0,0,0,0.5)", width: "100%", height: "30%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          <span style={{ color: "#fff", fontSize: 10 }}>✏️</span>
+                        </div>
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         {editingNickname ? (
@@ -464,7 +619,6 @@ export default function GongsilTalkOverlay() {
                       onClick={() => {
                         if (currentUserId) {
                           setRealtorCard({ userId: currentUserId, userName: currentUserName });
-                          // 채팅방이 선택되지 않은 경우 임시로 열기 위해 친구탭에서 바로 보여줄 수도 있음
                         }
                       }}
                       style={{ background: "#f8f9fa", borderRadius: 10, padding: 12, cursor: "pointer", transition: "background 0.15s" }}
@@ -482,7 +636,117 @@ export default function GongsilTalkOverlay() {
                     </div>
                   </div>
 
-                  <div style={{ padding: "40px 14px", textAlign: "center", color: "#bbb", fontSize: 13 }}>👥 채팅방 멤버들과 대화해보세요</div>
+                  {/* ── 친구 관리 헤더 ── */}
+                  <div style={{ padding: "12px 16px 8px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: "#555" }}>친구 {friends.length}명</span>
+                    <div style={{ display: "flex", gap: 6 }}>
+                      {selectMode ? (
+                        <>
+                          <button onClick={() => { setSelectMode(false); setSelectedFriendIds(new Set()); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "#888", fontWeight: 600, padding: "4px 8px" }}>취소</button>
+                          <button
+                            disabled={selectedFriendIds.size < 1 || groupChatCreating}
+                            onClick={async () => {
+                              if (!currentUserId || selectedFriendIds.size < 1) return;
+                              setGroupChatCreating(true);
+                              const selectedFriends = friends.filter(f => selectedFriendIds.has(f.friend_id));
+                              const names = selectedFriends.map(f => f.friend_name || "알수없음");
+                              const title = names.length <= 3 ? names.join(", ") : `${names.slice(0, 3).join(", ")} 외 ${names.length - 3}명`;
+                              const res = await createGroupRoom({
+                                title,
+                                creatorId: currentUserId,
+                                creatorName: currentUserName,
+                                memberIds: [...selectedFriendIds],
+                                memberNames: names,
+                              });
+                              if (res.success && res.roomId) {
+                                await loadRooms();
+                                setSelectedRoom(res.roomId);
+                                setActiveTab("chats");
+                                setSelectMode(false);
+                                setSelectedFriendIds(new Set());
+                              }
+                              setGroupChatCreating(false);
+                            }}
+                            style={{ background: NAVY, color: "#fff", border: "none", cursor: selectedFriendIds.size < 1 ? "not-allowed" : "pointer", fontSize: 12, fontWeight: 700, padding: "5px 12px", borderRadius: 6, opacity: selectedFriendIds.size < 1 ? 0.4 : 1 }}
+                          >
+                            {groupChatCreating ? "생성중..." : `채팅방 만들기 (${selectedFriendIds.size})`}
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          {friends.length >= 1 && (
+                            <button onClick={() => setSelectMode(true)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "#888", fontWeight: 600, padding: "4px 8px", borderRadius: 6 }}>💬 그룹채팅</button>
+                          )}
+                          <button onClick={() => setFolderManagerOpen(!folderManagerOpen)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: folderManagerOpen ? BLUE : "#888", fontWeight: 600, padding: "4px 8px", borderRadius: 6 }}>
+                            {folderManagerOpen ? "완료" : "📁 폴더관리"}
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* ── 폴더 관리 모드 ── */}
+                  {folderManagerOpen && (
+                    <div style={{ padding: "0 16px 12px", borderBottom: "1px solid #f0f0f0" }}>
+                      {/* 새 폴더 추가 */}
+                      <div style={{ display: "flex", gap: 4, marginBottom: 8 }}>
+                        <input value={newFolderName} onChange={e => setNewFolderName(e.target.value)} placeholder="새 폴더 이름" style={{ flex: 1, padding: "6px 10px", borderRadius: 6, border: "1px solid #ddd", fontSize: 12, outline: "none" }}
+                          onKeyDown={async e => { if (e.key === "Enter" && newFolderName.trim() && currentUserId) { await createFriendFolder(currentUserId, newFolderName.trim()); setNewFolderName(""); loadFriends(); } }}
+                        />
+                        <button onClick={async () => { if (newFolderName.trim() && currentUserId) { await createFriendFolder(currentUserId, newFolderName.trim()); setNewFolderName(""); loadFriends(); } }} style={{ padding: "6px 12px", borderRadius: 6, background: NAVY, color: "#fff", border: "none", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>추가</button>
+                      </div>
+                      {/* 폴더 리스트 */}
+                      {folders.map(f => (
+                        <div key={f.id} style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 0" }}>
+                          <span style={{ fontSize: 13, color: "#666" }}>📁</span>
+                          {editingFolderId === f.id ? (
+                            <input value={editingFolderName} onChange={e => setEditingFolderName(e.target.value)} autoFocus style={{ flex: 1, padding: "3px 6px", borderRadius: 4, border: "1px solid #ccc", fontSize: 12, outline: "none" }}
+                              onKeyDown={async e => { if (e.key === "Enter" && editingFolderName.trim()) { await renameFriendFolder(f.id, editingFolderName.trim()); setEditingFolderId(null); loadFriends(); } if (e.key === "Escape") setEditingFolderId(null); }}
+                              onBlur={async () => { if (editingFolderName.trim()) { await renameFriendFolder(f.id, editingFolderName.trim()); } setEditingFolderId(null); loadFriends(); }}
+                            />
+                          ) : (
+                            <span onClick={() => { setEditingFolderId(f.id); setEditingFolderName(f.name); }} style={{ flex: 1, fontSize: 13, color: "#333", cursor: "pointer" }}>{f.name}</span>
+                          )}
+                          <button onClick={async () => { if (confirm(`"${f.name}" 폴더를 삭제하시겠습니까?\n폴더 내 친구는 미분류로 이동됩니다.`)) { await deleteFriendFolder(f.id); loadFriends(); } }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "#ccc", padding: "2px" }} title="삭제">✕</button>
+                        </div>
+                      ))}
+                      {folders.length === 0 && <div style={{ fontSize: 12, color: "#bbb", textAlign: "center", padding: 8 }}>폴더를 추가해보세요</div>}
+                    </div>
+                  )}
+
+                  {/* ── 폴더별 친구 목록 ── */}
+                  {friends.length === 0 ? (
+                    <div style={{ padding: "40px 14px", textAlign: "center", color: "#bbb", fontSize: 13 }}>👥 프로필 카드에서 친구를 추가해보세요</div>
+                  ) : (
+                    <>
+                      {/* 폴더별 그룹 */}
+                      {folders.map(folder => {
+                        const folderFriends = friends.filter(f => f.folder_id === folder.id);
+                        if (folderFriends.length === 0) return null;
+                        const isCollapsed = collapsedFolders.has(folder.id);
+                        return (
+                          <div key={folder.id}>
+                            <div onClick={() => setCollapsedFolders(prev => { const n = new Set(prev); if (n.has(folder.id)) n.delete(folder.id); else n.add(folder.id); return n; })} style={{ padding: "8px 16px", fontSize: 12, fontWeight: 700, color: "#888", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, background: "#fafafa", userSelect: "none" }}>
+                              <span style={{ fontSize: 10, transition: "transform 0.2s", transform: isCollapsed ? "rotate(-90deg)" : "rotate(0deg)", display: "inline-block" }}>▼</span>
+                              📁 {folder.name} ({folderFriends.length})
+                            </div>
+                            {!isCollapsed && folderFriends.map(fr => renderFriendItem(fr))}
+                          </div>
+                        );
+                      })}
+                      {/* 미분류 친구 */}
+                      {(() => {
+                        const noFolder = friends.filter(f => !f.folder_id);
+                        if (noFolder.length === 0) return null;
+                        return (
+                          <div>
+                            {folders.length > 0 && <div style={{ padding: "8px 16px", fontSize: 12, fontWeight: 700, color: "#888", background: "#fafafa" }}>미분류 ({noFolder.length})</div>}
+                            {noFolder.map(fr => renderFriendItem(fr))}
+                          </div>
+                        );
+                      })()}
+                    </>
+                  )}
                 </>
               )}
 
@@ -498,16 +762,56 @@ export default function GongsilTalkOverlay() {
               <>
                 <div style={{ height: 48, background: "#fff", borderBottom: "1px solid #e5e7eb", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 14px", flexShrink: 0 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <h3 style={{ fontWeight: 800, fontSize: 14, color: "#111", margin: 0 }}>{currentRoom.title}</h3>
-                    {currentRoom.type === "group" && <span style={{ fontSize: 12, color: "#aaa" }}>{currentRoom.member_count}</span>}
+                    {editingRoomTitle ? (
+                      <div style={{ display: "flex", gap: 4 }}>
+                        <input value={roomTitleInput} onChange={e => setRoomTitleInput(e.target.value)} autoFocus
+                          style={{ padding: "3px 8px", borderRadius: 6, border: "1px solid #ddd", fontSize: 14, fontWeight: 700, outline: "none", width: 140 }}
+                          onKeyDown={async e => {
+                            if (e.key === "Enter" && roomTitleInput.trim() && selectedRoom) {
+                              const res = await renameRoom(selectedRoom, roomTitleInput.trim());
+                              if (res.success) { await loadRooms(); setEditingRoomTitle(false); }
+                            }
+                            if (e.key === "Escape") setEditingRoomTitle(false);
+                          }}
+                        />
+                        <button onClick={async () => {
+                          if (roomTitleInput.trim() && selectedRoom) {
+                            const res = await renameRoom(selectedRoom, roomTitleInput.trim());
+                            if (res.success) { await loadRooms(); setEditingRoomTitle(false); }
+                          }
+                        }} style={{ padding: "3px 10px", borderRadius: 6, background: NAVY, color: "#fff", border: "none", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>저장</button>
+                        <button onClick={() => setEditingRoomTitle(false)} style={{ padding: "3px 8px", borderRadius: 6, background: "#f3f4f6", color: "#888", border: "none", fontSize: 11, cursor: "pointer" }}>취소</button>
+                      </div>
+                    ) : (
+                      <>
+                        <h3 style={{ fontWeight: 800, fontSize: 14, color: "#111", margin: 0 }}>{currentRoom.title}</h3>
+                        {currentRoom.type === "group" && <span style={{ fontSize: 12, color: "#aaa" }}>{currentRoom.member_count}</span>}
+                      </>
+                    )}
                   </div>
-                  <div style={{ display: "flex", gap: 2 }}>
-                    <button style={{ width: 30, height: 30, borderRadius: 6, background: "transparent", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#888" }}>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-                    </button>
-                    <button style={{ width: 30, height: 30, borderRadius: 6, background: "transparent", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#888" }}>
+                  <div style={{ display: "flex", gap: 2, position: "relative" }}>
+                    {/* 채팅방 설정 메뉴 */}
+                    <button onClick={() => setRoomMenuOpen(!roomMenuOpen)} style={{ width: 30, height: 30, borderRadius: 6, background: roomMenuOpen ? "#f3f4f6" : "transparent", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#888" }}>
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
                     </button>
+                    {roomMenuOpen && (
+                      <div style={{ position: "absolute", right: 0, top: 34, background: "#fff", borderRadius: 10, boxShadow: "0 4px 20px rgba(0,0,0,0.15)", border: "1px solid #e5e7eb", minWidth: 160, overflow: "hidden", zIndex: 100 }}>
+                        <button onClick={() => { setRoomTitleInput(currentRoom.title); setEditingRoomTitle(true); setRoomMenuOpen(false); }}
+                          style={{ width: "100%", padding: "10px 14px", background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "#333", textAlign: "left", display: "flex", alignItems: "center", gap: 8 }}
+                          onMouseEnter={e => e.currentTarget.style.background = "#f3f4f6"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                        >✏️ 채팅방 이름 변경</button>
+                        {(currentRoom.created_by === currentUserId || currentUserRole === "ADMIN") && (
+                          <button onClick={() => { setRoomMenuOpen(false); roomAvatarInputRef.current?.click(); }}
+                            style={{ width: "100%", padding: "10px 14px", background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "#333", textAlign: "left", display: "flex", alignItems: "center", gap: 8, borderTop: "1px solid #f0f0f0" }}
+                            onMouseEnter={e => e.currentTarget.style.background = "#f3f4f6"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                          >📸 프로필 사진 변경</button>
+                        )}
+                        <button onClick={() => { setShowInvitePanel(true); setInviteSelectedIds(new Set()); setRoomMenuOpen(false); loadFriends(); }}
+                          style={{ width: "100%", padding: "10px 14px", background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "#333", textAlign: "left", display: "flex", alignItems: "center", gap: 8, borderTop: "1px solid #f0f0f0" }}
+                          onMouseEnter={e => e.currentTarget.style.background = "#f3f4f6"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                        >👥 친구 초대</button>
+                      </div>
+                    )}
                     <button onClick={() => setSelectedRoom(null)} title="닫기" style={{ width: 30, height: 30, borderRadius: 6, background: "transparent", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#888" }}
                       onMouseEnter={e => e.currentTarget.style.color = "#ef4444"} onMouseLeave={e => e.currentTarget.style.color = "#888"}
                     >
@@ -516,9 +820,64 @@ export default function GongsilTalkOverlay() {
                   </div>
                 </div>
 
+                {/* 초대 패널 */}
+                {showInvitePanel && (
+                  <div style={{ background: "#fff", borderBottom: "1px solid #e5e7eb", maxHeight: 280, overflowY: "auto", flexShrink: 0 }}>
+                    <div style={{ padding: "10px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid #f0f0f0" }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: "#333" }}>👥 친구 초대</span>
+                      <div style={{ display: "flex", gap: 6 }}>
+                        <button onClick={() => setShowInvitePanel(false)} style={{ padding: "4px 10px", borderRadius: 6, background: "#f3f4f6", color: "#888", border: "none", fontSize: 11, cursor: "pointer" }}>취소</button>
+                        <button
+                          disabled={inviteSelectedIds.size === 0}
+                          onClick={async () => {
+                            if (!selectedRoom || !currentUserId || inviteSelectedIds.size === 0) return;
+                            const selectedFr = friends.filter(f => inviteSelectedIds.has(f.friend_id));
+                            const res = await inviteToRoom({
+                              roomId: selectedRoom,
+                              inviterId: currentUserId,
+                              inviterName: currentUserName,
+                              memberIds: selectedFr.map(f => f.friend_id),
+                              memberNames: selectedFr.map(f => f.friend_name || "알수없음"),
+                            });
+                            if (res.success) {
+                              setShowInvitePanel(false);
+                              setInviteSelectedIds(new Set());
+                              await loadRooms();
+                              const msgRes = await getRoomMessages(selectedRoom);
+                              if (msgRes.success && msgRes.data) setMessages(msgRes.data);
+                            }
+                          }}
+                          style={{ padding: "4px 12px", borderRadius: 6, background: inviteSelectedIds.size === 0 ? "#ccc" : NAVY, color: "#fff", border: "none", fontSize: 11, fontWeight: 700, cursor: inviteSelectedIds.size === 0 ? "not-allowed" : "pointer" }}
+                        >초대하기 ({inviteSelectedIds.size})</button>
+                      </div>
+                    </div>
+                    {friends.length === 0 ? (
+                      <div style={{ padding: 20, textAlign: "center", color: "#bbb", fontSize: 12 }}>친구를 먼저 추가해주세요</div>
+                    ) : (
+                      friends.map(fr => {
+                        const isInvSel = inviteSelectedIds.has(fr.friend_id);
+                        return (
+                          <div key={fr.id}
+                            onClick={() => setInviteSelectedIds(prev => { const n = new Set(prev); if (n.has(fr.friend_id)) n.delete(fr.friend_id); else n.add(fr.friend_id); return n; })}
+                            style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 14px", cursor: "pointer", background: isInvSel ? "#eef4ff" : "transparent" }}
+                            onMouseEnter={e => { if (!isInvSel) e.currentTarget.style.background = "#f9fafb"; }}
+                            onMouseLeave={e => { if (!isInvSel) e.currentTarget.style.background = "transparent"; }}
+                          >
+                            <div style={{ width: 18, height: 18, borderRadius: 4, border: isInvSel ? "none" : "2px solid #ccc", background: isInvSel ? BLUE : "#fff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                              {isInvSel && <span style={{ color: "#fff", fontSize: 11, fontWeight: 800 }}>✓</span>}
+                            </div>
+                            <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#e8f0fe", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, flexShrink: 0, overflow: "hidden" }}>
+                              {fr.friend_profile_image ? <img src={fr.friend_profile_image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : (fr.friend_name || "?")[0]}
+                            </div>
+                            <span style={{ fontSize: 13, fontWeight: 600, color: "#333" }}>{fr.friend_name}</span>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                )}
 
-
-                <div style={{ flex: 1, overflowY: "auto", padding: "16px 14px" }}>
+                <div style={{ flex: 1, overflowY: "auto", padding: "16px 14px" }} onClick={() => { if (roomMenuOpen) setRoomMenuOpen(false); }}>
                   {messages.map(msg => {
                     const isMe = msg.sender_id === currentUserId;
                     const initial = (msg.sender_name || "?")[0];
@@ -527,7 +886,7 @@ export default function GongsilTalkOverlay() {
                         {!isMe && (
                           <div style={{ display: "flex", gap: 6, maxWidth: "75%" }}>
                             <div
-                              onClick={(e) => setProfileCard({ anchorEl: e.currentTarget as HTMLElement, name: msg.sender_name, userId: msg.sender_id, role: "REALTOR" })}
+                              onClick={(e) => setProfileCard({ anchorEl: e.currentTarget as HTMLElement, name: msg.sender_name, userId: msg.sender_id, role: "REALTOR", profileImage: msg.sender_profile_image })}
                               style={{ width: 32, height: 32, borderRadius: "50%", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0, boxShadow: "0 1px 2px rgba(0,0,0,0.08)", cursor: "pointer", overflow: "hidden" }}
                             >
                               {msg.sender_profile_image ? <img src={msg.sender_profile_image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : initial}
@@ -574,10 +933,14 @@ export default function GongsilTalkOverlay() {
         </div>
       </div>
       {/* 프로필 카드 팝오버 */}
+      <input type="file" ref={roomAvatarInputRef} accept="image/*" style={{ display: "none" }} onChange={handleRoomAvatarUpload} />
       {profileCard && (
         <ProfileCardPopover 
           {...profileCard}
+          currentUserId={currentUserId || undefined}
+          folders={folders}
           onClose={() => setProfileCard(null)}
+          onFriendChanged={loadFriends}
         />
       )}
       {/* 채팅방 만들기 모달 */}

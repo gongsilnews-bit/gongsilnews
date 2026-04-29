@@ -215,6 +215,134 @@ export async function createRoom(params: {
   }
 }
 
+/** 그룹 채팅방 생성 (친구 선택) */
+export async function createGroupRoom(params: {
+  title: string;
+  creatorId: string;
+  creatorName: string;
+  memberIds: string[];
+  memberNames: string[];
+}): Promise<{ success: boolean; roomId?: string; error?: string }> {
+  const supabase = getAdminClient();
+  try {
+    // 방 생성
+    const { data: room, error: roomErr } = await supabase
+      .from("talk_rooms")
+      .insert({
+        title: params.title,
+        description: null,
+        type: "group",
+        avatar: "💬",
+        created_by: params.creatorId,
+      })
+      .select("id")
+      .single();
+
+    if (roomErr) throw roomErr;
+
+    // 방장 + 멤버 등록
+    const membersToInsert = [
+      { room_id: room.id, user_id: params.creatorId, role: "owner" },
+      ...params.memberIds.map(id => ({ room_id: room.id, user_id: id, role: "member" })),
+    ];
+
+    const { error: memberErr } = await supabase
+      .from("talk_room_members")
+      .insert(membersToInsert);
+
+    if (memberErr) throw memberErr;
+
+    // 시스템 메시지
+    const names = params.memberNames.join(", ");
+    await supabase.from("talk_messages").insert({
+      room_id: room.id,
+      sender_id: params.creatorId,
+      sender_name: "시스템",
+      content: `${params.creatorName}님이 ${names}님을 초대했습니다 🎉`,
+    });
+
+    return { success: true, roomId: room.id };
+  } catch (error: any) {
+    console.error("그룹 채팅방 생성 오류:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+/** 채팅방 프로필 이미지 변경 */
+export async function updateRoomAvatar(roomId: string, avatarUrl: string): Promise<{ success: boolean; error?: string }> {
+  const supabase = getAdminClient();
+  try {
+    const { error } = await supabase.from("talk_rooms").update({ avatar: avatarUrl }).eq("id", roomId);
+    if (error) throw error;
+    return { success: true };
+  } catch (error: any) {
+    console.error("채팅방 아바타 변경 오류:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+/** 채팅방에 멤버 초대 */
+export async function inviteToRoom(params: {
+  roomId: string;
+  inviterName: string;
+  inviterId: string;
+  memberIds: string[];
+  memberNames: string[];
+}): Promise<{ success: boolean; error?: string }> {
+  const supabase = getAdminClient();
+  try {
+    // 이미 있는 멤버 확인
+    const { data: existing } = await supabase
+      .from("talk_room_members")
+      .select("user_id")
+      .eq("room_id", params.roomId)
+      .in("user_id", params.memberIds);
+
+    const existingIds = new Set((existing || []).map(e => e.user_id));
+    const newIds = params.memberIds.filter(id => !existingIds.has(id));
+    const newNames = params.memberNames.filter((_, i) => !existingIds.has(params.memberIds[i]));
+
+    if (newIds.length === 0) return { success: true }; // 이미 모두 참여중
+
+    // 멤버 추가
+    const { error: memberErr } = await supabase
+      .from("talk_room_members")
+      .insert(newIds.map(id => ({ room_id: params.roomId, user_id: id, role: "member" })));
+
+    if (memberErr) throw memberErr;
+
+    // 시스템 메시지
+    const names = newNames.join(", ");
+    await supabase.from("talk_messages").insert({
+      room_id: params.roomId,
+      sender_id: params.inviterId,
+      sender_name: "시스템",
+      content: `${params.inviterName}님이 ${names}님을 초대했습니다`,
+    });
+
+    return { success: true };
+  } catch (error: any) {
+    console.error("채팅방 초대 오류:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+/** 채팅방 이름 변경 */
+export async function renameRoom(roomId: string, newTitle: string): Promise<{ success: boolean; error?: string }> {
+  const supabase = getAdminClient();
+  try {
+    const { error } = await supabase
+      .from("talk_rooms")
+      .update({ title: newTitle })
+      .eq("id", roomId);
+    if (error) throw error;
+    return { success: true };
+  } catch (error: any) {
+    console.error("채팅방 이름 변경 오류:", error);
+    return { success: false, error: error.message };
+  }
+}
+
 /* ═══════════════ 1:1 DM 찾기/생성 ═══════════════ */
 
 export async function findOrCreateDM(myUserId: string, myName: string, targetUserId: string, targetName: string): Promise<{ success: boolean; roomId?: string; error?: string }> {
@@ -323,6 +451,268 @@ export async function updateMyName(userId: string, newName: string): Promise<{ s
     return { success: true };
   } catch (error: any) {
     console.error("이름 수정 오류:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function updateMyProfileImage(userId: string, imageUrl: string): Promise<{ success: boolean; error?: string }> {
+  const supabase = getAdminClient();
+  try {
+    const { error } = await supabase.from("members").update({ profile_image_url: imageUrl }).eq("id", userId);
+    if (error) throw error;
+    
+    return { success: true };
+  } catch (error: any) {
+    console.error("프로필 이미지 수정 오류:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function uploadTalkProfileImage(formData: FormData): Promise<{ success: boolean; url?: string; error?: string }> {
+  const file = formData.get('file') as File;
+  const path = formData.get('path') as string;
+  if (!file || !path) return { success: false, error: "파일 누락" };
+
+  const supabase = getAdminClient();
+  try {
+    const { error } = await supabase.storage.from('vacancy_images').upload(path, file, { upsert: true });
+    if (error) throw error;
+    const { data: urlData } = supabase.storage.from('vacancy_images').getPublicUrl(path);
+    return { success: true, url: urlData.publicUrl };
+  } catch (error: any) {
+    console.error("프로필 업로드 오류:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+/* ═══════════════ 친구 관리 ═══════════════ */
+
+export interface TalkFriend {
+  id: string;
+  user_id: string;
+  friend_id: string;
+  folder_id: string | null;
+  nickname: string | null;
+  created_at: string;
+  // 조인
+  friend_name?: string;
+  friend_profile_image?: string;
+  friend_role?: string;
+  friend_agency_name?: string;
+}
+
+export interface TalkFriendFolder {
+  id: string;
+  user_id: string;
+  name: string;
+  sort_order: number;
+  created_at: string;
+}
+
+/** 친구 추가 */
+export async function addFriend(userId: string, friendId: string, friendName?: string, folderId?: string | null, profileImageUrl?: string): Promise<{ success: boolean; error?: string }> {
+  if (userId === friendId) return { success: false, error: "자기 자신을 친구 추가할 수 없습니다." };
+  const supabase = getAdminClient();
+  try {
+    const { error } = await supabase
+      .from("talk_friends")
+      .upsert({ user_id: userId, friend_id: friendId, nickname: friendName || null, folder_id: folderId || null }, { onConflict: "user_id,friend_id" });
+    if (error) throw error;
+    return { success: true };
+  } catch (error: any) {
+    console.error("친구 추가 오류:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+/** 친구 삭제 */
+export async function removeFriend(userId: string, friendId: string): Promise<{ success: boolean; error?: string }> {
+  const supabase = getAdminClient();
+  try {
+    const { error } = await supabase
+      .from("talk_friends")
+      .delete()
+      .eq("user_id", userId)
+      .eq("friend_id", friendId);
+    if (error) throw error;
+    return { success: true };
+  } catch (error: any) {
+    console.error("친구 삭제 오류:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+/** 친구 여부 확인 */
+export async function isFriend(userId: string, friendId: string): Promise<{ success: boolean; isFriend: boolean }> {
+  const supabase = getAdminClient();
+  try {
+    const { data, error } = await supabase
+      .from("talk_friends")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("friend_id", friendId)
+      .maybeSingle();
+    if (error) throw error;
+    return { success: true, isFriend: !!data };
+  } catch (error: any) {
+    return { success: true, isFriend: false };
+  }
+}
+
+/** 내 친구 목록 (프로필 정보 포함) */
+export async function getMyFriends(userId: string): Promise<{ success: boolean; data?: TalkFriend[]; error?: string }> {
+  const supabase = getAdminClient();
+  try {
+    const { data: friendships, error } = await supabase
+      .from("talk_friends")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: true });
+
+    if (error) throw error;
+    if (!friendships || friendships.length === 0) return { success: true, data: [] };
+
+    // 친구들의 프로필 정보 조회
+    const friendIds = friendships.map(f => f.friend_id);
+    const { data: members, error: membersErr } = await supabase
+      .from("members")
+      .select("id, name, profile_image_url, role")
+      .in("id", friendIds);
+    
+    if (membersErr) console.error("getMyFriends members query error:", membersErr);
+
+    // 부동산 회원이면 agency 이름과 이미지도
+    const realtorIds = (members || []).filter(m => m.role === "REALTOR" || m.role === "부동산회원").map(m => m.id);
+    let agencyMap: Record<string, string> = {};
+    let agencyImageMap: Record<string, string> = {};
+    if (realtorIds.length > 0) {
+      const { data: agencies } = await supabase
+        .from("agencies")
+        .select("owner_id, name, profile_image_url")
+        .in("owner_id", realtorIds);
+      (agencies || []).forEach(a => { 
+        agencyMap[a.owner_id] = a.name; 
+        if (a.profile_image_url) agencyImageMap[a.owner_id] = a.profile_image_url;
+      });
+    }
+
+    const memberMap: Record<string, any> = {};
+    (members || []).forEach(m => { memberMap[m.id] = m; });
+
+    const result: TalkFriend[] = friendships.map(f => ({
+      ...f,
+      friend_name: memberMap[f.friend_id]?.name || f.nickname || "알 수 없음",
+      friend_profile_image: memberMap[f.friend_id]?.profile_image_url || agencyImageMap[f.friend_id] || undefined,
+      friend_role: memberMap[f.friend_id]?.role || "general",
+      friend_agency_name: agencyMap[f.friend_id] || undefined,
+    }));
+
+    return { success: true, data: result };
+  } catch (error: any) {
+    console.error("친구 목록 조회 오류:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+/* ═══════════════ 친구 폴더 관리 ═══════════════ */
+
+/** 내 폴더 목록 */
+export async function getMyFolders(userId: string): Promise<{ success: boolean; data?: TalkFriendFolder[]; error?: string }> {
+  const supabase = getAdminClient();
+  try {
+    const { data, error } = await supabase
+      .from("talk_friend_folders")
+      .select("*")
+      .eq("user_id", userId)
+      .order("sort_order", { ascending: true });
+
+    if (error) throw error;
+    return { success: true, data: data || [] };
+  } catch (error: any) {
+    console.error("폴더 목록 조회 오류:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+/** 폴더 생성 */
+export async function createFriendFolder(userId: string, name: string): Promise<{ success: boolean; folderId?: string; error?: string }> {
+  const supabase = getAdminClient();
+  try {
+    // 현재 최대 sort_order 조회
+    const { data: existing } = await supabase
+      .from("talk_friend_folders")
+      .select("sort_order")
+      .eq("user_id", userId)
+      .order("sort_order", { ascending: false })
+      .limit(1);
+
+    const nextOrder = (existing && existing.length > 0 ? existing[0].sort_order : 0) + 1;
+
+    const { data, error } = await supabase
+      .from("talk_friend_folders")
+      .insert({ user_id: userId, name, sort_order: nextOrder })
+      .select("id")
+      .single();
+
+    if (error) throw error;
+    return { success: true, folderId: data.id };
+  } catch (error: any) {
+    console.error("폴더 생성 오류:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+/** 폴더 이름 변경 */
+export async function renameFriendFolder(folderId: string, name: string): Promise<{ success: boolean; error?: string }> {
+  const supabase = getAdminClient();
+  try {
+    const { error } = await supabase
+      .from("talk_friend_folders")
+      .update({ name })
+      .eq("id", folderId);
+    if (error) throw error;
+    return { success: true };
+  } catch (error: any) {
+    console.error("폴더 이름 변경 오류:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+/** 폴더 삭제 (소속 친구는 미분류로) */
+export async function deleteFriendFolder(folderId: string): Promise<{ success: boolean; error?: string }> {
+  const supabase = getAdminClient();
+  try {
+    // 소속 친구들의 folder_id를 null로 변경
+    await supabase
+      .from("talk_friends")
+      .update({ folder_id: null })
+      .eq("folder_id", folderId);
+
+    // 폴더 삭제
+    const { error } = await supabase
+      .from("talk_friend_folders")
+      .delete()
+      .eq("id", folderId);
+    if (error) throw error;
+    return { success: true };
+  } catch (error: any) {
+    console.error("폴더 삭제 오류:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+/** 친구를 폴더로 이동 (folderId가 null이면 미분류) */
+export async function moveFriendToFolder(friendshipId: string, folderId: string | null): Promise<{ success: boolean; error?: string }> {
+  const supabase = getAdminClient();
+  try {
+    const { error } = await supabase
+      .from("talk_friends")
+      .update({ folder_id: folderId })
+      .eq("id", friendshipId);
+    if (error) throw error;
+    return { success: true };
+  } catch (error: any) {
+    console.error("친구 폴더 이동 오류:", error);
     return { success: false, error: error.message };
   }
 }

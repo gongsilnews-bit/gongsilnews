@@ -2150,7 +2150,6 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                           onMouseLeave={(e) => { e.currentTarget.style.background = "#f8f9fa"; e.currentTarget.style.borderColor = "#e0e0e0"; e.currentTarget.style.color = "#444"; }}
                         >
                           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                          공실Talk
                         </button>
                       </div>
                       <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 10 }}>

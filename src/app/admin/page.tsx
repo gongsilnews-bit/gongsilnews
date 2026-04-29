@@ -28,7 +28,7 @@ const ADMIN_MENU: MenuItem[] = [
   { key: "members", label: "회원관리", icon: <IconMembers />, submenus: [{ key: "members_list", label: "회원목록" }, { key: "dormant", label: "휴지통" }] },
   { key: "gongsil", label: "공실관리", icon: <IconBuilding /> },
   { key: "article", label: "기사관리", icon: <IconArticle /> },
-  { key: "comment", label: "공실Talk", icon: <IconComment /> },
+  { key: "comment", label: "TALK", icon: <IconComment /> },
   { key: "study", label: "스터디관리", icon: <IconStudy /> },
   { key: "board", label: "게시판", icon: <IconBoard /> },
   { key: "ad", label: "광고", icon: <IconAd /> },

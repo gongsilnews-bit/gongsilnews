@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { addFriend, removeFriend, isFriend as checkIsFriend, type TalkFriendFolder } from "@/app/actions/talkActions";
 
 interface ProfileCardProps {
   name: string;
@@ -11,8 +12,11 @@ interface ProfileCardProps {
   profileImage?: string;
   userId?: string;
   role?: string;
+  currentUserId?: string;
+  folders?: TalkFriendFolder[];
   anchorEl: HTMLElement | null;
   onClose: () => void;
+  onFriendChanged?: () => void;
 }
 
 export default function ProfileCardPopover({
@@ -24,11 +28,18 @@ export default function ProfileCardPopover({
   profileImage,
   userId,
   role,
+  currentUserId,
+  folders,
   anchorEl,
   onClose,
+  onFriendChanged,
 }: ProfileCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState({ top: 0, left: 0 });
+  const [friendStatus, setFriendStatus] = useState<"loading" | "friend" | "not_friend">("loading");
+  const [friendActionLoading, setFriendActionLoading] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const [showFolderPicker, setShowFolderPicker] = useState(false);
 
   const NAVY = "#1a2e50";
   const BLUE = "#508bf5";
@@ -49,6 +60,17 @@ export default function ProfileCardPopover({
     setPos({ top, left });
   }, [anchorEl]);
 
+  // 친구 여부 확인
+  useEffect(() => {
+    if (!currentUserId || !userId || currentUserId === userId) {
+      setFriendStatus("not_friend");
+      return;
+    }
+    checkIsFriend(currentUserId, userId).then(res => {
+      setFriendStatus(res.isFriend ? "friend" : "not_friend");
+    });
+  }, [currentUserId, userId]);
+
   // 바깥 클릭 닫기
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -67,11 +89,51 @@ export default function ProfileCardPopover({
     return () => document.removeEventListener("keydown", handler);
   }, [onClose]);
 
+  // 토스트 자동 숨김
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 2000);
+    return () => clearTimeout(t);
+  }, [toast]);
+
   if (!anchorEl) return null;
 
   const displayName = agencyName || name;
   const initial = (displayName || "?")[0];
   const isRealtor = role === "REALTOR" || !!agencyName;
+  const isSelf = currentUserId === userId;
+
+  const handleAddToFolder = async (folderId: string | null) => {
+    if (!currentUserId || !userId || friendActionLoading) return;
+    setFriendActionLoading(true);
+    try {
+      const res = await addFriend(currentUserId, userId, displayName, folderId, profileImage);
+      if (res.success) {
+        setFriendStatus("friend");
+        setShowFolderPicker(false);
+        setToast("친구로 추가되었습니다 ✓");
+        onFriendChanged?.();
+      } else {
+        setToast(res.error || "친구 추가에 실패했습니다");
+      }
+    } finally {
+      setFriendActionLoading(false);
+    }
+  };
+
+  const handleFriendClick = () => {
+    if (!currentUserId || !userId || isSelf || friendActionLoading) return;
+    if (friendStatus === "friend") {
+      // 이미 친구면 아무 동작 안함 (삭제는 친구목록 ⋮ 메뉴에서)
+      return;
+    }
+    // 폴더가 있으면 폴더 선택 드롭다운 표시, 없으면 바로 추가
+    if (folders && folders.length > 0) {
+      setShowFolderPicker(!showFolderPicker);
+    } else {
+      handleAddToFolder(null);
+    }
+  };
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 30000000 }}>
@@ -98,7 +160,61 @@ export default function ProfileCardPopover({
         {/* 프로필 사진 */}
         <div style={{ display: "flex", justifyContent: "center", marginTop: -48, position: "relative", zIndex: 2 }}>
           {profileImage ? (
-            <img src={profileImage} alt="" style={{ width: 96, height: 96, borderRadius: "50%", objectFit: "cover", border: "6px solid #fff", boxShadow: "0 4px 16px rgba(0,0,0,0.25)" }} />
+            <img 
+              src={profileImage} 
+              alt="" 
+              onClick={() => {
+                // 부모(GongsilTalkOverlay) 쪽에 띄울 수 있도록 커스텀 이벤트나 상태를 쓰는 방법도 있지만,
+                // 여기서는 간단히 window 팝업 또는 이 컴포넌트 내의 fixed overlay로 처리.
+                const overlay = document.createElement("div");
+                overlay.style.position = "fixed";
+                overlay.style.top = "0";
+                overlay.style.left = "0";
+                overlay.style.width = "100vw";
+                overlay.style.height = "100vh";
+                overlay.style.backgroundColor = "rgba(0,0,0,0.85)";
+                overlay.style.zIndex = "10000";
+                overlay.style.display = "flex";
+                overlay.style.alignItems = "center";
+                overlay.style.justifyContent = "center";
+                overlay.style.cursor = "zoom-out";
+                overlay.onclick = () => document.body.removeChild(overlay);
+
+                const img = document.createElement("img");
+                img.src = profileImage;
+                img.style.maxWidth = "90%";
+                img.style.maxHeight = "90%";
+                img.style.objectFit = "contain";
+                img.style.borderRadius = "8px";
+                img.style.boxShadow = "0 10px 40px rgba(0,0,0,0.5)";
+                img.onclick = (e) => e.stopPropagation();
+
+                const closeBtn = document.createElement("button");
+                closeBtn.innerHTML = "✕";
+                closeBtn.style.position = "absolute";
+                closeBtn.style.top = "20px";
+                closeBtn.style.right = "24px";
+                closeBtn.style.background = "rgba(255,255,255,0.2)";
+                closeBtn.style.border = "none";
+                closeBtn.style.color = "#fff";
+                closeBtn.style.fontSize = "24px";
+                closeBtn.style.width = "40px";
+                closeBtn.style.height = "40px";
+                closeBtn.style.borderRadius = "50%";
+                closeBtn.style.cursor = "pointer";
+                closeBtn.style.display = "flex";
+                closeBtn.style.alignItems = "center";
+                closeBtn.style.justifyContent = "center";
+                closeBtn.onclick = () => document.body.removeChild(overlay);
+                closeBtn.onmouseenter = () => closeBtn.style.background = "rgba(255,255,255,0.3)";
+                closeBtn.onmouseleave = () => closeBtn.style.background = "rgba(255,255,255,0.2)";
+
+                overlay.appendChild(img);
+                overlay.appendChild(closeBtn);
+                document.body.appendChild(overlay);
+              }}
+              style={{ width: 96, height: 96, borderRadius: "50%", objectFit: "cover", border: "6px solid #fff", boxShadow: "0 4px 16px rgba(0,0,0,0.25)", cursor: "zoom-in" }} 
+            />
           ) : (
             <div style={{ width: 96, height: 96, borderRadius: "50%", background: "#fffbeb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 38, fontWeight: 800, color: NAVY, border: "6px solid #fff", boxShadow: "0 4px 16px rgba(0,0,0,0.25)" }}>
               {initial}
@@ -163,17 +279,51 @@ export default function ProfileCardPopover({
             )}
 
             {/* 친구추가 */}
-            <button
-              onClick={() => { onClose(); }}
-              style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, background: "none", border: "none", cursor: "pointer", padding: 4 }}
-            >
-              <div style={{ width: 40, height: 40, borderRadius: 12, background: "#f0e8fe", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+            {!isSelf && (
+              <div style={{ position: "relative" }}>
+                <button
+                  onClick={handleFriendClick}
+                  disabled={friendActionLoading || friendStatus === "loading"}
+                  style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, background: "none", border: "none", cursor: friendStatus === "friend" ? "default" : friendActionLoading ? "wait" : "pointer", padding: 4, opacity: friendActionLoading ? 0.5 : 1 }}
+                >
+                  <div style={{ width: 40, height: 40, borderRadius: 12, background: friendStatus === "friend" ? "#dcfce7" : "#f0e8fe", display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.2s" }}>
+                    {friendStatus === "friend" ? (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg>
+                    ) : (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+                    )}
+                  </div>
+                  <span style={{ fontSize: 11, color: friendStatus === "friend" ? "#22c55e" : "#555", fontWeight: 600 }}>
+                    {friendStatus === "loading" ? "..." : friendStatus === "friend" ? "✓ 친구" : "친구추가"}
+                  </span>
+                </button>
+                {/* 폴더 선택 드롭다운 */}
+                {showFolderPicker && (
+                  <div style={{ position: "absolute", bottom: "100%", left: "50%", transform: "translateX(-50%)", marginBottom: 6, background: "#fff", borderRadius: 10, boxShadow: "0 4px 20px rgba(0,0,0,0.18)", border: "1px solid #e5e7eb", minWidth: 160, overflow: "hidden", zIndex: 10 }}>
+                    <div style={{ padding: "8px 12px", fontSize: 11, fontWeight: 700, color: "#888", borderBottom: "1px solid #f0f0f0" }}>폴더 선택</div>
+                    <button onClick={() => handleAddToFolder(null)}
+                      style={{ width: "100%", padding: "9px 14px", background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "#333", textAlign: "left", display: "flex", alignItems: "center", gap: 6 }}
+                      onMouseEnter={e => e.currentTarget.style.background = "#f3f4f6"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                    >👤 미분류</button>
+                    {(folders || []).map(fo => (
+                      <button key={fo.id} onClick={() => handleAddToFolder(fo.id)}
+                        style={{ width: "100%", padding: "9px 14px", background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "#333", textAlign: "left", display: "flex", alignItems: "center", gap: 6 }}
+                        onMouseEnter={e => e.currentTarget.style.background = "#f3f4f6"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                      >📁 {fo.name}</button>
+                    ))}
+                  </div>
+                )}
               </div>
-              <span style={{ fontSize: 11, color: "#555", fontWeight: 600 }}>친구추가</span>
-            </button>
+            )}
           </div>
         </div>
+
+        {/* 토스트 */}
+        {toast && (
+          <div style={{ position: "absolute", bottom: 8, left: "50%", transform: "translateX(-50%)", background: "rgba(0,0,0,0.8)", color: "#fff", padding: "6px 16px", borderRadius: 20, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", animation: "profileCardIn 0.15s ease" }}>
+            {toast}
+          </div>
+        )}
 
         <style>{`
           @keyframes profileCardIn {

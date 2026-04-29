@@ -339,7 +339,7 @@ export default function GongsilTalkPage() {
         ) : (
           <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#999" }}>
             <div style={{ fontSize: 50, marginBottom: 12 }}>💬</div>
-            <p style={{ fontSize: 18, fontWeight: 800, color: NAVY, margin: "0 0 4px" }}>공실Talk</p>
+            <p style={{ fontSize: 18, fontWeight: 800, color: NAVY, margin: "0 0 4px" }}>TALK</p>
             <p style={{ fontSize: 14, margin: 0 }}>대화할 채팅방을 선택해 주세요</p>
           </div>
         )}
