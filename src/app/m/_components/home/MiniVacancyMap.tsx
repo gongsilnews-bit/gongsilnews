@@ -44,16 +44,28 @@ export default function MiniVacancyMap({ vacancies }: Props) {
       // 줌 컨트롤 숨김 (미리보기)
       map.setZoomable(false);
 
-      // 마커 그리기
+      // 마커 그룹화 (좌표 기준)
+      const groups: Record<string, any[]> = {};
       withCoords.forEach((v) => {
-        const size = 36;
+        // 소수점 3자리(약 100m) 단위로 그룹화
+        const key = `${Math.round(v.lat * 1000)}_${Math.round(v.lng * 1000)}`;
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(v);
+      });
+
+      // 그룹별 마커 그리기
+      Object.values(groups).forEach((group) => {
+        const { lat, lng } = group[0];
+        const count = group.length;
+        const size = count > 9 ? 42 : 36;
+        
         const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
           <circle cx="${size/2}" cy="${size/2}" r="${size/2-2}" fill="#1a2e50" stroke="white" stroke-width="2.5"/>
-          <text x="50%" y="50%" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="11" font-weight="bold" font-family="sans-serif">공실</text>
+          <text x="50%" y="50%" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="${count > 9 ? 14 : 15}" font-weight="bold" font-family="sans-serif">${count}</text>
         </svg>`;
 
         new kakao.maps.Marker({
-          position: new kakao.maps.LatLng(v.lat, v.lng),
+          position: new kakao.maps.LatLng(lat, lng),
           image: new kakao.maps.MarkerImage(
             `data:image/svg+xml,${encodeURIComponent(svg)}`,
             new kakao.maps.Size(size, size),
