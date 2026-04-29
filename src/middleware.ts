@@ -32,6 +32,26 @@ export function middleware(request: NextRequest) {
     hostname === 'gongsilnews.com' ||
     hostname === 'www.gongsilnews.com'
   ) {
+    // 모바일 기기 접속 여부 확인
+    const userAgent = request.headers.get('user-agent') || '';
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+
+    // 쿠키를 통한 PC 버전 강제 보기 옵션 확인 (옵션)
+    const viewDesktop = request.cookies.get('view-desktop')?.value === 'true';
+
+    // 이미 /m 경로이거나 관리자 페이지 등은 제외하고 Rewrite
+    if (
+      isMobile &&
+      !viewDesktop &&
+      !url.pathname.startsWith('/m') &&
+      !url.pathname.startsWith('/admin') &&
+      !url.pathname.startsWith('/realty_admin') &&
+      !url.pathname.startsWith('/user_admin')
+    ) {
+      url.pathname = `/m${url.pathname === '/' ? '' : url.pathname}`;
+      return NextResponse.rewrite(url);
+    }
+
     return NextResponse.next();
   }
 

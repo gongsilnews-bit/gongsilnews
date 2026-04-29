@@ -1,8 +1,6 @@
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 /* ========== 원본 사이트 CSS 완전 이식 ========== */
 
@@ -1087,4 +1085,25 @@ button { border: none; background: none; cursor: pointer; font-family: inherit; 
     .b-grid { grid-template-columns: 1fr; }
     .b-search input { width: 150px; }
     .b-tab { padding: 6px 12px; font-size: 13px; }
+}
+
+/* ==============================================================
+   모바일 전용 공실톡 강제 풀스크린 스타일
+   ============================================================== */
+@media (max-width: 768px) {
+    /* 모바일에서는 플로팅 버튼 숨기기 (헤더에 아이콘이 있으므로) */
+    .talk-floating-btn {
+        display: none !important;
+    }
+    
+    /* 모바일에서는 공실톡 오버레이를 카카오톡처럼 전체 화면으로 강제 확대 */
+    .talk-overlay-container {
+        width: 100vw !important;
+        height: 100dvh !important;
+        bottom: 0 !important;
+        right: 0 !important;
+        border-radius: 0 !important;
+        max-width: 100% !important;
+        max-height: 100% !important;
+    }
 }

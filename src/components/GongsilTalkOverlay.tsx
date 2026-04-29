@@ -289,8 +289,19 @@ export default function GongsilTalkOverlay() {
         }
       }
     };
+    
+    // 모바일 헤더 등에서 단순히 톡방 전체 목록을 열 때 사용하는 이벤트
+    const openMainHandler = () => {
+      setIsOpen(true);
+    };
+
     window.addEventListener("openGongsilTalk", handler);
-    return () => window.removeEventListener("openGongsilTalk", handler);
+    window.addEventListener("openGongsilTalkMain", openMainHandler);
+    
+    return () => {
+      window.removeEventListener("openGongsilTalk", handler);
+      window.removeEventListener("openGongsilTalkMain", openMainHandler);
+    };
   }, [currentUserId, currentUserName, loadRooms]);
 
   // 매물 카드 이벤트 리스너
@@ -368,6 +379,7 @@ export default function GongsilTalkOverlay() {
       {/* ──── 플로팅 버튼 ──── */}
       {!isOpen && (
         <button
+          className="talk-floating-btn"
           onClick={() => setIsOpen(true)}
           style={{
             position: "fixed", bottom: 24, right: 24, zIndex: 20000000,
@@ -393,14 +405,16 @@ export default function GongsilTalkOverlay() {
       )}
 
       {/* ──── 슬라이드 오버레이 ──── */}
-      <div style={{
-        position: "fixed", bottom: 0, right: 0, zIndex: 20000000,
-        width: isOpen ? overlayWidth : 0, height: isOpen ? overlayHeight : 0,
-        boxShadow: isOpen ? "-4px -4px 24px rgba(0,0,0,0.15)" : "none",
-        transition: isDragging.current ? "none" : "width 0.35s cubic-bezier(0.4, 0, 0.2, 1), height 0.35s cubic-bezier(0.4, 0, 0.2, 1)",
-        fontFamily: "'Pretendard', sans-serif",
-        opacity: isOpen ? 1 : 0,
-      }}>
+      <div 
+        className="talk-overlay-container"
+        style={{
+          position: "fixed", bottom: 0, right: 0, zIndex: 20000000,
+          width: isOpen ? overlayWidth : 0, height: isOpen ? overlayHeight : 0,
+          boxShadow: isOpen ? "-4px -4px 24px rgba(0,0,0,0.15)" : "none",
+          transition: isDragging.current ? "none" : "width 0.35s cubic-bezier(0.4, 0, 0.2, 1), height 0.35s cubic-bezier(0.4, 0, 0.2, 1)",
+          fontFamily: "'Pretendard', sans-serif",
+          opacity: isOpen ? 1 : 0,
+        }}>
         {/* 좌측 리사이즈 핸들 */}
         <div
           onMouseDown={handleResizeLeftStart}
