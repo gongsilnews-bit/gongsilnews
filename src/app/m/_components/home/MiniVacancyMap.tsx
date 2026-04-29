@@ -48,7 +48,7 @@ export default function MiniVacancyMap({ vacancies }: Props) {
       withCoords.forEach((v) => {
         const size = 36;
         const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
-          <circle cx="${size/2}" cy="${size/2}" r="${size/2-2}" fill="#f97316" stroke="white" stroke-width="2.5"/>
+          <circle cx="${size/2}" cy="${size/2}" r="${size/2-2}" fill="#1a2e50" stroke="white" stroke-width="2.5"/>
           <text x="50%" y="50%" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="11" font-weight="bold" font-family="sans-serif">공실</text>
         </svg>`;
 
@@ -135,13 +135,13 @@ export default function MiniVacancyMap({ vacancies }: Props) {
           bottom: 12,
           right: 12,
           zIndex: 20,
-          background: "#f97316",
+          background: "#1a2e50",
           color: "#fff",
           borderRadius: 20,
           padding: "7px 16px",
           fontSize: 13,
           fontWeight: 700,
-          boxShadow: "0 4px 12px rgba(249,115,22,0.4)",
+          boxShadow: "0 4px 12px rgba(26,46,80,0.4)",
           pointerEvents: "none",
           display: "flex",
           alignItems: "center",
