@@ -232,13 +232,11 @@ export default function MobileGongsilPage() {
               onClick={() => handleVacancyClick(v)}
               style={{ display: "flex", gap: "12px", padding: "14px 0", borderBottom: "1px solid #f3f4f6", cursor: "pointer", transition: "background 0.15s" }}
             >
-              <div style={{ width: "90px", height: "72px", borderRadius: "10px", overflow: "hidden", flexShrink: 0, backgroundColor: "#e5e7eb" }}>
-                {v.images?.[0] ? (
+              {v.images?.[0] && (
+                <div style={{ width: "90px", height: "72px", borderRadius: "10px", overflow: "hidden", flexShrink: 0, backgroundColor: "#e5e7eb" }}>
                   <img src={v.images[0]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                ) : (
-                  <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg,#1a2e50,#2d4a7a)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "24px" }}>🏠</div>
-                )}
-              </div>
+                </div>
+              )}
               <div style={{ flex: 1 }}>
                 <div style={{ display: "flex", gap: "4px", marginBottom: "5px" }}>
                   <span style={{ fontSize: "11px", fontWeight: 700, color: "#f97316", background: "#fff7ed", padding: "2px 6px", borderRadius: "4px" }}>{v.trade_type || "-"}</span>
@@ -271,13 +269,11 @@ export default function MobileGongsilPage() {
         {selectedVacancy && (
           <>
             {/* 이미지 슬라이더 */}
-            <div style={{ width: "100%", aspectRatio: "4/3", backgroundColor: "#e5e7eb", overflow: "hidden" }}>
-              {selectedVacancy.images?.[0] ? (
+            {selectedVacancy.images?.[0] && (
+              <div style={{ width: "100%", aspectRatio: "4/3", backgroundColor: "#e5e7eb", overflow: "hidden" }}>
                 <img src={selectedVacancy.images[0]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-              ) : (
-                <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg,#1a2e50,#2d4a7a)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "48px" }}>🏠</div>
-              )}
-            </div>
+              </div>
+            )}
 
             {/* 매물 핵심 정보 */}
             <div style={{ padding: "20px 16px", borderBottom: "1px solid #f3f4f6" }}>
