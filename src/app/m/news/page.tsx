@@ -220,23 +220,6 @@ function MobileNewsPage() {
         position: "relative",
       }}
     >
-      <style>{`
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        .news-bottom-sheet {
-          position: absolute; bottom: 0; left: 0; width: 100%;
-          background: white; border-radius: 20px 20px 0 0;
-          box-shadow: 0 -8px 32px rgba(0,0,0,0.15);
-          transform: translateY(100%);
-          transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1);
-          z-index: 30; max-height: 72vh;
-          display: flex; flex-direction: column;
-        }
-        .news-bottom-sheet.open { transform: translateY(0); }
-        .skeleton { background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 6px; }
-        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-        .article-row:active { background: #f9fafb; }
-      `}</style>
 
       {/* 카테고리 탭 */}
       <div
@@ -648,6 +631,23 @@ function MobileNewsPage() {
           )}
         </div>
       )}
+      <style>{`
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .news-bottom-sheet {
+          position: absolute; bottom: 0; left: 0; width: 100%;
+          background: white; border-radius: 20px 20px 0 0;
+          box-shadow: 0 -8px 32px rgba(0,0,0,0.15);
+          transform: translateY(100%);
+          transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+          z-index: 30; max-height: 72vh;
+          display: flex; flex-direction: column;
+        }
+        .news-bottom-sheet.open { transform: translateY(0); }
+        .skeleton { background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 6px; }
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        .article-row:active { background: #f9fafb; }
+      `}</style>
     </div>
   );
 }
