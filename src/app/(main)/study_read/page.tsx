@@ -176,7 +176,7 @@ function StudyReadContent() {
         </div>
       )}
 
-      <main className="w-[1200px] mx-auto px-[20px] pt-[30px] pb-[100px]">
+      <main className="container mx-auto px-20 pt-[30px] pb-[100px]">
         {/* Breadcrumb */}
         <div className="text-[13px] text-[#666] mb-[20px] flex items-center gap-[8px]">
           <span className="cursor-pointer hover:font-bold">부동산 특강</span>
@@ -184,9 +184,9 @@ function StudyReadContent() {
           <span className="cursor-pointer hover:font-bold">{lecture.category || "중개실무"}</span>
         </div>
 
-        <div className="flex gap-[40px] relative">
+        <div className="flex gap-[40px] relative items-start">
           {/* 좌측 메인 콘텐츠 */}
-          <div className="flex-[6.5] min-w-0">
+          <div className="flex-1 min-w-0">
 
             {/* ── 이미지 캐러셀 ── */}
             <div style={{ position: "relative", width: "100%", aspectRatio: "16/9", borderRadius: 4, overflow: "hidden", marginBottom: 24, background: "#f0f0f0" }}>
@@ -241,7 +241,7 @@ function StudyReadContent() {
               )}
             </div>
 
-            {/* 타이틀 */}
+            {/* 타이틀 (복원) */}
             <div className="mb-[40px]">
               {lecture.subtitle && <div className="text-[14px] font-[700] text-[#8a3ffc] mb-[8px]">{lecture.subtitle}</div>}
               <h1 className="text-[32px] font-[800] text-[#111] leading-[1.3] mb-[12px] break-words">{lecture.title}</h1>
@@ -394,8 +394,8 @@ function StudyReadContent() {
           </div>
 
           {/* 우측 Sticky 박스 */}
-          <div className="flex-[3.5] min-w-0">
-            <div className="sticky top-[110px] bg-white border border-[#e5e5e5] rounded-[12px] p-[32px] shadow-[0_12px_40px_rgba(0,0,0,0.08)]">
+          <div className="w-[340px] shrink-0">
+            <div className="sticky top-[110px] bg-white border border-[#e5e5e5] rounded-[12px] p-[28px] shadow-[0_12px_40px_rgba(0,0,0,0.08)]">
               {lecture.discount_label && <div className="text-[13px] font-[700] text-[#eb5757] mb-[8px]">{lecture.discount_label}</div>}
               <div className="flex items-end gap-[8px] mb-[8px]">
                 {originalPrice && <span className="text-[18px] text-[#888] line-through font-[500]">{originalPrice.toLocaleString()}원</span>}

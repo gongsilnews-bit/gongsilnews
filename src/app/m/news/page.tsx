@@ -2,31 +2,93 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+
+// --- 더미 데이터 ---
+const MOCK_LOCAL_NEWS = [
+  {
+    id: '1', // 실제 라우팅 테스트를 위해 숫자 ID 사용 (예: /m/news/1)
+    category: '우리동네 단독',
+    title: '작년 공인중개사 신규 개업 1998년 IMF 외환위기 이후 최소',
+    time: '1시간 전',
+    author: '김민석 기자',
+    image: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=200&q=80'
+  },
+  {
+    id: '2',
+    category: '우리동네 핫이슈',
+    title: '"이채·결제 다 뚫리나"...세계 경제수장들 \'미도스\' 대응 고심',
+    time: '2시간 전',
+    author: '공실뉴스',
+    image: 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=200&q=80'
+  },
+  {
+    id: '3',
+    category: '우리동네 심층',
+    title: '강남 오피스 공실률 0%대 진입... \'품귀 현상\' 언제까지 이어질까',
+    time: '3시간 전',
+    author: '이영희 기자',
+    image: 'https://images.unsplash.com/photo-1541888081622-4a00cb9f3f4c?w=200&q=80'
+  }
+];
 
 export default function MobileNewsPage() {
-  // 사용자가 요청한 현재 공실뉴스 PC 버전의 메뉴
+  const router = useRouter();
   const categories = [
     "전체뉴스", "우리동네뉴스", "부동산·주식·재테크", "정치·경제·사회", "세무·법률", "여행·건강·생활", "기타"
   ];
 
   const [activeTab, setActiveTab] = useState(categories[0]);
+  const [selectedCluster, setSelectedCluster] = useState<any[] | null>(null);
+
+  const handleClusterClick = (num: number) => {
+    // 마커 클릭 시 가짜 뉴스 데이터 삽입
+    setSelectedCluster(MOCK_LOCAL_NEWS);
+  };
+
+  const handleMapClick = () => {
+    setSelectedCluster(null);
+  };
 
   return (
-    <div className="w-full bg-white min-h-screen flex flex-col" style={{ width: '100%', backgroundColor: '#ffffff', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div className="w-full bg-white min-h-screen flex flex-col relative" style={{ width: '100%', backgroundColor: '#ffffff', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <style>{`
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* 바텀 시트 애니메이션 */
+        .news-bottom-sheet {
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          width: 100%;
+          background: white;
+          border-radius: 20px 20px 0 0;
+          box-shadow: 0 -4px 16px rgba(0,0,0,0.1);
+          transform: translateY(100%);
+          transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+          z-index: 30;
+          max-height: 75vh;
+          display: flex;
+          flex-direction: column;
+        }
+        .news-bottom-sheet.open {
+          transform: translateY(0);
+        }
       `}</style>
       
-      {/* 1. 카테고리 탭 (가로 스크롤) - 남색 배경에 흰색 글씨, 활성화 시 흰색 하단 바 */}
+      {/* 1. 카테고리 탭 (가로 스크롤) */}
       <div className="w-full overflow-x-auto whitespace-nowrap no-scrollbar sticky top-[44px] z-40" style={{ width: '100%', overflowX: 'auto', whiteSpace: 'nowrap', position: 'sticky', top: '44px', backgroundColor: '#1a2e50', zIndex: 40, marginTop: '-1px' }}>
         <ul className="flex px-4" style={{ display: 'flex', padding: '0 16px' }}>
-          {categories.map((cat, i) => (
+          {categories.map((cat) => (
             <li 
               key={cat} 
               className="mr-6 py-3 relative cursor-pointer" 
               style={{ marginRight: '24px', padding: '12px 0', position: 'relative', cursor: 'pointer' }}
-              onClick={() => setActiveTab(cat)}
+              onClick={() => {
+                setActiveTab(cat);
+                setSelectedCluster(null); // 탭 변경 시 바텀시트 닫기
+              }}
             >
               <span className={`text-[15px] ${activeTab === cat ? 'font-bold' : 'font-medium'}`} style={{ fontSize: '15px', color: activeTab === cat ? '#ffffff' : 'rgba(255, 255, 255, 0.7)', fontWeight: activeTab === cat ? 700 : 500 }}>
                 {cat}
@@ -41,7 +103,7 @@ export default function MobileNewsPage() {
 
       {activeTab === '우리동네뉴스' ? (
         /* 우리동네뉴스: 지도 기반 특화 뷰 */
-        <div className="relative w-full flex-1 overflow-hidden bg-[#e5e9f0]" style={{ flex: 1, position: 'relative', overflow: 'hidden', backgroundColor: '#e5e9f0' }}>
+        <div className="relative w-full flex-1 overflow-hidden bg-[#e5e9f0]" onClick={handleMapClick} style={{ flex: 1, position: 'relative', overflow: 'hidden', backgroundColor: '#e5e9f0' }}>
           {/* 가상의 지도 배경 (그리드 패턴) */}
           <div className="absolute inset-0 opacity-40 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#9ca3af 1px, transparent 1px)', backgroundSize: '20px 20px', position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}></div>
           
@@ -58,7 +120,12 @@ export default function MobileNewsPage() {
             { top: '70%', left: '40%', num: 1 },
             { top: '25%', left: '65%', num: 1 },
           ].map((marker, idx) => (
-            <div key={idx} className="absolute flex items-center justify-center rounded-full bg-[#f97316] text-white font-bold text-[14px] shadow-md border-2 border-white cursor-pointer" style={{ position: 'absolute', top: marker.top, left: marker.left, width: '36px', height: '36px', borderRadius: '50%', backgroundColor: '#f97316', color: '#fff', fontWeight: 700, fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', border: '2px solid #fff', transform: 'translate(-50%, -50%)', zIndex: 10 }}>
+            <div 
+              key={idx} 
+              onClick={(e) => { e.stopPropagation(); handleClusterClick(marker.num); }}
+              className={`absolute flex items-center justify-center rounded-full text-white font-bold text-[14px] shadow-md border-2 border-white cursor-pointer transition-transform ${selectedCluster ? 'scale-90 opacity-70' : 'scale-100'}`} 
+              style={{ position: 'absolute', top: marker.top, left: marker.left, width: '36px', height: '36px', borderRadius: '50%', backgroundColor: '#f97316', color: '#fff', fontWeight: 700, fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', border: '2px solid #fff', transform: 'translate(-50%, -50%)', zIndex: 10 }}
+            >
               {marker.num}
             </div>
           ))}
@@ -74,38 +141,37 @@ export default function MobileNewsPage() {
             </button>
           </div>
 
-          {/* 하단 뉴스 카드 슬라이더 */}
-          <div className="absolute bottom-6 left-0 w-full overflow-x-auto whitespace-nowrap no-scrollbar z-20 px-4" style={{ position: 'absolute', bottom: '24px', left: 0, width: '100%', overflowX: 'auto', whiteSpace: 'nowrap', zIndex: 20, padding: '0 16px' }}>
-            <div className="flex gap-3" style={{ display: 'flex', gap: '12px' }}>
-              
-              {/* 뉴스 카드 1 */}
-              <div className="w-[280px] bg-white rounded-xl shadow-lg p-3 inline-block whitespace-normal align-top flex-shrink-0" style={{ width: '280px', backgroundColor: '#fff', borderRadius: '12px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', padding: '12px', display: 'inline-block', whiteSpace: 'normal', verticalAlign: 'top', flexShrink: 0 }}>
-                <div className="flex gap-3" style={{ display: 'flex', gap: '12px' }}>
-                  <div className="flex-1" style={{ flex: 1 }}>
-                    <span className="text-[11px] font-bold text-[#f97316] mb-1 block" style={{ fontSize: '11px', fontWeight: 700, color: '#f97316', marginBottom: '4px', display: 'block' }}>우리동네 단독</span>
-                    <h4 className="text-[14px] font-bold text-gray-900 leading-snug line-clamp-2" style={{ fontSize: '14px', fontWeight: 700, color: '#111827', lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>작년 공인중개사 신규 개업 1998년 IMF 외환위기 이후 최소</h4>
-                    <p className="text-[11px] text-gray-500 mt-2" style={{ fontSize: '11px', color: '#6b7280', marginTop: '8px' }}>1시간 전 · 김민석 기자</p>
-                  </div>
-                  <div className="w-[70px] h-[70px] bg-gray-200 rounded-lg overflow-hidden flex-shrink-0" style={{ width: '70px', height: '70px', backgroundColor: '#e5e7eb', borderRadius: '8px', overflow: 'hidden', flexShrink: 0 }}>
-                    <img src="https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=200&q=80" className="w-full h-full object-cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  </div>
-                </div>
+          {/* 바텀 시트 (클러스터 클릭 시 등장) */}
+          <div className={`news-bottom-sheet ${selectedCluster ? 'open' : ''}`} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 8px' }} onClick={handleMapClick}>
+              <div style={{ width: '40px', height: '4px', backgroundColor: '#e5e7eb', borderRadius: '4px' }}></div>
+            </div>
+            
+            <div style={{ padding: '0 20px 16px', borderBottom: '1px solid #f3f4f6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#111827' }}>우리동네 뉴스 <span style={{ color: '#f97316' }}>{selectedCluster?.length || 0}</span>건</h3>
+              <div style={{ display: 'flex', gap: '12px', fontSize: '13px', color: '#6b7280' }}>
+                <span style={{ fontWeight: 700, color: '#111' }}>최신순</span>
+                <span>조회순</span>
               </div>
-              
-              {/* 뉴스 카드 2 */}
-              <div className="w-[280px] bg-white rounded-xl shadow-lg p-3 inline-block whitespace-normal align-top flex-shrink-0" style={{ width: '280px', backgroundColor: '#fff', borderRadius: '12px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', padding: '12px', display: 'inline-block', whiteSpace: 'normal', verticalAlign: 'top', flexShrink: 0 }}>
-                <div className="flex gap-3" style={{ display: 'flex', gap: '12px' }}>
-                  <div className="flex-1" style={{ flex: 1 }}>
-                    <span className="text-[11px] font-bold text-[#f97316] mb-1 block" style={{ fontSize: '11px', fontWeight: 700, color: '#f97316', marginBottom: '4px', display: 'block' }}>우리동네 핫이슈</span>
-                    <h4 className="text-[14px] font-bold text-gray-900 leading-snug line-clamp-2" style={{ fontSize: '14px', fontWeight: 700, color: '#111827', lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>"이채·결제 다 뚫리나"...세계 경제수장들 '미도스' 대응 고심</h4>
-                    <p className="text-[11px] text-gray-500 mt-2" style={{ fontSize: '11px', color: '#6b7280', marginTop: '8px' }}>2시간 전 · 공실뉴스</p>
-                  </div>
-                  <div className="w-[70px] h-[70px] bg-gray-200 rounded-lg overflow-hidden flex-shrink-0" style={{ width: '70px', height: '70px', backgroundColor: '#e5e7eb', borderRadius: '8px', overflow: 'hidden', flexShrink: 0 }}>
-                    <img src="https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=200&q=80" className="w-full h-full object-cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  </div>
-                </div>
-              </div>
+            </div>
 
+            <div style={{ flex: 1, overflowY: 'auto', padding: '0 20px 20px', backgroundColor: '#fff' }}>
+              {selectedCluster?.map((news) => (
+                <div 
+                  key={news.id} 
+                  onClick={() => router.push(`/m/news/${news.id}`)}
+                  style={{ display: 'flex', gap: '16px', padding: '20px 0', borderBottom: '1px solid #f3f4f6', cursor: 'pointer' }}
+                >
+                  <div style={{ flex: 1 }}>
+                    <span style={{ fontSize: '12px', fontWeight: 800, color: '#f97316', marginBottom: '6px', display: 'block' }}>{news.category}</span>
+                    <h4 style={{ fontSize: '16px', fontWeight: 800, color: '#111827', lineHeight: 1.4, marginBottom: '8px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{news.title}</h4>
+                    <p style={{ fontSize: '12px', color: '#6b7280' }}>{news.time} · {news.author}</p>
+                  </div>
+                  <div style={{ width: '90px', height: '90px', backgroundColor: '#f3f4f6', borderRadius: '10px', overflow: 'hidden', flexShrink: 0 }}>
+                    <img src={news.image} alt="뉴스 이미지" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -142,53 +208,41 @@ export default function MobileNewsPage() {
 
           {/* 4. 뉴스 리스트 */}
           <div className="px-4 py-2" style={{ padding: '8px 16px' }}>
-            {/* 리스트 아이템 1 */}
-            <div className="flex py-4 border-b border-gray-100 cursor-pointer" style={{ display: 'flex', padding: '16px 0', borderBottom: '1px solid #f3f4f6', cursor: 'pointer' }}>
-              <div className="flex-1 pr-4" style={{ flex: 1, paddingRight: '16px' }}>
-                <h3 className="text-[16px] font-bold text-gray-900 leading-snug mb-2 line-clamp-2 break-keep" style={{ fontSize: '16px', fontWeight: 700, color: '#111827', lineHeight: 1.3, marginBottom: '8px', wordBreak: 'keep-all', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                  정부, 상가 임대차보호법 개정안 발표... 자영업자 보호 강화된다
-                </h3>
-                <div className="text-[12px] text-gray-500 flex items-center" style={{ fontSize: '12px', color: '#6b7280', display: 'flex', alignItems: 'center' }}>
-                  <span className="text-blue-600 font-semibold mr-2" style={{ color: '#2563eb', fontWeight: 600, marginRight: '8px' }}>정치·경제·사회</span>
-                  <span>2026-04-29</span>
+            {[
+              {
+                title: "정부, 상가 임대차보호법 개정안 발표... 자영업자 보호 강화된다",
+                cat: "정치·경제·사회",
+                date: "2026-04-29",
+                img: "https://images.unsplash.com/photo-1541888081622-4a00cb9f3f4c?w=300&q=80"
+              },
+              {
+                title: "여름의 시작 '서울썸머바이브' 음악과 춤, 아트와 패션까지 노들섬을 달구다",
+                cat: "여행·건강·생활",
+                date: "2026-04-29",
+                img: "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=300&q=80"
+              },
+              {
+                title: "'제46회 국제환경산업기술·그린에너지전' 코엑스 개막식",
+                cat: "기타",
+                date: "2026-04-28",
+                img: "https://images.unsplash.com/photo-1497366216548-37526070297c?w=300&q=80"
+              }
+            ].map((news, i) => (
+              <div key={i} onClick={() => router.push('/m/news/1')} className="flex py-4 border-b border-gray-100 cursor-pointer" style={{ display: 'flex', padding: '16px 0', borderBottom: '1px solid #f3f4f6', cursor: 'pointer' }}>
+                <div className="flex-1 pr-4" style={{ flex: 1, paddingRight: '16px' }}>
+                  <h3 className="text-[16px] font-bold text-gray-900 leading-snug mb-2 line-clamp-2 break-keep" style={{ fontSize: '16px', fontWeight: 700, color: '#111827', lineHeight: 1.3, marginBottom: '8px', wordBreak: 'keep-all', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                    {news.title}
+                  </h3>
+                  <div className="text-[12px] text-gray-500 flex items-center" style={{ fontSize: '12px', color: '#6b7280', display: 'flex', alignItems: 'center' }}>
+                    <span className="text-blue-600 font-semibold mr-2" style={{ color: '#2563eb', fontWeight: 600, marginRight: '8px' }}>{news.cat}</span>
+                    <span>{news.date}</span>
+                  </div>
+                </div>
+                <div className="w-[100px] h-[70px] bg-gray-200 rounded-lg overflow-hidden flex-shrink-0" style={{ width: '100px', height: '70px', backgroundColor: '#e5e7eb', borderRadius: '8px', overflow: 'hidden', flexShrink: 0 }}>
+                  <img src={news.img} alt="News" className="w-full h-full object-cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 </div>
               </div>
-              <div className="w-[100px] h-[70px] bg-gray-200 rounded-lg overflow-hidden flex-shrink-0" style={{ width: '100px', height: '70px', backgroundColor: '#e5e7eb', borderRadius: '8px', overflow: 'hidden', flexShrink: 0 }}>
-                <img src="https://images.unsplash.com/photo-1541888081622-4a00cb9f3f4c?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80" alt="News" className="w-full h-full object-cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              </div>
-            </div>
-
-            {/* 리스트 아이템 2 */}
-            <div className="flex py-4 border-b border-gray-100 cursor-pointer" style={{ display: 'flex', padding: '16px 0', borderBottom: '1px solid #f3f4f6', cursor: 'pointer' }}>
-              <div className="flex-1 pr-4" style={{ flex: 1, paddingRight: '16px' }}>
-                <h3 className="text-[16px] font-bold text-gray-900 leading-snug mb-2 line-clamp-2 break-keep" style={{ fontSize: '16px', fontWeight: 700, color: '#111827', lineHeight: 1.3, marginBottom: '8px', wordBreak: 'keep-all', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                  여름의 시작 '서울썸머바이브' 음악과 춤, 아트와 패션까지 노들섬을 달구다
-                </h3>
-                <div className="text-[12px] text-gray-500 flex items-center" style={{ fontSize: '12px', color: '#6b7280', display: 'flex', alignItems: 'center' }}>
-                  <span className="text-blue-600 font-semibold mr-2" style={{ color: '#2563eb', fontWeight: 600, marginRight: '8px' }}>여행·건강·생활</span>
-                  <span>2026-04-29</span>
-                </div>
-              </div>
-              <div className="w-[100px] h-[70px] bg-gray-200 rounded-lg overflow-hidden flex-shrink-0" style={{ width: '100px', height: '70px', backgroundColor: '#e5e7eb', borderRadius: '8px', overflow: 'hidden', flexShrink: 0 }}>
-                <img src="https://images.unsplash.com/photo-1459749411175-04bf5292ceea?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80" alt="News" className="w-full h-full object-cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              </div>
-            </div>
-
-            {/* 리스트 아이템 3 */}
-            <div className="flex py-4 border-b border-gray-100 cursor-pointer" style={{ display: 'flex', padding: '16px 0', borderBottom: '1px solid #f3f4f6', cursor: 'pointer' }}>
-              <div className="flex-1 pr-4" style={{ flex: 1, paddingRight: '16px' }}>
-                <h3 className="text-[16px] font-bold text-gray-900 leading-snug mb-2 line-clamp-2 break-keep" style={{ fontSize: '16px', fontWeight: 700, color: '#111827', lineHeight: 1.3, marginBottom: '8px', wordBreak: 'keep-all', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                  '제46회 국제환경산업기술·그린에너지전' 코엑스 개막식
-                </h3>
-                <div className="text-[12px] text-gray-500 flex items-center" style={{ fontSize: '12px', color: '#6b7280', display: 'flex', alignItems: 'center' }}>
-                  <span className="text-blue-600 font-semibold mr-2" style={{ color: '#2563eb', fontWeight: 600, marginRight: '8px' }}>기타</span>
-                  <span>2026-04-28</span>
-                </div>
-              </div>
-              <div className="w-[100px] h-[70px] bg-gray-200 rounded-lg overflow-hidden flex-shrink-0" style={{ width: '100px', height: '70px', backgroundColor: '#e5e7eb', borderRadius: '8px', overflow: 'hidden', flexShrink: 0 }}>
-                <img src="https://images.unsplash.com/photo-1497366216548-37526070297c?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80" alt="News" className="w-full h-full object-cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       )}

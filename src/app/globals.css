@@ -1107,3 +1107,35 @@ button { border: none; background: none; cursor: pointer; font-family: inherit; 
         max-height: 100% !important;
     }
 }
+
+/* ========== Mobile News Detail Layout Override ========== */
+@media (max-width: 768px) {
+    .mobile-news-detail-wrapper .news-layout {
+        flex-direction: column;
+        gap: 20px;
+        margin-top: 10px;
+        margin-bottom: 20px;
+    }
+    
+    .mobile-news-detail-wrapper .container {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+    }
+    
+    .mobile-news-detail-wrapper .news-read-area {
+        padding: 0 16px;
+    }
+    
+    .mobile-news-detail-wrapper .news-sidebar {
+        width: 100%;
+        padding: 0 16px;
+        margin-top: 20px;
+        border-top: 8px solid #f3f4f6;
+        padding-top: 30px;
+    }
+    
+    .mobile-news-detail-wrapper .detail-title {
+        font-size: 24px;
+        line-height: 1.4;
+    }
+}
