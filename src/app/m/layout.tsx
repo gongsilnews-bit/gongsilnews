@@ -20,7 +20,7 @@ export default function MobileLayout({ children }: { children: React.ReactNode }
       {/* 모바일 메인 콘텐츠 영역 */}
       <main 
         className="flex-1 w-full max-w-md mx-auto bg-white shadow-sm overflow-x-hidden"
-        style={{ flex: 1, width: '100%', maxWidth: '448px', margin: '0 auto', backgroundColor: '#ffffff', overflowX: 'hidden', paddingTop: '44px' }}
+        style={{ flex: 1, width: '100%', maxWidth: '448px', margin: '0 auto', backgroundColor: '#ffffff', overflowX: 'hidden', paddingTop: '36px' }}
       >
         {children}
       </main>

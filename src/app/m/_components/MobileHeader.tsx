@@ -15,8 +15,8 @@ export default function MobileHeader() {
   return (
     <>
       <header 
-        className="fixed top-0 z-50 w-full max-w-md bg-white flex items-center justify-between px-4 h-[44px]"
-        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px', height: '44px', position: 'fixed', top: 0, left: '50%', transform: 'translateX(-50%)', zIndex: 50, backgroundColor: '#ffffff', width: '100%', maxWidth: '448px' }}
+        className="fixed top-0 z-50 w-full max-w-md bg-white flex items-center justify-between px-4 h-[36px]"
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px', height: '36px', position: 'fixed', top: 0, left: '50%', transform: 'translateX(-50%)', zIndex: 50, backgroundColor: '#ffffff', width: '100%', maxWidth: '448px' }}
       >
         {/* 좌측 햄버거 메뉴 */}
         <button className="p-1" onClick={() => setIsMenuOpen(true)}>
@@ -29,7 +29,7 @@ export default function MobileHeader() {
 
         {/* 중앙 로고 */}
         <Link href="/m" className="flex items-center justify-center" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
-          <img src="/logo.png" alt="공실뉴스" style={{ height: '28px', objectFit: 'contain' }} />
+          <img src="/logo.png" alt="공실뉴스" style={{ height: '32px', objectFit: 'contain' }} />
         </Link>
 
         {/* 우측 검색 & 공실톡 */}

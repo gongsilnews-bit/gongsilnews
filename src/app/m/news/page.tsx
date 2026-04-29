@@ -284,7 +284,7 @@ function MobileNewsPage() {
           overflowX: "auto",
           backgroundColor: "#1a2e50",
           position: "sticky",
-          top: "44px",
+          top: "36px",
           zIndex: 40,
           marginTop: "-1px",
         }}
@@ -494,7 +494,8 @@ function MobileNewsPage() {
               style={{
                 position: "relative",
                 width: "100%",
-                height: "220px",
+                aspectRatio: "16/9",
+                height: "auto",
                 overflow: "hidden",
                 cursor: "pointer",
                 backgroundColor: "#e5e7eb",
