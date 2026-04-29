@@ -1,379 +1,345 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
+import React, { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
+import { getVacancies, getVacancyDetail } from "@/app/actions/vacancy";
 
-// --- 더미 데이터 ---
-const MOCK_VACANCIES = [
-  {
-    id: 'v1',
-    building_name: '순화더샵(주상복합) B동',
-    trade_type: '매매',
-    price: '5억',
-    price_detail: '3,571만원/3.3㎡',
-    property_type: '아파트',
-    area: '46G1㎡ (전용35G1)',
-    floor: '중/27층',
-    direction: '북향',
-    description: '입주가능한 서울역 도보 5분 원룸 순화동 더샵',
-    created_at: '2026.04.21.',
-    thumbnail: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=500&q=80',
-    images: [
-      'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&q=80',
-      'https://images.unsplash.com/photo-1502672260266-1c1de2d9d000?w=800&q=80',
-    ],
-    details: {
-      매매가: '5억원',
-      관리비: '10만원',
-      구조: '방 1, 욕실 1',
-      난방: '개별난방, 도시가스',
-    },
-    realtor_count: 2,
-  },
-  {
-    id: 'v2',
-    building_name: '덕수궁롯데캐슬(주상복합) 101동',
-    trade_type: '매매',
-    price: '6억 1,000 ~ 6억 5,000',
-    price_detail: '',
-    property_type: '아파트',
-    area: '42㎡ (전용31)',
-    floor: '7/22층',
-    direction: '북동향',
-    description: '덕수궁 뷰가 나오는 깔끔한 소형 아파트',
-    created_at: '2026.04.29.',
-    thumbnail: 'https://images.unsplash.com/photo-1502672260266-1c1de2d9d000?w=500&q=80',
-    images: [
-      'https://images.unsplash.com/photo-1502672260266-1c1de2d9d000?w=800&q=80',
-    ],
-    details: {
-      매매가: '6억 3,000만원',
-      관리비: '15만원',
-      구조: '방 1, 욕실 1',
-      난방: '지역난방, 열병합',
-    },
-    realtor_count: 2,
-  },
-  {
-    id: 'v3',
-    building_name: '삼정아트테라스정동(도시형) 1동',
-    trade_type: '매매',
-    price: '2억 5,000',
-    price_detail: '',
-    property_type: '아파트',
-    area: '21F2㎡ (전용14F2)',
-    floor: '5/9층',
-    direction: '남향',
-    description: '풀옵션 신축급 오피스텔형 아파트',
-    created_at: '2026.04.29.',
-    thumbnail: 'https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=500&q=80',
-    images: [
-      'https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=800&q=80',
-    ],
-    details: {
-      매매가: '2억 5,000만원',
-      관리비: '8만원',
-      구조: '원룸형, 욕실 1',
-      난방: '개별난방, 도시가스',
-    },
-    realtor_count: 2,
-  },
-  {
-    id: 'v4',
-    building_name: '삼정아트테라스정동(도시형) 1동',
-    trade_type: '매매',
-    price: '3억 5,000',
-    price_detail: '',
-    property_type: '아파트',
-    area: '21A1㎡ (전용13A1)',
-    floor: '7/9층',
-    direction: '북향',
-    description: '시티뷰가 좋은 고층 매물',
-    created_at: '2026.04.27.',
-    thumbnail: 'https://images.unsplash.com/photo-1502005097973-6a7082348e28?w=500&q=80',
-    images: [
-      'https://images.unsplash.com/photo-1502005097973-6a7082348e28?w=800&q=80',
-    ],
-    details: {
-      매매가: '3억 5,000만원',
-      관리비: '9만원',
-      구조: '원룸형, 욕실 1',
-      난방: '개별난방, 도시가스',
-    },
-    realtor_count: 3,
-  }
-];
+const KAKAO_APP_KEY = process.env.NEXT_PUBLIC_KAKAO_APP_KEY || "435d3602201a49ea712e5f5a36fe6efc";
+
+function formatPrice(v: any): string {
+  const dep = v.deposit || 0;
+  const rent = v.monthly_rent || 0;
+  const trade = v.trade_type || "";
+  const fmt = (n: number) => {
+    if (n >= 100000000) return `${(n / 100000000).toFixed(n % 100000000 === 0 ? 0 : 1)}억`;
+    if (n >= 10000) return `${Math.round(n / 10000)}만`;
+    return `${n}`;
+  };
+  if (trade === "월세" && rent > 0) return `${fmt(dep)}/${fmt(rent)}`;
+  if (trade === "전세") return `전세 ${fmt(dep)}`;
+  if (dep > 0) return `${fmt(dep)}`;
+  return "-";
+}
 
 export default function MobileGongsilPage() {
-  const [filters] = useState(['거래유형', '가격', '구조', '면적', '층수']);
-  
-  // 상태 관리
+  const router = useRouter();
+  const [vacancies, setVacancies] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedCluster, setSelectedCluster] = useState<any[] | null>(null);
   const [selectedVacancy, setSelectedVacancy] = useState<any | null>(null);
-  const [imageIndex, setImageIndex] = useState(0);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [mapLoaded, setMapLoaded] = useState(false);
+  const mapRef = useRef<HTMLDivElement>(null);
+  const kakaoMapRef = useRef<any>(null);
+  const markersRef = useRef<any[]>([]);
 
-  // 클러스터 클릭 시 가짜 데이터 로드
-  const handleClusterClick = (num: number) => {
-    // 숫자에 관계없이 일단 가짜 데이터 세팅 (테스트용)
-    // 네이버 부동산처럼 하단에서 올라오도록
-    setSelectedCluster(MOCK_VACANCIES);
+  // 데이터 로드
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      const res = await getVacancies({ status: "ACTIVE" });
+      if (res.success && res.data) {
+        const withImages = res.data.map((v: any) => ({
+          ...v,
+          images: v.vacancy_photos
+            ? [...v.vacancy_photos].sort((a: any, b: any) => a.sort_order - b.sort_order).map((p: any) => p.url)
+            : [],
+        }));
+        setVacancies(withImages);
+      }
+      setLoading(false);
+    };
+    load();
+  }, []);
+
+  // 카카오 지도 초기화
+  useEffect(() => {
+    const initMap = () => {
+      if (!mapRef.current || kakaoMapRef.current) return;
+      const kakao = (window as any).kakao;
+      if (!kakao?.maps) return;
+
+      const map = new kakao.maps.Map(mapRef.current, {
+        center: new kakao.maps.LatLng(37.5665, 126.978),
+        level: 7,
+      });
+      kakaoMapRef.current = map;
+      setMapLoaded(true);
+    };
+
+    if ((window as any).kakao?.maps?.LatLng) {
+      initMap();
+    } else {
+      const scriptId = "kakao-map-script";
+      if (!document.getElementById(scriptId)) {
+        const script = document.createElement("script");
+        script.id = scriptId;
+        script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_APP_KEY}&libraries=services,clusterer&autoload=false`;
+        script.onload = () => (window as any).kakao.maps.load(initMap);
+        document.head.appendChild(script);
+      } else {
+        const timer = setInterval(() => {
+          if ((window as any).kakao?.maps?.LatLng) { clearInterval(timer); initMap(); }
+        }, 100);
+      }
+    }
+  }, []);
+
+  // 마커 그리기
+  useEffect(() => {
+    if (!kakaoMapRef.current || !mapLoaded || vacancies.length === 0) return;
+    const kakao = (window as any).kakao;
+
+    markersRef.current.forEach((m: any) => m.setMap(null));
+    markersRef.current = [];
+
+    // lat/lng 기준으로 그룹화
+    const groups: Record<string, any[]> = {};
+    vacancies.forEach((v) => {
+      if (!v.lat || !v.lng) return;
+      const key = `${Math.round(v.lat * 1000)}_${Math.round(v.lng * 1000)}`;
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(v);
+    });
+
+    Object.values(groups).forEach((group) => {
+      const { lat, lng } = group[0];
+      const count = group.length;
+      const size = count > 5 ? 52 : 44;
+      const color = count > 5 ? "#1a2e50" : "#f97316";
+
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
+        <circle cx="${size/2}" cy="${size/2}" r="${size/2-2}" fill="${color}" stroke="white" stroke-width="2.5"/>
+        <text x="50%" y="50%" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="${count>9?13:15}" font-weight="bold" font-family="sans-serif">${count}</text>
+      </svg>`;
+
+      const img = new kakao.maps.MarkerImage(
+        `data:image/svg+xml,${encodeURIComponent(svg)}`,
+        new kakao.maps.Size(size, size),
+        { offset: new kakao.maps.Point(size / 2, size / 2) }
+      );
+      const marker = new kakao.maps.Marker({
+        position: new kakao.maps.LatLng(lat, lng),
+        image: img,
+        map: kakaoMapRef.current,
+      });
+      kakao.maps.event.addListener(marker, "click", () => {
+        setSelectedVacancy(null);
+        setSelectedCluster(group);
+      });
+      markersRef.current.push(marker);
+    });
+  }, [vacancies, mapLoaded]);
+
+  // 상세 조회
+  const handleVacancyClick = async (v: any) => {
+    setDetailLoading(true);
+    setSelectedVacancy(v); // 먼저 기본 정보 표시
+    const res = await getVacancyDetail(v.id);
+    if (res.success && res.data) {
+      const detail = {
+        ...res.data,
+        images: res.data.vacancy_photos
+          ? [...res.data.vacancy_photos].sort((a: any, b: any) => a.sort_order - b.sort_order).map((p: any) => p.url)
+          : v.images || [],
+      };
+      setSelectedVacancy(detail);
+    }
+    setDetailLoading(false);
   };
 
-  // 배경 클릭 시 닫기
-  const handleMapClick = () => {
-    setSelectedCluster(null);
+  const goBack = () => {
+    if (selectedVacancy) { setSelectedVacancy(null); return; }
+    if (selectedCluster) { setSelectedCluster(null); }
   };
 
   return (
-    <div className="w-full relative flex flex-col bg-gray-50 overflow-hidden" style={{ width: '100%', height: 'calc(100vh - 116px)', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
+    <div style={{ width: "100%", backgroundColor: "#fff", minHeight: "100vh", display: "flex", flexDirection: "column", position: "relative" }}>
       <style>{`
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        
-        /* 바텀 시트 애니메이션 */
-        .bottom-sheet {
-          position: absolute;
-          bottom: 0;
-          left: 0;
-          width: 100%;
-          background: white;
-          border-radius: 20px 20px 0 0;
-          box-shadow: 0 -4px 16px rgba(0,0,0,0.1);
-          transform: translateY(100%);
-          transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
-          z-index: 30;
-          max-height: 75vh;
-          display: flex;
-          flex-direction: column;
-        }
-        .bottom-sheet.open {
-          transform: translateY(0);
-        }
-
-        /* 상세 뷰 애니메이션 (오른쪽에서 왼쪽으로 슬라이드) */
-        .detail-view {
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100vw;
-          height: 100dvh;
-          background: white;
-          z-index: 99999;
-          transform: translateX(100%);
-          transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
-          overflow-y: auto;
-          display: flex;
-          flex-direction: column;
-        }
-        .detail-view.open {
-          transform: translateX(0);
-        }
+        .no-scrollbar::-webkit-scrollbar{display:none;}
+        .no-scrollbar{-ms-overflow-style:none;scrollbar-width:none;}
+        .gongsil-sheet{position:absolute;bottom:0;left:0;width:100%;background:#fff;border-radius:20px 20px 0 0;box-shadow:0 -8px 32px rgba(0,0,0,0.15);transform:translateY(100%);transition:transform 0.35s cubic-bezier(0.25,1,0.5,1);z-index:30;max-height:75vh;display:flex;flex-direction:column;}
+        .gongsil-sheet.open{transform:translateY(0);}
+        .detail-panel{position:absolute;top:0;left:0;width:100%;height:100%;background:#fff;z-index:40;transform:translateX(100%);transition:transform 0.35s cubic-bezier(0.25,1,0.5,1);overflow-y:auto;}
+        .detail-panel.open{transform:translateX(0);}
+        .skeleton{background:linear-gradient(90deg,#f3f4f6 25%,#e5e7eb 50%,#f3f4f6 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:6px;}
+        @keyframes shimmer{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
+        .v-card:active{background:#f9fafb;}
       `}</style>
 
-      {/* 1. 필터 칩 영역 */}
-      <div className="w-full bg-white border-b border-gray-200 overflow-x-auto whitespace-nowrap no-scrollbar z-10 py-2" style={{ width: '100%', backgroundColor: '#fff', borderBottom: '1px solid #e5e7eb', overflowX: 'auto', whiteSpace: 'nowrap', zIndex: 10, padding: '8px 0' }}>
-        <ul className="flex px-4 gap-2" style={{ display: 'flex', padding: '0 16px', gap: '8px' }}>
-          {filters.map((filter) => (
-            <li key={filter}>
-              <button className="flex items-center px-3 py-1.5 border border-gray-300 rounded-full text-[13px] text-gray-700 bg-white" style={{ display: 'flex', alignItems: 'center', padding: '6px 12px', border: '1px solid #d1d5db', borderRadius: '9999px', fontSize: '13px', color: '#374151', backgroundColor: '#fff' }}>
-                {filter}
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: '4px' }}>
-                  <polyline points="6 9 12 15 18 9"></polyline>
-                </svg>
-              </button>
-            </li>
-          ))}
-        </ul>
-      </div>
+      {/* 카카오 지도 */}
+      <div ref={mapRef} style={{ width: "100%", flex: 1, minHeight: "calc(100vh - 124px)" }}
+        onClick={() => { setSelectedCluster(null); setSelectedVacancy(null); }} />
 
-      {/* 2. 지도 영역 */}
-      <div className="flex-1 relative w-full overflow-hidden bg-[#e6eed4]" onClick={handleMapClick} style={{ flex: 1, position: 'relative', width: '100%', overflow: 'hidden', backgroundColor: '#e6eed4' }}>
-        <div className="absolute inset-0 opacity-40 pointer-events-none" style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, opacity: 0.4, pointerEvents: 'none', backgroundImage: 'radial-gradient(#9ca3af 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
-        
-        {/* 가상의 길 및 구역 표시 */}
-        <div className="absolute top-[30%] left-[20%] w-[100px] h-[50px] bg-blue-100 rounded opacity-60" style={{ position: 'absolute', top: '30%', left: '20%', width: '100px', height: '50px', backgroundColor: '#dbeafe', borderRadius: '4px', opacity: 0.6 }}></div>
-        <div className="absolute top-[40%] right-[10%] w-[150px] h-[80px] bg-green-100 rounded opacity-60" style={{ position: 'absolute', top: '40%', right: '10%', width: '150px', height: '80px', backgroundColor: '#dcfce3', borderRadius: '4px', opacity: 0.6 }}></div>
-
-        {/* 클러스터 마커 모음 */}
-        {[
-          { top: '20%', left: '30%', num: 8 },
-          { top: '45%', left: '70%', num: 7 },
-          { top: '55%', left: '20%', num: 11 },
-          { top: '65%', left: '45%', num: 78 }, // 78개짜리 대표 클러스터
-          { top: '80%', left: '80%', num: 13 },
-          { top: '75%', left: '15%', num: 20 },
-          { top: '85%', left: '60%', num: 2 },
-          { top: '35%', left: '85%', num: 23 },
-        ].map((marker, idx) => (
-          <div 
-            key={idx} 
-            onClick={(e) => { e.stopPropagation(); handleClusterClick(marker.num); }}
-            className={`absolute flex flex-col items-center justify-center rounded-full text-white shadow-md border-2 border-white cursor-pointer transition-transform ${selectedCluster ? 'scale-90 opacity-70' : 'scale-100'}`} 
-            style={{ 
-              position: 'absolute', top: marker.top, left: marker.left, 
-              width: marker.num > 50 ? '56px' : '44px', height: marker.num > 50 ? '56px' : '44px', 
-              borderRadius: '50%', 
-              backgroundColor: marker.num > 50 ? '#1a2e50' : '#f97316', // 공실뉴스 네이비/오렌지 스타일
-              color: '#fff', 
-              transform: 'translate(-50%, -50%)',
-              zIndex: 15
-            }}
-          >
-            <span style={{ fontSize: marker.num > 50 ? '16px' : '14px', fontWeight: 800 }}>{marker.num}</span>
+      {/* 지도 로딩 중 */}
+      {!mapLoaded && (
+        <div style={{ position: "absolute", inset: 0, background: "#e8ecf0", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 5 }}>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: "40px", marginBottom: "12px" }}>🗺️</div>
+            <p style={{ color: "#6b7280", fontSize: "14px" }}>지도를 불러오는 중...</p>
           </div>
-        ))}
+        </div>
+      )}
 
-        {/* 우측 상단 AI중개사 */}
-        <button className="absolute top-4 right-4 bg-white text-[#1a2e50] font-bold px-4 py-2 rounded-full shadow-lg flex items-center text-[14px]" style={{ position: 'absolute', top: '16px', right: '16px', backgroundColor: '#fff', color: '#1a2e50', fontWeight: 700, padding: '8px 16px', borderRadius: '9999px', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', display: 'flex', alignItems: 'center', fontSize: '14px', zIndex: 20 }}>
-          <span className="text-[#f97316] mr-1 text-[16px] leading-none" style={{ color: '#f97316', marginRight: '4px', fontSize: '16px', lineHeight: 1 }}>✦</span> AI중개사
+      {/* 매물 수 표시 */}
+      {mapLoaded && (
+        <div style={{ position: "absolute", top: "16px", left: "16px", zIndex: 20, background: "rgba(255,255,255,0.95)", borderRadius: "20px", padding: "8px 14px", fontSize: "13px", fontWeight: 700, color: "#1a2e50", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}>
+          🏢 공실 {vacancies.filter(v => v.lat && v.lng).length}건
+        </div>
+      )}
+
+      {/* 내 위치 버튼 */}
+      {mapLoaded && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            if (navigator.geolocation && kakaoMapRef.current) {
+              navigator.geolocation.getCurrentPosition((pos) => {
+                const kakao = (window as any).kakao;
+                kakaoMapRef.current.panTo(new kakao.maps.LatLng(pos.coords.latitude, pos.coords.longitude));
+                kakaoMapRef.current.setLevel(5);
+              });
+            }
+          }}
+          style={{ position: "absolute", top: "16px", right: "16px", zIndex: 20, background: "#f97316", color: "#fff", border: "none", borderRadius: "20px", padding: "8px 14px", fontSize: "13px", fontWeight: 700, boxShadow: "0 4px 12px rgba(249,115,22,0.4)", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+          내 위치
         </button>
-      </div>
+      )}
 
-      {/* 3. 매물 리스트 바텀 시트 (Bottom Sheet) */}
-      <div className={`bottom-sheet ${selectedCluster ? 'open' : ''}`}>
-        {/* 핸들 (드래그 바 표시) */}
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 8px' }} onClick={handleMapClick}>
-          <div style={{ width: '40px', height: '4px', backgroundColor: '#e5e7eb', borderRadius: '4px' }}></div>
+      {/* 바텀시트: 클러스터 리스트 */}
+      <div className={`gongsil-sheet ${selectedCluster && !selectedVacancy ? "open" : ""}`} onClick={(e) => e.stopPropagation()}>
+        <div style={{ display: "flex", justifyContent: "center", padding: "12px 0 8px", cursor: "pointer" }} onClick={() => setSelectedCluster(null)}>
+          <div style={{ width: "40px", height: "4px", backgroundColor: "#e5e7eb", borderRadius: "4px" }} />
         </div>
-        
-        {/* 헤더 */}
-        <div style={{ padding: '0 20px 16px', borderBottom: '1px solid #f3f4f6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#111827' }}>매물 <span style={{ color: '#f97316' }}>{selectedCluster?.length || 0}</span>개</h3>
-          <div style={{ display: 'flex', gap: '12px', fontSize: '13px', color: '#6b7280' }}>
-            <span style={{ fontWeight: 700, color: '#111' }}>랭킹순</span>
-            <span>가격순</span>
-            <span>최신순</span>
-          </div>
+        <div style={{ padding: "0 20px 14px", borderBottom: "1px solid #f3f4f6", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <h3 style={{ fontSize: "16px", fontWeight: 800, color: "#111827" }}>
+            매물 <span style={{ color: "#f97316" }}>{selectedCluster?.length || 0}</span>개
+          </h3>
+          <button onClick={() => setSelectedCluster(null)} style={{ background: "#f3f4f6", border: "none", borderRadius: "50%", width: "28px", height: "28px", cursor: "pointer", fontSize: "15px", color: "#6b7280", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
         </div>
-
-        {/* 리스트 (스크롤) */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '0 20px 20px', backgroundColor: '#f9fafb' }}>
-          {selectedCluster?.map((vacancy) => (
-            <div 
-              key={vacancy.id} 
-              onClick={() => { setSelectedVacancy(vacancy); setImageIndex(0); }}
-              style={{ backgroundColor: '#fff', borderRadius: '12px', padding: '16px', marginTop: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', border: '1px solid #f3f4f6', cursor: 'pointer' }}
+        <div className="no-scrollbar" style={{ flex: 1, overflowY: "auto", padding: "8px 16px 20px" }}>
+          {selectedCluster?.map((v: any) => (
+            <div
+              key={v.id}
+              className="v-card"
+              onClick={() => handleVacancyClick(v)}
+              style={{ display: "flex", gap: "12px", padding: "14px 0", borderBottom: "1px solid #f3f4f6", cursor: "pointer", transition: "background 0.15s" }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', marginBottom: '12px' }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: '14px', color: '#4b5563', marginBottom: '4px' }}>{vacancy.building_name}</div>
-                  <div style={{ fontSize: '18px', fontWeight: 800, color: '#111827', marginBottom: '4px' }}>
-                    {vacancy.trade_type} {vacancy.price}
-                  </div>
-                  <div style={{ fontSize: '13px', color: '#6b7280', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px' }}>
-                    {vacancy.property_type} <span style={{ color: '#d1d5db' }}>|</span> {vacancy.area} <span style={{ color: '#d1d5db' }}>|</span> {vacancy.floor} <span style={{ color: '#d1d5db' }}>|</span> {vacancy.direction}
-                  </div>
-                  <div style={{ marginTop: '8px', display: 'flex', gap: '6px', alignItems: 'center' }}>
-                    <span style={{ fontSize: '11px', color: '#1a2e50', backgroundColor: '#e2e8f0', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>집주인</span>
-                    <span style={{ fontSize: '11px', color: '#ef4444', fontWeight: 700 }}>확인매물 {vacancy.created_at}</span>
-                  </div>
-                </div>
-                <div style={{ width: '80px', height: '80px', flexShrink: 0, position: 'relative', borderRadius: '8px', overflow: 'hidden' }}>
-                  <img src={vacancy.thumbnail} alt="매물" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  <div style={{ position: 'absolute', bottom: '4px', right: '4px', backgroundColor: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: '10px', padding: '2px 6px', borderRadius: '4px' }}>
-                    {vacancy.images.length}
-                  </div>
-                </div>
+              <div style={{ width: "90px", height: "72px", borderRadius: "10px", overflow: "hidden", flexShrink: 0, backgroundColor: "#e5e7eb" }}>
+                {v.images?.[0] ? (
+                  <img src={v.images[0]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                ) : (
+                  <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg,#1a2e50,#2d4a7a)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "24px" }}>🏠</div>
+                )}
               </div>
-              <div style={{ backgroundColor: '#fff7ed', color: '#ea580c', fontSize: '13px', fontWeight: 700, padding: '10px', borderRadius: '8px', textAlign: 'center', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '4px' }}>
-                중개사 {vacancy.realtor_count}곳에서 등록했어요
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: "flex", gap: "4px", marginBottom: "5px" }}>
+                  <span style={{ fontSize: "11px", fontWeight: 700, color: "#f97316", background: "#fff7ed", padding: "2px 6px", borderRadius: "4px" }}>{v.trade_type || "-"}</span>
+                  <span style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", background: "#f3f4f6", padding: "2px 6px", borderRadius: "4px" }}>{v.property_type || ""}</span>
+                </div>
+                <p style={{ fontSize: "17px", fontWeight: 800, color: "#111827", marginBottom: "4px" }}>{formatPrice(v)}</p>
+                <p style={{ fontSize: "12px", color: "#6b7280" }}>
+                  {[v.exclusive_m2 && `전용 ${v.exclusive_m2}㎡`, v.current_floor && `${v.current_floor}층`, v.direction].filter(Boolean).join(" · ")}
+                </p>
+                <p style={{ fontSize: "12px", color: "#9ca3af", marginTop: "2px" }}>{v.building_name || [v.dong, v.sigungu].filter(Boolean).join(" ")}</p>
               </div>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="2" style={{ flexShrink: 0, alignSelf: "center" }}><polyline points="9 18 15 12 9 6"/></svg>
             </div>
           ))}
         </div>
       </div>
 
-      {/* 4. 매물 상세 풀스크린 뷰 (Detail View) */}
-      <div className={`detail-view ${selectedVacancy ? 'open' : ''}`}>
+      {/* 상세 패널 */}
+      <div className={`detail-panel ${selectedVacancy ? "open" : ""}`} onClick={(e) => e.stopPropagation()}>
+        {/* 상단 헤더 */}
+        <div style={{ position: "sticky", top: 0, zIndex: 10, background: "#fff", borderBottom: "1px solid #f3f4f6", display: "flex", alignItems: "center", gap: "12px", padding: "14px 16px" }}>
+          <button onClick={goBack} style={{ background: "none", border: "none", cursor: "pointer", padding: "4px", display: "flex", alignItems: "center" }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <h2 style={{ fontSize: "16px", fontWeight: 800, color: "#111827", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {selectedVacancy?.building_name || "매물 상세"}
+          </h2>
+        </div>
+
         {selectedVacancy && (
           <>
-            {/* 상단 헤더바 */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', position: 'sticky', top: 0, backgroundColor: '#fff', zIndex: 10 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <button onClick={() => setSelectedVacancy(null)} style={{ padding: '8px', marginLeft: '-8px' }}>
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#111" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-                </button>
-                <div style={{ fontWeight: 800, fontSize: '16px' }}>{selectedVacancy.building_name.split('(')[0]}</div>
-              </div>
-              <div style={{ display: 'flex', gap: '16px' }}>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
-              </div>
-            </div>
-
-            {/* 메인 이미지 스와이프 영역 */}
-            <div style={{ position: 'relative', width: '100%', aspectRatio: '4/3', backgroundColor: '#f3f4f6', overflow: 'hidden' }}>
-              <img src={selectedVacancy.images[imageIndex]} alt="상세이미지" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              
-              {/* 이미지 인디케이터 */}
-              <div style={{ position: 'absolute', bottom: '16px', right: '16px', backgroundColor: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: '12px', padding: '4px 12px', borderRadius: '16px', fontWeight: 700 }}>
-                {imageIndex + 1} / {selectedVacancy.images.length}
-              </div>
-
-              {/* 좌우 화살표 (이미지가 여러장일 때만) */}
-              {selectedVacancy.images.length > 1 && (
-                <>
-                  <button onClick={() => setImageIndex(prev => Math.max(0, prev - 1))} style={{ position: 'absolute', top: '50%', left: '12px', transform: 'translateY(-50%)', backgroundColor: 'rgba(255,255,255,0.8)', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: imageIndex === 0 ? 0.3 : 1 }}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
-                  </button>
-                  <button onClick={() => setImageIndex(prev => Math.min(selectedVacancy.images.length - 1, prev + 1))} style={{ position: 'absolute', top: '50%', right: '12px', transform: 'translateY(-50%)', backgroundColor: 'rgba(255,255,255,0.8)', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: imageIndex === selectedVacancy.images.length - 1 ? 0.3 : 1 }}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                  </button>
-                </>
+            {/* 이미지 슬라이더 */}
+            <div style={{ width: "100%", aspectRatio: "4/3", backgroundColor: "#e5e7eb", overflow: "hidden" }}>
+              {selectedVacancy.images?.[0] ? (
+                <img src={selectedVacancy.images[0]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ) : (
+                <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg,#1a2e50,#2d4a7a)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "48px" }}>🏠</div>
               )}
             </div>
 
-            {/* 타이틀 및 핵심 요약 */}
-            <div style={{ padding: '24px 20px', borderBottom: '8px solid #f3f4f6' }}>
-              <div style={{ fontSize: '15px', color: '#4b5563', marginBottom: '8px' }}>{selectedVacancy.building_name}</div>
-              <div style={{ fontSize: '28px', fontWeight: 800, color: '#111827', marginBottom: '4px' }}>
-                {selectedVacancy.trade_type} {selectedVacancy.price}
+            {/* 매물 핵심 정보 */}
+            <div style={{ padding: "20px 16px", borderBottom: "1px solid #f3f4f6" }}>
+              <div style={{ display: "flex", gap: "6px", marginBottom: "12px" }}>
+                <span style={{ fontSize: "12px", fontWeight: 700, color: "#f97316", background: "#fff7ed", padding: "3px 8px", borderRadius: "5px" }}>{selectedVacancy.trade_type}</span>
+                <span style={{ fontSize: "12px", fontWeight: 600, color: "#1a2e50", background: "#e2e8f0", padding: "3px 8px", borderRadius: "5px" }}>{selectedVacancy.property_type}</span>
+                {detailLoading && <span style={{ fontSize: "11px", color: "#9ca3af", alignSelf: "center" }}>상세 로드중...</span>}
               </div>
-              {selectedVacancy.price_detail && (
-                <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '16px' }}>{selectedVacancy.price_detail}</div>
+              <p style={{ fontSize: "26px", fontWeight: 900, color: "#111827", marginBottom: "8px" }}>{formatPrice(selectedVacancy)}</p>
+              {selectedVacancy.maintenance_fee > 0 && (
+                <p style={{ fontSize: "13px", color: "#6b7280", marginBottom: "8px" }}>관리비 {Math.round(selectedVacancy.maintenance_fee / 10000)}만원</p>
               )}
-              
-              <div style={{ fontSize: '15px', color: '#374151', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
-                <span style={{ fontWeight: 800 }}>{selectedVacancy.property_type}</span>
-                <span style={{ color: '#d1d5db' }}>|</span> 
-                {selectedVacancy.area} 
-                <span style={{ color: '#d1d5db' }}>|</span> 
-                {selectedVacancy.floor} 
-                <span style={{ color: '#d1d5db' }}>|</span> 
-                {selectedVacancy.direction}
-              </div>
-
-              <div style={{ fontSize: '15px', color: '#4b5563', lineHeight: 1.5, marginBottom: '16px' }}>
-                {selectedVacancy.description}
-              </div>
-
-              <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                <span style={{ fontSize: '11px', color: '#1a2e50', backgroundColor: '#e2e8f0', padding: '4px 8px', borderRadius: '4px', fontWeight: 700 }}>집주인</span>
-                <span style={{ fontSize: '11px', color: '#ef4444', backgroundColor: '#fef2f2', padding: '4px 8px', borderRadius: '4px', fontWeight: 700 }}>확인매물 {selectedVacancy.created_at}</span>
-              </div>
+              <p style={{ fontSize: "14px", color: "#374151" }}>
+                {[selectedVacancy.sido, selectedVacancy.sigungu, selectedVacancy.dong].filter(Boolean).join(" ")}
+                {selectedVacancy.building_name && ` ${selectedVacancy.building_name}`}
+              </p>
             </div>
 
-            {/* 기본 정보 테이블 */}
-            <div style={{ padding: '30px 20px 100px' }}>
-              <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#111827', marginBottom: '20px' }}>기본 정보</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                {Object.entries(selectedVacancy.details).map(([key, value]) => (
-                  <div key={key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '16px', borderBottom: '1px solid #f3f4f6' }}>
-                    <span style={{ fontSize: '15px', color: '#6b7280' }}>{key}</span>
-                    <span style={{ fontSize: '15px', color: '#111827', fontWeight: 700 }}>{value as string}</span>
-                  </div>
-                ))}
-              </div>
+            {/* 상세 정보 테이블 */}
+            <div style={{ padding: "16px" }}>
+              <h3 style={{ fontSize: "15px", fontWeight: 800, color: "#111827", marginBottom: "14px" }}>기본 정보</h3>
+              {[
+                ["거래방식", selectedVacancy.trade_type],
+                ["건물유형", selectedVacancy.property_type],
+                ["공급/전용", selectedVacancy.supply_m2 && `${selectedVacancy.supply_m2}㎡ / ${selectedVacancy.exclusive_m2 || "-"}㎡`],
+                ["해당/총층", selectedVacancy.current_floor && `${selectedVacancy.current_floor}층 / ${selectedVacancy.total_floor || "-"}층`],
+                ["방향", selectedVacancy.direction],
+                ["방/욕실", selectedVacancy.room_count && `${selectedVacancy.room_count}개 / ${selectedVacancy.bath_count || 0}개`],
+                ["주차", selectedVacancy.parking],
+                ["입주가능일", selectedVacancy.move_in_date || "즉시입주(공실)"],
+              ].filter(([, v]) => v).map(([label, val]) => (
+                <div key={label as string} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", borderBottom: "1px solid #f9fafb" }}>
+                  <span style={{ fontSize: "14px", color: "#6b7280" }}>{label}</span>
+                  <span style={{ fontSize: "14px", color: "#111827", fontWeight: 700 }}>{val}</span>
+                </div>
+              ))}
             </div>
 
-            {/* 고정 하단 CTA 버튼 (전화걸기) */}
-            <div style={{ position: 'fixed', bottom: 0, left: 0, width: '100%', padding: '16px 20px 24px', backgroundColor: '#fff', borderTop: '1px solid #e5e7eb', display: 'flex', gap: '12px', zIndex: 20 }}>
-              <button style={{ width: '56px', height: '56px', borderRadius: '12px', border: '1px solid #d1d5db', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, backgroundColor: '#fff' }}>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4b5563" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+            {/* 설명 */}
+            {selectedVacancy.description && (
+              <div style={{ margin: "0 16px 16px", padding: "14px", background: "#f8f9fa", borderRadius: "10px" }}>
+                <p style={{ fontSize: "14px", color: "#374151", lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{selectedVacancy.description}</p>
+              </div>
+            )}
+
+            {/* 옵션 */}
+            {selectedVacancy.options?.length > 0 && (
+              <div style={{ padding: "0 16px 16px" }}>
+                <h3 style={{ fontSize: "15px", fontWeight: 800, color: "#111827", marginBottom: "12px" }}>옵션</h3>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                  {selectedVacancy.options.map((opt: string) => (
+                    <span key={opt} style={{ fontSize: "13px", background: "#f3f4f6", color: "#374151", padding: "6px 12px", borderRadius: "6px", fontWeight: 600 }}>{opt}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 하단 CTA */}
+            <div style={{ position: "sticky", bottom: 0, background: "#fff", borderTop: "1px solid #e5e7eb", padding: "14px 16px 24px", display: "flex", gap: "10px" }}>
+              <button style={{ width: "52px", height: "52px", borderRadius: "12px", border: "1.5px solid #e5e7eb", display: "flex", alignItems: "center", justifyContent: "center", background: "#fff", cursor: "pointer", flexShrink: 0 }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4b5563" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
               </button>
-              <button style={{ flex: 1, height: '56px', borderRadius: '12px', backgroundColor: '#1a2e50', color: '#fff', fontSize: '18px', fontWeight: 800, border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+              <button
+                onClick={() => { const phone = selectedVacancy?.members?.phone || selectedVacancy?.client_phone; if (phone) window.location.href = `tel:${phone}`; }}
+                style={{ flex: 1, height: "52px", borderRadius: "12px", background: "#1a2e50", color: "#fff", fontSize: "16px", fontWeight: 800, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
                 전화하기
               </button>
             </div>
