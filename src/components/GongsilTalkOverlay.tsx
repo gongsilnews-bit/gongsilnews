@@ -790,10 +790,29 @@ export default function GongsilTalkOverlay() {
 
           {/* ── 우측 대화방 ── */}
           {selectedRoom && currentRoom && (
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", background: "#d5e3f0", minWidth: 0, position: "relative" }}>
+          <div style={{ 
+              flex: isMobilePath ? "none" : 1, display: "flex", flexDirection: "column", background: "#d5e3f0", minWidth: 0,
+              ...(isMobilePath ? {
+                position: "absolute", top: 0, left: 0, width: "100%", height: "100%", zIndex: 100,
+                animation: "talkSlideIn 0.25s ease-out forwards"
+              } : {
+                position: "relative"
+              })
+            }}>
               <>
+                <style>{`
+                  @keyframes talkSlideIn {
+                    from { transform: translateX(100%); }
+                    to { transform: translateX(0); }
+                  }
+                `}</style>
                 <div style={{ height: 48, background: "#fff", borderBottom: "1px solid #e5e7eb", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 14px", flexShrink: 0 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    {isMobilePath && (
+                      <button onClick={() => setSelectedRoom(null)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", padding: "0 8px 0 0" }}>
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#111" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+                      </button>
+                    )}
                     {editingRoomTitle ? (
                       <div style={{ display: "flex", gap: 4 }}>
                         <input value={roomTitleInput} onChange={e => setRoomTitleInput(e.target.value)} autoFocus
@@ -844,11 +863,13 @@ export default function GongsilTalkOverlay() {
                         >👥 친구 초대</button>
                       </div>
                     )}
-                    <button onClick={() => setSelectedRoom(null)} title="닫기" style={{ width: 30, height: 30, borderRadius: 6, background: "transparent", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#888" }}
-                      onMouseEnter={e => e.currentTarget.style.color = "#ef4444"} onMouseLeave={e => e.currentTarget.style.color = "#888"}
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
-                    </button>
+                    {!isMobilePath && (
+                      <button onClick={() => setSelectedRoom(null)} title="닫기" style={{ width: 30, height: 30, borderRadius: 6, background: "transparent", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#888" }}
+                        onMouseEnter={e => e.currentTarget.style.color = "#ef4444"} onMouseLeave={e => e.currentTarget.style.color = "#888"}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
+                      </button>
+                    )}
                   </div>
                 </div>
 
