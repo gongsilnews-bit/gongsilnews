@@ -7,8 +7,8 @@ import { getArticles, getArticleDetail, incrementArticleView } from "@/app/actio
 const KAKAO_APP_KEY = process.env.NEXT_PUBLIC_KAKAO_APP_KEY || "435d3602201a49ea712e5f5a36fe6efc";
 
 const CATEGORIES = [
+  { key: "home", label: "홈" },
   { key: "all", label: "전체뉴스" },
-  { key: "local", label: "우리동네뉴스" },
   { key: "부동산·주식·재테크", label: "부동산·재테크" },
   { key: "정치·경제·사회", label: "정치·경제" },
   { key: "세무·법률", label: "세무·법률" },
@@ -276,41 +276,53 @@ function MobileNewsPage() {
       }}
     >
 
-      {/* 카테고리 탭 */}
-      <div
-        className="no-scrollbar"
-        style={{
-          display: "flex",
-          overflowX: "auto",
-          backgroundColor: "#1a2e50",
-          position: "sticky",
-          top: "36px",
-          zIndex: 40,
-          marginTop: "-1px",
-        }}
-      >
-        {CATEGORIES.map((cat) => (
-          <button
-            key={cat.key}
-            onClick={() => { setActiveTab(cat.key); setSelectedCluster(null); }}
+      {/* 카테고리 탭 — 우리동네뉴스(지도)일 때 숨김 */}
+      {activeTab !== "local" && (
+        <>
+          <div
+            className="no-scrollbar"
             style={{
-              flexShrink: 0,
-              padding: "12px 16px",
-              fontSize: "14px",
-              fontWeight: activeTab === cat.key ? 800 : 500,
-              color: activeTab === cat.key ? "#fff" : "rgba(255,255,255,0.6)",
-              background: "none",
-              border: "none",
-              borderBottom: activeTab === cat.key ? "3px solid #ffffff" : "3px solid transparent",
-              cursor: "pointer",
-              transition: "all 0.2s",
-              whiteSpace: "nowrap",
+              display: "flex",
+              overflowX: "auto",
+              backgroundColor: "#1a2e50",
+              position: "fixed",
+              top: "41px",
+              left: "50%",
+              transform: "translateX(-50%)",
+              width: "100%",
+              maxWidth: "448px",
+              zIndex: 40,
             }}
           >
-            {cat.label}
-          </button>
-        ))}
-      </div>
+            {CATEGORIES.map((cat) => (
+              <button
+                key={cat.key}
+                onClick={() => {
+                  if (cat.key === "home") { router.push("/m"); return; }
+                  setActiveTab(cat.key); setSelectedCluster(null);
+                }}
+                style={{
+                  flexShrink: 0,
+                  padding: "10px 16px",
+                  fontSize: "14px",
+                  fontWeight: activeTab === cat.key ? 800 : 500,
+                  color: activeTab === cat.key ? "#fff" : "rgba(255,255,255,0.6)",
+                  background: "none",
+                  border: "none",
+                  borderBottom: activeTab === cat.key ? "3px solid #ffffff" : "3px solid transparent",
+                  cursor: "pointer",
+                  transition: "all 0.2s",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {cat.label}
+              </button>
+            ))}
+          </div>
+          {/* 카테고리 바 높이만큼 공간 확보 */}
+          <div style={{ height: "46px" }} />
+        </>
+      )}
 
       {/* 우리동네뉴스: 카카오 지도 뷰 */}
       {activeTab === "local" ? (

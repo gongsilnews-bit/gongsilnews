@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from "next/link";
 import dynamic from 'next/dynamic';
 
@@ -11,6 +11,19 @@ const SearchOverlay = dynamic(() => import('./header/SearchOverlay'), { ssr: fal
 export default function MobileHeader() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  // 로그인 성공 후 돌아오면 자동으로 햄버거 메뉴 열기
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('login') === 'success') {
+      const timer = setTimeout(() => {
+        setIsMenuOpen(true);
+        // URL에서 ?login=success 제거 (새로고침 시 다시 열리지 않도록)
+        window.history.replaceState({}, '', '/m');
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, []);
 
   return (
     <>

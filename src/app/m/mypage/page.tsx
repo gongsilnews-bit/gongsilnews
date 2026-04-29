@@ -2,150 +2,279 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { createClient } from '@/utils/supabase/client';
 
 export default function MobileMyPage() {
-  const [mounted, setMounted] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [memberData, setMemberData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setMounted(true);
+    const checkAuth = async () => {
+      setLoading(true);
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          setCurrentUser(user);
+          const { data } = await supabase
+            .from('members')
+            .select('name, email, role, avatar_url, plan_type, signup_completed')
+            .eq('id', user.id)
+            .single();
+          if (data) setMemberData(data);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+      setLoading(false);
+    };
+    checkAuth();
   }, []);
 
+  const handleOAuthLogin = async (providerName: 'google' | 'kakao') => {
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: providerName as any,
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback?from=mobile`,
+        },
+      });
+      if (error) throw error;
+    } catch (err: any) {
+      console.error(err);
+      alert('로그인 오류: ' + (err?.message || String(err)));
+    }
+  };
+
+  const handleLogout = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    window.location.href = '/m';
+  };
+
+  const getRoleLabel = (role?: string) => {
+    if (role === 'ADMIN') return '관리자';
+    if (role === 'REALTOR') return '부동산회원';
+    return '일반회원';
+  };
+
+  const getRoleBadgeStyle = (role?: string): React.CSSProperties => {
+    if (role === 'ADMIN') return { background: '#111827', color: '#fff' };
+    if (role === 'REALTOR') return { background: '#2563eb', color: '#fff' };
+    return { background: '#e5e7eb', color: '#374151' };
+  };
+
+  // 역할별 관리 메뉴 구성
+  const getAdminMenus = (role?: string) => {
+    const common = [
+      { icon: '📊', label: '대시보드', desc: '활동 요약 및 통계', href: role === 'ADMIN' ? '/admin?menu=dashboard' : role === 'REALTOR' ? '/realty_admin?menu=dashboard' : '/user_admin?menu=dashboard' },
+      { icon: '🏢', label: '공실관리', desc: '등록한 공실 매물 관리', href: role === 'ADMIN' ? '/admin?menu=gongsil' : role === 'REALTOR' ? '/realty_admin?menu=gongsil' : '/user_admin?menu=gongsil' },
+      { icon: '📝', label: '기사관리', desc: '작성한 기사 관리', href: role === 'ADMIN' ? '/admin?menu=article' : role === 'REALTOR' ? '/realty_admin?menu=article' : '/user_admin?menu=article' },
+      { icon: '💰', label: '포인트', desc: '포인트 내역 및 충전', href: role === 'REALTOR' ? '/realty_admin?menu=point' : '/user_admin?menu=point' },
+    ];
+    const realtor = [
+      { icon: '👥', label: '고객관리', desc: '상담 고객 목록', href: '/realty_admin?menu=customer' },
+      { icon: '💬', label: 'TALK', desc: '채팅 및 문의 관리', href: '/realty_admin?menu=comment' },
+      { icon: '🌐', label: '홈페이지', desc: '미니 홈페이지 관리', href: '/realty_admin?menu=homepage' },
+      { icon: '⚙️', label: '정보설정', desc: '내 정보 및 업소 설정', href: '/realty_admin?menu=settings' },
+    ];
+    const admin = [
+      { icon: '👥', label: '회원관리', desc: '전체 회원 관리', href: '/admin?menu=member' },
+      { icon: '🖼️', label: '배너관리', desc: '광고 배너 관리', href: '/admin?menu=banner' },
+      { icon: '📋', label: '게시판관리', desc: '게시판 관리', href: '/admin?menu=board' },
+      { icon: '⚙️', label: '설정', desc: '시스템 설정', href: '/admin?menu=settings' },
+    ];
+    const user = [
+      { icon: '⚙️', label: '정보설정', desc: '내 프로필 정보 수정', href: '/user_admin?menu=settings' },
+    ];
+
+    if (role === 'ADMIN') return [...common, ...admin];
+    if (role === 'REALTOR') return [...common, ...realtor];
+    return [...common, ...user];
+  };
+
+  // 로딩 상태
+  if (loading) {
+    return (
+      <div style={{ padding: '40px 20px', textAlign: 'center' }}>
+        <div style={{ width: '48px', height: '48px', border: '3px solid #e5e7eb', borderTopColor: '#1e56a0', borderRadius: '50%', margin: '0 auto 16px', animation: 'spin 0.8s linear infinite' }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        <p style={{ color: '#9ca3af', fontSize: '14px' }}>로딩 중...</p>
+      </div>
+    );
+  }
+
+  // 비로그인 상태
+  if (!currentUser) {
+    return (
+      <div style={{ padding: '40px 20px' }}>
+        {/* 로그인 유도 */}
+        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+          <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+          </div>
+          <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#111', margin: '0 0 6px' }}>로그인이 필요합니다</h2>
+          <p style={{ fontSize: '13px', color: '#888', margin: 0, lineHeight: 1.5 }}>
+            소셜 계정으로 간편하게 시작하세요<br />
+            모든 서비스를 무료로 이용할 수 있습니다
+          </p>
+        </div>
+
+        {/* 구글 */}
+        <button
+          onClick={() => handleOAuthLogin('google')}
+          style={{
+            width: '100%', padding: '14px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+            fontSize: '15px', fontWeight: 700, color: '#222', background: '#fff', border: '2px solid #4285F4',
+            borderRadius: '10px', cursor: 'pointer', fontFamily: 'inherit', marginBottom: '10px',
+            boxShadow: '0 2px 6px rgba(66,133,244,0.12)',
+          }}
+        >
+          <svg width="20" height="20" viewBox="0 0 48 48">
+            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+          </svg>
+          Google 계정으로 시작하기
+        </button>
+
+        {/* 카카오 */}
+        <button
+          onClick={() => handleOAuthLogin('kakao')}
+          style={{
+            width: '100%', padding: '14px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+            fontSize: '15px', fontWeight: 700, color: '#000', background: '#FEE500', border: 'none',
+            borderRadius: '10px', cursor: 'pointer', fontFamily: 'inherit',
+          }}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#3C1E1E" d="M12 3C6.48 3 2 6.36 2 10.44c0 2.62 1.75 4.93 4.38 6.24l-1.12 4.16c-.1.36.3.65.6.44l4.94-3.26c.39.04.79.06 1.2.06 5.52 0 10-3.36 10-7.64C22 6.36 17.52 3 12 3z"/></svg>
+          카카오 계정으로 시작하기
+        </button>
+      </div>
+    );
+  }
+
+  // ── 로그인 상태 ──
+  const menus = getAdminMenus(memberData?.role);
+
   return (
-    <div 
-      className={`w-full min-h-screen bg-gray-50 pb-10 overflow-x-hidden ${mounted ? 'animate-slide-in-right' : 'opacity-0 translate-x-full'}`}
-      style={{ width: '100%', minHeight: '100vh', backgroundColor: '#f9fafb', paddingBottom: '40px', overflowX: 'hidden' }}
-    >
-      <style>{`
-        @keyframes slideInRight {
-          from { transform: translateX(100%); opacity: 0; }
-          to { transform: translateX(0); opacity: 1; }
-        }
-        .animate-slide-in-right {
-          animation: slideInRight 0.3s cubic-bezier(0.25, 1, 0.5, 1) forwards;
-        }
-      `}</style>
-
-      {/* 1. 프로필 및 포인트 영역 */}
-      <div className="bg-white p-6 border-b border-gray-100" style={{ backgroundColor: '#ffffff', padding: '24px', borderBottom: '1px solid #f3f4f6' }}>
-        <div className="flex items-center mb-6" style={{ display: 'flex', alignItems: 'center', marginBottom: '24px' }}>
-          <div className="w-16 h-16 bg-gray-200 rounded-full overflow-hidden mr-4" style={{ width: '64px', height: '64px', backgroundColor: '#e5e7eb', borderRadius: '50%', overflow: 'hidden', marginRight: '16px' }}>
-            <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80" alt="Profile" className="w-full h-full object-cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+    <div style={{ width: '100%', minHeight: '100vh', backgroundColor: '#f4f5f7' }}>
+      {/* ── 1. 프로필 카드 ── */}
+      <div style={{ background: 'linear-gradient(135deg, #1a3a6b 0%, #1e56a0 100%)', padding: '24px 20px 20px', color: '#fff' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <div style={{ width: '56px', height: '56px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0, border: '2px solid rgba(255,255,255,0.3)' }}>
+            {memberData?.avatar_url ? (
+              <img src={memberData.avatar_url} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            ) : (
+              <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.2)', fontSize: '22px', fontWeight: 700 }}>
+                {(memberData?.name || '회')[0]}
+              </div>
+            )}
           </div>
-          <div>
-            <h2 className="text-[20px] font-bold text-gray-900" style={{ fontSize: '20px', fontWeight: 700, color: '#111827' }}>홍길동 대표님</h2>
-            <p className="text-[13px] text-gray-500 mt-1" style={{ fontSize: '13px', color: '#6b7280', marginTop: '4px' }}>hong@gongsil.com</p>
-          </div>
-        </div>
-
-        {/* 내 포인트 박스 */}
-        <div className="bg-[#1a2e50] rounded-xl p-4 flex justify-between items-center shadow-lg" style={{ backgroundColor: '#1a2e50', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)' }}>
-          <div className="flex items-center" style={{ display: 'flex', alignItems: 'center' }}>
-            <div className="w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center mr-3 text-[#1a2e50] font-bold text-[14px]" style={{ width: '32px', height: '32px', backgroundColor: '#facc15', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '12px', color: '#1a2e50', fontWeight: 700, fontSize: '14px' }}>
-              P
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+              <span style={{ fontSize: '18px', fontWeight: 800 }}>{memberData?.name || '회원'}님</span>
+              <span style={{
+                ...getRoleBadgeStyle(memberData?.role),
+                fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '10px',
+              }}>
+                {getRoleLabel(memberData?.role)}
+              </span>
             </div>
-            <span className="text-white font-medium text-[15px]" style={{ color: '#ffffff', fontWeight: 500, fontSize: '15px' }}>내 포인트</span>
-          </div>
-          <div className="text-white font-bold text-[22px]" style={{ color: '#ffffff', fontWeight: 700, fontSize: '22px' }}>
-            21,000 <span className="text-[14px] text-yellow-400" style={{ fontSize: '14px', color: '#facc15' }}>P</span>
+            <p style={{ fontSize: '12px', opacity: 0.7, margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {memberData?.email || currentUser?.email}
+            </p>
           </div>
         </div>
       </div>
 
-      {/* 2. 나의 활동 메뉴 */}
-      <div className="mt-2 bg-white" style={{ marginTop: '8px', backgroundColor: '#ffffff' }}>
-        <h3 className="px-5 pt-5 pb-2 text-[14px] font-bold text-gray-500" style={{ padding: '20px 20px 8px 20px', fontSize: '14px', fontWeight: 700, color: '#6b7280' }}>나의 활동</h3>
-        <ul>
-          {/* 내가 등록한 기사 */}
-          <li>
-            <button className="w-full flex items-center justify-between px-5 py-4 border-b border-gray-50 active:bg-gray-50" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid #f9fafb', backgroundColor: 'transparent', border: 'none', cursor: 'pointer' }}>
-              <div className="flex items-center" style={{ display: 'flex', alignItems: 'center' }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4b5563" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '12px' }}>
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                  <polyline points="14 2 14 8 20 8"></polyline>
-                  <line x1="16" y1="13" x2="8" y2="13"></line>
-                  <line x1="16" y1="17" x2="8" y2="17"></line>
-                  <polyline points="10 9 9 9 8 9"></polyline>
-                </svg>
-                <span className="text-[16px] text-gray-800 font-medium" style={{ fontSize: '16px', color: '#1f2937', fontWeight: 500 }}>내가 등록한 기사</span>
-              </div>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-            </button>
-          </li>
-          
-          {/* 내가 찜한 기사 */}
-          <li>
-            <button className="w-full flex items-center justify-between px-5 py-4 border-b border-gray-50 active:bg-gray-50" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid #f9fafb', backgroundColor: 'transparent', border: 'none', cursor: 'pointer' }}>
-              <div className="flex items-center" style={{ display: 'flex', alignItems: 'center' }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4b5563" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '12px' }}>
-                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
-                </svg>
-                <span className="text-[16px] text-gray-800 font-medium" style={{ fontSize: '16px', color: '#1f2937', fontWeight: 500 }}>내가 찜한 기사</span>
-              </div>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-            </button>
-          </li>
+      {/* ── 2. 관리 메뉴 그리드 ── */}
+      <div style={{ padding: '16px', background: '#fff', marginBottom: '8px' }}>
+        <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#6b7280', marginBottom: '12px', padding: '0 4px' }}>관리 메뉴</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+          {menus.map((item) => (
+            <Link
+              key={item.label}
+              href={item.href}
+              style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                padding: '14px 4px 10px', background: '#f8f9fb', borderRadius: '12px',
+                textDecoration: 'none', transition: 'all 0.15s',
+              }}
+            >
+              <span style={{ fontSize: '24px', marginBottom: '6px' }}>{item.icon}</span>
+              <span style={{ fontSize: '11px', fontWeight: 600, color: '#374151', textAlign: 'center', lineHeight: 1.3, wordBreak: 'keep-all' }}>{item.label}</span>
+            </Link>
+          ))}
+        </div>
+      </div>
 
-          {/* 내가 등록한 공실 */}
-          <li>
-            <button className="w-full flex items-center justify-between px-5 py-4 border-b border-gray-50 active:bg-gray-50" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid #f9fafb', backgroundColor: 'transparent', border: 'none', cursor: 'pointer' }}>
-              <div className="flex items-center" style={{ display: 'flex', alignItems: 'center' }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4b5563" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '12px' }}>
-                  <rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect>
-                  <path d="M9 22v-4h6v4"></path>
-                  <path d="M8 6h.01"></path>
-                  <path d="M16 6h.01"></path>
-                  <path d="M12 6h.01"></path>
-                  <path d="M12 10h.01"></path>
-                  <path d="M12 14h.01"></path>
-                  <path d="M16 10h.01"></path>
-                  <path d="M16 14h.01"></path>
-                  <path d="M8 10h.01"></path>
-                  <path d="M8 14h.01"></path>
-                </svg>
-                <span className="text-[16px] text-gray-800 font-medium" style={{ fontSize: '16px', color: '#1f2937', fontWeight: 500 }}>내가 등록한 공실</span>
-              </div>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-            </button>
-          </li>
+      {/* ── 3. 나의 활동 ── */}
+      <div style={{ background: '#fff', marginBottom: '8px' }}>
+        <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#6b7280', padding: '16px 20px 8px' }}>나의 활동</h3>
+        <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+          {[
+            { icon: '📝', label: '내가 등록한 기사', href: memberData?.role === 'REALTOR' ? '/realty_admin?menu=article' : '/user_admin?menu=article' },
+            { icon: '🏢', label: '내가 등록한 공실', href: memberData?.role === 'REALTOR' ? '/realty_admin?menu=gongsil' : '/user_admin?menu=gongsil' },
+            { icon: '🔖', label: '내가 찜한 기사', href: '#' },
+            { icon: '❤️', label: '내가 찜한 공실', href: '#' },
+          ].map((item) => (
+            <li key={item.label}>
+              <Link
+                href={item.href}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '14px 20px', borderBottom: '1px solid #f3f4f6',
+                  textDecoration: 'none', color: '#1f2937',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <span style={{ fontSize: '18px' }}>{item.icon}</span>
+                  <span style={{ fontSize: '15px', fontWeight: 500 }}>{item.label}</span>
+                </div>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
 
-          {/* 내가 찜한 공실 */}
+      {/* ── 4. 기타 ── */}
+      <div style={{ background: '#fff', marginBottom: '32px' }}>
+        <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
           <li>
-            <button className="w-full flex items-center justify-between px-5 py-4 border-b border-gray-50 active:bg-gray-50" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid #f9fafb', backgroundColor: 'transparent', border: 'none', cursor: 'pointer' }}>
-              <div className="flex items-center" style={{ display: 'flex', alignItems: 'center' }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4b5563" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '12px' }}>
-                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-                </svg>
-                <span className="text-[16px] text-gray-800 font-medium" style={{ fontSize: '16px', color: '#1f2937', fontWeight: 500 }}>내가 찜한 공실</span>
-              </div>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            <Link href="#" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #f3f4f6', textDecoration: 'none', color: '#374151' }}>
+              <span style={{ fontSize: '15px' }}>공지사항 / 이벤트</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </Link>
+          </li>
+          <li>
+            <Link href="#" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #f3f4f6', textDecoration: 'none', color: '#374151' }}>
+              <span style={{ fontSize: '15px' }}>고객센터 (1555-5343)</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </Link>
+          </li>
+          <li>
+            <button
+              onClick={handleLogout}
+              style={{
+                width: '100%', display: 'flex', alignItems: 'center',
+                padding: '14px 20px', color: '#ef4444', fontWeight: 600,
+                fontSize: '15px', background: 'none', border: 'none',
+                cursor: 'pointer', fontFamily: 'inherit',
+              }}
+            >
+              로그아웃
             </button>
           </li>
         </ul>
       </div>
-
-      {/* 3. 기타 메뉴 */}
-      <div className="mt-2 bg-white mb-8" style={{ marginTop: '8px', backgroundColor: '#ffffff', marginBottom: '32px' }}>
-        <ul>
-          <li>
-            <button className="w-full flex items-center justify-between px-5 py-4 border-b border-gray-50 text-gray-700" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid #f9fafb', color: '#374151', backgroundColor: 'transparent', border: 'none', cursor: 'pointer' }}>
-              <span className="text-[15px]" style={{ fontSize: '15px' }}>공지사항 / 이벤트</span>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-            </button>
-          </li>
-          <li>
-            <button className="w-full flex items-center justify-between px-5 py-4 border-b border-gray-50 text-gray-700" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid #f9fafb', color: '#374151', backgroundColor: 'transparent', border: 'none', cursor: 'pointer' }}>
-              <span className="text-[15px]" style={{ fontSize: '15px' }}>고객센터</span>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-            </button>
-          </li>
-          <li>
-            <button className="w-full flex items-center px-5 py-4 text-red-500 font-medium" style={{ width: '100%', display: 'flex', alignItems: 'center', padding: '16px 20px', color: '#ef4444', fontWeight: 500, backgroundColor: 'transparent', border: 'none', cursor: 'pointer' }}>
-              <span className="text-[15px]" style={{ fontSize: '15px' }}>로그아웃</span>
-            </button>
-          </li>
-        </ul>
-      </div>
-
     </div>
   );
 }

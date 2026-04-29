@@ -40,7 +40,9 @@ export default function MobileBottomNav() {
         style={{ maxWidth: '448px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '60px', padding: '0 8px' }}
       >
         {navItems.map((item) => {
-          const isActive = pathname === item.path || (item.path !== "/m" && pathname.startsWith(item.path));
+          const isActive = pathname === item.path || 
+            (item.path !== "/m" && pathname.startsWith(item.path.split('?')[0]));
+
           return (
             <Link
               key={item.name}

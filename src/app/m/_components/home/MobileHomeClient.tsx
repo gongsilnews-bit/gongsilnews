@@ -43,8 +43,8 @@ interface Props {
 }
 
 const CATEGORIES = [
+  { key: "home", label: "홈" },
   { key: "all", label: "전체뉴스" },
-  { key: "local", label: "우리동네뉴스" },
   { key: "부동산·주식·재테크", label: "부동산·재테크" },
   { key: "정치·경제·사회", label: "정치·경제" },
   { key: "세무·법률", label: "세무·법률" },
@@ -67,8 +67,12 @@ export default function MobileHomeClient(props: Props) {
           display: "flex",
           overflowX: "auto",
           backgroundColor: "#1a2e50",
-          position: "sticky",
-          top: "44px", // 모바일 헤더 높이(44px) 바로 아래 고정
+          position: "fixed",
+          top: "41px",
+          left: "50%",
+          transform: "translateX(-50%)",
+          width: "100%",
+          maxWidth: "448px",
           zIndex: 40,
         }}
       >
@@ -76,18 +80,18 @@ export default function MobileHomeClient(props: Props) {
           <button
             key={cat.key}
             onClick={() => {
-              if (cat.key === "all") return; // 이미 전체 홈이므로
+              if (cat.key === "home") return; // 이미 홈이므로
               router.push(`/m/news?tab=${cat.key}`);
             }}
             style={{
               flexShrink: 0,
-              padding: "12px 16px",
+              padding: "10px 16px",
               fontSize: "14px",
-              fontWeight: cat.key === "all" ? 800 : 500,
-              color: cat.key === "all" ? "#fff" : "rgba(255,255,255,0.6)",
+              fontWeight: cat.key === "home" ? 800 : 500,
+              color: cat.key === "home" ? "#fff" : "rgba(255,255,255,0.6)",
               background: "none",
               border: "none",
-              borderBottom: cat.key === "all" ? "3px solid #ffffff" : "3px solid transparent",
+              borderBottom: cat.key === "home" ? "3px solid #ffffff" : "3px solid transparent",
               cursor: "pointer",
               transition: "all 0.2s",
               whiteSpace: "nowrap",
@@ -97,6 +101,8 @@ export default function MobileHomeClient(props: Props) {
           </button>
         ))}
       </div>
+      {/* 카테고리 바 높이만큼 공간 확보 */}
+      <div style={{ height: "46px" }} />
 
       {/* ① Hero 배너 (헤드라인 기사) */}
       {hero && (

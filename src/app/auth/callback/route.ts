@@ -6,6 +6,7 @@ import { cookies } from 'next/headers'
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
+  const from = searchParams.get('from')
   
   if (code) {
     const cookieStore = await cookies()
@@ -30,11 +31,14 @@ export async function GET(request: Request) {
     // 코드를 통해 세션을 교환
     const { error } = await supabase.auth.exchangeCodeForSession(code)
     if (!error) {
-      // 성공하면 홈페이지로 리다이렉트 (로그인 성공 모달 등을 띄우려면 query param을 추가할 수도 있음)
-      return NextResponse.redirect(`${origin}/?signup=success`)
+      // from=mobile이면 모바일 페이지로, 아니면 PC 페이지로 리다이렉트
+      const redirectPath = from === 'mobile' ? '/m?login=success' : '/?signup=success'
+      return NextResponse.redirect(`${origin}${redirectPath}`)
     }
   }
 
   // 에러 발생시
-  return NextResponse.redirect(`${origin}/?error=auth`)
+  const errorPath = from === 'mobile' ? '/m?error=auth' : '/?error=auth'
+  return NextResponse.redirect(`${origin}${errorPath}`)
 }
+
