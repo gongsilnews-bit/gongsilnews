@@ -60,20 +60,6 @@ export default function MobileHomeClient(props: Props) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", width: "100%", background: "#f8f9fa", minHeight: "100vh", paddingBottom: "80px" }}>
-      <style>{`
-        .no-scrollbar::-webkit-scrollbar{display:none;}
-        .no-scrollbar{-ms-overflow-style:none;scrollbar-width:none;}
-        .tap:active{opacity:0.75;}
-        .sec-hd{display:flex;align-items:center;justify-content:space-between;padding:18px 16px 12px;}
-        .sec-hd h2{font-size:16px;font-weight:800;color:#111827;margin:0;}
-        .sec-hd a{font-size:13px;color:#6b7280;text-decoration:none;display:flex;align-items:center;gap:2px;}
-        .art-row{display:flex;gap:12px;padding:0 16px 16px;cursor:pointer;border-bottom:1px solid #f3f4f6;}
-        .art-row:last-child{border-bottom:none;}
-        .art-row:active{background:#f9fafb;}
-        .skeleton{background:linear-gradient(90deg,#f3f4f6 25%,#e5e7eb 50%,#f3f4f6 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:6px;}
-        @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
-      `}</style>
-
       {/* 네비게이션 메뉴 (뉴스 탭과 동일, 네이버식 가로 스와이프) */}
       <div
         className="no-scrollbar"
@@ -84,7 +70,6 @@ export default function MobileHomeClient(props: Props) {
           position: "sticky",
           top: "44px", // 모바일 헤더 높이(44px) 바로 아래 고정
           zIndex: 40,
-          marginTop: "-1px",
         }}
       >
         {CATEGORIES.map((cat) => (
@@ -222,6 +207,19 @@ export default function MobileHomeClient(props: Props) {
           </div>
         </div>
       )}
+      <style>{`
+        .no-scrollbar::-webkit-scrollbar{display:none;}
+        .no-scrollbar{-ms-overflow-style:none;scrollbar-width:none;}
+        .tap:active{opacity:0.75;}
+        .sec-hd{display:flex;align-items:center;justify-content:space-between;padding:18px 16px 12px;}
+        .sec-hd h2{font-size:16px;font-weight:800;color:#111827;margin:0;}
+        .sec-hd a{font-size:13px;color:#6b7280;text-decoration:none;display:flex;align-items:center;gap:2px;}
+        .art-row{display:flex;gap:12px;padding:0 16px 16px;cursor:pointer;border-bottom:1px solid #f3f4f6;}
+        .art-row:last-child{border-bottom:none;}
+        .art-row:active{background:#f9fafb;}
+        .skeleton{background:linear-gradient(90deg,#f3f4f6 25%,#e5e7eb 50%,#f3f4f6 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:6px;}
+        @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+      `}</style>
     </div>
   );
 }
