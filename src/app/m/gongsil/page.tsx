@@ -63,6 +63,12 @@ export default function MobileGongsilPage() {
         center: new kakao.maps.LatLng(37.5665, 126.978),
         level: 7,
       });
+
+      kakao.maps.event.addListener(map, "click", () => {
+        setSelectedCluster(null);
+        setSelectedVacancy(null);
+      });
+
       kakaoMapRef.current = map;
       setMapLoaded(true);
     };
@@ -105,12 +111,12 @@ export default function MobileGongsilPage() {
     Object.values(groups).forEach((group) => {
       const { lat, lng } = group[0];
       const count = group.length;
-      const size = count > 5 ? 52 : 44;
-      const color = count > 5 ? "#1a2e50" : "#f97316";
+      const size = count > 9 ? 52 : 44;
+      const color = "#1a2e50";
 
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
         <circle cx="${size/2}" cy="${size/2}" r="${size/2-2}" fill="${color}" stroke="white" stroke-width="2.5"/>
-        <text x="50%" y="50%" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="${count>9?13:15}" font-weight="bold" font-family="sans-serif">${count}</text>
+        <text x="50%" y="50%" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="${count>9?14:15}" font-weight="bold" font-family="sans-serif">${count}</text>
       </svg>`;
 
       const img = new kakao.maps.MarkerImage(
@@ -168,8 +174,7 @@ export default function MobileGongsilPage() {
       `}</style>
 
       {/* 카카오 지도 */}
-      <div ref={mapRef} style={{ width: "100%", flex: 1, minHeight: "calc(100vh - 124px)" }}
-        onClick={() => { setSelectedCluster(null); setSelectedVacancy(null); }} />
+      <div ref={mapRef} style={{ width: "100%", flex: 1, minHeight: "calc(100vh - 124px)" }} />
 
       {/* 지도 로딩 중 */}
       {!mapLoaded && (
