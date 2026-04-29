@@ -242,6 +242,27 @@ export async function getArticles(filters?: {
   return await getArticlesCached(filters);
 }
 
+/* ── 제목/본문 텍스트 검색 ── */
+export async function searchArticles(query: string) {
+  const supabase = getAdminClient();
+  try {
+    const searchPattern = `%${query}%`;
+    const { data, error } = await supabase
+      .from("articles")
+      .select("id, article_no, status, section1, section2, title, subtitle, content, author_name, author_id, published_at, created_at, updated_at, is_deleted, thumbnail_url, view_count, lat, lng, location_name, youtube_url, is_important, is_headline, article_keywords(keyword)")
+      .eq("is_deleted", false)
+      .eq("status", "APPROVED")
+      .or(`title.ilike.${searchPattern},subtitle.ilike.${searchPattern},content.ilike.${searchPattern}`)
+      .order("created_at", { ascending: false })
+      .limit(100);
+
+    if (error) return { success: false, error: error.message };
+    return { success: true, data };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
 /* ── 회원 본인 기사만 조회 (author_id 필터링) ── */
 export async function getMyArticles(authorId: string) {
   const supabase = getAdminClient();

@@ -157,9 +157,39 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
         </div>
         <div className="top-bar-right">
           <div className="top-search-wrap" ref={searchWrapRef}>
-            <input type="text" className="top-search-input" ref={searchInputRef} placeholder="검색어를 입력하세요" />
+            <input
+              type="text"
+              className="top-search-input"
+              ref={searchInputRef}
+              placeholder="검색어를 입력하세요"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  const query = searchInputRef.current?.value.trim();
+                  if (query) {
+                    router.push(`/news_all?q=${encodeURIComponent(query)}`);
+                    searchWrapRef.current?.classList.remove('active');
+                    if (searchInputRef.current) searchInputRef.current.value = '';
+                  }
+                }
+              }}
+            />
             <div className="icon-tooltip-wrap" data-tooltip="검색">
-              <svg onClick={() => { searchWrapRef.current?.classList.toggle("active"); searchInputRef.current?.focus(); }} viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <svg onClick={() => {
+                const isActive = searchWrapRef.current?.classList.contains('active');
+                if (isActive) {
+                  const query = searchInputRef.current?.value.trim();
+                  if (query) {
+                    router.push(`/news_all?q=${encodeURIComponent(query)}`);
+                    searchWrapRef.current?.classList.remove('active');
+                    if (searchInputRef.current) searchInputRef.current.value = '';
+                  } else {
+                    searchWrapRef.current?.classList.remove('active');
+                  }
+                } else {
+                  searchWrapRef.current?.classList.add('active');
+                  searchInputRef.current?.focus();
+                }
+              }} viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
             </div>
           </div>
           {currentUser ? (
