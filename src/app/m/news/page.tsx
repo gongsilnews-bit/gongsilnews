@@ -57,6 +57,15 @@ function MobileNewsPage() {
   const searchParams = useSearchParams();
   const initialTab = searchParams.get("tab") || "all";
   const [activeTab, setActiveTab] = useState(initialTab);
+
+  // URL의 탭이 변경되면 activeTab 상태를 동기화
+  useEffect(() => {
+    const tab = searchParams.get("tab") || "all";
+    if (tab !== activeTab) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
+
   const [articles, setArticles] = useState<any[]>([]);
   const [localArticles, setLocalArticles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
