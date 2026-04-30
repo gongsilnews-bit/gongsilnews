@@ -14,9 +14,18 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [memberData, setMemberData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [isClosing, setIsClosing] = useState(false);
   const [isSignupCompleteOpen, setIsSignupCompleteOpen] = useState(false);
   const [signupEmail, setSignupEmail] = useState('');
   const [signupName, setSignupName] = useState('');
+
+  const handleClose = () => {
+    setIsClosing(true);
+    setTimeout(() => {
+      setIsClosing(false);
+      onClose();
+    }, 250);
+  };
 
   useEffect(() => {
     if (!isOpen) return;
@@ -58,8 +67,8 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
     await supabase.auth.signOut();
     setCurrentUser(null);
     setMemberData(null);
-    onClose();
-    window.location.reload();
+    handleClose();
+    setTimeout(() => window.location.reload(), 300);
   };
 
   const handleOAuthLogin = async (providerName: 'google' | 'kakao') => {
@@ -121,21 +130,35 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
 
   return (
     <>
-      <div className="animate-slide-in-left" style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100dvh', backgroundColor: '#f9fafb', zIndex: 99999, display: 'flex', flexDirection: 'column', overflowX: 'hidden' }}>
+      <div className={isClosing ? "animate-slide-out-left" : "animate-slide-in-left"} style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100dvh', backgroundColor: '#f9fafb', zIndex: 99999, display: 'flex', flexDirection: 'column', overflowX: 'hidden' }}>
         <style>{`
           @keyframes slideInLeft {
             from { transform: translateX(-100%); opacity: 0; }
             to { transform: translateX(0); opacity: 1; }
           }
+          @keyframes slideOutLeft {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(-100%); opacity: 0; }
+          }
           .animate-slide-in-left {
-            animation: slideInLeft 0.3s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+            animation: slideInLeft 0.25s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+          }
+          .animate-slide-out-left {
+            animation: slideOutLeft 0.25s cubic-bezier(0.25, 1, 0.5, 1) forwards;
           }
         `}</style>
         
         {/* 헤더 */}
         <div style={{ display: 'flex', alignItems: 'center', justifyItems: 'center', justifyContent: 'space-between', padding: '16px', backgroundColor: '#fff', borderBottom: '1px solid #f3f4f6' }}>
           <img src="/logo.png" alt="공실뉴스" style={{ height: '24px', objectFit: 'contain' }} />
-          <button onClick={onClose} style={{ padding: '4px' }}>
+          <button 
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleClose();
+            }} 
+            style={{ padding: '4px' }}
+          >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
           </button>
         </div>
@@ -192,7 +215,7 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
                       <Link
                         key={item.label}
                         href={item.href}
-                        onClick={onClose}
+                        onClick={handleClose}
                         style={{
                           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                           padding: '12px 4px 8px', background: '#f8f9fb', borderRadius: '10px',
@@ -284,7 +307,7 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
             <ul>
               {["전체뉴스", "우리동네뉴스", "부동산·주식·재테크", "정치·경제·사회", "세무·법률", "여행·건강·생활", "기타"].map(menu => (
                 <li key={menu}>
-                  <Link href="/m/news" onClick={onClose} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', borderBottom: '1px solid #f9fafb', color: '#1f2937', textDecoration: 'none' }}>
+                  <Link href="/m/news" onClick={handleClose} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', borderBottom: '1px solid #f9fafb', color: '#1f2937', textDecoration: 'none' }}>
                     <span style={{ fontSize: '15px', fontWeight: 500 }}>{menu}</span>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
                   </Link>
@@ -326,7 +349,7 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
                     { icon: '❤️', label: '내가 찜한 공실', href: '#' },
                   ].map((item) => (
                     <li key={item.label}>
-                      <Link href={item.href} onClick={onClose} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', borderBottom: '1px solid #f9fafb', textDecoration: 'none', color: '#1f2937' }}>
+                      <Link href={item.href} onClick={handleClose} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', borderBottom: '1px solid #f9fafb', textDecoration: 'none', color: '#1f2937' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                           <span style={{ fontSize: '16px' }}>{item.icon}</span>
                           <span style={{ fontSize: '15px', fontWeight: 500 }}>{item.label}</span>
@@ -356,8 +379,8 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
           {/* 풋터 영역 — 실제 회사 정보 */}
           <div style={{ backgroundColor: '#f3f4f6', padding: '24px 20px', marginTop: '16px' }}>
             <div style={{ marginBottom: '16px', display: 'flex', gap: '16px' }}>
-              <Link href="/terms" onClick={onClose} style={{ fontSize: '13px', fontWeight: 700, color: '#4b5563', textDecoration: 'none' }}>이용약관</Link>
-              <Link href="#" onClick={onClose} style={{ fontSize: '13px', fontWeight: 700, color: '#4b5563', textDecoration: 'none' }}>개인정보처리방침</Link>
+              <Link href="/terms" onClick={handleClose} style={{ fontSize: '13px', fontWeight: 700, color: '#4b5563', textDecoration: 'none' }}>이용약관</Link>
+              <Link href="#" onClick={handleClose} style={{ fontSize: '13px', fontWeight: 700, color: '#4b5563', textDecoration: 'none' }}>개인정보처리방침</Link>
             </div>
             <div style={{ fontSize: '12px', color: '#9ca3af', lineHeight: 1.6 }}>
               (주)공실마케팅<br/>
