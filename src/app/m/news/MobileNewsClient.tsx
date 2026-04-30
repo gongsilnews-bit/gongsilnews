@@ -414,7 +414,12 @@ function MobileNewsClient({ initialTab, initialArticles }: { initialTab: string,
       {activeTab === "local" ? (
         <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minHeight: "calc(100vh - 41px)" }}>
           {/* 상단: 카카오 지도 */}
-          <div style={{ position: "relative", width: "100%", height: "45vh", borderBottom: "1px solid #ddd", flexShrink: 0 }}>
+          <div 
+            style={{ position: "relative", width: "100%", height: "45vh", borderBottom: "1px solid #ddd", flexShrink: 0 }}
+            onTouchStart={(e) => e.stopPropagation()}
+            onTouchMove={(e) => e.stopPropagation()}
+            onTouchEnd={(e) => e.stopPropagation()}
+          >
             <div ref={mapRef} style={{ width: "100%", height: "100%" }} />
 
             {/* 지도 미로드 시 스켈레톤 */}
