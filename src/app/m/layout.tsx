@@ -9,7 +9,19 @@ export const metadata = {
   description: "대한민국 대표 부동산 공실 플랫폼",
 };
 
+import PopupBanner from "@/components/PopupBanner";
+
 export default function MobileLayout({ children }: { children: React.ReactNode }) {
+  const isMaintenance = process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true";
+
+  if (isMaintenance) {
+    return (
+      <div style={{ position: 'relative', width: '100%', minHeight: '100vh', backgroundColor: '#fff' }}>
+        <PopupBanner />
+      </div>
+    );
+  }
+
   return (
     <div 
       className="flex flex-col min-h-screen pb-[60px]"
