@@ -649,7 +649,7 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
               <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 16 }}>
                 <h3 style={{ fontSize: 16, fontWeight: 800, color: "#111", margin: 0 }}>이 기사를 추천합니다</h3>
               </div>
-              <div style={{ display: "flex", gap: "16px", alignItems: "center", flexWrap: "nowrap", overflowX: "auto", paddingBottom: "8px" }} className="no-scrollbar">
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", paddingBottom: "8px" }}>
                 {[
                   { type: 'INFO', icon: '💡', label: '쏠쏠정보' },
                   { type: 'INTERESTING', icon: '🤓', label: '흥미진진' },
@@ -657,7 +657,7 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
                   { type: 'ANALYSIS', icon: '✨', label: '분석탁월' },
                   { type: 'RECOMMEND', icon: '👍', label: '후속강추' },
                 ].map(rp => (
-                  <div key={rp.type} onClick={() => handleToggleReaction(rp.type)} style={{ display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer", gap: 6, opacity: myReaction === rp.type ? 1 : 0.6, transition: "opacity 0.2s", flexShrink: 0, minWidth: 50 }}>
+                  <div key={rp.type} onClick={() => handleToggleReaction(rp.type)} style={{ display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer", gap: 6, opacity: myReaction === rp.type ? 1 : 0.6, transition: "opacity 0.2s", flex: 1 }}>
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
                       <span style={{ fontSize: 24, lineHeight: 1 }}>{rp.icon}</span>
                       <span style={{ fontSize: 11, color: "#555", fontWeight: myReaction === rp.type ? "bold" : "normal", whiteSpace: "nowrap" }}>{rp.label}</span>
