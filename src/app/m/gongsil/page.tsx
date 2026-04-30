@@ -362,7 +362,7 @@ export default function MobileGongsilPage() {
               {detailTab === "info" ? (
                 <div>
                   {[
-                    ["매물번호", selectedVacancy.id],
+                    ["매물번호", selectedVacancy.vacancy_no || '-'],
                     ["소재지", [selectedVacancy.sido, selectedVacancy.sigungu, selectedVacancy.dong, selectedVacancy.building_name].filter(Boolean).join(" ")],
                     ["매물특성", selectedVacancy.building_name || "-"],
                     ["공급/전용면적", `${selectedVacancy.supply_m2 || "-"}㎡ / ${selectedVacancy.exclusive_m2 || "-"}㎡`],
