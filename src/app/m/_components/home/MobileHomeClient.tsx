@@ -208,8 +208,8 @@ export default function MobileHomeClient(props: Props) {
           <div className="no-scrollbar" style={{ display: "flex", gap: 12, padding: "0 16px 16px", overflowX: "auto" }}>
             {mapArticles.slice(0, 5).map((a: any) => (
               <div key={a.id} className="tap" onClick={() => router.push(`/m/news/${a.article_no || a.id}`)}
-                style={{ flexShrink: 0, width: 240, borderRadius: 10, overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.07)", border: "1px solid #f3f4f6", background: "#fff", cursor: "pointer" }}>
-                <div style={{ width: "100%", height: 134, overflow: "hidden", background: "#e5e7eb", position: "relative" }}>
+                style={{ flexShrink: 0, width: "calc(50vw - 22px)", maxWidth: 200, borderRadius: 10, overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.07)", border: "1px solid #f3f4f6", background: "#fff", cursor: "pointer" }}>
+                <div style={{ width: "100%", aspectRatio: "16/9", overflow: "hidden", background: "#e5e7eb", position: "relative" }}>
                   {a.thumbnail_url
                     ? <img src={a.thumbnail_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     : <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg,#1a2e50,#2d4a7a)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>📺</div>}
@@ -317,7 +317,7 @@ function NewsSection({ title, href, articles }: { title: string; href: string; a
           <span style={{ flexShrink: 0, width: 20, fontSize: 15, fontWeight: 800, color: i === 0 ? "#f97316" : "#d1d5db", alignSelf: "center" }}>{i + 1}</span>
           <p style={{ fontSize: 16, fontWeight: 600, color: "#333333", lineHeight: 1.5, flex: 1, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", wordBreak: "keep-all", margin: 0, letterSpacing: "-0.3px" }}>{a.title}</p>
           {a.thumbnail_url && (
-            <div style={{ width: 76, height: 56, borderRadius: 6, overflow: "hidden", flexShrink: 0 }}>
+            <div style={{ width: 104, height: 80, borderRadius: 8, overflow: "hidden", flexShrink: 0 }}>
               <img src={a.thumbnail_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             </div>
           )}
