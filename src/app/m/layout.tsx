@@ -12,8 +12,19 @@ export const metadata = {
 export default function MobileLayout({ children }: { children: React.ReactNode }) {
   return (
     <div 
-      className="flex flex-col min-h-screen bg-gray-50 pb-[60px]"
-      style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', backgroundColor: '#f9fafb', paddingBottom: '60px' }}
+      className="flex flex-col min-h-screen pb-[60px]"
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        minHeight: '100vh',
+        backgroundColor: '#F4F6F8',
+        paddingBottom: '60px',
+        fontFamily: "'Pretendard', -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif",
+        letterSpacing: '-0.3px',
+        lineHeight: 1.6,
+        color: '#333333',
+        WebkitFontSmoothing: 'antialiased',
+      }}
     >
       {/* 모바일 전용 상단 헤더 */}
       <MobileHeader />

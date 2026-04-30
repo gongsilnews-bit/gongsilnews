@@ -59,7 +59,7 @@ export default function MobileHomeClient(props: Props) {
   const hero = headlineArticles[heroIdx] || null;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", width: "100%", background: "#f8f9fa", minHeight: "100vh", paddingBottom: "80px" }}>
+    <div style={{ display: "flex", flexDirection: "column", width: "100%", background: "#F4F6F8", minHeight: "100vh", paddingBottom: "80px", letterSpacing: "-0.3px" }}>
       {/* 네비게이션 메뉴 (뉴스 탭과 동일, 네이버식 가로 스와이프) */}
       <div
         className="hide-scrollbar"
@@ -115,9 +115,9 @@ export default function MobileHomeClient(props: Props) {
             : <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg,#1a2e50,#2d4a7a)" }} />}
           <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top,rgba(0,0,0,0.85) 0%,rgba(0,0,0,0.2) 55%,transparent 100%)" }} />
           <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "16px" }}>
-            <span style={{ background: "#dc2626", color: "#fff", fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 3, display: "inline-block", marginBottom: 8 }}>HEADLINE</span>
-            <h2 style={{ color: "#fff", fontSize: 17, fontWeight: 800, lineHeight: 1.35, wordBreak: "keep-all", margin: 0, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{hero.title}</h2>
-            <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 12, marginTop: 6, marginBottom: 0 }}>{hero.author_name} · {formatDate(hero.published_at || hero.created_at)}</p>
+            <span style={{ background: "#dc2626", color: "#fff", fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 3, display: "inline-block", marginBottom: 8, letterSpacing: "0.5px" }}>HEADLINE</span>
+            <h2 style={{ color: "#fff", fontSize: 17, fontWeight: 800, lineHeight: 1.45, wordBreak: "keep-all", margin: 0, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", letterSpacing: "-0.5px" }}>{hero.title}</h2>
+            <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 12, marginTop: 6, marginBottom: 0, letterSpacing: "-0.2px" }}>{hero.author_name} · {formatDate(hero.published_at || hero.created_at)}</p>
           </div>
           {headlineArticles.length > 1 && (
             <div style={{ position: "absolute", bottom: 12, right: 12, display: "flex", gap: 4 }}>
@@ -131,7 +131,7 @@ export default function MobileHomeClient(props: Props) {
       )}
 
       {/* ② 실시간 공실 매물 - 카카오 지도 미리보기 */}
-      <div style={{ background: "#fff", marginBottom: 8 }}>
+      <div style={{ background: "#fff", marginBottom: 12, borderBottom: "1px solid #f0f0f0" }}>
         <div className="sec-hd">
           <h2>실시간 공실 매물</h2>
           <Link href="/m/gongsil" style={{ fontSize: 13, color: "#6b7280", textDecoration: "none" }}>더보기 ›</Link>
@@ -143,11 +143,11 @@ export default function MobileHomeClient(props: Props) {
 
 
       {/* ③ 부동산·주식·재테크 */}
-      <NewsSection title="부동산·주식·재테크" href="/m/news" articles={financeArticles} />
+      <NewsSection title="부동산·주식·재테크" href="/m/news?tab=부동산·주식·재테크" articles={financeArticles} />
 
       {/* ④ 우리동네부동산 (PC VideoGrid 대응) */}
       {mapArticles.length > 0 && (
-        <div style={{ background: "#fff", marginBottom: 8 }}>
+        <div style={{ background: "#fff", marginBottom: 12, borderBottom: "1px solid #f0f0f0" }}>
           <div className="sec-hd">
             <h2>우리동네부동산</h2>
             <Link href="/m/news" style={{ fontSize: 13, color: "#6b7280", textDecoration: "none" }}>더보기 ›</Link>
@@ -167,8 +167,8 @@ export default function MobileHomeClient(props: Props) {
                   )}
                 </div>
                 <div style={{ padding: "10px" }}>
-                  <p style={{ fontSize: 13, fontWeight: 700, color: "#111827", lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", wordBreak: "keep-all", margin: 0 }}>{a.title}</p>
-                  <p style={{ fontSize: 11, color: "#9ca3af", marginTop: 5 }}>{formatDate(a.published_at || a.created_at)}</p>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: "#333333", lineHeight: 1.5, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", wordBreak: "keep-all", margin: 0, letterSpacing: "-0.3px" }}>{a.title}</p>
+                  <p style={{ fontSize: 11, color: "#999999", marginTop: 5 }}>{formatDate(a.published_at || a.created_at)}</p>
                 </div>
               </div>
             ))}
@@ -190,7 +190,7 @@ export default function MobileHomeClient(props: Props) {
 
       {/* ⑨ 부동산특강 (PC SpecialLectureBanner 대응) */}
       {lectures.length > 0 && (
-        <div style={{ background: "#fff", marginBottom: 8 }}>
+        <div style={{ background: "#fff", marginBottom: 12, borderBottom: "1px solid #f0f0f0" }}>
           <div className="sec-hd">
             <h2>부동산특강</h2>
             <Link href="/m/study" style={{ fontSize: 13, color: "#6b7280", textDecoration: "none" }}>더보기 ›</Link>
@@ -205,10 +205,10 @@ export default function MobileHomeClient(props: Props) {
                     : <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg,#667eea,#764ba2)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 12, fontWeight: 700, padding: "0 8px", textAlign: "center" }}>{lec.category || "특강"}</div>}
                 </div>
                 <div style={{ padding: "10px" }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: "#8a3ffc", display: "block", marginBottom: 4 }}>{lec.category}</span>
-                  <p style={{ fontSize: 13, fontWeight: 700, color: "#111827", lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", margin: "0 0 6px", wordBreak: "keep-all" }}>{lec.title}</p>
-                  <p style={{ fontSize: 12, color: "#6b7280", margin: 0 }}>{lec.instructor_name || "공실마스터"}</p>
-                  <p style={{ fontSize: 13, fontWeight: 800, color: "#111827", marginTop: 6 }}>{lec.discount_price || lec.price ? `${(lec.discount_price || lec.price).toLocaleString()}P` : "무료"}</p>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: "#8a3ffc", display: "block", marginBottom: 4, letterSpacing: "-0.2px" }}>{lec.category}</span>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: "#333333", lineHeight: 1.5, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", margin: "0 0 6px", wordBreak: "keep-all", letterSpacing: "-0.3px" }}>{lec.title}</p>
+                  <p style={{ fontSize: 12, color: "#666666", margin: 0 }}>{lec.instructor_name || "공실마스터"}</p>
+                  <p style={{ fontSize: 13, fontWeight: 800, color: "#333333", marginTop: 6 }}>{lec.discount_price || lec.price ? `${(lec.discount_price || lec.price).toLocaleString()}P` : "무료"}</p>
                 </div>
               </Link>
             ))}
@@ -219,10 +219,10 @@ export default function MobileHomeClient(props: Props) {
         .no-scrollbar::-webkit-scrollbar{display:none;}
         .no-scrollbar{-ms-overflow-style:none;scrollbar-width:none;}
         .tap:active{opacity:0.75;}
-        .sec-hd{display:flex;align-items:center;justify-content:space-between;padding:18px 16px 12px;}
-        .sec-hd h2{font-size:16px;font-weight:800;color:#111827;margin:0;}
-        .sec-hd a{font-size:13px;color:#6b7280;text-decoration:none;display:flex;align-items:center;gap:2px;}
-        .art-row{display:flex;gap:12px;padding:0 16px 16px;cursor:pointer;border-bottom:1px solid #f3f4f6;}
+        .sec-hd{display:flex;align-items:center;justify-content:space-between;padding:20px 16px 14px;}
+        .sec-hd h2{font-size:16px;font-weight:800;color:#333333;margin:0;letter-spacing:-0.5px;}
+        .sec-hd a{font-size:13px;color:#999999;text-decoration:none;display:flex;align-items:center;gap:2px;letter-spacing:-0.2px;}
+        .art-row{display:flex;gap:12px;padding:12px 16px;cursor:pointer;border-bottom:1px solid #f0f0f0;}
         .art-row:last-child{border-bottom:none;}
         .art-row:active{background:#f9fafb;}
         .skeleton{background:linear-gradient(90deg,#f3f4f6 25%,#e5e7eb 50%,#f3f4f6 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:6px;}
@@ -238,18 +238,18 @@ function NewsSection({ title, href, articles }: { title: string; href: string; a
   const [main, ...rest] = articles;
 
   return (
-    <div style={{ background: "#fff", marginBottom: 8 }}>
+    <div style={{ background: "#fff", marginBottom: 12, borderBottom: "1px solid #f0f0f0" }}>
       <div className="sec-hd">
         <h2>{title}</h2>
-        <Link href={href} style={{ fontSize: 13, color: "#6b7280", textDecoration: "none" }}>더보기 ›</Link>
+        <Link href={href} style={{ fontSize: 13, color: "#999999", textDecoration: "none", letterSpacing: "-0.2px" }}>더보기 ›</Link>
       </div>
       {/* 메인 기사 (큰 썸네일) */}
       <div className="tap" onClick={() => router.push(`/m/news/${main.article_no || main.id}`)}
         style={{ padding: "0 16px 14px", cursor: "pointer" }}>
         <div style={{ display: "flex", gap: 12 }}>
           <div style={{ flex: 1 }}>
-            <h3 style={{ fontSize: 15, fontWeight: 700, color: "#111827", lineHeight: 1.45, marginBottom: 6, wordBreak: "keep-all", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden", margin: "0 0 6px" }}>{main.title}</h3>
-            <p style={{ fontSize: 12, color: "#9ca3af", margin: 0 }}>{main.author_name} · {formatDate(main.published_at || main.created_at)}</p>
+            <h3 style={{ fontSize: 15, fontWeight: 700, color: "#333333", lineHeight: 1.5, marginBottom: 6, wordBreak: "keep-all", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden", margin: "0 0 6px", letterSpacing: "-0.5px" }}>{main.title}</h3>
+            <p style={{ fontSize: 12, color: "#999999", margin: 0, letterSpacing: "-0.2px" }}>{main.author_name} · {formatDate(main.published_at || main.created_at)}</p>
           </div>
           {main.thumbnail_url && (
             <div style={{ width: 84, height: 64, borderRadius: 8, overflow: "hidden", flexShrink: 0, background: "#e5e7eb" }}>
@@ -262,7 +262,7 @@ function NewsSection({ title, href, articles }: { title: string; href: string; a
       {rest.slice(0, 3).map((a: any, i: number) => (
         <div key={a.id} className="tap art-row" onClick={() => router.push(`/m/news/${a.article_no || a.id}`)}>
           <span style={{ flexShrink: 0, width: 20, fontSize: 13, fontWeight: 800, color: i === 0 ? "#f97316" : "#d1d5db", alignSelf: "center" }}>{i + 1}</span>
-          <p style={{ fontSize: 14, fontWeight: 600, color: "#374151", lineHeight: 1.4, flex: 1, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", wordBreak: "keep-all", margin: 0 }}>{a.title}</p>
+          <p style={{ fontSize: 14, fontWeight: 600, color: "#333333", lineHeight: 1.5, flex: 1, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", wordBreak: "keep-all", margin: 0, letterSpacing: "-0.3px" }}>{a.title}</p>
           {a.thumbnail_url && (
             <div style={{ width: 60, height: 44, borderRadius: 6, overflow: "hidden", flexShrink: 0 }}>
               <img src={a.thumbnail_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
