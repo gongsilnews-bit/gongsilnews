@@ -34,7 +34,6 @@ interface NewsListLayoutProps {
 
 export default function NewsListLayout({ category, title, initialArticles, initialPopular, importantArticles = [], searchQuery }: NewsListLayoutProps) {
   const router = useRouter();
-  const [localQuery, setLocalQuery] = useState(searchQuery || '');
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
 
@@ -120,49 +119,6 @@ export default function NewsListLayout({ category, title, initialArticles, initi
             <div className="list-header">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
               {title}
-            </div>
-
-            {/* 검색 바 — 검색 결과 페이지에서 재검색 가능 */}
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: '8px',
-              margin: '12px 0 16px', padding: '0',
-            }}>
-              <div style={{
-                display: 'flex', alignItems: 'center', flex: 1,
-                border: '2px solid #1a2e50', borderRadius: '8px',
-                overflow: 'hidden', background: '#fff',
-              }}>
-                <input
-                  type="text"
-                  value={localQuery}
-                  onChange={(e) => setLocalQuery(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && localQuery.trim()) {
-                      router.push(`/news_all?q=${encodeURIComponent(localQuery.trim())}`);
-                    }
-                  }}
-                  placeholder="뉴스 제목, 내용으로 검색"
-                  style={{
-                    flex: 1, padding: '10px 14px', border: 'none', outline: 'none',
-                    fontSize: '14px', color: '#333', background: 'transparent',
-                  }}
-                />
-                {localQuery && (
-                  <button
-                    onClick={() => { setLocalQuery(''); router.push('/news_all'); }}
-                    style={{ background: 'none', border: 'none', padding: '0 8px', cursor: 'pointer', color: '#999', fontSize: '18px', lineHeight: 1 }}
-                  >✕</button>
-                )}
-                <button
-                  onClick={() => { if (localQuery.trim()) router.push(`/news_all?q=${encodeURIComponent(localQuery.trim())}`); }}
-                  style={{
-                    background: '#1a2e50', border: 'none', padding: '10px 16px',
-                    cursor: 'pointer', display: 'flex', alignItems: 'center',
-                  }}
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                </button>
-              </div>
             </div>
 
             {searchQuery && (
