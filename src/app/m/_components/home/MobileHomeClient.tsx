@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 
@@ -57,10 +57,33 @@ export default function MobileHomeClient(props: Props) {
   const router = useRouter();
   const [heroIdx, setHeroIdx] = useState(0);
   const hero = headlineArticles[heroIdx] || null;
+  // ── 스와이프 탭 전환 ──
+  const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
+
+  const handleSwipeStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  };
+  const handleSwipeEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null || touchStartY.current === null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    const dy = e.changedTouches[0].clientY - touchStartY.current;
+    touchStartX.current = null;
+    touchStartY.current = null;
+    if (Math.abs(dy) > Math.abs(dx)) return;
+    if (dx < -60) {
+      // ← 왼쪽 스와이프 → 전체뉴스로 이동
+      router.push("/m/news?tab=all");
+    }
+  };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", width: "100%", background: "#F4F6F8", minHeight: "100vh", paddingBottom: "80px", letterSpacing: "-0.3px" }}>
-      {/* 네비게이션 메뉴 (네이버 모바일 스타일 가로 스와이프) */}
+    <div
+      onTouchStart={handleSwipeStart}
+      onTouchEnd={handleSwipeEnd}
+      style={{ display: "flex", flexDirection: "column", width: "100%", background: "#F4F6F8", minHeight: "100vh", paddingBottom: "80px", letterSpacing: "-0.3px", overflow: "hidden" }}
+    >      {/* 네비게이션 메뉴 (네이버 모바일 스타일 가로 스와이프) */}
       <div
         className="hide-scrollbar"
         style={{

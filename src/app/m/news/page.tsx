@@ -271,8 +271,72 @@ function MobileNewsPage() {
     };
   }, [localArticles, mapLoaded]);
 
+  // ── 스와이프(좌우 슬라이드) 탭 전환 ──
+  const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
+  const [slideAnim, setSlideAnim] = useState<"" | "slide-out-left" | "slide-out-right" | "slide-in-left" | "slide-in-right">("");
+  const tabBarRef = useRef<HTMLDivElement>(null);
+
+  const handleSwipeStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  };
+
+  const handleSwipeEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null || touchStartY.current === null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    const dy = e.changedTouches[0].clientY - touchStartY.current;
+    touchStartX.current = null;
+    touchStartY.current = null;
+
+    // 수직 스크롤이면 무시
+    if (Math.abs(dy) > Math.abs(dx)) return;
+    // 최소 스와이프 거리
+    if (Math.abs(dx) < 60) return;
+
+    const currentIdx = CATEGORIES.findIndex((c) => c.key === activeTab);
+
+    if (dx < 0 && currentIdx < CATEGORIES.length - 1) {
+      // ← 왼쪽 스와이프 → 다음 탭
+      const next = CATEGORIES[currentIdx + 1].key;
+      setSlideAnim("slide-out-left");
+      setTimeout(() => {
+        setActiveTab(next);
+        setClusterMode(false);
+        setSlideAnim("slide-in-right");
+        setTimeout(() => setSlideAnim(""), 250);
+      }, 200);
+    } else if (dx > 0 && currentIdx > 0) {
+      // → 오른쪽 스와이프 → 이전 탭
+      const prev = CATEGORIES[currentIdx - 1].key;
+      if (prev === "home") {
+        setSlideAnim("slide-out-right");
+        setTimeout(() => { router.push("/m"); }, 200);
+      } else {
+        setSlideAnim("slide-out-right");
+        setTimeout(() => {
+          setActiveTab(prev);
+          setClusterMode(false);
+          setSlideAnim("slide-in-left");
+          setTimeout(() => setSlideAnim(""), 250);
+        }, 200);
+      }
+    }
+  };
+
+  // 탭 변경 시 카테고리 바 자동 스크롤
+  useEffect(() => {
+    if (!tabBarRef.current) return;
+    const activeBtn = tabBarRef.current.querySelector("[data-active='true']") as HTMLElement;
+    if (activeBtn) {
+      activeBtn.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+    }
+  }, [activeTab]);
+
   return (
     <div
+      onTouchStart={handleSwipeStart}
+      onTouchEnd={handleSwipeEnd}
       style={{
         width: "100%",
         backgroundColor: "#fff",
@@ -280,6 +344,7 @@ function MobileNewsPage() {
         display: "flex",
         flexDirection: "column",
         position: "relative",
+        overflow: "hidden",
       }}
     >
 
@@ -287,6 +352,7 @@ function MobileNewsPage() {
       {activeTab !== "local" && (
         <>
           <div
+            ref={tabBarRef}
             className="no-scrollbar"
             style={{
               display: "flex",
@@ -308,6 +374,7 @@ function MobileNewsPage() {
             {CATEGORIES.map((cat) => (
               <button
                 key={cat.key}
+                data-active={activeTab === cat.key ? "true" : "false"}
                 onClick={() => {
                   if (cat.key === "home") { router.push("/m"); return; }
                   setActiveTab(cat.key); setClusterMode(false);
@@ -503,7 +570,7 @@ function MobileNewsPage() {
         </div>
       ) : (
         /* 일반 뉴스 리스트 뷰 */
-        <div style={{ flex: 1, paddingBottom: "20px" }}>
+        <div className={slideAnim} style={{ flex: 1, paddingBottom: "20px" }}>
           {/* 헤드라인 히어로 (APPROVED 기사 중 첫번째 큰 이미지) */}
           {articles[0] && (
             <div
@@ -716,6 +783,14 @@ function MobileNewsPage() {
         .skeleton { background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 6px; }
         @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
         .article-row:active { background: #f9fafb; }
+        .slide-out-left { animation: slideOutLeft 0.2s ease forwards; }
+        .slide-out-right { animation: slideOutRight 0.2s ease forwards; }
+        .slide-in-left { animation: slideInLeft 0.25s ease forwards; }
+        .slide-in-right { animation: slideInRight 0.25s ease forwards; }
+        @keyframes slideOutLeft { from { transform: translateX(0); opacity: 1; } to { transform: translateX(-100%); opacity: 0; } }
+        @keyframes slideOutRight { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
+        @keyframes slideInLeft { from { transform: translateX(-60px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes slideInRight { from { transform: translateX(60px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
       `}</style>
     </div>
   );
