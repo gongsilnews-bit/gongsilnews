@@ -436,42 +436,41 @@ function MobileNewsPage() {
                   onClick={() => handleSelectArticle(article.id, true)}
                   style={{
                     display: "flex",
-                    gap: "14px",
-                    padding: "16px 0",
+                    flexDirection: "column",
+                    padding: "20px 0",
                     borderBottom: "1px solid #f0f0f0",
                     cursor: "pointer",
                     background: "#fff",
                     transition: "background 0.15s ease",
                   }}
                 >
-                  {/* 왼쪽 썸네일 (존재할 경우) */}
-                  {(article.thumbnail_url || extractYoutubeId(article.youtube_url, article.content)) && (
-                    <div style={{ flexShrink: 0, width: "110px", height: "74px", borderRadius: "6px", overflow: "hidden", backgroundColor: "#f3f4f6" }}>
-                      <img 
-                        src={article.thumbnail_url || `https://img.youtube.com/vi/${extractYoutubeId(article.youtube_url, article.content)}/mqdefault.jpg`} 
-                        alt={article.title} 
-                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                      />
-                    </div>
-                  )}
+                  {/* 상단 카테고리 & NEWS 태그 */}
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px" }}>
+                    <span style={{ fontSize: "12px", fontWeight: 700, color: "#f97316" }}>
+                      {article.section1 || "뉴스"} &gt; {article.section2 || "전체"}
+                    </span>
+                    <span style={{ fontSize: "11px", fontWeight: 800, color: "#dc2626" }}>NEWS</span>
+                  </div>
 
-                  {/* 오른쪽 텍스트 컨텐츠 */}
-                  <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, justifyContent: "center" }}>
-                    <div style={{ fontSize: 16, fontWeight: 800, color: "#111", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", wordBreak: "keep-all", marginBottom: 6, lineHeight: 1.35 }}>
-                      {article.title}
-                    </div>
-                    <div style={{ fontSize: 13, color: "#666", display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden", marginBottom: 8, lineHeight: 1.5 }}>
-                      {article.subtitle || stripHtml(article.content || "").slice(0, 80)}
-                    </div>
-                    <div style={{ fontSize: 12, display: "flex", flexWrap: "wrap", alignItems: "center", gap: "6px" }}>
-                      <span style={{ color: "#3b82f6", fontWeight: 700 }}>
-                        [{article.section1 || "뉴스"} &gt; {article.section2 || "전체"}]
-                      </span>
-                      <span style={{ color: "#9ca3af" }}>
-                        {formatDate(article.published_at || article.created_at)} · {article.author_name || "공실뉴스"}
-                      </span>
-                      {article.location_name && <span style={{ color: "#9ca3af", marginLeft: "auto" }}>📍{article.location_name}</span>}
-                    </div>
+                  {/* 제목 */}
+                  <div style={{ fontSize: "17px", fontWeight: 800, color: "#111", lineHeight: 1.35, marginBottom: "10px", wordBreak: "keep-all" }}>
+                    {article.title}
+                  </div>
+
+                  {/* 요약 (본문 또는 부제목) */}
+                  <div style={{ fontSize: "14px", color: "#666", lineHeight: 1.5, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", marginBottom: "14px" }}>
+                    {article.subtitle || stripHtml(article.content || "").slice(0, 100)}
+                  </div>
+
+                  {/* 하단 날짜, 작성자 및 상세보기 버튼 */}
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "13px" }}>
+                    <span style={{ color: "#9ca3af" }}>
+                      {formatDate(article.published_at || article.created_at)} · {article.author_name || "공실뉴스"}
+                      {article.location_name && ` · 📍${article.location_name}`}
+                    </span>
+                    <span style={{ color: "#f97316", fontWeight: 700 }}>
+                      기사상세보기 &gt;
+                    </span>
                   </div>
                 </div>
               ))}
