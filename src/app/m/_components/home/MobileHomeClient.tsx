@@ -2,6 +2,7 @@
 
 import React, { useState, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import dynamic from "next/dynamic";
 
 const MiniVacancyMap = dynamic(() => import("./MiniVacancyMap"), { ssr: false });
@@ -211,7 +212,7 @@ export default function MobileHomeClient(props: Props) {
                 style={{ flexShrink: 0, width: "calc(50vw - 22px)", maxWidth: 200, borderRadius: 10, overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.07)", border: "1px solid #f3f4f6", background: "#fff", cursor: "pointer" }}>
                 <div style={{ width: "100%", aspectRatio: "16/9", overflow: "hidden", background: "#e5e7eb", position: "relative" }}>
                   {a.thumbnail_url
-                    ? <img src={a.thumbnail_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ? <Image src={a.thumbnail_url} alt="" fill style={{ objectFit: "cover" }} sizes="50vw" />
                     : <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg,#1a2e50,#2d4a7a)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>📺</div>}
                   {a.youtube_url && (
                     <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 36, height: 36, background: "rgba(0,0,0,0.55)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -252,9 +253,9 @@ export default function MobileHomeClient(props: Props) {
             {lectures.map((lec: any) => (
               <Link key={lec.id} href={`/study_read?id=${lec.id}`}
                 style={{ flexShrink: 0, width: 180, borderRadius: 12, overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.08)", border: "1px solid #f3f4f6", background: "#fff", textDecoration: "none", display: "block" }}>
-                <div style={{ width: "100%", height: 112, overflow: "hidden", background: "#e5e7eb" }}>
+                <div style={{ width: "100%", height: 112, overflow: "hidden", background: "#e5e7eb", position: "relative" }}>
                   {lec.thumbnail_url
-                    ? <img src={lec.thumbnail_url} alt={lec.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ? <Image src={lec.thumbnail_url} alt={lec.title} fill style={{ objectFit: "cover" }} sizes="50vw" />
                     : <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg,#667eea,#764ba2)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 14, fontWeight: 700, padding: "0 8px", textAlign: "center" }}>{lec.category || "특강"}</div>}
                 </div>
                 <div style={{ padding: "10px" }}>
@@ -306,8 +307,8 @@ function NewsSection({ title, href, articles }: { title: string; href: string; a
             <p style={{ fontSize: 14, color: "#999999", margin: 0, letterSpacing: "-0.2px" }}>{main.author_name} · {formatDate(main.published_at || main.created_at)}</p>
           </div>
           {main.thumbnail_url && (
-            <div style={{ width: 104, height: 80, borderRadius: 8, overflow: "hidden", flexShrink: 0, background: "#e5e7eb" }}>
-              <img src={main.thumbnail_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            <div style={{ width: 104, height: 80, borderRadius: 8, overflow: "hidden", flexShrink: 0, background: "#e5e7eb", position: "relative" }}>
+              <Image src={main.thumbnail_url} alt="" fill style={{ objectFit: "cover" }} sizes="104px" />
             </div>
           )}
         </div>
@@ -318,8 +319,8 @@ function NewsSection({ title, href, articles }: { title: string; href: string; a
           <span style={{ flexShrink: 0, width: 20, fontSize: 15, fontWeight: 800, color: i === 0 ? "#f97316" : "#d1d5db", alignSelf: "center" }}>{i + 1}</span>
           <p style={{ fontSize: 16, fontWeight: 600, color: "#333333", lineHeight: 1.5, flex: 1, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", wordBreak: "keep-all", margin: 0, letterSpacing: "-0.3px" }}>{a.title}</p>
           {a.thumbnail_url && (
-            <div style={{ width: 104, height: 80, borderRadius: 8, overflow: "hidden", flexShrink: 0 }}>
-              <img src={a.thumbnail_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            <div style={{ width: 104, height: 80, borderRadius: 8, overflow: "hidden", flexShrink: 0, background: "#e5e7eb", position: "relative" }}>
+              <Image src={a.thumbnail_url} alt="" fill style={{ objectFit: "cover" }} sizes="104px" />
             </div>
           )}
         </div>

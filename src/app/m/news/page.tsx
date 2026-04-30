@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, Suspense } from "react";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getArticles, getArticleDetail, incrementArticleView } from "@/app/actions/article";
 
@@ -586,11 +587,16 @@ function MobileNewsPage() {
               }}
             >
               {articles[0].thumbnail_url ? (
-                <img
-                  src={articles[0].thumbnail_url}
-                  alt={articles[0].title}
-                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                />
+                <div style={{ position: "relative", width: "100%", height: "100%" }}>
+                  <Image
+                    src={articles[0].thumbnail_url}
+                    alt={articles[0].title}
+                    fill
+                    style={{ objectFit: "cover" }}
+                    sizes="100vw"
+                    priority
+                  />
+                </div>
               ) : (
                 <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg, #1a2e50, #2d4a7a)" }} />
               )}
@@ -672,11 +678,13 @@ function MobileNewsPage() {
                 >
                   {/* 왼쪽 썸네일 (존재할 경우) */}
                   {(a.thumbnail_url || extractYoutubeId(a.youtube_url, a.content)) && (
-                    <div style={{ flexShrink: 0, width: "130px", height: "88px", borderRadius: "6px", overflow: "hidden", backgroundColor: "#f3f4f6" }}>
-                      <img 
+                    <div style={{ flexShrink: 0, width: "130px", height: "88px", borderRadius: "6px", overflow: "hidden", backgroundColor: "#f3f4f6", position: "relative" }}>
+                      <Image 
                         src={a.thumbnail_url || `https://img.youtube.com/vi/${extractYoutubeId(a.youtube_url, a.content)}/mqdefault.jpg`} 
                         alt={a.title} 
-                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                        fill
+                        style={{ objectFit: "cover" }}
+                        sizes="130px"
                       />
                     </div>
                   )}

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 
@@ -605,8 +606,8 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
                   </div>
                 </div>
               ) : !hasYoutube && article.thumbnail_url && !(article.content && article.content.includes(article.thumbnail_url)) ? (
-                <div className="article-img-wrap">
-                  <img src={article.thumbnail_url} alt={article.title} style={{ width: "100%", maxHeight: 500, objectFit: "cover" }} />
+                <div className="article-img-wrap" style={{ position: "relative", width: "100%", aspectRatio: "16/9", overflow: "hidden", borderRadius: "8px", marginBottom: "16px" }}>
+                  <Image src={article.thumbnail_url} alt={article.title} fill style={{ objectFit: "cover" }} sizes="100vw" />
                 </div>
               ) : null}
 
