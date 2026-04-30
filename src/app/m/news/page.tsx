@@ -294,7 +294,7 @@ function MobileNewsPage() {
               WebkitOverflowScrolling: "touch",
               touchAction: "pan-x",
               backgroundColor: "#ffffff",
-              borderBottom: "16px solid #F4F6F8",
+              borderBottom: "14px solid #F4F6F8",
               position: "fixed",
               top: "30px",
               left: "50%",
@@ -314,20 +314,25 @@ function MobileNewsPage() {
                 }}
                 style={{
                   flexShrink: 0,
-                  padding: "11px 16px",
+                  padding: "11px 16px 0",
                   fontSize: "16px",
                   fontWeight: activeTab === cat.key ? 700 : 500,
                   color: activeTab === cat.key ? "#1a2e50" : "#222222",
                   background: "none",
                   border: "none",
-                  borderBottom: activeTab === cat.key ? "5px solid #1a2e50" : "5px solid transparent",
                   cursor: "pointer",
                   transition: "all 0.2s",
                   whiteSpace: "nowrap",
                   letterSpacing: "-0.3px",
                 }}
               >
-                {cat.label}
+                <span style={{
+                  display: "inline-block",
+                  paddingBottom: "7px",
+                  borderBottom: activeTab === cat.key ? "5px solid #1a2e50" : "5px solid transparent",
+                }}>
+                  {cat.label}
+                </span>
               </button>
             ))}
           </div>

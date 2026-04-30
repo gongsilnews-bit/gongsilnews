@@ -84,7 +84,7 @@ export default async function MobileNewsReadPage({ params }: { params: Promise<{
           WebkitOverflowScrolling: "touch",
           touchAction: "pan-x",
           backgroundColor: "#ffffff",
-          borderBottom: "16px solid #F4F6F8",
+          borderBottom: "14px solid #F4F6F8",
           position: "fixed",
           top: "30px",
           left: "50%",
@@ -105,13 +105,12 @@ export default async function MobileNewsReadPage({ params }: { params: Promise<{
               href={targetUrl}
               style={{
                 flexShrink: 0,
-                padding: "11px 16px",
+                padding: "11px 16px 0",
                 fontSize: "16px",
                 fontWeight: isActive ? 700 : 500,
                 color: isActive ? "#1a2e50" : "#222222",
                 background: "none",
                 textDecoration: "none",
-                borderBottom: isActive ? "5px solid #1a2e50" : "5px solid transparent",
                 cursor: "pointer",
                 transition: "all 0.2s",
                 whiteSpace: "nowrap",
@@ -119,7 +118,13 @@ export default async function MobileNewsReadPage({ params }: { params: Promise<{
                 letterSpacing: "-0.3px",
               }}
             >
-              {cat.label}
+              <span style={{
+                display: "inline-block",
+                paddingBottom: "7px",
+                borderBottom: isActive ? "5px solid #1a2e50" : "5px solid transparent",
+              }}>
+                {cat.label}
+              </span>
             </Link>
           );
         })}

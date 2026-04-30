@@ -69,7 +69,7 @@ export default function MobileHomeClient(props: Props) {
           WebkitOverflowScrolling: "touch",
           touchAction: "pan-x",
           backgroundColor: "#ffffff",
-          borderBottom: "16px solid #F4F6F8",
+          borderBottom: "14px solid #F4F6F8",
           position: "fixed",
           top: "30px",
           left: "50%",
@@ -89,20 +89,25 @@ export default function MobileHomeClient(props: Props) {
             }}
             style={{
               flexShrink: 0,
-              padding: "11px 16px",
+              padding: "11px 16px 0",
               fontSize: "16px",
               fontWeight: cat.key === "home" ? 700 : 500,
               color: cat.key === "home" ? "#1a2e50" : "#222222",
               background: "none",
               border: "none",
-              borderBottom: cat.key === "home" ? "5px solid #1a2e50" : "5px solid transparent",
               cursor: "pointer",
               transition: "all 0.2s",
               whiteSpace: "nowrap",
               letterSpacing: "-0.3px",
             }}
           >
-            {cat.label}
+            <span style={{
+              display: "inline-block",
+              paddingBottom: "7px",
+              borderBottom: cat.key === "home" ? "5px solid #1a2e50" : "5px solid transparent",
+            }}>
+              {cat.label}
+            </span>
           </button>
         ))}
       </div>
