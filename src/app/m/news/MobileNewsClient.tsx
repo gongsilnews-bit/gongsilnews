@@ -430,7 +430,7 @@ function MobileNewsClient({ initialTab, initialArticles }: { initialTab: string,
             {/* 중앙 스크롤 메뉴 */}
             <div
               ref={tabBarRef}
-              className="no-scrollbar"
+              className="hide-scrollbar"
               style={{
                 flex: 1,
                 display: "flex",
@@ -478,7 +478,7 @@ function MobileNewsClient({ initialTab, initialArticles }: { initialTab: string,
               style={{
                 position: "absolute",
                 right: "0",
-                top: "8px",
+                top: "4px",
                 width: "40px",
                 height: "40px",
                 display: "flex",

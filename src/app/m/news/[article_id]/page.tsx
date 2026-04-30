@@ -24,15 +24,7 @@ export async function generateStaticParams() {
   return [];
 }
 
-const CATEGORIES = [
-  { key: "home", label: "홈" },
-  { key: "all", label: "전체뉴스" },
-  { key: "부동산·주식·재테크", label: "부동산·재테크" },
-  { key: "정치·경제·사회", label: "정치·경제" },
-  { key: "세무·법률", label: "세무·법률" },
-  { key: "여행·건강·생활", label: "여행·생활" },
-  { key: "etc", label: "기타" },
-];
+import NewsDetailHeader from "../_components/NewsDetailHeader";
 
 export default async function MobileNewsReadPage({ params }: { params: Promise<{ article_id: string }> }) {
   const resolvedParams = await params;
@@ -75,61 +67,8 @@ export default async function MobileNewsReadPage({ params }: { params: Promise<{
   // 모바일 전용 래퍼 클래스로 감싸주어 globals.css의 반응형 속성을 적용
   return (
     <div className="flex flex-col w-full bg-white min-h-screen mobile-news-detail-wrapper">
-      {/* 카테고리 네비게이션 탭 */}
-      <div
-        className="hide-scrollbar"
-        style={{
-          display: "flex",
-          overflowX: "auto",
-          WebkitOverflowScrolling: "touch",
-          touchAction: "pan-x",
-          backgroundColor: "#ffffff",
-          borderBottom: "9px solid #F4F6F8",
-          position: "fixed",
-          top: "30px",
-          left: "50%",
-          transform: "translateX(-50%)",
-          width: "100%",
-          maxWidth: "448px",
-          zIndex: 40,
-          scrollBehavior: "smooth",
-        }}
-      >
-        {CATEGORIES.map((cat) => {
-          const isActive = article.category === cat.key;
-          const targetUrl = cat.key === "home" ? "/m" : `/m/news?tab=${cat.key}`;
-          
-          return (
-            <Link
-              key={cat.key}
-              href={targetUrl}
-              style={{
-                flexShrink: 0,
-                padding: "11px 16px 0",
-                fontSize: "17px",
-                fontWeight: isActive ? 700 : 500,
-                color: isActive ? "#1a2e50" : "#222222",
-                background: "none",
-                textDecoration: "none",
-                cursor: "pointer",
-                transition: "all 0.2s",
-                whiteSpace: "nowrap",
-                display: "inline-block",
-                letterSpacing: "-0.3px",
-              }}
-            >
-              <span style={{
-                display: "inline-block",
-                paddingBottom: "5px",
-                borderBottom: isActive ? "5px solid #1a2e50" : "5px solid transparent",
-              }}>
-                {cat.label}
-              </span>
-            </Link>
-          );
-        })}
-      </div>
-      <div style={{ height: "46px", flexShrink: 0 }}></div>
+      {/* 공통 모바일 뉴스 헤더 (상단 고정) */}
+      <NewsDetailHeader activeCategory={article.category} />
 
       <NewsReadContent article={article} popularArticles={popular} />
     </div>
