@@ -42,7 +42,7 @@ export default function MobileHeader() {
 
         {/* 중앙 로고 */}
         <Link href="/m" className="flex items-center justify-center" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
-          <img src="/logo.png" alt="공실뉴스" style={{ height: '28px', objectFit: 'contain', marginTop: '2px' }} />
+          <img src={`/logo.png?v=${new Date().getTime()}`} alt="공실뉴스" style={{ height: '28px', objectFit: 'contain', marginTop: '2px' }} />
         </Link>
 
         {/* 우측 검색 & 공실톡 */}
