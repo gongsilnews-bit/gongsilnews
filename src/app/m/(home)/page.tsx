@@ -2,8 +2,8 @@ import React from "react";
 import { getVacanciesForMap } from "@/app/actions/vacancy";
 import { getLectures } from "@/app/actions/lecture";
 import { getArticles } from "@/app/actions/article";
-import MobileHomeClient from "./_components/home/MobileHomeClient";
-import MobileFooter from "./_components/MobileFooter";
+import MobileHomeClient from "../_components/home/MobileHomeClient";
+import MobileFooter from "../_components/MobileFooter";
 
 export const revalidate = 300;
 

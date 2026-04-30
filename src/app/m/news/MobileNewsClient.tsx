@@ -2,13 +2,15 @@
 
 import React, { useState, useEffect, useRef, Suspense } from "react";
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getArticles, getArticleDetail, incrementArticleView } from "@/app/actions/article";
+
+const SearchOverlay = dynamic(() => import("../_components/header/SearchOverlay"), { ssr: false });
 
 const KAKAO_APP_KEY = process.env.NEXT_PUBLIC_KAKAO_APP_KEY || "435d3602201a49ea712e5f5a36fe6efc";
 
 const CATEGORIES = [
-  { key: "home", label: "홈" },
   { key: "all", label: "전체뉴스" },
   { key: "부동산·주식·재테크", label: "부동산·재테크" },
   { key: "정치·경제·사회", label: "정치·경제" },
@@ -66,6 +68,7 @@ function MobileNewsClient({ initialTab, initialArticles }: { initialTab: string,
     }
   }, [searchParams]);
 
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [articles, setArticles] = useState<any[]>(initialArticles);
   const [localArticles, setLocalArticles] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -142,7 +145,7 @@ function MobileNewsClient({ initialTab, initialArticles }: { initialTab: string,
     if (showDetail && detailPanelRef.current) {
       const el = detailPanelRef.current;
       el.scrollTop = 0;
-      
+
       // 혹시 모를 렌더링 딜레이를 대비해 여러 번 강제 초기화
       let attempts = 0;
       const interval = setInterval(() => {
@@ -150,7 +153,7 @@ function MobileNewsClient({ initialTab, initialArticles }: { initialTab: string,
         attempts++;
         if (attempts > 5) clearInterval(interval);
       }, 50);
-      
+
       return () => clearInterval(interval);
     }
   }, [articleDetail, showDetail]);
@@ -255,7 +258,7 @@ function MobileNewsClient({ initialTab, initialArticles }: { initialTab: string,
       if (!a.lat || !a.lng) return;
       const size = 32;
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
-        <circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="#ff8e15" stroke="white" stroke-width="2.5"/>
+        <circle cx="${size / 2}" cy="${size / 2}" r="${size / 2 - 2}" fill="#ff8e15" stroke="white" stroke-width="2.5"/>
         <text x="50%" y="50%" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="13" font-weight="bold" font-family="sans-serif">1</text>
       </svg>`;
 
@@ -299,7 +302,7 @@ function MobileNewsClient({ initialTab, initialArticles }: { initialTab: string,
     };
 
     kakao.maps.event.addListener(kakaoMapRef.current, "idle", updateVisible);
-    
+
     // Slight delay to allow map to render fully before taking bounds
     setTimeout(updateVisible, 300);
 
@@ -385,63 +388,121 @@ function MobileNewsClient({ initialTab, initialArticles }: { initialTab: string,
       }}
     >
 
-      {/* 카테고리 탭 — 우리동네뉴스(지도)일 때 숨김 */}
+      {/* 카테고리 탭바 */}
       {activeTab !== "local" && (
         <>
+          {/*
+            외부 wrapper: position fixed + borderBottom 여기에만 지정 → 회색 바 절대 안 사라짘
+            내부 자식에는 border 없음
+          */}
           <div
-            ref={tabBarRef}
-            className="no-scrollbar"
             style={{
-              display: "flex",
-              overflowX: "auto",
-              WebkitOverflowScrolling: "touch",
-              touchAction: "pan-x",
-              backgroundColor: "#ffffff",
-              borderBottom: "9px solid #F4F6F8",
               position: "fixed",
-              top: "30px",
+              top: "0px",
               left: "50%",
               transform: "translateX(-50%)",
               width: "100%",
               maxWidth: "448px",
               zIndex: 40,
-              scrollBehavior: "smooth",
+              backgroundColor: "#ffffff",
+              borderBottom: "9px solid #F4F6F8",
+              display: "flex",
+              alignItems: "stretch",
+              height: "56px",
             }}
           >
-            {CATEGORIES.map((cat) => (
-              <button
-                key={cat.key}
-                data-active={activeTab === cat.key ? "true" : "false"}
-                onClick={() => {
-                  if (cat.key === "home") { router.push("/m"); return; }
-                  setActiveTab(cat.key); setClusterMode(false);
-                }}
-                style={{
-                  flexShrink: 0,
-                  padding: "11px 16px 0",
-                  fontSize: "17px",
-                  fontWeight: activeTab === cat.key ? 700 : 500,
-                  color: activeTab === cat.key ? "#1a2e50" : "#222222",
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  transition: "all 0.2s",
-                  whiteSpace: "nowrap",
-                  letterSpacing: "-0.3px",
-                }}
-              >
-                <span style={{
-                  display: "inline-block",
-                  paddingBottom: "5px",
-                  borderBottom: activeTab === cat.key ? "5px solid #1a2e50" : "5px solid transparent",
-                }}>
-                  {cat.label}
-                </span>
-              </button>
-            ))}
+            {/* 좌측 로고 — 고정 */}
+            <button
+              onClick={() => router.push("/m")}
+              style={{
+                flexShrink: 0,
+                display: "flex",
+                alignItems: "flex-end",
+                padding: "0 8px 6px 12px",
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+              }}
+            >
+              <img src="/favicon.png" alt="홈" style={{ width: "28px", height: "28px", objectFit: "contain" }} />
+            </button>
+
+            {/* 중앙 스크롤 메뉴 */}
+            <div
+              ref={tabBarRef}
+              className="no-scrollbar"
+              style={{
+                flex: 1,
+                display: "flex",
+                alignItems: "flex-end",
+                overflowX: "auto",
+                WebkitOverflowScrolling: "touch",
+                touchAction: "pan-x",
+                scrollBehavior: "smooth",
+              }}
+            >
+              {CATEGORIES.map((cat) => (
+                <button
+                  key={cat.key}
+                  data-active={activeTab === cat.key ? "true" : "false"}
+                  onClick={() => { setActiveTab(cat.key); setClusterMode(false); }}
+                  style={{
+                    flexShrink: 0,
+                    padding: "0 14px 0",
+                    fontSize: "17px",
+                    fontWeight: activeTab === cat.key ? 700 : 500,
+                    color: activeTab === cat.key ? "#1a2e50" : "#222222",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    transition: "color 0.2s",
+                    whiteSpace: "nowrap",
+                    letterSpacing: "-0.3px",
+                  }}
+                >
+                  <span style={{
+                    display: "inline-block",
+                    paddingBottom: "3px",
+                    borderBottom: activeTab === cat.key ? "3px solid #1a2e50" : "3px solid transparent",
+                  }}>
+                    {cat.label}
+                  </span>
+                </button>
+              ))}
+              {/* 검색 버튼에 가려지지 않도록 끝부분 여백 추가 */}
+              <div style={{ flexShrink: 0, width: "40px" }} />
+            </div>
+            {/* 우측 검색 버튼 — 고정 */}
+            <button
+              onClick={() => setIsSearchOpen(true)}
+              style={{
+                position: "absolute",
+                right: "0",
+                top: "8px",
+                width: "40px",
+                height: "40px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                background: "#fff",
+                border: "none",
+                cursor: "pointer",
+              }}
+            >
+              <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#1a2e50" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+            </button>
+
           </div>
-          {/* 카테고리 바 높이만큼 공간 확보 */}
-          <div style={{ height: "46px" }} />
+
+
+          {/* 탭바(56px) 만큼 콘텐츠 밀리기 */}
+          <div style={{ height: "56px" }} />
+
+          {/* 검색 오버레이 */}
+          {isSearchOpen && <SearchOverlay isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />}
         </>
       )}
 
@@ -449,7 +510,7 @@ function MobileNewsClient({ initialTab, initialArticles }: { initialTab: string,
       {activeTab === "local" ? (
         <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minHeight: "calc(100vh - 41px)" }}>
           {/* 상단: 카카오 지도 */}
-          <div 
+          <div
             style={{ position: "relative", width: "100%", height: "45vh", borderBottom: "1px solid #ddd", flexShrink: 0 }}
             onTouchStart={(e) => e.stopPropagation()}
             onTouchMove={(e) => e.stopPropagation()}
@@ -555,7 +616,7 @@ function MobileNewsClient({ initialTab, initialArticles }: { initialTab: string,
                 </button>
               )}
             </div>
-            
+
             <div style={{ padding: "0 16px 20px", background: "#fff", flex: 1 }}>
               {visibleArticles.map((article: any) => (
                 <div
@@ -720,9 +781,9 @@ function MobileNewsClient({ initialTab, initialArticles }: { initialTab: string,
                   {/* 왼쪽 썸네일 (존재할 경우) */}
                   {(a.thumbnail_url || extractYoutubeId(a.youtube_url, a.content)) && (
                     <div style={{ flexShrink: 0, width: "130px", height: "88px", borderRadius: "6px", overflow: "hidden", backgroundColor: "#f3f4f6", position: "relative" }}>
-                      <Image 
-                        src={a.thumbnail_url || `https://img.youtube.com/vi/${extractYoutubeId(a.youtube_url, a.content)}/mqdefault.jpg`} 
-                        alt={a.title} 
+                      <Image
+                        src={a.thumbnail_url || `https://img.youtube.com/vi/${extractYoutubeId(a.youtube_url, a.content)}/mqdefault.jpg`}
+                        alt={a.title}
                         fill
                         style={{ objectFit: "cover" }}
                         sizes="130px"
@@ -792,23 +853,23 @@ function MobileNewsClient({ initialTab, initialArticles }: { initialTab: string,
                 <span style={{ color: "#d1d5db", margin: "0 4px" }}>|</span>
                 {formatDateFull(articleDetail.published_at || articleDetail.created_at)}
               </div>
-              <button 
+              <button
                 onClick={() => router.push(`/m/news/${articleDetail.article_no || articleDetail.id}`)}
                 style={{ fontSize: "12px", color: "#ff8e15", border: "1px solid #ff8e15", background: "#fff", borderRadius: "20px", padding: "4px 10px", cursor: "pointer" }}
               >
                 원본보기
               </button>
             </div>
-            
+
             {/* 부제목 */}
             {articleDetail.subtitle && (
               <div style={{ padding: "16px", backgroundColor: "#f9fafb", borderLeft: "4px solid #d97706", fontSize: "15px", color: "#374151", lineHeight: 1.6, marginBottom: "24px", fontWeight: 600 }}>
                 {articleDetail.subtitle}
               </div>
             )}
-            
+
             {/* 본문 */}
-            <div 
+            <div
               style={{ fontSize: "16px", lineHeight: 1.8, color: "#333", wordBreak: "keep-all" }}
               dangerouslySetInnerHTML={{ __html: articleDetail.content || "" }}
             />

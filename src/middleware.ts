@@ -21,9 +21,13 @@ export function middleware(request: NextRequest) {
   // Vercel 환경에서 넘어오는 호스트 헤더 읽기
   const hostname = request.headers.get('host') || '';
 
+  // Vercel 환경 여부 (실제 도메인 gongsilnews.com 강제 적용 시 아래 값을 true로 변경하세요)
+  // const isVercel = false; // 로컬 호스트(.localhost:3000) 테스트용
+  const isVercel = true;  // 실제 주소(.gongsilnews.com) 적용 중
+  // const isVercel = process.env.NODE_ENV === 'production' && process.env.VERCEL === '1';
+
   // 허용할 메인 도메인 및 로컬호스트 (테스트 환경)
-  const currentHost =
-    process.env.NODE_ENV === 'production' && process.env.VERCEL === '1'
+  const currentHost = isVercel
       ? hostname.replace(`.gongsilnews.com`, '')
       : hostname.replace(`.localhost:3000`, '');
 
