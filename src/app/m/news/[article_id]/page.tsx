@@ -77,13 +77,15 @@ export default async function MobileNewsReadPage({ params }: { params: Promise<{
     <div className="flex flex-col w-full bg-white min-h-screen mobile-news-detail-wrapper">
       {/* 카테고리 네비게이션 탭 */}
       <div
-        className="no-scrollbar"
+        className="hide-scrollbar"
         style={{
           display: "flex",
           overflowX: "auto",
+          WebkitOverflowScrolling: "touch",
+          touchAction: "pan-x",
           backgroundColor: "#1a2e50",
           position: "fixed",
-          top: "41px",
+          top: "36px",
           left: "50%",
           transform: "translateX(-50%)",
           width: "100%",

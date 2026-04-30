@@ -62,13 +62,15 @@ export default function MobileHomeClient(props: Props) {
     <div style={{ display: "flex", flexDirection: "column", width: "100%", background: "#f8f9fa", minHeight: "100vh", paddingBottom: "80px" }}>
       {/* 네비게이션 메뉴 (뉴스 탭과 동일, 네이버식 가로 스와이프) */}
       <div
-        className="no-scrollbar"
+        className="hide-scrollbar"
         style={{
           display: "flex",
           overflowX: "auto",
+          WebkitOverflowScrolling: "touch",
+          touchAction: "pan-x",
           backgroundColor: "#1a2e50",
           position: "fixed",
-          top: "41px",
+          top: "36px",
           left: "50%",
           transform: "translateX(-50%)",
           width: "100%",
