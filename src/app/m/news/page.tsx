@@ -783,6 +783,7 @@ function MobileNewsPage() {
         .news-detail-panel.open { transform: translateX(0); }
         .skeleton { background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 6px; }
         @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        .article-row { -webkit-user-select: none; user-select: none; }
         .article-row:active { background: #f3f4f6 !important; }
         .slide-out-left { animation: slideOutLeft 0.2s ease forwards; }
         .slide-out-right { animation: slideOutRight 0.2s ease forwards; }

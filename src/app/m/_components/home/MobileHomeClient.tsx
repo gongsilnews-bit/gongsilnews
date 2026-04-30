@@ -271,12 +271,12 @@ export default function MobileHomeClient(props: Props) {
       <style>{`
         .no-scrollbar::-webkit-scrollbar{display:none;}
         .no-scrollbar{-ms-overflow-style:none;scrollbar-width:none;}
-        .tap{-webkit-tap-highlight-color:transparent;}
+        .tap{-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;}
         .tap:active{background:#f3f4f6 !important;}
         .sec-hd{display:flex;align-items:center;justify-content:space-between;padding:20px 16px 14px;}
         .sec-hd h2{font-size:18px;font-weight:800;color:#333333;margin:0;letter-spacing:-0.5px;}
         .sec-hd a{font-size:15px;color:#999999;text-decoration:none;display:flex;align-items:center;gap:2px;letter-spacing:-0.2px;}
-        .art-row{display:flex;gap:12px;padding:12px 16px;cursor:pointer;border-bottom:1px solid #f0f0f0;transition:background 0.15s ease;-webkit-tap-highlight-color:transparent;}
+        .art-row{display:flex;gap:12px;padding:12px 16px;cursor:pointer;border-bottom:1px solid #f0f0f0;transition:background 0.15s ease;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;}
         .art-row:last-child{border-bottom:none;}
         .art-row:active{background:#f3f4f6 !important;}
         .skeleton{background:linear-gradient(90deg,#f3f4f6 25%,#e5e7eb 50%,#f3f4f6 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:6px;}
