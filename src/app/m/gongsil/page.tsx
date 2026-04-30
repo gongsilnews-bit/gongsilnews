@@ -34,6 +34,7 @@ export default function MobileGongsilPage() {
   const kakaoMapRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
   const detailPanelRef = useRef<HTMLDivElement>(null);
+  const detailScrollRef = useRef<HTMLDivElement>(null);
 
   // 뒤로 가기(안드로이드 하드웨어 백버튼 등) 처리
   useEffect(() => {
@@ -156,8 +157,8 @@ export default function MobileGongsilPage() {
   // 상세 조회
   const handleVacancyClick = async (v: any) => {
     window.history.pushState({ panel: "detail" }, "");
-    if (detailPanelRef.current) {
-      detailPanelRef.current.scrollTop = 0;
+    if (detailScrollRef.current) {
+      detailScrollRef.current.scrollTop = 0;
     }
     setDetailLoading(true);
     setSelectedVacancy(v); // 먼저 기본 정보 표시
@@ -294,9 +295,9 @@ export default function MobileGongsilPage() {
       </div>
 
       {/* 상세 패널 */}
-      <div ref={detailPanelRef} className={`detail-panel ${selectedVacancy ? "open" : ""}`} onClick={(e) => e.stopPropagation()}>
+      <div ref={detailPanelRef} className={`detail-panel ${selectedVacancy ? "open" : ""}`} onClick={(e) => e.stopPropagation()} style={{ display: "flex", flexDirection: "column", overflow: "hidden" }}>
         {/* 상단 헤더 */}
-        <div style={{ position: "sticky", top: 0, zIndex: 10, background: "#fff", borderBottom: "1px solid #f3f4f6", display: "flex", alignItems: "center", gap: "12px", padding: "14px 16px" }}>
+        <div style={{ zIndex: 10, background: "#fff", borderBottom: "1px solid #f3f4f6", display: "flex", alignItems: "center", gap: "12px", padding: "14px 16px" }}>
           <button onClick={goBack} style={{ background: "none", border: "none", cursor: "pointer", padding: "4px", display: "flex", alignItems: "center" }}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg>
           </button>
@@ -306,7 +307,8 @@ export default function MobileGongsilPage() {
         </div>
 
         {selectedVacancy && (
-          <div style={{ display: "flex", flexDirection: "column", minHeight: "calc(100% - 54px)" }}>
+          <>
+            <div ref={detailScrollRef} style={{ flex: 1, overflowY: "auto", paddingBottom: "20px" }}>
             {/* 상단 핵심 정보 영역 */}
             <div style={{ padding: "20px 16px", background: "#fff" }}>
               {/* Badges */}
@@ -411,17 +413,31 @@ export default function MobileGongsilPage() {
                     </div>
                     <div style={{ flex: 1 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
-                        <h3 style={{ fontSize: "20px", fontWeight: 800, color: "#111827" }}>{selectedVacancy.members?.full_name || "착한임대"}</h3>
+                        <h3 style={{ fontSize: "20px", fontWeight: 800, color: "#111827" }}>
+                          {(() => {
+                            const agencyInfo = Array.isArray(selectedVacancy.members?.agencies) ? selectedVacancy.members.agencies[0] : selectedVacancy.members?.agencies;
+                            return agencyInfo?.name || selectedVacancy.members?.full_name || "착한임대";
+                          })()}
+                        </h3>
                         <button style={{ background: "#f3f4f6", border: "1px solid #e5e7eb", borderRadius: "4px", padding: "2px 6px", display: "flex", alignItems: "center" }}>
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4b5563" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
                         </button>
                       </div>
-                      <p style={{ fontSize: "15px", color: "#6b7280", marginBottom: "4px" }}>대표 {selectedVacancy.members?.name || "김동현"} | 등록번호 54545-45454</p>
-                      <p style={{ fontSize: "15px", color: "#6b7280", marginBottom: "12px" }}>서울 강남구 논현동 봉은사로11길 12</p>
-                      <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "#1a73e8", fontSize: "16px", fontWeight: 700 }}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-                        전화 {selectedVacancy.members?.phone || "02-542-3001, 010-8831-9450"}
-                      </div>
+                      {(() => {
+                        const agencyInfo = Array.isArray(selectedVacancy.members?.agencies) ? selectedVacancy.members.agencies[0] : selectedVacancy.members?.agencies;
+                        return (
+                          <>
+                            <p style={{ fontSize: "15px", color: "#6b7280", marginBottom: "4px" }}>
+                              대표 {agencyInfo?.ceo_name || selectedVacancy.members?.name || "김동현"} | 등록번호 {agencyInfo?.reg_num || "미등록"}
+                            </p>
+                            <p style={{ fontSize: "15px", color: "#6b7280", marginBottom: "12px" }}>{agencyInfo?.address || selectedVacancy.sido + " " + selectedVacancy.sigungu}</p>
+                            <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "#1a73e8", fontSize: "16px", fontWeight: 700 }}>
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                              전화 {[agencyInfo?.phone, agencyInfo?.cell].filter(Boolean).join(', ') || selectedVacancy.members?.phone || selectedVacancy.client_phone || "미등록"}
+                            </div>
+                          </>
+                        );
+                      })()}
                     </div>
                   </div>
                   
@@ -457,12 +473,13 @@ export default function MobileGongsilPage() {
             </div>
 
             {/* 하단 CTA */}
-            <div style={{ marginTop: "auto", position: "sticky", bottom: 0, background: "#fff", borderTop: "1px solid #e5e7eb", padding: "14px 16px 24px" }}>
+            <div style={{ background: "#fff", borderTop: "1px solid #e5e7eb", padding: "14px 16px 24px" }}>
               <button
                 onClick={() => {
-                  const phoneStr = selectedVacancy?.members?.phone || selectedVacancy?.client_phone;
-                  if (phoneStr) {
-                    const firstPhone = phoneStr.split(',')[0].trim();
+                  const agencyInfo = Array.isArray(selectedVacancy?.members?.agencies) ? selectedVacancy.members.agencies[0] : selectedVacancy?.members?.agencies;
+                  const targetPhone = agencyInfo?.cell || agencyInfo?.phone || selectedVacancy?.members?.phone || selectedVacancy?.client_phone;
+                  if (targetPhone) {
+                    const firstPhone = targetPhone.split(',')[0].trim();
                     window.location.href = `tel:${firstPhone}`;
                   }
                 }}
@@ -471,7 +488,7 @@ export default function MobileGongsilPage() {
                 연락하기
               </button>
             </div>
-          </div>
+          </>
         )}
       </div>
     </div>
