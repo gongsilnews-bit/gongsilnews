@@ -296,7 +296,7 @@ function MobileNewsPage() {
               backgroundColor: "#ffffff",
               borderBottom: "9px solid #e0e0e0",
               position: "fixed",
-              top: "41px",
+              top: "36px",
               left: "50%",
               transform: "translateX(-50%)",
               width: "100%",
