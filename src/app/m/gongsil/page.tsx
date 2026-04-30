@@ -239,10 +239,10 @@ export default function MobileGongsilPage() {
           <div style={{ width: "40px", height: "4px", backgroundColor: "#e5e7eb", borderRadius: "4px" }} />
         </div>
         <div style={{ padding: "0 20px 14px", borderBottom: "1px solid #f3f4f6", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <h3 style={{ fontSize: "16px", fontWeight: 800, color: "#111827" }}>
+          <h3 style={{ fontSize: "18px", fontWeight: 800, color: "#111827" }}>
             매물 <span style={{ color: "#f97316" }}>{selectedCluster?.length || 0}</span>개
           </h3>
-          <button onClick={goBack} style={{ background: "#f3f4f6", border: "none", borderRadius: "50%", width: "28px", height: "28px", cursor: "pointer", fontSize: "15px", color: "#6b7280", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+          <button onClick={goBack} style={{ background: "#f3f4f6", border: "none", borderRadius: "50%", width: "28px", height: "28px", cursor: "pointer", fontSize: "17px", color: "#6b7280", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
         </div>
         <div className="no-scrollbar" style={{ flex: 1, overflowY: "auto", padding: "8px 16px 20px" }}>
           {selectedCluster?.map((v: any) => (
@@ -260,31 +260,31 @@ export default function MobileGongsilPage() {
               <div style={{ flex: 1, minWidth: 0 }}>
                 {/* Title & Date */}
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
-                  <p style={{ fontSize: "14px", fontWeight: 800, color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  <p style={{ fontSize: "16px", fontWeight: 800, color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {v.building_name || [v.dong, v.sigungu].filter(Boolean).join(" ")}
                   </p>
                 </div>
                 
                 {/* Price (Blue) */}
-                <p style={{ fontSize: "16px", fontWeight: 800, color: "#1a73e8", marginBottom: "6px" }}>
+                <p style={{ fontSize: "18px", fontWeight: 800, color: "#1a73e8", marginBottom: "6px" }}>
                   {v.trade_type} {formatPrice(v)}
                 </p>
                 
                 {/* Specs 1: Type | Direction | Area */}
-                <p style={{ fontSize: "12px", color: "#6b7280", marginBottom: "2px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                <p style={{ fontSize: "14px", color: "#6b7280", marginBottom: "2px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                   {[v.property_type || "건물", v.direction, v.exclusive_m2 && `${v.exclusive_m2}㎡`].filter(Boolean).join(" | ")}
                 </p>
                 
                 {/* Specs 2: Rooms, Options */}
-                <p style={{ fontSize: "12px", color: "#6b7280", marginBottom: "8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                <p style={{ fontSize: "14px", color: "#6b7280", marginBottom: "8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                   {[v.room_count !== undefined ? `룸 ${v.room_count}개` : null, v.bath_count !== undefined ? `욕실 ${v.bath_count}개` : null, ...(v.options || [])].filter(Boolean).join(", ")}
                 </p>
 
                 {/* Badges & Date */}
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <span style={{ fontSize: "11px", fontWeight: 700, color: "#ef4444", border: "1px solid #ef4444", padding: "1px 6px", borderRadius: "3px" }}>공동중개 0%</span>
-                  <span style={{ fontSize: "12px", fontWeight: 700, color: "#ef4444" }}>{v.comment_count || 0}</span>
-                  <span style={{ fontSize: "11px", color: "#9ca3af" }}>{v.created_at ? new Date(v.created_at).toLocaleDateString("ko-KR").slice(0, -1) : ""}</span>
+                  <span style={{ fontSize: "13px", fontWeight: 700, color: "#ef4444", border: "1px solid #ef4444", padding: "1px 6px", borderRadius: "3px" }}>공동중개 0%</span>
+                  <span style={{ fontSize: "14px", fontWeight: 700, color: "#ef4444" }}>{v.comment_count || 0}</span>
+                  <span style={{ fontSize: "13px", color: "#9ca3af" }}>{v.created_at ? new Date(v.created_at).toLocaleDateString("ko-KR").slice(0, -1) : ""}</span>
                 </div>
               </div>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="2" style={{ flexShrink: 0, alignSelf: "center" }}><polyline points="9 18 15 12 9 6"/></svg>
@@ -300,7 +300,7 @@ export default function MobileGongsilPage() {
           <button onClick={goBack} style={{ background: "none", border: "none", cursor: "pointer", padding: "4px", display: "flex", alignItems: "center" }}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg>
           </button>
-          <h2 style={{ fontSize: "16px", fontWeight: 800, color: "#111827", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <h2 style={{ fontSize: "18px", fontWeight: 800, color: "#111827", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {selectedVacancy?.building_name || [selectedVacancy?.dong, selectedVacancy?.sigungu].filter(Boolean).join(" ") || "매물 상세"}
           </h2>
         </div>
@@ -312,22 +312,22 @@ export default function MobileGongsilPage() {
               {/* Badges */}
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
                 <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                  <span style={{ fontSize: "12px", fontWeight: 700, color: "#ef4444", border: "1px solid #ef4444", padding: "2px 8px", borderRadius: "3px" }}>공동중개 0%</span>
-                  <span style={{ fontSize: "13px", fontWeight: 700, color: "#ef4444" }}>{selectedVacancy.comment_count || 0}</span>
-                  <span style={{ fontSize: "12px", color: "#6b7280" }}>{selectedVacancy.created_at ? new Date(selectedVacancy.created_at).toLocaleDateString("ko-KR").slice(0, -1) : ""}</span>
+                  <span style={{ fontSize: "14px", fontWeight: 700, color: "#ef4444", border: "1px solid #ef4444", padding: "2px 8px", borderRadius: "3px" }}>공동중개 0%</span>
+                  <span style={{ fontSize: "15px", fontWeight: 700, color: "#ef4444" }}>{selectedVacancy.comment_count || 0}</span>
+                  <span style={{ fontSize: "14px", color: "#6b7280" }}>{selectedVacancy.created_at ? new Date(selectedVacancy.created_at).toLocaleDateString("ko-KR").slice(0, -1) : ""}</span>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "4px", color: "#ef4444", fontSize: "12px", fontWeight: 600 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "4px", color: "#ef4444", fontSize: "14px", fontWeight: 600 }}>
                   <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#ef4444" }}></span> 허위매물신고
                 </div>
               </div>
 
               {/* Title & Price */}
-              <h1 style={{ fontSize: "20px", fontWeight: 800, color: "#111827", marginBottom: "8px", lineHeight: 1.3 }}>
+              <h1 style={{ fontSize: "22px", fontWeight: 800, color: "#111827", marginBottom: "8px", lineHeight: 1.3 }}>
                 {selectedVacancy.building_name || [selectedVacancy.dong, selectedVacancy.sigungu].filter(Boolean).join(" ")}
               </h1>
               
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-                <p style={{ fontSize: "28px", fontWeight: 900, color: "#1a73e8" }}>
+                <p style={{ fontSize: "30px", fontWeight: 900, color: "#1a73e8" }}>
                   {selectedVacancy.trade_type} {formatPrice(selectedVacancy)}
                 </p>
                 <div style={{ display: "flex", gap: "10px" }}>
@@ -341,10 +341,10 @@ export default function MobileGongsilPage() {
               </div>
 
               {/* Sub Info */}
-              <div style={{ fontSize: "13px", color: "#4b5563", lineHeight: 1.6, marginBottom: "8px" }}>
+              <div style={{ fontSize: "15px", color: "#4b5563", lineHeight: 1.6, marginBottom: "8px" }}>
                 {[selectedVacancy.property_type || "건물", selectedVacancy.direction, `공급/전용 면적: ${selectedVacancy.supply_m2 || "-"}㎡ / ${selectedVacancy.exclusive_m2 || "-"}㎡`].filter(Boolean).join(" · ")}
               </div>
-              <div style={{ fontSize: "13px", color: "#4b5563", lineHeight: 1.6 }}>
+              <div style={{ fontSize: "15px", color: "#4b5563", lineHeight: 1.6 }}>
                 {[
                   selectedVacancy.room_count !== undefined ? `룸 ${selectedVacancy.room_count}개` : null,
                   `주차 ${selectedVacancy.parking || "정보없음"}`,
@@ -364,13 +364,13 @@ export default function MobileGongsilPage() {
             <div style={{ display: "flex", borderBottom: "1px solid #111827", marginTop: "10px" }}>
               <button 
                 onClick={() => setDetailTab("info")} 
-                style={{ flex: 1, padding: "14px 0", fontSize: "15px", fontWeight: detailTab === "info" ? 800 : 600, color: detailTab === "info" ? "#111827" : "#6b7280", borderBottom: detailTab === "info" ? "3px solid #111827" : "3px solid transparent", background: "none" }}
+                style={{ flex: 1, padding: "14px 0", fontSize: "17px", fontWeight: detailTab === "info" ? 800 : 600, color: detailTab === "info" ? "#111827" : "#6b7280", borderBottom: detailTab === "info" ? "3px solid #111827" : "3px solid transparent", background: "none" }}
               >
                 매물정보
               </button>
               <button 
                 onClick={() => setDetailTab("realtor")} 
-                style={{ flex: 1, padding: "14px 0", fontSize: "15px", fontWeight: detailTab === "realtor" ? 800 : 600, color: detailTab === "realtor" ? "#111827" : "#6b7280", borderBottom: detailTab === "realtor" ? "3px solid #111827" : "3px solid transparent", background: "none" }}
+                style={{ flex: 1, padding: "14px 0", fontSize: "17px", fontWeight: detailTab === "realtor" ? 800 : 600, color: detailTab === "realtor" ? "#111827" : "#6b7280", borderBottom: detailTab === "realtor" ? "3px solid #111827" : "3px solid transparent", background: "none" }}
               >
                 등록자정보
               </button>
@@ -392,14 +392,14 @@ export default function MobileGongsilPage() {
                     ["입주가능일", selectedVacancy.move_in_date || "즉시입주(공실)"]
                   ].map(([label, val], i) => (
                     <div key={i} style={{ display: "flex", padding: "16px 0", borderBottom: "1px solid #f3f4f6" }}>
-                      <div style={{ width: "100px", fontSize: "13px", fontWeight: 700, color: "#374151" }}>{label}</div>
-                      <div style={{ flex: 1, fontSize: "14px", color: "#111827" }}>{val}</div>
+                      <div style={{ width: "100px", fontSize: "15px", fontWeight: 700, color: "#374151" }}>{label}</div>
+                      <div style={{ flex: 1, fontSize: "16px", color: "#111827" }}>{val}</div>
                     </div>
                   ))}
                   {/* 설명 */}
                   {selectedVacancy.description && (
                     <div style={{ padding: "20px 0 0" }}>
-                      <p style={{ fontSize: "14px", color: "#374151", lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{selectedVacancy.description}</p>
+                      <p style={{ fontSize: "16px", color: "#374151", lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{selectedVacancy.description}</p>
                     </div>
                   )}
                 </div>
@@ -411,14 +411,14 @@ export default function MobileGongsilPage() {
                     </div>
                     <div style={{ flex: 1 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
-                        <h3 style={{ fontSize: "18px", fontWeight: 800, color: "#111827" }}>{selectedVacancy.members?.full_name || "착한임대"}</h3>
+                        <h3 style={{ fontSize: "20px", fontWeight: 800, color: "#111827" }}>{selectedVacancy.members?.full_name || "착한임대"}</h3>
                         <button style={{ background: "#f3f4f6", border: "1px solid #e5e7eb", borderRadius: "4px", padding: "2px 6px", display: "flex", alignItems: "center" }}>
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4b5563" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
                         </button>
                       </div>
-                      <p style={{ fontSize: "13px", color: "#6b7280", marginBottom: "4px" }}>대표 {selectedVacancy.members?.name || "김동현"} | 등록번호 54545-45454</p>
-                      <p style={{ fontSize: "13px", color: "#6b7280", marginBottom: "12px" }}>서울 강남구 논현동 봉은사로11길 12</p>
-                      <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "#1a73e8", fontSize: "14px", fontWeight: 700 }}>
+                      <p style={{ fontSize: "15px", color: "#6b7280", marginBottom: "4px" }}>대표 {selectedVacancy.members?.name || "김동현"} | 등록번호 54545-45454</p>
+                      <p style={{ fontSize: "15px", color: "#6b7280", marginBottom: "12px" }}>서울 강남구 논현동 봉은사로11길 12</p>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "#1a73e8", fontSize: "16px", fontWeight: 700 }}>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
                         전화 {selectedVacancy.members?.phone || "02-542-3001, 010-8831-9450"}
                       </div>
@@ -427,8 +427,8 @@ export default function MobileGongsilPage() {
                   
                   {/* 소개글 박스 */}
                   <div style={{ background: "#f8f9fa", borderRadius: "8px", padding: "16px", marginBottom: "20px" }}>
-                    <h4 style={{ fontSize: "12px", fontWeight: 700, color: "#9ca3af", marginBottom: "8px" }}>부동산 소개</h4>
-                    <p style={{ fontSize: "13px", color: "#4b5563", lineHeight: 1.6 }}>
+                    <h4 style={{ fontSize: "14px", fontWeight: 700, color: "#9ca3af", marginBottom: "8px" }}>부동산 소개</h4>
+                    <p style={{ fontSize: "15px", color: "#4b5563", lineHeight: 1.6 }}>
                       임대차 계약 만료 전, 묵시적 갱신과 계약갱신청구권의 차이를 아는 것이 자산을 지키는 핵심입니다. 세입자에게 더 유리한 거주 기간 확보 전략과 복비 부담 주체를 명확히 정리해 드립니다.
                     </p>
                   </div>
@@ -443,8 +443,8 @@ export default function MobileGongsilPage() {
                   
                   {/* 공실등록현황 */}
                   <div style={{ background: "#f9fafb", borderRadius: "8px", padding: "16px", display: "flex", alignItems: "center" }}>
-                    <div style={{ fontSize: "14px", fontWeight: 800, color: "#111827", marginRight: "20px" }}>공실등록현황</div>
-                    <div style={{ display: "flex", flex: 1, justifyContent: "space-between", fontSize: "13px", color: "#6b7280" }}>
+                    <div style={{ fontSize: "16px", fontWeight: 800, color: "#111827", marginRight: "20px" }}>공실등록현황</div>
+                    <div style={{ display: "flex", flex: 1, justifyContent: "space-between", fontSize: "15px", color: "#6b7280" }}>
                       <span>전체 <b style={{ color: "#1a73e8" }}>6</b></span>
                       <span>매매 <b>3</b></span>
                       <span>전세 <b>3</b></span>
@@ -460,7 +460,7 @@ export default function MobileGongsilPage() {
             <div style={{ position: "sticky", bottom: 0, background: "#fff", borderTop: "1px solid #e5e7eb", padding: "14px 16px 24px" }}>
               <button
                 onClick={() => { const phone = selectedVacancy?.members?.phone || selectedVacancy?.client_phone; if (phone) window.location.href = `tel:${phone}`; }}
-                style={{ width: "100%", height: "52px", borderRadius: "6px", background: "#1a73e8", color: "#fff", fontSize: "16px", fontWeight: 800, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                style={{ width: "100%", height: "52px", borderRadius: "6px", background: "#1a73e8", color: "#fff", fontSize: "18px", fontWeight: 800, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
               >
                 연락처 보기
               </button>
