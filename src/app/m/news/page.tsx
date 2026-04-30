@@ -306,7 +306,7 @@ function MobileNewsPage() {
                 key={cat.key}
                 onClick={() => {
                   if (cat.key === "home") { router.push("/m"); return; }
-                  setActiveTab(cat.key); setSelectedCluster(null);
+                  setActiveTab(cat.key); setClusterMode(false);
                 }}
                 style={{
                   flexShrink: 0,
@@ -418,7 +418,7 @@ function MobileNewsPage() {
                   onClick={() => {
                     setClusterMode(false);
                     if (kakaoMapRef.current) {
-                      kakao.maps.event.trigger(kakaoMapRef.current, 'idle');
+                      (window as any).kakao.maps.event.trigger(kakaoMapRef.current, 'idle');
                     }
                   }}
                   style={{
