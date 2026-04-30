@@ -294,7 +294,7 @@ function MobileNewsPage() {
               WebkitOverflowScrolling: "touch",
               touchAction: "pan-x",
               backgroundColor: "#ffffff",
-              borderBottom: "1px solid #e5e5e5",
+              borderBottom: "3px solid #e0e0e0",
               position: "fixed",
               top: "41px",
               left: "50%",
