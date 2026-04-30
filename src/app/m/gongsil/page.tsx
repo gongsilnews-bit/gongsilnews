@@ -33,6 +33,20 @@ export default function MobileGongsilPage() {
   const mapRef = useRef<HTMLDivElement>(null);
   const kakaoMapRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
+  const detailPanelRef = useRef<HTMLDivElement>(null);
+
+  // 뒤로 가기(안드로이드 하드웨어 백버튼 등) 처리
+  useEffect(() => {
+    const handlePopState = () => {
+      if (selectedVacancy) {
+        setSelectedVacancy(null);
+      } else if (selectedCluster) {
+        setSelectedCluster(null);
+      }
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [selectedVacancy, selectedCluster]);
 
   // 데이터 로드
   useEffect(() => {
@@ -131,6 +145,7 @@ export default function MobileGongsilPage() {
         map: kakaoMapRef.current,
       });
       kakao.maps.event.addListener(marker, "click", () => {
+        window.history.pushState({ panel: "cluster" }, "");
         setSelectedVacancy(null);
         setSelectedCluster(group);
       });
@@ -140,6 +155,10 @@ export default function MobileGongsilPage() {
 
   // 상세 조회
   const handleVacancyClick = async (v: any) => {
+    window.history.pushState({ panel: "detail" }, "");
+    if (detailPanelRef.current) {
+      detailPanelRef.current.scrollTop = 0;
+    }
     setDetailLoading(true);
     setSelectedVacancy(v); // 먼저 기본 정보 표시
     const res = await getVacancyDetail(v.id);
@@ -156,8 +175,8 @@ export default function MobileGongsilPage() {
   };
 
   const goBack = () => {
-    if (selectedVacancy) { setSelectedVacancy(null); return; }
-    if (selectedCluster) { setSelectedCluster(null); }
+    if (selectedVacancy) { window.history.back(); return; }
+    if (selectedCluster) { window.history.back(); }
   };
 
   return (
@@ -223,7 +242,7 @@ export default function MobileGongsilPage() {
           <h3 style={{ fontSize: "16px", fontWeight: 800, color: "#111827" }}>
             매물 <span style={{ color: "#f97316" }}>{selectedCluster?.length || 0}</span>개
           </h3>
-          <button onClick={() => setSelectedCluster(null)} style={{ background: "#f3f4f6", border: "none", borderRadius: "50%", width: "28px", height: "28px", cursor: "pointer", fontSize: "15px", color: "#6b7280", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+          <button onClick={goBack} style={{ background: "#f3f4f6", border: "none", borderRadius: "50%", width: "28px", height: "28px", cursor: "pointer", fontSize: "15px", color: "#6b7280", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
         </div>
         <div className="no-scrollbar" style={{ flex: 1, overflowY: "auto", padding: "8px 16px 20px" }}>
           {selectedCluster?.map((v: any) => (
@@ -275,7 +294,7 @@ export default function MobileGongsilPage() {
       </div>
 
       {/* 상세 패널 */}
-      <div className={`detail-panel ${selectedVacancy ? "open" : ""}`} onClick={(e) => e.stopPropagation()}>
+      <div ref={detailPanelRef} className={`detail-panel ${selectedVacancy ? "open" : ""}`} onClick={(e) => e.stopPropagation()}>
         {/* 상단 헤더 */}
         <div style={{ position: "sticky", top: 0, zIndex: 10, background: "#fff", borderBottom: "1px solid #f3f4f6", display: "flex", alignItems: "center", gap: "12px", padding: "14px 16px" }}>
           <button onClick={goBack} style={{ background: "none", border: "none", cursor: "pointer", padding: "4px", display: "flex", alignItems: "center" }}>
