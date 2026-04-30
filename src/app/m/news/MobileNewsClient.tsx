@@ -122,28 +122,43 @@ function MobileNewsClient({ initialTab, initialArticles }: { initialTab: string,
     };
     loadLocalArticles();
   }, []);
-  // 뒤로 가기(안드로이드 하드웨어 백버튼 등) 처리
+  // 뒤로 가기(안드로이드 하드웨어 백버튼 등) 처리 - hash를 사용해야 Next.js 라우터와 충돌하지 않음
   useEffect(() => {
-    const handlePopState = () => {
-      if (showDetail) {
+    const handleHashChange = () => {
+      if (window.location.hash !== "#detail" && showDetail) {
         setShowDetail(false);
       }
     };
-    window.addEventListener("popstate", handlePopState);
-    return () => window.removeEventListener("popstate", handlePopState);
+    window.addEventListener("hashchange", handleHashChange);
+    // 현재 열려있는데 해시가 없다면(버그 방지) 해시 추가
+    if (showDetail && window.location.hash !== "#detail") {
+      window.location.hash = "detail";
+    }
+    return () => window.removeEventListener("hashchange", handleHashChange);
   }, [showDetail]);
 
   // 기사 상세 변경 시 스크롤 최상단 강제 초기화 (가장 확실한 방법)
   useEffect(() => {
     if (showDetail && detailPanelRef.current) {
-      detailPanelRef.current.scrollTop = 0;
+      const el = detailPanelRef.current;
+      el.scrollTop = 0;
+      
+      // 혹시 모를 렌더링 딜레이를 대비해 여러 번 강제 초기화
+      let attempts = 0;
+      const interval = setInterval(() => {
+        if (el) el.scrollTop = 0;
+        attempts++;
+        if (attempts > 5) clearInterval(interval);
+      }, 50);
+      
+      return () => clearInterval(interval);
     }
   }, [articleDetail, showDetail]);
 
   // 기사 상세 조회 (우리동네뉴스는 인라인 패널, 나머지는 새 페이지)
   const handleSelectArticle = async (id: string, isLocal: boolean = false) => {
     if (isLocal) {
-      window.history.pushState({ panel: "newsDetail" }, "");
+      window.location.hash = "detail";
       setShowDetail(true);
       setDetailLoading(true);
       const res = await getArticleDetail(id);
