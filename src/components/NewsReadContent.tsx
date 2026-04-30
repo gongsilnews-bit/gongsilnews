@@ -514,17 +514,17 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
                   </span>
                 </div>
                 
-                <div className="meta-stats" style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+                <div className="meta-stats" style={{ display: "flex", gap: "10px", alignItems: "center" }}>
                   <span className="meta-icon" title={isBookmarked ? "찜 해제" : "찜하기"} onClick={toggleBookmark} style={{ cursor: "pointer", color: isBookmarked ? "#f5a623" : "#888", display: "flex", alignItems: "center" }}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill={isBookmarked ? "#f5a623" : "none"} stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill={isBookmarked ? "#f5a623" : "none"} stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
                   </span>
                   
                   <span className="meta-icon" title="글자 크기" style={{ fontWeight: "700", display: "flex", alignItems: "baseline", gap: "1px", letterSpacing: "-1px", cursor: "pointer", color: showFontSizePopup ? "#1a73e8" : "#888" }} onClick={() => { setShowFontSizePopup(!showFontSizePopup); setShowShareDropdown(false); }}>
-                    <span style={{ fontSize: "12px" }}>가</span><span style={{ fontSize: "15px" }}>가</span>
+                    <span style={{ fontSize: "11px" }}>가</span><span style={{ fontSize: "14px" }}>가</span>
                   </span>
                   
                   <span className="meta-icon" title="공유하기" onClick={() => { setShowShareDropdown(!showShareDropdown); setShowFontSizePopup(false); }} style={{ cursor: "pointer", color: showShareDropdown ? "#1a73e8" : "#888", display: "flex", alignItems: "center" }}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
                   </span>
                   
                   {/* Share Dropdown */}
