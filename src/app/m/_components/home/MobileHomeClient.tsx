@@ -137,10 +137,32 @@ export default function MobileHomeClient(props: Props) {
       {/* 카테고리 바 높이만큼 공간 확보 */}
       <div style={{ height: "46px" }} />
 
-      {/* ① Hero 배너 (헤드라인 기사) */}
+      {/* ① Hero 배너 (헤드라인 기사) — 좌우 스와이프로 기사 전환 */}
       {hero && (
-        <div style={{ position: "relative", width: "100%", aspectRatio: "16/9", maxHeight: 250, overflow: "hidden", cursor: "pointer" }}
-          onClick={() => router.push(`/m/news/${hero.article_no || hero.id}`)}>
+        <div
+          style={{ position: "relative", width: "100%", aspectRatio: "16/9", maxHeight: 250, overflow: "hidden", cursor: "pointer" }}
+          onTouchStart={(e) => {
+            // 히어로 전용 스와이프 시작 — 부모 페이지 전환 방지
+            e.stopPropagation();
+            (e.currentTarget as any)._heroStartX = e.touches[0].clientX;
+          }}
+          onTouchEnd={(e) => {
+            e.stopPropagation();
+            const startX = (e.currentTarget as any)._heroStartX;
+            if (startX == null) return;
+            const dx = e.changedTouches[0].clientX - startX;
+            (e.currentTarget as any)._heroStartX = null;
+            if (Math.abs(dx) < 50) return;
+            if (dx < 0) {
+              // ← 왼쪽 스와이프 → 다음 기사
+              setHeroIdx((prev) => Math.min(prev + 1, headlineArticles.length - 1));
+            } else {
+              // → 오른쪽 스와이프 → 이전 기사
+              setHeroIdx((prev) => Math.max(prev - 1, 0));
+            }
+          }}
+          onClick={() => router.push(`/m/news/${hero.article_no || hero.id}`)}
+        >
           {hero.thumbnail_url
             ? <img src={hero.thumbnail_url} alt={hero.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             : <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg,#1a2e50,#2d4a7a)" }} />}
