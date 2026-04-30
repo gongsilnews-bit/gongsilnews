@@ -140,7 +140,7 @@ export default function MobileHomeClient(props: Props) {
       {/* ① Hero 배너 (헤드라인 기사) — 좌우 스와이프로 기사 전환 */}
       {hero && (
         <div
-          style={{ position: "relative", width: "100%", aspectRatio: "16/9", maxHeight: 250, overflow: "hidden", cursor: "pointer" }}
+          style={{ position: "relative", width: "100%", aspectRatio: "16/9", maxHeight: 280, overflow: "hidden", cursor: "pointer" }}
           onTouchStart={(e) => {
             // 히어로 전용 스와이프 시작 — 부모 페이지 전환 방지
             e.stopPropagation();
@@ -168,9 +168,9 @@ export default function MobileHomeClient(props: Props) {
             : <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg,#1a2e50,#2d4a7a)" }} />}
           <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top,rgba(0,0,0,0.85) 0%,rgba(0,0,0,0.2) 55%,transparent 100%)" }} />
           <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "16px" }}>
-            <span style={{ background: "#dc2626", color: "#fff", fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 3, display: "inline-block", marginBottom: 8, letterSpacing: "0.5px" }}>HEADLINE</span>
-            <h2 style={{ color: "#fff", fontSize: 17, fontWeight: 800, lineHeight: 1.45, wordBreak: "keep-all", margin: 0, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", letterSpacing: "-0.5px" }}>{hero.title}</h2>
-            <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 12, marginTop: 6, marginBottom: 0, letterSpacing: "-0.2px" }}>{hero.author_name} · {formatDate(hero.published_at || hero.created_at)}</p>
+            <span style={{ background: "#dc2626", color: "#fff", fontSize: 12, fontWeight: 700, padding: "3px 8px", borderRadius: 3, display: "inline-block", marginBottom: 8, letterSpacing: "0.5px" }}>HEADLINE</span>
+            <h2 style={{ color: "#fff", fontSize: 19, fontWeight: 800, lineHeight: 1.45, wordBreak: "keep-all", margin: 0, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", letterSpacing: "-0.5px" }}>{hero.title}</h2>
+            <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 14, marginTop: 6, marginBottom: 0, letterSpacing: "-0.2px" }}>{hero.author_name} · {formatDate(hero.published_at || hero.created_at)}</p>
           </div>
           {headlineArticles.length > 1 && (
             <div style={{ position: "absolute", bottom: 12, right: 12, display: "flex", gap: 4 }}>
@@ -187,7 +187,7 @@ export default function MobileHomeClient(props: Props) {
       <div style={{ background: "#fff", marginBottom: 12, borderBottom: "1px solid #f0f0f0" }}>
         <div className="sec-hd">
           <h2>실시간 공실 매물</h2>
-          <Link href="/m/gongsil" style={{ fontSize: 13, color: "#6b7280", textDecoration: "none" }}>더보기 ›</Link>
+          <Link href="/m/gongsil" style={{ fontSize: 15, color: "#6b7280", textDecoration: "none" }}>더보기 ›</Link>
         </div>
         <div style={{ padding: "0 16px 16px" }}>
           <MiniVacancyMap vacancies={vacancies} />
@@ -203,13 +203,13 @@ export default function MobileHomeClient(props: Props) {
         <div style={{ background: "#fff", marginBottom: 12, borderBottom: "1px solid #f0f0f0" }}>
           <div className="sec-hd">
             <h2>우리동네부동산</h2>
-            <Link href="/m/news" style={{ fontSize: 13, color: "#6b7280", textDecoration: "none" }}>더보기 ›</Link>
+            <Link href="/m/news" style={{ fontSize: 15, color: "#6b7280", textDecoration: "none" }}>더보기 ›</Link>
           </div>
           <div className="no-scrollbar" style={{ display: "flex", gap: 12, padding: "0 16px 16px", overflowX: "auto" }}>
             {mapArticles.slice(0, 5).map((a: any) => (
               <div key={a.id} className="tap" onClick={() => router.push(`/m/news/${a.article_no || a.id}`)}
-                style={{ flexShrink: 0, width: 200, borderRadius: 10, overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.07)", border: "1px solid #f3f4f6", background: "#fff", cursor: "pointer" }}>
-                <div style={{ width: "100%", height: 112, overflow: "hidden", background: "#e5e7eb", position: "relative" }}>
+                style={{ flexShrink: 0, width: 240, borderRadius: 10, overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.07)", border: "1px solid #f3f4f6", background: "#fff", cursor: "pointer" }}>
+                <div style={{ width: "100%", height: 134, overflow: "hidden", background: "#e5e7eb", position: "relative" }}>
                   {a.thumbnail_url
                     ? <img src={a.thumbnail_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     : <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg,#1a2e50,#2d4a7a)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>📺</div>}
@@ -220,8 +220,8 @@ export default function MobileHomeClient(props: Props) {
                   )}
                 </div>
                 <div style={{ padding: "10px" }}>
-                  <p style={{ fontSize: 13, fontWeight: 700, color: "#333333", lineHeight: 1.5, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", wordBreak: "keep-all", margin: 0, letterSpacing: "-0.3px" }}>{a.title}</p>
-                  <p style={{ fontSize: 11, color: "#999999", marginTop: 5 }}>{formatDate(a.published_at || a.created_at)}</p>
+                  <p style={{ fontSize: 15, fontWeight: 700, color: "#333333", lineHeight: 1.5, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", wordBreak: "keep-all", margin: 0, letterSpacing: "-0.3px" }}>{a.title}</p>
+                  <p style={{ fontSize: 13, color: "#999999", marginTop: 5 }}>{formatDate(a.published_at || a.created_at)}</p>
                 </div>
               </div>
             ))}
@@ -246,22 +246,22 @@ export default function MobileHomeClient(props: Props) {
         <div style={{ background: "#fff", marginBottom: 12, borderBottom: "1px solid #f0f0f0" }}>
           <div className="sec-hd">
             <h2>부동산특강</h2>
-            <Link href="/m/study" style={{ fontSize: 13, color: "#6b7280", textDecoration: "none" }}>더보기 ›</Link>
+            <Link href="/m/study" style={{ fontSize: 15, color: "#6b7280", textDecoration: "none" }}>더보기 ›</Link>
           </div>
           <div className="no-scrollbar" style={{ display: "flex", gap: 12, padding: "0 16px 16px", overflowX: "auto" }}>
             {lectures.map((lec: any) => (
               <Link key={lec.id} href={`/study_read?id=${lec.id}`}
-                style={{ flexShrink: 0, width: 160, borderRadius: 12, overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.08)", border: "1px solid #f3f4f6", background: "#fff", textDecoration: "none", display: "block" }}>
-                <div style={{ width: "100%", height: 100, overflow: "hidden", background: "#e5e7eb" }}>
+                style={{ flexShrink: 0, width: 180, borderRadius: 12, overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.08)", border: "1px solid #f3f4f6", background: "#fff", textDecoration: "none", display: "block" }}>
+                <div style={{ width: "100%", height: 112, overflow: "hidden", background: "#e5e7eb" }}>
                   {lec.thumbnail_url
                     ? <img src={lec.thumbnail_url} alt={lec.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                    : <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg,#667eea,#764ba2)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 12, fontWeight: 700, padding: "0 8px", textAlign: "center" }}>{lec.category || "특강"}</div>}
+                    : <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg,#667eea,#764ba2)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 14, fontWeight: 700, padding: "0 8px", textAlign: "center" }}>{lec.category || "특강"}</div>}
                 </div>
                 <div style={{ padding: "10px" }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: "#8a3ffc", display: "block", marginBottom: 4, letterSpacing: "-0.2px" }}>{lec.category}</span>
-                  <p style={{ fontSize: 13, fontWeight: 700, color: "#333333", lineHeight: 1.5, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", margin: "0 0 6px", wordBreak: "keep-all", letterSpacing: "-0.3px" }}>{lec.title}</p>
-                  <p style={{ fontSize: 12, color: "#666666", margin: 0 }}>{lec.instructor_name || "공실마스터"}</p>
-                  <p style={{ fontSize: 13, fontWeight: 800, color: "#333333", marginTop: 6 }}>{lec.discount_price || lec.price ? `${(lec.discount_price || lec.price).toLocaleString()}P` : "무료"}</p>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: "#8a3ffc", display: "block", marginBottom: 4, letterSpacing: "-0.2px" }}>{lec.category}</span>
+                  <p style={{ fontSize: 15, fontWeight: 700, color: "#333333", lineHeight: 1.5, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", margin: "0 0 6px", wordBreak: "keep-all", letterSpacing: "-0.3px" }}>{lec.title}</p>
+                  <p style={{ fontSize: 14, color: "#666666", margin: 0 }}>{lec.instructor_name || "공실마스터"}</p>
+                  <p style={{ fontSize: 15, fontWeight: 800, color: "#333333", marginTop: 6 }}>{lec.discount_price || lec.price ? `${(lec.discount_price || lec.price).toLocaleString()}P` : "무료"}</p>
                 </div>
               </Link>
             ))}
@@ -273,8 +273,8 @@ export default function MobileHomeClient(props: Props) {
         .no-scrollbar{-ms-overflow-style:none;scrollbar-width:none;}
         .tap:active{opacity:0.75;}
         .sec-hd{display:flex;align-items:center;justify-content:space-between;padding:20px 16px 14px;}
-        .sec-hd h2{font-size:16px;font-weight:800;color:#333333;margin:0;letter-spacing:-0.5px;}
-        .sec-hd a{font-size:13px;color:#999999;text-decoration:none;display:flex;align-items:center;gap:2px;letter-spacing:-0.2px;}
+        .sec-hd h2{font-size:18px;font-weight:800;color:#333333;margin:0;letter-spacing:-0.5px;}
+        .sec-hd a{font-size:15px;color:#999999;text-decoration:none;display:flex;align-items:center;gap:2px;letter-spacing:-0.2px;}
         .art-row{display:flex;gap:12px;padding:12px 16px;cursor:pointer;border-bottom:1px solid #f0f0f0;}
         .art-row:last-child{border-bottom:none;}
         .art-row:active{background:#f9fafb;}
@@ -294,18 +294,18 @@ function NewsSection({ title, href, articles }: { title: string; href: string; a
     <div style={{ background: "#fff", marginBottom: 12, borderBottom: "1px solid #f0f0f0" }}>
       <div className="sec-hd">
         <h2>{title}</h2>
-        <Link href={href} style={{ fontSize: 13, color: "#999999", textDecoration: "none", letterSpacing: "-0.2px" }}>더보기 ›</Link>
+        <Link href={href} style={{ fontSize: 15, color: "#999999", textDecoration: "none", letterSpacing: "-0.2px" }}>더보기 ›</Link>
       </div>
       {/* 메인 기사 (큰 썸네일) */}
       <div className="tap" onClick={() => router.push(`/m/news/${main.article_no || main.id}`)}
         style={{ padding: "0 16px 14px", cursor: "pointer" }}>
         <div style={{ display: "flex", gap: 12 }}>
           <div style={{ flex: 1 }}>
-            <h3 style={{ fontSize: 15, fontWeight: 700, color: "#333333", lineHeight: 1.5, marginBottom: 6, wordBreak: "keep-all", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden", margin: "0 0 6px", letterSpacing: "-0.5px" }}>{main.title}</h3>
-            <p style={{ fontSize: 12, color: "#999999", margin: 0, letterSpacing: "-0.2px" }}>{main.author_name} · {formatDate(main.published_at || main.created_at)}</p>
+            <h3 style={{ fontSize: 17, fontWeight: 700, color: "#333333", lineHeight: 1.5, marginBottom: 6, wordBreak: "keep-all", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden", margin: "0 0 6px", letterSpacing: "-0.5px" }}>{main.title}</h3>
+            <p style={{ fontSize: 14, color: "#999999", margin: 0, letterSpacing: "-0.2px" }}>{main.author_name} · {formatDate(main.published_at || main.created_at)}</p>
           </div>
           {main.thumbnail_url && (
-            <div style={{ width: 84, height: 64, borderRadius: 8, overflow: "hidden", flexShrink: 0, background: "#e5e7eb" }}>
+            <div style={{ width: 104, height: 80, borderRadius: 8, overflow: "hidden", flexShrink: 0, background: "#e5e7eb" }}>
               <img src={main.thumbnail_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             </div>
           )}
@@ -314,10 +314,10 @@ function NewsSection({ title, href, articles }: { title: string; href: string; a
       {/* 나머지 기사 (번호 리스트) */}
       {rest.slice(0, 3).map((a: any, i: number) => (
         <div key={a.id} className="tap art-row" onClick={() => router.push(`/m/news/${a.article_no || a.id}`)}>
-          <span style={{ flexShrink: 0, width: 20, fontSize: 13, fontWeight: 800, color: i === 0 ? "#f97316" : "#d1d5db", alignSelf: "center" }}>{i + 1}</span>
-          <p style={{ fontSize: 14, fontWeight: 600, color: "#333333", lineHeight: 1.5, flex: 1, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", wordBreak: "keep-all", margin: 0, letterSpacing: "-0.3px" }}>{a.title}</p>
+          <span style={{ flexShrink: 0, width: 20, fontSize: 15, fontWeight: 800, color: i === 0 ? "#f97316" : "#d1d5db", alignSelf: "center" }}>{i + 1}</span>
+          <p style={{ fontSize: 16, fontWeight: 600, color: "#333333", lineHeight: 1.5, flex: 1, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", wordBreak: "keep-all", margin: 0, letterSpacing: "-0.3px" }}>{a.title}</p>
           {a.thumbnail_url && (
-            <div style={{ width: 60, height: 44, borderRadius: 6, overflow: "hidden", flexShrink: 0 }}>
+            <div style={{ width: 76, height: 56, borderRadius: 6, overflow: "hidden", flexShrink: 0 }}>
               <img src={a.thumbnail_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             </div>
           )}

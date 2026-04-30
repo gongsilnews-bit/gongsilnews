@@ -606,7 +606,7 @@ function MobileNewsPage() {
                   style={{
                     background: "#1a2e50",
                     color: "#f97316",
-                    fontSize: "11px",
+                    fontSize: "12px",
                     fontWeight: 800,
                     padding: "3px 8px",
                     borderRadius: "3px",
@@ -619,7 +619,7 @@ function MobileNewsPage() {
                 <h2
                   style={{
                     color: "#fff",
-                    fontSize: "17px",
+                    fontSize: "19px",
                     fontWeight: 800,
                     lineHeight: 1.35,
                     wordBreak: "keep-all",
@@ -671,7 +671,7 @@ function MobileNewsPage() {
                 >
                   {/* 왼쪽 썸네일 (존재할 경우) */}
                   {(a.thumbnail_url || extractYoutubeId(a.youtube_url, a.content)) && (
-                    <div style={{ flexShrink: 0, width: "110px", height: "74px", borderRadius: "6px", overflow: "hidden", backgroundColor: "#f3f4f6" }}>
+                    <div style={{ flexShrink: 0, width: "130px", height: "88px", borderRadius: "6px", overflow: "hidden", backgroundColor: "#f3f4f6" }}>
                       <img 
                         src={a.thumbnail_url || `https://img.youtube.com/vi/${extractYoutubeId(a.youtube_url, a.content)}/mqdefault.jpg`} 
                         alt={a.title} 
@@ -682,13 +682,13 @@ function MobileNewsPage() {
 
                   {/* 오른쪽 텍스트 컨텐츠 */}
                   <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, justifyContent: "center" }}>
-                    <div style={{ fontSize: 16, fontWeight: 800, color: "#111", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", wordBreak: "keep-all", marginBottom: 6, lineHeight: 1.35 }}>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: "#111", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", wordBreak: "keep-all", marginBottom: 6, lineHeight: 1.35 }}>
                       {a.title}
                     </div>
-                    <div style={{ fontSize: 13, color: "#666", display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden", marginBottom: 8, lineHeight: 1.5 }}>
+                    <div style={{ fontSize: 15, color: "#666", display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden", marginBottom: 8, lineHeight: 1.5 }}>
                       {a.subtitle || stripHtml(a.content || "").slice(0, 80)}
                     </div>
-                    <div style={{ fontSize: 12, display: "flex", flexWrap: "wrap", alignItems: "center", gap: "6px" }}>
+                    <div style={{ fontSize: 14, display: "flex", flexWrap: "wrap", alignItems: "center", gap: "6px" }}>
                       <span style={{ color: "#3b82f6", fontWeight: 700 }}>
                         [{a.section1 || "뉴스"} &gt; {a.section2 || "전체"}]
                       </span>
