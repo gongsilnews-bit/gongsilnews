@@ -60,7 +60,7 @@ export default function MiniVacancyMap({ vacancies }: Props) {
         const size = count > 9 ? 42 : 36;
         
         const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
-          <circle cx="${size/2}" cy="${size/2}" r="${size/2-2}" fill="#1a2e50" stroke="white" stroke-width="2.5"/>
+          <circle cx="${size/2}" cy="${size/2}" r="${size/2-2}" fill="#4b89ff" stroke="white" stroke-width="2"/>
           <text x="50%" y="50%" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="${count > 9 ? 14 : 15}" font-weight="bold" font-family="sans-serif">${count}</text>
         </svg>`;
 
@@ -127,7 +127,7 @@ export default function MiniVacancyMap({ vacancies }: Props) {
           top: 12,
           left: 12,
           zIndex: 20,
-          background: "rgba(26,46,80,0.92)",
+          background: "rgba(26,66,130,0.92)",
           color: "#fff",
           borderRadius: 20,
           padding: "6px 14px",
@@ -147,13 +147,13 @@ export default function MiniVacancyMap({ vacancies }: Props) {
           bottom: 12,
           right: 12,
           zIndex: 20,
-          background: "#1a2e50",
+          background: "#1a4282",
           color: "#fff",
           borderRadius: 20,
           padding: "7px 16px",
           fontSize: 13,
           fontWeight: 700,
-          boxShadow: "0 4px 12px rgba(26,46,80,0.4)",
+          boxShadow: "0 4px 12px rgba(26,66,130,0.4)",
           pointerEvents: "none",
           display: "flex",
           alignItems: "center",

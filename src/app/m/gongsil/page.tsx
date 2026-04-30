@@ -113,10 +113,10 @@ export default function MobileGongsilPage() {
       const { lat, lng } = group[0];
       const count = group.length;
       const size = count > 9 ? 52 : 44;
-      const color = "#1a2e50";
+      const color = "#4b89ff";
 
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
-        <circle cx="${size/2}" cy="${size/2}" r="${size/2-2}" fill="${color}" stroke="white" stroke-width="2.5"/>
+        <circle cx="${size/2}" cy="${size/2}" r="${size/2-2}" fill="${color}" stroke="white" stroke-width="2"/>
         <text x="50%" y="50%" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="${count>9?14:15}" font-weight="bold" font-family="sans-serif">${count}</text>
       </svg>`;
 
@@ -207,7 +207,7 @@ export default function MobileGongsilPage() {
               });
             }
           }}
-          style={{ position: "absolute", top: "16px", right: "16px", zIndex: 20, background: "#f97316", color: "#fff", border: "none", borderRadius: "20px", padding: "8px 14px", fontSize: "13px", fontWeight: 700, boxShadow: "0 4px 12px rgba(249,115,22,0.4)", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
+          style={{ position: "absolute", top: "16px", right: "16px", zIndex: 20, background: "#1a4282", color: "#fff", border: "none", borderRadius: "20px", padding: "8px 14px", fontSize: "13px", fontWeight: 700, boxShadow: "0 4px 12px rgba(26,66,130,0.4)", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
           내 위치

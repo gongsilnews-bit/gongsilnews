@@ -1,5 +1,6 @@
 import { getArticleDetail, getArticles } from "@/app/actions/article";
 import NewsReadContent from "@/components/NewsReadContent";
+import Link from "next/link";
 
 // 1시간 주기로 재생성 (ISR)
 export const revalidate = 3600;
@@ -22,6 +23,16 @@ export async function generateStaticParams() {
   }
   return [];
 }
+
+const CATEGORIES = [
+  { key: "home", label: "홈" },
+  { key: "all", label: "전체뉴스" },
+  { key: "부동산·주식·재테크", label: "부동산·재테크" },
+  { key: "정치·경제·사회", label: "정치·경제" },
+  { key: "세무·법률", label: "세무·법률" },
+  { key: "여행·건강·생활", label: "여행·생활" },
+  { key: "etc", label: "기타" },
+];
 
 export default async function MobileNewsReadPage({ params }: { params: Promise<{ article_id: string }> }) {
   const resolvedParams = await params;
@@ -64,6 +75,53 @@ export default async function MobileNewsReadPage({ params }: { params: Promise<{
   // 모바일 전용 래퍼 클래스로 감싸주어 globals.css의 반응형 속성을 적용
   return (
     <div className="flex flex-col w-full bg-white min-h-screen mobile-news-detail-wrapper">
+      {/* 카테고리 네비게이션 탭 */}
+      <div
+        className="no-scrollbar"
+        style={{
+          display: "flex",
+          overflowX: "auto",
+          backgroundColor: "#1a2e50",
+          position: "fixed",
+          top: "41px",
+          left: "50%",
+          transform: "translateX(-50%)",
+          width: "100%",
+          maxWidth: "448px",
+          zIndex: 40,
+        }}
+      >
+        {CATEGORIES.map((cat) => {
+          // 현재 기사의 카테고리와 일치하는지 확인
+          const isActive = article.category === cat.key;
+          const targetUrl = cat.key === "home" ? "/m" : `/m/news?tab=${cat.key}`;
+          
+          return (
+            <Link
+              key={cat.key}
+              href={targetUrl}
+              style={{
+                flexShrink: 0,
+                padding: "10px 16px",
+                fontSize: "14px",
+                fontWeight: isActive ? 800 : 500,
+                color: isActive ? "#fff" : "rgba(255,255,255,0.6)",
+                background: "none",
+                textDecoration: "none",
+                borderBottom: isActive ? "3px solid #ffffff" : "3px solid transparent",
+                cursor: "pointer",
+                transition: "all 0.2s",
+                whiteSpace: "nowrap",
+                display: "inline-block",
+              }}
+            >
+              {cat.label}
+            </Link>
+          );
+        })}
+      </div>
+      <div style={{ height: "46px", flexShrink: 0 }}></div>
+
       <NewsReadContent article={article} popularArticles={popular} />
     </div>
   );

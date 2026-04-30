@@ -60,16 +60,20 @@ function MobileNewsPage() {
   const [articles, setArticles] = useState<any[]>([]);
   const [localArticles, setLocalArticles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCluster, setSelectedCluster] = useState<any[] | null>(null);
-  const [activeArticleId, setActiveArticleId] = useState<string | null>(null);
-  const [articleDetail, setArticleDetail] = useState<any>(null);
-  const [showDetail, setShowDetail] = useState(false);
-  const [detailLoading, setDetailLoading] = useState(false);
-  const [viewedArticles, setViewedArticles] = useState<Set<string>>(new Set());
+  const [visibleArticles, setVisibleArticles] = useState<any[]>([]);
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [showDetail, setShowDetail] = useState(false);
+  const [articleDetail, setArticleDetail] = useState<any>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [clusterMode, setClusterMode] = useState(false);
+
   const mapRef = useRef<HTMLDivElement>(null);
   const kakaoMapRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
+  const clustererRef = useRef<any>(null);
+  const clusterModeRef = useRef(false);
+
+  useEffect(() => { clusterModeRef.current = clusterMode; }, [clusterMode]);
 
   // 일반 뉴스 로드
   useEffect(() => {
@@ -106,32 +110,20 @@ function MobileNewsPage() {
     };
     loadLocalArticles();
   }, []);
-  // 기사 상세 조회
-  const handleSelectArticle = async (id: string) => {
-    setActiveArticleId(id);
-    setShowDetail(true);
-    setArticleDetail(null);
-    setDetailLoading(true);
-    const res = await getArticleDetail(id);
-    if (res.success && res.data) {
-      setArticleDetail(res.data);
-    }
-    setDetailLoading(false);
-  };
-
-  // 조회수 증가
-  useEffect(() => {
-    if (showDetail && articleDetail && articleDetail.id) {
-      if (!viewedArticles.has(articleDetail.id)) {
-        incrementArticleView(articleDetail.id).then((res) => {
-          if (res.success && res.view_count !== undefined) {
-            setArticleDetail((prev: any) => prev ? { ...prev, view_count: res.view_count } : prev);
-          }
-        });
-        setViewedArticles((prev) => new Set(prev).add(articleDetail.id));
+  // 기사 상세 조회 (우리동네뉴스는 인라인 패널, 나머지는 새 페이지)
+  const handleSelectArticle = async (id: string, isLocal: boolean = false) => {
+    if (isLocal) {
+      setShowDetail(true);
+      setDetailLoading(true);
+      const res = await getArticleDetail(id);
+      if (res.success && res.data) {
+        setArticleDetail(res.data);
       }
+      setDetailLoading(false);
+    } else {
+      router.push(`/m/news/${id}`);
     }
-  }, [showDetail, articleDetail, viewedArticles]);
+  };
 
   // 카카오 지도 초기화
   useEffect(() => {
@@ -147,51 +139,6 @@ function MobileNewsPage() {
         level: 7,
       });
       kakaoMapRef.current = map;
-
-      // 마커 그리기
-      const addMarkers = () => {
-        markersRef.current.forEach((m: any) => m.setMap(null));
-        markersRef.current = [];
-
-        // lat/lng 기준으로 그룹화
-        const groups: Record<string, any[]> = {};
-        localArticles.forEach((a) => {
-          const key = `${Math.round(a.lat * 100)}_${Math.round(a.lng * 100)}`;
-          if (!groups[key]) groups[key] = [];
-          groups[key].push(a);
-        });
-
-        Object.values(groups).forEach((group) => {
-          const { lat, lng } = group[0];
-          const count = group.length;
-          const size = count > 5 ? 44 : 36;
-
-          const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
-            <circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="${count > 5 ? '#1a2e50' : '#f97316'}" stroke="white" stroke-width="2.5"/>
-            <text x="50%" y="50%" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="${count > 9 ? 13 : 15}" font-weight="bold" font-family="sans-serif">${count}</text>
-          </svg>`;
-
-          const markerImage = new kakao.maps.MarkerImage(
-            `data:image/svg+xml,${encodeURIComponent(svg)}`,
-            new kakao.maps.Size(size, size),
-            { offset: new kakao.maps.Point(size / 2, size / 2) }
-          );
-
-          const marker = new kakao.maps.Marker({
-            position: new kakao.maps.LatLng(lat, lng),
-            image: markerImage,
-            map,
-          });
-
-          kakao.maps.event.addListener(marker, "click", () => {
-            setSelectedCluster(group);
-          });
-
-          markersRef.current.push(marker);
-        });
-      };
-
-      if (localArticles.length > 0) addMarkers();
       setMapLoaded(true);
     };
 
@@ -226,22 +173,44 @@ function MobileNewsPage() {
     if (!kakao?.maps) return;
 
     markersRef.current.forEach((m: any) => m.setMap(null));
+    if (!clustererRef.current) {
+      clustererRef.current = new kakao.maps.MarkerClusterer({
+        map: kakaoMapRef.current,
+        averageCenter: true,
+        minLevel: 4,
+        gridSize: 60,
+        calculator: [5, 10, 30, 50],
+        texts: (count: number) => count.toString(),
+        styles: [
+          { width: '38px', height: '38px', background: 'rgba(255, 142, 21, 0.85)', color: '#fff', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', fontWeight: 'bold', fontSize: '14px', border: '3px solid rgba(255,255,255,0.7)', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' },
+          { width: '44px', height: '44px', background: 'rgba(255, 130, 0, 0.88)', color: '#fff', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', fontWeight: 'bold', fontSize: '15px', border: '3px solid rgba(255,255,255,0.7)', boxShadow: '0 2px 8px rgba(0,0,0,0.2)' },
+          { width: '52px', height: '52px', background: 'rgba(230, 115, 0, 0.9)', color: '#fff', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', fontWeight: 'bold', fontSize: '16px', border: '3px solid rgba(255,255,255,0.7)', boxShadow: '0 3px 10px rgba(0,0,0,0.25)' },
+          { width: '60px', height: '60px', background: 'rgba(204, 102, 0, 0.92)', color: '#fff', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', fontWeight: 'bold', fontSize: '17px', border: '3px solid rgba(255,255,255,0.7)', boxShadow: '0 3px 12px rgba(0,0,0,0.3)' },
+          { width: '70px', height: '70px', background: 'rgba(178, 89, 0, 0.95)', color: '#fff', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', fontWeight: 'bold', fontSize: '19px', border: '3px solid rgba(255,255,255,0.7)', boxShadow: '0 4px 14px rgba(0,0,0,0.35)' }
+        ]
+      });
+
+      kakao.maps.event.addListener(clustererRef.current, 'clusterclick', (cluster: any) => {
+        const clusterMarkers = cluster.getMarkers();
+        const clusterArticleIds = clusterMarkers.map((m: any) => m._articleId).filter(Boolean);
+        const matched = localArticles.filter(a => clusterArticleIds.includes(a.id));
+        if (matched.length > 0) {
+          setVisibleArticles(matched);
+          setClusterMode(true);
+        }
+      });
+    }
+
+    if (clustererRef.current) clustererRef.current.clear();
     markersRef.current = [];
 
-    const groups: Record<string, any[]> = {};
+    const newMarkers: any[] = [];
     localArticles.forEach((a) => {
-      const key = `${Math.round(a.lat * 100)}_${Math.round(a.lng * 100)}`;
-      if (!groups[key]) groups[key] = [];
-      groups[key].push(a);
-    });
-
-    Object.values(groups).forEach((group) => {
-      const { lat, lng } = group[0];
-      const count = group.length;
-      const size = count > 5 ? 44 : 36;
+      if (!a.lat || !a.lng) return;
+      const size = 32;
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
-        <circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="${count > 5 ? '#1a2e50' : '#f97316'}" stroke="white" stroke-width="2.5"/>
-        <text x="50%" y="50%" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="${count > 9 ? 13 : 15}" font-weight="bold" font-family="sans-serif">${count}</text>
+        <circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="#ff8e15" stroke="white" stroke-width="2.5"/>
+        <text x="50%" y="50%" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="13" font-weight="bold" font-family="sans-serif">1</text>
       </svg>`;
 
       const markerImage = new kakao.maps.MarkerImage(
@@ -251,17 +220,46 @@ function MobileNewsPage() {
       );
 
       const marker = new kakao.maps.Marker({
-        position: new kakao.maps.LatLng(lat, lng),
+        position: new kakao.maps.LatLng(a.lat, a.lng),
         image: markerImage,
-        map: kakaoMapRef.current,
       });
+
+      (marker as any)._articleId = a.id;
 
       kakao.maps.event.addListener(marker, "click", () => {
-        setSelectedCluster(group);
+        kakaoMapRef.current.panTo(new kakao.maps.LatLng(a.lat, a.lng));
+        handleSelectArticle(a.id, true);
       });
 
+      newMarkers.push(marker);
       markersRef.current.push(marker);
     });
+
+    if (clustererRef.current && newMarkers.length > 0) {
+      clustererRef.current.addMarkers(newMarkers);
+    }
+
+    const updateVisible = () => {
+      if (clusterModeRef.current) return;
+      const bounds = kakaoMapRef.current.getBounds();
+      if (!bounds) return;
+      const sw = bounds.getSouthWest();
+      const ne = bounds.getNorthEast();
+      const visible = localArticles.filter((a) => {
+        if (!a.lat || !a.lng) return false;
+        return a.lat >= sw.getLat() && a.lat <= ne.getLat() && a.lng >= sw.getLng() && a.lng <= ne.getLng();
+      });
+      setVisibleArticles(visible);
+    };
+
+    kakao.maps.event.addListener(kakaoMapRef.current, "idle", updateVisible);
+    
+    // Slight delay to allow map to render fully before taking bounds
+    setTimeout(updateVisible, 300);
+
+    return () => {
+      kakao.maps.event.removeListener(kakaoMapRef.current, "idle", updateVisible);
+    };
   }, [localArticles, mapLoaded]);
 
   return (
@@ -324,151 +322,123 @@ function MobileNewsPage() {
         </>
       )}
 
-      {/* 우리동네뉴스: 카카오 지도 뷰 */}
+      {/* 우리동네뉴스: 카카오 지도 + 목록 스플릿 뷰 */}
       {activeTab === "local" ? (
-        <div
-          style={{ flex: 1, position: "relative", overflow: "hidden" }}
-          onClick={() => setSelectedCluster(null)}
-        >
-          {/* 카카오 지도 */}
-          <div ref={mapRef} style={{ width: "100%", height: "100%", minHeight: "calc(100vh - 100px)" }} />
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minHeight: "calc(100vh - 41px)" }}>
+          {/* 상단: 카카오 지도 */}
+          <div style={{ position: "relative", width: "100%", height: "45vh", borderBottom: "1px solid #ddd", flexShrink: 0 }}>
+            <div ref={mapRef} style={{ width: "100%", height: "100%" }} />
 
-          {/* 지도 미로드 시 스켈레톤 */}
-          {!mapLoaded && (
-            <div
-              style={{
-                position: "absolute",
-                inset: 0,
-                background: "#e8ecf0",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexDirection: "column",
-                gap: "12px",
-              }}
-            >
-              <div className="skeleton" style={{ width: "120px", height: "20px" }} />
-              <p style={{ fontSize: "14px", color: "#9ca3af" }}>지도를 불러오는 중...</p>
-            </div>
-          )}
-
-          {/* 내 위치 검색 버튼 */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              if (navigator.geolocation && kakaoMapRef.current) {
-                navigator.geolocation.getCurrentPosition((pos) => {
-                  const kakao = (window as any).kakao;
-                  const latlng = new kakao.maps.LatLng(pos.coords.latitude, pos.coords.longitude);
-                  kakaoMapRef.current.panTo(latlng);
-                  kakaoMapRef.current.setLevel(5);
-                });
-              }
-            }}
-            style={{
-              position: "absolute",
-              top: "16px",
-              right: "16px",
-              zIndex: 20,
-              background: "#f97316",
-              color: "#fff",
-              border: "none",
-              borderRadius: "20px",
-              padding: "8px 14px",
-              fontSize: "13px",
-              fontWeight: 700,
-              boxShadow: "0 4px 12px rgba(249,115,22,0.4)",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: "4px",
-            }}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <circle cx="12" cy="12" r="3" />
-              <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
-            </svg>
-            내 위치
-          </button>
-
-          {/* 기사 수 표시 */}
-          <div
-            style={{
-              position: "absolute",
-              top: "16px",
-              left: "16px",
-              zIndex: 20,
-              background: "rgba(255,255,255,0.95)",
-              borderRadius: "20px",
-              padding: "8px 14px",
-              fontSize: "13px",
-              fontWeight: 700,
-              color: "#1a2e50",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-            }}
-          >
-            📍 기사 {localArticles.length}건
-          </div>
-
-          {/* 바텀시트 */}
-          <div
-            className={`news-bottom-sheet ${selectedCluster ? "open" : ""}`}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* 핸들 */}
-            <div
-              style={{ display: "flex", justifyContent: "center", padding: "12px 0 8px", cursor: "pointer" }}
-              onClick={() => setSelectedCluster(null)}
-            >
-              <div style={{ width: "40px", height: "4px", backgroundColor: "#e5e7eb", borderRadius: "4px" }} />
-            </div>
-
-            {/* 헤더 */}
-            <div
-              style={{
-                padding: "0 20px 12px",
-                borderBottom: "1px solid #f3f4f6",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-              <h3 style={{ fontSize: "16px", fontWeight: 800, color: "#111827" }}>
-                이 지역 뉴스{" "}
-                <span style={{ color: "#f97316" }}>{selectedCluster?.length || 0}</span>건
-              </h3>
-              <button
-                onClick={() => setSelectedCluster(null)}
+            {/* 지도 미로드 시 스켈레톤 */}
+            {!mapLoaded && (
+              <div
                 style={{
-                  background: "#f3f4f6",
-                  border: "none",
-                  borderRadius: "50%",
-                  width: "28px",
-                  height: "28px",
+                  position: "absolute",
+                  inset: 0,
+                  background: "#e8ecf0",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  cursor: "pointer",
-                  fontSize: "16px",
-                  color: "#6b7280",
+                  flexDirection: "column",
+                  gap: "12px",
                 }}
               >
-                ✕
-              </button>
-            </div>
+                <div className="skeleton" style={{ width: "120px", height: "20px" }} />
+                <p style={{ fontSize: "14px", color: "#9ca3af" }}>지도를 불러오는 중...</p>
+              </div>
+            )}
 
-            {/* 기사 목록 */}
-            <div style={{ flex: 1, overflowY: "auto", padding: "0 16px 20px" }}>
-              {selectedCluster?.map((article: any) => (
+            {/* 내 위치 검색 버튼 */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (navigator.geolocation && kakaoMapRef.current) {
+                  navigator.geolocation.getCurrentPosition((pos) => {
+                    const kakao = (window as any).kakao;
+                    const latlng = new kakao.maps.LatLng(pos.coords.latitude, pos.coords.longitude);
+                    kakaoMapRef.current.panTo(latlng);
+                    kakaoMapRef.current.setLevel(5);
+                  });
+                }
+              }}
+              style={{
+                position: "absolute",
+                top: "16px",
+                right: "16px",
+                zIndex: 20,
+                background: "#f97316",
+                color: "#fff",
+                border: "none",
+                borderRadius: "20px",
+                padding: "8px 14px",
+                fontSize: "13px",
+                fontWeight: 700,
+                boxShadow: "0 4px 12px rgba(249,115,22,0.4)",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "4px",
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <circle cx="12" cy="12" r="3" />
+                <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+              </svg>
+              내 위치
+            </button>
+          </div>
+
+          {/* 하단: 보이는 기사 리스트 */}
+          <div style={{ flex: "1 1 50%", overflowY: "auto", background: "#f9fafb", display: "flex", flexDirection: "column" }}>
+            <div style={{ padding: "12px 16px", background: "#fff", borderBottom: "1px solid #f0f0f0", position: "sticky", top: 0, zIndex: 10, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4b89ff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                  <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+                </svg>
+                <h3 style={{ fontSize: "15px", fontWeight: 800, color: "#111" }}>
+                  {clusterMode ? (
+                    <><span style={{ color: "#ff8e15" }}>선택 지역</span> 기사 {visibleArticles.length}개</>
+                  ) : (
+                    <>지도영역 기사 {visibleArticles.length}개</>
+                  )}
+                </h3>
+              </div>
+              {clusterMode && (
+                <button
+                  onClick={() => {
+                    setClusterMode(false);
+                    if (kakaoMapRef.current) {
+                      kakao.maps.event.trigger(kakaoMapRef.current, 'idle');
+                    }
+                  }}
+                  style={{
+                    padding: "4px 12px",
+                    background: "#f3f4f6",
+                    border: "1px solid #ddd",
+                    borderRadius: "20px",
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    color: "#555",
+                    cursor: "pointer"
+                  }}
+                >
+                  전체보기
+                </button>
+              )}
+            </div>
+            
+            <div style={{ padding: "0 16px 20px", background: "#fff", flex: 1 }}>
+              {visibleArticles.map((article: any) => (
                 <div
                   key={article.id}
                   className="article-row"
-                  onClick={() => handleSelectArticle(article.id)}
+                  onClick={() => handleSelectArticle(article.id, true)}
                   style={{
-                    padding: "16px 20px",
+                    padding: "16px 0",
                     borderBottom: "1px solid #f0f0f0",
                     cursor: "pointer",
-                    background: activeArticleId === article.id ? "#fff7ed" : "#fff",
+                    background: "#fff",
                     transition: "background 0.15s ease",
                   }}
                 >
@@ -487,12 +457,17 @@ function MobileNewsPage() {
                   </div>
                   <div style={{ fontSize: 12, color: "#999", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <span>{formatDate(article.published_at || article.created_at)} · {article.author_name || "공실뉴스"}</span>
-                    <span style={{ color: activeArticleId === article.id && showDetail ? "#d32f2f" : "#ff8e15", fontWeight: "bold", fontSize: 12 }}>
-                      {activeArticleId === article.id && showDetail ? "기사닫기 ✕" : "기사상세보기 >"}
+                    <span style={{ color: "#ff8e15", fontWeight: "bold", fontSize: 12 }}>
+                      기사상세보기 &gt;
                     </span>
                   </div>
                 </div>
               ))}
+              {visibleArticles.length === 0 && mapLoaded && (
+                <div style={{ textAlign: "center", padding: "40px 0", color: "#9ca3af" }}>
+                  <p style={{ fontSize: "14px" }}>현재 지도 영역에 기사가 없습니다.</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -591,7 +566,7 @@ function MobileNewsPage() {
                     padding: "16px 0",
                     borderBottom: "1px solid #f0f0f0",
                     cursor: "pointer",
-                    background: activeArticleId === a.id ? "#fff7ed" : "#fff",
+                    background: "#fff",
                     transition: "background 0.15s ease",
                   }}
                 >
@@ -610,8 +585,8 @@ function MobileNewsPage() {
                   </div>
                   <div style={{ fontSize: 12, color: "#999", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <span>{formatDate(a.published_at || a.created_at)} · {a.author_name || "공실뉴스"}</span>
-                    <span style={{ color: activeArticleId === a.id && showDetail ? "#d32f2f" : "#ff8e15", fontWeight: "bold", fontSize: 12 }}>
-                      {activeArticleId === a.id && showDetail ? "기사닫기 ✕" : "기사상세보기 >"}
+                    <span style={{ color: "#ff8e15", fontWeight: "bold", fontSize: 12 }}>
+                      기사상세보기 &gt;
                     </span>
                   </div>
                 </div>
@@ -627,99 +602,78 @@ function MobileNewsPage() {
           )}
         </div>
       )}
-
-      {/* 기사 상세 뷰 (모바일 슬라이딩 패널) */}
+      {/* 기사 상세 뷰 (모바일 슬라이딩 패널) - 우리동네뉴스 전용 */}
       <div className={`news-detail-panel ${showDetail ? "open" : ""}`}>
-        <button
-          onClick={() => setShowDetail(false)}
-          style={{ position: "absolute", top: 12, right: 12, background: "none", border: "none", fontSize: 28, color: "#999", cursor: "pointer", padding: 8, lineHeight: 1, zIndex: 10 }}
-        >✕</button>
+        {/* 헤더 */}
+        <div style={{ position: "sticky", top: 0, zIndex: 50, background: "#fff", display: "flex", justifyContent: "flex-end", padding: "12px 16px", borderBottom: "1px solid #f0f0f0" }}>
+          <button onClick={() => setShowDetail(false)} style={{ background: "none", border: "none", fontSize: "24px", cursor: "pointer", color: "#999" }}>✕</button>
+        </div>
 
+        {/* 로딩 상태 */}
         {detailLoading ? (
-          <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16 }}>
-            <div style={{ width: 32, height: 32, border: "3px solid #f0f0f0", borderTop: "3px solid #ff8e15", borderRadius: "50%", animation: "spin 0.8s linear infinite" }}></div>
-            <div style={{ fontSize: 14, color: "#888", fontWeight: 500 }}>기사를 불러오는 중</div>
+          <div style={{ padding: "20px" }}>
+            <div className="skeleton" style={{ width: "80%", height: "24px", marginBottom: "16px" }} />
+            <div className="skeleton" style={{ width: "40%", height: "16px", marginBottom: "30px" }} />
+            <div className="skeleton" style={{ width: "100%", height: "200px", marginBottom: "16px" }} />
           </div>
         ) : articleDetail ? (
-          <div style={{ padding: "20px", paddingTop: "50px", paddingBottom: "80px", overflowY: "auto", height: "100%" }}>
-            <div style={{ fontSize: 13, color: "#666", marginBottom: 8, fontWeight: 600 }}>
+          <div style={{ padding: "0 20px 40px", backgroundColor: "#fff" }}>
+            {/* 섹션 */}
+            <div style={{ fontSize: "13px", color: "#666", marginBottom: "10px", marginTop: "16px" }}>
               [{articleDetail.section1 || "뉴스"} &gt; {articleDetail.section2 || "전체"}]
             </div>
-
-            <h1 style={{ fontSize: 24, fontWeight: 800, color: "#111", lineHeight: 1.35, marginBottom: 16, letterSpacing: -1, wordBreak: "keep-all" }}>
+            {/* 제목 */}
+            <h1 style={{ fontSize: "22px", fontWeight: 800, color: "#111", lineHeight: 1.4, marginBottom: "16px", wordBreak: "keep-all" }}>
               {articleDetail.title}
             </h1>
-
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #ddd", paddingBottom: 16, marginBottom: 24 }}>
-              <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, fontSize: 12, color: "#666" }}>
-                <span style={{ color: "#111", fontWeight: "bold" }}>{articleDetail.author_name || "공실뉴스"}</span>
-                <span style={{ display: "inline-block", width: 1, height: 10, background: "#ddd" }}></span>
-                <span>{formatDateFull(articleDetail.published_at || articleDetail.created_at)}</span>
+            {/* 작성자 & 작성일 & 원본보기 */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #f0f0f0", paddingBottom: "16px", marginBottom: "20px" }}>
+              <div style={{ fontSize: "13px", color: "#666" }}>
+                <span style={{ fontWeight: 700, color: "#111", marginRight: "8px" }}>{articleDetail.author_name || "공실뉴스"}</span>
+                <span style={{ color: "#d1d5db", margin: "0 4px" }}>|</span>
+                {formatDateFull(articleDetail.published_at || articleDetail.created_at)}
               </div>
-              <button
+              <button 
                 onClick={() => router.push(`/m/news/${articleDetail.article_no || articleDetail.id}`)}
-                style={{ fontSize: 12, fontWeight: "bold", color: "#ff8e15", border: "1px solid #ff8e15", borderRadius: 20, padding: "4px 12px", background: "none", whiteSpace: "nowrap" }}
+                style={{ fontSize: "12px", color: "#ff8e15", border: "1px solid #ff8e15", background: "#fff", borderRadius: "20px", padding: "4px 10px", cursor: "pointer" }}
               >
                 원본보기
               </button>
             </div>
-
+            
+            {/* 부제목 */}
             {articleDetail.subtitle && (
-              <div className="article-subtitle-box map-subtitle-box" style={{ fontSize: 14, marginBottom: 20, paddingLeft: 12, borderLeft: "3px solid #ff8e15", color: "#333", fontWeight: 600, wordBreak: "keep-all" }}>
+              <div style={{ padding: "16px", backgroundColor: "#f9fafb", borderLeft: "4px solid #d97706", fontSize: "15px", color: "#374151", lineHeight: 1.6, marginBottom: "24px", fontWeight: 600 }}>
                 {articleDetail.subtitle}
               </div>
             )}
-
-            <div className="article-body" style={{ fontSize: 16, lineHeight: 1.6, color: "#111" }}>
-              {extractYoutubeId(articleDetail.youtube_url, articleDetail.content) ? (
-                <div style={{ position: "relative", width: "100%", paddingBottom: articleDetail.is_shorts ? "177.78%" : "56.25%", marginBottom: 16, borderRadius: 8, overflow: "hidden" }}>
-                  <iframe src={`https://www.youtube.com/embed/${extractYoutubeId(articleDetail.youtube_url, articleDetail.content)}`} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" }} allowFullScreen />
-                </div>
-              ) : articleDetail.thumbnail_url && !(articleDetail.content && articleDetail.content.includes(articleDetail.thumbnail_url)) ? (
-                <img src={articleDetail.thumbnail_url} alt={articleDetail.title} style={{ width: "100%", borderRadius: 8, marginBottom: 16 }} />
-              ) : null}
-
-              {articleDetail.content && (
-                <div suppressHydrationWarning dangerouslySetInnerHTML={{
-                  __html: articleDetail.content
-                    .replace(/<p[^>]*>\s*(?:<br>\s*)*<iframe[^>]*youtube\.com\/embed[^>]*>.*?<\/iframe>(?:\s*<br>\s*)*\s*<\/p>/gi, '')
-                    .replace(/<div(?:(?!class="article-body")[^>]*)?>\s*(?:<br>\s*)*<iframe[^>]*youtube\.com\/embed[^>]*>.*?<\/iframe>(?:\s*<br>\s*)*\s*<\/div>/gi, '')
-                    .replace(/<iframe[^>]*youtube\.com\/embed[^>]*>.*?<\/iframe>/gi, '')
-                }} />
-              )}
-            </div>
-
-            <div style={{ marginTop: 40, paddingTop: 20, borderTop: "1px solid #eee", color: "#888", fontSize: 12, textAlign: "center" }}>
-              저작권자 © 공실뉴스 무단전재 및 재배포 금지
-            </div>
+            
+            {/* 본문 */}
+            <div 
+              style={{ fontSize: "16px", lineHeight: 1.8, color: "#333", wordBreak: "keep-all" }}
+              dangerouslySetInnerHTML={{ __html: articleDetail.content || "" }}
+            />
           </div>
-        ) : null}
+        ) : (
+          <div style={{ padding: "40px 20px", textAlign: "center", color: "#999" }}>
+            기사를 불러올 수 없습니다.
+          </div>
+        )}
       </div>
 
       <style>{`
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        .news-bottom-sheet {
-          position: absolute; bottom: 0; left: 0; width: 100%;
-          background: white; border-radius: 20px 20px 0 0;
-          box-shadow: 0 -8px 32px rgba(0,0,0,0.15);
-          transform: translateY(100%);
+        .news-detail-panel {
+          position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+          background: #fff; z-index: 50; transform: translateX(100%);
           transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1);
-          z-index: 30; max-height: 72vh;
-          display: flex; flex-direction: column;
+          overflow-y: auto;
         }
-        .news-bottom-sheet.open { transform: translateY(0); }
+        .news-detail-panel.open { transform: translateX(0); }
         .skeleton { background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 6px; }
         @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
         .article-row:active { background: #f9fafb; }
-        .news-detail-panel {
-          position: absolute; top: 0; right: 0; width: 100%; height: 100%;
-          background: white; z-index: 50;
-          transform: translateX(100%);
-          transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-          box-shadow: -5px 0 30px rgba(0,0,0,0.15);
-        }
-        .news-detail-panel.open { transform: translateX(0); }
       `}</style>
     </div>
   );
