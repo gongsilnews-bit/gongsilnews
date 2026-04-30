@@ -432,6 +432,7 @@ export default function GongsilTalkOverlay() {
           transition: isDragging.current ? "none" : (isMobilePath ? "opacity 0.2s" : "width 0.35s cubic-bezier(0.4, 0, 0.2, 1), height 0.35s cubic-bezier(0.4, 0, 0.2, 1)"),
           fontFamily: "'Pretendard', sans-serif",
           opacity: isOpen ? 1 : 0,
+          pointerEvents: isOpen ? "auto" : "none",
         }}>
         {/* 좌측 리사이즈 핸들 */}
         <div
