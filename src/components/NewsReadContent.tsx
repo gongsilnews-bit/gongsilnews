@@ -864,27 +864,27 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
                   const createdDate = prop.created_at ? new Date(prop.created_at).toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" }).replace(/\.$/, "") : "";
 
                   return (
-                    <Link href={`/gongsil?id=${prop.id}`} target="_blank" key={prop.id || i} style={{ textDecoration: "none", color: "inherit", display: "block" }}>
+                    <Link href={isMobile ? `/m/gongsil?id=${prop.id}` : `/gongsil?id=${prop.id}`} target={isMobile ? undefined : "_blank"} key={prop.id || i} style={{ textDecoration: "none", color: "inherit", display: "block" }}>
                       <div className="prop-item" style={{ padding: "16px 0", borderBottom: "1px solid #f0f0f0", display: "flex", gap: 12, cursor: "pointer", background: "#fff", transition: "background 0.15s" }} onMouseEnter={e => e.currentTarget.style.background = '#f9fafb'} onMouseLeave={e => e.currentTarget.style.background = '#fff'}>
                         <div className="prop-info" style={{ minWidth: 0, overflow: "hidden", flex: 1, display: "flex", flexDirection: "column" }}>
-                          <div className="prop-title" style={{ fontSize: 14, fontWeight: 700, color: "#111", marginBottom: 4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{title}</div>
-                          <div className="prop-price" style={{ color: "#1a73e8", fontWeight: 800, fontSize: 18, marginBottom: 6 }}>{price}</div>
-                          <div className="prop-meta" style={{ fontSize: 12, color: "#666", marginBottom: 3 }}>
+                          <div className="prop-title" style={{ fontSize: 16, fontWeight: 700, color: "#111", marginBottom: 4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{title}</div>
+                          <div className="prop-price" style={{ color: "#1a73e8", fontWeight: 800, fontSize: 20, marginBottom: 6 }}>{price}</div>
+                          <div className="prop-meta" style={{ fontSize: 14, color: "#666", marginBottom: 3 }}>
                             {prop.property_type || "주택"} <span style={{color: "#ddd"}}>|</span> {prop.direction || "방향없음"} <span style={{color: "#ddd"}}>|</span> {prop.exclusive_m2 || 0}㎡
                           </div>
-                          <div className="prop-meta" style={{ fontSize: 12, color: "#666", marginBottom: 10, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          <div className="prop-meta" style={{ fontSize: 14, color: "#666", marginBottom: 10, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                             {detailStr}{prop.options && prop.options.length > 0 ? `, ${prop.options.join(", ")}` : ""}
                           </div>
                           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                             {prop.commission_type && (
-                              <span style={{ fontSize: 11, color: "#ef4444", border: "1px solid #fca5a5", padding: "2px 6px", borderRadius: 2 }}>
+                              <span style={{ fontSize: 13, color: "#ef4444", border: "1px solid #fca5a5", padding: "2px 6px", borderRadius: 2 }}>
                                 {prop.commission_type}
                               </span>
                             )}
                             {prop.vacancy_no && (
-                              <span style={{ fontSize: 13, color: "#ef4444", fontWeight: 700 }}>{prop.vacancy_no}</span>
+                              <span style={{ fontSize: 15, color: "#ef4444", fontWeight: 700 }}>{prop.vacancy_no}</span>
                             )}
-                            <span style={{ fontSize: 12, color: "#999" }}>{createdDate}</span>
+                            <span style={{ fontSize: 14, color: "#999" }}>{createdDate}</span>
                           </div>
                         </div>
                         {thumb && (

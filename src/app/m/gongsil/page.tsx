@@ -62,6 +62,21 @@ export default function MobileGongsilPage() {
             : [],
         }));
         setVacancies(withImages);
+
+        // URL id 파라미터가 있으면 해당 매물 상세 즉시 열기
+        if (typeof window !== "undefined") {
+          const params = new URLSearchParams(window.location.search);
+          const idParam = params.get("id");
+          if (idParam) {
+            const target = withImages.find((v: any) => v.id === idParam);
+            if (target) {
+              // history 상태를 맞추기 위해 약간의 딜레이 후 실행
+              setTimeout(() => {
+                handleVacancyClick(target);
+              }, 100);
+            }
+          }
+        }
       }
       setLoading(false);
     };
@@ -470,6 +485,7 @@ export default function MobileGongsilPage() {
                   </div>
                 </div>
               )}
+            </div>
             </div>
 
             {/* 하단 CTA */}
