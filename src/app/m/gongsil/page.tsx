@@ -407,7 +407,7 @@ export default function MobileGongsilPage() {
                 <div style={{ paddingTop: "24px" }}>
                   <div style={{ display: "flex", gap: "16px", marginBottom: "20px" }}>
                     <div style={{ width: "64px", height: "64px", borderRadius: "50%", background: "#f3f4f6", overflow: "hidden", flexShrink: 0 }}>
-                      <img src={selectedVacancy.members?.profile_image_url || "https://via.placeholder.com/64"} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      <img src={selectedVacancy.members?.profile_image_url || selectedVacancy.members?.avatar_url || "https://via.placeholder.com/64"} onError={(e) => { e.currentTarget.src = "https://via.placeholder.com/64?text=Profile"; }} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     </div>
                     <div style={{ flex: 1 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
