@@ -3,6 +3,7 @@ import { getVacanciesForMap } from "@/app/actions/vacancy";
 import { getLectures } from "@/app/actions/lecture";
 import { getArticles } from "@/app/actions/article";
 import MobileHomeClient from "./_components/home/MobileHomeClient";
+import MobileFooter from "./_components/MobileFooter";
 
 export const revalidate = 300;
 
@@ -37,16 +38,21 @@ export default async function MobileHomePage() {
   ).slice(0, 4);
 
   return (
-    <MobileHomeClient
-      vacancies={vacancies.slice(0, 5)}
-      headlineArticles={headlineArticles}
-      financeArticles={financeArts}
-      politicsArticles={politicsArts}
-      lawArticles={lawArts}
-      lifeArticles={lifeArts}
-      etcArticles={etcArts}
-      mapArticles={mapArticles}
-      lectures={lectures.slice(0, 4)}
-    />
+    <>
+      <MobileHomeClient
+        vacancies={vacancies.slice(0, 5)}
+        headlineArticles={headlineArticles}
+        financeArticles={financeArts}
+        politicsArticles={politicsArts}
+        lawArticles={lawArts}
+        lifeArticles={lifeArts}
+        etcArticles={etcArts}
+        mapArticles={mapArticles}
+        lectures={lectures.slice(0, 4)}
+      />
+      <div style={{ width: '100%', maxWidth: '448px', margin: '0 auto' }}>
+        <MobileFooter />
+      </div>
+    </>
   );
 }

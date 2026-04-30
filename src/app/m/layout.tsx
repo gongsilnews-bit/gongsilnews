@@ -37,10 +37,7 @@ export default function MobileLayout({ children }: { children: React.ReactNode }
         {children}
       </main>
 
-      {/* 모바일 전용 하단 푸터 */}
-      <div style={{ width: '100%', maxWidth: '448px', margin: '0 auto' }}>
-        <MobileFooter />
-      </div>
+
 
       {/* 모바일 전용 하단 탭바 (GNB) */}
       <MobileBottomNav />
