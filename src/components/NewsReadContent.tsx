@@ -911,7 +911,7 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
                     </Link>
                   </li>
                 )) : (
-                  <li className="pop-item" style={{ color: "#999", fontSize: 13 }}>기사가 없습니다.</li>
+                  <li className="pop-item" style={{ color: "#999", fontSize: 15 }}>기사가 없습니다.</li>
                 )}
               </ul>
             </div>
