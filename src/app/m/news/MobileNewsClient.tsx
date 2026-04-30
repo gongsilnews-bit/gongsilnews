@@ -122,13 +122,30 @@ function MobileNewsClient({ initialTab, initialArticles }: { initialTab: string,
     };
     loadLocalArticles();
   }, []);
+  // 뒤로 가기(안드로이드 하드웨어 백버튼 등) 처리
+  useEffect(() => {
+    const handlePopState = () => {
+      if (showDetail) {
+        setShowDetail(false);
+      }
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [showDetail]);
+
   // 기사 상세 조회 (우리동네뉴스는 인라인 패널, 나머지는 새 페이지)
   const handleSelectArticle = async (id: string, isLocal: boolean = false) => {
     if (isLocal) {
-      if (detailPanelRef.current) {
-        detailPanelRef.current.scrollTop = 0;
-      }
+      window.history.pushState({ panel: "newsDetail" }, "");
       setShowDetail(true);
+      
+      // 패널이 열린 후 스크롤 최상단 초기화
+      setTimeout(() => {
+        if (detailPanelRef.current) {
+          detailPanelRef.current.scrollTop = 0;
+        }
+      }, 50);
+
       setDetailLoading(true);
       const res = await getArticleDetail(id);
       if (res.success && res.data) {
@@ -734,7 +751,7 @@ function MobileNewsClient({ initialTab, initialArticles }: { initialTab: string,
       <div ref={detailPanelRef} className={`news-detail-panel ${showDetail ? "open" : ""}`}>
         {/* 헤더 */}
         <div style={{ position: "sticky", top: 0, zIndex: 50, background: "#fff", display: "flex", justifyContent: "flex-end", padding: "12px 16px", borderBottom: "1px solid #f0f0f0" }}>
-          <button onClick={() => setShowDetail(false)} style={{ background: "none", border: "none", fontSize: "24px", cursor: "pointer", color: "#999" }}>✕</button>
+          <button onClick={() => window.history.back()} style={{ background: "none", border: "none", fontSize: "24px", cursor: "pointer", color: "#999" }}>✕</button>
         </div>
 
         {/* 로딩 상태 */}
