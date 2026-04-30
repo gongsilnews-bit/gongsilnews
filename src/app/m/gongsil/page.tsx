@@ -306,7 +306,7 @@ export default function MobileGongsilPage() {
         </div>
 
         {selectedVacancy && (
-          <>
+          <div style={{ display: "flex", flexDirection: "column", minHeight: "calc(100% - 54px)" }}>
             {/* 상단 핵심 정보 영역 */}
             <div style={{ padding: "20px 16px", background: "#fff" }}>
               {/* Badges */}
@@ -457,15 +457,21 @@ export default function MobileGongsilPage() {
             </div>
 
             {/* 하단 CTA */}
-            <div style={{ position: "sticky", bottom: 0, background: "#fff", borderTop: "1px solid #e5e7eb", padding: "14px 16px 24px" }}>
+            <div style={{ marginTop: "auto", position: "sticky", bottom: 0, background: "#fff", borderTop: "1px solid #e5e7eb", padding: "14px 16px 24px" }}>
               <button
-                onClick={() => { const phone = selectedVacancy?.members?.phone || selectedVacancy?.client_phone; if (phone) window.location.href = `tel:${phone}`; }}
+                onClick={() => {
+                  const phoneStr = selectedVacancy?.members?.phone || selectedVacancy?.client_phone;
+                  if (phoneStr) {
+                    const firstPhone = phoneStr.split(',')[0].trim();
+                    window.location.href = `tel:${firstPhone}`;
+                  }
+                }}
                 style={{ width: "100%", height: "52px", borderRadius: "6px", background: "#1a73e8", color: "#fff", fontSize: "18px", fontWeight: 800, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
               >
-                연락처 보기
+                연락하기
               </button>
             </div>
-          </>
+          </div>
         )}
       </div>
     </div>
