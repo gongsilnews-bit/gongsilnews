@@ -133,19 +133,18 @@ function MobileNewsClient({ initialTab, initialArticles }: { initialTab: string,
     return () => window.removeEventListener("popstate", handlePopState);
   }, [showDetail]);
 
+  // 기사 상세 변경 시 스크롤 최상단 강제 초기화 (가장 확실한 방법)
+  useEffect(() => {
+    if (showDetail && detailPanelRef.current) {
+      detailPanelRef.current.scrollTop = 0;
+    }
+  }, [articleDetail, showDetail]);
+
   // 기사 상세 조회 (우리동네뉴스는 인라인 패널, 나머지는 새 페이지)
   const handleSelectArticle = async (id: string, isLocal: boolean = false) => {
     if (isLocal) {
       window.history.pushState({ panel: "newsDetail" }, "");
       setShowDetail(true);
-      
-      // 패널이 열린 후 스크롤 최상단 초기화
-      setTimeout(() => {
-        if (detailPanelRef.current) {
-          detailPanelRef.current.scrollTop = 0;
-        }
-      }, 50);
-
       setDetailLoading(true);
       const res = await getArticleDetail(id);
       if (res.success && res.data) {
