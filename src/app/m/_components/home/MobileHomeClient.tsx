@@ -60,7 +60,7 @@ export default function MobileHomeClient(props: Props) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", width: "100%", background: "#F4F6F8", minHeight: "100vh", paddingBottom: "80px", letterSpacing: "-0.3px" }}>
-      {/* 네비게이션 메뉴 (뉴스 탭과 동일, 네이버식 가로 스와이프) */}
+      {/* 네비게이션 메뉴 (네이버 모바일 스타일 가로 스와이프) */}
       <div
         className="hide-scrollbar"
         style={{
@@ -68,7 +68,8 @@ export default function MobileHomeClient(props: Props) {
           overflowX: "auto",
           WebkitOverflowScrolling: "touch",
           touchAction: "pan-x",
-          backgroundColor: "#1a2e50",
+          backgroundColor: "#ffffff",
+          borderBottom: "1px solid #e5e5e5",
           position: "fixed",
           top: "36px",
           left: "50%",
@@ -76,27 +77,29 @@ export default function MobileHomeClient(props: Props) {
           width: "100%",
           maxWidth: "448px",
           zIndex: 40,
+          scrollBehavior: "smooth",
         }}
       >
         {CATEGORIES.map((cat) => (
           <button
             key={cat.key}
             onClick={() => {
-              if (cat.key === "home") return; // 이미 홈이므로
+              if (cat.key === "home") return;
               router.push(`/m/news?tab=${cat.key}`);
             }}
             style={{
               flexShrink: 0,
-              padding: "10px 16px",
+              padding: "11px 16px",
               fontSize: "14px",
-              fontWeight: cat.key === "home" ? 800 : 500,
-              color: cat.key === "home" ? "#fff" : "rgba(255,255,255,0.6)",
+              fontWeight: cat.key === "home" ? 700 : 500,
+              color: cat.key === "home" ? "#1a2e50" : "#333333",
               background: "none",
               border: "none",
-              borderBottom: cat.key === "home" ? "3px solid #ffffff" : "3px solid transparent",
+              borderBottom: cat.key === "home" ? "2.5px solid #1a2e50" : "2.5px solid transparent",
               cursor: "pointer",
               transition: "all 0.2s",
               whiteSpace: "nowrap",
+              letterSpacing: "-0.3px",
             }}
           >
             {cat.label}

@@ -291,7 +291,10 @@ function MobileNewsPage() {
             style={{
               display: "flex",
               overflowX: "auto",
-              backgroundColor: "#1a2e50",
+              WebkitOverflowScrolling: "touch",
+              touchAction: "pan-x",
+              backgroundColor: "#ffffff",
+              borderBottom: "1px solid #e5e5e5",
               position: "fixed",
               top: "41px",
               left: "50%",
@@ -299,6 +302,7 @@ function MobileNewsPage() {
               width: "100%",
               maxWidth: "448px",
               zIndex: 40,
+              scrollBehavior: "smooth",
             }}
           >
             {CATEGORIES.map((cat) => (
@@ -310,16 +314,17 @@ function MobileNewsPage() {
                 }}
                 style={{
                   flexShrink: 0,
-                  padding: "10px 16px",
+                  padding: "11px 16px",
                   fontSize: "14px",
-                  fontWeight: activeTab === cat.key ? 800 : 500,
-                  color: activeTab === cat.key ? "#fff" : "rgba(255,255,255,0.6)",
+                  fontWeight: activeTab === cat.key ? 700 : 500,
+                  color: activeTab === cat.key ? "#1a2e50" : "#333333",
                   background: "none",
                   border: "none",
-                  borderBottom: activeTab === cat.key ? "3px solid #ffffff" : "3px solid transparent",
+                  borderBottom: activeTab === cat.key ? "2.5px solid #1a2e50" : "2.5px solid transparent",
                   cursor: "pointer",
                   transition: "all 0.2s",
                   whiteSpace: "nowrap",
+                  letterSpacing: "-0.3px",
                 }}
               >
                 {cat.label}

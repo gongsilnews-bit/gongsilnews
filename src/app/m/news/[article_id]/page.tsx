@@ -83,7 +83,8 @@ export default async function MobileNewsReadPage({ params }: { params: Promise<{
           overflowX: "auto",
           WebkitOverflowScrolling: "touch",
           touchAction: "pan-x",
-          backgroundColor: "#1a2e50",
+          backgroundColor: "#ffffff",
+          borderBottom: "1px solid #e5e5e5",
           position: "fixed",
           top: "36px",
           left: "50%",
@@ -91,10 +92,10 @@ export default async function MobileNewsReadPage({ params }: { params: Promise<{
           width: "100%",
           maxWidth: "448px",
           zIndex: 40,
+          scrollBehavior: "smooth",
         }}
       >
         {CATEGORIES.map((cat) => {
-          // 현재 기사의 카테고리와 일치하는지 확인
           const isActive = article.category === cat.key;
           const targetUrl = cat.key === "home" ? "/m" : `/m/news?tab=${cat.key}`;
           
@@ -104,17 +105,18 @@ export default async function MobileNewsReadPage({ params }: { params: Promise<{
               href={targetUrl}
               style={{
                 flexShrink: 0,
-                padding: "10px 16px",
+                padding: "11px 16px",
                 fontSize: "14px",
-                fontWeight: isActive ? 800 : 500,
-                color: isActive ? "#fff" : "rgba(255,255,255,0.6)",
+                fontWeight: isActive ? 700 : 500,
+                color: isActive ? "#1a2e50" : "#333333",
                 background: "none",
                 textDecoration: "none",
-                borderBottom: isActive ? "3px solid #ffffff" : "3px solid transparent",
+                borderBottom: isActive ? "2.5px solid #1a2e50" : "2.5px solid transparent",
                 cursor: "pointer",
                 transition: "all 0.2s",
                 whiteSpace: "nowrap",
                 display: "inline-block",
+                letterSpacing: "-0.3px",
               }}
             >
               {cat.label}
