@@ -328,7 +328,7 @@ function MobileNewsPage() {
               >
                 <span style={{
                   display: "inline-block",
-                  paddingBottom: "7px",
+                  paddingBottom: "5px",
                   borderBottom: activeTab === cat.key ? "5px solid #1a2e50" : "5px solid transparent",
                 }}>
                   {cat.label}

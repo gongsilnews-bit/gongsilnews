@@ -120,7 +120,7 @@ export default async function MobileNewsReadPage({ params }: { params: Promise<{
             >
               <span style={{
                 display: "inline-block",
-                paddingBottom: "7px",
+                paddingBottom: "5px",
                 borderBottom: isActive ? "5px solid #1a2e50" : "5px solid transparent",
               }}>
                 {cat.label}
