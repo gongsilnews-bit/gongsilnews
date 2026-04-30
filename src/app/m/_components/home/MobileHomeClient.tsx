@@ -95,7 +95,7 @@ export default function MobileHomeClient(props: Props) {
               color: cat.key === "home" ? "#1a2e50" : "#222222",
               background: "none",
               border: "none",
-              borderBottom: cat.key === "home" ? "2.5px solid #1a2e50" : "2.5px solid transparent",
+              borderBottom: cat.key === "home" ? "5px solid #1a2e50" : "5px solid transparent",
               cursor: "pointer",
               transition: "all 0.2s",
               whiteSpace: "nowrap",

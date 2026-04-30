@@ -111,7 +111,7 @@ export default async function MobileNewsReadPage({ params }: { params: Promise<{
                 color: isActive ? "#1a2e50" : "#222222",
                 background: "none",
                 textDecoration: "none",
-                borderBottom: isActive ? "2.5px solid #1a2e50" : "2.5px solid transparent",
+                borderBottom: isActive ? "5px solid #1a2e50" : "5px solid transparent",
                 cursor: "pointer",
                 transition: "all 0.2s",
                 whiteSpace: "nowrap",

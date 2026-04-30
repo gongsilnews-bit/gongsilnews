@@ -320,7 +320,7 @@ function MobileNewsPage() {
                   color: activeTab === cat.key ? "#1a2e50" : "#222222",
                   background: "none",
                   border: "none",
-                  borderBottom: activeTab === cat.key ? "2.5px solid #1a2e50" : "2.5px solid transparent",
+                  borderBottom: activeTab === cat.key ? "5px solid #1a2e50" : "5px solid transparent",
                   cursor: "pointer",
                   transition: "all 0.2s",
                   whiteSpace: "nowrap",
