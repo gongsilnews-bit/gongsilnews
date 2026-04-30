@@ -653,7 +653,7 @@ function MobileNewsPage() {
 
           {/* 실 기사 리스트 */}
           {!loading && (
-            <div style={{ padding: "0 16px" }}>
+            <div>
               {articles.slice(1).map((a: any) => (
                 <div
                   key={a.id}
@@ -662,11 +662,12 @@ function MobileNewsPage() {
                   style={{
                     display: "flex",
                     gap: "14px",
-                    padding: "16px 0",
+                    padding: "16px",
                     borderBottom: "1px solid #f0f0f0",
                     cursor: "pointer",
                     background: "#fff",
                     transition: "background 0.15s ease",
+                    WebkitTapHighlightColor: "transparent",
                   }}
                 >
                   {/* 왼쪽 썸네일 (존재할 경우) */}
@@ -782,7 +783,7 @@ function MobileNewsPage() {
         .news-detail-panel.open { transform: translateX(0); }
         .skeleton { background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 6px; }
         @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-        .article-row:active { background: #f9fafb; }
+        .article-row:active { background: #f3f4f6 !important; }
         .slide-out-left { animation: slideOutLeft 0.2s ease forwards; }
         .slide-out-right { animation: slideOutRight 0.2s ease forwards; }
         .slide-in-left { animation: slideInLeft 0.25s ease forwards; }
