@@ -360,7 +360,7 @@ function MobileNewsPage() {
               WebkitOverflowScrolling: "touch",
               touchAction: "pan-x",
               backgroundColor: "#ffffff",
-              borderBottom: "14px solid #F4F6F8",
+              borderBottom: "9px solid #F4F6F8",
               position: "fixed",
               top: "30px",
               left: "50%",
@@ -382,7 +382,7 @@ function MobileNewsPage() {
                 style={{
                   flexShrink: 0,
                   padding: "11px 16px 0",
-                  fontSize: "16px",
+                  fontSize: "17px",
                   fontWeight: activeTab === cat.key ? 700 : 500,
                   color: activeTab === cat.key ? "#1a2e50" : "#222222",
                   background: "none",

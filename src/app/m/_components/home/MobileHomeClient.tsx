@@ -92,7 +92,7 @@ export default function MobileHomeClient(props: Props) {
           WebkitOverflowScrolling: "touch",
           touchAction: "pan-x",
           backgroundColor: "#ffffff",
-          borderBottom: "14px solid #F4F6F8",
+          borderBottom: "9px solid #F4F6F8",
           position: "fixed",
           top: "30px",
           left: "50%",
@@ -113,7 +113,7 @@ export default function MobileHomeClient(props: Props) {
             style={{
               flexShrink: 0,
               padding: "11px 16px 0",
-              fontSize: "16px",
+              fontSize: "17px",
               fontWeight: cat.key === "home" ? 700 : 500,
               color: cat.key === "home" ? "#1a2e50" : "#222222",
               background: "none",
