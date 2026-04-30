@@ -81,6 +81,7 @@ function MobileNewsClient({ initialTab, initialArticles }: { initialTab: string,
   const markersRef = useRef<any[]>([]);
   const clustererRef = useRef<any>(null);
   const clusterModeRef = useRef(false);
+  const detailPanelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { clusterModeRef.current = clusterMode; }, [clusterMode]);
 
@@ -124,6 +125,9 @@ function MobileNewsClient({ initialTab, initialArticles }: { initialTab: string,
   // 기사 상세 조회 (우리동네뉴스는 인라인 패널, 나머지는 새 페이지)
   const handleSelectArticle = async (id: string, isLocal: boolean = false) => {
     if (isLocal) {
+      if (detailPanelRef.current) {
+        detailPanelRef.current.scrollTop = 0;
+      }
       setShowDetail(true);
       setDetailLoading(true);
       const res = await getArticleDetail(id);
@@ -727,7 +731,7 @@ function MobileNewsClient({ initialTab, initialArticles }: { initialTab: string,
         </div>
       )}
       {/* 기사 상세 뷰 (모바일 슬라이딩 패널) - 우리동네뉴스 전용 */}
-      <div className={`news-detail-panel ${showDetail ? "open" : ""}`}>
+      <div ref={detailPanelRef} className={`news-detail-panel ${showDetail ? "open" : ""}`}>
         {/* 헤더 */}
         <div style={{ position: "sticky", top: 0, zIndex: 50, background: "#fff", display: "flex", justifyContent: "flex-end", padding: "12px 16px", borderBottom: "1px solid #f0f0f0" }}>
           <button onClick={() => setShowDetail(false)} style={{ background: "none", border: "none", fontSize: "24px", cursor: "pointer", color: "#999" }}>✕</button>
