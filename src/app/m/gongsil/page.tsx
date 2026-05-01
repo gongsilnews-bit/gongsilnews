@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { getVacancies, getVacancyDetail } from "@/app/actions/vacancy";
 import HomeHeader from "../_components/HomeHeader";
 
@@ -43,39 +43,37 @@ function formatPrice(v: any): string {
 
 export default function MobileGongsilPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [vacancies, setVacancies] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCluster, setSelectedCluster] = useState<any[] | null>(null);
-  const [selectedVacancy, setSelectedVacancy] = useState<any | null>(null);
-  const [detailLoading, setDetailLoading] = useState(false);
-  const [detailTab, setDetailTab] = useState<"info" | "realtor">("info");
-  const [mapLoaded, setMapLoaded] = useState(false);
   const mapRef = useRef<HTMLDivElement>(null);
   const kakaoMapRef = useRef<any>(null);
-  const markersRef = useRef<any[]>([]);
   const clustererRef = useRef<any>(null);
+  const markersRef = useRef<any[]>([]);
   const detailPanelRef = useRef<HTMLDivElement>(null);
-  const detailScrollRef = useRef<HTMLDivElement>(null);
+
+  const [selectedCluster, setSelectedCluster] = useState<any[] | null>(null);
+  const [selectedVacancy, setSelectedVacancy] = useState<any | null>(null);
+  const [mapLoaded, setMapLoaded] = useState(false);
+  const [detailLoading, setDetailLoading] = useState(false);
+  
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [showShareDropdown, setShowShareDropdown] = useState(false);
   const shareDropdownRef = useRef<HTMLDivElement>(null);
+  const detailScrollRef = useRef<HTMLDivElement>(null);
+  
+  const [showGalleryFullscreen, setShowGalleryFullscreen] = useState(false);
+  const [detailTab, setDetailTab] = useState<"info" | "realtor">("info");
+  const [galleryIndex, setGalleryIndex] = useState(0);
+  const [realtorFilter, setRealtorFilter] = useState("전체");
+
   const itemMapRef = useRef<HTMLDivElement>(null);
   const roadviewRef = useRef<HTMLDivElement>(null);
   const vacancyStackRef = useRef<any[]>([]);
 
-  const [isBookmarked, setIsBookmarked] = useState(false);
-  const [showShareDropdown, setShowShareDropdown] = useState(false);
-  const [showGalleryFullscreen, setShowGalleryFullscreen] = useState(false);
-  const [galleryIndex, setGalleryIndex] = useState(0);
-  const [realtorFilter, setRealtorFilter] = useState("전체");
-
   // 다이렉트 뷰 상태 (URL에 id가 있는 경우 지도를 가리고 상세 정보를 보여줌)
-  const [isDirectView, setIsDirectView] = useState(false);
-  const [isEmbedded, setIsEmbedded] = useState(false);
-  
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      setIsEmbedded(new URLSearchParams(window.location.search).get("embed") === "true");
-    }
-  }, []);
+  const [isDirectView, setIsDirectView] = useState(searchParams.has("id"));
+  const [isEmbedded, setIsEmbedded] = useState(searchParams.get("embed") === "true");
 
   useEffect(() => {
     if (selectedVacancy && detailTab === "info") {
@@ -405,16 +403,25 @@ export default function MobileGongsilPage() {
   };
 
   return (
-    <div style={{ width: "100%", backgroundColor: "#F4F6F8", height: "calc(100vh - 60px)", display: "flex", flexDirection: "column", overflow: "hidden", position: "relative" }}>
-      <HomeHeader 
-        bgColor="#4b89ff" 
-        logoText="공실등록"
-        sloganPrefix="부동산이 무료 열람하는 "
-        sloganHighlight="공동중개네트워크"
-        highlightColor="#fcd34d"
-      />
+    <div style={{ width: "100%", backgroundColor: isEmbedded ? "transparent" : "#F4F6F8", height: "calc(100vh - 60px)", display: "flex", flexDirection: "column", overflow: "hidden", position: "relative" }}>
+      {!isEmbedded && (
+        <HomeHeader 
+          bgColor="#4b89ff" 
+          logoText="공실등록"
+          sloganPrefix="부동산이 무료 열람하는 "
+          sloganHighlight="공동중개네트워크"
+          highlightColor="#fcd34d"
+        />
+      )}
       
       <style>{`
+        ${isEmbedded ? `
+          main { background: transparent !important; }
+          div[style*="padding-bottom: 60px"] { padding-bottom: 0 !important; background: transparent !important; }
+          nav { display: none !important; }
+          body { background: transparent !important; }
+          html { background: transparent !important; }
+        ` : ''}
         .no-scrollbar::-webkit-scrollbar{display:none;}
         .no-scrollbar{-ms-overflow-style:none;scrollbar-width:none;}
         .list-panel{position:fixed;top:0;left:50%;width:100%;max-width:448px;margin-left:-224px;height:100dvh;background:#fff;z-index:9998;transform:translateX(100vw);transition:transform 0.35s cubic-bezier(0.25,1,0.5,1);overflow-y:hidden;display:flex;flex-direction:column;}
@@ -423,7 +430,7 @@ export default function MobileGongsilPage() {
         .detail-panel{position:fixed;top:0;left:50%;width:100%;max-width:448px;margin-left:-224px;height:100dvh;background:#fff;z-index:9999;transform:translateX(100vw);transition:transform 0.35s cubic-bezier(0.25,1,0.5,1);overflow-y:auto;}
         @media (max-width: 448px) { .detail-panel { margin-left: -50vw; } }
         .detail-panel.open{transform:translateX(0);}
-        .detail-panel.direct-view{transform:translateX(0); animation: slideInRight 0.35s cubic-bezier(0.25,1,0.5,1) forwards;}
+        .detail-panel.direct-view{transform:translateX(0); ${isEmbedded ? '' : 'animation: slideInRight 0.35s cubic-bezier(0.25,1,0.5,1) forwards;'}}
         .detail-panel.slide-out{transform:translateX(100vw) !important; transition: transform 0.35s cubic-bezier(0.25,1,0.5,1) !important;}
         @keyframes slideInRight { from { transform: translateX(100vw); } to { transform: translateX(0); } }
         .skeleton{background:linear-gradient(90deg,#f3f4f6 25%,#e5e7eb 50%,#f3f4f6 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:6px;}
@@ -431,9 +438,11 @@ export default function MobileGongsilPage() {
         .v-card:active{background:#f9fafb;}
       `}</style>
       
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", paddingTop: "50px" }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", paddingTop: isEmbedded ? "0" : "50px" }}>
         {/* 구분선 (회색 배경) */}
-        <div style={{ height: "9px", backgroundColor: "#F4F6F8", width: "100%", flexShrink: 0, borderBottom: "1px solid #e5e7eb" }} />
+        {!isEmbedded && (
+          <div style={{ height: "9px", backgroundColor: "#F4F6F8", width: "100%", flexShrink: 0, borderBottom: "1px solid #e5e7eb" }} />
+        )}
 
         {/* 지도 및 오버레이 컨테이너 */}
         <div style={{ position: "relative", flex: 1, display: isDirectView ? "none" : "flex", flexDirection: "column", backgroundColor: "#fff" }}>
