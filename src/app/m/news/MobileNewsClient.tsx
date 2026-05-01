@@ -764,9 +764,55 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
           )}
 
           {/* 실 기사 리스트 */}
-          {!loading && (
-            <div>
-              {articles.map((a: any) => (
+          {!loading && (() => {
+            const importantArticles = articles.filter(a => a.is_important);
+            const regularArticles = articles.filter(a => !a.is_important);
+            
+            return (
+              <div>
+                {/* 중요 뉴스 슬라이딩 캐러셀 */}
+                {importantArticles.length > 0 && (
+                  <div style={{ padding: "20px 16px", borderBottom: "8px solid #f4f6f8" }}>
+                    <div style={{ display: 'flex', overflowX: 'auto', gap: '12px', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }} className="no-scrollbar">
+                      {importantArticles.map((a: any) => (
+                        <Link
+                          href={`/m/news/${a.article_no || a.id}`}
+                          key={a.id}
+                          style={{
+                            flexShrink: 0,
+                            width: "calc(50% - 6px)", // Exactly 2 items visible
+                            textDecoration: "none",
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "8px"
+                          }}
+                        >
+                          <div style={{ width: "100%", aspectRatio: "16/10", position: "relative", backgroundColor: "#f3f4f6", borderRadius: "8px", overflow: "hidden" }}>
+                            {(a.thumbnail_url || extractYoutubeId(a.youtube_url, a.content)) ? (
+                              <Image
+                                src={a.thumbnail_url || `https://img.youtube.com/vi/${extractYoutubeId(a.youtube_url, a.content)}/mqdefault.jpg`}
+                                alt={a.title}
+                                fill
+                                style={{ objectFit: "cover" }}
+                                sizes="(max-width: 768px) 50vw, 33vw"
+                              />
+                            ) : (
+                              <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#ccc", background: "#f8f9fa", border: "1px solid #eaeaea" }}>
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                              </div>
+                            )}
+                          </div>
+                          <div style={{ fontSize: "14px", fontWeight: 700, color: "#111", lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", wordBreak: "keep-all" }}>
+                            {a.title}
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* 일반 뉴스 리스트 */}
+                {regularArticles.map((a: any) => (
                 <Link
                   href={`/m/news/${a.article_no || a.id}`}
                   key={a.id}
@@ -814,15 +860,16 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                   </div>
                 </Link>
               ))}
+              </div>
+            );
+          })()}
 
-              {!loading && articles.length === 0 && (
+          {!loading && articles.length === 0 && (
                 <div style={{ textAlign: "center", padding: "60px 0", color: "#9ca3af" }}>
                   <div style={{ fontSize: "40px", marginBottom: "12px" }}>📰</div>
                   <p style={{ fontSize: "15px", fontWeight: 600 }}>아직 기사가 없습니다.</p>
                 </div>
               )}
-            </div>
-          )}
         </div>
       )}
       {/* 기사 상세 뷰 (모바일 슬라이딩 패널) - 우리동네뉴스 전용 */}
