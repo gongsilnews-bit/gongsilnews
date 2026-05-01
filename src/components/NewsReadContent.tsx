@@ -488,10 +488,8 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
             </div>
             <h1 className="detail-title" style={{ fontSize: `${currentFontSize + 10}px`, lineHeight: 1.35, transition: "font-size 0.2s ease" }}>{article.title}</h1>
             
-            {/* 기사 작성자 & 메타 정보 (심플 텍스트 스타일) */}
-            <div style={{ padding: "0", marginBottom: "30px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
-                {/* 작성자 및 날짜 정보 */}
+            <div style={{ padding: "0", marginBottom: "30px", position: "relative" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
                   <div style={{ fontSize: "15px", color: "#111", display: "flex", alignItems: "center", gap: "6px" }}>
                     <span style={{ fontWeight: "700" }}>{article.author_name || "공실뉴스"}</span>
@@ -506,26 +504,26 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
                 </div>
               </div>
               
-              {/* 기능 버튼 (조회수, 찜, 공유, 글자크기, 인쇄) */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", position: "relative" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", color: "#6b7280", fontWeight: "600" }}>
+              {/* 기능 버튼 (조회수) */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", position: "relative", height: "20px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", color: "#6b7280", fontWeight: "600", lineHeight: 1 }}>
                   <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
                     <span>조회수</span> 
                     <span style={{ color: "#374151" }}>{viewCount}</span>
                   </span>
                 </div>
                 
-                <div className="meta-stats" style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-                  <span className="meta-icon" title={isBookmarked ? "찜 해제" : "찜하기"} onClick={toggleBookmark} style={{ cursor: "pointer", color: isBookmarked ? "#f5a623" : "#888", display: "flex", alignItems: "center" }}>
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill={isBookmarked ? "#f5a623" : "none"} stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                <div className="meta-stats" style={{ display: "flex", gap: "14px", alignItems: "center", height: "100%" }}>
+                  <span className="meta-icon" title={isBookmarked ? "찜 해제" : "찜하기"} onClick={toggleBookmark} style={{ cursor: "pointer", color: isBookmarked ? "#1a73e8" : "#222", display: "flex", alignItems: "center" }}>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill={isBookmarked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
                   </span>
                   
-                  <span className="meta-icon" title="글자 크기" style={{ fontWeight: "700", display: "flex", alignItems: "baseline", gap: "1px", letterSpacing: "-1px", cursor: "pointer", color: showFontSizePopup ? "#1a73e8" : "#888" }} onClick={() => { setShowFontSizePopup(!showFontSizePopup); setShowShareDropdown(false); }}>
-                    <span style={{ fontSize: "11px" }}>가</span><span style={{ fontSize: "14px" }}>가</span>
+                  <span className="meta-icon" title="글자 크기" style={{ fontWeight: "400", display: "flex", alignItems: "baseline", gap: "1px", letterSpacing: "-1px", cursor: "pointer", color: showFontSizePopup ? "#1a73e8" : "#222" }} onClick={() => { setShowFontSizePopup(!showFontSizePopup); setShowShareDropdown(false); }}>
+                    <span style={{ fontSize: "10px", lineHeight: 1 }}>가</span><span style={{ fontSize: "14px", lineHeight: 1 }}>가</span>
                   </span>
                   
-                  <span className="meta-icon" title="공유하기" onClick={() => { setShowShareDropdown(!showShareDropdown); setShowFontSizePopup(false); }} style={{ cursor: "pointer", color: showShareDropdown ? "#1a73e8" : "#888", display: "flex", alignItems: "center" }}>
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+                  <span className="meta-icon" title="공유하기" onClick={() => { setShowShareDropdown(!showShareDropdown); setShowFontSizePopup(false); }} style={{ cursor: "pointer", color: showShareDropdown ? "#1a73e8" : "#222", display: "flex", alignItems: "center" }}>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
                   </span>
                   
                   {/* Share Dropdown */}
