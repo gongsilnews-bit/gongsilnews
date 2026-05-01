@@ -468,11 +468,6 @@ export default function MobileGongsilPage() {
               onClick={() => handleVacancyClick(v)}
               style={{ display: "flex", gap: "12px", padding: "14px 0", borderBottom: "1px solid #f3f4f6", cursor: "pointer", transition: "background 0.15s" }}
             >
-              {v.images?.[0] && (
-                <div style={{ width: "90px", height: "72px", borderRadius: "10px", overflow: "hidden", flexShrink: 0, backgroundColor: "#e5e7eb" }}>
-                  <img src={v.images[0]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                </div>
-              )}
               <div style={{ flex: 1, minWidth: 0 }}>
                 {/* Badges & Date (Moved to top) */}
                 <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
@@ -514,6 +509,11 @@ export default function MobileGongsilPage() {
                   </div>
                 )}
               </div>
+              {v.images?.[0] && (
+                <div style={{ width: "90px", height: "72px", borderRadius: "10px", overflow: "hidden", flexShrink: 0, backgroundColor: "#e5e7eb", alignSelf: "center" }}>
+                  <img src={v.images[0]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                </div>
+              )}
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="2" style={{ flexShrink: 0, alignSelf: "center" }}><polyline points="9 18 15 12 9 6"/></svg>
             </div>
           ))}
