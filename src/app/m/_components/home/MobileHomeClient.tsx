@@ -59,25 +59,10 @@ export default function MobileHomeClient(props: Props) {
   const [heroIdx, setHeroIdx] = useState(0);
   const hero = headlineArticles[heroIdx] || null;
 
-  // 화면 전환 애니메이션 상태
-  const [transitionRect, setTransitionRect] = useState<DOMRect | null>(null);
-  const [isTransitioning, setIsTransitioning] = useState(false);
+  // 화면 전환 애니메이션 상태 제거 (즉시 라우팅)
 
-  const handleArticleClick = (id: string, e: React.MouseEvent) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    setTransitionRect(rect);
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        setIsTransitioning(true);
-      });
-    });
-    setTimeout(() => {
-      router.push(`/m/news/${id}`);
-      setTimeout(() => {
-        setIsTransitioning(false);
-        setTransitionRect(null);
-      }, 800);
-    }, 350);
+  const handleArticleClick = (id: string, e?: React.MouseEvent) => {
+    router.push(`/m/news/${id}`);
   };
 
   // ── 헤드라인 자동 슬라이드 (3초마다) ──
@@ -299,24 +284,7 @@ export default function MobileHomeClient(props: Props) {
           </div>
         </div>
       )}
-      {/* 기사 클릭 시 화면 팽창(Scale-up) 오버레이 애니메이션 */}
-      {transitionRect && (
-        <div 
-          style={{
-            position: "fixed",
-            zIndex: 999999,
-            backgroundColor: "#f3f4f6", // 사용자 요청 바탕색(연한 회색)
-            top: isTransitioning ? 0 : "calc(50% - 50px)",
-            left: isTransitioning ? 0 : "calc(50% - 50px)",
-            width: isTransitioning ? "100vw" : "100px",
-            height: isTransitioning ? "100vh" : "100px",
-            borderRadius: isTransitioning ? "0px" : "24px",
-            transition: "all 0.35s cubic-bezier(0.25, 1, 0.5, 1)",
-            pointerEvents: "none",
-            boxShadow: isTransitioning ? "none" : "0 10px 30px rgba(0,0,0,0.15)",
-          }}
-        />
-      )}
+
       <style>{`
         .no-scrollbar::-webkit-scrollbar{display:none;}
         .no-scrollbar{-ms-overflow-style:none;scrollbar-width:none;}
