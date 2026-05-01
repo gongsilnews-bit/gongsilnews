@@ -49,6 +49,7 @@ export function middleware(request: NextRequest) {
       isMobile &&
       !viewDesktop &&
       !url.pathname.startsWith('/m') &&
+      !url.pathname.startsWith('/auth') &&
       !url.pathname.startsWith('/admin') &&
       !url.pathname.startsWith('/realty_admin') &&
       !url.pathname.startsWith('/user_admin')
