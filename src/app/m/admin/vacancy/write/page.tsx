@@ -22,6 +22,7 @@ function MobileVacancyWrite() {
   const [memberId, setMemberId] = useState("");
   const [userName, setUserName] = useState("");
   const [userPhone, setUserPhone] = useState("");
+  const [userRole, setUserRole] = useState("USER");
   const [authChecked, setAuthChecked] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [loadingEdit, setLoadingEdit] = useState(false);
@@ -51,6 +52,9 @@ function MobileVacancyWrite() {
   const [dong, setDong] = useState("");
   const [buildingName, setBuildingName] = useState("");
   const [detailAddr, setDetailAddr] = useState("");
+  const [aptDong, setAptDong] = useState("");
+  const [hosu, setHosu] = useState("");
+  const [addressExposure, setAddressExposure] = useState("기본주소만공개");
 
   // 기타
   const [parking, setParking] = useState("없음");
@@ -71,8 +75,8 @@ function MobileVacancyWrite() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.push("/m"); return; }
-      const { data } = await supabase.from("members").select("id, name, phone").eq("id", user.id).single();
-      if (data) { setMemberId(data.id); setUserName(data.name||""); setUserPhone(data.phone||""); setClientName(data.name||""); setClientPhone(data.phone||""); }
+      const { data } = await supabase.from("members").select("id, name, phone, role").eq("id", user.id).single();
+      if (data) { setMemberId(data.id); setUserName(data.name||""); setUserPhone(data.phone||""); setClientName(data.name||""); setClientPhone(data.phone||""); setUserRole((data as any).role || "USER"); }
       setAuthChecked(true);
     })();
   }, []);
@@ -103,6 +107,9 @@ function MobileVacancyWrite() {
         if (d.dong) setDong(d.dong);
         if (d.building_name) setBuildingName(d.building_name);
         if (d.detail_addr) setDetailAddr(d.detail_addr);
+        if (d.apt_dong) setAptDong(d.apt_dong);
+        if (d.hosu) setHosu(d.hosu);
+        if (d.address_exposure) setAddressExposure(d.address_exposure);
         if (d.parking) setParking(d.parking);
         if (d.move_in_date) setMoveInDate(d.move_in_date);
         if (d.description) setDescription(d.description);
@@ -187,6 +194,7 @@ function MobileVacancyWrite() {
         bath_count: isCommercial ? undefined : parseInt(bathCount)||1,
         direction: isCommercial ? undefined : direction,
         sido, sigungu, dong, building_name: buildingName||undefined, detail_addr: detailAddr||undefined,
+        apt_dong: aptDong||undefined, hosu: hosu||undefined, address_exposure: addressExposure,
         lat: coords?.lat, lng: coords?.lng,
         parking, move_in_date: moveInDate, description: description||undefined,
         client_name: clientName, client_phone: clientPhone,
@@ -335,6 +343,47 @@ function MobileVacancyWrite() {
           </div>
           <label style={labelStyle}>상세주소</label>
           <input type="text" value={detailAddr} onChange={e=>setDetailAddr(e.target.value)} placeholder="상세주소 입력" style={{...inputStyle, marginBottom:10}}/>
+
+          {/* 동/호수 (아파트인 경우) */}
+          {propertyType === "아파트·오피스텔" && (
+            <div style={{ display:"flex", gap:8, marginBottom:10 }}>
+              <div style={{flex:1}}><label style={labelStyle}>동</label><input type="text" value={aptDong} onChange={e=>setAptDong(e.target.value)} placeholder="101동" style={inputStyle}/></div>
+              <div style={{flex:1}}><label style={labelStyle}>호수</label><input type="text" value={hosu} onChange={e=>setHosu(e.target.value)} placeholder="405호" style={inputStyle}/></div>
+            </div>
+          )}
+          {propertyType !== "아파트·오피스텔" && (
+            <div style={{ marginBottom:10 }}>
+              <label style={labelStyle}>호수</label>
+              <input type="text" value={hosu} onChange={e=>setHosu(e.target.value)} placeholder="101호" style={inputStyle}/>
+            </div>
+          )}
+
+          {/* 주소 공개 설정 */}
+          <div style={{ background:"#f9fafb", padding:12, borderRadius:10, border:"1px solid #e5e7eb", marginBottom:12 }}>
+            <div style={{ fontSize:13, fontWeight:700, color:"#374151", marginBottom:8 }}>🔒 주소 노출 범위</div>
+            <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+              {propertyType === "아파트·오피스텔" ? (
+                <>
+                  {["동/호수공개","동수공개","비공개"].map(opt => (
+                    <label key={opt} style={{ display:"flex", alignItems:"center", gap:4, fontSize:13, cursor:"pointer", padding:"6px 10px", borderRadius:8, background: addressExposure===opt?"#eff6ff":"#fff", border: addressExposure===opt?"1px solid #3b82f6":"1px solid #d1d5db" }}>
+                      <input type="radio" name="addrExp" checked={addressExposure===opt} onChange={()=>setAddressExposure(opt)} style={{accentColor:"#3b82f6"}}/>
+                      {opt}
+                    </label>
+                  ))}
+                </>
+              ) : (
+                <>
+                  {["번지공개","본번지만공개","기본주소만공개"].map(opt => (
+                    <label key={opt} style={{ display:"flex", alignItems:"center", gap:4, fontSize:13, cursor:"pointer", padding:"6px 10px", borderRadius:8, background: addressExposure===opt?"#eff6ff":"#fff", border: addressExposure===opt?"1px solid #3b82f6":"1px solid #d1d5db" }}>
+                      <input type="radio" name="addrExp" checked={addressExposure===opt} onChange={()=>setAddressExposure(opt)} style={{accentColor:"#3b82f6"}}/>
+                      {opt}
+                    </label>
+                  ))}
+                </>
+              )}
+            </div>
+          </div>
+
           <button type="button" onClick={handleGeocode} style={{ width:"100%", height:40, background:"#374151", color:"#fff", border:"none", borderRadius:8, fontSize:13, fontWeight:700, cursor:"pointer" }}>
             📍 좌표 자동설정
           </button>
