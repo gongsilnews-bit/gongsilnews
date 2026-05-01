@@ -254,25 +254,28 @@ function MobileVacancyAdmin() {
               )}
 
               {/* 액션 버튼 */}
-              <div style={{ display: "flex", gap: 8 }}>
+              <div style={{ display: "flex", gap: 6 }}>
                 {row.status === "REJECTED" && (
                   <button onClick={async () => {
                     if (!confirm("이 공실을 재승인 신청하시겠습니까?")) return;
                     const res = await updateVacancyStatus(row.id, "PENDING");
                     if (res.success) fetchVacancies();
-                  }} style={{ flex: 1, height: 38, background: "#8b5cf6", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-                    📋 재승인신청
+                  }} style={{ flex: 1, height: 36, background: "#8b5cf6", color: "#fff", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                    📋 재승인
                   </button>
                 )}
-                <button onClick={() => router.push(`/m/admin/vacancy/write?id=${row.id}`)} style={{ flex: 1, height: 38, background: "#4b5563", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
+                <button onClick={() => window.open(`/m/gongsil?id=${row.id}`, "_blank")} style={{ flex: 1, height: 36, background: "#f0f9ff", color: "#2563eb", border: "1px solid #bfdbfe", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                  👁️ 미리보기
+                </button>
+                <button onClick={() => router.push(`/m/admin/vacancy/write?id=${row.id}`)} style={{ flex: 1, height: 36, background: "#4b5563", color: "#fff", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                   ✏️ 수정
                 </button>
                 <button onClick={async () => {
                   if (!confirm("이 공실을 삭제하시겠습니까?")) return;
                   const res = await deleteVacancy(row.id);
                   if (res.success) fetchVacancies();
-                }} style={{ height: 38, padding: "0 14px", background: "#fff", color: "#9ca3af", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-                  🗑️
+                }} style={{ flex: 1, height: 36, background: "#fff", color: "#ef4444", border: "1px solid #fecaca", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                  🗑️ 삭제
                 </button>
               </div>
             </div>
