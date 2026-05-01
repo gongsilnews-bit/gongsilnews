@@ -252,7 +252,7 @@ export default function MobileHomeClient(props: Props) {
                 </div>
                 <div style={{ padding: "10px" }}>
                   <p style={{ fontSize: 15, fontWeight: 700, color: "#333333", lineHeight: 1.5, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", wordBreak: "keep-all", margin: 0, letterSpacing: "-0.3px" }}>{a.title}</p>
-                  <p style={{ fontSize: 13, color: "#999999", marginTop: 5 }}>{formatDate(a.published_at || a.created_at)}</p>
+                  <p style={{ fontSize: 13, color: "#222222", fontWeight: 500, marginTop: 5 }}>{formatDate(a.published_at || a.created_at)}</p>
                 </div>
               </div>
             ))}
@@ -352,7 +352,7 @@ function NewsSection({ title, href, articles, onArticleClick }: { title: string;
         <div style={{ display: "flex", gap: 12 }}>
           <div style={{ flex: 1 }}>
             <h3 style={{ fontSize: 17, fontWeight: 700, color: "#333333", lineHeight: 1.5, marginBottom: 6, wordBreak: "keep-all", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden", margin: "0 0 6px", letterSpacing: "-0.5px" }}>{main.title}</h3>
-            <p style={{ fontSize: 14, color: "#999999", margin: 0, letterSpacing: "-0.2px" }}>{main.author_name} · {formatDate(main.published_at || main.created_at)}</p>
+            <p style={{ fontSize: 14, color: "#222222", fontWeight: 500, margin: 0, letterSpacing: "-0.2px" }}>{main.author_name} · {formatDate(main.published_at || main.created_at)}</p>
           </div>
           {main.thumbnail_url && (
             <div style={{ width: 104, height: 80, borderRadius: 8, overflow: "hidden", flexShrink: 0, background: "#e5e7eb", position: "relative" }}>

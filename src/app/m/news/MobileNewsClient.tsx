@@ -371,13 +371,13 @@ function MobileNewsClient({ initialTab, initialArticles }: { initialTab: string,
         setSlideAnim("slide-in-right");
         setTimeout(() => setSlideAnim(""), 250);
       }, 200);
-    } else if (dx > 0 && currentIdx > 0) {
-      // → 오른쪽 스와이프 → 이전 탭
-      const prev = CATEGORIES[currentIdx - 1].key;
-      if (prev === "home") {
+    } else if (dx > 0) {
+      // → 오른쪽 스와이프 → 이전 탭 (또는 홈으로 이동)
+      if (currentIdx === 0) {
         setSlideAnim("slide-out-right");
         setTimeout(() => { router.push("/m"); }, 200);
-      } else {
+      } else if (currentIdx > 0) {
+        const prev = CATEGORIES[currentIdx - 1].key;
         setSlideAnim("slide-out-right");
         setTimeout(() => {
           setActiveTab(prev);
@@ -675,7 +675,7 @@ function MobileNewsClient({ initialTab, initialArticles }: { initialTab: string,
 
                   {/* 하단 날짜, 작성자 및 상세보기 버튼 */}
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "13px" }}>
-                    <span style={{ color: "#9ca3af" }}>
+                    <span style={{ color: "#222222", fontWeight: 500 }}>
                       {formatDate(article.published_at || article.created_at)} · {article.author_name || "공실뉴스"}
                       {article.location_name && ` · 📍${article.location_name}`}
                     </span>
@@ -824,10 +824,10 @@ function MobileNewsClient({ initialTab, initialArticles }: { initialTab: string,
                       </div>
                     </div>
                     <div style={{ fontSize: "13px", display: "flex", flexWrap: "wrap", alignItems: "center", gap: "6px" }}>
-                      <span style={{ color: "#9ca3af" }}>
+                      <span style={{ color: "#222222", fontWeight: 500 }}>
                         {formatDate(a.published_at || a.created_at)} · {a.author_name || "공실뉴스"}
                       </span>
-                      {a.location_name && <span style={{ color: "#9ca3af", marginLeft: "auto" }}>📍{a.location_name}</span>}
+                      {a.location_name && <span style={{ color: "#222222", marginLeft: "auto", fontWeight: 500 }}>📍{a.location_name}</span>}
                     </div>
                   </div>
                 </div>
