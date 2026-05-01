@@ -62,6 +62,8 @@ export default function MobileGongsilPage() {
 
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [showShareDropdown, setShowShareDropdown] = useState(false);
+  const [showGalleryFullscreen, setShowGalleryFullscreen] = useState(false);
+  const [galleryIndex, setGalleryIndex] = useState(0);
 
   // 다이렉트 뷰 여부 (URL에 id가 있는 경우 지도를 가리고 상세 정보만 보여줌)
   const [isDirectView, setIsDirectView] = useState(false);
@@ -568,6 +570,27 @@ export default function MobileGongsilPage() {
         {selectedVacancy && (
           <>
             <div ref={detailScrollRef} style={{ flex: 1, overflowY: "auto", paddingBottom: "20px" }}>
+            {/* 이미지 슬라이더 (맨 위로 이동) */}
+            {selectedVacancy.images?.[0] && (
+              <div style={{ position: "relative", width: "100%", height: "220px", backgroundColor: "#e5e7eb", overflow: "hidden" }}>
+                <img 
+                  src={selectedVacancy.images[galleryIndex] || selectedVacancy.images[0]} 
+                  alt="" 
+                  onClick={() => setShowGalleryFullscreen(true)}
+                  style={{ width: "100%", height: "100%", objectFit: "cover", cursor: "pointer" }} 
+                />
+                {selectedVacancy.images.length > 1 && (
+                  <>
+                    <button onClick={(e) => { e.stopPropagation(); setGalleryIndex(Math.max(0, galleryIndex - 1)); }} style={{ position: "absolute", top: "50%", left: 0, transform: "translateY(-50%)", background: "rgba(0,0,0,0.3)", color: "#fff", border: "none", fontSize: "20px", padding: "12px 8px", cursor: "pointer", borderRadius: "0 4px 4px 0" }}>〈</button>
+                    <button onClick={(e) => { e.stopPropagation(); setGalleryIndex(Math.min(selectedVacancy.images.length - 1, galleryIndex + 1)); }} style={{ position: "absolute", top: "50%", right: 0, transform: "translateY(-50%)", background: "rgba(0,0,0,0.3)", color: "#fff", border: "none", fontSize: "20px", padding: "12px 8px", cursor: "pointer", borderRadius: "4px 0 0 4px" }}>〉</button>
+                    <div style={{ position: "absolute", bottom: "12px", right: "12px", background: "rgba(0,0,0,0.6)", color: "#fff", fontSize: "11px", fontWeight: 600, padding: "4px 10px", borderRadius: "20px" }}>
+                      {galleryIndex + 1} / {selectedVacancy.images.length}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
             {/* 상단 핵심 정보 영역 */}
             <div style={{ padding: "20px 16px", background: "#fff" }}>
               {/* Badges */}
@@ -618,13 +641,6 @@ export default function MobileGongsilPage() {
                 </div>
               )}
             </div>
-
-            {/* 이미지 슬라이더 */}
-            {selectedVacancy.images?.[0] && (
-              <div style={{ width: "100%", aspectRatio: "4/3", backgroundColor: "#e5e7eb", overflow: "hidden" }}>
-                <img src={selectedVacancy.images[0]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-              </div>
-            )}
 
             {/* 탭 네비게이션 */}
             <div style={{ display: "flex", borderBottom: "1px solid #111827", marginTop: "10px" }}>
@@ -806,6 +822,28 @@ export default function MobileGongsilPage() {
         )}
       </div>
     </div>
+      {/* 갤러리 풀스크린 모달 */}
+      {showGalleryFullscreen && selectedVacancy?.images && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "#000", zIndex: 10000, display: "flex", flexDirection: "column" }}>
+          <div style={{ padding: "16px", display: "flex", justifyContent: "space-between", alignItems: "center", color: "#fff" }}>
+            <div style={{ fontSize: "15px", fontWeight: 600 }}>{galleryIndex + 1} / {selectedVacancy.images.length}</div>
+            <button onClick={() => setShowGalleryFullscreen(false)} style={{ background: "none", border: "none", color: "#fff", fontSize: "24px", cursor: "pointer", padding: "4px" }}>✕</button>
+          </div>
+          <div style={{ flex: 1, position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <img 
+              src={selectedVacancy.images[galleryIndex]} 
+              style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} 
+              alt="갤러리 확대" 
+            />
+            {selectedVacancy.images.length > 1 && (
+              <>
+                <button onClick={() => setGalleryIndex(Math.max(0, galleryIndex - 1))} style={{ position: "absolute", top: "50%", left: 0, transform: "translateY(-50%)", background: "none", color: "#fff", border: "none", fontSize: "36px", padding: "20px", cursor: "pointer" }}>〈</button>
+                <button onClick={() => setGalleryIndex(Math.min(selectedVacancy.images.length - 1, galleryIndex + 1))} style={{ position: "absolute", top: "50%", right: 0, transform: "translateY(-50%)", background: "none", color: "#fff", border: "none", fontSize: "36px", padding: "20px", cursor: "pointer" }}>〉</button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
