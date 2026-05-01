@@ -658,11 +658,8 @@ function MobileNewsClient({ initialTab, initialArticles }: { initialTab: string,
                     transition: "background 0.15s ease",
                   }}
                 >
-                  {/* 상단 카테고리 & NEWS 태그 */}
+                  {/* 상단 NEWS 태그 (카테고리 제거) */}
                   <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px" }}>
-                    <span style={{ fontSize: "12px", fontWeight: 700, color: "#f97316" }}>
-                      {article.section1 || "뉴스"} &gt; {article.section2 || "전체"}
-                    </span>
                     <span style={{ fontSize: "11px", fontWeight: 800, color: "#dc2626" }}>NEWS</span>
                   </div>
 
@@ -817,17 +814,16 @@ function MobileNewsClient({ initialTab, initialArticles }: { initialTab: string,
                   )}
 
                   {/* 오른쪽 텍스트 컨텐츠 */}
-                  <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, justifyContent: "center" }}>
-                    <div style={{ fontSize: 18, fontWeight: 800, color: "#111", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", wordBreak: "keep-all", marginBottom: 6, lineHeight: 1.35 }}>
-                      {a.title}
+                  <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, justifyContent: "space-between" }}>
+                    <div>
+                      <div style={{ fontSize: "16px", fontWeight: 800, color: "#111", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", wordBreak: "keep-all", marginBottom: "4px", lineHeight: 1.4 }}>
+                        {a.title}
+                      </div>
+                      <div style={{ fontSize: "14px", color: "#666", display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden", marginBottom: "6px", lineHeight: 1.4 }}>
+                        {a.subtitle || stripHtml(a.content || "").slice(0, 80)}
+                      </div>
                     </div>
-                    <div style={{ fontSize: 15, color: "#666", display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden", marginBottom: 8, lineHeight: 1.5 }}>
-                      {a.subtitle || stripHtml(a.content || "").slice(0, 80)}
-                    </div>
-                    <div style={{ fontSize: 14, display: "flex", flexWrap: "wrap", alignItems: "center", gap: "6px" }}>
-                      <span style={{ color: "#3b82f6", fontWeight: 700 }}>
-                        [{a.section1 || "뉴스"} &gt; {a.section2 || "전체"}]
-                      </span>
+                    <div style={{ fontSize: "13px", display: "flex", flexWrap: "wrap", alignItems: "center", gap: "6px" }}>
                       <span style={{ color: "#9ca3af" }}>
                         {formatDate(a.published_at || a.created_at)} · {a.author_name || "공실뉴스"}
                       </span>

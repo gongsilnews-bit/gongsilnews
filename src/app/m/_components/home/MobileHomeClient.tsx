@@ -59,6 +59,27 @@ export default function MobileHomeClient(props: Props) {
   const [heroIdx, setHeroIdx] = useState(0);
   const hero = headlineArticles[heroIdx] || null;
 
+  // 화면 전환 애니메이션 상태
+  const [transitionRect, setTransitionRect] = useState<DOMRect | null>(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+
+  const handleArticleClick = (id: string, e: React.MouseEvent) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setTransitionRect(rect);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setIsTransitioning(true);
+      });
+    });
+    setTimeout(() => {
+      router.push(`/m/news/${id}`);
+      setTimeout(() => {
+        setIsTransitioning(false);
+        setTransitionRect(null);
+      }, 800);
+    }, 350);
+  };
+
   // ── 헤드라인 자동 슬라이드 (3초마다) ──
   useEffect(() => {
     if (headlineArticles.length <= 1) return;
@@ -171,7 +192,7 @@ export default function MobileHomeClient(props: Props) {
               setHeroIdx((prev) => Math.max(prev - 1, 0));
             }
           }}
-          onClick={() => router.push(`/m/news/${hero.article_no || hero.id}`)}
+          onClick={(e) => handleArticleClick(hero.article_no || hero.id, e)}
         >
           {hero.thumbnail_url
             ? <img src={hero.thumbnail_url} alt={hero.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
@@ -206,7 +227,7 @@ export default function MobileHomeClient(props: Props) {
 
 
       {/* ③ 부동산·주식·재테크 */}
-      <NewsSection title="부동산·주식·재테크" href="/m/news?tab=부동산·주식·재테크" articles={financeArticles} />
+      <NewsSection title="부동산·주식·재테크" href="/m/news?tab=부동산·주식·재테크" articles={financeArticles} onArticleClick={handleArticleClick} />
 
       {/* ④ 우리동네부동산 (PC VideoGrid 대응) */}
       {mapArticles.length > 0 && (
@@ -217,7 +238,7 @@ export default function MobileHomeClient(props: Props) {
           </div>
           <div className="no-scrollbar" style={{ display: "flex", gap: 12, padding: "0 16px 16px", overflowX: "auto" }} onTouchStart={(e) => e.stopPropagation()} onTouchEnd={(e) => e.stopPropagation()}>
             {mapArticles.slice(0, 5).map((a: any) => (
-              <div key={a.id} className="tap" onClick={() => router.push(`/m/news/${a.article_no || a.id}`)}
+              <div key={a.id} className="tap" onClick={(e) => handleArticleClick(a.article_no || a.id, e)}
                 style={{ flexShrink: 0, width: "calc(50vw - 22px)", maxWidth: 200, borderRadius: 10, overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.07)", border: "1px solid #f3f4f6", background: "#fff", cursor: "pointer" }}>
                 <div style={{ width: "100%", aspectRatio: "16/9", overflow: "hidden", background: "#e5e7eb", position: "relative" }}>
                   {a.thumbnail_url
@@ -240,16 +261,16 @@ export default function MobileHomeClient(props: Props) {
       )}
 
       {/* ⑤ 정치·경제·사회 */}
-      <NewsSection title="정치·경제·사회" href="/m/news" articles={politicsArticles} />
+      <NewsSection title="정치·경제·사회" href="/m/news" articles={politicsArticles} onArticleClick={handleArticleClick} />
 
       {/* ⑥ 세무·법률 */}
-      <NewsSection title="세무·법률" href="/m/news" articles={lawArticles} />
+      <NewsSection title="세무·법률" href="/m/news" articles={lawArticles} onArticleClick={handleArticleClick} />
 
       {/* ⑦ 여행·건강·생활 */}
-      <NewsSection title="여행·건강·생활" href="/m/news" articles={lifeArticles} />
+      <NewsSection title="여행·건강·생활" href="/m/news" articles={lifeArticles} onArticleClick={handleArticleClick} />
 
       {/* ⑧ 기타 */}
-      <NewsSection title="기타" href="/m/news" articles={etcArticles} />
+      <NewsSection title="기타" href="/m/news" articles={etcArticles} onArticleClick={handleArticleClick} />
 
       {/* ⑨ 부동산특강 (PC SpecialLectureBanner 대응) */}
       {lectures.length > 0 && (
@@ -278,6 +299,24 @@ export default function MobileHomeClient(props: Props) {
           </div>
         </div>
       )}
+      {/* 기사 클릭 시 화면 팽창(Scale-up) 오버레이 애니메이션 */}
+      {transitionRect && (
+        <div 
+          style={{
+            position: "fixed",
+            zIndex: 999999,
+            backgroundColor: "#f3f4f6", // 사용자 요청 바탕색(연한 회색)
+            top: isTransitioning ? 0 : "calc(50% - 50px)",
+            left: isTransitioning ? 0 : "calc(50% - 50px)",
+            width: isTransitioning ? "100vw" : "100px",
+            height: isTransitioning ? "100vh" : "100px",
+            borderRadius: isTransitioning ? "0px" : "24px",
+            transition: "all 0.35s cubic-bezier(0.25, 1, 0.5, 1)",
+            pointerEvents: "none",
+            boxShadow: isTransitioning ? "none" : "0 10px 30px rgba(0,0,0,0.15)",
+          }}
+        />
+      )}
       <style>{`
         .no-scrollbar::-webkit-scrollbar{display:none;}
         .no-scrollbar{-ms-overflow-style:none;scrollbar-width:none;}
@@ -296,7 +335,7 @@ export default function MobileHomeClient(props: Props) {
   );
 }
 
-function NewsSection({ title, href, articles }: { title: string; href: string; articles: any[] }) {
+function NewsSection({ title, href, articles, onArticleClick }: { title: string; href: string; articles: any[]; onArticleClick?: (id: string, e: React.MouseEvent) => void }) {
   const router = useRouter();
   if (articles.length === 0) return null;
   const [main, ...rest] = articles;
@@ -308,7 +347,7 @@ function NewsSection({ title, href, articles }: { title: string; href: string; a
         <Link href={href} style={{ fontSize: 15, color: "#999999", textDecoration: "none", letterSpacing: "-0.2px" }}>더보기 ›</Link>
       </div>
       {/* 메인 기사 (큰 썸네일) */}
-      <div className="tap art-row" onClick={() => router.push(`/m/news/${main.article_no || main.id}`)}
+      <div className="tap art-row" onClick={(e) => onArticleClick ? onArticleClick(main.article_no || main.id, e) : router.push(`/m/news/${main.article_no || main.id}`)}
         style={{ padding: "14px 16px", cursor: "pointer", borderBottom: "1px solid #f0f0f0" }}>
         <div style={{ display: "flex", gap: 12 }}>
           <div style={{ flex: 1 }}>
@@ -324,7 +363,7 @@ function NewsSection({ title, href, articles }: { title: string; href: string; a
       </div>
       {/* 나머지 기사 (번호 리스트) */}
       {rest.slice(0, 3).map((a: any, i: number) => (
-        <div key={a.id} className="tap art-row" onClick={() => router.push(`/m/news/${a.article_no || a.id}`)}>
+        <div key={a.id} className="tap art-row" onClick={(e) => onArticleClick ? onArticleClick(a.article_no || a.id, e) : router.push(`/m/news/${a.article_no || a.id}`)}>
           <span style={{ flexShrink: 0, width: 20, fontSize: 15, fontWeight: 800, color: i === 0 ? "#f97316" : "#d1d5db", alignSelf: "center" }}>{i + 1}</span>
           <p style={{ fontSize: 16, fontWeight: 600, color: "#333333", lineHeight: 1.5, flex: 1, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", wordBreak: "keep-all", margin: 0, letterSpacing: "-0.3px" }}>{a.title}</p>
           {a.thumbnail_url && (
