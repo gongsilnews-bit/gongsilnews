@@ -234,9 +234,19 @@ export default function HomepageViewPage() {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 16 }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 15, color: "#555", marginBottom: 6, fontWeight: 600 }}>{vacancy.dong} {vacancy.building_name || "단독/다가구"}</div>
-                  <div style={{ fontSize: 32, fontWeight: 900, color: "#111", letterSpacing: "-1px", lineHeight: 1.1 }}>
+                  <div style={{ fontSize: 32, fontWeight: 900, color: "#111", letterSpacing: "-1px", lineHeight: 1.1, marginBottom: 12 }}>
                     {vacancy.trade_type} {getPriceText(vacancy)}
                   </div>
+                  {/* Themes */}
+                  {vacancy.themes && vacancy.themes.length > 0 && (
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                      {vacancy.themes.map((theme: string, idx: number) => (
+                        <span key={idx} style={{ background: "#f8fafc", color: "#3b82f6", fontSize: 13, padding: "4px 12px", borderRadius: 20, fontWeight: 700, border: "1px solid #bfdbfe" }}>
+                          {theme.startsWith('#') ? theme : `# ${theme}`}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div style={{ display: "flex", gap: 8, paddingBottom: 4 }}>
                   <button style={{ width: 44, height: 44, borderRadius: 8, border: "1px solid #e2e8f0", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#64748b", transition: "0.2s" }} onMouseEnter={e=>e.currentTarget.style.background="#f1f5f9"} onMouseLeave={e=>e.currentTarget.style.background="#fff"} title="찜하기">

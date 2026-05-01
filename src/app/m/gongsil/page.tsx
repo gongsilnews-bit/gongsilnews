@@ -7,6 +7,25 @@ import HomeHeader from "../_components/HomeHeader";
 
 const KAKAO_APP_KEY = process.env.NEXT_PUBLIC_KAKAO_APP_KEY || "435d3602201a49ea712e5f5a36fe6efc";
 
+// 옵션 아이콘 헬퍼
+const OptionIcon = ({ name }: { name: string }) => {
+  const sz = 24;
+  const str = 1.8;
+  switch (name) {
+    case "에어컨": return <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={str} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="6" width="18" height="8" rx="2"/><path d="M7 14v4"/><path d="M17 14v4"/><path d="M12 14v4"/></svg>;
+    case "침대": return <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={str} strokeLinecap="round" strokeLinejoin="round"><path d="M2 4v16"/><path d="M2 8h18a2 2 0 0 1 2 2v10"/><path d="M2 17h20"/><path d="M6 8v9"/></svg>;
+    case "도어락": case "전자도어락": return <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={str} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>;
+    case "전자렌지": case "전자레인지": return <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={str} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M17 10h.01"/><path d="M17 14h.01"/><path d="M7 12h5"/></svg>;
+    case "비데": return <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={str} strokeLinecap="round" strokeLinejoin="round"><path d="M9 22H15C20 22 22 20 22 15V9C22 4 20 2 15 2H9C4 2 2 4 2 9V15C2 20 4 22 9 22Z"/><path d="M7 12.5L10 15.5L17 8.5"/></svg>;
+    case "TV": return <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={str} strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"/><polyline points="17 2 12 7 7 2"/></svg>;
+    case "옷장": return <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={str} strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M12 2v20"/><path d="M8 12h.01"/><path d="M16 12h.01"/></svg>;
+    case "세탁기": return <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={str} strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><circle cx="12" cy="13" r="5"/><path d="M8 6h.01"/><path d="M10 6h.01"/></svg>;
+    case "냉장고": return <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={str} strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M5 10h14"/><path d="M9 14v2"/><path d="M9 5v2"/></svg>;
+    case "가스레인지": case "인덕션": return <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={str} strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="6" width="16" height="14" rx="2"/><path d="M4 10h16"/><circle cx="8" cy="15" r="2"/><circle cx="16" cy="15" r="2"/></svg>;
+    default: return <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={str} strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>;
+  }
+};
+
 function formatPrice(v: any): string {
   const dep = v.deposit || 0;
   const rent = v.monthly_rent || 0;
@@ -545,6 +564,17 @@ export default function MobileGongsilPage() {
               <h1 style={{ fontSize: "22px", fontWeight: 800, color: "#111827", marginBottom: "8px", lineHeight: 1.3 }}>
                 {selectedVacancy.building_name || [selectedVacancy.dong, selectedVacancy.sigungu].filter(Boolean).join(" ")}
               </h1>
+
+              {/* Themes */}
+              {selectedVacancy.themes && selectedVacancy.themes.length > 0 && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "16px" }}>
+                  {selectedVacancy.themes.map((theme: string, idx: number) => (
+                    <span key={idx} style={{ background: "#f8fafc", color: "#3b82f6", fontSize: "13px", padding: "4px 10px", borderRadius: "16px", fontWeight: 700, border: "1px solid #bfdbfe" }}>
+                      {theme.startsWith('#') ? theme : `# ${theme}`}
+                    </span>
+                  ))}
+                </div>
+              )}
               
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
                 <p style={{ fontSize: "30px", fontWeight: 900, color: "#1a73e8" }}>
@@ -608,15 +638,56 @@ export default function MobileGongsilPage() {
                       <div style={{ flex: 1, fontSize: "16px", color: "#111827" }}>{val}</div>
                     </div>
                   ))}
+                  {/* 옵션 */}
+                  {selectedVacancy.options && selectedVacancy.options.length > 0 && (
+                    <div style={{ paddingTop: "24px" }}>
+                      <div style={{ fontSize: "16px", fontWeight: 800, color: "#111827", marginBottom: "16px" }}>옵션</div>
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px 8px" }}>
+                        {selectedVacancy.options.map((opt: string) => (
+                          <div key={opt} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}>
+                            <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: "#f3f4f6", display: "flex", alignItems: "center", justifyContent: "center", color: "#4b5563" }}>
+                              <OptionIcon name={opt} />
+                            </div>
+                            <span style={{ fontSize: "13px", color: "#374151", fontWeight: 600 }}>{opt}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 주변환경 (인프라) */}
+                  {selectedVacancy.infrastructure && Object.keys(selectedVacancy.infrastructure).length > 0 && (
+                    <div style={{ paddingTop: "24px", marginTop: "24px", borderTop: "1px dashed #e5e7eb" }}>
+                      <div style={{ fontSize: "16px", fontWeight: 800, color: "#111827", marginBottom: "16px" }}>주변환경</div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                        {Object.entries(selectedVacancy.infrastructure).map(([category, items]) => {
+                          const itemList = Array.isArray(items) ? items : [];
+                          if (itemList.length === 0) return null;
+                          return (
+                            <div key={category} style={{ display: "flex", gap: "12px" }}>
+                              <div style={{ width: "80px", fontSize: "14px", fontWeight: 700, color: "#6b7280", paddingTop: "2px" }}>{category}</div>
+                              <div style={{ flex: 1, display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                                {itemList.map((item: any) => (
+                                  <span key={item} style={{ background: "#f3f4f6", color: "#374151", fontSize: "13px", padding: "4px 10px", borderRadius: "12px" }}>{String(item)}</span>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
                   {/* 설명 */}
                   {selectedVacancy.description && (
-                    <div style={{ padding: "20px 0 0" }}>
-                      <p style={{ fontSize: "16px", color: "#374151", lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{selectedVacancy.description}</p>
+                    <div style={{ padding: "24px 0 0", marginTop: "24px", borderTop: "1px dashed #e5e7eb" }}>
+                      <div style={{ fontSize: "16px", fontWeight: 800, color: "#111827", marginBottom: "12px" }}>상세설명</div>
+                      <p style={{ fontSize: "15px", color: "#374151", lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{selectedVacancy.description}</p>
                     </div>
                   )}
 
                   {/* 위치정보 및 로드뷰 */}
-                  <div style={{ paddingTop: "24px" }}>
+                  <div style={{ paddingTop: "24px", marginTop: "24px", borderTop: "1px dashed #e5e7eb" }}>
                     <div style={{ fontSize: "16px", fontWeight: 800, color: "#111827", marginBottom: "12px" }}>위치정보</div>
                     <div ref={itemMapRef} style={{ width: "100%", height: "200px", borderRadius: "8px", background: "#f3f4f6", marginBottom: "20px" }}></div>
                     <div style={{ fontSize: "16px", fontWeight: 800, color: "#111827", marginBottom: "12px" }}>로드뷰</div>
