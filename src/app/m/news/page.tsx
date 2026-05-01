@@ -7,9 +7,13 @@ export const revalidate = 60; // 1분 단위 백그라운드 캐싱 (ISR)
 export default async function MobileNewsPage({
   searchParams,
 }: {
-  searchParams: { tab?: string };
+  searchParams: { tab?: string; author_name?: string; keyword?: string };
 }) {
-  const tab = searchParams.tab || "all";
+  // Promise resolve required for Next.js 15
+  const resolvedParams = await Promise.resolve(searchParams);
+  const tab = resolvedParams.tab || "all";
+  const authorMatch = resolvedParams.author_name;
+  const keywordMatch = resolvedParams.keyword;
   
   const filters: any = { status: "APPROVED", limit: 30 };
   if (tab !== "all" && tab !== "local") {
@@ -20,9 +24,16 @@ export default async function MobileNewsPage({
     }
   }
 
-  // 서버에서 데이터를 미리 Fetching (RSC의 장점)
+  if (authorMatch) {
+    filters.author_name = authorMatch;
+  }
+  if (keywordMatch) {
+    filters.keyword = keywordMatch;
+  }
+
+  // 서버에서 데이터 미리 Fetching (RSC의 장점)
   const res = await getArticles(filters);
   const initialArticles = res.success ? res.data || [] : [];
 
-  return <MobileNewsClient initialTab={tab} initialArticles={initialArticles} />;
+  return <MobileNewsClient initialTab={tab} initialArticles={initialArticles} initialAuthorName={authorMatch} initialKeyword={keywordMatch} />;
 }

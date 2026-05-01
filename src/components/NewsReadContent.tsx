@@ -623,7 +623,7 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
             {article.article_keywords && article.article_keywords.length > 0 && (
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, margin: "24px 0", padding: "16px 0", borderTop: "1px solid #eee" }}>
                 {article.article_keywords.map((kw: any, i: number) => (
-                  <Link href={`/news_all?keyword=${encodeURIComponent(kw.keyword)}`} key={i} style={{ padding: "6px 14px", borderRadius: 20, background: "#fff", color: "#555", fontSize: 13, fontWeight: 500, border: "1px solid #ccc", textDecoration: "none", transition: "all 0.2s" }} onMouseEnter={e => e.currentTarget.style.background = '#f8f9fa'} onMouseLeave={e => e.currentTarget.style.background = '#fff'}>
+                  <Link href={isMobile ? `/m/news?keyword=${encodeURIComponent(kw.keyword)}` : `/news_all?keyword=${encodeURIComponent(kw.keyword)}`} key={i} style={{ padding: "6px 14px", borderRadius: 20, background: "#fff", color: "#555", fontSize: 13, fontWeight: 500, border: "1px solid #ccc", textDecoration: "none", transition: "all 0.2s" }} onMouseEnter={e => e.currentTarget.style.background = '#f8f9fa'} onMouseLeave={e => e.currentTarget.style.background = '#fff'}>
                     #{kw.keyword}
                   </Link>
                 ))}
@@ -636,7 +636,7 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
                     <span style={{ fontWeight: 800, color: "#111", fontSize: 16 }}>{article.author_name || "공실뉴스"}</span>
                     <span style={{ color: "#666", fontSize: 14 }}>{authorRole === "ADMIN" ? "기자" : "객원기자"}</span>
-                    <Link href={`/news_all?author_name=${encodeURIComponent(article.author_name || "공실뉴스")}`} style={{ background: "#e11d48", color: "#fff", fontSize: 11, fontWeight: "bold", padding: "4px 8px", borderRadius: 4, textDecoration: "none" }}>다른기사 보기</Link>
+                    <Link href={isMobile ? `/m/news?author_name=${encodeURIComponent(article.author_name || "공실뉴스")}` : `/news_all?author_name=${encodeURIComponent(article.author_name || "공실뉴스")}`} style={{ background: "#e11d48", color: "#fff", fontSize: 11, fontWeight: "bold", padding: "4px 8px", borderRadius: 4, textDecoration: "none" }}>다른기사 보기</Link>
                   </div>
                   {authorEmail && <div style={{ color: "#888", fontSize: 13 }}>{authorEmail}</div>}
                 </div>

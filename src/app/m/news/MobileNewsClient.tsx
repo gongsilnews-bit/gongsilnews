@@ -56,7 +56,7 @@ const extractYoutubeId = (url?: string, html?: string): string | null => {
   return null;
 };
 
-function MobileNewsClient({ initialTab, initialArticles }: { initialTab: string, initialArticles: any[] }) {
+function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, initialKeyword }: { initialTab: string, initialArticles: any[], initialAuthorName?: string, initialKeyword?: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
@@ -115,6 +115,17 @@ function MobileNewsClient({ initialTab, initialArticles }: { initialTab: string,
           filters.section2 = activeTab;
         }
       }
+      
+      const authorMatch = searchParams.get("author_name");
+      if (authorMatch) {
+        filters.author_name = authorMatch;
+      }
+      
+      const keywordMatch = searchParams.get("keyword");
+      if (keywordMatch) {
+        filters.keyword = keywordMatch;
+      }
+      
       const res = await getArticles(filters);
       if (res.success && res.data) {
         setArticles(res.data);
@@ -126,8 +137,12 @@ function MobileNewsClient({ initialTab, initialArticles }: { initialTab: string,
       loadArticles();
     } else if (activeTab === initialTab && articles.length === 0) {
       loadArticles();
+    } else if (searchParams.get("author_name") !== initialAuthorName) {
+      loadArticles();
+    } else if (searchParams.get("keyword") !== initialKeyword) {
+      loadArticles();
     }
-  }, [activeTab]);
+  }, [activeTab, searchParams, initialTab, articles.length, initialAuthorName, initialKeyword]);
 
   // 우리동네뉴스 (lat/lng 있는 기사) 로드
   useEffect(() => {
