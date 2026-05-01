@@ -40,6 +40,7 @@ function MobileVacancyWrite() {
   // 면적/층
   const [exclusiveM2, setExclusiveM2] = useState("");
   const [supplyM2, setSupplyM2] = useState("");
+  const [areaUnit, setAreaUnit] = useState<"m2"|"py">("m2");
   const [currentFloor, setCurrentFloor] = useState("");
   const [totalFloor, setTotalFloor] = useState("");
   const [roomCount, setRoomCount] = useState("1");
@@ -312,14 +313,34 @@ function MobileVacancyWrite() {
 
         {/* 3. 면적/층수 */}
         <div style={{ background:"#fff", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.05)" }}>
-          <div style={{ fontSize:16, fontWeight:800, color:"#111", marginBottom:14 }}>📐 면적·층수</div>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
+            <div style={{ fontSize:16, fontWeight:800, color:"#111" }}>📐 면적·층수</div>
+            <div style={{ display:"flex", borderRadius:8, overflow:"hidden", border:"1px solid #d1d5db" }}>
+              <button type="button" onClick={()=>setAreaUnit("m2")} style={{ padding:"6px 14px", fontSize:12, fontWeight:700, border:"none", cursor:"pointer", background: areaUnit==="m2"?"#2563eb":"#fff", color: areaUnit==="m2"?"#fff":"#6b7280" }}>m²</button>
+              <button type="button" onClick={()=>setAreaUnit("py")} style={{ padding:"6px 14px", fontSize:12, fontWeight:700, border:"none", cursor:"pointer", background: areaUnit==="py"?"#2563eb":"#fff", color: areaUnit==="py"?"#fff":"#6b7280" }}>평</button>
+            </div>
+          </div>
           <div style={{ display:"flex", gap:10, marginBottom:4 }}>
-            <div style={{flex:1}}><label style={labelStyle}>전용면적(m²)</label><input type="number" value={exclusiveM2} onChange={e=>setExclusiveM2(e.target.value)} placeholder="59" style={inputStyle}/></div>
-            <div style={{flex:1}}><label style={labelStyle}>공급면적(m²)</label><input type="number" value={supplyM2} onChange={e=>setSupplyM2(e.target.value)} placeholder="84" style={inputStyle}/></div>
+            <div style={{flex:1}}>
+              <label style={labelStyle}>전용면적({areaUnit==="m2"?"m²":"평"})</label>
+              {areaUnit==="m2" ? (
+                <input type="number" value={exclusiveM2} onChange={e=>setExclusiveM2(e.target.value)} placeholder="59" style={inputStyle}/>
+              ) : (
+                <input type="number" value={exclusiveM2 ? (parseFloat(exclusiveM2)*0.3025).toFixed(1) : ""} onChange={e=>{ const py=e.target.value; setExclusiveM2(py ? (parseFloat(py)/0.3025).toFixed(1) : ""); }} placeholder="17.8" style={inputStyle}/>
+              )}
+            </div>
+            <div style={{flex:1}}>
+              <label style={labelStyle}>공급면적({areaUnit==="m2"?"m²":"평"})</label>
+              {areaUnit==="m2" ? (
+                <input type="number" value={supplyM2} onChange={e=>setSupplyM2(e.target.value)} placeholder="84" style={inputStyle}/>
+              ) : (
+                <input type="number" value={supplyM2 ? (parseFloat(supplyM2)*0.3025).toFixed(1) : ""} onChange={e=>{ const py=e.target.value; setSupplyM2(py ? (parseFloat(py)/0.3025).toFixed(1) : ""); }} placeholder="25.4" style={inputStyle}/>
+              )}
+            </div>
           </div>
           <div style={{ display:"flex", gap:10, marginBottom:10, fontSize:12, color:"#f97316", fontWeight:600, padding:"0 2px" }}>
-            <div style={{flex:1}}>{exclusiveM2 ? `≈ ${(parseFloat(exclusiveM2)*0.3025).toFixed(1)}평` : ""}</div>
-            <div style={{flex:1}}>{supplyM2 ? `≈ ${(parseFloat(supplyM2)*0.3025).toFixed(1)}평` : ""}</div>
+            <div style={{flex:1}}>{exclusiveM2 ? (areaUnit==="m2" ? `≈ ${(parseFloat(exclusiveM2)*0.3025).toFixed(1)}평` : `≈ ${parseFloat(exclusiveM2).toFixed(1)}m²`) : ""}</div>
+            <div style={{flex:1}}>{supplyM2 ? (areaUnit==="m2" ? `≈ ${(parseFloat(supplyM2)*0.3025).toFixed(1)}평` : `≈ ${parseFloat(supplyM2).toFixed(1)}m²`) : ""}</div>
           </div>
           <div style={{ display:"flex", gap:10, marginBottom:10 }}>
             <div style={{flex:1}}><label style={labelStyle}>해당층</label><input type="text" value={currentFloor} onChange={e=>setCurrentFloor(e.target.value)} placeholder="3" style={inputStyle}/></div>
