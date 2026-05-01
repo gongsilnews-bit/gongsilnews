@@ -104,6 +104,9 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
   const [authorEmail, setAuthorEmail] = useState<string | null>(null);
   const [authorVacancies, setAuthorVacancies] = useState<any[]>([]);
 
+  // 현재 열람자 권한 State
+  const [viewerRole, setViewerRole] = useState<string | null>(null);
+
   // 사용자 정보 가져오기
   useEffect(() => {
     import("@/utils/supabase/client").then(({ createClient }) => {
@@ -113,6 +116,11 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
           setCurrentUserId(data.user.id);
           // 필요하면 user_metadata 에서 이름 가져오기
           setCurrentUserName(data.user.user_metadata?.name || data.user.email?.split("@")[0] || "익명");
+
+          // 회원 권한(role) 가져오기
+          supabase.from("members").select("role").eq("id", data.user.id).single().then(res => {
+            if (res.data) setViewerRole(res.data.role);
+          });
         }
       });
     });
@@ -884,10 +892,17 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
           {/* 사이드바 */}
           <div className="news-sidebar">
             {/* 1. 추천 공실 - 부동산회원이면 등록한 공실 전체 노출 */}
-            {authorRole === "REALTOR" && authorVacancies.length > 0 && (
-              <div className="sb-widget">
-                <div className="sb-title">추천 공실</div>
-                {authorVacancies.map((prop, i) => {
+            {(() => {
+              const visibleVacancies = authorVacancies.filter(prop => {
+                if (prop.exposure_type === '부동산노출' && viewerRole !== 'REALTOR' && viewerRole !== 'ADMIN') return false;
+                return true;
+              });
+              if (authorRole !== "REALTOR" || visibleVacancies.length === 0) return null;
+              
+              return (
+                <div className="sb-widget">
+                  <div className="sb-title">추천 공실</div>
+                  {visibleVacancies.map((prop, i) => {
                   const title = prop.building_name || prop.detail_addr || "이름없는 공실";
                   
                   // 가격 포매팅 로직 개선 (원 단위 -> 억/천/백 혼합)
@@ -964,7 +979,8 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
                   );
                 })}
               </div>
-            )}
+              );
+            })()}
 
             {/* 2. 많이 본 뉴스 */}
             <div className="sb-widget">
