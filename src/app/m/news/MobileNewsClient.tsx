@@ -860,8 +860,14 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                       urlObj.pathname = '/m/gongsil';
                       url = urlObj.toString();
                     }
-                  } catch (err) {}
-                  window.open(url, '_blank');
+                    if (urlObj.origin === window.location.origin) {
+                      router.push(urlObj.pathname + urlObj.search + urlObj.hash);
+                    } else {
+                      window.location.href = url;
+                    }
+                  } catch (err) {
+                    window.location.href = url;
+                  }
                 }
               }}
             />

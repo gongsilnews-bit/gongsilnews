@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 
 import { incrementArticleView } from "@/app/actions/article";
@@ -28,6 +28,7 @@ const FONT_SIZES = [
 
 export default function NewsReadContent({ article, popularArticles }: NewsReadContentProps) {
   const pathname = usePathname() || "";
+  const router = useRouter();
   const isMobile = pathname.startsWith("/m");
   const basePath = isMobile ? "/m" : "";
 
@@ -629,10 +630,17 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
                         const urlObj = new URL(url);
                         if (isMobile && urlObj.pathname === '/gongsil' && urlObj.searchParams.has('id')) {
                           urlObj.pathname = '/m/gongsil';
-                          url = urlObj.toString();
+                          url = urlObj.pathname + urlObj.search;
                         }
-                      } catch (err) {}
-                      window.open(url, '_blank');
+                        
+                        if (urlObj.origin === window.location.origin) {
+                          router.push(urlObj.pathname + urlObj.search + urlObj.hash);
+                        } else {
+                          window.location.href = url;
+                        }
+                      } catch (err) {
+                        window.location.href = url;
+                      }
                     }
                   }}
                 />
@@ -882,7 +890,7 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
                   const createdDate = prop.created_at ? new Date(prop.created_at).toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" }).replace(/\.$/, "") : "";
 
                   return (
-                    <Link href={isMobile ? `/m/gongsil?id=${prop.id}` : `/homepage/${prop.id}`} target="_blank" key={prop.id || i} style={{ textDecoration: "none", color: "inherit", display: "block" }}>
+                    <Link href={isMobile ? `/m/gongsil?id=${prop.id}` : `/homepage/${prop.id}`} target={isMobile ? undefined : "_blank"} key={prop.id || i} style={{ textDecoration: "none", color: "inherit", display: "block" }}>
                       <div className="prop-item" style={{ padding: "16px 0", borderBottom: "1px solid #f0f0f0", display: "flex", gap: 12, cursor: "pointer", background: "#fff", transition: "background 0.15s" }} onMouseEnter={e => e.currentTarget.style.background = '#f9fafb'} onMouseLeave={e => e.currentTarget.style.background = '#fff'}>
                         <div className="prop-info" style={{ minWidth: 0, overflow: "hidden", flex: 1, display: "flex", flexDirection: "column" }}>
                           <div className="prop-title" style={{ fontSize: 16, fontWeight: 700, color: "#111", marginBottom: 4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{title}</div>
