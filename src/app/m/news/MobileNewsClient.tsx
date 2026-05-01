@@ -89,7 +89,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
 
   useEffect(() => {
     const handlePopState = (e: PopStateEvent) => {
-      if (selectedVacancyId) {
+      if (selectedVacancyId && e.state?.panel !== 'vacancy-overlay') {
         setSelectedVacancyId(null);
       }
     };

@@ -58,7 +58,7 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
 
   useEffect(() => {
     const handlePopState = (e: PopStateEvent) => {
-      if (selectedVacancyId) {
+      if (selectedVacancyId && e.state?.panel !== 'vacancy-overlay') {
         setSelectedVacancyId(null);
       }
     };

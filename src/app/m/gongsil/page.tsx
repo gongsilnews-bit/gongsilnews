@@ -210,6 +210,10 @@ export default function MobileGongsilPage() {
         setDetailTab("realtor");
         setTimeout(() => { if (detailScrollRef.current) detailScrollRef.current.scrollTo(0, 0); }, 50);
       } else if (selectedVacancy) {
+        if (isEmbedded) {
+          window.parent.postMessage({ type: 'CLOSE_VACANCY_OVERLAY' }, '*');
+          return;
+        }
         vacancyStackRef.current = [];
         setSelectedVacancy(null);
         setIsDirectView(false);
@@ -221,7 +225,7 @@ export default function MobileGongsilPage() {
     };
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
-  }, [selectedVacancy, selectedCluster]);
+  }, [selectedVacancy, selectedCluster, isEmbedded]);
 
   // 데이터 로드
   useEffect(() => {
@@ -385,6 +389,10 @@ export default function MobileGongsilPage() {
   };
 
   const goBack = () => {
+    if (vacancyStackRef.current.length > 0) {
+      window.history.back();
+      return;
+    }
     if (isEmbedded) {
       if (detailPanelRef.current) detailPanelRef.current.classList.add("slide-out");
       setTimeout(() => window.parent.postMessage({ type: 'CLOSE_VACANCY_OVERLAY' }, '*'), 350);
