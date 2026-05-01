@@ -576,16 +576,7 @@ export default function MobileGongsilPage() {
                 {selectedVacancy.building_name || [selectedVacancy.dong, selectedVacancy.sigungu].filter(Boolean).join(" ")}
               </h1>
 
-              {/* Themes */}
-              {selectedVacancy.themes && selectedVacancy.themes.length > 0 && (
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "16px" }}>
-                  {selectedVacancy.themes.map((theme: string, idx: number) => (
-                    <span key={idx} style={{ background: "#f8fafc", color: "#3b82f6", fontSize: "13px", padding: "4px 10px", borderRadius: "16px", fontWeight: 700, border: "1px solid #bfdbfe" }}>
-                      {theme.startsWith('#') ? theme : `# ${theme}`}
-                    </span>
-                  ))}
-                </div>
-              )}
+
               
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
                 <p style={{ fontSize: "30px", fontWeight: 900, color: "#1a73e8" }}>
@@ -597,13 +588,24 @@ export default function MobileGongsilPage() {
               <div style={{ fontSize: "15px", color: "#4b5563", lineHeight: 1.6, marginBottom: "8px" }}>
                 {[selectedVacancy.property_type || "건물", selectedVacancy.direction, `공급/전용 면적: ${selectedVacancy.supply_m2 || "-"}㎡ / ${selectedVacancy.exclusive_m2 || "-"}㎡`].filter(Boolean).join(" · ")}
               </div>
-              <div style={{ fontSize: "15px", color: "#4b5563", lineHeight: 1.6 }}>
+              <div style={{ fontSize: "15px", color: "#4b5563", lineHeight: 1.6, marginBottom: "16px" }}>
                 {[
                   selectedVacancy.room_count !== undefined ? `룸 ${selectedVacancy.room_count}개` : null,
                   `주차 ${selectedVacancy.parking || "정보없음"}`,
                   selectedVacancy.options?.length ? selectedVacancy.options.join(", ") : null
                 ].filter(Boolean).join(" | ")}
               </div>
+
+              {/* Themes */}
+              {selectedVacancy.themes && selectedVacancy.themes.length > 0 && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                  {selectedVacancy.themes.map((theme: string, idx: number) => (
+                    <span key={idx} style={{ background: "#f8fafc", color: "#3b82f6", fontSize: "13px", padding: "4px 10px", borderRadius: "16px", fontWeight: 700, border: "1px solid #bfdbfe" }}>
+                      {theme.startsWith('#') ? theme : `# ${theme}`}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* 이미지 슬라이더 */}
