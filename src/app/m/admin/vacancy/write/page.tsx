@@ -574,7 +574,25 @@ function MobileVacancyWrite() {
           </div>
         </div>
 
-        {/* 6. 등록자 */}
+        {/* 6. 사진 */}
+        <div style={{ background:"#fff", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.05)" }}>
+          <div style={{ fontSize:16, fontWeight:800, color:"#111", marginBottom:14 }}>📸 사진 ({photos.length}/5)</div>
+          <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:10 }}>
+            {photoPreview.map((src,i) => (
+              <div key={i} style={{ position:"relative", width:80, height:80, borderRadius:10, overflow:"hidden" }}>
+                <img src={src} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
+                <button onClick={()=>removePhoto(i)} style={{ position:"absolute", top:2, right:2, width:22, height:22, borderRadius:"50%", background:"rgba(0,0,0,0.6)", color:"#fff", border:"none", fontSize:12, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>✕</button>
+              </div>
+            ))}
+            {photos.length < 5 && (
+              <label style={{ width:80, height:80, borderRadius:10, border:"2px dashed #d1d5db", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", fontSize:28, color:"#9ca3af" }}>
+                +<input type="file" accept="image/*" multiple hidden onChange={handlePhotoChange}/>
+              </label>
+            )}
+          </div>
+        </div>
+
+        {/* 7. 등록자 */}
         <div style={{ background:"#fff", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.05)" }}>
           <div style={{ fontSize:16, fontWeight:800, color:"#111", marginBottom:14 }}>👤 등록자 정보</div>
           <div style={{ display:"flex", gap:10 }}>
@@ -583,7 +601,7 @@ function MobileVacancyWrite() {
           </div>
         </div>
 
-        {/* 7. 부동산 전용 (REALTOR/ADMIN만) */}
+        {/* 8. 부동산 전용 (REALTOR/ADMIN만) */}
         {isRealtor && (
           <div style={{ background:"#fff", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.05)", border:"1px solid #dbeafe" }}>
             <div style={{ fontSize:16, fontWeight:800, color:"#2563eb", marginBottom:14 }}>🏘️ 부동산 전용</div>
@@ -619,24 +637,6 @@ function MobileVacancyWrite() {
             </div>
           </div>
         )}
-
-        {/* 7. 사진 */}
-        <div style={{ background:"#fff", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.05)" }}>
-          <div style={{ fontSize:16, fontWeight:800, color:"#111", marginBottom:14 }}>📸 사진 ({photos.length}/5)</div>
-          <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:10 }}>
-            {photoPreview.map((src,i) => (
-              <div key={i} style={{ position:"relative", width:80, height:80, borderRadius:10, overflow:"hidden" }}>
-                <img src={src} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
-                <button onClick={()=>removePhoto(i)} style={{ position:"absolute", top:2, right:2, width:22, height:22, borderRadius:"50%", background:"rgba(0,0,0,0.6)", color:"#fff", border:"none", fontSize:12, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>✕</button>
-              </div>
-            ))}
-            {photos.length < 5 && (
-              <label style={{ width:80, height:80, borderRadius:10, border:"2px dashed #d1d5db", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", fontSize:28, color:"#9ca3af" }}>
-                +<input type="file" accept="image/*" multiple hidden onChange={handlePhotoChange}/>
-              </label>
-            )}
-          </div>
-        </div>
 
         {/* 저장 버튼 */}
         <div style={{ display:"flex", gap:10 }}>
