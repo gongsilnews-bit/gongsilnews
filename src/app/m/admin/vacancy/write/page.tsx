@@ -65,6 +65,13 @@ function MobileVacancyWrite() {
   const [clientPhone, setClientPhone] = useState("");
   const [coords, setCoords] = useState<{lat:number;lng:number}|null>(null);
 
+  // 옵션/테마/주변환경
+  const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
+  const [selectedThemes, setSelectedThemes] = useState<string[]>([]);
+  const [customOptionInput, setCustomOptionInput] = useState("");
+  const [customThemeInput, setCustomThemeInput] = useState("");
+  const [infrastructure, setInfrastructure] = useState<any>({});
+
   // 부동산 전용
   const [realtorCommission, setRealtorCommission] = useState("공동중개 0%");
   const [exposureType, setExposureType] = useState("부동산노출");
@@ -130,10 +137,59 @@ function MobileVacancyWrite() {
         if (d.landlord_name) setLandlordName(d.landlord_name);
         if (d.landlord_phone) setLandlordPhone(d.landlord_phone);
         if (d.landlord_memo) setLandlordMemo(d.landlord_memo);
+        if (d.options) setSelectedOptions(d.options);
+        if (d.themes) setSelectedThemes(d.themes);
+        if (d.infrastructure) setInfrastructure(d.infrastructure);
       }
       setLoadingEdit(false);
     })();
   }, [editId]);
+
+  // 다이나믹 옵션 관리
+  const currentOptionList = React.useMemo(() => {
+    let base = ["주차", "엘리베이터"];
+    if (propertyType === "아파트·오피스텔" || propertyType === "원룸·투룸(풀옵션)") {
+      base = ["에어컨", "세탁기", "냉장고", "가스렌지", "전자렌지", "침대", "옷장", "TV", "신발장", "비데", "도어락"];
+    } else if (propertyType === "상가·사무실·건물·공장·토지") {
+      base = ["냉난방기", "수도설비", "가스설비", "화물용승강기", "보안시스템"];
+    }
+    return Array.from(new Set([...base, ...selectedOptions]));
+  }, [propertyType, subCategory, selectedOptions]);
+
+  const toggleOption = (opt: string) => {
+    setSelectedOptions(prev => prev.includes(opt) ? prev.filter(o => o !== opt) : [...prev, opt]);
+  };
+
+  const addCustomOption = () => {
+    if (customOptionInput && customOptionInput.trim() && !currentOptionList.includes(customOptionInput.trim())) {
+      setSelectedOptions(prev => [...prev, customOptionInput.trim()]);
+      setCustomOptionInput("");
+    }
+  };
+
+  const currentThemeList = React.useMemo(() => {
+    if (propertyType === "아파트·오피스텔") {
+      return Array.from(new Set(["신축급", "올수리", "한강뷰", "역세권", "풀옵션", ...selectedThemes]));
+    } else if (propertyType === "원룸·투룸(풀옵션)") {
+      return Array.from(new Set(["가성비", "단기임대", "주차편리", "대로변안전", "여성안심", ...selectedThemes]));
+    } else if (propertyType === "상가·사무실·건물·공장·토지") {
+      return Array.from(new Set(["무권리", "코너자리", "유동인구많음", "주차대수많음", "인테리어잘됨", "층고높음", "대로변", ...selectedThemes]));
+    } else if (propertyType === "빌라·주택") {
+      return Array.from(new Set(["테라스", "복층", "마당있음", "투자용", ...selectedThemes]));
+    }
+    return Array.from(new Set(["급매", "추천매물", ...selectedThemes]));
+  }, [propertyType, selectedThemes]);
+
+  const toggleTheme = (theme: string) => {
+    setSelectedThemes(prev => prev.includes(theme) ? prev.filter(t => t !== theme) : [...prev, theme]);
+  };
+
+  const addCustomTheme = () => {
+    if (customThemeInput && customThemeInput.trim() && !currentThemeList.includes(customThemeInput.trim())) {
+      setSelectedThemes(prev => [...prev, customThemeInput.trim()]);
+      setCustomThemeInput("");
+    }
+  };
 
   const handlePostcodeSearch = () => {
     const script = document.createElement("script");
@@ -150,7 +206,14 @@ function MobileVacancyWrite() {
           const addr = data.address || data.jibunAddress || "";
           if (addr) {
             const res = await geocodeAddress(addr);
-            if (res.success && res.lat && res.lng) setCoords({lat:res.lat, lng:res.lng});
+            if (res.success && res.lat && res.lng) {
+              setCoords({lat:res.lat, lng:res.lng});
+              try {
+                const { searchNearbyInfrastructure } = await import("@/app/actions/geocode");
+                const infra = await searchNearbyInfrastructure(res.lat, res.lng);
+                setInfrastructure(infra);
+              } catch (e) { console.error(e); }
+            }
           }
         }
       }).open();
@@ -162,7 +225,15 @@ function MobileVacancyWrite() {
     const addr = [sido, sigungu, dong, detailAddr].filter(Boolean).join(" ");
     if (!addr) { alert("주소를 입력해주세요."); return; }
     const res = await geocodeAddress(addr);
-    if (res.success && res.lat && res.lng) { setCoords({lat:res.lat, lng:res.lng}); alert("좌표 설정 완료!"); }
+    if (res.success && res.lat && res.lng) { 
+      setCoords({lat:res.lat, lng:res.lng}); 
+      try {
+        const { searchNearbyInfrastructure } = await import("@/app/actions/geocode");
+        const infra = await searchNearbyInfrastructure(res.lat, res.lng);
+        setInfrastructure(infra);
+      } catch (e) { console.error(e); }
+      alert("좌표 및 주변환경(인프라) 설정 완료!"); 
+    }
     else alert("주소를 찾을 수 없습니다.");
   };
 
@@ -212,6 +283,7 @@ function MobileVacancyWrite() {
         lat: coords?.lat, lng: coords?.lng,
         parking, move_in_date: moveInDate, description: description||undefined,
         client_name: clientName, client_phone: clientPhone,
+        options: selectedOptions, themes: selectedThemes, infrastructure,
         realtor_commission: isRealtor ? realtorCommission : undefined,
         exposure_type: isRealtor ? exposureType : undefined,
         landlord_name: isRealtor ? landlordName : undefined,
@@ -450,8 +522,56 @@ function MobileVacancyWrite() {
               </select>
             </div>
           </div>
-          <label style={labelStyle}>전달사항 / 매물설명</label>
-          <textarea value={description} onChange={e=>setDescription(e.target.value)} placeholder="매물에 대한 추가 설명을 입력하세요" rows={4} style={{ ...inputStyle, height:"auto", padding:12, resize:"vertical", lineHeight:1.5 }}/>
+
+          {/* 옵션 & 테마 & 주변환경 */}
+          <div style={{ marginTop: 16, borderTop: "1px dashed #e5e7eb", paddingTop: 16 }}>
+            {/* 테마 */}
+            <label style={labelStyle}>테마 선택</label>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
+              {currentThemeList.map(t => (
+                <button key={t} type="button" onClick={()=>toggleTheme(t)} style={{ padding:"6px 12px", borderRadius:20, fontSize:13, fontWeight:600, cursor:"pointer", border: selectedThemes.includes(t)?"2px solid #3b82f6":"1px solid #d1d5db", background: selectedThemes.includes(t)?"#eff6ff":"#f8fafc", color: selectedThemes.includes(t)?"#2563eb":"#4b5563" }}>
+                  {t.startsWith('#')?t:`#${t}`}
+                </button>
+              ))}
+            </div>
+            <div style={{ display:"flex", gap:6, marginBottom: 16 }}>
+              <input type="text" value={customThemeInput} onChange={e=>setCustomThemeInput(e.target.value)} placeholder="직접 입력 (예: 반려동물)" style={{...inputStyle, flex:1}} onKeyDown={e=>{if(e.key==='Enter') {e.preventDefault(); addCustomTheme();}}} />
+              <button type="button" onClick={addCustomTheme} style={{ background:"#374151", color:"#fff", border:"none", borderRadius:8, padding:"0 16px", fontWeight:700 }}>추가</button>
+            </div>
+
+            {/* 옵션 */}
+            <label style={labelStyle}>옵션 선택</label>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
+              {currentOptionList.map(opt => (
+                <button key={opt} type="button" onClick={()=>toggleOption(opt)} style={{ padding:"6px 12px", borderRadius:8, fontSize:13, fontWeight:600, cursor:"pointer", border: selectedOptions.includes(opt)?"2px solid #3b82f6":"1px solid #d1d5db", background: selectedOptions.includes(opt)?"#eff6ff":"#fff", color: selectedOptions.includes(opt)?"#2563eb":"#4b5563" }}>
+                  {opt}
+                </button>
+              ))}
+            </div>
+            <div style={{ display:"flex", gap:6, marginBottom: 16 }}>
+              <input type="text" value={customOptionInput} onChange={e=>setCustomOptionInput(e.target.value)} placeholder="직접 입력 (예: 붙박이장)" style={{...inputStyle, flex:1}} onKeyDown={e=>{if(e.key==='Enter') {e.preventDefault(); addCustomOption();}}} />
+              <button type="button" onClick={addCustomOption} style={{ background:"#374151", color:"#fff", border:"none", borderRadius:8, padding:"0 16px", fontWeight:700 }}>추가</button>
+            </div>
+
+            {/* 주변환경 (자동 검색) */}
+            <label style={labelStyle}>주변환경 (좌표 기반 자동생성)</label>
+            <div style={{ background:"#f9fafb", border:"1px solid #e5e7eb", borderRadius:8, padding:12, fontSize:13, color:"#6b7280" }}>
+              {Object.keys(infrastructure).length > 0 ? (
+                Object.entries(infrastructure).map(([category, items]: [string, any]) => (
+                  <div key={category} style={{ marginBottom:6 }}>
+                    <strong style={{ color:"#374151" }}>{category}:</strong> {Array.isArray(items) ? items.join(", ") : ""}
+                  </div>
+                ))
+              ) : (
+                "상단 소재지 '좌표 자동설정'을 누르면 주변 인프라가 자동 검색됩니다."
+              )}
+            </div>
+          </div>
+
+          <div style={{ marginTop: 16, borderTop: "1px dashed #e5e7eb", paddingTop: 16 }}>
+            <label style={labelStyle}>전달사항 / 매물설명</label>
+            <textarea value={description} onChange={e=>setDescription(e.target.value)} placeholder="매물에 대한 추가 설명을 입력하세요" rows={4} style={{ ...inputStyle, height:"auto", padding:12, resize:"vertical", lineHeight:1.5 }}/>
+          </div>
         </div>
 
         {/* 6. 의뢰인 */}
