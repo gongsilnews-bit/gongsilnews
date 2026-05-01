@@ -32,7 +32,13 @@ export async function GET(request: Request) {
     const { error } = await supabase.auth.exchangeCodeForSession(code)
     if (!error) {
       // from=mobile이면 모바일 페이지로, 아니면 PC 페이지로 리다이렉트
-      const redirectPath = from === 'mobile' ? '/m?login=success' : '/?signup=success'
+      // 단, returnTo가 있으면 해당 주소로 이동
+      const returnTo = searchParams.get('returnTo');
+      const defaultMobilePath = '/m?login=success';
+      const defaultPcPath = '/?signup=success';
+      const baseRedirectPath = from === 'mobile' ? defaultMobilePath : defaultPcPath;
+      const redirectPath = returnTo ? returnTo : baseRedirectPath;
+      
       return NextResponse.redirect(`${origin}${redirectPath}`)
     }
   }
