@@ -56,13 +56,13 @@ export default function MobileMyPage() {
 
   const getRoleLabel = (role?: string) => {
     if (role === 'ADMIN') return '관리자';
-    if (role === 'REALTOR') return '부동산회원';
+    if (role === 'REALTOR' || role === '부동산회원') return '부동산회원';
     return '일반회원';
   };
 
   const getRoleBadgeStyle = (role?: string): React.CSSProperties => {
     if (role === 'ADMIN') return { background: '#111827', color: '#fff' };
-    if (role === 'REALTOR') return { background: '#2563eb', color: '#fff' };
+    if (role === 'REALTOR' || role === '부동산회원') return { background: '#2563eb', color: '#fff' };
     return { background: '#e5e7eb', color: '#374151' };
   };
 
@@ -72,7 +72,7 @@ export default function MobileMyPage() {
       { icon: '📊', label: '대시보드', desc: '활동 요약 및 통계', href: role === 'ADMIN' ? '/admin?menu=dashboard' : role === 'REALTOR' ? '/realty_admin?menu=dashboard' : '/user_admin?menu=dashboard' },
       { icon: '🏢', label: '공실관리', desc: '등록한 공실 매물 관리', href: role === 'ADMIN' ? '/admin?menu=gongsil' : role === 'REALTOR' ? '/realty_admin?menu=gongsil' : '/user_admin?menu=gongsil' },
       { icon: '📝', label: '기사관리', desc: '작성한 기사 관리', href: role === 'ADMIN' ? '/admin?menu=article' : role === 'REALTOR' ? '/realty_admin?menu=article' : '/user_admin?menu=article' },
-      { icon: '💰', label: '포인트', desc: '포인트 내역 및 충전', href: role === 'REALTOR' ? '/realty_admin?menu=point' : '/user_admin?menu=point' },
+      { icon: '💰', label: '포인트', desc: '포인트 내역 및 충전', href: '/m/admin/point' },
     ];
     const realtor = [
       { icon: '👥', label: '고객관리', desc: '상담 고객 목록', href: '/realty_admin?menu=customer' },

@@ -236,6 +236,9 @@ function MobileArticleAdmin() {
                     📋 승인신청
                   </button>
                 )}
+                <button onClick={() => window.open(`/news/${a.article_no || a.id}`, '_blank')} style={{ flex: 1, height: 38, background: "#eff6ff", color: "#2563eb", border: "1px solid #bfdbfe", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
+                  👁️ 미리보기
+                </button>
                 <button onClick={() => router.push(`/m/admin/article/write?id=${a.id}`)} style={{ flex: 1, height: 38, background: "#4b5563", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
                   ✏️ 수정
                 </button>
