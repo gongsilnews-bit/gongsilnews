@@ -958,7 +958,7 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
                             {detailStr}{prop.options && prop.options.length > 0 ? `, ${prop.options.join(", ")}` : ""}
                           </div>
                           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                            {prop.commission_type && (
+                            {prop.commission_type && (viewerRole === 'REALTOR' || viewerRole === 'ADMIN') && (
                               <span style={{ fontSize: 13, color: "#ef4444", border: "1px solid #fca5a5", padding: "2px 6px", borderRadius: 2 }}>
                                 {prop.commission_type}
                               </span>

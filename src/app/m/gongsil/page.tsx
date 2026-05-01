@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getVacancies, getVacancyDetail } from "@/app/actions/vacancy";
+import { getPermissionLevel } from "@/utils/permissionCheck";
+import AuthModal from "@/components/AuthModal";
 import HomeHeader from "../_components/HomeHeader";
 
 const KAKAO_APP_KEY = process.env.NEXT_PUBLIC_KAKAO_APP_KEY || "435d3602201a49ea712e5f5a36fe6efc";
@@ -92,6 +94,14 @@ function MobileGongsilContent() {
   const [galleryIndex, setGalleryIndex] = useState(0);
   const [realtorFilter, setRealtorFilter] = useState("전체");
 
+  // 권한 관련 State
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [userLevel, setUserLevel] = useState<number>(0);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
+  // 권한 파생 값
+  const showCommission = userLevel >= 2;
+
   // Swipe gesture states
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
@@ -126,6 +136,25 @@ function MobileGongsilContent() {
   // 다이렉트 뷰 상태 (URL에 id가 있는 경우 지도를 가리고 상세 정보를 보여줌)
   const [isDirectView, setIsDirectView] = useState(searchParams.has("id"));
   const [isEmbedded, setIsEmbedded] = useState(searchParams.get("embed") === "true");
+
+  // 사용자 권한 확인
+  useEffect(() => {
+    async function initUser() {
+      const { createClient } = await import("@/utils/supabase/client");
+      const client = createClient();
+      const { data } = await client.auth.getUser();
+      if (data?.user) {
+        setCurrentUser(data.user);
+        const { data: memberData } = await client.from('members').select('role, plan_type').eq('id', data.user.id).single();
+        if (memberData) {
+          setUserLevel(getPermissionLevel(memberData));
+        } else {
+          setUserLevel(1);
+        }
+      }
+    }
+    initUser();
+  }, []);
 
   useEffect(() => {
     if (selectedVacancy && detailTab === "info") {
@@ -567,25 +596,29 @@ function MobileGongsilContent() {
           </div>
         </div>
         <div className="no-scrollbar" style={{ flex: 1, overflowY: "auto", padding: "8px 16px 20px" }}>
-          {selectedCluster?.map((v: any) => (
+          {selectedCluster?.map((v: any) => {
+            const cardMasked = v.exposure_type === '부동산노출' && userLevel < 2;
+            const cardAddr = v.building_name || [v.dong, v.sigungu].filter(Boolean).join(" ");
+            return (
             <div
               key={v.id}
               className="v-card"
-              onClick={() => handleVacancyClick(v)}
+              onClick={() => { if (cardMasked) { setIsAuthModalOpen(true); return; } handleVacancyClick(v); }}
               style={{ display: "flex", gap: "12px", padding: "14px 0", borderBottom: "1px solid #f3f4f6", cursor: "pointer", transition: "background 0.15s" }}
             >
               <div style={{ flex: 1, minWidth: 0 }}>
-                {/* Badges & Date (Moved to top) */}
-                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
-                  <span style={{ fontSize: "12px", fontWeight: 700, color: "#ef4444", border: "1px solid #ef4444", padding: "1px 6px", borderRadius: "3px" }}>공동중개 0%</span>
+                {/* Badges & Date */}
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px", flexWrap: "wrap" }}>
+                  {showCommission && <span style={{ fontSize: "12px", fontWeight: 700, color: "#ef4444", border: "1px solid #ef4444", padding: "1px 6px", borderRadius: "3px" }}>{v.realtor_commission || v.commission_type || "법정수수료"}</span>}
                   <span style={{ fontSize: "13px", fontWeight: 700, color: "#ef4444" }}>{v.vacancy_no || '-'}</span>
                   <span style={{ fontSize: "12px", color: "#9ca3af" }}>{v.created_at ? new Date(v.created_at).toLocaleDateString("ko-KR").slice(0, -1) : ""}</span>
+                  {cardMasked && <span onClick={(e) => { e.stopPropagation(); setIsAuthModalOpen(true); }} style={{ fontSize: "11px", color: "#3b82f6", fontWeight: 700, background: "#eef6ff", padding: "3px 8px", borderRadius: "4px", cursor: "pointer" }}>🔒 부동산회원 무료열람</span>}
                 </div>
 
                 {/* Title */}
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
-                  <p style={{ fontSize: "16px", fontWeight: 800, color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {v.building_name || [v.dong, v.sigungu].filter(Boolean).join(" ")}
+                  <p style={{ fontSize: "16px", fontWeight: 800, color: cardMasked ? "#bbb" : "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", letterSpacing: cardMasked ? 1 : 0 }}>
+                    {cardMasked ? (cardAddr || "주소 없음").replace(/[^\s]/g, "X") : cardAddr}
                   </p>
                 </div>
                 
@@ -604,7 +637,7 @@ function MobileGongsilContent() {
                   {[v.room_count !== undefined ? `룸 ${v.room_count}개` : null, v.bath_count !== undefined ? `욕실 ${v.bath_count}개` : null, ...(v.options || [])].filter(Boolean).join(", ")}
                 </p>
 
-                {/* Themes (Added at bottom) */}
+                {/* Themes */}
                 {v.themes && v.themes.length > 0 && (
                   <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginTop: "4px" }}>
                     {v.themes.map((theme: string, idx: number) => (
@@ -622,7 +655,8 @@ function MobileGongsilContent() {
               )}
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="2" style={{ flexShrink: 0, alignSelf: "center" }}><polyline points="9 18 15 12 9 6"/></svg>
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -671,7 +705,10 @@ function MobileGongsilContent() {
           </div>
         </div>
 
-        {selectedVacancy && (
+        {selectedVacancy && (() => {
+          const detailMasked = selectedVacancy.exposure_type === '부동산노출' && userLevel < 2;
+          const detailAddr = selectedVacancy.building_name || [selectedVacancy.dong, selectedVacancy.sigungu].filter(Boolean).join(" ");
+          return (
           <>
             <div ref={detailScrollRef} style={{ flex: 1, overflowY: "auto", paddingBottom: "20px" }}>
             {/* 이미지 슬라이더 (맨 위로 이동) */}
@@ -705,7 +742,7 @@ function MobileGongsilContent() {
               {/* Badges */}
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
                 <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                  <span style={{ fontSize: "14px", fontWeight: 700, color: "#ef4444", border: "1px solid #ef4444", padding: "2px 8px", borderRadius: "3px" }}>공동중개 0%</span>
+                  {showCommission && <span style={{ fontSize: "14px", fontWeight: 700, color: "#ef4444", border: "1px solid #ef4444", padding: "2px 8px", borderRadius: "3px" }}>{selectedVacancy.realtor_commission || selectedVacancy.commission_type || "법정수수료"}</span>}
                   <span style={{ fontSize: "15px", fontWeight: 700, color: "#ef4444" }}>{selectedVacancy.vacancy_no || '-'}</span>
                   <span style={{ fontSize: "14px", color: "#6b7280" }}>{selectedVacancy.created_at ? new Date(selectedVacancy.created_at).toLocaleDateString("ko-KR").slice(0, -1) : ""}</span>
                 </div>
@@ -715,9 +752,18 @@ function MobileGongsilContent() {
               </div>
 
               {/* Title & Price */}
-              <h1 style={{ fontSize: "22px", fontWeight: 800, color: "#111827", marginBottom: "8px", lineHeight: 1.3 }}>
-                {selectedVacancy.building_name || [selectedVacancy.dong, selectedVacancy.sigungu].filter(Boolean).join(" ")}
+              <h1 style={{ fontSize: "22px", fontWeight: 800, color: detailMasked ? "#bbb" : "#111827", marginBottom: "8px", lineHeight: 1.3, letterSpacing: detailMasked ? 1 : 0 }}>
+                {detailMasked ? (detailAddr || "주소 없음").replace(/[^\s]/g, "X") : detailAddr}
               </h1>
+              {detailMasked && (
+                <div onClick={() => setIsAuthModalOpen(true)} style={{ background: "#eef6ff", border: "1px solid #bfdbfe", borderRadius: "8px", padding: "12px 16px", marginBottom: "12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}>
+                  <span style={{ fontSize: "20px" }}>🔒</span>
+                  <div>
+                    <div style={{ fontSize: "14px", fontWeight: 700, color: "#1e40af" }}>부동산회원 전용 매물입니다</div>
+                    <div style={{ fontSize: "12px", color: "#3b82f6", marginTop: "2px" }}>무료 가입 후 모든 정보를 열람하세요</div>
+                  </div>
+                </div>
+              )}
 
 
               
@@ -773,8 +819,8 @@ function MobileGongsilContent() {
                 <div>
                   {[
                     ["매물번호", selectedVacancy.vacancy_no || '-'],
-                    ["소재지", [selectedVacancy.sido, selectedVacancy.sigungu, selectedVacancy.dong, selectedVacancy.building_name].filter(Boolean).join(" ")],
-                    ["매물특성", selectedVacancy.building_name || "-"],
+                    ["소재지", detailMasked ? [selectedVacancy.sido, selectedVacancy.sigungu, selectedVacancy.dong, selectedVacancy.building_name].filter(Boolean).join(" ").replace(/[^\s]/g, "X") : [selectedVacancy.sido, selectedVacancy.sigungu, selectedVacancy.dong, selectedVacancy.building_name].filter(Boolean).join(" ")],
+                    ["매물특성", detailMasked ? (selectedVacancy.building_name || "-").replace(/[^\s-]/g, "X") : (selectedVacancy.building_name || "-")],
                     ["공급/전용면적", `${selectedVacancy.supply_m2 || "-"}㎡ / ${selectedVacancy.exclusive_m2 || "-"}㎡`],
                     ["해당층/총층", `${selectedVacancy.current_floor || "-"}층 / ${selectedVacancy.total_floor || "-"}층`],
                     ["방/욕실수", `${selectedVacancy.room_count || 0}개 / ${selectedVacancy.bath_count || 0}개`],
@@ -980,7 +1026,7 @@ function MobileGongsilContent() {
                               <div style={{ flex: 1, minWidth: 0 }}>
                                 {/* Badges & Date */}
                                 <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
-                                  <span style={{ fontSize: "12px", fontWeight: 700, color: "#ef4444", border: "1px solid #ef4444", padding: "1px 6px", borderRadius: "3px" }}>공동중개 0%</span>
+                                  {showCommission && <span style={{ fontSize: "12px", fontWeight: 700, color: "#ef4444", border: "1px solid #ef4444", padding: "1px 6px", borderRadius: "3px" }}>{v.realtor_commission || v.commission_type || "법정수수료"}</span>}
                                   <span style={{ fontSize: "13px", fontWeight: 700, color: "#ef4444" }}>{v.vacancy_no || '-'}</span>
                                   <span style={{ fontSize: "12px", color: "#9ca3af" }}>{v.created_at ? new Date(v.created_at).toLocaleDateString("ko-KR").slice(0, -1) : ""}</span>
                                 </div>
@@ -1052,7 +1098,8 @@ function MobileGongsilContent() {
               </button>
             </div>
           </>
-        )}
+          );
+        })()}
       </div>
     </div>
       {/* 갤러리 풀스크린 모달 */}
@@ -1081,6 +1128,15 @@ function MobileGongsilContent() {
             )}
           </div>
         </div>
+      )}
+
+      {/* 권한 인증 모달 */}
+      {isAuthModalOpen && (
+        <AuthModal
+          isOpen={isAuthModalOpen}
+          onClose={() => setIsAuthModalOpen(false)}
+          initialTab="login"
+        />
       )}
     </div>
   );
