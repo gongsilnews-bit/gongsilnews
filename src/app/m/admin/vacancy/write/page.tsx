@@ -64,11 +64,19 @@ function MobileVacancyWrite() {
   const [clientPhone, setClientPhone] = useState("");
   const [coords, setCoords] = useState<{lat:number;lng:number}|null>(null);
 
+  // 부동산 전용
+  const [realtorCommission, setRealtorCommission] = useState("공동중개 0%");
+  const [exposureType, setExposureType] = useState("부동산노출");
+  const [landlordName, setLandlordName] = useState("");
+  const [landlordPhone, setLandlordPhone] = useState("");
+  const [landlordMemo, setLandlordMemo] = useState("");
+
   // 사진
   const [photos, setPhotos] = useState<File[]>([]);
   const [photoPreview, setPhotoPreview] = useState<string[]>([]);
 
   const isCommercial = propertyType === "상가·사무실·건물·공장·토지";
+  const isRealtor = userRole === "REALTOR" || userRole === "ADMIN";
 
   useEffect(() => {
     (async () => {
@@ -116,6 +124,11 @@ function MobileVacancyWrite() {
         if (d.client_name) setClientName(d.client_name);
         if (d.client_phone) setClientPhone(d.client_phone);
         if (d.lat && d.lng) setCoords({lat:d.lat,lng:d.lng});
+        if (d.realtor_commission) setRealtorCommission(d.realtor_commission);
+        if (d.exposure_type) setExposureType(d.exposure_type);
+        if (d.landlord_name) setLandlordName(d.landlord_name);
+        if (d.landlord_phone) setLandlordPhone(d.landlord_phone);
+        if (d.landlord_memo) setLandlordMemo(d.landlord_memo);
       }
       setLoadingEdit(false);
     })();
@@ -198,6 +211,11 @@ function MobileVacancyWrite() {
         lat: coords?.lat, lng: coords?.lng,
         parking, move_in_date: moveInDate, description: description||undefined,
         client_name: clientName, client_phone: clientPhone,
+        realtor_commission: isRealtor ? realtorCommission : undefined,
+        exposure_type: isRealtor ? exposureType : undefined,
+        landlord_name: isRealtor ? landlordName : undefined,
+        landlord_phone: isRealtor ? landlordPhone : undefined,
+        landlord_memo: isRealtor ? landlordMemo : undefined,
         consent: true, status,
       };
 
@@ -295,9 +313,13 @@ function MobileVacancyWrite() {
         {/* 3. 면적/층수 */}
         <div style={{ background:"#fff", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.05)" }}>
           <div style={{ fontSize:16, fontWeight:800, color:"#111", marginBottom:14 }}>📐 면적·층수</div>
-          <div style={{ display:"flex", gap:10, marginBottom:10 }}>
+          <div style={{ display:"flex", gap:10, marginBottom:4 }}>
             <div style={{flex:1}}><label style={labelStyle}>전용면적(m²)</label><input type="number" value={exclusiveM2} onChange={e=>setExclusiveM2(e.target.value)} placeholder="59" style={inputStyle}/></div>
             <div style={{flex:1}}><label style={labelStyle}>공급면적(m²)</label><input type="number" value={supplyM2} onChange={e=>setSupplyM2(e.target.value)} placeholder="84" style={inputStyle}/></div>
+          </div>
+          <div style={{ display:"flex", gap:10, marginBottom:10, fontSize:12, color:"#f97316", fontWeight:600, padding:"0 2px" }}>
+            <div style={{flex:1}}>{exclusiveM2 ? `≈ ${(parseFloat(exclusiveM2)*0.3025).toFixed(1)}평` : ""}</div>
+            <div style={{flex:1}}>{supplyM2 ? `≈ ${(parseFloat(supplyM2)*0.3025).toFixed(1)}평` : ""}</div>
           </div>
           <div style={{ display:"flex", gap:10, marginBottom:10 }}>
             <div style={{flex:1}}><label style={labelStyle}>해당층</label><input type="text" value={currentFloor} onChange={e=>setCurrentFloor(e.target.value)} placeholder="3" style={inputStyle}/></div>
@@ -419,6 +441,43 @@ function MobileVacancyWrite() {
             <div style={{flex:1}}><label style={labelStyle}>연락처</label><input type="tel" value={clientPhone} onChange={e=>setClientPhone(e.target.value)} placeholder="010-0000-0000" style={inputStyle}/></div>
           </div>
         </div>
+
+        {/* 7. 부동산 전용 (REALTOR/ADMIN만) */}
+        {isRealtor && (
+          <div style={{ background:"#fff", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.05)", border:"1px solid #dbeafe" }}>
+            <div style={{ fontSize:16, fontWeight:800, color:"#2563eb", marginBottom:14 }}>🏘️ 부동산 전용</div>
+
+            <label style={labelStyle}>공동중개 수수료</label>
+            <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:14 }}>
+              {["공동중개 0%","공동중개 10%","공동중개 20%","공동중개 30%","공동중개 40%","공동중개 50%"].map(opt => (
+                <button key={opt} type="button" onClick={()=>setRealtorCommission(opt)} style={{ padding:"8px 12px", borderRadius:8, fontSize:12, fontWeight: realtorCommission===opt?700:500, border: realtorCommission===opt?"2px solid #2563eb":"1px solid #d1d5db", background: realtorCommission===opt?"#eff6ff":"#fff", color: realtorCommission===opt?"#2563eb":"#374151", cursor:"pointer" }}>{opt}</button>
+              ))}
+            </div>
+
+            <label style={labelStyle}>노출선택 <span style={{color:"#ef4444"}}>*</span></label>
+            <div style={{ display:"flex", gap:10, marginBottom:14 }}>
+              <div onClick={()=>setExposureType("부동산노출")} style={{ flex:1, padding:12, borderRadius:10, cursor:"pointer", border: exposureType==="부동산노출"?"2px solid #3b82f6":"1px solid #d1d5db", background: exposureType==="부동산노출"?"#eff6ff":"#fff" }}>
+                <div style={{ fontSize:14, fontWeight:700, color: exposureType==="부동산노출"?"#2563eb":"#374151", marginBottom:4 }}>부동산노출</div>
+                <div style={{ fontSize:11, color: exposureType==="부동산노출"?"#3b82f6":"#9ca3af", lineHeight:1.4 }}>부동산만 열람 가능, 일반인 비공개</div>
+              </div>
+              <div onClick={()=>setExposureType("부동산노출 + 일반인노출")} style={{ flex:1, padding:12, borderRadius:10, cursor:"pointer", border: exposureType==="부동산노출 + 일반인노출"?"2px solid #3b82f6":"1px solid #d1d5db", background: exposureType==="부동산노출 + 일반인노출"?"#eff6ff":"#fff" }}>
+                <div style={{ fontSize:14, fontWeight:700, color: exposureType==="부동산노출 + 일반인노출"?"#2563eb":"#374151", marginBottom:4 }}>부동산+일반인</div>
+                <div style={{ fontSize:11, color: exposureType==="부동산노출 + 일반인노출"?"#3b82f6":"#9ca3af" }}>모두에게 노출</div>
+              </div>
+            </div>
+
+            {/* 임대인 정보 */}
+            <div style={{ background:"#fff7ed", padding:12, borderRadius:10, border:"1px solid #fed7aa", borderLeft:"4px solid #ea580c" }}>
+              <div style={{ fontSize:13, fontWeight:700, color:"#ea580c", marginBottom:8 }}>🔐 임대인 정보 (비공개)</div>
+              <div style={{ display:"flex", gap:8, marginBottom:8 }}>
+                <div style={{flex:1}}><label style={{...labelStyle,fontSize:12}}>임대인명</label><input type="text" value={landlordName} onChange={e=>setLandlordName(e.target.value)} placeholder="이름" style={inputStyle}/></div>
+                <div style={{flex:1}}><label style={{...labelStyle,fontSize:12}}>연락처</label><input type="tel" value={landlordPhone} onChange={e=>setLandlordPhone(e.target.value)} placeholder="010-0000-0000" style={inputStyle}/></div>
+              </div>
+              <label style={{...labelStyle,fontSize:12}}>메모</label>
+              <textarea value={landlordMemo} onChange={e=>setLandlordMemo(e.target.value)} placeholder="임대인 특이사항 등 중개사님만 보는 메모" rows={2} style={{...inputStyle, height:"auto", padding:10, resize:"vertical", lineHeight:1.4}}/>
+            </div>
+          </div>
+        )}
 
         {/* 7. 사진 */}
         <div style={{ background:"#fff", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.05)" }}>
