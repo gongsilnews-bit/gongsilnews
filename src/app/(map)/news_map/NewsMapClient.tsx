@@ -616,13 +616,24 @@ export default function NewsMapClient({ initialArticles, initialPopularArticles 
                       </div>
                     ) : null}
 
-                    {articleDetail.content && <div suppressHydrationWarning dangerouslySetInnerHTML={{ 
-                      __html: articleDetail.content
-                        .replace(/<button[^>]*class="editor-media-delete"[^>]*>.*?<\/button>/gi, '')
-                        .replace(/<p[^>]*>\s*(?:<br>\s*)*<iframe[^>]*youtube\.com\/embed[^>]*>.*?<\/iframe>(?:\s*<br>\s*)*\s*<\/p>/gi, '')
-                        .replace(/<div(?:(?!class="article-body")[^>]*)?>\s*(?:<br>\s*)*<iframe[^>]*youtube\.com\/embed[^>]*>.*?<\/iframe>(?:\s*<br>\s*)*\s*<\/div>/gi, '')
-                        .replace(/<iframe[^>]*youtube\.com\/embed[^>]*>.*?<\/iframe>/gi, '') 
-                    }} />}
+                    {articleDetail.content && <div 
+                      suppressHydrationWarning 
+                      dangerouslySetInnerHTML={{ 
+                        __html: articleDetail.content
+                          .replace(/<button[^>]*class="editor-media-delete"[^>]*>.*?<\/button>/gi, '')
+                          .replace(/<p[^>]*>\s*(?:<br>\s*)*<iframe[^>]*youtube\.com\/embed[^>]*>.*?<\/iframe>(?:\s*<br>\s*)*\s*<\/p>/gi, '')
+                          .replace(/<div(?:(?!class="article-body")[^>]*)?>\s*(?:<br>\s*)*<iframe[^>]*youtube\.com\/embed[^>]*>.*?<\/iframe>(?:\s*<br>\s*)*\s*<\/div>/gi, '')
+                          .replace(/<iframe[^>]*youtube\.com\/embed[^>]*>.*?<\/iframe>/gi, '') 
+                      }} 
+                      onClick={(e) => {
+                        const target = e.target as HTMLElement;
+                        const a = target.closest('a');
+                        if (a && a.href) {
+                          e.preventDefault();
+                          window.open(a.href, '_blank');
+                        }
+                      }}
+                    />}
                   </div>
 
                   {articleDetail.article_keywords && articleDetail.article_keywords.length > 0 && (

@@ -847,6 +847,23 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
             <div
               style={{ fontSize: "16px", lineHeight: 1.8, color: "#333", wordBreak: "keep-all" }}
               dangerouslySetInnerHTML={{ __html: articleDetail.content || "" }}
+              onClick={(e) => {
+                const target = e.target as HTMLElement;
+                const a = target.closest('a');
+                if (a && a.href) {
+                  e.preventDefault();
+                  let url = a.href;
+                  try {
+                    const urlObj = new URL(url);
+                    // 모바일에서는 PC용 공실 링크를 모바일용으로 변환
+                    if (urlObj.pathname === '/gongsil' && urlObj.searchParams.has('id')) {
+                      urlObj.pathname = '/m/gongsil';
+                      url = urlObj.toString();
+                    }
+                  } catch (err) {}
+                  window.open(url, '_blank');
+                }
+              }}
             />
           </div>
         ) : (
