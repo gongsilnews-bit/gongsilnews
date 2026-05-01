@@ -337,7 +337,7 @@ export default function MobileGongsilPage() {
                 {/* Badges & Date */}
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                   <span style={{ fontSize: "13px", fontWeight: 700, color: "#ef4444", border: "1px solid #ef4444", padding: "1px 6px", borderRadius: "3px" }}>공동중개 0%</span>
-                  <span style={{ fontSize: "14px", fontWeight: 700, color: "#ef4444" }}>{v.comment_count || 0}</span>
+                  <span style={{ fontSize: "13px", color: "#6b7280" }}>No.{v.vacancy_no || '-'}</span>
                   <span style={{ fontSize: "13px", color: "#9ca3af" }}>{v.created_at ? new Date(v.created_at).toLocaleDateString("ko-KR").slice(0, -1) : ""}</span>
                 </div>
               </div>
