@@ -709,6 +709,16 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
             <AuthorProfileHeader profile={authorProfile || { name: initialAuthorName, role: 'REALTOR', profile_image_url: null }} />
           )}
 
+          {/* Keyword Search Result Header */}
+          {(initialKeyword || searchParams.get("keyword")) && (
+            <div style={{ padding: "20px 16px 8px", background: "#fff", display: "flex", alignItems: "center", gap: "6px" }}>
+              <span style={{ fontSize: "18px", fontWeight: 800, color: "#111" }}>#{initialKeyword || searchParams.get("keyword")}</span>
+              <span style={{ fontSize: "16px", fontWeight: 600, color: "#333" }}>관련기사</span>
+              <span style={{ fontSize: "16px", fontWeight: 800, color: "#508bf5" }}>{articles.length}</span>
+              <span style={{ fontSize: "16px", fontWeight: 600, color: "#333" }}>건</span>
+            </div>
+          )}
+
           {/* 스켈레톤 로딩 */}
           {loading && (
             <div style={{ padding: "16px" }}>
