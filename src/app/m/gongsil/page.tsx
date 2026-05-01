@@ -232,10 +232,16 @@ function MobileGongsilContent() {
   useEffect(() => {
     const handlePopState = () => {
       if (vacancyStackRef.current.length > 0) {
-        const prevVacancy = vacancyStackRef.current.pop();
-        setSelectedVacancy(prevVacancy);
-        setDetailTab("realtor");
-        setTimeout(() => { if (detailScrollRef.current) detailScrollRef.current.scrollTo(0, 0); }, 50);
+        const prev = vacancyStackRef.current.pop();
+        if (prev && prev.vacancy) {
+          setSelectedVacancy(prev.vacancy);
+          setDetailTab("realtor");
+          setTimeout(() => { if (detailScrollRef.current) detailScrollRef.current.scrollTo(0, prev.scrollY || 0); }, 50);
+        } else {
+          setSelectedVacancy(prev);
+          setDetailTab("realtor");
+          setTimeout(() => { if (detailScrollRef.current) detailScrollRef.current.scrollTo(0, 0); }, 50);
+        }
       } else if (selectedVacancy) {
         if (isEmbedded) {
           window.parent.postMessage({ type: 'CLOSE_VACANCY_OVERLAY' }, '*');
@@ -934,7 +940,10 @@ function MobileGongsilContent() {
                               key={v.id}
                               className="v-card"
                               onClick={() => {
-                                vacancyStackRef.current.push(selectedVacancy);
+                                vacancyStackRef.current.push({
+                                  vacancy: selectedVacancy,
+                                  scrollY: detailScrollRef.current?.scrollTop || 0
+                                });
                                 setDetailTab("info");
                                 handleVacancyClick(v);
                               }}
