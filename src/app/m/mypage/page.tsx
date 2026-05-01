@@ -112,17 +112,36 @@ export default function MobileMyPage() {
       <div style={{ padding: '40px 20px' }}>
         {/* 로그인 유도 */}
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-              <circle cx="12" cy="7" r="4"></circle>
+          {/* 로고 원형 */}
+          <div style={{ width: 80, height: 80, borderRadius: '50%', border: '1px solid #eee', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 24, boxShadow: '0 2px 6px rgba(0,0,0,0.06)', overflow: 'hidden', margin: '0 auto 24px' }}>
+            <svg width="64" height="64" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="24" cy="24" r="24" fill="#222222" />
+              <circle cx="24" cy="24" r="16" fill="#FFFFFF" />
+              <path d="M19 15.34L34 24L19 32.66Z" fill="#F59E0B" stroke="#222222" strokeWidth="3" strokeLinejoin="round" />
             </svg>
           </div>
-          <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#111', margin: '0 0 6px' }}>로그인이 필요합니다</h2>
-          <p style={{ fontSize: '13px', color: '#888', margin: 0, lineHeight: 1.5 }}>
-            소셜 계정으로 간편하게 시작하세요<br />
-            모든 서비스를 무료로 이용할 수 있습니다
+
+          <h3 style={{ fontSize: 20, fontWeight: 900, color: '#111', textAlign: 'center', margin: '0 0 8px 0', letterSpacing: '-0.3px' }}>
+            <span style={{ color: '#1e56a0' }}>11만</span> 부동산 무료 정보채널
+          </h3>
+          
+          <p style={{ fontSize: 13, color: '#888', textAlign: 'center', lineHeight: 1.6, margin: '0 0 26px 0' }}>
+            단 한 번의 가입으로 중개 실무에 꼭 필요한<br />특별한 혜택들을 모두 무료로 누려보세요.
           </p>
+
+          {/* 혜택 리스트 */}
+          <ul style={{ width: '100%', listStyle: 'none', margin: '0 0 28px 0', background: '#f4f6fa', borderRadius: '10px', padding: '18px 20px', border: '1px solid #eef0f5', boxSizing: 'border-box', textAlign: 'left' }}>
+            {[
+              <><strong style={{color: '#111', fontWeight: 800}}>로컬 부동산이 직접 전달하는</strong> 시세 현황 뉴스</>,
+              <><strong style={{color: '#111', fontWeight: 800}}>중개사에게 꼭 필요한</strong> AI 유튜브 특강 시청</>,
+              <><strong style={{color: '#111', fontWeight: 800}}>대한민국 부동산 누구나 가입하는</strong> 100% 무료 공동중개망</>
+            ].map((item, i) => (
+              <li key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, color: '#555', marginBottom: i < 2 ? 14 : 0, letterSpacing: '-0.3px' }}>
+                <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#1e56a0', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 900, flexShrink: 0 }}>✓</div>
+                <span style={{ lineHeight: 1.4 }}>{item}</span>
+              </li>
+            ))}
+          </ul>
         </div>
 
         {/* 구글 */}
