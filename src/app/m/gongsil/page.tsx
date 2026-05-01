@@ -37,6 +37,85 @@ export default function MobileGongsilPage() {
   const clustererRef = useRef<any>(null);
   const detailPanelRef = useRef<HTMLDivElement>(null);
   const detailScrollRef = useRef<HTMLDivElement>(null);
+  const shareDropdownRef = useRef<HTMLDivElement>(null);
+
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [showShareDropdown, setShowShareDropdown] = useState(false);
+
+  useEffect(() => {
+    if (selectedVacancy) {
+      const saved = localStorage.getItem("gongsil_bookmarks");
+      if (saved) {
+        try {
+          const arr = JSON.parse(saved);
+          setIsBookmarked(arr.includes(selectedVacancy.id));
+        } catch (e) {}
+      } else {
+        setIsBookmarked(false);
+      }
+    }
+  }, [selectedVacancy]);
+
+  const toggleBookmark = () => {
+    if (!selectedVacancy) return;
+    setIsBookmarked((prev) => {
+      const next = !prev;
+      const saved = localStorage.getItem("gongsil_bookmarks");
+      let arr: string[] = [];
+      if (saved) { try { arr = JSON.parse(saved); } catch (e) {} }
+      if (next) {
+        arr = [selectedVacancy.id, ...arr.filter((x: string) => x !== selectedVacancy.id)];
+      } else {
+        arr = arr.filter((x: string) => x !== selectedVacancy.id);
+      }
+      localStorage.setItem("gongsil_bookmarks", JSON.stringify(arr));
+      alert(next ? "매물을 찜했습니다." : "찜을 해제했습니다.");
+      return next;
+    });
+  };
+
+  const handleKakaoShare = () => {
+    if (!selectedVacancy) return;
+    const Kakao = (window as any).Kakao;
+    if (!Kakao || !Kakao.isInitialized()) {
+      alert("카카오 SDK 로드 중입니다. 잠시 후 시도해 주세요.");
+      return;
+    }
+    const shareUrl = `${window.location.origin}/m/gongsil?id=${selectedVacancy.id}`;
+    Kakao.Share.sendDefault({
+      objectType: "feed",
+      content: {
+        title: selectedVacancy.building_name || [selectedVacancy.dong, selectedVacancy.sigungu].filter(Boolean).join(" ") || "매물 상세",
+        description: `${selectedVacancy.trade_type} ${formatPrice(selectedVacancy)}`,
+        imageUrl: selectedVacancy.images?.[0] || "https://gongsilnews.com/favicon.png",
+        link: { mobileWebUrl: shareUrl, webUrl: shareUrl },
+      },
+      buttons: [{ title: "매물 보기", link: { mobileWebUrl: shareUrl, webUrl: shareUrl } }],
+    });
+    setShowShareDropdown(false);
+  };
+
+  const handleCopyUrl = () => {
+    if (!selectedVacancy) return;
+    const shareUrl = `${window.location.origin}/m/gongsil?id=${selectedVacancy.id}`;
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      alert("URL이 복사되었습니다.");
+    }).catch(() => {
+      alert("URL 복사에 실패했습니다.");
+    });
+    setShowShareDropdown(false);
+  };
+
+  useEffect(() => {
+    if (!showShareDropdown) return;
+    const handleClick = (e: MouseEvent) => {
+      if (shareDropdownRef.current && !shareDropdownRef.current.contains(e.target as Node)) {
+        setShowShareDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [showShareDropdown]);
 
   // 뒤로 가기(안드로이드 하드웨어 백버튼 등) 처리
   useEffect(() => {
@@ -360,17 +439,35 @@ export default function MobileGongsilPage() {
           {/* Action Buttons */}
           <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
             {/* 찜하기 */}
-            <button style={{ background: "none", border: "none", cursor: "pointer", padding: "0", display: "flex", alignItems: "center", color: "#6b7280" }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <button onClick={toggleBookmark} style={{ background: "none", border: "none", cursor: "pointer", padding: "0", display: "flex", alignItems: "center", color: isBookmarked ? "#1a73e8" : "#6b7280" }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill={isBookmarked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
               </svg>
             </button>
             {/* 공유(전달) */}
-            <button style={{ background: "none", border: "none", cursor: "pointer", padding: "0", display: "flex", alignItems: "center", color: "#6b7280" }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
-              </svg>
-            </button>
+            <div style={{ position: "relative" }} ref={shareDropdownRef}>
+              <button onClick={() => setShowShareDropdown(!showShareDropdown)} style={{ background: "none", border: "none", cursor: "pointer", padding: "0", display: "flex", alignItems: "center", color: showShareDropdown ? "#1a73e8" : "#6b7280" }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line>
+                </svg>
+              </button>
+              {showShareDropdown && (
+                <div style={{ position: "absolute", top: "100%", right: 0, marginTop: "8px", background: "#fff", border: "1px solid #e0e0e0", borderRadius: "10px", boxShadow: "0 6px 24px rgba(0,0,0,0.15)", width: "200px", zIndex: 9999, overflow: "hidden" }}>
+                  <button onClick={handleKakaoShare} style={{ width: "100%", display: "flex", alignItems: "center", gap: "12px", padding: "14px 16px", background: "none", border: "none", borderBottom: "1px solid #f0f0f0", cursor: "pointer", fontSize: "14px", color: "#333", fontWeight: 600 }}>
+                    <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "#FEE500", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="#3C1E1E"><path d="M12 3c-5.5 0-10 3.5-10 7.8 0 2.8 1.8 5.2 4.4 6.5l-1 3.7c-.1.3.3.6.5.4l4.3-2.9c.6.1 1.2.1 1.8.1 5.5 0 10-3.5 10-7.8S17.5 3 12 3z"></path></svg>
+                    </div>
+                    카카오톡 공유
+                  </button>
+                  <button onClick={handleCopyUrl} style={{ width: "100%", display: "flex", alignItems: "center", gap: "12px", padding: "14px 16px", background: "none", border: "none", cursor: "pointer", fontSize: "14px", color: "#333", fontWeight: 600 }}>
+                    <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "#f0f0f0", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                    </div>
+                    URL 복사
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
