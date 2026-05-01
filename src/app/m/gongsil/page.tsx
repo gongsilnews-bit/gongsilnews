@@ -63,6 +63,9 @@ export default function MobileGongsilPage() {
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [showShareDropdown, setShowShareDropdown] = useState(false);
 
+  // 다이렉트 뷰 여부 (URL에 id가 있는 경우 지도를 가리고 상세 정보만 보여줌)
+  const [isDirectView, setIsDirectView] = useState(false);
+
   useEffect(() => {
     if (selectedVacancy && detailTab === "info") {
       const kakao = (window as any).kakao;
@@ -194,6 +197,8 @@ export default function MobileGongsilPage() {
     const handlePopState = () => {
       if (selectedVacancy) {
         setSelectedVacancy(null);
+        setIsDirectView(false);
+        setTimeout(() => kakaoMapRef.current?.relayout(), 50);
       } else if (selectedCluster) {
         setSelectedCluster(null);
       }
@@ -221,12 +226,10 @@ export default function MobileGongsilPage() {
           const params = new URLSearchParams(window.location.search);
           const idParam = params.get("id");
           if (idParam) {
+            setIsDirectView(true);
             const target = withImages.find((v: any) => v.id === idParam);
             if (target) {
-              // history 상태를 맞추기 위해 약간의 딜레이 후 실행
-              setTimeout(() => {
-                handleVacancyClick(target);
-              }, 100);
+              handleVacancyClick(target);
             }
           }
         }
@@ -385,6 +388,7 @@ export default function MobileGongsilPage() {
         .detail-panel{position:fixed;top:0;left:50%;width:100%;max-width:448px;margin-left:-224px;height:100dvh;background:#fff;z-index:9999;transform:translateX(100vw);transition:transform 0.35s cubic-bezier(0.25,1,0.5,1);overflow-y:auto;}
         @media (max-width: 448px) { .detail-panel { margin-left: -50vw; } }
         .detail-panel.open{transform:translateX(0);}
+        .detail-panel.direct-view{transform:translateX(0);transition:none;}
         .skeleton{background:linear-gradient(90deg,#f3f4f6 25%,#e5e7eb 50%,#f3f4f6 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:6px;}
         @keyframes shimmer{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
         .v-card:active{background:#f9fafb;}
@@ -395,7 +399,7 @@ export default function MobileGongsilPage() {
         <div style={{ height: "9px", backgroundColor: "#F4F6F8", width: "100%", flexShrink: 0, borderBottom: "1px solid #e5e7eb" }} />
 
         {/* 지도 및 오버레이 컨테이너 */}
-        <div style={{ position: "relative", flex: 1, display: "flex", flexDirection: "column", backgroundColor: "#fff" }}>
+        <div style={{ position: "relative", flex: 1, display: isDirectView ? "none" : "flex", flexDirection: "column", backgroundColor: "#fff" }}>
           {/* 카카오 지도 */}
           <div ref={mapRef} style={{ width: "100%", flex: 1 }} />
 
@@ -499,7 +503,7 @@ export default function MobileGongsilPage() {
       </div>
 
       {/* 상세 패널 */}
-      <div ref={detailPanelRef} className={`detail-panel ${selectedVacancy ? "open" : ""}`} onClick={(e) => e.stopPropagation()} style={{ display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <div ref={detailPanelRef} className={`detail-panel ${selectedVacancy ? "open" : ""} ${isDirectView ? "direct-view" : ""}`} onClick={(e) => e.stopPropagation()} style={{ display: "flex", flexDirection: "column", overflow: "hidden" }}>
         {/* 상단 헤더 */}
         <div style={{ zIndex: 10, background: "#fff", borderBottom: "1px solid #f3f4f6", display: "flex", alignItems: "center", gap: "12px", padding: "14px 16px", position: "sticky", top: 0 }}>
           <button onClick={goBack} style={{ background: "none", border: "none", cursor: "pointer", padding: "4px", display: "flex", alignItems: "center", marginLeft: "-4px" }}>
