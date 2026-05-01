@@ -732,7 +732,9 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
         /* 일반 뉴스 리스트 뷰 */
         <div className={slideAnim} style={{ flex: 1, paddingBottom: "20px" }}>
           {/* Author Profile Header */}
-          {authorProfile && <AuthorProfileHeader profile={authorProfile} />}
+          {(authorProfile || initialAuthorName) && (
+            <AuthorProfileHeader profile={authorProfile || { name: initialAuthorName, role: 'REALTOR', profile_image_url: null }} />
+          )}
 
           {/* 스켈레톤 로딩 */}
           {loading && (
