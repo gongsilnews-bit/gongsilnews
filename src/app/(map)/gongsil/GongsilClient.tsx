@@ -1360,7 +1360,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                 : f === "사용승인일" ? yearFilterLabel 
                 : f === "세대수" ? unitFilterLabel 
                 : f === "등록자" ? (filterOwnerRole === 'USER' ? '일반인' : filterOwnerRole === 'REALTOR' ? '부동산' : '등록자')
-                : f === "중개보수" ? (filterCommissionType === '공동중개' ? '공동중개' : filterCommissionType === '100' ? '100%(법정)' : filterCommissionType ? `${filterCommissionType}%~` : '중개보수')
+                : f === "중개보수" ? (filterCommissionType === '공동중개' ? '공동중개' : filterCommissionType === '100' ? '100% (법정수수료)' : filterCommissionType === '25' ? '수수료25%~' : filterCommissionType ? `${filterCommissionType}%~` : '중개보수')
                 : f === "테마" ? (filterThemes.length > 0 ? `테마 ${filterThemes.length}개` : '테마')
                 : f;
 
@@ -1849,8 +1849,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                       <span style={{ fontSize: 15, fontWeight: "bold", color: "#111" }}>중개보수</span>
                       <button onClick={() => setActiveFilterDropdown(null)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#999", padding: 0, lineHeight: 1 }}>✕</button>
                     </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 16 }}>
-                      {[{ label: "전체", value: null }, { label: "공동중개", value: "공동중개" }, { label: "25%~", value: "25" }, { label: "50%~", value: "50" }, { label: "75%~", value: "75" }, { label: "100%(법정)", value: "100" }].map(p => (
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8, marginBottom: 16 }}>
+                      {[{ label: "전체", value: null }, { label: "공동중개", value: "공동중개" }, { label: "수수료25%~", value: "25" }, { label: "50%~", value: "50" }, { label: "75%~", value: "75" }, { label: "100% (법정수수료)", value: "100" }].map(p => (
                         <button key={p.label} onClick={() => setFilterCommissionType(filterCommissionType === p.value ? null : p.value)} style={{ padding: "10px 8px", borderRadius: 4, fontSize: 13, cursor: "pointer", textAlign: "center", border: filterCommissionType === p.value ? "1px solid #1a73e8" : "1px solid #e0e0e0", background: filterCommissionType === p.value ? "#e8f0fe" : "#fff", color: filterCommissionType === p.value ? "#1a73e8" : "#555", fontWeight: filterCommissionType === p.value ? "bold" : "normal" }}>
                           {p.label}
                         </button>

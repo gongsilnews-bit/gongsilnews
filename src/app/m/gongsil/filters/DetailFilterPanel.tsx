@@ -25,10 +25,10 @@ const OWNER_PRESETS = [
 const COMMISSION_PRESETS = [
   { label: '전체', value: null },
   { label: '공동중개', value: '공동중개' },
-  { label: '25%~', value: '25' },
+  { label: '수수료25%~', value: '25' },
   { label: '50%~', value: '50' },
   { label: '75%~', value: '75' },
-  { label: '100%(법정)', value: '100' },
+  { label: '100% (법정수수료)', value: '100' },
 ];
 
 const THEME_PRESETS = [
@@ -82,7 +82,7 @@ export default function DetailFilterPanel({ filters, onFilterChange }: Props) {
       {/* 수수료 유형 */}
       <div style={{ marginBottom: "24px" }}>
         <div style={{ fontSize: "14px", fontWeight: 700, color: "#111", marginBottom: "12px" }}>중개보수</div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "8px" }}>
           {COMMISSION_PRESETS.map(p => (
             <button
               key={p.label}

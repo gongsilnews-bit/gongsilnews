@@ -41,6 +41,10 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
   useEffect(() => { setTempFilters(filters); }, [filters]);
   useEffect(() => { if (searchOpen && searchInputRef.current) searchInputRef.current.focus(); }, [searchOpen]);
 
+  const handleTempFilterChange = (partial: Partial<FilterState>) => {
+    setTempFilters(prev => ({ ...prev, ...partial }));
+  };
+
   const applyTextSearch = () => {
     onFilterChange({ keyword: searchText });
     setSearchOpen(false);
@@ -178,31 +182,31 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
             {/* 거래유형 */}
             <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
               <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>거래유형</div>
-              <TradeTypeFilterPanel filters={tempFilters} onFilterChange={setTempFilters} TRADE_TYPES={TRADE_TYPES} />
+              <TradeTypeFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} TRADE_TYPES={TRADE_TYPES} />
             </div>
 
             {/* 매물유형 */}
             <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
               <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>매물유형</div>
-              <PropertyTypeFilterPanel filters={tempFilters} onFilterChange={setTempFilters} PROPERTY_TYPES={PROPERTY_TYPES} />
+              <PropertyTypeFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} PROPERTY_TYPES={PROPERTY_TYPES} />
             </div>
             
             {/* 가격 */}
             <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
               <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>가격</div>
-              <PriceFilterPanel filters={tempFilters} onFilterChange={setTempFilters} />
+              <PriceFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} />
             </div>
 
             {/* 면적 */}
             <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
               <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>면적</div>
-              <AreaFilterPanel filters={tempFilters} onFilterChange={setTempFilters} />
+              <AreaFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} />
             </div>
 
             {/* 층수 및 연식 */}
             <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
               <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>층수 및 연식</div>
-              <DetailFilterPanel filters={tempFilters} onFilterChange={setTempFilters} />
+              <DetailFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} />
             </div>
           </div>
 
