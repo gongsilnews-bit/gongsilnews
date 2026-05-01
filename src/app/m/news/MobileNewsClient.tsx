@@ -79,6 +79,10 @@ function MobileNewsClient({ initialTab, initialArticles }: { initialTab: string,
   const [detailLoading, setDetailLoading] = useState(false);
   const [clusterMode, setClusterMode] = useState(false);
 
+  // 화면 전환 애니메이션 상태
+  const [transitionRect, setTransitionRect] = useState<DOMRect | null>(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+
   const mapRef = useRef<HTMLDivElement>(null);
   const kakaoMapRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
@@ -159,7 +163,7 @@ function MobileNewsClient({ initialTab, initialArticles }: { initialTab: string,
   }, [articleDetail, showDetail]);
 
   // 기사 상세 조회 (우리동네뉴스는 인라인 패널, 나머지는 새 페이지)
-  const handleSelectArticle = async (id: string, isLocal: boolean = false) => {
+  const handleSelectArticle = async (id: string, isLocal: boolean = false, e?: React.MouseEvent) => {
     if (isLocal) {
       window.location.hash = "detail";
       setShowDetail(true);
@@ -170,7 +174,28 @@ function MobileNewsClient({ initialTab, initialArticles }: { initialTab: string,
       }
       setDetailLoading(false);
     } else {
-      router.push(`/m/news/${id}`);
+      if (e) {
+        const rect = e.currentTarget.getBoundingClientRect();
+        setTransitionRect(rect);
+        // 레이아웃이 그려진 직후 애니메이션 시작
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            setIsTransitioning(true);
+          });
+        });
+        
+        // 애니메이션 재생 후 라우팅
+        setTimeout(() => {
+          router.push(`/m/news/${id}`);
+          // 뒤로가기로 돌아왔을 때를 대비해 상태 초기화 (충분한 시간 뒤)
+          setTimeout(() => {
+            setIsTransitioning(false);
+            setTransitionRect(null);
+          }, 800);
+        }, 350);
+      } else {
+        router.push(`/m/news/${id}`);
+      }
     }
   };
 
@@ -677,7 +702,7 @@ function MobileNewsClient({ initialTab, initialArticles }: { initialTab: string,
           {/* 헤드라인 히어로 (APPROVED 기사 중 첫번째 큰 이미지) */}
           {articles[0] && (
             <div
-              onClick={() => handleSelectArticle(articles[0].id)}
+              onClick={(e) => handleSelectArticle(articles[0].id, false, e)}
               style={{
                 position: "relative",
                 width: "100%",
@@ -766,7 +791,7 @@ function MobileNewsClient({ initialTab, initialArticles }: { initialTab: string,
                 <div
                   key={a.id}
                   className="article-row"
-                  onClick={() => handleSelectArticle(a.id)}
+                  onClick={(e) => handleSelectArticle(a.id, false, e)}
                   style={{
                     display: "flex",
                     gap: "14px",
@@ -880,6 +905,24 @@ function MobileNewsClient({ initialTab, initialArticles }: { initialTab: string,
           </div>
         )}
       </div>
+      
+      {/* 기사 클릭 시 화면 팽창(Scale-up) 오버레이 애니메이션 */}
+      {transitionRect && (
+        <div 
+          style={{
+            position: "fixed",
+            zIndex: 999999,
+            backgroundColor: "#f3f4f6", // 사용자 요청 바탕색(연한 회색)
+            top: isTransitioning ? 0 : transitionRect.top,
+            left: isTransitioning ? 0 : transitionRect.left,
+            width: isTransitioning ? "100vw" : transitionRect.width,
+            height: isTransitioning ? "100vh" : transitionRect.height,
+            transition: "all 0.35s cubic-bezier(0.25, 1, 0.5, 1)",
+            pointerEvents: "none",
+            boxShadow: isTransitioning ? "none" : "0 4px 12px rgba(0,0,0,0.1)",
+          }}
+        />
+      )}
 
       <style>{`
         .no-scrollbar::-webkit-scrollbar { display: none; }
