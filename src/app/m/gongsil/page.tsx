@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { getVacancies, getVacancyDetail } from "@/app/actions/vacancy";
 import { getPermissionLevel } from "@/utils/permissionCheck";
 import AuthModal from "@/components/AuthModal";
+import MobileFilterBar from "./MobileFilterBar";
 import HomeHeader from "../_components/HomeHeader";
 
 const KAKAO_APP_KEY = process.env.NEXT_PUBLIC_KAKAO_APP_KEY || "435d3602201a49ea712e5f5a36fe6efc";
@@ -101,6 +102,21 @@ function MobileGongsilContent() {
 
   // 권한 파생 값
   const showCommission = userLevel >= 2;
+
+  // 필터 State
+  const [filters, setFilters] = useState<{ propertyTypes: string[]; tradeTypes: string[]; keyword: string }>({ propertyTypes: [], tradeTypes: [], keyword: "" });
+
+  // 필터링된 매물
+  const filteredVacancies = vacancies.filter(v => {
+    if (filters.propertyTypes.length > 0 && !filters.propertyTypes.includes(v.property_type)) return false;
+    if (filters.tradeTypes.length > 0 && !filters.tradeTypes.includes(v.trade_type)) return false;
+    if (filters.keyword) {
+      const q = filters.keyword.toLowerCase();
+      const match = (v.building_name || "").toLowerCase().includes(q) || (v.dong || "").toLowerCase().includes(q) || (v.sigungu || "").toLowerCase().includes(q) || (v.vacancy_no || "").toLowerCase().includes(q);
+      if (!match) return false;
+    }
+    return true;
+  });
 
   // Swipe gesture states
   const [touchStart, setTouchStart] = useState<number | null>(null);
@@ -419,7 +435,7 @@ function MobileGongsilContent() {
       });
     }
 
-    vacancies.forEach((v) => {
+    filteredVacancies.forEach((v) => {
       if (!v.lat || !v.lng) return;
       const size = 36;
       const color = "#4b89ff";
@@ -449,7 +465,7 @@ function MobileGongsilContent() {
     });
 
     clustererRef.current.addMarkers(markersRef.current);
-  }, [vacancies, mapLoaded]);
+  }, [filteredVacancies, mapLoaded]);
 
   // 상세 조회
   const handleVacancyClick = async (v: any, isDirect: boolean = false) => {
@@ -535,9 +551,26 @@ function MobileGongsilContent() {
       `}</style>
       
       <div style={{ flex: 1, display: "flex", flexDirection: "column", paddingTop: isEmbedded ? "0" : "50px" }}>
-        {/* 구분선 (회색 배경) */}
         {!isEmbedded && (
           <div style={{ height: "9px", backgroundColor: "#F4F6F8", width: "100%", flexShrink: 0, borderBottom: "1px solid #e5e7eb" }} />
+        )}
+
+        {/* 필터 바 */}
+        {!isEmbedded && !isDirectView && (
+          <MobileFilterBar
+            vacancies={vacancies}
+            filteredCount={filteredVacancies.length}
+            filters={filters}
+            onFilterChange={setFilters}
+            onLocationMove={(lat, lng, zoom) => {
+              const kakao = (window as any).kakao;
+              if (kakaoMapRef.current && kakao) {
+                kakaoMapRef.current.panTo(new kakao.maps.LatLng(lat, lng));
+                kakaoMapRef.current.setLevel(zoom);
+              }
+            }}
+            kakaoMapRef={kakaoMapRef}
+          />
         )}
 
         {/* 지도 및 오버레이 컨테이너 */}
@@ -558,7 +591,7 @@ function MobileGongsilContent() {
         {/* 매물 수 표시 */}
         {mapLoaded && (
           <div style={{ position: "absolute", top: "16px", left: "16px", zIndex: 20, background: "rgba(255,255,255,0.95)", borderRadius: "20px", padding: "8px 14px", fontSize: "13px", fontWeight: 700, color: "#1a2e50", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}>
-            🏢 공실 {vacancies.filter(v => v.lat && v.lng).length}건
+            🏢 공실 {filteredVacancies.filter(v => v.lat && v.lng).length}건
           </div>
         )}
 
