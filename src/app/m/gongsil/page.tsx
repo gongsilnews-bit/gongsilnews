@@ -654,7 +654,7 @@ export default function MobileGongsilPage() {
                 onClick={() => setDetailTab("realtor")} 
                 style={{ flex: 1, padding: "14px 0", fontSize: "17px", fontWeight: detailTab === "realtor" ? 800 : 600, color: detailTab === "realtor" ? "#111827" : "#6b7280", borderBottom: detailTab === "realtor" ? "3px solid #111827" : "3px solid transparent", background: "none" }}
               >
-                등록자정보
+                등록자 공실
               </button>
             </div>
 
@@ -786,17 +786,93 @@ export default function MobileGongsilPage() {
                     <button style={{ width: "40px", height: "40px", borderRadius: "50%", border: "1px solid #e5e7eb", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4b5563" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg></button>
                   </div>
                   
-                  {/* 공실등록현황 */}
-                  <div style={{ background: "#f9fafb", borderRadius: "8px", padding: "16px", display: "flex", alignItems: "center" }}>
-                    <div style={{ fontSize: "16px", fontWeight: 800, color: "#111827", marginRight: "20px" }}>공실등록현황</div>
-                    <div style={{ display: "flex", flex: 1, justifyContent: "space-between", fontSize: "15px", color: "#6b7280" }}>
-                      <span>전체 <b style={{ color: "#1a73e8" }}>6</b></span>
-                      <span>매매 <b>3</b></span>
-                      <span>전세 <b>3</b></span>
-                      <span>월세 <b>0</b></span>
-                      <span>단기 <b>0</b></span>
-                    </div>
-                  </div>
+                  {/* 공실등록현황 및 리스트 */}
+                  {(() => {
+                    const ownerVacancies = vacancies.filter(v => v.owner_id === selectedVacancy.owner_id);
+                    const totalCnt = ownerVacancies.length;
+                    const saleCnt = ownerVacancies.filter(v => v.trade_type === "매매").length;
+                    const jeonseCnt = ownerVacancies.filter(v => v.trade_type === "전세").length;
+                    const wolseCnt = ownerVacancies.filter(v => v.trade_type === "월세").length;
+                    const shortCnt = ownerVacancies.filter(v => v.trade_type === "단기").length;
+
+                    return (
+                      <>
+                        <div style={{ background: "#f9fafb", borderRadius: "8px", padding: "16px", display: "flex", alignItems: "center", marginBottom: "16px" }}>
+                          <div style={{ fontSize: "16px", fontWeight: 800, color: "#111827", marginRight: "20px" }}>공실등록현황</div>
+                          <div style={{ display: "flex", flex: 1, justifyContent: "space-between", fontSize: "14px", color: "#6b7280" }}>
+                            <span>전체 <b style={{ color: "#1a73e8" }}>{totalCnt}</b></span>
+                            <span>매매 <b>{saleCnt}</b></span>
+                            <span>전세 <b>{jeonseCnt}</b></span>
+                            <span>월세 <b>{wolseCnt}</b></span>
+                            <span>단기 <b>{shortCnt}</b></span>
+                          </div>
+                        </div>
+
+                        <div style={{ display: "flex", flexDirection: "column" }}>
+                          {ownerVacancies.map((v: any) => (
+                            <div
+                              key={v.id}
+                              className="v-card"
+                              onClick={() => {
+                                setDetailTab("info");
+                                setSelectedVacancy(v);
+                                if (detailScrollRef.current) detailScrollRef.current.scrollTo(0, 0);
+                              }}
+                              style={{ display: "flex", gap: "12px", padding: "16px 0", borderBottom: "1px solid #f3f4f6", cursor: "pointer", transition: "background 0.15s" }}
+                            >
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                {/* Badges & Date */}
+                                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
+                                  <span style={{ fontSize: "12px", fontWeight: 700, color: "#ef4444", border: "1px solid #ef4444", padding: "1px 6px", borderRadius: "3px" }}>공동중개 0%</span>
+                                  <span style={{ fontSize: "13px", fontWeight: 700, color: "#ef4444" }}>{v.vacancy_no || '-'}</span>
+                                  <span style={{ fontSize: "12px", color: "#9ca3af" }}>{v.created_at ? new Date(v.created_at).toLocaleDateString("ko-KR").slice(0, -1) : ""}</span>
+                                </div>
+
+                                {/* Title */}
+                                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+                                  <p style={{ fontSize: "16px", fontWeight: 800, color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                    {v.building_name || [v.dong, v.sigungu].filter(Boolean).join(" ")}
+                                  </p>
+                                </div>
+                                
+                                {/* Price */}
+                                <p style={{ fontSize: "18px", fontWeight: 800, color: "#1a73e8", marginBottom: "6px" }}>
+                                  {v.trade_type} {formatPrice(v)}
+                                </p>
+                                
+                                {/* Specs */}
+                                <p style={{ fontSize: "14px", color: "#6b7280", marginBottom: "2px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                  {[v.property_type || "건물", v.direction, v.exclusive_m2 && `${v.exclusive_m2}㎡`].filter(Boolean).join(" | ")}
+                                </p>
+                                
+                                {/* Options */}
+                                <p style={{ fontSize: "14px", color: "#6b7280", marginBottom: "8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                  {[v.room_count !== undefined ? `룸 ${v.room_count}개` : null, v.bath_count !== undefined ? `욕실 ${v.bath_count}개` : null, ...(v.options || [])].filter(Boolean).join(", ")}
+                                </p>
+
+                                {/* Themes */}
+                                {v.themes && v.themes.length > 0 && (
+                                  <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginTop: "4px" }}>
+                                    {v.themes.map((theme: string, idx: number) => (
+                                      <span key={idx} style={{ background: "#f8fafc", color: "#3b82f6", fontSize: "12px", padding: "2px 8px", borderRadius: "12px", fontWeight: 700, border: "1px solid #bfdbfe" }}>
+                                        {theme.startsWith('#') ? theme : `# ${theme}`}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                              {v.images?.[0] && (
+                                <div style={{ width: "90px", height: "72px", borderRadius: "10px", overflow: "hidden", flexShrink: 0, backgroundColor: "#e5e7eb", alignSelf: "center" }}>
+                                  <img src={v.images[0]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                </div>
+                              )}
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="2" style={{ flexShrink: 0, alignSelf: "center" }}><polyline points="9 18 15 12 9 6"/></svg>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               )}
             </div>
