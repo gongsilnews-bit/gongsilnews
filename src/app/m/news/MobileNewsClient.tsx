@@ -457,7 +457,7 @@ function MobileNewsClient({ initialTab, initialArticles }: { initialTab: string,
                 cursor: "pointer",
               }}
             >
-              <img src="/favicon.png" alt="홈" style={{ width: "28px", height: "28px", objectFit: "contain" }} />
+              <img src="/new_logo.png" alt="홈" style={{ width: "28px", height: "28px", objectFit: "contain" }} />
             </button>
 
             {/* 중앙 스크롤 메뉴 */}
