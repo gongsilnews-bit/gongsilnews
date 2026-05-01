@@ -3,9 +3,58 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import { createClient } from "@/utils/supabase/client";
 
 export default function MobileBottomNav() {
   const pathname = usePathname();
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [profileImg, setProfileImg] = useState<string | null>(null);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    const supabase = createClient();
+
+    const fetchUserData = async (userId: string, userMetaImg: string | undefined) => {
+      // Get profile image
+      const { data } = await supabase.from('members').select('avatar_url').eq('id', userId).single();
+      setProfileImg(data?.avatar_url || userMetaImg || null);
+
+      // Get unread messages
+      try {
+        const { getMyRooms } = await import('@/app/actions/talkActions');
+        const res = await getMyRooms(userId);
+        if (res.success && res.data) {
+          const count = res.data.reduce((sum: number, r: any) => sum + (r.unread_count || 0), 0);
+          setUnreadCount(count);
+        }
+      } catch (e) {
+        console.error("Failed to fetch unread messages", e);
+      }
+    };
+
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        setCurrentUser(user);
+        fetchUserData(user.id, user.user_metadata?.avatar_url);
+      }
+    });
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user) {
+        setCurrentUser(session.user);
+        fetchUserData(session.user.id, session.user.user_metadata?.avatar_url);
+      } else {
+        setCurrentUser(null);
+        setProfileImg(null);
+        setUnreadCount(0);
+      }
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
 
   const navItems = [
     { 
@@ -48,10 +97,39 @@ export default function MobileBottomNav() {
               key={item.name}
               href={item.path}
               className="flex flex-col items-center justify-center w-full h-full"
-              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', position: 'relative' }}
             >
-              <span className={`text-xl mb-1 ${isActive ? "opacity-100 scale-110" : "opacity-50 grayscale"} transition-all duration-200`}>
-                {item.icon}
+              <span className={`text-xl mb-1 ${isActive ? "opacity-100 scale-110" : "opacity-50 grayscale"} transition-all duration-200`} style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {item.name === "마이" && profileImg ? (
+                  <div style={{ width: 24, height: 24, borderRadius: '50%', overflow: 'hidden', border: isActive ? '2px solid #1a2e50' : '1px solid #ccc' }}>
+                    <img src={profileImg} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  </div>
+                ) : (
+                  item.icon
+                )}
+                
+                {/* Unread Message Badge */}
+                {item.name === "마이" && unreadCount > 0 && (
+                  <span style={{
+                    position: 'absolute',
+                    top: -4,
+                    right: -6,
+                    backgroundColor: '#ef4444',
+                    color: 'white',
+                    fontSize: '10px',
+                    fontWeight: 'bold',
+                    width: '16px',
+                    height: '16px',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: '2px solid #fff',
+                    zIndex: 10
+                  }}>
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
               </span>
               <span className={`text-[10px] font-bold ${isActive ? "text-[#1a2e50]" : "text-gray-400"}`}>
                 {item.name}
