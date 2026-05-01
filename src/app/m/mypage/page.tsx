@@ -38,7 +38,7 @@ export default function MobileMyPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: providerName as any,
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?from=mobile`,
+          redirectTo: `${window.location.origin}/auth/callback?returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}`,
         },
       });
       if (error) throw error;
