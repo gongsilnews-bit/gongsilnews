@@ -133,8 +133,18 @@ function MobileVacancyWrite() {
 
   const formatKorean = (v: string) => {
     const n = parseInt(v); if (isNaN(n) || n<=0) return "";
-    const e = Math.floor(n/10000); const m = n%10000;
-    let r = ""; if (e>0) r+=`${e}억`; if (m>0) r+=` ${m}만`; return r.trim()+"원";
+    const eok = Math.floor(n/10000); const man = n%10000;
+    let result = "";
+    if (eok > 0) result += `${eok}억`;
+    if (man > 0) {
+      const cheon = Math.floor(man/1000);
+      const rest = man%1000;
+      let manStr = "";
+      if (cheon > 0) manStr += `${cheon}천`;
+      if (rest > 0) manStr += `${rest}`;
+      result += (result ? " " : "") + manStr + "만";
+    }
+    return (result || "0") + "원";
   };
 
   const handleSubmit = async (status: string) => {
