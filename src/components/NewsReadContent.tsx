@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 
 import { incrementArticleView } from "@/app/actions/article";
@@ -28,8 +28,31 @@ const FONT_SIZES = [
 
 export default function NewsReadContent({ article, popularArticles }: NewsReadContentProps) {
   const pathname = usePathname() || "";
+  const router = useRouter();
   const isMobile = pathname.startsWith("/m");
   const basePath = isMobile ? "/m" : "";
+
+  // 기사 전환 애니메이션 State
+  const [transitionRect, setTransitionRect] = useState<DOMRect | null>(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+
+  const handlePopularArticleClick = (e: React.MouseEvent, id: string) => {
+    e.preventDefault();
+    if (!isMobile) {
+      router.push(`/news/${id}`);
+      return;
+    }
+    const rect = e.currentTarget.getBoundingClientRect();
+    setTransitionRect(rect);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setIsTransitioning(true);
+      });
+    });
+    setTimeout(() => {
+      router.push(`/m/news/${id}`);
+    }, 350);
+  };
 
   const scrollBarRef = useRef<HTMLDivElement>(null);
   const shareDropdownRef = useRef<HTMLDivElement>(null);
@@ -904,7 +927,7 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
               <ul className="pop-list">
                 {popularArticles.length > 0 ? popularArticles.map((item, i) => (
                   <li key={item.id} className="pop-item">
-                    <Link href={`${basePath}/news/${item.article_no || item.id}`} style={{ textDecoration: "none", color: "inherit", display: "flex", alignItems: "flex-start", gap: 8, width: "100%" }}>
+                    <Link href={`${basePath}/news/${item.article_no || item.id}`} onClick={(e) => handlePopularArticleClick(e, item.article_no || item.id)} style={{ textDecoration: "none", color: "inherit", display: "flex", alignItems: "flex-start", gap: 8, width: "100%" }}>
                       <span className="pop-ranking">{i + 1}</span>
                       <span className="pop-title">{item.title}</span>
                     </Link>
@@ -946,6 +969,25 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
             </div>
           </div>
         </div>
+      )}
+
+      {/* 기사 클릭 시 화면 팽창(Scale-up) 오버레이 애니메이션 */}
+      {transitionRect && (
+        <div 
+          style={{
+            position: "fixed",
+            zIndex: 999999,
+            backgroundColor: "#f3f4f6",
+            top: isTransitioning ? 0 : "calc(50% - 50px)",
+            left: isTransitioning ? 0 : "calc(50% - 50px)",
+            width: isTransitioning ? "100vw" : "100px",
+            height: isTransitioning ? "100vh" : "100px",
+            borderRadius: isTransitioning ? "0px" : "24px",
+            transition: "all 0.35s cubic-bezier(0.25, 1, 0.5, 1)",
+            pointerEvents: "none",
+            boxShadow: isTransitioning ? "none" : "0 10px 30px rgba(0,0,0,0.15)",
+          }}
+        />
       )}
 
       <style>{`
