@@ -988,7 +988,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
   );
 }
 
-export default function MobileNewsClientWrapper(props: { initialTab: string, initialArticles: any[] }) {
+export default function MobileNewsClientWrapper(props: { initialTab: string, initialArticles: any[], initialAuthorName?: string, initialKeyword?: string }) {
   return (
     <Suspense fallback={null}>
       <MobileNewsClient {...props} />
