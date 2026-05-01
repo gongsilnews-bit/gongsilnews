@@ -236,7 +236,7 @@ function MobileArticleAdmin() {
                     📋 승인신청
                   </button>
                 )}
-                <button onClick={() => router.push(`/user_admin?menu=article&action=write&id=${a.id}`)} style={{ flex: 1, height: 38, background: "#4b5563", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
+                <button onClick={() => router.push(`/m/admin/article/write?id=${a.id}`)} style={{ flex: 1, height: 38, background: "#4b5563", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
                   ✏️ 수정
                 </button>
                 <button onClick={() => handleDelete(a.id)} style={{ height: 38, padding: "0 14px", background: "#fff", color: "#9ca3af", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
@@ -250,7 +250,7 @@ function MobileArticleAdmin() {
 
       {/* FAB: 새 기사 작성 */}
       <button
-        onClick={() => router.push("/user_admin?menu=article&action=write")}
+        onClick={() => router.push("/m/admin/article/write")}
         style={{
           position: "fixed", bottom: 80, right: 20, width: 56, height: 56,
           borderRadius: "50%", background: "linear-gradient(135deg, #3b82f6, #2563eb)",
