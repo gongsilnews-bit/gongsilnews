@@ -91,7 +91,7 @@ export default function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
           />
         </div>
         <button onClick={() => handleSearch(searchTerm)} style={{ padding: '4px', background: 'none', border: 'none', cursor: 'pointer' }}>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1a2e50" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
         </button>
       </div>
 
