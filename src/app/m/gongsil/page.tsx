@@ -38,9 +38,62 @@ export default function MobileGongsilPage() {
   const detailPanelRef = useRef<HTMLDivElement>(null);
   const detailScrollRef = useRef<HTMLDivElement>(null);
   const shareDropdownRef = useRef<HTMLDivElement>(null);
+  const itemMapRef = useRef<HTMLDivElement>(null);
+  const roadviewRef = useRef<HTMLDivElement>(null);
 
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [showShareDropdown, setShowShareDropdown] = useState(false);
+
+  useEffect(() => {
+    if (selectedVacancy && detailTab === "info") {
+      const kakao = (window as any).kakao;
+      if (!kakao || !kakao.maps) return;
+
+      const pos = new kakao.maps.LatLng(selectedVacancy.lat, selectedVacancy.lng);
+      
+      const isAptType = (type: string) => ["아파트", "오피스텔", "도시형생활주택"].includes(type || "");
+      const isPrivateAddr = selectedVacancy.address_exposure && selectedVacancy.address_exposure !== '번지공개';
+      const isApt = isAptType(selectedVacancy.property_type) || isAptType(selectedVacancy.sub_category);
+      const useCircle = isPrivateAddr && !isApt;
+      
+      setTimeout(() => {
+        if (itemMapRef.current) {
+          itemMapRef.current.innerHTML = "";
+          const map = new kakao.maps.Map(itemMapRef.current, { center: pos, level: useCircle ? 5 : 3 });
+          if (useCircle) {
+            map.setMinLevel(5);
+            map.setMaxLevel(8);
+            new kakao.maps.Circle({
+              center: pos, radius: 300, strokeWeight: 2, strokeColor: '#3b82f6', strokeOpacity: 0.6,
+              strokeStyle: 'solid', fillColor: '#3b82f6', fillOpacity: 0.15, map: map
+            });
+          } else {
+            new kakao.maps.Marker({ position: pos, map: map });
+          }
+        }
+
+        if (roadviewRef.current) {
+          roadviewRef.current.innerHTML = "";
+          const rv = new kakao.maps.Roadview(roadviewRef.current);
+          const rvClient = new kakao.maps.RoadviewClient();
+          const agencyInfo = Array.isArray(selectedVacancy.members?.agencies) ? selectedVacancy.members.agencies[0] : selectedVacancy.members?.agencies;
+
+          if (useCircle && agencyInfo?.lat && agencyInfo?.lng) {
+            const agencyPos = new kakao.maps.LatLng(agencyInfo.lat, agencyInfo.lng);
+            rvClient.getNearestPanoId(agencyPos, 50, (panoId: any) => {
+              if (panoId) { rv.setPanoId(panoId, agencyPos); }
+              else if (roadviewRef.current) { roadviewRef.current.innerHTML = '<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#999; font-size:13px;">중개업소 위치의 로드뷰를 제공할 수 없습니다.</div>'; }
+            });
+          } else {
+            rvClient.getNearestPanoId(pos, 50, (panoId: any) => {
+              if (panoId) { rv.setPanoId(panoId, pos); }
+              else if (roadviewRef.current) { roadviewRef.current.innerHTML = '<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#999; font-size:13px;">해당 위치의 로드뷰를 제공할 수 없습니다.</div>'; }
+            });
+          }
+        }
+      }, 100);
+    }
+  }, [selectedVacancy, detailTab]);
 
   useEffect(() => {
     if (selectedVacancy) {
@@ -561,6 +614,14 @@ export default function MobileGongsilPage() {
                       <p style={{ fontSize: "16px", color: "#374151", lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{selectedVacancy.description}</p>
                     </div>
                   )}
+
+                  {/* 위치정보 및 로드뷰 */}
+                  <div style={{ paddingTop: "24px" }}>
+                    <div style={{ fontSize: "16px", fontWeight: 800, color: "#111827", marginBottom: "12px" }}>위치정보</div>
+                    <div ref={itemMapRef} style={{ width: "100%", height: "200px", borderRadius: "8px", background: "#f3f4f6", marginBottom: "20px" }}></div>
+                    <div style={{ fontSize: "16px", fontWeight: 800, color: "#111827", marginBottom: "12px" }}>로드뷰</div>
+                    <div ref={roadviewRef} style={{ width: "100%", height: "200px", borderRadius: "8px", background: "#f3f4f6" }}></div>
+                  </div>
                 </div>
               ) : (
                 <div style={{ paddingTop: "24px" }}>
