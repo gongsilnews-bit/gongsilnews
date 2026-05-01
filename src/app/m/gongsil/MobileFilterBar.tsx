@@ -102,23 +102,29 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
         <div style={{ width: 1, height: 20, background: "#e5e7eb", flexShrink: 0 }} />
 
         {/* 수평 스크롤 필 버튼들 */}
-        <div className="filter-scroll" style={{ flex: 1, minWidth: 0, overflowX: "auto", display: "flex", gap: "8px", padding: "0 12px", WebkitOverflowScrolling: "touch" as any }}>
-          <button onClick={() => setActivePanel(activePanel === "loc" ? null : "loc")} style={pillStyle(activePanel === "loc" || locLabel !== "위치")}>📍 {locLabel} ▾</button>
-          <button onClick={() => setActivePanel(activePanel === "prop" ? null : "prop")} style={pillStyle(activePanel === "prop" || filters.propertyTypes.length > 0)}>
-            {filters.propertyTypes.length > 0 ? filters.propertyTypes.slice(0,2).join(", ") + (filters.propertyTypes.length > 2 ? ` +${filters.propertyTypes.length-2}` : "") : "매물유형"} ▾
-          </button>
-          <button onClick={() => setActivePanel(activePanel === "trade" ? null : "trade")} style={pillStyle(activePanel === "trade" || filters.tradeTypes.length > 0)}>
-            {filters.tradeTypes.length > 0 ? filters.tradeTypes.join(", ") : "거래방식"} ▾
-          </button>
-          <button onClick={() => setActivePanel(activePanel === "price" ? null : "price")} style={pillStyle(activePanel === "price" || filters.priceMin !== null || filters.priceMax !== null)}>
-            가격 ▾
-          </button>
-          <button onClick={() => setActivePanel(activePanel === "area" ? null : "area")} style={pillStyle(activePanel === "area" || filters.areaMin !== null || filters.areaMax !== null)}>
-            면적 ▾
-          </button>
-          <button onClick={() => setActivePanel(activePanel === "detail" ? null : "detail")} style={pillStyle(activePanel === "detail" || filters.floor !== null || filters.yearMin !== null)}>
-            층수/연식 ▾
-          </button>
+        <div style={{ position: "relative", flex: 1, minWidth: 0, overflow: "hidden" }}>
+          <div className="filter-scroll" style={{ overflowX: "auto", display: "flex", gap: "8px", padding: "0 12px 0 12px", WebkitOverflowScrolling: "touch" as any }}>
+            <button onClick={() => setActivePanel(activePanel === "loc" ? null : "loc")} style={pillStyle(activePanel === "loc" || locLabel !== "위치")}>📍 {locLabel} ▾</button>
+            <button onClick={() => setActivePanel(activePanel === "prop" ? null : "prop")} style={pillStyle(activePanel === "prop" || filters.propertyTypes.length > 0)}>
+              {filters.propertyTypes.length > 0 ? filters.propertyTypes.slice(0,2).join(", ") + (filters.propertyTypes.length > 2 ? ` +${filters.propertyTypes.length-2}` : "") : "매물유형"} ▾
+            </button>
+            <button onClick={() => setActivePanel(activePanel === "trade" ? null : "trade")} style={pillStyle(activePanel === "trade" || filters.tradeTypes.length > 0)}>
+              {filters.tradeTypes.length > 0 ? filters.tradeTypes.join(", ") : "거래방식"} ▾
+            </button>
+            <button onClick={() => setActivePanel(activePanel === "price" ? null : "price")} style={pillStyle(activePanel === "price" || filters.priceMin !== null || filters.priceMax !== null)}>
+              가격 ▾
+            </button>
+            <button onClick={() => setActivePanel(activePanel === "area" ? null : "area")} style={pillStyle(activePanel === "area" || filters.areaMin !== null || filters.areaMax !== null)}>
+              면적 ▾
+            </button>
+            <button onClick={() => setActivePanel(activePanel === "detail" ? null : "detail")} style={pillStyle(activePanel === "detail" || filters.floor !== null || filters.yearMin !== null)}>
+              층수/연식 ▾
+            </button>
+            {/* 오른쪽 패딩 확보 */}
+            <div style={{ flexShrink: 0, width: "8px" }} />
+          </div>
+          {/* 오른쪽 페이드 그라데이션 힌트 */}
+          <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: "24px", background: "linear-gradient(to right, transparent, #fff)", pointerEvents: "none" }} />
         </div>
       </div>
 
