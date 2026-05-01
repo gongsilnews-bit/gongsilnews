@@ -264,7 +264,7 @@ function MobileVacancyAdmin() {
                     📋 재승인신청
                   </button>
                 )}
-                <button onClick={() => router.push(`/user_admin?menu=gongsil&action=write&id=${row.id}`)} style={{ flex: 1, height: 38, background: "#4b5563", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
+                <button onClick={() => router.push(`/m/admin/vacancy/write?id=${row.id}`)} style={{ flex: 1, height: 38, background: "#4b5563", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
                   ✏️ 수정
                 </button>
                 <button onClick={async () => {
@@ -282,7 +282,7 @@ function MobileVacancyAdmin() {
 
       {/* FAB: 공실등록 */}
       <button
-        onClick={() => router.push("/user_admin?menu=gongsil&action=write")}
+        onClick={() => router.push("/m/admin/vacancy/write")}
         style={{
           position: "fixed", bottom: 80, right: 20, width: 56, height: 56,
           borderRadius: "50%", background: "linear-gradient(135deg, #3b82f6, #2563eb)",
