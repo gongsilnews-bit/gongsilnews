@@ -185,30 +185,34 @@ export default function MobileMyPage() {
   return (
     <div style={{ width: '100%', minHeight: '100vh', backgroundColor: '#f4f5f7' }}>
       {/* ── 1. 프로필 카드 ── */}
-      <div style={{ background: 'linear-gradient(135deg, #1a3a6b 0%, #1e56a0 100%)', padding: '24px 20px 20px', color: '#fff' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-          <div style={{ width: '56px', height: '56px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0, border: '2px solid rgba(255,255,255,0.3)' }}>
-            {memberData?.avatar_url ? (
-              <img src={memberData.avatar_url} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            ) : (
-              <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.2)', fontSize: '22px', fontWeight: 700 }}>
-                {(memberData?.name || '회')[0]}
-              </div>
-            )}
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-              <span style={{ fontSize: '18px', fontWeight: 800 }}>{memberData?.name || '회원'}님</span>
-              <span style={{
-                ...getRoleBadgeStyle(memberData?.role),
-                fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '10px',
-              }}>
-                {getRoleLabel(memberData?.role)}
-              </span>
+      <div style={{ padding: '20px 20px 10px', backgroundColor: '#fff' }}>
+        <div style={{ background: 'linear-gradient(135deg, #1a3a6b 0%, #1e56a0 100%)', padding: '20px', borderRadius: '12px', color: '#fff' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <div style={{ width: '56px', height: '56px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0, border: '2px solid rgba(255,255,255,0.3)' }}>
+              {memberData?.avatar_url || currentUser?.user_metadata?.avatar_url ? (
+                <img src={memberData?.avatar_url || currentUser?.user_metadata?.avatar_url} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.2)', fontSize: '22px', fontWeight: 700 }}>
+                  {(memberData?.name || currentUser?.user_metadata?.full_name || '회')[0]}
+                </div>
+              )}
             </div>
-            <p style={{ fontSize: '12px', opacity: 0.7, margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {memberData?.email || currentUser?.email}
-            </p>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                <span style={{ fontSize: '18px', fontWeight: 800 }}>{memberData?.name || currentUser?.user_metadata?.full_name || '회원'}님</span>
+                <span style={{
+                  ...getRoleBadgeStyle(memberData?.role || 'USER'),
+                  fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '10px',
+                }}>
+                  {getRoleLabel(memberData?.role || 'USER')}
+                </span>
+              </div>
+              <p style={{ fontSize: '12px', opacity: 0.8, margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{memberData?.email || currentUser?.email}</span>
+                {currentUser?.app_metadata?.provider === 'google' && <span style={{ fontSize: '10px', background: 'rgba(255,255,255,0.2)', padding: '2px 6px', borderRadius: '4px', flexShrink: 0 }}>구글</span>}
+                {currentUser?.app_metadata?.provider === 'kakao' && <span style={{ fontSize: '10px', background: '#FEE500', color: '#000', padding: '2px 6px', borderRadius: '4px', flexShrink: 0 }}>카카오</span>}
+              </p>
+            </div>
           </div>
         </div>
       </div>

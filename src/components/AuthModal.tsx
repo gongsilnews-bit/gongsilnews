@@ -23,10 +23,11 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signup', onGo
   const handleOAuthLogin = async (providerName: 'google' | 'kakao' | 'naver') => {
     try {
       const supabase = createClient();
+      const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: providerName as any,
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: `${window.location.origin}/auth/callback?returnTo=${returnTo}`,
         },
       });
       if (error) throw error;
