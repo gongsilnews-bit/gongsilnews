@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getVacancies, getVacancyDetail } from "@/app/actions/vacancy";
 import HomeHeader from "../_components/HomeHeader";
@@ -41,7 +41,7 @@ function formatPrice(v: any): string {
   return "-";
 }
 
-export default function MobileGongsilPage() {
+function MobileGongsilContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [vacancies, setVacancies] = useState<any[]>([]);
@@ -1009,5 +1009,13 @@ export default function MobileGongsilPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function MobileGongsilPage() {
+  return (
+    <Suspense fallback={null}>
+      <MobileGongsilContent />
+    </Suspense>
   );
 }

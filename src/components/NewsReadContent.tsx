@@ -533,7 +533,7 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
               </div>
               
               {/* 기능 버튼 (조회수) */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", position: "relative", height: "20px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", position: "relative", height: isMobile ? "20px" : "26px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", color: "#6b7280", fontWeight: "600", lineHeight: 1 }}>
                   <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
                     <span>조회수</span> 
@@ -541,17 +541,17 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
                   </span>
                 </div>
                 
-                <div className="meta-stats" style={{ display: "flex", gap: "14px", alignItems: "center", height: "100%" }}>
+                <div className="meta-stats" style={{ display: "flex", gap: isMobile ? "14px" : "18px", alignItems: "center", height: "100%" }}>
                   <span className="meta-icon" title={isBookmarked ? "찜 해제" : "찜하기"} onClick={toggleBookmark} style={{ cursor: "pointer", color: isBookmarked ? "#1a73e8" : "#222", display: "flex", alignItems: "center" }}>
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill={isBookmarked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
+                    <svg width={isMobile ? "15" : "21"} height={isMobile ? "15" : "21"} viewBox="0 0 24 24" fill={isBookmarked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
                   </span>
                   
-                  <span className="meta-icon" title="글자 크기" style={{ fontWeight: "400", display: "flex", alignItems: "baseline", gap: "1px", letterSpacing: "-1px", cursor: "pointer", color: showFontSizePopup ? "#1a73e8" : "#222" }} onClick={() => { setShowFontSizePopup(!showFontSizePopup); setShowShareDropdown(false); }}>
-                    <span style={{ fontSize: "10px", lineHeight: 1 }}>가</span><span style={{ fontSize: "14px", lineHeight: 1 }}>가</span>
+                  <span className="meta-icon" title="글자 크기" style={{ fontWeight: "400", display: "flex", alignItems: "baseline", gap: isMobile ? "1px" : "2px", letterSpacing: "-1px", cursor: "pointer", color: showFontSizePopup ? "#1a73e8" : "#222" }} onClick={() => { setShowFontSizePopup(!showFontSizePopup); setShowShareDropdown(false); }}>
+                    <span style={{ fontSize: isMobile ? "10px" : "14px", lineHeight: 1 }}>가</span><span style={{ fontSize: isMobile ? "14px" : "20px", lineHeight: 1 }}>가</span>
                   </span>
                   
                   <span className="meta-icon" title="공유하기" onClick={() => { setShowShareDropdown(!showShareDropdown); setShowFontSizePopup(false); }} style={{ cursor: "pointer", color: showShareDropdown ? "#1a73e8" : "#222", display: "flex", alignItems: "center" }}>
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+                    <svg width={isMobile ? "15" : "21"} height={isMobile ? "15" : "21"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
                   </span>
                   
                   {/* Share Dropdown */}
