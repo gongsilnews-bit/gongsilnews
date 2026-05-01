@@ -228,8 +228,9 @@ export default function MobileGongsilPage() {
       <style>{`
         .no-scrollbar::-webkit-scrollbar{display:none;}
         .no-scrollbar{-ms-overflow-style:none;scrollbar-width:none;}
-        .gongsil-sheet{position:absolute;bottom:0;left:0;width:100%;background:#fff;border-radius:20px 20px 0 0;box-shadow:0 -8px 32px rgba(0,0,0,0.15);transform:translateY(100%);transition:transform 0.35s cubic-bezier(0.25,1,0.5,1);z-index:30;max-height:75vh;display:flex;flex-direction:column;}
-        .gongsil-sheet.open{transform:translateY(0);}
+        .list-panel{position:fixed;top:0;left:50%;width:100%;max-width:448px;margin-left:-224px;height:100dvh;background:#fff;z-index:9998;transform:translateX(100vw);transition:transform 0.35s cubic-bezier(0.25,1,0.5,1);overflow-y:hidden;display:flex;flex-direction:column;}
+        @media (max-width: 448px) { .list-panel { margin-left: -50vw; } }
+        .list-panel.open{transform:translateX(0);}
         .detail-panel{position:fixed;top:0;left:50%;width:100%;max-width:448px;margin-left:-224px;height:100dvh;background:#fff;z-index:9999;transform:translateX(100vw);transition:transform 0.35s cubic-bezier(0.25,1,0.5,1);overflow-y:auto;}
         @media (max-width: 448px) { .detail-panel { margin-left: -50vw; } }
         .detail-panel.open{transform:translateX(0);}
@@ -285,16 +286,17 @@ export default function MobileGongsilPage() {
         )}
       </div>
 
-      {/* 바텀시트: 클러스터 리스트 */}
-      <div className={`gongsil-sheet ${selectedCluster && !selectedVacancy ? "open" : ""}`} onClick={(e) => e.stopPropagation()}>
-        <div style={{ display: "flex", justifyContent: "center", padding: "12px 0 8px", cursor: "pointer" }} onClick={() => setSelectedCluster(null)}>
-          <div style={{ width: "40px", height: "4px", backgroundColor: "#e5e7eb", borderRadius: "4px" }} />
-        </div>
-        <div style={{ padding: "0 20px 14px", borderBottom: "1px solid #f3f4f6", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <h3 style={{ fontSize: "18px", fontWeight: 800, color: "#111827" }}>
-            매물 <span style={{ color: "#f97316" }}>{selectedCluster?.length || 0}</span>개
-          </h3>
-          <button onClick={goBack} style={{ background: "#f3f4f6", border: "none", borderRadius: "50%", width: "28px", height: "28px", cursor: "pointer", fontSize: "17px", color: "#6b7280", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+      {/* 슬라이딩 패널: 클러스터 리스트 */}
+      <div className={`list-panel ${selectedCluster ? "open" : ""}`} onClick={(e) => e.stopPropagation()}>
+        <div style={{ padding: "16px 20px", borderBottom: "1px solid #f3f4f6", display: "flex", justifyContent: "space-between", alignItems: "center", backgroundColor: "#fff" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <button onClick={goBack} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: "4px", marginLeft: "-4px" }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            </button>
+            <h3 style={{ fontSize: "18px", fontWeight: 800, color: "#111827", margin: 0 }}>
+              매물 <span style={{ color: "#f97316" }}>{selectedCluster?.length || 0}</span>개
+            </h3>
+          </div>
         </div>
         <div className="no-scrollbar" style={{ flex: 1, overflowY: "auto", padding: "8px 16px 20px" }}>
           {selectedCluster?.map((v: any) => (
