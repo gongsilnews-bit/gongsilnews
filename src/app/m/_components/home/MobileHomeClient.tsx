@@ -61,10 +61,6 @@ export default function MobileHomeClient(props: Props) {
 
   // 화면 전환 애니메이션 상태 제거 (즉시 라우팅)
 
-  const handleArticleClick = (id: string, e?: React.MouseEvent) => {
-    router.push(`/m/news/${id}`);
-  };
-
   // ── 헤드라인 자동 슬라이드 (3초마다) ──
   useEffect(() => {
     if (headlineArticles.length <= 1) return;
@@ -155,8 +151,9 @@ export default function MobileHomeClient(props: Props) {
 
       {/* ① Hero 배너 (헤드라인 기사) — 좌우 스와이프로 기사 전환 */}
       {hero && (
-        <div
-          style={{ position: "relative", width: "100%", aspectRatio: "16/9", maxHeight: 280, overflow: "hidden", cursor: "pointer" }}
+        <Link
+          href={`/m/news/${hero.article_no || hero.id}`}
+          style={{ position: "relative", width: "100%", display: "block", aspectRatio: "16/9", maxHeight: 280, overflow: "hidden", cursor: "pointer", textDecoration: "none" }}
           onTouchStart={(e) => {
             // 히어로 전용 스와이프 시작 — 부모 페이지 전환 방지
             e.stopPropagation();
@@ -177,7 +174,6 @@ export default function MobileHomeClient(props: Props) {
               setHeroIdx((prev) => Math.max(prev - 1, 0));
             }
           }}
-          onClick={(e) => handleArticleClick(hero.article_no || hero.id, e)}
         >
           {hero.thumbnail_url
             ? <img src={hero.thumbnail_url} alt={hero.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
@@ -196,7 +192,7 @@ export default function MobileHomeClient(props: Props) {
               ))}
             </div>
           )}
-        </div>
+        </Link>
       )}
 
       {/* ② 실시간 공실 매물 - 카카오 지도 미리보기 */}
@@ -223,8 +219,8 @@ export default function MobileHomeClient(props: Props) {
           </div>
           <div className="no-scrollbar" style={{ display: "flex", gap: 12, padding: "0 16px 16px", overflowX: "auto" }} onTouchStart={(e) => e.stopPropagation()} onTouchEnd={(e) => e.stopPropagation()}>
             {mapArticles.slice(0, 5).map((a: any) => (
-              <div key={a.id} className="tap" onClick={(e) => handleArticleClick(a.article_no || a.id, e)}
-                style={{ flexShrink: 0, width: "calc(50vw - 22px)", maxWidth: 200, borderRadius: 10, overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.07)", border: "1px solid #f3f4f6", background: "#fff", cursor: "pointer" }}>
+              <Link key={a.id} href={`/m/news/${a.article_no || a.id}`} className="tap"
+                style={{ flexShrink: 0, width: "calc(50vw - 22px)", maxWidth: 200, borderRadius: 10, overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.07)", border: "1px solid #f3f4f6", background: "#fff", cursor: "pointer", textDecoration: "none", display: "block" }}>
                 <div style={{ width: "100%", aspectRatio: "16/9", overflow: "hidden", background: "#e5e7eb", position: "relative" }}>
                   {a.thumbnail_url
                     ? <Image src={a.thumbnail_url} alt="" fill style={{ objectFit: "cover" }} sizes="50vw" />
@@ -239,23 +235,23 @@ export default function MobileHomeClient(props: Props) {
                   <p style={{ fontSize: 15, fontWeight: 700, color: "#333333", lineHeight: 1.5, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", wordBreak: "keep-all", margin: 0, letterSpacing: "-0.3px" }}>{a.title}</p>
                   <p style={{ fontSize: 13, color: "#222222", fontWeight: 500, marginTop: 5 }}>{formatDate(a.published_at || a.created_at)}</p>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </div>
       )}
 
       {/* ⑤ 정치·경제·사회 */}
-      <NewsSection title="정치·경제·사회" href="/m/news" articles={politicsArticles} onArticleClick={handleArticleClick} />
+      <NewsSection title="정치·경제·사회" href="/m/news" articles={politicsArticles} />
 
       {/* ⑥ 세무·법률 */}
-      <NewsSection title="세무·법률" href="/m/news" articles={lawArticles} onArticleClick={handleArticleClick} />
+      <NewsSection title="세무·법률" href="/m/news" articles={lawArticles} />
 
       {/* ⑦ 여행·건강·생활 */}
-      <NewsSection title="여행·건강·생활" href="/m/news" articles={lifeArticles} onArticleClick={handleArticleClick} />
+      <NewsSection title="여행·건강·생활" href="/m/news" articles={lifeArticles} />
 
       {/* ⑧ 기타 */}
-      <NewsSection title="기타" href="/m/news" articles={etcArticles} onArticleClick={handleArticleClick} />
+      <NewsSection title="기타" href="/m/news" articles={etcArticles} />
 
       {/* ⑨ 부동산특강 (PC SpecialLectureBanner 대응) */}
       {lectures.length > 0 && (
@@ -293,7 +289,7 @@ export default function MobileHomeClient(props: Props) {
         .sec-hd{display:flex;align-items:center;justify-content:space-between;padding:20px 16px 14px;}
         .sec-hd h2{font-size:18px;font-weight:800;color:#333333;margin:0;letter-spacing:-0.5px;}
         .sec-hd a{font-size:15px;color:#999999;text-decoration:none;display:flex;align-items:center;gap:2px;letter-spacing:-0.2px;}
-        .art-row{display:flex;gap:12px;padding:12px 16px;cursor:pointer;border-bottom:1px solid #f0f0f0;transition:background 0.15s ease;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;}
+        .art-row{display:flex;gap:12px;padding:12px 16px;cursor:pointer;border-bottom:1px solid #f0f0f0;transition:background 0.15s ease;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;text-decoration:none;}
         .art-row:last-child{border-bottom:none;}
         .art-row:active{background:#f3f4f6 !important;}
         .skeleton{background:linear-gradient(90deg,#f3f4f6 25%,#e5e7eb 50%,#f3f4f6 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:6px;}
@@ -303,8 +299,7 @@ export default function MobileHomeClient(props: Props) {
   );
 }
 
-function NewsSection({ title, href, articles, onArticleClick }: { title: string; href: string; articles: any[]; onArticleClick?: (id: string, e: React.MouseEvent) => void }) {
-  const router = useRouter();
+function NewsSection({ title, href, articles }: { title: string; href: string; articles: any[]; }) {
   if (articles.length === 0) return null;
   const [main, ...rest] = articles;
 
@@ -315,8 +310,8 @@ function NewsSection({ title, href, articles, onArticleClick }: { title: string;
         <Link href={href} style={{ fontSize: 15, color: "#999999", textDecoration: "none", letterSpacing: "-0.2px" }}>더보기 ›</Link>
       </div>
       {/* 메인 기사 (큰 썸네일) */}
-      <div className="tap art-row" onClick={(e) => onArticleClick ? onArticleClick(main.article_no || main.id, e) : router.push(`/m/news/${main.article_no || main.id}`)}
-        style={{ padding: "14px 16px", cursor: "pointer", borderBottom: "1px solid #f0f0f0" }}>
+      <Link href={`/m/news/${main.article_no || main.id}`} className="tap art-row"
+        style={{ padding: "14px 16px", cursor: "pointer", borderBottom: "1px solid #f0f0f0", display: "block" }}>
         <div style={{ display: "flex", gap: 12 }}>
           <div style={{ flex: 1 }}>
             <h3 style={{ fontSize: 17, fontWeight: 700, color: "#333333", lineHeight: 1.5, marginBottom: 6, wordBreak: "keep-all", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden", margin: "0 0 6px", letterSpacing: "-0.5px" }}>{main.title}</h3>
@@ -328,10 +323,10 @@ function NewsSection({ title, href, articles, onArticleClick }: { title: string;
             </div>
           )}
         </div>
-      </div>
+      </Link>
       {/* 나머지 기사 (번호 리스트) */}
       {rest.slice(0, 3).map((a: any, i: number) => (
-        <div key={a.id} className="tap art-row" onClick={(e) => onArticleClick ? onArticleClick(a.article_no || a.id, e) : router.push(`/m/news/${a.article_no || a.id}`)}>
+        <Link key={a.id} href={`/m/news/${a.article_no || a.id}`} className="tap art-row" style={{ display: "flex" }}>
           <span style={{ flexShrink: 0, width: 20, fontSize: 15, fontWeight: 800, color: i === 0 ? "#f97316" : "#d1d5db", alignSelf: "center" }}>{i + 1}</span>
           <p style={{ fontSize: 16, fontWeight: 600, color: "#333333", lineHeight: 1.5, flex: 1, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", wordBreak: "keep-all", margin: 0, letterSpacing: "-0.3px" }}>{a.title}</p>
           {a.thumbnail_url && (
@@ -339,7 +334,7 @@ function NewsSection({ title, href, articles, onArticleClick }: { title: string;
               <Image src={a.thumbnail_url} alt="" fill style={{ objectFit: "cover" }} sizes="104px" />
             </div>
           )}
-        </div>
+        </Link>
       ))}
     </div>
   );

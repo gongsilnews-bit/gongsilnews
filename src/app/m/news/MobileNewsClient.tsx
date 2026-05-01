@@ -728,10 +728,10 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
           {!loading && (
             <div>
               {articles.map((a: any) => (
-                <div
+                <Link
+                  href={`/m/news/${a.article_no || a.id}`}
                   key={a.id}
                   className="article-row"
-                  onClick={(e) => handleSelectArticle(a.id, false, e)}
                   style={{
                     display: "flex",
                     gap: "14px",
@@ -773,7 +773,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                       {a.location_name && <span style={{ color: "#222222", marginLeft: "auto", fontWeight: 500 }}>📍{a.location_name}</span>}
                     </div>
                   </div>
-                </div>
+                </Link>
               ))}
 
               {!loading && articles.length === 0 && (
