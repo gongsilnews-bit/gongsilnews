@@ -913,13 +913,14 @@ function MobileNewsClient({ initialTab, initialArticles }: { initialTab: string,
             position: "fixed",
             zIndex: 999999,
             backgroundColor: "#f3f4f6", // 사용자 요청 바탕색(연한 회색)
-            top: isTransitioning ? 0 : transitionRect.top,
-            left: isTransitioning ? 0 : transitionRect.left,
-            width: isTransitioning ? "100vw" : transitionRect.width,
-            height: isTransitioning ? "100vh" : transitionRect.height,
+            top: isTransitioning ? 0 : "calc(50% - 50px)",
+            left: isTransitioning ? 0 : "calc(50% - 50px)",
+            width: isTransitioning ? "100vw" : "100px",
+            height: isTransitioning ? "100vh" : "100px",
+            borderRadius: isTransitioning ? "0px" : "24px",
             transition: "all 0.35s cubic-bezier(0.25, 1, 0.5, 1)",
             pointerEvents: "none",
-            boxShadow: isTransitioning ? "none" : "0 4px 12px rgba(0,0,0,0.1)",
+            boxShadow: isTransitioning ? "none" : "0 10px 30px rgba(0,0,0,0.15)",
           }}
         />
       )}
