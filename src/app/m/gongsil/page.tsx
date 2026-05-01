@@ -368,6 +368,7 @@ export default function MobileGongsilPage() {
     const res = await getVacancyDetail(v.id);
     if (res.success && res.data) {
       const detail = {
+        ...v,
         ...res.data,
         images: res.data.vacancy_photos
           ? [...res.data.vacancy_photos].sort((a: any, b: any) => a.sort_order - b.sort_order).map((p: any) => p.url)
