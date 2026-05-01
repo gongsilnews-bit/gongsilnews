@@ -67,6 +67,33 @@ function MobileGongsilContent() {
   const [galleryIndex, setGalleryIndex] = useState(0);
   const [realtorFilter, setRealtorFilter] = useState("전체");
 
+  // Swipe gesture states
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEndHandler = () => {
+    if (touchStart === null || touchEnd === null) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > 50;
+    const isRightSwipe = distance < -50;
+    
+    if (isLeftSwipe && selectedVacancy?.images) {
+      setGalleryIndex(prev => Math.min(selectedVacancy.images.length - 1, prev + 1));
+    }
+    if (isRightSwipe && selectedVacancy?.images) {
+      setGalleryIndex(prev => Math.max(0, prev - 1));
+    }
+  };
+
   const itemMapRef = useRef<HTMLDivElement>(null);
   const roadviewRef = useRef<HTMLDivElement>(null);
   const vacancyStackRef = useRef<any[]>([]);
@@ -617,7 +644,12 @@ function MobileGongsilContent() {
             <div ref={detailScrollRef} style={{ flex: 1, overflowY: "auto", paddingBottom: "20px" }}>
             {/* 이미지 슬라이더 (맨 위로 이동) */}
             {selectedVacancy.images?.[0] && (
-              <div style={{ position: "relative", width: "100%", height: "220px", backgroundColor: "#e5e7eb", overflow: "hidden" }}>
+              <div 
+                style={{ position: "relative", width: "100%", height: "220px", backgroundColor: "#e5e7eb", overflow: "hidden" }}
+                onTouchStart={onTouchStart}
+                onTouchMove={onTouchMove}
+                onTouchEnd={onTouchEndHandler}
+              >
                 <img 
                   src={selectedVacancy.images[galleryIndex] || selectedVacancy.images[0]} 
                   alt="" 
@@ -993,7 +1025,12 @@ function MobileGongsilContent() {
             <div style={{ fontSize: "15px", fontWeight: 600 }}>{galleryIndex + 1} / {selectedVacancy.images.length}</div>
             <button onClick={() => setShowGalleryFullscreen(false)} style={{ background: "none", border: "none", color: "#fff", fontSize: "24px", cursor: "pointer", padding: "4px" }}>✕</button>
           </div>
-          <div style={{ flex: 1, position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div 
+            style={{ flex: 1, position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEndHandler}
+          >
             <img 
               src={selectedVacancy.images[galleryIndex]} 
               style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} 
