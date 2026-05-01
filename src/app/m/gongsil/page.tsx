@@ -229,7 +229,7 @@ export default function MobileGongsilPage() {
             setIsDirectView(true);
             const target = withImages.find((v: any) => v.id === idParam);
             if (target) {
-              handleVacancyClick(target);
+              handleVacancyClick(target, true);
             }
           }
         }
@@ -344,8 +344,10 @@ export default function MobileGongsilPage() {
   }, [vacancies, mapLoaded]);
 
   // 상세 조회
-  const handleVacancyClick = async (v: any) => {
-    window.history.pushState({ panel: "detail" }, "");
+  const handleVacancyClick = async (v: any, isDirect: boolean = false) => {
+    if (!isDirect) {
+      window.history.pushState({ panel: "detail" }, "");
+    }
     if (detailScrollRef.current) {
       detailScrollRef.current.scrollTop = 0;
     }
@@ -365,6 +367,11 @@ export default function MobileGongsilPage() {
   };
 
   const goBack = () => {
+    if (isDirectView) {
+      if (window.opener) window.close();
+      else window.history.back();
+      return;
+    }
     if (selectedVacancy) { window.history.back(); return; }
     if (selectedCluster) { window.history.back(); }
   };

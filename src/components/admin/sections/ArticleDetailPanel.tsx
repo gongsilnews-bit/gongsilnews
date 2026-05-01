@@ -128,9 +128,7 @@ export default function ArticleDetailPanel({ articleId, onBack, onEdit }: Articl
         {/* Device Toggle */}
         <div className="adp-device-bar">
           <div className="adp-device-btns">
-            <button className={`adp-device-btn ${device === 'pc' ? 'adp-active' : ''}`} onClick={() => setDevice('pc')} title="PC">🖥️</button>
-            <button className={`adp-device-btn ${device === 'tablet' ? 'adp-active' : ''}`} onClick={() => setDevice('tablet')} title="태블릿">📱</button>
-            <button className={`adp-device-btn ${device === 'mobile' ? 'adp-active' : ''}`} onClick={() => setDevice('mobile')} title="모바일">📲</button>
+            <button className={`adp-device-btn adp-active`} onClick={() => setDevice('mobile')} title="모바일">📲 모바일 미리보기</button>
           </div>
         </div>
 
