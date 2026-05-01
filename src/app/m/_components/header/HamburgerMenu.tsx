@@ -110,7 +110,7 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
       { icon: '👥', label: '고객관리', href: '/realty_admin?menu=customer' },
       { icon: '💬', label: 'TALK', href: '/realty_admin?menu=comment' },
       { icon: '🌐', label: '홈페이지', href: '/realty_admin?menu=homepage' },
-      { icon: '⚙️', label: '정보설정', href: '/realty_admin?menu=settings' },
+      { icon: '⚙️', label: '정보설정', href: '/m/admin/settings' },
     ];
     const admin = [
       { icon: '👥', label: '회원관리', href: '/admin?menu=member' },
@@ -119,7 +119,7 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
       { icon: '⚙️', label: '설정', href: '/admin?menu=settings' },
     ];
     const user = [
-      { icon: '⚙️', label: '정보설정', href: '/user_admin?menu=settings' },
+      { icon: '⚙️', label: '정보설정', href: '/m/admin/settings' },
     ];
     if (role === 'ADMIN') return [...common, ...admin];
     if (role === 'REALTOR') return [...common, ...realtor];

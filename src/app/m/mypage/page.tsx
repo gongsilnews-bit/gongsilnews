@@ -78,7 +78,7 @@ export default function MobileMyPage() {
       { icon: '👥', label: '고객관리', desc: '상담 고객 목록', href: '/realty_admin?menu=customer' },
       { icon: '💬', label: 'TALK', desc: '채팅 및 문의 관리', href: '/realty_admin?menu=comment' },
       { icon: '🌐', label: '홈페이지', desc: '미니 홈페이지 관리', href: '/realty_admin?menu=homepage' },
-      { icon: '⚙️', label: '정보설정', desc: '내 정보 및 업소 설정', href: '/realty_admin?menu=settings' },
+      { icon: '⚙️', label: '정보설정', desc: '내 정보 및 업소 설정', href: '/m/admin/settings' },
     ];
     const admin = [
       { icon: '👥', label: '회원관리', desc: '전체 회원 관리', href: '/admin?menu=member' },
@@ -87,7 +87,7 @@ export default function MobileMyPage() {
       { icon: '⚙️', label: '설정', desc: '시스템 설정', href: '/admin?menu=settings' },
     ];
     const user = [
-      { icon: '⚙️', label: '정보설정', desc: '내 프로필 정보 수정', href: '/user_admin?menu=settings' },
+      { icon: '⚙️', label: '정보설정', desc: '내 프로필 정보 수정', href: '/m/admin/settings' },
     ];
 
     if (role === 'ADMIN') return [...common, ...admin];
