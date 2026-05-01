@@ -863,7 +863,7 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
                   const createdDate = prop.created_at ? new Date(prop.created_at).toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" }).replace(/\.$/, "") : "";
 
                   return (
-                    <Link href={isMobile ? `/m/gongsil?id=${prop.id}` : `/gongsil?id=${prop.id}`} target="_blank" key={prop.id || i} style={{ textDecoration: "none", color: "inherit", display: "block" }}>
+                    <Link href={`/homepage/${prop.id}`} target="_blank" key={prop.id || i} style={{ textDecoration: "none", color: "inherit", display: "block" }}>
                       <div className="prop-item" style={{ padding: "16px 0", borderBottom: "1px solid #f0f0f0", display: "flex", gap: 12, cursor: "pointer", background: "#fff", transition: "background 0.15s" }} onMouseEnter={e => e.currentTarget.style.background = '#f9fafb'} onMouseLeave={e => e.currentTarget.style.background = '#fff'}>
                         <div className="prop-info" style={{ minWidth: 0, overflow: "hidden", flex: 1, display: "flex", flexDirection: "column" }}>
                           <div className="prop-title" style={{ fontSize: 16, fontWeight: 700, color: "#111", marginBottom: 4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{title}</div>
