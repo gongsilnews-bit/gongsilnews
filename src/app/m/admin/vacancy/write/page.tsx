@@ -574,9 +574,9 @@ function MobileVacancyWrite() {
           </div>
         </div>
 
-        {/* 6. 의뢰인 */}
+        {/* 6. 등록자 */}
         <div style={{ background:"#fff", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.05)" }}>
-          <div style={{ fontSize:16, fontWeight:800, color:"#111", marginBottom:14 }}>👤 의뢰인 정보</div>
+          <div style={{ fontSize:16, fontWeight:800, color:"#111", marginBottom:14 }}>👤 등록자 정보</div>
           <div style={{ display:"flex", gap:10 }}>
             <div style={{flex:1}}><label style={labelStyle}>이름</label><input type="text" value={clientName} onChange={e=>setClientName(e.target.value)} style={inputStyle}/></div>
             <div style={{flex:1}}><label style={labelStyle}>연락처</label><input type="tel" value={clientPhone} onChange={e=>setClientPhone(e.target.value)} placeholder="010-0000-0000" style={inputStyle}/></div>
