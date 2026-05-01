@@ -69,9 +69,9 @@ export default function MobileMyPage() {
   // 역할별 관리 메뉴 구성
   const getAdminMenus = (role?: string) => {
     const common = [
-      { icon: '📊', label: '대시보드', desc: '활동 요약 및 통계', href: role === 'ADMIN' ? '/admin?menu=dashboard' : role === 'REALTOR' ? '/realty_admin?menu=dashboard' : '/user_admin?menu=dashboard' },
-      { icon: '🏢', label: '공실관리', desc: '등록한 공실 매물 관리', href: role === 'ADMIN' ? '/admin?menu=gongsil' : role === 'REALTOR' ? '/realty_admin?menu=gongsil' : '/user_admin?menu=gongsil' },
-      { icon: '📝', label: '기사관리', desc: '작성한 기사 관리', href: role === 'ADMIN' ? '/admin?menu=article' : role === 'REALTOR' ? '/realty_admin?menu=article' : '/user_admin?menu=article' },
+      { icon: '📊', label: '대시보드', desc: '활동 요약 및 통계', href: role === 'ADMIN' ? '/admin?menu=dashboard' : role === 'REALTOR' || role === '부동산회원' ? '/realty_admin?menu=dashboard' : '/user_admin?menu=dashboard' },
+      { icon: '🏢', label: '공실관리', desc: '등록한 공실 매물 관리', href: '/m/admin/vacancy' },
+      { icon: '📝', label: '기사관리', desc: '작성한 기사 관리', href: '/m/admin/article' },
       { icon: '💰', label: '포인트', desc: '포인트 내역 및 충전', href: '/m/admin/point' },
     ];
     const realtor = [
@@ -243,8 +243,8 @@ export default function MobileMyPage() {
         <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#6b7280', padding: '16px 20px 8px' }}>나의 활동</h3>
         <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
           {[
-            { icon: '📝', label: '내가 등록한 기사', href: memberData?.role === 'REALTOR' ? '/realty_admin?menu=article' : '/user_admin?menu=article' },
-            { icon: '🏢', label: '내가 등록한 공실', href: memberData?.role === 'REALTOR' ? '/realty_admin?menu=gongsil' : '/user_admin?menu=gongsil' },
+            { icon: '📝', label: '내가 등록한 기사', href: '/m/admin/article' },
+            { icon: '🏢', label: '내가 등록한 공실', href: '/m/admin/vacancy' },
             { icon: '🔖', label: '내가 찜한 기사', href: '#' },
             { icon: '❤️', label: '내가 찜한 공실', href: '#' },
           ].map((item) => (
