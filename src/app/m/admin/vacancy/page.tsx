@@ -173,7 +173,7 @@ function MobileVacancyAdmin() {
       </div>
 
       {/* 공실 카드 리스트 */}
-      <div style={{ padding: "12px 16px 100px" }}>
+      <div style={{ padding: "8px 8px 100px" }}>
         {loading ? (
           <div style={{ padding: "40px 0", textAlign: "center", color: "#9ca3af" }}>
             <div style={{ fontSize: 14, fontWeight: 600 }}>불러오는 중...</div>
@@ -196,8 +196,8 @@ function MobileVacancyAdmin() {
 
           return (
             <div key={row.id} style={{
-              background: "#fff", borderRadius: 14, padding: "16px", marginBottom: 10,
-              boxShadow: "0 1px 4px rgba(0,0,0,0.06)", border: "1px solid #f0f0f0",
+              background: "#fff", borderRadius: 12, padding: "14px", marginBottom: 8,
+              boxShadow: "0 1px 3px rgba(0,0,0,0.05)", border: "1px solid #f0f0f0",
             }}>
               {/* 상단: 상태 + 매물종류 + 번호 */}
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
