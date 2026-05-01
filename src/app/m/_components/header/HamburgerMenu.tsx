@@ -102,8 +102,8 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
   const getAdminMenus = (role?: string) => {
     const common = [
       { icon: '📊', label: '대시보드', href: role === 'ADMIN' ? '/admin?menu=dashboard' : role === 'REALTOR' ? '/realty_admin?menu=dashboard' : '/user_admin?menu=dashboard' },
-      { icon: '🏢', label: '공실관리', href: role === 'ADMIN' ? '/admin?menu=gongsil' : role === 'REALTOR' ? '/realty_admin?menu=gongsil' : '/user_admin?menu=gongsil' },
-      { icon: '📝', label: '기사관리', href: role === 'ADMIN' ? '/admin?menu=article' : role === 'REALTOR' ? '/realty_admin?menu=article' : '/user_admin?menu=article' },
+      { icon: '🏢', label: '공실관리', href: '/m/admin/vacancy' },
+      { icon: '📝', label: '기사관리', href: '/m/admin/article' },
       { icon: '💰', label: '포인트', href: role === 'REALTOR' ? '/realty_admin?menu=point' : '/user_admin?menu=point' },
     ];
     const realtor = [
