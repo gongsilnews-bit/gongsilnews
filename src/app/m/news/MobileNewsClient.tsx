@@ -73,7 +73,17 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
   const [articleDetail, setArticleDetail] = useState<any | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
 
-  // 애니메이션 오버레이 상태는 제거됨 (빠른 화면 전환 위해)
+  // 애니메이션 오버레이 상태
+  const [transitionRect, setTransitionRect] = useState<DOMRect | null>(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+
+  // 사용자가 뒤로가기로 리스트 페이지로 돌아왔을 때 남아있는 애니메이션 상태 초기화
+  useEffect(() => {
+    if (pathname === "/m/news" || pathname === "/m/news_all") {
+      setIsTransitioning(false);
+      setTransitionRect(null);
+    }
+  }, [pathname]);
   // URL의 탭이 변경되면 activeTab 상태를 동기화
   useEffect(() => {
     const tab = searchParams.get("tab") || "all";
@@ -191,7 +201,25 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
       }
       setDetailLoading(false);
     } else {
-      router.push(`/m/news/${id}`);
+      if (e) {
+        const rect = e.currentTarget.getBoundingClientRect();
+        setTransitionRect(rect);
+        // 레이아웃이 그려진 직후 애니메이션 시작
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            setIsTransitioning(true);
+          });
+        });
+        
+        // 애니메이션 재생 후 라우팅
+        setTimeout(() => {
+          router.push(`/m/news/${id}`);
+          // 너무 빨리 리셋하면 기사 로딩 중 목록이 다시 보이는 깜빡임 발생하므로
+          // 타임아웃은 제거하고 상단 pathname 감지 useEffect에서 초기화
+        }, 350);
+      } else {
+        router.push(`/m/news/${id}`);
+      }
     }
   };
 
@@ -845,6 +873,24 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
         )}
       </div>
       
+      {/* 기사 클릭 시 화면 팽창(Scale-up) 오버레이 애니메이션 */}
+      {transitionRect && (
+        <div 
+          style={{
+            position: "fixed",
+            zIndex: 999999,
+            backgroundColor: "#f3f4f6", // 사용자 요청 바탕색(연한 회색)
+            top: isTransitioning ? 0 : "calc(50% - 50px)",
+            left: isTransitioning ? 0 : "calc(50% - 50px)",
+            width: isTransitioning ? "100vw" : "100px",
+            height: isTransitioning ? "100vh" : "100px",
+            borderRadius: isTransitioning ? "0px" : "24px",
+            transition: "all 0.35s cubic-bezier(0.25, 1, 0.5, 1)",
+            pointerEvents: "none",
+            boxShadow: isTransitioning ? "none" : "0 10px 30px rgba(0,0,0,0.15)",
+          }}
+        />
+      )}
 
       <style>{`
         .no-scrollbar::-webkit-scrollbar { display: none; }
