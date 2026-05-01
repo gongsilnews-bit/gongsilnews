@@ -30,14 +30,39 @@ function formatPrice(v: any): string {
   const dep = v.deposit || 0;
   const rent = v.monthly_rent || 0;
   const trade = v.trade_type || "";
-  const fmt = (n: number) => {
-    if (n >= 100000000) return `${(n / 100000000).toFixed(n % 100000000 === 0 ? 0 : 1)}억`;
-    if (n >= 10000) return `${Math.round(n / 10000)}만`;
-    return `${n}`;
+  
+  const formatAmount = (amt: number) => {
+    if (!amt) return "";
+    const m = Math.round(amt / 10000);
+    if (m === 0) return "";
+
+    const e = Math.floor(m / 10000);
+    const r = m % 10000;
+
+    let result = "";
+    if (e > 0) result += `${e}억`;
+
+    if (r > 0) {
+      const c = Math.floor(r / 1000);
+      const rem = r % 1000;
+      
+      let rest = "";
+      if (c > 0) rest += `${c}천`;
+      if (rem > 0) rest += `${rem}`;
+      
+      if (rest) {
+        result += (result && !result.endsWith(" ") ? " " : "") + rest;
+        if (e === 0 && c === 0 && rem > 0) result += "만";
+      }
+    }
+    return result || "";
   };
-  if (trade === "월세" && rent > 0) return `${fmt(dep)}/${fmt(rent)}`;
-  if (trade === "전세") return `전세 ${fmt(dep)}`;
-  if (dep > 0) return `${fmt(dep)}`;
+
+  if (trade === "월세" && rent > 0) {
+    const monthlyManwon = Math.round(rent / 10000);
+    return `${formatAmount(dep)}/${monthlyManwon}만`;
+  }
+  if (dep > 0) return `${formatAmount(dep)}`;
   return "-";
 }
 
