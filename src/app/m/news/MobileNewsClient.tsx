@@ -734,75 +734,6 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
           {/* Author Profile Header */}
           {authorProfile && <AuthorProfileHeader profile={authorProfile} />}
 
-          {/* 헤드라인 히어로 (APPROVED 기사 중 첫번째 큰 이미지) */}
-          {articles[0] && (
-            <div
-              onClick={(e) => handleSelectArticle(articles[0].id, false, e)}
-              style={{
-                position: "relative",
-                width: "100%",
-                aspectRatio: "16/9",
-                height: "auto",
-                overflow: "hidden",
-                cursor: "pointer",
-                backgroundColor: "#e5e7eb",
-              }}
-            >
-              {articles[0].thumbnail_url ? (
-                <div style={{ position: "relative", width: "100%", height: "100%" }}>
-                  <Image
-                    src={articles[0].thumbnail_url}
-                    alt={articles[0].title}
-                    fill
-                    style={{ objectFit: "cover" }}
-                    sizes="100vw"
-                    priority
-                  />
-                </div>
-              ) : (
-                <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg, #1a2e50, #2d4a7a)" }} />
-              )}
-              <div
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  background: "linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 60%)",
-                }}
-              />
-              <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "16px" }}>
-                <span
-                  style={{
-                    background: "#1a2e50",
-                    color: "#f97316",
-                    fontSize: "12px",
-                    fontWeight: 800,
-                    padding: "3px 8px",
-                    borderRadius: "3px",
-                    display: "inline-block",
-                    marginBottom: "8px",
-                  }}
-                >
-                  {articles[0].section1 || "뉴스"}
-                </span>
-                <h2
-                  style={{
-                    color: "#fff",
-                    fontSize: "19px",
-                    fontWeight: 800,
-                    lineHeight: 1.35,
-                    wordBreak: "keep-all",
-                    display: "-webkit-box",
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: "vertical",
-                    overflow: "hidden",
-                  }}
-                >
-                  {articles[0].title}
-                </h2>
-              </div>
-            </div>
-          )}
-
           {/* 스켈레톤 로딩 */}
           {loading && (
             <div style={{ padding: "16px" }}>
@@ -822,7 +753,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
           {/* 실 기사 리스트 */}
           {!loading && (
             <div>
-              {articles.slice(1).map((a: any) => (
+              {articles.map((a: any) => (
                 <div
                   key={a.id}
                   className="article-row"
