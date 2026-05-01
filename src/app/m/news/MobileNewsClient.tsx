@@ -853,7 +853,6 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
           position: fixed; top: 0; left: 50%; width: 100%; max-width: 448px; height: 100dvh;
           margin-left: -224px; /* max-width 448px 의 절반 */
           background: #fff; z-index: 9999; transform: translateX(100vw);
-          transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1);
           overflow-y: auto;
         }
         @media (max-width: 448px) {
