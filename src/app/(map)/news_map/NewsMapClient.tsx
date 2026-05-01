@@ -618,6 +618,7 @@ export default function NewsMapClient({ initialArticles, initialPopularArticles 
 
                     {articleDetail.content && <div suppressHydrationWarning dangerouslySetInnerHTML={{ 
                       __html: articleDetail.content
+                        .replace(/<button[^>]*class="editor-media-delete"[^>]*>.*?<\/button>/gi, '')
                         .replace(/<p[^>]*>\s*(?:<br>\s*)*<iframe[^>]*youtube\.com\/embed[^>]*>.*?<\/iframe>(?:\s*<br>\s*)*\s*<\/p>/gi, '')
                         .replace(/<div(?:(?!class="article-body")[^>]*)?>\s*(?:<br>\s*)*<iframe[^>]*youtube\.com\/embed[^>]*>.*?<\/iframe>(?:\s*<br>\s*)*\s*<\/div>/gi, '')
                         .replace(/<iframe[^>]*youtube\.com\/embed[^>]*>.*?<\/iframe>/gi, '') 

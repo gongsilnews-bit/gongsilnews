@@ -201,6 +201,7 @@ export default function ArticleDetailPanel({ articleId, onBack, onEdit }: Articl
             {article.content && (
               <div dangerouslySetInnerHTML={{
                 __html: article.content
+                  .replace(/<button[^>]*class="editor-media-delete"[^>]*>.*?<\/button>/gi, '')
                   .replace(/<p[^>]*>\s*(?:<br>\s*)*<iframe[^>]*youtube\.com\/embed[^>]*>.*?<\/iframe>(?:\s*<br>\s*)*\s*<\/p>/gi, '')
                   .replace(/<div(?:(?!class="article-body")[^>]*)?>\s*(?:<br>\s*)*<iframe[^>]*youtube\.com\/embed[^>]*>.*?<\/iframe>(?:\s*<br>\s*)*\s*<\/div>/gi, '')
                   .replace(/<iframe[^>]*youtube\.com\/embed[^>]*>.*?<\/iframe>/gi, '')
