@@ -83,12 +83,27 @@ export function useVacancyFilters(initialVacancies: any[]) {
         if (filters.ownerRole === 'REALTOR' && v.owner_role !== 'REALTOR') return false;
       }
 
-      // 8. 수수료 타입
+      // 8. 중개보수 필터
       if (filters.commissionType) {
         const vc = v.realtor_commission || v.commission_type || '';
-        if (filters.commissionType === '공동수수료' && !vc.includes('공동')) return false;
-        if (filters.commissionType === '법정수수료' && vc !== '' && vc !== '법정수수료') return false;
-        if (filters.commissionType === '기타' && (vc === '' || vc === '법정수수료' || vc.includes('공동'))) return false;
+        if (filters.commissionType === '공동중개') {
+          if (!vc.includes('공동')) return false;
+        } else {
+          // 퍼센트 기반 필터: '25%~', '50%~', '75%~', '100%'
+          // DB 값: '수수료25%', '수수료50%', '수수료75%', '수수료100%', '법정수수료', '' 등
+          const percentMatch = vc.match(/(\d+)%/);
+          const vcPercent = percentMatch ? parseInt(percentMatch[1], 10) : (vc === '' || vc === '법정수수료' ? 100 : 0);
+          
+          if (filters.commissionType === '25') {
+            if (vcPercent < 25) return false;
+          } else if (filters.commissionType === '50') {
+            if (vcPercent < 50) return false;
+          } else if (filters.commissionType === '75') {
+            if (vcPercent < 75) return false;
+          } else if (filters.commissionType === '100') {
+            if (vcPercent < 100) return false;
+          }
+        }
       }
 
       // 9. 테마 키워드 (선택된 테마 중 하나라도 포함)

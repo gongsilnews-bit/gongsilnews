@@ -13,11 +13,11 @@ import AuthModal from "@/components/AuthModal";
 
 // 카테고리 설정 데이터
 const CATEGORY_CONFIG: Record<string, { name: string; pills: string[]; basicFilters: string[]; detailFilters: string[]; showToggle: boolean; pillStyle?: string }> = {
-  apart: { name: "아파트·오피스텔", pills: ["아파트", "아파트분양권", "재건축", "오피스텔", "오피스텔분양권", "재개발"], basicFilters: ["거래방식", "가격대", "면적", "사용승인일", "세대수", "층수", "방/욕실수", "방향", "등록자", "수수료", "테마", "기타옵션"], detailFilters: [], showToggle: false },
-  villa: { name: "빌라·주택", pills: ["빌라/연립", "단독/다가구", "전원주택", "상가주택"], basicFilters: ["거래방식", "가격대", "면적", "방/욕실수", "사용승인일", "방향", "등록자", "수수료", "테마", "기타옵션"], detailFilters: [], showToggle: false },
-  one: { name: "원룸·투룸", pills: ["원룸", "투룸", "오피스텔만 보기"], basicFilters: ["거래방식", "가격대", "관리비", "등록자", "수수료", "테마", "기타옵션"], detailFilters: [], showToggle: false },
-  biz: { name: "상가·사무실·공장·토지", pills: ["상가", "사무실", "공장/창고", "지식산업센터", "건물", "토지"], basicFilters: ["거래방식", "가격대", "면적", "층수", "관리비", "등록자", "수수료", "테마", "기타옵션"], detailFilters: [], showToggle: false },
-  sale: { name: "분양", pills: ["아파트", "오피스텔", "빌라", "도시형생활주택", "생활숙박시설", "상가/업무"], basicFilters: ["분양단계", "분양형태", "분양가/보증금", "면적", "세대수", "등록자", "수수료", "테마"], detailFilters: [], showToggle: false },
+  apart: { name: "아파트·오피스텔", pills: ["아파트", "아파트분양권", "재건축", "오피스텔", "오피스텔분양권", "재개발"], basicFilters: ["거래방식", "가격대", "면적", "사용승인일", "세대수", "층수", "방/욕실수", "방향", "등록자", "중개보수", "테마", "기타옵션"], detailFilters: [], showToggle: false },
+  villa: { name: "빌라·주택", pills: ["빌라/연립", "단독/다가구", "전원주택", "상가주택"], basicFilters: ["거래방식", "가격대", "면적", "방/욕실수", "사용승인일", "방향", "등록자", "중개보수", "테마", "기타옵션"], detailFilters: [], showToggle: false },
+  one: { name: "원룸·투룸", pills: ["원룸", "투룸", "오피스텔만 보기"], basicFilters: ["거래방식", "가격대", "관리비", "등록자", "중개보수", "테마", "기타옵션"], detailFilters: [], showToggle: false },
+  biz: { name: "상가·사무실·공장·토지", pills: ["상가", "사무실", "공장/창고", "지식산업센터", "건물", "토지"], basicFilters: ["거래방식", "가격대", "면적", "층수", "관리비", "등록자", "중개보수", "테마", "기타옵션"], detailFilters: [], showToggle: false },
+  sale: { name: "분양", pills: ["아파트", "오피스텔", "빌라", "도시형생활주택", "생활숙박시설", "상가/업무"], basicFilters: ["분양단계", "분양형태", "분양가/보증금", "면적", "세대수", "등록자", "중개보수", "테마"], detailFilters: [], showToggle: false },
   wish: { name: "MY관심공실", pills: [], basicFilters: [], detailFilters: [], showToggle: false },
 };
 
@@ -344,13 +344,16 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
       list = list.filter(v => v.owner_role === filterOwnerRole);
     }
 
-    // 13) 수수료 유형
+    // 13) 중개보수 필터
     if (filterCommissionType) {
       list = list.filter(v => {
         const vc = v.realtor_commission || v.commission_type || '';
-        if (filterCommissionType === '공동수수료') return vc.includes('공동');
-        if (filterCommissionType === '법정수수료') return vc === '' || vc === '법정수수료';
-        if (filterCommissionType === '기타') return vc !== '' && vc !== '법정수수료' && !vc.includes('공동');
+        if (filterCommissionType === '공동중개') return vc.includes('공동');
+        // 퍼센트 기반: DB 값 '수수료25%', '수수료50%' 등에서 숫자 추출
+        const percentMatch = vc.match(/(\d+)%/);
+        const vcPercent = percentMatch ? parseInt(percentMatch[1], 10) : (vc === '' || vc === '법정수수료' ? 100 : 0);
+        const minPercent = parseInt(filterCommissionType, 10);
+        if (!isNaN(minPercent)) return vcPercent >= minPercent;
         return true;
       });
     }
@@ -1349,7 +1352,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                 (f === "분양형태" && filterSaleType.length > 0) ||
                 (f === "기타옵션" && filterOptions.length > 0) ||
                 (f === "등록자" && filterOwnerRole !== null) ||
-                (f === "수수료" && filterCommissionType !== null) ||
+                (f === "중개보수" && filterCommissionType !== null) ||
                 (f === "테마" && filterThemes.length > 0)
               );
               const btnLabel = (f === "가격대" || f === "분양가/보증금") ? priceFilterLabel 
@@ -1357,7 +1360,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                 : f === "사용승인일" ? yearFilterLabel 
                 : f === "세대수" ? unitFilterLabel 
                 : f === "등록자" ? (filterOwnerRole === 'USER' ? '일반인' : filterOwnerRole === 'REALTOR' ? '부동산' : '등록자')
-                : f === "수수료" ? (filterCommissionType || '수수료')
+                : f === "중개보수" ? (filterCommissionType === '공동중개' ? '공동중개' : filterCommissionType === '100' ? '100%(법정)' : filterCommissionType ? `${filterCommissionType}%~` : '중개보수')
                 : f === "테마" ? (filterThemes.length > 0 ? `테마 ${filterThemes.length}개` : '테마')
                 : f;
 
@@ -1839,16 +1842,16 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                   </div>
                 )}
 
-                {/* ── 수수료 유형 ── */}
-                {f === "수수료" && activeFilterDropdown === "수수료" && (
-                  <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, background: "#fff", border: "1px solid #ddd", borderRadius: 4, boxShadow: "0 4px 16px rgba(0,0,0,0.15)", width: 320, zIndex: 9000, padding: "16px" }}>
+                {/* ── 중개보수 ── */}
+                {f === "중개보수" && activeFilterDropdown === "중개보수" && (
+                  <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, background: "#fff", border: "1px solid #ddd", borderRadius: 4, boxShadow: "0 4px 16px rgba(0,0,0,0.15)", width: 380, zIndex: 9000, padding: "16px" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-                      <span style={{ fontSize: 15, fontWeight: "bold", color: "#111" }}>수수료 유형</span>
+                      <span style={{ fontSize: 15, fontWeight: "bold", color: "#111" }}>중개보수</span>
                       <button onClick={() => setActiveFilterDropdown(null)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#999", padding: 0, lineHeight: 1 }}>✕</button>
                     </div>
-                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
-                      {[{ label: "전체", value: null }, { label: "법정수수료", value: "법정수수료" }, { label: "공동수수료", value: "공동수수료" }, { label: "기타", value: "기타" }].map(p => (
-                        <button key={p.label} onClick={() => setFilterCommissionType(filterCommissionType === p.value ? null : p.value)} style={{ padding: "8px 16px", borderRadius: 4, fontSize: 13, cursor: "pointer", border: filterCommissionType === p.value ? "1px solid #1a73e8" : "1px solid #e0e0e0", background: filterCommissionType === p.value ? "#e8f0fe" : "#fff", color: filterCommissionType === p.value ? "#1a73e8" : "#555", fontWeight: filterCommissionType === p.value ? "bold" : "normal" }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 16 }}>
+                      {[{ label: "전체", value: null }, { label: "공동중개", value: "공동중개" }, { label: "25%~", value: "25" }, { label: "50%~", value: "50" }, { label: "75%~", value: "75" }, { label: "100%(법정)", value: "100" }].map(p => (
+                        <button key={p.label} onClick={() => setFilterCommissionType(filterCommissionType === p.value ? null : p.value)} style={{ padding: "10px 8px", borderRadius: 4, fontSize: 13, cursor: "pointer", textAlign: "center", border: filterCommissionType === p.value ? "1px solid #1a73e8" : "1px solid #e0e0e0", background: filterCommissionType === p.value ? "#e8f0fe" : "#fff", color: filterCommissionType === p.value ? "#1a73e8" : "#555", fontWeight: filterCommissionType === p.value ? "bold" : "normal" }}>
                           {p.label}
                         </button>
                       ))}
