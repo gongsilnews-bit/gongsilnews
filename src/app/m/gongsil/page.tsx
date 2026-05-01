@@ -432,6 +432,7 @@ function MobileGongsilContent() {
     }
     setDetailLoading(true);
     setSelectedVacancy(v); // 먼저 기본 정보 표시
+    setDetailTab("info");
     const res = await getVacancyDetail(v.id);
     if (res.success && res.data) {
       const detail = {
