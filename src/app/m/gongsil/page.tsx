@@ -59,6 +59,7 @@ export default function MobileGongsilPage() {
   const shareDropdownRef = useRef<HTMLDivElement>(null);
   const itemMapRef = useRef<HTMLDivElement>(null);
   const roadviewRef = useRef<HTMLDivElement>(null);
+  const vacancyStackRef = useRef<any[]>([]);
 
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [showShareDropdown, setShowShareDropdown] = useState(false);
@@ -197,11 +198,18 @@ export default function MobileGongsilPage() {
   // 뒤로 가기(안드로이드 하드웨어 백버튼 등) 처리
   useEffect(() => {
     const handlePopState = () => {
-      if (selectedVacancy) {
+      if (vacancyStackRef.current.length > 0) {
+        const prevVacancy = vacancyStackRef.current.pop();
+        setSelectedVacancy(prevVacancy);
+        setDetailTab("realtor");
+        setTimeout(() => { if (detailScrollRef.current) detailScrollRef.current.scrollTo(0, 0); }, 50);
+      } else if (selectedVacancy) {
+        vacancyStackRef.current = [];
         setSelectedVacancy(null);
         setIsDirectView(false);
         setTimeout(() => kakaoMapRef.current?.relayout(), 50);
       } else if (selectedCluster) {
+        vacancyStackRef.current = [];
         setSelectedCluster(null);
       }
     };
@@ -254,6 +262,7 @@ export default function MobileGongsilPage() {
       });
 
       kakao.maps.event.addListener(map, "click", () => {
+        vacancyStackRef.current = [];
         setSelectedCluster(null);
         setSelectedVacancy(null);
       });
@@ -348,7 +357,7 @@ export default function MobileGongsilPage() {
   // 상세 조회
   const handleVacancyClick = async (v: any, isDirect: boolean = false) => {
     if (!isDirect) {
-      window.history.pushState({ panel: "detail" }, "");
+      window.history.pushState({ panel: "detail", t: Date.now() }, "");
     }
     if (detailScrollRef.current) {
       detailScrollRef.current.scrollTop = 0;
@@ -814,9 +823,9 @@ export default function MobileGongsilPage() {
                               key={v.id}
                               className="v-card"
                               onClick={() => {
+                                vacancyStackRef.current.push(selectedVacancy);
                                 setDetailTab("info");
-                                setSelectedVacancy(v);
-                                if (detailScrollRef.current) detailScrollRef.current.scrollTo(0, 0);
+                                handleVacancyClick(v);
                               }}
                               style={{ display: "flex", gap: "12px", padding: "16px 0", borderBottom: "1px solid #f3f4f6", cursor: "pointer", transition: "background 0.15s" }}
                             >
