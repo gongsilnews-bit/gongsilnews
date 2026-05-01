@@ -474,7 +474,14 @@ export default function MobileGongsilPage() {
                 </div>
               )}
               <div style={{ flex: 1, minWidth: 0 }}>
-                {/* Title & Date */}
+                {/* Badges & Date (Moved to top) */}
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
+                  <span style={{ fontSize: "12px", fontWeight: 700, color: "#ef4444", border: "1px solid #ef4444", padding: "1px 6px", borderRadius: "3px" }}>공동중개 0%</span>
+                  <span style={{ fontSize: "13px", fontWeight: 700, color: "#ef4444" }}>{v.vacancy_no || '-'}</span>
+                  <span style={{ fontSize: "12px", color: "#9ca3af" }}>{v.created_at ? new Date(v.created_at).toLocaleDateString("ko-KR").slice(0, -1) : ""}</span>
+                </div>
+
+                {/* Title */}
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
                   <p style={{ fontSize: "16px", fontWeight: 800, color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {v.building_name || [v.dong, v.sigungu].filter(Boolean).join(" ")}
@@ -496,12 +503,16 @@ export default function MobileGongsilPage() {
                   {[v.room_count !== undefined ? `룸 ${v.room_count}개` : null, v.bath_count !== undefined ? `욕실 ${v.bath_count}개` : null, ...(v.options || [])].filter(Boolean).join(", ")}
                 </p>
 
-                {/* Badges & Date */}
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <span style={{ fontSize: "13px", fontWeight: 700, color: "#ef4444", border: "1px solid #ef4444", padding: "1px 6px", borderRadius: "3px" }}>공동중개 0%</span>
-                  <span style={{ fontSize: "14px", fontWeight: 700, color: "#ef4444" }}>{v.vacancy_no || '-'}</span>
-                  <span style={{ fontSize: "13px", color: "#9ca3af" }}>{v.created_at ? new Date(v.created_at).toLocaleDateString("ko-KR").slice(0, -1) : ""}</span>
-                </div>
+                {/* Themes (Added at bottom) */}
+                {v.themes && v.themes.length > 0 && (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginTop: "4px" }}>
+                    {v.themes.map((theme: string, idx: number) => (
+                      <span key={idx} style={{ background: "#f8fafc", color: "#3b82f6", fontSize: "12px", padding: "2px 8px", borderRadius: "12px", fontWeight: 700, border: "1px solid #bfdbfe" }}>
+                        {theme.startsWith('#') ? theme : `# ${theme}`}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="2" style={{ flexShrink: 0, alignSelf: "center" }}><polyline points="9 18 15 12 9 6"/></svg>
             </div>
