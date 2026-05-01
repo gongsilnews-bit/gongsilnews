@@ -921,7 +921,7 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
 
                   return (
                     <Link 
-                      href={isMobile ? `/m/gongsil?id=${prop.id}` : `/homepage/${prop.id}`} 
+                      href={isMobile ? `/m/gongsil?id=${prop.id}` : `/gongsil?id=${prop.id}`} 
                       target={isMobile ? undefined : "_blank"} 
                       key={prop.id || i} 
                       onClick={(e) => {
