@@ -208,7 +208,7 @@ export default function MobileHomeClient(props: Props) {
 
 
       {/* ③ 부동산·주식·재테크 */}
-      <NewsSection title="부동산·주식·재테크" href="/m/news?tab=부동산·주식·재테크" articles={financeArticles} onArticleClick={handleArticleClick} />
+      <NewsSection title="부동산·주식·재테크" href="/m/news?tab=부동산·주식·재테크" articles={financeArticles} />
 
       {/* ④ 우리동네부동산 (PC VideoGrid 대응) */}
       {mapArticles.length > 0 && (
