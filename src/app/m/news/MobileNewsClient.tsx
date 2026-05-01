@@ -68,6 +68,34 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
   const [localArticles, setLocalArticles] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedVacancyId, setSelectedVacancyId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleMessage = (e: MessageEvent) => {
+      if (e.data?.type === 'CLOSE_VACANCY_OVERLAY') {
+        window.history.back(); // Trigger popstate
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
+  useEffect(() => {
+    if (selectedVacancyId) {
+      window.history.pushState({ panel: 'vacancy-overlay' }, '');
+    }
+  }, [selectedVacancyId]);
+
+  useEffect(() => {
+    const handlePopState = (e: PopStateEvent) => {
+      if (selectedVacancyId) {
+        setSelectedVacancyId(null);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [selectedVacancyId]);
 
   // 기사 상세 보기 상태 (우리동네뉴스 슬라이딩 패널용)
   const [showDetail, setShowDetail] = useState(false);
@@ -855,10 +883,12 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                   let url = a.href;
                   try {
                     const urlObj = new URL(url);
-                    // 모바일에서는 PC용 공실 링크를 모바일용으로 변환
-                    if (urlObj.pathname === '/gongsil' && urlObj.searchParams.has('id')) {
-                      urlObj.pathname = '/m/gongsil';
-                      url = urlObj.toString();
+                    if (urlObj.pathname === '/gongsil' || urlObj.pathname === '/m/gongsil') {
+                      const id = urlObj.searchParams.get('id');
+                      if (id) {
+                        setSelectedVacancyId(id);
+                        return;
+                      }
                     }
                     if (urlObj.origin === window.location.origin) {
                       router.push(urlObj.pathname + urlObj.search + urlObj.hash);
@@ -876,6 +906,27 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
           <div style={{ padding: "40px 20px", textAlign: "center", color: "#999" }}>
             기사를 불러올 수 없습니다.
           </div>
+        )}
+      </div>
+      
+      {/* Vacancy Iframe Overlay */}
+      <div 
+        className={`vacancy-iframe-overlay ${selectedVacancyId ? "open" : ""}`} 
+        style={{
+          position: "fixed", top: 0, left: "50%", width: "100%", maxWidth: "448px",
+          marginLeft: "-224px", height: "100dvh", background: "#fff", zIndex: 9999999,
+          transform: selectedVacancyId ? "translateX(0)" : "translateX(100vw)",
+          transition: "transform 0.35s cubic-bezier(0.25,1,0.5,1)",
+          display: "flex", flexDirection: "column"
+        }}
+      >
+        <style>{`@media (max-width: 448px) { .vacancy-iframe-overlay { margin-left: -50vw !important; } }`}</style>
+        {selectedVacancyId && (
+          <iframe 
+            src={`/m/gongsil?id=${selectedVacancyId}&embed=true`} 
+            style={{ flex: 1, border: "none", width: "100%", height: "100%" }}
+            title="vacancy-detail"
+          />
         )}
       </div>
       

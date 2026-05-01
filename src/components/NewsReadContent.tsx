@@ -38,6 +38,33 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
   const [commentText, setCommentText] = useState("");
   const [viewCount, setViewCount] = useState(article.view_count || 0);
   const [mounted, setMounted] = useState(false);
+  const [selectedVacancyId, setSelectedVacancyId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleMessage = (e: MessageEvent) => {
+      if (e.data?.type === 'CLOSE_VACANCY_OVERLAY') {
+        window.history.back(); // Trigger popstate
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
+  useEffect(() => {
+    if (selectedVacancyId) {
+      window.history.pushState({ panel: 'vacancy-overlay' }, '');
+    }
+  }, [selectedVacancyId]);
+
+  useEffect(() => {
+    const handlePopState = (e: PopStateEvent) => {
+      if (selectedVacancyId) {
+        setSelectedVacancyId(null);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [selectedVacancyId]);
 
   // 별도 기능 State
   const [isBookmarked, setIsBookmarked] = useState(false);
@@ -628,9 +655,12 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
                       let url = a.href;
                       try {
                         const urlObj = new URL(url);
-                        if (isMobile && urlObj.pathname === '/gongsil' && urlObj.searchParams.has('id')) {
-                          urlObj.pathname = '/m/gongsil';
-                          url = urlObj.pathname + urlObj.search;
+                        if (urlObj.pathname === '/gongsil' || urlObj.pathname === '/m/gongsil') {
+                          const id = urlObj.searchParams.get('id');
+                          if (id) {
+                            setSelectedVacancyId(id);
+                            return;
+                          }
                         }
                         
                         if (urlObj.origin === window.location.origin) {
@@ -890,7 +920,18 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
                   const createdDate = prop.created_at ? new Date(prop.created_at).toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" }).replace(/\.$/, "") : "";
 
                   return (
-                    <Link href={isMobile ? `/m/gongsil?id=${prop.id}` : `/homepage/${prop.id}`} target={isMobile ? undefined : "_blank"} key={prop.id || i} style={{ textDecoration: "none", color: "inherit", display: "block" }}>
+                    <Link 
+                      href={isMobile ? `/m/gongsil?id=${prop.id}` : `/homepage/${prop.id}`} 
+                      target={isMobile ? undefined : "_blank"} 
+                      key={prop.id || i} 
+                      onClick={(e) => {
+                        if (isMobile) {
+                          e.preventDefault();
+                          setSelectedVacancyId(prop.id);
+                        }
+                      }}
+                      style={{ textDecoration: "none", color: "inherit", display: "block" }}
+                    >
                       <div className="prop-item" style={{ padding: "16px 0", borderBottom: "1px solid #f0f0f0", display: "flex", gap: 12, cursor: "pointer", background: "#fff", transition: "background 0.15s" }} onMouseEnter={e => e.currentTarget.style.background = '#f9fafb'} onMouseLeave={e => e.currentTarget.style.background = '#fff'}>
                         <div className="prop-info" style={{ minWidth: 0, overflow: "hidden", flex: 1, display: "flex", flexDirection: "column" }}>
                           <div className="prop-title" style={{ fontSize: 16, fontWeight: 700, color: "#111", marginBottom: 4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{title}</div>
@@ -974,6 +1015,27 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
           </div>
         </div>
       )}
+
+      {/* Vacancy Iframe Overlay */}
+      <div 
+        className={`vacancy-iframe-overlay ${selectedVacancyId ? "open" : ""}`} 
+        style={{
+          position: "fixed", top: 0, left: "50%", width: "100%", maxWidth: "448px",
+          marginLeft: "-224px", height: "100dvh", background: "#fff", zIndex: 9999999,
+          transform: selectedVacancyId ? "translateX(0)" : "translateX(100vw)",
+          transition: "transform 0.35s cubic-bezier(0.25,1,0.5,1)",
+          display: "flex", flexDirection: "column"
+        }}
+      >
+        <style>{`@media (max-width: 448px) { .vacancy-iframe-overlay { margin-left: -50vw !important; } }`}</style>
+        {selectedVacancyId && (
+          <iframe 
+            src={`/m/gongsil?id=${selectedVacancyId}&embed=true`} 
+            style={{ flex: 1, border: "none", width: "100%", height: "100%" }}
+            title="vacancy-detail"
+          />
+        )}
+      </div>
 
       <style>{`
         @keyframes toastFadeIn { from { opacity: 0; transform: translateX(-50%) translateY(-10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }

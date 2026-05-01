@@ -67,8 +67,15 @@ export default function MobileGongsilPage() {
   const [galleryIndex, setGalleryIndex] = useState(0);
   const [realtorFilter, setRealtorFilter] = useState("전체");
 
-  // 다이렉트 뷰 여부 (URL에 id가 있는 경우 지도를 가리고 상세 정보만 보여줌)
+  // 다이렉트 뷰 상태 (URL에 id가 있는 경우 지도를 가리고 상세 정보를 보여줌)
   const [isDirectView, setIsDirectView] = useState(false);
+  const [isEmbedded, setIsEmbedded] = useState(false);
+  
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setIsEmbedded(new URLSearchParams(window.location.search).get("embed") === "true");
+    }
+  }, []);
 
   useEffect(() => {
     if (selectedVacancy && detailTab === "info") {
@@ -380,9 +387,17 @@ export default function MobileGongsilPage() {
   };
 
   const goBack = () => {
+    if (isEmbedded) {
+      if (detailPanelRef.current) detailPanelRef.current.classList.add("slide-out");
+      setTimeout(() => window.parent.postMessage({ type: 'CLOSE_VACANCY_OVERLAY' }, '*'), 350);
+      return;
+    }
     if (isDirectView) {
-      if (window.opener) window.close();
-      else window.history.back();
+      if (detailPanelRef.current) detailPanelRef.current.classList.add("slide-out");
+      setTimeout(() => {
+        if (window.opener) window.close();
+        else window.history.back();
+      }, 350);
       return;
     }
     if (selectedVacancy) { window.history.back(); return; }
@@ -408,7 +423,9 @@ export default function MobileGongsilPage() {
         .detail-panel{position:fixed;top:0;left:50%;width:100%;max-width:448px;margin-left:-224px;height:100dvh;background:#fff;z-index:9999;transform:translateX(100vw);transition:transform 0.35s cubic-bezier(0.25,1,0.5,1);overflow-y:auto;}
         @media (max-width: 448px) { .detail-panel { margin-left: -50vw; } }
         .detail-panel.open{transform:translateX(0);}
-        .detail-panel.direct-view{transform:translateX(0);transition:none;}
+        .detail-panel.direct-view{transform:translateX(0); animation: slideInRight 0.35s cubic-bezier(0.25,1,0.5,1) forwards;}
+        .detail-panel.slide-out{transform:translateX(100vw) !important; transition: transform 0.35s cubic-bezier(0.25,1,0.5,1) !important;}
+        @keyframes slideInRight { from { transform: translateX(100vw); } to { transform: translateX(0); } }
         .skeleton{background:linear-gradient(90deg,#f3f4f6 25%,#e5e7eb 50%,#f3f4f6 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:6px;}
         @keyframes shimmer{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
         .v-card:active{background:#f9fafb;}
