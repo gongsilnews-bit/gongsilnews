@@ -13,11 +13,11 @@ import AuthModal from "@/components/AuthModal";
 
 // 카테고리 설정 데이터
 const CATEGORY_CONFIG: Record<string, { name: string; pills: string[]; basicFilters: string[]; detailFilters: string[]; showToggle: boolean; pillStyle?: string }> = {
-  apart: { name: "아파트·오피스텔", pills: ["아파트", "아파트분양권", "재건축", "오피스텔", "오피스텔분양권", "재개발"], basicFilters: ["거래방식", "가격대", "면적", "사용승인일", "세대수", "층수", "방/욕실수", "방향", "기타옵션"], detailFilters: [], showToggle: false },
-  villa: { name: "빌라·주택", pills: ["빌라/연립", "단독/다가구", "전원주택", "상가주택"], basicFilters: ["거래방식", "가격대", "면적", "방/욕실수", "사용승인일", "방향", "기타옵션"], detailFilters: [], showToggle: false },
-  one: { name: "원룸·투룸", pills: ["원룸", "투룸", "오피스텔만 보기"], basicFilters: ["거래방식", "가격대", "관리비", "기타옵션"], detailFilters: [], showToggle: false },
-  biz: { name: "상가·사무실·공장·토지", pills: ["상가", "사무실", "공장/창고", "지식산업센터", "건물", "토지"], basicFilters: ["거래방식", "가격대", "면적", "층수", "관리비", "기타옵션"], detailFilters: [], showToggle: false },
-  sale: { name: "분양", pills: ["아파트", "오피스텔", "빌라", "도시형생활주택", "생활숙박시설", "상가/업무"], basicFilters: ["분양단계", "분양형태", "분양가/보증금", "면적", "세대수"], detailFilters: [], showToggle: false },
+  apart: { name: "아파트·오피스텔", pills: ["아파트", "아파트분양권", "재건축", "오피스텔", "오피스텔분양권", "재개발"], basicFilters: ["거래방식", "가격대", "면적", "사용승인일", "세대수", "층수", "방/욕실수", "방향", "등록자", "수수료", "테마", "기타옵션"], detailFilters: [], showToggle: false },
+  villa: { name: "빌라·주택", pills: ["빌라/연립", "단독/다가구", "전원주택", "상가주택"], basicFilters: ["거래방식", "가격대", "면적", "방/욕실수", "사용승인일", "방향", "등록자", "수수료", "테마", "기타옵션"], detailFilters: [], showToggle: false },
+  one: { name: "원룸·투룸", pills: ["원룸", "투룸", "오피스텔만 보기"], basicFilters: ["거래방식", "가격대", "관리비", "등록자", "수수료", "테마", "기타옵션"], detailFilters: [], showToggle: false },
+  biz: { name: "상가·사무실·공장·토지", pills: ["상가", "사무실", "공장/창고", "지식산업센터", "건물", "토지"], basicFilters: ["거래방식", "가격대", "면적", "층수", "관리비", "등록자", "수수료", "테마", "기타옵션"], detailFilters: [], showToggle: false },
+  sale: { name: "분양", pills: ["아파트", "오피스텔", "빌라", "도시형생활주택", "생활숙박시설", "상가/업무"], basicFilters: ["분양단계", "분양형태", "분양가/보증금", "면적", "세대수", "등록자", "수수료", "테마"], detailFilters: [], showToggle: false },
   wish: { name: "MY관심공실", pills: [], basicFilters: [], detailFilters: [], showToggle: false },
 };
 
@@ -197,6 +197,9 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   const [filterSaleStage, setFilterSaleStage] = useState<string[]>([]);
   const [filterSaleType, setFilterSaleType] = useState<string[]>([]);
   const [filterOptions, setFilterOptions] = useState<string[]>([]);
+  const [filterOwnerRole, setFilterOwnerRole] = useState<string | null>(null);
+  const [filterCommissionType, setFilterCommissionType] = useState<string | null>(null);
+  const [filterThemes, setFilterThemes] = useState<string[]>([]);
 
   const [selectedClusterIds, setSelectedClusterIds] = useState<string[] | null>(null);
   const selectedClusterIdsRef = useRef<string[] | null>(null);
@@ -336,8 +339,32 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
       });
     }
 
+    // 12) 등록자 유형 (일반인/부동산)
+    if (filterOwnerRole) {
+      list = list.filter(v => v.owner_role === filterOwnerRole);
+    }
+
+    // 13) 수수료 유형
+    if (filterCommissionType) {
+      list = list.filter(v => {
+        const vc = v.realtor_commission || v.commission_type || '';
+        if (filterCommissionType === '공동수수료') return vc.includes('공동');
+        if (filterCommissionType === '법정수수료') return vc === '' || vc === '법정수수료';
+        if (filterCommissionType === '기타') return vc !== '' && vc !== '법정수수료' && !vc.includes('공동');
+        return true;
+      });
+    }
+
+    // 14) 테마 키워드
+    if (filterThemes.length > 0) {
+      list = list.filter(v => {
+        if (!v.themes || !Array.isArray(v.themes)) return false;
+        return filterThemes.some(t => v.themes.includes(t));
+      });
+    }
+
     return list;
-  }, [dbVacancies, activeCategory, activePills, filterTradeTypes, filterPriceMin, filterPriceMax, filterAreaMin, filterAreaMax, filterMaintIdx, filterRoomCount, filterBathCount, filterDirection, filterYearMin, filterYearMax, filterUnitMin, filterUnitMax, wishTab, recentViews]);
+  }, [dbVacancies, activeCategory, activePills, filterTradeTypes, filterPriceMin, filterPriceMax, filterAreaMin, filterAreaMax, filterMaintIdx, filterRoomCount, filterBathCount, filterDirection, filterYearMin, filterYearMax, filterUnitMin, filterUnitMax, filterOwnerRole, filterCommissionType, filterThemes, wishTab, recentViews]);
 
   // ── 지도 범위 / 클러스터 선택 적용 ──
   const displayVacancies = React.useMemo(() => {
@@ -1200,6 +1227,9 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     setFilterSaleStage([]);
     setFilterSaleType([]);
     setFilterOptions([]);
+    setFilterOwnerRole(null);
+    setFilterCommissionType(null);
+    setFilterThemes([]);
     setActiveFilterDropdown(null);
   };
 
@@ -1248,7 +1278,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     setFilterTradeTypes(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]);
   };
 
-  const hasActiveFilters = filterTradeTypes.length > 0 || filterPriceMin !== null || filterPriceMax !== null || filterAreaMin !== null || filterAreaMax !== null || filterMaintIdx > 0 || filterRoomCount !== null || filterBathCount !== null || filterDirection !== null || filterYearMin !== null || filterYearMax !== null || filterUnitMin !== null || filterUnitMax !== null;
+  const hasActiveFilters = filterTradeTypes.length > 0 || filterPriceMin !== null || filterPriceMax !== null || filterAreaMin !== null || filterAreaMax !== null || filterMaintIdx > 0 || filterRoomCount !== null || filterBathCount !== null || filterDirection !== null || filterYearMin !== null || filterYearMax !== null || filterUnitMin !== null || filterUnitMax !== null || filterOwnerRole !== null || filterCommissionType !== null || filterThemes.length > 0;
 
   // 가격 표시 헬퍼
   const formatPriceLabel = (val: number | null) => {
@@ -1317,9 +1347,19 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                 (f === "층수" && filterFloor !== null) ||
                 (f === "분양단계" && filterSaleStage.length > 0) ||
                 (f === "분양형태" && filterSaleType.length > 0) ||
-                (f === "기타옵션" && filterOptions.length > 0)
+                (f === "기타옵션" && filterOptions.length > 0) ||
+                (f === "등록자" && filterOwnerRole !== null) ||
+                (f === "수수료" && filterCommissionType !== null) ||
+                (f === "테마" && filterThemes.length > 0)
               );
-              const btnLabel = (f === "가격대" || f === "분양가/보증금") ? priceFilterLabel : f === "면적" ? areaFilterLabel : f === "사용승인일" ? yearFilterLabel : f === "세대수" ? unitFilterLabel : f;
+              const btnLabel = (f === "가격대" || f === "분양가/보증금") ? priceFilterLabel 
+                : f === "면적" ? areaFilterLabel 
+                : f === "사용승인일" ? yearFilterLabel 
+                : f === "세대수" ? unitFilterLabel 
+                : f === "등록자" ? (filterOwnerRole === 'USER' ? '일반인' : filterOwnerRole === 'REALTOR' ? '부동산' : '등록자')
+                : f === "수수료" ? (filterCommissionType || '수수료')
+                : f === "테마" ? (filterThemes.length > 0 ? `테마 ${filterThemes.length}개` : '테마')
+                : f;
 
               return (
               <div key={f} style={{ position: "relative" }}>
@@ -1775,6 +1815,66 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                     </div>
                     <div style={{ textAlign: "right" }}>
                       <button onClick={() => setFilterOptions([])} style={{ background: "none", border: "none", fontSize: 13, color: "#888", cursor: "pointer" }}>⟲ 조건삭제</button>
+                    </div>
+                  </div>
+                )}
+
+                {/* ── 등록자 유형 (일반인/부동산) ── */}
+                {f === "등록자" && activeFilterDropdown === "등록자" && (
+                  <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, background: "#fff", border: "1px solid #ddd", borderRadius: 4, boxShadow: "0 4px 16px rgba(0,0,0,0.15)", width: 240, zIndex: 9000, padding: "16px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                      <span style={{ fontSize: 15, fontWeight: "bold", color: "#111" }}>등록자 유형</span>
+                      <button onClick={() => setActiveFilterDropdown(null)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#999", padding: 0, lineHeight: 1 }}>✕</button>
+                    </div>
+                    <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+                      {[{ label: "전체", value: null }, { label: "일반인", value: "USER" }, { label: "부동산", value: "REALTOR" }].map(p => (
+                        <button key={p.label} onClick={() => setFilterOwnerRole(filterOwnerRole === p.value ? null : p.value)} style={{ flex: 1, padding: "10px", borderRadius: 4, fontSize: 13, cursor: "pointer", border: filterOwnerRole === p.value ? "1px solid #1a73e8" : "1px solid #e0e0e0", background: filterOwnerRole === p.value ? "#e8f0fe" : "#fff", color: filterOwnerRole === p.value ? "#1a73e8" : "#555", fontWeight: filterOwnerRole === p.value ? "bold" : "normal" }}>
+                          {p.label}
+                        </button>
+                      ))}
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      <button onClick={() => setFilterOwnerRole(null)} style={{ background: "none", border: "none", fontSize: 13, color: "#888", cursor: "pointer" }}>⟲ 조건삭제</button>
+                    </div>
+                  </div>
+                )}
+
+                {/* ── 수수료 유형 ── */}
+                {f === "수수료" && activeFilterDropdown === "수수료" && (
+                  <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, background: "#fff", border: "1px solid #ddd", borderRadius: 4, boxShadow: "0 4px 16px rgba(0,0,0,0.15)", width: 320, zIndex: 9000, padding: "16px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                      <span style={{ fontSize: 15, fontWeight: "bold", color: "#111" }}>수수료 유형</span>
+                      <button onClick={() => setActiveFilterDropdown(null)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#999", padding: 0, lineHeight: 1 }}>✕</button>
+                    </div>
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
+                      {[{ label: "전체", value: null }, { label: "법정수수료", value: "법정수수료" }, { label: "공동수수료", value: "공동수수료" }, { label: "기타", value: "기타" }].map(p => (
+                        <button key={p.label} onClick={() => setFilterCommissionType(filterCommissionType === p.value ? null : p.value)} style={{ padding: "8px 16px", borderRadius: 4, fontSize: 13, cursor: "pointer", border: filterCommissionType === p.value ? "1px solid #1a73e8" : "1px solid #e0e0e0", background: filterCommissionType === p.value ? "#e8f0fe" : "#fff", color: filterCommissionType === p.value ? "#1a73e8" : "#555", fontWeight: filterCommissionType === p.value ? "bold" : "normal" }}>
+                          {p.label}
+                        </button>
+                      ))}
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      <button onClick={() => setFilterCommissionType(null)} style={{ background: "none", border: "none", fontSize: 13, color: "#888", cursor: "pointer" }}>⟲ 조건삭제</button>
+                    </div>
+                  </div>
+                )}
+
+                {/* ── 테마 키워드 ── */}
+                {f === "테마" && activeFilterDropdown === "테마" && (
+                  <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, background: "#fff", border: "1px solid #ddd", borderRadius: 4, boxShadow: "0 4px 16px rgba(0,0,0,0.15)", width: 380, zIndex: 9000, padding: "16px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                      <span style={{ fontSize: 15, fontWeight: "bold", color: "#111" }}>테마 키워드</span>
+                      <button onClick={() => setActiveFilterDropdown(null)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#999", padding: 0, lineHeight: 1 }}>✕</button>
+                    </div>
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
+                      {["급매", "추천매물", "신축급", "올수리", "한강뷰", "역세권", "풀옵션", "가성비", "단기임대", "주차편리", "대로변안전", "여성안심", "무권리", "코너자리", "유동인구많음", "인테리어잘됨", "층고높음", "테라스", "복층", "마당있음", "투자용"].map(t => (
+                        <button key={t} onClick={() => setFilterThemes(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])} style={{ padding: "5px 12px", borderRadius: 16, fontSize: 13, cursor: "pointer", border: filterThemes.includes(t) ? "1px solid #10b981" : "1px solid #e0e0e0", background: filterThemes.includes(t) ? "#d1fae5" : "#f9fafb", color: filterThemes.includes(t) ? "#065f46" : "#6b7280", fontWeight: filterThemes.includes(t) ? "bold" : "normal" }}>
+                          # {t} {filterThemes.includes(t) && "✓"}
+                        </button>
+                      ))}
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      <button onClick={() => setFilterThemes([])} style={{ background: "none", border: "none", fontSize: 13, color: "#888", cursor: "pointer" }}>⟲ 조건삭제</button>
                     </div>
                   </div>
                 )}

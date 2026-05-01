@@ -53,7 +53,10 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
     filters.priceMin !== null || filters.priceMax !== null ||
     filters.areaMin !== null || filters.areaMax !== null ||
     filters.yearMin !== null || filters.yearMax !== null ||
-    filters.floor !== null;
+    filters.floor !== null ||
+    filters.ownerRole !== null ||
+    filters.commissionType !== null ||
+    filters.themes.length > 0;
 
   const pillStyle = (active: boolean): React.CSSProperties => ({
     padding: "7px 14px", borderRadius: "20px", fontSize: "13px", fontWeight: 600, whiteSpace: "nowrap", flexShrink: 0,
@@ -117,8 +120,8 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
             <button onClick={() => setActivePanel(activePanel === "area" ? null : "area")} style={pillStyle(activePanel === "area" || filters.areaMin !== null || filters.areaMax !== null)}>
               면적 ▾
             </button>
-            <button onClick={() => setActivePanel(activePanel === "detail" ? null : "detail")} style={pillStyle(activePanel === "detail" || filters.floor !== null || filters.yearMin !== null)}>
-              층수/연식 ▾
+            <button onClick={() => setActivePanel(activePanel === "detail" ? null : "detail")} style={pillStyle(activePanel === "detail" || filters.floor !== null || filters.yearMin !== null || filters.ownerRole !== null || filters.commissionType !== null || filters.themes.length > 0)}>
+              상세 ▾
             </button>
             {/* 오른쪽 패딩 확보 */}
             <div style={{ flexShrink: 0, width: "8px" }} />
@@ -207,7 +210,7 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
           <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "#fff", borderTop: "1px solid #e5e7eb", padding: "12px 20px 24px", display: "flex", gap: "12px" }}>
             <button 
               onClick={() => {
-                const empty = { propertyTypes: [], tradeTypes: [], keyword: "", priceMin: null, priceMax: null, areaMin: null, areaMax: null, yearMin: null, yearMax: null, floor: null };
+                const empty = { propertyTypes: [], tradeTypes: [], keyword: "", priceMin: null, priceMax: null, areaMin: null, areaMax: null, yearMin: null, yearMax: null, floor: null, ownerRole: null, commissionType: null, themes: [] };
                 setTempFilters(empty);
               }} 
               style={{ padding: "14px 20px", background: "#f3f4f6", border: "none", borderRadius: "10px", fontSize: "14px", fontWeight: 600, color: "#6b7280", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}

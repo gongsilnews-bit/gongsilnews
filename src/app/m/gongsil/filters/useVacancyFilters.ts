@@ -11,6 +11,9 @@ export interface FilterState {
   yearMin: number | null;
   yearMax: number | null;
   floor: string | null;
+  ownerRole: string | null;        // 'USER' | 'REALTOR' | null(전체)
+  commissionType: string | null;   // '법정수수료' | '공동수수료' 등
+  themes: string[];                // 테마 키워드 (다중 선택)
 }
 
 export const initialFilterState: FilterState = {
@@ -24,6 +27,9 @@ export const initialFilterState: FilterState = {
   yearMin: null,
   yearMax: null,
   floor: null,
+  ownerRole: null,
+  commissionType: null,
+  themes: [],
 };
 
 export function useVacancyFilters(initialVacancies: any[]) {
@@ -71,7 +77,28 @@ export function useVacancyFilters(initialVacancies: any[]) {
         if (filters.floor === '옥탑' && v.floor !== '옥탑') return false;
       }
 
-      // 7. 키워드 검색
+      // 7. 등록자 유형 (일반인 / 부동산)
+      if (filters.ownerRole) {
+        if (filters.ownerRole === 'USER' && v.owner_role !== 'USER') return false;
+        if (filters.ownerRole === 'REALTOR' && v.owner_role !== 'REALTOR') return false;
+      }
+
+      // 8. 수수료 타입
+      if (filters.commissionType) {
+        const vc = v.realtor_commission || v.commission_type || '';
+        if (filters.commissionType === '공동수수료' && !vc.includes('공동')) return false;
+        if (filters.commissionType === '법정수수료' && vc !== '' && vc !== '법정수수료') return false;
+        if (filters.commissionType === '기타' && (vc === '' || vc === '법정수수료' || vc.includes('공동'))) return false;
+      }
+
+      // 9. 테마 키워드 (선택된 테마 중 하나라도 포함)
+      if (filters.themes.length > 0) {
+        if (!v.themes || !Array.isArray(v.themes)) return false;
+        const hasMatch = filters.themes.some(t => v.themes.includes(t));
+        if (!hasMatch) return false;
+      }
+
+      // 10. 키워드 검색
       if (filters.keyword) {
         const q = filters.keyword.toLowerCase();
         const match = 
@@ -103,6 +130,9 @@ export function useVacancyFilters(initialVacancies: any[]) {
     if (filters.areaMin !== null || filters.areaMax !== null) count++;
     if (filters.yearMin !== null || filters.yearMax !== null) count++;
     if (filters.floor !== null) count++;
+    if (filters.ownerRole !== null) count++;
+    if (filters.commissionType !== null) count++;
+    if (filters.themes.length > 0) count++;
     if (filters.keyword !== "") count++;
     return count;
   }, [filters]);
