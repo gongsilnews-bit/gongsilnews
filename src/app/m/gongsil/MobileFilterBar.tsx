@@ -107,7 +107,7 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
 
   const hasActiveFilters = filters.propertyTypes.length > 0 || filters.tradeTypes.length > 0 || filters.keyword;
   const pillStyle = (active: boolean): React.CSSProperties => ({
-    padding: "7px 14px", borderRadius: "20px", fontSize: "13px", fontWeight: 600, whiteSpace: "nowrap",
+    padding: "7px 14px", borderRadius: "20px", fontSize: "13px", fontWeight: 600, whiteSpace: "nowrap", flexShrink: 0,
     border: active ? "1.5px solid #4b89ff" : "1px solid #d1d5db",
     background: active ? "#eef4ff" : "#fff", color: active ? "#4b89ff" : "#374151",
     cursor: "pointer", transition: "all 0.15s", display: "flex", alignItems: "center", gap: "4px",
@@ -144,7 +144,7 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
       `}</style>
 
       {/* ═══ 필터 바 ═══ */}
-      <div style={{ display: "flex", alignItems: "center", background: "#fff", borderBottom: "1px solid #e5e7eb", padding: "8px 0 8px 0", flexShrink: 0 }}>
+      <div style={{ display: "flex", alignItems: "center", background: "#fff", borderBottom: "1px solid #e5e7eb", padding: "8px 0 8px 0", flexShrink: 0, width: "100%" }}>
         {/* ≡ 통합필터 버튼 */}
         <button onClick={() => setFullFilterOpen(true)} style={{ flexShrink: 0, width: "40px", display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", cursor: "pointer", position: "relative" }}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#374151" strokeWidth="2.2" strokeLinecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="8" cy="6" r="2" fill="#374151" stroke="#fff" strokeWidth="1.5"/><circle cx="16" cy="12" r="2" fill="#374151" stroke="#fff" strokeWidth="1.5"/><circle cx="10" cy="18" r="2" fill="#374151" stroke="#fff" strokeWidth="1.5"/></svg>
@@ -153,7 +153,7 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
         <div style={{ width: 1, height: 20, background: "#e5e7eb", flexShrink: 0 }} />
 
         {/* 수평 스크롤 필 버튼들 */}
-        <div className="filter-scroll" style={{ flex: 1, overflowX: "auto", display: "flex", gap: "8px", padding: "0 12px", WebkitOverflowScrolling: "touch" as any }}>
+        <div className="filter-scroll" style={{ flex: 1, minWidth: 0, overflowX: "auto", display: "flex", gap: "8px", padding: "0 12px", WebkitOverflowScrolling: "touch" as any }}>
           <button onClick={() => setActivePanel(activePanel === "loc" ? null : "loc")} style={pillStyle(activePanel === "loc" || locLabel !== "위치")}>📍 {locLabel} ▾</button>
           <button onClick={() => setActivePanel(activePanel === "prop" ? null : "prop")} style={pillStyle(activePanel === "prop" || filters.propertyTypes.length > 0)}>
             {filters.propertyTypes.length > 0 ? filters.propertyTypes.slice(0,2).join(", ") + (filters.propertyTypes.length > 2 ? ` +${filters.propertyTypes.length-2}` : "") : "매물유형"} ▾
