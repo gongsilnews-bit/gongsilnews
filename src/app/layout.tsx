@@ -6,6 +6,10 @@ export const metadata: Metadata = {
   title: "공실뉴스 - 부동산 중개망의 스마트한 변화",
   description: "11만 부동산을 위한 무료 정보 채널. 실시간 공실 정보, 부동산 뉴스, 시세 분석을 제공합니다.",
   metadataBase: new URL("https://gongsilnews.com"),
+  icons: {
+    icon: '/favicon.png',
+    apple: '/apple-icon.jpg',
+  },
   openGraph: {
     title: "공실뉴스 - 부동산 중개망의 스마트한 변화",
     description: "11만 부동산을 위한 무료 정보 채널",

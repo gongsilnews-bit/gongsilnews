@@ -49,6 +49,7 @@ export default function MobileLayout({ children }: { children: React.ReactNode }
 
       {/* 공통 하단 탭바 */}
       <MobileBottomNav />
+      <PopupBanner />
     </div>
   );
 }
