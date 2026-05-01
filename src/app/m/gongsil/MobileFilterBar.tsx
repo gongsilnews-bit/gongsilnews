@@ -117,7 +117,7 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
   const renderSheet = (title: string, content: React.ReactNode) => (
     <>
       <div onClick={() => setActivePanel(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.35)", zIndex: 9990, transition: "opacity 0.2s" }} />
-      <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50)", width: "100%", maxWidth: 448, background: "#fff", borderRadius: "16px 16px 0 0", zIndex: 9991, maxHeight: "55vh", display: "flex", flexDirection: "column", animation: "sheetUp 0.3s ease-out" }}>
+      <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 448, background: "#fff", borderRadius: "16px 16px 0 0", zIndex: 9991, maxHeight: "55vh", display: "flex", flexDirection: "column", animation: "sheetUp 0.3s ease-out" }}>
         <div style={{ padding: "16px 20px 12px", borderBottom: "1px solid #f3f4f6", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span style={{ fontSize: "16px", fontWeight: 800, color: "#111" }}>{title}</span>
           <button onClick={() => setActivePanel(null)} style={{ background: "none", border: "none", fontSize: "22px", color: "#9ca3af", cursor: "pointer", padding: "4px" }}>✕</button>
