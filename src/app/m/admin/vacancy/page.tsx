@@ -202,7 +202,23 @@ function MobileVacancyAdmin() {
               {/* 상단: 상태 + 매물종류 + 번호 */}
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ padding: "4px 10px", background: st.bg, color: "#fff", borderRadius: 6, fontSize: 12, fontWeight: 700 }}>{st.label}</span>
+                  {(row.status === "ACTIVE" || row.status === "STOPPED") ? (
+                    <button
+                      onClick={async () => {
+                        const isActive = row.status === "ACTIVE";
+                        const msg = isActive ? "광고를 종료하시겠습니까?" : "광고를 다시 시작하시겠습니까?";
+                        if (!confirm(msg)) return;
+                        const newStatus = isActive ? "STOPPED" : "ACTIVE";
+                        const res = await updateVacancyStatus(row.id, newStatus);
+                        if (res.success) fetchVacancies();
+                      }}
+                      style={{ padding: "4px 10px", background: st.bg, color: "#fff", borderRadius: 6, fontSize: 12, fontWeight: 700, border: "none", cursor: "pointer" }}
+                    >
+                      {st.label}
+                    </button>
+                  ) : (
+                    <span style={{ padding: "4px 10px", background: st.bg, color: "#fff", borderRadius: 6, fontSize: 12, fontWeight: 700 }}>{st.label}</span>
+                  )}
                   <span style={{ fontSize: 13, color: "#374151", fontWeight: 700 }}>{row.sub_category || row.property_type}</span>
                 </div>
                 <span style={{ fontSize: 11, color: "#9ca3af" }}>#{row.vacancy_no || "-"} · {daysSinceCreated}일</span>
