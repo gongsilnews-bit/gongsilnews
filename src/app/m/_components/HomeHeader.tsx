@@ -31,57 +31,67 @@ export default function HomeHeader() {
           alignItems: 'center',
           justifyContent: 'space-between',
           padding: '0 16px',
-          height: '36px',
+          height: '50px',
           position: 'fixed',
           top: 0,
           left: '50%',
           transform: 'translateX(-50%)',
           zIndex: 50,
-          backgroundColor: '#ffffff',
+          backgroundColor: '#102142',
           width: '100%',
           maxWidth: '448px',
         }}
       >
-        {/* 좌측 햄버거 메뉴 */}
-        <button style={{ padding: '4px', background: 'none', border: 'none', cursor: 'pointer' }} onClick={() => setIsMenuOpen(true)}>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="3" y1="12" x2="21" y2="12"></line>
-            <line x1="3" y1="6" x2="21" y2="6"></line>
-            <line x1="3" y1="18" x2="21" y2="18"></line>
-          </svg>
-        </button>
+        {/* 좌측 로고 & 슬로건 */}
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: '14px', paddingTop: '2px' }}>
+          <Link href="/m" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
+            <span style={{ color: '#ffffff', fontSize: '22px', fontWeight: 900, fontStyle: 'italic', letterSpacing: '-1px', lineHeight: 1 }}>
+              공실뉴스
+            </span>
+          </Link>
+          <span style={{ display: 'inline-block', color: 'rgba(255,255,255,0.95)', fontSize: '13px', fontWeight: 600, letterSpacing: '-0.5px', animation: 'sloganFadeIn 1s ease-out forwards' }}>
+            11만 부동산을 위한 <span style={{ color: '#fcd34d', fontWeight: 800 }}>무료 정보 채널</span>
+          </span>
+        </div>
 
-        {/* 중앙 로고 */}
-        <Link href="/m" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
-          <img src="/logo.png" alt="공실뉴스" style={{ height: '28px', objectFit: 'contain', marginTop: '2px' }} />
-        </Link>
-
-        {/* 우측 검색 & 공실톡 */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <button style={{ padding: '4px', background: 'none', border: 'none', cursor: 'pointer' }} onClick={() => setIsSearchOpen(true)}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1a2e50" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        {/* 우측 아이콘 3개 (검색, 마이페이지, 햄버거) */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          {/* 검색 아이콘 */}
+          <button style={{ padding: 0, background: 'none', border: 'none', cursor: 'pointer', display: 'flex' }} onClick={() => setIsSearchOpen(true)}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="11" cy="11" r="8"></circle>
               <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
             </svg>
           </button>
-          <button
-            style={{ padding: '4px', position: 'relative', background: 'none', border: 'none', cursor: 'pointer' }}
-            onClick={() => {
-              if (typeof window !== "undefined") {
-                window.dispatchEvent(new CustomEvent("openGongsilTalkMain"));
-              }
-            }}
-          >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1a2e50" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+
+          {/* 마이페이지 아이콘 */}
+          <Link href="/m/mypage" style={{ padding: 0, background: 'none', border: 'none', cursor: 'pointer', display: 'flex' }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
             </svg>
-            <span style={{ position: 'absolute', top: 0, right: 0, width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#ef4444', border: '2px solid #ffffff' }}></span>
+          </Link>
+
+          {/* 햄버거 메뉴 아이콘 */}
+          <button style={{ padding: 0, background: 'none', border: 'none', cursor: 'pointer', display: 'flex' }} onClick={() => setIsMenuOpen(true)}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
           </button>
         </div>
       </header>
 
       {isSearchOpen && <SearchOverlay isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />}
       {isMenuOpen && <HamburgerMenu isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} />}
+
+      <style>{`
+        @keyframes sloganFadeIn {
+          0% { opacity: 0; transform: translateY(4px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </>
   );
 }

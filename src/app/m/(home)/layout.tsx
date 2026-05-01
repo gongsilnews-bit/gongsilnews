@@ -7,8 +7,8 @@ export default function HomeLayout({ children }: { children: React.ReactNode }) 
       {/* 홈 전용 헤더 */}
       <HomeHeader />
 
-      {/* 홈 콘텐츠 — 헤더(36px) 높이만큼 padding */}
-      <div style={{ paddingTop: '36px' }}>
+      {/* 홈 콘텐츠 — 헤더(50px) 높이만큼 padding */}
+      <div style={{ paddingTop: '50px' }}>
         {children}
       </div>
     </>

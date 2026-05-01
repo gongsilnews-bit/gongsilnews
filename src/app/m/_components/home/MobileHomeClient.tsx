@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import dynamic from "next/dynamic";
@@ -58,6 +58,15 @@ export default function MobileHomeClient(props: Props) {
   const router = useRouter();
   const [heroIdx, setHeroIdx] = useState(0);
   const hero = headlineArticles[heroIdx] || null;
+
+  // ── 헤드라인 자동 슬라이드 (3초마다) ──
+  useEffect(() => {
+    if (headlineArticles.length <= 1) return;
+    const timer = setInterval(() => {
+      setHeroIdx((prev) => (prev + 1) % Math.min(headlineArticles.length, 5));
+    }, 3000);
+    return () => clearInterval(timer);
+  }, [headlineArticles.length]);
   // ── 스와이프 탭 전환 ──
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
@@ -93,9 +102,9 @@ export default function MobileHomeClient(props: Props) {
           WebkitOverflowScrolling: "touch",
           touchAction: "pan-x",
           backgroundColor: "#ffffff",
-          borderBottom: "9px solid #F4F6F8",
+          borderBottom: "1px solid #f0f0f0", // Subtle border under nav instead of thick background
           position: "fixed",
-          top: "30px",
+          top: "50px", // Match new header height
           left: "50%",
           transform: "translateX(-50%)",
           width: "100%",
@@ -128,7 +137,7 @@ export default function MobileHomeClient(props: Props) {
             <span style={{
               display: "inline-block",
               paddingBottom: "5px",
-              borderBottom: cat.key === "home" ? "5px solid #1a2e50" : "5px solid transparent",
+              borderBottom: cat.key === "home" ? "5px solid #102142" : "5px solid transparent",
             }}>
               {cat.label}
             </span>
@@ -174,10 +183,10 @@ export default function MobileHomeClient(props: Props) {
             <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 14, marginTop: 6, marginBottom: 0, letterSpacing: "-0.2px" }}>{hero.author_name} · {formatDate(hero.published_at || hero.created_at)}</p>
           </div>
           {headlineArticles.length > 1 && (
-            <div style={{ position: "absolute", bottom: 12, right: 12, display: "flex", gap: 4 }}>
+            <div style={{ position: "absolute", bottom: 12, right: 12, display: "flex", gap: 6, alignItems: "center" }}>
               {headlineArticles.slice(0, 5).map((_, i) => (
                 <button key={i} onClick={(e) => { e.stopPropagation(); setHeroIdx(i); }}
-                  style={{ width: i === heroIdx ? 16 : 6, height: 6, borderRadius: 3, background: i === heroIdx ? "#fff" : "rgba(255,255,255,0.5)", border: "none", padding: 0, transition: "all 0.3s", cursor: "pointer" }} />
+                  style={{ width: i === heroIdx ? 20 : 6, height: 6, borderRadius: 3, background: i === heroIdx ? "#fff" : "rgba(255,255,255,0.4)", border: "none", padding: 0, transition: "all 0.3s", cursor: "pointer" }} />
               ))}
             </div>
           )}
@@ -190,7 +199,7 @@ export default function MobileHomeClient(props: Props) {
           <h2>실시간 공실 매물</h2>
           <Link href="/m/gongsil" style={{ fontSize: 15, color: "#6b7280", textDecoration: "none" }}>더보기 ›</Link>
         </div>
-        <div style={{ padding: "0 16px 16px" }}>
+        <div style={{ padding: "0 16px 16px", position: "relative" }}>
           <MiniVacancyMap vacancies={vacancies} />
         </div>
       </div>
