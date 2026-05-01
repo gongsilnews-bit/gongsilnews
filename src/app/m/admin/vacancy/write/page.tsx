@@ -520,9 +520,9 @@ function MobileVacancyWrite() {
 
         {/* 저장 버튼 */}
         <div style={{ display:"flex", gap:10 }}>
-          <button type="button" disabled={submitting} onClick={()=>handleSubmit("PENDING")}
-            style={{ flex:1, height:52, background: submitting?"#9ca3af":"linear-gradient(135deg,#3b82f6,#2563eb)", color:"#fff", border:"none", borderRadius:12, fontSize:16, fontWeight:800, cursor: submitting?"not-allowed":"pointer", boxShadow:"0 4px 12px rgba(37,99,235,0.3)" }}>
-            {submitting ? "처리 중..." : editId ? "✅ 수정완료" : "✅ 등록 (승인신청)"}
+          <button type="button" disabled={submitting} onClick={()=>handleSubmit(isRealtor ? "ACTIVE" : "PENDING")}
+            style={{ flex:1, height:52, background: submitting?"#9ca3af": isRealtor?"linear-gradient(135deg,#10b981,#059669)":"linear-gradient(135deg,#3b82f6,#2563eb)", color:"#fff", border:"none", borderRadius:12, fontSize:16, fontWeight:800, cursor: submitting?"not-allowed":"pointer", boxShadow: isRealtor?"0 4px 12px rgba(16,185,129,0.3)":"0 4px 12px rgba(37,99,235,0.3)" }}>
+            {submitting ? "처리 중..." : editId ? "✅ 수정완료" : isRealtor ? "✅ 등록 (바로발행)" : "✅ 등록 (승인신청)"}
           </button>
           <button type="button" disabled={submitting} onClick={()=>handleSubmit("DRAFT")}
             style={{ height:52, padding:"0 20px", background:"#64748b", color:"#fff", border:"none", borderRadius:12, fontSize:14, fontWeight:700, cursor: submitting?"not-allowed":"pointer" }}>
