@@ -610,13 +610,32 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
               ) : null}
 
               {article.content && (
-                <div suppressHydrationWarning dangerouslySetInnerHTML={{ 
-                  __html: article.content
-                    .replace(/<button[^>]*class="editor-media-delete"[^>]*>.*?<\/button>/gi, '')
-                    .replace(/<p[^>]*>\s*(?:<br>\s*)*<iframe[^>]*youtube\.com\/embed[^>]*>.*?<\/iframe>(?:\s*<br>\s*)*\s*<\/p>/gi, '')
-                    .replace(/<div(?:(?!class="article-body")[^>]*)?>\s*(?:<br>\s*)*<iframe[^>]*youtube\.com\/embed[^>]*>.*?<\/iframe>(?:\s*<br>\s*)*\s*<\/div>/gi, '')
-                    .replace(/<iframe[^>]*youtube\.com\/embed[^>]*>.*?<\/iframe>/gi, '') 
-                }} />
+                <div 
+                  suppressHydrationWarning 
+                  dangerouslySetInnerHTML={{ 
+                    __html: article.content
+                      .replace(/<button[^>]*class="editor-media-delete"[^>]*>.*?<\/button>/gi, '')
+                      .replace(/<p[^>]*>\s*(?:<br>\s*)*<iframe[^>]*youtube\.com\/embed[^>]*>.*?<\/iframe>(?:\s*<br>\s*)*\s*<\/p>/gi, '')
+                      .replace(/<div(?:(?!class="article-body")[^>]*)?>\s*(?:<br>\s*)*<iframe[^>]*youtube\.com\/embed[^>]*>.*?<\/iframe>(?:\s*<br>\s*)*\s*<\/div>/gi, '')
+                      .replace(/<iframe[^>]*youtube\.com\/embed[^>]*>.*?<\/iframe>/gi, '') 
+                  }} 
+                  onClick={(e) => {
+                    const target = e.target as HTMLElement;
+                    const a = target.closest('a');
+                    if (a && a.href) {
+                      e.preventDefault();
+                      let url = a.href;
+                      try {
+                        const urlObj = new URL(url);
+                        if (isMobile && urlObj.pathname === '/gongsil' && urlObj.searchParams.has('id')) {
+                          urlObj.pathname = '/m/gongsil';
+                          url = urlObj.toString();
+                        }
+                      } catch (err) {}
+                      window.open(url, '_blank');
+                    }
+                  }}
+                />
               )}
             </div>
 
