@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { getArticles, getArticleDetail, incrementArticleView } from "@/app/actions/article";
 import HomeHeader from "../_components/HomeHeader";
+import AuthorProfileHeader from "../_components/AuthorProfileHeader";
 
 const SearchOverlay = dynamic(() => import("../_components/header/SearchOverlay"), { ssr: false });
 
@@ -56,7 +57,7 @@ const extractYoutubeId = (url?: string, html?: string): string | null => {
   return null;
 };
 
-function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, initialKeyword }: { initialTab: string, initialArticles: any[], initialAuthorName?: string, initialKeyword?: string }) {
+function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, initialKeyword, authorProfile }: { initialTab: string, initialArticles: any[], initialAuthorName?: string, initialKeyword?: string, authorProfile?: any }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
@@ -730,6 +731,9 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
       ) : (
         /* 일반 뉴스 리스트 뷰 */
         <div className={slideAnim} style={{ flex: 1, paddingBottom: "20px" }}>
+          {/* Author Profile Header */}
+          {authorProfile && <AuthorProfileHeader profile={authorProfile} />}
+
           {/* 헤드라인 히어로 (APPROVED 기사 중 첫번째 큰 이미지) */}
           {articles[0] && (
             <div
@@ -988,7 +992,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
   );
 }
 
-export default function MobileNewsClientWrapper(props: { initialTab: string, initialArticles: any[], initialAuthorName?: string, initialKeyword?: string }) {
+export default function MobileNewsClientWrapper(props: { initialTab: string, initialArticles: any[], initialAuthorName?: string, initialKeyword?: string, authorProfile?: any }) {
   return (
     <Suspense fallback={null}>
       <MobileNewsClient {...props} />

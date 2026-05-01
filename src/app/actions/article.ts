@@ -507,3 +507,14 @@ export async function incrementArticleView(articleId: string) {
     return { success: false, error: err.message };
   }
 }
+
+export async function getAuthorProfileByName(name: string) {
+  const supabase = getAdminClient();
+  try {
+    const { data, error } = await supabase.from('members').select('*').eq('name', name).limit(1).maybeSingle();
+    if (error) return { success: false, error: error.message };
+    return { success: true, data };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}

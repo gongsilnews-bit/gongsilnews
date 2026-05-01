@@ -1,6 +1,6 @@
 import React from "react";
 import MobileNewsClient from "./MobileNewsClient";
-import { getArticles } from "@/app/actions/article";
+import { getArticles, getAuthorProfileByName } from "@/app/actions/article";
 
 export const revalidate = 60; // 1분 단위 백그라운드 캐싱 (ISR)
 
@@ -34,6 +34,14 @@ export default async function MobileNewsPage({
   // 서버에서 데이터 미리 Fetching (RSC의 장점)
   const res = await getArticles(filters);
   const initialArticles = res.success ? res.data || [] : [];
+  
+  let authorProfile = null;
+  if (authorMatch) {
+    const profileRes = await getAuthorProfileByName(authorMatch);
+    if (profileRes.success && profileRes.data) {
+      authorProfile = profileRes.data;
+    }
+  }
 
-  return <MobileNewsClient initialTab={tab} initialArticles={initialArticles} initialAuthorName={authorMatch} initialKeyword={keywordMatch} />;
+  return <MobileNewsClient initialTab={tab} initialArticles={initialArticles} initialAuthorName={authorMatch} initialKeyword={keywordMatch} authorProfile={authorProfile} />;
 }
