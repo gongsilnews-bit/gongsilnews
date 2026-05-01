@@ -7,7 +7,21 @@ import dynamic from 'next/dynamic';
 const HamburgerMenu = dynamic(() => import('./header/HamburgerMenu'), { ssr: false });
 const SearchOverlay = dynamic(() => import('./header/SearchOverlay'), { ssr: false });
 
-export default function HomeHeader() {
+interface HomeHeaderProps {
+  bgColor?: string;
+  logoText?: string;
+  sloganPrefix?: string;
+  sloganHighlight?: string;
+  highlightColor?: string;
+}
+
+export default function HomeHeader({
+  bgColor = '#102142',
+  logoText = '공실뉴스',
+  sloganPrefix = '11만 부동산을 위한',
+  sloganHighlight = '무료 정보 채널',
+  highlightColor = '#fcd34d'
+}: HomeHeaderProps = {}) {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -37,7 +51,7 @@ export default function HomeHeader() {
           left: '50%',
           transform: 'translateX(-50%)',
           zIndex: 50,
-          backgroundColor: '#102142',
+          backgroundColor: bgColor,
           width: '100%',
           maxWidth: '448px',
         }}
@@ -46,15 +60,15 @@ export default function HomeHeader() {
         <div style={{ display: 'flex', alignItems: 'baseline', gap: '14px', paddingTop: '2px' }}>
           <Link href="/m" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
             <span style={{ color: '#ffffff', fontSize: '22px', fontWeight: 900, fontStyle: 'italic', letterSpacing: '-1px', lineHeight: 1 }}>
-              공실뉴스
+              {logoText}
             </span>
           </Link>
           <span style={{ display: 'inline-block', color: 'rgba(255,255,255,0.95)', fontSize: '13px', fontWeight: 600, letterSpacing: '-0.5px', animation: 'sloganFadeIn 1s ease-out forwards' }}>
-            11만 부동산을 위한 <span style={{ color: '#fcd34d', fontWeight: 800 }}>무료 정보 채널</span>
+            {sloganPrefix} <span style={{ color: highlightColor, fontWeight: 800 }}>{sloganHighlight}</span>
           </span>
         </div>
 
-        {/* 우측 아이콘 3개 (검색, 마이페이지, 햄버거) */}
+        {/* 우측 아이콘 2개 (검색, 햄버거) */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
           {/* 검색 아이콘 */}
           <button style={{ padding: 0, background: 'none', border: 'none', cursor: 'pointer', display: 'flex' }} onClick={() => setIsSearchOpen(true)}>
@@ -63,14 +77,6 @@ export default function HomeHeader() {
               <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
             </svg>
           </button>
-
-          {/* 마이페이지 아이콘 */}
-          <Link href="/m/mypage" style={{ padding: 0, background: 'none', border: 'none', cursor: 'pointer', display: 'flex' }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-              <circle cx="12" cy="7" r="4"></circle>
-            </svg>
-          </Link>
 
           {/* 햄버거 메뉴 아이콘 */}
           <button style={{ padding: 0, background: 'none', border: 'none', cursor: 'pointer', display: 'flex' }} onClick={() => setIsMenuOpen(true)}>

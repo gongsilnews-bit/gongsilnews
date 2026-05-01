@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { getVacancies, getVacancyDetail } from "@/app/actions/vacancy";
+import HomeHeader from "../_components/HomeHeader";
 
 const KAKAO_APP_KEY = process.env.NEXT_PUBLIC_KAKAO_APP_KEY || "435d3602201a49ea712e5f5a36fe6efc";
 
@@ -196,58 +197,74 @@ export default function MobileGongsilPage() {
   };
 
   return (
-    <div style={{ width: "100%", backgroundColor: "#fff", minHeight: "100vh", display: "flex", flexDirection: "column", position: "relative" }}>
+    <div style={{ width: "100%", backgroundColor: "#F4F6F8", height: "calc(100vh - 60px)", display: "flex", flexDirection: "column", overflow: "hidden", position: "relative" }}>
+      <HomeHeader 
+        bgColor="#4b89ff" 
+        logoText="공실등록"
+        sloganPrefix="부동산이 무료 열람하는 "
+        sloganHighlight="공동중개네트워크"
+        highlightColor="#fcd34d"
+      />
+      
       <style>{`
         .no-scrollbar::-webkit-scrollbar{display:none;}
         .no-scrollbar{-ms-overflow-style:none;scrollbar-width:none;}
         .gongsil-sheet{position:absolute;bottom:0;left:0;width:100%;background:#fff;border-radius:20px 20px 0 0;box-shadow:0 -8px 32px rgba(0,0,0,0.15);transform:translateY(100%);transition:transform 0.35s cubic-bezier(0.25,1,0.5,1);z-index:30;max-height:75vh;display:flex;flex-direction:column;}
         .gongsil-sheet.open{transform:translateY(0);}
-        .detail-panel{position:absolute;top:0;left:0;width:100%;height:100%;background:#fff;z-index:40;transform:translateX(100%);transition:transform 0.35s cubic-bezier(0.25,1,0.5,1);overflow-y:auto;}
+        .detail-panel{position:fixed;top:0;left:50%;width:100%;max-width:448px;margin-left:-224px;height:100dvh;background:#fff;z-index:9999;transform:translateX(100vw);transition:transform 0.35s cubic-bezier(0.25,1,0.5,1);overflow-y:auto;}
+        @media (max-width: 448px) { .detail-panel { margin-left: -50vw; } }
         .detail-panel.open{transform:translateX(0);}
         .skeleton{background:linear-gradient(90deg,#f3f4f6 25%,#e5e7eb 50%,#f3f4f6 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:6px;}
         @keyframes shimmer{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
         .v-card:active{background:#f9fafb;}
       `}</style>
+      
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", paddingTop: "50px" }}>
+        {/* 구분선 (회색 배경) */}
+        <div style={{ height: "9px", backgroundColor: "#F4F6F8", width: "100%", flexShrink: 0, borderBottom: "1px solid #e5e7eb" }} />
 
-      {/* 카카오 지도 */}
-      <div ref={mapRef} style={{ width: "100%", flex: 1, minHeight: "calc(100vh - 124px)" }} />
+        {/* 지도 및 오버레이 컨테이너 */}
+        <div style={{ position: "relative", flex: 1, display: "flex", flexDirection: "column", backgroundColor: "#fff" }}>
+          {/* 카카오 지도 */}
+          <div ref={mapRef} style={{ width: "100%", flex: 1 }} />
 
-      {/* 지도 로딩 중 */}
-      {!mapLoaded && (
-        <div style={{ position: "absolute", inset: 0, background: "#e8ecf0", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 5 }}>
-          <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: "40px", marginBottom: "12px" }}>🗺️</div>
-            <p style={{ color: "#6b7280", fontSize: "14px" }}>지도를 불러오는 중...</p>
+        {/* 지도 로딩 중 */}
+        {!mapLoaded && (
+          <div style={{ position: "absolute", inset: 0, background: "#e8ecf0", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 5 }}>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontSize: "40px", marginBottom: "12px" }}>🗺️</div>
+              <p style={{ color: "#6b7280", fontSize: "14px" }}>지도를 불러오는 중...</p>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* 매물 수 표시 */}
-      {mapLoaded && (
-        <div style={{ position: "absolute", top: "16px", left: "16px", zIndex: 20, background: "rgba(255,255,255,0.95)", borderRadius: "20px", padding: "8px 14px", fontSize: "13px", fontWeight: 700, color: "#1a2e50", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}>
-          🏢 공실 {vacancies.filter(v => v.lat && v.lng).length}건
-        </div>
-      )}
+        {/* 매물 수 표시 */}
+        {mapLoaded && (
+          <div style={{ position: "absolute", top: "16px", left: "16px", zIndex: 20, background: "rgba(255,255,255,0.95)", borderRadius: "20px", padding: "8px 14px", fontSize: "13px", fontWeight: 700, color: "#1a2e50", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}>
+            🏢 공실 {vacancies.filter(v => v.lat && v.lng).length}건
+          </div>
+        )}
 
-      {/* 내 위치 버튼 */}
-      {mapLoaded && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            if (navigator.geolocation && kakaoMapRef.current) {
-              navigator.geolocation.getCurrentPosition((pos) => {
-                const kakao = (window as any).kakao;
-                kakaoMapRef.current.panTo(new kakao.maps.LatLng(pos.coords.latitude, pos.coords.longitude));
-                kakaoMapRef.current.setLevel(5);
-              });
-            }
-          }}
-          style={{ position: "absolute", top: "16px", right: "16px", zIndex: 20, background: "#1a4282", color: "#fff", border: "none", borderRadius: "20px", padding: "8px 14px", fontSize: "13px", fontWeight: 700, boxShadow: "0 4px 12px rgba(26,66,130,0.4)", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
-          내 위치
-        </button>
-      )}
+        {/* 내 위치 버튼 */}
+        {mapLoaded && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (navigator.geolocation && kakaoMapRef.current) {
+                navigator.geolocation.getCurrentPosition((pos) => {
+                  const kakao = (window as any).kakao;
+                  kakaoMapRef.current.panTo(new kakao.maps.LatLng(pos.coords.latitude, pos.coords.longitude));
+                  kakaoMapRef.current.setLevel(5);
+                });
+              }
+            }}
+            style={{ position: "absolute", top: "16px", right: "16px", zIndex: 20, background: "#1a4282", color: "#fff", border: "none", borderRadius: "20px", padding: "8px 14px", fontSize: "13px", fontWeight: 700, boxShadow: "0 4px 12px rgba(26,66,130,0.4)", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+            내 위치
+          </button>
+        )}
+      </div>
 
       {/* 바텀시트: 클러스터 리스트 */}
       <div className={`gongsil-sheet ${selectedCluster && !selectedVacancy ? "open" : ""}`} onClick={(e) => e.stopPropagation()}>
@@ -507,6 +524,7 @@ export default function MobileGongsilPage() {
           </>
         )}
       </div>
+    </div>
     </div>
   );
 }

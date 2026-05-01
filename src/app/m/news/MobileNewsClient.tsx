@@ -5,6 +5,7 @@ import Image from "next/image";
 import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getArticles, getArticleDetail, incrementArticleView } from "@/app/actions/article";
+import HomeHeader from "../_components/HomeHeader";
 
 const SearchOverlay = dynamic(() => import("../_components/header/SearchOverlay"), { ssr: false });
 
@@ -533,8 +534,18 @@ function MobileNewsClient({ initialTab, initialArticles }: { initialTab: string,
 
       {/* 우리동네뉴스: 카카오 지도 + 목록 스플릿 뷰 */}
       {activeTab === "local" ? (
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minHeight: "calc(100vh - 41px)" }}>
-          {/* 상단: 카카오 지도 */}
+        <div className={slideAnim} style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+          <HomeHeader 
+            bgColor="#ea580c" 
+            logoText="우리동네뉴스"
+            sloganPrefix="내 지역부동산이 전하는 " 
+            sloganHighlight="real 부동산정보" 
+            highlightColor="#ffffff" 
+          />
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minHeight: "calc(100vh - 50px - 60px)", paddingTop: "50px" }}>
+            {/* 구분선 (회색 배경) */}
+            <div style={{ height: "9px", backgroundColor: "#F4F6F8", width: "100%", flexShrink: 0 }} />
+            {/* 상단: 카카오 지도 */}
           <div
             style={{ position: "relative", width: "100%", height: "45vh", borderBottom: "1px solid #ddd", flexShrink: 0 }}
             onTouchStart={(e) => e.stopPropagation()}
@@ -692,6 +703,7 @@ function MobileNewsClient({ initialTab, initialArticles }: { initialTab: string,
               )}
             </div>
           </div>
+        </div>
         </div>
       ) : (
         /* 일반 뉴스 리스트 뷰 */
@@ -925,10 +937,16 @@ function MobileNewsClient({ initialTab, initialArticles }: { initialTab: string,
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .news-detail-panel {
-          position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-          background: #fff; z-index: 50; transform: translateX(100%);
+          position: fixed; top: 0; left: 50%; width: 100%; max-width: 448px; height: 100dvh;
+          margin-left: -224px; /* max-width 448px 의 절반 */
+          background: #fff; z-index: 9999; transform: translateX(100vw);
           transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1);
           overflow-y: auto;
+        }
+        @media (max-width: 448px) {
+          .news-detail-panel {
+            margin-left: -50vw;
+          }
         }
         .news-detail-panel.open { transform: translateX(0); }
         .skeleton { background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 6px; }
