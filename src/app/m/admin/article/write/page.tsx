@@ -28,14 +28,7 @@ const compressToWebP = (file: File, maxWidth = 1920, quality = 0.82): Promise<Fi
   });
 };
 
-const SECTIONS = [
-  { label: "뉴스/칼럼", value: "뉴스/칼럼" },
-  { label: "부동산", value: "부동산" },
-  { label: "경제", value: "경제" },
-  { label: "사회", value: "사회" },
-  { label: "문화", value: "문화" },
-  { label: "기타", value: "기타" },
-];
+
 
 function MobileArticleWrite() {
   const router = useRouter();
@@ -48,19 +41,27 @@ function MobileArticleWrite() {
   const [reporterEmail, setReporterEmail] = useState("");
   const [title, setTitle] = useState("");
   const [subtitle, setSubtitle] = useState("");
-  const [section1, setSection1] = useState("뉴스/칼럼");
+  const [section1, setSection1] = useState("");
+  const [section2, setSection2] = useState("");
   const [content, setContent] = useState("");
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [keyword, setKeyword] = useState("");
   const [keywords, setKeywords] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
-  const [showSubtitle, setShowSubtitle] = useState(false);
-  const [showYoutube, setShowYoutube] = useState(false);
 
-  /* ── 사진 상태 ── */
+  /* ── 미디어 상태 ── */
   const [photos, setPhotos] = useState<{ file: File | null; preview: string; caption: string; isCover: boolean; mediaId?: string }[]>([]);
+  const [videos, setVideos] = useState<{ url: string; videoId: string; isCover: boolean; isShorts: boolean }[]>([]);
+  const [youtubeInput, setYoutubeInput] = useState("");
   const photoInputRef = useRef<HTMLInputElement>(null);
+  const editorRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (editorRef.current && content && !editorRef.current.innerHTML) {
+      editorRef.current.innerHTML = content;
+    }
+  }, [content, authChecked]);
 
   /* ── 인증 및 수정 모드 ── */
   useEffect(() => {
@@ -84,26 +85,35 @@ function MobileArticleWrite() {
           const d = res.data;
           setTitle(d.title || "");
           setSubtitle(d.subtitle || "");
-          setSection1(d.section1 || "뉴스/칼럼");
-          setContent(d.content || "");
-          setYoutubeUrl(d.youtube_url || "");
-          if (d.author_name) setReporterName(d.author_name);
-          if (d.author_email) setReporterEmail(d.author_email);
-          if (d.subtitle) setShowSubtitle(true);
-          if (d.youtube_url) setShowYoutube(true);
-          if (d.article_keywords) setKeywords(d.article_keywords.map((k: any) => k.keyword));
-          if (d.article_media) {
-            const existingPhotos = d.article_media
-              .filter((m: any) => m.media_type === "PHOTO")
-              .map((m: any) => ({
-                file: null,
-                preview: m.url,
-                caption: m.caption || "",
-                isCover: d.thumbnail_url === m.url,
-                mediaId: m.id,
-              }));
-            setPhotos(existingPhotos);
+          // 영상 추출
+          const vids: any[] = [];
+          let htmlContent = d.content || "";
+          const regex = /<div[^>]*class="inserted-video"[^>]*>.*?src="https:\/\/www\.youtube\.com\/embed\/([\w-]{11})".*?<\/div>/g;
+          let match;
+          while ((match = regex.exec(htmlContent)) !== null) {
+            vids.push({
+              url: `https://www.youtube.com/watch?v=${match[1]}`,
+              videoId: match[1],
+              isCover: d.thumbnail_url?.includes(match[1]) || false,
+              isShorts: false,
+            });
           }
+          // 추출 후 본문에서 영상 태그 제거 (모바일 에디터에서는 카드로 관리)
+          htmlContent = htmlContent.replace(/<div[^>]*class="inserted-video"[^>]*>.*?<\/div>/g, "");
+          
+          if (d.youtube_url) {
+            const mainMatch = d.youtube_url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([\w-]{11})/);
+            if (mainMatch && !vids.find(v => v.videoId === mainMatch[1])) {
+               vids.push({
+                 url: d.youtube_url,
+                 videoId: mainMatch[1],
+                 isCover: d.thumbnail_url?.includes(mainMatch[1]) || false,
+                 isShorts: !!d.is_shorts
+               });
+            }
+          }
+          setVideos(vids);
+          setContent(htmlContent);
         }
       }
     })();
@@ -135,14 +145,37 @@ function MobileArticleWrite() {
   const removePhoto = (idx: number) => {
     setPhotos(prev => {
       const updated = prev.filter((_, i) => i !== idx);
-      if (updated.length > 0 && !updated.some(p => p.isCover)) updated[0].isCover = true;
+      if (updated.length > 0 && !updated.some(p => p.isCover) && !videos.some(v => v.isCover)) updated[0].isCover = true;
       return updated;
     });
   };
 
-  /* ── 대표 사진 설정 ── */
-  const setCover = (idx: number) => {
-    setPhotos(prev => prev.map((p, i) => ({ ...p, isCover: i === idx })));
+  /* ── 영상 추가 ── */
+  const handleAddVideo = () => {
+    const url = youtubeInput.trim();
+    if (!url) return;
+    const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([\w-]{11})/);
+    if (!match) {
+      alert("유효한 유튜브 링크를 입력해주세요.");
+      return;
+    }
+    setVideos(prev => [...prev, { url, videoId: match[1], isCover: prev.length === 0 && photos.length === 0, isShorts: url.includes("shorts") }]);
+    setYoutubeInput("");
+  };
+
+  /* ── 영상 삭제 ── */
+  const removeVideo = (idx: number) => {
+    setVideos(prev => {
+      const updated = prev.filter((_, i) => i !== idx);
+      if (updated.length > 0 && !updated.some(v => v.isCover) && !photos.some(p => p.isCover)) updated[0].isCover = true;
+      return updated;
+    });
+  };
+
+  /* ── 대표 미디어 설정 ── */
+  const setCover = (type: 'photo' | 'video', idx: number) => {
+    setPhotos(prev => prev.map((p, i) => ({ ...p, isCover: type === 'photo' && i === idx })));
+    setVideos(prev => prev.map((v, i) => ({ ...v, isCover: type === 'video' && i === idx })));
   };
 
   /* ── 저장/승인신청 ── */
@@ -155,12 +188,17 @@ function MobileArticleWrite() {
 
     try {
       // 1. 기사 본문에 사진을 삽입한 HTML 생성
-      let fullContent = content;
+      let fullContent = editorRef.current ? editorRef.current.innerHTML : content;
       
       // 이미 content에 HTML이 포함되어 있지 않고, 순수 텍스트인 경우 p 태그로 래핑
       if (!fullContent.includes("<")) {
         fullContent = fullContent.split("\n").filter(Boolean).map(line => `<p>${line}</p>`).join("\n");
       }
+
+      // 영상 본문에 추가
+      videos.forEach(v => {
+        fullContent += `<div class="inserted-video" style="margin-top: 16px;"><iframe src="https://www.youtube.com/embed/${v.videoId}" frameborder="0" allowfullscreen style="width:100%; aspect-ratio: ${v.isShorts ? '9/16' : '16/9'}; border-radius: 8px;"></iframe></div>`;
+      });
 
       // 2. 기사 저장
       const status = requestApproval ? "승인신청" : "작성중";
@@ -168,6 +206,12 @@ function MobileArticleWrite() {
       const published_at = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}T${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
 
       const coverPhoto = photos.find(p => p.isCover);
+      const coverVideo = videos.find(v => v.isCover);
+      
+      let thumbnailUrl = coverPhoto?.preview || "";
+      if (coverVideo) {
+         thumbnailUrl = `https://img.youtube.com/vi/${coverVideo.videoId}/hqdefault.jpg`;
+      }
 
       const res = await saveArticle({
         id: editId || undefined,
@@ -177,16 +221,16 @@ function MobileArticleWrite() {
         status,
         form_type: "일반",
         section1,
-        section2: "",
+        section2,
         series: "",
         title,
         subtitle: subtitle || "",
         content: fullContent,
-        youtube_url: youtubeUrl || "",
-        is_shorts: false,
+        youtube_url: videos.length > 0 ? videos[0].url : "",
+        is_shorts: videos.length > 0 ? videos[0].isShorts : false,
         published_at,
         keywords,
-        thumbnail_url: coverPhoto?.preview || undefined,
+        thumbnail_url: thumbnailUrl || undefined,
       });
 
       if (!res.success) {
@@ -225,13 +269,13 @@ function MobileArticleWrite() {
             status,
             form_type: "일반",
             section1,
-            section2: "",
+            section2,
             series: "",
             title,
             subtitle: subtitle || "",
             content: fullContent,
-            youtube_url: youtubeUrl || "",
-            is_shorts: false,
+            youtube_url: videos.length > 0 ? videos[0].url : "",
+            is_shorts: videos.length > 0 ? videos[0].isShorts : false,
             published_at,
             keywords,
             thumbnail_url: thumbnailUrl,
@@ -294,26 +338,54 @@ function MobileArticleWrite() {
 
         {/* 섹션 선택 */}
         <div style={{ marginBottom: 16 }}>
-          <label style={{ fontSize: 13, fontWeight: 700, color: "#374151", display: "block", marginBottom: 6 }}>카테고리</label>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-            {SECTIONS.map(s => (
-              <button
-                key={s.value}
-                onClick={() => setSection1(s.value)}
-                style={{
-                  padding: "8px 16px",
-                  borderRadius: 20,
-                  border: section1 === s.value ? "1.5px solid #3b82f6" : "1px solid #d1d5db",
-                  background: section1 === s.value ? "#eff6ff" : "#fff",
-                  color: section1 === s.value ? "#2563eb" : "#4b5563",
-                  fontSize: 13,
-                  fontWeight: section1 === s.value ? 700 : 500,
-                  cursor: "pointer",
-                }}
-              >
-                {s.label}
-              </button>
-            ))}
+          <label style={{ fontSize: 13, fontWeight: 700, color: "#374151", display: "block", marginBottom: 6 }}>
+            카테고리 <span style={{ color: "#ef4444" }}>*</span>
+          </label>
+          <div style={{ display: "flex", gap: 8 }}>
+            <select
+              value={section1}
+              onChange={e => { setSection1(e.target.value); setSection2(""); }}
+              style={{
+                flex: 1, padding: "0 12px", height: 44, border: "1px solid #d1d5db", borderRadius: 10,
+                fontSize: 14, color: "#111", background: "#fff", outline: "none", boxSizing: "border-box",
+                appearance: "none", backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 12px center"
+              }}
+            >
+              <option value="" disabled style={{ color: "#9ca3af" }}>1차섹션 선택</option>
+              <option value="우리동네부동산">우리동네부동산</option>
+              <option value="뉴스/칼럼">뉴스/칼럼</option>
+            </select>
+            <select
+              value={section2}
+              onChange={e => setSection2(e.target.value)}
+              style={{
+                flex: 1, padding: "0 12px", height: 44, border: "1px solid #d1d5db", borderRadius: 10,
+                fontSize: 14, color: "#111", background: "#fff", outline: "none", boxSizing: "border-box",
+                appearance: "none", backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 12px center"
+              }}
+            >
+              <option value="" disabled style={{ color: "#9ca3af" }}>2차섹션 선택</option>
+              {section1 === "우리동네부동산" && (
+                <>
+                  <option value="아파트·오피스텔">아파트·오피스텔</option>
+                  <option value="빌라·주택">빌라·주택</option>
+                  <option value="원룸·투룸">원룸·투룸</option>
+                  <option value="상가·업무·공장·토지">상가·업무·공장·토지</option>
+                  <option value="분양">분양</option>
+                </>
+              )}
+              {section1 === "뉴스/칼럼" && (
+                <>
+                  <option value="부동산·주식·재테크">부동산·주식·재테크</option>
+                  <option value="정치·경제·사회">정치·경제·사회</option>
+                  <option value="세무·법률">세무·법률</option>
+                  <option value="여행·건강·생활">여행·건강·생활</option>
+                  <option value="IT·가전·가구">IT·가전·가구</option>
+                  <option value="스포츠·연예·Car">스포츠·연예·Car</option>
+                  <option value="인물·미션·기타">인물·미션·기타</option>
+                </>
+              )}
+            </select>
           </div>
         </div>
 
@@ -331,34 +403,47 @@ function MobileArticleWrite() {
           />
         </div>
 
-        {/* 부제목 토글 */}
-        {!showSubtitle ? (
-          <button onClick={() => setShowSubtitle(true)} style={{ fontSize: 13, color: "#6b7280", background: "none", border: "none", cursor: "pointer", marginBottom: 12, padding: 0, fontWeight: 600 }}>
-            + 부제목 추가
-          </button>
-        ) : (
-          <div style={{ marginBottom: 12 }}>
-            <label style={{ fontSize: 13, fontWeight: 700, color: "#374151", display: "block", marginBottom: 6 }}>부제목</label>
-            <input
-              type="text"
-              value={subtitle}
-              onChange={e => setSubtitle(e.target.value)}
-              placeholder="부제목 (선택)"
-              style={{ width: "100%", height: 44, padding: "0 14px", border: "1px solid #d1d5db", borderRadius: 10, fontSize: 14, outline: "none", boxSizing: "border-box" }}
-            />
-          </div>
-        )}
+        {/* 부제목 */}
+        <div style={{ marginBottom: 12 }}>
+          <label style={{ fontSize: 13, fontWeight: 700, color: "#374151", display: "block", marginBottom: 6 }}>부제목</label>
+          <input
+            type="text"
+            value={subtitle}
+            onChange={e => setSubtitle(e.target.value)}
+            placeholder="부제목 (선택)"
+            style={{ width: "100%", height: 44, padding: "0 14px", border: "1px solid #d1d5db", borderRadius: 10, fontSize: 14, outline: "none", boxSizing: "border-box" }}
+          />
+        </div>
 
-        {/* 사진 섹션 */}
+        {/* 미디어 섹션 (사진/영상) */}
         <div style={{ marginBottom: 16, background: "#fff", borderRadius: 14, padding: 16, border: "1px solid #e5e7eb" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-            <span style={{ fontSize: 14, fontWeight: 800, color: "#111" }}>📷 사진 ({photos.length})</span>
+            <span style={{ fontSize: 14, fontWeight: 800, color: "#111" }}>📷 미디어 첨부 (사진 {photos.length} / 영상 {videos.length})</span>
+          </div>
+
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
             <button
               onClick={() => photoInputRef.current?.click()}
-              style={{ height: 32, padding: "0 12px", background: "#f3f4f6", color: "#374151", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+              style={{ flex: 1, minWidth: "120px", height: 40, background: "#f3f4f6", color: "#374151", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer" }}
             >
               + 사진 추가
             </button>
+            <div style={{ flex: 2, minWidth: "200px", display: "flex", gap: 6 }}>
+               <input
+                 type="url"
+                 value={youtubeInput}
+                 onChange={e => setYoutubeInput(e.target.value)}
+                 onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handleAddVideo(); } }}
+                 placeholder="유튜브 영상 링크 입력"
+                 style={{ flex: 1, padding: "0 10px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 13, outline: "none" }}
+               />
+               <button
+                 onClick={handleAddVideo}
+                 style={{ padding: "0 14px", background: "#374151", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}
+               >
+                 추가
+               </button>
+            </div>
             <input
               ref={photoInputRef}
               type="file"
@@ -369,29 +454,50 @@ function MobileArticleWrite() {
             />
           </div>
 
-          {photos.length === 0 ? (
+          {photos.length === 0 && videos.length === 0 ? (
             <div
               onClick={() => photoInputRef.current?.click()}
               style={{ border: "2px dashed #d1d5db", borderRadius: 10, padding: "24px 0", textAlign: "center", color: "#9ca3af", cursor: "pointer" }}
             >
               <div style={{ fontSize: 28, marginBottom: 6 }}>📁</div>
-              <div style={{ fontSize: 13, fontWeight: 600 }}>터치하여 사진을 추가해주세요</div>
+              <div style={{ fontSize: 13, fontWeight: 600 }}>사진이나 유튜브 영상을 추가해주세요</div>
               <div style={{ fontSize: 11, color: "#b0b5bf", marginTop: 4 }}>자동 WebP 압축 적용</div>
             </div>
           ) : (
             <div style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 4 }}>
+              {/* 사진 목록 */}
               {photos.map((p, idx) => (
-                <div key={idx} style={{ position: "relative", flexShrink: 0, width: 100, height: 100, borderRadius: 10, overflow: "hidden", border: p.isCover ? "2px solid #3b82f6" : "1px solid #e5e7eb" }}>
+                <div key={`photo-${idx}`} style={{ position: "relative", flexShrink: 0, width: 100, height: 100, borderRadius: 10, overflow: "hidden", border: p.isCover ? "2px solid #3b82f6" : "1px solid #e5e7eb" }}>
                   <img src={p.preview} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   {p.isCover && (
                     <div style={{ position: "absolute", top: 4, left: 4, background: "#3b82f6", color: "#fff", fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4 }}>대표</div>
                   )}
                   <div style={{ position: "absolute", top: 4, right: 4, display: "flex", gap: 4 }}>
                     {!p.isCover && (
-                      <button onClick={() => setCover(idx)} style={{ width: 22, height: 22, borderRadius: "50%", background: "rgba(255,255,255,0.9)", border: "none", fontSize: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>⭐</button>
+                      <button onClick={() => setCover('photo', idx)} style={{ width: 22, height: 22, borderRadius: "50%", background: "rgba(255,255,255,0.9)", border: "none", fontSize: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>⭐</button>
                     )}
                     <button onClick={() => removePhoto(idx)} style={{ width: 22, height: 22, borderRadius: "50%", background: "rgba(239,68,68,0.9)", color: "#fff", border: "none", fontSize: 11, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
                   </div>
+                  <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "rgba(0,0,0,0.5)", color: "#fff", fontSize: 10, textAlign: "center", padding: "2px 0" }}>사진</div>
+                </div>
+              ))}
+              {/* 영상 목록 */}
+              {videos.map((v, idx) => (
+                <div key={`video-${idx}`} style={{ position: "relative", flexShrink: 0, width: 100, height: 100, borderRadius: 10, overflow: "hidden", border: v.isCover ? "2px solid #3b82f6" : "1px solid #e5e7eb" }}>
+                  <img src={`https://img.youtube.com/vi/${v.videoId}/mqdefault.jpg`} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 24, height: 24, background: "rgba(0,0,0,0.7)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                     <svg width="10" height="10" viewBox="0 0 24 24" fill="#fff"><polygon points="5 3 19 12 5 21" /></svg>
+                  </div>
+                  {v.isCover && (
+                    <div style={{ position: "absolute", top: 4, left: 4, background: "#3b82f6", color: "#fff", fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4 }}>대표</div>
+                  )}
+                  <div style={{ position: "absolute", top: 4, right: 4, display: "flex", gap: 4 }}>
+                    {!v.isCover && (
+                      <button onClick={() => setCover('video', idx)} style={{ width: 22, height: 22, borderRadius: "50%", background: "rgba(255,255,255,0.9)", border: "none", fontSize: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>⭐</button>
+                    )}
+                    <button onClick={() => removeVideo(idx)} style={{ width: 22, height: 22, borderRadius: "50%", background: "rgba(239,68,68,0.9)", color: "#fff", border: "none", fontSize: 11, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+                  </div>
+                  <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "rgba(220,38,38,0.8)", color: "#fff", fontSize: 10, textAlign: "center", padding: "2px 0", fontWeight: "bold" }}>영상</div>
                 </div>
               ))}
             </div>
@@ -403,47 +509,39 @@ function MobileArticleWrite() {
           <label style={{ fontSize: 13, fontWeight: 700, color: "#374151", display: "block", marginBottom: 6 }}>
             본문 <span style={{ color: "#ef4444" }}>*</span>
           </label>
-          <textarea
-            value={content}
-            onChange={e => setContent(e.target.value)}
-            placeholder="기사 본문 내용을 입력해주세요..."
+          {/* 에디터 툴바 */}
+          <div style={{ display: "flex", gap: 4, padding: "8px 12px", background: "#fafafa", border: "1px solid #d1d5db", borderBottom: "none", borderTopLeftRadius: 10, borderTopRightRadius: 10, overflowX: "auto" }}>
+            <button type="button" onMouseDown={e => { e.preventDefault(); document.execCommand('bold', false); }} style={{ width: 32, height: 32, border: "none", background: "none", cursor: "pointer", fontSize: 14, fontWeight: 800, color: "#1f2937", borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center" }}>B</button>
+            <button type="button" onMouseDown={e => { e.preventDefault(); document.execCommand('italic', false); }} style={{ width: 32, height: 32, border: "none", background: "none", cursor: "pointer", fontSize: 14, fontStyle: "italic", color: "#1f2937", borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center" }}>I</button>
+            <button type="button" onMouseDown={e => { e.preventDefault(); document.execCommand('underline', false); }} style={{ width: 32, height: 32, border: "none", background: "none", cursor: "pointer", fontSize: 14, textDecoration: "underline", color: "#1f2937", borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center" }}>U</button>
+            <button type="button" onMouseDown={e => { e.preventDefault(); document.execCommand('strikeThrough', false); }} style={{ width: 32, height: 32, border: "none", background: "none", cursor: "pointer", fontSize: 14, color: "#1f2937", borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "line-through" }}>S</button>
+            <div style={{ width: 1, height: 20, background: "#d1d5db", margin: "6px 4px" }} />
+            <select onChange={e => { document.execCommand(e.target.value, false); editorRef.current?.focus(); }} defaultValue="" title="텍스트 정렬" style={{ padding: "0 8px", border: "none", borderRadius: 4, fontSize: 13, color: "#1f2937", background: "none", cursor: "pointer", outline: "none" }}>
+              <option value="" disabled hidden>정렬</option>
+              <option value="justifyLeft">왼쪽</option>
+              <option value="justifyCenter">가운데</option>
+              <option value="justifyRight">오른쪽</option>
+              <option value="justifyFull">양쪽</option>
+            </select>
+          </div>
+          <div
+            ref={editorRef}
+            contentEditable
+            suppressContentEditableWarning
+            onInput={e => setContent(e.currentTarget.innerHTML || "")}
+            onBlur={e => setContent(e.currentTarget.innerHTML || "")}
             style={{
               width: "100%", minHeight: 260, padding: 14, border: "1px solid #d1d5db",
-              borderRadius: 10, fontSize: 15, lineHeight: 1.8, outline: "none",
-              boxSizing: "border-box", resize: "vertical", fontFamily: "inherit",
+              borderBottomLeftRadius: 10, borderBottomRightRadius: 10, fontSize: 15, lineHeight: 1.8, outline: "none",
+              boxSizing: "border-box", fontFamily: "inherit", background: "#fff", overflowY: "auto"
             }}
           />
           <div style={{ textAlign: "right", fontSize: 11, color: "#9ca3af", marginTop: 4 }}>
-            {content.length}자
+            {content.replace(/<[^>]*>/g, '').length}자
           </div>
         </div>
 
-        {/* 유튜브 링크 토글 */}
-        {!showYoutube ? (
-          <button onClick={() => setShowYoutube(true)} style={{ fontSize: 13, color: "#6b7280", background: "none", border: "none", cursor: "pointer", marginBottom: 16, padding: 0, fontWeight: 600 }}>
-            + 유튜브 영상 링크 추가
-          </button>
-        ) : (
-          <div style={{ marginBottom: 16, background: "#fff", borderRadius: 14, padding: 16, border: "1px solid #e5e7eb" }}>
-            <label style={{ fontSize: 14, fontWeight: 800, color: "#111", display: "block", marginBottom: 8 }}>🎬 유튜브 영상</label>
-            <input
-              type="url"
-              value={youtubeUrl}
-              onChange={e => setYoutubeUrl(e.target.value)}
-              placeholder="https://www.youtube.com/watch?v=..."
-              style={{ width: "100%", height: 44, padding: "0 14px", border: "1px solid #d1d5db", borderRadius: 10, fontSize: 14, outline: "none", boxSizing: "border-box" }}
-            />
-            {youtubeUrl && (() => {
-              const match = youtubeUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([\w-]{11})/);
-              if (match) return (
-                <div style={{ marginTop: 8, borderRadius: 8, overflow: "hidden", position: "relative", paddingBottom: "56.25%", height: 0 }}>
-                  <iframe src={`https://www.youtube.com/embed/${match[1]}`} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none", borderRadius: 8 }} allowFullScreen />
-                </div>
-              );
-              return null;
-            })()}
-          </div>
-        )}
+
 
         {/* 키워드 */}
         <div style={{ marginBottom: 16, background: "#fff", borderRadius: 14, padding: 16, border: "1px solid #e5e7eb" }}>
