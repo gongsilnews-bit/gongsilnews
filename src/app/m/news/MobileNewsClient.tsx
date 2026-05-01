@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, Suspense } from "react";
 import Image from "next/image";
 import dynamic from "next/dynamic";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { getArticles, getArticleDetail, incrementArticleView } from "@/app/actions/article";
 import HomeHeader from "../_components/HomeHeader";
 
@@ -59,8 +59,30 @@ const extractYoutubeId = (url?: string, html?: string): string | null => {
 function MobileNewsClient({ initialTab, initialArticles }: { initialTab: string, initialArticles: any[] }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [activeTab, setActiveTab] = useState(initialTab);
+  const pathname = usePathname();
 
+  const [activeTab, setActiveTab] = useState(initialTab);
+  const [articles, setArticles] = useState<any[]>(initialArticles);
+  const [localArticles, setLocalArticles] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+
+  // 기사 상세 보기 상태 (우리동네뉴스 슬라이딩 패널용)
+  const [showDetail, setShowDetail] = useState(false);
+  const [articleDetail, setArticleDetail] = useState<any | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+
+  // 애니메이션 오버레이 상태
+  const [transitionRect, setTransitionRect] = useState<DOMRect | null>(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+
+  // 사용자가 뒤로가기로 리스트 페이지로 돌아왔을 때 남아있는 애니메이션 상태 초기화
+  useEffect(() => {
+    if (pathname === "/m/news" || pathname === "/m/news_all") {
+      setIsTransitioning(false);
+      setTransitionRect(null);
+    }
+  }, [pathname]);
   // URL의 탭이 변경되면 activeTab 상태를 동기화
   useEffect(() => {
     const tab = searchParams.get("tab") || "all";
@@ -68,21 +90,9 @@ function MobileNewsClient({ initialTab, initialArticles }: { initialTab: string,
       setActiveTab(tab);
     }
   }, [searchParams]);
-
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [articles, setArticles] = useState<any[]>(initialArticles);
-  const [localArticles, setLocalArticles] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
   const [visibleArticles, setVisibleArticles] = useState<any[]>([]);
   const [mapLoaded, setMapLoaded] = useState(false);
-  const [showDetail, setShowDetail] = useState(false);
-  const [articleDetail, setArticleDetail] = useState<any>(null);
-  const [detailLoading, setDetailLoading] = useState(false);
   const [clusterMode, setClusterMode] = useState(false);
-
-  // 화면 전환 애니메이션 상태
-  const [transitionRect, setTransitionRect] = useState<DOMRect | null>(null);
-  const [isTransitioning, setIsTransitioning] = useState(false);
 
   const mapRef = useRef<HTMLDivElement>(null);
   const kakaoMapRef = useRef<any>(null);
@@ -188,11 +198,8 @@ function MobileNewsClient({ initialTab, initialArticles }: { initialTab: string,
         // 애니메이션 재생 후 라우팅
         setTimeout(() => {
           router.push(`/m/news/${id}`);
-          // 뒤로가기로 돌아왔을 때를 대비해 상태 초기화 (충분한 시간 뒤)
-          setTimeout(() => {
-            setIsTransitioning(false);
-            setTransitionRect(null);
-          }, 800);
+          // 너무 빨리 리셋하면 기사 로딩 중 목록이 다시 보이는 깜빡임 발생하므로
+          // 타임아웃은 제거하고 상단 pathname 감지 useEffect에서 초기화
         }, 350);
       } else {
         router.push(`/m/news/${id}`);
