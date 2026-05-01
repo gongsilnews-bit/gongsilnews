@@ -837,16 +837,18 @@ function MobileGongsilContent() {
                       </div>
                       {(() => {
                         const agencyInfo = Array.isArray(selectedVacancy.members?.agencies) ? selectedVacancy.members.agencies[0] : selectedVacancy.members?.agencies;
+                        const phoneStr = [agencyInfo?.phone, agencyInfo?.cell].filter(Boolean).join(', ') || selectedVacancy.members?.phone || selectedVacancy.client_phone || "미등록";
+                        const firstPhone = phoneStr !== "미등록" ? phoneStr.split(',')[0].trim() : "";
                         return (
                           <>
                             <p style={{ fontSize: "15px", color: "#6b7280", marginBottom: "4px" }}>
                               대표 {agencyInfo?.ceo_name || selectedVacancy.members?.name || "김동현"} | 등록번호 {agencyInfo?.reg_num || "미등록"}
                             </p>
                             <p style={{ fontSize: "15px", color: "#6b7280", marginBottom: "12px" }}>{agencyInfo?.address || selectedVacancy.sido + " " + selectedVacancy.sigungu}</p>
-                            <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "#1a73e8", fontSize: "16px", fontWeight: 700 }}>
+                            <a href={firstPhone ? `tel:${firstPhone}` : undefined} style={{ display: "flex", alignItems: "center", gap: "6px", color: "#1a73e8", fontSize: "16px", fontWeight: 700, textDecoration: "none" }}>
                               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-                              전화 {[agencyInfo?.phone, agencyInfo?.cell].filter(Boolean).join(', ') || selectedVacancy.members?.phone || selectedVacancy.client_phone || "미등록"}
-                            </div>
+                              전화 {phoneStr}
+                            </a>
                           </>
                         );
                       })()}
