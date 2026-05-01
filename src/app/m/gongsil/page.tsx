@@ -34,6 +34,7 @@ export default function MobileGongsilPage() {
   const mapRef = useRef<HTMLDivElement>(null);
   const kakaoMapRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
+  const clustererRef = useRef<any>(null);
   const detailPanelRef = useRef<HTMLDivElement>(null);
   const detailScrollRef = useRef<HTMLDivElement>(null);
 
@@ -127,28 +128,43 @@ export default function MobileGongsilPage() {
   useEffect(() => {
     if (!kakaoMapRef.current || !mapLoaded || vacancies.length === 0) return;
     const kakao = (window as any).kakao;
+    const map = kakaoMapRef.current;
 
+    if (clustererRef.current) clustererRef.current.clear();
     markersRef.current.forEach((m: any) => m.setMap(null));
     markersRef.current = [];
 
-    // lat/lng 기준으로 그룹화
-    const groups: Record<string, any[]> = {};
+    if (!clustererRef.current) {
+      clustererRef.current = new kakao.maps.MarkerClusterer({
+        map: map,
+        averageCenter: true,
+        minLevel: 4,
+        gridSize: 60,
+        disableClickZoom: true,
+        calculator: [10, 30, 50],
+        texts: (count: number) => count.toString(),
+        styles: [
+          { width: '44px', height: '44px', background: '#4b89ff', color: '#fff', textAlign: 'center', lineHeight: '40px', borderRadius: '50%', fontWeight: 'bold', fontSize: '15px', border: '2px solid #ffffff', boxShadow: '0 3px 8px rgba(0,0,0,0.2)' }
+        ]
+      });
+
+      kakao.maps.event.addListener(clustererRef.current, 'clusterclick', (cluster: any) => {
+        const mks = cluster.getMarkers();
+        const items = mks.map((m: any) => m.customData);
+        window.history.pushState({ panel: "cluster" }, "");
+        setSelectedVacancy(null);
+        setSelectedCluster(items);
+      });
+    }
+
     vacancies.forEach((v) => {
       if (!v.lat || !v.lng) return;
-      const key = `${Math.round(v.lat * 1000)}_${Math.round(v.lng * 1000)}`;
-      if (!groups[key]) groups[key] = [];
-      groups[key].push(v);
-    });
-
-    Object.values(groups).forEach((group) => {
-      const { lat, lng } = group[0];
-      const count = group.length;
-      const size = count > 9 ? 52 : 44;
+      const size = 36;
       const color = "#4b89ff";
 
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
         <circle cx="${size/2}" cy="${size/2}" r="${size/2-2}" fill="${color}" stroke="white" stroke-width="2"/>
-        <text x="50%" y="50%" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="${count>9?14:15}" font-weight="bold" font-family="sans-serif">${count}</text>
+        <text x="50%" y="50%" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="14" font-weight="bold" font-family="sans-serif">1</text>
       </svg>`;
 
       const img = new kakao.maps.MarkerImage(
@@ -157,17 +173,20 @@ export default function MobileGongsilPage() {
         { offset: new kakao.maps.Point(size / 2, size / 2) }
       );
       const marker = new kakao.maps.Marker({
-        position: new kakao.maps.LatLng(lat, lng),
+        position: new kakao.maps.LatLng(v.lat, v.lng),
         image: img,
-        map: kakaoMapRef.current,
       });
+      marker.customData = v;
+
       kakao.maps.event.addListener(marker, "click", () => {
         window.history.pushState({ panel: "cluster" }, "");
         setSelectedVacancy(null);
-        setSelectedCluster(group);
+        setSelectedCluster([v]);
       });
       markersRef.current.push(marker);
     });
+
+    clustererRef.current.addMarkers(markersRef.current);
   }, [vacancies, mapLoaded]);
 
   // 상세 조회
