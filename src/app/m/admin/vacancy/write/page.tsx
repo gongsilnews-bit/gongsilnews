@@ -211,7 +211,7 @@ function MobileVacancyWrite() {
         }
       }
 
-      alert(editId ? "수정 완료!" : "등록 완료!");
+      alert(status === "DRAFT" ? "임시저장 완료!" : editId ? "수정 완료! 승인신청되었습니다." : "등록 완료! 승인신청되었습니다.");
       router.push("/m/admin/vacancy");
     } catch (err: any) { alert("오류: " + err.message); } finally { setSubmitting(false); }
   };
