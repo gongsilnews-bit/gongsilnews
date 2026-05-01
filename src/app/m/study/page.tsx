@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import HomeHeader from '../_components/HomeHeader';
 
 export default function MobileStudyPage() {
   const lectures = [
@@ -38,8 +39,16 @@ export default function MobileStudyPage() {
   ];
 
   return (
-    <div className="w-full bg-[#f8f9fa] min-h-screen pb-10" style={{ width: '100%', backgroundColor: '#f8f9fa', minHeight: '100vh', paddingBottom: '40px' }}>
+    <div className="w-full bg-[#f8f9fa] min-h-screen pb-10" style={{ width: '100%', backgroundColor: '#f8f9fa', minHeight: '100vh', paddingBottom: '40px', paddingTop: '50px' }}>
       
+      <HomeHeader 
+        bgColor="#16a34a" 
+        logoText="부동산특강"
+        sloganPrefix="AI시대 부동산중개에 필요한 "
+        sloganHighlight="마케팅 특강"
+        highlightColor="#fcd34d"
+      />
+
       {/* 상단 타이틀 영역 */}
       <div className="px-4 py-5" style={{ padding: '20px 16px' }}>
         <h1 className="text-[20px] font-black text-[#1a2e50] flex items-center" style={{ fontSize: '20px', fontWeight: 900, color: '#1a2e50', display: 'flex', alignItems: 'center' }}>
