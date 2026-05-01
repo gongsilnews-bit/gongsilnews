@@ -395,3 +395,50 @@ const moveToMapSearchByKeyword = (keyword, zlevel) => {
 - [x] ~~지역 검색(시/도/구/동 캐스케이딩)도 필터 바에 포함할지?~~ → **포함 확정 (📍 위치 필로 통합)**
 - [ ] 필터 상태를 URL 파라미터로 유지할지? (공유 가능성)
 
+---
+
+## 8. 컴포넌트 분리 및 리팩토링 설계 (Phase 2)
+
+### 8-1. 배경 및 필요성
+- 현재 `page.tsx`(약 1,170줄)와 `MobileFilterBar.tsx`(약 320줄)에 모든 UI와 필터 로직이 집중되어 파일 크기가 비대해짐.
+- 향후 가격(최소/최대 입력, 15개 이상 프리셋 버튼), 면적, 사용승인일, 층수 등 복잡한 세부 필터가 추가되면 유지보수가 불가능해짐.
+- 따라서 **기능별 패널(바텀 시트 내용물)을 독립된 컴포넌트로 분리**하는 리팩토링이 필수적임.
+
+### 8-2. 디렉토리 및 컴포넌트 구조
+
+```
+src/app/m/gongsil/
+ ├─ page.tsx                        (지도 렌더링 및 필터된 매물 마커 표시)
+ ├─ MobileFilterBar.tsx             (수평 스크롤 컨테이너 및 껍데기 바텀 시트 관리)
+ │
+ └─ filters/                        (신규 폴더: 각 필터 패널 분리)
+     ├─ LocationFilterPanel.tsx     (📍 지역 캐스케이딩 및 키워드 장소 검색)
+     ├─ PropertyTypeFilterPanel.tsx (🏢 매물유형 그리드 다중 선택)
+     ├─ TradeTypeFilterPanel.tsx    (🤝 거래방식 다중 선택)
+     ├─ PriceFilterPanel.tsx        (💰 매매가/전세가/보증금 프리셋 및 직접 입력)
+     ├─ AreaFilterPanel.tsx         (📐 면적 프리셋 및 평수 계산)
+     ├─ DetailFilterPanel.tsx       (📅 층수, 사용승인일, 방/욕실 등 세부 조건)
+     ├─ FullFilterOverlay.tsx       (≡ 통합 필터 풀스크린 팝업)
+     └─ useVacancyFilters.ts        (필터 상태 및 필터링 로직 분리 Hook)
+```
+
+### 8-3. 역할 분담 (Responsibilities)
+
+1. **`useVacancyFilters` Hook**
+   - `FilterState` 인터페이스 정의 (가격, 면적, 층수, 연식 등 모든 세부 조건 포함).
+   - 초기화 함수, 부분 업데이트 함수 등 상태 관리 로직 캡슐화.
+   - `page.tsx`에 존재하던 `.filter()` 로직을 가져와 최종 `filteredVacancies` 반환.
+
+2. **`MobileFilterBar.tsx`**
+   - 현재 활성화된 패널 상태 (`activePanel`) 관리.
+   - 하단 바텀 시트(`renderSheet`) UI 틀 제공.
+   - 내부에 `activePanel` 값에 따라 `filters/*Panel.tsx` 컴포넌트들을 지연(lazy) 또는 조건부 렌더링.
+
+3. **개별 Panel 컴포넌트**
+   - `filters`(현재 상태)와 `onFilterChange`(상태 업데이트 함수)를 Props로 받아 내부 UI 렌더링.
+   - 예: `PriceFilterPanel`은 1천, 3천, 1억 등 프리셋 버튼과 최소/최대 입력 폼만 렌더링하고, 값 변경 시 `onFilterChange` 호출.
+
+### 8-4. 기대 효과
+- **관심사 분리**: 각 파일이 100~200줄 내외로 유지되어 가독성과 유지보수성 향상.
+- **재사용성**: 향후 PC 버전 개편이나 다른 메뉴에서 동일한 필터 UI를 재사용 가능.
+- **성능 최적화**: 필터 패널 내용물을 별도 컴포넌트로 분리하면 불필요한 전체 리렌더링 방지 용이.

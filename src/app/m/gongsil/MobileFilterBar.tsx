@@ -1,17 +1,18 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
-
-interface FilterState {
-  propertyTypes: string[];
-  tradeTypes: string[];
-  keyword: string;
-}
+import { FilterState } from "./filters/useVacancyFilters";
+import LocationFilterPanel from "./filters/LocationFilterPanel";
+import PropertyTypeFilterPanel from "./filters/PropertyTypeFilterPanel";
+import TradeTypeFilterPanel from "./filters/TradeTypeFilterPanel";
+import PriceFilterPanel from "./filters/PriceFilterPanel";
+import AreaFilterPanel from "./filters/AreaFilterPanel";
+import DetailFilterPanel from "./filters/DetailFilterPanel";
 
 interface MobileFilterBarProps {
   vacancies: any[];
   filteredCount: number;
   filters: FilterState;
-  onFilterChange: (filters: FilterState) => void;
+  onFilterChange: (filters: Partial<FilterState>) => void;
   onLocationMove: (lat: number, lng: number, zoom: number) => void;
   kakaoMapRef: React.MutableRefObject<any>;
 }
@@ -27,18 +28,7 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
   const [fullFilterOpen, setFullFilterOpen] = useState(false);
 
   // Location search state
-  const [locTab, setLocTab] = useState<"region" | "keyword">("region");
-  const [sidoList, setSidoList] = useState<any[]>([]);
-  const [gugunList, setGugunList] = useState<any[]>([]);
-  const [dongList, setDongList] = useState<any[]>([]);
-  const [selSido, setSelSido] = useState("");
-  const [selGugun, setSelGugun] = useState("");
-  const [selSidoCode, setSelSidoCode] = useState("");
-  const [selGugunCode, setSelGugunCode] = useState("");
-  const [locKeyword, setLocKeyword] = useState("");
-  const [locResults, setLocResults] = useState<any[]>([]);
   const [locLabel, setLocLabel] = useState("위치");
-  const [regTab, setRegTab] = useState<"sido"|"gugun"|"dong">("sido");
 
   // Text search
   const [searchOpen, setSearchOpen] = useState(false);
@@ -48,64 +38,23 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
   // Temp filters for full filter panel
   const [tempFilters, setTempFilters] = useState<FilterState>(filters);
 
-  useEffect(() => { loadSido(); }, []);
   useEffect(() => { setTempFilters(filters); }, [filters]);
   useEffect(() => { if (searchOpen && searchInputRef.current) searchInputRef.current.focus(); }, [searchOpen]);
 
-  const loadSido = async () => {
-    try {
-      const res = await fetch('https://grpc-proxy-server-mkvo6j4wsq-du.a.run.app/v1/regcodes?regcode_pattern=*00000000');
-      const data = await res.json();
-      setSidoList(data.regcodes || []);
-    } catch (e) { console.error(e); }
-  };
-  const loadGugun = async (code: string) => {
-    setGugunList([]);
-    try {
-      const res = await fetch(`https://grpc-proxy-server-mkvo6j4wsq-du.a.run.app/v1/regcodes?regcode_pattern=${code.substring(0,2)}*00000&is_ignore_zero=true`);
-      const data = await res.json();
-      setGugunList((data.regcodes || []).sort((a:any,b:any) => a.name.localeCompare(b.name)).map((c:any) => ({ code: c.code, name: c.name.split(' ').slice(1).join(' ') })));
-    } catch (e) { console.error(e); }
-  };
-  const loadDong = async (code: string) => {
-    setDongList([]);
-    try {
-      const res = await fetch(`https://grpc-proxy-server-mkvo6j4wsq-du.a.run.app/v1/regcodes?regcode_pattern=${code.substring(0,5)}*&is_ignore_zero=true`);
-      const data = await res.json();
-      setDongList((data.regcodes || []).filter((c:any) => c.code !== code).sort((a:any,b:any) => a.name.localeCompare(b.name)).map((c:any) => { const p = c.name.split(' '); return { code: c.code, name: p[p.length-1] }; }));
-    } catch (e) { console.error(e); }
-  };
-
-  const moveMap = (keyword: string, zoom: number) => {
-    const kakao = (window as any).kakao;
-    if (!kakao?.maps?.services) return;
-    const ps = new kakao.maps.services.Places();
-    ps.keywordSearch(keyword, (data: any, status: any) => {
-      if (status === kakao.maps.services.Status.OK && data.length > 0) {
-        onLocationMove(parseFloat(data[0].y), parseFloat(data[0].x), zoom);
-      }
-    });
-  };
-
-  const doLocKeywordSearch = () => {
-    if (!locKeyword.trim()) return;
-    const kakao = (window as any).kakao;
-    if (!kakao?.maps?.services) return;
-    const ps = new kakao.maps.services.Places();
-    ps.keywordSearch(locKeyword, (data: any, status: any) => {
-      if (status === kakao.maps.services.Status.OK) setLocResults(data);
-      else setLocResults([]);
-    });
-  };
-
-  const toggleProp = (arr: string[], item: string) => arr.includes(item) ? arr.filter(x => x !== item) : [...arr, item];
-
   const applyTextSearch = () => {
-    onFilterChange({ ...filters, keyword: searchText });
+    onFilterChange({ keyword: searchText });
     setSearchOpen(false);
   };
 
-  const hasActiveFilters = filters.propertyTypes.length > 0 || filters.tradeTypes.length > 0 || filters.keyword;
+  const hasActiveFilters = 
+    filters.propertyTypes.length > 0 || 
+    filters.tradeTypes.length > 0 || 
+    filters.keyword !== "" ||
+    filters.priceMin !== null || filters.priceMax !== null ||
+    filters.areaMin !== null || filters.areaMax !== null ||
+    filters.yearMin !== null || filters.yearMax !== null ||
+    filters.floor !== null;
+
   const pillStyle = (active: boolean): React.CSSProperties => ({
     padding: "7px 14px", borderRadius: "20px", fontSize: "13px", fontWeight: 600, whiteSpace: "nowrap", flexShrink: 0,
     border: active ? "1.5px solid #4b89ff" : "1px solid #d1d5db",
@@ -161,88 +110,51 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
           <button onClick={() => setActivePanel(activePanel === "trade" ? null : "trade")} style={pillStyle(activePanel === "trade" || filters.tradeTypes.length > 0)}>
             {filters.tradeTypes.length > 0 ? filters.tradeTypes.join(", ") : "거래방식"} ▾
           </button>
-          <button style={pillStyle(false)} onClick={() => setActivePanel(null)}>가격 ▾</button>
-          <button style={pillStyle(false)} onClick={() => setActivePanel(null)}>면적 ▾</button>
-          <button style={pillStyle(false)} onClick={() => setActivePanel(null)}>층수 ▾</button>
-          <button style={pillStyle(false)} onClick={() => setActivePanel(null)}>방향 ▾</button>
-          <button style={pillStyle(false)} onClick={() => setActivePanel(null)}>옵션 ▾</button>
+          <button onClick={() => setActivePanel(activePanel === "price" ? null : "price")} style={pillStyle(activePanel === "price" || filters.priceMin !== null || filters.priceMax !== null)}>
+            가격 ▾
+          </button>
+          <button onClick={() => setActivePanel(activePanel === "area" ? null : "area")} style={pillStyle(activePanel === "area" || filters.areaMin !== null || filters.areaMax !== null)}>
+            면적 ▾
+          </button>
+          <button onClick={() => setActivePanel(activePanel === "detail" ? null : "detail")} style={pillStyle(activePanel === "detail" || filters.floor !== null || filters.yearMin !== null)}>
+            층수/연식 ▾
+          </button>
         </div>
       </div>
 
       {/* ═══ 위치 검색 시트 ═══ */}
       {activePanel === "loc" && renderSheet("📍 위치 검색", (
-        <div>
-          <div style={{ display: "flex", borderBottom: "2px solid #f3f4f6", marginBottom: "16px" }}>
-            <button onClick={() => setLocTab("region")} style={{ flex: 1, padding: "10px", fontSize: "14px", fontWeight: locTab === "region" ? 700 : 500, color: locTab === "region" ? "#4b89ff" : "#9ca3af", borderBottom: locTab === "region" ? "2px solid #4b89ff" : "2px solid transparent", background: "none", border: "none", cursor: "pointer" }}>지역선택</button>
-            <button onClick={() => setLocTab("keyword")} style={{ flex: 1, padding: "10px", fontSize: "14px", fontWeight: locTab === "keyword" ? 700 : 500, color: locTab === "keyword" ? "#4b89ff" : "#9ca3af", borderBottom: locTab === "keyword" ? "2px solid #4b89ff" : "2px solid transparent", background: "none", border: "none", cursor: "pointer" }}>키워드검색</button>
-          </div>
-          {locTab === "region" ? (
-            <div>
-              <div style={{ display: "flex", gap: "6px", marginBottom: "14px" }}>
-                {(["sido","gugun","dong"] as const).map(t => (
-                  <button key={t} onClick={() => setRegTab(t)} style={{ flex: 1, padding: "8px 4px", fontSize: "13px", fontWeight: regTab === t ? 700 : 500, background: regTab === t ? "#4b89ff" : "#f3f4f6", color: regTab === t ? "#fff" : "#6b7280", borderRadius: "6px", border: "none", cursor: "pointer" }}>
-                    {t === "sido" ? "시/도" : t === "gugun" ? "시/군/구" : "읍/면/동"}
-                  </button>
-                ))}
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", maxHeight: "200px", overflowY: "auto" }}>
-                {regTab === "sido" && (sidoList.length > 0 ? sidoList.map(c => (
-                  <button key={c.code} onClick={() => { setSelSidoCode(c.code); setSelSido(c.name); setSelGugun(""); setRegTab("gugun"); loadGugun(c.code); moveMap(c.name, 8); setLocLabel(c.name); }} style={gridBtnStyle(selSido === c.name)}>{c.name}</button>
-                )) : <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "20px", color: "#9ca3af" }}>로딩중...</div>)}
-                {regTab === "gugun" && (!selSidoCode ? <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "20px", color: "#9ca3af" }}>시/도를 먼저 선택하세요</div> : gugunList.length > 0 ? gugunList.map(c => (
-                  <button key={c.code} onClick={() => { setSelGugunCode(c.code); setSelGugun(c.name); setRegTab("dong"); loadDong(c.code); moveMap(`${selSido} ${c.name}`, 6); setLocLabel(`${c.name}`); }} style={gridBtnStyle(selGugun === c.name)}>{c.name}</button>
-                )) : <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "20px", color: "#9ca3af" }}>로딩중...</div>)}
-                {regTab === "dong" && (!selGugunCode ? <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "20px", color: "#9ca3af" }}>시/군/구를 먼저 선택하세요</div> : dongList.length > 0 ? dongList.map(c => (
-                  <button key={c.code} onClick={() => { moveMap(`${selSido} ${selGugun} ${c.name}`, 4); setLocLabel(`${selGugun} ${c.name}`); setActivePanel(null); }} style={gridBtnStyle(false)}>{c.name}</button>
-                )) : <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "20px", color: "#9ca3af" }}>로딩중...</div>)}
-              </div>
-            </div>
-          ) : (
-            <div>
-              <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
-                <input type="text" placeholder="동, 읍, 면 또는 랜드마크 검색" value={locKeyword} onChange={e => setLocKeyword(e.target.value)} onKeyDown={e => e.key === "Enter" && doLocKeywordSearch()} style={{ flex: 1, padding: "10px 14px", border: "1px solid #d1d5db", borderRadius: "8px", fontSize: "14px", outline: "none" }} />
-                <button onClick={doLocKeywordSearch} style={{ padding: "10px 16px", background: "#4b89ff", color: "#fff", border: "none", borderRadius: "8px", fontWeight: 700, fontSize: "14px", cursor: "pointer" }}>이동</button>
-              </div>
-              <div style={{ maxHeight: "180px", overflowY: "auto" }}>
-                {locResults.map((r, i) => (
-                  <div key={i} onClick={() => { onLocationMove(parseFloat(r.y), parseFloat(r.x), 5); setLocLabel(r.place_name || r.address_name); setActivePanel(null); }} style={{ padding: "12px 4px", borderBottom: "1px solid #f3f4f6", cursor: "pointer" }}>
-                    <div style={{ fontSize: "14px", fontWeight: 600, color: "#111" }}>{r.place_name || r.address_name}</div>
-                    <div style={{ fontSize: "12px", color: "#9ca3af", marginTop: "2px" }}>{r.address_name}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
+        <LocationFilterPanel 
+          onLocationMove={onLocationMove} 
+          onClose={() => setActivePanel(null)} 
+          locLabel={locLabel} 
+          setLocLabel={setLocLabel} 
+        />
       ))}
 
       {/* ═══ 매물유형 시트 ═══ */}
       {activePanel === "prop" && renderSheet("매물유형", (
-        <div>
-          {PROPERTY_TYPES.map(g => (
-            <div key={g.group} style={{ marginBottom: "16px" }}>
-              <div style={{ fontSize: "13px", fontWeight: 700, color: "#6b7280", marginBottom: "8px" }}>{g.group}</div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px" }}>
-                {g.items.map(item => (
-                  <button key={item} onClick={() => onFilterChange({ ...filters, propertyTypes: toggleProp(filters.propertyTypes, item) })} style={gridBtnStyle(filters.propertyTypes.includes(item))}>{item}</button>
-                ))}
-              </div>
-            </div>
-          ))}
-          <button onClick={() => onFilterChange({ ...filters, propertyTypes: [] })} style={{ width: "100%", padding: "12px", background: "#f3f4f6", border: "none", borderRadius: "8px", fontSize: "14px", fontWeight: 600, color: "#6b7280", cursor: "pointer", marginTop: "8px" }}>초기화</button>
-        </div>
+        <PropertyTypeFilterPanel filters={filters} onFilterChange={onFilterChange} PROPERTY_TYPES={PROPERTY_TYPES} />
       ))}
 
       {/* ═══ 거래방식 시트 ═══ */}
       {activePanel === "trade" && renderSheet("거래방식", (
-        <div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "10px" }}>
-            {TRADE_TYPES.map(t => (
-              <button key={t} onClick={() => onFilterChange({ ...filters, tradeTypes: toggleProp(filters.tradeTypes, t) })} style={{ ...gridBtnStyle(filters.tradeTypes.includes(t)), padding: "14px" }}>{t}</button>
-            ))}
-          </div>
-          <button onClick={() => onFilterChange({ ...filters, tradeTypes: [] })} style={{ width: "100%", padding: "12px", background: "#f3f4f6", border: "none", borderRadius: "8px", fontSize: "14px", fontWeight: 600, color: "#6b7280", cursor: "pointer", marginTop: "16px" }}>초기화</button>
-        </div>
+        <TradeTypeFilterPanel filters={filters} onFilterChange={onFilterChange} TRADE_TYPES={TRADE_TYPES} />
+      ))}
+
+      {/* ═══ 가격 시트 ═══ */}
+      {activePanel === "price" && renderSheet("매매가/전세가/보증금", (
+        <PriceFilterPanel filters={filters} onFilterChange={onFilterChange} />
+      ))}
+
+      {/* ═══ 면적 시트 ═══ */}
+      {activePanel === "area" && renderSheet("면적", (
+        <AreaFilterPanel filters={filters} onFilterChange={onFilterChange} />
+      ))}
+
+      {/* ═══ 층수/연식 시트 ═══ */}
+      {activePanel === "detail" && renderSheet("층수 및 연식", (
+        <DetailFilterPanel filters={filters} onFilterChange={onFilterChange} />
       ))}
 
       {/* ═══ 풀스크린 통합 필터 ═══ */}
@@ -257,32 +169,45 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
             {/* 거래유형 */}
             <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
               <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>거래유형</div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "8px" }}>
-                {TRADE_TYPES.map(t => (
-                  <button key={t} onClick={() => setTempFilters(p => ({ ...p, tradeTypes: toggleProp(p.tradeTypes, t) }))} style={gridBtnStyle(tempFilters.tradeTypes.includes(t))}>{t}</button>
-                ))}
-              </div>
+              <TradeTypeFilterPanel filters={tempFilters} onFilterChange={setTempFilters} TRADE_TYPES={TRADE_TYPES} />
             </div>
 
             {/* 매물유형 */}
             <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
               <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>매물유형</div>
-              {PROPERTY_TYPES.map(g => (
-                <div key={g.group} style={{ marginBottom: "12px" }}>
-                  <div style={{ fontSize: "12px", color: "#9ca3af", marginBottom: "6px" }}>{g.group}</div>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px" }}>
-                    {g.items.map(item => (
-                      <button key={item} onClick={() => setTempFilters(p => ({ ...p, propertyTypes: toggleProp(p.propertyTypes, item) }))} style={gridBtnStyle(tempFilters.propertyTypes.includes(item))}>{item}</button>
-                    ))}
-                  </div>
-                </div>
-              ))}
+              <PropertyTypeFilterPanel filters={tempFilters} onFilterChange={setTempFilters} PROPERTY_TYPES={PROPERTY_TYPES} />
+            </div>
+            
+            {/* 가격 */}
+            <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
+              <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>가격</div>
+              <PriceFilterPanel filters={tempFilters} onFilterChange={setTempFilters} />
+            </div>
+
+            {/* 면적 */}
+            <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
+              <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>면적</div>
+              <AreaFilterPanel filters={tempFilters} onFilterChange={setTempFilters} />
+            </div>
+
+            {/* 층수 및 연식 */}
+            <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
+              <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>층수 및 연식</div>
+              <DetailFilterPanel filters={tempFilters} onFilterChange={setTempFilters} />
             </div>
           </div>
 
           {/* 하단 CTA */}
           <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "#fff", borderTop: "1px solid #e5e7eb", padding: "12px 20px 24px", display: "flex", gap: "12px" }}>
-            <button onClick={() => setTempFilters({ propertyTypes: [], tradeTypes: [], keyword: "" })} style={{ padding: "14px 20px", background: "#f3f4f6", border: "none", borderRadius: "10px", fontSize: "14px", fontWeight: 600, color: "#6b7280", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}>↻ 초기화</button>
+            <button 
+              onClick={() => {
+                const empty = { propertyTypes: [], tradeTypes: [], keyword: "", priceMin: null, priceMax: null, areaMin: null, areaMax: null, yearMin: null, yearMax: null, floor: null };
+                setTempFilters(empty);
+              }} 
+              style={{ padding: "14px 20px", background: "#f3f4f6", border: "none", borderRadius: "10px", fontSize: "14px", fontWeight: 600, color: "#6b7280", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
+            >
+              ↻ 초기화
+            </button>
             <button onClick={() => { onFilterChange(tempFilters); setFullFilterOpen(false); }} style={{ flex: 1, padding: "14px", background: "#4b89ff", border: "none", borderRadius: "10px", fontSize: "15px", fontWeight: 800, color: "#fff", cursor: "pointer" }}>{filteredCount}개 매물 보기</button>
           </div>
         </div>

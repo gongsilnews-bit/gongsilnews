@@ -6,6 +6,7 @@ import { getVacancies, getVacancyDetail } from "@/app/actions/vacancy";
 import { getPermissionLevel } from "@/utils/permissionCheck";
 import AuthModal from "@/components/AuthModal";
 import MobileFilterBar from "./MobileFilterBar";
+import { useVacancyFilters } from "./filters/useVacancyFilters";
 import HomeHeader from "../_components/HomeHeader";
 
 const KAKAO_APP_KEY = process.env.NEXT_PUBLIC_KAKAO_APP_KEY || "435d3602201a49ea712e5f5a36fe6efc";
@@ -103,20 +104,8 @@ function MobileGongsilContent() {
   // 권한 파생 값
   const showCommission = userLevel >= 2;
 
-  // 필터 State
-  const [filters, setFilters] = useState<{ propertyTypes: string[]; tradeTypes: string[]; keyword: string }>({ propertyTypes: [], tradeTypes: [], keyword: "" });
-
-  // 필터링된 매물
-  const filteredVacancies = vacancies.filter(v => {
-    if (filters.propertyTypes.length > 0 && !filters.propertyTypes.includes(v.property_type)) return false;
-    if (filters.tradeTypes.length > 0 && !filters.tradeTypes.includes(v.trade_type)) return false;
-    if (filters.keyword) {
-      const q = filters.keyword.toLowerCase();
-      const match = (v.building_name || "").toLowerCase().includes(q) || (v.dong || "").toLowerCase().includes(q) || (v.sigungu || "").toLowerCase().includes(q) || (v.vacancy_no || "").toLowerCase().includes(q);
-      if (!match) return false;
-    }
-    return true;
-  });
+  // 필터 State 및 필터링 로직 (Hook으로 분리)
+  const { filters, filteredVacancies, updateFilter, activeFilterCount } = useVacancyFilters(vacancies);
 
   // Swipe gesture states
   const [touchStart, setTouchStart] = useState<number | null>(null);
@@ -561,7 +550,7 @@ function MobileGongsilContent() {
             vacancies={vacancies}
             filteredCount={filteredVacancies.length}
             filters={filters}
-            onFilterChange={setFilters}
+            onFilterChange={updateFilter}
             onLocationMove={(lat, lng, zoom) => {
               const kakao = (window as any).kakao;
               if (kakaoMapRef.current && kakao) {
