@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://gongsilnews.com"),
   icons: {
     icon: '/favicon.png',
-    apple: '/apple-icon.jpg',
+    apple: '/apple-icon.png',
   },
   openGraph: {
     title: "공실뉴스 - 부동산 중개망의 스마트한 변화",
