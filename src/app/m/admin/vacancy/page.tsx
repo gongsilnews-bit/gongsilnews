@@ -258,48 +258,57 @@ function MobileVacancyAdmin() {
               )}
 
               {/* 액션 버튼 */}
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                {isAdmin && row.status === "PENDING" && (
-                  <>
-                    <button onClick={async () => {
-                      if (!confirm("이 공실을 승인하시겠습니까?")) return;
-                      const res = await updateVacancyStatus(row.id, "ACTIVE");
-                      if (res.success) { alert("승인되었습니다."); fetchVacancies(); }
-                    }} style={{ flex: 1, minWidth: "45%", height: 36, background: "#10b981", color: "#fff", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                      ✅ 승인
-                    </button>
-                    <button onClick={async () => {
-                      const reason = prompt("반려 사유를 입력해주세요:");
-                      if (reason === null) return;
-                      const res = await updateVacancy(row.id, { status: "REJECTED", reject_reason: reason });
-                      if (res.success) { alert("반려되었습니다."); fetchVacancies(); }
-                    }} style={{ flex: 1, minWidth: "45%", height: 36, background: "#ef4444", color: "#fff", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                      ❌ 반려
-                    </button>
-                  </>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {/* 특수 버튼 (승인/반려, 재승인) - 조건부 렌더링 */}
+                {((isAdmin && row.status === "PENDING") || row.status === "REJECTED") && (
+                  <div style={{ display: "flex", gap: 6 }}>
+                    {isAdmin && row.status === "PENDING" && (
+                      <>
+                        <button onClick={async () => {
+                          if (!confirm("이 공실을 승인하시겠습니까?")) return;
+                          const res = await updateVacancyStatus(row.id, "ACTIVE");
+                          if (res.success) { alert("승인되었습니다."); fetchVacancies(); }
+                        }} style={{ flex: 1, height: 36, background: "#10b981", color: "#fff", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                          ✅ 승인
+                        </button>
+                        <button onClick={async () => {
+                          const reason = prompt("반려 사유를 입력해주세요:");
+                          if (reason === null) return;
+                          const res = await updateVacancy(row.id, { status: "REJECTED", reject_reason: reason });
+                          if (res.success) { alert("반려되었습니다."); fetchVacancies(); }
+                        }} style={{ flex: 1, height: 36, background: "#ef4444", color: "#fff", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                          ❌ 반려
+                        </button>
+                      </>
+                    )}
+                    {row.status === "REJECTED" && (
+                      <button onClick={async () => {
+                        if (!confirm("이 공실을 재승인 신청하시겠습니까?")) return;
+                        const res = await updateVacancyStatus(row.id, "PENDING");
+                        if (res.success) fetchVacancies();
+                      }} style={{ flex: 1, height: 36, background: "#8b5cf6", color: "#fff", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                        📋 재승인
+                      </button>
+                    )}
+                  </div>
                 )}
-                {row.status === "REJECTED" && (
-                  <button onClick={async () => {
-                    if (!confirm("이 공실을 재승인 신청하시겠습니까?")) return;
-                    const res = await updateVacancyStatus(row.id, "PENDING");
-                    if (res.success) fetchVacancies();
-                  }} style={{ flex: 1, height: 36, background: "#8b5cf6", color: "#fff", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                    📋 재승인
+                
+                {/* 기본 3종 버튼 (미리보기, 수정, 삭제) - 항상 동일한 크기로 한 줄에 노출 */}
+                <div style={{ display: "flex", gap: 6 }}>
+                  <button onClick={() => window.open(`/m/gongsil?id=${row.id}`, "_blank")} style={{ flex: 1, height: 36, background: "#f0f9ff", color: "#2563eb", border: "1px solid #bfdbfe", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                    👁️ 미리보기
                   </button>
-                )}
-                <button onClick={() => window.open(`/m/gongsil?id=${row.id}`, "_blank")} style={{ flex: 1, height: 36, background: "#f0f9ff", color: "#2563eb", border: "1px solid #bfdbfe", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                  👁️ 미리보기
-                </button>
-                <button onClick={() => router.push(`/m/admin/vacancy/write?id=${row.id}`)} style={{ flex: 1, height: 36, background: "#4b5563", color: "#fff", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                  ✏️ 수정
-                </button>
-                <button onClick={async () => {
-                  if (!confirm("이 공실을 삭제하시겠습니까?")) return;
-                  const res = await deleteVacancy(row.id);
-                  if (res.success) fetchVacancies();
-                }} style={{ flex: 1, height: 36, background: "#fff", color: "#ef4444", border: "1px solid #fecaca", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                  🗑️ 삭제
-                </button>
+                  <button onClick={() => router.push(`/m/admin/vacancy/write?id=${row.id}`)} style={{ flex: 1, height: 36, background: "#4b5563", color: "#fff", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                    ✏️ 수정
+                  </button>
+                  <button onClick={async () => {
+                    if (!confirm("이 공실을 삭제하시겠습니까?")) return;
+                    const res = await deleteVacancy(row.id);
+                    if (res.success) fetchVacancies();
+                  }} style={{ flex: 1, height: 36, background: "#fff", color: "#ef4444", border: "1px solid #fecaca", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                    🗑️ 삭제
+                  </button>
+                </div>
               </div>
             </div>
           );
