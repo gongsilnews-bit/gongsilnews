@@ -332,3 +332,15 @@ export async function getVacanciesForMap(options?: any) {
     return { success: false, error: error.message };
   }
 }
+
+export async function getVacancyListByKeyword(keyword: string) {
+  const supabase = getAdminClient();
+  try {
+    const { data, error } = await supabase.from('vacancies').select('*, vacancy_photos(url, sort_order)').neq('status', 'DELETED').or(`dong.ilike.%${keyword}%,sigungu.ilike.%${keyword}%,sido.ilike.%${keyword}%,building_name.ilike.%${keyword}%,detail_addr.ilike.%${keyword}%`).order('created_at', { ascending: false });
+    if (error) throw error;
+    const withImages = data?.map(v => ({ ...v, images: v.vacancy_photos ? [...v.vacancy_photos].sort((a: any, b: any) => a.sort_order - b.sort_order).map((p: any) => p.url) : [] })) || [];
+    return { success: true, data: withImages };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}

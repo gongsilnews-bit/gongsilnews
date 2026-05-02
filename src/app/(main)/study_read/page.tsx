@@ -402,9 +402,13 @@ function StudyReadContent() {
                         </div>
                         <div className="flex-1 break-keep line-clamp-4" style={{ fontSize: 15, color: "#3e4042", lineHeight: 1.6, marginBottom: 24 }}>{review.content}</div>
                         <div className="flex items-center font-medium" style={{ gap: 8, fontSize: 13, color: "#858a8d" }}>
-                          <span className="rounded-full flex items-center justify-center font-bold" style={{ width: 24, height: 24, backgroundColor: "#f0f0f0", fontSize: 11, color: "#858a8d" }}>
-                            {review.user_name ? review.user_name.charAt(0) : "익"}
-                          </span>
+                          {review.user_avatar ? (
+                            <img src={review.user_avatar} alt="Profile" className="rounded-full object-cover shrink-0 border border-gray-100" style={{ width: 24, height: 24 }} />
+                          ) : (
+                            <span className="shrink-0 rounded-full flex items-center justify-center font-bold" style={{ width: 24, height: 24, backgroundColor: "#f0f0f0", fontSize: 11, color: "#858a8d" }}>
+                              {review.user_name ? review.user_name.charAt(0) : "익"}
+                            </span>
+                          )}
                           <span className="font-semibold" style={{ color: "#1a1a1a" }}>{review.user_name || "익명"}</span>
                           <span>·</span>
                           <span>{review.created_at ? new Date(review.created_at).toLocaleDateString("ko-KR", { month: "long", day: "numeric" }) : ""}</span>

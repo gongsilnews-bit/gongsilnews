@@ -226,12 +226,36 @@ export async function getLectureDetail(lectureId: string) {
       .order("created_at", { ascending: false })
       .limit(20);
 
+    // 리뷰 작성자의 프로필 이미지 및 최신 닉네임 병합
+    let enrichedReviews = reviews || [];
+    if (enrichedReviews.length > 0) {
+      const userIds = enrichedReviews.map(r => r.user_id).filter(Boolean);
+      if (userIds.length > 0) {
+        const { data: members } = await supabase
+          .from("members")
+          .select("id, profile_image_url, name")
+          .in("id", userIds);
+
+        if (members) {
+          const memberMap = new Map(members.map(m => [m.id, m]));
+          enrichedReviews = enrichedReviews.map(r => {
+            const member = memberMap.get(r.user_id);
+            return {
+              ...r,
+              user_avatar: member?.profile_image_url || null,
+              user_name: member?.name || r.user_name || "익명",
+            };
+          });
+        }
+      }
+    }
+
     return {
       success: true,
       data: {
         ...lecture,
         chapters: chaptersWithLessons,
-        reviews: reviews || [],
+        reviews: enrichedReviews,
       },
     };
   } catch (err: any) {
