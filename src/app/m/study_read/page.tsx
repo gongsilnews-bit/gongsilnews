@@ -31,7 +31,17 @@ function MobileStudyReadContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showAllReviews, setShowAllReviews] = useState(false);
   const [expandedChapters, setExpandedChapters] = useState<Record<number, boolean>>({});
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewTitle, setPreviewTitle] = useState("");
   const tabBarRef = useRef<HTMLDivElement>(null);
+
+  const toEmbedUrl = (url: string): string | null => {
+    if (!url) return null;
+    const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]+)/);
+    if (m) return `https://www.youtube.com/embed/${m[1]}?autoplay=1`;
+    if (url.includes("youtube.com/embed")) return url + (url.includes("?") ? "&autoplay=1" : "?autoplay=1");
+    return url;
+  };
 
   /* ── 스크롤 시 현재 섹션에 맞게 탭 자동 활성화 ── */
   useEffect(() => {
@@ -275,12 +285,24 @@ function MobileStudyReadContent() {
                 </div>
                 <span style={{ fontSize: 18, color: "#999", transform: expandedChapters[ci] ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.2s" }}>▾</span>
               </button>
-              {expandedChapters[ci] && ch.lessons?.map((lesson: any, li: number) => (
-                <div key={li} style={{ padding: "10px 14px 10px 40px", borderTop: "1px solid #f5f5f5", fontSize: 13, color: "#555", display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ color: "#aaa" }}>{li + 1}.</span> {lesson.title}
-                  {lesson.duration && <span style={{ marginLeft: "auto", fontSize: 12, color: "#bbb" }}>{lesson.duration}</span>}
-                </div>
-              ))}
+              {expandedChapters[ci] && ch.lessons?.map((lesson: any, li: number) => {
+                const hasVideo = !!lesson.video_url;
+                const canPreview = lesson.is_preview && hasVideo;
+                return (
+                  <div key={li}
+                    onClick={() => { if (canPreview) { setPreviewUrl(lesson.video_url); setPreviewTitle(`${ch.chapter_no}-${lesson.lesson_no}. ${lesson.title}`); } }}
+                    style={{ padding: "12px 14px 12px 40px", borderTop: "1px solid #f5f5f5", fontSize: 13, color: canPreview ? "#1a1a1a" : "#555", display: "flex", alignItems: "center", gap: 8, cursor: canPreview ? "pointer" : "default" }}>
+                    <span style={{ color: "#aaa", flexShrink: 0 }}>{lesson.lesson_no || li + 1}.</span>
+                    <span style={{ fontWeight: canPreview ? 700 : 400 }}>{lesson.title}</span>
+                    {lesson.is_preview && (
+                      <span style={{ fontSize: 10, fontWeight: 700, color: hasVideo ? "#fff" : "#059669", background: hasVideo ? "#059669" : "#ecfdf5", padding: "3px 7px", borderRadius: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
+                        {hasVideo ? "▶ 미리보기" : "미리보기"}
+                      </span>
+                    )}
+                    {lesson.duration && <span style={{ marginLeft: "auto", fontSize: 12, color: "#bbb", flexShrink: 0 }}>{lesson.duration}</span>}
+                  </div>
+                );
+              })}
             </div>
           )) : <div style={{ fontSize: 14, color: "#999" }}>커리큘럼이 준비 중입니다.</div>}
         </div>
@@ -345,6 +367,21 @@ function MobileStudyReadContent() {
           </div>
         </div>
       </div>
+
+      {/* ── 영상 미리보기 모달 ── */}
+      {previewUrl && (
+        <div onClick={() => setPreviewUrl(null)} style={{ position: "fixed", inset: 0, zIndex: 100, background: "rgba(0,0,0,0.85)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <div style={{ color: "#fff", fontSize: 14, fontWeight: 700, marginBottom: 12, textAlign: "center" }}>{previewTitle}</div>
+          <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: 420, aspectRatio: "16/9", borderRadius: 12, overflow: "hidden", background: "#000" }}>
+            {(() => { const embed = toEmbedUrl(previewUrl); return embed && embed.includes("youtube") ? (
+              <iframe src={embed} style={{ width: "100%", height: "100%", border: "none" }} allow="autoplay; encrypted-media" allowFullScreen />
+            ) : (
+              <video src={previewUrl} controls autoPlay style={{ width: "100%", height: "100%" }} />
+            ); })()}
+          </div>
+          <button onClick={() => setPreviewUrl(null)} style={{ marginTop: 16, padding: "10px 32px", borderRadius: 8, border: "none", background: "#fff", fontSize: 14, fontWeight: 700 }}>닫기</button>
+        </div>
+      )}
 
       {/* ── 하단 고정 결제 바 ── */}
       <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 448, background: "#fff", borderTop: "1px solid #eee", padding: "10px 16px", paddingBottom: "max(10px, env(safe-area-inset-bottom))", zIndex: 50, boxShadow: "0 -2px 10px rgba(0,0,0,0.05)" }}>
