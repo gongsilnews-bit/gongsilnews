@@ -253,6 +253,7 @@ function MobileGongsilContent() {
     }
     // 무조건 운영 서버 도메인으로 하드코딩
     const shareUrl = `https://gongsilnews.com/m/gongsil?id=${selectedVacancy.id}`;
+    alert("카카오로 전송될 링크: " + shareUrl);
     Kakao.Share.sendDefault({
       objectType: "feed",
       content: {
