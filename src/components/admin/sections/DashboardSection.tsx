@@ -3,12 +3,13 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { AdminSectionProps } from "./types";
 import { SvgIcon, IconBuilding, IconArticle, IconMembers, IconComment } from "./AdminIcons";
-import { adminGetDashboardData } from "@/app/admin/actions";
+import { adminGetDashboardData, memberGetDashboardData } from "@/app/admin/actions";
 
 /* ── 유틸리티 함수 ── */
 const formatTimeAgo = (dateStr: string) => {
   const diff = Date.now() - new Date(dateStr).getTime();
   const minutes = Math.floor(diff / 60000);
+  if (minutes < 1) return "방금 전";
   if (minutes < 60) return `${minutes}분 전`;
   const hours = Math.floor(minutes / 60);
   if (hours < 24) return `${hours}시간 전`;
@@ -25,58 +26,79 @@ const formatRole = (role: string) => {
   return { label: '일반', class: 'general' };
 };
 
-type QuickLink = { icon: React.ReactElement; label: string; count: string | number; href: string };
+type QuickLink = { icon: React.ReactElement; label: string; count: string | number; menu: string };
 
 interface DashboardSectionProps extends AdminSectionProps {
   role: "admin" | "realtor" | "user";
   agencyStatus?: string;
   onMenuChange?: (menu: string) => void;
+  memberId?: string;
 }
 
-export default function DashboardSection({ theme, role, agencyStatus, onMenuChange }: DashboardSectionProps) {
+export default function DashboardSection({ theme, role, agencyStatus, onMenuChange, memberId }: DashboardSectionProps) {
   const { bg, cardBg, textPrimary, textSecondary, darkMode, border } = theme;
   const navigate = (menu: string) => { if (onMenuChange) onMenuChange(menu); };
-  
+
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ vacanciesCount: 0, membersCount: 0, articlesCount: 0, commentsCount: 0 });
   const [recentVacancies, setRecentVacancies] = useState<any[]>([]);
   const [recentMembers, setRecentMembers] = useState<any[]>([]);
+  const [recentArticles, setRecentArticles] = useState<any[]>([]);
   const [recentComments, setRecentComments] = useState<any[]>([]);
   const [lastUpdated, setLastUpdated] = useState<string>("");
 
   const fetchData = useCallback(async () => {
-    if (role !== "admin") return; // 현재는 최고관리자용만 지원
     setLoading(true);
-    const res = await adminGetDashboardData();
-    if (res.success) {
-      setStats(res.stats || { vacanciesCount: 0, membersCount: 0, articlesCount: 0, commentsCount: 0 });
-      setRecentVacancies(res.recentVacancies || []);
-      setRecentMembers(res.recentMembers || []);
-      setRecentComments(res.recentComments || []);
-      
+    try {
+      if (role === "admin") {
+        const res = await adminGetDashboardData();
+        if (res.success) {
+          setStats(res.stats || { vacanciesCount: 0, membersCount: 0, articlesCount: 0, commentsCount: 0 });
+          setRecentVacancies(res.recentVacancies || []);
+          setRecentMembers(res.recentMembers || []);
+          setRecentComments(res.recentComments || []);
+        }
+      } else if (memberId) {
+        const res = await memberGetDashboardData(memberId);
+        if (res.success) {
+          setStats({
+            vacanciesCount: res.stats?.vacanciesCount || 0,
+            membersCount: 0,
+            articlesCount: res.stats?.articlesCount || 0,
+            commentsCount: res.stats?.commentsCount || 0,
+          });
+          setRecentVacancies(res.recentVacancies || []);
+          setRecentArticles(res.recentArticles || []);
+          setRecentComments(res.recentComments || []);
+        }
+      }
       const now = new Date();
       setLastUpdated(`${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`);
-    }
+    } catch (e) { console.error(e); }
     setLoading(false);
-  }, [role]);
+  }, [role, memberId]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  // 더미 데이터 폴백 (권한이 admin이 아니거나 로딩 중일 때 표시할 기본값)
-  const kpiCardsAdmin = [
+  /* ── KPI 카드 구성 (역할에 따라 다르게) ── */
+  const kpiCards = role === "admin" ? [
     { icon: "🏢", label: "공실 등록 물건", value: stats.vacanciesCount.toLocaleString(), sub: "전체 등록 공실", color: "#3b82f6", menu: "gongsil" },
     { icon: "👤", label: "전체 회원", value: stats.membersCount.toLocaleString(), sub: "전체 가입 회원", color: "#10b981", menu: "members" },
     { icon: "📰", label: "등록 기사", value: stats.articlesCount.toLocaleString(), sub: "전체 등록 기사", color: "#f59e0b", menu: "article" },
     { icon: "💬", label: "댓글 / 문의", value: stats.commentsCount.toLocaleString(), sub: "전체 댓글 및 문의", color: "#ef4444", menu: "comment" },
+  ] : [
+    { icon: "🏢", label: "내 공실 물건", value: stats.vacanciesCount.toLocaleString(), sub: "내가 등록한 공실", color: "#3b82f6", menu: "gongsil" },
+    { icon: "📰", label: "내 기사", value: stats.articlesCount.toLocaleString(), sub: "내가 작성한 기사", color: "#f59e0b", menu: "article" },
+    { icon: "💬", label: "받은 댓글", value: stats.commentsCount.toLocaleString(), sub: "내 글에 달린 댓글", color: "#ef4444", menu: "comment" },
   ];
 
   const quickLinks: QuickLink[] = [
-    { icon: <IconBuilding />, label: "공실 관리", count: stats.vacanciesCount, href: "?menu=gongsil" },
-    { icon: <IconArticle />, label: "기사 관리", count: stats.articlesCount, href: "?menu=article" },
-    ...(role === "admin" ? [{ icon: <IconMembers />, label: "회원 관리", count: stats.membersCount, href: "?menu=members" }] : []),
-    { icon: <SvgIcon strokeWidth={2}><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></SvgIcon>, label: "댓글 관리", count: stats.commentsCount, href: "?menu=comment" },
+    { icon: <IconBuilding />, label: "공실 관리", count: stats.vacanciesCount, menu: "gongsil" },
+    { icon: <IconArticle />, label: "기사 관리", count: stats.articlesCount, menu: "article" },
+    ...(role === "admin" ? [{ icon: <IconMembers />, label: "회원 관리", count: stats.membersCount, menu: "members" }] : []),
+    { icon: <SvgIcon strokeWidth={2}><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></SvgIcon>, label: "댓글 관리", count: stats.commentsCount, menu: "comment" },
   ];
 
   return (
@@ -91,7 +113,16 @@ export default function DashboardSection({ theme, role, agencyStatus, onMenuChan
           </div>
         </div>
       )}
-      
+      {role === "realtor" && agencyStatus === "REJECTED" && (
+        <div style={{ padding: "16px 20px", marginBottom: 24, borderRadius: 8, background: darkMode ? "#451a1a" : "#fef2f2", border: `1px solid ${darkMode ? "#7f1d1d" : "#fecaca"}`, display: "flex", gap: 12, alignItems: "flex-start", color: darkMode ? "#fca5a5" : "#b91c1c" }}>
+          <span style={{ fontSize: 20 }}>🚨</span>
+          <div>
+            <div style={{ fontWeight: 800, fontSize: 15, marginBottom: 4 }}>제출하신 서류의 보완이 필요합니다.</div>
+            <div style={{ fontSize: 13, opacity: 0.9 }}>제출된 서류가 미비하여 승인이 거절되었습니다. 좌측의 <strong>[정보설정]</strong> 메뉴로 이동하여 서류를 다시 첨부해 주시기 바랍니다.</div>
+          </div>
+        </div>
+      )}
+
       {/* 타이틀 */}
       <h1 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: "0 0 20px", display: "flex", alignItems: "center", gap: 10 }}>
         <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#3b82f6", display: "inline-block" }} />
@@ -103,8 +134,8 @@ export default function DashboardSection({ theme, role, agencyStatus, onMenuChan
       </h1>
 
       {/* KPI 카드 */}
-      <div style={{ display: "grid", gridTemplateColumns: `repeat(${kpiCardsAdmin.length}, 1fr)`, gap: 16, marginBottom: 24 }}>
-        {kpiCardsAdmin.map((card, i) => (
+      <div style={{ display: "grid", gridTemplateColumns: `repeat(${kpiCards.length}, 1fr)`, gap: 16, marginBottom: 24 }}>
+        {kpiCards.map((card, i) => (
           <div key={i} onClick={() => navigate(card.menu)} style={{ background: cardBg, borderRadius: 14, padding: "20px 22px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)", display: "flex", flexDirection: "column", borderLeft: `4px solid ${card.color}`, transition: "transform 0.2s, box-shadow 0.2s", cursor: "pointer" }}
             onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 6px 14px rgba(0,0,0,0.09)"; }}
             onMouseLeave={(e) => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.05)"; }}
@@ -117,12 +148,12 @@ export default function DashboardSection({ theme, role, agencyStatus, onMenuChan
         ))}
       </div>
 
-      {/* 중단: 최근 물건 + 최근 회원 */}
+      {/* 중단: 최근 물건 + 최근 회원/기사 */}
       <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 16, marginBottom: 24 }}>
         {/* 최근 등록 공실 물건 */}
         <div style={{ background: cardBg, borderRadius: 14, padding: 22, boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
           <div onClick={() => navigate("gongsil")} style={{ fontSize: 14, fontWeight: 700, color: darkMode ? "#e1e4e8" : "#374151", margin: "0 0 16px", display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-            🏠 최근 등록 공실 물건
+            🏠 {role === "admin" ? "최근 등록 공실 물건" : "내 최근 공실 물건"}
             <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 20, background: darkMode ? "#1e3a5f" : "#eff6ff", color: "#3b82f6", fontWeight: 600 }}>{recentVacancies.length}</span>
           </div>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
@@ -137,12 +168,12 @@ export default function DashboardSection({ theme, role, agencyStatus, onMenuChan
               {loading ? (
                 <tr><td colSpan={4} style={{ color: "#9ca3af", fontSize: 13, textAlign: "center", padding: 20 }}>로딩 중...</td></tr>
               ) : recentVacancies.length === 0 ? (
-                <tr><td colSpan={4} style={{ color: "#9ca3af", fontSize: 13, textAlign: "center", padding: 20 }}>최근 등록된 데이터가 없습니다.</td></tr>
+                <tr><td colSpan={4} style={{ color: "#9ca3af", fontSize: 13, textAlign: "center", padding: 20 }}>등록된 공실이 없습니다.</td></tr>
               ) : (
                 recentVacancies.map(v => (
                   <tr key={v.id} onClick={() => navigate("gongsil")} style={{ borderBottom: `1px solid ${darkMode ? "#333" : "#f3f4f6"}`, cursor: "pointer", transition: "background 0.15s" }} onMouseEnter={e => e.currentTarget.style.background = darkMode ? "#2c2d31" : "#f8fafc"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
                     <td style={{ padding: "10px", fontWeight: 600, color: textPrimary }}>{v.trade_type}</td>
-                    <td style={{ padding: "10px", color: textSecondary }}>{v.address ? v.address.split(' ').slice(0,2).join(' ') : '-'}</td>
+                    <td style={{ padding: "10px", color: textSecondary }}>{v.address ? v.address.split(' ').slice(0, 2).join(' ') : '-'}</td>
                     <td style={{ padding: "10px", color: "#3b82f6", fontWeight: 700 }}>{formatPrice(v.trade_type, v.price)}</td>
                     <td style={{ padding: "10px", color: "#9ca3af", fontSize: 12 }}>{formatTimeAgo(v.created_at)}</td>
                   </tr>
@@ -152,36 +183,60 @@ export default function DashboardSection({ theme, role, agencyStatus, onMenuChan
           </table>
         </div>
 
-        {/* 최근 가입 회원 (admin만) */}
+        {/* 최근 가입 회원 (admin) or 최근 기사 (realtor/user) */}
         <div style={{ background: cardBg, borderRadius: 14, padding: 22, boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
-          <div onClick={() => navigate("members")} style={{ fontSize: 14, fontWeight: 700, color: darkMode ? "#e1e4e8" : "#374151", margin: "0 0 16px", display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-            👥 최근 가입 회원
-            <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 20, background: darkMode ? "#1e3a5f" : "#eff6ff", color: "#3b82f6", fontWeight: 600 }}>{recentMembers.length}</span>
+          <div onClick={() => navigate(role === "admin" ? "members" : "article")} style={{ fontSize: 14, fontWeight: 700, color: darkMode ? "#e1e4e8" : "#374151", margin: "0 0 16px", display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+            {role === "admin" ? "👥 최근 가입 회원" : "📰 내 최근 기사"}
+            <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 20, background: darkMode ? "#1e3a5f" : "#eff6ff", color: "#3b82f6", fontWeight: 600 }}>{role === "admin" ? recentMembers.length : recentArticles.length}</span>
           </div>
-          <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
-            {loading ? (
-               <li style={{ padding: 20, textAlign: "center", color: "#9ca3af", fontSize: 13 }}>로딩 중...</li>
-            ) : recentMembers.length === 0 ? (
-               <li style={{ padding: 20, textAlign: "center", color: "#9ca3af", fontSize: 13 }}>가입한 회원이 없습니다.</li>
-            ) : (
-              recentMembers.map((m, i) => {
-                const roleInfo = formatRole(m.role);
-                return (
-                  <li key={m.id} onClick={() => navigate("members")} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 4px", borderBottom: i < recentMembers.length - 1 ? `1px solid ${darkMode ? "#333" : "#f3f4f6"}` : "none", fontSize: 13, cursor: "pointer", borderRadius: 6, transition: "background 0.15s" }} onMouseEnter={e => e.currentTarget.style.background = darkMode ? "#2c2d31" : "#f8fafc"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                    <div style={{ width: 34, height: 34, borderRadius: "50%", background: roleInfo.class === "realtor" ? "linear-gradient(135deg, #f59e0b, #d97706)" : "linear-gradient(135deg, #3b82f6, #6366f1)", color: "#fff", fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                      {m.name ? m.name[0] : "?"}
+
+          {role === "admin" ? (
+            /* 최고관리자: 최근 가입 회원 리스트 */
+            <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
+              {loading ? (
+                <li style={{ padding: 20, textAlign: "center", color: "#9ca3af", fontSize: 13 }}>로딩 중...</li>
+              ) : recentMembers.length === 0 ? (
+                <li style={{ padding: 20, textAlign: "center", color: "#9ca3af", fontSize: 13 }}>가입한 회원이 없습니다.</li>
+              ) : (
+                recentMembers.map((m, i) => {
+                  const roleInfo = formatRole(m.role);
+                  return (
+                    <li key={m.id} onClick={() => navigate("members")} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 4px", borderBottom: i < recentMembers.length - 1 ? `1px solid ${darkMode ? "#333" : "#f3f4f6"}` : "none", fontSize: 13, cursor: "pointer", borderRadius: 6, transition: "background 0.15s" }} onMouseEnter={e => e.currentTarget.style.background = darkMode ? "#2c2d31" : "#f8fafc"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                      <div style={{ width: 34, height: 34, borderRadius: "50%", background: roleInfo.class === "realtor" ? "linear-gradient(135deg, #f59e0b, #d97706)" : "linear-gradient(135deg, #3b82f6, #6366f1)", color: "#fff", fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        {m.name ? m.name[0] : "?"}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 600, color: textPrimary }}>{m.name || '이름없음'}</div>
+                        <div style={{ fontSize: 11, color: "#9ca3af" }}>{m.email}</div>
+                      </div>
+                      <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 4, background: roleInfo.class === "realtor" ? "#dbeafe" : roleInfo.class === "admin" ? "#dbeafe" : "#f3f4f6", color: roleInfo.class === "realtor" ? "#1d4ed8" : roleInfo.class === "admin" ? "#1d4ed8" : "#6b7280" }}>{roleInfo.label}</span>
+                      <span style={{ fontSize: 11, color: "#9ca3af", marginLeft: 6 }}>{formatTimeAgo(m.created_at)}</span>
+                    </li>
+                  );
+                })
+              )}
+            </ul>
+          ) : (
+            /* 부동산/일반: 내 최근 기사 리스트 */
+            <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
+              {loading ? (
+                <li style={{ padding: 20, textAlign: "center", color: "#9ca3af", fontSize: 13 }}>로딩 중...</li>
+              ) : recentArticles.length === 0 ? (
+                <li style={{ padding: 20, textAlign: "center", color: "#9ca3af", fontSize: 13 }}>작성한 기사가 없습니다.</li>
+              ) : (
+                recentArticles.map((a, i) => (
+                  <li key={a.id} onClick={() => navigate("article")} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 4px", borderBottom: i < recentArticles.length - 1 ? `1px solid ${darkMode ? "#333" : "#f3f4f6"}` : "none", fontSize: 13, cursor: "pointer", borderRadius: 6, transition: "background 0.15s" }} onMouseEnter={e => e.currentTarget.style.background = darkMode ? "#2c2d31" : "#f8fafc"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                    <div style={{ width: 34, height: 34, borderRadius: "50%", background: "linear-gradient(135deg, #f59e0b, #d97706)", color: "#fff", fontWeight: 700, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>📰</div>
+                    <div style={{ flex: 1, overflow: "hidden" }}>
+                      <div style={{ fontWeight: 600, color: textPrimary, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{a.title}</div>
+                      <div style={{ fontSize: 11, color: "#9ca3af" }}>조회 {a.views || 0}회</div>
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 600, color: textPrimary }}>{m.name || '이름없음'}</div>
-                      <div style={{ fontSize: 11, color: "#9ca3af" }}>{m.email}</div>
-                    </div>
-                    <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 4, background: roleInfo.class === "realtor" ? "#dbeafe" : roleInfo.class === "admin" ? "#dbeafe" : "#f3f4f6", color: roleInfo.class === "realtor" ? "#1d4ed8" : roleInfo.class === "admin" ? "#1d4ed8" : "#6b7280" }}>{roleInfo.label}</span>
-                    <span style={{ fontSize: 11, color: "#9ca3af", marginLeft: 6 }}>{formatTimeAgo(m.created_at)}</span>
+                    <span style={{ fontSize: 11, color: "#9ca3af", flexShrink: 0 }}>{formatTimeAgo(a.created_at)}</span>
                   </li>
-                );
-              })
-            )}
-          </ul>
+                ))
+              )}
+            </ul>
+          )}
         </div>
       </div>
 
@@ -192,7 +247,7 @@ export default function DashboardSection({ theme, role, agencyStatus, onMenuChan
           <div style={{ fontSize: 14, fontWeight: 700, color: darkMode ? "#e1e4e8" : "#374151", margin: "0 0 16px" }}>⚡ 바로가기</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {quickLinks.map((ql, i) => (
-              <a key={i} href={ql.href} style={{
+              <a key={i} onClick={() => navigate(ql.menu)} style={{
                 display: "flex", alignItems: "center", gap: 10,
                 padding: "11px 14px", borderRadius: 10, background: darkMode ? "#2c2d31" : "#f9fafb",
                 cursor: "pointer", textDecoration: "none", color: darkMode ? "#e1e4e8" : "#374151",
@@ -215,7 +270,7 @@ export default function DashboardSection({ theme, role, agencyStatus, onMenuChan
         {/* 최근 댓글 / 문의 */}
         <div style={{ background: cardBg, borderRadius: 14, padding: 22, boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
           <div onClick={() => navigate("comment")} style={{ fontSize: 14, fontWeight: 700, color: darkMode ? "#e1e4e8" : "#374151", margin: "0 0 16px", display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-            💬 최근 댓글 / 문의
+            💬 {role === "admin" ? "최근 댓글 / 문의" : "내 글에 달린 댓글"}
             <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 20, background: darkMode ? "#1e3a5f" : "#eff6ff", color: "#3b82f6", fontWeight: 600 }}>{recentComments.length}</span>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -225,8 +280,8 @@ export default function DashboardSection({ theme, role, agencyStatus, onMenuChan
               <div style={{ color: "#9ca3af", fontSize: 13, textAlign: "center", padding: 20 }}>댓글 없음</div>
             ) : (
               recentComments.map((c, i) => (
-                <div key={c.id || i} onClick={() => navigate("comment")} style={{ 
-                  display: "flex", flexDirection: "column", gap: 4, 
+                <div key={c.id || i} onClick={() => navigate("comment")} style={{
+                  display: "flex", flexDirection: "column", gap: 4,
                   padding: "10px 14px", borderRadius: 8, cursor: "pointer",
                   background: darkMode ? "#2c2d31" : "#f9fafb",
                   border: `1px solid ${darkMode ? "#444" : "#e5e7eb"}`,

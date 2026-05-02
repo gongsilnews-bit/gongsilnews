@@ -333,3 +333,83 @@ export async function adminGetDashboardData() {
     return { success: false, error: error.message };
   }
 }
+
+// ── 개별 회원용 대시보드 통계 조회 (본인 데이터만) ──
+export async function memberGetDashboardData(memberId: string) {
+  const supabaseAdmin = getAdminClient();
+  try {
+    // 본인의 공실 수
+    const { count: vacanciesCount } = await supabaseAdmin.from('vacancies')
+      .select('*', { count: 'exact', head: true })
+      .eq('owner_id', memberId);
+
+    // 본인의 기사 수
+    const { count: articlesCount } = await supabaseAdmin.from('articles')
+      .select('*', { count: 'exact', head: true })
+      .eq('author_id', memberId);
+
+    // 본인 글(기사/공실)에 달린 댓글 수 합산
+    // 1) 본인 기사 ID 조회 후 해당 기사에 달린 댓글
+    const { data: myArticles } = await supabaseAdmin.from('articles').select('id').eq('author_id', memberId);
+    const myArticleIds = (myArticles || []).map(a => a.id);
+    let articleCommentsCount = 0;
+    if (myArticleIds.length > 0) {
+      const { count } = await supabaseAdmin.from('article_comments').select('*', { count: 'exact', head: true }).in('article_id', myArticleIds);
+      articleCommentsCount = count || 0;
+    }
+
+    // 2) 본인 공실에 달린 댓글
+    const { data: myVacancies } = await supabaseAdmin.from('vacancies').select('id').eq('owner_id', memberId);
+    const myVacancyIds = (myVacancies || []).map(v => v.id);
+    let vacancyCommentsCount = 0;
+    if (myVacancyIds.length > 0) {
+      const { count } = await supabaseAdmin.from('vacancy_comments').select('*', { count: 'exact', head: true }).in('vacancy_id', myVacancyIds);
+      vacancyCommentsCount = count || 0;
+    }
+
+    const commentsCount = articleCommentsCount + vacancyCommentsCount;
+
+    // 최근 본인 공실 5개
+    const { data: recentVacancies } = await supabaseAdmin.from('vacancies')
+      .select('id, trade_type, address, price, contact, created_at')
+      .eq('owner_id', memberId)
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    // 최근 본인 기사 5개
+    const { data: recentArticles } = await supabaseAdmin.from('articles')
+      .select('id, title, views, created_at')
+      .eq('author_id', memberId)
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    // 본인 글에 달린 최근 댓글 5개
+    let comments: any[] = [];
+    if (myArticleIds.length > 0) {
+      const { data } = await supabaseAdmin.from('article_comments')
+        .select('id, content, created_at, article_id, is_secret')
+        .in('article_id', myArticleIds)
+        .order('created_at', { ascending: false }).limit(5);
+      comments.push(...(data || []).map(c => ({ ...c, type: 'article', sourceId: c.article_id })));
+    }
+    if (myVacancyIds.length > 0) {
+      const { data } = await supabaseAdmin.from('vacancy_comments')
+        .select('id, content, created_at, vacancy_id, is_secret')
+        .in('vacancy_id', myVacancyIds)
+        .order('created_at', { ascending: false }).limit(5);
+      comments.push(...(data || []).map(c => ({ ...c, type: 'vacancy', sourceId: c.vacancy_id })));
+    }
+    comments.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    const recentComments = comments.slice(0, 5);
+
+    return {
+      success: true,
+      stats: { vacanciesCount, membersCount: null, articlesCount, commentsCount },
+      recentVacancies: recentVacancies || [],
+      recentArticles: recentArticles || [],
+      recentComments
+    };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
