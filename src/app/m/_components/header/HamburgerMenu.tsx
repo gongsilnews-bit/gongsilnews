@@ -88,20 +88,23 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
   };
 
   const getRoleLabel = (role?: string) => {
-    if (role === 'ADMIN' || role === '최고관리자' || role === 'admin') return '최고관리자';
-    if (role === 'REALTOR' || role === '부동산회원' || role === 'realtor') return '부동산';
+    const r = role?.trim().toUpperCase() || '';
+    if (r === 'ADMIN' || r === '최고관리자' || r.includes('관리자')) return '최고관리자';
+    if (r === 'REALTOR' || r === '부동산회원' || r === '부동산' || r.includes('REALTOR')) return '부동산';
     return '일반';
   };
 
   const getRoleBadgeStyle = (role?: string): React.CSSProperties => {
-    if (role === 'ADMIN' || role === '최고관리자' || role === 'admin') return { background: '#111827', color: '#fff' };
-    if (role === 'REALTOR' || role === '부동산회원' || role === 'realtor') return { background: '#2563eb', color: '#fff' };
+    const r = role?.trim().toUpperCase() || '';
+    if (r === 'ADMIN' || r === '최고관리자' || r.includes('관리자')) return { background: '#111827', color: '#fff' };
+    if (r === 'REALTOR' || r === '부동산회원' || r === '부동산' || r.includes('REALTOR')) return { background: '#2563eb', color: '#fff' };
     return { background: '#e5e7eb', color: '#374151' };
   };
 
   const getAdminMenus = (role?: string) => {
-    const isAdmin = role === 'ADMIN' || role === '최고관리자' || role === 'admin';
-    const isRealtor = role === 'REALTOR' || role === '부동산회원' || role === 'realtor';
+    const r = role?.trim().toUpperCase() || '';
+    const isAdmin = r === 'ADMIN' || r === '최고관리자' || r.includes('관리자');
+    const isRealtor = r === 'REALTOR' || r === '부동산회원' || r === '부동산' || r.includes('REALTOR');
 
     const common = [
       { icon: '📊', label: '대시보드', href: isAdmin ? '/admin?menu=dashboard' : isRealtor ? '/realty_admin?menu=dashboard' : '/user_admin?menu=dashboard' },
