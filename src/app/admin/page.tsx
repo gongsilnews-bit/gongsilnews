@@ -29,7 +29,7 @@ const ADMIN_MENU: MenuItem[] = [
   { key: "gongsil", label: "공실관리", icon: <IconBuilding /> },
   { key: "article", label: "기사관리", icon: <IconArticle /> },
   { key: "comment", label: "댓글", icon: <IconComment /> },
-  { key: "study", label: "스터디관리", icon: <IconStudy /> },
+  { key: "study", label: "특강관리", icon: <IconStudy /> },
   { key: "board", label: "게시판", icon: <IconBoard /> },
   { key: "ad", label: "광고", icon: <IconAd /> },
   { key: "plugin", label: "부동산홈페이지", icon: <IconPlugin /> },

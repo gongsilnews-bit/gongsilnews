@@ -18,7 +18,7 @@ const MEMBER_MENU = [
   { key: "dashboard", label: "대시보드", icon: <IconDashboard /> },
   { key: "gongsil", label: "공실관리", icon: <IconBuilding /> },
   { key: "article", label: "기사관리", icon: <IconArticle /> },
-  { key: "study", label: "스터디관리", icon: <IconStudy /> },
+  { key: "study", label: "특강관리", icon: <IconStudy /> },
   { key: "customer", label: "고객관리", icon: <IconCustomer /> },
   { key: "comment", label: "댓글·문의", icon: <IconComment /> },
   { key: "manual", label: "매뉴얼", icon: <IconManual /> },

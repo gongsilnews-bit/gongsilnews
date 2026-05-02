@@ -104,7 +104,7 @@ export default function StudySection({ theme }: AdminSectionProps) {
   return (
     <div style={{ flex: 1, overflowY: "auto", padding: "20px 28px", background: bg }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 20 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: 0 }}>스터디목록 (강의관리)</h1>
+        <h1 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: 0 }}>특강목록 (강의관리)</h1>
         <span style={{ fontSize: 13, fontWeight: 600 }}>
           ( <span style={{ color: "#3b82f6" }}>총 {totalCount}건</span> / <span style={{ color: "#6b7280" }}>임시저장 {draftCount}건</span> / <span style={{ color: "#f59e0b" }}>판매중 {activeCount}건</span> )
         </span>
