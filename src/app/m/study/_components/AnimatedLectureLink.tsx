@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 
-export default function AnimatedLectureLink({ href, children }: { href: string; children: React.ReactNode }) {
+export default function AnimatedLectureLink({ href, children, className, style }: { href: string; children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
   const router = useRouter();
   const [isAnimating, setIsAnimating] = useState(false);
 
@@ -22,7 +22,7 @@ export default function AnimatedLectureLink({ href, children }: { href: string; 
 
   return (
     <>
-      <div onClick={handleClick} style={{ textDecoration: "none", display: "block", cursor: "pointer" }}>
+      <div onClick={handleClick} className={className} style={{ textDecoration: "none", display: "block", cursor: "pointer", ...style }}>
         {children}
       </div>
 
