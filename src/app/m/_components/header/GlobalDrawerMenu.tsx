@@ -180,12 +180,12 @@ export default function GlobalDrawerMenu() {
     const isAdmin = r === 'ADMIN' || r === '최고관리자' || r.includes('관리자');
     const isRealtor = r === 'REALTOR' || r === '부동산회원' || r === '부동산' || r.includes('REALTOR');
 
-    const common: any[] = [
-      { icon: '📊', label: '대시보드', desc: '활동 요약 및 통계', href: isAdmin ? '/admin?menu=dashboard' : isRealtor ? '/realty_admin?menu=dashboard' : '/user_admin?menu=dashboard' },
-      { icon: '🏢', label: '공실관리', desc: '등록한 공실 매물 관리', href: '/m/admin/vacancy', badgeCount: isAdmin ? pendingCounts.vacancies : 0 },
-      { icon: '📝', label: '기사관리', desc: '작성한 기사 관리', href: '/m/admin/article', badgeCount: isAdmin ? pendingCounts.articles : 0 },
-      { icon: '💰', label: '포인트', desc: '포인트 내역 및 충전', href: '/m/admin/point' },
-    ];
+    const dashboard = { icon: '📊', label: '대시보드', desc: '활동 요약 및 통계', href: isAdmin ? '/admin?menu=dashboard' : isRealtor ? '/realty_admin?menu=dashboard' : '/user_admin?menu=dashboard' };
+    const vacancy = { icon: '🏢', label: '공실관리', desc: '등록한 공실 매물 관리', href: '/m/admin/vacancy', badgeCount: isAdmin ? pendingCounts.vacancies : 0 };
+    const article = { icon: '📝', label: '기사관리', desc: '작성한 기사 관리', href: '/m/admin/article', badgeCount: isAdmin ? pendingCounts.articles : 0 };
+    const point = { icon: '💰', label: '포인트', desc: '포인트 내역 및 충전', href: '/m/admin/point' };
+    const member = { icon: '👥', label: '회원관리', desc: '전체 회원 관리', href: '/m/admin/member', badgeCount: isAdmin ? pendingCounts.members : 0 };
+
     const realtor: any[] = [
       { icon: '👥', label: '고객관리', desc: '상담 고객 목록', href: '/m/admin/customer' },
       { icon: '💬', label: '댓글', desc: '댓글 관리', href: '/m/admin/comment' },
@@ -193,7 +193,6 @@ export default function GlobalDrawerMenu() {
       { icon: '⚙️', label: '정보설정', desc: '내 정보 및 업소 설정', href: '/m/admin/settings' },
     ];
     const admin: any[] = [
-      { icon: '👥', label: '회원관리', desc: '전체 회원 관리', href: '/m/admin/member', badgeCount: isAdmin ? pendingCounts.members : 0 },
       { icon: '🖼️', label: '배너관리', desc: '광고 배너 관리', href: '/admin?menu=banner' },
       { icon: '📋', label: '게시판관리', desc: '게시판 관리', href: '/admin?menu=board' },
       { icon: '⚙️', label: '설정', desc: '시스템 설정', href: '/admin?menu=settings' },
@@ -203,9 +202,9 @@ export default function GlobalDrawerMenu() {
       { icon: '⚙️', label: '정보설정', desc: '내 프로필 정보 수정', href: '/m/admin/settings' },
     ];
 
-    if (isAdmin) return [...common, ...admin];
-    if (isRealtor) return [...common, ...realtor];
-    return [...common, ...user];
+    if (isAdmin) return [dashboard, member, vacancy, article, point, ...admin];
+    if (isRealtor) return [dashboard, vacancy, article, point, ...realtor];
+    return [dashboard, vacancy, article, point, ...user];
   };
 
   const menus = getAdminMenus(memberData?.role);
