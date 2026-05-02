@@ -1,6 +1,7 @@
 import React from "react";
 import MobileBottomNav from "./_components/MobileBottomNav";
 import PopupBanner from "@/components/PopupBanner";
+import GlobalDrawerMenu from './_components/header/GlobalDrawerMenu';
 
 export const metadata = {
   title: "공실뉴스 (모바일)",
@@ -47,7 +48,8 @@ export default function MobileLayout({ children }: { children: React.ReactNode }
         {children}
       </main>
 
-      {/* 공통 하단 탭바 */}
+      {/* 공통 하단 탭바 및 전역 드로어 */}
+      <GlobalDrawerMenu />
       <MobileBottomNav />
       <PopupBanner />
     </div>

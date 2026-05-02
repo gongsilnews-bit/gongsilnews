@@ -25,12 +25,13 @@ export default function HomeHeader({
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const router = useRouter();
 
-  // 로그인 성공 시 돌아오면 자동으로 마이페이지로 이동
+  // 로그인 성공 시 돌아오면 자동으로 메뉴 열기
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('login') === 'success') {
       const timer = setTimeout(() => {
-        router.push('/m/mypage');
+        window.dispatchEvent(new Event('open-drawer'));
+        window.history.replaceState({}, '', '/m');
       }, 500);
       return () => clearTimeout(timer);
     }
@@ -77,14 +78,14 @@ export default function HomeHeader({
             </svg>
           </button>
 
-          {/* 햄버거 메뉴 아이콘 (마이페이지로 이동) */}
-          <Link href="/m/mypage" style={{ padding: 0, background: 'none', border: 'none', cursor: 'pointer', display: 'flex' }}>
+          {/* 햄버거 메뉴 아이콘 (드로어 열기) */}
+          <button onClick={() => window.dispatchEvent(new Event('open-drawer'))} style={{ padding: 0, background: 'none', border: 'none', cursor: 'pointer', display: 'flex' }}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="3" y1="12" x2="21" y2="12"></line>
               <line x1="3" y1="6" x2="21" y2="6"></line>
               <line x1="3" y1="18" x2="21" y2="18"></line>
             </svg>
-          </Link>
+          </button>
         </div>
       </header>
 

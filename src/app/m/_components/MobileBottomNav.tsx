@@ -92,15 +92,15 @@ export default function MobileBottomNav() {
           const isActive = pathname === item.path || 
             (item.path !== "/m" && pathname.startsWith(item.path.split('?')[0]));
 
-          return (
-            <Link
+          return item.name === "마이" ? (
+            <button
               key={item.name}
-              href={item.path}
-              className="flex flex-col items-center justify-center w-full h-full"
-              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', position: 'relative' }}
+              onClick={() => window.dispatchEvent(new Event('open-drawer'))}
+              className="flex flex-col items-center justify-center w-full h-full cursor-pointer"
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', position: 'relative', background: 'none', border: 'none', padding: 0 }}
             >
               <span className={`text-xl mb-1 ${isActive ? "opacity-100 scale-110" : "opacity-50 grayscale"} transition-all duration-200`} style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {item.name === "마이" && profileImg ? (
+                {profileImg ? (
                   <div style={{ width: 24, height: 24, borderRadius: '50%', overflow: 'hidden', border: isActive ? '2px solid #1a2e50' : '1px solid #ccc' }}>
                     <img src={profileImg} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   </div>
@@ -109,7 +109,7 @@ export default function MobileBottomNav() {
                 )}
                 
                 {/* Unread Message Badge */}
-                {item.name === "마이" && unreadCount > 0 && (
+                {unreadCount > 0 && (
                   <span style={{
                     position: 'absolute',
                     top: -4,
@@ -130,6 +130,20 @@ export default function MobileBottomNav() {
                     {unreadCount > 99 ? '99+' : unreadCount}
                   </span>
                 )}
+              </span>
+              <span className={`text-[10px] font-bold ${isActive ? "text-[#1a2e50]" : "text-gray-400"}`}>
+                {item.name}
+              </span>
+            </button>
+          ) : (
+            <Link
+              key={item.name}
+              href={item.path}
+              className="flex flex-col items-center justify-center w-full h-full"
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', position: 'relative' }}
+            >
+              <span className={`text-xl mb-1 ${isActive ? "opacity-100 scale-110" : "opacity-50 grayscale"} transition-all duration-200`} style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {item.icon}
               </span>
               <span className={`text-[10px] font-bold ${isActive ? "text-[#1a2e50]" : "text-gray-400"}`}>
                 {item.name}

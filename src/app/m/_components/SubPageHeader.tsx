@@ -41,14 +41,14 @@ export default function SubPageHeader({ title }: SubPageHeaderProps) {
           </span>
         )}
 
-        {/* 우측 햄버거 메뉴 (마이페이지로 이동) */}
-        <Link href="/m/mypage" style={{ padding: '4px', background: 'none', border: 'none', cursor: 'pointer', display: 'flex' }}>
+        {/* 우측 햄버거 메뉴 (드로어 열기) */}
+        <button onClick={() => window.dispatchEvent(new Event('open-drawer'))} style={{ padding: '4px', background: 'none', border: 'none', cursor: 'pointer', display: 'flex' }}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <line x1="3" y1="12" x2="21" y2="12"></line>
             <line x1="3" y1="6" x2="21" y2="6"></line>
             <line x1="3" y1="18" x2="21" y2="18"></line>
           </svg>
-        </Link>
+        </button>
       </header>
     </>
   );
