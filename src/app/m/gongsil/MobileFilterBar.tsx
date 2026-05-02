@@ -75,6 +75,9 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
   const commissionLabel = filters.commissionType === '공동중개' ? '공동중개' : filters.commissionType === '100' ? '100%(법정)' : filters.commissionType ? `${filters.commissionType}%~` : '중개보수';
   const themeLabel = filters.themes.length > 0 ? `테마 ${filters.themes.length}개` : '테마';
 
+  const priceLabel = (filters.priceMin || filters.priceMax) ? `${filters.priceMin ? `${filters.priceMin >= 10000 ? `${filters.priceMin / 10000}억` : `${filters.priceMin}만`}` : ""}~${filters.priceMax ? `${filters.priceMax >= 10000 ? `${filters.priceMax / 10000}억` : `${filters.priceMax}만`}` : ""}` : "가격대";
+  const areaLabel = (filters.areaMin || filters.areaMax) ? `${filters.areaMin || ""}~${filters.areaMax || ""}평` : "면적";
+
   const pillStyle = (active: boolean): React.CSSProperties => ({
     padding: "7px 14px", borderRadius: "20px", fontSize: "13px", fontWeight: 600, whiteSpace: "nowrap", flexShrink: 0,
     border: active ? "1.5px solid #4b89ff" : "1px solid #d1d5db",
@@ -132,10 +135,10 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
               {filters.tradeTypes.length > 0 ? filters.tradeTypes.join(", ") : "거래방식"} ▾
             </button>
             <button onClick={() => setActivePanel(activePanel === "price" ? null : "price")} style={pillStyle(activePanel === "price" || filters.priceMin !== null || filters.priceMax !== null)}>
-              가격 ▾
+              {priceLabel} ▾
             </button>
             <button onClick={() => setActivePanel(activePanel === "area" ? null : "area")} style={pillStyle(activePanel === "area" || filters.areaMin !== null || filters.areaMax !== null)}>
-              면적 ▾
+              {areaLabel} ▾
             </button>
             <button onClick={() => setActivePanel(activePanel === "floor" ? null : "floor")} style={pillStyle(activePanel === "floor" || filters.floor !== null)}>
               {filters.floor || "층수"} ▾

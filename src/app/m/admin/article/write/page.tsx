@@ -85,6 +85,11 @@ function MobileArticleWrite() {
           const d = res.data;
           setTitle(d.title || "");
           setSubtitle(d.subtitle || "");
+          setSection1(d.section1 || "");
+          setSection2(d.section2 || "");
+          if (d.keywords) {
+            setKeywords(Array.isArray(d.keywords) ? d.keywords : d.keywords.split(',').map((k: string) => k.trim()).filter(Boolean));
+          }
           // 영상 추출
           const vids: any[] = [];
           let htmlContent = d.content || "";
