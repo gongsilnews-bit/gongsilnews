@@ -351,7 +351,7 @@ export default function MobileStudyReadClient({ initialLecture }: { initialLectu
 
         <div id="creator" style={{ paddingTop: 24, paddingBottom: 24 }}>
           <h2 style={{ fontSize: 18, fontWeight: 800, color: "#1a1a1a", marginBottom: 16 }}>크리에이터 소개</h2>
-          <div style={{ position: "relative", maxHeight: expandedSections["creator"] ? "none" : 200, overflow: "hidden", transition: "max-height 0.3s ease" }}>
+          <div>
             <div style={{ padding: 20, background: "#fafafa", borderRadius: 12 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
                 <div style={{ width: 56, height: 56, borderRadius: "50%", overflow: "hidden", background: "#e4e4e4", flexShrink: 0 }}>
@@ -368,14 +368,7 @@ export default function MobileStudyReadClient({ initialLecture }: { initialLectu
                 <div style={{ fontSize: 13, color: "#999" }}>강사 소개가 준비 중입니다.</div>
               )}
             </div>
-            {!expandedSections["creator"] && (
-              <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 80, background: "linear-gradient(transparent, #fff)" }} />
-            )}
           </div>
-          <button onClick={() => toggleSection("creator")} style={{ width: "100%", padding: 12, marginTop: 8, borderRadius: 8, border: "1px solid #e8e8e8", background: "#fff", fontSize: 13, fontWeight: 600, color: "#555", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
-            <span style={{ fontSize: 16, transform: expandedSections["creator"] ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.2s" }}>▾</span>
-            {expandedSections["creator"] ? "숨기기" : "더보기"}
-          </button>
         </div>
       </div>
 
