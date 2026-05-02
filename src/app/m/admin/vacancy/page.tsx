@@ -3,7 +3,7 @@
 import React, { useState, useEffect, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
-import { getVacancies, updateVacancyStatus, deleteVacancy } from "@/app/actions/vacancy";
+import { getVacancies, updateVacancyStatus, deleteVacancy, updateVacancy } from "@/app/actions/vacancy";
 
 function MobileVacancyAdmin() {
   const router = useRouter();
@@ -15,6 +15,7 @@ function MobileVacancyAdmin() {
   const [userPhone, setUserPhone] = useState("");
   const [authChecked, setAuthChecked] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [searchKeyword, setSearchKeyword] = useState("");
   const [activeKeyword, setActiveKeyword] = useState("");
 
@@ -23,11 +24,14 @@ function MobileVacancyAdmin() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.push("/m"); return; }
-      const { data } = await supabase.from("members").select("id, name, phone").eq("id", user.id).single();
+      const { data } = await supabase.from("members").select("id, name, phone, role").eq("id", user.id).single();
       if (data) {
         setMemberId(data.id);
         setUserName(data.name || "이름없음");
         setUserPhone(data.phone || "");
+        if (data.role === 'ADMIN' || data.role === 'SUPER_ADMIN' || data.role === '최고관리자') {
+          setIsAdmin(true);
+        }
       }
       setAuthChecked(true);
     }
@@ -254,7 +258,26 @@ function MobileVacancyAdmin() {
               )}
 
               {/* 액션 버튼 */}
-              <div style={{ display: "flex", gap: 6 }}>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {isAdmin && row.status === "PENDING" && (
+                  <>
+                    <button onClick={async () => {
+                      if (!confirm("이 공실을 승인하시겠습니까?")) return;
+                      const res = await updateVacancyStatus(row.id, "ACTIVE");
+                      if (res.success) { alert("승인되었습니다."); fetchVacancies(); }
+                    }} style={{ flex: 1, minWidth: "45%", height: 36, background: "#10b981", color: "#fff", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                      ✅ 승인
+                    </button>
+                    <button onClick={async () => {
+                      const reason = prompt("반려 사유를 입력해주세요:");
+                      if (reason === null) return;
+                      const res = await updateVacancy(row.id, { status: "REJECTED", reject_reason: reason });
+                      if (res.success) { alert("반려되었습니다."); fetchVacancies(); }
+                    }} style={{ flex: 1, minWidth: "45%", height: 36, background: "#ef4444", color: "#fff", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                      ❌ 반려
+                    </button>
+                  </>
+                )}
                 {row.status === "REJECTED" && (
                   <button onClick={async () => {
                     if (!confirm("이 공실을 재승인 신청하시겠습니까?")) return;

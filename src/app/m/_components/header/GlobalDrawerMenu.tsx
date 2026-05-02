@@ -9,6 +9,7 @@ export default function GlobalDrawerMenu() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [memberData, setMemberData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [pendingCounts, setPendingCounts] = useState({ vacancies: 0, articles: 0, members: 0 });
   const searchParams = useSearchParams();
   const router = useRouter();
   const isOpen = searchParams.get('menu') === 'open';
@@ -84,7 +85,23 @@ export default function GlobalDrawerMenu() {
             .select('name, email, role, profile_image_url, plan_type, signup_completed')
             .eq('id', user.id)
             .single();
-          if (data) setMemberData(data);
+          if (data) {
+            setMemberData(data);
+            const r = data.role?.trim().toUpperCase() || '';
+            const isAdmin = r === 'ADMIN' || r === '최고관리자' || r.includes('관리자');
+            if (isAdmin) {
+              const [
+                { count: vCount },
+                { count: aCount },
+                { count: mCount }
+              ] = await Promise.all([
+                supabase.from('vacancies').select('*', { count: 'exact', head: true }).eq('status', 'PENDING'),
+                supabase.from('articles').select('*', { count: 'exact', head: true }).eq('status', 'PENDING'),
+                supabase.from('agencies').select('*', { count: 'exact', head: true }).eq('status', 'PENDING')
+              ]);
+              setPendingCounts({ vacancies: vCount || 0, articles: aCount || 0, members: mCount || 0 });
+            }
+          }
         } else {
           setCurrentUser(null);
           setMemberData(null);
@@ -163,25 +180,25 @@ export default function GlobalDrawerMenu() {
     const isAdmin = r === 'ADMIN' || r === '최고관리자' || r.includes('관리자');
     const isRealtor = r === 'REALTOR' || r === '부동산회원' || r === '부동산' || r.includes('REALTOR');
 
-    const common = [
+    const common: any[] = [
       { icon: '📊', label: '대시보드', desc: '활동 요약 및 통계', href: isAdmin ? '/admin?menu=dashboard' : isRealtor ? '/realty_admin?menu=dashboard' : '/user_admin?menu=dashboard' },
-      { icon: '🏢', label: '공실관리', desc: '등록한 공실 매물 관리', href: '/m/admin/vacancy' },
-      { icon: '📝', label: '기사관리', desc: '작성한 기사 관리', href: '/m/admin/article' },
+      { icon: '🏢', label: '공실관리', desc: '등록한 공실 매물 관리', href: '/m/admin/vacancy', badgeCount: isAdmin ? pendingCounts.vacancies : 0 },
+      { icon: '📝', label: '기사관리', desc: '작성한 기사 관리', href: '/m/admin/article', badgeCount: isAdmin ? pendingCounts.articles : 0 },
       { icon: '💰', label: '포인트', desc: '포인트 내역 및 충전', href: '/m/admin/point' },
     ];
-    const realtor = [
+    const realtor: any[] = [
       { icon: '👥', label: '고객관리', desc: '상담 고객 목록', href: '/m/admin/customer' },
       { icon: '💬', label: 'TALK', desc: '채팅 및 문의 관리', href: '/realty_admin?menu=comment' },
       { icon: '🌐', label: '홈페이지', desc: '미니 홈페이지 관리', href: '/realty_admin?menu=homepage' },
       { icon: '⚙️', label: '정보설정', desc: '내 정보 및 업소 설정', href: '/m/admin/settings' },
     ];
-    const admin = [
-      { icon: '👥', label: '회원관리', desc: '전체 회원 관리', href: '/admin?menu=member' },
+    const admin: any[] = [
+      { icon: '👥', label: '회원관리', desc: '전체 회원 관리', href: '/admin?menu=member', badgeCount: isAdmin ? pendingCounts.members : 0 },
       { icon: '🖼️', label: '배너관리', desc: '광고 배너 관리', href: '/admin?menu=banner' },
       { icon: '📋', label: '게시판관리', desc: '게시판 관리', href: '/admin?menu=board' },
       { icon: '⚙️', label: '설정', desc: '시스템 설정', href: '/admin?menu=settings' },
     ];
-    const user = [
+    const user: any[] = [
       { icon: '⚙️', label: '정보설정', desc: '내 프로필 정보 수정', href: '/m/admin/settings' },
     ];
 
@@ -333,18 +350,26 @@ export default function GlobalDrawerMenu() {
             <div style={{ padding: '16px', background: '#fff', marginBottom: '8px' }}>
               <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#6b7280', marginBottom: '12px', padding: '0 4px' }}>관리 메뉴</h3>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
-                {menus.map((item) => (
+                {menus.map((item: any) => (
                   <Link
                     key={item.label}
                     href={item.href}
                     
                     style={{
+                      position: 'relative',
                       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                       padding: '14px 4px 10px', background: '#f8f9fb', borderRadius: '12px',
                       textDecoration: 'none', transition: 'all 0.15s',
                     }}
                   >
-                    <span style={{ fontSize: '24px', marginBottom: '6px' }}>{item.icon}</span>
+                    <span style={{ fontSize: '24px', marginBottom: '6px', position: 'relative' }}>
+                      {item.icon}
+                      {item.badgeCount ? (
+                        <span style={{ position: 'absolute', top: -6, right: -12, background: '#f97316', color: '#fff', fontSize: 10, fontWeight: 800, padding: '2px 5px', borderRadius: 10, lineHeight: 1 }}>
+                          {item.badgeCount > 99 ? '99+' : item.badgeCount}
+                        </span>
+                      ) : null}
+                    </span>
                     <span style={{ fontSize: '11px', fontWeight: 600, color: '#374151', textAlign: 'center', lineHeight: 1.3, wordBreak: 'keep-all' }}>{item.label}</span>
                   </Link>
                 ))}

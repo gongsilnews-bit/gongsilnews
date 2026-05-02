@@ -181,7 +181,7 @@ export async function getVacancies(options?: {
     // 역할별 필터
     if (options?.ownerId && !options?.all) {
       const { data: user } = await supabase.from('members').select('role').eq('id', options.ownerId).single();
-      if (user?.role !== 'SUPER_ADMIN') {
+      if (user?.role !== 'SUPER_ADMIN' && user?.role !== 'ADMIN' && user?.role !== '최고관리자') {
         query = query.eq('owner_id', options.ownerId);
       }
     }
