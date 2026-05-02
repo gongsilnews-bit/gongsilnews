@@ -1,22 +1,13 @@
-"use client";
-
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import HomeHeader from '../_components/HomeHeader';
 import { getLectures } from '@/app/actions/lecture';
 
-export default function MobileStudyPage() {
-  const [lectures, setLectures] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+export const dynamic = 'force-dynamic';
 
-  useEffect(() => {
-    const fetchLectures = async () => {
-      const res = await getLectures({ status: "ACTIVE" });
-      if (res.success && res.data) setLectures(res.data);
-      setLoading(false);
-    };
-    fetchLectures();
-  }, []);
+export default async function MobileStudyPage() {
+  const res = await getLectures({ status: "ACTIVE" });
+  const lectures = res.success && res.data ? res.data : [];
 
   return (
     <div style={{ width: '100%', backgroundColor: '#f8f9fa', minHeight: '100vh', paddingBottom: '40px', paddingTop: '50px' }}>
@@ -42,12 +33,10 @@ export default function MobileStudyPage() {
 
       {/* 특강 리스트 */}
       <div style={{ padding: '0 16px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-        {loading ? (
-          <div style={{ textAlign: 'center', padding: '40px 0', color: '#999' }}>⏳ 강의를 불러오는 중...</div>
-        ) : lectures.length === 0 ? (
+        {lectures.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '40px 0', color: '#999' }}>등록된 강의가 없습니다.</div>
         ) : (
-          lectures.map((lecture) => (
+          lectures.map((lecture: any) => (
             <Link key={lecture.id} href={`/m/study_read?id=${lecture.id}`} style={{ textDecoration: 'none' }}>
               <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)', border: '1px solid #f3f4f6', cursor: 'pointer' }}>
                 
