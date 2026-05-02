@@ -39,7 +39,9 @@ function MobileVacancyWrite() {
 
   // 면적/층
   const [exclusiveM2, setExclusiveM2] = useState("");
+  const [exclusivePy, setExclusivePy] = useState("");
   const [supplyM2, setSupplyM2] = useState("");
+  const [supplyPy, setSupplyPy] = useState("");
   const [areaUnit, setAreaUnit] = useState<"m2"|"py">("m2");
   const [currentFloor, setCurrentFloor] = useState("");
   const [totalFloor, setTotalFloor] = useState("");
@@ -111,8 +113,14 @@ function MobileVacancyWrite() {
         if (d.deposit) setDeposit(String(d.deposit / 10000));
         if (d.monthly_rent) setMonthly(String(d.monthly_rent / 10000));
         if (d.maintenance_fee) setMaintenance(String(d.maintenance_fee / 10000));
-        if (d.exclusive_m2) setExclusiveM2(String(d.exclusive_m2));
-        if (d.supply_m2) setSupplyM2(String(d.supply_m2));
+        if (d.exclusive_m2) {
+          setExclusiveM2(String(d.exclusive_m2));
+          setExclusivePy((Number(d.exclusive_m2) * 0.3025).toFixed(1));
+        }
+        if (d.supply_m2) {
+          setSupplyM2(String(d.supply_m2));
+          setSupplyPy((Number(d.supply_m2) * 0.3025).toFixed(1));
+        }
         if (d.current_floor) setCurrentFloor(d.current_floor);
         if (d.total_floor) setTotalFloor(d.total_floor);
         if (d.room_count) setRoomCount(String(d.room_count));
@@ -144,6 +152,25 @@ function MobileVacancyWrite() {
       setLoadingEdit(false);
     })();
   }, [editId]);
+
+  // 면적 자동 변환
+  const handleM2Change = useCallback((val: string, setter: (v: string) => void, pySetter: (v: string) => void) => {
+    setter(val);
+    if (val && !isNaN(Number(val))) {
+      pySetter((Number(val) * 0.3025).toFixed(1));
+    } else {
+      pySetter("");
+    }
+  }, []);
+
+  const handlePyChange = useCallback((val: string, pySetter: (v: string) => void, m2Setter: (v: string) => void) => {
+    pySetter(val);
+    if (val && !isNaN(Number(val))) {
+      m2Setter((Number(val) / 0.3025).toFixed(1));
+    } else {
+      m2Setter("");
+    }
+  }, []);
 
   // 다이나믹 옵션 관리
   const currentOptionList = React.useMemo(() => {
@@ -396,17 +423,17 @@ function MobileVacancyWrite() {
             <div style={{flex:1}}>
               <label style={labelStyle}>전용면적({areaUnit==="m2"?"m²":"평"})</label>
               {areaUnit==="m2" ? (
-                <input type="number" value={exclusiveM2} onChange={e=>setExclusiveM2(e.target.value)} placeholder="59" style={inputStyle}/>
+                <input type="number" value={exclusiveM2} onChange={e=>handleM2Change(e.target.value, setExclusiveM2, setExclusivePy)} placeholder="59" style={inputStyle}/>
               ) : (
-                <input type="number" value={exclusiveM2 ? (parseFloat(exclusiveM2)*0.3025).toFixed(1) : ""} onChange={e=>{ const py=e.target.value; setExclusiveM2(py ? (parseFloat(py)/0.3025).toFixed(1) : ""); }} placeholder="17.8" style={inputStyle}/>
+                <input type="number" value={exclusivePy} onChange={e=>handlePyChange(e.target.value, setExclusivePy, setExclusiveM2)} placeholder="17.8" style={inputStyle}/>
               )}
             </div>
             <div style={{flex:1}}>
               <label style={labelStyle}>공급면적({areaUnit==="m2"?"m²":"평"})</label>
               {areaUnit==="m2" ? (
-                <input type="number" value={supplyM2} onChange={e=>setSupplyM2(e.target.value)} placeholder="84" style={inputStyle}/>
+                <input type="number" value={supplyM2} onChange={e=>handleM2Change(e.target.value, setSupplyM2, setSupplyPy)} placeholder="84" style={inputStyle}/>
               ) : (
-                <input type="number" value={supplyM2 ? (parseFloat(supplyM2)*0.3025).toFixed(1) : ""} onChange={e=>{ const py=e.target.value; setSupplyM2(py ? (parseFloat(py)/0.3025).toFixed(1) : ""); }} placeholder="25.4" style={inputStyle}/>
+                <input type="number" value={supplyPy} onChange={e=>handlePyChange(e.target.value, setSupplyPy, setSupplyM2)} placeholder="25.4" style={inputStyle}/>
               )}
             </div>
           </div>
