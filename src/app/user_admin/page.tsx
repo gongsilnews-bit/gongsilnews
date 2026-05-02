@@ -179,7 +179,7 @@ function UserAdminContent() {
         </header>
 
         <Suspense fallback={<AdminLoadingFallback />}>
-          {activeMenu === "dashboard" && <DashboardSection theme={theme} role="user" />}
+          {activeMenu === "dashboard" && <DashboardSection theme={theme} role="user" memberId={memberId || undefined} onMenuChange={(menu) => { setActiveMenu(menu); router.push(`?menu=${menu}`, { scroll: false }); }} />}
           {activeMenu === "gongsil" && memberId && <VacancySection theme={theme} role="user" ownerId={memberId} ownerName={userName !== "로딩중..." ? userName : ""} ownerPhone={userPhone} initialData={prefetchedData["gongsil"]} />}
           {activeMenu === "article" && memberId && <MemberArticleSection theme={theme} memberId={memberId} memberName={userName} memberEmail={userEmail || undefined} role="user" />}
           {activeMenu === "point" && memberId && <MyPointSection theme={theme} memberId={memberId} role="user" />}
