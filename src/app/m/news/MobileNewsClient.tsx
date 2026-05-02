@@ -745,20 +745,22 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
             <AuthorProfileHeader profile={authorProfile || { name: initialAuthorName, role: 'REALTOR', profile_image_url: null }} />
           )}
 
-          {/* Keyword Search Result Header */}
+          {/* Keyword Search Result Header (Tab UI) */}
           {(initialKeyword || searchParams.get("keyword")) && (
-            <div style={{ padding: "20px 16px 8px", background: "#fff", display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
-              <span style={{ fontSize: "18px", fontWeight: 800, color: "#111" }}>#{initialKeyword || searchParams.get("keyword")}</span>
-              <span style={{ fontSize: "16px", fontWeight: 600, color: "#333" }}>관련기사</span>
-              <span style={{ fontSize: "16px", fontWeight: 800, color: "#508bf5" }}>{articles.length}</span>
-              <span style={{ fontSize: "16px", fontWeight: 600, color: "#333", marginRight: "4px" }}>건,</span>
+            <div style={{ background: "#fff", display: "flex", flexDirection: "column", borderBottom: "1px solid #eee" }}>
+              <div style={{ padding: "16px 16px 12px" }}>
+                <span style={{ fontSize: "18px", fontWeight: 800, color: "#111" }}>#{initialKeyword || searchParams.get("keyword")}</span>
+                <span style={{ fontSize: "15px", fontWeight: 600, color: "#666", marginLeft: "6px" }}>검색결과</span>
+              </div>
               
-              <Link href={`/m/gongsil?keyword=${initialKeyword || searchParams.get("keyword")}`} style={{ display: "flex", alignItems: "center", gap: "6px", textDecoration: "none" }}>
-                <span style={{ fontSize: "16px", fontWeight: 600, color: "#333" }}>관련공실</span>
-                <span style={{ fontSize: "16px", fontWeight: 800, color: "#f97316" }}>{vacancyCount}</span>
-                <span style={{ fontSize: "16px", fontWeight: 600, color: "#333" }}>건</span>
-                <span style={{ fontSize: "14px", color: "#666" }}>&gt;</span>
-              </Link>
+              <div style={{ display: "flex" }}>
+                <div style={{ flex: 1, textAlign: "center", padding: "12px 0", fontSize: "15px", fontWeight: 800, color: "#111", borderBottom: "3px solid #111" }}>
+                  관련기사 <span style={{ color: "#508bf5" }}>{articles.length}</span>
+                </div>
+                <Link href={`/m/gongsil?keyword=${initialKeyword || searchParams.get("keyword")}`} style={{ flex: 1, textAlign: "center", padding: "12px 0", fontSize: "15px", fontWeight: 600, color: "#888", borderBottom: "3px solid transparent", textDecoration: "none" }}>
+                  관련공실 <span style={{ color: "#f97316" }}>{vacancyCount}</span>
+                </Link>
+              </div>
             </div>
           )}
 
