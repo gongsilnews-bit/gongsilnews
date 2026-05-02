@@ -126,7 +126,8 @@ function StudyWatchContent() {
   const embedUrl = activeLesson?.video_url ? toEmbed(activeLesson.video_url) : "";
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100vh", fontFamily: "'Pretendard Variable', -apple-system, sans-serif", background: bg, overflow: "hidden" }}>
+    <div style={{ display: "flex", justifyContent: "center", background: darkMode ? "#000" : "#f1f5f9", height: "100vh", overflow: "hidden", fontFamily: "'Pretendard Variable', -apple-system, sans-serif" }}>
+      <div style={{ width: "100%", maxWidth: 1500, display: "flex", flexDirection: "column", background: bg, boxShadow: darkMode ? "0 0 40px rgba(0,0,0,0.5)" : "0 0 40px rgba(0,0,0,0.08)", position: "relative" }}>
 
       {/* ═══ 상단 헤더 ═══ */}
       <header style={{
@@ -350,6 +351,7 @@ function StudyWatchContent() {
             ))}
           </div>
         </aside>
+      </div>
       </div>
     </div>
   );
