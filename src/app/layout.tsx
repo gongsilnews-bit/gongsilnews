@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   description: "11만 부동산을 위한 무료 정보 채널. 실시간 공실 정보, 부동산 뉴스, 시세 분석을 제공합니다.",
   metadataBase: new URL("https://gongsilnews.com"),
   icons: {
-    icon: '/favicon.png',
+    icon: '/new_logo.png',
     apple: '/apple-icon.png',
   },
   openGraph: {

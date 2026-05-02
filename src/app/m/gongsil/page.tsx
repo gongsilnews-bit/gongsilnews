@@ -257,7 +257,7 @@ function MobileGongsilContent() {
       content: {
         title: selectedVacancy.building_name || [selectedVacancy.dong, selectedVacancy.sigungu].filter(Boolean).join(" ") || "매물 상세",
         description: `${selectedVacancy.trade_type} ${formatPrice(selectedVacancy)}`,
-        imageUrl: selectedVacancy.images?.[0] || "https://gongsilnews.com/favicon.png",
+        imageUrl: selectedVacancy.images?.[0] || "https://gongsilnews.com/new_logo.png",
         link: { mobileWebUrl: shareUrl, webUrl: shareUrl },
       },
       buttons: [{ title: "매물 보기", link: { mobileWebUrl: shareUrl, webUrl: shareUrl } }],
