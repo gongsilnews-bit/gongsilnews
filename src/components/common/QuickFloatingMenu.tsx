@@ -11,7 +11,7 @@ export default function QuickFloatingMenu() {
       </div>
       <div
         className="qm-item"
-        onClick={() => window.open("https://pf.kakao.com/_xnxaxbxj/chat", "_blank")}
+        onClick={() => window.open("https://pf.kakao.com/_ckHkG/chat", "_blank")}
         style={{ cursor: "pointer" }}
       >
         <span>💬</span>카카오톡문의
