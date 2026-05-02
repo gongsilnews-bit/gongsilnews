@@ -7,12 +7,12 @@ interface Props {
 }
 
 const PRESETS = [
-  { label: '10평대', min: 10, max: 20 },
-  { label: '20평대', min: 20, max: 30 },
-  { label: '30평대', min: 30, max: 40 },
-  { label: '40평대', min: 40, max: 50 },
-  { label: '50평대', min: 50, max: 60 },
-  { label: '60평 이상', min: 60, max: null }
+  { label: '10평', val: 10 },
+  { label: '20평', val: 20 },
+  { label: '30평', val: 30 },
+  { label: '40평', val: 40 },
+  { label: '50평', val: 50 },
+  { label: '60평~', val: 60 }
 ];
 
 export default function AreaFilterPanel({ filters, onFilterChange }: Props) {
@@ -20,12 +20,22 @@ export default function AreaFilterPanel({ filters, onFilterChange }: Props) {
   const [maxInput, setMaxInput] = useState<string>('');
 
   useEffect(() => {
-    setMinInput(filters.areaMin ? filters.areaMin.toString() : '');
-    setMaxInput(filters.areaMax ? filters.areaMax.toString() : '');
+    setMinInput(filters.areaMin !== null ? filters.areaMin.toString() : '');
+    setMaxInput(filters.areaMax !== null ? filters.areaMax.toString() : '');
   }, [filters.areaMin, filters.areaMax]);
 
-  const handlePresetClick = (min: number | null, max: number | null) => {
-    onFilterChange({ areaMin: min, areaMax: max });
+  const handlePresetClick = (val: number) => {
+    if (filters.areaMin === null) {
+      onFilterChange({ areaMin: val, areaMax: null });
+    } else if (filters.areaMax === null) {
+      if (val > filters.areaMin) {
+        onFilterChange({ areaMax: val });
+      } else {
+        onFilterChange({ areaMin: val, areaMax: null });
+      }
+    } else {
+      onFilterChange({ areaMin: val, areaMax: null });
+    }
   };
 
   const applyInputs = () => {
@@ -44,13 +54,13 @@ export default function AreaFilterPanel({ filters, onFilterChange }: Props) {
     cursor: "pointer", transition: "all 0.15s",
   });
 
-  const isPresetActive = (min: number | null, max: number | null) => filters.areaMin === min && filters.areaMax === max;
+  const isPresetActive = (val: number) => filters.areaMin === val || filters.areaMax === val;
 
   return (
     <div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", marginBottom: "20px" }}>
         {PRESETS.map(p => (
-          <button key={p.label} onClick={() => handlePresetClick(p.min, p.max)} style={gridBtnStyle(isPresetActive(p.min, p.max))}>
+          <button key={p.label} onClick={() => handlePresetClick(p.val)} style={gridBtnStyle(isPresetActive(p.val))}>
             {p.label}
           </button>
         ))}
