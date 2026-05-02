@@ -6,7 +6,7 @@ import PropertyTypeFilterPanel from "./filters/PropertyTypeFilterPanel";
 import TradeTypeFilterPanel from "./filters/TradeTypeFilterPanel";
 import PriceFilterPanel from "./filters/PriceFilterPanel";
 import AreaFilterPanel from "./filters/AreaFilterPanel";
-import DetailFilterPanel from "./filters/DetailFilterPanel";
+import { FloorFilterPanel, YearFilterPanel, OwnerRoleFilterPanel, CommissionFilterPanel, ThemeFilterPanel } from "./filters/SubFilterPanels";
 
 interface MobileFilterBarProps {
   vacancies: any[];
@@ -60,7 +60,20 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
     filters.floor !== null ||
     filters.ownerRole !== null ||
     filters.commissionType !== null ||
+    filters.commissionType !== null ||
     filters.themes.length > 0;
+
+  const currentYear = new Date().getFullYear();
+  const yearLabel = filters.yearMin === currentYear - 1 ? "1년 이내" :
+    filters.yearMin === currentYear - 5 ? "5년 이내" :
+    filters.yearMin === currentYear - 10 ? "10년 이내" :
+    filters.yearMin === currentYear - 15 ? "15년 이내" :
+    filters.yearMax === currentYear - 15 ? "15년 이상" :
+    "사용승인일";
+
+  const ownerLabel = filters.ownerRole === 'USER' ? '일반인' : filters.ownerRole === 'REALTOR' ? '부동산' : '등록자';
+  const commissionLabel = filters.commissionType === '공동중개' ? '공동중개' : filters.commissionType === '100' ? '100%(법정)' : filters.commissionType ? `${filters.commissionType}%~` : '중개보수';
+  const themeLabel = filters.themes.length > 0 ? `테마 ${filters.themes.length}개` : '테마';
 
   const pillStyle = (active: boolean): React.CSSProperties => ({
     padding: "7px 14px", borderRadius: "20px", fontSize: "13px", fontWeight: 600, whiteSpace: "nowrap", flexShrink: 0,
@@ -124,8 +137,20 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
             <button onClick={() => setActivePanel(activePanel === "area" ? null : "area")} style={pillStyle(activePanel === "area" || filters.areaMin !== null || filters.areaMax !== null)}>
               면적 ▾
             </button>
-            <button onClick={() => setActivePanel(activePanel === "detail" ? null : "detail")} style={pillStyle(activePanel === "detail" || filters.floor !== null || filters.yearMin !== null || filters.ownerRole !== null || filters.commissionType !== null || filters.themes.length > 0)}>
-              상세 ▾
+            <button onClick={() => setActivePanel(activePanel === "floor" ? null : "floor")} style={pillStyle(activePanel === "floor" || filters.floor !== null)}>
+              {filters.floor || "층수"} ▾
+            </button>
+            <button onClick={() => setActivePanel(activePanel === "year" ? null : "year")} style={pillStyle(activePanel === "year" || filters.yearMin !== null || filters.yearMax !== null)}>
+              {yearLabel} ▾
+            </button>
+            <button onClick={() => setActivePanel(activePanel === "owner" ? null : "owner")} style={pillStyle(activePanel === "owner" || filters.ownerRole !== null)}>
+              {ownerLabel} ▾
+            </button>
+            <button onClick={() => setActivePanel(activePanel === "commission" ? null : "commission")} style={pillStyle(activePanel === "commission" || filters.commissionType !== null)}>
+              {commissionLabel} ▾
+            </button>
+            <button onClick={() => setActivePanel(activePanel === "theme" ? null : "theme")} style={pillStyle(activePanel === "theme" || filters.themes.length > 0)}>
+              {themeLabel} ▾
             </button>
             {/* 오른쪽 패딩 확보 */}
             <div style={{ flexShrink: 0, width: "8px" }} />
@@ -165,10 +190,20 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
         <AreaFilterPanel filters={filters} onFilterChange={onFilterChange} />
       ))}
 
-      {/* ═══ 층수/연식 시트 ═══ */}
-      {activePanel === "detail" && renderSheet("층수 및 연식", (
-        <DetailFilterPanel filters={filters} onFilterChange={onFilterChange} />
-      ))}
+      {/* ═══ 층수 시트 ═══ */}
+      {activePanel === "floor" && renderSheet("층수", <FloorFilterPanel filters={filters} onFilterChange={onFilterChange} />)}
+
+      {/* ═══ 사용승인일 시트 ═══ */}
+      {activePanel === "year" && renderSheet("사용승인일 (연식)", <YearFilterPanel filters={filters} onFilterChange={onFilterChange} />)}
+
+      {/* ═══ 등록자 시트 ═══ */}
+      {activePanel === "owner" && renderSheet("등록자 유형", <OwnerRoleFilterPanel filters={filters} onFilterChange={onFilterChange} />)}
+
+      {/* ═══ 중개보수 시트 ═══ */}
+      {activePanel === "commission" && renderSheet("중개보수", <CommissionFilterPanel filters={filters} onFilterChange={onFilterChange} />)}
+
+      {/* ═══ 테마 시트 ═══ */}
+      {activePanel === "theme" && renderSheet("테마 키워드", <ThemeFilterPanel filters={filters} onFilterChange={onFilterChange} />)}
 
       {/* ═══ 풀스크린 통합 필터 ═══ */}
       {fullFilterOpen && (
@@ -203,10 +238,34 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
               <AreaFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} />
             </div>
 
-            {/* 층수 및 연식 */}
+            {/* 층수 */}
             <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
-              <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>층수 및 연식</div>
-              <DetailFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} />
+              <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>층수</div>
+              <FloorFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} />
+            </div>
+
+            {/* 사용승인일 */}
+            <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
+              <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>사용승인일 (연식)</div>
+              <YearFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} />
+            </div>
+
+            {/* 등록자 유형 */}
+            <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
+              <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>등록자 유형</div>
+              <OwnerRoleFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} />
+            </div>
+
+            {/* 중개보수 */}
+            <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
+              <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>중개보수</div>
+              <CommissionFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} />
+            </div>
+
+            {/* 테마 */}
+            <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
+              <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>테마 키워드</div>
+              <ThemeFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} />
             </div>
           </div>
 
