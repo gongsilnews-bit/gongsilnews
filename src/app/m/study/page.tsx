@@ -63,56 +63,58 @@ export default function MobileStudyPage() {
       {/* 특강 리스트 (1열 세로형, 큼직하게) */}
       <div className="px-4 flex flex-col gap-6" style={{ padding: '0 16px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
         {lectures.map((lecture) => (
-          <div key={lecture.id} className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100 relative cursor-pointer" style={{ backgroundColor: '#ffffff', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)', border: '1px solid #f3f4f6', position: 'relative', cursor: 'pointer' }}>
-            
-            {/* 상단 썸네일 큼직하게 배치 */}
-            <div className="w-full relative bg-gray-200" style={{ width: '100%', aspectRatio: '16/9', position: 'relative', backgroundColor: '#e5e7eb' }}>
-              <img 
-                src={lecture.image} 
-                alt={lecture.title} 
-                className="w-full h-full object-cover"
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              />
-              {/* 북마크 리본 아이콘 */}
-              <div className="absolute top-0 right-4 w-[28px] h-[36px] bg-[#ff4d4f] flex justify-center pt-2 shadow-md" style={{ position: 'absolute', top: 0, right: '16px', width: '28px', height: '36px', backgroundColor: '#ff4d4f', display: 'flex', justifyContent: 'center', paddingTop: '8px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', clipPath: 'polygon(0 0, 100% 0, 100% 100%, 50% 80%, 0 100%)' }}>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ fill: 'white' }}>
-                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-                </svg>
-              </div>
-            </div>
-
-            {/* 하단 텍스트 정보 */}
-            <div className="p-4" style={{ padding: '16px' }}>
-              {/* 카테고리 */}
-              <div className="text-[#3b82f6] text-[12px] font-bold mb-1" style={{ color: '#3b82f6', fontSize: '12px', fontWeight: 700, marginBottom: '4px' }}>
-                {lecture.category}
-              </div>
+          <Link key={lecture.id} href={`/m/study_read?id=${lecture.id}`}>
+            <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100 relative cursor-pointer" style={{ backgroundColor: '#ffffff', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)', border: '1px solid #f3f4f6', position: 'relative', cursor: 'pointer' }}>
               
-              {/* 타이틀 */}
-              <h2 className="text-[#111827] text-[18px] font-bold leading-tight mb-3 line-clamp-2 break-keep" style={{ color: '#111827', fontSize: '18px', fontWeight: 700, lineHeight: 1.3, marginBottom: '12px', wordBreak: 'keep-all', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                {lecture.title}
-              </h2>
-              
-              {/* 강사명 & 별점 */}
-              <div className="flex items-center text-[13px] text-gray-600 mb-4" style={{ display: 'flex', alignItems: 'center', fontSize: '13px', color: '#4b5563', marginBottom: '16px' }}>
-                <span style={{ marginRight: '8px' }}>{lecture.author}</span>
-                <span className="flex items-center text-[#3b82f6]" style={{ display: 'flex', alignItems: 'center', color: '#3b82f6' }}>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1" className="mr-1" style={{ marginRight: '4px', fill: 'currentColor' }}>
+              {/* 상단 썸네일 큼직하게 배치 */}
+              <div className="w-full relative bg-gray-200" style={{ width: '100%', aspectRatio: '16/9', position: 'relative', backgroundColor: '#e5e7eb' }}>
+                <img 
+                  src={lecture.image} 
+                  alt={lecture.title} 
+                  className="w-full h-full object-cover"
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+                {/* 북마크 리본 아이콘 */}
+                <div className="absolute top-0 right-4 w-[28px] h-[36px] bg-[#ff4d4f] flex justify-center pt-2 shadow-md" style={{ position: 'absolute', top: 0, right: '16px', width: '28px', height: '36px', backgroundColor: '#ff4d4f', display: 'flex', justifyContent: 'center', paddingTop: '8px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', clipPath: 'polygon(0 0, 100% 0, 100% 100%, 50% 80%, 0 100%)' }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ fill: 'white' }}>
                     <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
                   </svg>
-                  {lecture.rating.toFixed(1)} ({lecture.reviews})
-                </span>
+                </div>
+              </div>
+
+              {/* 하단 텍스트 정보 */}
+              <div className="p-4" style={{ padding: '16px' }}>
+                {/* 카테고리 */}
+                <div className="text-[#3b82f6] text-[12px] font-bold mb-1" style={{ color: '#3b82f6', fontSize: '12px', fontWeight: 700, marginBottom: '4px' }}>
+                  {lecture.category}
+                </div>
+                
+                {/* 타이틀 */}
+                <h2 className="text-[#111827] text-[18px] font-bold leading-tight mb-3 line-clamp-2 break-keep" style={{ color: '#111827', fontSize: '18px', fontWeight: 700, lineHeight: 1.3, marginBottom: '12px', wordBreak: 'keep-all', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                  {lecture.title}
+                </h2>
+                
+                {/* 강사명 & 별점 */}
+                <div className="flex items-center text-[13px] text-gray-600 mb-4" style={{ display: 'flex', alignItems: 'center', fontSize: '13px', color: '#4b5563', marginBottom: '16px' }}>
+                  <span style={{ marginRight: '8px' }}>{lecture.author}</span>
+                  <span className="flex items-center text-[#3b82f6]" style={{ display: 'flex', alignItems: 'center', color: '#3b82f6' }}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1" className="mr-1" style={{ marginRight: '4px', fill: 'currentColor' }}>
+                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                    </svg>
+                    {lecture.rating.toFixed(1)} ({lecture.reviews})
+                  </span>
+                </div>
+                
+                {/* 가격/포인트 버튼 */}
+                <div className="inline-block bg-[#f8f9fa] border border-gray-200 rounded-lg px-4 py-2" style={{ display: 'inline-block', backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '8px 16px' }}>
+                  <span className="text-[#111827] font-bold text-[16px]" style={{ color: '#111827', fontWeight: 700, fontSize: '16px' }}>
+                    {lecture.price}
+                  </span>
+                </div>
               </div>
               
-              {/* 가격/포인트 버튼 */}
-              <div className="inline-block bg-[#f8f9fa] border border-gray-200 rounded-lg px-4 py-2" style={{ display: 'inline-block', backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '8px 16px' }}>
-                <span className="text-[#111827] font-bold text-[16px]" style={{ color: '#111827', fontWeight: 700, fontSize: '16px' }}>
-                  {lecture.price}
-                </span>
-              </div>
             </div>
-            
-          </div>
+          </Link>
         ))}
       </div>
     </div>

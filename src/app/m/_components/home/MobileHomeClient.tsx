@@ -262,7 +262,7 @@ export default function MobileHomeClient(props: Props) {
           </div>
           <div className="no-scrollbar" style={{ display: "flex", gap: 12, padding: "0 16px 16px", overflowX: "auto" }} onTouchStart={(e) => e.stopPropagation()} onTouchEnd={(e) => e.stopPropagation()}>
             {lectures.map((lec: any) => (
-              <Link key={lec.id} href={`/study_read?id=${lec.id}`}
+              <Link key={lec.id} href={`/m/study_read?id=${lec.id}`}
                 style={{ flexShrink: 0, width: 180, borderRadius: 12, overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.08)", border: "1px solid #f3f4f6", background: "#fff", textDecoration: "none", display: "block" }}>
                 <div style={{ width: "100%", height: 112, overflow: "hidden", background: "#e5e7eb", position: "relative" }}>
                   {lec.thumbnail_url
