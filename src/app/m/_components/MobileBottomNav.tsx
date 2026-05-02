@@ -11,14 +11,36 @@ export default function MobileBottomNav() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [profileImg, setProfileImg] = useState<string | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [adminPendingCount, setAdminPendingCount] = useState(0);
 
   useEffect(() => {
     const supabase = createClient();
 
     const fetchUserData = async (userId: string, userMetaImg: string | undefined) => {
-      // Get profile image
-      const { data } = await supabase.from('members').select('avatar_url').eq('id', userId).single();
+      // Get profile image and role
+      const { data } = await supabase.from('members').select('avatar_url, role').eq('id', userId).single();
       setProfileImg(data?.avatar_url || userMetaImg || null);
+
+      // Fetch admin pending count if role is ADMIN
+      if (data?.role) {
+        const r = data.role.trim().toUpperCase();
+        if (r === 'ADMIN' || r === '최고관리자' || r.includes('관리자')) {
+          try {
+            const [
+              { count: vCount },
+              { count: aCount },
+              { count: mCount }
+            ] = await Promise.all([
+              supabase.from('vacancies').select('*', { count: 'exact', head: true }).eq('status', 'PENDING'),
+              supabase.from('articles').select('*', { count: 'exact', head: true }).eq('status', 'PENDING'),
+              supabase.from('agencies').select('*', { count: 'exact', head: true }).eq('status', 'PENDING')
+            ]);
+            setAdminPendingCount((vCount || 0) + (aCount || 0) + (mCount || 0));
+          } catch (e) {
+            console.error("Failed to fetch pending counts", e);
+          }
+        }
+      }
 
       // Get unread messages
       try {
@@ -128,6 +150,30 @@ export default function MobileBottomNav() {
                     zIndex: 10
                   }}>
                     {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+                {/* Admin Pending Count Badge */}
+                {adminPendingCount > 0 && (
+                  <span style={{
+                    position: 'absolute',
+                    top: -4,
+                    left: -6,
+                    backgroundColor: '#f97316',
+                    color: 'white',
+                    fontSize: '10px',
+                    fontWeight: 'bold',
+                    padding: '2px 5px',
+                    minWidth: '16px',
+                    height: '16px',
+                    borderRadius: '10px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: '2px solid #fff',
+                    lineHeight: 1,
+                    zIndex: 10
+                  }}>
+                    {adminPendingCount > 99 ? '99+' : adminPendingCount}
                   </span>
                 )}
               </span>
