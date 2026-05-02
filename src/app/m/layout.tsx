@@ -49,7 +49,9 @@ export default function MobileLayout({ children }: { children: React.ReactNode }
       </main>
 
       {/* 공통 하단 탭바 및 전역 드로어 */}
-      <GlobalDrawerMenu />
+      <React.Suspense fallback={null}>
+        <GlobalDrawerMenu />
+      </React.Suspense>
       <MobileBottomNav />
       <PopupBanner />
     </div>

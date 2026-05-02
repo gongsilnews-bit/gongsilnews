@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 
 export default function GlobalDrawerMenu() {
@@ -9,9 +10,21 @@ export default function GlobalDrawerMenu() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [memberData, setMemberData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const searchParams = useSearchParams();
+  const router = useRouter();
 
   const touchStartX = useRef<number | null>(null);
   const [translateX, setTranslateX] = useState(0);
+
+  // URL 파라미터 감지하여 메뉴 열기 (뒤로가기 등)
+  useEffect(() => {
+    if (searchParams.get('menu') === 'open') {
+      setIsOpen(true);
+      // URL에서 파라미터 제거 (뒤로가기 스택 깔끔하게 유지)
+      const currentPath = window.location.pathname;
+      window.history.replaceState(null, '', currentPath);
+    }
+  }, [searchParams]);
 
   // 전역 이벤트(open-drawer) 감지
   useEffect(() => {
