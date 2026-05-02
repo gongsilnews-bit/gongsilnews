@@ -180,10 +180,11 @@ function MobileSettings() {
       await adminUpdateMember(memberId, {
         name, phone,
         ...(profileUrl ? { profile_image_url: profileUrl } : {}),
+        ...((tab === "agency" || isRealtor) ? { role: "REALTOR" } : {}),
       });
 
       /* 부동산 정보 */
-      if (isRealtor) {
+      if (tab === "agency" || isRealtor) {
         let regUrl = regCertPreview?.startsWith("http") ? regCertPreview : null;
         let bizUrl = bizCertPreview?.startsWith("http") ? bizCertPreview : null;
 
@@ -211,6 +212,8 @@ function MobileSettings() {
           status: agencyStatus,
         });
       }
+
+      if (tab === "agency" && !isRealtor) setIsRealtor(true);
 
       alert("저장되었습니다.");
     } catch (err: any) {
@@ -252,16 +255,14 @@ function MobileSettings() {
       </div>
 
       {/* 탭 */}
-      {isRealtor && (
-        <div style={{ display: "flex", background: "#fff", borderBottom: "1px solid #e5e7eb" }}>
-          {[{ key: "basic" as const, label: "기본정보" }, { key: "agency" as const, label: "부동산정보" }].map(t => (
-            <button key={t.key} onClick={() => setTab(t.key)}
-              style={{ flex: 1, padding: "14px 0", border: "none", background: "none", fontSize: 14, fontWeight: tab === t.key ? 800 : 500, color: tab === t.key ? "#2563eb" : "#6b7280", borderBottom: tab === t.key ? "3px solid #2563eb" : "3px solid transparent", cursor: "pointer" }}>
-              {t.label}
-            </button>
-          ))}
-        </div>
-      )}
+      <div style={{ display: "flex", background: "#fff", borderBottom: "1px solid #e5e7eb" }}>
+        {[{ key: "basic" as const, label: "기본정보" }, { key: "agency" as const, label: "부동산정보" }].map(t => (
+          <button key={t.key} onClick={() => setTab(t.key)}
+            style={{ flex: 1, padding: "14px 0", border: "none", background: "none", fontSize: 14, fontWeight: tab === t.key ? 800 : 500, color: tab === t.key ? "#2563eb" : "#6b7280", borderBottom: tab === t.key ? "3px solid #2563eb" : "3px solid transparent", cursor: "pointer" }}>
+            {t.label}
+          </button>
+        ))}
+      </div>
 
       <div style={{ padding: "16px 16px 120px" }}>
         {/* ── 기본정보 탭 ── */}
@@ -299,7 +300,7 @@ function MobileSettings() {
         )}
 
         {/* ── 부동산정보 탭 ── */}
-        {tab === "agency" && isRealtor && (
+        {tab === "agency" && (
           <>
             <div style={{ background: "#fff", borderRadius: 14, padding: 16, border: "1px solid #e5e7eb", marginBottom: 16 }}>
               <Field label="상호(사업장명)" value={agencyName} onChange={setAgencyName} required />
