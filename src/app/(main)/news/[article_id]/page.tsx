@@ -1,4 +1,6 @@
 import { getArticleDetail, getArticles } from "@/app/actions/article";
+import { getVacancies } from "@/app/actions/vacancy";
+import { createClient } from "@supabase/supabase-js";
 import NewsReadContent from "@/components/NewsReadContent";
 
 // 1시간 주기로 재생성 (ISR)
@@ -59,5 +61,27 @@ export default async function NewsReadPage({ params }: { params: Promise<{ artic
     );
   }
 
-  return <NewsReadContent article={article} popularArticles={popular} />;
+  let authorRole = null;
+  let authorEmail = null;
+  let authorVacancies: any[] = [];
+
+  if (article && article.author_id) {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+    const supabase = createClient(supabaseUrl, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } });
+    
+    const { data: member } = await supabase.from("members").select("role, email").eq("id", article.author_id).single();
+    if (member) {
+      authorRole = member.role;
+      authorEmail = member.email;
+      if (member.role === "REALTOR") {
+        const res = await getVacancies({ ownerId: article.author_id });
+        if (res.success && res.data) {
+          authorVacancies = res.data;
+        }
+      }
+    }
+  }
+
+  return <NewsReadContent article={article} popularArticles={popular} initialAuthorRole={authorRole} initialAuthorEmail={authorEmail} initialAuthorVacancies={authorVacancies} />;
 }

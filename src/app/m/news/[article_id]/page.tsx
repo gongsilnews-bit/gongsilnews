@@ -1,4 +1,6 @@
 import { getArticleDetail, getArticles } from "@/app/actions/article";
+import { getVacancies } from "@/app/actions/vacancy";
+import { createClient } from "@supabase/supabase-js";
 import NewsReadContent from "@/components/NewsReadContent";
 import Link from "next/link";
 
@@ -64,13 +66,35 @@ export default async function MobileNewsReadPage({ params }: { params: Promise<{
     );
   }
 
+  let authorRole = null;
+  let authorEmail = null;
+  let authorVacancies: any[] = [];
+
+  if (article && article.author_id) {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+    const supabase = createClient(supabaseUrl, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } });
+    
+    const { data: member } = await supabase.from("members").select("role, email").eq("id", article.author_id).single();
+    if (member) {
+      authorRole = member.role;
+      authorEmail = member.email;
+      if (member.role === "REALTOR") {
+        const res = await getVacancies({ ownerId: article.author_id });
+        if (res.success && res.data) {
+          authorVacancies = res.data;
+        }
+      }
+    }
+  }
+
   // 모바일 전용 래퍼 클래스로 감싸주어 globals.css의 반응형 속성을 적용
   return (
     <div className="flex flex-col w-full bg-white min-h-screen mobile-news-detail-wrapper">
       {/* 공통 모바일 뉴스 헤더 (상단 고정) */}
       <NewsDetailHeader activeCategory={article.category} />
 
-      <NewsReadContent article={article} popularArticles={popular} />
+      <NewsReadContent article={article} popularArticles={popular} initialAuthorRole={authorRole} initialAuthorEmail={authorEmail} initialAuthorVacancies={authorVacancies} />
     </div>
   );
 }

@@ -16,6 +16,9 @@ import BannerSlot from "./BannerSlot";
 interface NewsReadContentProps {
   article: any;
   popularArticles: any[];
+  initialAuthorRole?: string | null;
+  initialAuthorEmail?: string | null;
+  initialAuthorVacancies?: any[];
 }
 
 const FONT_SIZES = [
@@ -26,7 +29,7 @@ const FONT_SIZES = [
   { label: "최대크게", size: 24 },
 ];
 
-export default function NewsReadContent({ article, popularArticles }: NewsReadContentProps) {
+export default function NewsReadContent({ article, popularArticles, initialAuthorRole = null, initialAuthorEmail = null, initialAuthorVacancies = [] }: NewsReadContentProps) {
   const pathname = usePathname() || "";
   const router = useRouter();
   const isMobile = pathname.startsWith("/m");
@@ -100,9 +103,9 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
   const [confirmDialog, setConfirmDialog] = useState<{isOpen: boolean; message: string; onConfirm: () => void} | null>(null);
 
   // 작성자 정보 및 소속 공실 State
-  const [authorRole, setAuthorRole] = useState<string | null>(null);
-  const [authorEmail, setAuthorEmail] = useState<string | null>(null);
-  const [authorVacancies, setAuthorVacancies] = useState<any[]>([]);
+  const [authorRole, setAuthorRole] = useState<string | null>(initialAuthorRole);
+  const [authorEmail, setAuthorEmail] = useState<string | null>(initialAuthorEmail);
+  const [authorVacancies, setAuthorVacancies] = useState<any[]>(initialAuthorVacancies);
 
   // 현재 열람자 권한 State
   const [viewerRole, setViewerRole] = useState<string | null>(null);
@@ -302,33 +305,7 @@ export default function NewsReadContent({ article, popularArticles }: NewsReadCo
     }
   }, [article.id]);
 
-  // 기사 작성자의 권한 확인 및 공실 데이터 페칭
-  useEffect(() => {
-    async function fetchAuthorData() {
-      if (!article?.author_id) return;
-      try {
-        const supabase = createClient();
-        const { data: member } = await supabase
-          .from("members")
-          .select("role, email")
-          .eq("id", article.author_id)
-          .single();
-        
-        if (member) {
-          setAuthorRole(member.role);
-          if (member.email) setAuthorEmail(member.email);
-          // 부동산회원인 경우에만 추천 공실 표시를 위해 데이터 가져오기
-          if (member.role === "REALTOR") {
-            const res = await getVacancies({ ownerId: article.author_id });
-            if (res.success && res.data) {
-              setAuthorVacancies(res.data);
-            }
-          }
-        }
-      } catch (err) {}
-    }
-    fetchAuthorData();
-  }, [article?.author_id]);
+  // 기사 작성자의 권한 확인 및 공실 데이터 페칭은 서버에서 처리하여 props로 전달받음
 
   // 스크롤 진행 바 (리렌더링 방지)
   useEffect(() => {
