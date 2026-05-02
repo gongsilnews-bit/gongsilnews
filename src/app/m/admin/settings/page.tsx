@@ -277,7 +277,7 @@ function MobileSettings() {
                 )}
                 <button onClick={() => profileRef.current?.click()}
                   style={{ position: "absolute", bottom: -2, right: -2, width: 28, height: 28, borderRadius: "50%", background: "#2563eb", color: "#fff", border: "2px solid #fff", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>📷</button>
-                <input ref={profileRef} type="file" accept="image/*" capture="environment" onChange={e => handlePhotoCapture(e, "profile")} style={{ display: "none" }} />
+                <input ref={profileRef} type="file" accept="image/*" onChange={e => handlePhotoCapture(e, "profile")} style={{ display: "none" }} />
               </div>
               <span style={{ fontSize: 12, color: "#9ca3af" }}>터치하여 프로필 사진 변경</span>
             </div>
@@ -366,7 +366,7 @@ function MobileSettings() {
       </div>
 
       {/* 하단 저장 바 */}
-      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#fff", borderTop: "1px solid #e5e7eb", padding: "12px 16px 24px", zIndex: 50 }}>
+      <div style={{ position: "fixed", bottom: 65, left: 0, right: 0, background: "#fff", borderTop: "1px solid #e5e7eb", padding: "12px 16px", zIndex: 50 }}>
         <button onClick={handleSave} disabled={saving}
           style={{ width: "100%", height: 52, borderRadius: 12, border: "none", background: "linear-gradient(135deg, #3b82f6, #2563eb)", color: "#fff", fontSize: 16, fontWeight: 800, cursor: "pointer", boxShadow: "0 4px 12px rgba(59,130,246,0.3)" }}>
           {saving ? "저장 중..." : "💾 저장하기"}
@@ -430,7 +430,7 @@ function DocUpload({ label, preview, inputRef, onCapture, onPreview, onRemove }:
           <div style={{ fontSize: 13, fontWeight: 600, color: "#6b7280" }}>터치하여 촬영 또는 갤러리에서 선택</div>
         </button>
       )}
-      <input ref={inputRef} type="file" accept="image/*" capture="environment" onChange={onCapture} style={{ display: "none" }} />
+      <input ref={inputRef} type="file" accept="image/*" onChange={onCapture} style={{ display: "none" }} />
     </div>
   );
 }
