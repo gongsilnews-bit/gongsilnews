@@ -300,7 +300,7 @@ function StudyReadContent() {
             </div>
 
             {/* Sticky Tab */}
-            <div className="sticky bg-white z-50 flex border-b transition-colors" style={{ position: "sticky", top: 180, borderColor: "#f0f0f0", marginBottom: 48 }}>
+            <div className="sticky bg-white z-50 flex border-b transition-colors" style={{ position: "sticky", top: 136, borderColor: "#f0f0f0", marginBottom: 48 }}>
               {["introduce", "curriculum", "review", "creator"].map((tabId) => {
                 const labels: any = { introduce: "클래스 소개", curriculum: "커리큘럼", creator: "크리에이터", review: `리뷰 ${lecture.review_count || reviews.length}` };
                 const isActive = activeTab === tabId;
