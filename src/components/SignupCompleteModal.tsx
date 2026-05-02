@@ -17,7 +17,7 @@ export default function SignupCompleteModal({ isOpen, onClose, email = '', name 
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   
-  const [role, setRole] = useState<'general' | 'realtor'>('general');
+  const [step, setStep] = useState<1 | 2>(1);
   const [formData, setFormData] = useState({
     email: email,
     name: name,
@@ -91,41 +91,15 @@ export default function SignupCompleteModal({ isOpen, onClose, email = '', name 
         .update({
           name: formData.name.trim(),
           phone: formData.phone.trim(),
-          role: role === 'realtor' ? 'REALTOR' : 'USER',
+          role: 'USER',
           signup_completed: true, 
         })
         .eq('id', user.id);
         
       if (memberError) throw memberError;
 
-      // 2. 부동산 회원인 경우 -> agencies 더미 테이블 (상태: PENDING) 기본 생성
-      if (role === 'realtor') {
-         // 중개업소 정보는 빈 뼈대만 만들어서 realty_admin에서 작성하도록 유도. 이미 있다면 onConflict 무시.
-         const { error: agencyError } = await supabase.from('agencies')
-           .insert({
-              owner_id: user.id,
-              name: '상호명 미등록',
-              ceo_name: '대표자명 미등록',
-              zipcode: '',
-              address: '주소 미등록',
-              address_detail: '',
-              status: 'PENDING'
-           });
-           
-         if (agencyError && !agencyError.message.includes('duplicate key')) {
-           throw agencyError;
-         }
-      }
-
-      onClose(); // 모달 닫기
-
-      if (role === 'realtor') {
-        alert("부동산 회원으로 가입하셨습니다!\n정상적인 매물 등록을 위해 중개업소 정보 설정 페이지로 이동합니다.");
-        router.push('/realty_admin?menu=settings');
-      } else {
-        alert("🎉 가입이 완료되었습니다! 환영합니다!");
-        window.location.reload();
-      }
+      // 2. 가입 완료 후 Step 2 화면으로 이동 (부동산 회원 전환 유도)
+      setStep(2);
 
     } catch (err: any) {
       alert("❌ 처리 중 에러가 발생했습니다: " + err.message);
@@ -135,6 +109,42 @@ export default function SignupCompleteModal({ isOpen, onClose, email = '', name 
   };
 
   if (!isOpen || !mounted) return null;
+
+  if (step === 2) {
+    const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
+    
+    return createPortal(
+      <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100vh', zIndex: 99999999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, boxSizing: 'border-box' }}>
+        <div onClick={() => { onClose(); window.location.reload(); }} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }} />
+        <div style={{ position: 'relative', background: '#fff', width: 520, maxWidth: '100%', borderRadius: 14, boxShadow: '0 25px 60px rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column', maxHeight: '90vh', overflow: 'hidden' }}>
+          <div style={{ overflowY: 'auto', padding: '40px 36px 36px', flex: 1, textAlign: 'center' }}>
+            <div style={{ fontSize: 48, marginBottom: 16 }}>🎉</div>
+            <h2 style={{ fontSize: 24, fontWeight: 900, color: '#111', margin: '0 0 16px 0' }}>가입이 완료되었습니다!</h2>
+            <p style={{ fontSize: 15, color: '#444', lineHeight: 1.6, marginBottom: 28, wordBreak: 'keep-all' }}>환영합니다! 이제 공실뉴스의 일반회원 서비스를 이용하실 수 있습니다.</p>
+            <div style={{ background: '#f4f6fa', borderRadius: 12, padding: '24px 20px', marginBottom: 28 }}>
+              <h3 style={{ fontSize: 18, fontWeight: 800, color: '#1e56a0', marginTop: 0, marginBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                혹시 부동산(중개사)이신가요? 🏡
+              </h3>
+              <p style={{ fontSize: 14, color: '#555', lineHeight: 1.6, margin: 0, wordBreak: 'keep-all' }}>
+                부동산회원으로 전환하시고 승인 신청을 하시면<br/>
+                <strong style={{color: '#111'}}>100% 무료 공동중개 매물 등록</strong> 등<br/>
+                중개사를 위한 특별한 혜택을 누리실 수 있습니다!
+              </p>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <button onClick={() => { onClose(); router.push(isMobile ? '/m/admin/settings' : '/user_admin?menu=settings'); }} style={{ width: '100%', padding: '16px 0', background: '#f59e0b', color: '#fff', border: 'none', borderRadius: 8, fontSize: 16, fontWeight: 800, cursor: 'pointer', transition: 'background 0.2s', boxShadow: '0 4px 6px rgba(245,158,11,0.2)' }} onMouseEnter={(e) => e.currentTarget.style.background = "#d97706"} onMouseLeave={(e) => e.currentTarget.style.background = "#f59e0b"}>
+                부동산회원 전환 신청하기 ✨
+              </button>
+              <button onClick={() => { onClose(); window.location.reload(); }} style={{ width: '100%', padding: '16px 0', background: '#f5f5f5', color: '#666', border: 'none', borderRadius: 8, fontSize: 15, fontWeight: 700, cursor: 'pointer', transition: 'background 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.background = "#ebebeb"} onMouseLeave={(e) => e.currentTarget.style.background = "#f5f5f5"}>
+                다음에 할게요 (홈으로 가기)
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>,
+      document.body
+    );
+  }
 
   const inputStyle: React.CSSProperties = {
     width: '100%',
@@ -198,41 +208,6 @@ export default function SignupCompleteModal({ isOpen, onClose, email = '', name 
 
           <label style={labelStyle}>연락처 <span style={{ color: '#e53e3e' }}>*</span></label>
           <input type="tel" value={formData.phone} onChange={e => handlePhoneInput(e.target.value)} placeholder="010-0000-0000" style={{ ...inputStyle, marginBottom: 20 }} />
-
-          <label style={labelStyle}>활동 유형 <span style={{ color: '#e53e3e' }}>*</span></label>
-          <div style={{ display: 'flex', gap: 12, marginBottom: 20 }}>
-            <button
-              onClick={() => setRole('general')}
-              style={{
-                flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                padding: '16px 12px', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.2s',
-                border: `2px solid ${role === 'general' ? '#1e56a0' : '#ddd'}`,
-                background: role === 'general' ? '#f4f6fa' : '#fff', color: role === 'general' ? '#1e56a0' : '#666',
-              }}
-            >
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={role === 'general' ? '#1e56a0' : '#aaa'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                <circle cx="12" cy="7" r="4" />
-              </svg>
-              <span style={{ fontSize: 13, fontWeight: 700, marginTop: 6 }}>일반 회원</span>
-            </button>
-
-            <button
-              onClick={() => setRole('realtor')}
-              style={{
-                flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                padding: '16px 12px', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.2s',
-                border: `2px solid ${role === 'realtor' ? '#1e56a0' : '#ddd'}`,
-                background: role === 'realtor' ? '#f4f6fa' : '#fff', color: role === 'realtor' ? '#1e56a0' : '#666',
-              }}
-            >
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={role === 'realtor' ? '#1e56a0' : '#aaa'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                <polyline points="9 22 9 12 15 12 15 22" />
-              </svg>
-              <span style={{ fontSize: 13, fontWeight: 700, marginTop: 6 }}>부동산 회원</span>
-            </button>
-          </div>
 
           {/* ━━━ 약관 동의 ━━━ */}
           <div style={{ borderTop: '1px solid #eee', paddingTop: 20 }}>
