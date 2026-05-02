@@ -177,9 +177,13 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
   const [locKeyword, setLocKeyword] = useState("");
   const [locResults, setLocResults] = useState<any[]>([]);
   const [locTab, setLocTab] = useState<"region"|"keyword">("region");
-  const [newsCategory, setNewsCategory] = useState("전체");
+  const [section1Filter, setSection1Filter] = useState("");
+  const [section2Filter, setSection2Filter] = useState("");
 
-  const NEWS_CATEGORIES = ["전체", "부동산·재테크", "정치·경제", "세무·법률", "여행·생활", "기타"];
+  const SECTION2_MAP: Record<string, string[]> = {
+    "우리동네부동산": ["아파트·오피스텔", "빌라·주택", "원룸·투룸", "상가·사무실·공장·토지", "분양"],
+    "뉴스/칼럼": ["부동산·주식·재테크", "정치·경제·사회", "세무·법률", "여행·건강·생활", "IT·가전·가구", "스포츠·연예·Car", "인물·미션·기타"],
+  };
 
   const loadSidoData = async () => {
     try {
@@ -233,14 +237,10 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
 
   useEffect(() => { if (activeTab === 'local' && sidoList.length === 0) loadSidoData(); }, [activeTab]);
 
-  // 카테고리 필터 적용 (section2 매핑)
-  const filteredVisibleArticles = newsCategory === "전체" ? visibleArticles : visibleArticles.filter((a: any) => {
-    const sec = a.section2 || '';
-    if (newsCategory === '부동산·재테크') return sec.includes('부동산') || sec.includes('주식') || sec.includes('재테크');
-    if (newsCategory === '정치·경제') return sec.includes('정치') || sec.includes('경제') || sec.includes('사회');
-    if (newsCategory === '세무·법률') return sec.includes('세무') || sec.includes('법률');
-    if (newsCategory === '여행·생활') return sec.includes('여행') || sec.includes('건강') || sec.includes('생활');
-    if (newsCategory === '기타') return sec.includes('IT') || sec.includes('스포츠') || sec.includes('연예') || sec.includes('인물') || sec.includes('미션') || sec.includes('기타') || sec.includes('가전') || sec.includes('가구') || sec.includes('Car');
+  // 섹션 필터 적용 (section1/section2 정확 매칭)
+  const filteredVisibleArticles = visibleArticles.filter((a: any) => {
+    if (section1Filter && a.section1 !== section1Filter) return false;
+    if (section2Filter && a.section2 !== section2Filter) return false;
     return true;
   });
 
@@ -709,15 +709,21 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
             `}</style>
             <div style={{ display: "flex", alignItems: "center", background: "#fff", borderBottom: "1px solid #e5e7eb", padding: "8px 0", flexShrink: 0, width: "100%" }}>
               <div style={{ position: "relative", flex: 1, minWidth: 0, overflow: "hidden" }}>
-                <div className="news-filter-scroll" style={{ overflowX: "auto", display: "flex", gap: "8px", padding: "0 12px", WebkitOverflowScrolling: "touch" as any }}>
+                <div className="news-filter-scroll" style={{ overflowX: "auto", display: "flex", gap: "8px", padding: "0 12px", WebkitOverflowScrolling: "touch" as any, alignItems: "center" }}>
                   <button onClick={() => setLocActivePanel(locActivePanel === "loc" ? null : "loc")} style={{ padding: "7px 14px", borderRadius: "20px", fontSize: "13px", fontWeight: 600, whiteSpace: "nowrap", flexShrink: 0, border: (locActivePanel === "loc" || locLabel !== "위치") ? "1.5px solid #ea580c" : "1px solid #d1d5db", background: (locActivePanel === "loc" || locLabel !== "위치") ? "#fff7ed" : "#fff", color: (locActivePanel === "loc" || locLabel !== "위치") ? "#ea580c" : "#374151", cursor: "pointer", transition: "all 0.15s", display: "flex", alignItems: "center", gap: "4px" }}>
                     📍 {locLabel} ▾
                   </button>
-                  {NEWS_CATEGORIES.map(cat => (
-                    <button key={cat} onClick={() => setNewsCategory(cat)} style={{ padding: "7px 14px", borderRadius: "20px", fontSize: "13px", fontWeight: 600, whiteSpace: "nowrap", flexShrink: 0, border: newsCategory === cat ? "1.5px solid #ea580c" : "1px solid #d1d5db", background: newsCategory === cat ? "#fff7ed" : "#fff", color: newsCategory === cat ? "#ea580c" : "#374151", cursor: "pointer", transition: "all 0.15s" }}>
-                      {cat}
-                    </button>
-                  ))}
+                  <select value={section1Filter} onChange={(e) => { setSection1Filter(e.target.value); setSection2Filter(""); }} style={{ padding: "7px 10px", borderRadius: "20px", fontSize: "13px", fontWeight: 600, border: section1Filter ? "1.5px solid #ea580c" : "1px solid #d1d5db", background: section1Filter ? "#fff7ed" : "#fff", color: section1Filter ? "#ea580c" : "#374151", cursor: "pointer", outline: "none", flexShrink: 0, appearance: "none" as any, WebkitAppearance: "none" as any, paddingRight: "24px", backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23666' fill='none' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 10px center" }}>
+                    <option value="">1차섹션 전체</option>
+                    <option value="우리동네부동산">우리동네부동산</option>
+                    <option value="뉴스/칼럼">뉴스/칼럼</option>
+                  </select>
+                  <select value={section2Filter} onChange={(e) => setSection2Filter(e.target.value)} style={{ padding: "7px 10px", borderRadius: "20px", fontSize: "13px", fontWeight: 600, border: section2Filter ? "1.5px solid #ea580c" : "1px solid #d1d5db", background: section2Filter ? "#fff7ed" : "#fff", color: section2Filter ? "#ea580c" : "#374151", cursor: "pointer", outline: "none", flexShrink: 0, appearance: "none" as any, WebkitAppearance: "none" as any, paddingRight: "24px", backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23666' fill='none' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 10px center" }}>
+                    <option value="">2차섹션 전체</option>
+                    {section1Filter && SECTION2_MAP[section1Filter]?.map(s => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
                   <div style={{ flexShrink: 0, width: "8px" }} />
                 </div>
                 <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: "24px", background: "linear-gradient(to right, transparent, #fff)", pointerEvents: "none" }} />
