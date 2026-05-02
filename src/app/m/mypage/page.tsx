@@ -274,18 +274,53 @@ export default function MobileMyPage() {
         </ul>
       </div>
 
-      {/* ── 4. 기타 ── */}
-      <div style={{ background: '#fff', marginBottom: '32px' }}>
+      {/* ── 4. 공실뉴스 ── */}
+      <div style={{ background: '#fff', marginBottom: '8px' }}>
+        <h3 style={{ padding: '16px 20px 8px', fontSize: '14px', fontWeight: 700, color: '#6b7280', margin: 0 }}>공실뉴스</h3>
+        <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+          {["전체뉴스", "우리동네뉴스", "부동산·주식·재테크", "정치·경제·사회", "세무·법률", "여행·건강·생활", "기타"].map(menu => (
+            <li key={menu}>
+              <Link href="/m/news" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #f9fafb', color: '#1f2937', textDecoration: 'none' }}>
+                <span style={{ fontSize: '15px', fontWeight: 500 }}>{menu}</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* ── 5. 서비스 ── */}
+      <div style={{ background: '#fff', marginBottom: '8px' }}>
+        <h3 style={{ padding: '16px 20px 8px', fontSize: '14px', fontWeight: 700, color: '#6b7280', margin: 0 }}>서비스</h3>
+        <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+          {[
+            { name: "공실열람", path: "/m/gongsil" },
+            { name: "자료실", path: "/m/study" },
+            { name: "부동산특강", path: "/m/study" },
+            { name: "중개업소무료가입", path: "/m" }
+          ].map(menu => (
+            <li key={menu.name}>
+              <Link href={menu.path} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #f9fafb', color: '#1f2937', textDecoration: 'none' }}>
+                <span style={{ fontSize: '15px', fontWeight: 500 }}>{menu.name}</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* ── 6. 기타 ── */}
+      <div style={{ background: '#fff', marginBottom: '16px' }}>
         <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
           <li>
             <Link href="#" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #f3f4f6', textDecoration: 'none', color: '#374151' }}>
-              <span style={{ fontSize: '15px' }}>공지사항 / 이벤트</span>
+              <span style={{ fontSize: '15px', fontWeight: 500 }}>공지사항 / 이벤트</span>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
             </Link>
           </li>
           <li>
             <Link href="#" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #f3f4f6', textDecoration: 'none', color: '#374151' }}>
-              <span style={{ fontSize: '15px' }}>고객센터 (1555-5343)</span>
+              <span style={{ fontSize: '15px', fontWeight: 500 }}>고객센터 (1555-5343)</span>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
             </Link>
           </li>
@@ -293,16 +328,39 @@ export default function MobileMyPage() {
             <button
               onClick={handleLogout}
               style={{
-                width: '100%', display: 'flex', alignItems: 'center',
+                width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 padding: '14px 20px', color: '#ef4444', fontWeight: 600,
                 fontSize: '15px', background: 'none', border: 'none',
                 cursor: 'pointer', fontFamily: 'inherit',
               }}
             >
-              로그아웃
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '18px' }}>🚪</span>
+                로그아웃
+              </div>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fca5a5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
             </button>
           </li>
         </ul>
+      </div>
+
+      {/* ── 풋터 영역 ── */}
+      <div style={{ backgroundColor: '#f3f4f6', padding: '24px 20px 80px', marginTop: '16px' }}>
+        <div style={{ marginBottom: '16px', display: 'flex', gap: '16px' }}>
+          <Link href="/terms" style={{ fontSize: '13px', fontWeight: 700, color: '#4b5563', textDecoration: 'none' }}>이용약관</Link>
+          <Link href="#" style={{ fontSize: '13px', fontWeight: 700, color: '#4b5563', textDecoration: 'none' }}>개인정보처리방침</Link>
+        </div>
+        <div style={{ fontSize: '12px', color: '#9ca3af', lineHeight: 1.6 }}>
+          (주)공실마케팅<br/>
+          대표자·발행인 : 김윤경 | 편집인 : 김동현<br/>
+          사업자등록번호 : 337-81-03010<br/>
+          인터넷신문 등록번호 : 서울 아55037<br/>
+          주소 : 서울특별시 강남구 논현로115길 31, 105호<br/>
+          고객센터 : 1555-5343 (평일 10:00~18:00)
+        </div>
+        <div style={{ fontSize: '11px', color: '#d1d5db', marginTop: '16px' }}>
+          © GONGSIL NEWS Co., Ltd. All Rights Reserved.
+        </div>
       </div>
     </div>
   );

@@ -40,7 +40,7 @@ function StudyReadContent() {
   const [user, setUser] = useState<any>(null);
   const [userName, setUserName] = useState<string>("");
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [isAllReviewsModalOpen, setIsAllReviewsModalOpen] = useState(false);
+  const [isExpandedReviews, setIsExpandedReviews] = useState(false);
 
   /* ── 리뷰 캐러셀 ── */
   const [reviewStartIndex, setReviewStartIndex] = useState(0);
@@ -425,33 +425,67 @@ function StudyReadContent() {
               </div>
               {reviews.length > 0 ? (
                 <>
-                  <div className="grid grid-cols-1 sm:grid-cols-3" style={{ gap: 16, paddingBottom: 16 }}>
-                    {visibleReviews.map((review: any, idx: number) => (
-                      <div key={`${review.id || idx}-${reviewStartIndex}`} className="flex flex-col bg-white" style={{ padding: 24, border: "1px solid #f0f0f0", borderRadius: 12, boxShadow: "0 2px 12px rgba(0,0,0,0.03)", transition: "all 0.3s ease-in-out", animation: "fadeIn 0.5s" }}>
-                        <div className="flex items-center" style={{ gap: 8, marginBottom: 16 }}>
-                          <div className="flex" style={{ gap: 2, color: "#f5a623", fontSize: 14 }}>{"⭐".repeat(review.rating || 5)}</div>
-                          <span className="font-bold" style={{ fontSize: 14, color: "#1a1a1a" }}>{review.rating || 5}</span>
-                        </div>
-                        <div className="flex-1 break-keep line-clamp-4" style={{ fontSize: 15, color: "#3e4042", lineHeight: 1.6, marginBottom: 24 }}>{review.content}</div>
-                        <div className="flex items-center font-medium" style={{ gap: 8, fontSize: 13, color: "#858a8d" }}>
-                          {review.user_avatar || (user && user.id === review.user_id && user.user_metadata?.avatar_url) ? (
-                            <img src={review.user_avatar || (user && user.id === review.user_id ? user.user_metadata?.avatar_url : null)} alt="Profile" className="rounded-full object-cover shrink-0 border border-gray-100" style={{ width: 24, height: 24 }} />
-                          ) : (
-                            <span className="shrink-0 rounded-full flex items-center justify-center font-bold" style={{ width: 24, height: 24, backgroundColor: "#f0f0f0", fontSize: 11, color: "#858a8d" }}>
-                              {review.user_name ? review.user_name.charAt(0) : "익"}
-                            </span>
-                          )}
-                          <span className="font-semibold" style={{ color: "#1a1a1a" }}>{review.user_name || "익명"}</span>
-                          <span>·</span>
-                          <span>{review.created_at ? new Date(review.created_at).toLocaleDateString("ko-KR", { month: "long", day: "numeric" }) : ""}</span>
-                        </div>
+                  {!isExpandedReviews ? (
+                    <>
+                      <div className="grid grid-cols-1 sm:grid-cols-3" style={{ gap: 16, paddingBottom: 16 }}>
+                        {visibleReviews.map((review: any, idx: number) => (
+                          <div key={`${review.id || idx}-${reviewStartIndex}`} className="flex flex-col bg-white" style={{ padding: 24, border: "1px solid #f0f0f0", borderRadius: 12, boxShadow: "0 2px 12px rgba(0,0,0,0.03)", transition: "all 0.3s ease-in-out", animation: "fadeIn 0.5s" }}>
+                            <div className="flex items-center" style={{ gap: 8, marginBottom: 16 }}>
+                              <div className="flex" style={{ gap: 2, color: "#f5a623", fontSize: 14 }}>{"⭐".repeat(review.rating || 5)}</div>
+                              <span className="font-bold" style={{ fontSize: 14, color: "#1a1a1a" }}>{review.rating || 5}</span>
+                            </div>
+                            <div className="flex-1 break-keep line-clamp-4" style={{ fontSize: 15, color: "#3e4042", lineHeight: 1.6, marginBottom: 24 }}>{review.content}</div>
+                            <div className="flex items-center font-medium" style={{ gap: 8, fontSize: 13, color: "#858a8d" }}>
+                              {review.user_avatar || (user && user.id === review.user_id && user.user_metadata?.avatar_url) ? (
+                                <img src={review.user_avatar || (user && user.id === review.user_id ? user.user_metadata?.avatar_url : null)} alt="Profile" className="rounded-full object-cover shrink-0 border border-gray-100" style={{ width: 24, height: 24 }} />
+                              ) : (
+                                <span className="shrink-0 rounded-full flex items-center justify-center font-bold" style={{ width: 24, height: 24, backgroundColor: "#f0f0f0", fontSize: 11, color: "#858a8d" }}>
+                                  {review.user_name ? review.user_name.charAt(0) : "익"}
+                                </span>
+                              )}
+                              <span className="font-semibold" style={{ color: "#1a1a1a" }}>{review.user_name || "익명"}</span>
+                              <span>·</span>
+                              <span>{review.created_at ? new Date(review.created_at).toLocaleDateString("ko-KR", { month: "long", day: "numeric" }) : ""}</span>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                  {reviews.length > 3 && (
-                    <button onClick={() => setIsAllReviewsModalOpen(true)} className="w-full font-bold hover:bg-gray-50 transition-colors" style={{ marginTop: 16, padding: "16px 0", border: "1px solid #e4e4e4", borderRadius: 8, fontSize: 15, color: "#1a1a1a" }}>
-                      {lecture.review_count || reviews.length}개 리뷰 전체 보기
-                    </button>
+                      {reviews.length > 3 && (
+                        <button onClick={() => setIsExpandedReviews(true)} className="w-full font-bold hover:bg-gray-50 transition-colors" style={{ marginTop: 16, padding: "16px 0", border: "1px solid #e4e4e4", borderRadius: 8, fontSize: 15, color: "#1a1a1a" }}>
+                          {lecture.review_count || reviews.length}개 리뷰 전체 보기
+                        </button>
+                      )}
+                    </>
+                  ) : (
+                    <div className="flex flex-col" style={{ gap: 16, marginTop: 8, animation: "fadeIn 0.3s" }}>
+                      {reviews.map((review: any, idx: number) => (
+                        <div key={review.id || idx} className="bg-white" style={{ padding: 24, border: "1px solid #f0f0f0", borderRadius: 12, boxShadow: "0 2px 12px rgba(0,0,0,0.02)" }}>
+                          <div className="flex items-center justify-between" style={{ marginBottom: 14 }}>
+                            <div className="flex items-center" style={{ gap: 10 }}>
+                              {review.user_avatar || (user && user.id === review.user_id && user.user_metadata?.avatar_url) ? (
+                                <img src={review.user_avatar || (user && user.id === review.user_id ? user.user_metadata?.avatar_url : null)} alt="Profile" className="rounded-full object-cover shrink-0 border border-gray-200" style={{ width: 36, height: 36 }} />
+                              ) : (
+                                <span className="shrink-0 rounded-full flex items-center justify-center font-bold" style={{ width: 36, height: 36, backgroundColor: "#f0f0f0", fontSize: 13, color: "#858a8d" }}>
+                                  {review.user_name ? review.user_name.charAt(0) : "익"}
+                                </span>
+                              )}
+                              <div className="flex flex-col">
+                                <span className="font-bold text-[#111] text-[14px]">{review.user_name || "익명"}</span>
+                                <span className="text-[#888] text-[12px]">{review.created_at ? new Date(review.created_at).toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" }) : ""}</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center" style={{ gap: 6 }}>
+                              <div className="flex" style={{ gap: 2, color: "#f5a623", fontSize: 14 }}>{"⭐".repeat(review.rating || 5)}</div>
+                              <span className="font-bold text-[#111] text-[15px]">{review.rating || 5}</span>
+                            </div>
+                          </div>
+                          <div className="text-[15px] text-[#3e4042] leading-relaxed break-keep whitespace-pre-wrap">{review.content}</div>
+                        </div>
+                      ))}
+                      <button onClick={() => setIsExpandedReviews(false)} className="w-full font-bold hover:bg-gray-50 transition-colors" style={{ marginTop: 8, padding: "16px 0", border: "1px solid #e4e4e4", borderRadius: 8, fontSize: 15, color: "#1a1a1a" }}>
+                        리뷰 숨기기
+                      </button>
+                    </div>
                   )}
                 </>
               ) : (
@@ -587,58 +621,6 @@ function StudyReadContent() {
         </div>
       </main>
       {isAuthModalOpen && <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />}
-      
-      {/* ── 모든 리뷰 보기 모달 ── */}
-      {isAllReviewsModalOpen && (
-        <div
-          onClick={() => setIsAllReviewsModalOpen(false)}
-          style={{
-            position: "fixed", inset: 0, zIndex: 9999,
-            background: "rgba(0,0,0,0.6)",
-            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "20px"
-          }}
-        >
-          <div 
-            onClick={(e) => e.stopPropagation()}
-            className="bg-white rounded-xl shadow-2xl flex flex-col hide-scrollbar"
-            style={{ width: "100%", maxWidth: 640, maxHeight: "85vh", overflow: "hidden" }}
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between" style={{ padding: "20px 24px", borderBottom: "1px solid #f0f0f0" }}>
-              <div className="font-bold text-[18px] text-[#111]">전체 수강생 리뷰 ({lecture.review_count || reviews.length}개)</div>
-              <button onClick={() => setIsAllReviewsModalOpen(false)} className="text-[28px] leading-none text-[#888] hover:text-[#111]" style={{ background: "none", border: "none", cursor: "pointer" }}>&times;</button>
-            </div>
-            {/* Body */}
-            <div className="overflow-y-auto" style={{ padding: "24px", display: "flex", flexDirection: "column", gap: 24 }}>
-              {reviews.map((review: any, idx: number) => (
-                <div key={review.id || idx} style={{ paddingBottom: 24, borderBottom: idx === reviews.length - 1 ? "none" : "1px solid #f0f0f0" }}>
-                  <div className="flex items-center justify-between" style={{ marginBottom: 14 }}>
-                    <div className="flex items-center" style={{ gap: 10 }}>
-                      {review.user_avatar || (user && user.id === review.user_id && user.user_metadata?.avatar_url) ? (
-                        <img src={review.user_avatar || (user && user.id === review.user_id ? user.user_metadata?.avatar_url : null)} alt="Profile" className="rounded-full object-cover shrink-0 border border-gray-200" style={{ width: 36, height: 36 }} />
-                      ) : (
-                        <span className="shrink-0 rounded-full flex items-center justify-center font-bold" style={{ width: 36, height: 36, backgroundColor: "#f0f0f0", fontSize: 13, color: "#858a8d" }}>
-                          {review.user_name ? review.user_name.charAt(0) : "익"}
-                        </span>
-                      )}
-                      <div className="flex flex-col">
-                        <span className="font-bold text-[#111] text-[14px]">{review.user_name || "익명"}</span>
-                        <span className="text-[#888] text-[12px]">{review.created_at ? new Date(review.created_at).toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" }) : ""}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center" style={{ gap: 6 }}>
-                      <div className="flex" style={{ gap: 2, color: "#f5a623", fontSize: 14 }}>{"⭐".repeat(review.rating || 5)}</div>
-                      <span className="font-bold text-[#111] text-[15px]">{review.rating || 5}</span>
-                    </div>
-                  </div>
-                  <div className="text-[15px] text-[#3e4042] leading-relaxed break-keep whitespace-pre-wrap">{review.content}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
       <style>{`
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(5px); }
