@@ -38,12 +38,21 @@ function StudyReadContent() {
 
   /* ── 인증 상태 ── */
   const [user, setUser] = useState<any>(null);
+  const [userName, setUserName] = useState<string>("");
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => {
-      if (data?.user) setUser(data.user);
+    supabase.auth.getUser().then(async ({ data }) => {
+      if (data?.user) {
+        setUser(data.user);
+        const { data: member } = await supabase.from('members').select('name').eq('id', data.user.id).single();
+        if (member?.name) {
+          setUserName(member.name);
+        } else {
+          setUserName(data.user.user_metadata?.full_name || data.user.email?.split("@")[0] || "익명");
+        }
+      }
     });
   }, []);
 
@@ -120,7 +129,7 @@ function StudyReadContent() {
       rating: newRating,
       content: newReview,
       user_id: user.id,
-      user_name: user.user_metadata?.full_name || user.email?.split("@")[0] || "익명",
+      user_name: userName,
     });
     setIsSubmitting(false);
     if (res.success) {
@@ -374,7 +383,7 @@ function StudyReadContent() {
                 {user ? (
                   <div className="flex flex-col md:flex-row" style={{ gap: 12 }}>
                     <div className="shrink-0 flex items-center justify-center font-bold text-[#858a8d]" style={{ minWidth: 120, padding: "16px", borderRadius: 8, border: "1px solid #e4e4e4", fontSize: 14, backgroundColor: "#fff" }}>
-                      {user.user_metadata?.full_name || user.email?.split("@")[0] || "익명"}
+                      {userName}
                     </div>
                     <div className="flex-1 flex" style={{ gap: 12 }}>
                       <textarea placeholder="수강을 고민하는 분들을 위해 솔직한 리뷰를 남겨주세요." value={newReview} onChange={(e) => setNewReview(e.target.value)} className="flex-1 resize-none" style={{ height: 54, padding: "16px", borderRadius: 8, border: "1px solid #e4e4e4", fontSize: 14, outline: "none", color: "#1a1a1a" }} />
@@ -393,17 +402,17 @@ function StudyReadContent() {
               </div>
               {reviews.length > 0 ? (
                 <>
-                  <div className="flex overflow-x-auto hide-scrollbar" style={{ gap: 16, paddingBottom: 16, scrollbarWidth: "none" }}>
+                  <div className="grid grid-cols-1 sm:grid-cols-2" style={{ gap: 16, paddingBottom: 16 }}>
                     {reviews.map((review: any, idx: number) => (
-                      <div key={review.id || idx} className="shrink-0 flex flex-col bg-white" style={{ width: 300, padding: 24, border: "1px solid #f0f0f0", borderRadius: 12, boxShadow: "0 2px 12px rgba(0,0,0,0.03)" }}>
+                      <div key={review.id || idx} className="flex flex-col bg-white" style={{ padding: 24, border: "1px solid #f0f0f0", borderRadius: 12, boxShadow: "0 2px 12px rgba(0,0,0,0.03)" }}>
                         <div className="flex items-center" style={{ gap: 8, marginBottom: 16 }}>
                           <div className="flex" style={{ gap: 2, color: "#f5a623", fontSize: 14 }}>{"⭐".repeat(review.rating || 5)}</div>
                           <span className="font-bold" style={{ fontSize: 14, color: "#1a1a1a" }}>{review.rating || 5}</span>
                         </div>
                         <div className="flex-1 break-keep line-clamp-4" style={{ fontSize: 15, color: "#3e4042", lineHeight: 1.6, marginBottom: 24 }}>{review.content}</div>
                         <div className="flex items-center font-medium" style={{ gap: 8, fontSize: 13, color: "#858a8d" }}>
-                          {review.user_avatar ? (
-                            <img src={review.user_avatar} alt="Profile" className="rounded-full object-cover shrink-0 border border-gray-100" style={{ width: 24, height: 24 }} />
+                          {review.user_avatar || (user && user.id === review.user_id && user.user_metadata?.avatar_url) ? (
+                            <img src={review.user_avatar || (user && user.id === review.user_id ? user.user_metadata?.avatar_url : null)} alt="Profile" className="rounded-full object-cover shrink-0 border border-gray-100" style={{ width: 24, height: 24 }} />
                           ) : (
                             <span className="shrink-0 rounded-full flex items-center justify-center font-bold" style={{ width: 24, height: 24, backgroundColor: "#f0f0f0", fontSize: 11, color: "#858a8d" }}>
                               {review.user_name ? review.user_name.charAt(0) : "익"}
