@@ -242,7 +242,7 @@ function AdminContent() {
 
         {/* 콘텐츠 영역 */}
         <Suspense fallback={<AdminLoadingFallback />}>
-          {activeMenu === "dashboard" && <DashboardSection theme={theme} role="admin" />}
+          {activeMenu === "dashboard" && <DashboardSection theme={theme} role="admin" onMenuChange={(menu) => { setActiveMenu(menu); router.push(`?menu=${menu}`, { scroll: false }); }} />}
           {activeMenu === "members" && <MemberSection theme={theme} activeSubmenu={activeSubmenu as "members_list" | "dormant"} onSubmenuChange={setActiveSubmenu} initialData={prefetchedData["members"]} />}
           {activeMenu === "gongsil" && <VacancySection theme={theme} role="admin" ownerId={adminUserId} initialData={prefetchedData["gongsil"]} />}
           {activeMenu === "article" && <ArticleSection theme={theme} initialData={prefetchedData["article"]} />}
