@@ -55,21 +55,24 @@ export default function MobileMyPage() {
   };
 
   const getRoleLabel = (role?: string) => {
-    if (role === 'ADMIN') return '최고관리자';
-    if (role === 'REALTOR' || role === '부동산회원') return '부동산';
+    if (role === 'ADMIN' || role === '최고관리자' || role === 'admin') return '최고관리자';
+    if (role === 'REALTOR' || role === '부동산회원' || role === 'realtor') return '부동산';
     return '일반';
   };
 
   const getRoleBadgeStyle = (role?: string): React.CSSProperties => {
-    if (role === 'ADMIN') return { background: '#111827', color: '#fff' };
-    if (role === 'REALTOR' || role === '부동산회원') return { background: '#2563eb', color: '#fff' };
+    if (role === 'ADMIN' || role === '최고관리자' || role === 'admin') return { background: '#111827', color: '#fff' };
+    if (role === 'REALTOR' || role === '부동산회원' || role === 'realtor') return { background: '#2563eb', color: '#fff' };
     return { background: '#e5e7eb', color: '#374151' };
   };
 
   // 역할별 관리 메뉴 구성
   const getAdminMenus = (role?: string) => {
+    const isAdmin = role === 'ADMIN' || role === '최고관리자' || role === 'admin';
+    const isRealtor = role === 'REALTOR' || role === '부동산회원' || role === 'realtor';
+
     const common = [
-      { icon: '📊', label: '대시보드', desc: '활동 요약 및 통계', href: role === 'ADMIN' ? '/admin?menu=dashboard' : role === 'REALTOR' || role === '부동산회원' ? '/realty_admin?menu=dashboard' : '/user_admin?menu=dashboard' },
+      { icon: '📊', label: '대시보드', desc: '활동 요약 및 통계', href: isAdmin ? '/admin?menu=dashboard' : isRealtor ? '/realty_admin?menu=dashboard' : '/user_admin?menu=dashboard' },
       { icon: '🏢', label: '공실관리', desc: '등록한 공실 매물 관리', href: '/m/admin/vacancy' },
       { icon: '📝', label: '기사관리', desc: '작성한 기사 관리', href: '/m/admin/article' },
       { icon: '💰', label: '포인트', desc: '포인트 내역 및 충전', href: '/m/admin/point' },
@@ -90,8 +93,8 @@ export default function MobileMyPage() {
       { icon: '⚙️', label: '정보설정', desc: '내 프로필 정보 수정', href: '/m/admin/settings' },
     ];
 
-    if (role === 'ADMIN') return [...common, ...admin];
-    if (role === 'REALTOR') return [...common, ...realtor];
+    if (isAdmin) return [...common, ...admin];
+    if (isRealtor) return [...common, ...realtor];
     return [...common, ...user];
   };
 
@@ -209,8 +212,8 @@ export default function MobileMyPage() {
               </div>
               <p style={{ fontSize: '12px', opacity: 0.8, margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{memberData?.email || currentUser?.email}</span>
-                {currentUser?.app_metadata?.provider === 'google' && <span style={{ fontSize: '10px', background: 'rgba(255,255,255,0.2)', padding: '2px 6px', borderRadius: '4px', flexShrink: 0 }}>구글</span>}
-                {currentUser?.app_metadata?.provider === 'kakao' && <span style={{ fontSize: '10px', background: '#FEE500', color: '#000', padding: '2px 6px', borderRadius: '4px', flexShrink: 0 }}>카카오</span>}
+                {currentUser?.app_metadata?.providers?.includes('google') && <span style={{ fontSize: '10px', background: 'rgba(255,255,255,0.2)', padding: '2px 6px', borderRadius: '4px', flexShrink: 0 }}>구글</span>}
+                {currentUser?.app_metadata?.providers?.includes('kakao') && <span style={{ fontSize: '10px', background: '#FEE500', color: '#000', padding: '2px 6px', borderRadius: '4px', flexShrink: 0 }}>카카오</span>}
               </p>
             </div>
           </div>

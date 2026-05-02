@@ -88,20 +88,23 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
   };
 
   const getRoleLabel = (role?: string) => {
-    if (role === 'ADMIN') return '최고관리자';
-    if (role === 'REALTOR' || role === '부동산회원') return '부동산';
+    if (role === 'ADMIN' || role === '최고관리자' || role === 'admin') return '최고관리자';
+    if (role === 'REALTOR' || role === '부동산회원' || role === 'realtor') return '부동산';
     return '일반';
   };
 
   const getRoleBadgeStyle = (role?: string): React.CSSProperties => {
-    if (role === 'ADMIN') return { background: '#111827', color: '#fff' };
-    if (role === 'REALTOR' || role === '부동산회원') return { background: '#2563eb', color: '#fff' };
+    if (role === 'ADMIN' || role === '최고관리자' || role === 'admin') return { background: '#111827', color: '#fff' };
+    if (role === 'REALTOR' || role === '부동산회원' || role === 'realtor') return { background: '#2563eb', color: '#fff' };
     return { background: '#e5e7eb', color: '#374151' };
   };
 
   const getAdminMenus = (role?: string) => {
+    const isAdmin = role === 'ADMIN' || role === '최고관리자' || role === 'admin';
+    const isRealtor = role === 'REALTOR' || role === '부동산회원' || role === 'realtor';
+
     const common = [
-      { icon: '📊', label: '대시보드', href: role === 'ADMIN' ? '/admin?menu=dashboard' : role === 'REALTOR' ? '/realty_admin?menu=dashboard' : '/user_admin?menu=dashboard' },
+      { icon: '📊', label: '대시보드', href: isAdmin ? '/admin?menu=dashboard' : isRealtor ? '/realty_admin?menu=dashboard' : '/user_admin?menu=dashboard' },
       { icon: '🏢', label: '공실관리', href: '/m/admin/vacancy' },
       { icon: '📝', label: '기사관리', href: '/m/admin/article' },
       { icon: '💰', label: '포인트', href: '/m/admin/point' },
@@ -121,8 +124,8 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
     const user = [
       { icon: '⚙️', label: '정보설정', href: '/m/admin/settings' },
     ];
-    if (role === 'ADMIN') return [...common, ...admin];
-    if (role === 'REALTOR') return [...common, ...realtor];
+    if (isAdmin) return [...common, ...admin];
+    if (isRealtor) return [...common, ...realtor];
     return [...common, ...user];
   };
 
@@ -202,8 +205,8 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
                       </div>
                       <p style={{ fontSize: '11px', opacity: 0.7, margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{memberData?.email || currentUser.email}</span>
-                        {currentUser?.app_metadata?.provider === 'google' && <span style={{ fontSize: '9px', background: 'rgba(255,255,255,0.2)', padding: '2px 6px', borderRadius: '4px', flexShrink: 0 }}>구글</span>}
-                        {currentUser?.app_metadata?.provider === 'kakao' && <span style={{ fontSize: '9px', background: '#FEE500', color: '#000', padding: '2px 6px', borderRadius: '4px', flexShrink: 0 }}>카카오</span>}
+                        {currentUser?.app_metadata?.providers?.includes('google') && <span style={{ fontSize: '9px', background: 'rgba(255,255,255,0.2)', padding: '2px 6px', borderRadius: '4px', flexShrink: 0 }}>구글</span>}
+                        {currentUser?.app_metadata?.providers?.includes('kakao') && <span style={{ fontSize: '9px', background: '#FEE500', color: '#000', padding: '2px 6px', borderRadius: '4px', flexShrink: 0 }}>카카오</span>}
                       </p>
                     </div>
                   </div>
