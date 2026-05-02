@@ -170,7 +170,7 @@ export default function GlobalDrawerMenu() {
       { icon: '💰', label: '포인트', desc: '포인트 내역 및 충전', href: '/m/admin/point' },
     ];
     const realtor = [
-      { icon: '👥', label: '고객관리', desc: '상담 고객 목록', href: '/realty_admin?menu=customer' },
+      { icon: '👥', label: '고객관리', desc: '상담 고객 목록', href: '/m/admin/customer' },
       { icon: '💬', label: 'TALK', desc: '채팅 및 문의 관리', href: '/realty_admin?menu=comment' },
       { icon: '🌐', label: '홈페이지', desc: '미니 홈페이지 관리', href: '/realty_admin?menu=homepage' },
       { icon: '⚙️', label: '정보설정', desc: '내 정보 및 업소 설정', href: '/m/admin/settings' },
