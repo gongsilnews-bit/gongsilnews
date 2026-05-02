@@ -95,10 +95,10 @@ function MobileMemberAdmin() {
 
   const tabs = [
     { key: "전체", count: members.filter(m => !m.is_deleted).length },
+    { key: "승인대기", count: members.filter(m => !m.is_deleted && m.computedStatus === "승인대기").length },
     { key: "최고관리자", count: members.filter(m => !m.is_deleted && m.role === "ADMIN").length },
     { key: "부동산회원", count: members.filter(m => !m.is_deleted && m.role === "REALTOR").length },
     { key: "일반회원", count: members.filter(m => !m.is_deleted && m.role === "USER").length },
-    { key: "승인대기", count: members.filter(m => !m.is_deleted && m.computedStatus === "승인대기").length },
   ];
 
   if (!authChecked) {
@@ -179,17 +179,17 @@ function MobileMemberAdmin() {
           <div style={{ background: "#fff", borderRadius: 12, padding: "16px", display: "flex", justifyContent: "space-between", boxShadow: "0 1px 3px rgba(0,0,0,0.05)", border: "1px solid #f0f0f0" }}>
             <div style={{ textAlign: "center", flex: 1 }}>
               <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>최고관리자</div>
-              <div style={{ fontSize: 18, fontWeight: 800, color: "#111" }}>{tabs[1].count}</div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: "#111" }}>{tabs.find(t => t.key === "최고관리자")?.count || 0}</div>
             </div>
             <div style={{ width: 1, background: "#e5e7eb", margin: "0 10px" }} />
             <div style={{ textAlign: "center", flex: 1 }}>
               <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>부동산회원</div>
-              <div style={{ fontSize: 18, fontWeight: 800, color: "#2563eb" }}>{tabs[2].count}</div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: "#2563eb" }}>{tabs.find(t => t.key === "부동산회원")?.count || 0}</div>
             </div>
             <div style={{ width: 1, background: "#e5e7eb", margin: "0 10px" }} />
             <div style={{ textAlign: "center", flex: 1 }}>
               <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>일반회원</div>
-              <div style={{ fontSize: 18, fontWeight: 800, color: "#111" }}>{tabs[3].count}</div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: "#111" }}>{tabs.find(t => t.key === "일반회원")?.count || 0}</div>
             </div>
           </div>
         </div>
