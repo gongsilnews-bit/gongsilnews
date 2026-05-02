@@ -86,7 +86,9 @@ function MobileArticleAdmin() {
     if (activeKeyword) {
       const k = activeKeyword.toLowerCase();
       if (!(a.title && a.title.toLowerCase().includes(k)) && 
-          !(a.author_name && a.author_name.toLowerCase().includes(k))) return false;
+          !(a.author_name && a.author_name.toLowerCase().includes(k)) &&
+          !(a.article_no && String(a.article_no).includes(k)) &&
+          !(a.id && String(a.id).includes(k))) return false;
     }
     return true;
   });
@@ -206,7 +208,7 @@ function MobileArticleAdmin() {
             value={searchKeyword}
             onChange={e => setSearchKeyword(e.target.value)}
             onKeyDown={e => { if (e.key === "Enter") { setActiveKeyword(searchKeyword); setFilter("전체"); } }}
-            placeholder="기사 제목 또는 기자명 검색"
+            placeholder="기사 제목, 기자명 또는 기사번호 검색"
             style={{ flex: 1, height: 40, padding: "0 12px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, outline: "none" }}
           />
           <button onClick={() => { setActiveKeyword(searchKeyword); setFilter("전체"); }} style={{ height: 40, padding: "0 16px", background: "#374151", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700 }}>검색</button>

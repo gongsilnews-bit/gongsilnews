@@ -59,7 +59,10 @@ function MobileVacancyAdmin() {
     if (activeKeyword) {
       const k = activeKeyword.toLowerCase();
       const addr = [v.sido, v.sigungu, v.dong, v.building_name].filter(Boolean).join(" ").toLowerCase();
-      if (!addr.includes(k) && !(v.client_name && v.client_name.toLowerCase().includes(k))) return false;
+      if (!addr.includes(k) && 
+          !(v.client_name && v.client_name.toLowerCase().includes(k)) &&
+          !(v.vacancy_no && String(v.vacancy_no).includes(k)) &&
+          !(v.id && String(v.id).includes(k))) return false;
     }
     return true;
   });
@@ -140,7 +143,7 @@ function MobileVacancyAdmin() {
             value={searchKeyword}
             onChange={e => setSearchKeyword(e.target.value)}
             onKeyDown={e => { if (e.key === "Enter") { setActiveKeyword(searchKeyword); setFilter("전체"); } }}
-            placeholder="주소, 건물명 또는 등록자 검색"
+            placeholder="주소, 건물명, 등록자 또는 공실번호 검색"
             style={{ flex: 1, height: 40, padding: "0 12px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, outline: "none" }}
           />
           <button onClick={() => { setActiveKeyword(searchKeyword); setFilter("전체"); }} style={{ height: 40, padding: "0 16px", background: "#374151", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700 }}>검색</button>

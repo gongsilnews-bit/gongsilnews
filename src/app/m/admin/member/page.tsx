@@ -69,7 +69,9 @@ function MobileMemberAdmin() {
       if (
         !(m.name && m.name.toLowerCase().includes(k)) && 
         !(m.email && m.email.toLowerCase().includes(k)) &&
-        !(m.phone && m.phone.includes(k))
+        !(m.phone && m.phone.includes(k)) &&
+        !(m.memberNumber && m.memberNumber.toString().includes(k)) &&
+        !(m.id && String(m.id).includes(k))
       ) return false;
     }
     return true;
@@ -137,7 +139,7 @@ function MobileMemberAdmin() {
             value={searchKeyword}
             onChange={e => setSearchKeyword(e.target.value)}
             onKeyDown={e => { if (e.key === "Enter") { setActiveKeyword(searchKeyword); setFilter("전체"); } }}
-            placeholder="이름 또는 이메일 검색"
+            placeholder="이름, 이메일 또는 회원번호 검색"
             style={{ flex: 1, height: 40, padding: "0 12px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, outline: "none" }}
           />
           <button onClick={() => { setActiveKeyword(searchKeyword); setFilter("전체"); }} style={{ height: 40, padding: "0 16px", background: "#374151", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700 }}>검색</button>

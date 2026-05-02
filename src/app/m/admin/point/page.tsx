@@ -321,7 +321,12 @@ function MobileAdminPointView({ userName, activeKeyword }: { userName: string, a
             {membersLoading ? (
               <div style={{ textAlign: "center", padding: "40px", color: "#6b7280" }}>불러오는 중...</div>
             ) : (
-              members.filter(m => !activeKeyword || (m.name || "").includes(activeKeyword) || (m.email || "").includes(activeKeyword)).map(m => (
+              members.filter(m => !activeKeyword || 
+                (m.name || "").includes(activeKeyword) || 
+                (m.email || "").includes(activeKeyword) ||
+                (m.memberNumber && m.memberNumber.toString().includes(activeKeyword)) ||
+                (m.id && String(m.id).includes(activeKeyword))
+              ).map(m => (
                 <div key={m.id} style={{ background: "#fff", borderRadius: 12, padding: "16px", marginBottom: 12, border: "1px solid #e5e7eb", boxShadow: "0 1px 2px rgba(0,0,0,0.05)" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                     <div style={{ flex: 1, minWidth: 0, paddingRight: 8 }}>
@@ -508,7 +513,7 @@ function MobilePointMain() {
             value={searchKeyword}
             onChange={e => setSearchKeyword(e.target.value)}
             onKeyDown={e => { if (e.key === "Enter") setActiveKeyword(searchKeyword); }}
-            placeholder="이름 또는 이메일 검색"
+            placeholder="이름, 이메일 또는 회원번호 검색"
             style={{ flex: 1, height: 40, padding: "0 12px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, outline: "none" }}
           />
           <button onClick={() => setActiveKeyword(searchKeyword)} style={{ height: 40, padding: "0 16px", background: "#374151", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700 }}>검색</button>
