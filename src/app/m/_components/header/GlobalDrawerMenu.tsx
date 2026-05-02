@@ -193,7 +193,7 @@ export default function GlobalDrawerMenu() {
       { icon: '⚙️', label: '정보설정', desc: '내 정보 및 업소 설정', href: '/m/admin/settings' },
     ];
     const admin: any[] = [
-      { icon: '👥', label: '회원관리', desc: '전체 회원 관리', href: '/admin?menu=member', badgeCount: isAdmin ? pendingCounts.members : 0 },
+      { icon: '👥', label: '회원관리', desc: '전체 회원 관리', href: '/m/admin/member', badgeCount: isAdmin ? pendingCounts.members : 0 },
       { icon: '🖼️', label: '배너관리', desc: '광고 배너 관리', href: '/admin?menu=banner' },
       { icon: '📋', label: '게시판관리', desc: '게시판 관리', href: '/admin?menu=board' },
       { icon: '⚙️', label: '설정', desc: '시스템 설정', href: '/admin?menu=settings' },
