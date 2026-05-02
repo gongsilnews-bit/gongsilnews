@@ -90,8 +90,8 @@ export default function MobileCommentPage() {
   const typeColor = (type: string) => type === "article" ? "#2563eb" : type === "vacancy" ? "#d97706" : "#7c3aed";
 
   const getLink = (c: CommentItem) => {
-    if (c.type === "article") return `/news/${c.sourceId}`;
-    if (c.type === "vacancy") return `/gongsil?id=${c.sourceId}`;
+    if (c.type === "article") return `/m/news/${c.sourceId}`;
+    if (c.type === "vacancy") return `/m/gongsil?id=${c.sourceId}`;
     return "#";
   };
 

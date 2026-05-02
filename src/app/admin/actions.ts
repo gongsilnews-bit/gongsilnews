@@ -281,3 +281,55 @@ export async function adminHardDeleteMember(memberId: string) {
     return { success: false, error: error.message };
   }
 }
+
+// ── 대시보드 통계 및 최근 데이터 조회 ──
+export async function adminGetDashboardData() {
+  const supabaseAdmin = getAdminClient();
+  try {
+    const { count: vacanciesCount } = await supabaseAdmin.from('vacancies').select('*', { count: 'exact', head: true });
+    const { count: membersCount } = await supabaseAdmin.from('members').select('*', { count: 'exact', head: true });
+    const { count: articlesCount } = await supabaseAdmin.from('articles').select('*', { count: 'exact', head: true });
+    
+    const [{ count: ac }, { count: vc }, { count: bc }] = await Promise.all([
+      supabaseAdmin.from('article_comments').select('*', { count: 'exact', head: true }),
+      supabaseAdmin.from('vacancy_comments').select('*', { count: 'exact', head: true }),
+      supabaseAdmin.from('board_comments').select('*', { count: 'exact', head: true }),
+    ]);
+    const commentsCount = (ac || 0) + (vc || 0) + (bc || 0);
+
+    const { data: recentVacancies } = await supabaseAdmin.from('vacancies')
+      .select('id, trade_type, address, price, contact, created_at')
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    const { data: recentMembers } = await supabaseAdmin.from('members')
+      .select('id, name, email, role, created_at')
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    // 댓글은 3개 테이블에서 5개씩 가져와서 JS 단에서 정렬 후 5개 추출
+    const [{ data: acData }, { data: vcData }, { data: bcData }] = await Promise.all([
+      supabaseAdmin.from('article_comments').select('id, content, created_at, article_id, is_secret').order('created_at', { ascending: false }).limit(5),
+      supabaseAdmin.from('vacancy_comments').select('id, content, created_at, vacancy_id, is_secret').order('created_at', { ascending: false }).limit(5),
+      supabaseAdmin.from('board_comments').select('id, content, created_at, board_id, is_secret').order('created_at', { ascending: false }).limit(5),
+    ]);
+    
+    let comments = [
+      ...(acData || []).map(c => ({ ...c, type: 'article', sourceId: c.article_id })),
+      ...(vcData || []).map(c => ({ ...c, type: 'vacancy', sourceId: c.vacancy_id })),
+      ...(bcData || []).map(c => ({ ...c, type: 'board', sourceId: c.board_id }))
+    ];
+    comments.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    const recentComments = comments.slice(0, 5);
+
+    return { 
+      success: true, 
+      stats: { vacanciesCount, membersCount, articlesCount, commentsCount },
+      recentVacancies: recentVacancies || [],
+      recentMembers: recentMembers || [],
+      recentComments
+    };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
