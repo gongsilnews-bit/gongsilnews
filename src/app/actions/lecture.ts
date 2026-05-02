@@ -203,19 +203,28 @@ export async function getLectureDetail(lectureId: string) {
       .eq("lecture_id", lectureId)
       .order("sort_order", { ascending: true });
 
-    // 각 챕터의 레슨 조회
+    // 각 챕터의 레슨 조회 (N+1 문제 해결)
     const chaptersWithLessons = [];
-    for (const chapter of (chapters || [])) {
-      const { data: lessons } = await supabase
+    if (chapters && chapters.length > 0) {
+      const chapterIds = chapters.map(c => c.id);
+      const { data: allLessons } = await supabase
         .from("lecture_lessons")
         .select("*")
-        .eq("chapter_id", chapter.id)
+        .in("chapter_id", chapterIds)
         .order("sort_order", { ascending: true });
 
-      chaptersWithLessons.push({
-        ...chapter,
-        lessons: lessons || [],
-      });
+      const lessonsByChapter = (allLessons || []).reduce((acc: any, lesson: any) => {
+        if (!acc[lesson.chapter_id]) acc[lesson.chapter_id] = [];
+        acc[lesson.chapter_id].push(lesson);
+        return acc;
+      }, {});
+
+      for (const chapter of chapters) {
+        chaptersWithLessons.push({
+          ...chapter,
+          lessons: lessonsByChapter[chapter.id] || [],
+        });
+      }
     }
 
     // 리뷰 조회
