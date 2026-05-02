@@ -55,15 +55,15 @@ export default function AreaFilterPanel({ filters, onFilterChange }: Props) {
 
       <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
         <div style={{ flex: 1, display: "flex", border: "1px solid #d1d5db", borderRadius: "6px", overflow: "hidden" }}>
-          <button style={{ padding: "10px", background: "#f9fafb", border: "none", borderRight: "1px solid #d1d5db", color: "#6b7280", cursor: "pointer" }} onClick={() => setMinInput(prev => Math.max(0, parseInt(prev || "0") - 5).toString())}>-</button>
+          <button type="button" style={{ padding: "10px", background: "#f9fafb", border: "none", borderRight: "1px solid #d1d5db", color: "#6b7280", cursor: "pointer" }} onClick={() => { const val = Math.max(0, parseInt(minInput || "0") - 5); setMinInput(val.toString()); onFilterChange({ areaMin: val }); }}>-</button>
           <input type="number" placeholder="최소(평)" value={minInput} onChange={(e) => setMinInput(e.target.value)} onBlur={applyInputs} style={{ flex: 1, width: "100%", border: "none", textAlign: "center", fontSize: "14px", outline: "none" }} />
-          <button style={{ padding: "10px", background: "#f9fafb", border: "none", borderLeft: "1px solid #d1d5db", color: "#6b7280", cursor: "pointer" }} onClick={() => setMinInput(prev => (parseInt(prev || "0") + 5).toString())}>+</button>
+          <button type="button" style={{ padding: "10px", background: "#f9fafb", border: "none", borderLeft: "1px solid #d1d5db", color: "#6b7280", cursor: "pointer" }} onClick={() => { const val = parseInt(minInput || "0") + 5; setMinInput(val.toString()); onFilterChange({ areaMin: val }); }}>+</button>
         </div>
         <span style={{ color: "#9ca3af" }}>~</span>
         <div style={{ flex: 1, display: "flex", border: "1px solid #d1d5db", borderRadius: "6px", overflow: "hidden" }}>
-          <button style={{ padding: "10px", background: "#f9fafb", border: "none", borderRight: "1px solid #d1d5db", color: "#6b7280", cursor: "pointer" }} onClick={() => setMaxInput(prev => Math.max(0, parseInt(prev || "0") - 5).toString())}>-</button>
+          <button type="button" style={{ padding: "10px", background: "#f9fafb", border: "none", borderRight: "1px solid #d1d5db", color: "#6b7280", cursor: "pointer" }} onClick={() => { const val = Math.max(0, parseInt(maxInput || "0") - 5); setMaxInput(val.toString()); onFilterChange({ areaMax: val }); }}>-</button>
           <input type="number" placeholder="최대(평)" value={maxInput} onChange={(e) => setMaxInput(e.target.value)} onBlur={applyInputs} style={{ flex: 1, width: "100%", border: "none", textAlign: "center", fontSize: "14px", outline: "none" }} />
-          <button style={{ padding: "10px", background: "#f9fafb", border: "none", borderLeft: "1px solid #d1d5db", color: "#6b7280", cursor: "pointer" }} onClick={() => setMaxInput(prev => (parseInt(prev || "0") + 5).toString())}>+</button>
+          <button type="button" style={{ padding: "10px", background: "#f9fafb", border: "none", borderLeft: "1px solid #d1d5db", color: "#6b7280", cursor: "pointer" }} onClick={() => { const val = parseInt(maxInput || "0") + 5; setMaxInput(val.toString()); onFilterChange({ areaMax: val }); }}>+</button>
         </div>
       </div>
 

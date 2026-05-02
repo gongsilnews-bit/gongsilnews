@@ -78,7 +78,7 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
           <span style={{ fontSize: "16px", fontWeight: 800, color: "#111" }}>{title}</span>
           <button onClick={() => setActivePanel(null)} style={{ background: "none", border: "none", fontSize: "22px", color: "#9ca3af", cursor: "pointer", padding: "4px" }}>✕</button>
         </div>
-        <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px 24px" }}>{content}</div>
+        <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px 24px", WebkitOverflowScrolling: "touch", overscrollBehaviorY: "contain" }}>{content}</div>
       </div>
     </>
   );
@@ -178,7 +178,7 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
             <button onClick={() => { setTempFilters(filters); setFullFilterOpen(false); }} style={{ background: "none", border: "none", fontSize: "22px", color: "#6b7280", cursor: "pointer" }}>✕</button>
           </div>
 
-          <div style={{ flex: 1, overflowY: "auto", padding: "0 20px 100px" }}>
+          <div style={{ flex: 1, overflowY: "auto", padding: "0 20px 100px", WebkitOverflowScrolling: "touch", overscrollBehaviorY: "contain" }}>
             {/* 거래유형 */}
             <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
               <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>거래유형</div>

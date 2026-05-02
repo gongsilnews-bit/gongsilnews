@@ -135,9 +135,16 @@ function MobileArticleWrite() {
       const compressed = await compressToWebP(f);
       const preview = URL.createObjectURL(compressed);
       setPhotos(prev => {
-        const updated = [...prev, { file: compressed, preview, caption: "", isCover: prev.length === 0 }];
+        const updated = [...prev, { file: compressed, preview, caption: "", isCover: prev.length === 0 && videos.length === 0 }];
         return updated;
       });
+      // 에디터에 즉시 삽입
+      if (editorRef.current) {
+        const currentHtml = editorRef.current.innerHTML;
+        const imgHtml = `<br/><div style="text-align: center;"><img src="${preview}" style="max-width: 100%; height: auto; border-radius: 8px;" /></div><br/>`;
+        editorRef.current.innerHTML = currentHtml + (currentHtml.endsWith('<br>') ? '' : '<br/>') + imgHtml;
+        setContent(editorRef.current.innerHTML);
+      }
     }
   };
 
@@ -159,8 +166,21 @@ function MobileArticleWrite() {
       alert("유효한 유튜브 링크를 입력해주세요.");
       return;
     }
-    setVideos(prev => [...prev, { url, videoId: match[1], isCover: prev.length === 0 && photos.length === 0, isShorts: url.includes("shorts") }]);
+    const videoId = match[1];
+    const isShorts = url.includes("shorts");
+    setVideos(prev => {
+      if (prev.some(v => v.videoId === videoId)) return prev;
+      return [...prev, { url, videoId, isCover: false, isShorts }];
+    });
     setYoutubeInput("");
+
+    // 에디터에 즉시 삽입
+    if (editorRef.current) {
+      const currentHtml = editorRef.current.innerHTML;
+      const videoHtml = `<div class="inserted-video" style="margin-top: 16px;"><iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen style="width:100%; aspect-ratio: ${isShorts ? '9/16' : '16/9'}; border-radius: 8px;"></iframe></div><br/>`;
+      editorRef.current.innerHTML = currentHtml + (currentHtml.endsWith('<br>') ? '' : '<br/>') + videoHtml;
+      setContent(editorRef.current.innerHTML);
+    }
   };
 
   /* ── 영상 삭제 ── */
@@ -194,11 +214,6 @@ function MobileArticleWrite() {
       if (!fullContent.includes("<")) {
         fullContent = fullContent.split("\n").filter(Boolean).map(line => `<p>${line}</p>`).join("\n");
       }
-
-      // 영상 본문에 추가
-      videos.forEach(v => {
-        fullContent += `<div class="inserted-video" style="margin-top: 16px;"><iframe src="https://www.youtube.com/embed/${v.videoId}" frameborder="0" allowfullscreen style="width:100%; aspect-ratio: ${v.isShorts ? '9/16' : '16/9'}; border-radius: 8px;"></iframe></div>`;
-      });
 
       // 2. 기사 저장
       const status = requestApproval ? "승인신청" : "작성중";
@@ -244,6 +259,7 @@ function MobileArticleWrite() {
       // 3. 새로 추가된 사진 업로드
       if (articleId) {
         let thumbnailUrl = coverPhoto?.preview || "";
+        let htmlChanged = false;
 
         for (let i = 0; i < photos.length; i++) {
           const p = photos[i];
@@ -255,12 +271,17 @@ function MobileArticleWrite() {
             });
             if (uploadRes.success && uploadRes.url) {
               if (p.isCover) thumbnailUrl = uploadRes.url;
+              // 로컬 blob URL을 업로드된 실제 URL로 교체
+              if (fullContent.includes(p.preview)) {
+                fullContent = fullContent.replaceAll(p.preview, uploadRes.url);
+                htmlChanged = true;
+              }
             }
           }
         }
 
-        // 4. 대표 이미지 URL 업데이트
-        if (thumbnailUrl && thumbnailUrl !== coverPhoto?.preview) {
+        // 4. 대표 이미지 URL 업데이트 또는 본문 HTML 변경 시 다시 저장
+        if ((thumbnailUrl && thumbnailUrl !== coverPhoto?.preview) || htmlChanged) {
           await saveArticle({
             id: articleId,
             author_id: currentUserId,
