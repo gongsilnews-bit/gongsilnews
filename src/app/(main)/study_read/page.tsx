@@ -128,7 +128,8 @@ function StudyReadContent() {
   const totalLessons = chapters.reduce((sum: number, ch: any) => sum + (ch.lessons?.length || 0), 0);
 
   return (
-    <div className="min-w-[1200px] bg-white font-sans text-[#1a1a1a]">
+  return (
+    <div className="bg-white font-sans text-gray-900" style={{ minWidth: 1200 }}>
       {/* ── 영상 미리보기 모달 ── */}
       {previewUrl && (
         <div
@@ -174,20 +175,20 @@ function StudyReadContent() {
         </div>
       )}
 
-      <main className="w-[1200px] mx-auto px-[24px] pt-[40px] pb-[120px]">
+      <main className="mx-auto" style={{ width: 1200, padding: "40px 24px 120px" }}>
         {/* Breadcrumb */}
-        <div className="text-[13px] text-[#858a8d] mb-[24px] flex items-center gap-[8px] font-medium">
-          <span className="cursor-pointer hover:text-[#1a1a1a] transition-colors">부동산 특강</span>
-          <span className="text-[#d7e2eb]">&gt;</span>
-          <span className="cursor-pointer hover:text-[#1a1a1a] transition-colors">{lecture.category || "중개실무"}</span>
+        <div className="flex items-center font-medium" style={{ fontSize: 13, color: "#858a8d", marginBottom: 24, gap: 8 }}>
+          <span className="cursor-pointer hover:text-black transition-colors">부동산 특강</span>
+          <span className="text-gray-300">&gt;</span>
+          <span className="cursor-pointer hover:text-black transition-colors">{lecture.category || "중개실무"}</span>
         </div>
 
-        <div className="flex gap-[48px] relative items-start">
+        <div className="flex relative items-start" style={{ gap: 48 }}>
           {/* 좌측 메인 콘텐츠 */}
           <div className="flex-1 min-w-0">
 
             {/* ── 이미지 캐러셀 (Class101 스타일 라운드) ── */}
-            <div style={{ position: "relative", width: "100%", aspectRatio: "16/11", borderRadius: "16px", overflow: "hidden", marginBottom: "40px", background: "#f8f8f8", border: "1px solid #f0f0f0" }}>
+            <div style={{ position: "relative", width: "100%", aspectRatio: "16/11", borderRadius: 16, overflow: "hidden", marginBottom: 40, background: "#f8f8f8", border: "1px solid #f0f0f0" }}>
               {slideImages.length > 0 ? (
                 <>
                   <div style={{ display: "flex", width: `${slideImages.length * 100}%`, height: "100%", transform: `translateX(-${currentSlide * (100 / slideImages.length)}%)`, transition: "transform 0.5s cubic-bezier(0.25, 1, 0.5, 1)" }}>
@@ -214,7 +215,7 @@ function StudyReadContent() {
                   )}
 
                   {slideImages.length > 1 && (
-                    <div style={{ position: "absolute", top: 16, right: 16, padding: "5px 14px", borderRadius: "20px", background: "rgba(0,0,0,0.6)", color: "#fff", fontSize: 12, fontWeight: 700, letterSpacing: "1px" }}>
+                    <div style={{ position: "absolute", top: 16, right: 16, padding: "5px 14px", borderRadius: 20, background: "rgba(0,0,0,0.6)", color: "#fff", fontSize: 12, fontWeight: 700, letterSpacing: 1 }}>
                       {currentSlide + 1} / {slideImages.length}
                     </div>
                   )}
@@ -227,53 +228,54 @@ function StudyReadContent() {
             </div>
 
             {/* Sticky Tab */}
-            <div className="sticky top-[80px] bg-white z-50 flex border-b border-[#f0f0f0] mb-[48px]">
+            <div className="sticky bg-white z-50 flex border-b transition-colors" style={{ top: 80, borderColor: "#f0f0f0", marginBottom: 48 }}>
               {["introduce", "curriculum", "review", "creator"].map((tabId) => {
                 const labels: any = { introduce: "클래스 소개", curriculum: "커리큘럼", creator: "크리에이터", review: `리뷰 ${lecture.review_count || reviews.length}` };
                 const isActive = activeTab === tabId;
                 return (
                   <button key={tabId} onClick={() => scrollToAnchor(tabId)}
-                    className={`py-[16px] mr-[32px] text-[16px] font-[700] transition-colors relative`}
-                    style={{ color: isActive ? "#1a1a1a" : "#858a8d" }}>
+                    className="relative transition-colors"
+                    style={{ padding: "16px 0", marginRight: 32, fontSize: 16, fontWeight: 700, color: isActive ? "#1a1a1a" : "#858a8d" }}>
                     {labels[tabId]}
-                    {isActive && <div className="absolute bottom-0 left-0 w-full h-[3px] bg-[#1a1a1a]" />}
+                    {isActive && <div style={{ position: "absolute", bottom: 0, left: 0, width: "100%", height: 3, backgroundColor: "#1a1a1a" }} />}
                   </button>
                 );
               })}
             </div>
 
             {/* 1. 클래스 소개 */}
-            <div id="introduce" className="pt-[10px] mb-[80px]">
-              <h2 className="text-[24px] font-[800] text-[#1a1a1a] mb-[28px] leading-[1.4]">이 클래스를 듣고 나면<br />이런 걸 할 수 있게 될 거예요</h2>
+            <div id="introduce" style={{ paddingTop: 10, marginBottom: 80 }}>
+              <h2 className="font-bold leading-snug" style={{ fontSize: 24, color: "#1a1a1a", marginBottom: 28 }}>이 클래스를 듣고 나면<br />이런 걸 할 수 있게 될 거예요</h2>
               {lecture.description ? (
-                <div className="text-[16px] leading-[1.8] text-[#3e4042] break-keep" dangerouslySetInnerHTML={{ __html: lecture.description }} />
+                <div className="break-keep" style={{ fontSize: 16, lineHeight: 1.8, color: "#3e4042" }} dangerouslySetInnerHTML={{ __html: lecture.description }} />
               ) : (
                 <div className="text-[16px] leading-[1.8] text-[#858a8d]"><p className="mb-[1em]">강의 상세 소개가 준비 중입니다.</p></div>
               )}
             </div>
 
             {/* 2. 커리큘럼 */}
-            <div id="curriculum" className="pt-[10px] mb-[80px]">
-              <h2 className="text-[24px] font-[800] text-[#1a1a1a] mb-[8px]">커리큘럼</h2>
-              <div className="text-[15px] font-[500] text-[#858a8d] mb-[32px]">
+            <div id="curriculum" style={{ paddingTop: 10, marginBottom: 80 }}>
+              <h2 className="font-bold" style={{ fontSize: 24, color: "#1a1a1a", marginBottom: 8 }}>커리큘럼</h2>
+              <div className="font-medium" style={{ fontSize: 15, color: "#858a8d", marginBottom: 32 }}>
                 총 {chapters.length}개 챕터, {totalLessons}개 세부 강의로 구성되어 있습니다.
               </div>
 
-              <div className="flex flex-col gap-[16px]">
+              <div className="flex flex-col" style={{ gap: 16 }}>
                 {chapters.length > 0 ? (
                   chapters.map((chapter: any, ci: number) => (
-                    <div key={chapter.id || ci} className="border border-[#f0f0f0] bg-[#fafafa] rounded-[12px] p-[28px] transition-colors hover:bg-white hover:shadow-[0_4px_20px_rgba(0,0,0,0.04)]">
-                      <div className="flex items-center gap-[12px] mb-[20px]">
-                        <span className="text-[13px] font-[800] text-[#8a3ffc] bg-[#f4efff] px-[10px] py-[4px] rounded-[6px]">Chapter {chapter.chapter_no}</span>
-                        <h3 className="text-[18px] font-[700] text-[#1a1a1a]">{chapter.title}</h3>
+                    <div key={chapter.id || ci} className="transition-colors hover:bg-white" style={{ border: "1px solid #f0f0f0", backgroundColor: "#fafafa", borderRadius: 12, padding: 28, boxShadow: "0 4px 20px rgba(0,0,0,0.04)" }}>
+                      <div className="flex items-center" style={{ gap: 12, marginBottom: 20 }}>
+                        <span className="font-bold" style={{ fontSize: 13, color: "#8a3ffc", backgroundColor: "#f4efff", padding: "4px 10px", borderRadius: 6 }}>Chapter {chapter.chapter_no}</span>
+                        <h3 className="font-bold" style={{ fontSize: 18, color: "#1a1a1a" }}>{chapter.title}</h3>
                       </div>
-                      <ul className="m-0 p-0 list-none flex flex-col gap-[12px]">
+                      <ul className="m-0 p-0 list-none flex flex-col" style={{ gap: 12 }}>
                         {(chapter.lessons || []).map((lesson: any, li: number) => {
                           const hasVideo = !!lesson.video_url;
                           const canPreview = lesson.is_preview && hasVideo;
                           return (
                             <li key={lesson.id || li}
-                              className={`flex justify-between items-center text-[15px] ${canPreview ? "cursor-pointer bg-white" : "bg-white"} border border-[#f0f0f0] rounded-[8px] p-[16px] transition-all`}
+                              className={`flex justify-between items-center transition-all ${canPreview ? "cursor-pointer bg-white" : "bg-white"}`}
+                              style={{ fontSize: 15, border: "1px solid #f0f0f0", borderRadius: 8, padding: 16 }}
                               onMouseEnter={(e) => { if (canPreview) e.currentTarget.style.borderColor = "#1a1a1a"; }}
                               onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#f0f0f0"; }}
                               onClick={() => {
@@ -283,8 +285,8 @@ function StudyReadContent() {
                                 }
                               }}
                             >
-                              <span className="flex items-center gap-[12px]" style={{ color: canPreview ? "#1a1a1a" : "#3e4042", fontWeight: canPreview ? 700 : 500 }}>
-                                <span className="w-[28px] h-[28px] rounded-full flex items-center justify-center bg-[#f8f8f8] text-[#858a8d] text-[12px] font-[700]">
+                              <span className="flex items-center" style={{ gap: 12, color: canPreview ? "#1a1a1a" : "#3e4042", fontWeight: canPreview ? 700 : 500 }}>
+                                <span className="rounded-full flex items-center justify-center font-bold" style={{ width: 28, height: 28, backgroundColor: "#f8f8f8", color: "#858a8d", fontSize: 12 }}>
                                   {lesson.lesson_no}
                                 </span>
                                 {lesson.title}
@@ -300,7 +302,7 @@ function StudyReadContent() {
                                   </span>
                                 )}
                               </span>
-                              <span className="text-[#858a8d] text-[14px] font-[500]">{lesson.duration || "00:00"}</span>
+                              <span className="font-medium" style={{ color: "#858a8d", fontSize: 14 }}>{lesson.duration || "00:00"}</span>
                             </li>
                           );
                         })}
@@ -314,25 +316,25 @@ function StudyReadContent() {
             </div>
 
             {/* 3. 리뷰 */}
-            <div id="review" className="pt-[10px] mb-[80px]">
-              <div className="flex justify-between items-end mb-[32px]">
-                <h2 className="text-[24px] font-[800] text-[#1a1a1a]">실제 수강생 리뷰</h2>
+            <div id="review" style={{ paddingTop: 10, marginBottom: 80 }}>
+              <div className="flex justify-between items-end" style={{ marginBottom: 32 }}>
+                <h2 className="font-bold" style={{ fontSize: 24, color: "#1a1a1a" }}>실제 수강생 리뷰</h2>
               </div>
               {reviews.length > 0 ? (
                 <>
-                  <div className="flex gap-[16px] overflow-x-auto pb-[16px] hide-scrollbar" style={{ scrollbarWidth: "none" }}>
+                  <div className="flex overflow-x-auto hide-scrollbar" style={{ gap: 16, paddingBottom: 16, scrollbarWidth: "none" }}>
                     {reviews.map((review: any, idx: number) => (
-                      <div key={review.id || idx} className="w-[300px] shrink-0 p-[24px] border border-[#f0f0f0] bg-white rounded-[12px] shadow-[0_2px_12px_rgba(0,0,0,0.03)] flex flex-col">
-                        <div className="flex items-center gap-[8px] mb-[16px]">
-                          <div className="flex gap-[2px] text-[#f5a623] text-[14px]">{"⭐".repeat(review.rating || 5)}</div>
-                          <span className="text-[14px] font-[700] text-[#1a1a1a]">{review.rating || 5}</span>
+                      <div key={review.id || idx} className="shrink-0 flex flex-col bg-white" style={{ width: 300, padding: 24, border: "1px solid #f0f0f0", borderRadius: 12, boxShadow: "0 2px 12px rgba(0,0,0,0.03)" }}>
+                        <div className="flex items-center" style={{ gap: 8, marginBottom: 16 }}>
+                          <div className="flex" style={{ gap: 2, color: "#f5a623", fontSize: 14 }}>{"⭐".repeat(review.rating || 5)}</div>
+                          <span className="font-bold" style={{ fontSize: 14, color: "#1a1a1a" }}>{review.rating || 5}</span>
                         </div>
-                        <div className="text-[15px] text-[#3e4042] leading-[1.6] mb-[24px] flex-1 break-keep line-clamp-4">{review.content}</div>
-                        <div className="flex items-center gap-[8px] text-[13px] text-[#858a8d] font-[500]">
-                          <span className="w-[24px] h-[24px] bg-[#f0f0f0] rounded-full flex items-center justify-center text-[11px] font-[700] text-[#858a8d]">
+                        <div className="flex-1 break-keep line-clamp-4" style={{ fontSize: 15, color: "#3e4042", lineHeight: 1.6, marginBottom: 24 }}>{review.content}</div>
+                        <div className="flex items-center font-medium" style={{ gap: 8, fontSize: 13, color: "#858a8d" }}>
+                          <span className="rounded-full flex items-center justify-center font-bold" style={{ width: 24, height: 24, backgroundColor: "#f0f0f0", fontSize: 11, color: "#858a8d" }}>
                             {review.user_name ? review.user_name.charAt(0) : "익"}
                           </span>
-                          <span className="text-[#1a1a1a] font-[600]">{review.user_name || "익명"}</span>
+                          <span className="font-semibold" style={{ color: "#1a1a1a" }}>{review.user_name || "익명"}</span>
                           <span>·</span>
                           <span>{review.created_at ? new Date(review.created_at).toLocaleDateString("ko-KR", { month: "long", day: "numeric" }) : ""}</span>
                         </div>
@@ -340,7 +342,7 @@ function StudyReadContent() {
                     ))}
                   </div>
                   {reviews.length > 4 && (
-                    <button className="w-full mt-[16px] py-[16px] border border-[#e4e4e4] rounded-[8px] text-[15px] font-[700] text-[#1a1a1a] hover:bg-[#fafafa] transition-colors">
+                    <button className="w-full font-bold hover:bg-gray-50 transition-colors" style={{ marginTop: 16, padding: "16px 0", border: "1px solid #e4e4e4", borderRadius: 8, fontSize: 15, color: "#1a1a1a" }}>
                       {lecture.review_count || reviews.length}개 리뷰 전체 보기
                     </button>
                   )}
@@ -354,26 +356,26 @@ function StudyReadContent() {
             </div>
 
             {/* 4. 크리에이터 */}
-            <div id="creator" className="pt-[10px] mb-[40px]">
-              <h2 className="text-[24px] font-[800] text-[#1a1a1a] mb-[24px]">크리에이터 소개</h2>
-              <div className="p-[40px] bg-[#fafafa] border border-[#f0f0f0] rounded-[16px]">
-                <div className="flex items-center gap-[24px] mb-[24px]">
-                  <div style={{ width: 80, height: 80, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: "#e4e4e4" }}>
+            <div id="creator" style={{ paddingTop: 10, marginBottom: 40 }}>
+              <h2 className="font-bold" style={{ fontSize: 24, color: "#1a1a1a", marginBottom: 24 }}>크리에이터 소개</h2>
+              <div style={{ padding: 40, backgroundColor: "#fafafa", border: "1px solid #f0f0f0", borderRadius: 16 }}>
+                <div className="flex items-center" style={{ gap: 24, marginBottom: 24 }}>
+                  <div className="shrink-0 rounded-full overflow-hidden" style={{ width: 80, height: 80, backgroundColor: "#e4e4e4" }}>
                     {lecture.instructor_photo ? (
                       <img src={lecture.instructor_photo} className="w-full h-full object-cover" alt="크리에이터" />
                     ) : (
-                      <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, color: "#fff", background: "linear-gradient(135deg, #a8edea, #fed6e3)" }}>👨‍🏫</div>
+                      <div className="flex items-center justify-center w-full h-full text-white" style={{ fontSize: 28, background: "linear-gradient(135deg, #a8edea, #fed6e3)" }}>👨‍🏫</div>
                     )}
                   </div>
                   <div>
-                    <div className="text-[14px] font-[700] text-[#858a8d] mb-[4px]">공실뉴스 공인 크리에이터</div>
-                    <h3 className="text-[22px] font-[800] text-[#1a1a1a]">{lecture.instructor_name || "강사"}</h3>
+                    <div className="font-bold" style={{ fontSize: 14, color: "#858a8d", marginBottom: 4 }}>공실뉴스 공인 크리에이터</div>
+                    <h3 className="font-bold" style={{ fontSize: 22, color: "#1a1a1a" }}>{lecture.instructor_name || "강사"}</h3>
                   </div>
                 </div>
                 {lecture.instructor_bio ? (
-                  <div className="text-[16px] leading-[1.8] text-[#3e4042] break-keep" dangerouslySetInnerHTML={{ __html: lecture.instructor_bio.replace(/\n/g, "<br/>") }} />
+                  <div className="break-keep" style={{ fontSize: 16, lineHeight: 1.8, color: "#3e4042" }} dangerouslySetInnerHTML={{ __html: lecture.instructor_bio.replace(/\n/g, "<br/>") }} />
                 ) : (
-                  <div className="text-[16px] leading-[1.8] text-[#858a8d]">강사 상세 소개가 준비 중입니다.</div>
+                  <div style={{ fontSize: 16, lineHeight: 1.8, color: "#858a8d" }}>강사 상세 소개가 준비 중입니다.</div>
                 )}
               </div>
             </div>
@@ -381,55 +383,55 @@ function StudyReadContent() {
           </div>
 
           {/* 우측 Sticky 박스 (Class101 스타일) */}
-          <div className="w-[360px] shrink-0">
-            <div className="sticky top-[100px]">
+          <div className="shrink-0" style={{ width: 360 }}>
+            <div className="sticky" style={{ top: 100 }}>
               
               {/* Creator Info (Small) */}
-              <div className="flex items-center gap-[8px] mb-[12px] text-[14px] font-[700] text-[#1a1a1a]">
-                <span className="w-[20px] h-[20px] rounded-full overflow-hidden bg-[#eee]">
+              <div className="flex items-center font-bold" style={{ gap: 8, marginBottom: 12, fontSize: 14, color: "#1a1a1a" }}>
+                <span className="rounded-full overflow-hidden" style={{ width: 20, height: 20, backgroundColor: "#eee" }}>
                   {lecture.instructor_photo && <img src={lecture.instructor_photo} className="w-full h-full object-cover" />}
                 </span>
                 {lecture.instructor_name || "연플레르"} ⌂
               </div>
 
               {/* Title */}
-              <h1 className="text-[24px] font-[800] text-[#1a1a1a] leading-[1.4] mb-[16px] break-keep">
+              <h1 className="font-bold leading-snug break-keep" style={{ fontSize: 24, color: "#1a1a1a", marginBottom: 16 }}>
                 {lecture.title}
               </h1>
 
               {/* Rating & Badge */}
-              <div className="flex items-center gap-[12px] text-[14px] font-[600] text-[#1a1a1a] mb-[24px] pb-[24px] border-b border-[#f0f0f0]">
-                <span className="flex items-center gap-[4px] text-[#f5a623]">⭐ {lecture.rating || "5.0"} <span className="text-[#858a8d] font-[500]">({lecture.review_count || reviews.length})</span></span>
-                <span className="text-[#e4e4e4]">|</span>
-                <span className="flex items-center gap-[4px] text-[#858a8d]"><span className="text-[#1a1a1a]">👍</span> 추천 클래스</span>
+              <div className="flex items-center font-semibold border-b" style={{ gap: 12, fontSize: 14, color: "#1a1a1a", marginBottom: 24, paddingBottom: 24, borderColor: "#f0f0f0" }}>
+                <span className="flex items-center" style={{ gap: 4, color: "#f5a623" }}>⭐ {lecture.rating || "5.0"} <span className="font-medium" style={{ color: "#858a8d" }}>({lecture.review_count || reviews.length})</span></span>
+                <span style={{ color: "#e4e4e4" }}>|</span>
+                <span className="flex items-center" style={{ gap: 4, color: "#858a8d" }}><span style={{ color: "#1a1a1a" }}>👍</span> 추천 클래스</span>
               </div>
 
               {/* Price Section */}
-              <div className="mb-[24px]">
-                {lecture.discount_label && <div className="text-[14px] font-[800] text-[#8a3ffc] mb-[4px]">{lecture.discount_label}</div>}
+              <div style={{ marginBottom: 24 }}>
+                {lecture.discount_label && <div className="font-bold" style={{ fontSize: 14, color: "#8a3ffc", marginBottom: 4 }}>{lecture.discount_label}</div>}
                 
                 {originalPrice && (
-                  <div className="flex items-center gap-[8px] mb-[4px]">
-                    <span className="text-[16px] font-[800] text-[#ff3f3f]">
+                  <div className="flex items-center" style={{ gap: 8, marginBottom: 4 }}>
+                    <span className="font-bold" style={{ fontSize: 16, color: "#ff3f3f" }}>
                       {Math.round((1 - displayPrice / originalPrice) * 100)}%
                     </span>
-                    <span className="text-[16px] text-[#a2a2a2] line-through font-[500]">{originalPrice.toLocaleString()}원</span>
+                    <span className="line-through font-medium" style={{ fontSize: 16, color: "#a2a2a2" }}>{originalPrice.toLocaleString()}원</span>
                   </div>
                 )}
                 
-                <div className="flex items-end gap-[4px] mb-[8px]">
-                  <span className="text-[28px] font-[800] text-[#1a1a1a] leading-none tracking-tight">{displayPrice ? displayPrice.toLocaleString() + "원" : "무료"}</span>
+                <div className="flex items-end tracking-tight" style={{ gap: 4, marginBottom: 8 }}>
+                  <span className="font-bold leading-none" style={{ fontSize: 28, color: "#1a1a1a" }}>{displayPrice ? displayPrice.toLocaleString() + "원" : "무료"}</span>
                 </div>
                 
                 {monthlyPrice && (
-                  <div className="text-[15px] font-[700] text-[#8a3ffc]">
-                    월 {monthlyPrice.toLocaleString()}원 <span className="font-[500] text-[#858a8d]">({lecture.duration_months}개월)</span>
+                  <div className="font-bold" style={{ fontSize: 15, color: "#8a3ffc" }}>
+                    월 {monthlyPrice.toLocaleString()}원 <span className="font-medium" style={{ color: "#858a8d" }}>({lecture.duration_months}개월)</span>
                   </div>
                 )}
               </div>
 
               {/* Download Coupon Button */}
-              <button className="w-full mb-[16px] py-[14px] rounded-[8px] border border-[#e4e4e4] bg-white text-[14px] font-[700] text-[#1a1a1a] hover:bg-[#fafafa] flex items-center justify-center gap-[6px] transition-colors">
+              <button className="w-full font-bold flex items-center justify-center transition-colors hover:bg-gray-50" style={{ marginBottom: 16, padding: "14px 0", borderRadius: 8, border: "1px solid #e4e4e4", backgroundColor: "white", fontSize: 14, color: "#1a1a1a", gap: 6 }}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                 쿠폰 받기
               </button>
@@ -437,36 +439,39 @@ function StudyReadContent() {
               {/* CTA Button */}
               <button 
                 onClick={() => router.push(`/study_watch?id=${lecture.id}`)} 
-                className="w-full mb-[24px] py-[18px] rounded-[8px] text-[16px] font-[800] text-white bg-[#8a3ffc] hover:bg-[#722ed1] transition-colors shadow-[0_4px_12px_rgba(138,63,252,0.3)]"
+                className="w-full font-bold text-white transition-colors"
+                style={{ marginBottom: 24, padding: "18px 0", borderRadius: 8, fontSize: 16, backgroundColor: "#8a3ffc", boxShadow: "0 4px 12px rgba(138,63,252,0.3)" }}
+                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#722ed1"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "#8a3ffc"; }}
               >
                 클래스 수강 시작하기
               </button>
 
               {/* Share & Like */}
-              <div className="flex justify-center gap-[40px] border-b border-[#f0f0f0] pb-[24px] mb-[24px]">
-                <div className="flex flex-col items-center gap-[6px] cursor-pointer group">
-                  <svg className="text-[#858a8d] group-hover:text-[#1a1a1a] transition-colors" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
-                  <span className="text-[13px] font-[600] text-[#858a8d] group-hover:text-[#1a1a1a]">1,043</span>
+              <div className="flex justify-center border-b" style={{ gap: 40, paddingBottom: 24, marginBottom: 24, borderColor: "#f0f0f0" }}>
+                <div className="flex flex-col items-center cursor-pointer group" style={{ gap: 6 }}>
+                  <svg className="transition-colors text-gray-500 group-hover:text-black" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+                  <span className="font-semibold transition-colors text-gray-500 group-hover:text-black" style={{ fontSize: 13 }}>1,043</span>
                 </div>
-                <div className="flex flex-col items-center gap-[6px] cursor-pointer group">
-                  <svg className="text-[#858a8d] group-hover:text-[#1a1a1a] transition-colors" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg>
-                  <span className="text-[13px] font-[600] text-[#858a8d] group-hover:text-[#1a1a1a]">공유</span>
+                <div className="flex flex-col items-center cursor-pointer group" style={{ gap: 6 }}>
+                  <svg className="transition-colors text-gray-500 group-hover:text-black" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg>
+                  <span className="font-semibold transition-colors text-gray-500 group-hover:text-black" style={{ fontSize: 13 }}>공유</span>
                 </div>
               </div>
 
               {/* Class Features */}
-              <div className="flex flex-col gap-[14px]">
-                <div className="flex items-center gap-[12px] text-[14px] text-[#3e4042] font-[500]">
-                  <span className="text-[18px]">🎥</span> {totalLessons}개 강의 {lecture.total_duration ? `(총 ${lecture.total_duration})` : ""}
+              <div className="flex flex-col" style={{ gap: 14 }}>
+                <div className="flex items-center font-medium" style={{ gap: 12, fontSize: 14, color: "#3e4042" }}>
+                  <span style={{ fontSize: 18 }}>🎥</span> {totalLessons}개 강의 {lecture.total_duration ? `(총 ${lecture.total_duration})` : ""}
                 </div>
-                <div className="flex items-center gap-[12px] text-[14px] text-[#3e4042] font-[500]">
-                  <span className="text-[18px]">📝</span> 수업 노트 및 PDF 교재 제공
+                <div className="flex items-center font-medium" style={{ gap: 12, fontSize: 14, color: "#3e4042" }}>
+                  <span style={{ fontSize: 18 }}>📝</span> 수업 노트 및 PDF 교재 제공
                 </div>
-                <div className="flex items-center gap-[12px] text-[14px] text-[#3e4042] font-[500]">
-                  <span className="text-[18px]">💬</span> 크리에이터 Q&A 및 피드백
+                <div className="flex items-center font-medium" style={{ gap: 12, fontSize: 14, color: "#3e4042" }}>
+                  <span style={{ fontSize: 18 }}>💬</span> 크리에이터 Q&A 및 피드백
                 </div>
-                <div className="flex items-center gap-[12px] text-[14px] text-[#3e4042] font-[500]">
-                  <span className="text-[18px]">♾️</span> 결제 후 {lecture.duration_months || 5}개월 무제한 수강
+                <div className="flex items-center font-medium" style={{ gap: 12, fontSize: 14, color: "#3e4042" }}>
+                  <span style={{ fontSize: 18 }}>♾️</span> 결제 후 {lecture.duration_months || 5}개월 무제한 수강
                 </div>
               </div>
 
