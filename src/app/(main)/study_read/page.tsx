@@ -302,7 +302,7 @@ function StudyReadContent() {
             {/* Sticky Tab */}
             <div className="sticky bg-white z-50 flex border-b transition-colors" style={{ position: "sticky", top: 136, borderColor: "#f0f0f0", marginBottom: 48 }}>
               {["introduce", "curriculum", "review", "creator"].map((tabId) => {
-                const labels: any = { introduce: "클래스 소개", curriculum: "커리큘럼", creator: "크리에이터", review: `리뷰 ${lecture.review_count || reviews.length}` };
+                const labels: any = { introduce: "특강 소개", curriculum: "커리큘럼", creator: "크리에이터", review: `리뷰 ${lecture.review_count || reviews.length}` };
                 const isActive = activeTab === tabId;
                 return (
                   <button key={tabId} onClick={() => scrollToAnchor(tabId)}
@@ -315,9 +315,9 @@ function StudyReadContent() {
               })}
             </div>
 
-            {/* 1. 클래스 소개 */}
+            {/* 1. 특강 소개 */}
             <div id="introduce" style={{ paddingTop: 10, marginBottom: 80 }}>
-              <h2 className="font-bold leading-snug" style={{ fontSize: 24, color: "#1a1a1a", marginBottom: 28 }}>이 클래스를 듣고 나면<br />이런 걸 할 수 있게 될 거예요</h2>
+              <h2 className="font-bold leading-snug" style={{ fontSize: 24, color: "#1a1a1a", marginBottom: 28 }}>이 특강을 듣고 나면<br />이런 걸 할 수 있게 될 거예요</h2>
               {lecture.description ? (
                 <div className="break-keep" style={{ fontSize: 16, lineHeight: 1.8, color: "#3e4042" }} dangerouslySetInnerHTML={{ __html: lecture.description }} />
               ) : (
@@ -544,7 +544,7 @@ function StudyReadContent() {
               <div className="flex items-center font-semibold border-b" style={{ gap: 12, fontSize: 14, color: "#1a1a1a", marginBottom: 24, paddingBottom: 24, borderColor: "#f0f0f0" }}>
                 <span className="flex items-center" style={{ gap: 4, color: "#f5a623" }}>⭐ {lecture.rating || "5.0"} <span className="font-medium" style={{ color: "#858a8d" }}>({lecture.review_count || reviews.length})</span></span>
                 <span style={{ color: "#e4e4e4" }}>|</span>
-                <span className="flex items-center" style={{ gap: 4, color: "#858a8d" }}><span style={{ color: "#1a1a1a" }}>👍</span> 추천 클래스</span>
+                <span className="flex items-center" style={{ gap: 4, color: "#858a8d" }}><span style={{ color: "#1a1a1a" }}>👍</span> 추천 특강</span>
               </div>
 
               {/* Price Section */}
@@ -585,7 +585,7 @@ function StudyReadContent() {
                 onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#047857"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "#059669"; }}
               >
-                클래스 수강 시작하기
+                특강 수강 시작하기
               </button>
 
               {/* Share & Like */}
