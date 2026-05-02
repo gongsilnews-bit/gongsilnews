@@ -639,7 +639,7 @@ function MobileVacancyWrite() {
         )}
 
         {/* 저장 버튼 */}
-        <div style={{ display:"flex", gap:10 }}>
+        <div style={{ position: "fixed", bottom: 65, left: 0, right: 0, background: "#fff", borderTop: "1px solid #e5e7eb", padding: "12px 16px", display: "flex", gap: 10, zIndex: 50 }}>
           <button type="button" disabled={submitting} onClick={()=>handleSubmit(isRealtor ? "ACTIVE" : "PENDING")}
             style={{ flex:1, height:52, background: submitting?"#9ca3af": isRealtor?"linear-gradient(135deg,#10b981,#059669)":"linear-gradient(135deg,#3b82f6,#2563eb)", color:"#fff", border:"none", borderRadius:12, fontSize:16, fontWeight:800, cursor: submitting?"not-allowed":"pointer", boxShadow: isRealtor?"0 4px 12px rgba(16,185,129,0.3)":"0 4px 12px rgba(37,99,235,0.3)" }}>
             {submitting ? "처리 중..." : editId ? "✅ 수정완료" : isRealtor ? "✅ 등록 (바로발행)" : "✅ 등록 (승인신청)"}

@@ -627,7 +627,7 @@ function MobileArticleWrite() {
       </div>
 
       {/* 하단 고정 바 */}
-      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#fff", borderTop: "1px solid #e5e7eb", padding: "12px 16px 24px", display: "flex", gap: 10, zIndex: 50 }}>
+      <div style={{ position: "fixed", bottom: 65, left: 0, right: 0, background: "#fff", borderTop: "1px solid #e5e7eb", padding: "12px 16px", display: "flex", gap: 10, zIndex: 50 }}>
         <button
           onClick={() => handleSave(false)}
           disabled={saving}
