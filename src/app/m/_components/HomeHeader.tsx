@@ -3,8 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import Link from "next/link";
 import dynamic from 'next/dynamic';
+import { useRouter } from 'next/navigation';
 
-const HamburgerMenu = dynamic(() => import('./header/HamburgerMenu'), { ssr: false });
 const SearchOverlay = dynamic(() => import('./header/SearchOverlay'), { ssr: false });
 
 interface HomeHeaderProps {
@@ -23,19 +23,18 @@ export default function HomeHeader({
   highlightColor = '#fcd34d'
 }: HomeHeaderProps = {}) {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const router = useRouter();
 
-  // 로그인 성공 후 돌아오면 자동으로 햄버거 메뉴 열기
+  // 로그인 성공 시 돌아오면 자동으로 마이페이지로 이동
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('login') === 'success') {
       const timer = setTimeout(() => {
-        setIsMenuOpen(true);
-        window.history.replaceState({}, '', '/m');
+        router.push('/m/mypage');
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, []);
+  }, [router]);
 
   return (
     <>
@@ -78,19 +77,18 @@ export default function HomeHeader({
             </svg>
           </button>
 
-          {/* 햄버거 메뉴 아이콘 */}
-          <button style={{ padding: 0, background: 'none', border: 'none', cursor: 'pointer', display: 'flex' }} onClick={() => setIsMenuOpen(true)}>
+          {/* 햄버거 메뉴 아이콘 (마이페이지로 이동) */}
+          <Link href="/m/mypage" style={{ padding: 0, background: 'none', border: 'none', cursor: 'pointer', display: 'flex' }}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="3" y1="12" x2="21" y2="12"></line>
               <line x1="3" y1="6" x2="21" y2="6"></line>
               <line x1="3" y1="18" x2="21" y2="18"></line>
             </svg>
-          </button>
+          </Link>
         </div>
       </header>
 
       {isSearchOpen && <SearchOverlay isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />}
-      {isMenuOpen && <HamburgerMenu isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} />}
 
       <style>{`
         @keyframes sloganFadeIn {
