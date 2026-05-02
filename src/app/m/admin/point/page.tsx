@@ -224,7 +224,7 @@ function MobileUserPointView({ memberId, userName, balance, transactions, loadin
   );
 }
 
-function MobileAdminPointView({ userName }: { userName: string }) {
+function MobileAdminPointView({ userName, activeKeyword }: { userName: string, activeKeyword: string }) {
   const [tab, setTab] = useState<"members" | "transactions" | "settings">("members");
 
   const [members, setMembers] = useState<any[]>([]);
@@ -232,7 +232,6 @@ function MobileAdminPointView({ userName }: { userName: string }) {
   const [adjustModal, setAdjustModal] = useState<{ id: string; name: string } | null>(null);
   const [adjustAmount, setAdjustAmount] = useState("");
   const [adjustReason, setAdjustReason] = useState("");
-  const [memberSearchQuery, setMemberSearchQuery] = useState("");
 
   const [transactions, setTransactions] = useState<any[]>([]);
   const [txLoading, setTxLoading] = useState(true);
@@ -319,20 +318,10 @@ function MobileAdminPointView({ userName }: { userName: string }) {
               </div>
             </div>
 
-            <div style={{ marginBottom: 16 }}>
-              <input 
-                type="text" 
-                placeholder="이름 또는 이메일 검색" 
-                value={memberSearchQuery}
-                onChange={e => setMemberSearchQuery(e.target.value)}
-                style={{ width: "100%", height: 44, padding: "0 14px", borderRadius: 8, border: "1px solid #d1d5db", fontSize: 14, outline: "none", boxSizing: "border-box", background: "#fff" }}
-              />
-            </div>
-
             {membersLoading ? (
               <div style={{ textAlign: "center", padding: "40px", color: "#6b7280" }}>불러오는 중...</div>
             ) : (
-              members.filter(m => !memberSearchQuery || (m.name || "").includes(memberSearchQuery) || (m.email || "").includes(memberSearchQuery)).map(m => (
+              members.filter(m => !activeKeyword || (m.name || "").includes(activeKeyword) || (m.email || "").includes(activeKeyword)).map(m => (
                 <div key={m.id} style={{ background: "#fff", borderRadius: 12, padding: "16px", marginBottom: 12, border: "1px solid #e5e7eb", boxShadow: "0 1px 2px rgba(0,0,0,0.05)" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                     <div style={{ flex: 1, minWidth: 0, paddingRight: 8 }}>
@@ -451,6 +440,11 @@ function MobilePointMain() {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // 상단 검색 
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchKeyword, setSearchKeyword] = useState("");
+  const [activeKeyword, setActiveKeyword] = useState("");
+
   useEffect(() => {
     (async () => {
       const supabase = createClient();
@@ -491,15 +485,41 @@ function MobilePointMain() {
 
   return (
     <div style={{ minHeight: "100dvh", background: "#f4f5f7", fontFamily: "'Pretendard Variable', -apple-system, sans-serif" }}>
-      <div style={{ position: "sticky", top: 0, zIndex: 50, background: "#fff", borderBottom: "1px solid #e5e7eb", padding: "0 16px", height: 56, display: "flex", alignItems: "center", gap: 12 }}>
-        <button onClick={() => router.push('/m?menu=open')} style={{ background: "none", border: "none", cursor: "pointer", padding: 4, display: "flex" }}>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M15 18L9 12L15 6" stroke="#333" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-        </button>
-        <h1 style={{ fontSize: 18, fontWeight: 800, color: "#111", margin: 0 }}>{isAdmin ? "포인트 관리" : "내 포인트"}</h1>
+      <div style={{ position: "sticky", top: 0, zIndex: 50, background: "#fff", borderBottom: "1px solid #e5e7eb", padding: "0 16px", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <button onClick={() => router.push('/m?menu=open')} style={{ background: "none", border: "none", cursor: "pointer", padding: 4, display: "flex" }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M15 18L9 12L15 6" stroke="#333" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </button>
+          <h1 style={{ fontSize: 18, fontWeight: 800, color: "#111", margin: 0 }}>{isAdmin ? "포인트 관리" : "내 포인트"}</h1>
+        </div>
+        {isAdmin && (
+          <button onClick={() => setSearchOpen(!searchOpen)} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+          </button>
+        )}
       </div>
 
+      {searchOpen && isAdmin && (
+        <div style={{ background: "#fff", padding: "12px 16px", borderBottom: "1px solid #e5e7eb", display: "flex", gap: 8 }}>
+          <input
+            type="text"
+            value={searchKeyword}
+            onChange={e => setSearchKeyword(e.target.value)}
+            onKeyDown={e => { if (e.key === "Enter") setActiveKeyword(searchKeyword); }}
+            placeholder="이름 또는 이메일 검색"
+            style={{ flex: 1, height: 40, padding: "0 12px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, outline: "none" }}
+          />
+          <button onClick={() => setActiveKeyword(searchKeyword)} style={{ height: 40, padding: "0 16px", background: "#374151", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700 }}>검색</button>
+          {activeKeyword && (
+            <button onClick={() => { setSearchKeyword(""); setActiveKeyword(""); }} style={{ height: 40, padding: "0 12px", background: "#fff", color: "#6b7280", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 13, fontWeight: 600 }}>초기화</button>
+          )}
+        </div>
+      )}
+
       {isAdmin ? (
-        <MobileAdminPointView userName={memberInfo?.name || "관리자"} />
+        <MobileAdminPointView userName={memberInfo?.name || "관리자"} activeKeyword={activeKeyword} />
       ) : (
         <MobileUserPointView memberId={memberInfo?.id} userName={memberInfo?.name} balance={balance} transactions={transactions} loading={loading} setBalance={setBalance} setTransactions={setTransactions} />
       )}
