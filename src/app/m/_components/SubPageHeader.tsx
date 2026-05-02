@@ -36,7 +36,12 @@ export default function SubPageHeader({ title }: SubPageHeaderProps) {
 
         {/* 중앙 타이틀 (선택적) */}
         {title && (
-          <span style={{ fontSize: '16px', fontWeight: 700, color: '#111827', position: 'absolute', left: '50%', transform: 'translateX(-50%)' }}>
+          <span style={{ 
+            fontSize: '16px', fontWeight: 700, color: '#111827', 
+            position: 'absolute', left: '50%', transform: 'translateX(-50%)',
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+            maxWidth: '55%', textAlign: 'center'
+          }}>
             {title}
           </span>
         )}
