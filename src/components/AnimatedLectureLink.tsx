@@ -11,6 +11,7 @@ export default function AnimatedLectureLink({ href, children, className, style }
     e.preventDefault();
     setIsAnimating(true);
     setTimeout(() => {
+      window.scrollTo(0, 0);
       router.push(href);
       setTimeout(() => setIsAnimating(false), 500);
     }, 150);

@@ -13,6 +13,7 @@ export default function AnimatedLectureLink({ href, children }: { href: string; 
     
     // 0.15초 동안 사각형이 커지는 애니메이션을 보여준 뒤 페이지 이동
     setTimeout(() => {
+      window.scrollTo(0, 0);
       router.push(href);
       // 뒤로가기로 돌아왔을 때를 대비해 상태 초기화 (페이지 전환 완료 후)
       setTimeout(() => setIsAnimating(false), 500);
