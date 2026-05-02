@@ -401,6 +401,23 @@ function MobileGongsilContent() {
     }
   }, []);
 
+  // 카카오 Share SDK 로드 (공유 기능용)
+  useEffect(() => {
+    const scriptId = "kakao-share-script";
+    if (document.getElementById(scriptId)) return;
+    const script = document.createElement("script");
+    script.id = scriptId;
+    script.src = "https://t1.kakaocdn.net/kakao_js_sdk/2.7.4/kakao.min.js";
+    script.onload = () => {
+      const Kakao = (window as any).Kakao;
+      if (Kakao && !Kakao.isInitialized()) {
+        const kakaoJsKey = process.env.NEXT_PUBLIC_KAKAO_JS_KEY || KAKAO_APP_KEY;
+        Kakao.init(kakaoJsKey);
+      }
+    };
+    document.head.appendChild(script);
+  }, []);
+
   // 마커 그리기
   useEffect(() => {
     if (!kakaoMapRef.current || !mapLoaded || vacancies.length === 0) return;
