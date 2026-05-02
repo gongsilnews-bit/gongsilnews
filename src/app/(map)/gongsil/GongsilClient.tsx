@@ -812,8 +812,18 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     const kakao = (window as any).kakao;
     if (!mapRef.current || kakaoMapRef.current) return;
 
+    let initialLat = 37.498095;
+    let initialLng = 127.027610;
+    if (initialVacancies && initialVacancies.length > 0) {
+      const firstValid = initialVacancies.find((v: any) => v.lat && v.lng);
+      if (firstValid) {
+        initialLat = firstValid.lat;
+        initialLng = firstValid.lng;
+      }
+    }
+
     kakaoMapRef.current = new kakao.maps.Map(mapRef.current, {
-      center: new kakao.maps.LatLng(37.498095, 127.027610),
+      center: new kakao.maps.LatLng(initialLat, initialLng),
       level: 6,
     });
 

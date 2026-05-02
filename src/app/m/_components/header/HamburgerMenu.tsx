@@ -88,9 +88,9 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
   };
 
   const getRoleLabel = (role?: string) => {
-    if (role === 'ADMIN') return '관리자';
-    if (role === 'REALTOR' || role === '부동산회원') return '부동산회원';
-    return '일반회원';
+    if (role === 'ADMIN') return '최고관리자';
+    if (role === 'REALTOR' || role === '부동산회원') return '부동산';
+    return '일반';
   };
 
   const getRoleBadgeStyle = (role?: string): React.CSSProperties => {
@@ -200,8 +200,10 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
                           {getRoleLabel(memberData?.role || 'USER')}
                         </span>
                       </div>
-                      <p style={{ fontSize: '11px', opacity: 0.7, margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {memberData?.email || currentUser.email}
+                      <p style={{ fontSize: '11px', opacity: 0.7, margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{memberData?.email || currentUser.email}</span>
+                        {currentUser?.app_metadata?.provider === 'google' && <span style={{ fontSize: '9px', background: 'rgba(255,255,255,0.2)', padding: '2px 6px', borderRadius: '4px', flexShrink: 0 }}>구글</span>}
+                        {currentUser?.app_metadata?.provider === 'kakao' && <span style={{ fontSize: '9px', background: '#FEE500', color: '#000', padding: '2px 6px', borderRadius: '4px', flexShrink: 0 }}>카카오</span>}
                       </p>
                     </div>
                   </div>

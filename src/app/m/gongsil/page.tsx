@@ -358,8 +358,18 @@ function MobileGongsilContent() {
       const kakao = (window as any).kakao;
       if (!kakao?.maps) return;
 
+      let initialLat = 37.5665;
+      let initialLng = 126.978;
+      if (vacancies && vacancies.length > 0) {
+        const firstValid = vacancies.find((v: any) => v.lat && v.lng);
+        if (firstValid) {
+          initialLat = firstValid.lat;
+          initialLng = firstValid.lng;
+        }
+      }
+
       const map = new kakao.maps.Map(mapRef.current, {
-        center: new kakao.maps.LatLng(37.5665, 126.978),
+        center: new kakao.maps.LatLng(initialLat, initialLng),
         level: 7,
       });
 

@@ -55,9 +55,9 @@ export default function MobileMyPage() {
   };
 
   const getRoleLabel = (role?: string) => {
-    if (role === 'ADMIN') return '관리자';
-    if (role === 'REALTOR' || role === '부동산회원') return '부동산회원';
-    return '일반회원';
+    if (role === 'ADMIN') return '최고관리자';
+    if (role === 'REALTOR' || role === '부동산회원') return '부동산';
+    return '일반';
   };
 
   const getRoleBadgeStyle = (role?: string): React.CSSProperties => {
