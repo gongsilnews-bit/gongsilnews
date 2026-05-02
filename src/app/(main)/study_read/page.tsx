@@ -300,7 +300,7 @@ function StudyReadContent() {
             </div>
 
             {/* Sticky Tab */}
-            <div className="sticky bg-white z-50 flex border-b transition-colors" style={{ position: "sticky", top: 160, borderColor: "#f0f0f0", marginBottom: 48 }}>
+            <div className="sticky bg-white z-50 flex border-b transition-colors" style={{ position: "sticky", top: 180, borderColor: "#f0f0f0", marginBottom: 48 }}>
               {["introduce", "curriculum", "review", "creator"].map((tabId) => {
                 const labels: any = { introduce: "클래스 소개", curriculum: "커리큘럼", creator: "크리에이터", review: `리뷰 ${lecture.review_count || reviews.length}` };
                 const isActive = activeTab === tabId;
@@ -525,7 +525,7 @@ function StudyReadContent() {
 
           {/* 우측 Sticky 박스 (Class101 스타일) */}
           <div className="shrink-0" style={{ width: 360 }}>
-            <div className="sticky" style={{ position: "sticky", top: 136 }}>
+            <div className="sticky" style={{ position: "sticky", top: 180 }}>
               
               {/* Creator Info (Small) */}
               <div className="flex items-center font-bold" style={{ gap: 8, marginBottom: 12, fontSize: 14, color: "#1a1a1a" }}>
