@@ -4,8 +4,9 @@ import MobileStudyWatchClient from "./MobileStudyWatchClient";
 
 export const dynamic = 'force-dynamic';
 
-export default async function MobileStudyWatchPage({ searchParams }: { searchParams: { id?: string } }) {
-  const lectureId = searchParams.id;
+export default async function MobileStudyWatchPage({ searchParams }: { searchParams: Promise<{ id?: string }> }) {
+  const resolvedParams = await searchParams;
+  const lectureId = resolvedParams.id;
   let initialLecture = null;
 
   if (lectureId) {
