@@ -247,7 +247,7 @@ function StudyReadContent() {
         </div>
       )}
 
-      <main className="w-full max-w-[1200px] mx-auto px-4 md:px-6" style={{ paddingBottom: 120 }}>
+      <main className="w-full px-4 md:px-6" style={{ maxWidth: 1200, margin: "0 auto", paddingBottom: 120, paddingTop: 40 }}>
         {/* Breadcrumb */}
         <div className="flex items-center font-medium" style={{ fontSize: 13, color: "#858a8d", marginBottom: 24, gap: 8 }}>
           <span className="cursor-pointer hover:text-black transition-colors">부동산 특강</span>
