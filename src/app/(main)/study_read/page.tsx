@@ -41,6 +41,17 @@ function StudyReadContent() {
   const [userName, setUserName] = useState<string>("");
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
+  /* ── 리뷰 캐러셀 ── */
+  const [reviewStartIndex, setReviewStartIndex] = useState(0);
+
+  useEffect(() => {
+    if (!lecture?.reviews || lecture.reviews.length <= 3) return;
+    const timer = setInterval(() => {
+      setReviewStartIndex((prev) => (prev + 3 >= lecture.reviews.length ? 0 : prev + 3));
+    }, 2000);
+    return () => clearInterval(timer);
+  }, [lecture?.reviews]);
+
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(async ({ data }) => {
@@ -176,6 +187,17 @@ function StudyReadContent() {
   const chapters = lecture.chapters || [];
   const reviews = lecture.reviews || [];
   const totalLessons = chapters.reduce((sum: number, ch: any) => sum + (ch.lessons?.length || 0), 0);
+
+  const getVisibleReviews = () => {
+    if (reviews.length === 0) return [];
+    if (reviews.length <= 3) return reviews;
+    const visible = [];
+    for (let i = 0; i < 3; i++) {
+      visible.push(reviews[(reviewStartIndex + i) % reviews.length]);
+    }
+    return visible;
+  };
+  const visibleReviews = getVisibleReviews();
 
   return (
     <div className="bg-white font-sans text-gray-900" style={{ minWidth: 1200 }}>
@@ -402,9 +424,9 @@ function StudyReadContent() {
               </div>
               {reviews.length > 0 ? (
                 <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2" style={{ gap: 16, paddingBottom: 16 }}>
-                    {reviews.map((review: any, idx: number) => (
-                      <div key={review.id || idx} className="flex flex-col bg-white" style={{ padding: 24, border: "1px solid #f0f0f0", borderRadius: 12, boxShadow: "0 2px 12px rgba(0,0,0,0.03)" }}>
+                  <div className="grid grid-cols-1 sm:grid-cols-3" style={{ gap: 16, paddingBottom: 16 }}>
+                    {visibleReviews.map((review: any, idx: number) => (
+                      <div key={`${review.id || idx}-${reviewStartIndex}`} className="flex flex-col bg-white" style={{ padding: 24, border: "1px solid #f0f0f0", borderRadius: 12, boxShadow: "0 2px 12px rgba(0,0,0,0.03)", transition: "all 0.3s ease-in-out", animation: "fadeIn 0.5s" }}>
                         <div className="flex items-center" style={{ gap: 8, marginBottom: 16 }}>
                           <div className="flex" style={{ gap: 2, color: "#f5a623", fontSize: 14 }}>{"⭐".repeat(review.rating || 5)}</div>
                           <span className="font-bold" style={{ fontSize: 14, color: "#1a1a1a" }}>{review.rating || 5}</span>
@@ -425,7 +447,7 @@ function StudyReadContent() {
                       </div>
                     ))}
                   </div>
-                  {reviews.length > 4 && (
+                  {reviews.length > 3 && (
                     <button className="w-full font-bold hover:bg-gray-50 transition-colors" style={{ marginTop: 16, padding: "16px 0", border: "1px solid #e4e4e4", borderRadius: 8, fontSize: 15, color: "#1a1a1a" }}>
                       {lecture.review_count || reviews.length}개 리뷰 전체 보기
                     </button>
@@ -564,6 +586,12 @@ function StudyReadContent() {
         </div>
       </main>
       {isAuthModalOpen && <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />}
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(5px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </div>
   );
 }
