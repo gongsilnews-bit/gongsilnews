@@ -1,5 +1,5 @@
 import React from 'react';
-import Link from 'next/link';
+import AnimatedLectureLink from './_components/AnimatedLectureLink';
 import HomeHeader from '../_components/HomeHeader';
 import { getLectures } from '@/app/actions/lecture';
 
@@ -37,7 +37,7 @@ export default async function MobileStudyPage() {
           <div style={{ textAlign: 'center', padding: '40px 0', color: '#999' }}>등록된 강의가 없습니다.</div>
         ) : (
           lectures.map((lecture: any) => (
-            <Link key={lecture.id} href={`/m/study_read?id=${lecture.id}`} style={{ textDecoration: 'none' }}>
+            <AnimatedLectureLink key={lecture.id} href={`/m/study_read?id=${lecture.id}`}>
               <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)', border: '1px solid #f3f4f6', cursor: 'pointer' }}>
                 
                 {/* 썸네일 */}
@@ -77,7 +77,7 @@ export default async function MobileStudyPage() {
                   </div>
                 </div>
               </div>
-            </Link>
+            </AnimatedLectureLink>
           ))
         )}
       </div>
