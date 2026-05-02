@@ -182,7 +182,7 @@ function StudyReadContent() {
           <span className="cursor-pointer hover:text-black transition-colors">{lecture.category || "중개실무"}</span>
         </div>
 
-        <div className="flex relative items-start" style={{ gap: 48 }}>
+        <div className="flex relative" style={{ gap: 48, alignItems: "stretch" }}>
           {/* 좌측 메인 콘텐츠 */}
           <div className="flex-1 min-w-0">
 
@@ -227,7 +227,7 @@ function StudyReadContent() {
             </div>
 
             {/* Sticky Tab */}
-            <div className="sticky bg-white z-50 flex border-b transition-colors" style={{ top: 80, borderColor: "#f0f0f0", marginBottom: 48 }}>
+            <div className="sticky bg-white z-50 flex border-b transition-colors" style={{ position: "sticky", top: 80, borderColor: "#f0f0f0", marginBottom: 48 }}>
               {["introduce", "curriculum", "review", "creator"].map((tabId) => {
                 const labels: any = { introduce: "클래스 소개", curriculum: "커리큘럼", creator: "크리에이터", review: `리뷰 ${lecture.review_count || reviews.length}` };
                 const isActive = activeTab === tabId;
@@ -383,7 +383,7 @@ function StudyReadContent() {
 
           {/* 우측 Sticky 박스 (Class101 스타일) */}
           <div className="shrink-0" style={{ width: 360 }}>
-            <div className="sticky" style={{ top: 100 }}>
+            <div className="sticky" style={{ position: "sticky", top: 100 }}>
               
               {/* Creator Info (Small) */}
               <div className="flex items-center font-bold" style={{ gap: 8, marginBottom: 12, fontSize: 14, color: "#1a1a1a" }}>
