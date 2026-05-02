@@ -10,8 +10,6 @@ export default async function NewsAllPage({ searchParams }: PageProps) {
   const searchQuery = resolvedParams.q as string | undefined;
   const keywordMatch = resolvedParams.keyword as string | undefined;
   const authorMatch = resolvedParams.author_name as string | undefined;
-  const mode = resolvedParams.mode as string | undefined;
-  const isBookmarkMode = mode === "bookmarks";
 
   const isSearching = !!(searchQuery || keywordMatch || authorMatch);
 
@@ -37,10 +35,9 @@ export default async function NewsAllPage({ searchParams }: PageProps) {
   const importantArticles = importantRes.success ? (importantRes.data || []) : [];
 
   let pageTitle = "전체뉴스";
-  if (isBookmarkMode) pageTitle = "관심기사";
-  else if (searchQuery) pageTitle = `"${searchQuery}" 검색결과`;
-  else if (keywordMatch) pageTitle = `키워드 검색결과 : #${keywordMatch}`;
-  else if (authorMatch) pageTitle = `${authorMatch} 기자의 글`;
+  if (searchQuery) pageTitle = `"${searchQuery}" 검색결과`;
+  if (keywordMatch) pageTitle = `키워드 검색결과 : #${keywordMatch}`;
+  if (authorMatch) pageTitle = `${authorMatch} 기자의 글`;
 
-  return <NewsListLayout category="all" title={pageTitle} initialArticles={articles} initialPopular={popular} importantArticles={importantArticles} searchQuery={searchQuery} isBookmarkMode={isBookmarkMode} />;
+  return <NewsListLayout category="all" title={pageTitle} initialArticles={articles} initialPopular={popular} importantArticles={importantArticles} searchQuery={searchQuery} />;
 }
