@@ -247,7 +247,7 @@ function StudyReadContent() {
         </div>
       )}
 
-      <main style={{ width: 1200, margin: "0 auto", padding: "40px 24px 120px" }}>
+      <main className="w-full max-w-[1200px] mx-auto px-4 md:px-6" style={{ paddingBottom: 120 }}>
         {/* Breadcrumb */}
         <div className="flex items-center font-medium" style={{ fontSize: 13, color: "#858a8d", marginBottom: 24, gap: 8 }}>
           <span className="cursor-pointer hover:text-black transition-colors">부동산 특강</span>
@@ -255,7 +255,7 @@ function StudyReadContent() {
           <span className="cursor-pointer hover:text-black transition-colors">{lecture.category || "중개실무"}</span>
         </div>
 
-        <div className="flex relative" style={{ gap: 48, alignItems: "stretch" }}>
+        <div className="flex flex-col lg:flex-row relative" style={{ gap: 48, alignItems: "stretch" }}>
           {/* 좌측 메인 콘텐츠 */}
           <div className="flex-1 min-w-0">
 
@@ -295,6 +295,37 @@ function StudyReadContent() {
               ) : (
                 <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)", color: "#333", fontSize: 32, fontWeight: 800 }}>
                   {lecture.category || "특강"}
+                </div>
+              )}
+            </div>
+
+            {/* ── 모바일 전용 상단 정보 (lg:hidden) ── */}
+            <div className="block lg:hidden mb-8">
+              <div className="flex items-center font-bold" style={{ gap: 8, marginBottom: 12, fontSize: 13, color: "#1a1a1a" }}>
+                <span className="rounded-full overflow-hidden" style={{ width: 18, height: 18, backgroundColor: "#eee" }}>
+                  {lecture.instructor_photo && <img src={lecture.instructor_photo} className="w-full h-full object-cover" />}
+                </span>
+                {lecture.instructor_name || "강사"} ⌂
+              </div>
+              <h1 className="font-bold leading-snug break-keep" style={{ fontSize: 22, color: "#1a1a1a", marginBottom: 12 }}>
+                {lecture.title}
+              </h1>
+              <div className="flex items-center font-semibold" style={{ gap: 12, fontSize: 13, color: "#1a1a1a", marginBottom: 16 }}>
+                <span className="flex items-center" style={{ gap: 4, color: "#f5a623" }}>⭐ {lecture.rating || "5.0"} <span className="font-medium" style={{ color: "#858a8d" }}>({lecture.review_count || reviews.length})</span></span>
+                <span style={{ color: "#e4e4e4" }}>|</span>
+                <span className="flex items-center" style={{ gap: 4, color: "#858a8d" }}><span style={{ color: "#1a1a1a" }}>👍</span> 추천 특강</span>
+              </div>
+              <div className="flex items-end tracking-tight" style={{ gap: 6, marginBottom: 4 }}>
+                {originalPrice && (
+                  <span className="font-bold" style={{ fontSize: 15, color: "#ff3f3f" }}>
+                    {Math.round((1 - displayPrice / originalPrice) * 100)}%
+                  </span>
+                )}
+                <span className="font-bold leading-none" style={{ fontSize: 24, color: "#1a1a1a" }}>{displayPrice ? displayPrice.toLocaleString() + "원" : "무료"}</span>
+              </div>
+              {monthlyPrice && (
+                <div className="font-bold" style={{ fontSize: 14, color: "#059669" }}>
+                  월 {monthlyPrice.toLocaleString()}원 <span className="font-medium" style={{ color: "#858a8d" }}>({lecture.duration_months}개월)</span>
                 </div>
               )}
             </div>
@@ -524,7 +555,7 @@ function StudyReadContent() {
           </div>
 
           {/* 우측 Sticky 박스 (Class101 스타일) */}
-          <div className="shrink-0" style={{ width: 360 }}>
+          <div className="hidden lg:block shrink-0" style={{ width: 360 }}>
             <div className="sticky" style={{ position: "sticky", top: 180 }}>
               
               {/* Creator Info (Small) */}
@@ -620,6 +651,25 @@ function StudyReadContent() {
           </div>
         </div>
       </main>
+
+      {/* ── 모바일 전용 고정 하단 결제 바 (lg:hidden) ── */}
+      <div className="block lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 p-4" style={{ paddingBottom: "max(16px, env(safe-area-inset-bottom))", boxShadow: "0 -4px 12px rgba(0,0,0,0.05)" }}>
+        <div className="flex gap-2">
+          <button className="flex items-center justify-center transition-colors hover:bg-gray-50" style={{ width: 52, height: 52, borderRadius: 8, border: "1px solid #e4e4e4", backgroundColor: "white", color: "#1a1a1a", flexShrink: 0 }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          </button>
+          <button 
+            onClick={() => router.push(`/study_watch?id=${lecture.id}`)} 
+            className="flex-1 font-bold text-white transition-colors flex items-center justify-center"
+            style={{ height: 52, borderRadius: 8, fontSize: 16, backgroundColor: "#059669" }}
+            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#047857"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "#059669"; }}
+          >
+            특강 수강 시작하기
+          </button>
+        </div>
+      </div>
+
       {isAuthModalOpen && <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />}
       <style>{`
         @keyframes fadeIn {

@@ -6,32 +6,35 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 
 export default function GlobalDrawerMenu() {
-  const [isOpen, setIsOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [memberData, setMemberData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const searchParams = useSearchParams();
   const router = useRouter();
+  const isOpen = searchParams.get('menu') === 'open';
 
   const touchStartX = useRef<number | null>(null);
   const [translateX, setTranslateX] = useState(0);
 
-  // URL 파라미터 감지하여 메뉴 열기 (뒤로가기 등)
-  useEffect(() => {
-    if (searchParams.get('menu') === 'open') {
-      setIsOpen(true);
-      // URL에서 파라미터 제거 (뒤로가기 스택 깔끔하게 유지)
-      const currentPath = window.location.pathname;
-      window.history.replaceState(null, '', currentPath);
+  const handleOpen = () => {
+    if (!isOpen) {
+      router.push(window.location.pathname + '?menu=open');
     }
-  }, [searchParams]);
+  };
 
-  // 전역 이벤트(open-drawer) 감지
+  const handleClose = () => {
+    if (isOpen) {
+      setTranslateX(0);
+      router.back();
+    }
+  };
+
+  // 전역 이벤트(open-drawer, close-drawer) 감지
   useEffect(() => {
-    const handleOpen = () => setIsOpen(true);
-    const handleClose = () => setIsOpen(false);
-    window.addEventListener('open-drawer', handleOpen);
-    window.addEventListener('close-drawer', handleClose);
+    const onOpenDrawer = () => handleOpen();
+    const onCloseDrawer = () => handleClose();
+    window.addEventListener('open-drawer', onOpenDrawer);
+    window.addEventListener('close-drawer', onCloseDrawer);
 
     // 엣지 스와이프(열기) 감지 - 화면 맨 왼쪽 30px 이내에서 터치 시작 시
     const handleTouchStart = (e: TouchEvent) => {
@@ -44,7 +47,7 @@ export default function GlobalDrawerMenu() {
       if (touchStartX.current !== null && !isOpen) {
         const diff = e.touches[0].clientX - touchStartX.current;
         if (diff > 40) { // 오른쪽으로 40px 이상 당기면 열기
-          setIsOpen(true);
+          handleOpen();
           touchStartX.current = null;
         }
       }
@@ -58,13 +61,13 @@ export default function GlobalDrawerMenu() {
     window.addEventListener('touchend', handleTouchEnd);
 
     return () => {
-      window.removeEventListener('open-drawer', handleOpen);
-      window.removeEventListener('close-drawer', handleClose);
+      window.removeEventListener('open-drawer', onOpenDrawer);
+      window.removeEventListener('close-drawer', onCloseDrawer);
       window.removeEventListener('touchstart', handleTouchStart);
       window.removeEventListener('touchmove', handleTouchMove);
       window.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [isOpen]);
+  }, [isOpen, router]);
 
   // 데이터 로딩
   useEffect(() => {
@@ -94,10 +97,7 @@ export default function GlobalDrawerMenu() {
     checkAuth();
   }, [isOpen]);
 
-  const handleClose = () => {
-    setTranslateX(0);
-    setIsOpen(false);
-  };
+
 
   const onDrawerTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
@@ -337,7 +337,7 @@ export default function GlobalDrawerMenu() {
                   <Link
                     key={item.label}
                     href={item.href}
-                    onClick={handleClose}
+                    
                     style={{
                       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                       padding: '14px 4px 10px', background: '#f8f9fb', borderRadius: '12px',
@@ -364,7 +364,7 @@ export default function GlobalDrawerMenu() {
                   <li key={item.label}>
                     <Link
                       href={item.href}
-                      onClick={handleClose}
+                      
                       style={{
                         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                         padding: '14px 20px', borderBottom: '1px solid #f3f4f6',
@@ -388,7 +388,7 @@ export default function GlobalDrawerMenu() {
               <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
                 {["전체뉴스", "우리동네뉴스", "부동산·주식·재테크", "정치·경제·사회", "세무·법률", "여행·건강·생활", "기타"].map(menu => (
                   <li key={menu}>
-                    <Link href="/m/news" onClick={handleClose} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #f9fafb', color: '#1f2937', textDecoration: 'none' }}>
+                    <Link href="/m/news"  style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #f9fafb', color: '#1f2937', textDecoration: 'none' }}>
                       <span style={{ fontSize: '15px', fontWeight: 500 }}>{menu}</span>
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
                     </Link>
@@ -408,7 +408,7 @@ export default function GlobalDrawerMenu() {
                   { name: "중개업소무료가입", path: "/m" }
                 ].map(menu => (
                   <li key={menu.name}>
-                    <Link href={menu.path} onClick={handleClose} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #f9fafb', color: '#1f2937', textDecoration: 'none' }}>
+                    <Link href={menu.path}  style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #f9fafb', color: '#1f2937', textDecoration: 'none' }}>
                       <span style={{ fontSize: '15px', fontWeight: 500 }}>{menu.name}</span>
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
                     </Link>
@@ -421,13 +421,13 @@ export default function GlobalDrawerMenu() {
             <div style={{ background: '#fff', marginBottom: '16px' }}>
               <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
                 <li>
-                  <Link href="#" onClick={handleClose} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #f3f4f6', textDecoration: 'none', color: '#374151' }}>
+                  <Link href="#"  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #f3f4f6', textDecoration: 'none', color: '#374151' }}>
                     <span style={{ fontSize: '15px', fontWeight: 500 }}>공지사항 / 이벤트</span>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
                   </Link>
                 </li>
                 <li>
-                  <Link href="#" onClick={handleClose} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #f3f4f6', textDecoration: 'none', color: '#374151' }}>
+                  <Link href="#"  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #f3f4f6', textDecoration: 'none', color: '#374151' }}>
                     <span style={{ fontSize: '15px', fontWeight: 500 }}>고객센터 (1555-5343)</span>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
                   </Link>
@@ -457,8 +457,8 @@ export default function GlobalDrawerMenu() {
         {/* ── 풋터 영역 ── */}
         <div style={{ backgroundColor: '#f3f4f6', padding: '24px 20px 80px', marginTop: '16px' }}>
           <div style={{ marginBottom: '16px', display: 'flex', gap: '16px' }}>
-            <Link href="/terms" onClick={handleClose} style={{ fontSize: '13px', fontWeight: 700, color: '#4b5563', textDecoration: 'none' }}>이용약관</Link>
-            <Link href="#" onClick={handleClose} style={{ fontSize: '13px', fontWeight: 700, color: '#4b5563', textDecoration: 'none' }}>개인정보처리방침</Link>
+            <Link href="/terms"  style={{ fontSize: '13px', fontWeight: 700, color: '#4b5563', textDecoration: 'none' }}>이용약관</Link>
+            <Link href="#"  style={{ fontSize: '13px', fontWeight: 700, color: '#4b5563', textDecoration: 'none' }}>개인정보처리방침</Link>
           </div>
           <div style={{ fontSize: '12px', color: '#9ca3af', lineHeight: 1.6 }}>
             (주)공실마케팅<br/>
