@@ -33,7 +33,9 @@ function MobileStudyReadContent() {
   const [expandedChapters, setExpandedChapters] = useState<Record<number, boolean>>({});
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewTitle, setPreviewTitle] = useState("");
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
   const tabBarRef = useRef<HTMLDivElement>(null);
+  const toggleSection = (id: string) => setExpandedSections(prev => ({ ...prev, [id]: !prev[id] }));
 
   const toEmbedUrl = (url: string): string | null => {
     if (!url) return null;
@@ -264,17 +266,27 @@ function MobileStudyReadContent() {
         {/* 특강 소개 */}
         <div id="introduce" style={{ paddingTop: 24, paddingBottom: 24, borderBottom: "6px solid #f5f5f5" }}>
           <h2 style={{ fontSize: 18, fontWeight: 800, color: "#1a1a1a", marginBottom: 16, lineHeight: 1.5 }}>이 특강을 듣고 나면<br />이런 걸 할 수 있게 될 거예요</h2>
-          {lecture.description ? (
-            <div style={{ fontSize: 14, lineHeight: 1.8, color: "#444", wordBreak: "keep-all" }} dangerouslySetInnerHTML={{ __html: lecture.description }} />
-          ) : (
-            <div style={{ fontSize: 14, color: "#999" }}>강의 상세 소개가 준비 중입니다.</div>
-          )}
+          <div style={{ position: "relative", maxHeight: expandedSections["introduce"] ? "none" : 280, overflow: "hidden", transition: "max-height 0.3s ease" }}>
+            {lecture.description ? (
+              <div style={{ fontSize: 14, lineHeight: 1.8, color: "#444", wordBreak: "keep-all" }} dangerouslySetInnerHTML={{ __html: lecture.description }} />
+            ) : (
+              <div style={{ fontSize: 14, color: "#999" }}>강의 상세 소개가 준비 중입니다.</div>
+            )}
+            {!expandedSections["introduce"] && (
+              <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 80, background: "linear-gradient(transparent, #fff)" }} />
+            )}
+          </div>
+          <button onClick={() => toggleSection("introduce")} style={{ width: "100%", padding: 12, marginTop: 8, borderRadius: 8, border: "1px solid #e8e8e8", background: "#fff", fontSize: 13, fontWeight: 600, color: "#555", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
+            <span style={{ fontSize: 16, transform: expandedSections["introduce"] ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.2s" }}>▾</span>
+            {expandedSections["introduce"] ? "숨기기" : "더보기"}
+          </button>
         </div>
 
         {/* 커리큘럼 */}
         <div id="curriculum" style={{ paddingTop: 24, paddingBottom: 24, borderBottom: "6px solid #f5f5f5" }}>
           <h2 style={{ fontSize: 18, fontWeight: 800, color: "#1a1a1a", marginBottom: 6 }}>커리큘럼</h2>
           <div style={{ fontSize: 13, color: "#999", marginBottom: 20 }}>총 {chapters.length}개 챕터, {totalLessons}개 세부 강의</div>
+          <div style={{ position: "relative", maxHeight: expandedSections["curriculum"] ? "none" : 300, overflow: "hidden", transition: "max-height 0.3s ease" }}>
           {chapters.length > 0 ? chapters.map((ch: any, ci: number) => (
             <div key={ch.id || ci} style={{ marginBottom: 12, border: "1px solid #f0f0f0", borderRadius: 10, overflow: "hidden" }}>
               <button onClick={() => setExpandedChapters(prev => ({ ...prev, [ci]: !prev[ci] }))}
@@ -305,6 +317,14 @@ function MobileStudyReadContent() {
               })}
             </div>
           )) : <div style={{ fontSize: 14, color: "#999" }}>커리큘럼이 준비 중입니다.</div>}
+            {!expandedSections["curriculum"] && (
+              <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 80, background: "linear-gradient(transparent, #fff)" }} />
+            )}
+          </div>
+          <button onClick={() => toggleSection("curriculum")} style={{ width: "100%", padding: 12, marginTop: 8, borderRadius: 8, border: "1px solid #e8e8e8", background: "#fff", fontSize: 13, fontWeight: 600, color: "#555", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
+            <span style={{ fontSize: 16, transform: expandedSections["curriculum"] ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.2s" }}>▾</span>
+            {expandedSections["curriculum"] ? "숨기기" : "더보기"}
+          </button>
         </div>
 
         {/* 리뷰 전체 */}
@@ -346,25 +366,33 @@ function MobileStudyReadContent() {
           )}
         </div>
 
-        {/* 크리에이터 */}
         <div id="creator" style={{ paddingTop: 24, paddingBottom: 24 }}>
           <h2 style={{ fontSize: 18, fontWeight: 800, color: "#1a1a1a", marginBottom: 16 }}>크리에이터 소개</h2>
-          <div style={{ padding: 20, background: "#fafafa", borderRadius: 12 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
-              <div style={{ width: 56, height: 56, borderRadius: "50%", overflow: "hidden", background: "#e4e4e4", flexShrink: 0 }}>
-                {lecture.instructor_photo ? <img src={lecture.instructor_photo} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg,#a8edea,#fed6e3)", fontSize: 24 }}>👨‍🏫</div>}
+          <div style={{ position: "relative", maxHeight: expandedSections["creator"] ? "none" : 200, overflow: "hidden", transition: "max-height 0.3s ease" }}>
+            <div style={{ padding: 20, background: "#fafafa", borderRadius: 12 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
+                <div style={{ width: 56, height: 56, borderRadius: "50%", overflow: "hidden", background: "#e4e4e4", flexShrink: 0 }}>
+                  {lecture.instructor_photo ? <img src={lecture.instructor_photo} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg,#a8edea,#fed6e3)", fontSize: 24 }}>👨‍🏫</div>}
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "#999", marginBottom: 2 }}>공실뉴스 공인 크리에이터</div>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: "#1a1a1a" }}>{lecture.instructor_name || "강사"}</div>
+                </div>
               </div>
-              <div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "#999", marginBottom: 2 }}>공실뉴스 공인 크리에이터</div>
-                <div style={{ fontSize: 18, fontWeight: 800, color: "#1a1a1a" }}>{lecture.instructor_name || "강사"}</div>
-              </div>
+              {lecture.instructor_bio ? (
+                <div style={{ fontSize: 13, lineHeight: 1.8, color: "#555" }} dangerouslySetInnerHTML={{ __html: lecture.instructor_bio.replace(/\n/g, "<br/>") }} />
+              ) : (
+                <div style={{ fontSize: 13, color: "#999" }}>강사 소개가 준비 중입니다.</div>
+              )}
             </div>
-            {lecture.instructor_bio ? (
-              <div style={{ fontSize: 13, lineHeight: 1.8, color: "#555" }} dangerouslySetInnerHTML={{ __html: lecture.instructor_bio.replace(/\n/g, "<br/>") }} />
-            ) : (
-              <div style={{ fontSize: 13, color: "#999" }}>강사 소개가 준비 중입니다.</div>
+            {!expandedSections["creator"] && (
+              <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 80, background: "linear-gradient(transparent, #fff)" }} />
             )}
           </div>
+          <button onClick={() => toggleSection("creator")} style={{ width: "100%", padding: 12, marginTop: 8, borderRadius: 8, border: "1px solid #e8e8e8", background: "#fff", fontSize: 13, fontWeight: 600, color: "#555", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
+            <span style={{ fontSize: 16, transform: expandedSections["creator"] ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.2s" }}>▾</span>
+            {expandedSections["creator"] ? "숨기기" : "더보기"}
+          </button>
         </div>
       </div>
 
