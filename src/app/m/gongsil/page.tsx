@@ -105,7 +105,7 @@ function MobileGongsilContent() {
   const showCommission = userLevel >= 2;
 
   // 필터 State 및 필터링 로직 (Hook으로 분리)
-  const { filters, filteredVacancies, updateFilter, activeFilterCount } = useVacancyFilters(vacancies);
+  const { filters, filteredVacancies, updateFilter, activeFilterCount, resetFilters } = useVacancyFilters(vacancies);
 
   // Swipe gesture states
   const [touchStart, setTouchStart] = useState<number | null>(null);
@@ -587,10 +587,19 @@ function MobileGongsilContent() {
           </div>
         )}
 
-        {/* 매물 수 표시 */}
+        {/* 매물 수 표시 및 초기화 버튼 */}
         {mapLoaded && (
-          <div style={{ position: "absolute", top: "16px", left: "16px", zIndex: 20, background: "rgba(255,255,255,0.95)", borderRadius: "20px", padding: "8px 14px", fontSize: "13px", fontWeight: 700, color: "#1a2e50", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}>
-            🏢 공실 {filteredVacancies.filter(v => v.lat && v.lng).length}건
+          <div style={{ position: "absolute", top: "16px", left: "16px", zIndex: 20, display: "flex", gap: "8px", alignItems: "center" }}>
+            <div style={{ background: "rgba(255,255,255,0.95)", borderRadius: "20px", padding: "8px 14px", fontSize: "13px", fontWeight: 700, color: "#1a2e50", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}>
+              🏢 공실 {filteredVacancies.filter(v => v.lat && v.lng).length}건
+            </div>
+            <button 
+              onClick={resetFilters}
+              style={{ background: "none", border: "none", padding: "4px 8px", fontSize: "13px", fontWeight: 600, color: "#4b89ff", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px", textShadow: "0 1px 2px rgba(255,255,255,0.8)" }}
+            >
+              <span style={{ fontSize: "15px", lineHeight: 1 }}>↻</span>
+              초기화
+            </button>
           </div>
         )}
 
