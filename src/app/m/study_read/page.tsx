@@ -33,6 +33,28 @@ function MobileStudyReadContent() {
   const [expandedChapters, setExpandedChapters] = useState<Record<number, boolean>>({});
   const tabBarRef = useRef<HTMLDivElement>(null);
 
+  /* ── 스크롤 시 현재 섹션에 맞게 탭 자동 활성화 ── */
+  useEffect(() => {
+    const sectionIds = ["introduce", "curriculum", "review", "creator"];
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setActiveTab(entry.target.id);
+          }
+        });
+      },
+      { rootMargin: "-90px 0px -60% 0px", threshold: 0 }
+    );
+    const timer = setTimeout(() => {
+      sectionIds.forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) observer.observe(el);
+      });
+    }, 500);
+    return () => { clearTimeout(timer); observer.disconnect(); };
+  }, [lecture]);
+
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(async ({ data }) => {
