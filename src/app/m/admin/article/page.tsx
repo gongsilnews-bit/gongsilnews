@@ -3,7 +3,14 @@
 import React, { useState, useEffect, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
-import { getMyArticles, adminUpdateArticleStatus, deleteArticle } from "@/app/actions/article";
+import { getMyArticles, getArticles, adminUpdateArticleStatus, deleteArticle } from "@/app/actions/article";
+
+const REJECT_REASONS = [
+  "사진 화질 불량 또는 이미지 누락",
+  "제목 및 본문 오타 수정 요망",
+  "사실 확인 필요 (내용 불충분)",
+  "기타 사유 (직접 입력)"
+];
 
 function MobileArticleAdmin() {
   const router = useRouter();
@@ -12,35 +19,64 @@ function MobileArticleAdmin() {
   const [loading, setLoading] = useState(true);
   const [memberId, setMemberId] = useState<string | null>(null);
   const [userName, setUserName] = useState("");
+  const [userRole, setUserRole] = useState("");
   const [authChecked, setAuthChecked] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchKeyword, setSearchKeyword] = useState("");
   const [activeKeyword, setActiveKeyword] = useState("");
+
+  // 반려 모달
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectTargetId, setRejectTargetId] = useState<string | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
+  const [rejectCustom, setRejectCustom] = useState("");
+
+  const isAdmin = (() => {
+    const r = userRole?.trim().toUpperCase() || '';
+    return r === 'ADMIN' || r === '최고관리자' || r.includes('관리자');
+  })();
 
   useEffect(() => {
     async function init() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.push("/m"); return; }
-      const { data } = await supabase.from("members").select("id, name").eq("id", user.id).single();
+      const { data } = await supabase.from("members").select("id, name, role").eq("id", user.id).single();
       if (data) {
         setMemberId(data.id);
         setUserName(data.name || "이름없음");
+        setUserRole(data.role || "");
       }
       setAuthChecked(true);
     }
     init();
   }, []);
 
+  // 기사 목록 로딩: 관리자면 전체, 일반이면 내 기사만
   useEffect(() => {
-    if (!memberId) return;
+    if (!memberId || !authChecked) return;
     (async () => {
       setLoading(true);
-      const res = await getMyArticles(memberId);
-      if (res.success) setArticles(res.data || []);
+      if (isAdmin) {
+        const res = await getArticles();
+        if (res.success) setArticles(res.data || []);
+      } else {
+        const res = await getMyArticles(memberId);
+        if (res.success) setArticles(res.data || []);
+      }
       setLoading(false);
     })();
-  }, [memberId]);
+  }, [memberId, authChecked, isAdmin]);
+
+  const refreshArticles = async () => {
+    if (isAdmin) {
+      const res = await getArticles();
+      if (res.success) setArticles(res.data || []);
+    } else {
+      const res = await getMyArticles(memberId!);
+      if (res.success) setArticles(res.data || []);
+    }
+  };
 
   const filtered = articles.filter(a => {
     if (filter === "승인대기" && a.status !== "PENDING") return false;
@@ -55,6 +91,7 @@ function MobileArticleAdmin() {
     return true;
   });
 
+  // 승인신청 (일반 회원용)
   const handleRequestApproval = async (id: string) => {
     const a = articles.find(x => x.id === id);
     if (!a || (a.status !== "DRAFT" && a.status !== "REJECTED")) {
@@ -63,19 +100,53 @@ function MobileArticleAdmin() {
     }
     if (!confirm("이 기사를 승인신청하시겠습니까?")) return;
     const res = await adminUpdateArticleStatus([id], "PENDING");
-    if (res.success) {
-      const refreshed = await getMyArticles(memberId!);
-      if (refreshed.success) setArticles(refreshed.data || []);
-    } else alert("오류: " + res.error);
+    if (res.success) await refreshArticles();
+    else alert("오류: " + res.error);
+  };
+
+  // 승인 (관리자용)
+  const handleApprove = async (id: string) => {
+    if (!confirm("이 기사를 승인(발행)하시겠습니까?")) return;
+    // 낙관적 업데이트
+    setArticles(prev => prev.map(a => a.id === id ? { ...a, status: 'APPROVED' } : a));
+    const res = await adminUpdateArticleStatus([id], "APPROVED");
+    if (!res.success) {
+      alert("오류: " + res.error);
+      await refreshArticles();
+    }
+  };
+
+  // 반려 모달 열기 (관리자용)
+  const openRejectModal = (id: string) => {
+    setRejectTargetId(id);
+    setRejectReason(REJECT_REASONS[0]);
+    setRejectCustom("");
+    setShowRejectModal(true);
+  };
+
+  // 반려 처리
+  const handleReject = async () => {
+    if (!rejectTargetId) return;
+    const finalReason = rejectReason === "기타 사유 (직접 입력)" ? rejectCustom : rejectReason;
+    if (!finalReason.trim()) {
+      alert("반려 사유를 입력해주세요.");
+      return;
+    }
+    // 낙관적 업데이트
+    setArticles(prev => prev.map(a => a.id === rejectTargetId ? { ...a, status: 'REJECTED', reject_reason: finalReason } : a));
+    setShowRejectModal(false);
+    const res = await adminUpdateArticleStatus([rejectTargetId], "REJECTED", finalReason);
+    if (!res.success) {
+      alert("오류: " + res.error);
+      await refreshArticles();
+    }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm("이 기사를 삭제하시겠습니까?")) return;
     const res = await deleteArticle(id);
-    if (res.success) {
-      const refreshed = await getMyArticles(memberId!);
-      if (refreshed.success) setArticles(refreshed.data || []);
-    } else alert("삭제 실패: " + res.error);
+    if (res.success) await refreshArticles();
+    else alert("삭제 실패: " + res.error);
   };
 
   const statusInfo: Record<string, { bg: string; label: string }> = {
@@ -113,6 +184,9 @@ function MobileArticleAdmin() {
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M15 18L9 12L15 6" stroke="#333" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </button>
           <h1 style={{ fontSize: 18, fontWeight: 800, color: "#111", margin: 0 }}>기사관리</h1>
+          {isAdmin && (
+            <span style={{ fontSize: 10, padding: "2px 8px", background: "#111827", color: "#fff", borderRadius: 10, fontWeight: 700 }}>관리자</span>
+          )}
           <span style={{ fontSize: 12, color: "#6b7280", fontWeight: 600 }}>
             {articles.filter(a => a.status === "PENDING").length}건 대기 / 전체 {articles.length}건
           </span>
@@ -169,10 +243,12 @@ function MobileArticleAdmin() {
       </div>
 
       {/* 안내 배너 */}
-      <div style={{ margin: "12px 16px 0", padding: "10px 14px", background: "#eff6ff", borderRadius: 10, border: "1px solid #bfdbfe", display: "flex", alignItems: "center", gap: 8 }}>
-        <span style={{ fontSize: 16 }}>💡</span>
-        <span style={{ fontSize: 12, color: "#1d4ed8", fontWeight: 600, lineHeight: 1.4 }}>
-          기사 작성 후 &quot;승인신청&quot;을 하면 관리자 검토 후 발행됩니다.
+      <div style={{ margin: "12px 16px 0", padding: "10px 14px", background: isAdmin ? "#fef3c7" : "#eff6ff", borderRadius: 10, border: `1px solid ${isAdmin ? "#fde68a" : "#bfdbfe"}`, display: "flex", alignItems: "center", gap: 8 }}>
+        <span style={{ fontSize: 16 }}>{isAdmin ? "👑" : "💡"}</span>
+        <span style={{ fontSize: 12, color: isAdmin ? "#92400e" : "#1d4ed8", fontWeight: 600, lineHeight: 1.4 }}>
+          {isAdmin
+            ? "관리자 모드: 모든 기사를 조회하고 승인/반려할 수 있습니다."
+            : "기사 작성 후 \"승인신청\"을 하면 관리자 검토 후 발행됩니다."}
         </span>
       </div>
 
@@ -197,15 +273,22 @@ function MobileArticleAdmin() {
           return (
             <div key={a.id} style={{
               background: "#fff", borderRadius: 14, padding: "16px", marginBottom: 10,
-              boxShadow: "0 1px 4px rgba(0,0,0,0.06)", border: "1px solid #f0f0f0",
+              boxShadow: "0 1px 4px rgba(0,0,0,0.06)", border: a.status === "PENDING" && isAdmin ? "2px solid #8b5cf6" : "1px solid #f0f0f0",
             }}>
-              {/* 상단: 상태 배지 + 섹션 */}
+              {/* 상단: 상태 배지 + 섹션 + 기자명(관리자) */}
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <span style={{ padding: "4px 10px", background: st.bg, color: "#fff", borderRadius: 6, fontSize: 12, fontWeight: 700 }}>{st.label}</span>
                   <span style={{ fontSize: 12, color: "#6b7280", fontWeight: 600 }}>{a.section1 || "-"}</span>
                 </div>
-                <span style={{ fontSize: 11, color: "#9ca3af" }}>#{a.article_no || "-"}</span>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  {isAdmin && a.author_name && (
+                    <span style={{ fontSize: 11, color: "#3b82f6", fontWeight: 600, background: "#eff6ff", padding: "2px 8px", borderRadius: 6 }}>
+                      {a.author_name}
+                    </span>
+                  )}
+                  <span style={{ fontSize: 11, color: "#9ca3af" }}>#{a.article_no || "-"}</span>
+                </div>
               </div>
 
               {/* 제목 */}
@@ -230,12 +313,45 @@ function MobileArticleAdmin() {
               </div>
 
               {/* 액션 버튼 */}
-              <div style={{ display: "flex", gap: 8 }}>
-                {(a.status === "DRAFT" || a.status === "REJECTED") && (
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {/* 관리자: 승인대기 기사에 승인/반려 버튼 표시 */}
+                {isAdmin && a.status === "PENDING" && (
+                  <>
+                    <button onClick={() => handleApprove(a.id)} style={{
+                      flex: 1, height: 38, background: "linear-gradient(135deg, #10b981, #059669)", color: "#fff",
+                      border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer",
+                      display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
+                    }}>
+                      ✅ 승인
+                    </button>
+                    <button onClick={() => openRejectModal(a.id)} style={{
+                      flex: 1, height: 38, background: "linear-gradient(135deg, #ef4444, #dc2626)", color: "#fff",
+                      border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer",
+                      display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
+                    }}>
+                      🚫 반려
+                    </button>
+                  </>
+                )}
+
+                {/* 관리자: 반려/작성중 기사도 승인 가능 */}
+                {isAdmin && (a.status === "REJECTED" || a.status === "DRAFT") && (
+                  <button onClick={() => handleApprove(a.id)} style={{
+                    flex: 1, height: 38, background: "#10b981", color: "#fff",
+                    border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer",
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
+                  }}>
+                    ✅ 즉시승인
+                  </button>
+                )}
+
+                {/* 일반 회원: 승인신청 */}
+                {!isAdmin && (a.status === "DRAFT" || a.status === "REJECTED") && (
                   <button onClick={() => handleRequestApproval(a.id)} style={{ flex: 1, height: 38, background: "#8b5cf6", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
                     📋 승인신청
                   </button>
                 )}
+
                 <button onClick={() => window.open(`/news/${a.article_no || a.id}`, '_blank')} style={{ flex: 1, height: 38, background: "#eff6ff", color: "#2563eb", border: "1px solid #bfdbfe", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
                   👁️ 미리보기
                 </button>
@@ -264,6 +380,72 @@ function MobileArticleAdmin() {
       >
         +
       </button>
+
+      {/* 반려 사유 모달 */}
+      {showRejectModal && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+          <div style={{ background: "#fff", width: "100%", maxWidth: 400, borderRadius: 16, padding: 24, boxShadow: "0 10px 25px rgba(0,0,0,0.2)" }}>
+            <h3 style={{ margin: "0 0 8px 0", fontSize: 18, color: "#111", fontWeight: 800 }}>🚫 기사 반려</h3>
+            <p style={{ margin: "0 0 20px 0", fontSize: 13, color: "#6b7280", lineHeight: 1.5 }}>
+              작성자에게 전달할 반려 사유를 선택하거나 직접 입력하세요.
+            </p>
+
+            {/* 반려 사유 선택 */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
+              {REJECT_REASONS.map(reason => (
+                <button
+                  key={reason}
+                  onClick={() => { setRejectReason(reason); if (reason !== "기타 사유 (직접 입력)") setRejectCustom(""); }}
+                  style={{
+                    padding: "12px 16px", textAlign: "left", border: `2px solid ${rejectReason === reason ? "#ef4444" : "#e5e7eb"}`,
+                    borderRadius: 10, fontSize: 13, fontWeight: rejectReason === reason ? 700 : 500,
+                    color: rejectReason === reason ? "#dc2626" : "#374151",
+                    background: rejectReason === reason ? "#fef2f2" : "#fff",
+                    cursor: "pointer", transition: "all 0.15s",
+                  }}
+                >
+                  {reason}
+                </button>
+              ))}
+            </div>
+
+            {/* 직접 입력 */}
+            {rejectReason === "기타 사유 (직접 입력)" && (
+              <textarea
+                value={rejectCustom}
+                onChange={e => setRejectCustom(e.target.value)}
+                placeholder="상세 반려 사유를 직접 입력하세요."
+                style={{
+                  width: "100%", height: 80, padding: 12, border: "1px solid #d1d5db", borderRadius: 8,
+                  fontSize: 14, resize: "none", outline: "none", boxSizing: "border-box", marginBottom: 16,
+                }}
+              />
+            )}
+
+            {/* 버튼 */}
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                onClick={() => setShowRejectModal(false)}
+                style={{
+                  flex: 1, height: 44, background: "#f3f4f6", color: "#4b5563",
+                  border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer",
+                }}
+              >
+                취소
+              </button>
+              <button
+                onClick={handleReject}
+                style={{
+                  flex: 1, height: 44, background: "linear-gradient(135deg, #ef4444, #dc2626)", color: "#fff",
+                  border: "none", borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: "pointer",
+                }}
+              >
+                반려 처리
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style>{`
         .hide-scrollbar::-webkit-scrollbar { display: none; }
