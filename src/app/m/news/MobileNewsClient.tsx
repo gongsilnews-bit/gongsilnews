@@ -9,6 +9,8 @@ import { getArticles, getArticleDetail, incrementArticleView } from "@/app/actio
 import { getVacancyCountByKeyword, getVacancyListByKeyword } from "@/app/actions/vacancy";
 import HomeHeader from "../_components/HomeHeader";
 import AuthorProfileHeader from "../_components/AuthorProfileHeader";
+import AuthModal from "@/components/AuthModal";
+import { getPermissionLevel } from "@/utils/permissionCheck";
 
 function formatPrice(v: any): string {
   const dep = v.deposit || 0;
@@ -131,6 +133,28 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
   const [searchTab, setSearchTab] = useState<'article' | 'vacancy'>('article');
   const [mapLoaded, setMapLoaded] = useState(false);
   const [clusterMode, setClusterMode] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [userLevel, setUserLevel] = useState<number>(0);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
+  useEffect(() => {
+    async function initUser() {
+      const { createClient } = await import("@/utils/supabase/client");
+      const client = createClient();
+      const { data } = await client.auth.getUser();
+      if (data?.user) {
+        setCurrentUser(data.user);
+        const { data: memberData } = await client.from('members')
+          .select('role, plan_type').eq('id', data.user.id).single();
+        if (memberData) {
+          setUserLevel(getPermissionLevel(memberData));
+        } else {
+          setUserLevel(1);
+        }
+      }
+    }
+    initUser();
+  }, []);
 
   const mapRef = useRef<HTMLDivElement>(null);
   const kakaoMapRef = useRef<any>(null);
@@ -809,25 +833,35 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
           {searchTab === 'vacancy' && (
             <div style={{ background: "#f9fafb", padding: "8px 16px 20px" }}>
               {vacancyList.map((v: any) => {
-                const cardAddr = v.building_name || [v.dong, v.sigungu].filter(Boolean).join(" ");
+                const cardMasked = v.exposure_type === '부동산노출' && userLevel < 2;
+                const showCommission = userLevel >= 2;
+                const baseAddr = v.building_name || [v.dong, v.sigungu].filter(Boolean).join(" ");
+                const cardAddr = cardMasked ? (baseAddr || "주소 없음").replace(/[^\s]/g, "X") : baseAddr;
                 return (
                   <div
                     key={v.id}
                     className="v-card"
-                    onClick={() => setSelectedVacancyId(v.id)}
+                    onClick={() => {
+                        if (cardMasked) {
+                            setIsAuthModalOpen(true);
+                            return;
+                        }
+                        setSelectedVacancyId(v.id);
+                    }}
                     style={{ display: "flex", gap: "12px", padding: "14px 0", borderBottom: "1px solid #f3f4f6", cursor: "pointer", transition: "background 0.15s", background: "#fff" }}
                   >
                     <div style={{ flex: 1, minWidth: 0 }}>
                       {/* Badges & Date */}
                       <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px", flexWrap: "wrap" }}>
-                        <span style={{ fontSize: "12px", fontWeight: 700, color: "#ef4444", border: "1px solid #ef4444", padding: "1px 6px", borderRadius: "3px" }}>{v.realtor_commission || v.commission_type || "법정수수료"}</span>
+                        {showCommission && <span style={{ fontSize: "12px", fontWeight: 700, color: "#ef4444", border: "1px solid #ef4444", padding: "1px 6px", borderRadius: "3px" }}>{v.realtor_commission || v.commission_type || "법정수수료"}</span>}
                         <span style={{ fontSize: "13px", fontWeight: 700, color: "#ef4444" }}>{v.vacancy_no || '-'}</span>
                         <span style={{ fontSize: "12px", color: "#9ca3af" }}>{v.created_at ? new Date(v.created_at).toLocaleDateString("ko-KR").slice(0, -1) : ""}</span>
+                        {cardMasked && <span onClick={(e) => { e.stopPropagation(); setIsAuthModalOpen(true); }} style={{ fontSize: "11px", color: "#3b82f6", fontWeight: 700, background: "#eef6ff", padding: "3px 8px", borderRadius: "4px", cursor: "pointer" }}>🔒 부동산회원 무료열람</span>}
                       </div>
 
                       {/* Title */}
                       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
-                        <p style={{ fontSize: "16px", fontWeight: 800, color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        <p style={{ fontSize: "16px", fontWeight: 800, color: cardMasked ? "#bbb" : "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", letterSpacing: cardMasked ? 1 : 0 }}>
                           {cardAddr}
                         </p>
                       </div>
@@ -1090,6 +1124,9 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
         )}
       </div>
       
+      {isAuthModalOpen && (
+        <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} initialTab="login" />
+      )}
 
       <style>{`
         .no-scrollbar::-webkit-scrollbar { display: none; }
