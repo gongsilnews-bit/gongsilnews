@@ -1,13 +1,15 @@
 "use client";
 
-import React from "react";
+import React, { Suspense } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 
-export default function MobileBottomNav() {
+function MobileBottomNavContent() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const tab = searchParams.get('tab');
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [profileImg, setProfileImg] = useState<string | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -111,8 +113,19 @@ export default function MobileBottomNav() {
         style={{ maxWidth: '448px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '60px', padding: '0 8px' }}
       >
         {navItems.map((item) => {
-          const isActive = pathname === item.path || 
-            (item.path !== "/m" && pathname.startsWith(item.path.split('?')[0]));
+          const isActive = (() => {
+            if (item.name === "홈") {
+              if (pathname === "/m") return true;
+              if (pathname.startsWith("/m/news") && tab !== "local") return true;
+              return false;
+            }
+            if (item.name === "우리동네") {
+              if (pathname.startsWith("/m/news") && tab === "local") return true;
+              return false;
+            }
+            return pathname === item.path || 
+              (item.path !== "/m" && pathname.startsWith(item.path.split('?')[0]));
+          })();
 
           return item.name === "마이" ? (
             <button
@@ -199,5 +212,18 @@ export default function MobileBottomNav() {
         })}
       </div>
     </nav>
+  );
+}
+
+export default function MobileBottomNav() {
+  return (
+    <Suspense fallback={
+      <nav 
+        className="fixed bottom-0 left-0 w-full z-50 bg-white border-t border-gray-200 pb-safe"
+        style={{ position: 'fixed', bottom: 0, left: 0, width: '100%', zIndex: 50, backgroundColor: '#ffffff', borderTop: '1px solid #e5e7eb', height: '60px' }}
+      />
+    }>
+      <MobileBottomNavContent />
+    </Suspense>
   );
 }
