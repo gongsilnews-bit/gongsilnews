@@ -351,8 +351,8 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
                 <h3 style={{ padding: '20px 20px 8px 20px', fontSize: '14px', fontWeight: 700, color: '#6b7280' }}>나의 활동</h3>
                 <ul>
                   {[
-                    { icon: '📝', label: '내가 등록한 기사', href: memberData?.role === 'REALTOR' ? '/realty_admin?menu=article' : '/user_admin?menu=article' },
-                    { icon: '🏢', label: '내가 등록한 공실', href: memberData?.role === 'REALTOR' ? '/realty_admin?menu=gongsil' : '/user_admin?menu=gongsil' },
+                    { icon: '📝', label: '내가 등록한 기사', href: '/m/admin/article' },
+                    { icon: '🏢', label: '내가 등록한 공실', href: '/m/admin/vacancy' },
                     { icon: '🔖', label: '내가 찜한 기사', href: '#' },
                     { icon: '❤️', label: '내가 찜한 공실', href: '#' },
                   ].map((item) => (
