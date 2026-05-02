@@ -147,6 +147,27 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
     }
   }, [article?.id, currentUserId]);
 
+  // 해시 링크 네비게이션 처리 (댓글 알림에서 이동 시)
+  useEffect(() => {
+    if (!isCommentsLoading) {
+      const hash = window.location.hash;
+      if (hash && hash.startsWith('#comment-')) {
+        setTimeout(() => {
+          const el = document.getElementById(hash.substring(1));
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // 약간의 하이라이트 효과 (옵션)
+            el.style.backgroundColor = '#eff6ff';
+            el.style.transition = 'background-color 1.5s ease-out';
+            setTimeout(() => {
+              el.style.backgroundColor = 'transparent';
+            }, 2000);
+          }
+        }, 300); // 렌더링 대기
+      }
+    }
+  }, [isCommentsLoading, comments.length]);
+
   const loadComments = async () => {
     if (!article?.id) return;
     const res = await getComments(article.id, currentUserId);
@@ -772,7 +793,7 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
                       const children = getChildren(comment.id);
 
                       return (
-                        <div key={comment.id} style={{ paddingLeft: depth * 24, borderBottom: "1px solid #f3f4f6", paddingBottom: 16 }}>
+                        <div key={comment.id} id={`comment-${comment.id}`} style={{ paddingLeft: depth * 24, borderBottom: "1px solid #f3f4f6", paddingBottom: 16 }}>
                           <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: depth > 0 ? 16 : 0 }}>
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                               <span style={{ fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}>

@@ -531,6 +531,24 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     if (res.success) setComments(res.data || []);
   }, []);
 
+  // 해시 링크 네비게이션 처리 (댓글 알림에서 이동 시)
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash && hash.startsWith('#comment-') && comments.length > 0) {
+      setTimeout(() => {
+        const el = document.getElementById(hash.substring(1));
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          el.style.backgroundColor = '#eff6ff';
+          el.style.transition = 'background-color 1.5s ease-out';
+          setTimeout(() => {
+            el.style.backgroundColor = 'transparent';
+          }, 2000);
+        }
+      }, 300); // 렌더링 대기
+    }
+  }, [comments]);
+
   const handleCommentSubmit = async () => {
     if (!activeProperty || !newComment.trim()) return;
     if (!currentUser) return alert('로그인 후 이용 가능합니다.');
@@ -1055,7 +1073,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
       const dateStr = new Date(comment.created_at).toLocaleString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(/\.$/, '');
 
       return (
-        <div key={comment.id} style={{ paddingLeft: depth > 0 ? 30 : 0, paddingBottom: 20, paddingTop: 20, borderBottom: depth === 0 ? "1px solid #f0f0f0" : "none" }}>
+        <div key={comment.id} id={`comment-${comment.id}`} style={{ paddingLeft: depth > 0 ? 30 : 0, paddingBottom: 20, paddingTop: 20, borderBottom: depth === 0 ? "1px solid #f0f0f0" : "none" }}>
           {/* 작성자 정보 & 날짜 */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>

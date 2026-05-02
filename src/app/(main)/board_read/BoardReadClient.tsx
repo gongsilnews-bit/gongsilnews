@@ -66,6 +66,24 @@ export default function BoardReadClient({
     fetchUser();
   }, []);
 
+  // 해시 링크 네비게이션 처리 (댓글 알림에서 이동 시)
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash && hash.startsWith('#comment-') && comments.length > 0) {
+      setTimeout(() => {
+        const el = document.getElementById(hash.substring(1));
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          el.style.backgroundColor = '#eff6ff';
+          el.style.transition = 'background-color 1.5s ease-out';
+          setTimeout(() => {
+            el.style.backgroundColor = 'transparent';
+          }, 2000);
+        }
+      }, 300); // 렌더링 대기
+    }
+  }, [comments]);
+
   // 카테고리 뱃지 추출
   const catMatch = post.title.match(/^\[([^\]]+)\]/);
   const catBadge = catMatch ? catMatch[0] : null;
@@ -457,7 +475,7 @@ export default function BoardReadClient({
 
             {/* 댓글 목록 */}
             {comments.map((c: any) => (
-              <div key={c.id} style={{ paddingTop: 16, paddingBottom: 16, borderTop: "1px solid #f0f0f0" }}>
+              <div key={c.id} id={`comment-${c.id}`} style={{ paddingTop: 16, paddingBottom: 16, borderTop: "1px solid #f0f0f0" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, fontSize: 13 }}>
                   <span style={{ fontWeight: 700, color: "#374151" }}>{c.author_name || "게스트"}</span>
                   <span style={{ color: "#9ca3af" }}>{new Date(c.created_at).toLocaleString("ko-KR")}</span>
