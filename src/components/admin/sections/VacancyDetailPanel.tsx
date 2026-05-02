@@ -181,7 +181,7 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
   };
 
   const copyShareLink = () => {
-    const url = `${window.location.origin}/gongsil?id=${vacancyId}`;
+    const url = `https://gongsilnews.com/gongsil?id=${vacancyId}`;
     if (navigator.clipboard) navigator.clipboard.writeText(url).then(() => alert('공유 URL이 복사되었습니다.'));
   };
 

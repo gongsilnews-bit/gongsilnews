@@ -251,7 +251,7 @@ function MobileGongsilContent() {
       alert("카카오 SDK 로드 중입니다. 잠시 후 시도해 주세요.");
       return;
     }
-    const shareUrl = `${window.location.origin}/m/gongsil?id=${selectedVacancy.id}`;
+    const shareUrl = `https://gongsilnews.com/m/gongsil?id=${selectedVacancy.id}`;
     Kakao.Share.sendDefault({
       objectType: "feed",
       content: {
@@ -267,7 +267,7 @@ function MobileGongsilContent() {
 
   const handleCopyUrl = () => {
     if (!selectedVacancy) return;
-    const shareUrl = `${window.location.origin}/m/gongsil?id=${selectedVacancy.id}`;
+    const shareUrl = `https://gongsilnews.com/m/gongsil?id=${selectedVacancy.id}`;
     navigator.clipboard.writeText(shareUrl).then(() => {
       alert("URL이 복사되었습니다.");
     }).catch(() => {
