@@ -4,6 +4,7 @@ import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getLectureDetail } from "@/app/actions/lecture";
 import SubPageHeader from "../_components/SubPageHeader";
+import HomeHeader from "../_components/HomeHeader";
 
 export default function MobileStudyWatchClient({ initialLecture }: { initialLecture: any }) {
   const router = useRouter();
@@ -42,11 +43,48 @@ export default function MobileStudyWatchClient({ initialLecture }: { initialLect
   const chapters = lecture.chapters || [];
 
   return (
-    <div style={{ backgroundColor: "#f8f9fa", minHeight: "100vh", paddingTop: 36 }}>
-      <SubPageHeader title={lecture.title} />
+    <div style={{ backgroundColor: "#f8f9fa", minHeight: "100vh", paddingTop: 90 }}>
+      
+      {/* 1. 최상단 메인 헤더 */}
+      <HomeHeader 
+        bgColor="#16a34a" 
+        logoText="부동산특강"
+        sloganPrefix="AI시대 부동산중개에 필요한 "
+        sloganHighlight="마케팅 특강"
+        highlightColor="#fcd34d"
+      />
+
+      {/* 2. 뒤로가기 및 제목 바 */}
+      <div style={{
+        position: "fixed",
+        top: 50,
+        left: "50%",
+        transform: "translateX(-50%)",
+        width: "100%",
+        maxWidth: 448,
+        height: 40,
+        backgroundColor: "#fff",
+        display: "flex",
+        alignItems: "center",
+        padding: "0 16px",
+        zIndex: 50,
+        boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
+      }}>
+        <button 
+          onClick={() => router.back()} 
+          style={{ display: "flex", alignItems: "center", gap: 4, background: "none", border: "none", color: "#666", fontSize: 13, fontWeight: 600, padding: 0, cursor: "pointer", flexShrink: 0 }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6"/></svg>
+          뒤로가기
+        </button>
+        <div style={{ width: 1, height: 12, backgroundColor: "#ddd", margin: "0 12px", flexShrink: 0 }} />
+        <div style={{ fontSize: 13, fontWeight: 700, color: "#111827", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", flex: 1 }}>
+          {lecture.title}
+        </div>
+      </div>
 
       {/* ── 비디오 플레이어 영역 (상단 고정) ── */}
-      <div style={{ position: "sticky", top: 36, zIndex: 40, width: "100%", aspectRatio: "16/9", background: "#000", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)" }}>
+      <div style={{ position: "sticky", top: 90, zIndex: 40, width: "100%", aspectRatio: "16/9", background: "#000", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)" }}>
         {activeVideo ? (
           (() => {
             const embed = toEmbedUrl(activeVideo);
