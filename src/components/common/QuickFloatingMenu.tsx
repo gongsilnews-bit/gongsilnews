@@ -68,7 +68,7 @@ export default function QuickFloatingMenu() {
 
         {/* 관심기사 */}
         <div
-          onClick={() => window.location.href = "/news_all"}
+          onClick={() => window.location.href = "/news_all?mode=bookmarks"}
           style={{
             display: "flex", alignItems: "center", gap: 10,
             padding: "12px 14px", cursor: "pointer",
