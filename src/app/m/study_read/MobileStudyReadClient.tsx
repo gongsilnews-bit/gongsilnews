@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useCallback, Suspense } from "react
 import { useRouter, useSearchParams } from "next/navigation";
 import { getLectureDetail, getLectures, createLectureReview } from "@/app/actions/lecture";
 import { createClient } from "@/utils/supabase/client";
-import SubPageHeader from "../_components/SubPageHeader";
+import HomeHeader from "../_components/HomeHeader";
 
 export default function MobileStudyReadClient({ initialLecture }: { initialLecture: any }) {
   const router = useRouter();
@@ -117,11 +117,11 @@ export default function MobileStudyReadClient({ initialLecture }: { initialLectu
 
   if (loading) return (
     <div style={{ paddingTop: 50, minHeight: "100vh", backgroundColor: "#fff", display: "flex", flexDirection: "column" }}>
-      <SubPageHeader title="부동산 특강" />
+      <HomeHeader bgColor="#16a34a" logoText="부동산특강" sloganPrefix="AI시대 부동산중개에 필요한 " sloganHighlight="마케팅 특강" highlightColor="#fcd34d" />
       <div style={{ flex: 1, backgroundColor: "#fff" }} />
     </div>
   );
-  if (!lecture) return <div style={{ paddingTop: 50 }}><SubPageHeader title="부동산 특강" /><div style={{ textAlign: "center", padding: 80, color: "#999" }}>📭 등록된 강의가 없습니다.</div></div>;
+  if (!lecture) return <div style={{ paddingTop: 50 }}><HomeHeader bgColor="#16a34a" logoText="부동산특강" sloganPrefix="AI시대 부동산중개에 필요한 " sloganHighlight="마케팅 특강" highlightColor="#fcd34d" /><div style={{ textAlign: "center", padding: 80, color: "#999" }}>📭 등록된 강의가 없습니다.</div></div>;
 
   const displayPrice = lecture.discount_price || lecture.price;
   const originalPrice = lecture.discount_price ? lecture.price : null;
@@ -138,8 +138,14 @@ export default function MobileStudyReadClient({ initialLecture }: { initialLectu
   ];
 
   return (
-    <div style={{ backgroundColor: "#fff", minHeight: "100vh", paddingTop: 36, paddingBottom: 76 }}>
-      <SubPageHeader title="부동산 특강" />
+    <div style={{ backgroundColor: "#fff", minHeight: "100vh", paddingTop: 50, paddingBottom: 76 }}>
+      <HomeHeader 
+        bgColor="#16a34a" 
+        logoText="부동산특강"
+        sloganPrefix="AI시대 부동산중개에 필요한 "
+        sloganHighlight="마케팅 특강"
+        highlightColor="#fcd34d"
+      />
 
       {/* ── 1. 이미지 (비율 유지 축소) ── */}
       <div style={{ position: "relative", width: "100%", aspectRatio: "16/11", overflow: "hidden", background: "#f0f0f0" }}>
@@ -229,7 +235,7 @@ export default function MobileStudyReadClient({ initialLecture }: { initialLectu
       )}
 
       {/* ── 4. 메뉴 탭바 (Sticky) ── */}
-      <div ref={tabBarRef} style={{ position: "sticky", top: 36, zIndex: 40, backgroundColor: "#fff", borderBottom: "1px solid #f0f0f0", overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+      <div ref={tabBarRef} style={{ position: "sticky", top: 50, zIndex: 40, backgroundColor: "#fff", borderBottom: "1px solid #f0f0f0", overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
         <div style={{ display: "flex", whiteSpace: "nowrap", minWidth: "100%" }}>
           {tabs.map((tab) => {
             const isActive = activeTab === tab.id;

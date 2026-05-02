@@ -107,6 +107,9 @@ function MobileGongsilContent() {
   // 필터 State 및 필터링 로직 (Hook으로 분리)
   const { filters, filteredVacancies, updateFilter, activeFilterCount, resetFilters } = useVacancyFilters(vacancies);
 
+  // 현재 지도 화면 내에 보이는 매물 개수 상태
+  const [visibleCount, setVisibleCount] = useState(0);
+
   // Swipe gesture states
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
@@ -485,6 +488,36 @@ function MobileGongsilContent() {
     clustererRef.current.addMarkers(markersRef.current);
   }, [filteredVacancies, mapLoaded]);
 
+  // 지도 범위 내 매물 개수 업데이트
+  useEffect(() => {
+    if (!kakaoMapRef.current || !mapLoaded) return;
+    const kakao = (window as any).kakao;
+    const map = kakaoMapRef.current;
+
+    const updateVisibleCount = () => {
+      const bounds = map.getBounds();
+      let count = 0;
+      filteredVacancies.forEach((v) => {
+        if (!v.lat || !v.lng) return;
+        const pos = new kakao.maps.LatLng(v.lat, v.lng);
+        if (bounds.contain(pos)) {
+          count++;
+        }
+      });
+      setVisibleCount(count);
+    };
+
+    // 초기 계산
+    updateVisibleCount();
+
+    // 지도의 이동/확대축소가 끝났을 때 업데이트
+    kakao.maps.event.addListener(map, "idle", updateVisibleCount);
+
+    return () => {
+      kakao.maps.event.removeListener(map, "idle", updateVisibleCount);
+    };
+  }, [filteredVacancies, mapLoaded]);
+
   // 상세 조회
   const handleVacancyClick = async (v: any, isDirect: boolean = false) => {
     if (!isDirect) {
@@ -610,7 +643,7 @@ function MobileGongsilContent() {
         {mapLoaded && (
           <div style={{ position: "absolute", top: "16px", left: "16px", zIndex: 20, display: "flex", gap: "8px", alignItems: "center" }}>
             <div style={{ background: "rgba(255,255,255,0.95)", borderRadius: "20px", padding: "8px 14px", fontSize: "13px", fontWeight: 700, color: "#1a2e50", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}>
-              🏢 공실 {filteredVacancies.filter(v => v.lat && v.lng).length}건
+              🏢 공실 {visibleCount}건
             </div>
             <button 
               onClick={resetFilters}
@@ -628,11 +661,20 @@ function MobileGongsilContent() {
             onClick={(e) => {
               e.stopPropagation();
               if (navigator.geolocation && kakaoMapRef.current) {
-                navigator.geolocation.getCurrentPosition((pos) => {
-                  const kakao = (window as any).kakao;
-                  kakaoMapRef.current.panTo(new kakao.maps.LatLng(pos.coords.latitude, pos.coords.longitude));
-                  kakaoMapRef.current.setLevel(5);
-                });
+                navigator.geolocation.getCurrentPosition(
+                  (pos) => {
+                    const kakao = (window as any).kakao;
+                    kakaoMapRef.current.panTo(new kakao.maps.LatLng(pos.coords.latitude, pos.coords.longitude));
+                    kakaoMapRef.current.setLevel(5);
+                  },
+                  (err) => {
+                    console.error("Geolocation error:", err);
+                    alert("위치 정보를 가져올 수 없습니다. 위치 권한이 허용되어 있는지 확인해주세요.");
+                  },
+                  { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+                );
+              } else {
+                alert("이 기기 또는 브라우저에서는 위치 정보를 지원하지 않습니다.");
               }
             }}
             style={{ position: "absolute", top: "16px", right: "16px", zIndex: 20, background: "#1a4282", color: "#fff", border: "none", borderRadius: "20px", padding: "8px 14px", fontSize: "13px", fontWeight: 700, boxShadow: "0 4px 12px rgba(26,66,130,0.4)", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
