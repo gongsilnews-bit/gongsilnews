@@ -128,7 +128,6 @@ function StudyReadContent() {
   const totalLessons = chapters.reduce((sum: number, ch: any) => sum + (ch.lessons?.length || 0), 0);
 
   return (
-  return (
     <div className="bg-white font-sans text-gray-900" style={{ minWidth: 1200 }}>
       {/* ── 영상 미리보기 모달 ── */}
       {previewUrl && (
