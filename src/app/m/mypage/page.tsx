@@ -210,7 +210,7 @@ export default function MobileMyPage() {
                   ...getRoleBadgeStyle(memberData?.role || 'USER'),
                   fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '10px',
                 }}>
-                  {getRoleLabel(memberData?.role || 'USER')}
+                  {getRoleLabel(memberData?.role || 'USER')} {memberData?.role ? `[DB:${memberData.role}]` : '[NO_MEMBER_DATA]'}
                 </span>
               </div>
               <p style={{ fontSize: '12px', opacity: 0.8, margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
