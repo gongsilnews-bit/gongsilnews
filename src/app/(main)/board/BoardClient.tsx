@@ -217,7 +217,7 @@ export default function BoardClient({ board, initialPosts }: { board: any, initi
   if (!canAccessBoard(userLevel, board.perm_list ?? 0)) {
     return (
       <div style={{ padding: 100, textAlign: "center" }}>
-        <h2 style={{ fontSize: 20, color: "#ef4444", marginBottom: 12 }}>접근 권한이 없습니다</h2>
+        <h2 style={{ fontSize: 20, color: "#ef4444", marginBottom: 12 }}>{getLevelName(board.perm_list ?? 0)}부터 열람하실 수 있습니다.</h2>
         <p style={{ color: "#666" }}>목록 보기 레벨: <strong>{board.perm_list ?? 0}레벨 이상</strong> (현재 내 레벨: {userLevel}레벨)</p>
         <button onClick={() => router.push('/')} style={{ marginTop: 24, padding: "10px 24px", background: "#333", color: "#fff", border: "none", borderRadius: 4, cursor: "pointer" }}>메인으로 돌아가기</button>
       </div>

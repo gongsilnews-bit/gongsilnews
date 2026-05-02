@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { saveBoardPost, uploadBoardAttachment, uploadBoardThumbnail } from "@/app/actions/board";
 import { createClient } from "@/utils/supabase/client";
-import { getPermissionLevel, canAccessBoard } from "@/utils/permissionCheck";
+import { getPermissionLevel, canAccessBoard, getLevelName } from "@/utils/permissionCheck";
 
 const convertToWebp = (file: File): Promise<File> => {
   return new Promise((resolve) => {
@@ -187,7 +187,7 @@ export default function BoardWriteClient({
   if (!canAccessBoard(userLevel, board.perm_write ?? 5)) {
     return (
       <div style={{ padding: 100, textAlign: "center" }}>
-        <h2 style={{ fontSize: 20, color: "#ef4444", marginBottom: 12 }}>접근 권한이 없습니다</h2>
+        <h2 style={{ fontSize: 20, color: "#ef4444", marginBottom: 12 }}>{getLevelName(board.perm_write ?? 5)}부터 작성하실 수 있습니다.</h2>
         <p style={{ color: "#666" }}>쓰기 레벨: <strong>{board.perm_write ?? 5}레벨 이상</strong> (현재 내 레벨: {userLevel}레벨)</p>
         <button onClick={() => router.push(`/board?id=${boardId}`)} style={{ marginTop: 24, padding: "10px 24px", background: "#333", color: "#fff", border: "none", borderRadius: 4, cursor: "pointer" }}>목록으로 돌아가기</button>
       </div>

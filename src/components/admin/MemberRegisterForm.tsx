@@ -599,7 +599,21 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
                 <option value="최고관리자">최고관리자</option>
               </select>
             ) : (
-              <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? "#3b82f6" : "#2563eb", background: darkMode ? "#1e3a8a" : "#dbeafe", padding: "4px 10px", borderRadius: 6 }}>{formData.role}</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? "#3b82f6" : "#2563eb", background: darkMode ? "#1e3a8a" : "#dbeafe", padding: "4px 10px", borderRadius: 6 }}>{formData.role}</span>
+                {formData.role === "일반회원" && (
+                  <button type="button" onClick={() => {
+                    if(confirm("부동산회원으로 전환을 신청하시겠습니까?\n\n전환 후 생성되는 '부동산정보' 탭에서 필수 서류와 중개업소 정보를 입력하고 저장하셔야 승인 처리가 시작됩니다.")) {
+                       setFormData({...formData, role: "부동산회원"});
+                       setActiveTab(1);
+                    }
+                  }} style={{ padding: "6px 12px", fontSize: 13, fontWeight: 600, color: "#fff", background: "#f59e0b", border: "none", borderRadius: 6, cursor: "pointer", transition: "background 0.2s" }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = "#d97706"}
+                  onMouseLeave={(e) => e.currentTarget.style.background = "#f59e0b"}>
+                    부동산회원 전환 신청 ✨
+                  </button>
+                )}
+              </div>
             )}
           </div>
         </div>
