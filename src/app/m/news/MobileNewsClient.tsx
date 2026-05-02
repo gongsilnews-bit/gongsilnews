@@ -6,9 +6,23 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { getArticles, getArticleDetail, incrementArticleView } from "@/app/actions/article";
-import { getVacancyCountByKeyword } from "@/app/actions/vacancy";
+import { getVacancyCountByKeyword, getVacancyListByKeyword } from "@/app/actions/vacancy";
 import HomeHeader from "../_components/HomeHeader";
 import AuthorProfileHeader from "../_components/AuthorProfileHeader";
+
+function formatPrice(v: any): string {
+  const dep = v.deposit || 0;
+  const rent = v.monthly_rent || 0;
+  const sale = v.sale_price || 0;
+  const depStr = dep >= 10000 ? `${Math.floor(dep / 10000)}억${dep % 10000 !== 0 ? ` ${dep % 10000}` : ''}` : dep > 0 ? `${dep}` : '';
+  const rentStr = rent > 0 ? `${rent}` : '';
+  const saleStr = sale >= 10000 ? `${Math.floor(sale / 10000)}억${sale % 10000 !== 0 ? ` ${sale % 10000}` : ''}` : sale > 0 ? `${sale}` : '';
+
+  if (v.trade_type === '월세') return `${depStr}/${rentStr}`;
+  if (v.trade_type === '전세') return depStr;
+  if (v.trade_type === '매매') return saleStr;
+  return '';
+}
 
 const SearchOverlay = dynamic(() => import("../_components/header/SearchOverlay"), { ssr: false });
 
@@ -113,6 +127,8 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
   }, [searchParams]);
   const [visibleArticles, setVisibleArticles] = useState<any[]>([]);
   const [vacancyCount, setVacancyCount] = useState<number>(0);
+  const [vacancyList, setVacancyList] = useState<any[]>([]);
+  const [searchTab, setSearchTab] = useState<'article' | 'vacancy'>('article');
   const [mapLoaded, setMapLoaded] = useState(false);
   const [clusterMode, setClusterMode] = useState(false);
 
@@ -144,15 +160,20 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
       }
       
       const keywordMatch = searchParams.get("keyword");
-      if (keywordMatch) {
-        filters.keyword = keywordMatch;
-        // Fetch related vacancy count
-        const vRes = await getVacancyCountByKeyword(keywordMatch);
-        if (vRes.success) setVacancyCount(vRes.count || 0);
-        else setVacancyCount(0);
-      } else {
-        setVacancyCount(0);
-      }
+        if (keywordMatch) {
+          filters.keyword = keywordMatch;
+          // Fetch related vacancy count and list
+          const vRes = await getVacancyCountByKeyword(keywordMatch);
+          if (vRes.success) setVacancyCount(vRes.count || 0);
+          else setVacancyCount(0);
+          
+          const listRes = await getVacancyListByKeyword(keywordMatch);
+          if (listRes.success) setVacancyList(listRes.data || []);
+          else setVacancyList([]);
+        } else {
+          setVacancyCount(0);
+          setVacancyList([]);
+        }
       
       const res = await getArticles(filters);
       if (res.success && res.data) {
@@ -754,12 +775,16 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
               </div>
               
               <div style={{ display: "flex" }}>
-                <div style={{ flex: 1, textAlign: "center", padding: "12px 0", fontSize: "15px", fontWeight: 800, color: "#111", borderBottom: "3px solid #111" }}>
-                  관련기사 <span style={{ color: "#508bf5" }}>{articles.length}</span>
+                <div 
+                  onClick={() => setSearchTab('article')}
+                  style={{ flex: 1, textAlign: "center", padding: "12px 0", fontSize: "15px", fontWeight: searchTab === 'article' ? 800 : 600, color: searchTab === 'article' ? "#111" : "#888", borderBottom: searchTab === 'article' ? "3px solid #111" : "3px solid transparent", cursor: "pointer" }}>
+                  관련기사 <span style={{ color: searchTab === 'article' ? "#508bf5" : "#888" }}>{articles.length}</span>
                 </div>
-                <Link href={`/m/gongsil?keyword=${initialKeyword || searchParams.get("keyword")}`} style={{ flex: 1, textAlign: "center", padding: "12px 0", fontSize: "15px", fontWeight: 600, color: "#888", borderBottom: "3px solid transparent", textDecoration: "none" }}>
-                  관련공실 <span style={{ color: "#f97316" }}>{vacancyCount}</span>
-                </Link>
+                <div 
+                  onClick={() => setSearchTab('vacancy')}
+                  style={{ flex: 1, textAlign: "center", padding: "12px 0", fontSize: "15px", fontWeight: searchTab === 'vacancy' ? 800 : 600, color: searchTab === 'vacancy' ? "#111" : "#888", borderBottom: searchTab === 'vacancy' ? "3px solid #111" : "3px solid transparent", cursor: "pointer" }}>
+                  관련공실 <span style={{ color: searchTab === 'vacancy' ? "#f97316" : "#888" }}>{vacancyCount}</span>
+                </div>
               </div>
             </div>
           )}
@@ -780,8 +805,79 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
             </div>
           )}
 
+          {/* 공실 리스트 (관련공실 탭일 경우) */}
+          {searchTab === 'vacancy' && (
+            <div style={{ background: "#f9fafb", padding: "8px 16px 20px" }}>
+              {vacancyList.map((v: any) => {
+                const cardAddr = v.building_name || [v.dong, v.sigungu].filter(Boolean).join(" ");
+                return (
+                  <div
+                    key={v.id}
+                    className="v-card"
+                    onClick={() => setSelectedVacancyId(v.id)}
+                    style={{ display: "flex", gap: "12px", padding: "14px 0", borderBottom: "1px solid #f3f4f6", cursor: "pointer", transition: "background 0.15s", background: "#fff" }}
+                  >
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      {/* Badges & Date */}
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px", flexWrap: "wrap" }}>
+                        <span style={{ fontSize: "12px", fontWeight: 700, color: "#ef4444", border: "1px solid #ef4444", padding: "1px 6px", borderRadius: "3px" }}>{v.realtor_commission || v.commission_type || "법정수수료"}</span>
+                        <span style={{ fontSize: "13px", fontWeight: 700, color: "#ef4444" }}>{v.vacancy_no || '-'}</span>
+                        <span style={{ fontSize: "12px", color: "#9ca3af" }}>{v.created_at ? new Date(v.created_at).toLocaleDateString("ko-KR").slice(0, -1) : ""}</span>
+                      </div>
+
+                      {/* Title */}
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+                        <p style={{ fontSize: "16px", fontWeight: 800, color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {cardAddr}
+                        </p>
+                      </div>
+                      
+                      {/* Price (Blue) */}
+                      <p style={{ fontSize: "18px", fontWeight: 800, color: "#1a73e8", marginBottom: "6px" }}>
+                        {v.trade_type} {formatPrice(v)}
+                      </p>
+                      
+                      {/* Specs 1: Type | Direction | Area */}
+                      <p style={{ fontSize: "14px", color: "#6b7280", marginBottom: "2px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {[v.property_type || "건물", v.direction, v.exclusive_m2 && `${v.exclusive_m2}㎡`].filter(Boolean).join(" | ")}
+                      </p>
+                      
+                      {/* Specs 2: Rooms, Options */}
+                      <p style={{ fontSize: "14px", color: "#6b7280", marginBottom: "8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {[v.room_count !== undefined ? `룸 ${v.room_count}개` : null, v.bath_count !== undefined ? `욕실 ${v.bath_count}개` : null, ...(v.options || [])].filter(Boolean).join(", ")}
+                      </p>
+
+                      {/* Themes */}
+                      {v.themes && v.themes.length > 0 && (
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginTop: "4px" }}>
+                          {v.themes.map((theme: string, idx: number) => (
+                            <span key={idx} style={{ background: "#f8fafc", color: "#3b82f6", fontSize: "12px", padding: "2px 8px", borderRadius: "12px", fontWeight: 700, border: "1px solid #bfdbfe" }}>
+                              {theme.startsWith('#') ? theme : `# ${theme}`}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    {v.images?.[0] && (
+                      <div style={{ width: "90px", height: "72px", borderRadius: "10px", overflow: "hidden", flexShrink: 0, backgroundColor: "#e5e7eb", alignSelf: "center" }}>
+                        <img src={v.images[0]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      </div>
+                    )}
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="2" style={{ flexShrink: 0, alignSelf: "center" }}><polyline points="9 18 15 12 9 6"/></svg>
+                  </div>
+                );
+              })}
+              {vacancyList.length === 0 && (
+                <div style={{ textAlign: "center", padding: "60px 0", color: "#9ca3af" }}>
+                  <div style={{ fontSize: "40px", marginBottom: "12px" }}>🏢</div>
+                  <p style={{ fontSize: "15px", fontWeight: 600 }}>해당 키워드의 공실이 없습니다.</p>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* 실 기사 리스트 */}
-          {!loading && (() => {
+          {!loading && searchTab === 'article' && (() => {
             const importantArticles = articles.filter(a => a.is_important);
             const regularArticles = articles.filter(a => !a.is_important);
             
@@ -881,7 +977,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
             );
           })()}
 
-          {!loading && articles.length === 0 && (
+          {!loading && searchTab === 'article' && articles.length === 0 && (
                 <div style={{ textAlign: "center", padding: "60px 0", color: "#9ca3af" }}>
                   <div style={{ fontSize: "40px", marginBottom: "12px" }}>📰</div>
                   <p style={{ fontSize: "15px", fontWeight: 600 }}>아직 기사가 없습니다.</p>
