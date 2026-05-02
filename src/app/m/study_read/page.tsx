@@ -211,7 +211,7 @@ function MobileStudyReadContent() {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
           쿠폰 받기
         </button>
-        <button onClick={() => router.push(`/study_watch?id=${lecture.id}`)} style={{ width: "100%", padding: "14px 0", borderRadius: 8, border: "none", background: "#059669", color: "#fff", fontSize: 16, fontWeight: 700, marginBottom: 12 }}>
+        <button onClick={() => router.push(`/m/study_watch?id=${lecture.id}`)} style={{ width: "100%", padding: "14px 0", borderRadius: 8, border: "none", background: "#059669", color: "#fff", fontSize: 16, fontWeight: 700, marginBottom: 12 }}>
           특강 수강 시작하기
         </button>
 
@@ -417,7 +417,7 @@ function MobileStudyReadContent() {
           <button style={{ width: 46, height: 46, borderRadius: 8, border: "1px solid #e0e0e0", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
           </button>
-          <button onClick={() => router.push(`/study_watch?id=${lecture.id}`)} style={{ flex: 1, height: 46, borderRadius: 8, border: "none", background: "#059669", color: "#fff", fontSize: 15, fontWeight: 700 }}>
+          <button onClick={() => router.push(`/m/study_watch?id=${lecture.id}`)} style={{ flex: 1, height: 46, borderRadius: 8, border: "none", background: "#059669", color: "#fff", fontSize: 15, fontWeight: 700 }}>
             특강 수강 시작하기
           </button>
         </div>
