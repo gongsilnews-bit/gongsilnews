@@ -264,7 +264,7 @@ function StudyReadContent() {
                   chapters.map((chapter: any, ci: number) => (
                     <div key={chapter.id || ci} className="transition-colors hover:bg-white" style={{ border: "1px solid #f0f0f0", backgroundColor: "#fafafa", borderRadius: 12, padding: 28, boxShadow: "0 4px 20px rgba(0,0,0,0.04)" }}>
                       <div className="flex items-center" style={{ gap: 12, marginBottom: 20 }}>
-                        <span className="font-bold" style={{ fontSize: 13, color: "#8a3ffc", backgroundColor: "#f4efff", padding: "4px 10px", borderRadius: 6 }}>Chapter {chapter.chapter_no}</span>
+                        <span className="font-bold" style={{ fontSize: 13, color: "#059669", backgroundColor: "#ecfdf5", padding: "4px 10px", borderRadius: 6 }}>Chapter {chapter.chapter_no}</span>
                         <h3 className="font-bold" style={{ fontSize: 18, color: "#1a1a1a" }}>{chapter.title}</h3>
                       </div>
                       <ul className="m-0 p-0 list-none flex flex-col" style={{ gap: 12 }}>
@@ -292,8 +292,8 @@ function StudyReadContent() {
                                 {lesson.is_preview && (
                                   <span style={{
                                     fontSize: 11, fontWeight: 700,
-                                    color: hasVideo ? "#fff" : "#8a3ffc",
-                                    background: hasVideo ? "#8a3ffc" : "#f4efff",
+                                    color: hasVideo ? "#fff" : "#059669",
+                                    background: hasVideo ? "#059669" : "#ecfdf5",
                                     padding: "4px 8px", borderRadius: 4, marginLeft: 8,
                                     display: "inline-flex", alignItems: "center", gap: 3,
                                   }}>
@@ -407,7 +407,7 @@ function StudyReadContent() {
 
               {/* Price Section */}
               <div style={{ marginBottom: 24 }}>
-                {lecture.discount_label && <div className="font-bold" style={{ fontSize: 14, color: "#8a3ffc", marginBottom: 4 }}>{lecture.discount_label}</div>}
+                {lecture.discount_label && <div className="font-bold" style={{ fontSize: 14, color: "#059669", marginBottom: 4 }}>{lecture.discount_label}</div>}
                 
                 {originalPrice && (
                   <div className="flex items-center" style={{ gap: 8, marginBottom: 4 }}>
@@ -423,7 +423,7 @@ function StudyReadContent() {
                 </div>
                 
                 {monthlyPrice && (
-                  <div className="font-bold" style={{ fontSize: 15, color: "#8a3ffc" }}>
+                  <div className="font-bold" style={{ fontSize: 15, color: "#059669" }}>
                     월 {monthlyPrice.toLocaleString()}원 <span className="font-medium" style={{ color: "#858a8d" }}>({lecture.duration_months}개월)</span>
                   </div>
                 )}
@@ -439,9 +439,9 @@ function StudyReadContent() {
               <button 
                 onClick={() => router.push(`/study_watch?id=${lecture.id}`)} 
                 className="w-full font-bold text-white transition-colors"
-                style={{ marginBottom: 24, padding: "18px 0", borderRadius: 8, fontSize: 16, backgroundColor: "#8a3ffc", boxShadow: "0 4px 12px rgba(138,63,252,0.3)" }}
-                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#722ed1"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "#8a3ffc"; }}
+                style={{ marginBottom: 24, padding: "18px 0", borderRadius: 8, fontSize: 16, backgroundColor: "#059669", boxShadow: "0 4px 12px rgba(5,150,105,0.3)" }}
+                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#047857"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "#059669"; }}
               >
                 클래스 수강 시작하기
               </button>
