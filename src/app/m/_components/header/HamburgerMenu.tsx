@@ -38,7 +38,7 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
           setCurrentUser(user);
           const { data } = await supabase
             .from('members')
-            .select('name, email, role, signup_completed, avatar_url')
+            .select('name, email, role, signup_completed, profile_image_url')
             .eq('id', user.id)
             .single();
           if (data) {
@@ -188,8 +188,8 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
                 <div style={{ background: 'linear-gradient(135deg, #1a3a6b 0%, #1e56a0 100%)', padding: '20px', borderRadius: '12px', marginBottom: '16px', color: '#fff' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
                     <div style={{ width: '48px', height: '48px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0, border: '2px solid rgba(255,255,255,0.3)' }}>
-                      {memberData?.avatar_url || currentUser.user_metadata?.avatar_url ? (
-                        <img src={memberData?.avatar_url || currentUser.user_metadata?.avatar_url} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      {memberData?.profile_image_url || currentUser.user_metadata?.avatar_url ? (
+                        <img src={memberData?.profile_image_url || currentUser.user_metadata?.avatar_url} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       ) : (
                         <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.2)', fontSize: '18px', fontWeight: 700 }}>
                           {(memberData?.name || currentUser.user_metadata?.full_name || '회')[0]}
@@ -203,7 +203,7 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
                           ...getRoleBadgeStyle(memberData?.role || 'USER'),
                           fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '10px',
                         }}>
-                          {getRoleLabel(memberData?.role || 'USER')} {memberData?.role ? `[DB:${memberData.role}]` : '[NO_MEMBER_DATA]'}
+                          {getRoleLabel(memberData?.role || 'USER')}
                         </span>
                       </div>
                       <p style={{ fontSize: '11px', opacity: 0.7, margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
