@@ -267,17 +267,17 @@ button { border: none; background: none; cursor: pointer; font-family: inherit; 
     position: fixed;
     top: 250px;
     left: 50%;
-    margin-left: 620px;
-    width: 70px;
-    background: #fff;
-    border: 1px solid var(--border-light);
+    margin-left: 610px;
+    width: 130px;
+    background: transparent;
+    border: none;
     border-radius: 8px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    box-shadow: none;
     display: flex;
     flex-direction: column;
-    text-align: center;
+    text-align: left;
     z-index: 9999;
-    overflow: hidden;
+    overflow: visible;
 }
 .qm-item { padding: 14px 5px; font-size: 13px; color: #333; border-bottom: 1px solid #eee; font-weight: 700; cursor:pointer; transition: background 0.15s;}
 .qm-item:hover { background: #f4f6fa; }
