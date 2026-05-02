@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useCallback, Suspense } from "react
 import { useRouter, useSearchParams } from "next/navigation";
 import { getLectureDetail, getLectures, createLectureReview } from "@/app/actions/lecture";
 import { createClient } from "@/utils/supabase/client";
+import AnimatedLectureLink from "@/components/AnimatedLectureLink";
 import AuthModal from "@/components/AuthModal";
 
 export default function StudyReadPage() {
@@ -159,9 +160,10 @@ function StudyReadContent() {
     return (
       <div className="min-w-[1200px] bg-white font-sans text-[#222]">
         <main className="w-[1200px] mx-auto px-[20px] pt-[30px] pb-[100px]">
-          <div style={{ textAlign: "center", padding: "120px 0", color: "#9ca3af" }}>
-            <div style={{ fontSize: 32, marginBottom: 16 }}>⏳</div>
-            <div style={{ fontSize: 16, fontWeight: 600 }}>강의 정보를 불러오는 중...</div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 20, marginTop: "15vh", minHeight: "40vh" }}>
+            <style>{`@keyframes pulse-breathe { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.6; transform: scale(0.96); } }`}</style>
+            <img src="/new_logo.png" alt="loading" style={{ width: 160, animation: "pulse-breathe 2s cubic-bezier(0.4, 0, 0.6, 1) infinite" }} />
+            <div style={{ color: "#888", fontSize: 16, fontWeight: 600, letterSpacing: "-0.5px" }}>강의 정보를 불러오는 중입니다...</div>
           </div>
         </main>
       </div>
@@ -609,15 +611,16 @@ function StudyReadContent() {
               </button>
 
               {/* CTA Button */}
-              <button 
-                onClick={() => router.push(`/study_watch?id=${lecture.id}`)} 
-                className="w-full font-bold text-white transition-colors"
-                style={{ marginBottom: 24, padding: "18px 0", borderRadius: 8, fontSize: 16, backgroundColor: "#059669", boxShadow: "0 4px 12px rgba(5,150,105,0.3)" }}
-                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#047857"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "#059669"; }}
-              >
-                특강 수강 시작하기
-              </button>
+              <AnimatedLectureLink href={`/study_watch?id=${lecture.id}`}>
+                <div 
+                  className="w-full font-bold text-white transition-colors flex items-center justify-center"
+                  style={{ marginBottom: 24, padding: "18px 0", borderRadius: 8, fontSize: 16, backgroundColor: "#059669", boxShadow: "0 4px 12px rgba(5,150,105,0.3)", cursor: "pointer" }}
+                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#047857"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "#059669"; }}
+                >
+                  특강 수강 시작하기
+                </div>
+              </AnimatedLectureLink>
 
               {/* Share & Like */}
               <div className="flex justify-center border-b" style={{ gap: 40, paddingBottom: 24, marginBottom: 24, borderColor: "#f0f0f0" }}>
@@ -658,15 +661,16 @@ function StudyReadContent() {
           <button className="flex items-center justify-center transition-colors hover:bg-gray-50" style={{ width: 52, height: 52, borderRadius: 8, border: "1px solid #e4e4e4", backgroundColor: "white", color: "#1a1a1a", flexShrink: 0 }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
           </button>
-          <button 
-            onClick={() => router.push(`/study_watch?id=${lecture.id}`)} 
-            className="flex-1 font-bold text-white transition-colors flex items-center justify-center"
-            style={{ height: 52, borderRadius: 8, fontSize: 16, backgroundColor: "#059669" }}
-            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#047857"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "#059669"; }}
-          >
-            특강 수강 시작하기
-          </button>
+          <AnimatedLectureLink href={`/study_watch?id=${lecture.id}`} className="flex-1">
+            <div 
+              className="w-full h-full font-bold text-white transition-colors flex items-center justify-center"
+              style={{ height: 52, borderRadius: 8, fontSize: 16, backgroundColor: "#059669", cursor: "pointer" }}
+              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#047857"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "#059669"; }}
+            >
+              특강 수강 시작하기
+            </div>
+          </AnimatedLectureLink>
         </div>
       </div>
 

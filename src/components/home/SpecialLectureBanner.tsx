@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import AnimatedLectureLink from "@/components/AnimatedLectureLink";
 import { useEffect, useState } from "react";
 import { getLectures } from "@/app/actions/lecture";
 
@@ -46,7 +46,7 @@ export default function SpecialLectureBanner({ initialLectures }: { initialLectu
       </div>
       <div className="lecture-grid mb-50">
         {lectures.map((item, i) => (
-          <Link href={item.id ? `/study_read?id=${item.id}` : "/study_read"} key={item.id || i} className="lecture-card" style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+          <AnimatedLectureLink href={item.id ? `/study_read?id=${item.id}` : "/study_read"} key={item.id || i} className="lecture-card" style={{ display: "flex", flexDirection: "column", height: "100%" }}>
             <div className="lecture-thumb">
               {item.thumbnail_url ? (
                 <img
@@ -80,7 +80,7 @@ export default function SpecialLectureBanner({ initialLectures }: { initialLectu
                 </div>
               </div>
             </div>
-          </Link>
+          </AnimatedLectureLink>
         ))}
       </div>
     </div>
