@@ -376,7 +376,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
     };
 
     // Kakao Maps SDK 로드
-    if ((window as any).kakao?.maps?.LatLng) {
+    if ((window as any).kakao?.maps?.LatLng && (window as any).kakao?.maps?.MarkerClusterer) {
       initMap();
     } else {
       const scriptId = "kakao-map-script";
@@ -392,7 +392,18 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
         const check = setInterval(() => {
           if ((window as any).kakao?.maps?.LatLng) {
             clearInterval(check);
-            initMap();
+            // clusterer 라이브러리 로드 대기
+            if ((window as any).kakao.maps.MarkerClusterer) {
+              initMap();
+            } else {
+              const check2 = setInterval(() => {
+                if ((window as any).kakao?.maps?.MarkerClusterer) {
+                  clearInterval(check2);
+                  initMap();
+                }
+              }, 50);
+              setTimeout(() => clearInterval(check2), 5000); // 5초 타임아웃
+            }
           }
         }, 100);
       }
