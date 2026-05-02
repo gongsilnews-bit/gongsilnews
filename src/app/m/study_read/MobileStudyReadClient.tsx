@@ -147,6 +147,9 @@ export default function MobileStudyReadClient({ initialLecture }: { initialLectu
         highlightColor="#fcd34d"
       />
 
+      {/* 헤더 하단 배경회색 구분선 */}
+      <div style={{ height: "9px", backgroundColor: "#F4F6F8", width: "100%", flexShrink: 0, borderBottom: "1px solid #e5e7eb" }} />
+
       {/* ── 1. 이미지 (비율 유지 축소) ── */}
       <div style={{ position: "relative", width: "100%", aspectRatio: "16/11", overflow: "hidden", background: "#f0f0f0" }}>
         {slideImages.length > 0 ? (
