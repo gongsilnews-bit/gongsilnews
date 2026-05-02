@@ -6,6 +6,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { getArticles, getArticleDetail, incrementArticleView } from "@/app/actions/article";
+import { getVacancyCountByKeyword } from "@/app/actions/vacancy";
 import HomeHeader from "../_components/HomeHeader";
 import AuthorProfileHeader from "../_components/AuthorProfileHeader";
 
@@ -111,6 +112,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
     }
   }, [searchParams]);
   const [visibleArticles, setVisibleArticles] = useState<any[]>([]);
+  const [vacancyCount, setVacancyCount] = useState<number>(0);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [clusterMode, setClusterMode] = useState(false);
 
@@ -144,6 +146,12 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
       const keywordMatch = searchParams.get("keyword");
       if (keywordMatch) {
         filters.keyword = keywordMatch;
+        // Fetch related vacancy count
+        const vRes = await getVacancyCountByKeyword(keywordMatch);
+        if (vRes.success) setVacancyCount(vRes.count || 0);
+        else setVacancyCount(0);
+      } else {
+        setVacancyCount(0);
       }
       
       const res = await getArticles(filters);
@@ -739,11 +747,18 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
 
           {/* Keyword Search Result Header */}
           {(initialKeyword || searchParams.get("keyword")) && (
-            <div style={{ padding: "20px 16px 8px", background: "#fff", display: "flex", alignItems: "center", gap: "6px" }}>
+            <div style={{ padding: "20px 16px 8px", background: "#fff", display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
               <span style={{ fontSize: "18px", fontWeight: 800, color: "#111" }}>#{initialKeyword || searchParams.get("keyword")}</span>
               <span style={{ fontSize: "16px", fontWeight: 600, color: "#333" }}>관련기사</span>
               <span style={{ fontSize: "16px", fontWeight: 800, color: "#508bf5" }}>{articles.length}</span>
-              <span style={{ fontSize: "16px", fontWeight: 600, color: "#333" }}>건</span>
+              <span style={{ fontSize: "16px", fontWeight: 600, color: "#333", marginRight: "4px" }}>건,</span>
+              
+              <Link href={`/m/gongsil?keyword=${initialKeyword || searchParams.get("keyword")}`} style={{ display: "flex", alignItems: "center", gap: "6px", textDecoration: "none" }}>
+                <span style={{ fontSize: "16px", fontWeight: 600, color: "#333" }}>관련공실</span>
+                <span style={{ fontSize: "16px", fontWeight: 800, color: "#f97316" }}>{vacancyCount}</span>
+                <span style={{ fontSize: "16px", fontWeight: 600, color: "#333" }}>건</span>
+                <span style={{ fontSize: "14px", color: "#666" }}>&gt;</span>
+              </Link>
             </div>
           )}
 

@@ -213,6 +213,22 @@ export async function getVacancies(options?: {
   }
 }
 
+export async function getVacancyCountByKeyword(keyword: string) {
+  const supabase = getAdminClient();
+  try {
+    const { count, error } = await supabase
+      .from('vacancies')
+      .select('id', { count: 'exact', head: true })
+      .neq('status', 'DELETED')
+      .or(`dong.ilike.%${keyword}%,sigungu.ilike.%${keyword}%,sido.ilike.%${keyword}%,building_name.ilike.%${keyword}%,detail_addr.ilike.%${keyword}%`);
+
+    if (error) return { success: false, error: error.message };
+    return { success: true, count: count || 0 };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
 // ── 공실 상세 조회 ──
 export async function getVacancyDetail(vacancyId: string) {
   const supabase = getAdminClient();
