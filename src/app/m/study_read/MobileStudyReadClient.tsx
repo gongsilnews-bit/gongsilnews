@@ -119,11 +119,7 @@ export default function MobileStudyReadClient({ initialLecture }: { initialLectu
   if (loading) return (
     <div style={{ paddingTop: 50, minHeight: "100vh", backgroundColor: "#fff", display: "flex", flexDirection: "column" }}>
       <SubPageHeader title="부동산 특강" />
-      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 16, marginTop: "20vh" }}>
-        <style>{`@keyframes pulse-breathe { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.6; transform: scale(0.96); } }`}</style>
-        <img src="/new_logo.png" alt="loading" style={{ width: 140, animation: "pulse-breathe 2s cubic-bezier(0.4, 0, 0.6, 1) infinite" }} />
-        <div style={{ color: "#888", fontSize: 14, fontWeight: 600, letterSpacing: "-0.5px" }}>강의 정보를 불러오는 중입니다...</div>
-      </div>
+      <div style={{ flex: 1, backgroundColor: "#fff" }} />
     </div>
   );
   if (!lecture) return <div style={{ paddingTop: 50 }}><SubPageHeader title="부동산 특강" /><div style={{ textAlign: "center", padding: 80, color: "#999" }}>📭 등록된 강의가 없습니다.</div></div>;

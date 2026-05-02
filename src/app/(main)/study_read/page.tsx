@@ -160,11 +160,7 @@ function StudyReadContent() {
     return (
       <div className="min-w-[1200px] bg-white font-sans text-[#222]">
         <main className="w-[1200px] mx-auto px-[20px] pt-[30px] pb-[100px]">
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 20, marginTop: "15vh", minHeight: "40vh" }}>
-            <style>{`@keyframes pulse-breathe { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.6; transform: scale(0.96); } }`}</style>
-            <img src="/new_logo.png" alt="loading" style={{ width: 160, animation: "pulse-breathe 2s cubic-bezier(0.4, 0, 0.6, 1) infinite" }} />
-            <div style={{ color: "#888", fontSize: 16, fontWeight: 600, letterSpacing: "-0.5px" }}>강의 정보를 불러오는 중입니다...</div>
-          </div>
+          <div style={{ minHeight: "40vh" }} />
         </main>
       </div>
     );
