@@ -394,6 +394,15 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
     }
   }, []);
 
+  const handlePyChange = useCallback((val: string, pySetter: (v: string) => void, m2Setter: (v: string) => void) => {
+    pySetter(val);
+    if (val && !isNaN(Number(val))) {
+      m2Setter((Number(val) / 0.3025).toFixed(1));
+    } else {
+      m2Setter("");
+    }
+  }, []);
+
   // ── 주소 노출 여부 판별 ──
   const isFieldExposed = (field: "detailAddr" | "buildingName" | "aptDong" | "hosu") => {
     if (propertyType === "아파트·오피스텔") {
@@ -858,8 +867,9 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                     style={{ ...inputStyle, flex: 1 }} />
                   <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>m²</span>
                   <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>=</span>
-                  <input type="text" placeholder="평환산" value={supplyPy} readOnly
-                    style={{ ...inputStyle, flex: 1, background: darkMode ? "#1a1b1e" : "#f9fafb" }} />
+                  <input type="number" placeholder="예: 25.4" value={supplyPy}
+                    onChange={(e) => handlePyChange(e.target.value, setSupplyPy, setSupplyM2)}
+                    style={{ ...inputStyle, flex: 1 }} />
                   <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>평</span>
                 </div>
               </div>
@@ -871,8 +881,9 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                     style={{ ...inputStyle, flex: 1 }} />
                   <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>m²</span>
                   <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>=</span>
-                  <input type="text" placeholder="평환산" value={exclusivePy} readOnly
-                    style={{ ...inputStyle, flex: 1, background: darkMode ? "#1a1b1e" : "#f9fafb" }} />
+                  <input type="number" placeholder="예: 18.8" value={exclusivePy}
+                    onChange={(e) => handlePyChange(e.target.value, setExclusivePy, setExclusiveM2)}
+                    style={{ ...inputStyle, flex: 1 }} />
                   <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>평</span>
                 </div>
               </div>
