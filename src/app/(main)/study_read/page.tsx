@@ -2,7 +2,9 @@
 
 import React, { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { getLectureDetail, getLectures } from "@/app/actions/lecture";
+import { getLectureDetail, getLectures, createLectureReview } from "@/app/actions/lecture";
+import { createClient } from "@/utils/supabase/client";
+import AuthModal from "@/components/AuthModal";
 
 export default function StudyReadPage() {
   return (
@@ -28,6 +30,22 @@ function StudyReadContent() {
   /* ── 영상 미리보기 모달 ── */
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewTitle, setPreviewTitle] = useState("");
+
+  /* ── 리뷰 작성 상태 ── */
+  const [newRating, setNewRating] = useState(5);
+  const [newReview, setNewReview] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  /* ── 인증 상태 ── */
+  const [user, setUser] = useState<any>(null);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => {
+      if (data?.user) setUser(data.user);
+    });
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -90,6 +108,29 @@ function StudyReadContent() {
     if (el) {
       const y = el.getBoundingClientRect().top + window.scrollY - 210;
       window.scrollTo({ top: y, behavior: "smooth" });
+    }
+  };
+
+  const handleReviewSubmit = async () => {
+    if (!newReview.trim()) return alert("리뷰 내용을 입력해주세요.");
+    if (!lecture?.id || !user) return;
+    setIsSubmitting(true);
+    const res = await createLectureReview({
+      lecture_id: lecture.id,
+      rating: newRating,
+      content: newReview,
+      user_id: user.id,
+      user_name: user.user_metadata?.full_name || user.email?.split("@")[0] || "익명",
+    });
+    setIsSubmitting(false);
+    if (res.success) {
+      alert("소중한 리뷰가 등록되었습니다.");
+      setNewReview("");
+      setNewRating(5);
+      const detailRes = await getLectureDetail(lecture.id);
+      if (detailRes.success && detailRes.data) setLecture(detailRes.data);
+    } else {
+      alert("리뷰 등록에 실패했습니다. 다시 시도해주세요.");
     }
   };
 
@@ -319,6 +360,37 @@ function StudyReadContent() {
               <div className="flex justify-between items-end" style={{ marginBottom: 32 }}>
                 <h2 className="font-bold" style={{ fontSize: 24, color: "#1a1a1a" }}>실제 수강생 리뷰</h2>
               </div>
+
+              {/* 리뷰 작성 폼 */}
+              <div style={{ padding: 24, backgroundColor: "#fafafa", borderRadius: 12, border: "1px solid #f0f0f0", marginBottom: 32 }}>
+                <div className="flex items-center justify-between" style={{ marginBottom: 16 }}>
+                  <div className="font-bold text-[#1a1a1a]">이 강의 어떠셨나요? 평점을 남겨주세요!</div>
+                  <div className="flex" style={{ gap: 4 }}>
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button key={star} onClick={() => user ? setNewRating(star) : setIsAuthModalOpen(true)} className="text-[24px] transition-transform hover:scale-110" style={{ color: star <= newRating ? "#f5a623" : "#e4e4e4" }}>★</button>
+                    ))}
+                  </div>
+                </div>
+                {user ? (
+                  <div className="flex flex-col md:flex-row" style={{ gap: 12 }}>
+                    <div className="shrink-0 flex items-center justify-center font-bold text-[#858a8d]" style={{ minWidth: 120, padding: "16px", borderRadius: 8, border: "1px solid #e4e4e4", fontSize: 14, backgroundColor: "#fff" }}>
+                      {user.user_metadata?.full_name || user.email?.split("@")[0] || "익명"}
+                    </div>
+                    <div className="flex-1 flex" style={{ gap: 12 }}>
+                      <textarea placeholder="수강을 고민하는 분들을 위해 솔직한 리뷰를 남겨주세요." value={newReview} onChange={(e) => setNewReview(e.target.value)} className="flex-1 resize-none" style={{ height: 54, padding: "16px", borderRadius: 8, border: "1px solid #e4e4e4", fontSize: 14, outline: "none", color: "#1a1a1a" }} />
+                      <button onClick={handleReviewSubmit} disabled={isSubmitting} className="shrink-0 font-bold transition-colors" style={{ width: 100, height: 54, borderRadius: 8, border: "none", backgroundColor: newReview.trim() ? "#059669" : "#e4e4e4", color: newReview.trim() ? "#fff" : "#a2a2a2", cursor: newReview.trim() ? "pointer" : "default" }}>
+                        {isSubmitting ? "등록 중..." : "등록하기"}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center" style={{ padding: "20px 0 10px 0" }}>
+                    <button onClick={() => setIsAuthModalOpen(true)} className="font-bold transition-colors hover:bg-gray-50" style={{ padding: "12px 32px", borderRadius: 8, border: "1px solid #059669", color: "#059669", backgroundColor: "#fff", fontSize: 15 }}>
+                      로그인하고 리뷰 남기기
+                    </button>
+                  </div>
+                )}
+              </div>
               {reviews.length > 0 ? (
                 <>
                   <div className="flex overflow-x-auto hide-scrollbar" style={{ gap: 16, paddingBottom: 16, scrollbarWidth: "none" }}>
@@ -478,6 +550,7 @@ function StudyReadContent() {
           </div>
         </div>
       </main>
+      {isAuthModalOpen && <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />}
     </div>
   );
 }
