@@ -163,6 +163,87 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
   const clusterModeRef = useRef(false);
   const detailPanelRef = useRef<HTMLDivElement>(null);
 
+  // ── 우리동네뉴스 위치 필터 상태 ──
+  const [locActivePanel, setLocActivePanel] = useState<string | null>(null);
+  const [locLabel, setLocLabel] = useState("위치");
+  const [sidoList, setSidoList] = useState<any[]>([]);
+  const [gugunList, setGugunList] = useState<any[]>([]);
+  const [dongList, setDongList] = useState<any[]>([]);
+  const [selSido, setSelSido] = useState("");
+  const [selGugun, setSelGugun] = useState("");
+  const [selSidoCode, setSelSidoCode] = useState("");
+  const [selGugunCode, setSelGugunCode] = useState("");
+  const [regTab, setRegTab] = useState<"sido"|"gugun"|"dong">("sido");
+  const [locKeyword, setLocKeyword] = useState("");
+  const [locResults, setLocResults] = useState<any[]>([]);
+  const [locTab, setLocTab] = useState<"region"|"keyword">("region");
+  const [newsCategory, setNewsCategory] = useState("전체");
+
+  const NEWS_CATEGORIES = ["전체", "부동산·재테크", "정치·경제", "세무·법률", "여행·생활", "기타"];
+
+  const loadSidoData = async () => {
+    try {
+      const res = await fetch('https://grpc-proxy-server-mkvo6j4wsq-du.a.run.app/v1/regcodes?regcode_pattern=*00000000');
+      const data = await res.json();
+      setSidoList(data.regcodes || []);
+    } catch (e) { console.error(e); }
+  };
+
+  const loadGugunData = async (code: string) => {
+    setGugunList([]);
+    try {
+      const res = await fetch(`https://grpc-proxy-server-mkvo6j4wsq-du.a.run.app/v1/regcodes?regcode_pattern=${code.substring(0,2)}*00000&is_ignore_zero=true`);
+      const data = await res.json();
+      setGugunList((data.regcodes || []).sort((a:any,b:any) => a.name.localeCompare(b.name)).map((c:any) => ({ code: c.code, name: c.name.split(' ').slice(1).join(' ') })));
+    } catch (e) { console.error(e); }
+  };
+
+  const loadDongData = async (code: string) => {
+    setDongList([]);
+    try {
+      const res = await fetch(`https://grpc-proxy-server-mkvo6j4wsq-du.a.run.app/v1/regcodes?regcode_pattern=${code.substring(0,5)}*&is_ignore_zero=true`);
+      const data = await res.json();
+      setDongList((data.regcodes || []).filter((c:any) => c.code !== code).sort((a:any,b:any) => a.name.localeCompare(b.name)).map((c:any) => { const p = c.name.split(' '); return { code: c.code, name: p[p.length-1] }; }));
+    } catch (e) { console.error(e); }
+  };
+
+  const moveToLocation = (keyword: string, zoom: number) => {
+    const kakao = (window as any).kakao;
+    if (!kakao?.maps?.services || !kakaoMapRef.current) return;
+    const ps = new kakao.maps.services.Places();
+    ps.keywordSearch(keyword, (data: any, status: any) => {
+      if (status === kakao.maps.services.Status.OK && data.length > 0) {
+        const latlng = new kakao.maps.LatLng(parseFloat(data[0].y), parseFloat(data[0].x));
+        kakaoMapRef.current.panTo(latlng);
+        kakaoMapRef.current.setLevel(zoom);
+      }
+    });
+  };
+
+  const doLocKeywordSearch = () => {
+    if (!locKeyword.trim()) return;
+    const kakao = (window as any).kakao;
+    if (!kakao?.maps?.services) return;
+    const ps = new kakao.maps.services.Places();
+    ps.keywordSearch(locKeyword, (data: any, status: any) => {
+      if (status === kakao.maps.services.Status.OK) setLocResults(data);
+      else setLocResults([]);
+    });
+  };
+
+  useEffect(() => { if (activeTab === 'local' && sidoList.length === 0) loadSidoData(); }, [activeTab]);
+
+  // 카테고리 필터 적용 (section2 매핑)
+  const filteredVisibleArticles = newsCategory === "전체" ? visibleArticles : visibleArticles.filter((a: any) => {
+    const sec = a.section2 || '';
+    if (newsCategory === '부동산·재테크') return sec.includes('부동산') || sec.includes('주식') || sec.includes('재테크');
+    if (newsCategory === '정치·경제') return sec.includes('정치') || sec.includes('경제') || sec.includes('사회');
+    if (newsCategory === '세무·법률') return sec.includes('세무') || sec.includes('법률');
+    if (newsCategory === '여행·생활') return sec.includes('여행') || sec.includes('건강') || sec.includes('생활');
+    if (newsCategory === '기타') return sec.includes('IT') || sec.includes('스포츠') || sec.includes('연예') || sec.includes('인물') || sec.includes('미션') || sec.includes('기타') || sec.includes('가전') || sec.includes('가구') || sec.includes('Car');
+    return true;
+  });
+
   useEffect(() => { clusterModeRef.current = clusterMode; }, [clusterMode]);
 
   // 일반 뉴스 로드
@@ -620,8 +701,96 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
             highlightColor="#ffffff" 
           />
           <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minHeight: "calc(100vh - 50px - 60px)", paddingTop: "50px" }}>
-            {/* 구분선 (회색 배경) */}
-            <div style={{ height: "9px", backgroundColor: "#F4F6F8", width: "100%", flexShrink: 0 }} />
+            {/* ═══ 위치·카테고리 필터 바 ═══ */}
+            <style>{`
+              @keyframes newsSheetUp { from { transform: translateX(-50%) translateY(100%); } to { transform: translateX(-50%) translateY(0); } }
+              .news-filter-scroll::-webkit-scrollbar { display: none; }
+              .news-filter-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+            `}</style>
+            <div style={{ display: "flex", alignItems: "center", background: "#fff", borderBottom: "1px solid #e5e7eb", padding: "8px 0", flexShrink: 0, width: "100%" }}>
+              <div style={{ position: "relative", flex: 1, minWidth: 0, overflow: "hidden" }}>
+                <div className="news-filter-scroll" style={{ overflowX: "auto", display: "flex", gap: "8px", padding: "0 12px", WebkitOverflowScrolling: "touch" as any }}>
+                  <button onClick={() => setLocActivePanel(locActivePanel === "loc" ? null : "loc")} style={{ padding: "7px 14px", borderRadius: "20px", fontSize: "13px", fontWeight: 600, whiteSpace: "nowrap", flexShrink: 0, border: (locActivePanel === "loc" || locLabel !== "위치") ? "1.5px solid #ea580c" : "1px solid #d1d5db", background: (locActivePanel === "loc" || locLabel !== "위치") ? "#fff7ed" : "#fff", color: (locActivePanel === "loc" || locLabel !== "위치") ? "#ea580c" : "#374151", cursor: "pointer", transition: "all 0.15s", display: "flex", alignItems: "center", gap: "4px" }}>
+                    📍 {locLabel} ▾
+                  </button>
+                  {NEWS_CATEGORIES.map(cat => (
+                    <button key={cat} onClick={() => setNewsCategory(cat)} style={{ padding: "7px 14px", borderRadius: "20px", fontSize: "13px", fontWeight: 600, whiteSpace: "nowrap", flexShrink: 0, border: newsCategory === cat ? "1.5px solid #ea580c" : "1px solid #d1d5db", background: newsCategory === cat ? "#fff7ed" : "#fff", color: newsCategory === cat ? "#ea580c" : "#374151", cursor: "pointer", transition: "all 0.15s" }}>
+                      {cat}
+                    </button>
+                  ))}
+                  <div style={{ flexShrink: 0, width: "8px" }} />
+                </div>
+                <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: "24px", background: "linear-gradient(to right, transparent, #fff)", pointerEvents: "none" }} />
+              </div>
+            </div>
+
+            {/* 위치 검색 바텀시트 */}
+            {locActivePanel === "loc" && (
+              <>
+                <div onClick={() => setLocActivePanel(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.35)", zIndex: 9990, transition: "opacity 0.2s" }} />
+                <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 448, background: "#fff", borderRadius: "16px 16px 0 0", zIndex: 9991, maxHeight: "55vh", display: "flex", flexDirection: "column", animation: "newsSheetUp 0.3s ease-out" }}>
+                  <div style={{ padding: "16px 20px 12px", borderBottom: "1px solid #f3f4f6", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: "16px", fontWeight: 800, color: "#111" }}>📍 위치 검색</span>
+                    <button onClick={() => setLocActivePanel(null)} style={{ background: "none", border: "none", fontSize: "22px", color: "#9ca3af", cursor: "pointer", padding: "4px" }}>✕</button>
+                  </div>
+                  <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px 24px", WebkitOverflowScrolling: "touch", overscrollBehaviorY: "contain" }}>
+                    {/* 탭 */}
+                    <div style={{ display: "flex", borderBottom: "2px solid #f3f4f6", marginBottom: "16px" }}>
+                      <button onClick={() => setLocTab("region")} style={{ flex: 1, padding: "10px", fontSize: "14px", fontWeight: locTab === "region" ? 700 : 500, color: locTab === "region" ? "#ea580c" : "#9ca3af", borderBottom: locTab === "region" ? "2px solid #ea580c" : "2px solid transparent", background: "none", border: "none", cursor: "pointer" }}>지역선택</button>
+                      <button onClick={() => setLocTab("keyword")} style={{ flex: 1, padding: "10px", fontSize: "14px", fontWeight: locTab === "keyword" ? 700 : 500, color: locTab === "keyword" ? "#ea580c" : "#9ca3af", borderBottom: locTab === "keyword" ? "2px solid #ea580c" : "2px solid transparent", background: "none", border: "none", cursor: "pointer" }}>키워드검색</button>
+                    </div>
+
+                    {locTab === "region" ? (
+                      <div>
+                        <div style={{ display: "flex", gap: "6px", marginBottom: "14px" }}>
+                          {(["sido","gugun","dong"] as const).map(t => (
+                            <button key={t} onClick={() => setRegTab(t)} style={{ flex: 1, padding: "8px 4px", fontSize: "13px", fontWeight: regTab === t ? 700 : 500, background: regTab === t ? "#ea580c" : "#f3f4f6", color: regTab === t ? "#fff" : "#6b7280", borderRadius: "6px", border: "none", cursor: "pointer" }}>
+                              {t === "sido" ? "시/도" : t === "gugun" ? "시/군/구" : "읍/면/동"}
+                            </button>
+                          ))}
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", maxHeight: "200px", overflowY: "auto" }}>
+                          {regTab === "sido" && (sidoList.length > 0 ? sidoList.map((c: any) => (
+                            <button key={c.code} onClick={() => { setSelSidoCode(c.code); setSelSido(c.name); setSelGugun(""); setRegTab("gugun"); loadGugunData(c.code); moveToLocation(c.name, 8); setLocLabel(c.name); }} style={{ padding: "10px 4px", borderRadius: "8px", fontSize: "13px", fontWeight: selSido === c.name ? 700 : 500, textAlign: "center", border: selSido === c.name ? "1.5px solid #ea580c" : "1px solid #e5e7eb", background: selSido === c.name ? "#fff7ed" : "#fff", color: selSido === c.name ? "#ea580c" : "#374151", cursor: "pointer", transition: "all 0.15s" }}>{c.name}</button>
+                          )) : <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "20px", color: "#9ca3af" }}>로딩중...</div>)}
+                          {regTab === "gugun" && (!selSidoCode ? <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "20px", color: "#9ca3af" }}>시/도를 먼저 선택하세요</div> : gugunList.length > 0 ? gugunList.map((c: any) => (
+                            <button key={c.code} onClick={() => { setSelGugunCode(c.code); setSelGugun(c.name); setRegTab("dong"); loadDongData(c.code); moveToLocation(`${selSido} ${c.name}`, 6); setLocLabel(`${c.name}`); }} style={{ padding: "10px 4px", borderRadius: "8px", fontSize: "13px", fontWeight: selGugun === c.name ? 700 : 500, textAlign: "center", border: selGugun === c.name ? "1.5px solid #ea580c" : "1px solid #e5e7eb", background: selGugun === c.name ? "#fff7ed" : "#fff", color: selGugun === c.name ? "#ea580c" : "#374151", cursor: "pointer", transition: "all 0.15s" }}>{c.name}</button>
+                          )) : <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "20px", color: "#9ca3af" }}>로딩중...</div>)}
+                          {regTab === "dong" && (!selGugunCode ? <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "20px", color: "#9ca3af" }}>시/군/구를 먼저 선택하세요</div> : dongList.length > 0 ? dongList.map((c: any) => (
+                            <button key={c.code} onClick={() => { moveToLocation(`${selSido} ${selGugun} ${c.name}`, 4); setLocLabel(`${selGugun} ${c.name}`); setLocActivePanel(null); }} style={{ padding: "10px 4px", borderRadius: "8px", fontSize: "13px", fontWeight: 500, textAlign: "center", border: "1px solid #e5e7eb", background: "#fff", color: "#374151", cursor: "pointer", transition: "all 0.15s" }}>{c.name}</button>
+                          )) : <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "20px", color: "#9ca3af" }}>로딩중...</div>)}
+                        </div>
+                      </div>
+                    ) : (
+                      <div>
+                        <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
+                          <input type="text" placeholder="동, 읍, 면 또는 랜드마크 검색" value={locKeyword} onChange={e => setLocKeyword(e.target.value)} onKeyDown={e => e.key === "Enter" && doLocKeywordSearch()} style={{ flex: 1, padding: "10px 14px", border: "1px solid #d1d5db", borderRadius: "8px", fontSize: "14px", outline: "none" }} />
+                          <button onClick={doLocKeywordSearch} style={{ padding: "10px 16px", background: "#ea580c", color: "#fff", border: "none", borderRadius: "8px", fontWeight: 700, fontSize: "14px", cursor: "pointer" }}>이동</button>
+                        </div>
+                        <div style={{ maxHeight: "180px", overflowY: "auto" }}>
+                          {locResults.map((r: any, i: number) => (
+                            <div key={i} onClick={() => {
+                              if (kakaoMapRef.current) {
+                                const kakao = (window as any).kakao;
+                                const latlng = new kakao.maps.LatLng(parseFloat(r.y), parseFloat(r.x));
+                                kakaoMapRef.current.panTo(latlng);
+                                kakaoMapRef.current.setLevel(5);
+                              }
+                              setLocLabel(r.place_name || r.address_name);
+                              setLocActivePanel(null);
+                            }} style={{ padding: "12px 4px", borderBottom: "1px solid #f3f4f6", cursor: "pointer" }}>
+                              <div style={{ fontSize: "14px", fontWeight: 600, color: "#111" }}>{r.place_name || r.address_name}</div>
+                              <div style={{ fontSize: "12px", color: "#9ca3af", marginTop: "2px" }}>{r.address_name}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+
             {/* 상단: 카카오 지도 */}
           <div
             style={{ position: "relative", width: "100%", height: "45vh", borderBottom: "1px solid #ddd", flexShrink: 0 }}
@@ -700,9 +869,9 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                 </svg>
                 <h3 style={{ fontSize: "15px", fontWeight: 800, color: "#111" }}>
                   {clusterMode ? (
-                    <><span style={{ color: "#ff8e15" }}>선택 지역</span> 기사 {visibleArticles.length}개</>
+                    <><span style={{ color: "#ff8e15" }}>선택 지역</span> 기사 {filteredVisibleArticles.length}개</>
                   ) : (
-                    <>지도영역 기사 {visibleArticles.length}개</>
+                    <>지도영역 기사 {filteredVisibleArticles.length}개</>
                   )}
                 </h3>
               </div>
@@ -731,7 +900,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
             </div>
 
             <div style={{ padding: "0 16px 20px", background: "#fff", flex: 1 }}>
-              {visibleArticles.map((article: any) => (
+              {filteredVisibleArticles.map((article: any) => (
                 <div
                   key={article.id}
                   className="article-row"
@@ -773,7 +942,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                   </div>
                 </div>
               ))}
-              {visibleArticles.length === 0 && mapLoaded && (
+              {filteredVisibleArticles.length === 0 && mapLoaded && (
                 <div style={{ textAlign: "center", padding: "40px 0", color: "#9ca3af" }}>
                   <p style={{ fontSize: "14px" }}>현재 지도 영역에 기사가 없습니다.</p>
                 </div>
