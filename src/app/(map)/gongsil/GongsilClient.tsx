@@ -765,7 +765,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
         <div class="info-row"><div class="info-label">관리비</div><div class="info-value">${prop.maintenance_fee ? (prop.maintenance_fee / 10000) + '만원' : '없음'}</div></div>
         ${prop.description ? `<div class="info-row"><div class="info-label">상세설명</div><div class="info-value" style="white-space:pre-line;">${prop.description}</div></div>` : ''}
         ${prop.options && prop.options.length > 0 ? `<div class="section-title">옵션</div><div class="options">${prop.options.map((o:string) => `<span class="option-tag">${o}</span>`).join('')}</div>` : ''}
-        <div class="footer">공실뉴스 | https://gongsilnews.com/gongsil?id=${prop.id} | 인쇄일: ${new Date().toLocaleDateString('ko-KR')}</div>
+        <div class="footer">공실뉴스 | ${window.location.origin.includes('localhost') ? 'https://www.gongsilnews.com' : window.location.origin}/gongsil?id=${prop.id} | 인쇄일: ${new Date().toLocaleDateString('ko-KR')}</div>
       </body>
       </html>
     `);
@@ -788,7 +788,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     }
     const addrText = [prop.dong, prop.building_name].filter(Boolean).join(" ");
     const priceText = getPriceText(prop);
-    const shareUrl = `https://gongsilnews.com/gongsil?id=${prop.id}`;
+    const origin = window.location.origin.includes('localhost') ? 'https://www.gongsilnews.com' : window.location.origin;
+    const shareUrl = `${origin}/gongsil?id=${prop.id}`;
     const imageUrl = prop.images?.[0] || '';
 
     Kakao.Share.sendDefault({
@@ -808,7 +809,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
 
   // ── URL 복사 ──
   const handleCopyUrl = (propId: any) => {
-    const url = `https://gongsilnews.com/gongsil?id=${propId}`;
+    const origin = window.location.origin.includes('localhost') ? 'https://www.gongsilnews.com' : window.location.origin;
+    const url = `${origin}/gongsil?id=${propId}`;
     navigator.clipboard.writeText(url).then(() => {
       setToastMessage('URL이 복사되었습니다.');
     }).catch(() => {

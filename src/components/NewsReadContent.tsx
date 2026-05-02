@@ -406,7 +406,8 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
       setToastMessage("카카오 SDK 로드 중입니다. 잠시 후 시도해 주세요.");
       return;
     }
-    const shareUrl = `https://gongsilnews.com/news/${article.article_no || article.id}`;
+    const origin = window.location.origin.includes('localhost') ? 'https://www.gongsilnews.com' : window.location.origin;
+    const shareUrl = `${origin}/news/${article.article_no || article.id}`;
     Kakao.Share.sendDefault({
       objectType: "feed",
       content: {
@@ -424,7 +425,8 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
 
   // URL 복사
   const handleCopyUrl = () => {
-    const url = `https://gongsilnews.com/news/${article.article_no || article.id}`;
+    const origin = window.location.origin.includes('localhost') ? 'https://www.gongsilnews.com' : window.location.origin;
+    const url = `${origin}/news/${article.article_no || article.id}`;
     navigator.clipboard.writeText(url).then(() => {
       setToastMessage("URL이 복사되었습니다.");
     }).catch(() => {
@@ -487,7 +489,7 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
         </div>
         ${imgHtml}
         <div class="content">${article.content || ""}</div>
-        <div class="footer">본문에 포함된 모든 내용의 저작권은 공실뉴스에 있으며 무단전재 및 재배포를 금지합니다.<br/><br/>https://gongsilnews.com/news/${article.article_no || article.id}</div>
+        <div class="footer">본문에 포함된 모든 내용의 저작권은 공실뉴스에 있으며 무단전재 및 재배포를 금지합니다.<br/><br/>${window.location.origin.includes('localhost') ? 'https://www.gongsilnews.com' : window.location.origin}/news/${article.article_no || article.id}</div>
       </body>
       </html>
     `);
