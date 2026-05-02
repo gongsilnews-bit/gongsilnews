@@ -406,7 +406,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
     if (!kakao?.maps) return;
 
     markersRef.current.forEach((m: any) => m.setMap(null));
-    if (!clustererRef.current) {
+    if (!clustererRef.current && kakao.maps.MarkerClusterer) {
       clustererRef.current = new kakao.maps.MarkerClusterer({
         map: kakaoMapRef.current,
         averageCenter: true,
@@ -470,6 +470,8 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
 
     if (clustererRef.current && newMarkers.length > 0) {
       clustererRef.current.addMarkers(newMarkers);
+    } else {
+      newMarkers.forEach(m => m.setMap(kakaoMapRef.current));
     }
 
     const updateVisible = () => {

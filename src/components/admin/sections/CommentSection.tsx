@@ -34,9 +34,7 @@ export default function CommentSection({ theme, role, memberId }: CommentSection
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState("");
 
-  // 선택 삭제용
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  // 삭제(숨김) 처리된 ID 목록 (로컬)
+  const [checkedIds, setCheckedIds] = useState<string[]>([]);
   const [hiddenIds, setHiddenIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -65,7 +63,7 @@ export default function CommentSection({ theme, role, memberId }: CommentSection
     }
   }, []);
 
-  // Realtime 구독
+  // Realtime
   useEffect(() => {
     if (!userId) return;
     const supabase = createClient();
@@ -78,19 +76,19 @@ export default function CommentSection({ theme, role, memberId }: CommentSection
     return () => { supabase.removeChannel(channel); };
   }, [userId, fetchAll]);
 
-  // 탭 변경 시 선택 초기화
-  useEffect(() => { setSelectedIds(new Set()); }, [tab]);
+  useEffect(() => { setCheckedIds([]); }, [tab]);
 
   const currentList = (tab === "myContent" ? myContentComments : myReplies).filter(c => !hiddenIds.has(c.id));
 
-  const formatTime = (dateStr: string) => {
+  const formatDate = (dateStr: string) => {
     const d = new Date(dateStr);
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}:${String(d.getSeconds()).padStart(2, "0")}`;
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
   };
 
   const isNew = (dateStr: string) => (new Date().getTime() - new Date(dateStr).getTime()) < 86400000;
 
   const typeLabel = (type: string) => type === "article" ? "기사" : type === "vacancy" ? "공실" : "특강";
+  const typeBadgeColor = (type: string) => type === "article" ? "#2563eb" : type === "vacancy" ? "#d97706" : "#7c3aed";
 
   const getLink = (c: CommentItem) => {
     if (c.type === "article") return `/news/${c.sourceId}`;
@@ -98,157 +96,174 @@ export default function CommentSection({ theme, role, memberId }: CommentSection
     return "#";
   };
 
-  // 전체 선택/해제
-  const toggleSelectAll = () => {
-    if (selectedIds.size === currentList.length) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(currentList.map(c => c.id)));
-    }
-  };
-
-  const toggleSelect = (id: string) => {
-    setSelectedIds(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
-  };
-
-  // 단일 삭제 (로컬 숨김)
   const handleDelete = (id: string) => {
     if (!confirm("이 댓글 알림을 삭제하시겠습니까?")) return;
     setHiddenIds(prev => new Set([...prev, id]));
-    setSelectedIds(prev => { const next = new Set(prev); next.delete(id); return next; });
+    setCheckedIds(prev => prev.filter(cid => cid !== id));
   };
 
-  // 선택 삭제
   const handleBulkDelete = () => {
-    if (selectedIds.size === 0) { alert("삭제할 항목을 선택해주세요."); return; }
-    if (!confirm(`선택한 ${selectedIds.size}개 항목을 삭제하시겠습니까?`)) return;
-    setHiddenIds(prev => new Set([...prev, ...selectedIds]));
-    setSelectedIds(new Set());
+    if (checkedIds.length === 0) { alert("삭제할 항목을 선택해주세요."); return; }
+    if (!confirm(`선택한 ${checkedIds.length}개 항목을 삭제하시겠습니까?`)) return;
+    setHiddenIds(prev => new Set([...prev, ...checkedIds]));
+    setCheckedIds([]);
   };
 
-  const btnStyle: React.CSSProperties = {
-    padding: "5px 12px", fontSize: 12, fontWeight: 600, borderRadius: 4,
-    border: `1px solid ${darkMode ? "#555" : "#d1d5db"}`, cursor: "pointer",
-    background: darkMode ? "#2c2d31" : "#fff", color: textPrimary,
-    transition: "all 0.15s", whiteSpace: "nowrap",
+  const thStyle: React.CSSProperties = {
+    padding: "14px 12px", textAlign: "center", fontWeight: 700, fontSize: 14,
+    color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`,
+  };
+
+  const tdStyle: React.CSSProperties = {
+    padding: "18px 12px", verticalAlign: "middle",
   };
 
   return (
-    <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: bg }}>
+    <div style={{ flex: 1, overflowY: "auto", padding: "20px 28px", background: bg }}>
       {/* 헤더 */}
-      <div style={{ padding: "20px 28px 0", flexShrink: 0 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: "0 0 16px" }}>
-          댓글 관리
-        </h1>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 20 }}>
+        <h1 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: 0 }}>댓글 관리</h1>
+        <span style={{ fontSize: 13, fontWeight: 600, color: textSecondary }}>
+          ( 전체 {myContentComments.filter(c => !hiddenIds.has(c.id)).length + myReplies.filter(c => !hiddenIds.has(c.id)).length}건 )
+        </span>
       </div>
 
-      {/* 2탭 */}
-      <div style={{ display: "flex", gap: 0, padding: "0 28px", flexShrink: 0, borderBottom: `2px solid ${darkMode ? "#444" : "#e5e7eb"}` }}>
-        {[
-          { key: "myContent" as const, label: "📥 내 글에 달린 댓글", count: myContentComments.filter(c => !hiddenIds.has(c.id)).length },
-          { key: "myReplies" as const, label: "💬 내 댓글의 답글", count: myReplies.filter(c => !hiddenIds.has(c.id)).length },
-        ].map(t => (
-          <button key={t.key} onClick={() => setTab(t.key)} style={{
-            padding: "10px 20px", fontSize: 14, fontWeight: tab === t.key ? 800 : 500,
-            border: "none", background: tab === t.key ? (darkMode ? "#2c2d31" : "#fff") : "none",
-            cursor: "pointer", color: tab === t.key ? textPrimary : textSecondary,
-            borderBottom: tab === t.key ? `2px solid ${darkMode ? "#fff" : "#111"}` : "2px solid transparent",
-            marginBottom: -2, transition: "all 0.2s",
+      {/* 카드 컨테이너 */}
+      <div style={{ background: cardBg, borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", overflow: "hidden" }}>
+
+        {/* 필터 탭 (기사관리와 동일 스타일) */}
+        <div style={{ display: "flex", borderBottom: `1px solid ${border}`, background: darkMode ? "#2c2d31" : "#fafafa", padding: "0 16px" }}>
+          {[
+            { key: "myContent" as const, label: "내 글에 달린 댓글", count: myContentComments.filter(c => !hiddenIds.has(c.id)).length },
+            { key: "myReplies" as const, label: "내 댓글의 답글", count: myReplies.filter(c => !hiddenIds.has(c.id)).length },
+          ].map(t => (
+            <button key={t.key} onClick={() => setTab(t.key)} style={{
+              border: "none", background: "none", padding: "16px 20px", fontSize: 14,
+              fontWeight: tab === t.key ? 800 : 600,
+              color: tab === t.key ? "#3b82f6" : textSecondary,
+              borderBottom: tab === t.key ? "3px solid #3b82f6" : "3px solid transparent",
+              cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
+            }}>
+              {t.label}
+              <span style={{
+                background: t.count > 0 ? "#3b82f6" : "#e5e7eb",
+                color: t.count > 0 ? "#fff" : "#4b5563",
+                padding: "2px 8px", borderRadius: 10, fontSize: 11, fontWeight: 700,
+              }}>{t.count}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* 액션 버튼 */}
+        <div style={{ padding: "16px 24px", borderBottom: `1px solid ${border}`, display: "flex", gap: 10, alignItems: "center" }}>
+          <button onClick={handleBulkDelete} style={{
+            height: 36, padding: "0 16px",
+            background: darkMode ? "#2c2d31" : "#fff", color: textPrimary,
+            border: `1px solid ${border}`, borderRadius: 6,
+            fontSize: 13, fontWeight: 600, cursor: "pointer",
+            display: "flex", alignItems: "center", gap: 6,
           }}>
-            {t.label} <span style={{ fontSize: 12, fontWeight: 700, marginLeft: 4, color: textSecondary }}>{t.count}</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            선택삭제 {checkedIds.length > 0 && `(${checkedIds.length})`}
           </button>
-        ))}
-      </div>
+        </div>
 
-      {/* 테이블 리스트 */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "0 28px" }}>
-        {loading ? (
-          <div style={{ padding: 60, textAlign: "center", color: textSecondary }}>
-            <div style={{ fontSize: 14, fontWeight: 600 }}>댓글을 불러오는 중...</div>
-          </div>
-        ) : currentList.length === 0 ? (
-          <div style={{ padding: 60, textAlign: "center", color: textSecondary }}>
-            <div style={{ fontSize: 36, marginBottom: 10 }}>📭</div>
-            <div style={{ fontSize: 15, fontWeight: 600 }}>
-              {tab === "myContent" ? "내 글에 달린 댓글이 없습니다" : "내 댓글에 달린 답글이 없습니다"}
-            </div>
-          </div>
-        ) : (
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+        {/* 테이블 */}
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14, minWidth: 700 }}>
             <thead>
-              <tr style={{ borderBottom: `1px solid ${border}`, background: darkMode ? "#1e1f23" : "#f9fafb" }}>
-                <th style={{ padding: "12px 8px", width: 40, textAlign: "center" }}>
-                  <input type="checkbox" checked={selectedIds.size === currentList.length && currentList.length > 0}
-                    onChange={toggleSelectAll} style={{ cursor: "pointer", width: 16, height: 16 }} />
+              <tr style={{ background: darkMode ? "#2c2d31" : "#f9fafb" }}>
+                <th style={{ ...thStyle, width: 40 }}>
+                  <input type="checkbox" style={{ accentColor: "#3b82f6", width: 16, height: 16 }}
+                    checked={checkedIds.length === currentList.length && currentList.length > 0}
+                    onChange={e => setCheckedIds(e.target.checked ? currentList.map(c => c.id) : [])} />
                 </th>
-                <th style={{ padding: "12px 12px", textAlign: "left", fontWeight: 700, color: textPrimary, width: 140 }}>아이디</th>
-                <th style={{ padding: "12px 12px", textAlign: "left", fontWeight: 700, color: textPrimary }}>내용</th>
-                <th style={{ padding: "12px 12px", textAlign: "center", fontWeight: 700, color: textPrimary, width: 180 }}>관리</th>
+                <th style={{ ...thStyle, width: 140, textAlign: "left" }}>아이디</th>
+                <th style={{ ...thStyle, textAlign: "left" }}>내용</th>
+                <th style={{ ...thStyle, width: 180 }}>관리</th>
               </tr>
             </thead>
             <tbody>
-              {currentList.map(c => (
-                <tr key={c.id} style={{
-                  borderBottom: `1px solid ${darkMode ? "#333" : "#f0f0f0"}`,
-                  background: isNew(c.createdAt) ? (darkMode ? "rgba(59,130,246,0.06)" : "rgba(59,130,246,0.03)") : "transparent",
-                  transition: "background 0.15s",
-                }}>
+              {loading ? (
+                <tr><td colSpan={4} style={{ padding: 60, textAlign: "center", color: textSecondary, fontSize: 15 }}>댓글을 불러오는 중...</td></tr>
+              ) : currentList.length === 0 ? (
+                <tr><td colSpan={4} style={{ padding: 60, textAlign: "center", color: textSecondary, fontSize: 15 }}>조회된 댓글이 없습니다.</td></tr>
+              ) : currentList.map(c => (
+                <tr key={c.id} style={{ borderBottom: `1px solid ${darkMode ? "#333" : "#f3f4f6"}` }}>
                   {/* 체크박스 */}
-                  <td style={{ padding: "14px 8px", textAlign: "center", verticalAlign: "top" }}>
-                    <input type="checkbox" checked={selectedIds.has(c.id)}
-                      onChange={() => toggleSelect(c.id)}
-                      style={{ cursor: "pointer", width: 16, height: 16 }} />
+                  <td style={{ ...tdStyle, textAlign: "center" }}>
+                    <input type="checkbox" style={{ accentColor: "#3b82f6", width: 16, height: 16 }}
+                      checked={checkedIds.includes(c.id)}
+                      onChange={e => {
+                        if (e.target.checked) setCheckedIds(prev => [...prev, c.id]);
+                        else setCheckedIds(prev => prev.filter(id => id !== c.id));
+                      }} />
                   </td>
+
                   {/* 아이디 */}
-                  <td style={{ padding: "14px 12px", verticalAlign: "top" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <span style={{ fontWeight: 600, color: textPrimary, fontSize: 13 }}>{c.authorName}</span>
+                  <td style={{ ...tdStyle, verticalAlign: "top" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
+                      <span style={{ fontWeight: 700, fontSize: 15, color: textPrimary }}>{c.authorName}</span>
                       {isNew(c.createdAt) && (
-                        <span style={{ fontSize: 9, fontWeight: 800, color: "#fff", background: "#ef4444", padding: "1px 5px", borderRadius: 4 }}>N</span>
+                        <span style={{ fontSize: 10, fontWeight: 800, color: "#fff", background: "#ef4444", padding: "2px 6px", borderRadius: 4 }}>N</span>
                       )}
                     </div>
-                    <div style={{ fontSize: 11, color: textSecondary, marginTop: 2 }}>
-                      <span style={{
-                        fontSize: 10, fontWeight: 700,
-                        color: c.type === "article" ? "#2563eb" : c.type === "vacancy" ? "#d97706" : "#7c3aed",
-                      }}>
-                        [{typeLabel(c.type)}]
-                      </span>
-                    </div>
+                    <span style={{
+                      fontSize: 12, fontWeight: 700, color: typeBadgeColor(c.type),
+                      background: darkMode ? "rgba(255,255,255,0.06)" : `${typeBadgeColor(c.type)}10`,
+                      padding: "2px 8px", borderRadius: 4, display: "inline-block", marginTop: 2,
+                    }}>
+                      {typeLabel(c.type)}
+                    </span>
                   </td>
+
                   {/* 내용 */}
-                  <td style={{ padding: "14px 12px", verticalAlign: "top" }}>
-                    <div style={{ fontSize: 12, color: textSecondary, marginBottom: 3 }}>
-                      {formatTime(c.createdAt)}
+                  <td style={{ ...tdStyle, verticalAlign: "top" }}>
+                    <div style={{ fontSize: 13, color: textSecondary, marginBottom: 4 }}>
+                      {formatDate(c.createdAt)}
                     </div>
-                    <div style={{ fontSize: 14, color: textPrimary, lineHeight: 1.5, wordBreak: "break-word" }}>
+                    <div style={{ fontSize: 15, fontWeight: 600, color: textPrimary, lineHeight: 1.6, wordBreak: "break-word", marginBottom: 6 }}>
                       {c.isSecret ? "🔒 비밀 댓글입니다" : c.content}
                     </div>
                     {/* 답글 탭: 내 원댓글 표시 */}
                     {tab === "myReplies" && (c as any).myOriginalComment && (
-                      <div style={{ fontSize: 12, color: textSecondary, marginTop: 6, padding: "4px 8px", background: darkMode ? "#2a2b30" : "#f3f4f6", borderRadius: 4, borderLeft: `2px solid ${darkMode ? "#555" : "#d1d5db"}` }}>
-                        내 댓글: {(c as any).myOriginalComment.length > 50 ? (c as any).myOriginalComment.slice(0, 50) + "..." : (c as any).myOriginalComment}
+                      <div style={{
+                        fontSize: 13, color: textSecondary, marginBottom: 6,
+                        padding: "6px 10px", background: darkMode ? "#2a2b30" : "#f3f4f6",
+                        borderRadius: 6, borderLeft: `3px solid ${darkMode ? "#555" : "#d1d5db"}`,
+                      }}>
+                        <span style={{ fontWeight: 700, color: textPrimary }}>내 댓글:</span>{" "}
+                        {(c as any).myOriginalComment.length > 60 ? (c as any).myOriginalComment.slice(0, 60) + "..." : (c as any).myOriginalComment}
                       </div>
                     )}
-                    <div style={{ fontSize: 12, color: textSecondary, marginTop: 4 }}>
-                      📌 {c.sourceTitle.length > 40 ? c.sourceTitle.slice(0, 40) + "..." : c.sourceTitle}
+                    <div style={{ fontSize: 13, color: textSecondary }}>
+                      📌 {c.sourceTitle.length > 50 ? c.sourceTitle.slice(0, 50) + "..." : c.sourceTitle}
                     </div>
                   </td>
+
                   {/* 관리 버튼 */}
-                  <td style={{ padding: "14px 12px", textAlign: "center", verticalAlign: "top" }}>
-                    <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
-                      <button onClick={() => window.open(getLink(c), "_blank")} style={{ ...btnStyle, color: "#2563eb", borderColor: "#93c5fd" }}
-                        onMouseEnter={e => { e.currentTarget.style.background = "#eff6ff"; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = darkMode ? "#2c2d31" : "#fff"; }}>
+                  <td style={{ ...tdStyle, textAlign: "center" }}>
+                    <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+                      <button onClick={() => window.open(getLink(c), "_blank")} style={{
+                        height: 32, padding: "0 14px",
+                        background: darkMode ? "#1e293b" : "#eff6ff",
+                        color: darkMode ? "#93c5fd" : "#2563eb",
+                        border: `1px solid ${darkMode ? "#334155" : "#bfdbfe"}`,
+                        borderRadius: 4, fontSize: 13, fontWeight: 600,
+                        display: "flex", alignItems: "center", gap: 4,
+                        whiteSpace: "nowrap", cursor: "pointer",
+                      }}>
                         📋 보기
                       </button>
-                      <button onClick={() => handleDelete(c.id)} style={{ ...btnStyle, color: "#ef4444", borderColor: "#fca5a5" }}
-                        onMouseEnter={e => { e.currentTarget.style.background = "#fef2f2"; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = darkMode ? "#2c2d31" : "#fff"; }}>
+                      <button onClick={() => handleDelete(c.id)} style={{
+                        height: 32, padding: "0 14px",
+                        background: darkMode ? "#2c2d31" : "#fff",
+                        color: "#ef4444",
+                        border: `1px solid ${darkMode ? "#444" : "#fca5a5"}`,
+                        borderRadius: 4, fontSize: 13, fontWeight: 600,
+                        display: "flex", alignItems: "center", gap: 4,
+                        whiteSpace: "nowrap", cursor: "pointer",
+                      }}>
                         🗑 삭제
                       </button>
                     </div>
@@ -257,27 +272,8 @@ export default function CommentSection({ theme, role, memberId }: CommentSection
               ))}
             </tbody>
           </table>
-        )}
-      </div>
-
-      {/* 하단: 선택삭제 */}
-      {currentList.length > 0 && (
-        <div style={{
-          padding: "12px 28px", borderTop: `1px solid ${border}`, flexShrink: 0,
-          display: "flex", justifyContent: "flex-end",
-        }}>
-          <button onClick={handleBulkDelete} style={{
-            padding: "8px 18px", fontSize: 13, fontWeight: 700, borderRadius: 6,
-            border: `1px solid ${darkMode ? "#555" : "#d1d5db"}`,
-            background: darkMode ? "#2c2d31" : "#fff", color: textPrimary,
-            cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
-          }}
-            onMouseEnter={e => { e.currentTarget.style.background = darkMode ? "#374151" : "#f3f4f6"; }}
-            onMouseLeave={e => { e.currentTarget.style.background = darkMode ? "#2c2d31" : "#fff"; }}>
-            ✓ 선택삭제 {selectedIds.size > 0 && `(${selectedIds.size})`}
-          </button>
         </div>
-      )}
+      </div>
     </div>
   );
 }
