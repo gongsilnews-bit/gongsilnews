@@ -70,20 +70,6 @@ export default function AboutPage() {
             justify-content: space-between;
             padding: 0 40px;
           }
-          
-          .about-nav {
-            display: flex;
-            gap: 40px;
-          }
-          
-          .about-nav a {
-            font-size: 16px;
-            font-weight: 700;
-            color: #d97706; /* 주황색 텍스트 */
-            text-decoration: none;
-            transition: opacity 0.2s;
-          }
-          .about-nav a:hover { opacity: 0.8; }
 
           /* Main Content Wrapper */
           .about-main {
@@ -253,11 +239,6 @@ export default function AboutPage() {
           <Link href="/" style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
             <img src="/logo.png" alt="부동산 정보채널 공실뉴스" style={{ height: 32, width: "auto" }} />
           </Link>
-          <nav className="about-nav">
-            <Link href="/about">매체소개</Link>
-            <Link href="#">광고·제휴</Link>
-            <Link href="/board">공실스터디</Link>
-          </nav>
         </header>
 
         {/* ===== Main Content ===== */}
