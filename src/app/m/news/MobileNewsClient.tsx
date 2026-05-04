@@ -360,7 +360,11 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
 
   // 카카오 지도 초기화
   useEffect(() => {
-    if (activeTab !== "local") return;
+    if (activeTab !== "local") {
+      kakaoMapRef.current = null;
+      setMapLoaded(false);
+      return;
+    }
 
     const initMap = () => {
       if (!mapRef.current || kakaoMapRef.current) return;
