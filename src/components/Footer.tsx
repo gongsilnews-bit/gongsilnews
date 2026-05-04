@@ -17,7 +17,7 @@ export default function Footer() {
           <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 0 }}>
             <Link href="/about" style={linkStyle}>회사소개</Link>
             {divider}
-            <Link href="#" style={linkStyle}>광고안내</Link>
+            <Link href="/marketing" style={linkStyle}>광고안내</Link>
             {divider}
             <Link href="#" style={linkStyle}>제휴문의</Link>
             {divider}
