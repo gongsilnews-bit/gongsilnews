@@ -194,21 +194,27 @@ export default function PCReporterClient({
                   {agencyInfo.agency_name || profile.name}
                 </div>
                 <div style={{ fontSize: "13px", color: "rgba(255,255,255,0.7)", marginBottom: "4px", textAlign: "center" }}>
-                  대표 {agencyInfo.representative} <span style={{ margin: "0 6px", color: "rgba(255,255,255,0.3)" }}>|</span> 등록번호 {agencyInfo.registration_number}
+                  대표 {agencyInfo.representative || profile.name} <span style={{ margin: "0 6px", color: "rgba(255,255,255,0.3)" }}>|</span> 등록번호 {agencyInfo.registration_number || "-"}
                 </div>
                 <div style={{ fontSize: "13px", color: "rgba(255,255,255,0.7)", marginBottom: "4px", textAlign: "center" }}>
                   {agencyInfo.address}
                 </div>
-                <div style={{ fontSize: "14px", color: "#60a5fa", fontWeight: "bold", marginBottom: "16px", display: "flex", flexDirection: "column", gap: "4px", alignItems: "center" }}>
-                  {agencyInfo.phone?.split(',').map((num: string, idx: number) => {
+                <div style={{ fontSize: "14px", color: "#60a5fa", fontWeight: "bold", marginBottom: "16px", display: "flex", flexDirection: "column", gap: "6px", alignItems: "center" }}>
+                  {agencyInfo.phone && agencyInfo.phone.split(',').map((num: string, idx: number) => {
                     const cleanNum = num.trim();
                     return (
-                      <a key={idx} href={`tel:${cleanNum}`} style={{ color: "inherit", textDecoration: "none", display: "flex", alignItems: "center", gap: "4px" }}>
+                      <a key={`ag-${idx}`} href={`tel:${cleanNum}`} style={{ color: "inherit", textDecoration: "none", display: "flex", alignItems: "center", gap: "6px" }}>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
                         {cleanNum}
                       </a>
                     );
                   })}
+                  {profile.phone && !agencyInfo.phone?.includes(profile.phone) && (
+                    <a href={`tel:${profile.phone}`} style={{ color: "inherit", textDecoration: "none", display: "flex", alignItems: "center", gap: "6px" }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+                      {profile.phone}
+                    </a>
+                  )}
                 </div>
               </>
             ) : (
@@ -231,12 +237,7 @@ export default function PCReporterClient({
             </div>
           )}
 
-          {/* 통계 */}
-          <div style={{ textAlign: "center", fontSize: "13px", color: "rgba(255,255,255,0.7)", marginBottom: "16px" }}>
-            구독 {subCount.toLocaleString()} | 응원 {cheerCount.toLocaleString()}
-          </div>
-
-          {/* SNS 아이콘 (공실상세 스타일) */}
+          {/* SNS 아이콘 (부동산 소개 아래로 이동) */}
           {agencyInfo?.sns_links && typeof agencyInfo.sns_links === 'object' && Object.keys(agencyInfo.sns_links).filter(k => k !== "api_info" && k !== "api_list" && agencyInfo.sns_links[k]).length > 0 && (
             <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "10px", marginBottom: "20px" }}>
               {Object.keys(agencyInfo.sns_links).filter(k => k !== "api_info" && k !== "api_list" && agencyInfo.sns_links[k]).map(key => {
@@ -274,6 +275,11 @@ export default function PCReporterClient({
             </div>
           )}
 
+          {/* 통계 */}
+          <div style={{ textAlign: "center", fontSize: "13px", color: "rgba(255,255,255,0.7)", marginBottom: "16px" }}>
+            구독 {subCount.toLocaleString()} | 응원 {cheerCount.toLocaleString()}
+          </div>
+
           {/* 버튼들 */}
           <div style={{ display: "flex", gap: "8px" }}>
             <button onClick={handleSubscribe} disabled={subLoading}
@@ -286,8 +292,12 @@ export default function PCReporterClient({
             </button>
           </div>
           <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
-            <button style={{ flex: 1, padding: "10px 0", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.05)", color: "#fff", fontSize: "13px", cursor: "pointer" }}>
-              ✉️ 메일
+            <button onClick={() => {
+              if (agencyInfo?.address) {
+                window.open(`https://map.naver.com/v5/search/${encodeURIComponent(agencyInfo.address)}`);
+              }
+            }} style={{ flex: 1, padding: "10px 0", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.05)", color: "#fff", fontSize: "13px", cursor: "pointer" }}>
+              📍 오시는길
             </button>
             <button style={{ flex: 1, padding: "10px 0", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.05)", color: "#fff", fontSize: "13px", cursor: "pointer" }}>
               🔗 공유

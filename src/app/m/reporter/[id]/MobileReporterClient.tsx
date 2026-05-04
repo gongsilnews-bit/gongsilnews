@@ -238,7 +238,7 @@ export default function MobileReporterClient({
                 {agencyInfo ? (
                   <>
                     <span style={{ fontSize: "13px", color: "rgba(255,255,255,0.7)" }}>
-                      대표 {agencyInfo.ceo_name || agencyInfo.representative} <span style={{ color: "rgba(255,255,255,0.3)", margin: "0 4px" }}>|</span> 등록번호 {agencyInfo.reg_num || agencyInfo.registration_number || '-'}
+                      대표 {agencyInfo.ceo_name || agencyInfo.representative || profile.name} <span style={{ color: "rgba(255,255,255,0.3)", margin: "0 4px" }}>|</span> 등록번호 {agencyInfo.reg_num || agencyInfo.registration_number || '-'}
                     </span>
                     <span style={{ fontSize: "13px", color: "rgba(255,255,255,0.7)" }}>
                       {[agencyInfo.address, agencyInfo.address_detail].filter(Boolean).join(" ") || '-'}
@@ -250,21 +250,23 @@ export default function MobileReporterClient({
                   </span>
                 )}
                 
-                <span style={{ fontSize: "14px", fontWeight: "bold", color: "#60a5fa", marginTop: "4px", display: "flex", alignItems: "center", gap: "4px" }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-                  </svg>
-                  전화{" "}
-                  {agencyInfo?.phone?.split(',').map((num: string, idx: number, arr: string[]) => (
-                    <React.Fragment key={idx}>
-                      <a href={`tel:${num.trim()}`} style={{ color: "inherit", textDecoration: "none" }}>{num.trim()}</a>
-                      {idx < arr.length - 1 && ", "}
-                    </React.Fragment>
-                  )) || <a href={`tel:${profile.phone}`} style={{ color: "inherit", textDecoration: "none" }}>{profile.phone || "미등록"}</a>}
-                  {agencyInfo?.cell && agencyInfo.cell !== agencyInfo.phone && (
-                    <>, <a href={`tel:${agencyInfo.cell}`} style={{ color: "inherit", textDecoration: "none" }}>{agencyInfo.cell}</a></>
+                <div style={{ fontSize: "14px", color: "#60a5fa", fontWeight: "bold", marginTop: "4px", display: "flex", flexDirection: "column", gap: "6px" }}>
+                  {agencyInfo?.phone && agencyInfo.phone.split(',').map((num: string, idx: number) => {
+                    const cleanNum = num.trim();
+                    return (
+                      <a key={`ag-${idx}`} href={`tel:${cleanNum}`} style={{ color: "inherit", textDecoration: "none", display: "flex", alignItems: "center", gap: "6px" }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                        {cleanNum}
+                      </a>
+                    );
+                  })}
+                  {profile.phone && !agencyInfo?.phone?.includes(profile.phone) && (
+                    <a href={`tel:${profile.phone}`} style={{ color: "inherit", textDecoration: "none", display: "flex", alignItems: "center", gap: "6px" }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+                      {profile.phone}
+                    </a>
                   )}
-                </span>
+                </div>
               </div>
             </div>
           </div>
@@ -315,15 +317,35 @@ export default function MobileReporterClient({
             </div>
           )}
 
-          {/* 구독/응원 버튼 */}
+          {/* 통계 */}
+          <div style={{ textAlign: "center", fontSize: "13px", color: "rgba(255,255,255,0.7)", marginBottom: "16px" }}>
+            구독 {subCount.toLocaleString()} | 응원 {cheerCount.toLocaleString()}
+          </div>
+
+          {/* 구독/응원/오시는길/공유 버튼 (PC와 동일한 구조) */}
           <div style={{ display: "flex", gap: "8px" }}>
             <button onClick={handleSubscribe} disabled={subLoading}
-              style={{ flex: 1, padding: "12px 0", borderRadius: "8px", border: isSubscribed ? "none" : "1px solid rgba(255,255,255,0.2)", background: isSubscribed ? "rgba(255,255,255,0.15)" : "transparent", color: "#fff", fontSize: "14px", fontWeight: "bold", display: "flex", justifyContent: "center", alignItems: "center", gap: "6px", cursor: "pointer", transition: "all 0.2s" }}>
-              {subLoading ? "..." : isSubscribed ? `✓ 구독중 (${subCount})` : `+ 구독 (${subCount})`}
+              style={{ flex: 1, padding: "12px 0", borderRadius: "10px", border: isSubscribed ? "none" : "1px solid rgba(255,255,255,0.2)", background: isSubscribed ? "rgba(255,255,255,0.15)" : "transparent", color: "#fff", fontSize: "14px", fontWeight: "bold", cursor: "pointer", transition: "all 0.2s" }}>
+              {subLoading ? "..." : isSubscribed ? "✓ 구독중" : "+ 구독"}
             </button>
             <button onClick={handleCheer} disabled={cheerLoading}
-              style={{ flex: 1, padding: "12px 0", borderRadius: "8px", border: isCheered ? "none" : "1px solid rgba(255,255,255,0.2)", background: isCheered ? "rgba(255,255,255,0.15)" : "transparent", color: "#fff", fontSize: "14px", fontWeight: "bold", display: "flex", justifyContent: "center", alignItems: "center", gap: "6px", cursor: "pointer", transition: "all 0.2s" }}>
-              {cheerLoading ? "..." : isCheered ? `✓ 응원중 (${cheerCount})` : `👏 응원 (${cheerCount})`}
+              style={{ flex: 1, padding: "12px 0", borderRadius: "10px", border: isCheered ? "none" : "1px solid rgba(255,255,255,0.2)", background: isCheered ? "rgba(255,255,255,0.15)" : "transparent", color: "#fff", fontSize: "14px", fontWeight: "bold", cursor: "pointer", transition: "all 0.2s" }}>
+              {cheerLoading ? "..." : isCheered ? "✓ 응원중" : "👏 응원"}
+            </button>
+          </div>
+          <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
+            <button onClick={() => {
+              const fullAddress = [agencyInfo?.address, agencyInfo?.address_detail].filter(Boolean).join(" ");
+              if (fullAddress) {
+                window.open(`https://map.naver.com/v5/search/${encodeURIComponent(fullAddress)}`);
+              } else {
+                alert("등록된 주소가 없습니다.");
+              }
+            }} style={{ flex: 1, padding: "10px 0", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.05)", color: "#fff", fontSize: "13px", cursor: "pointer" }}>
+              📍 오시는길
+            </button>
+            <button style={{ flex: 1, padding: "10px 0", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.05)", color: "#fff", fontSize: "13px", cursor: "pointer" }}>
+              🔗 공유
             </button>
           </div>
         </div>
