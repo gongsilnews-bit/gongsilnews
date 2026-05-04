@@ -15,6 +15,24 @@ const SUB_CATEGORIES: Record<string, string[]> = {
   "상가·사무실·건물·공장·토지": ["상가", "사무실", "공장/창고", "건물", "토지"],
 };
 
+/* ── WebP 압축 ── */
+const compressToWebP = (file: File, maxWidth = 1920, quality = 0.8): Promise<File> =>
+  new Promise((resolve) => {
+    if (!file.type.startsWith("image/")) { resolve(file); return; }
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      let w = img.width, h = img.height;
+      if (w > maxWidth) { h = Math.round(h * maxWidth / w); w = maxWidth; }
+      canvas.width = w; canvas.height = h;
+      canvas.getContext("2d")!.drawImage(img, 0, 0, w, h);
+      canvas.toBlob(blob => {
+        resolve(new File([blob!], file.name.replace(/\.[^.]+$/, ".webp"), { type: "image/webp" }));
+      }, "image/webp", quality);
+    };
+    img.src = URL.createObjectURL(file);
+  });
+
 function MobileVacancyWrite() {
   const router = useRouter();
   const searchParams = useSearchParams();
