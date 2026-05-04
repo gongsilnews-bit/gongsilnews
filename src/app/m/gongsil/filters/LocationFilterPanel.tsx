@@ -4,25 +4,34 @@ import { FilterState } from './useVacancyFilters';
 interface Props {
   onLocationMove: (lat: number, lng: number, zoom: number) => void;
   onFilterChange?: (filters: Partial<FilterState>) => void;
-  onClose: () => void;
-  locLabel: string;
-  setLocLabel: (label: string) => void;
+  onClose?: () => void;
+  locLabel?: string;
+  setLocLabel?: (label: string) => void;
+  variant?: "sheet" | "inline";
+  tempFilters?: Partial<FilterState>;
 }
 
-export default function LocationFilterPanel({ onLocationMove, onFilterChange, onClose, locLabel, setLocLabel }: Props) {
+export default function LocationFilterPanel({ onLocationMove, onFilterChange, onClose, locLabel, setLocLabel, variant = "sheet", tempFilters }: Props) {
   const [locTab, setLocTab] = useState<"region" | "keyword">("region");
   const [sidoList, setSidoList] = useState<any[]>([]);
   const [gugunList, setGugunList] = useState<any[]>([]);
   const [dongList, setDongList] = useState<any[]>([]);
   const [selSido, setSelSido] = useState("");
   const [selGugun, setSelGugun] = useState("");
+  const [selDong, setSelDong] = useState("");
   const [selSidoCode, setSelSidoCode] = useState("");
   const [selGugunCode, setSelGugunCode] = useState("");
   const [locKeyword, setLocKeyword] = useState("");
   const [locResults, setLocResults] = useState<any[]>([]);
   const [regTab, setRegTab] = useState<"sido"|"gugun"|"dong">("sido");
+  const [isExpanded, setIsExpanded] = useState(false);
 
-  useEffect(() => { loadSido(); }, []);
+  useEffect(() => { 
+    if (tempFilters?.sido) setSelSido(tempFilters.sido);
+    if (tempFilters?.sigungu) setSelGugun(tempFilters.sigungu);
+    if (tempFilters?.dong) setSelDong(tempFilters.dong); // dong was not tracked as text, wait, we didn't have selDong state!
+    loadSido(); 
+  }, [tempFilters]);
 
   const loadSido = async () => {
     try {
@@ -79,6 +88,59 @@ export default function LocationFilterPanel({ onLocationMove, onFilterChange, on
     cursor: "pointer", transition: "all 0.15s",
   });
 
+  const inlinePillStyle = (active: boolean): React.CSSProperties => ({
+    flex: 1, padding: "8px 4px", borderRadius: "20px", fontSize: "13px", fontWeight: 700, textAlign: "center",
+    border: active ? "1.5px solid #4b89ff" : "1px solid #d1d5db",
+    background: active ? "#eef4ff" : "#fff", color: active ? "#4b89ff" : "#374151",
+    cursor: "pointer", transition: "all 0.15s", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis"
+  });
+
+  if (variant === "inline") {
+    return (
+      <div>
+        <div style={{ display: "flex", gap: "8px", marginBottom: isExpanded ? "12px" : "0" }}>
+          <button onClick={() => { setRegTab("sido"); setIsExpanded(true); }} style={inlinePillStyle(regTab === "sido" && isExpanded)}>
+            {selSido || "시/도"} ▾
+          </button>
+          <button onClick={() => { setRegTab("gugun"); setIsExpanded(true); }} style={inlinePillStyle(regTab === "gugun" && isExpanded)}>
+            {selGugun || "시/군/구"} ▾
+          </button>
+          <button onClick={() => { setRegTab("dong"); setIsExpanded(true); }} style={inlinePillStyle(regTab === "dong" && isExpanded)}>
+            {selDong || "읍/면/동"} ▾
+          </button>
+        </div>
+        
+        {isExpanded && (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", maxHeight: "200px", overflowY: "auto", padding: "8px", background: "#f9fafb", borderRadius: "12px", border: "1px solid #e5e7eb" }}>
+            {regTab === "sido" && (sidoList.length > 0 ? sidoList.map(c => (
+              <button key={c.code} onClick={() => { 
+                setSelSidoCode(c.code); setSelSido(c.name); setSelGugun(""); setSelDong(""); setRegTab("gugun"); loadGugun(c.code); 
+                moveMap(c.name, 8); if (setLocLabel) setLocLabel(c.name);
+                if (onFilterChange) onFilterChange({ sido: c.name, sigungu: null, dong: null });
+              }} style={gridBtnStyle(selSido === c.name)}>{c.name}</button>
+            )) : <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "20px", color: "#9ca3af" }}>로딩중...</div>)}
+            
+            {regTab === "gugun" && (!selSidoCode ? <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "20px", color: "#9ca3af" }}>시/도를 먼저 선택하세요</div> : gugunList.length > 0 ? gugunList.map(c => (
+              <button key={c.code} onClick={() => { 
+                setSelGugunCode(c.code); setSelGugun(c.name); setSelDong(""); setRegTab("dong"); loadDong(c.code); 
+                moveMap(`${selSido} ${c.name}`, 6); if (setLocLabel) setLocLabel(`${c.name}`);
+                if (onFilterChange) onFilterChange({ sido: selSido, sigungu: c.name, dong: null });
+              }} style={gridBtnStyle(selGugun === c.name)}>{c.name}</button>
+            )) : <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "20px", color: "#9ca3af" }}>로딩중...</div>)}
+            
+            {regTab === "dong" && (!selGugunCode ? <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "20px", color: "#9ca3af" }}>시/군/구를 먼저 선택하세요</div> : dongList.length > 0 ? dongList.map(c => (
+              <button key={c.code} onClick={() => { 
+                setSelDong(c.name); moveMap(`${selSido} ${selGugun} ${c.name}`, 4); if (setLocLabel) setLocLabel(`${selGugun} ${c.name}`); 
+                if (onFilterChange) onFilterChange({ sido: selSido, sigungu: selGugun, dong: c.name });
+                setIsExpanded(false);
+              }} style={gridBtnStyle(selDong === c.name)}>{c.name}</button>
+            )) : <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "20px", color: "#9ca3af" }}>로딩중...</div>)}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div>
       <div style={{ display: "flex", borderBottom: "2px solid #f3f4f6", marginBottom: "16px" }}>
@@ -98,24 +160,24 @@ export default function LocationFilterPanel({ onLocationMove, onFilterChange, on
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", maxHeight: "200px", overflowY: "auto" }}>
             {regTab === "sido" && (sidoList.length > 0 ? sidoList.map(c => (
               <button key={c.code} onClick={() => { 
-                setSelSidoCode(c.code); setSelSido(c.name); setSelGugun(""); setRegTab("gugun"); loadGugun(c.code); 
-                moveMap(c.name, 8); setLocLabel(c.name);
+                setSelSidoCode(c.code); setSelSido(c.name); setSelGugun(""); setSelDong(""); setRegTab("gugun"); loadGugun(c.code); 
+                moveMap(c.name, 8); if (setLocLabel) setLocLabel(c.name);
                 if (onFilterChange) onFilterChange({ sido: c.name, sigungu: null, dong: null });
               }} style={gridBtnStyle(selSido === c.name)}>{c.name}</button>
             )) : <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "20px", color: "#9ca3af" }}>로딩중...</div>)}
             {regTab === "gugun" && (!selSidoCode ? <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "20px", color: "#9ca3af" }}>시/도를 먼저 선택하세요</div> : gugunList.length > 0 ? gugunList.map(c => (
               <button key={c.code} onClick={() => { 
-                setSelGugunCode(c.code); setSelGugun(c.name); setRegTab("dong"); loadDong(c.code); 
-                moveMap(`${selSido} ${c.name}`, 6); setLocLabel(`${c.name}`);
+                setSelGugunCode(c.code); setSelGugun(c.name); setSelDong(""); setRegTab("dong"); loadDong(c.code); 
+                moveMap(`${selSido} ${c.name}`, 6); if (setLocLabel) setLocLabel(`${c.name}`);
                 if (onFilterChange) onFilterChange({ sido: selSido, sigungu: c.name, dong: null });
               }} style={gridBtnStyle(selGugun === c.name)}>{c.name}</button>
             )) : <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "20px", color: "#9ca3af" }}>로딩중...</div>)}
             {regTab === "dong" && (!selGugunCode ? <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "20px", color: "#9ca3af" }}>시/군/구를 먼저 선택하세요</div> : dongList.length > 0 ? dongList.map(c => (
               <button key={c.code} onClick={() => { 
-                moveMap(`${selSido} ${selGugun} ${c.name}`, 4); setLocLabel(`${selGugun} ${c.name}`); 
+                setSelDong(c.name); moveMap(`${selSido} ${selGugun} ${c.name}`, 4); if (setLocLabel) setLocLabel(`${selGugun} ${c.name}`); 
                 if (onFilterChange) onFilterChange({ sido: selSido, sigungu: selGugun, dong: c.name });
-                onClose(); 
-              }} style={gridBtnStyle(false)}>{c.name}</button>
+                if (onClose) onClose(); 
+              }} style={gridBtnStyle(selDong === c.name)}>{c.name}</button>
             )) : <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "20px", color: "#9ca3af" }}>로딩중...</div>)}
           </div>
         </div>
@@ -127,7 +189,7 @@ export default function LocationFilterPanel({ onLocationMove, onFilterChange, on
           </div>
           <div style={{ maxHeight: "180px", overflowY: "auto" }}>
             {locResults.map((r, i) => (
-              <div key={i} onClick={() => { onLocationMove(parseFloat(r.y), parseFloat(r.x), 5); setLocLabel(r.place_name || r.address_name); onClose(); }} style={{ padding: "12px 4px", borderBottom: "1px solid #f3f4f6", cursor: "pointer" }}>
+              <div key={i} onClick={() => { onLocationMove(parseFloat(r.y), parseFloat(r.x), 5); if (setLocLabel) setLocLabel(r.place_name || r.address_name); if (onClose) onClose(); }} style={{ padding: "12px 4px", borderBottom: "1px solid #f3f4f6", cursor: "pointer" }}>
                 <div style={{ fontSize: "14px", fontWeight: 600, color: "#111" }}>{r.place_name || r.address_name}</div>
                 <div style={{ fontSize: "12px", color: "#9ca3af", marginTop: "2px" }}>{r.address_name}</div>
               </div>
