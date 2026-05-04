@@ -11,6 +11,7 @@ import HomeHeader from "../_components/HomeHeader";
 import AuthorProfileHeader from "../_components/AuthorProfileHeader";
 import AuthModal from "@/components/AuthModal";
 import { getPermissionLevel } from "@/utils/permissionCheck";
+import { handleLocationPermissionDenied, handleLocationUnavailable } from "@/utils/locationPermission";
 
 function formatPrice(v: any): string {
   const dep = v.deposit || 0;
@@ -848,7 +849,12 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                     const latlng = new kakao.maps.LatLng(pos.coords.latitude, pos.coords.longitude);
                     kakaoMapRef.current.panTo(latlng);
                     kakaoMapRef.current.setLevel(5);
-                  });
+                  }, (err) => {
+                    console.error("Geolocation error:", err);
+                    handleLocationPermissionDenied();
+                  }, { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 });
+                } else {
+                  handleLocationUnavailable();
                 }
               }}
               style={{

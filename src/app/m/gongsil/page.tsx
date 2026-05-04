@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getVacancies, getVacancyDetail } from "@/app/actions/vacancy";
 import { getPermissionLevel } from "@/utils/permissionCheck";
+import { handleLocationPermissionDenied, handleLocationUnavailable } from "@/utils/locationPermission";
 import AuthModal from "@/components/AuthModal";
 import MobileFilterBar from "./MobileFilterBar";
 import { useVacancyFilters } from "./filters/useVacancyFilters";
@@ -669,12 +670,12 @@ function MobileGongsilContent() {
                   },
                   (err) => {
                     console.error("Geolocation error:", err);
-                    alert("위치 정보를 가져올 수 없습니다. 위치 권한이 허용되어 있는지 확인해주세요.");
+                    handleLocationPermissionDenied();
                   },
                   { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
                 );
               } else {
-                alert("이 기기 또는 브라우저에서는 위치 정보를 지원하지 않습니다.");
+                handleLocationUnavailable();
               }
             }}
             style={{ position: "absolute", top: "16px", right: "16px", zIndex: 20, background: "#1a4282", color: "#fff", border: "none", borderRadius: "20px", padding: "8px 14px", fontSize: "13px", fontWeight: 700, boxShadow: "0 4px 12px rgba(26,66,130,0.4)", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}

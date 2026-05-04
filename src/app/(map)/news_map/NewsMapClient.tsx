@@ -5,6 +5,7 @@ import Link from "next/link";
 import { getArticles, getArticleDetail, incrementArticleView } from "@/app/actions/article";
 import MapSearchBar from "@/components/MapSearchBar";
 import MapTopAuthButtons from "@/components/MapTopAuthButtons";
+import { handleLocationPermissionDenied, handleLocationUnavailable } from "@/utils/locationPermission";
 
 export default function NewsMapClient({ initialArticles, initialPopularArticles }: { initialArticles: any[], initialPopularArticles: any[] }) {
   /* ── 상태 ── */
@@ -710,11 +711,12 @@ export default function NewsMapClient({ initialArticles, initialPopularArticles 
                    const kakao = (window as any).kakao;
                    kakaoMapRef.current.panTo(new kakao.maps.LatLng(lat, lng));
                 }
-              }, () => {
-                 alert('위치 정보를 가져올 수 없습니다. 브라우저 설정에서 위치 정보 엑세스 권한을 허용해 주세요.');
+              }, (err) => {
+                 console.error("Geolocation error:", err);
+                 handleLocationPermissionDenied();
               }, { enableHighAccuracy: true });
             } else {
-               alert('현재 브라우저에서는 위치 기반 검색 기능을 지원하지 않습니다.');
+               handleLocationUnavailable();
             }
           }}>내 위치에서 검색</button>
           
