@@ -99,10 +99,8 @@ export default function QuickFloatingMenu() {
           onMouseEnter={(e) => (e.currentTarget.style.background = "#f4f6fa")}
           onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
-            <rect width="24" height="24" rx="5" fill="#FEE500"/>
-            <path d="M12 5.5C7.3 5.5 3.5 8.35 3.5 11.87c0 2.22 1.5 4.19 3.75 5.3l-.95 3.55c-.08.31.25.55.51.38l4.2-2.77c.33.03.67.05 1.02.05 4.7 0 8.5-2.85 8.5-6.37S16.7 5.5 12 5.5z" fill="#3A1D1D"/>
-            <text x="12" y="14.3" fontFamily="Arial, sans-serif" fontWeight="900" fontSize="6.5" fill="#FEE500" textAnchor="middle">TALK</text>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4a6fad" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
           </svg>
           실시간상담
         </div>
