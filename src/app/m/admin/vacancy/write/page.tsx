@@ -373,7 +373,7 @@ function MobileVacancyWrite() {
   return (
     <div style={{ minHeight:"100dvh", background:"#f4f5f7", fontFamily:"'Pretendard Variable', -apple-system, sans-serif" }}>
       {/* 헤더 */}
-      <div style={{ position:"sticky", top:0, zIndex:50, background:"#fff", borderBottom:"1px solid #e5e7eb", padding:"0 16px", height:56, display:"flex", alignItems:"center", gap:12 }}>
+      <div style={{ position:"fixed", top:0, left:0, right:0, zIndex:50, background:"#fff", borderBottom:"1px solid #e5e7eb", padding:"0 16px", height:56, display:"flex", alignItems:"center", gap:12 }}>
         <button onClick={() => router.push("/m/admin/vacancy")} style={{ background:"none", border:"none", cursor:"pointer", padding:4, display:"flex" }}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M15 18L9 12L15 6" stroke="#333" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </button>
@@ -383,6 +383,7 @@ function MobileVacancyWrite() {
           임시저장
         </button>
       </div>
+      <div style={{ height:56 }} /> {/* 헤더 높이만큼 공간 확보 */}
 
       <div style={{ padding:"16px 16px 32px" }}>
         {/* 1. 매물분류 */}
