@@ -513,25 +513,33 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
   // ── 스와이프(좌우 슬라이드) 탭 전환 ──
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
+  const touchStartTime = useRef<number>(0);
   const [slideAnim, setSlideAnim] = useState<"" | "slide-out-left" | "slide-out-right" | "slide-in-left" | "slide-in-right">("");
   const tabBarRef = useRef<HTMLDivElement>(null);
 
   const handleSwipeStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
     touchStartY.current = e.touches[0].clientY;
+    touchStartTime.current = Date.now();
   };
 
   const handleSwipeEnd = (e: React.TouchEvent) => {
     if (touchStartX.current === null || touchStartY.current === null) return;
     const dx = e.changedTouches[0].clientX - touchStartX.current;
     const dy = e.changedTouches[0].clientY - touchStartY.current;
+    const timeElapsed = Date.now() - touchStartTime.current;
+    
     touchStartX.current = null;
     touchStartY.current = null;
 
-    // 수직 스크롤이면 무시
-    if (Math.abs(dy) > Math.abs(dx)) return;
-    // 최소 스와이프 거리
-    if (Math.abs(dx) < 60) return;
+    // 너무 오래 누르고 있었던 경우(500ms 이상) 단순 스크롤/드래그로 간주하여 탭 전환 무시
+    if (timeElapsed > 500) return;
+
+    // 수직 스크롤 비중이 높으면(대각선 포함) 탭 전환 무시하여 민감도 낮춤
+    if (Math.abs(dy) * 1.5 > Math.abs(dx)) return;
+    
+    // 최소 스와이프 거리 (기존 60 -> 90으로 증가)
+    if (Math.abs(dx) < 90) return;
 
     const currentIdx = CATEGORIES.findIndex((c) => c.key === activeTab);
 
@@ -543,13 +551,14 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
         setActiveTab(next);
         setClusterMode(false);
         setSlideAnim("slide-in-right");
-        setTimeout(() => setSlideAnim(""), 250);
-      }, 200);
+        setTimeout(() => setSlideAnim(""), 200);
+      }, 150);
     } else if (dx > 0) {
-      // → 오른쪽 스와이프 → 이전 탭 (또는 홈으로 이동)
+      // → 오른쪽 스와이프 → 이전 탭
       if (currentIdx === 0) {
-        setSlideAnim("slide-out-right");
-        setTimeout(() => { router.push("/m"); }, 200);
+        // 첫 번째 탭에서 오른쪽 스와이프 시 홈으로 가는 기능은 오동작 우려가 커서 애니메이션만 주고 튕겨내도록 처리
+        setSlideAnim("slide-in-left");
+        setTimeout(() => setSlideAnim(""), 200);
       } else if (currentIdx > 0) {
         const prev = CATEGORIES[currentIdx - 1].key;
         setSlideAnim("slide-out-right");
@@ -557,8 +566,8 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
           setActiveTab(prev);
           setClusterMode(false);
           setSlideAnim("slide-in-left");
-          setTimeout(() => setSlideAnim(""), 250);
-        }, 200);
+          setTimeout(() => setSlideAnim(""), 200);
+        }, 150);
       }
     }
   };
@@ -1372,14 +1381,14 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
         @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
         .article-row { -webkit-user-select: none; user-select: none; }
         .article-row:active { background: #f3f4f6 !important; }
-        .slide-out-left { animation: slideOutLeft 0.2s ease forwards; }
-        .slide-out-right { animation: slideOutRight 0.2s ease forwards; }
-        .slide-in-left { animation: slideInLeft 0.25s ease forwards; }
-        .slide-in-right { animation: slideInRight 0.25s ease forwards; }
+        .slide-out-left { animation: slideOutLeft 0.15s ease forwards; }
+        .slide-out-right { animation: slideOutRight 0.15s ease forwards; }
+        .slide-in-left { animation: slideInLeft 0.2s ease forwards; }
+        .slide-in-right { animation: slideInRight 0.2s ease forwards; }
         @keyframes slideOutLeft { from { transform: translateX(0); opacity: 1; } to { transform: translateX(-100%); opacity: 0; } }
         @keyframes slideOutRight { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
-        @keyframes slideInLeft { from { transform: translateX(-60px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-        @keyframes slideInRight { from { transform: translateX(60px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes slideInLeft { from { transform: translateX(-40px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes slideInRight { from { transform: translateX(40px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
       `}</style>
     </div>
   );

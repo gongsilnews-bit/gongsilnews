@@ -2,6 +2,7 @@ import React from "react";
 import MobileBottomNav from "./_components/MobileBottomNav";
 import PopupBanner from "@/components/PopupBanner";
 import GlobalDrawerMenu from './_components/header/GlobalDrawerMenu';
+import LocationPermissionInitializer from './_components/LocationPermissionInitializer';
 
 export const metadata = {
   title: "공실뉴스 (모바일)",
@@ -54,6 +55,7 @@ export default function MobileLayout({ children }: { children: React.ReactNode }
       </React.Suspense>
       <MobileBottomNav />
       <PopupBanner />
+      <LocationPermissionInitializer />
     </div>
   );
 }
