@@ -637,6 +637,8 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
             <div
               ref={tabBarRef}
               className="hide-scrollbar"
+              onTouchStart={(e) => e.stopPropagation()}
+              onTouchEnd={(e) => e.stopPropagation()}
               style={{
                 flex: 1,
                 display: "flex",
@@ -731,7 +733,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
             `}</style>
             <div style={{ display: "flex", alignItems: "center", background: "#fff", borderBottom: "1px solid #e5e7eb", padding: "8px 0", flexShrink: 0, width: "100%" }}>
               <div style={{ position: "relative", flex: 1, minWidth: 0, overflow: "hidden" }}>
-                <div className="news-filter-scroll" style={{ overflowX: "auto", display: "flex", gap: "8px", padding: "0 12px", WebkitOverflowScrolling: "touch" as any, alignItems: "center" }}>
+                <div className="news-filter-scroll" onTouchStart={(e) => e.stopPropagation()} onTouchEnd={(e) => e.stopPropagation()} style={{ overflowX: "auto", display: "flex", gap: "8px", padding: "0 12px", WebkitOverflowScrolling: "touch" as any, alignItems: "center" }}>
                   <button onClick={() => setLocActivePanel(locActivePanel === "loc" ? null : "loc")} style={{ padding: "7px 14px", borderRadius: "20px", fontSize: "13px", fontWeight: 600, whiteSpace: "nowrap", flexShrink: 0, border: (locActivePanel === "loc" || locLabel !== "위치") ? "1.5px solid #ea580c" : "1px solid #d1d5db", background: (locActivePanel === "loc" || locLabel !== "위치") ? "#fff7ed" : "#fff", color: (locActivePanel === "loc" || locLabel !== "위치") ? "#ea580c" : "#374151", cursor: "pointer", transition: "all 0.15s", display: "flex", alignItems: "center", gap: "4px" }}>
                     📍 {locLabel} ▾
                   </button>
