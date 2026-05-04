@@ -315,13 +315,19 @@ export default function PartnershipPage() {
           }
         `}</style>
 
-        {/* ===== Header ===== */}
         <header className="marketing-header">
-          <Link href="/" style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
-            <img src="/logo.png" alt="부동산 정보채널 공실뉴스" style={{ height: 32, width: "auto" }} />
-          </Link>
-          <div style={{ fontSize: 16, fontWeight: 700, color: '#1e293b' }}>
-            제휴문의
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <Link href="/" style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
+              <img src="/logo.png" alt="부동산 정보채널 공실뉴스" style={{ height: 32, width: "auto" }} />
+            </Link>
+            <div style={{ fontSize: 16, fontWeight: 700, color: '#1e293b', borderLeft: "1px solid #e2e8f0", paddingLeft: 16 }}>
+              제휴문의
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: "20px", fontSize: "14px", fontWeight: "600" }}>
+            <Link href="/about" style={{ color: "#475569", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.color = "#0f172a"} onMouseLeave={(e) => e.currentTarget.style.color = "#475569"}>회사소개</Link>
+            <Link href="/marketing" style={{ color: "#475569", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.color = "#0f172a"} onMouseLeave={(e) => e.currentTarget.style.color = "#475569"}>광고안내</Link>
+            <Link href="/partnership" style={{ color: "#0f172a", textDecoration: "none" }}>제휴문의</Link>
           </div>
         </header>
 
