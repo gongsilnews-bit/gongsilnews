@@ -81,6 +81,7 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
 
   // 댓글 State
   const [comments, setComments] = useState<any[]>([]);
+  const [showAllComments, setShowAllComments] = useState(false);
   const [isSecretComment, setIsSecretComment] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [currentUserName, setCurrentUserName] = useState<string | null>(null);
@@ -895,7 +896,26 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
                       );
                     };
 
-                    return rootComments.map(c => renderComment(c, 0));
+                    const visibleRootComments = showAllComments ? rootComments : rootComments.slice(0, 5);
+                    const hasMoreComments = !showAllComments && rootComments.length > 5;
+
+                    return (
+                      <>
+                        {visibleRootComments.map(c => renderComment(c, 0))}
+                        {hasMoreComments && (
+                          <div style={{ textAlign: "center", marginTop: "16px" }}>
+                            <button
+                              onClick={() => setShowAllComments(true)}
+                              style={{ padding: "10px 24px", background: "#f3f4f6", border: "1px solid #e5e7eb", borderRadius: "20px", color: "#4b5563", fontSize: "14px", fontWeight: "bold", cursor: "pointer", transition: "all 0.2s" }}
+                              onMouseEnter={(e) => e.currentTarget.style.background = "#e5e7eb"}
+                              onMouseLeave={(e) => e.currentTarget.style.background = "#f3f4f6"}
+                            >
+                              댓글 더보기 ({rootComments.length - 5}개)
+                            </button>
+                          </div>
+                        )}
+                      </>
+                    );
                   })()}
                 </div>
               )}
