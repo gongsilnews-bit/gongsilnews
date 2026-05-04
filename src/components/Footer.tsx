@@ -15,7 +15,7 @@ export default function Footer() {
       <div style={{ borderBottom: "1px solid #f0f0f0" }}>
         <div style={{ maxWidth: 1200, margin: "0 auto", padding: "12px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
           <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 0 }}>
-            <Link href="#" style={linkStyle}>회사소개</Link>
+            <Link href="/about" style={linkStyle}>회사소개</Link>
             {divider}
             <Link href="#" style={linkStyle}>광고안내</Link>
             {divider}
