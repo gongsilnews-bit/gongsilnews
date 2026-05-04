@@ -38,7 +38,9 @@ interface Props {
   politicsArticles: any[];
   lawArticles: any[];
   lifeArticles: any[];
-  etcArticles: any[];
+  itArticles: any[];
+  sportsArticles: any[];
+  peopleArticles: any[];
   mapArticles: any[];
   lectures: any[];
 }
@@ -50,11 +52,13 @@ const CATEGORIES = [
   { key: "정치·경제·사회", label: "정치·경제" },
   { key: "세무·법률", label: "세무·법률" },
   { key: "여행·건강·생활", label: "여행·생활" },
-  { key: "etc", label: "기타" },
+  { key: "IT·가전·가구", label: "IT·가전·가구" },
+  { key: "스포츠·연예·Car", label: "스포츠·연예·Car" },
+  { key: "인물·미션·기타", label: "인물·미션·기타" },
 ];
 
 export default function MobileHomeClient(props: Props) {
-  const { vacancies, headlineArticles, financeArticles, politicsArticles, lawArticles, lifeArticles, etcArticles, mapArticles, lectures } = props;
+  const { vacancies, headlineArticles, financeArticles, politicsArticles, lawArticles, lifeArticles, itArticles, sportsArticles, peopleArticles, mapArticles, lectures } = props;
   const router = useRouter();
   const [heroIdx, setHeroIdx] = useState(0);
   const hero = headlineArticles[heroIdx] || null;
@@ -242,16 +246,22 @@ export default function MobileHomeClient(props: Props) {
       )}
 
       {/* ⑤ 정치·경제·사회 */}
-      <NewsSection title="정치·경제·사회" href="/m/news" articles={politicsArticles} />
+      <NewsSection title="정치·경제·사회" href="/m/news?tab=정치·경제·사회" articles={politicsArticles} />
 
       {/* ⑥ 세무·법률 */}
-      <NewsSection title="세무·법률" href="/m/news" articles={lawArticles} />
+      <NewsSection title="세무·법률" href="/m/news?tab=세무·법률" articles={lawArticles} />
 
       {/* ⑦ 여행·건강·생활 */}
-      <NewsSection title="여행·건강·생활" href="/m/news" articles={lifeArticles} />
+      <NewsSection title="여행·건강·생활" href="/m/news?tab=여행·건강·생활" articles={lifeArticles} />
 
-      {/* ⑧ 기타 */}
-      <NewsSection title="기타" href="/m/news" articles={etcArticles} />
+      {/* ⑧ IT·가전·가구 */}
+      <NewsSection title="IT·가전·가구" href="/m/news?tab=IT·가전·가구" articles={itArticles} />
+
+      {/* ⑨ 스포츠·연예·Car */}
+      <NewsSection title="스포츠·연예·Car" href="/m/news?tab=스포츠·연예·Car" articles={sportsArticles} />
+
+      {/* ⑩ 인물·미션·기타 */}
+      <NewsSection title="인물·미션·기타" href="/m/news?tab=인물·미션·기타" articles={peopleArticles} />
 
       {/* ⑨ 부동산특강 (PC SpecialLectureBanner 대응) */}
       {lectures.length > 0 && (

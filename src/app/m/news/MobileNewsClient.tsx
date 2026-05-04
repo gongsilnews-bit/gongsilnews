@@ -37,7 +37,9 @@ const CATEGORIES = [
   { key: "정치·경제·사회", label: "정치·경제" },
   { key: "세무·법률", label: "세무·법률" },
   { key: "여행·건강·생활", label: "여행·생활" },
-  { key: "etc", label: "기타" },
+  { key: "IT·가전·가구", label: "IT·가전·가구" },
+  { key: "스포츠·연예·Car", label: "스포츠·연예·Car" },
+  { key: "인물·미션·기타", label: "인물·미션·기타" },
 ];
 
 function formatDate(d: string) {
@@ -254,11 +256,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
       setLoading(true);
       const filters: any = { status: "APPROVED", limit: 30 };
       if (activeTab !== "all" && activeTab !== "local") {
-        if (activeTab === "etc") {
-          filters.section2 = ["IT·가전·가구", "스포츠·연예·Car", "인물·미션·기타"];
-        } else {
-          filters.section2 = activeTab;
-        }
+        filters.section2 = activeTab;
       }
       
       const authorMatch = searchParams.get("author_name");

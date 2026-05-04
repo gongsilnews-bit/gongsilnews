@@ -33,9 +33,9 @@ export default async function MobileHomePage() {
   const politicsArts = allNewsArticles.filter((a: any) => a.section2 === "정치·경제·사회").slice(0, 4);
   const lawArts = allNewsArticles.filter((a: any) => a.section2 === "세무·법률").slice(0, 4);
   const lifeArts = allNewsArticles.filter((a: any) => a.section2 === "여행·건강·생활").slice(0, 4);
-  const etcArts = allNewsArticles.filter((a: any) =>
-    ["IT·가전·가구", "스포츠·연예·Car", "인물·미션·기타"].includes(a.section2)
-  ).slice(0, 4);
+  const itArts = allNewsArticles.filter((a: any) => a.section2 === "IT·가전·가구").slice(0, 4);
+  const sportsArts = allNewsArticles.filter((a: any) => a.section2 === "스포츠·연예·Car").slice(0, 4);
+  const peopleArts = allNewsArticles.filter((a: any) => a.section2 === "인물·미션·기타").slice(0, 4);
 
   return (
     <>
@@ -46,7 +46,9 @@ export default async function MobileHomePage() {
         politicsArticles={politicsArts}
         lawArticles={lawArts}
         lifeArticles={lifeArts}
-        etcArticles={etcArts}
+        itArticles={itArts}
+        sportsArticles={sportsArts}
+        peopleArticles={peopleArts}
         mapArticles={mapArticles}
         lectures={lectures.slice(0, 4)}
       />
