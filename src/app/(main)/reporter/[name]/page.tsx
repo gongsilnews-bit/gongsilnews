@@ -1,6 +1,6 @@
 import React from "react";
 import { getArticles, getAuthorProfileByName } from "@/app/actions/article";
-import { getVacancies } from "@/app/actions/vacancy";
+import { getVacanciesByOwnerId } from "@/app/actions/vacancy";
 import PCReporterClient from "./PCReporterClient";
 
 export const revalidate = 60;
@@ -23,14 +23,9 @@ export default async function PCReporterPage({
 
   let vacancies: any[] = [];
   if (profile?.id) {
-    const vacRes = await getVacancies({ ownerId: profile.id, status: "ACTIVE" });
+    const vacRes = await getVacanciesByOwnerId(profile.id);
     if (vacRes.success && vacRes.data) {
-      vacancies = vacRes.data.map((v: any) => ({
-        ...v,
-        images: v.vacancy_photos
-          ? [...v.vacancy_photos].sort((a: any, b: any) => a.sort_order - b.sort_order).map((p: any) => p.url)
-          : [],
-      }));
+      vacancies = vacRes.data;
     }
   }
 

@@ -299,10 +299,10 @@ export default function PCReporterClient({
         {/* 메인 탭 */}
         <div style={{ display: 'flex', borderBottom: '2px solid #e5e7eb', marginBottom: '24px' }}>
           <button onClick={() => setMainTab('articles')} style={{ padding: '14px 24px', fontSize: '15px', fontWeight: mainTab === 'articles' ? 800 : 600, color: mainTab === 'articles' ? '#111' : '#888', background: 'none', border: 'none', borderBottom: mainTab === 'articles' ? '3px solid #111' : '3px solid transparent', cursor: 'pointer', marginBottom: '-2px' }}>
-            전체기사 <span style={{ color: '#3b82f6', fontSize: '13px' }}>{articles.length}</span>
+            전체기사 <span style={{ color: '#f97316', fontSize: '13px' }}>{articles.length}</span>
           </button>
-          <button onClick={() => setMainTab('vacancies')} style={{ padding: '14px 24px', fontSize: '15px', fontWeight: mainTab === 'vacancies' ? 800 : 600, color: mainTab === 'vacancies' ? '#111' : '#888', background: 'none', border: 'none', borderBottom: mainTab === 'vacancies' ? '3px solid #f97316' : '3px solid transparent', cursor: 'pointer', marginBottom: '-2px' }}>
-            등록공실 <span style={{ color: '#f97316', fontSize: '13px' }}>{vacancies.length}</span>
+          <button onClick={() => setMainTab('vacancies')} style={{ padding: '14px 24px', fontSize: '15px', fontWeight: mainTab === 'vacancies' ? 800 : 600, color: mainTab === 'vacancies' ? '#111' : '#888', background: 'none', border: 'none', borderBottom: mainTab === 'vacancies' ? '3px solid #3b82f6' : '3px solid transparent', cursor: 'pointer', marginBottom: '-2px' }}>
+            등록공실 <span style={{ color: '#3b82f6', fontSize: '13px' }}>{vacancies.length}</span>
           </button>
         </div>
 
@@ -318,7 +318,7 @@ export default function PCReporterClient({
             </div>
 
             <div style={{ fontSize: '14px', color: '#6b7280', fontWeight: 600, marginBottom: '16px' }}>
-              총 <span style={{ color: '#3b82f6', fontWeight: 800 }}>{filteredArticles.length}</span>건
+              총 <span style={{ color: '#f97316', fontWeight: 800 }}>{filteredArticles.length}</span>건
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -349,7 +349,7 @@ export default function PCReporterClient({
           /* 등록공실 - 기존 공실리스트 스타일 */
           <>
             <div style={{ fontSize: '14px', color: '#6b7280', fontWeight: 600, marginBottom: '16px' }}>
-              총 <span style={{ color: '#f97316', fontWeight: 800 }}>{vacancies.length}</span>건
+              총 <span style={{ color: '#3b82f6', fontWeight: 800 }}>{vacancies.length}</span>건
             </div>
             {vacancies.length > 0 ? (
               <div>
