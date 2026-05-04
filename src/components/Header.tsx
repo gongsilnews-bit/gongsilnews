@@ -156,13 +156,6 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
           )}
         </div>
         <div className="top-bar-right">
-          <div style={{ display: "flex", gap: "12px", fontSize: "12px", color: "rgba(255,255,255,0.7)", marginRight: "16px", alignItems: "center", fontWeight: "600" }}>
-            <Link href="/about" style={{ color: "inherit", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.color = "#fff"} onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.7)"}>회사소개</Link>
-            <span style={{ fontSize: "10px", color: "rgba(255,255,255,0.3)" }}>|</span>
-            <Link href="/marketing" style={{ color: "inherit", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.color = "#fff"} onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.7)"}>광고안내</Link>
-            <span style={{ fontSize: "10px", color: "rgba(255,255,255,0.3)" }}>|</span>
-            <Link href="/partnership" style={{ color: "inherit", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.color = "#fff"} onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.7)"}>제휴문의</Link>
-          </div>
           <div className="top-search-wrap" ref={searchWrapRef}>
             <input
               type="text"
