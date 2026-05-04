@@ -433,12 +433,11 @@ function MobileArticleWrite() {
         {/* 부제목 */}
         <div style={{ marginBottom: 12 }}>
           <label style={{ fontSize: 13, fontWeight: 700, color: "#374151", display: "block", marginBottom: 6 }}>부제목</label>
-          <input
-            type="text"
+          <textarea
             value={subtitle}
             onChange={e => setSubtitle(e.target.value)}
             placeholder="부제목 (선택)"
-            style={{ width: "100%", height: 44, padding: "0 14px", border: "1px solid #d1d5db", borderRadius: 10, fontSize: 14, outline: "none", boxSizing: "border-box" }}
+            style={{ width: "100%", minHeight: 64, padding: "10px 14px", border: "1px solid #d1d5db", borderRadius: 10, fontSize: 14, outline: "none", boxSizing: "border-box", resize: "vertical", fontFamily: "inherit" }}
           />
         </div>
 
