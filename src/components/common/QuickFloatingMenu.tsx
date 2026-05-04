@@ -26,10 +26,7 @@ export default function QuickFloatingMenu() {
 
   const handleAuthClick = (href: string) => {
     if (!isLoggedIn) {
-      showToast("회원가입하셔야 이용하실 수 있습니다!");
-      setTimeout(() => {
-        setIsAuthModalOpen(true);
-      }, 1200);
+      setIsAuthModalOpen(true);
       return;
     }
     if (href.startsWith("http")) {

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { toggleWishlistToDB } from "@/app/actions/vacancyUserData";
+import AuthModal from "@/components/AuthModal";
 
 function formatPrice(v: any): string {
   const dep = v.deposit || 0;
@@ -51,14 +52,15 @@ export default function MobileGongsilBookmarksClient() {
   const [properties, setProperties] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   useEffect(() => {
     async function fetchBookmarks() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        alert("회원가입하셔야 이용하실 수 있습니다!");
-        router.push("/m");
+        setIsAuthModalOpen(true);
+        setLoading(false);
         return;
       }
       setUser(user);
@@ -163,6 +165,14 @@ export default function MobileGongsilBookmarksClient() {
           })
         )}
       </div>
+
+      {isAuthModalOpen && (
+        <AuthModal
+          isOpen={isAuthModalOpen}
+          onClose={() => router.push("/m")}
+          initialTab="login"
+        />
+      )}
     </div>
   );
 }

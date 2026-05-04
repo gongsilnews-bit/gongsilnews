@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
+import AuthModal from "@/components/AuthModal";
 
 function formatDate(d: string) {
   if (!d) return "";
@@ -23,14 +24,15 @@ export default function MobileNewsBookmarksClient() {
   const router = useRouter();
   const [articles, setArticles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   useEffect(() => {
     async function fetchBookmarks() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        alert("회원가입하셔야 이용하실 수 있습니다!");
-        router.push("/m");
+        setIsAuthModalOpen(true);
+        setLoading(false);
         return;
       }
 
@@ -117,6 +119,14 @@ export default function MobileNewsBookmarksClient() {
           ))
         )}
       </div>
+
+      {isAuthModalOpen && (
+        <AuthModal
+          isOpen={isAuthModalOpen}
+          onClose={() => router.push("/m")}
+          initialTab="login"
+        />
+      )}
     </div>
   );
 }
