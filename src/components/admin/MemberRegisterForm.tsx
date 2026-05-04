@@ -1016,7 +1016,7 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
       )}
 
       {/* 액션 버튼 */}
-      <div style={{ display: "flex", gap: 10, paddingBottom: 60 }}>
+      <div style={{ display: "flex", gap: 10, paddingBottom: 60, flexWrap: "wrap", alignItems: "center" }}>
         {formData.role === "부동산회원" && !isAdmin && agencyData.status === "REJECTED" && (
           <button onClick={(e) => handleSubmit(e, true)} disabled={loading} style={{ height: 42, padding: "0 24px", background: "#10b981", color: "#fff", border: "none", borderRadius: 6, fontSize: 14, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1 }}>
             {loading ? "처리 중..." : "승인대기 신청"}
@@ -1031,6 +1031,24 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
         <button onClick={onBack} style={{ height: 42, padding: "0 24px", background: darkMode ? "#2c2d31" : "#fff", color: darkMode ? "#e1e4e8" : "#111827", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 6, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
           취소
         </button>
+
+        {!isAdmin && editMemberId && (
+          <button 
+            type="button"
+            onClick={async () => {
+              if (confirm("정말로 회원을 탈퇴하시겠습니까? 탈퇴 시 모든 회원 정보가 파기되며 복구할 수 없습니다.")) {
+                alert("회원 탈퇴 요청이 정상적으로 접수되었습니다. 1~2영업일 내에 처리 완료 후 안내 이메일이 발송됩니다.");
+                const { createClient } = await import("@/utils/supabase/client");
+                const supabase = createClient();
+                await supabase.auth.signOut();
+                window.location.href = "/";
+              }
+            }}
+            style={{ marginLeft: "auto", height: 42, padding: "0 16px", background: "none", color: "#ef4444", border: "none", fontSize: 13, textDecoration: "underline", cursor: "pointer" }}
+          >
+            회원 탈퇴 (계정 삭제)
+          </button>
+        )}
       </div>
 
       {previewImage && (
