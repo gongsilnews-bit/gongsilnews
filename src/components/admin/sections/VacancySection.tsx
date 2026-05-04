@@ -106,11 +106,9 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
   }
   let filteredVacancies = dbVacancies.filter(v => {
     // tab filter
-    if (activeTab === "승인대기" && v.status !== "PENDING") return false;
     if (activeTab === "광고중" && v.status !== "ACTIVE") return false;
     if (activeTab === "광고종료" && v.status !== "STOPPED") return false;
     if (activeTab === "작성중" && v.status !== "DRAFT") return false;
-    if (activeTab === "반려" && v.status !== "REJECTED") return false;
     
     // search filters
     if (activeFilters.vacancyNo && !String(v.vacancy_no || "").includes(activeFilters.vacancyNo)) return false;
@@ -154,17 +152,12 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
       <div style={{ background: cardBg, borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", overflow: "hidden" }}>
         {/* 필터 탭 */}
         <div style={{ display: "flex", borderBottom: `1px solid ${border}`, background: darkMode ? "#2c2d31" : "#fafafa", padding: "0 16px" }}>
-          {["전체", "승인대기", "광고중", "광고종료", "작성중", "반려"].filter(tab => {
-            if (role === "realtor" && (tab === "승인대기" || tab === "반려")) return false;
-            return true;
-          }).map(tab => {
+          {["전체", "광고중", "광고종료", "작성중"].map(tab => {
             let count = 0;
             if (tab === "전체") count = dbVacancies.length;
-            else if (tab === "승인대기") count = dbVacancies.filter(v => v.status === "PENDING").length;
             else if (tab === "광고중") count = dbVacancies.filter(v => v.status === "ACTIVE").length;
             else if (tab === "광고종료") count = dbVacancies.filter(v => v.status === "STOPPED").length;
             else if (tab === "작성중") count = dbVacancies.filter(v => v.status === "DRAFT").length;
-            else if (tab === "반려") count = dbVacancies.filter(v => v.status === "REJECTED").length;
 
             return (
               <button key={tab} onClick={() => {
@@ -175,7 +168,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                 style={{ border: "none", background: "none", padding: "16px 20px", fontSize: 14, fontWeight: activeTab === tab ? 800 : 600, color: activeTab === tab ? "#3b82f6" : textSecondary, borderBottom: activeTab === tab ? "3px solid #3b82f6" : "3px solid transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
                 {tab}
                 <span style={{ 
-                  background: tab === "전체" ? "#e5e7eb" : tab === "승인대기" ? "#8b5cf6" : tab === "광고중" ? "#10b981" : tab === "광고종료" ? "#ef4444" : tab === "작성중" ? "#9ca3af" : "#ef4444",
+                  background: tab === "전체" ? "#e5e7eb" : tab === "광고중" ? "#10b981" : tab === "광고종료" ? "#ef4444" : tab === "작성중" ? "#9ca3af" : "#ef4444",
                   color: tab === "전체" ? "#4b5563" : "#fff", padding: "2px 8px", borderRadius: 10, fontSize: 11, fontWeight: 700 
                 }}>{count}</span>
               </button>
@@ -189,30 +182,6 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
             const path = role === "realtor" ? "/realty_admin" : role === "user" ? "/user_admin" : "/admin";
             router.push(`${path}?menu=gongsil&action=write`);
           }} style={{ height: 36, padding: "0 16px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>+ 공실등록</button>
-
-
-          
-          {role === "admin" && (
-            <>
-              <button onClick={async () => {
-                const checked = Array.from(document.querySelectorAll('.vacancy-checkbox:checked')).map((el: any) => el.value);
-                if (checked.length === 0) { alert("승인할 매물을 선택하세요."); return; }
-                if (confirm(`선택한 ${checked.length}건의 공실을 일괄 광고(승인)하시겠습니까?`)) {
-                  for (const id of checked) { await updateVacancyStatus(id, 'ACTIVE'); }
-                  fetchAllVacancies();
-                }
-              }} style={{ height: 36, padding: "0 16px", background: "#10b981", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>✓ 선택 승인</button>
-              <button onClick={async () => {
-                const checked = Array.from(document.querySelectorAll('.vacancy-checkbox:checked')).map((el: any) => el.value);
-                if (checked.length === 0) { alert("반려할 매물을 선택하세요."); return; }
-                const reason = prompt("반려 사유를 입력하세요 (취소 시 처리 안 됨)");
-                if (reason) {
-                   for (const id of checked) { await updateVacancy(id, { status: 'REJECTED', reject_reason: reason }); }
-                   fetchAllVacancies();
-                }
-              }} style={{ height: 36, padding: "0 16px", background: "#ef4444", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>🚫 선택 반려</button>
-            </>
-          )}
 
           {role !== "user" && (
             <button onClick={() => alert("준비 중인 기능입니다.")} style={{ height: 36, padding: "0 16px", background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
@@ -304,24 +273,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                     </td>
                     <td style={{ padding: "16px 4px", textAlign: "center", verticalAlign: "middle" }}>
                       {canToggleStatus ? (
-                        isPending ? (
-                          role === "admin" ? (
-                            <button onClick={async () => {
-                              if (!confirm("이 공실을 승인하시겠습니까?")) return;
-                              const res = await updateVacancyStatus(row.id, 'ACTIVE');
-                              if (res.success) fetchAllVacancies();
-                            }} style={{ display: "inline-block", padding: "4px 8px", borderRadius: 4, border: "none", cursor: "pointer", background: "#8b5cf6", color: "#fff", fontWeight: 700, fontSize: 12 }}>
-                              승인하기
-                            </button>
-                          ) : (
-                            <span style={{ display: "inline-block", padding: "4px 8px", borderRadius: 4, background: "#8b5cf6", color: "#fff", fontWeight: 700, fontSize: 12 }}>승인대기</span>
-                          )
-                        ) : row.status === 'REJECTED' ? (
-                          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-                            <span style={{ display: "inline-block", padding: "4px 8px", borderRadius: 4, background: "#ef4444", color: "#fff", fontWeight: 700, fontSize: 12 }}>반려됨</span>
-                            <span style={{ fontSize: 11, color: textSecondary }}>{daysSinceCreated}일</span>
-                          </div>
-                        ) : row.status === 'DRAFT' ? (
+                        row.status === 'DRAFT' ? (
                           <span style={{ display: "inline-block", padding: "4px 8px", borderRadius: 4, background: "#9ca3af", color: "#fff", fontWeight: 700, fontSize: 12 }}>작성중</span>
                         ) : (
                           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
@@ -338,11 +290,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                           </div>
                         )
                       ) : (
-                        isPending ? (
-                          <span style={{ display: "inline-block", padding: "4px 8px", borderRadius: 4, background: "#8b5cf6", color: "#fff", fontWeight: 700, fontSize: 12 }}>승인대기</span>
-                        ) : row.status === 'REJECTED' ? (
-                          <span style={{ display: "inline-block", padding: "4px 8px", borderRadius: 4, background: "#ef4444", color: "#fff", fontWeight: 700, fontSize: 12 }}>반려됨</span>
-                        ) : row.status === 'DRAFT' ? (
+                        row.status === 'DRAFT' ? (
                           <span style={{ display: "inline-block", padding: "4px 8px", borderRadius: 4, background: "#9ca3af", color: "#fff", fontWeight: 700, fontSize: 12 }}>작성중</span>
                         ) : isActive ? (
                           <span style={{ display: "inline-block", padding: "4px 8px", borderRadius: 4, background: "#10b981", color: "#fff", fontWeight: 700, fontSize: 12 }}>광고중</span>
