@@ -6,7 +6,9 @@ import {
   getBookmarkCategories, 
   createBookmarkCategory, 
   setArticleBookmarkCategory, 
-  setVacancyBookmarkCategory 
+  setVacancyBookmarkCategory,
+  updateBookmarkCategory,
+  deleteBookmarkCategory
 } from '@/app/actions/bookmark';
 
 interface BookmarkCategoryModalProps {
@@ -27,6 +29,8 @@ export default function BookmarkCategoryModal({
   const [creating, setCreating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<string | null>(null);
+  const [editCategoryName, setEditCategoryName] = useState('');
 
   useEffect(() => {
     setMounted(true);
@@ -60,6 +64,27 @@ export default function BookmarkCategoryModal({
       alert('폴더 생성에 실패했습니다: ' + res.error);
     }
     setCreating(false);
+  };
+
+  const handleEditCategory = async (categoryId: string) => {
+    if (!editCategoryName.trim()) return;
+    const res = await updateBookmarkCategory(categoryId, editCategoryName.trim());
+    if (res.success) {
+      setCategories(categories.map(c => c.id === categoryId ? { ...c, name: editCategoryName.trim() } : c));
+      setEditingCategory(null);
+    } else {
+      alert('폴더 수정에 실패했습니다.');
+    }
+  };
+
+  const handleDeleteCategory = async (categoryId: string) => {
+    if (!window.confirm('이 폴더를 삭제하시겠습니까? 폴더 내 항목은 유지됩니다.')) return;
+    const res = await deleteBookmarkCategory(categoryId);
+    if (res.success) {
+      setCategories(categories.filter(c => c.id !== categoryId));
+    } else {
+      alert('폴더 삭제에 실패했습니다.');
+    }
   };
 
   const handleSelectCategory = async (categoryId: string | null) => {
@@ -150,22 +175,49 @@ export default function BookmarkCategoryModal({
 
               {/* 사용자 생성 폴더들 */}
               {categories.map((cat) => (
-                <li key={cat.id}>
-                  <button 
-                    onClick={() => handleSelectCategory(cat.id)}
-                    disabled={saving}
-                    style={{
-                      width: '100%', padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, cursor: 'pointer',
-                      fontSize: 15, fontWeight: 600, color: '#111', fontFamily: 'inherit', textAlign: 'left'
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <span style={{ fontSize: 20 }}>📂</span>
-                      {cat.name}
+                <li key={cat.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {editingCategory === cat.id ? (
+                    <div style={{ display: 'flex', width: '100%', gap: 8 }}>
+                      <input 
+                        type="text" 
+                        value={editCategoryName} 
+                        onChange={(e) => setEditCategoryName(e.target.value)}
+                        onKeyDown={(e) => { if(e.key === 'Enter') handleEditCategory(cat.id); }}
+                        style={{ flex: 1, padding: '10px 14px', border: '1px solid #ddd', borderRadius: 8, fontSize: 14, outline: 'none' }}
+                        autoFocus
+                      />
+                      <button onClick={() => handleEditCategory(cat.id)} style={{ padding: '0 12px', background: '#1e56a0', color: '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>저장</button>
+                      <button onClick={() => setEditingCategory(null)} style={{ padding: '0 12px', background: '#e5e7eb', color: '#4b5563', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>취소</button>
                     </div>
-                    <span style={{ color: '#aaa', fontSize: 13, fontWeight: 400 }}>선택</span>
-                  </button>
+                  ) : (
+                    <>
+                      <button 
+                        onClick={() => handleSelectCategory(cat.id)}
+                        disabled={saving}
+                        style={{
+                          flex: 1, padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                          background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, cursor: 'pointer',
+                          fontSize: 15, fontWeight: 600, color: '#111', fontFamily: 'inherit', textAlign: 'left'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <span style={{ fontSize: 20 }}>📂</span>
+                          {cat.name}
+                        </div>
+                        <span style={{ color: '#aaa', fontSize: 13, fontWeight: 400 }}>선택</span>
+                      </button>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        <button 
+                          onClick={() => { setEditingCategory(cat.id); setEditCategoryName(cat.name); }}
+                          style={{ background: 'none', border: 'none', color: '#4b5563', fontSize: 12, cursor: 'pointer', padding: '4px' }}
+                        >수정</button>
+                        <button 
+                          onClick={() => handleDeleteCategory(cat.id)}
+                          style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: 12, cursor: 'pointer', padding: '4px' }}
+                        >삭제</button>
+                      </div>
+                    </>
+                  )}
                 </li>
               ))}
             </ul>

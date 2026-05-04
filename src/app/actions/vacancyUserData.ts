@@ -17,7 +17,7 @@ export async function getVacancyUserData(userId: string) {
     // 1. Fetch Wishlist
     const { data: wishData, error: wishError } = await supabase
       .from("vacancy_wishlist")
-      .select("vacancy_id")
+      .select("vacancy_id, category_id")
       .eq("user_id", userId)
       .order("created_at", { ascending: false });
 
@@ -30,9 +30,10 @@ export async function getVacancyUserData(userId: string) {
       .limit(50);
 
     const wishlist = (wishData || []).map(row => row.vacancy_id);
+    const wishlistData = wishData || [];
     const recentViews = (recentData || []).map(row => row.vacancy_id);
 
-    return { success: true, wishlist, recentViews };
+    return { success: true, wishlist, wishlistData, recentViews };
   } catch (err: any) {
     return { success: false, error: err.message };
   }

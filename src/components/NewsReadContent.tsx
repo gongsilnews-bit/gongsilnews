@@ -13,6 +13,7 @@ import { getVacancies } from "@/app/actions/vacancy";
 import { toggleArticleBookmark, getArticleBookmarks } from "@/app/actions/bookmark";
 import AuthModal from "./AuthModal";
 import BannerSlot from "./BannerSlot";
+import BookmarkCategoryModal from "./BookmarkCategoryModal";
 
 interface NewsReadContentProps {
   article: any;
@@ -72,6 +73,7 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
 
   // 별도 기능 State
   const [isBookmarked, setIsBookmarked] = useState(false);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showShareDropdown, setShowShareDropdown] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [showFontSizePopup, setShowFontSizePopup] = useState(false);
@@ -396,7 +398,12 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
     const res = await toggleArticleBookmark(currentUserId, article.id);
     if (res.success) {
       setIsBookmarked(res.isBookmarked!);
-      setToastMessage(res.isBookmarked ? "기사를 찜했습니다." : "찜을 해제했습니다.");
+      setToastMessage(res.isBookmarked ? "기본 폴더에 저장되었습니다." : "찜을 해제했습니다.");
+      
+      // 방금 찜을 추가한 경우 폴더 선택 모달을 띄움
+      if (res.isBookmarked) {
+        setShowCategoryModal(true);
+      }
     } else {
       setToastMessage("오류: " + res.error);
     }
@@ -517,6 +524,17 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
   return (
     <>
       <div ref={scrollBarRef} className="scroll-progress" style={{ width: 0 }}></div>
+
+      {currentUserId && showCategoryModal && (
+        <BookmarkCategoryModal
+          isOpen={showCategoryModal}
+          onClose={() => setShowCategoryModal(false)}
+          userId={currentUserId}
+          itemId={article.id}
+          type="ARTICLE"
+          onSuccess={() => setToastMessage("폴더 이동이 완료되었습니다.")}
+        />
+      )}
 
       <main className="container px-20" style={{ position: "relative" }}>
         <div className="news-layout">

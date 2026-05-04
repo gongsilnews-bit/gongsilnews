@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
 import AuthModal from "@/components/AuthModal";
+import BookmarkCategoryModal from "@/components/BookmarkCategoryModal";
+import { getBookmarkCategories } from "@/app/actions/bookmark";
 
 function formatDate(d: string) {
   if (!d) return "";
@@ -23,8 +25,16 @@ const stripHtml = (html: string) => html ? html.replace(/<[^>]*>/g, "").replace(
 export default function MobileNewsBookmarksClient() {
   const router = useRouter();
   const [articles, setArticles] = useState<any[]>([]);
+  const [bookmarks, setBookmarks] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null | 'ALL'>('ALL');
   const [loading, setLoading] = useState(true);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  
+  // 폴더 이동 모달 상태
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchBookmarks() {
@@ -35,32 +45,59 @@ export default function MobileNewsBookmarksClient() {
         setLoading(false);
         return;
       }
+      setCurrentUser(user);
 
-      // Fetch article bookmarks
+      // Fetch categories
+      const catRes = await getBookmarkCategories(user.id, 'ARTICLE');
+      if (catRes.success && catRes.categories) {
+        setCategories(catRes.categories);
+      }
+
+      // Fetch article bookmarks with category_id
       const { data: wishData } = await supabase
         .from("article_bookmarks")
-        .select("article_id")
+        .select("article_id, category_id")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
-      const wishIds = (wishData || []).map((row: any) => row.article_id);
+      if (wishData) {
+        setBookmarks(wishData);
+        const wishIds = wishData.map((row: any) => row.article_id);
 
-      if (wishIds.length > 0) {
-        const { data: props } = await supabase
-          .from("articles")
-          .select("*")
-          .in("id", wishIds)
-          .eq("status", "APPROVED");
+        if (wishIds.length > 0) {
+          const { data: props } = await supabase
+            .from("articles")
+            .select("*")
+            .in("id", wishIds)
+            .eq("status", "APPROVED");
 
-        if (props) {
-          const sortedProps = wishIds.map((id: string) => props.find((p: any) => p.id === id)).filter(Boolean);
-          setArticles(sortedProps);
+          if (props) {
+            const sortedProps = wishIds.map((id: string) => props.find((p: any) => p.id === id)).filter(Boolean);
+            setArticles(sortedProps);
+          }
+        } else {
+          setArticles([]);
         }
       }
       setLoading(false);
     }
     fetchBookmarks();
-  }, [router]);
+  }, [router, showCategoryModal]);
+
+  // 선택된 카테고리에 맞는 기사 필터링
+  const filteredArticles = articles.filter(article => {
+    if (selectedCategoryId === 'ALL') return true;
+    const bookmark = bookmarks.find(b => b.article_id === article.id);
+    if (!bookmark) return false;
+    return bookmark.category_id === selectedCategoryId;
+  });
+
+  const handleOpenMoveModal = (e: React.MouseEvent, articleId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setSelectedArticleId(articleId);
+    setShowCategoryModal(true);
+  };
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", background: "#f9fafb", minHeight: "100vh" }}>
@@ -72,18 +109,55 @@ export default function MobileNewsBookmarksClient() {
         <h2 style={{ fontSize: "18px", fontWeight: 800, color: "#111", margin: 0 }}>관심기사 <span style={{ color: "#f97316" }}>{articles.length}</span>개</h2>
       </div>
 
+      {/* Category Tabs */}
+      <div style={{ display: 'flex', overflowX: 'auto', background: '#fff', borderBottom: '1px solid #e5e7eb', padding: '10px 16px', gap: '8px', WebkitOverflowScrolling: 'touch' }} className="no-scrollbar">
+        <button
+          onClick={() => setSelectedCategoryId('ALL')}
+          style={{
+            padding: '6px 14px', borderRadius: '20px', fontSize: '13px', fontWeight: selectedCategoryId === 'ALL' ? 700 : 500,
+            background: selectedCategoryId === 'ALL' ? '#1e56a0' : '#f3f4f6', color: selectedCategoryId === 'ALL' ? '#fff' : '#4b5563',
+            border: 'none', cursor: 'pointer', whiteSpace: 'nowrap'
+          }}
+        >
+          전체
+        </button>
+        <button
+          onClick={() => setSelectedCategoryId(null)}
+          style={{
+            padding: '6px 14px', borderRadius: '20px', fontSize: '13px', fontWeight: selectedCategoryId === null ? 700 : 500,
+            background: selectedCategoryId === null ? '#1e56a0' : '#f3f4f6', color: selectedCategoryId === null ? '#fff' : '#4b5563',
+            border: 'none', cursor: 'pointer', whiteSpace: 'nowrap'
+          }}
+        >
+          기본 폴더
+        </button>
+        {categories.map(cat => (
+          <button
+            key={cat.id}
+            onClick={() => setSelectedCategoryId(cat.id)}
+            style={{
+              padding: '6px 14px', borderRadius: '20px', fontSize: '13px', fontWeight: selectedCategoryId === cat.id ? 700 : 500,
+              background: selectedCategoryId === cat.id ? '#1e56a0' : '#f3f4f6', color: selectedCategoryId === cat.id ? '#fff' : '#4b5563',
+              border: 'none', cursor: 'pointer', whiteSpace: 'nowrap'
+            }}
+          >
+            {cat.name}
+          </button>
+        ))}
+      </div>
+
       {/* List */}
       <div style={{ padding: "0 16px 20px", background: "#fff", flex: 1 }}>
         {loading ? (
           <div style={{ padding: "40px 0", textAlign: "center", color: "#9ca3af" }}>로딩 중...</div>
-        ) : articles.length === 0 ? (
+        ) : filteredArticles.length === 0 ? (
           <div style={{ textAlign: "center", padding: "60px 0", color: "#9ca3af" }}>
             <div style={{ fontSize: "40px", marginBottom: "16px" }}>🔖</div>
-            <p style={{ fontSize: "15px", fontWeight: 700, color: "#333", marginBottom: "8px" }}>관심기사가 없습니다.</p>
+            <p style={{ fontSize: "15px", fontWeight: 700, color: "#333", marginBottom: "8px" }}>해당 폴더에 관심기사가 없습니다.</p>
             <p style={{ fontSize: "14px" }}>기사에서 북마크 아이콘을 눌러 추가해보세요.</p>
           </div>
         ) : (
-          articles.map((article: any) => (
+          filteredArticles.map((article: any) => (
             <Link
               href={`/m/news/${article.id}`}
               key={article.id}
@@ -97,8 +171,14 @@ export default function MobileNewsBookmarksClient() {
                 textDecoration: "none",
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
                 <span style={{ fontSize: "11px", fontWeight: 800, color: "#dc2626" }}>NEWS</span>
+                <button 
+                  onClick={(e) => handleOpenMoveModal(e, article.id)}
+                  style={{ background: '#f3f4f6', border: 'none', padding: '4px 10px', borderRadius: '4px', fontSize: '11px', fontWeight: 600, color: '#4b5563', cursor: 'pointer' }}
+                >
+                  폴더 이동
+                </button>
               </div>
               <div style={{ fontSize: "17px", fontWeight: 800, color: "#111", lineHeight: 1.35, marginBottom: "10px", wordBreak: "keep-all" }}>
                 {article.title}
@@ -119,6 +199,20 @@ export default function MobileNewsBookmarksClient() {
           ))
         )}
       </div>
+
+      {currentUser && showCategoryModal && selectedArticleId && (
+        <BookmarkCategoryModal
+          isOpen={showCategoryModal}
+          onClose={() => {
+            setShowCategoryModal(false);
+            setSelectedArticleId(null);
+          }}
+          userId={currentUser.id}
+          itemId={selectedArticleId}
+          type="ARTICLE"
+          onSuccess={() => alert("폴더 이동이 완료되었습니다.")}
+        />
+      )}
 
       {isAuthModalOpen && (
         <AuthModal

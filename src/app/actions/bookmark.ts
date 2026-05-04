@@ -159,13 +159,13 @@ export async function getArticleBookmarks(userId: string) {
   try {
     const { data, error } = await supabase
       .from("article_bookmarks")
-      .select("article_id")
+      .select("article_id, category_id")
       .eq("user_id", userId);
       
     if (error) return { success: false, error: error.message };
     
     const bookmarkIds = data.map((b) => b.article_id);
-    return { success: true, bookmarkIds };
+    return { success: true, bookmarkIds, bookmarks: data };
   } catch (err: any) {
     return { success: false, error: err.message };
   }

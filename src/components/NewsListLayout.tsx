@@ -6,8 +6,9 @@ import { useRouter } from "next/navigation";
 import ImportantNewsRotate from "./ImportantNewsRotate";
 import BannerSlot from "./BannerSlot";
 import { createClient } from "@/utils/supabase/client";
-import { getArticleBookmarks } from "@/app/actions/bookmark";
+import { getArticleBookmarks, getBookmarkCategories } from "@/app/actions/bookmark";
 import AuthModal from "./AuthModal";
+import BookmarkCategoryModal from "./BookmarkCategoryModal";
 
 interface Article {
   id: string;
@@ -41,6 +42,15 @@ export default function NewsListLayout({ category, title, initialArticles, initi
 
   const [currentPage, setCurrentPage] = useState(1);
   const [bookmarkIds, setBookmarkIds] = useState<string[]>([]);
+  const [bookmarks, setBookmarks] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null | 'ALL'>('ALL');
+  
+  // 모달 상태
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null);
+  const [user, setUser] = useState<any>(null);
+
   const ITEMS_PER_PAGE = 10;
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -55,19 +65,33 @@ export default function NewsListLayout({ category, title, initialArticles, initi
           setIsAuthModalOpen(true);
           return;
         }
+        setUser(user);
         
+        // Fetch categories
+        const catRes = await getBookmarkCategories(user.id, 'ARTICLE');
+        if (catRes.success && catRes.categories) {
+          setCategories(catRes.categories);
+        }
+
         const res = await getArticleBookmarks(user.id);
         if (res.success && res.bookmarkIds) {
           setBookmarkIds(res.bookmarkIds);
+          if (res.bookmarks) setBookmarks(res.bookmarks);
         }
       };
       fetchBookmarks();
     }
-  }, [isBookmarkMode]);
+  }, [isBookmarkMode, showCategoryModal]);
 
-  // 북마크 모드면 북마크된 기사만 필터
+  // 북마크 모드면 북마크된 기사 중 카테고리에 맞는 기사만 필터
   const displayArticles = isBookmarkMode
-    ? initialArticles.filter(a => bookmarkIds.includes(a.id))
+    ? initialArticles.filter(a => {
+        if (!bookmarkIds.includes(a.id)) return false;
+        if (selectedCategoryId === 'ALL') return true;
+        const b = bookmarks.find(bm => String(bm.article_id) === String(a.id));
+        if (!b) return false;
+        return b.category_id === selectedCategoryId;
+      })
     : initialArticles;
 
   const displayTitle = isBookmarkMode ? "📌 관심기사" : title;
@@ -171,6 +195,45 @@ export default function NewsListLayout({ category, title, initialArticles, initi
               )}
             </div>
 
+            {/* Category Tabs for Bookmark Mode */}
+            {isBookmarkMode && (
+              <div style={{ display: 'flex', overflowX: 'auto', background: '#fff', borderBottom: '1px solid #e5e7eb', padding: '10px 0', marginBottom: '16px', gap: '8px' }} className="no-scrollbar">
+                <button
+                  onClick={() => { setSelectedCategoryId('ALL'); setCurrentPage(1); }}
+                  style={{
+                    padding: '6px 14px', borderRadius: '20px', fontSize: '13px', fontWeight: selectedCategoryId === 'ALL' ? 700 : 500,
+                    background: selectedCategoryId === 'ALL' ? '#1e56a0' : '#f3f4f6', color: selectedCategoryId === 'ALL' ? '#fff' : '#4b5563',
+                    border: 'none', cursor: 'pointer', whiteSpace: 'nowrap'
+                  }}
+                >
+                  전체
+                </button>
+                <button
+                  onClick={() => { setSelectedCategoryId(null); setCurrentPage(1); }}
+                  style={{
+                    padding: '6px 14px', borderRadius: '20px', fontSize: '13px', fontWeight: selectedCategoryId === null ? 700 : 500,
+                    background: selectedCategoryId === null ? '#1e56a0' : '#f3f4f6', color: selectedCategoryId === null ? '#fff' : '#4b5563',
+                    border: 'none', cursor: 'pointer', whiteSpace: 'nowrap'
+                  }}
+                >
+                  기본 폴더
+                </button>
+                {categories.map(cat => (
+                  <button
+                    key={cat.id}
+                    onClick={() => { setSelectedCategoryId(cat.id); setCurrentPage(1); }}
+                    style={{
+                      padding: '6px 14px', borderRadius: '20px', fontSize: '13px', fontWeight: selectedCategoryId === cat.id ? 700 : 500,
+                      background: selectedCategoryId === cat.id ? '#1e56a0' : '#f3f4f6', color: selectedCategoryId === cat.id ? '#fff' : '#4b5563',
+                      border: 'none', cursor: 'pointer', whiteSpace: 'nowrap'
+                    }}
+                  >
+                    {cat.name}
+                  </button>
+                ))}
+              </div>
+            )}
+
             {searchQuery && (
               <div style={{ marginBottom: '16px', padding: '12px 16px', background: '#f0f4ff', borderRadius: '8px', fontSize: '14px', color: '#555' }}>
                 총 <strong style={{ color: '#1a2e50' }}>{initialArticles.length}</strong>건의 검색결과
@@ -230,20 +293,33 @@ export default function NewsListLayout({ category, title, initialArticles, initi
                     </div>
                   </Link>
                   {isBookmarkMode && (
-                    <button
-                      onClick={(e) => { e.preventDefault(); removeBookmark(article.id); }}
-                      title="관심기사 해제"
-                      style={{
-                        position: "absolute", top: 12, right: 12,
-                        background: "#fff", border: "1px solid #e5e7eb", borderRadius: 6,
-                        padding: "4px 8px", cursor: "pointer", fontSize: 12, color: "#ef4444",
-                        fontWeight: 600, display: "flex", alignItems: "center", gap: 4,
-                        boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
-                      }}
-                    >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1.5"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
-                      해제
-                    </button>
+                    <div style={{ position: "absolute", top: 12, right: 12, display: "flex", gap: 6 }}>
+                      <button
+                        onClick={(e) => { e.preventDefault(); setSelectedArticleId(article.id); setShowCategoryModal(true); }}
+                        title="폴더 이동"
+                        style={{
+                          background: "#fff", border: "1px solid #e5e7eb", borderRadius: 6,
+                          padding: "4px 8px", cursor: "pointer", fontSize: 12, color: "#4b5563",
+                          fontWeight: 600, display: "flex", alignItems: "center", gap: 4,
+                          boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
+                        }}
+                      >
+                        폴더 이동
+                      </button>
+                      <button
+                        onClick={(e) => { e.preventDefault(); removeBookmark(article.id); }}
+                        title="관심기사 해제"
+                        style={{
+                          background: "#fff", border: "1px solid #e5e7eb", borderRadius: 6,
+                          padding: "4px 8px", cursor: "pointer", fontSize: 12, color: "#ef4444",
+                          fontWeight: 600, display: "flex", alignItems: "center", gap: 4,
+                          boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
+                        }}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1.5"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
+                        해제
+                      </button>
+                    </div>
                   )}
                 </div>
               </React.Fragment>
@@ -294,6 +370,23 @@ export default function NewsListLayout({ category, title, initialArticles, initi
       
       {isAuthModalOpen && (
         <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} initialTab="login" />
+      )}
+
+      {user && showCategoryModal && selectedArticleId && (
+        <BookmarkCategoryModal
+          isOpen={showCategoryModal}
+          onClose={() => {
+            setShowCategoryModal(false);
+            setSelectedArticleId(null);
+          }}
+          userId={user.id}
+          itemId={selectedArticleId}
+          type="ARTICLE"
+          onSuccess={() => {
+            alert("폴더 이동이 완료되었습니다.");
+            // 새로고침 대신 모달 닫히면서 effect 재실행으로 업데이트됨
+          }}
+        />
       )}
     </>
   );

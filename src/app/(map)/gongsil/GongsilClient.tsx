@@ -11,6 +11,8 @@ import { handleLocationPermissionDenied, handleLocationUnavailable } from "@/uti
 import MapSearchBar from "@/components/MapSearchBar";
 import MapTopAuthButtons from "@/components/MapTopAuthButtons";
 import AuthModal from "@/components/AuthModal";
+import BookmarkCategoryModal from "@/components/BookmarkCategoryModal";
+import { getBookmarkCategories } from "@/app/actions/bookmark";
 
 // 카테고리 설정 데이터
 const CATEGORY_CONFIG: Record<string, { name: string; pills: string[]; basicFilters: string[]; detailFilters: string[]; showToggle: boolean; pillStyle?: string }> = {
@@ -109,6 +111,13 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   const [wishTab, setWishTab] = useState<"wish" | "recent">("wish");
   const [recentViews, setRecentViews] = useState<any[]>([]);
   const [wishlist, setWishlist] = useState<any[]>([]);
+  const [wishlistData, setWishlistData] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null | 'ALL'>('ALL');
+  
+  // 폴더 이동 모달 상태
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [selectedVacancyId, setSelectedVacancyId] = useState<string | null>(null);
 
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [userLevel, setUserLevel] = useState<number>(0);
@@ -133,14 +142,20 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
           const mergedRecent = Array.from(new Set([...(res.recentViews || []), ...localRecent])).slice(0, 50);
           
           setWishlist(mergedWish);
+          setWishlistData(res.wishlistData || []);
           setRecentViews(mergedRecent);
           localStorage.setItem('gongsil_recent_views', JSON.stringify(mergedRecent));
         }
       });
+      getBookmarkCategories(currentUser.id, 'VACANCY').then(res => {
+        if (res.success) setCategories(res.categories || []);
+      });
     } else {
       setWishlist([]); // 로그아웃 시 찜 목록 초기화
+      setWishlistData([]);
+      setCategories([]);
     }
-  }, [currentUser]);
+  }, [currentUser, showCategoryModal]);
 
   useEffect(() => {
     if (activeProperty) {
@@ -251,7 +266,16 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
         return recentViews.map(id => dbVacancies.find(v => v.id === id)).filter(Boolean) as any[];
       }
       if (wishTab === "wish") {
-        return wishlist.map(id => dbVacancies.find(v => v.id === id)).filter(Boolean) as any[];
+        let list = wishlist.map(id => dbVacancies.find(v => v.id === id)).filter(Boolean) as any[];
+        // 카테고리 필터 적용
+        if (selectedCategoryId !== 'ALL') {
+          list = list.filter(v => {
+            const b = wishlistData.find(wd => String(wd.vacancy_id) === String(v.id));
+            if (!b) return false;
+            return b.category_id === selectedCategoryId;
+          });
+        }
+        return list;
       }
       return [];
     }
@@ -1954,18 +1978,51 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
               </div>
               <div style={{ padding: "12px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #f5f5f5" }}>
                  <div style={{ display: "flex", gap: 10, fontSize: 12, color: "#999" }}>
-                    <span style={{ color: "#1a73e8", fontWeight: "bold", cursor: "pointer" }}>등록취소</span>
-                    <span style={{ cursor: "pointer" }}>가나다순</span>
-                    <span style={{ cursor: "pointer" }}>세대수순</span>
+                    <span style={{ color: "#1a73e8", fontWeight: "bold", cursor: "pointer" }}>가나다순</span>
                     <span style={{ cursor: "pointer" }}>최근접수순</span>
                  </div>
-                 <div style={{ fontSize: 12, color: "#999", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path></svg>
-                    편집
-                 </div>
               </div>
+              
+              {wishTab === "wish" && (
+                <div style={{ display: 'flex', overflowX: 'auto', background: '#fff', borderBottom: '1px solid #e5e7eb', padding: '10px 16px', gap: '8px', WebkitOverflowScrolling: 'touch' }} className="no-scrollbar">
+                  <button
+                    onClick={() => setSelectedCategoryId('ALL')}
+                    style={{
+                      padding: '6px 14px', borderRadius: '20px', fontSize: '13px', fontWeight: selectedCategoryId === 'ALL' ? 700 : 500,
+                      background: selectedCategoryId === 'ALL' ? '#1e56a0' : '#f3f4f6', color: selectedCategoryId === 'ALL' ? '#fff' : '#4b5563',
+                      border: 'none', cursor: 'pointer', whiteSpace: 'nowrap'
+                    }}
+                  >
+                    전체
+                  </button>
+                  <button
+                    onClick={() => setSelectedCategoryId(null)}
+                    style={{
+                      padding: '6px 14px', borderRadius: '20px', fontSize: '13px', fontWeight: selectedCategoryId === null ? 700 : 500,
+                      background: selectedCategoryId === null ? '#1e56a0' : '#f3f4f6', color: selectedCategoryId === null ? '#fff' : '#4b5563',
+                      border: 'none', cursor: 'pointer', whiteSpace: 'nowrap'
+                    }}
+                  >
+                    기본 폴더
+                  </button>
+                  {categories.map(cat => (
+                    <button
+                      key={cat.id}
+                      onClick={() => setSelectedCategoryId(cat.id)}
+                      style={{
+                        padding: '6px 14px', borderRadius: '20px', fontSize: '13px', fontWeight: selectedCategoryId === cat.id ? 700 : 500,
+                        background: selectedCategoryId === cat.id ? '#1e56a0' : '#f3f4f6', color: selectedCategoryId === cat.id ? '#fff' : '#4b5563',
+                        border: 'none', cursor: 'pointer', whiteSpace: 'nowrap'
+                      }}
+                    >
+                      {cat.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+
               <div style={{ padding: "15px 20px 5px", fontWeight: "bold", fontSize: 14, color: "#111" }}>
-                현재 지도 화면 {displayVacancies.length}개
+                현재 화면 {displayVacancies.length}개
               </div>
             </>
           ) : (
@@ -2014,14 +2071,24 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                       background: activeProperty === prop.id ? "#eaf4ff" : "#fff",
                     }}>
                     <div style={{ flex: 1, paddingRight: prop.images?.[0] ? 15 : 0, minWidth: 0 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, flexWrap: "wrap" }}>
-                        {showCommission && (
-                          <span style={{ display: "inline-block", fontSize: 11, color: "#fa5252", border: "1px solid #fa5252", padding: "1px 5px" }}>{prop.realtor_commission || prop.commission_type || "법정수수료"}</span>
-                        )}
-                        <span style={{ fontSize: 12, color: "#fa5252", fontWeight: "bold" }}>{prop.vacancy_no}</span>
-                        <span style={{ fontSize: 12, color: "#aaa" }}>{new Date(prop.created_at).toLocaleDateString('ko-KR', {year: 'numeric', month: '2-digit', day: '2-digit'}).replace(/\s/g, '')}</span>
-                        {isMasked && (
-                          <span onClick={(e) => { e.stopPropagation(); setIsAuthModalOpen(true); }} style={{ fontSize: 11, color: "#3b82f6", fontWeight: 700, background: "#eef6ff", padding: "3px 8px", borderRadius: 4, cursor: "pointer" }}>🔒 부동산회원 가입 시 무료 열람</span>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6, flexWrap: "wrap" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          {showCommission && (
+                            <span style={{ display: "inline-block", fontSize: 11, color: "#fa5252", border: "1px solid #fa5252", padding: "1px 5px" }}>{prop.realtor_commission || prop.commission_type || "법정수수료"}</span>
+                          )}
+                          <span style={{ fontSize: 12, color: "#fa5252", fontWeight: "bold" }}>{prop.vacancy_no}</span>
+                          <span style={{ fontSize: 12, color: "#aaa" }}>{new Date(prop.created_at).toLocaleDateString('ko-KR', {year: 'numeric', month: '2-digit', day: '2-digit'}).replace(/\s/g, '')}</span>
+                          {isMasked && (
+                            <span onClick={(e) => { e.stopPropagation(); setIsAuthModalOpen(true); }} style={{ fontSize: 11, color: "#3b82f6", fontWeight: 700, background: "#eef6ff", padding: "3px 8px", borderRadius: 4, cursor: "pointer" }}>🔒 가입 시 무료 열람</span>
+                          )}
+                        </div>
+                        {activeCategory === "wish" && wishTab === "wish" && (
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); setSelectedVacancyId(prop.id); setShowCategoryModal(true); }}
+                            style={{ background: '#f3f4f6', border: 'none', padding: '4px 10px', borderRadius: '4px', fontSize: '11px', fontWeight: 600, color: '#4b5563', cursor: 'pointer' }}
+                          >
+                            폴더 이동
+                          </button>
                         )}
                       </div>
                       
@@ -2566,6 +2633,20 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
         onClose={() => setIsAuthModalOpen(false)}
         initialTab="signup"
       />
+
+      {currentUser && showCategoryModal && selectedVacancyId && (
+        <BookmarkCategoryModal
+          isOpen={showCategoryModal}
+          onClose={() => {
+            setShowCategoryModal(false);
+            setSelectedVacancyId(null);
+          }}
+          userId={currentUser.id}
+          itemId={selectedVacancyId}
+          type="VACANCY"
+          onSuccess={() => alert("폴더 이동이 완료되었습니다.")}
+        />
+      )}
 
       <style>{`
         @keyframes toastFadeIn { from { opacity: 0; transform: translateX(-50%) translateY(-10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }

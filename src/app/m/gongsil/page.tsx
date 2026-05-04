@@ -7,6 +7,7 @@ import { toggleVacancyBookmark, getVacancyBookmarks } from "@/app/actions/bookma
 import { getPermissionLevel } from "@/utils/permissionCheck";
 import { handleLocationPermissionDenied, handleLocationUnavailable } from "@/utils/locationPermission";
 import AuthModal from "@/components/AuthModal";
+import BookmarkCategoryModal from "@/components/BookmarkCategoryModal";
 import MobileFilterBar from "./MobileFilterBar";
 import { useVacancyFilters } from "./filters/useVacancyFilters";
 import HomeHeader from "../_components/HomeHeader";
@@ -89,6 +90,7 @@ function MobileGongsilContent() {
   const [detailLoading, setDetailLoading] = useState(false);
   
   const [isBookmarked, setIsBookmarked] = useState(false);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showShareDropdown, setShowShareDropdown] = useState(false);
   const shareDropdownRef = useRef<HTMLDivElement>(null);
   const detailScrollRef = useRef<HTMLDivElement>(null);
@@ -241,7 +243,10 @@ function MobileGongsilContent() {
     const res = await toggleVacancyBookmark(currentUser.id, selectedVacancy.id);
     if (res.success) {
       setIsBookmarked(res.isBookmarked!);
-      alert(res.isBookmarked ? "매물을 찜했습니다." : "찜을 해제했습니다.");
+      alert(res.isBookmarked ? "기본 폴더에 저장되었습니다." : "찜을 해제했습니다.");
+      if (res.isBookmarked) {
+        setShowCategoryModal(true);
+      }
     } else {
       alert("처리 중 오류가 발생했습니다.");
     }
@@ -567,6 +572,16 @@ function MobileGongsilContent() {
 
   return (
     <div style={{ width: "100%", backgroundColor: isEmbedded ? "transparent" : "#F4F6F8", height: "calc(100vh - 60px)", display: "flex", flexDirection: "column", overflow: "hidden", position: "relative" }}>
+      {currentUser && showCategoryModal && selectedVacancy && (
+        <BookmarkCategoryModal
+          isOpen={showCategoryModal}
+          onClose={() => setShowCategoryModal(false)}
+          userId={currentUser.id}
+          itemId={selectedVacancy.id}
+          type="VACANCY"
+          onSuccess={() => alert("폴더 이동이 완료되었습니다.")}
+        />
+      )}
       {!isEmbedded && (
         <HomeHeader 
           bgColor="#4b89ff" 

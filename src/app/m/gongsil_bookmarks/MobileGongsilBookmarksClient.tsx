@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { toggleWishlistToDB } from "@/app/actions/vacancyUserData";
 import AuthModal from "@/components/AuthModal";
+import BookmarkCategoryModal from "@/components/BookmarkCategoryModal";
+import { getBookmarkCategories } from "@/app/actions/bookmark";
 
 function formatPrice(v: any): string {
   const dep = v.deposit || 0;
@@ -50,9 +52,16 @@ function formatPrice(v: any): string {
 export default function MobileGongsilBookmarksClient() {
   const router = useRouter();
   const [properties, setProperties] = useState<any[]>([]);
+  const [bookmarks, setBookmarks] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null | 'ALL'>('ALL');
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  
+  // 폴더 이동 모달 상태
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [selectedVacancyId, setSelectedVacancyId] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchBookmarks() {
@@ -65,36 +74,62 @@ export default function MobileGongsilBookmarksClient() {
       }
       setUser(user);
 
-      // Fetch wishlist IDs from Supabase
+      // Fetch categories
+      const catRes = await getBookmarkCategories(user.id, 'VACANCY');
+      if (catRes.success && catRes.categories) {
+        setCategories(catRes.categories);
+      }
+
+      // Fetch wishlist IDs and category_ids from Supabase
       const { data: wishData } = await supabase
         .from("vacancy_wishlist")
-        .select("vacancy_id")
+        .select("vacancy_id, category_id")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
-      const wishIds = (wishData || []).map((row: any) => row.vacancy_id);
+      if (wishData) {
+        setBookmarks(wishData);
+        const wishIds = wishData.map((row: any) => row.vacancy_id);
 
-      if (wishIds.length > 0) {
-        const { data: props } = await supabase
-          .from("vacancies")
-          .select("*, vacancy_photos(url, sort_order)")
-          .in("id", wishIds)
-          .neq("status", "DELETED");
+        if (wishIds.length > 0) {
+          const { data: props } = await supabase
+            .from("vacancies")
+            .select("*, vacancy_photos(url, sort_order)")
+            .in("id", wishIds)
+            .neq("status", "DELETED");
 
-        if (props) {
-          const sortedProps = wishIds.map((id: string) => props.find((p: any) => p.id === id)).filter(Boolean);
-          const withImages = sortedProps.map((p: any) => ({
-            ...p,
-            images: p.vacancy_photos ? [...p.vacancy_photos].sort((a:any, b:any) => a.sort_order - b.sort_order).map((pt:any) => pt.url) : []
-          }));
-          
-          setProperties(withImages);
+          if (props) {
+            const sortedProps = wishIds.map((id: string) => props.find((p: any) => p.id === id)).filter(Boolean);
+            const withImages = sortedProps.map((p: any) => ({
+              ...p,
+              images: p.vacancy_photos ? [...p.vacancy_photos].sort((a:any, b:any) => a.sort_order - b.sort_order).map((pt:any) => pt.url) : []
+            }));
+            
+            setProperties(withImages);
+          }
+        } else {
+          setProperties([]);
         }
       }
       setLoading(false);
     }
     fetchBookmarks();
-  }, [router]);
+  }, [router, showCategoryModal]);
+
+  // 선택된 카테고리에 맞는 매물 필터링
+  const filteredProperties = properties.filter(prop => {
+    if (selectedCategoryId === 'ALL') return true;
+    const bookmark = bookmarks.find(b => b.vacancy_id === prop.id);
+    if (!bookmark) return false;
+    return bookmark.category_id === selectedCategoryId;
+  });
+
+  const handleOpenMoveModal = (e: React.MouseEvent, vacancyId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setSelectedVacancyId(vacancyId);
+    setShowCategoryModal(true);
+  };
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", background: "#f9fafb", minHeight: "100vh" }}>
@@ -106,18 +141,55 @@ export default function MobileGongsilBookmarksClient() {
         <h2 style={{ fontSize: "18px", fontWeight: 800, color: "#111", margin: 0 }}>매물 <span style={{ color: "#f97316" }}>{properties.length}</span>개</h2>
       </div>
 
+      {/* Category Tabs */}
+      <div style={{ display: 'flex', overflowX: 'auto', background: '#fff', borderBottom: '1px solid #e5e7eb', padding: '10px 16px', gap: '8px', WebkitOverflowScrolling: 'touch' }} className="no-scrollbar">
+        <button
+          onClick={() => setSelectedCategoryId('ALL')}
+          style={{
+            padding: '6px 14px', borderRadius: '20px', fontSize: '13px', fontWeight: selectedCategoryId === 'ALL' ? 700 : 500,
+            background: selectedCategoryId === 'ALL' ? '#1e56a0' : '#f3f4f6', color: selectedCategoryId === 'ALL' ? '#fff' : '#4b5563',
+            border: 'none', cursor: 'pointer', whiteSpace: 'nowrap'
+          }}
+        >
+          전체
+        </button>
+        <button
+          onClick={() => setSelectedCategoryId(null)}
+          style={{
+            padding: '6px 14px', borderRadius: '20px', fontSize: '13px', fontWeight: selectedCategoryId === null ? 700 : 500,
+            background: selectedCategoryId === null ? '#1e56a0' : '#f3f4f6', color: selectedCategoryId === null ? '#fff' : '#4b5563',
+            border: 'none', cursor: 'pointer', whiteSpace: 'nowrap'
+          }}
+        >
+          기본 폴더
+        </button>
+        {categories.map(cat => (
+          <button
+            key={cat.id}
+            onClick={() => setSelectedCategoryId(cat.id)}
+            style={{
+              padding: '6px 14px', borderRadius: '20px', fontSize: '13px', fontWeight: selectedCategoryId === cat.id ? 700 : 500,
+              background: selectedCategoryId === cat.id ? '#1e56a0' : '#f3f4f6', color: selectedCategoryId === cat.id ? '#fff' : '#4b5563',
+              border: 'none', cursor: 'pointer', whiteSpace: 'nowrap'
+            }}
+          >
+            {cat.name}
+          </button>
+        ))}
+      </div>
+
       {/* List */}
       <div style={{ padding: "0 16px 20px", background: "#fff", flex: 1 }}>
         {loading ? (
           <div style={{ padding: "40px 0", textAlign: "center", color: "#9ca3af" }}>로딩 중...</div>
-        ) : properties.length === 0 ? (
+        ) : filteredProperties.length === 0 ? (
           <div style={{ textAlign: "center", padding: "60px 0", color: "#9ca3af" }}>
             <div style={{ fontSize: "40px", marginBottom: "16px" }}>🏢</div>
-            <p style={{ fontSize: "15px", fontWeight: 700, color: "#333", marginBottom: "8px" }}>찜한 매물이 없습니다.</p>
+            <p style={{ fontSize: "15px", fontWeight: 700, color: "#333", marginBottom: "8px" }}>해당 폴더에 찜한 매물이 없습니다.</p>
             <p style={{ fontSize: "14px" }}>지도에서 관심있는 매물의 하트를 눌러보세요.</p>
           </div>
         ) : (
-          properties.map((v: any) => {
+          filteredProperties.map((v: any) => {
             const cardAddr = v.building_name || [v.dong, v.sigungu].filter(Boolean).join(" ");
             return (
               <div
@@ -126,9 +198,17 @@ export default function MobileGongsilBookmarksClient() {
                 style={{ display: "flex", gap: "12px", padding: "16px 0", borderBottom: "1px solid #f3f4f6", cursor: "pointer", transition: "background 0.15s", background: "#fff" }}
               >
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px", flexWrap: "wrap" }}>
-                    <span style={{ fontSize: "13px", fontWeight: 700, color: "#ef4444" }}>{v.vacancy_no || '-'}</span>
-                    <span style={{ fontSize: "12px", color: "#9ca3af" }}>{v.created_at ? new Date(v.created_at).toLocaleDateString("ko-KR").slice(0, -1) : ""}</span>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                      <span style={{ fontSize: "13px", fontWeight: 700, color: "#ef4444" }}>{v.vacancy_no || '-'}</span>
+                      <span style={{ fontSize: "12px", color: "#9ca3af" }}>{v.created_at ? new Date(v.created_at).toLocaleDateString("ko-KR").slice(0, -1) : ""}</span>
+                    </div>
+                    <button 
+                      onClick={(e) => handleOpenMoveModal(e, v.id)}
+                      style={{ background: '#f3f4f6', border: 'none', padding: '4px 10px', borderRadius: '4px', fontSize: '11px', fontWeight: 600, color: '#4b5563', cursor: 'pointer' }}
+                    >
+                      폴더 이동
+                    </button>
                   </div>
 
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
@@ -165,6 +245,20 @@ export default function MobileGongsilBookmarksClient() {
           })
         )}
       </div>
+
+      {user && showCategoryModal && selectedVacancyId && (
+        <BookmarkCategoryModal
+          isOpen={showCategoryModal}
+          onClose={() => {
+            setShowCategoryModal(false);
+            setSelectedVacancyId(null);
+          }}
+          userId={user.id}
+          itemId={selectedVacancyId}
+          type="VACANCY"
+          onSuccess={() => alert("폴더 이동이 완료되었습니다.")}
+        />
+      )}
 
       {isAuthModalOpen && (
         <AuthModal
