@@ -383,7 +383,8 @@ export default function GongsilTalkOverlay() {
 
   return (
     <>
-      {/* ──── 플로팅 버튼 ──── */}
+      {/* ──── 플로팅 버튼 (임시 숨김 처리) ──── */}
+      {/* 
       {!isOpen && (
         <button
           className="talk-floating-btn"
@@ -406,16 +407,15 @@ export default function GongsilTalkOverlay() {
           <svg width="28" height="28" viewBox="0 0 24 24" fill="#fff" stroke="none">
             <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
           </svg>
-          {/* 안읽음 뱃지 */}
           {totalUnread > 0 && (
             <span style={{ position: "absolute", top: -2, right: -2, minWidth: 20, height: 20, background: "#ef4444", color: "#fff", fontSize: 11, fontWeight: 700, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 6px", border: "2px solid #fff" }}>
               {totalUnread}
             </span>
           )}
-          {/* 라벨 */}
           <span style={{ position: "absolute", bottom: -20, left: "50%", transform: "translateX(-50%)", fontSize: 10, fontWeight: 700, color: NAVY, whiteSpace: "nowrap" }}>TALK</span>
         </button>
       )}
+      */}
 
       {/* ──── 슬라이드 오버레이 ──── */}
       <div 
