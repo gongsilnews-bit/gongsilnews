@@ -345,7 +345,7 @@ function MobileVacancyWrite() {
   const inputStyle: React.CSSProperties = { width:"100%", height:44, padding:"0 12px", border:"1px solid #d1d5db", borderRadius:10, fontSize:15, outline:"none", background:"#fff" };
   const labelStyle: React.CSSProperties = { fontSize:13, fontWeight:700, color:"#374151", marginBottom:6, display:"block" };
   const SBtn = ({label,sel,onClick}:{label:string;sel:boolean;onClick:()=>void}) => (
-    <button type="button" onClick={onClick} style={{ flex:1, height:42, border: sel?"2px solid #2563eb":"1px solid #d1d5db", borderRadius:10, background: sel?"#eff6ff":"#fff", color: sel?"#2563eb":"#374151", fontSize:14, fontWeight: sel?700:500, cursor:"pointer" }}>{label}</button>
+    <button type="button" onClick={onClick} style={{ flex:1, minHeight:42, padding:"8px 4px", border: sel?"2px solid #2563eb":"1px solid #d1d5db", borderRadius:10, background: sel?"#eff6ff":"#fff", color: sel?"#2563eb":"#374151", fontSize:14, fontWeight: sel?700:500, cursor:"pointer", wordBreak:"keep-all", lineHeight:1.3, textAlign:"center" }}>{label}</button>
   );
 
   if (!authChecked || loadingEdit) return (
@@ -364,16 +364,20 @@ function MobileVacancyWrite() {
         <button onClick={() => router.push("/m/admin/vacancy")} style={{ background:"none", border:"none", cursor:"pointer", padding:4, display:"flex" }}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M15 18L9 12L15 6" stroke="#333" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </button>
-        <h1 style={{ fontSize:18, fontWeight:800, color:"#111", margin:0 }}>{editId ? "공실수정" : "공실등록"}</h1>
+        <h1 style={{ fontSize:18, fontWeight:800, color:"#111", margin:0, flex:1 }}>{editId ? "공실수정" : "공실등록"}</h1>
+        <button type="button" disabled={submitting} onClick={()=>handleSubmit("DRAFT")}
+          style={{ height:36, padding:"0 14px", background:"#64748b", color:"#fff", border:"none", borderRadius:8, fontSize:13, fontWeight:700, cursor: submitting?"not-allowed":"pointer", flexShrink:0 }}>
+          임시저장
+        </button>
       </div>
 
-      <div style={{ padding:"16px 16px 120px" }}>
+      <div style={{ padding:"16px 16px 32px" }}>
         {/* 1. 매물분류 */}
         <div style={{ background:"#fff", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.05)" }}>
           <div style={{ fontSize:16, fontWeight:800, color:"#111", marginBottom:14 }}>📋 매물분류</div>
           <label style={labelStyle}>대분류</label>
-          <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginBottom:12 }}>
-            {Object.keys(SUB_CATEGORIES).map(t => <SBtn key={t} label={t.length>8?t.slice(0,8)+"..":t} sel={propertyType===t} onClick={() => { setPropertyType(t); setSubCategory(SUB_CATEGORIES[t][0]); }} />)}
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6, marginBottom:12 }}>
+            {Object.keys(SUB_CATEGORIES).map(t => <SBtn key={t} label={t} sel={propertyType===t} onClick={() => { setPropertyType(t); setSubCategory(SUB_CATEGORIES[t][0]); }} />)}
           </div>
           <label style={labelStyle}>소분류</label>
           <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
@@ -665,15 +669,11 @@ function MobileVacancyWrite() {
           </div>
         )}
 
-        {/* 저장 버튼 */}
-        <div style={{ position: "fixed", bottom: 65, left: 0, right: 0, background: "#fff", borderTop: "1px solid #e5e7eb", padding: "12px 16px", display: "flex", gap: 10, zIndex: 50 }}>
+        {/* 등록 버튼 (인라인) */}
+        <div style={{ marginTop: 8 }}>
           <button type="button" disabled={submitting} onClick={()=>handleSubmit("ACTIVE")}
-            style={{ flex:1, height:52, background: submitting?"#9ca3af":"linear-gradient(135deg,#10b981,#059669)", color:"#fff", border:"none", borderRadius:12, fontSize:16, fontWeight:800, cursor: submitting?"not-allowed":"pointer", boxShadow:"0 4px 12px rgba(16,185,129,0.3)" }}>
+            style={{ width:"100%", height:56, background: submitting?"#9ca3af":"linear-gradient(135deg,#10b981,#059669)", color:"#fff", border:"none", borderRadius:14, fontSize:17, fontWeight:800, cursor: submitting?"not-allowed":"pointer", boxShadow:"0 4px 12px rgba(16,185,129,0.3)" }}>
             {submitting ? "처리 중..." : editId ? "✅ 수정완료" : "✅ 등록 (바로발행)"}
-          </button>
-          <button type="button" disabled={submitting} onClick={()=>handleSubmit("DRAFT")}
-            style={{ height:52, padding:"0 20px", background:"#64748b", color:"#fff", border:"none", borderRadius:12, fontSize:14, fontWeight:700, cursor: submitting?"not-allowed":"pointer" }}>
-            임시저장
           </button>
         </div>
       </div>
