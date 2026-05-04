@@ -440,8 +440,14 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     kakaoMapRef.current.panTo(position);
   }, []);
 
-  // Handle ?id=X from main page navigation
+  // Handle ?id=X and ?tab=wish from main page navigation
   useEffect(() => {
+    const tabParam = searchParams.get("tab");
+    if (tabParam === "wish") {
+      setActiveCategory("wish");
+      setWishTab("wish");
+    }
+
     const idParam = searchParams.get("id");
     if (idParam && dbVacancies.length > 0) {
       const target = dbVacancies.find(v => String(v.id) === String(idParam));
