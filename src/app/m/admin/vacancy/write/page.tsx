@@ -249,11 +249,20 @@ function MobileVacancyWrite() {
     script.onload = () => {
       new (window as any).daum.Postcode({
         oncomplete: async (data: any) => {
-          setSido(data.sido || "");
-          setSigungu(data.sigungu || "");
-          setDong(data.bname || "");
+          const parsedSido = data.sido || "";
+          const parsedSigungu = data.sigungu || "";
+          const parsedDong = data.bname || "";
+          setSido(parsedSido);
+          setSigungu(parsedSigungu);
+          setDong(parsedDong);
           setBuildingName(data.buildingName || "");
-          setDetailAddr(data.jibunAddress || data.address || "");
+          
+          let remainingAddr = data.roadAddress || data.jibunAddress || data.address || "";
+          const prefixes = [parsedSido, parsedSigungu, parsedDong].filter(Boolean);
+          prefixes.forEach(p => {
+            if (remainingAddr.startsWith(p)) remainingAddr = remainingAddr.slice(p.length).trim();
+          });
+          setDetailAddr(remainingAddr);
           // 자동 좌표 설정
           const addr = data.address || data.jibunAddress || "";
           if (addr) {
@@ -274,11 +283,9 @@ function MobileVacancyWrite() {
   };
 
   const handleGeocode = async () => {
-    // detailAddr에 이미 전체 주소가 담겨 있으면 그대로 사용, 아니면 조합
-    const addr = detailAddr
-      ? detailAddr
-      : [sido, sigungu, dong, buildingName].filter(Boolean).join(" ");
-    if (!addr) { alert("주소를 입력해주세요."); return; }
+    // sido, sigungu, dong, detailAddr 를 합쳐서 좌표 검색 (건물명은 좌표 검색 시 오류 유발 가능성이 높아 제외)
+    const addr = [sido, sigungu, dong, detailAddr].filter(Boolean).join(" ");
+    if (!addr.trim()) { alert("주소를 입력해주세요."); return; }
     const res = await geocodeAddress(addr);
     if (res.success && res.lat && res.lng) { 
       setCoords({lat:res.lat, lng:res.lng}); 
