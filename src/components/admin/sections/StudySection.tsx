@@ -94,7 +94,7 @@ export default function StudySection({ theme }: AdminSectionProps) {
 
   const formatPrice = (p: number) => {
     if (!p) return "무료";
-    return p.toLocaleString() + " 원";
+    return p.toLocaleString() + " P";
   };
 
   if (showWriteForm) {
