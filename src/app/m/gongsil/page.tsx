@@ -145,6 +145,7 @@ function MobileGongsilContent() {
   // 다이렉트 뷰 상태 (URL에 id가 있는 경우 지도를 가리고 상세 정보를 보여줌)
   const [isDirectView, setIsDirectView] = useState(searchParams.has("id"));
   const [isEmbedded, setIsEmbedded] = useState(searchParams.get("embed") === "true");
+  const [isLocating, setIsLocating] = useState(false);
 
   // 사용자 권한 확인
   useEffect(() => {
@@ -662,14 +663,17 @@ function MobileGongsilContent() {
             onClick={(e) => {
               e.stopPropagation();
               if (navigator.geolocation && kakaoMapRef.current) {
+                setIsLocating(true);
                 navigator.geolocation.getCurrentPosition(
                   (pos) => {
                     const kakao = (window as any).kakao;
                     kakaoMapRef.current.panTo(new kakao.maps.LatLng(pos.coords.latitude, pos.coords.longitude));
                     kakaoMapRef.current.setLevel(5);
+                    setIsLocating(false);
                   },
                   (err) => {
                     console.error("Geolocation error:", err);
+                    setIsLocating(false);
                     handleLocationPermissionDenied();
                   },
                   { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
@@ -680,9 +684,35 @@ function MobileGongsilContent() {
             }}
             style={{ position: "absolute", top: "16px", right: "16px", zIndex: 20, background: "#1a4282", color: "#fff", border: "none", borderRadius: "20px", padding: "8px 14px", fontSize: "13px", fontWeight: 700, boxShadow: "0 4px 12px rgba(26,66,130,0.4)", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+            {isLocating ? (
+              <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+            ) : (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+            )}
             내 위치
           </button>
+        )}
+
+        {/* 위치 검색 로딩 오버레이 */}
+        {isLocating && (
+          <div style={{ position: "fixed", inset: 0, background: "rgba(255,255,255,0.85)", backdropFilter: "blur(4px)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", zIndex: 9999 }}>
+            <style>{`
+              @keyframes pulseRing {
+                0% { transform: scale(0.8); opacity: 0.5; }
+                100% { transform: scale(1.5); opacity: 0; }
+              }
+            `}</style>
+            <div style={{ position: "relative", width: "60px", height: "60px", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "16px" }}>
+              <div style={{ position: "absolute", width: "100%", height: "100%", borderRadius: "50%", background: "#4b89ff", animation: "pulseRing 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite" }} />
+              <div style={{ position: "relative", width: "32px", height: "32px", borderRadius: "50%", background: "#1a4282", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+              </div>
+            </div>
+            <h3 style={{ fontSize: "18px", fontWeight: 800, color: "#1a2e50", marginBottom: "8px" }}>현재 위치를 찾고 있습니다</h3>
+            <p style={{ fontSize: "14px", color: "#6b7280", textAlign: "center", lineHeight: 1.5 }}>
+              GPS 상태에 따라<br/>수 초 정도 소요될 수 있습니다.
+            </p>
+          </div>
         )}
       </div>
 
