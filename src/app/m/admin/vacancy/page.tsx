@@ -51,11 +51,9 @@ function MobileVacancyAdmin() {
   }, [memberId]);
 
   const filtered = vacancies.filter(v => {
-    if (filter === "승인대기" && v.status !== "PENDING") return false;
     if (filter === "광고중" && v.status !== "ACTIVE") return false;
     if (filter === "광고종료" && v.status !== "STOPPED") return false;
-    if (filter === "작성중" && v.status !== "DRAFT") return false;
-    if (filter === "반려" && v.status !== "REJECTED") return false;
+    if (filter === "임시저장" && v.status !== "DRAFT") return false;
     if (activeKeyword) {
       const k = activeKeyword.toLowerCase();
       const addr = [v.sido, v.sigungu, v.dong, v.building_name].filter(Boolean).join(" ").toLowerCase();
@@ -88,20 +86,16 @@ function MobileVacancyAdmin() {
   };
 
   const statusInfo: Record<string, { bg: string; label: string }> = {
-    PENDING: { bg: "#8b5cf6", label: "승인대기" },
     ACTIVE: { bg: "#10b981", label: "광고중" },
     STOPPED: { bg: "#ef4444", label: "광고종료" },
-    DRAFT: { bg: "#9ca3af", label: "작성중" },
-    REJECTED: { bg: "#ef4444", label: "반려됨" },
+    DRAFT: { bg: "#9ca3af", label: "임시저장" },
   };
 
   const tabs = [
     { key: "전체", count: vacancies.length },
-    { key: "승인대기", count: vacancies.filter(v => v.status === "PENDING").length },
     { key: "광고중", count: vacancies.filter(v => v.status === "ACTIVE").length },
     { key: "광고종료", count: vacancies.filter(v => v.status === "STOPPED").length },
-    { key: "작성중", count: vacancies.filter(v => v.status === "DRAFT").length },
-    { key: "반려", count: vacancies.filter(v => v.status === "REJECTED").length },
+    { key: "임시저장", count: vacancies.filter(v => v.status === "DRAFT").length },
   ];
 
   if (!authChecked) {
@@ -169,7 +163,7 @@ function MobileVacancyAdmin() {
           >
             {tab.key}
             <span style={{
-              background: tab.key === "전체" ? "#e5e7eb" : tab.key === "승인대기" ? "#8b5cf6" : tab.key === "광고중" ? "#10b981" : tab.key === "광고종료" ? "#ef4444" : tab.key === "작성중" ? "#9ca3af" : "#ef4444",
+              background: tab.key === "전체" ? "#e5e7eb" : tab.key === "광고중" ? "#10b981" : tab.key === "광고종료" ? "#ef4444" : tab.key === "임시저장" ? "#9ca3af" : "#ef4444",
               color: tab.key === "전체" ? "#4b5563" : "#fff",
               padding: "2px 7px", borderRadius: 10, fontSize: 11, fontWeight: 700,
             }}>
@@ -209,20 +203,19 @@ function MobileVacancyAdmin() {
               {/* 상단: 상태 + 매물종류 + 번호 */}
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  {(row.status === "ACTIVE" || row.status === "STOPPED" || row.status === "PENDING") ? (
+                  {(row.status === "ACTIVE" || row.status === "STOPPED") ? (
                     <button
                       onClick={async () => {
                         const isActive = row.status === "ACTIVE";
-                        const isPending = row.status === "PENDING";
                         const msg = isActive ? "광고를 종료하시겠습니까?" : "광고를 시작하시겠습니까?";
                         if (!confirm(msg)) return;
                         const newStatus = isActive ? "STOPPED" : "ACTIVE";
                         const res = await updateVacancyStatus(row.id, newStatus);
                         if (res.success) fetchVacancies();
                       }}
-                      style={{ padding: "4px 10px", background: row.status === "PENDING" ? "#8b5cf6" : st.bg, color: "#fff", borderRadius: 6, fontSize: 12, fontWeight: 700, border: "none", cursor: "pointer" }}
+                      style={{ padding: "4px 10px", background: st.bg, color: "#fff", borderRadius: 6, fontSize: 12, fontWeight: 700, border: "none", cursor: "pointer" }}
                     >
-                      {row.status === "PENDING" ? "승인대기" : st.label}
+                      {st.label}
                     </button>
                   ) : (
                     <span style={{ padding: "4px 10px", background: st.bg, color: "#fff", borderRadius: 6, fontSize: 12, fontWeight: 700 }}>{st.label}</span>
@@ -254,49 +247,8 @@ function MobileVacancyAdmin() {
                 <span>{dateStr} 등록</span>
               </div>
 
-              {/* 반려 사유 */}
-              {row.status === "REJECTED" && row.reject_reason && (
-                <div style={{ padding: "8px 12px", background: "#fef2f2", borderRadius: 8, border: "1px solid #fecaca", marginBottom: 10, fontSize: 12, color: "#dc2626", fontWeight: 600, lineHeight: 1.4 }}>
-                  ⚠️ 반려 사유: {row.reject_reason}
-                </div>
-              )}
-
               {/* 액션 버튼 */}
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                {/* 특수 버튼 (승인/반려, 재승인) - 조건부 렌더링 */}
-                {((isAdmin && row.status === "PENDING") || row.status === "REJECTED") && (
-                  <div style={{ display: "flex", gap: 6 }}>
-                    {isAdmin && row.status === "PENDING" && (
-                      <>
-                        <button onClick={async () => {
-                          if (!confirm("이 공실을 승인하시겠습니까?")) return;
-                          const res = await updateVacancyStatus(row.id, "ACTIVE");
-                          if (res.success) { alert("승인되었습니다."); fetchVacancies(); }
-                        }} style={{ flex: 1, height: 36, background: "#10b981", color: "#fff", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                          ✅ 승인
-                        </button>
-                        <button onClick={async () => {
-                          const reason = prompt("반려 사유를 입력해주세요:");
-                          if (reason === null) return;
-                          const res = await updateVacancy(row.id, { status: "REJECTED", reject_reason: reason });
-                          if (res.success) { alert("반려되었습니다."); fetchVacancies(); }
-                        }} style={{ flex: 1, height: 36, background: "#ef4444", color: "#fff", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                          ❌ 반려
-                        </button>
-                      </>
-                    )}
-                    {row.status === "REJECTED" && (
-                      <button onClick={async () => {
-                        if (!confirm("이 공실을 재승인 신청하시겠습니까?")) return;
-                        const res = await updateVacancyStatus(row.id, "PENDING");
-                        if (res.success) fetchVacancies();
-                      }} style={{ flex: 1, height: 36, background: "#8b5cf6", color: "#fff", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                        📋 재승인
-                      </button>
-                    )}
-                  </div>
-                )}
-                
                 {/* 기본 3종 버튼 (미리보기, 수정, 삭제) - 항상 동일한 크기로 한 줄에 노출 */}
                 <div style={{ display: "flex", gap: 6 }}>
                   <button onClick={() => window.open(`/m/gongsil?id=${row.id}`, "_blank")} style={{ flex: 1, height: 36, background: "#f0f9ff", color: "#2563eb", border: "1px solid #bfdbfe", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>

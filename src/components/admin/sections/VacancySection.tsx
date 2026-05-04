@@ -108,7 +108,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
     // tab filter
     if (activeTab === "광고중" && v.status !== "ACTIVE") return false;
     if (activeTab === "광고종료" && v.status !== "STOPPED") return false;
-    if (activeTab === "작성중" && v.status !== "DRAFT") return false;
+    if (activeTab === "임시저장" && v.status !== "DRAFT") return false;
     
     // search filters
     if (activeFilters.vacancyNo && !String(v.vacancy_no || "").includes(activeFilters.vacancyNo)) return false;
@@ -152,12 +152,12 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
       <div style={{ background: cardBg, borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", overflow: "hidden" }}>
         {/* 필터 탭 */}
         <div style={{ display: "flex", borderBottom: `1px solid ${border}`, background: darkMode ? "#2c2d31" : "#fafafa", padding: "0 16px" }}>
-          {["전체", "광고중", "광고종료", "작성중"].map(tab => {
+          {["전체", "광고중", "광고종료", "임시저장"].map(tab => {
             let count = 0;
             if (tab === "전체") count = dbVacancies.length;
             else if (tab === "광고중") count = dbVacancies.filter(v => v.status === "ACTIVE").length;
             else if (tab === "광고종료") count = dbVacancies.filter(v => v.status === "STOPPED").length;
-            else if (tab === "작성중") count = dbVacancies.filter(v => v.status === "DRAFT").length;
+            else if (tab === "임시저장") count = dbVacancies.filter(v => v.status === "DRAFT").length;
 
             return (
               <button key={tab} onClick={() => {
@@ -168,7 +168,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                 style={{ border: "none", background: "none", padding: "16px 20px", fontSize: 14, fontWeight: activeTab === tab ? 800 : 600, color: activeTab === tab ? "#3b82f6" : textSecondary, borderBottom: activeTab === tab ? "3px solid #3b82f6" : "3px solid transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
                 {tab}
                 <span style={{ 
-                  background: tab === "전체" ? "#e5e7eb" : tab === "광고중" ? "#10b981" : tab === "광고종료" ? "#ef4444" : tab === "작성중" ? "#9ca3af" : "#ef4444",
+                  background: tab === "전체" ? "#e5e7eb" : tab === "광고중" ? "#10b981" : tab === "광고종료" ? "#ef4444" : tab === "임시저장" ? "#9ca3af" : "#ef4444",
                   color: tab === "전체" ? "#4b5563" : "#fff", padding: "2px 8px", borderRadius: 10, fontSize: 11, fontWeight: 700 
                 }}>{count}</span>
               </button>
@@ -274,7 +274,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                     <td style={{ padding: "16px 4px", textAlign: "center", verticalAlign: "middle" }}>
                       {canToggleStatus ? (
                         row.status === 'DRAFT' ? (
-                          <span style={{ display: "inline-block", padding: "4px 8px", borderRadius: 4, background: "#9ca3af", color: "#fff", fontWeight: 700, fontSize: 12 }}>작성중</span>
+                          <span style={{ display: "inline-block", padding: "4px 8px", borderRadius: 4, background: "#9ca3af", color: "#fff", fontWeight: 700, fontSize: 12 }}>임시저장</span>
                         ) : (
                           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
                             <button onClick={async () => {
@@ -291,7 +291,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                         )
                       ) : (
                         row.status === 'DRAFT' ? (
-                          <span style={{ display: "inline-block", padding: "4px 8px", borderRadius: 4, background: "#9ca3af", color: "#fff", fontWeight: 700, fontSize: 12 }}>작성중</span>
+                          <span style={{ display: "inline-block", padding: "4px 8px", borderRadius: 4, background: "#9ca3af", color: "#fff", fontWeight: 700, fontSize: 12 }}>임시저장</span>
                         ) : isActive ? (
                           <span style={{ display: "inline-block", padding: "4px 8px", borderRadius: 4, background: "#10b981", color: "#fff", fontWeight: 700, fontSize: 12 }}>광고중</span>
                         ) : (

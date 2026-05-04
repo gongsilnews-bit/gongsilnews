@@ -1580,7 +1580,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                       fontSize: 16, fontWeight: 700, cursor: submitting ? "not-allowed" : "pointer",
                     }}
                   >
-                    임시저장 (작성중)
+                    임시저장
                   </button>
                   <button
                     type="button"
