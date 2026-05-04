@@ -332,7 +332,7 @@ function MobileArticleWrite() {
   return (
     <div style={{ minHeight: "100dvh", background: "#f4f5f7", fontFamily: "'Pretendard Variable', -apple-system, sans-serif" }}>
       {/* 상단 헤더 */}
-      <div style={{ position: "sticky", top: 0, zIndex: 50, background: "#fff", borderBottom: "1px solid #e5e7eb", padding: "0 16px", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <div style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 50, background: "#fff", borderBottom: "1px solid #e5e7eb", padding: "0 16px", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <button onClick={() => { if (confirm("작성 중인 내용이 사라집니다. 나가시겠습니까?")) router.push("/m/admin/article"); }} style={{ background: "none", border: "none", cursor: "pointer", padding: 4, display: "flex" }}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M15 18L9 12L15 6" stroke="#333" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -358,9 +358,10 @@ function MobileArticleWrite() {
           </button>
         </div>
       </div>
+      <div style={{ height: 56 }} />
 
       {/* 폼 영역 */}
-      <div style={{ padding: "16px 16px 120px" }}>
+      <div style={{ padding: "16px 16px 32px" }}>
 
         {/* 섹션 선택 */}
         <div style={{ marginBottom: 16 }}>
@@ -626,23 +627,7 @@ function MobileArticleWrite() {
         </div>
       </div>
 
-      {/* 하단 고정 바 */}
-      <div style={{ position: "fixed", bottom: 65, left: 0, right: 0, background: "#fff", borderTop: "1px solid #e5e7eb", padding: "12px 16px", display: "flex", gap: 10, zIndex: 50 }}>
-        <button
-          onClick={() => handleSave(false)}
-          disabled={saving}
-          style={{ flex: 1, height: 50, background: "#fff", color: "#374151", border: "1px solid #d1d5db", borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: "pointer" }}
-        >
-          💾 임시저장
-        </button>
-        <button
-          onClick={() => handleSave(true)}
-          disabled={saving}
-          style={{ flex: 2, height: 50, background: "linear-gradient(135deg, #3b82f6, #2563eb)", color: "#fff", border: "none", borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: "pointer", boxShadow: "0 4px 12px rgba(59,130,246,0.3)" }}
-        >
-          📋 승인신청
-        </button>
-      </div>
+
     </div>
   );
 }
