@@ -595,6 +595,7 @@ function MobileGongsilContent() {
           sloganPrefix="부동산이 무료 열람하는 "
           sloganHighlight="공동중개네트워크"
           highlightColor="#fcd34d"
+          homeUrl="/m/gongsil"
         />
       )}
       

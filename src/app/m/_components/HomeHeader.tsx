@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from "next/link";
 import dynamic from 'next/dynamic';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 
 const SearchOverlay = dynamic(() => import('./header/SearchOverlay'), { ssr: false });
 
@@ -13,6 +13,7 @@ interface HomeHeaderProps {
   sloganPrefix?: string;
   sloganHighlight?: string;
   highlightColor?: string;
+  homeUrl?: string;
 }
 
 export default function HomeHeader({
@@ -20,10 +21,12 @@ export default function HomeHeader({
   logoText = '공실뉴스',
   sloganPrefix = '11만 부동산을 위한',
   sloganHighlight = '무료 정보 채널',
-  highlightColor = '#fcd34d'
+  highlightColor = '#fcd34d',
+  homeUrl = '/m'
 }: HomeHeaderProps = {}) {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
 
   // 로그인 성공 시 돌아오면 자동으로 메뉴 열기
   useEffect(() => {
@@ -36,6 +39,13 @@ export default function HomeHeader({
       return () => clearTimeout(timer);
     }
   }, [router]);
+
+  const handleLogoClick = (e: React.MouseEvent) => {
+    if (pathname === homeUrl || pathname + '/' === homeUrl || pathname === homeUrl + '/') {
+      e.preventDefault();
+      window.location.href = homeUrl;
+    }
+  };
 
   return (
     <>
@@ -58,7 +68,7 @@ export default function HomeHeader({
       >
         {/* 좌측 로고 & 슬로건 */}
         <div style={{ display: 'flex', alignItems: 'baseline', gap: '14px', paddingTop: '2px' }}>
-          <Link href="/m" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
+          <Link href={homeUrl} onClick={handleLogoClick} style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
             <span style={{ color: '#ffffff', fontSize: '22px', fontWeight: 900, fontStyle: 'italic', letterSpacing: '-1px', lineHeight: 1 }}>
               {logoText}
             </span>

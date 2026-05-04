@@ -18,6 +18,7 @@ export default async function MobileStudyPage() {
         sloganPrefix="AI시대 부동산중개에 필요한 "
         sloganHighlight="마케팅 특강"
         highlightColor="#fcd34d"
+        homeUrl="/m/study"
       />
 
       {/* 상단 타이틀 영역 */}
