@@ -37,10 +37,10 @@ export async function generatePropertyDescription(data: any) {
     // 3. Gemini 처리를 위한 프롬프트 가공
     const prompt = `
 당신은 최고의 실력을 가진 전문 공인중개사 카피라이터입니다. 
-당신의 목표는 아래 제공되는 부동산 매물 정보를 바탕으로, 고객의 마음을 사로잡을 수 있는 매력적이고 자연스러운 '전달사항(설명글)'을 작성하는 것입니다.
+당신의 목표는 아래 제공되는 부동산 공실광고 정보를 바탕으로, 고객의 마음을 사로잡을 수 있는 매력적이고 자연스러운 '전달사항(설명글)'을 작성하는 것입니다.
 
-[매물 데이터]
-- 매물유형: ${data.propertyType} (${data.subCategory})
+[공실광고 데이터]
+- 공실광고유형: ${data.propertyType} (${data.subCategory})
 - 거래종류: ${data.tradeType}
 - 금액: 보증금/매매가 ${data.deposit}만원 ${data.monthly ? `, 월세 ${data.monthly}만원` : ''}
 - 관리비: ${data.maintenance ? data.maintenance + "만원" : "없음"}
@@ -56,7 +56,7 @@ export async function generatePropertyDescription(data: any) {
 [작성 지침]
 1. 제목이나 말머리 없이 본문 내용만 작성하세요.
 2. 딱딱한 정보 나열이 아니라 감성적이고 전문적인 중개사 톤(해요체/하십시오체)으로 작성하세요.
-3. 매물의 장점(뷰, 방향, 층수, 옵션, 주변 인프라 등)을 극대화하여 표현하세요.
+3. 공실광고의 장점(뷰, 방향, 층수, 옵션, 주변 인프라 등)을 극대화하여 표현하세요.
 4. 마지막엔 적절한 해시태그(예: #채광좋은방 #즉시입주 #더블역세권 등)를 3~5개 정도 예쁘게 달아주세요.
 5. 너무 길지 않도록 핵심만 간결하게(약 4~5문장 내외) 정리하세요.
 `;

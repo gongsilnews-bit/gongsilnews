@@ -187,11 +187,11 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
   };
 
   if (loading) return <div className="gdv-page-body"><div style={{ textAlign: 'center', padding: '100px 20px', color: '#aaa', fontSize: 18 }}>⏳ 공실 데이터를 불러오는 중...</div></div>;
-  if (!vacancy) return <div className="gdv-page-body"><div style={{ textAlign: 'center', padding: '100px 20px', color: '#aaa', fontSize: 18 }}>매물을 불러올 수 없습니다.</div></div>;
+  if (!vacancy) return <div className="gdv-page-body"><div style={{ textAlign: 'center', padding: '100px 20px', color: '#aaa', fontSize: 18 }}>공실광고을 불러올 수 없습니다.</div></div>;
 
   const hasImages = vacancy.images && vacancy.images.length > 0;
   const images = hasImages ? vacancy.images : [];
-  const propName = vacancy.building_name || vacancy.property_type || '공실매물';
+  const propName = vacancy.building_name || vacancy.property_type || '공실공실광고';
   const isAdOn = vacancy.status === 'ACTIVE' || vacancy.status === 'PENDING';
   
   // Use the exact same formatAmount as GongsilClient (deposit is stored in 원)
@@ -272,7 +272,7 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
             {/* Gallery — only show when images exist */}
             {hasImages && (
               <div className="gdv-gallery-wrap">
-                <img src={images[galleryIndex]} alt="매물사진" />
+                <img src={images[galleryIndex]} alt="공실광고사진" />
                 {images.length > 1 && (
                   <>
                     <button className="gdv-gallery-nav-btn gdv-prev" onClick={() => setGalleryIndex((i) => (i - 1 + images.length) % images.length)}>〈</button>
@@ -320,7 +320,7 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
 
             {/* Tabs */}
             <div className="gdv-detail-tabs">
-              <div className={`gdv-tab-item ${activeTab === 'info' ? 'gdv-active' : ''}`} onClick={() => setActiveTab('info')}>매물정보</div>
+              <div className={`gdv-tab-item ${activeTab === 'info' ? 'gdv-active' : ''}`} onClick={() => setActiveTab('info')}>공실광고정보</div>
               <div className={`gdv-tab-item ${activeTab === 'realtor' ? 'gdv-active' : ''}`} onClick={() => setActiveTab('realtor')}>등록자정보</div>
             </div>
             
@@ -329,9 +329,9 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
               <div>
                 {/* Info Grid */}
                 <div className="gdv-info-grid">
-                  <div className="gdv-info-label">매물번호</div><div className="gdv-info-value">{vacancy.vacancy_no || '-'}</div>
+                  <div className="gdv-info-label">공실광고번호</div><div className="gdv-info-value">{vacancy.vacancy_no || '-'}</div>
                   <div className="gdv-info-label">소재지</div><div className="gdv-info-value">{[vacancy.sido, vacancy.sigungu, vacancy.dong, vacancy.detail_address].filter(Boolean).join(' ')}</div>
-                  <div className="gdv-info-label">매물특징</div><div className="gdv-info-value">{propName}</div>
+                  <div className="gdv-info-label">공실광고특징</div><div className="gdv-info-value">{propName}</div>
                   <div className="gdv-info-label">공급/전용면적</div><div className="gdv-info-value">{areaDisplay}</div>
                   <div className="gdv-info-label">해당층/총층</div><div className="gdv-info-value">{vacancy.current_floor||'-'}층 / {vacancy.total_floor||'-'}층</div>
                   <div className="gdv-info-label">방/욕실수</div><div className="gdv-info-value">{vacancy.room_count||'-'}개 / {vacancy.bathroom_count||'-'}개</div>
@@ -448,7 +448,7 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
                       <div key={vp.id}
                         style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '14px 16px', borderBottom: '1px solid #f0f0f0', background: vp.id === vacancyId ? '#eaf4ff' : '#fff' }}>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 14, fontWeight: 'bold', color: '#111', marginBottom: 3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{vp.building_name || vp.dong || '매물'}</div>
+                          <div style={{ fontSize: 14, fontWeight: 'bold', color: '#111', marginBottom: 3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{vp.building_name || vp.dong || '공실광고'}</div>
                           <div style={{ fontSize: 14, fontWeight: 800, color: '#1a73e8', marginBottom: 3 }}>{(() => {
                             const dep = vp.deposit || 0;
                             const monthly = vp.monthly_rent ? Math.round(vp.monthly_rent / 10000) : 0;
@@ -467,9 +467,9 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
 
             {/* Inquiry / Comment Section (below tabs) */}
             <div className="gdv-comment-section">
-              <div className="gdv-comment-header">📝 매물 문의 / 댓글</div>
+              <div className="gdv-comment-header">📝 공실광고 문의 / 댓글</div>
               <div className="gdv-comment-input-box">
-                <textarea value={inquiryInput} onChange={e => setInquiryInput(e.target.value)} placeholder="이 매물에 대해 궁금한 점을 남겨주세요." />
+                <textarea value={inquiryInput} onChange={e => setInquiryInput(e.target.value)} placeholder="이 공실광고에 대해 궁금한 점을 남겨주세요." />
                 <div className="gdv-comment-btn-row">
                   <span style={{ fontSize: 11, color: '#aaa' }}>비밀 댓글로 작성됩니다.</span>
                   <button className="gdv-comment-submit" onClick={submitInquiry}>등록</button>

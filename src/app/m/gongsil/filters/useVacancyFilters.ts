@@ -37,7 +37,7 @@ export function useVacancyFilters(initialVacancies: any[]) {
 
   const filteredVacancies = useMemo(() => {
     return initialVacancies.filter(v => {
-      // 1. 매물 유형
+      // 1. 공실광고 유형
       if (filters.propertyTypes.length > 0 && !filters.propertyTypes.includes(v.property_type)) return false;
       
       // 2. 거래 방식

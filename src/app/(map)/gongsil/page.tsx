@@ -6,7 +6,7 @@ export const revalidate = 60;
 
 export const metadata = {
   title: '공실열람 | 공실뉴스',
-  description: '전국 공실 매물을 지도에서 실시간으로 확인하세요.',
+  description: '전국 공실 공실광고을 지도에서 실시간으로 확인하세요.',
 };
 
 export default async function GongsilPage() {

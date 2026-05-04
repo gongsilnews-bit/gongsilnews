@@ -774,7 +774,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
         <h2 style="font-size:18px;margin-bottom:8px;">${addrText}</h2>
         <div class="price">${priceText}</div>
         <div style="font-size:13px;color:#555;margin-bottom:20px;">${prop.property_type} · ${prop.direction || '방향없음'} · 공급/전용: ${prop.supply_m2 || 0}㎡ / ${prop.exclusive_m2 || 0}㎡</div>
-        <div class="info-row"><div class="info-label">매물번호</div><div class="info-value">${prop.vacancy_no || '-'}</div></div>
+        <div class="info-row"><div class="info-label">공실광고번호</div><div class="info-value">${prop.vacancy_no || '-'}</div></div>
         <div class="info-row"><div class="info-label">소재지</div><div class="info-value">${fullAddr || '-'}</div></div>
         <div class="info-row"><div class="info-label">공급/전용면적</div><div class="info-value">${prop.supply_m2 ? prop.supply_m2 + 'm²' : '-'} / ${prop.exclusive_m2 ? prop.exclusive_m2 + 'm²' : '-'}</div></div>
         <div class="info-row"><div class="info-label">해당층/총층</div><div class="info-value">${prop.current_floor || '-'} / ${prop.total_floor || '-'}</div></div>
@@ -821,7 +821,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
         link: { mobileWebUrl: shareUrl, webUrl: shareUrl },
       },
       buttons: [
-        { title: '매물 보기', link: { mobileWebUrl: shareUrl, webUrl: shareUrl } },
+        { title: '공실광고 보기', link: { mobileWebUrl: shareUrl, webUrl: shareUrl } },
       ],
     });
     setShowShareDropdown(false);
@@ -1920,7 +1920,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                       <button onClick={() => setActiveFilterDropdown(null)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#999", padding: 0, lineHeight: 1 }}>✕</button>
                     </div>
                     <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
-                      {["급매", "추천매물", "신축급", "올수리", "한강뷰", "역세권", "풀옵션", "가성비", "단기임대", "주차편리", "대로변안전", "여성안심", "무권리", "코너자리", "유동인구많음", "인테리어잘됨", "층고높음", "테라스", "복층", "마당있음", "투자용"].map(t => (
+                      {["급매", "추천공실광고", "신축급", "올수리", "한강뷰", "역세권", "풀옵션", "가성비", "단기임대", "주차편리", "대로변안전", "여성안심", "무권리", "코너자리", "유동인구많음", "인테리어잘됨", "층고높음", "테라스", "복층", "마당있음", "투자용"].map(t => (
                         <button key={t} onClick={() => setFilterThemes(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])} style={{ padding: "5px 12px", borderRadius: 16, fontSize: 13, cursor: "pointer", border: filterThemes.includes(t) ? "1px solid #10b981" : "1px solid #e0e0e0", background: filterThemes.includes(t) ? "#d1fae5" : "#f9fafb", color: filterThemes.includes(t) ? "#065f46" : "#6b7280", fontWeight: filterThemes.includes(t) ? "bold" : "normal" }}>
                           # {t} {filterThemes.includes(t) && "✓"}
                         </button>
@@ -1936,7 +1936,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
             })}
             {config.showToggle && (
               <button onClick={() => setShowDetailFilters(!showDetailFilters)} style={{ background: "none", border: "none", fontSize: 13, fontWeight: "bold", color: "#1a73e8", cursor: "pointer", padding: "8px 12px", whiteSpace: "nowrap", flexShrink: 0, fontFamily: "inherit" }}>
-                {showDetailFilters ? "상세조건검색 닫기 ✕" : "상세매물검색 +"}
+                {showDetailFilters ? "상세조건검색 닫기 ✕" : "상세공실광고검색 +"}
               </button>
             )}
             <button onClick={resetAllFilters} style={{ background: hasActiveFilters ? "#fff3f3" : "none", border: hasActiveFilters ? "1px solid #e74c3c" : "none", fontSize: 13, color: hasActiveFilters ? "#e74c3c" : "#666", fontWeight: hasActiveFilters ? "bold" : "normal", cursor: "pointer", padding: "6px 12px", whiteSpace: "nowrap", marginLeft: "auto", flexShrink: 0, fontFamily: "inherit", borderRadius: 20 }}>↻ 초기화</button>
@@ -1959,7 +1959,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
 
       {/* ===== 메인 3단 레이아웃 ===== */}
       <main style={{ display: "flex", flex: 1, minHeight: 0, position: "relative" }}>
-        {/* 좌측 사이드바: 매물 리스트 (380px) */}
+        {/* 좌측 사이드바: 공실광고 리스트 (380px) */}
         <aside style={{ width: 380, minWidth: 380, height: "100%", background: "#fff", borderRight: "1px solid #eee", display: "flex", flexDirection: "column", zIndex: 20 }}>
           {activeCategory === "wish" ? (
             <>
@@ -2034,7 +2034,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
           <div style={{ flex: 1, overflowY: "auto", padding: 0, background: "#fff" }}>
             {displayVacancies.length === 0 ? (
                <div style={{ padding: "60px 40px", textAlign: "center", color: "#888", fontSize: 14 }}>
-                 {activeCategory === "wish" ? (wishTab === "wish" ? "현재 등록된 관심 매물이 없습니다." : "최근 본 매물이 없습니다.") : "조건에 맞는 매물이 없습니다."}
+                 {activeCategory === "wish" ? (wishTab === "wish" ? "현재 등록된 관심 공실광고가 없습니다." : "최근 본 공실광고가 없습니다.") : "조건에 맞는 공실광고가 없습니다."}
                </div>
             ) : displayVacancies.map((prop) => {
                 const isActiveAndShowing = activeProperty === prop.id && showDetail;
@@ -2127,7 +2127,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
             </div>
         </aside>
 
-        {/* 중앙: 매물 상세 패널 (600px) */}
+        {/* 중앙: 공실광고 상세 패널 (600px) */}
         {showDetail && activeProperty && (
           () => {
             const baseProp = dbVacancies.find(v => v.id === activeProperty);
@@ -2172,7 +2172,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                   fontSize: 20,
                   fontWeight: "bold",
                 }}
-                title="등록자 정보(이전 매물)로 돌아가기"
+                title="등록자 정보(이전 공실광고)로 돌아가기"
               >
                 ‹
               </div>
@@ -2204,7 +2204,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                     <span style={{ fontSize: 12, color: "#888" }}>{new Date(prop.created_at).toLocaleDateString()}</span>
                   </div>
                   <div style={{ display: "flex", gap: 10, fontSize: 11 }}>
-                    <button style={{ background: "none", border: "none", cursor: "pointer", color: "#ff5a5f", display: "flex", alignItems: "center", gap: 4, padding: 0, fontSize: 11 }}>● 허위매물신고</button>
+                    <button style={{ background: "none", border: "none", cursor: "pointer", color: "#ff5a5f", display: "flex", alignItems: "center", gap: 4, padding: 0, fontSize: 11 }}>● 허위공실광고신고</button>
                     <button onClick={() => handlePrint(prop)} style={{ background: "none", border: "none", cursor: "pointer", color: "#666", display: "flex", alignItems: "center", gap: 4, padding: 0, fontSize: 11 }}>🖨 인쇄</button>
                   </div>
                 </div>
@@ -2212,7 +2212,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <h1 style={{ fontSize: 26, fontWeight: 800, color: "#1f5edb", margin: 0 }}>{getPriceText(prop)}</h1>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, position: "relative" }}>
-                    <button onClick={() => toggleWishlist(prop.id)} style={{ background: "none", border: "1px solid #ddd", borderRadius: 6, width: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: wishlist.includes(prop.id) ? "#1a73e8" : "#666" }} title={wishlist.includes(prop.id) ? "관심매물 해제" : "관심매물 등록"}><svg width="18" height="18" viewBox="0 0 24 24" fill={wishlist.includes(prop.id) ? "#1a73e8" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg></button>
+                    <button onClick={() => toggleWishlist(prop.id)} style={{ background: "none", border: "1px solid #ddd", borderRadius: 6, width: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: wishlist.includes(prop.id) ? "#1a73e8" : "#666" }} title={wishlist.includes(prop.id) ? "관심공실광고 해제" : "관심공실광고 등록"}><svg width="18" height="18" viewBox="0 0 24 24" fill={wishlist.includes(prop.id) ? "#1a73e8" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg></button>
                     <button onClick={() => setShowShareDropdown(!showShareDropdown)} style={{ background: "none", border: "1px solid #ddd", borderRadius: 6, width: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: showShareDropdown ? "#1a73e8" : "#666" }} title="공유하기"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg></button>
                     {/* 공유 드롭다운 */}
                     {showShareDropdown && (
@@ -2255,20 +2255,20 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
               <div style={{ display: "flex", borderBottom: "1px solid #ddd", margin: 0 }}>
                 {(["info", "realtor"] as const).map((tab) => (
                   <div key={tab} onClick={() => setActiveDetailTab(tab)} style={{ flex: 1, textAlign: "center", padding: "14px 0", fontSize: 15, fontWeight: "bold", cursor: "pointer", color: activeDetailTab === tab ? "#111" : "#888", borderBottom: activeDetailTab === tab ? "2px solid #111" : "2px solid transparent" }}>
-                    {tab === "info" ? "매물정보" : "등록자정보"}
+                    {tab === "info" ? "공실광고정보" : "등록자정보"}
                   </div>
                 ))}
               </div>
 
-              {/* 매물정보 탭 */}
+              {/* 공실광고정보 탭 */}
               {activeDetailTab === "info" && (
                 <>
                 <div style={{ display: "grid", gridTemplateColumns: "110px 1fr", borderBottom: "10px solid #f5f5f5" }}>
-                  <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>매물번호</div>
+                  <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>공실광고번호</div>
                   <div style={{ fontSize: 14, color: "#222", fontWeight: "bold", padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.vacancy_no}</div>
                   <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>소재지</div>
                   <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{[prop.sido, prop.sigungu, prop.dong, prop.detail_addr].filter(Boolean).join(" ")}</div>
-                  <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>매물특성</div>
+                  <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>공실광고특성</div>
                   <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.building_name || "-"}</div>
                   <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>공급/전용면적</div>
                   <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.supply_m2 ? `${prop.supply_m2}m²(${prop.supply_py || 0}평)` : "-"} / {prop.exclusive_m2 ? `${prop.exclusive_m2}m²(${prop.exclusive_py || 0}평)` : "-"}</div>

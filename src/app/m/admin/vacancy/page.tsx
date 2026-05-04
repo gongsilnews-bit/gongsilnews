@@ -200,7 +200,7 @@ function MobileVacancyAdmin() {
               background: "#fff", borderRadius: 12, padding: "14px", marginBottom: 8,
               boxShadow: "0 1px 3px rgba(0,0,0,0.05)", border: "1px solid #f0f0f0",
             }}>
-              {/* 상단: 상태 + 매물종류 + 번호 */}
+              {/* 상단: 상태 + 공실광고 종류 + 번호 */}
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   {(row.status === "ACTIVE" || row.status === "STOPPED") ? (
@@ -213,12 +213,16 @@ function MobileVacancyAdmin() {
                         const res = await updateVacancyStatus(row.id, newStatus);
                         if (res.success) fetchVacancies();
                       }}
-                      style={{ padding: "4px 10px", background: st.bg, color: "#fff", borderRadius: 6, fontSize: 12, fontWeight: 700, border: "none", cursor: "pointer" }}
+                      style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 10px", background: st.bg, color: "#fff", borderRadius: 6, fontSize: 12, fontWeight: 700, border: "none", cursor: "pointer" }}
                     >
+                      {row.status === "ACTIVE" && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>}
                       {st.label}
                     </button>
                   ) : (
-                    <span style={{ padding: "4px 10px", background: st.bg, color: "#fff", borderRadius: 6, fontSize: 12, fontWeight: 700 }}>{st.label}</span>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 10px", background: st.bg, color: "#fff", borderRadius: 6, fontSize: 12, fontWeight: 700 }}>
+                      {row.status === "ACTIVE" && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>}
+                      {st.label}
+                    </span>
                   )}
                   <span style={{ fontSize: 13, color: "#374151", fontWeight: 700 }}>{row.sub_category || row.property_type}</span>
                 </div>

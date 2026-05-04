@@ -79,7 +79,7 @@ export default function QuickFloatingMenu() {
         borderRadius: "0 0 8px 8px",
         boxShadow: isOpen ? "0 4px 15px rgba(0,0,0,0.1)" : "none",
       }}>
-        {/* 관심매물 */}
+        {/* 관심공실광고 */}
         <div
           onClick={() => handleAuthClick("/gongsil")}
           style={{

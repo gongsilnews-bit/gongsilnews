@@ -129,7 +129,7 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
           <div className="filter-scroll" style={{ overflowX: "auto", display: "flex", gap: "8px", padding: "0 12px 0 12px", WebkitOverflowScrolling: "touch" as any }}>
             <button onClick={() => setActivePanel(activePanel === "loc" ? null : "loc")} style={pillStyle(activePanel === "loc" || locLabel !== "위치")}>📍 {locLabel} ▾</button>
             <button onClick={() => setActivePanel(activePanel === "prop" ? null : "prop")} style={pillStyle(activePanel === "prop" || filters.propertyTypes.length > 0)}>
-              {filters.propertyTypes.length > 0 ? filters.propertyTypes.slice(0,2).join(", ") + (filters.propertyTypes.length > 2 ? ` +${filters.propertyTypes.length-2}` : "") : "매물유형"} ▾
+              {filters.propertyTypes.length > 0 ? filters.propertyTypes.slice(0,2).join(", ") + (filters.propertyTypes.length > 2 ? ` +${filters.propertyTypes.length-2}` : "") : "공실광고유형"} ▾
             </button>
             <button onClick={() => setActivePanel(activePanel === "trade" ? null : "trade")} style={pillStyle(activePanel === "trade" || filters.tradeTypes.length > 0)}>
               {filters.tradeTypes.length > 0 ? filters.tradeTypes.join(", ") : "거래방식"} ▾
@@ -173,8 +173,8 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
         />
       ))}
 
-      {/* ═══ 매물유형 시트 ═══ */}
-      {activePanel === "prop" && renderSheet("매물유형", (
+      {/* ═══ 공실광고유형 시트 ═══ */}
+      {activePanel === "prop" && renderSheet("공실광고유형", (
         <PropertyTypeFilterPanel filters={filters} onFilterChange={onFilterChange} PROPERTY_TYPES={PROPERTY_TYPES} />
       ))}
 
@@ -223,9 +223,9 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
               <TradeTypeFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} TRADE_TYPES={TRADE_TYPES} />
             </div>
 
-            {/* 매물유형 */}
+            {/* 공실광고유형 */}
             <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
-              <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>매물유형</div>
+              <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>공실광고유형</div>
               <PropertyTypeFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} PROPERTY_TYPES={PROPERTY_TYPES} />
             </div>
             
@@ -283,7 +283,7 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
             >
               ↻ 초기화
             </button>
-            <button onClick={() => { onFilterChange(tempFilters); setFullFilterOpen(false); }} style={{ flex: 1, padding: "14px", background: "#4b89ff", border: "none", borderRadius: "10px", fontSize: "15px", fontWeight: 800, color: "#fff", cursor: "pointer" }}>{filteredCount}개 매물 보기</button>
+            <button onClick={() => { onFilterChange(tempFilters); setFullFilterOpen(false); }} style={{ flex: 1, padding: "14px", background: "#4b89ff", border: "none", borderRadius: "10px", fontSize: "15px", fontWeight: 800, color: "#fff", cursor: "pointer" }}>{filteredCount}개 공실광고 보기</button>
           </div>
         </div>
       )}
@@ -293,12 +293,12 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
         <div style={{ position: "fixed", inset: 0, background: "#fff", zIndex: 10002, display: "flex", flexDirection: "column" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 16px", borderBottom: "1px solid #e5e7eb" }}>
             <button onClick={() => { setSearchOpen(false); setSearchText(""); }} style={{ background: "none", border: "none", fontSize: "22px", cursor: "pointer", color: "#6b7280" }}>←</button>
-            <input ref={searchInputRef} type="text" placeholder="건물명, 주소, 매물번호 검색" value={searchText} onChange={e => setSearchText(e.target.value)} onKeyDown={e => e.key === "Enter" && applyTextSearch()} style={{ flex: 1, padding: "10px 14px", border: "1px solid #d1d5db", borderRadius: "8px", fontSize: "15px", outline: "none" }} />
+            <input ref={searchInputRef} type="text" placeholder="건물명, 주소, 공실광고번호 검색" value={searchText} onChange={e => setSearchText(e.target.value)} onKeyDown={e => e.key === "Enter" && applyTextSearch()} style={{ flex: 1, padding: "10px 14px", border: "1px solid #d1d5db", borderRadius: "8px", fontSize: "15px", outline: "none" }} />
             <button onClick={applyTextSearch} style={{ flexShrink: 0, padding: "10px 14px", background: "#4b89ff", color: "#fff", border: "none", borderRadius: "8px", fontWeight: 700, fontSize: "14px", cursor: "pointer" }}>🔍</button>
           </div>
           {searchText && (
             <div style={{ padding: "16px 20px", flex: 1, overflowY: "auto" }}>
-              <div style={{ fontSize: "13px", color: "#9ca3af", marginBottom: "12px" }}>매물 검색 결과</div>
+              <div style={{ fontSize: "13px", color: "#9ca3af", marginBottom: "12px" }}>공실광고 검색 결과</div>
               {vacancies.filter(v => {
                 const q = searchText.toLowerCase();
                 return (v.building_name || "").toLowerCase().includes(q) || (v.dong || "").toLowerCase().includes(q) || (v.sigungu || "").toLowerCase().includes(q) || (v.vacancy_no || "").toLowerCase().includes(q) || (v.property_type || "").toLowerCase().includes(q);

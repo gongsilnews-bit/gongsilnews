@@ -150,7 +150,7 @@ export default function GongsilTalkOverlay() {
           if (agency?.name) setCurrentAgencyName(agency.name);
         }
 
-        // 내 매물 수
+        // 내 공실광고 수
         const { count } = await supabase.from("vacancies").select("*", { count: "exact", head: true }).eq("owner_id", user.id);
         setCurrentVacancyCount(count || 0);
       }
@@ -311,7 +311,7 @@ export default function GongsilTalkOverlay() {
     };
   }, [currentUserId, currentUserName, loadRooms]);
 
-  // 매물 카드 이벤트 리스너
+  // 공실광고 카드 이벤트 리스너
   useEffect(() => {
     const handler = (e: Event) => {
       const detail = (e as CustomEvent).detail;
@@ -470,7 +470,7 @@ export default function GongsilTalkOverlay() {
           style={{ position: "absolute", left: -4, top: -4, width: 18, height: 18, cursor: "nwse-resize", zIndex: 30 }}
         />
         <div style={{ display: "flex", width: "100%", height: "100%", background: "#fff", borderRadius: "16px 0 0 0", overflow: "hidden", position: "relative" }}>
-          {/* 매물 카드 오버레이 — 전체 오버레이 위에 표시 */}
+          {/* 공실광고 카드 오버레이 — 전체 오버레이 위에 표시 */}
           {realtorCard && (
             <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 50, background: "rgba(0,0,0,0.2)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
               <div style={{ width: "100%", maxWidth: 420, maxHeight: "90%", display: "flex", flexDirection: "column" }}>
@@ -647,7 +647,7 @@ export default function GongsilTalkOverlay() {
                       </div>
                     </div>
 
-                    {/* 내 매물 현황 */}
+                    {/* 내 공실광고 현황 */}
                     <div
                       onClick={() => {
                         if (currentUserId) {

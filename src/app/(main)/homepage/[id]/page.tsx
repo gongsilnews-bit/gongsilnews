@@ -165,7 +165,7 @@ export default function HomepageViewPage() {
     return (
       <div style={{ minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#fff" }}>
         <span style={{ display: "inline-block", width: 32, height: 32, border: "3px solid #ddd", borderTop: `3px solid ${BRAND}`, borderRadius: "50%", animation: "spin 1s linear infinite", marginRight: 12 }}></span>
-        <span style={{ color: "#888", fontSize: 15 }}>매물 상세정보를 불러오고 있습니다...</span>
+        <span style={{ color: "#888", fontSize: 15 }}>공실광고 상세정보를 불러오고 있습니다...</span>
         <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
       </div>
     );
@@ -175,7 +175,7 @@ export default function HomepageViewPage() {
     return (
       <div style={{ minHeight: "60vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "#fff" }}>
         <span style={{ fontSize: 48, marginBottom: 16 }}>🏠</span>
-        <p style={{ fontSize: 16, color: "#888" }}>해당 매물을 찾을 수 없습니다.</p>
+        <p style={{ fontSize: 16, color: "#888" }}>해당 공실광고을 찾을 수 없습니다.</p>
         <button onClick={() => router.push("/homepage")} style={{ marginTop: 16, padding: "10px 24px", background: BRAND, color: "#fff", borderRadius: 6, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>목록으로 돌아가기</button>
       </div>
     );
@@ -189,9 +189,9 @@ export default function HomepageViewPage() {
 
         {/* Breadcrumb */}
         <div style={{ fontSize: 13, color: "#888", marginBottom: 16, paddingLeft: 24 }}>
-          <span style={{ cursor: "pointer", color: BRAND, fontWeight: 600 }} onClick={() => router.push("/homepage")}>매물목록</span>
+          <span style={{ cursor: "pointer", color: BRAND, fontWeight: 600 }} onClick={() => router.push("/homepage")}>공실광고목록</span>
           <span style={{ margin: "0 8px" }}>›</span>
-          <span>{vacancy.building_name || vacancy.dong || "매물 상세"}</span>
+          <span>{vacancy.building_name || vacancy.dong || "공실광고 상세"}</span>
         </div>
 
         {/* ── Main Content ── */}
@@ -225,7 +225,7 @@ export default function HomepageViewPage() {
                    <span style={{ fontSize: 13, color: "#888", fontWeight: 600 }}>등록 {vacancy.created_at ? new Date(vacancy.created_at).toLocaleDateString("ko-KR") : ""}</span>
                  </div>
                  <div style={{ display: "flex", gap: 12 }}>
-                    <span style={{ fontSize: 13, color: "#fa5252", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>🚨 허위매물신고</span>
+                    <span style={{ fontSize: 13, color: "#fa5252", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>🚨 허위공실광고신고</span>
                     <span style={{ fontSize: 13, color: "#999", cursor: "pointer" }}>인쇄</span>
                  </div>
               </div>
@@ -274,7 +274,7 @@ export default function HomepageViewPage() {
             {/* ── Sticky Tabs Only ── */}
             <div style={{ position: "sticky", top: 130, zIndex: 50, background: "#fff", margin: "0 -24px", padding: "0 24px", borderBottom: "1px solid #e5e7eb" }}>
               <div style={{ display: "flex", alignItems: "stretch", transform: "translateY(1px)" }}>
-                <div onClick={() => scrollToRef(infoRef, 'info')} style={{ flex: 1, textAlign: "center", padding: "16px 0", fontWeight: "bold", fontSize: 16, color: activeTab === 'info' ? "#111" : "#888", background: activeTab === 'info' ? "#fff" : "#f8fafc", borderTop: activeTab === 'info' ? "2px solid #111" : "1px solid transparent", borderLeft: "1px solid transparent", borderRight: "1px solid transparent", borderBottom: activeTab === 'info' ? "1px solid #fff" : "1px solid transparent", cursor: "pointer", zIndex: activeTab === 'info' ? 1 : 0 }}>매물정보</div>
+                <div onClick={() => scrollToRef(infoRef, 'info')} style={{ flex: 1, textAlign: "center", padding: "16px 0", fontWeight: "bold", fontSize: 16, color: activeTab === 'info' ? "#111" : "#888", background: activeTab === 'info' ? "#fff" : "#f8fafc", borderTop: activeTab === 'info' ? "2px solid #111" : "1px solid transparent", borderLeft: "1px solid transparent", borderRight: "1px solid transparent", borderBottom: activeTab === 'info' ? "1px solid #fff" : "1px solid transparent", cursor: "pointer", zIndex: activeTab === 'info' ? 1 : 0 }}>공실광고정보</div>
                 <div onClick={() => scrollToRef(locationRef, 'location')} style={{ flex: 1, textAlign: "center", padding: "16px 0", fontWeight: "bold", fontSize: 16, color: activeTab === 'location' ? "#111" : "#888", background: activeTab === 'location' ? "#fff" : "#f8fafc", borderTop: activeTab === 'location' ? "2px solid #111" : "1px solid transparent", borderLeft: activeTab === 'location' ? "1px solid #e5e7eb" : "none", borderRight: activeTab === 'location' ? "1px solid #e5e7eb" : "none", borderBottom: activeTab === 'location' ? "1px solid #fff" : "1px solid transparent", cursor: "pointer", zIndex: activeTab === 'location' ? 1 : 0 }}>위치</div>
                 <div onClick={() => scrollToRef(envRef, 'env')} style={{ flex: 1, textAlign: "center", padding: "16px 0", fontWeight: "bold", fontSize: 16, color: activeTab === 'env' ? "#111" : "#888", background: activeTab === 'env' ? "#fff" : "#f8fafc", borderTop: activeTab === 'env' ? "2px solid #111" : "1px solid transparent", borderLeft: "1px solid transparent", borderRight: "1px solid transparent", borderBottom: activeTab === 'env' ? "1px solid #fff" : "1px solid transparent", cursor: "pointer", zIndex: activeTab === 'env' ? 1 : 0 }}>주변환경</div>
               </div>
@@ -282,11 +282,11 @@ export default function HomepageViewPage() {
 
             {/* 사진 표시 (리스트 위치 이동됨) */}
 
-            {/* ── 매물정보 Table ── */}
+            {/* ── 공실광고정보 Table ── */}
             <div ref={infoRef} style={{ background: "#fff", marginBottom: 50, scrollMarginTop: 200, paddingTop: 30 }}>
-              <TRow label="매물번호" value={String(vacancy.id).split('-')[0].toUpperCase()} />
+              <TRow label="공실광고번호" value={String(vacancy.id).split('-')[0].toUpperCase()} />
               <TRow label="소재지" value={`${vacancy.sido} ${vacancy.sigungu} ${vacancy.dong} ${vacancy.detail_addr || ""}`} />
-              <TRow label="매물특징" value={vacancy.building_name || "특징 없음"} />
+              <TRow label="공실광고특징" value={vacancy.building_name || "특징 없음"} />
               <TRow label="공급/전용면적" value={`${Math.round((vacancy.area_m2 || 0) * 1.3)}m² / ${vacancy.area_m2 || 0}m²`} />
               <TRow label="해당층/총층" value={`${vacancy.floor || "해당층"} / ${vacancy.total_floors || "전체층"}`} />
               <TRow label="등록자명" value={(() => {
@@ -470,7 +470,7 @@ export default function HomepageViewPage() {
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                   {[
                     "“너도 에어비앤비 해볼까?”… 오피스텔·학세권 달러 겟 약올랐던 '신세자' 될 수도",
-                    "관악구 대단지 관악드림타운 네이버 전세 매물 0건?",
+                    "관악구 대단지 관악드림타운 네이버 전세 공실광고 0건?",
                     "서울 아파트 공시가 18.7% 급등… '한강벨트' 보유세 50% 이상 오를 듯"
                   ].map((news, idx) => (
                     <div key={idx} style={{ display: "flex", gap: 12, cursor: "pointer" }}>

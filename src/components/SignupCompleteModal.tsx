@@ -127,7 +127,7 @@ export default function SignupCompleteModal({ isOpen, onClose, email = '', name 
               </h3>
               <p style={{ fontSize: 14, color: '#555', lineHeight: 1.6, margin: 0, wordBreak: 'keep-all' }}>
                 부동산회원으로 전환하시고 승인 신청을 하시면<br/>
-                <strong style={{color: '#111'}}>100% 무료 공동중개 매물 등록</strong> 등<br/>
+                <strong style={{color: '#111'}}>100% 무료 공동중개 공실광고 등록</strong> 등<br/>
                 중개사를 위한 특별한 혜택을 누리실 수 있습니다!
               </p>
             </div>

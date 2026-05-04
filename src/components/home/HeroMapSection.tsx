@@ -356,14 +356,14 @@ export default function HeroMapSection({ initialVacancies }: { initialVacancies?
             if (displayVacancies.length === 0) {
               return (
                 <div style={{ padding: 20, textAlign: "center", color: "#999", fontSize: 13 }}>
-                  등록된 매물이 없습니다.
+                  등록된 공실광고가 없습니다.
                 </div>
               );
             }
 
             return displayVacancies.slice(0, 20).map((item) => {
               const photoUrl = item.photos?.[0] || null;
-              const addrText = [item.dong, item.building_name, item.hosu].filter(Boolean).join(" ") || item.address || item.title || "매물";
+              const addrText = [item.dong, item.building_name, item.hosu].filter(Boolean).join(" ") || item.address || item.title || "공실광고";
               const optionsStr = [`룸 ${item.room_count || 0}개`, `욕실 ${item.bath_count || 0}개`, ...(item.options || [])].filter(Boolean).join(", ");
               // 마스킹 판별: 공실열람(GongsilClient)과 동일한 규칙
               const isMasked = item.exposure_type === '부동산노출' && userLevel < 2;
@@ -425,7 +425,7 @@ export default function HeroMapSection({ initialVacancies }: { initialVacancies?
           onClick={() => setShowList(true)}
           style={{ position: "absolute", top: 15, left: 15, zIndex: 99999, background: "#fff", border: "1px solid #ddd", borderRadius: 8, padding: "8px 14px", fontSize: 13, fontWeight: "bold", color: "#333", cursor: "pointer", boxShadow: "0 2px 8px rgba(0,0,0,0.15)" }}
         >
-          📋 매물 목록 보기
+          📋 공실광고 목록 보기
         </button>
       )}
       {isAuthModalOpen && <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />}

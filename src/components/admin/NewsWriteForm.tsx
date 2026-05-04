@@ -1316,7 +1316,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                 <span style={{ fontSize: 15, fontWeight: 800, color: "#d97706" }}>AI 마법사</span>
               </div>
               <p style={{ fontSize: 12, color: "#92400e", lineHeight: 1.6, margin: "0 0 14px 0" }}>
-                매물 정보만 한 번 입력하면 기사, 블로그, 쇼츠 대본까지 5가지 콘텐츠를 AI가 한 번에 완성해 줍니다!
+                공실광고 정보만 한 번 입력하면 기사, 블로그, 쇼츠 대본까지 5가지 콘텐츠를 AI가 한 번에 완성해 줍니다!
               </p>
               <button style={{
                 width: "100%", padding: "12px 0", background: "linear-gradient(135deg, #f59e0b, #f97316)",

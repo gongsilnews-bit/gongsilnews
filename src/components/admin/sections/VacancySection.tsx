@@ -41,7 +41,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
 
   const handleRequestApproval = async () => {
     const checked = Array.from(document.querySelectorAll('.vacancy-checkbox:checked')).map((el: any) => el.value);
-    if (checked.length === 0) { alert("승인신청할 매물을 선택하세요."); return; }
+    if (checked.length === 0) { alert("승인신청할 공실광고를 선택하세요."); return; }
     
     const invalid = checked.some(id => {
       const v = dbVacancies.find(x => x.id === id);
@@ -135,7 +135,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
       {/* 필터 검색 바 (독립 컨테이너로 위로 분리) */}
       <div style={{ padding: "16px 24px", background: cardBg, borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", marginBottom: 20, display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <label style={{ fontSize: 13, fontWeight: 600, color: textSecondary, whiteSpace: "nowrap" }}>매물번호</label>
+          <label style={{ fontSize: 13, fontWeight: 600, color: textSecondary, whiteSpace: "nowrap" }}>공실광고 번호</label>
           <input type="text" value={searchVacancyNo} onChange={e => setSearchVacancyNo(e.target.value)} onKeyDown={e => { if(e.key === 'Enter') { setActiveFilters({ vacancyNo: searchVacancyNo, type: searchType, keyword: searchKeyword }); if (searchVacancyNo || searchKeyword || searchType !== "전체") setActiveTab("전체"); } }} placeholder="번호 검색" style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", width: 130 }} />
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -181,7 +181,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
           <button onClick={() => {
             const path = role === "realtor" ? "/realty_admin" : role === "user" ? "/user_admin" : "/admin";
             router.push(`${path}?menu=gongsil&action=write`);
-          }} style={{ height: 36, padding: "0 16px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>+ 공실등록</button>
+          }} style={{ height: 36, padding: "0 16px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>+ 공실광고 등록</button>
 
           {role !== "user" && (
             <button onClick={() => alert("준비 중인 기능입니다.")} style={{ height: 36, padding: "0 16px", background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
@@ -191,8 +191,8 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
           )}
           <button onClick={async () => {
              const checked = Array.from(document.querySelectorAll('.vacancy-checkbox:checked')).map((el: any) => el.value);
-             if (checked.length === 0) { alert("삭제할 매물을 선택하세요."); return; }
-             if (confirm(`선택한 ${checked.length}건의 매물을 삭제하시겠습니까?`)) {
+             if (checked.length === 0) { alert("삭제할 공실광고를 선택하세요."); return; }
+             if (confirm(`선택한 ${checked.length}건의 공실광고를 삭제하시겠습니까?`)) {
                for (const id of checked) { await deleteVacancy(id); }
                fetchAllVacancies();
              }
@@ -215,7 +215,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                 </th>
                 <th style={{ padding: "12px 4px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 50 }}>번호</th>
                 <th style={{ padding: "12px 4px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 70 }}>광고설정</th>
-                <th style={{ padding: "12px 4px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 70 }}>매물종류</th>
+                <th style={{ padding: "12px 4px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 70 }}>공실광고 종류</th>
                 <th style={{ padding: "12px 10px", textAlign: "left", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 300 }}>주소 / 연락처</th>
                 <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 110 }}>금액</th>
                 <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 130 }}>방수/면적(m²)/층</th>
@@ -283,7 +283,8 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                               const newStatus = isActive ? 'STOPPED' : 'ACTIVE';
                               const res = await updateVacancyStatus(row.id, newStatus);
                               if (res.success) fetchAllVacancies();
-                            }} style={{ display: "inline-block", padding: "4px 8px", borderRadius: 4, border: "none", cursor: "pointer", background: isActive ? "#10b981" : "#ef4444", color: "#fff", fontWeight: 700, fontSize: 12 }}>
+                            }} style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px", borderRadius: 4, border: "none", cursor: "pointer", background: isActive ? "#10b981" : "#ef4444", color: "#fff", fontWeight: 700, fontSize: 12 }}>
+                              {isActive && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>}
                               {isActive ? "광고중" : "광고종료"}
                             </button>
                             <span style={{ fontSize: 11, color: textSecondary }}>{daysSinceCreated}일</span>
@@ -293,7 +294,10 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                         row.status === 'DRAFT' ? (
                           <span style={{ display: "inline-block", padding: "4px 8px", borderRadius: 4, background: "#9ca3af", color: "#fff", fontWeight: 700, fontSize: 12 }}>임시저장</span>
                         ) : isActive ? (
-                          <span style={{ display: "inline-block", padding: "4px 8px", borderRadius: 4, background: "#10b981", color: "#fff", fontWeight: 700, fontSize: 12 }}>광고중</span>
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px", borderRadius: 4, background: "#10b981", color: "#fff", fontWeight: 700, fontSize: 12 }}>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+                            광고중
+                          </span>
                         ) : (
                           <span style={{ display: "inline-block", padding: "4px 8px", borderRadius: 4, background: "#ef4444", color: "#fff", fontWeight: 700, fontSize: 12 }}>광고종료</span>
                         )

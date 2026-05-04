@@ -207,7 +207,7 @@ export default function GlobalDrawerMenu() {
     const isRealtor = r === 'REALTOR' || r === '부동산회원' || r === '부동산' || r.includes('REALTOR');
 
     const dashboard = { icon: '📊', label: '대시보드', desc: '활동 요약 및 통계', href: '/m/admin/dashboard' };
-    const vacancy = { icon: '🏢', label: '공실관리', desc: '등록한 공실 매물 관리', href: '/m/admin/vacancy', badgeCount: isAdmin ? pendingCounts.vacancies : 0 };
+    const vacancy = { icon: '🏢', label: '공실관리', desc: '등록한 공실 공실광고 관리', href: '/m/admin/vacancy', badgeCount: isAdmin ? pendingCounts.vacancies : 0 };
     const article = { icon: '📝', label: '기사관리', desc: '작성한 기사 관리', href: '/m/admin/article', badgeCount: isAdmin ? pendingCounts.articles : 0 };
     const point = { icon: '💰', label: '포인트', desc: '포인트 내역 및 충전', href: '/m/admin/point' };
     const member = { icon: '👥', label: '회원관리', desc: '전체 회원 관리', href: '/m/admin/member', badgeCount: isAdmin ? pendingCounts.members : 0 };

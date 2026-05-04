@@ -14,7 +14,7 @@ export default function LocationPermissionInitializer() {
       
       if (!hasPrompted) {
         // 앱을 처음 설치(방문)했을 때 위치 정보 사용 의사를 묻습니다.
-        const askForLocation = confirm("공실뉴스 앱에 오신 것을 환영합니다!\n\n현재 위치를 기반으로 내 주변 부동산 뉴스와 실시간 매물을 확인하시겠습니까?\n(위치 권한 허용이 필요합니다)");
+        const askForLocation = confirm("공실뉴스 앱에 오신 것을 환영합니다!\n\n현재 위치를 기반으로 내 주변 부동산 뉴스와 실시간 공실광고을 확인하시겠습니까?\n(위치 권한 허용이 필요합니다)");
         
         if (askForLocation) {
           if ("geolocation" in navigator) {

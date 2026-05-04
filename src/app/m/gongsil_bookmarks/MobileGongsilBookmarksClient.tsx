@@ -116,7 +116,7 @@ export default function MobileGongsilBookmarksClient() {
     fetchBookmarks();
   }, [router, showCategoryModal]);
 
-  // 선택된 카테고리에 맞는 매물 필터링
+  // 선택된 카테고리에 맞는 공실광고 필터링
   const filteredProperties = properties.filter(prop => {
     if (selectedCategoryId === 'ALL') return true;
     const bookmark = bookmarks.find(b => b.vacancy_id === prop.id);
@@ -138,7 +138,7 @@ export default function MobileGongsilBookmarksClient() {
         <button onClick={() => router.back()} style={{ background: "none", border: "none", cursor: "pointer", padding: "4px", display: "flex", alignItems: "center", marginLeft: "-4px", marginRight: "8px" }}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#111" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
         </button>
-        <h2 style={{ fontSize: "18px", fontWeight: 800, color: "#111", margin: 0 }}>매물 <span style={{ color: "#f97316" }}>{properties.length}</span>개</h2>
+        <h2 style={{ fontSize: "18px", fontWeight: 800, color: "#111", margin: 0 }}>공실광고 <span style={{ color: "#f97316" }}>{properties.length}</span>개</h2>
       </div>
 
       {/* Category Tabs */}
@@ -185,8 +185,8 @@ export default function MobileGongsilBookmarksClient() {
         ) : filteredProperties.length === 0 ? (
           <div style={{ textAlign: "center", padding: "60px 0", color: "#9ca3af" }}>
             <div style={{ fontSize: "40px", marginBottom: "16px" }}>🏢</div>
-            <p style={{ fontSize: "15px", fontWeight: 700, color: "#333", marginBottom: "8px" }}>해당 폴더에 찜한 매물이 없습니다.</p>
-            <p style={{ fontSize: "14px" }}>지도에서 관심있는 매물의 하트를 눌러보세요.</p>
+            <p style={{ fontSize: "15px", fontWeight: 700, color: "#333", marginBottom: "8px" }}>해당 폴더에 찜한 공실광고가 없습니다.</p>
+            <p style={{ fontSize: "14px" }}>지도에서 관심있는 공실광고의 하트를 눌러보세요.</p>
           </div>
         ) : (
           filteredProperties.map((v: any) => {

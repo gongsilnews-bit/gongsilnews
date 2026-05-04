@@ -22,7 +22,7 @@ export default function MiniVacancyMap({ vacancies }: Props) {
 
       mapInitRef.current = true;
 
-      // 매물 중 좌표 있는 것
+      // 공실광고 중 좌표 있는 것
       const withCoords = vacancies.filter((v) => v.lat && v.lng);
 
       // 중심점 계산 (평균)

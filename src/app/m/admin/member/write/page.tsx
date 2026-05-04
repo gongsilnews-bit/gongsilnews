@@ -170,7 +170,7 @@ function MobileMemberWrite() {
             {member.role === 'REALTOR' && (
               <>
                 {renderInfoRow("요금제", member.plan_type === 'news_premium' ? '공실뉴스부동산' : member.plan_type === 'vacancy_premium' ? '공실등록부동산' : '무료부동산')}
-                {renderInfoRow("최대 매물", `${member.max_vacancies || 5}개`)}
+                {renderInfoRow("최대 공실광고", `${member.max_vacancies || 5}개`)}
                 {renderInfoRow("월 기사", `${member.max_articles_per_month || 0}개`)}
               </>
             )}

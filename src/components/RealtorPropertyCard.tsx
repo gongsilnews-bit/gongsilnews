@@ -28,16 +28,16 @@ const formatPrice = (deposit: number, monthlyRent?: number, tradeType?: string) 
   return `${man.toLocaleString()}만`;
 };
 
-// ── 매물 상세 뷰  ──
+// ── 공실광고 상세 뷰  ──
 function VacancyDetailView({ vacancy, photos, isMyProperty, onBack, onInquiry }: { vacancy: any; photos: any[]; isMyProperty?: boolean; onBack: () => void; onInquiry?: (text: string) => void }) {
   const [photoIdx, setPhotoIdx] = useState(0);
   const addr = [vacancy.sido, vacancy.sigungu, vacancy.dong, vacancy.detail_addr].filter(Boolean).join(" ");
   const price = formatPrice(vacancy.deposit, vacancy.monthly_rent, vacancy.trade_type);
 
   const specs = [
-    { label: "매물번호", value: vacancy.vacancy_no ? `${vacancy.vacancy_no}` : undefined },
+    { label: "공실광고번호", value: vacancy.vacancy_no ? `${vacancy.vacancy_no}` : undefined },
     { label: "거래유형", value: vacancy.trade_type },
-    { label: "매물가격", value: price },
+    { label: "공실광고가격", value: price },
     { label: "관리비", value: vacancy.maintenance_fee ? `${(vacancy.maintenance_fee / 10000).toLocaleString()}만원` : "-" },
     { label: "공급/전용", value: vacancy.supply_m2 ? `${vacancy.supply_m2}㎡ / ${vacancy.exclusive_m2 || "-"}㎡` : "-" },
     { label: "방/욕실", value: `${vacancy.room_count || "-"}개 / ${vacancy.bath_count || "-"}개` },
@@ -54,7 +54,7 @@ function VacancyDetailView({ vacancy, photos, isMyProperty, onBack, onInquiry }:
         <button onClick={onBack} style={{ width: 30, height: 30, borderRadius: 8, background: "#f3f4f6", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2.5"><path d="M15 18l-6-6 6-6"/></svg>
         </button>
-        <span style={{ fontWeight: 800, fontSize: 14, color: "#111" }}>매물 상세</span>
+        <span style={{ fontWeight: 800, fontSize: 14, color: "#111" }}>공실광고 상세</span>
       </div>
 
       <div style={{ flex: 1, overflowY: "auto" }}>
@@ -123,13 +123,13 @@ function VacancyDetailView({ vacancy, photos, isMyProperty, onBack, onInquiry }:
         <div style={{ padding: "10px 16px", borderTop: "1px solid #eee", flexShrink: 0 }}>
           <button
           onClick={() => {
-            const noStr = vacancy.vacancy_no ? `[매물번호 ${vacancy.vacancy_no}] ` : "";
-            const suffix = isMyProperty ? "매물 전달드립니다." : "매물 문의드립니다.";
+            const noStr = vacancy.vacancy_no ? `[공실광고번호 ${vacancy.vacancy_no}] ` : "";
+            const suffix = isMyProperty ? "공실광고 전달드립니다." : "공실광고 문의드립니다.";
             onInquiry(`${noStr}${vacancy.dong || ""} ${vacancy.building_name || ""} ${vacancy.trade_type} ${price} ${suffix}`);
           }}
             style={{ width: "100%", padding: "10px 0", borderRadius: 10, background: BLUE, color: "#fff", fontWeight: 800, fontSize: 14, border: "none", cursor: "pointer" }}
           >
-            {isMyProperty ? "이 매물 전달하기" : "이 매물 문의하기"}
+            {isMyProperty ? "이 공실광고 전달하기" : "이 공실광고 문의하기"}
           </button>
         </div>
       )}
@@ -193,7 +193,7 @@ export default function RealtorPropertyCard({ userId, userName, isMyProperty, on
         <div style={{ background: `linear-gradient(135deg, ${NAVY} 0%, ${BLUE} 100%)`, padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <span style={{ fontSize: 16 }}>🏢</span>
-            <span style={{ color: "#fff", fontWeight: 800, fontSize: 15 }}>{agency?.name || userName} 매물 정보</span>
+            <span style={{ color: "#fff", fontWeight: 800, fontSize: 15 }}>{agency?.name || userName} 공실광고 정보</span>
           </div>
           <button onClick={onClose} style={{ width: 28, height: 28, borderRadius: "50%", background: "rgba(255,255,255,0.2)", border: "none", color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700 }}>✕</button>
         </div>
@@ -214,7 +214,7 @@ export default function RealtorPropertyCard({ userId, userName, isMyProperty, on
       <div style={{ background: `linear-gradient(135deg, ${NAVY} 0%, ${BLUE} 100%)`, padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <span style={{ fontSize: 16 }}>🏢</span>
-          <span style={{ color: "#fff", fontWeight: 800, fontSize: 15 }}>{agency?.name || userName} 매물 정보</span>
+          <span style={{ color: "#fff", fontWeight: 800, fontSize: 15 }}>{agency?.name || userName} 공실광고 정보</span>
         </div>
         <button onClick={onClose} style={{ width: 28, height: 28, borderRadius: "50%", background: "rgba(255,255,255,0.2)", border: "none", color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700 }}>✕</button>
       </div>
@@ -257,7 +257,7 @@ export default function RealtorPropertyCard({ userId, userName, isMyProperty, on
             </div>
           )}
 
-          {/* 매물 필터 */}
+          {/* 공실광고 필터 */}
           <div style={{ padding: "10px 16px 6px", display: "flex", gap: 6, flexWrap: "wrap", borderBottom: "1px solid #f0f0f0" }}>
             {tradeTypes.map(t => (
               <button key={t} onClick={() => setFilter(t)}
@@ -272,9 +272,9 @@ export default function RealtorPropertyCard({ userId, userName, isMyProperty, on
             ))}
           </div>
 
-          {/* 매물 리스트 */}
+          {/* 공실광고 리스트 */}
           {filtered.length === 0 ? (
-            <div style={{ padding: "30px 16px", textAlign: "center", color: "#bbb", fontSize: 13 }}>등록된 매물이 없습니다</div>
+            <div style={{ padding: "30px 16px", textAlign: "center", color: "#bbb", fontSize: 13 }}>등록된 공실광고가 없습니다</div>
           ) : (
             <div>
               {filtered.map((v, i) => {
@@ -309,8 +309,8 @@ export default function RealtorPropertyCard({ userId, userName, isMyProperty, on
                       onClick={(e) => {
                         e.stopPropagation();
                         if (onInquiry) {
-                          const noStr = v.vacancy_no ? `[매물번호 ${v.vacancy_no}] ` : "";
-                          onInquiry(`${noStr}${addr} ${v.trade_type} ${price} 매물 문의드립니다.`);
+                          const noStr = v.vacancy_no ? `[공실광고번호 ${v.vacancy_no}] ` : "";
+                          onInquiry(`${noStr}${addr} ${v.trade_type} ${price} 공실광고 문의드립니다.`);
                         }
                       }}
                       style={{ padding: "6px 10px", borderRadius: 8, background: BLUE, color: "#fff", fontSize: 11, fontWeight: 700, border: "none", cursor: "pointer", flexShrink: 0, whiteSpace: "nowrap", display: onInquiry ? "block" : "none" }}

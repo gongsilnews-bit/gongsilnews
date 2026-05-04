@@ -222,7 +222,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
   // 사진
   const [photos, setPhotos] = useState<File[]>([]);
 
-  /* ── 이전 매물 모달 상태 ── */
+  /* ── 이전 공실광고 모달 상태 ── */
   const [showPrevMenuModal, setShowPrevMenuModal] = useState(false);
   const [prevVacancies, setPrevVacancies] = useState<any[]>([]);
   const [isPrevLoading, setIsPrevLoading] = useState(false);
@@ -482,7 +482,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
     } else if (propertyType === "빌라·주택") {
       return Array.from(new Set(["테라스", "복층", "마당있음", "투자용", ...selectedThemes]));
     }
-    return Array.from(new Set(["급매", "추천매물", ...selectedThemes]));
+    return Array.from(new Set(["급매", "추천공실광고", ...selectedThemes]));
   }, [propertyType, selectedThemes]);
 
   const toggleTheme = (theme: string) => {
@@ -599,7 +599,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
 
   // ── 체크리스트 계산 ──
   const checkItems = [
-    { label: "매물 분류 선택 완료", done: !!propertyType },
+    { label: "공실광고 분류 선택 완료", done: !!propertyType },
     { label: "거래유형/금액 입력", done: !!tradeType && (!!deposit || tradeType === "매매") },
     { label: "소재지 상세 주소", done: !!sido && !!sigungu && !!dong },
     { label: "홍보용 사진 등록", done: photos.length > 0 },
@@ -626,9 +626,9 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
           <div style={{ background: cardBg, borderRadius: 14, padding: "28px 24px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
             <h2 style={{ fontSize: 17, fontWeight: 800, color: textPrimary, margin: "0 0 8px", borderBottom: `2px solid ${textPrimary}`, paddingBottom: 12 }}>빠른 입력 / 도구</h2>
 
-            {/* 이전 매물 불러오기 */}
+            {/* 이전 공실광고 불러오기 */}
             <button type="button" onClick={openPrevMenuModal} style={{ width: "100%", height: 48, border: `1px solid ${border}`, borderRadius: 8, background: cardBg, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 14, fontWeight: 600, color: textPrimary, marginTop: 16 }}>
-              ↻ 이전 매물 불러오기
+              ↻ 이전 공실광고 불러오기
             </button>
 
             {/* 이미지로 등록하기 */}
@@ -673,7 +673,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                     }
                     if (p.description) setDescription(p.description);
                     
-                    alert('이미지 분석을 통해 매물 정보가 자동으로 채워졌습니다!');
+                    alert('이미지 분석을 통해 공실광고 정보가 자동으로 채워졌습니다!');
                   } catch(err: any) {
                     alert('오류 발생: ' + err.message);
                   } finally {
@@ -717,13 +717,13 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ background: cardBg, borderRadius: 14, padding: "36px 40px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
 
-            {/* ── 섹션 1: 매물정보 ── */}
+            {/* ── 섹션 1: 공실광고정보 ── */}
             <h2 style={{ fontSize: 20, fontWeight: 800, color: textPrimary, margin: "0 0 24px", borderBottom: `2px solid ${textPrimary}`, paddingBottom: 16 }}>
-              매물정보 (전세, 월세, 단기 임대정보)
+              공실광고정보 (전세, 월세, 단기 임대정보)
             </h2>
 
-            {/* 매물 대분류 */}
-            <label style={labelStyle}>매물 대분류 (1차) {reqMark}</label>
+            {/* 공실광고 대분류 */}
+            <label style={labelStyle}>공실광고 대분류 (1차) {reqMark}</label>
             <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
               {["아파트·오피스텔", "빌라·주택", "원룸·투룸(풀옵션)", "상가·사무실·건물·공장·토지", "분양"].map(t => (
                 <SelectBtn key={t} label={t} selected={propertyType === t} onClick={() => { setPropertyType(t); setSubCategory(SUB_CATEGORIES[t]?.[0] || ""); }} />
@@ -1227,7 +1227,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
               </button>
             </div>
             <textarea
-              placeholder="매물의 특징, 입주 가능일 등 상세 내용을 입력해주세요."
+              placeholder="공실광고의 특징, 입주 가능일 등 상세 내용을 입력해주세요."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={6}
@@ -1254,7 +1254,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                     </div>
                   </div>
                   <div style={{ marginTop: 16, background: darkMode ? "#1e3a5f" : "#eff6ff", borderRadius: 8, padding: "12px 16px", fontSize: 12, color: "#3b82f6", lineHeight: 1.6 }}>
-                    ⓘ 매물의뢰서 작성자는 법정수수료를 지급하는 것에 대하여 동의하며, 중개수수료 지급관련 민원이 발생될 경우 <strong>공실뉴스</strong> 매물 등록에 제한이 될 수 있음을 확인합니다.
+                    ⓘ 공실광고의뢰서 작성자는 법정수수료를 지급하는 것에 대하여 동의하며, 중개수수료 지급관련 민원이 발생될 경우 <strong>공실뉴스</strong> 공실광고 등록에 제한이 될 수 있음을 확인합니다.
                   </div>
                 </div>
 
@@ -1312,7 +1312,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                     >
                       <div style={{ fontSize: 14, fontWeight: 700, color: exposureType === "부동산노출" ? "#2563eb" : textPrimary, marginBottom: 6 }}>부동산노출</div>
                       <div style={{ fontSize: 12, color: exposureType === "부동산노출" ? "#3b82f6" : textSecondary, lineHeight: 1.5 }}>
-                        비로그인, 일반인로그인시 매물상세보기는 부동산엔 열람가능하고<br/>
+                        비로그인, 일반인로그인시 공실광고상세보기는 부동산엔 열람가능하고<br/>
                         비회원 일반인에게는 비공개
                       </div>
                     </div>
@@ -1392,7 +1392,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                 <input type="checkbox" id="consent" checked={consent} onChange={(e) => setConsent(e.target.checked)}
                   style={{ marginTop: 3, accentColor: "#3b82f6", width: 18, height: 18, flexShrink: 0, cursor: "pointer" }} />
                 <label htmlFor="consent" style={{ fontSize: 13, color: textSecondary, lineHeight: 1.6, cursor: "pointer" }}>
-                  <strong style={{ color: textPrimary }}>매물 광고 진행에 동의합니다. (필수)</strong><br />
+                  <strong style={{ color: textPrimary }}>공실광고 광고 진행에 동의합니다. (필수)</strong><br />
                   공실뉴스 부동산이 빠른 계약을 위해 네이버부동산, 유튜브, 블로그 등 다양한 광고를 진행하는 것에 동의합니다.
                 </label>
               </div>
@@ -1404,7 +1404,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
             {(() => {
               const handleSubmit = async (customStatus?: string) => {
                 if (!propertyType || !tradeType) {
-                  alert("매물 분류와 거래유형은 필수입니다.");
+                  alert("공실광고 분류와 거래유형은 필수입니다.");
                   return;
                 }
                 if (!sido || !sigungu || !dong) {
@@ -1498,7 +1498,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                   }
 
                   if (customStatus) {
-                     alert(customStatus === "ACTIVE" ? "매물이 발행(등록) 되었습니다." : "매물이 반려 처리되었습니다.");
+                     alert(customStatus === "ACTIVE" ? "공실광고가 발행(등록) 되었습니다." : "공실광고가 반려 처리되었습니다.");
                   } else {
                      const statusMsg = editData ? '공실 수정이 완료되었습니다!' : '공실이 등록되었습니다! 광고가 바로 시작됩니다.';
                      alert(statusMsg);
@@ -1601,11 +1601,11 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
           </div>
         </div>
 
-        {/* ============ 우측 사이드바: 매물 사진 / 라이브러리 ============ */}
+        {/* ============ 우측 사이드바: 공실광고 사진 / 라이브러리 ============ */}
         <div style={{ width: 320, flexShrink: 0, marginLeft: 20, position: "sticky", top: 24 }}>
-          {/* 매물 사진 / 라이브러리 */}
+          {/* 공실광고 사진 / 라이브러리 */}
           <div style={{ background: cardBg, borderRadius: 14, padding: "28px 24px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)", marginBottom: 20 }}>
-            <h2 style={{ fontSize: 17, fontWeight: 800, color: textPrimary, margin: "0 0 8px", borderBottom: `2px solid ${textPrimary}`, paddingBottom: 12 }}>매물 사진 / 라이브러리</h2>
+            <h2 style={{ fontSize: 17, fontWeight: 800, color: textPrimary, margin: "0 0 8px", borderBottom: `2px solid ${textPrimary}`, paddingBottom: 12 }}>공실광고 사진 / 라이브러리</h2>
 
             {/* 포토DB 간편검색 */}
             <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "16px 0 20px" }}>
@@ -1764,7 +1764,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
         </div>
       )}
 
-      {/* ═══ 이전 매물 불러오기 모달 ═══ */}
+      {/* ═══ 이전 공실광고 불러오기 모달 ═══ */}
       {showPrevMenuModal && (
         <div style={{
           position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
@@ -1779,7 +1779,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
             <div style={{ background: '#3b82f6', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{ fontSize: 20 }}>↻</span>
-                <span style={{ fontSize: 18, fontWeight: 800, color: '#fff' }}>이전 매물 불러오기</span>
+                <span style={{ fontSize: 18, fontWeight: 800, color: '#fff' }}>이전 공실광고 불러오기</span>
               </div>
               <button type="button" onClick={() => setShowPrevMenuModal(false)}
                 style={{ background: 'none', border: 'none', color: '#fff', fontSize: 20, cursor: 'pointer' }}>✕</button>
@@ -1790,7 +1790,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
               {isPrevLoading ? (
                 <div style={{ textAlign: "center", padding: "40px", color: textSecondary }}>⏳ 불러오는 중...</div>
               ) : prevVacancies.length === 0 ? (
-                <div style={{ textAlign: "center", padding: "60px 0", color: textSecondary }}>이전 매물이 없습니다.</div>
+                <div style={{ textAlign: "center", padding: "60px 0", color: textSecondary }}>이전 공실광고가 없습니다.</div>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                   {prevVacancies.map(v => (

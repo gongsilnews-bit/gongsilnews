@@ -462,7 +462,7 @@ export default function StudyWriteForm() {
 
               <div style={{ marginBottom: 16 }}>
                 <label style={labelStyle}>부제목</label>
-                <input type="text" value={subtitle} onChange={(e) => setSubtitle(e.target.value)} placeholder="예: 매물 접수부터 계약까지 완벽 가이드" style={inputStyle} />
+                <input type="text" value={subtitle} onChange={(e) => setSubtitle(e.target.value)} placeholder="예: 공실광고 접수부터 계약까지 완벽 가이드" style={inputStyle} />
               </div>
 
               {/* ── 리치 에디터 (상세 설명) ── */}

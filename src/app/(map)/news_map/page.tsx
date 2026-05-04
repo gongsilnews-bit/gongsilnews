@@ -6,7 +6,7 @@ export const revalidate = 0;
 
 export const metadata = {
   title: '우리동네뉴스 지도 | 공실뉴스',
-  description: '위치 기반으로 우리동네 부동산 뉴스와 매물을 확인하세요.',
+  description: '위치 기반으로 우리동네 부동산 뉴스와 공실광고을 확인하세요.',
 };
 
 export default async function NewsMapPage() {

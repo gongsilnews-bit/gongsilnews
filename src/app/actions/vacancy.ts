@@ -79,13 +79,13 @@ export async function createVacancy(data: {
         .eq('owner_id', data.owner_id)
         .neq('status', 'DELETED');
         
-      if (countErr) return { success: false, error: "매물 개수 확인 중 오류가 발생했습니다." };
+      if (countErr) return { success: false, error: "공실광고 개수 확인 중 오류가 발생했습니다." };
       
       const maxVacancies = member.max_vacancies ?? 5; // 요금제별 제한 (기본 5개)
       if ((count || 0) >= maxVacancies) {
         return { 
           success: false, 
-          error: `기본 요금제의 매물 등록 한도(${maxVacancies}건)를 초과했습니다. 무제한 등록을 위해 요금제를 업그레이드해 주세요.` 
+          error: `기본 요금제의 공실광고 등록 한도(${maxVacancies}건)를 초과했습니다. 무제한 등록을 위해 요금제를 업그레이드해 주세요.` 
         };
       }
     }

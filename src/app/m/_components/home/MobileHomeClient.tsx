@@ -227,10 +227,10 @@ export default function MobileHomeClient(props: Props) {
         </div>
       )}
 
-      {/* ② 실시간 공실 매물 - 카카오 지도 미리보기 */}
+      {/* ② 실시간 공실 공실광고 - 카카오 지도 미리보기 */}
       <div style={{ background: "#fff", marginBottom: 12, borderBottom: "1px solid #f0f0f0" }}>
         <div className="sec-hd">
-          <h2>실시간 공실 매물</h2>
+          <h2>실시간 공실 공실광고</h2>
           <Link href="/m/gongsil" style={{ fontSize: 15, color: "#6b7280", textDecoration: "none" }}>더보기 ›</Link>
         </div>
         <div style={{ padding: "0 16px 16px", position: "relative" }}>

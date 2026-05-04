@@ -111,7 +111,7 @@ function MobileGongsilContent() {
   // 필터 State 및 필터링 로직 (Hook으로 분리)
   const { filters, filteredVacancies, updateFilter, activeFilterCount, resetFilters } = useVacancyFilters(vacancies);
 
-  // 현재 지도 화면 내에 보이는 매물 개수 상태
+  // 현재 지도 화면 내에 보이는 공실광고 개수 상태
   const [visibleCount, setVisibleCount] = useState(0);
 
   // Swipe gesture states
@@ -264,12 +264,12 @@ function MobileGongsilContent() {
     Kakao.Share.sendDefault({
       objectType: "feed",
       content: {
-        title: selectedVacancy.building_name || [selectedVacancy.dong, selectedVacancy.sigungu].filter(Boolean).join(" ") || "매물 상세",
+        title: selectedVacancy.building_name || [selectedVacancy.dong, selectedVacancy.sigungu].filter(Boolean).join(" ") || "공실광고 상세",
         description: `${selectedVacancy.trade_type} ${formatPrice(selectedVacancy)}`,
         imageUrl: selectedVacancy.images?.[0] || "https://gongsilnews.com/new_logo.png",
         link: { mobileWebUrl: shareUrl, webUrl: shareUrl },
       },
-      buttons: [{ title: "매물 보기", link: { mobileWebUrl: shareUrl, webUrl: shareUrl } }],
+      buttons: [{ title: "공실광고 보기", link: { mobileWebUrl: shareUrl, webUrl: shareUrl } }],
     });
     setShowShareDropdown(false);
   };
@@ -343,7 +343,7 @@ function MobileGongsilContent() {
         }));
         setVacancies(withImages);
 
-        // URL id 파라미터가 있으면 해당 매물 상세 즉시 열기
+        // URL id 파라미터가 있으면 해당 공실광고 상세 즉시 열기
         if (typeof window !== "undefined") {
           const params = new URLSearchParams(window.location.search);
           const idParam = params.get("id");
@@ -493,7 +493,7 @@ function MobileGongsilContent() {
     clustererRef.current.addMarkers(markersRef.current);
   }, [filteredVacancies, mapLoaded]);
 
-  // 지도 범위 내 매물 개수 업데이트
+  // 지도 범위 내 공실광고 개수 업데이트
   useEffect(() => {
     if (!kakaoMapRef.current || !mapLoaded) return;
     const kakao = (window as any).kakao;
@@ -654,7 +654,7 @@ function MobileGongsilContent() {
           </div>
         )}
 
-        {/* 매물 수 표시 및 초기화 버튼 */}
+        {/* 공실광고 수 표시 및 초기화 버튼 */}
         {mapLoaded && (
           <div style={{ position: "absolute", top: "16px", left: "16px", zIndex: 20, display: "flex", gap: "8px", alignItems: "center" }}>
             <div style={{ background: "rgba(255,255,255,0.95)", borderRadius: "20px", padding: "8px 14px", fontSize: "13px", fontWeight: 700, color: "#1a2e50", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}>
@@ -737,7 +737,7 @@ function MobileGongsilContent() {
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
             </button>
             <h3 style={{ fontSize: "18px", fontWeight: 800, color: "#111827", margin: 0 }}>
-              매물 <span style={{ color: "#f97316" }}>{selectedCluster?.length || 0}</span>개
+              공실광고 <span style={{ color: "#f97316" }}>{selectedCluster?.length || 0}</span>개
             </h3>
           </div>
         </div>
@@ -814,7 +814,7 @@ function MobileGongsilContent() {
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg>
           </button>
           <h2 style={{ fontSize: "18px", fontWeight: 800, color: "#111827", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {selectedVacancy?.building_name || [selectedVacancy?.dong, selectedVacancy?.sigungu].filter(Boolean).join(" ") || "매물 상세"}
+            {selectedVacancy?.building_name || [selectedVacancy?.dong, selectedVacancy?.sigungu].filter(Boolean).join(" ") || "공실광고 상세"}
           </h2>
           {/* Action Buttons */}
           <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
@@ -893,7 +893,7 @@ function MobileGongsilContent() {
                   <span style={{ fontSize: "14px", color: "#6b7280" }}>{selectedVacancy.created_at ? new Date(selectedVacancy.created_at).toLocaleDateString("ko-KR").slice(0, -1) : ""}</span>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: "4px", color: "#ef4444", fontSize: "14px", fontWeight: 600 }}>
-                  <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#ef4444" }}></span> 허위매물신고
+                  <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#ef4444" }}></span> 허위공실광고신고
                 </div>
               </div>
 
@@ -905,7 +905,7 @@ function MobileGongsilContent() {
                 <div onClick={() => setIsAuthModalOpen(true)} style={{ background: "#eef6ff", border: "1px solid #bfdbfe", borderRadius: "8px", padding: "12px 16px", marginBottom: "12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}>
                   <span style={{ fontSize: "20px" }}>🔒</span>
                   <div>
-                    <div style={{ fontSize: "14px", fontWeight: 700, color: "#1e40af" }}>부동산회원 전용 매물입니다</div>
+                    <div style={{ fontSize: "14px", fontWeight: 700, color: "#1e40af" }}>부동산회원 전용 공실광고입니다</div>
                     <div style={{ fontSize: "12px", color: "#3b82f6", marginTop: "2px" }}>무료 가입 후 모든 정보를 열람하세요</div>
                   </div>
                 </div>
@@ -949,7 +949,7 @@ function MobileGongsilContent() {
                 onClick={() => setDetailTab("info")} 
                 style={{ flex: 1, padding: "14px 0", fontSize: "17px", fontWeight: detailTab === "info" ? 800 : 600, color: detailTab === "info" ? "#111827" : "#6b7280", borderBottom: detailTab === "info" ? "3px solid #111827" : "3px solid transparent", background: "none" }}
               >
-                매물정보
+                공실광고정보
               </button>
               <button 
                 onClick={() => setDetailTab("realtor")} 
@@ -964,9 +964,9 @@ function MobileGongsilContent() {
               {detailTab === "info" ? (
                 <div>
                   {[
-                    ["매물번호", selectedVacancy.vacancy_no || '-'],
+                    ["공실광고번호", selectedVacancy.vacancy_no || '-'],
                     ["소재지", detailMasked ? [selectedVacancy.sido, selectedVacancy.sigungu, selectedVacancy.dong, selectedVacancy.building_name].filter(Boolean).join(" ").replace(/[^\s]/g, "X") : [selectedVacancy.sido, selectedVacancy.sigungu, selectedVacancy.dong, selectedVacancy.building_name].filter(Boolean).join(" ")],
-                    ["매물특성", detailMasked ? (selectedVacancy.building_name || "-").replace(/[^\s-]/g, "X") : (selectedVacancy.building_name || "-")],
+                    ["공실광고특성", detailMasked ? (selectedVacancy.building_name || "-").replace(/[^\s-]/g, "X") : (selectedVacancy.building_name || "-")],
                     ["공급/전용면적", `${selectedVacancy.supply_m2 || "-"}㎡ / ${selectedVacancy.exclusive_m2 || "-"}㎡`],
                     ["해당층/총층", `${selectedVacancy.current_floor || "-"}층 / ${selectedVacancy.total_floor || "-"}층`],
                     ["방/욕실수", `${selectedVacancy.room_count || 0}개 / ${selectedVacancy.bath_count || 0}개`],

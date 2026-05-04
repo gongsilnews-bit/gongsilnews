@@ -27,7 +27,7 @@ function MobileVacancyWrite() {
   const [submitting, setSubmitting] = useState(false);
   const [loadingEdit, setLoadingEdit] = useState(false);
 
-  // 매물 기본
+  // 공실광고 기본
   const [propertyType, setPropertyTypeRaw] = useState("아파트·오피스텔");
   const [subCategory, setSubCategory] = useState("아파트");
 
@@ -237,7 +237,7 @@ function MobileVacancyWrite() {
     } else if (propertyType === "빌라·주택") {
       return Array.from(new Set(["테라스", "복층", "마당있음", "투자용", ...selectedThemes]));
     }
-    return Array.from(new Set(["급매", "추천매물", ...selectedThemes]));
+    return Array.from(new Set(["급매", "추천공실광고", ...selectedThemes]));
   }, [propertyType, selectedThemes]);
 
   const toggleTheme = (theme: string) => {
@@ -333,7 +333,7 @@ function MobileVacancyWrite() {
   };
 
   const handleSubmit = async (status: string) => {
-    if (!propertyType || !tradeType) { alert("매물 분류와 거래유형을 선택하세요."); return; }
+    if (!propertyType || !tradeType) { alert("공실광고 분류와 거래유형을 선택하세요."); return; }
     if (!sido || !dong) { alert("주소를 입력하세요."); return; }
     setSubmitting(true);
     try {
@@ -395,7 +395,7 @@ function MobileVacancyWrite() {
     <div style={{ display:"flex", height:"100dvh", alignItems:"center", justifyContent:"center", background:"#f4f5f7" }}>
       <div style={{ textAlign:"center", color:"#9ca3af" }}>
         <div style={{ fontSize:36, marginBottom:12 }}>{loadingEdit?"📋":"🔐"}</div>
-        <div style={{ fontSize:14, fontWeight:600 }}>{loadingEdit?"매물 정보 불러오는 중...":"권한 확인 중..."}</div>
+        <div style={{ fontSize:14, fontWeight:600 }}>{loadingEdit?"공실광고 정보 불러오는 중...":"권한 확인 중..."}</div>
       </div>
     </div>
   );
@@ -422,9 +422,9 @@ function MobileVacancyWrite() {
       <div style={{ height:56 }} /> {/* 헤더 높이만큼 공간 확보 */}
 
       <div style={{ padding:"16px 16px 32px" }}>
-        {/* 1. 매물분류 */}
+        {/* 1. 공실광고분류 */}
         <div style={{ background:"#fff", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.05)" }}>
-          <div style={{ fontSize:16, fontWeight:800, color:"#111", marginBottom:14 }}>📋 매물분류</div>
+          <div style={{ fontSize:16, fontWeight:800, color:"#111", marginBottom:14 }}>📋 공실광고분류</div>
           <label style={labelStyle}>대분류</label>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6, marginBottom:12 }}>
             {Object.keys(SUB_CATEGORIES).map(t => <SBtn key={t} label={t} sel={propertyType===t} onClick={() => { setPropertyType(t); setSubCategory(SUB_CATEGORIES[t][0]); }} />)}
@@ -650,8 +650,8 @@ function MobileVacancyWrite() {
           </div>
 
           <div style={{ marginTop: 16, borderTop: "1px dashed #e5e7eb", paddingTop: 16 }}>
-            <label style={labelStyle}>전달사항 / 매물설명</label>
-            <textarea value={description} onChange={e=>setDescription(e.target.value)} placeholder="매물에 대한 추가 설명을 입력하세요" rows={4} style={{ ...inputStyle, height:"auto", padding:12, resize:"vertical", lineHeight:1.5 }}/>
+            <label style={labelStyle}>전달사항 / 공실광고설명</label>
+            <textarea value={description} onChange={e=>setDescription(e.target.value)} placeholder="공실광고에 대한 추가 설명을 입력하세요" rows={4} style={{ ...inputStyle, height:"auto", padding:12, resize:"vertical", lineHeight:1.5 }}/>
           </div>
         </div>
 
@@ -719,7 +719,7 @@ function MobileVacancyWrite() {
               <div onClick={()=>setExposureType("부동산노출")} style={{ flex:1, padding:12, borderRadius:10, cursor:"pointer", border: exposureType==="부동산노출"?"2px solid #3b82f6":"1px solid #d1d5db", background: exposureType==="부동산노출"?"#eff6ff":"#fff" }}>
                 <div style={{ fontSize:14, fontWeight:700, color: exposureType==="부동산노출"?"#2563eb":"#374151", marginBottom:4 }}>부동산노출</div>
                 <div style={{ fontSize:11, color: exposureType==="부동산노출"?"#3b82f6":"#9ca3af", lineHeight:1.4 }}>
-                  비로그인, 일반인로그인시 매물상세보기는 부동산엔 열람 가능하고<br/>
+                  비로그인, 일반인로그인시 공실광고상세보기는 부동산엔 열람 가능하고<br/>
                   비회원 일반인에게는 비공개
                 </div>
               </div>

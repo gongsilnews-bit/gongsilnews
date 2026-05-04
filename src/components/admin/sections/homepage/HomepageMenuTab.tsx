@@ -11,7 +11,7 @@ interface HomepageMenuTabProps {
 
 const DEFAULT_MENUS = [
   { key: "home", label: "메인", always: true },
-  { key: "listings", label: "전체매물보기", always: false },
+  { key: "listings", label: "전체공실광고보기", always: false },
   { key: "map", label: "지도검색", always: false },
   { key: "news", label: "뉴스기사", always: false },
   { key: "about", label: "회사소개", always: false },

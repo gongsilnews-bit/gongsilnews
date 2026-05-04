@@ -261,7 +261,7 @@ export default function ProfileCardPopover({
               </a>
             )}
 
-            {/* 매물보기 */}
+            {/* 공실광고보기 */}
             {isRealtor && (
               <button
                 onClick={(e) => {
@@ -274,7 +274,7 @@ export default function ProfileCardPopover({
                 <div style={{ width: 40, height: 40, borderRadius: 12, background: "#fff7ed", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
                 </div>
-                <span style={{ fontSize: 11, color: "#555", fontWeight: 600 }}>매물</span>
+                <span style={{ fontSize: 11, color: "#555", fontWeight: 600 }}>공실광고</span>
               </button>
             )}
 

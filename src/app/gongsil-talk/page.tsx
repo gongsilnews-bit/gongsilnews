@@ -4,16 +4,16 @@ import { useState } from "react";
 
 /* ──────────────────────── 더미 데이터 ──────────────────────── */
 const DUMMY_ROOMS = [
-  { id: "1", type: "group", title: "강남 상가 교류방", members: 32, lastMsg: "급매물 정보 공유합니다. 강남역 1번출구 상가 32평...", lastTime: "오후 3:14", unread: 3, avatar: "🏢" },
+  { id: "1", type: "group", title: "강남 상가 교류방", members: 32, lastMsg: "급공실광고 정보 공유합니다. 강남역 1번출구 상가 32평...", lastTime: "오후 3:14", unread: 3, avatar: "🏢" },
   { id: "2", type: "group", title: "서초구 소장 모임", members: 18, lastMsg: "다음 주 목요일 정기 모임 참석하실 분?", lastTime: "오후 2:30", unread: 0, avatar: "🤝" },
-  { id: "3", type: "group", title: "급매물 공유방", members: 45, lastMsg: "마포구 오피스텔 급매 나왔습니다", lastTime: "오후 1:20", unread: 12, avatar: "🔥" },
+  { id: "3", type: "group", title: "급공실광고 공유방", members: 45, lastMsg: "마포구 오피스텔 급매 나왔습니다", lastTime: "오후 1:20", unread: 12, avatar: "🔥" },
   { id: "4", type: "private", title: "김동현 소장님", members: 2, lastMsg: "네, 내일 오후에 현장 같이 볼까요?", lastTime: "오전 11:45", unread: 1, avatar: "👤" },
   { id: "5", type: "private", title: "박미영 대표", members: 2, lastMsg: "계약서 확인 부탁드립니다", lastTime: "어제", unread: 0, avatar: "👤" },
   { id: "6", type: "group", title: "송파구 오피스 정보", members: 21, lastMsg: "잠실 새내역 오피스 공실률이 많이 낮아졌네요", lastTime: "어제", unread: 0, avatar: "🏙️" },
 ];
 
 const DUMMY_MESSAGES = [
-  { id: "m1", authorId: "other1", authorName: "미소탑공인", avatar: "🏠", content: "강남역 근처 상가 32평 급매물 나왔습니다.\n관심있으신 분 연락주세요!", time: "오후 2:56", isMe: false, role: "owner" },
+  { id: "m1", authorId: "other1", authorName: "미소탑공인", avatar: "🏠", content: "강남역 근처 상가 32평 급공실광고 나왔습니다.\n관심있으신 분 연락주세요!", time: "오후 2:56", isMe: false, role: "owner" },
   { id: "m2", authorId: "me", authorName: "나", avatar: "", content: "네 감사합니다. 위치 좀 더 알려주실 수 있나요?", time: "오후 3:01", isMe: true },
   { id: "m3", authorId: "other2", authorName: "박소장", avatar: "👤", content: "저도 관심있습니다. 평당가 얼마인가요?", time: "오후 3:05", isMe: false },
   { id: "m4", authorId: "other1", authorName: "미소탑공인", avatar: "🏠", content: "평당 2,800만원 수준입니다.\n현재 임차인 없이 깨끗한 상태입니다.\n사진 보내드릴게요!", time: "오후 3:08", isMe: false, role: "owner" },
@@ -291,7 +291,7 @@ export default function GongsilTalkPage() {
                 </div>
               ))}
 
-              {/* 매물 카드 공유 예시 */}
+              {/* 공실광고 카드 공유 예시 */}
               <div style={{ display: "flex", justifyContent: "flex-start", marginBottom: 16 }}>
                 <div style={{ display: "flex", gap: 8, maxWidth: "75%" }}>
                   <div style={{ width: 38, height: 38, borderRadius: "50%", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0, boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>

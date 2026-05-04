@@ -33,7 +33,7 @@ const SIDO_LIST = [
 ];
 
 const SORT_OPTIONS = [
-  { label: "매물정렬", value: "latest" },
+  { label: "공실광고정렬", value: "latest" },
   { label: "가격 낮은순", value: "price_asc" },
   { label: "가격 높은순", value: "price_desc" },
 ];
@@ -411,7 +411,7 @@ export default function HomepagePage() {
       if (!isNaN(mr)) list = list.filter(v => (v.monthly_rent || 0) / 10000 <= mr);
     }
 
-    // 사용자가 명시적으로 구/동을 선택했을 때만 지역 필터링을 적용하여 초기에는 전체 매물이 나오도록 함
+    // 사용자가 명시적으로 구/동을 선택했을 때만 지역 필터링을 적용하여 초기에는 전체 공실광고가 나오도록 함
     const isRegionSelected = sigungu || selectedDongs.length > 0;
     
     if (isRegionSelected) {
@@ -660,7 +660,7 @@ export default function HomepagePage() {
           `}</style>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr 1.5fr 1fr 1.5fr", background: "#f1f6fa", borderBottom: "1px solid #c2d3e4" }}>
             {[
-              { label: "매물구분", active: false },
+              { label: "공실광고구분", active: false },
               { label: "거래구분", active: false },
               { label: "룸갯수", active: false },
               { label: "층 구분", active: false },
@@ -772,19 +772,19 @@ export default function HomepagePage() {
             {loading ? (
               <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "80px 0", color: "#888" }}>
                 <span style={{ display: "inline-block", width: 28, height: 28, border: "3px solid #ddd", borderTop: `3px solid ${BRAND}`, borderRadius: "50%", animation: "spin 1s linear infinite", marginRight: 12 }}></span>
-                매물 데이터를 불러오고 있습니다...
+                공실광고 데이터를 불러오고 있습니다...
               </div>
             ) : paged.length === 0 ? (
               <div style={{ textAlign: "center", padding: "80px 0", color: "#aaa" }}>
                 <span style={{ fontSize: 40, display: "block", marginBottom: 12 }}>🏠</span>
-                검색 조건에 해당하는 매물이 없습니다.
+                검색 조건에 해당하는 공실광고가 없습니다.
               </div>
             ) : (
               <div style={{ borderTop: "1px solid #e5e7eb" }}>
                 {paged.map((v, idx) => {
                   const isMasked = v.exposure_type === '부동산노출' && userLevel < 2;
                   const showCommission = userLevel >= 2;
-                  const addrText = v.building_name || `${v.sigungu || ""} ${v.dong || ""} 매물`;
+                  const addrText = v.building_name || `${v.sigungu || ""} ${v.dong || ""} 공실광고`;
                   return (
                 <div key={v.id} style={{ borderBottom: "1px solid #e5e7eb", borderLeft: "1px solid #e5e7eb", borderRight: "1px solid #e5e7eb", background: "#fff" }}>
                   <div onClick={() => { 
@@ -869,9 +869,9 @@ export default function HomepagePage() {
                     <div style={{ padding: "0 24px 24px 40px", background: "#fff", cursor: "default" }} onClick={e => e.stopPropagation()}>
                       <div style={{ borderTop: "1px solid #e2e8f0", borderBottom: "1px solid #e2e8f0", borderLeft: "1px solid #e2e8f0", display: "grid", gridTemplateColumns: "130px 1fr 130px 1fr", fontSize: 14 }}>
                         {[
-                          { l1: "매물번호", v1: String(v.id).split('-')[0].toUpperCase(), l2: "방/욕실수", v2: `${v.rooms || 0}개 / ${v.bathrooms || 0}개` },
+                          { l1: "공실광고번호", v1: String(v.id).split('-')[0].toUpperCase(), l2: "방/욕실수", v2: `${v.rooms || 0}개 / ${v.bathrooms || 0}개` },
                           { l1: "소재지", v1: `${v.sido} ${v.sigungu} ${v.dong} ${v.detail_addr || ""}`.trim(), l2: "방향", v2: v.direction || "남향" },
-                          { l1: "매물특징", v1: v.building_name || "특징 없음", l2: "주차가능 여부", v2: v.parking_spots ? `${v.parking_spots}대` : "불가" },
+                          { l1: "공실광고특징", v1: v.building_name || "특징 없음", l2: "주차가능 여부", v2: v.parking_spots ? `${v.parking_spots}대` : "불가" },
                           { l1: "공급/전용면적", v1: `${Math.round((v.area_m2 || 0) * 1.3)}m² / ${v.area_m2 || 0}m²`, l2: "입주가능일", v2: v.move_in_date || "1개월 이내" },
                           { l1: "해당층/총층", v1: `${v.floor || "해당층"} / ${v.total_floors || "전체층"}`, l2: "관리비", v2: v.maintenance_fee ? `${Math.round(v.maintenance_fee/10000)}만원` : "10만원" },
                           { l1: "등록자명", v1: (() => {

@@ -20,7 +20,7 @@ export default function HomepagePreview({ theme, formData, logoPreview, onElemen
 
   const menus = [
     { key: "home", label: "메인" },
-    { key: "listings", label: "전체매물보기" },
+    { key: "listings", label: "전체공실광고보기" },
     { key: "map", label: "지도검색" },
     { key: "news", label: "뉴스기사" },
     { key: "about", label: "회사소개" },
@@ -179,13 +179,13 @@ export default function HomepagePreview({ theme, formData, logoPreview, onElemen
             )}
           </div>
 
-          {/* ── 매물 영역 ── */}
+          {/* ── 공실광고 영역 ── */}
           <div style={{ padding: isMobile ? "24px 20px" : "40px", background: "#f8fafc", flex: 1 }}>
             <div style={{
               fontSize: isMobile ? 18 : 24, fontWeight: 800, color: "#1e293b",
               marginBottom: isMobile ? 16 : 24, paddingBottom: 12, borderBottom: "2px solid #e2e8f0"
             }}>
-              🔖 최근 등록 {activeTheme === "apartment" ? "아파트" : "사무실"} 매물
+              🔖 최근 등록 {activeTheme === "apartment" ? "아파트" : "사무실"} 공실광고
             </div>
             <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: isMobile ? 16 : 24 }}>
               {[1, 2, 3].map(i => (
