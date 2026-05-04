@@ -745,8 +745,12 @@ function MobileVacancyWrite() {
         {/* 등록 버튼 (인라인) */}
         <div style={{ display:"flex", gap:10, marginTop: 8 }}>
           <button type="button" disabled={submitting} onClick={()=>handleSubmit("ACTIVE")}
-            style={{ flex:2, height:56, background: submitting?"#9ca3af":"linear-gradient(135deg,#10b981,#059669)", color:"#fff", border:"none", borderRadius:14, fontSize:17, fontWeight:800, cursor: submitting?"not-allowed":"pointer", boxShadow:"0 4px 12px rgba(16,185,129,0.3)" }}>
-            {submitting ? "처리 중..." : editId ? "✅ 수정완료" : "✅ 등록 (바로발행)"}
+            style={{ flex:2, height:56, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: submitting?"#9ca3af":"linear-gradient(135deg,#10b981,#059669)", color:"#fff", border:"none", borderRadius:14, fontSize:17, fontWeight:800, cursor: submitting?"not-allowed":"pointer", boxShadow:"0 4px 12px rgba(16,185,129,0.3)" }}>
+            {submitting ? "처리 중..." : editId ? (
+              <>✅ 수정완료</>
+            ) : (
+              <><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg> 광고등록</>
+            )}
           </button>
           <button type="button" disabled={submitting} onClick={()=>handleSubmit("DRAFT")}
             style={{ flex:1, height:56, background:"#fff", color:"#374151", border:"1px solid #d1d5db", borderRadius:14, fontSize:15, fontWeight:700, cursor: submitting?"not-allowed":"pointer" }}>

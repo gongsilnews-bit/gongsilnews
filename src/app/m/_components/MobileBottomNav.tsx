@@ -134,7 +134,7 @@ function MobileBottomNavContent() {
               className="flex flex-col items-center justify-center w-full h-full cursor-pointer"
               style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', position: 'relative', background: 'none', border: 'none', padding: 0 }}
             >
-              <span className={`text-xl mb-1 ${isActive ? "opacity-100 scale-110" : "opacity-50 grayscale"} transition-all duration-200`} style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <span className={`text-xl mb-1 ${isActive ? "opacity-100 scale-110" : `opacity-50 ${profileImg ? "" : "grayscale"}`} transition-all duration-200`} style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 {profileImg ? (
                   <div style={{ width: 24, height: 24, borderRadius: '50%', overflow: 'hidden', border: isActive ? '2px solid #1a2e50' : '1px solid #ccc' }}>
                     <img src={profileImg} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />

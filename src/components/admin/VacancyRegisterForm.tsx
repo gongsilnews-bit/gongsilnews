@@ -1541,10 +1541,12 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                       background: submitting ? "#9ca3af" : "linear-gradient(135deg, #10b981 0%, #059669 100%)",
                       color: "#fff", fontSize: 18, fontWeight: 800,
                       cursor: submitting ? "not-allowed" : "pointer",
-                      marginTop: 32
+                      marginTop: 32, display: "flex", alignItems: "center", justifyContent: "center", gap: 8
                     }}
                   >
-                    {submitting ? "등록 중..." : "✓ 공실 등록하기 (바로 발행)"}
+                    {submitting ? "처리 중..." : (
+                      <><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg> 광고등록</>
+                    )}
                   </button>
                 );
               }
@@ -1560,10 +1562,14 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                       background: submitting ? "#9ca3af" : "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
                       color: "#fff", fontSize: 18, fontWeight: 800,
                       cursor: submitting ? "not-allowed" : "pointer",
-                      marginTop: 32
+                      marginTop: 32, display: "flex", alignItems: "center", justifyContent: "center", gap: 8
                     }}
                   >
-                    {submitting ? "저장 중..." : (editData ? "✓ 공실 수정하기" : "✓ 공실 등록하기")}
+                    {submitting ? "처리 중..." : (editData ? (
+                      <>✅ 수정완료</>
+                    ) : (
+                      <><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg> 광고등록</>
+                    ))}
                   </button>
                 );
               }
@@ -1590,10 +1596,14 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                       flex: 1, padding: "18px 0", borderRadius: 10, border: "none",
                       background: "linear-gradient(135deg, #10b981 0%, #059669 100%)", color: "#fff",
                       fontSize: 16, fontWeight: 700, cursor: submitting ? "not-allowed" : "pointer",
-                      boxShadow: "0 4px 12px rgba(16, 185, 129, 0.2)"
+                      boxShadow: "0 4px 12px rgba(16, 185, 129, 0.2)", display: "flex", alignItems: "center", justifyContent: "center", gap: 8
                     }}
                   >
-                    {submitting ? "처리 중..." : (editData ? "✓ 공실 수정하기" : "✓ 공실 등록하기")}
+                    {submitting ? "처리 중..." : (editData ? (
+                      <>✅ 수정완료</>
+                    ) : (
+                      <><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg> 광고등록</>
+                    ))}
                   </button>
                 </div>
               );
