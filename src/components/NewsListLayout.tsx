@@ -5,6 +5,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import ImportantNewsRotate from "./ImportantNewsRotate";
 import BannerSlot from "./BannerSlot";
+import { createClient } from "@/utils/supabase/client";
+import { getArticleBookmarks } from "@/app/actions/bookmark";
+import AuthModal from "./AuthModal";
 
 interface Article {
   id: string;
@@ -40,17 +43,25 @@ export default function NewsListLayout({ category, title, initialArticles, initi
   const [bookmarkIds, setBookmarkIds] = useState<string[]>([]);
   const ITEMS_PER_PAGE = 10;
 
-  // 관심기사 모드일 때 localStorage에서 북마크 ID 로드
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
+  // 관심기사 모드일 때 DB에서 북마크 ID 로드
   useEffect(() => {
     if (isBookmarkMode) {
-      try {
-        const saved = localStorage.getItem("news_bookmarks");
-        if (saved) {
-          setBookmarkIds(JSON.parse(saved));
+      const fetchBookmarks = async () => {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          setIsAuthModalOpen(true);
+          return;
         }
-      } catch (e) {
-        console.error("Failed to load bookmarks", e);
-      }
+        
+        const res = await getArticleBookmarks(user.id);
+        if (res.success && res.bookmarkIds) {
+          setBookmarkIds(res.bookmarkIds);
+        }
+      };
+      fetchBookmarks();
     }
   }, [isBookmarkMode]);
 
@@ -280,6 +291,10 @@ export default function NewsListLayout({ category, title, initialArticles, initi
           </div>
         </div>
       </main>
+      
+      {isAuthModalOpen && (
+        <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} initialTab="login" />
+      )}
     </>
   );
 }

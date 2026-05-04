@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getVacancies, getVacancyDetail } from "@/app/actions/vacancy";
+import { toggleVacancyBookmark, getVacancyBookmarks } from "@/app/actions/bookmark";
 import { getPermissionLevel } from "@/utils/permissionCheck";
 import { handleLocationPermissionDenied, handleLocationUnavailable } from "@/utils/locationPermission";
 import AuthModal from "@/components/AuthModal";
@@ -218,35 +219,32 @@ function MobileGongsilContent() {
   }, [selectedVacancy, detailTab]);
 
   useEffect(() => {
-    if (selectedVacancy) {
-      const saved = localStorage.getItem("gongsil_bookmarks");
-      if (saved) {
-        try {
-          const arr = JSON.parse(saved);
-          setIsBookmarked(arr.includes(selectedVacancy.id));
-        } catch (e) {}
-      } else {
-        setIsBookmarked(false);
-      }
+    if (selectedVacancy && currentUser) {
+      getVacancyBookmarks(currentUser.id).then(res => {
+        if (res.success && res.bookmarkIds) {
+          setIsBookmarked(res.bookmarkIds.includes(selectedVacancy.id));
+        }
+      });
+    } else {
+      setIsBookmarked(false);
     }
-  }, [selectedVacancy]);
+  }, [selectedVacancy, currentUser]);
 
-  const toggleBookmark = () => {
+  const toggleBookmark = async () => {
     if (!selectedVacancy) return;
-    setIsBookmarked((prev) => {
-      const next = !prev;
-      const saved = localStorage.getItem("gongsil_bookmarks");
-      let arr: string[] = [];
-      if (saved) { try { arr = JSON.parse(saved); } catch (e) {} }
-      if (next) {
-        arr = [selectedVacancy.id, ...arr.filter((x: string) => x !== selectedVacancy.id)];
-      } else {
-        arr = arr.filter((x: string) => x !== selectedVacancy.id);
-      }
-      localStorage.setItem("gongsil_bookmarks", JSON.stringify(arr));
-      alert(next ? "매물을 찜했습니다." : "찜을 해제했습니다.");
-      return next;
-    });
+    if (!currentUser) {
+      alert("찜하려면 로그인이 필요합니다.");
+      setIsAuthModalOpen(true);
+      return;
+    }
+    
+    const res = await toggleVacancyBookmark(currentUser.id, selectedVacancy.id);
+    if (res.success) {
+      setIsBookmarked(res.isBookmarked!);
+      alert(res.isBookmarked ? "매물을 찜했습니다." : "찜을 해제했습니다.");
+    } else {
+      alert("처리 중 오류가 발생했습니다.");
+    }
   };
 
   const handleKakaoShare = () => {

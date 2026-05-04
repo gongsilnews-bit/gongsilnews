@@ -10,6 +10,7 @@ import { incrementArticleView } from "@/app/actions/article";
 import { getComments, addComment, deleteComment, toggleCommentLike, editComment } from "@/app/actions/comment";
 import { getArticleReactions, toggleArticleReaction } from "@/app/actions/reaction";
 import { getVacancies } from "@/app/actions/vacancy";
+import { toggleArticleBookmark, getArticleBookmarks } from "@/app/actions/bookmark";
 import AuthModal from "./AuthModal";
 import BannerSlot from "./BannerSlot";
 
@@ -144,6 +145,13 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
           setMyReaction(res.myReaction || null);
         }
       });
+      if (currentUserId) {
+        getArticleBookmarks(currentUserId).then(res => {
+          if (res.success && res.bookmarkIds) {
+            setIsBookmarked(res.bookmarkIds.includes(article.id));
+          }
+        });
+      }
     }
   }, [article?.id, currentUserId]);
 
@@ -288,14 +296,7 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
 
   useEffect(() => {
     setMounted(true);
-    // 찜 상태 복원
-    const saved = localStorage.getItem("news_bookmarks");
-    if (saved) {
-      try {
-        const arr = JSON.parse(saved) as number[];
-        setIsBookmarked(arr.includes(article.id));
-      } catch (e) {}
-    }
+    // 찜 상태 복원 (DB에서 가져오므로 localStorage 사용 안 함)
     // 글자 크기 복원
     const savedFs = localStorage.getItem("news_font_size_index");
     if (savedFs) {
@@ -382,21 +383,23 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
   }, []);
 
   // 찜하기 기능
-  const toggleBookmark = () => {
-    setIsBookmarked(prev => {
-      const next = !prev;
-      const saved = localStorage.getItem("news_bookmarks");
-      let arr: number[] = [];
-      if (saved) { try { arr = JSON.parse(saved); } catch (e) {} }
-      if (next) {
-        arr = [article.id, ...arr.filter((x: number) => x !== article.id)];
-      } else {
-        arr = arr.filter((x: number) => x !== article.id);
-      }
-      localStorage.setItem("news_bookmarks", JSON.stringify(arr));
-      setToastMessage(next ? "기사를 찜했습니다." : "찜을 해제했습니다.");
-      return next;
-    });
+  const toggleBookmark = async () => {
+    if (!currentUserId) {
+      setConfirmDialog({
+        isOpen: true,
+        message: "기사를 찜하려면 로그인이 필요합니다.\n로그인 화면으로 이동할까요?",
+        onConfirm: () => setIsAuthModalOpen(true)
+      });
+      return;
+    }
+
+    const res = await toggleArticleBookmark(currentUserId, article.id);
+    if (res.success) {
+      setIsBookmarked(res.isBookmarked!);
+      setToastMessage(res.isBookmarked ? "기사를 찜했습니다." : "찜을 해제했습니다.");
+    } else {
+      setToastMessage("처리 중 오류가 발생했습니다.");
+    }
   };
 
   // 카카오톡 공유

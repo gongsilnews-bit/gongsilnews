@@ -121,33 +121,26 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
 
   useEffect(() => {
     let localRecent: any[] = [];
-    let localWish: any[] = [];
     const savedRecent = localStorage.getItem('gongsil_recent_views');
     if (savedRecent) {
       try { localRecent = JSON.parse(savedRecent); setRecentViews(localRecent); } catch (e) {}
-    }
-    const savedWish = localStorage.getItem('gongsil_wishlist');
-    if (savedWish) {
-      try { localWish = JSON.parse(savedWish); setWishlist(localWish); } catch (e) {}
     }
 
     if (currentUser) {
       getVacancyUserData(currentUser.id).then(res => {
         if (res.success) {
-          // Merge local + DB, preferring DB, deduplicated
-          const mergedWish = Array.from(new Set([...(res.wishlist || []), ...localWish]));
+          const mergedWish = Array.from(new Set([...(res.wishlist || [])]));
           const mergedRecent = Array.from(new Set([...(res.recentViews || []), ...localRecent])).slice(0, 50);
           
           setWishlist(mergedWish);
           setRecentViews(mergedRecent);
-          localStorage.setItem('gongsil_wishlist', JSON.stringify(mergedWish));
           localStorage.setItem('gongsil_recent_views', JSON.stringify(mergedRecent));
-          
-          // Optionally, sync local to DB here lazily if we had a batch update, but we'll skip for simplicity.
         }
       });
+    } else {
+      setWishlist([]); // 로그아웃 시 찜 목록 초기화
     }
-  }, [currentUser]); // currentUser가 설정되면 DB 값을 가져와 로컬과 병합
+  }, [currentUser]);
 
   useEffect(() => {
     if (activeProperty) {
@@ -164,18 +157,20 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   }, [activeProperty, currentUser]);
 
   const toggleWishlist = (id: any) => {
+    if (!currentUser) {
+      setToastMessage("관심공실로 등록하시려면 로그인이 필요합니다.");
+      setIsAuthModalOpen(true);
+      return;
+    }
+
     const isWished = wishlist.includes(id);
     setToastMessage(isWished ? "찜을 해제했습니다." : "찜했습니다.");
     
     setWishlist(prev => {
-      const newWish = isWished ? prev.filter(x => x !== id) : [id, ...prev];
-      localStorage.setItem('gongsil_wishlist', JSON.stringify(newWish));
-      return newWish;
+      return isWished ? prev.filter(x => x !== id) : [id, ...prev];
     });
 
-    if (currentUser) {
-      toggleWishlistToDB(currentUser.id, String(id), !isWished);
-    }
+    toggleWishlistToDB(currentUser.id, String(id), !isWished);
   };
 
   const [realtorTradeType, setRealtorTradeType] = useState<string>("전체");
