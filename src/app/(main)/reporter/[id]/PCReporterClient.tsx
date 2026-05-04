@@ -112,29 +112,7 @@ export default function PCReporterClient({
             boxShadow: "0 8px 30px rgba(0,0,0,0.15)",
           }}
         >
-          {/* 전체 기자 링크 */}
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "flex-end",
-              marginBottom: "20px",
-            }}
-          >
-            <Link
-              href="/news_all"
-              style={{
-                color: "rgba(255,255,255,0.7)",
-                fontSize: "13px",
-                fontWeight: 600,
-                textDecoration: "none",
-                display: "flex",
-                alignItems: "center",
-                gap: "4px",
-              }}
-            >
-              전체 기자 &gt;
-            </Link>
-          </div>
+
 
           {/* 프로필 사진 */}
           <div
@@ -210,8 +188,15 @@ export default function PCReporterClient({
                 <div style={{ fontSize: "13px", color: "rgba(255,255,255,0.7)", marginBottom: "4px" }}>
                   {agencyInfo.address}
                 </div>
-                <div style={{ fontSize: "13px", color: "#60a5fa", fontWeight: "bold", marginBottom: "16px" }}>
-                  📞 {agencyInfo.phone}
+                <div style={{ fontSize: "13px", color: "#60a5fa", fontWeight: "bold", marginBottom: "16px", display: "flex", flexDirection: "column", gap: "4px", alignItems: "center" }}>
+                  {agencyInfo.phone?.split(',').map((num: string, idx: number) => {
+                    const cleanNum = num.trim();
+                    return (
+                      <a key={idx} href={`tel:${cleanNum}`} style={{ color: "inherit", textDecoration: "none" }}>
+                        📞 {cleanNum}
+                      </a>
+                    );
+                  })}
                 </div>
               </>
             ) : (

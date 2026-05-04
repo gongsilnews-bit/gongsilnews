@@ -138,31 +138,7 @@ export default function MobileReporterClient({
               />
             </svg>
           </button>
-          <button
-            onClick={() => router.push("/m/news?tab=all")}
-            style={{
-              background: "none",
-              border: "none",
-              color: "#fff",
-              cursor: "pointer",
-              fontSize: "14px",
-              fontWeight: "bold",
-              display: "flex",
-              alignItems: "center",
-              gap: "4px",
-            }}
-          >
-            전체 기자
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M9 18L15 12L9 6"
-                stroke="white"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
+
         </div>
 
         {/* 프로필 카드 */}
@@ -258,8 +234,15 @@ export default function MobileReporterClient({
                   <div style={{ fontSize: "12px", color: "rgba(255,255,255,0.7)" }}>
                     {agencyInfo.address}
                   </div>
-                  <div style={{ fontSize: "12px", color: "#60a5fa", fontWeight: "bold", marginTop: "2px" }}>
-                    📞 {agencyInfo.phone}
+                  <div style={{ fontSize: "12px", color: "#60a5fa", fontWeight: "bold", marginTop: "2px", display: "flex", flexDirection: "column", gap: "2px" }}>
+                    {agencyInfo.phone?.split(',').map((num: string, idx: number) => {
+                      const cleanNum = num.trim();
+                      return (
+                        <a key={idx} href={`tel:${cleanNum}`} style={{ color: "inherit", textDecoration: "none" }}>
+                          📞 {cleanNum}
+                        </a>
+                      );
+                    })}
                   </div>
                 </>
               ) : (
