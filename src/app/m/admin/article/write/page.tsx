@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
-import { saveArticle, getArticleDetail } from "@/app/actions/article";
+import { saveArticle, getArticleDetail, getPhotoLibrary, togglePhotoFavorite } from "@/app/actions/article";
 import { uploadArticleMediaDirect } from "@/utils/uploadDirect";
 
 /* ── WebP 압축 변환 ── */
@@ -57,6 +57,18 @@ function MobileArticleWrite() {
   const photoInputRef = useRef<HTMLInputElement>(null);
   const editorRef = useRef<HTMLDivElement>(null);
 
+  /* ── 예약 노출 상태 ── */
+  const [isReserved, setIsReserved] = useState(false);
+  const [publishDate, setPublishDate] = useState("");
+  const [publishTime, setPublishTime] = useState("");
+
+  /* ── 포토 DB 상태 ── */
+  const [showPhotoDbModal, setShowPhotoDbModal] = useState(false);
+  const [photoDbItems, setPhotoDbItems] = useState<any[]>([]);
+  const [photoDbSearch, setPhotoDbSearch] = useState("");
+  const [photoDbTab, setPhotoDbTab] = useState<"전체사진" | "즐겨찾기">("전체사진");
+  const [isPhotoDbLoading, setIsPhotoDbLoading] = useState(false);
+
   useEffect(() => {
     if (editorRef.current && content && !editorRef.current.innerHTML) {
       editorRef.current.innerHTML = content;
@@ -106,6 +118,17 @@ function MobileArticleWrite() {
           // 추출 후 본문에서 영상 태그 제거 (모바일 에디터에서는 카드로 관리)
           htmlContent = htmlContent.replace(/<div[^>]*class="inserted-video"[^>]*>.*?<\/div>/g, "");
           
+          if (d.published_at) {
+            const dt = new Date(d.published_at);
+            const now = new Date();
+            // 시간이 미래라면 예약 상태로 세팅
+            if (dt > now) {
+              setIsReserved(true);
+              setPublishDate(`${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`);
+              setPublishTime(`${String(dt.getHours()).padStart(2, "0")}:${String(dt.getMinutes()).padStart(2, "0")}`);
+            }
+          }
+          
           if (d.youtube_url) {
             const mainMatch = d.youtube_url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([\w-]{11})/);
             if (mainMatch && !vids.find(v => v.videoId === mainMatch[1])) {
@@ -123,6 +146,63 @@ function MobileArticleWrite() {
       }
     })();
   }, [editId]);
+
+  /* ── 포토DB 로직 ── */
+  const openPhotoDbModal = () => {
+    setShowPhotoDbModal(true);
+    setPhotoDbTab("전체사진");
+    setPhotoDbSearch("");
+    fetchPhotoDb("", false);
+  };
+
+  const fetchPhotoDb = async (searchStr: string, favOnly: boolean) => {
+    setIsPhotoDbLoading(true);
+    const res = await getPhotoLibrary({ search: searchStr, isFavorite: favOnly });
+    if (res.success && res.data) {
+      setPhotoDbItems(res.data);
+    } else {
+      setPhotoDbItems([]);
+    }
+    setIsPhotoDbLoading(false);
+  };
+
+  useEffect(() => {
+    if (showPhotoDbModal) {
+      fetchPhotoDb(photoDbSearch, photoDbTab === "즐겨찾기");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [photoDbTab]);
+
+  const handlePhotoDbSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    fetchPhotoDb(photoDbSearch, photoDbTab === "즐겨찾기");
+  };
+
+  const handleToggleFav = async (e: React.MouseEvent, photoId: string, currentFav: boolean) => {
+    e.stopPropagation();
+    const res = await togglePhotoFavorite(photoId, !currentFav);
+    if (res.success) {
+      setPhotoDbItems(prev => prev.map(p => p.id === photoId ? { ...p, is_favorite: !currentFav } : p));
+      if (photoDbTab === "즐겨찾기") {
+        fetchPhotoDb(photoDbSearch, true);
+      }
+    } else {
+      alert("상태 변경에 실패했습니다.");
+    }
+  };
+
+  const handleSelectFromPhotoDb = async (photo: any) => {
+    setShowPhotoDbModal(false);
+    try {
+      const response = await fetch(photo.url);
+      const blob = await response.blob();
+      const ext = photo.filename ? photo.filename.split(".").pop() : "webp";
+      const file = new File([blob], photo.filename || `db_photo_${Date.now()}.${ext}`, { type: blob.type });
+      handlePhotoAdd([file] as unknown as FileList);
+    } catch (err) {
+      alert("사진을 불러오는 중 오류가 발생했습니다.");
+    }
+  };
 
   /* ── 키워드 추가 ── */
   const addKeyword = () => {
@@ -223,7 +303,13 @@ function MobileArticleWrite() {
       // 2. 기사 저장
       const status = requestApproval ? "승인신청" : "작성중";
       const now = new Date();
-      const published_at = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}T${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+      let published_at = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}T${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+
+      if (isReserved && publishDate) {
+        published_at = `${publishDate}T${publishTime || "00:00"}:00`;
+      } else if (editId && publishDate) {
+        published_at = `${publishDate}T${publishTime || "00:00"}:00`;
+      }
 
       const coverPhoto = photos.find(p => p.isCover);
       const coverVideo = videos.find(v => v.isCover);
@@ -441,6 +527,22 @@ function MobileArticleWrite() {
           />
         </div>
 
+        {/* 노출시간 예약 */}
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ fontSize: 13, fontWeight: 700, color: "#374151", display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+            노출시간
+            <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 14, height: 14, borderRadius: "50%", border: "1px solid #9ca3af", fontSize: 9, color: "#9ca3af" }}>i</span>
+          </label>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 13, fontWeight: 600 }}>
+              <input type="checkbox" checked={isReserved} onChange={e => setIsReserved(e.target.checked)} style={{ accentColor: "#3b82f6" }} />
+              예약
+            </label>
+            <input type="date" value={publishDate} onChange={e => setPublishDate(e.target.value)} disabled={!isReserved && !editId} style={{ flex: 1, padding: "0 10px", height: 40, border: "1px solid #d1d5db", borderRadius: 8, fontSize: 13, background: (!isReserved && !editId) ? "#f3f4f6" : "#fff", color: (!isReserved && !editId) ? "#9ca3af" : "#111", outline: "none" }} />
+            <input type="time" value={publishTime} onChange={e => setPublishTime(e.target.value)} disabled={!isReserved && !editId} style={{ flex: 1, padding: "0 10px", height: 40, border: "1px solid #d1d5db", borderRadius: 8, fontSize: 13, background: (!isReserved && !editId) ? "#f3f4f6" : "#fff", color: (!isReserved && !editId) ? "#9ca3af" : "#111", outline: "none" }} />
+          </div>
+        </div>
+
         {/* 미디어 섹션 (사진/영상) */}
         <div style={{ marginBottom: 16, background: "#fff", borderRadius: 14, padding: 16, border: "1px solid #e5e7eb" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
@@ -450,11 +552,17 @@ function MobileArticleWrite() {
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
             <button
               onClick={() => photoInputRef.current?.click()}
-              style={{ flex: 1, minWidth: "120px", height: 40, background: "#f3f4f6", color: "#374151", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer" }}
+              style={{ flex: 1, minWidth: "80px", height: 40, background: "#f3f4f6", color: "#374151", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer" }}
             >
-              + 사진 추가
+              + 사진
             </button>
-            <div style={{ flex: 2, minWidth: "200px", display: "flex", gap: 6 }}>
+            <button
+              onClick={openPhotoDbModal}
+              style={{ flex: 1, minWidth: "80px", height: 40, background: "#f3f4f6", color: "#374151", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer" }}
+            >
+              + 포토DB
+            </button>
+            <div style={{ flex: 2, minWidth: "160px", display: "flex", gap: 6 }}>
                <input
                  type="url"
                  value={youtubeInput}
@@ -643,6 +751,55 @@ function MobileArticleWrite() {
           </button>
         </div>
       </div>
+
+      {/* ── 포토 DB 모달 ── */}
+      {showPhotoDbModal && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 10000, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <div style={{ background: "#fff", width: "100%", maxWidth: 500, maxHeight: "90vh", borderRadius: 16, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+            <div style={{ padding: "16px 20px", borderBottom: "1px solid #e5e7eb", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#f9fafb" }}>
+              <h3 style={{ fontSize: 16, fontWeight: 800, margin: 0 }}>포토DB 불러오기</h3>
+              <button onClick={() => setShowPhotoDbModal(false)} style={{ background: "none", border: "none", fontSize: 24, cursor: "pointer", color: "#9ca3af" }}>×</button>
+            </div>
+            
+            <div style={{ padding: "16px 20px", borderBottom: "1px solid #e5e7eb" }}>
+              <form onSubmit={handlePhotoDbSearch} style={{ display: "flex", gap: 8 }}>
+                <input
+                  type="text"
+                  placeholder="이미지 검색어 입력"
+                  value={photoDbSearch}
+                  onChange={e => setPhotoDbSearch(e.target.value)}
+                  style={{ flex: 1, padding: "0 12px", height: 40, border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, outline: "none" }}
+                />
+                <button type="submit" style={{ padding: "0 16px", background: "#374151", color: "#fff", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>검색</button>
+              </form>
+            </div>
+
+            <div style={{ display: "flex", borderBottom: "1px solid #e5e7eb", background: "#f9fafb" }}>
+              <button onClick={() => setPhotoDbTab("전체사진")} style={{ flex: 1, padding: "12px 0", border: "none", background: "none", fontSize: 14, fontWeight: photoDbTab === "전체사진" ? 800 : 600, color: photoDbTab === "전체사진" ? "#3b82f6" : "#6b7280", borderBottom: photoDbTab === "전체사진" ? "2px solid #3b82f6" : "2px solid transparent", cursor: "pointer" }}>전체사진</button>
+              <button onClick={() => setPhotoDbTab("즐겨찾기")} style={{ flex: 1, padding: "12px 0", border: "none", background: "none", fontSize: 14, fontWeight: photoDbTab === "즐겨찾기" ? 800 : 600, color: photoDbTab === "즐겨찾기" ? "#3b82f6" : "#6b7280", borderBottom: photoDbTab === "즐겨찾기" ? "2px solid #3b82f6" : "2px solid transparent", cursor: "pointer" }}>즐겨찾기 ⭐️</button>
+            </div>
+
+            <div style={{ flex: 1, overflowY: "auto", padding: 16, background: "#f3f4f6" }}>
+              {isPhotoDbLoading ? (
+                <div style={{ textAlign: "center", padding: "40px 0", color: "#6b7280", fontSize: 14 }}>불러오는 중...</div>
+              ) : photoDbItems.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "40px 0", color: "#9ca3af", fontSize: 14 }}>검색 결과가 없습니다.</div>
+              ) : (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(100px, 1fr))", gap: 10 }}>
+                  {photoDbItems.map((item, idx) => (
+                    <div key={idx} style={{ background: "#fff", borderRadius: 8, overflow: "hidden", border: "1px solid #e5e7eb", cursor: "pointer", position: "relative" }} onClick={() => handleSelectFromPhotoDb(item)}>
+                      <div style={{ width: "100%", aspectRatio: "1/1", background: "#f3f4f6", backgroundImage: `url(${item.url})`, backgroundSize: "cover", backgroundPosition: "center" }} />
+                      <button onClick={(e) => handleToggleFav(e, item.id, item.is_favorite)} style={{ position: "absolute", top: 4, right: 4, width: 24, height: 24, borderRadius: "50%", background: "rgba(255,255,255,0.9)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                        {item.is_favorite ? "⭐️" : "☆"}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

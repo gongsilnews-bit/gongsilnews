@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { createVacancy, updateVacancy, getVacancyDetail, saveVacancyPhoto } from "@/app/actions/vacancy";
+import { getPhotoLibrary, togglePhotoFavorite } from "@/app/actions/article";
 import { uploadVacancyPhotoDirect } from "@/utils/uploadDirect";
 import { geocodeAddress } from "@/app/actions/geocode";
 
@@ -103,6 +104,13 @@ function MobileVacancyWrite() {
   const [photos, setPhotos] = useState<File[]>([]);
   const [photoPreview, setPhotoPreview] = useState<string[]>([]);
 
+  /* ── 포토 DB 상태 ── */
+  const [showPhotoDbModal, setShowPhotoDbModal] = useState(false);
+  const [photoDbItems, setPhotoDbItems] = useState<any[]>([]);
+  const [photoDbSearch, setPhotoDbSearch] = useState("");
+  const [photoDbTab, setPhotoDbTab] = useState<"전체사진" | "즐겨찾기">("전체사진");
+  const [isPhotoDbLoading, setIsPhotoDbLoading] = useState(false);
+
   const isCommercial = propertyType === "상가·사무실·건물·공장·토지";
   const isRealtor = userRole === "REALTOR" || userRole === "ADMIN";
 
@@ -186,7 +194,68 @@ function MobileVacancyWrite() {
     })();
   }, [editId]);
 
-  // 면적 자동 변환
+  /* ── 포토DB 로직 ── */
+  const openPhotoDbModal = () => {
+    setShowPhotoDbModal(true);
+    setPhotoDbTab("전체사진");
+    setPhotoDbSearch("");
+    fetchPhotoDb("", false);
+  };
+
+  const fetchPhotoDb = async (searchStr: string, favOnly: boolean) => {
+    setIsPhotoDbLoading(true);
+    const res = await getPhotoLibrary({ search: searchStr, isFavorite: favOnly });
+    if (res.success && res.data) {
+      setPhotoDbItems(res.data);
+    } else {
+      setPhotoDbItems([]);
+    }
+    setIsPhotoDbLoading(false);
+  };
+
+  useEffect(() => {
+    if (showPhotoDbModal) {
+      fetchPhotoDb(photoDbSearch, photoDbTab === "즐겨찾기");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [photoDbTab]);
+
+  const handlePhotoDbSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    fetchPhotoDb(photoDbSearch, photoDbTab === "즐겨찾기");
+  };
+
+  const handleToggleFav = async (e: React.MouseEvent, photoId: string, currentFav: boolean) => {
+    e.stopPropagation();
+    const res = await togglePhotoFavorite(photoId, !currentFav);
+    if (res.success) {
+      setPhotoDbItems(prev => prev.map(p => p.id === photoId ? { ...p, is_favorite: !currentFav } : p));
+      if (photoDbTab === "즐겨찾기") {
+        fetchPhotoDb(photoDbSearch, true);
+      }
+    } else {
+      alert("상태 변경에 실패했습니다.");
+    }
+  };
+
+  const handleSelectFromPhotoDb = async (photo: any) => {
+    setShowPhotoDbModal(false);
+    try {
+      const response = await fetch(photo.url);
+      const blob = await response.blob();
+      const ext = photo.filename ? photo.filename.split(".").pop() : "webp";
+      const file = new File([blob], photo.filename || `db_photo_${Date.now()}.${ext}`, { type: blob.type });
+      
+      const compressed = await compressToWebP(file);
+      const pv = URL.createObjectURL(compressed);
+      setPhotos(prev => [...prev, compressed]);
+      setPhotoPreview(prev => [...prev, pv]);
+    } catch (err) {
+      alert("사진을 불러오는 중 오류가 발생했습니다.");
+    }
+  };
+
+  /* ── WebP 압축 변환 ── */
   const handleM2Change = useCallback((val: string, setter: (v: string) => void, pySetter: (v: string) => void) => {
     setter(val);
     if (val && !isNaN(Number(val))) {
@@ -666,9 +735,15 @@ function MobileVacancyWrite() {
               </div>
             ))}
             {photos.length < 5 && (
-              <label style={{ width:80, height:80, borderRadius:10, border:"2px dashed #d1d5db", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", fontSize:28, color:"#9ca3af" }}>
-                +<input type="file" accept="image/*" multiple hidden onChange={handlePhotoChange}/>
-              </label>
+              <>
+                <label style={{ width:80, height:80, borderRadius:10, border:"2px dashed #d1d5db", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", fontSize:28, color:"#9ca3af" }}>
+                  +<input type="file" accept="image/*" multiple hidden onChange={handlePhotoChange}/>
+                </label>
+                <button type="button" onClick={openPhotoDbModal} style={{ width:80, height:80, borderRadius:10, border:"2px dashed #d1d5db", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", cursor:"pointer", color:"#9ca3af", background:"#fff" }}>
+                  <span style={{ fontSize:20 }}>DB</span>
+                  <span style={{ fontSize:10, marginTop:4 }}>포토DB</span>
+                </button>
+              </>
             )}
           </div>
         </div>
@@ -758,6 +833,57 @@ function MobileVacancyWrite() {
           </button>
         </div>
       </div>
+      </div>
+
+      {/* ── 포토 DB 모달 ── */}
+      {showPhotoDbModal && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 10000, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <div style={{ background: "#fff", width: "100%", maxWidth: 500, maxHeight: "90vh", borderRadius: 16, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+            <div style={{ padding: "16px 20px", borderBottom: "1px solid #e5e7eb", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#f9fafb" }}>
+              <h3 style={{ fontSize: 16, fontWeight: 800, margin: 0 }}>포토DB 불러오기</h3>
+              <button type="button" onClick={() => setShowPhotoDbModal(false)} style={{ background: "none", border: "none", fontSize: 24, cursor: "pointer", color: "#9ca3af" }}>×</button>
+            </div>
+            
+            <div style={{ padding: "16px 20px", borderBottom: "1px solid #e5e7eb" }}>
+              <form onSubmit={handlePhotoDbSearch} style={{ display: "flex", gap: 8 }}>
+                <input
+                  type="text"
+                  placeholder="이미지 검색어 입력"
+                  value={photoDbSearch}
+                  onChange={e => setPhotoDbSearch(e.target.value)}
+                  style={{ flex: 1, padding: "0 12px", height: 40, border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, outline: "none" }}
+                />
+                <button type="submit" style={{ padding: "0 16px", background: "#374151", color: "#fff", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>검색</button>
+              </form>
+            </div>
+
+            <div style={{ display: "flex", borderBottom: "1px solid #e5e7eb", background: "#f9fafb" }}>
+              <button type="button" onClick={() => setPhotoDbTab("전체사진")} style={{ flex: 1, padding: "12px 0", border: "none", background: "none", fontSize: 14, fontWeight: photoDbTab === "전체사진" ? 800 : 600, color: photoDbTab === "전체사진" ? "#3b82f6" : "#6b7280", borderBottom: photoDbTab === "전체사진" ? "2px solid #3b82f6" : "2px solid transparent", cursor: "pointer" }}>전체사진</button>
+              <button type="button" onClick={() => setPhotoDbTab("즐겨찾기")} style={{ flex: 1, padding: "12px 0", border: "none", background: "none", fontSize: 14, fontWeight: photoDbTab === "즐겨찾기" ? 800 : 600, color: photoDbTab === "즐겨찾기" ? "#3b82f6" : "#6b7280", borderBottom: photoDbTab === "즐겨찾기" ? "2px solid #3b82f6" : "2px solid transparent", cursor: "pointer" }}>즐겨찾기 ⭐️</button>
+            </div>
+
+            <div style={{ flex: 1, overflowY: "auto", padding: 16, background: "#f3f4f6" }}>
+              {isPhotoDbLoading ? (
+                <div style={{ textAlign: "center", padding: "40px 0", color: "#6b7280", fontSize: 14 }}>불러오는 중...</div>
+              ) : photoDbItems.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "40px 0", color: "#9ca3af", fontSize: 14 }}>검색 결과가 없습니다.</div>
+              ) : (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(100px, 1fr))", gap: 10 }}>
+                  {photoDbItems.map((item, idx) => (
+                    <div key={idx} style={{ background: "#fff", borderRadius: 8, overflow: "hidden", border: "1px solid #e5e7eb", cursor: "pointer", position: "relative" }} onClick={() => handleSelectFromPhotoDb(item)}>
+                      <div style={{ width: "100%", aspectRatio: "1/1", background: "#f3f4f6", backgroundImage: `url(${item.url})`, backgroundSize: "cover", backgroundPosition: "center" }} />
+                      <button type="button" onClick={(e) => handleToggleFav(e, item.id, item.is_favorite)} style={{ position: "absolute", top: 4, right: 4, width: 24, height: 24, borderRadius: "50%", background: "rgba(255,255,255,0.9)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                        {item.is_favorite ? "⭐️" : "☆"}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
