@@ -63,7 +63,7 @@ export default function QuickFloatingMenu() {
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4a6fad" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
           </svg>
-          관심매물보기
+          찜한공실
         </div>
 
         {/* 관심기사 */}
