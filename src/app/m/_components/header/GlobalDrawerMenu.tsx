@@ -384,8 +384,8 @@ export default function GlobalDrawerMenu() {
                 {[
                   { icon: '📝', label: '내가 등록한 기사', href: '/m/admin/article' },
                   { icon: '🏢', label: '내가 등록한 공실', href: '/m/admin/vacancy' },
-                  { icon: '🔖', label: '내가 찜한 기사', href: '#' },
-                  { icon: '❤️', label: '내가 찜한 공실', href: '#' },
+                  { icon: '🔖', label: '내가 찜한 기사', href: '/m/news_bookmarks' },
+                  { icon: '❤️', label: '내가 찜한 공실', href: '/m/gongsil_bookmarks' },
                 ].map((item) => (
                   <li key={item.label}>
                     <Link

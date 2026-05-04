@@ -1,0 +1,122 @@
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { createClient } from "@/utils/supabase/client";
+
+function formatDate(d: string) {
+  if (!d) return "";
+  const dt = new Date(d);
+  const now = new Date();
+  const diff = Math.floor((now.getTime() - dt.getTime()) / 3600000);
+  if (diff < 1) return "방금 전";
+  if (diff < 24) return `${diff}시간 전`;
+  const days = Math.floor(diff / 24);
+  if (days < 7) return `${days}일 전`;
+  return `${dt.getMonth() + 1}/${dt.getDate()}`;
+}
+
+const stripHtml = (html: string) => html ? html.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim() : "";
+
+export default function MobileNewsBookmarksClient() {
+  const router = useRouter();
+  const [articles, setArticles] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchBookmarks() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        alert("로그인이 필요합니다.");
+        router.push("/m");
+        return;
+      }
+
+      // Fetch article bookmarks
+      const { data: wishData } = await supabase
+        .from("article_bookmarks")
+        .select("article_id")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+
+      const wishIds = (wishData || []).map((row: any) => row.article_id);
+
+      if (wishIds.length > 0) {
+        const { data: props } = await supabase
+          .from("articles")
+          .select("*")
+          .in("id", wishIds)
+          .eq("status", "APPROVED");
+
+        if (props) {
+          const sortedProps = wishIds.map((id: string) => props.find((p: any) => p.id === id)).filter(Boolean);
+          setArticles(sortedProps);
+        }
+      }
+      setLoading(false);
+    }
+    fetchBookmarks();
+  }, [router]);
+
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", background: "#f9fafb", minHeight: "100vh" }}>
+      {/* Header */}
+      <div style={{ background: "#fff", display: "flex", alignItems: "center", padding: "14px 16px", borderBottom: "1px solid #e5e7eb", position: "sticky", top: 0, zIndex: 10 }}>
+        <button onClick={() => router.back()} style={{ background: "none", border: "none", cursor: "pointer", padding: "4px", display: "flex", alignItems: "center", marginLeft: "-4px", marginRight: "8px" }}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#111" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        </button>
+        <h2 style={{ fontSize: "18px", fontWeight: 800, color: "#111", margin: 0 }}>관심기사 <span style={{ color: "#f97316" }}>{articles.length}</span>개</h2>
+      </div>
+
+      {/* List */}
+      <div style={{ padding: "0 16px 20px", background: "#fff", flex: 1 }}>
+        {loading ? (
+          <div style={{ padding: "40px 0", textAlign: "center", color: "#9ca3af" }}>로딩 중...</div>
+        ) : articles.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "60px 0", color: "#9ca3af" }}>
+            <div style={{ fontSize: "40px", marginBottom: "16px" }}>🔖</div>
+            <p style={{ fontSize: "15px", fontWeight: 700, color: "#333", marginBottom: "8px" }}>관심기사가 없습니다.</p>
+            <p style={{ fontSize: "14px" }}>기사에서 북마크 아이콘을 눌러 추가해보세요.</p>
+          </div>
+        ) : (
+          articles.map((article: any) => (
+            <Link
+              href={`/m/news/${article.id}`}
+              key={article.id}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                padding: "20px 0",
+                borderBottom: "1px solid #f0f0f0",
+                cursor: "pointer",
+                background: "#fff",
+                textDecoration: "none",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px" }}>
+                <span style={{ fontSize: "11px", fontWeight: 800, color: "#dc2626" }}>NEWS</span>
+              </div>
+              <div style={{ fontSize: "17px", fontWeight: 800, color: "#111", lineHeight: 1.35, marginBottom: "10px", wordBreak: "keep-all" }}>
+                {article.title}
+              </div>
+              <div style={{ fontSize: "14px", color: "#666", lineHeight: 1.5, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", marginBottom: "14px" }}>
+                {article.subtitle || stripHtml(article.content || "").slice(0, 100)}
+              </div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "13px" }}>
+                <span style={{ color: "#222", fontWeight: 500 }}>
+                  {formatDate(article.published_at || article.created_at)} · {article.author_name || "공실뉴스"}
+                  {article.location_name && ` · 📍${article.location_name}`}
+                </span>
+                <span style={{ color: "#f97316", fontWeight: 700 }}>
+                  기사상세보기 &gt;
+                </span>
+              </div>
+            </Link>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
