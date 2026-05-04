@@ -27,6 +27,7 @@ const TRADE_TYPES = ["매매", "전세", "월세", "단기"];
 export default function MobileFilterBar({ vacancies, filteredCount, filters, onFilterChange, onLocationMove, onShowList, kakaoMapRef }: MobileFilterBarProps) {
   const [activePanel, setActivePanel] = useState<string | null>(null);
   const [fullFilterOpen, setFullFilterOpen] = useState(false);
+  const [fullFilterLocSheetOpen, setFullFilterLocSheetOpen] = useState(false);
 
   // Location search state
   const [locLabel, setLocLabel] = useState("위치");
@@ -87,18 +88,21 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
   });
 
   // Bottom sheet renderer
-  const renderSheet = (title: string, content: React.ReactNode) => (
-    <>
-      <div onClick={() => setActivePanel(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.35)", zIndex: 9990, transition: "opacity 0.2s" }} />
-      <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 448, background: "#fff", borderRadius: "16px 16px 0 0", zIndex: 9991, maxHeight: "55vh", display: "flex", flexDirection: "column", animation: "sheetUp 0.3s ease-out" }}>
-        <div style={{ padding: "16px 20px 12px", borderBottom: "1px solid #f3f4f6", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={{ fontSize: "16px", fontWeight: 800, color: "#111" }}>{title}</span>
-          <button onClick={() => setActivePanel(null)} style={{ background: "none", border: "none", fontSize: "22px", color: "#9ca3af", cursor: "pointer", padding: "4px" }}>✕</button>
+  const renderSheet = (title: string, content: React.ReactNode, customZIndex?: number) => {
+    const zBase = customZIndex || 9990;
+    return (
+      <>
+        <div onClick={() => { setActivePanel(null); setFullFilterLocSheetOpen(false); }} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.35)", zIndex: zBase, transition: "opacity 0.2s" }} />
+        <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 448, background: "#fff", borderRadius: "16px 16px 0 0", zIndex: zBase + 1, maxHeight: "55vh", display: "flex", flexDirection: "column", animation: "sheetUp 0.3s ease-out" }}>
+          <div style={{ padding: "16px 20px 12px", borderBottom: "1px solid #f3f4f6", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span style={{ fontSize: "16px", fontWeight: 800, color: "#111" }}>{title}</span>
+            <button onClick={() => { setActivePanel(null); setFullFilterLocSheetOpen(false); }} style={{ background: "none", border: "none", fontSize: "22px", color: "#9ca3af", cursor: "pointer", padding: "4px" }}>✕</button>
+          </div>
+          <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px 24px", WebkitOverflowScrolling: "touch", overscrollBehaviorY: "contain" }}>{content}</div>
         </div>
-        <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px 24px", WebkitOverflowScrolling: "touch", overscrollBehaviorY: "contain" }}>{content}</div>
-      </div>
-    </>
-  );
+      </>
+    );
+  };
 
   const gridBtnStyle = (active: boolean): React.CSSProperties => ({
     padding: "10px 4px", borderRadius: "8px", fontSize: "13px", fontWeight: active ? 700 : 500, textAlign: "center",
@@ -222,13 +226,12 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
             {/* 위치 검색 */}
             <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
               <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>위치 (시/구/동)</div>
-              <LocationFilterPanel 
-                onLocationMove={onLocationMove} 
-                onFilterChange={handleTempFilterChange}
-                onClose={() => {}} 
-                locLabel={locLabel} 
-                setLocLabel={setLocLabel} 
-              />
+              <button 
+                onClick={() => setFullFilterLocSheetOpen(true)} 
+                style={pillStyle(locLabel !== "위치")}
+              >
+                📍 {locLabel} ▾
+              </button>
             </div>
 
             {/* 거래유형 */}
@@ -290,8 +293,9 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
           <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "#fff", borderTop: "1px solid #e5e7eb", padding: "12px 20px 24px", display: "flex", gap: "12px" }}>
             <button 
               onClick={() => {
-                const empty = { propertyTypes: [], tradeTypes: [], keyword: "", priceMin: null, priceMax: null, areaMin: null, areaMax: null, yearMin: null, yearMax: null, floor: null, ownerRole: null, commissionType: null, themes: [] };
+                const empty = { propertyTypes: [], tradeTypes: [], keyword: "", priceMin: null, priceMax: null, areaMin: null, areaMax: null, yearMin: null, yearMax: null, floor: null, ownerRole: null, commissionType: null, themes: [], sido: null, sigungu: null, dong: null };
                 setTempFilters(empty);
+                setLocLabel("위치");
               }} 
               style={{ padding: "14px 20px", background: "#f3f4f6", border: "none", borderRadius: "10px", fontSize: "14px", fontWeight: 600, color: "#6b7280", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
             >
@@ -303,6 +307,17 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
               if (onShowList) onShowList(); 
             }} style={{ flex: 1, padding: "14px", background: "#4b89ff", border: "none", borderRadius: "10px", fontSize: "15px", fontWeight: 800, color: "#fff", cursor: "pointer" }}>{filteredCount}개 공실광고 보기</button>
           </div>
+
+          {/* 통합 필터 내 위치 검색 바텀 시트 */}
+          {fullFilterLocSheetOpen && renderSheet("📍 위치 검색", (
+            <LocationFilterPanel 
+              onLocationMove={onLocationMove} 
+              onFilterChange={handleTempFilterChange}
+              onClose={() => setFullFilterLocSheetOpen(false)} 
+              locLabel={locLabel} 
+              setLocLabel={setLocLabel} 
+            />
+          ), 10010)}
         </div>
       )}
 
