@@ -55,6 +55,7 @@ export default function PCReporterClient({
 }) {
   const [mainTab, setMainTab] = useState<'articles' | 'vacancies'>('articles');
   const [activeTab, setActiveTab] = useState("all");
+  const [realtorTradeType, setRealtorTradeType] = useState('전체');
 
   const filteredArticles =
     activeTab === "all"
@@ -367,87 +368,96 @@ export default function PCReporterClient({
             {filteredArticles.length === 0 && <div style={{ textAlign: 'center', padding: '80px 0', color: '#9ca3af', fontSize: '15px' }}>이 카테고리에 작성된 기사가 없습니다.</div>}
           </>
         ) : (
-          /* 등록공실 - 기존 공실리스트 스타일 */
+          /* 등록공실 - 공실상세보기 등록자 공실 패턴 적용 */
           <>
-            <div style={{ fontSize: '14px', color: '#6b7280', fontWeight: 600, marginBottom: '16px' }}>
-              총 <span style={{ color: '#3b82f6', fontWeight: 800 }}>{vacancies.length}</span>건
-            </div>
             {vacancies.length > 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                {vacancies.map((prop: any, i: number) => {
-                  const cardMasked = prop.exposure_type === '부동산노출' && userLevel < 2;
-                  const cardAddr = prop.building_name || [prop.dong, prop.sigungu].filter(Boolean).join(" ") || "이름없는 공실";
-                  const title = cardMasked ? cardAddr.replace(/[^\s]/g, "X") : cardAddr;
-                  const showCommission = userLevel >= 2;
+              <div style={{ border: "1px solid #eee", borderRadius: "8px", overflow: "hidden", background: "#fff" }}>
+                <div style={{ display: "flex", background: "#f9f9f9", borderBottom: "1px solid #eee" }}>
+                  <div style={{ flex: "none", padding: "16px 20px", fontSize: 14, fontWeight: "bold", color: "#111", borderRight: "1px solid #eee", display: "flex", alignItems: "center" }}>
+                    공실등록현황
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", padding: "0 20px", gap: 16, fontSize: 13, color: "#666", overflowX: "auto", whiteSpace: "nowrap" }}>
+                    {[
+                      { label: '전체', count: vacancies.length },
+                      { label: '매매', count: vacancies.filter(v => v.trade_type === '매매').length },
+                      { label: '전세', count: vacancies.filter(v => v.trade_type === '전세').length },
+                      { label: '월세', count: vacancies.filter(v => v.trade_type === '월세').length },
+                      { label: '단기', count: vacancies.filter(v => v.trade_type === '단기').length }
+                    ].map((stat, i, arr) => (
+                      <React.Fragment key={stat.label}>
+                        <span 
+                          onClick={() => setRealtorTradeType(stat.label)}
+                          style={{ 
+                            cursor: "pointer", 
+                            color: realtorTradeType === stat.label ? "#1a73e8" : "#666", 
+                            fontWeight: realtorTradeType === stat.label ? "bold" : "normal"
+                          }}
+                        >
+                          {stat.label} <strong style={{color: realtorTradeType === stat.label ? "#1a73e8" : "#111"}}>{stat.count}</strong>
+                        </span>
+                        {i < arr.length - 1 && <span style={{width:1,height:12,background:"#ddd"}}></span>}
+                      </React.Fragment>
+                    ))}
+                  </div>
+                </div>
 
-                  let price = prop.trade_type;
-                  if (prop.trade_type === "매매" || prop.trade_type === "전세") price += ` ${prop.deposit >= 10000 ? `${Math.floor(prop.deposit/10000)}억${prop.deposit%10000!==0 ? ` ${prop.deposit%10000}`:''}` : prop.deposit}`;
-                  else if (prop.trade_type === "월세") price += ` ${prop.deposit >= 10000 ? `${Math.floor(prop.deposit/10000)}억${prop.deposit%10000!==0 ? ` ${prop.deposit%10000}`:''}` : prop.deposit} / ${prop.monthly_rent}`;
-                  
-                  const detailStr = `룸 ${prop.room_count||0}개, 욕실 ${prop.bath_count||0}개`;
-                  const thumb = prop.vacancy_photos && prop.vacancy_photos.length > 0 ? prop.vacancy_photos[0].url : "";
-                  const createdDate = prop.created_at ? new Date(prop.created_at).toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" }).replace(/\.$/, "") : "";
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  {vacancies.filter(v => realtorTradeType === "전체" || v.trade_type === realtorTradeType).map((prop: any, i: number) => {
+                    const cardMasked = prop.exposure_type === '부동산노출' && userLevel < 2;
+                    const cardAddr = prop.building_name || [prop.dong, prop.sigungu].filter(Boolean).join(" ") || "이름없는 공실";
+                    const title = cardMasked ? cardAddr.replace(/[^\s]/g, "X") : cardAddr;
 
-                  return (
-                    <Link 
-                      key={prop.id || i} 
-                      href={`/gongsil?id=${prop.id}`} 
-                      target="_blank"
-                      style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
-                      onClick={(e) => {
-                        if (cardMasked) {
-                          e.preventDefault();
-                          setIsAuthModalOpen(true);
-                        }
-                      }}
-                    >
-                      <div style={{ display: 'flex', gap: '16px', padding: '20px', background: '#fff', borderRadius: '12px', border: '1px solid #e5e7eb', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }} onMouseEnter={e => {e.currentTarget.style.borderColor='#3b82f6'; e.currentTarget.style.boxShadow='0 4px 12px rgba(59,130,246,0.1)'}} onMouseLeave={e => {e.currentTarget.style.borderColor='#e5e7eb'; e.currentTarget.style.boxShadow='0 1px 3px rgba(0,0,0,0.02)'}}>
-                        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
-                            {showCommission && (prop.realtor_commission || prop.commission_type) && (
-                              <span style={{ fontSize: "12px", fontWeight: 700, color: "#ef4444", border: "1px solid #ef4444", padding: "2px 8px", borderRadius: "4px" }}>
-                                {prop.realtor_commission || prop.commission_type}
-                              </span>
-                            )}
-                            {prop.vacancy_no && <span style={{ fontSize: "13px", fontWeight: 700, color: "#ef4444" }}>{prop.vacancy_no}</span>}
-                            <span style={{ fontSize: "13px", color: "#9ca3af" }}>{createdDate}</span>
-                            {cardMasked && <span onClick={(e) => { e.preventDefault(); setIsAuthModalOpen(true); }} style={{ fontSize: "12px", color: "#3b82f6", fontWeight: 700, background: "#eef6ff", padding: "4px 10px", borderRadius: "4px", cursor: "pointer" }}>🔒 가입 시 무료 열람</span>}
+                    let price = prop.trade_type;
+                    if (prop.trade_type === "매매" || prop.trade_type === "전세") price += ` ${prop.deposit >= 10000 ? `${Math.floor(prop.deposit/10000)}억${prop.deposit%10000!==0 ? ` ${prop.deposit%10000}`:''}` : prop.deposit}`;
+                    else if (prop.trade_type === "월세") price += ` ${prop.deposit >= 10000 ? `${Math.floor(prop.deposit/10000)}억${prop.deposit%10000!==0 ? ` ${prop.deposit%10000}`:''}` : prop.deposit} / ${prop.monthly_rent}`;
+                    
+                    const detailStr = `룸 ${prop.room_count||0}개, 욕실 ${prop.bath_count||0}개`;
+                    const thumb = prop.vacancy_photos && prop.vacancy_photos.length > 0 ? prop.vacancy_photos[0].url : "";
+
+                    return (
+                      <Link 
+                        key={prop.id || i} 
+                        href={`/gongsil?id=${prop.id}`} 
+                        target="_blank"
+                        style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
+                        onClick={(e) => {
+                          if (cardMasked) {
+                            e.preventDefault();
+                            setIsAuthModalOpen(true);
+                          }
+                        }}
+                      >
+                        <div style={{
+                          display: "flex", justifyContent: "space-between", alignItems: "flex-start",
+                          padding: "16px 20px", cursor: "pointer", transition: "background 0.15s",
+                          borderBottom: "1px solid #f0f0f0", background: "#fff",
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = "#f9fbff"; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = "#fff"; }}
+                        >
+                          <div style={{ flex: 1, paddingRight: thumb ? 12 : 0, minWidth: 0 }}>
+                            <div style={{ fontSize: 15, fontWeight: "bold", color: cardMasked ? "#bbb" : "#111", marginBottom: 4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", letterSpacing: cardMasked ? 1 : 0 }}>
+                              {title}
+                              {cardMasked && <span style={{ fontSize: "11px", color: "#3b82f6", fontWeight: 700, background: "#eef6ff", padding: "3px 8px", borderRadius: "4px", marginLeft: "8px", verticalAlign: "middle" }}>🔒 가입 시 무료 열람</span>}
+                            </div>
+                            <div style={{ fontSize: 16, fontWeight: 800, color: "#1a73e8", marginBottom: 4 }}>{price}</div>
+                            <div style={{ fontSize: 13, color: "#555", marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                              {prop.property_type || "주택"} <span style={{ color: "#ddd", margin: "0 4px" }}>|</span> {prop.direction || "방향없음"} <span style={{ color: "#ddd", margin: "0 4px" }}>|</span> {prop.exclusive_m2 ? `${prop.exclusive_m2}㎡` : "면적미상"}
+                            </div>
+                            <div style={{ fontSize: 12, color: "#666", marginBottom: 0, display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                              {[detailStr, ...(prop.options || [])].filter(Boolean).join(", ")}
+                            </div>
                           </div>
-                          
-                          <div style={{ fontSize: '18px', fontWeight: 700, color: cardMasked ? "#bbb" : '#111827', marginBottom: '6px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: cardMasked ? 1 : 0 }}>
-                            {title}
-                          </div>
-                          <div style={{ fontSize: '22px', fontWeight: 800, color: '#3b82f6', marginBottom: '8px' }}>
-                            {price}
-                          </div>
-                          <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            {prop.property_type || "주택"} <span style={{color: "#e5e7eb"}}>|</span> {prop.direction || "방향없음"} <span style={{color: "#e5e7eb"}}>|</span> {prop.exclusive_m2 || 0}㎡
-                          </div>
-                          <div style={{ fontSize: '14px', color: '#6b7280', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            {detailStr}{prop.options && prop.options.length > 0 ? `, ${prop.options.join(", ")}` : ""}
-                          </div>
-                          {prop.themes && prop.themes.length > 0 && (
-                            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginTop: "8px" }}>
-                              {prop.themes.map((theme: string, idx: number) => (
-                                <span key={idx} style={{ background: "#f8fafc", color: "#3b82f6", fontSize: "12px", padding: "2px 8px", borderRadius: "12px", fontWeight: 700, border: "1px solid #bfdbfe" }}>
-                                  {theme.startsWith('#') ? theme : `# ${theme}`}
-                                </span>
-                              ))}
+                          {thumb && (
+                            <div style={{ width: 80, height: 80, borderRadius: 6, overflow: "hidden", background: "#f0f0f0", flexShrink: 0 }}>
+                              <img src={thumb} style={{width:'100%', height:'100%', objectFit:'cover'}} alt="" />
                             </div>
                           )}
                         </div>
-                        {thumb && (
-                          <div style={{ width: '140px', height: '110px', borderRadius: '8px', overflow: 'hidden', flexShrink: 0, backgroundColor: '#f3f4f6', alignSelf: 'center', backgroundImage: `url(${thumb})`, backgroundSize: 'cover', backgroundPosition: 'center', border: '1px solid #f3f4f6' }} />
-                        )}
-                        {!thumb && (
-                          <div style={{ width: '140px', height: '110px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, backgroundColor: '#f9fafb', alignSelf: 'center', border: '1px solid #f3f4f6' }}>
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
-                          </div>
-                        )}
-                      </div>
-                    </Link>
-                  );
-                })}
+                      </Link>
+                    );
+                  })}
+                </div>
               </div>
             ) : (
               <div style={{ textAlign: 'center', padding: '80px 0', color: '#9ca3af', fontSize: '15px' }}>등록된 공실이 없습니다.</div>
