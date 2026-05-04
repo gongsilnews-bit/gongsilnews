@@ -1030,7 +1030,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                   document.head.appendChild(script);
                 }
               }} style={{ height: 36, padding: "0 16px", background: "#10b981", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
-                🔍 찾기
+                🔍 주소 검색
               </button>
             </div>
 

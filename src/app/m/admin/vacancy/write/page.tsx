@@ -525,9 +525,9 @@ function MobileVacancyWrite() {
 
         {/* 4. 주소 */}
         <div style={{ background:"#fff", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.05)" }}>
-          <div style={{ fontSize:16, fontWeight:800, color:"#111", marginBottom:14 }}>📍 소재지</div>
-          <button type="button" onClick={handlePostcodeSearch} style={{ width:"100%", height:46, background:"linear-gradient(135deg,#f97316,#ea580c)", color:"#fff", border:"none", borderRadius:10, fontSize:15, fontWeight:800, cursor:"pointer", marginBottom:14, display:"flex", alignItems:"center", justifyContent:"center", gap:8, boxShadow:"0 2px 8px rgba(249,115,22,0.3)" }}>
-            🔍 주소검색 (우편번호)
+          <div style={{ fontSize:16, fontWeight:800, color:"#111", marginBottom:14 }}>📍 위치/주소</div>
+          <button type="button" onClick={handlePostcodeSearch} style={{ width:"100%", height:46, background:"linear-gradient(135deg,#10b981,#059669)", color:"#fff", border:"none", borderRadius:10, fontSize:15, fontWeight:800, cursor:"pointer", marginBottom:14, display:"flex", alignItems:"center", justifyContent:"center", gap:8, boxShadow:"0 2px 8px rgba(16,185,129,0.3)" }}>
+            🔍 주소 검색
           </button>
           <div style={{ display:"flex", gap:8, marginBottom:10 }}>
             <div style={{flex:1}}><label style={labelStyle}>시/도</label><input type="text" value={sido} onChange={e=>setSido(e.target.value)} placeholder="서울" style={inputStyle}/></div>
