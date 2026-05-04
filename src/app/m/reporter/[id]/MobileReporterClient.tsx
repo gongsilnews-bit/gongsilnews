@@ -246,158 +246,99 @@ export default function MobileReporterClient({
               </div>
             )}
 
-            <div
-              style={{
-                flex: 1,
-                display: "flex",
-                flexDirection: "column",
-                gap: "4px",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: "13px",
-                    fontWeight: "bold",
-                    background: "rgba(255,255,255,0.2)",
-                    padding: "2px 8px",
-                    borderRadius: "12px",
-                  }}
-                >
-                  {profile.role === "ADMIN" ? "기자" : "부동산기자"}
-                </span>
-              </div>
-              <div
-                style={{
-                  fontSize: "26px",
-                  fontWeight: "800",
-                  letterSpacing: "-0.5px",
-                }}
-              >
-                {profile.name}
-              </div>
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "4px" }}>
+              {agencyInfo ? (
+                <>
+                  <div style={{ fontSize: "24px", fontWeight: "800", letterSpacing: "-0.5px" }}>
+                    {agencyInfo.agency_name || profile.name}
+                  </div>
+                  <div style={{ fontSize: "12px", color: "rgba(255,255,255,0.7)" }}>
+                    대표 {agencyInfo.representative} <span style={{ margin: "0 4px", color: "rgba(255,255,255,0.3)" }}>|</span> 등록번호 {agencyInfo.registration_number}
+                  </div>
+                  <div style={{ fontSize: "12px", color: "rgba(255,255,255,0.7)" }}>
+                    {agencyInfo.address}
+                  </div>
+                  <div style={{ fontSize: "12px", color: "#60a5fa", fontWeight: "bold", marginTop: "2px" }}>
+                    📞 {agencyInfo.phone}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <span style={{ fontSize: "13px", fontWeight: "bold", background: "rgba(255,255,255,0.2)", padding: "2px 8px", borderRadius: "12px" }}>
+                      {profile.role === "ADMIN" ? "기자" : "부동산기자"}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: "26px", fontWeight: "800", letterSpacing: "-0.5px" }}>
+                    {profile.name}
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
-          <div
-            style={{
-              fontSize: "15px",
-              lineHeight: "1.6",
-              color: "rgba(255,255,255,0.9)",
-              marginBottom: "20px",
-              wordBreak: "keep-all",
-            }}
-          >
-            {profile.introduction ||
-              "공실뉴스와 함께하는 소중한 기자님입니다. 항상 신속하고 정확한 뉴스를 전달하기 위해 최선을 다하겠습니다."}
+          <div style={{ fontSize: "15px", lineHeight: "1.6", color: "rgba(255,255,255,0.9)", marginBottom: "20px", wordBreak: "keep-all" }}>
+            {agencyInfo?.intro || profile.introduction || "공실뉴스와 함께하는 소중한 기자님입니다. 항상 신속하고 정확한 뉴스를 전달하기 위해 최선을 다하겠습니다."}
           </div>
 
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "12px",
-              fontSize: "13px",
-              color: "rgba(255,255,255,0.7)",
-              marginBottom: "20px",
-              flexWrap: "wrap",
-            }}
-          >
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", fontSize: "13px", color: "rgba(255,255,255,0.7)", marginBottom: "20px", flexWrap: "wrap" }}>
             <div>
-              구독 {profile.subscriber_count || 0} | 응원{" "}
-              {profile.point_balance || 0}
+              구독 {profile.subscriber_count || 0} | 응원 {profile.point_balance || 0}
             </div>
-            <div
-              style={{
-                width: 1,
-                height: 10,
-                background: "rgba(255,255,255,0.3)",
-              }}
-            />
-            <div>
-              {profile.phone || profile.email || "연락처 정보 없음"}
-            </div>
+            {profile.id && (
+              <>
+                <div style={{ width: 1, height: 10, background: "rgba(255,255,255,0.3)" }} />
+                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M12 16V12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M12 8H12.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  <span>{profile.id.substring(0, 8)}</span>
+                </div>
+              </>
+            )}
           </div>
 
-          <div style={{ display: "flex", gap: "8px" }}>
-            <button
-              style={{
-                flex: 1,
-                padding: "12px 0",
-                borderRadius: "12px",
-                border: "1px solid rgba(255,255,255,0.4)",
-                background: "rgba(255,255,255,0.1)",
-                color: "#fff",
-                fontSize: "14px",
-                fontWeight: "bold",
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                gap: "6px",
-                cursor: "pointer",
-              }}
-            >
-              + 구독
-            </button>
-            <button
-              style={{
-                flex: 1,
-                padding: "12px 0",
-                borderRadius: "12px",
-                border: "1px solid rgba(255,255,255,0.4)",
-                background: "transparent",
-                color: "#fff",
-                fontSize: "14px",
-                fontWeight: "bold",
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                gap: "6px",
-                cursor: "pointer",
-              }}
-            >
-              👏 응원
-            </button>
-            <button
-              style={{
-                width: "44px",
-                height: "44px",
-                borderRadius: "12px",
-                border: "1px solid rgba(255,255,255,0.4)",
-                background: "transparent",
-                color: "#fff",
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                flexShrink: 0,
-                cursor: "pointer",
-              }}
-            >
-              ✉️
-            </button>
-            <button
-              style={{
-                width: "44px",
-                height: "44px",
-                borderRadius: "12px",
-                border: "1px solid rgba(255,255,255,0.4)",
-                background: "transparent",
-                color: "#fff",
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                flexShrink: 0,
-                cursor: "pointer",
-              }}
-            >
-              🔗
-            </button>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+            {agencyInfo?.sns_links && typeof agencyInfo.sns_links === 'object' && Object.keys(agencyInfo.sns_links).length > 0 ? (
+              Object.entries(agencyInfo.sns_links).map(([key, url]) => {
+                if (!url || typeof url !== 'string' || !url.trim()) return null;
+                const titleNames: Record<string,string> = { homepage: "홈페이지", contact: "문의하기", shopping_mall: "쇼핑몰", blog: "블로그", cafe: "카페", youtube: "유튜브", facebook: "페이스북", twitter: "트위터", instagram: "인스타그램", kakao: "카카오", threads: "쓰레드" };
+                const titleName = titleNames[key] || key;
+                return (
+                  <a
+                    key={key}
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: "block",
+                      textAlign: "center",
+                      padding: "12px 0",
+                      borderRadius: "12px",
+                      border: "1px solid rgba(255,255,255,0.4)",
+                      background: "rgba(255,255,255,0.1)",
+                      color: "#fff",
+                      fontSize: "14px",
+                      fontWeight: "bold",
+                      textDecoration: "none"
+                    }}
+                  >
+                    {titleName}
+                  </a>
+                );
+              })
+            ) : (
+              <>
+                <button style={{ padding: "12px 0", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.4)", background: "rgba(255,255,255,0.1)", color: "#fff", fontSize: "14px", fontWeight: "bold", cursor: "pointer" }}>
+                  + 구독
+                </button>
+                <button style={{ padding: "12px 0", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.4)", background: "transparent", color: "#fff", fontSize: "14px", fontWeight: "bold", cursor: "pointer" }}>
+                  👏 응원
+                </button>
+              </>
+            )}
           </div>
         </div>
 
