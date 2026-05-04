@@ -98,6 +98,21 @@ function MobileVacancyWrite() {
   const isCommercial = propertyType === "상가·사무실·건물·공장·토지";
   const isRealtor = userRole === "REALTOR" || userRole === "ADMIN";
 
+  // PC와 동일한 주소 공개/비공개 판정 로직
+  const isFieldExposed = (field: "detailAddr" | "buildingName" | "aptDong" | "hosu") => {
+    if (propertyType === "아파트·오피스텔") {
+      if (field === "detailAddr") return addressExposure !== "비공개";
+      if (field === "buildingName") return true;
+      if (field === "aptDong") return addressExposure !== "비공개";
+      if (field === "hosu") return addressExposure === "동/호수공개";
+    } else {
+      if (field === "detailAddr") return addressExposure !== "기본주소만공개";
+      if (field === "buildingName" || field === "hosu") return addressExposure === "번지공개";
+    }
+    return true;
+  };
+  const PrivateTag = () => <span style={{ color:"#f97316", fontSize:11, fontWeight:600 }}>(비공개)</span>;
+
   useEffect(() => {
     (async () => {
       const supabase = createClient();
@@ -505,21 +520,21 @@ function MobileVacancyWrite() {
           </div>
           <div style={{ display:"flex", gap:8, marginBottom:10 }}>
             <div style={{flex:1}}><label style={labelStyle}>동/읍/면</label><input type="text" value={dong} onChange={e=>setDong(e.target.value)} placeholder="논현동" style={inputStyle}/></div>
-            <div style={{flex:1}}><label style={labelStyle}>건물명</label><input type="text" value={buildingName} onChange={e=>setBuildingName(e.target.value)} placeholder="건물명" style={inputStyle}/></div>
+            <div style={{flex:1}}><label style={labelStyle}>건물명 {!isFieldExposed("buildingName") && <PrivateTag/>}</label><input type="text" value={buildingName} onChange={e=>setBuildingName(e.target.value)} placeholder="건물명" style={inputStyle}/></div>
           </div>
-          <label style={labelStyle}>상세주소</label>
+          <label style={labelStyle}>상세주소 {!isFieldExposed("detailAddr") && <PrivateTag/>}</label>
           <input type="text" value={detailAddr} onChange={e=>setDetailAddr(e.target.value)} placeholder="상세주소 입력" style={{...inputStyle, marginBottom:10}}/>
 
           {/* 동/호수 (아파트인 경우) */}
           {propertyType === "아파트·오피스텔" && (
             <div style={{ display:"flex", gap:8, marginBottom:10 }}>
-              <div style={{flex:1}}><label style={labelStyle}>동</label><input type="text" value={aptDong} onChange={e=>setAptDong(e.target.value)} placeholder="101동" style={inputStyle}/></div>
-              <div style={{flex:1}}><label style={labelStyle}>호수</label><input type="text" value={hosu} onChange={e=>setHosu(e.target.value)} placeholder="405호" style={inputStyle}/></div>
+              <div style={{flex:1}}><label style={labelStyle}>동 {!isFieldExposed("aptDong") && <PrivateTag/>}</label><input type="text" value={aptDong} onChange={e=>setAptDong(e.target.value)} placeholder="101동" style={inputStyle}/></div>
+              <div style={{flex:1}}><label style={labelStyle}>호수 {!isFieldExposed("hosu") && <PrivateTag/>}</label><input type="text" value={hosu} onChange={e=>setHosu(e.target.value)} placeholder="405호" style={inputStyle}/></div>
             </div>
           )}
           {propertyType !== "아파트·오피스텔" && (
             <div style={{ marginBottom:10 }}>
-              <label style={labelStyle}>호수</label>
+              <label style={labelStyle}>호수 {!isFieldExposed("hosu") && <PrivateTag/>}</label>
               <input type="text" value={hosu} onChange={e=>setHosu(e.target.value)} placeholder="101호" style={inputStyle}/>
             </div>
           )}
