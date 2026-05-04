@@ -61,7 +61,8 @@ export default function MobileHomeClient(props: Props) {
   const { vacancies, headlineArticles, financeArticles, politicsArticles, lawArticles, lifeArticles, itArticles, sportsArticles, peopleArticles, mapArticles, lectures } = props;
   const router = useRouter();
   const [heroIdx, setHeroIdx] = useState(0);
-  const hero = headlineArticles[heroIdx] || null;
+  const [swipeOffset, setSwipeOffset] = useState(0);
+  const [isSwipingHero, setIsSwipingHero] = useState(false);
 
   // 화면 전환 애니메이션 상태 제거 (즉시 라우팅)
 
@@ -156,49 +157,74 @@ export default function MobileHomeClient(props: Props) {
       <div style={{ height: "46px" }} />
 
       {/* ① Hero 배너 (헤드라인 기사) — 좌우 스와이프로 기사 전환 */}
-      {hero && (
-        <Link
-          href={`/m/news/${hero.article_no || hero.id}`}
-          style={{ position: "relative", width: "100%", display: "block", aspectRatio: "16/9", maxHeight: 280, overflow: "hidden", cursor: "pointer", textDecoration: "none" }}
+      {headlineArticles.length > 0 && (
+        <div
+          style={{ position: "relative", width: "100%", aspectRatio: "16/9", maxHeight: 280, overflow: "hidden", cursor: "pointer", textDecoration: "none" }}
           onTouchStart={(e) => {
-            // 히어로 전용 스와이프 시작 — 부모 페이지 전환 방지
             e.stopPropagation();
             (e.currentTarget as any)._heroStartX = e.touches[0].clientX;
+            setIsSwipingHero(true);
+          }}
+          onTouchMove={(e) => {
+            const startX = (e.currentTarget as any)._heroStartX;
+            if (startX != null) {
+              e.stopPropagation();
+              setSwipeOffset(e.touches[0].clientX - startX);
+            }
           }}
           onTouchEnd={(e) => {
             e.stopPropagation();
+            setIsSwipingHero(false);
             const startX = (e.currentTarget as any)._heroStartX;
             if (startX == null) return;
             const dx = e.changedTouches[0].clientX - startX;
             (e.currentTarget as any)._heroStartX = null;
-            if (Math.abs(dx) < 50) return;
-            if (dx < 0) {
-              // ← 왼쪽 스와이프 → 다음 기사
-              setHeroIdx((prev) => Math.min(prev + 1, headlineArticles.length - 1));
-            } else {
-              // → 오른쪽 스와이프 → 이전 기사
-              setHeroIdx((prev) => Math.max(prev - 1, 0));
+            setSwipeOffset(0);
+            
+            if (Math.abs(dx) > 50) {
+              if (dx < 0 && heroIdx < Math.min(headlineArticles.length, 5) - 1) {
+                setHeroIdx(prev => prev + 1);
+              } else if (dx > 0 && heroIdx > 0) {
+                setHeroIdx(prev => prev - 1);
+              }
+            } else if (Math.abs(dx) < 10) {
+              // 클릭으로 간주하여 이동
+              router.push(`/m/news/${headlineArticles[heroIdx].article_no || headlineArticles[heroIdx].id}`);
             }
           }}
         >
-          {hero.thumbnail_url
-            ? <img src={hero.thumbnail_url} alt={hero.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-            : <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg,#1a2e50,#2d4a7a)" }} />}
-          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top,rgba(0,0,0,0.85) 0%,rgba(0,0,0,0.2) 55%,transparent 100%)" }} />
-          <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "16px" }}>
-            <span style={{ background: "#dc2626", color: "#fff", fontSize: 12, fontWeight: 700, padding: "3px 8px", borderRadius: 3, display: "inline-block", marginBottom: 8, letterSpacing: "0.5px" }}>HEADLINE</span>
-            <h2 style={{ color: "#fff", fontSize: 19, fontWeight: 800, lineHeight: 1.45, wordBreak: "keep-all", margin: 0, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", letterSpacing: "-0.5px" }}>{hero.title}</h2>
-            <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 14, marginTop: 6, marginBottom: 0, letterSpacing: "-0.2px" }}>{hero.author_name} · {formatDate(hero.published_at || hero.created_at)}</p>
+          <div style={{
+            display: "flex",
+            width: "100%",
+            height: "100%",
+            transform: `translateX(calc(-${heroIdx * 100}% + ${swipeOffset}px))`,
+            transition: isSwipingHero ? "none" : "transform 0.4s cubic-bezier(0.25, 1, 0.5, 1)",
+          }}>
+            {headlineArticles.slice(0, 5).map((hero, i) => (
+              <div key={i} style={{ width: "100%", height: "100%", flexShrink: 0, position: "relative" }}>
+                {hero.thumbnail_url
+                  ? <img src={hero.thumbnail_url} alt={hero.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  : <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg,#1a2e50,#2d4a7a)" }} />}
+                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top,rgba(0,0,0,0.85) 0%,rgba(0,0,0,0.2) 55%,transparent 100%)" }} />
+                <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "16px", zIndex: 2 }}>
+                  <span style={{ background: "#dc2626", color: "#fff", fontSize: 12, fontWeight: 700, padding: "3px 8px", borderRadius: 3, display: "inline-block", marginBottom: 8, letterSpacing: "0.5px" }}>HEADLINE</span>
+                  <h2 style={{ color: "#fff", fontSize: 19, fontWeight: 800, lineHeight: 1.45, wordBreak: "keep-all", margin: 0, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", letterSpacing: "-0.5px" }}>{hero.title}</h2>
+                  <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 14, marginTop: 6, marginBottom: 0, letterSpacing: "-0.2px" }}>{hero.author_name} · {formatDate(hero.published_at || hero.created_at)}</p>
+                </div>
+              </div>
+            ))}
           </div>
+          
+          {/* 하단 점(인디케이터) */}
           {headlineArticles.length > 1 && (
-            <div style={{ position: "absolute", bottom: 12, right: 12, display: "flex", gap: 6, alignItems: "center" }}>
+            <div style={{ position: "absolute", bottom: 12, right: 12, display: "flex", gap: 6, alignItems: "center", zIndex: 10 }}>
               {headlineArticles.slice(0, 5).map((_, i) => (
                 <button key={i} onClick={(e) => { e.stopPropagation(); setHeroIdx(i); }}
                   style={{ width: i === heroIdx ? 20 : 6, height: 6, borderRadius: 3, background: i === heroIdx ? "#fff" : "rgba(255,255,255,0.4)", border: "none", padding: 0, transition: "all 0.3s", cursor: "pointer" }} />
               ))}
             </div>
           )}
-        </Link>
+        </div>
       )}
 
       {/* ② 실시간 공실 매물 - 카카오 지도 미리보기 */}
