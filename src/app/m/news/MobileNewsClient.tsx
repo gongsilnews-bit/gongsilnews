@@ -508,7 +508,68 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
     };
   }, [localArticles, mapLoaded]);
 
+  // ── 스와이프(좌우 슬라이드) 탭 전환 ──
+  const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
+  const touchStartTime = useRef<number>(0);
+  const [slideAnim, setSlideAnim] = useState<"" | "slide-out-left" | "slide-out-right" | "slide-in-left" | "slide-in-right">("");
   const tabBarRef = useRef<HTMLDivElement>(null);
+
+  const handleSwipeStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+    touchStartTime.current = Date.now();
+  };
+
+  const handleSwipeEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null || touchStartY.current === null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    const dy = e.changedTouches[0].clientY - touchStartY.current;
+    const timeElapsed = Date.now() - touchStartTime.current;
+    
+    touchStartX.current = null;
+    touchStartY.current = null;
+
+    // 너무 오래 누르고 있었던 경우(500ms 이상) 단순 스크롤/드래그로 간주하여 탭 전환 무시
+    if (timeElapsed > 500) return;
+
+    // 수직 스크롤 비중이 높으면(대각선 포함) 탭 전환 무시하여 민감도 낮춤
+    if (Math.abs(dy) * 1.5 > Math.abs(dx)) return;
+    
+    if (Math.abs(dx) < 90) return;
+
+    if (activeTab === "local") return; // 우리동네에서는 스와이프로 탭 전환하지 않음
+
+    const currentIdx = CATEGORIES.findIndex((c) => c.key === activeTab);
+
+    if (dx < 0 && currentIdx < CATEGORIES.length - 1) {
+      // ← 왼쪽 스와이프 → 다음 탭
+      const next = CATEGORIES[currentIdx + 1].key;
+      setSlideAnim("slide-out-left");
+      setTimeout(() => {
+        setActiveTab(next);
+        setClusterMode(false);
+        setSlideAnim("slide-in-right");
+        setTimeout(() => setSlideAnim(""), 200);
+      }, 150);
+    } else if (dx > 0) {
+      // → 오른쪽 스와이프 → 이전 탭
+      if (currentIdx === 0) {
+        // 첫 번째 탭에서 오른쪽 스와이프 시 홈으로 가는 기능은 오동작 우려가 커서 애니메이션만 주고 튕겨내도록 처리
+        setSlideAnim("slide-in-left");
+        setTimeout(() => setSlideAnim(""), 200);
+      } else if (currentIdx > 0) {
+        const prev = CATEGORIES[currentIdx - 1].key;
+        setSlideAnim("slide-out-right");
+        setTimeout(() => {
+          setActiveTab(prev);
+          setClusterMode(false);
+          setSlideAnim("slide-in-left");
+          setTimeout(() => setSlideAnim(""), 200);
+        }, 150);
+      }
+    }
+  };
 
   // 탭 변경 시 카테고리 바 자동 스크롤
   useEffect(() => {
@@ -521,6 +582,8 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
 
   return (
     <div
+      onTouchStart={handleSwipeStart}
+      onTouchEnd={handleSwipeEnd}
       style={{
         width: "100%",
         backgroundColor: "#fff",
@@ -654,7 +717,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
 
       {/* 우리동네뉴스: 카카오 지도 + 목록 스플릿 뷰 */}
       {activeTab === "local" ? (
-        <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+        <div className={slideAnim} style={{ flex: 1, display: "flex", flexDirection: "column" }}>
           <HomeHeader 
             bgColor="#ea580c" 
             logoText="우리동네뉴스"
@@ -954,7 +1017,8 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
         </div>
         </div>
       ) : (
-        <div style={{ flex: 1, paddingBottom: "20px" }}>
+        /* 일반 뉴스 리스트 뷰 */
+        <div className={slideAnim} style={{ flex: 1, paddingBottom: "20px" }}>
           {/* Author Profile Header */}
           {(authorProfile || initialAuthorName) && (
             <AuthorProfileHeader profile={authorProfile || { name: initialAuthorName, role: 'REALTOR', profile_image_url: null }} />
