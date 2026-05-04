@@ -14,7 +14,8 @@ export default function GlobalDrawerMenu() {
     myArticles: 0,
     myVacancies: 0,
     bookmarkedArticles: 0,
-    bookmarkedVacancies: 0
+    bookmarkedVacancies: 0,
+    subscribedReporters: 0
   });
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -100,19 +101,22 @@ export default function GlobalDrawerMenu() {
               { count: myArticlesCount },
               { count: myVacanciesCount },
               { count: bookmarkedArticlesCount },
-              { count: bookmarkedVacanciesCount }
+              { count: bookmarkedVacanciesCount },
+              { count: subscribedReportersCount }
             ] = await Promise.all([
               supabase.from('articles').select('*', { count: 'exact', head: true }).eq('author_id', user.id),
               supabase.from('vacancies').select('*', { count: 'exact', head: true }).eq('member_id', user.id),
               supabase.from('article_bookmarks').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
-              supabase.from('vacancy_wishlist').select('*', { count: 'exact', head: true }).eq('user_id', user.id)
+              supabase.from('vacancy_wishlist').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
+              supabase.from('reporter_subscriptions').select('*', { count: 'exact', head: true }).eq('user_id', user.id)
             ]);
             
             setUserActivityCounts({
               myArticles: myArticlesCount || 0,
               myVacancies: myVacanciesCount || 0,
               bookmarkedArticles: bookmarkedArticlesCount || 0,
-              bookmarkedVacancies: bookmarkedVacanciesCount || 0
+              bookmarkedVacancies: bookmarkedVacanciesCount || 0,
+              subscribedReporters: subscribedReportersCount || 0
             });
 
             if (isAdmin) {
@@ -417,6 +421,10 @@ export default function GlobalDrawerMenu() {
                   { 
                     icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>, 
                     label: '내가 찜한 공실', href: '/m/gongsil_bookmarks', count: userActivityCounts.bookmarkedVacancies
+                  },
+                  { 
+                    icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>, 
+                    label: '내가 구독한 기자', href: '/m/subscribed_reporters', count: userActivityCounts.subscribedReporters
                   },
                 ].map((item) => (
                   <li key={item.label}>
