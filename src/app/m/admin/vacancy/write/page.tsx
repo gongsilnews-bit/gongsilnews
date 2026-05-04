@@ -378,10 +378,16 @@ function MobileVacancyWrite() {
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M15 18L9 12L15 6" stroke="#333" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </button>
         <h1 style={{ fontSize:18, fontWeight:800, color:"#111", margin:0, flex:1 }}>{editId ? "공실수정" : "공실등록"}</h1>
-        <button type="button" disabled={submitting} onClick={()=>handleSubmit("DRAFT")}
-          style={{ height:36, padding:"0 14px", background:"#64748b", color:"#fff", border:"none", borderRadius:8, fontSize:13, fontWeight:700, cursor: submitting?"not-allowed":"pointer", flexShrink:0 }}>
-          임시저장
-        </button>
+        <div style={{ display:"flex", gap:8, flexShrink:0 }}>
+          <button type="button" disabled={submitting} onClick={()=>handleSubmit("DRAFT")}
+            style={{ height:36, padding:"0 14px", background:"#fff", color:"#374151", border:"1px solid #d1d5db", borderRadius:8, fontSize:13, fontWeight:700, cursor: submitting?"not-allowed":"pointer" }}>
+            {submitting ? "저장중..." : "임시저장"}
+          </button>
+          <button type="button" disabled={submitting} onClick={()=>handleSubmit("ACTIVE")}
+            style={{ height:36, padding:"0 14px", background:"linear-gradient(135deg,#10b981,#059669)", color:"#fff", border:"none", borderRadius:8, fontSize:13, fontWeight:700, cursor: submitting?"not-allowed":"pointer" }}>
+            {submitting ? "처리중..." : editId ? "수정완료" : "광고등록"}
+          </button>
+        </div>
       </div>
       <div style={{ height:56 }} /> {/* 헤더 높이만큼 공간 확보 */}
 
@@ -684,10 +690,14 @@ function MobileVacancyWrite() {
         )}
 
         {/* 등록 버튼 (인라인) */}
-        <div style={{ marginTop: 8 }}>
+        <div style={{ display:"flex", gap:10, marginTop: 8 }}>
           <button type="button" disabled={submitting} onClick={()=>handleSubmit("ACTIVE")}
-            style={{ width:"100%", height:56, background: submitting?"#9ca3af":"linear-gradient(135deg,#10b981,#059669)", color:"#fff", border:"none", borderRadius:14, fontSize:17, fontWeight:800, cursor: submitting?"not-allowed":"pointer", boxShadow:"0 4px 12px rgba(16,185,129,0.3)" }}>
+            style={{ flex:2, height:56, background: submitting?"#9ca3af":"linear-gradient(135deg,#10b981,#059669)", color:"#fff", border:"none", borderRadius:14, fontSize:17, fontWeight:800, cursor: submitting?"not-allowed":"pointer", boxShadow:"0 4px 12px rgba(16,185,129,0.3)" }}>
             {submitting ? "처리 중..." : editId ? "✅ 수정완료" : "✅ 등록 (바로발행)"}
+          </button>
+          <button type="button" disabled={submitting} onClick={()=>handleSubmit("DRAFT")}
+            style={{ flex:1, height:56, background:"#fff", color:"#374151", border:"1px solid #d1d5db", borderRadius:14, fontSize:15, fontWeight:700, cursor: submitting?"not-allowed":"pointer" }}>
+            {submitting ? "저장중..." : "💾 임시저장"}
           </button>
         </div>
       </div>
