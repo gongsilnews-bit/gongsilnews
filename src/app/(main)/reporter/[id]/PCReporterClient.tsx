@@ -231,7 +231,7 @@ export default function PCReporterClient({
 
           {/* 버튼들 */}
           <div style={{ display: "flex", gap: "8px" }}>
-            <button style={{ flex: 1, padding: "12px 0", borderRadius: "10px", border: "none", background: "#1a73e8", color: "#fff", fontSize: "14px", fontWeight: "bold", cursor: "pointer" }}>
+            <button style={{ flex: 1, padding: "12px 0", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.2)", background: "transparent", color: "#fff", fontSize: "14px", fontWeight: "bold", cursor: "pointer" }}>
               + 구독
             </button>
             <button style={{ flex: 1, padding: "12px 0", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.2)", background: "transparent", color: "#fff", fontSize: "14px", fontWeight: "bold", cursor: "pointer" }}>
