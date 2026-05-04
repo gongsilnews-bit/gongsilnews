@@ -393,3 +393,88 @@ export async function createLectureReview(data: {
     return { success: false, error: err.message };
   }
 }
+
+// ── 포인트 결제 수강 등록 (100% 강의등록자 지급) ──
+export async function enrollLecture(lectureId: string, userId: string) {
+  const supabase = getAdminClient();
+  try {
+    const { data: existing } = await supabase
+      .from("lecture_enrollments").select("id, status, expires_at")
+      .eq("user_id", userId).eq("lecture_id", lectureId).maybeSingle();
+    if (existing && existing.status === "ACTIVE") {
+      if (existing.expires_at && new Date(existing.expires_at) < new Date()) {
+        await supabase.from("lecture_enrollments").delete().eq("id", existing.id);
+      } else {
+        return { success: true, already: true, message: "이미 수강 중인 강의입니다." };
+      }
+    }
+    const { data: lecture, error: lErr } = await supabase
+      .from("lectures").select("price, discount_price, author_id, duration_months, title")
+      .eq("id", lectureId).single();
+    if (lErr || !lecture) return { success: false, error: "강의 정보를 찾을 수 없습니다." };
+    const pointsRequired = lecture.discount_price || lecture.price || 0;
+    const expiresAt = new Date();
+    expiresAt.setMonth(expiresAt.getMonth() + (lecture.duration_months || 5));
+
+    if (pointsRequired <= 0) {
+      await supabase.from("lecture_enrollments").insert({ user_id: userId, lecture_id: lectureId, points_paid: 0, expires_at: expiresAt.toISOString(), status: "ACTIVE" });
+      const { count } = await supabase.from("lecture_enrollments").select("*", { count: "exact", head: true }).eq("lecture_id", lectureId).eq("status", "ACTIVE");
+      await supabase.from("lectures").update({ student_count: count || 0 }).eq("id", lectureId);
+      return { success: true, pointsPaid: 0 };
+    }
+
+    const { data: student } = await supabase.from("members").select("point_balance").eq("id", userId).single();
+    if (!student) return { success: false, error: "회원 정보를 찾을 수 없습니다." };
+    const bal = student.point_balance || 0;
+    if (bal < pointsRequired) return { success: false, error: "insufficient_points", balance: bal, required: pointsRequired };
+
+    const newBal = bal - pointsRequired;
+    await supabase.from("members").update({ point_balance: newBal }).eq("id", userId);
+    await supabase.from("point_transactions").insert({ member_id: userId, type: "SPEND", amount: pointsRequired, reason: `특강수강: ${lecture.title || "강의"}`, counterpart_id: lecture.author_id || null, balance_after: newBal });
+
+    if (lecture.author_id) {
+      const { data: author } = await supabase.from("members").select("point_balance").eq("id", lecture.author_id).single();
+      if (author) {
+        const newAuthorBal = (author.point_balance || 0) + pointsRequired;
+        await supabase.from("members").update({ point_balance: newAuthorBal }).eq("id", lecture.author_id);
+        await supabase.from("point_transactions").insert({ member_id: lecture.author_id, type: "EARN", amount: pointsRequired, reason: `특강수익: ${lecture.title || "강의"}`, counterpart_id: userId, balance_after: newAuthorBal });
+      }
+    }
+
+    await supabase.from("lecture_enrollments").insert({ user_id: userId, lecture_id: lectureId, points_paid: pointsRequired, expires_at: expiresAt.toISOString(), status: "ACTIVE" });
+    const { count } = await supabase.from("lecture_enrollments").select("*", { count: "exact", head: true }).eq("lecture_id", lectureId).eq("status", "ACTIVE");
+    await supabase.from("lectures").update({ student_count: count || 0 }).eq("id", lectureId);
+    return { success: true, pointsPaid: pointsRequired, balance: newBal };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+// ── 수강 등록 여부 확인 ──
+export async function checkEnrollment(lectureId: string, userId: string) {
+  const supabase = getAdminClient();
+  try {
+    const { data } = await supabase.from("lecture_enrollments")
+      .select("id, status, expires_at, points_paid")
+      .eq("user_id", userId).eq("lecture_id", lectureId).eq("status", "ACTIVE").maybeSingle();
+    if (!data) return { success: true, enrolled: false };
+    if (data.expires_at && new Date(data.expires_at) < new Date()) return { success: true, enrolled: false, expired: true };
+    return { success: true, enrolled: true, enrollment: data };
+  } catch { return { success: false, enrolled: false }; }
+}
+
+// ── 내 수강 특강 목록 ──
+export async function getMyEnrollments(userId: string) {
+  const supabase = getAdminClient();
+  try {
+    const { data: enrollments } = await supabase.from("lecture_enrollments")
+      .select("id, lecture_id, points_paid, enrolled_at, expires_at, status")
+      .eq("user_id", userId).eq("status", "ACTIVE").order("enrolled_at", { ascending: false });
+    if (!enrollments || enrollments.length === 0) return { success: true, data: [] };
+    const ids = enrollments.map(e => e.lecture_id);
+    const { data: lectures } = await supabase.from("lectures")
+      .select("id, title, thumbnail_url, category, instructor_name, duration_months").in("id", ids);
+    const m = new Map((lectures || []).map(l => [l.id, l]));
+    return { success: true, data: enrollments.map(e => ({ ...e, lecture: m.get(e.lecture_id) || null })) };
+  } catch { return { success: true, data: [] }; }
+}

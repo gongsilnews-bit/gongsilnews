@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { getLectureDetail, getLectures, createLectureReview } from "@/app/actions/lecture";
+import { getLectureDetail, getLectures, createLectureReview, enrollLecture, checkEnrollment } from "@/app/actions/lecture";
+import { getPointBalance } from "@/app/actions/point";
 import { createClient } from "@/utils/supabase/client";
 import AuthModal from "@/components/AuthModal";
 
@@ -42,6 +43,12 @@ function StudyReadContent() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isExpandedReviews, setIsExpandedReviews] = useState(false);
 
+  /* ── 수강 등록 상태 ── */
+  const [isEnrolled, setIsEnrolled] = useState(false);
+  const [showEnrollModal, setShowEnrollModal] = useState(false);
+  const [enrolling, setEnrolling] = useState(false);
+  const [pointBalance, setPointBalance] = useState(0);
+
   /* ── 리뷰 캐러셀 ── */
   const [reviewStartIndex, setReviewStartIndex] = useState(0);
 
@@ -64,9 +71,12 @@ function StudyReadContent() {
         } else {
           setUserName(data.user.user_metadata?.full_name || data.user.email?.split("@")[0] || "익명");
         }
+        // 포인트 잔액 조회
+        const balRes = await getPointBalance(data.user.id);
+        if (balRes.success) setPointBalance(balRes.balance);
       }
     });
-  }, []);
+  }, []);;
 
   useEffect(() => {
     const fetchData = async () => {
@@ -85,6 +95,50 @@ function StudyReadContent() {
     };
     fetchData();
   }, [lectureId]);
+
+  // 수강 등록 여부 확인
+  useEffect(() => {
+    if (!lecture?.id || !user) return;
+    checkEnrollment(lecture.id, user.id).then(res => {
+      if (res.success) setIsEnrolled(res.enrolled);
+    });
+  }, [lecture?.id, user]);
+
+  const handleEnroll = async () => {
+    if (!user) { setIsAuthModalOpen(true); return; }
+    if (isEnrolled) { router.push(`/study_watch?id=${lecture.id}`); return; }
+    const dp = lecture.discount_price || lecture.price || 0;
+    if (dp <= 0) {
+      setEnrolling(true);
+      const res = await enrollLecture(lecture.id, user.id);
+      if (res.success) { setIsEnrolled(true); router.push(`/study_watch?id=${lecture.id}`); }
+      else alert(res.error || "오류가 발생했습니다.");
+      setEnrolling(false);
+      return;
+    }
+    // 포인트 잔액 새로고침
+    const balRes = await getPointBalance(user.id);
+    if (balRes.success) setPointBalance(balRes.balance);
+    setShowEnrollModal(true);
+  };
+
+  const confirmEnroll = async () => {
+    if (!user || !lecture) return;
+    setEnrolling(true);
+    const res = await enrollLecture(lecture.id, user.id);
+    if (res.success) {
+      setIsEnrolled(true);
+      setShowEnrollModal(false);
+      if (res.balance !== undefined) setPointBalance(res.balance);
+      alert("수강 등록이 완료되었습니다! 특강을 시작합니다.");
+      router.push(`/study_watch?id=${lecture.id}`);
+    } else if (res.error === "insufficient_points") {
+      alert(`포인트가 부족합니다.\n보유: ${(res as any).balance?.toLocaleString()}P\n필요: ${(res as any).required?.toLocaleString()}P`);
+    } else {
+      alert(res.error || "수강 등록에 실패했습니다.");
+    }
+    setEnrolling(false);
+  };
 
   /* ── 이미지 배열 구성 ── */
   const allImages: string[] = lecture
@@ -318,11 +372,11 @@ function StudyReadContent() {
                     {Math.round((1 - displayPrice / originalPrice) * 100)}%
                   </span>
                 )}
-                <span className="font-bold leading-none" style={{ fontSize: 24, color: "#1a1a1a" }}>{displayPrice ? displayPrice.toLocaleString() + "원" : "무료"}</span>
+                <span className="font-bold leading-none" style={{ fontSize: 24, color: "#1a1a1a" }}>{displayPrice ? displayPrice.toLocaleString() + "P" : "무료"}</span>
               </div>
               {monthlyPrice && (
                 <div className="font-bold" style={{ fontSize: 14, color: "#059669" }}>
-                  월 {monthlyPrice.toLocaleString()}원 <span className="font-medium" style={{ color: "#858a8d" }}>({lecture.duration_months}개월)</span>
+                  월 {monthlyPrice.toLocaleString()}P <span className="font-medium" style={{ color: "#858a8d" }}>({lecture.duration_months}개월)</span>
                 </div>
               )}
             </div>
@@ -584,17 +638,17 @@ function StudyReadContent() {
                     <span className="font-bold" style={{ fontSize: 16, color: "#ff3f3f" }}>
                       {Math.round((1 - displayPrice / originalPrice) * 100)}%
                     </span>
-                    <span className="line-through font-medium" style={{ fontSize: 16, color: "#a2a2a2" }}>{originalPrice.toLocaleString()}원</span>
+                    <span className="line-through font-medium" style={{ fontSize: 16, color: "#a2a2a2" }}>{originalPrice.toLocaleString()}P</span>
                   </div>
                 )}
                 
                 <div className="flex items-end tracking-tight" style={{ gap: 4, marginBottom: 8 }}>
-                  <span className="font-bold leading-none" style={{ fontSize: 28, color: "#1a1a1a" }}>{displayPrice ? displayPrice.toLocaleString() + "원" : "무료"}</span>
+                  <span className="font-bold leading-none" style={{ fontSize: 28, color: "#1a1a1a" }}>{displayPrice ? displayPrice.toLocaleString() + "P" : "무료"}</span>
                 </div>
                 
                 {monthlyPrice && (
                   <div className="font-bold" style={{ fontSize: 15, color: "#059669" }}>
-                    월 {monthlyPrice.toLocaleString()}원 <span className="font-medium" style={{ color: "#858a8d" }}>({lecture.duration_months}개월)</span>
+                    월 {monthlyPrice.toLocaleString()}P <span className="font-medium" style={{ color: "#858a8d" }}>({lecture.duration_months}개월)</span>
                   </div>
                 )}
               </div>
@@ -607,13 +661,14 @@ function StudyReadContent() {
 
               {/* CTA Button */}
               <button 
-                onClick={() => router.push(`/study_watch?id=${lecture.id}`)} 
+                onClick={handleEnroll} 
+                disabled={enrolling}
                 className="w-full font-bold text-white transition-colors flex items-center justify-center"
-                style={{ marginBottom: 24, padding: "18px 0", borderRadius: 8, fontSize: 16, backgroundColor: "#059669", boxShadow: "0 4px 12px rgba(5,150,105,0.3)", cursor: "pointer" }}
-                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#047857"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "#059669"; }}
+                style={{ marginBottom: 24, padding: "18px 0", borderRadius: 8, fontSize: 16, backgroundColor: isEnrolled ? "#2563eb" : "#059669", boxShadow: isEnrolled ? "0 4px 12px rgba(37,99,235,0.3)" : "0 4px 12px rgba(5,150,105,0.3)", cursor: "pointer" }}
+                onMouseEnter={(e) => { e.currentTarget.style.opacity = "0.9"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.opacity = "1"; }}
               >
-                특강 수강 시작하기
+                {enrolling ? "처리 중..." : isEnrolled ? "▶ 수강 이어하기" : displayPrice ? `${displayPrice.toLocaleString()}P 결제 후 수강하기` : "무료 수강 시작하기"}
               </button>
 
               {/* Share & Like */}
@@ -656,18 +711,48 @@ function StudyReadContent() {
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
           </button>
           <button 
-            onClick={() => router.push(`/study_watch?id=${lecture.id}`)} 
+            onClick={handleEnroll} 
+            disabled={enrolling}
             className="flex-1 w-full h-full font-bold text-white transition-colors flex items-center justify-center"
-            style={{ height: 52, borderRadius: 8, fontSize: 16, backgroundColor: "#059669", cursor: "pointer" }}
-            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#047857"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "#059669"; }}
+            style={{ height: 52, borderRadius: 8, fontSize: 16, backgroundColor: isEnrolled ? "#2563eb" : "#059669", cursor: "pointer" }}
           >
-            특강 수강 시작하기
+            {enrolling ? "처리 중..." : isEnrolled ? "▶ 수강 이어하기" : "특강 수강 시작하기"}
           </button>
         </div>
       </div>
 
       {isAuthModalOpen && <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />}
+
+      {/* 포인트 결제 확인 모달 */}
+      {showEnrollModal && (
+        <div onClick={() => setShowEnrollModal(false)} style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "#fff", borderRadius: 16, padding: "32px 28px", width: "90%", maxWidth: 420, boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
+            <h3 style={{ fontSize: 20, fontWeight: 800, color: "#111", marginBottom: 20, textAlign: "center" }}>특강 수강 신청</h3>
+            <div style={{ background: "#f8f9fb", borderRadius: 12, padding: 20, marginBottom: 20 }}>
+              <div style={{ fontSize: 14, color: "#6b7280", marginBottom: 8 }}>{lecture?.title}</div>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                <span style={{ fontSize: 14, color: "#374151" }}>수강료</span>
+                <span style={{ fontSize: 16, fontWeight: 800, color: "#111" }}>{(lecture?.discount_price || lecture?.price || 0).toLocaleString()}P</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", paddingTop: 8, borderTop: "1px solid #e5e7eb" }}>
+                <span style={{ fontSize: 14, color: "#374151" }}>내 포인트 잔액</span>
+                <span style={{ fontSize: 16, fontWeight: 800, color: pointBalance >= (lecture?.discount_price || lecture?.price || 0) ? "#059669" : "#ef4444" }}>{pointBalance.toLocaleString()}P</span>
+              </div>
+              {pointBalance < (lecture?.discount_price || lecture?.price || 0) && (
+                <div style={{ marginTop: 12, padding: "10px 14px", background: "#fef2f2", borderRadius: 8, fontSize: 13, color: "#dc2626", fontWeight: 600 }}>
+                  ⚠️ 포인트가 {((lecture?.discount_price || lecture?.price || 0) - pointBalance).toLocaleString()}P 부족합니다
+                </div>
+              )}
+            </div>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button onClick={() => setShowEnrollModal(false)} style={{ flex: 1, padding: "14px 0", borderRadius: 10, border: "1px solid #d1d5db", background: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer", color: "#374151" }}>잠시만요</button>
+              <button onClick={confirmEnroll} disabled={enrolling || pointBalance < (lecture?.discount_price || lecture?.price || 0)} style={{ flex: 1, padding: "14px 0", borderRadius: 10, border: "none", background: pointBalance >= (lecture?.discount_price || lecture?.price || 0) ? "#059669" : "#d1d5db", color: "#fff", fontSize: 15, fontWeight: 700, cursor: pointBalance >= (lecture?.discount_price || lecture?.price || 0) ? "pointer" : "not-allowed" }}>
+                {enrolling ? "처리 중..." : "결제하고 수강하기"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <style>{`
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(5px); }

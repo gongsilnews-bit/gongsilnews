@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { getLectureDetail } from "@/app/actions/lecture";
+import { getLectureDetail, checkEnrollment } from "@/app/actions/lecture";
+import { createClient } from "@/utils/supabase/client";
 import SubPageHeader from "../_components/SubPageHeader";
 import HomeHeader from "../_components/HomeHeader";
 
@@ -16,17 +17,46 @@ export default function MobileStudyWatchClient({ initialLecture }: { initialLect
   const [activeTab, setActiveTab] = useState("curriculum");
 
   useEffect(() => {
-    if (!lecture && initialLecture) {
-      setLecture(initialLecture);
-    }
-    if (initialLecture) {
+    const init = async () => {
+      if (!initialLecture) return;
+
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        alert("로그인이 필요합니다.");
+        router.replace(`/m/study_read?id=${initialLecture.id}`);
+        return;
+      }
+
+      let hasAccess = false;
+      const isFree = (initialLecture.discount_price || initialLecture.price || 0) <= 0;
+      const enrollRes = await checkEnrollment(initialLecture.id, user.id);
+      
+      if (enrollRes.success && enrollRes.enrolled) {
+        hasAccess = true;
+      } else {
+        const { data: member } = await supabase.from("members").select("role").eq("id", user.id).single();
+        if (initialLecture.author_id === user.id || member?.role === "ADMIN") {
+          hasAccess = true;
+        }
+      }
+
+      if (!hasAccess) {
+        alert("수강 등록이 필요한 특강입니다.");
+        router.replace(`/m/study_read?id=${initialLecture.id}`);
+        return;
+      }
+
+      if (!lecture) setLecture(initialLecture);
+      
       const firstChapter = initialLecture.chapters?.[0];
       const firstLesson = firstChapter?.lessons?.[0];
       if (firstLesson?.video_url && !activeVideo) {
         setActiveVideo(firstLesson.video_url);
         setActiveTitle(`Ch.${firstChapter.chapter_no}-${firstLesson.lesson_no}. ${firstLesson.title}`);
       }
-    }
+    };
+    init();
   }, [initialLecture, lecture, activeVideo]);
 
   const toEmbedUrl = (url: string): string | null => {

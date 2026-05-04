@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, useMemo, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { getLectureDetail } from "@/app/actions/lecture";
+import { getLectureDetail, checkEnrollment } from "@/app/actions/lecture";
+import { createClient } from "@/utils/supabase/client";
 
 /* ── YouTube URL → embed URL ── */
 const toEmbed = (url: string): string => {
@@ -53,6 +54,36 @@ function StudyWatchContent() {
       const res = await getLectureDetail(lectureId);
       if (res.success && res.data) {
         setLecture(res.data);
+        
+        // 권한 체크: 수강생 본인, 혹은 관리자, 혹은 작성자인지 확인
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          alert("로그인이 필요합니다.");
+          router.replace(`/study_read?id=${lectureId}`);
+          return;
+        }
+
+        const isFree = (res.data.discount_price || res.data.price || 0) <= 0;
+        let hasAccess = false;
+
+        const enrollRes = await checkEnrollment(lectureId, user.id);
+        if (enrollRes.success && enrollRes.enrolled) {
+          hasAccess = true;
+        } else {
+          // 작성자 또는 관리자인지 확인
+          const { data: member } = await supabase.from("members").select("role").eq("id", user.id).single();
+          if (res.data.author_id === user.id || member?.role === "ADMIN") {
+            hasAccess = true;
+          }
+        }
+
+        if (!hasAccess) {
+          alert("수강 등록이 필요한 특강입니다.");
+          router.replace(`/study_read?id=${lectureId}`);
+          return;
+        }
+
         const exp: Record<number, boolean> = {};
         (res.data.chapters || []).forEach((_: any, i: number) => { exp[i] = true; });
         setExpandedChapters(exp);

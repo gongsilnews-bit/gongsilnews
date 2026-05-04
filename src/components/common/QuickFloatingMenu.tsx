@@ -125,6 +125,26 @@ export default function QuickFloatingMenu() {
           관심기사
         </div>
 
+        {/* 내 수강특강 */}
+        <div
+          onClick={() => handleAuthClick("/study_read")}
+          style={{
+            display: "flex", alignItems: "center", gap: 10,
+            padding: "12px 14px", cursor: "pointer",
+            borderBottom: "1px solid #f0f0f0",
+            fontSize: 13, fontWeight: 600, color: "#333",
+            transition: "background 0.15s",
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = "#f4f6fa")}
+          onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4a6fad" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+          </svg>
+          내 수강특강
+        </div>
+
         {/* 카카오톡 실시간상담 */}
         <div
           onClick={() => window.open("https://pf.kakao.com/_ckHkG/chat", "_blank")}

@@ -693,11 +693,11 @@ export default function StudyWriteForm() {
               <div style={sectionTitleStyle}><span style={{ fontSize: 20 }}>💰</span> 가격 설정</div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, marginBottom: 16 }}>
                 <div>
-                  <label style={labelStyle}>정가 (원)</label>
+                  <label style={labelStyle}>정가 (P)</label>
                   <input type="number" value={price} onChange={(e) => setPrice(Number(e.target.value))} placeholder="300000" style={inputStyle} />
                 </div>
                 <div>
-                  <label style={labelStyle}>할인가 (원)</label>
+                  <label style={labelStyle}>할인가 (P)</label>
                   <input type="number" value={discountPrice} onChange={(e) => setDiscountPrice(e.target.value === "" ? "" : Number(e.target.value))} placeholder="210000" style={inputStyle} />
                 </div>
                 <div>
