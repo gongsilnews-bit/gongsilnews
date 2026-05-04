@@ -29,15 +29,29 @@ function formatDate(d: string) {
 const stripHtml = (html: string) =>
   html ? html.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim() : "";
 
+function formatPrice(v: any): string {
+  const dep = v.deposit || 0;
+  const rent = v.monthly_rent || 0;
+  const depStr = dep >= 10000 ? `${Math.floor(dep / 10000)}억${dep % 10000 !== 0 ? ` ${dep % 10000}` : ''}` : dep > 0 ? `${dep}` : '';
+  const rentStr = rent > 0 ? `${rent}` : '';
+  if (v.trade_type === '월세') return `${depStr}/${rentStr}`;
+  if (v.trade_type === '전세') return depStr;
+  if (v.trade_type === '매매') return v.sale_price ? `${v.sale_price >= 10000 ? `${Math.floor(v.sale_price / 10000)}억` : v.sale_price}` : '';
+  return '';
+}
+
 export default function PCReporterClient({
   profile,
   articles,
+  vacancies,
   authorName,
 }: {
   profile: any;
   articles: any[];
+  vacancies: any[];
   authorName: string;
 }) {
+  const [mainTab, setMainTab] = useState<'articles' | 'vacancies'>('articles');
   const [activeTab, setActiveTab] = useState("all");
 
   const filteredArticles =
@@ -280,179 +294,84 @@ export default function PCReporterClient({
         </div>
       </div>
 
-      {/* ═══ 우측: 기사 목록 ═══ */}
+      {/* ═══ 우측: 기사/공실 목록 ═══ */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        {/* 카테고리 탭 */}
-        <div
-          style={{
-            display: "flex",
-            borderBottom: "2px solid #e5e7eb",
-            marginBottom: "24px",
-            gap: "4px",
-            flexWrap: "wrap",
-          }}
-        >
-          {CATEGORIES.map((cat) => (
-            <button
-              key={cat.key}
-              onClick={() => setActiveTab(cat.key)}
-              style={{
-                padding: "12px 18px",
-                fontSize: "14px",
-                fontWeight: activeTab === cat.key ? 800 : 500,
-                color: activeTab === cat.key ? "#111" : "#888",
-                background: "none",
-                border: "none",
-                borderBottom:
-                  activeTab === cat.key
-                    ? "3px solid #111"
-                    : "3px solid transparent",
-                cursor: "pointer",
-                whiteSpace: "nowrap",
-                transition: "all 0.15s",
-                marginBottom: "-2px",
-              }}
-            >
-              {cat.label}
-            </button>
-          ))}
+        {/* 메인 탭 */}
+        <div style={{ display: 'flex', borderBottom: '2px solid #e5e7eb', marginBottom: '24px' }}>
+          <button onClick={() => setMainTab('articles')} style={{ padding: '14px 24px', fontSize: '15px', fontWeight: mainTab === 'articles' ? 800 : 600, color: mainTab === 'articles' ? '#111' : '#888', background: 'none', border: 'none', borderBottom: mainTab === 'articles' ? '3px solid #111' : '3px solid transparent', cursor: 'pointer', marginBottom: '-2px' }}>
+            전체기사 <span style={{ color: '#3b82f6', fontSize: '13px' }}>{articles.length}</span>
+          </button>
+          <button onClick={() => setMainTab('vacancies')} style={{ padding: '14px 24px', fontSize: '15px', fontWeight: mainTab === 'vacancies' ? 800 : 600, color: mainTab === 'vacancies' ? '#111' : '#888', background: 'none', border: 'none', borderBottom: mainTab === 'vacancies' ? '3px solid #f97316' : '3px solid transparent', cursor: 'pointer', marginBottom: '-2px' }}>
+            등록공실 <span style={{ color: '#f97316', fontSize: '13px' }}>{vacancies.length}</span>
+          </button>
         </div>
 
-        {/* 기사 개수 */}
-        <div
-          style={{
-            fontSize: "14px",
-            color: "#6b7280",
-            fontWeight: 600,
-            marginBottom: "16px",
-          }}
-        >
-          총{" "}
-          <span style={{ color: "#3b82f6", fontWeight: 800 }}>
-            {filteredArticles.length}
-          </span>
-          건
-        </div>
+        {mainTab === 'articles' ? (
+          <>
+            {/* 카테고리 서브탭 */}
+            <div style={{ display: 'flex', borderBottom: '1px solid #e5e7eb', marginBottom: '16px', gap: '4px', flexWrap: 'wrap' }}>
+              {CATEGORIES.map((cat) => (
+                <button key={cat.key} onClick={() => setActiveTab(cat.key)} style={{ padding: '10px 14px', fontSize: '13px', fontWeight: activeTab === cat.key ? 700 : 500, color: activeTab === cat.key ? '#111' : '#888', background: 'none', border: 'none', borderBottom: activeTab === cat.key ? '2px solid #111' : '2px solid transparent', cursor: 'pointer', whiteSpace: 'nowrap', marginBottom: '-1px' }}>
+                  {cat.label}
+                </button>
+              ))}
+            </div>
 
-        {/* 기사 2열 그리드 (네이버 스타일) */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "0px" }}>
-          {/* 매 2개씩 row로 묶기 */}
-          {Array.from(
-            { length: Math.ceil(filteredArticles.length / 2) },
-            (_, rowIdx) => {
-              const pair = filteredArticles.slice(rowIdx * 2, rowIdx * 2 + 2);
-              return (
-                <div
-                  key={rowIdx}
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: "24px",
-                    padding: "16px 0",
-                    borderBottom: "1px solid #f3f4f6",
-                  }}
-                >
-                  {pair.map((article: any) => (
-                    <Link
-                      key={article.id}
-                      href={`/news/${article.article_no || article.id}`}
-                      style={{
-                        textDecoration: "none",
-                        color: "inherit",
-                        display: "flex",
-                        gap: "14px",
-                        alignItems: "flex-start",
-                      }}
-                    >
-                      {article.thumbnail_url && (
-                        <div
-                          style={{
-                            width: "120px",
-                            height: "80px",
-                            borderRadius: "8px",
-                            flexShrink: 0,
-                            background: `url(${article.thumbnail_url}) center/cover`,
-                            border: "1px solid #f3f4f6",
-                          }}
-                        />
-                      )}
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div
-                          style={{
-                            fontSize: "14px",
-                            fontWeight: 700,
-                            color: "#111",
-                            lineHeight: 1.5,
-                            marginBottom: "6px",
-                            overflow: "hidden",
-                            display: "-webkit-box",
-                            WebkitLineClamp: 2,
-                            WebkitBoxOrient: "vertical",
-                          }}
-                        >
-                          {article.title}
+            <div style={{ fontSize: '14px', color: '#6b7280', fontWeight: 600, marginBottom: '16px' }}>
+              총 <span style={{ color: '#3b82f6', fontWeight: 800 }}>{filteredArticles.length}</span>건
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              {Array.from({ length: Math.ceil(filteredArticles.length / 2) }, (_, rowIdx) => {
+                const pair = filteredArticles.slice(rowIdx * 2, rowIdx * 2 + 2);
+                return (
+                  <div key={rowIdx} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', padding: '16px 0', borderBottom: '1px solid #f3f4f6' }}>
+                    {pair.map((article: any) => (
+                      <Link key={article.id} href={`/news/${article.article_no || article.id}`} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
+                        {article.thumbnail_url && <div style={{ width: '120px', height: '80px', borderRadius: '8px', flexShrink: 0, background: `url(${article.thumbnail_url}) center/cover`, border: '1px solid #f3f4f6' }} />}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: '14px', fontWeight: 700, color: '#111', lineHeight: 1.5, marginBottom: '6px', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{article.title}</div>
+                          <div style={{ fontSize: '12px', color: '#9ca3af', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical' }}>{stripHtml(article.subtitle || article.content || '')}</div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#b0b0b0', marginTop: '6px' }}>
+                            <span>{formatDate(article.published_at || article.created_at)}</span>
+                            {article.view_count > 0 && <><span>·</span><span>💬 {article.view_count > 10 ? `${Math.floor(article.view_count / 10) * 10}+` : article.view_count}</span></>}
+                          </div>
                         </div>
-                        <div
-                          style={{
-                            fontSize: "12px",
-                            color: "#9ca3af",
-                            overflow: "hidden",
-                            display: "-webkit-box",
-                            WebkitLineClamp: 1,
-                            WebkitBoxOrient: "vertical",
-                          }}
-                        >
-                          {stripHtml(
-                            article.subtitle || article.content || ""
-                          )}
-                        </div>
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "6px",
-                            fontSize: "11px",
-                            color: "#b0b0b0",
-                            marginTop: "6px",
-                          }}
-                        >
-                          <span>
-                            {formatDate(
-                              article.published_at || article.created_at
-                            )}
-                          </span>
-                          {article.view_count > 0 && (
-                            <>
-                              <span>·</span>
-                              <span>
-                                💬{" "}
-                                {article.view_count > 10
-                                  ? `${Math.floor(article.view_count / 10) * 10}+`
-                                  : article.view_count}
-                              </span>
-                            </>
-                          )}
-                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                );
+              })}
+            </div>
+            {filteredArticles.length === 0 && <div style={{ textAlign: 'center', padding: '80px 0', color: '#9ca3af', fontSize: '15px' }}>이 카테고리에 작성된 기사가 없습니다.</div>}
+          </>
+        ) : (
+          /* 등록공실 */
+          <>
+            <div style={{ fontSize: '14px', color: '#6b7280', fontWeight: 600, marginBottom: '16px' }}>
+              총 <span style={{ color: '#f97316', fontWeight: 800 }}>{vacancies.length}</span>건
+            </div>
+            {vacancies.length > 0 ? (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+                {vacancies.map((v: any) => (
+                  <Link key={v.id} href={`/m/gongsil?id=${v.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                    <div style={{ borderRadius: '12px', overflow: 'hidden', border: '1px solid #e5e7eb', background: '#fff', transition: 'box-shadow 0.2s' }} onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.1)')} onMouseLeave={e => (e.currentTarget.style.boxShadow = 'none')}>
+                      <div style={{ width: '100%', aspectRatio: '16/10', background: v.images?.[0] ? `url(${v.images[0]}) center/cover` : 'linear-gradient(135deg, #fef3c7, #fde68a)', position: 'relative' }}>
+                        <span style={{ position: 'absolute', top: 8, left: 8, background: '#f97316', color: '#fff', fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 10 }}>{v.trade_type}</span>
                       </div>
-                    </Link>
-                  ))}
-                </div>
-              );
-            }
-          )}
-        </div>
-
-        {filteredArticles.length === 0 && (
-          <div
-            style={{
-              textAlign: "center",
-              padding: "80px 0",
-              color: "#9ca3af",
-              fontSize: "15px",
-            }}
-          >
-            이 카테고리에 작성된 기사가 없습니다.
-          </div>
+                      <div style={{ padding: '12px' }}>
+                        <div style={{ fontSize: '16px', fontWeight: 800, color: '#111', marginBottom: '4px' }}>{formatPrice(v)}<span style={{ fontSize: '12px', fontWeight: 600, color: '#6b7280', marginLeft: '4px' }}>만원</span></div>
+                        <div style={{ fontSize: '13px', color: '#6b7280', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', marginBottom: '3px' }}>{v.building_name || [v.dong, v.sigungu].filter(Boolean).join(' ')}</div>
+                        <div style={{ fontSize: '12px', color: '#9ca3af' }}>{v.property_type} · {v.supply_m2 || '-'}㎡</div>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '80px 0', color: '#9ca3af', fontSize: '15px' }}>등록된 공실이 없습니다.</div>
+            )}
+          </>
         )}
       </div>
     </div>

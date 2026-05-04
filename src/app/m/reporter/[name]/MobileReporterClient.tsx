@@ -30,24 +30,36 @@ function formatDate(d: string) {
 const stripHtml = (html: string) =>
   html ? html.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim() : "";
 
+function formatPrice(v: any): string {
+  const dep = v.deposit || 0;
+  const rent = v.monthly_rent || 0;
+  const depStr = dep >= 10000 ? `${Math.floor(dep / 10000)}억${dep % 10000 !== 0 ? ` ${dep % 10000}` : ''}` : dep > 0 ? `${dep}` : '';
+  const rentStr = rent > 0 ? `${rent}` : '';
+  if (v.trade_type === '월세') return `${depStr}/${rentStr}`;
+  if (v.trade_type === '전세') return depStr;
+  if (v.trade_type === '매매') return v.sale_price ? `${v.sale_price >= 10000 ? `${Math.floor(v.sale_price / 10000)}억` : v.sale_price}` : '';
+  return '';
+}
+
 export default function MobileReporterClient({
   profile,
   articles,
+  vacancies,
   authorName,
 }: {
   profile: any;
   articles: any[];
+  vacancies: any[];
   authorName: string;
 }) {
   const router = useRouter();
+  const [mainTab, setMainTab] = useState<'articles' | 'vacancies'>('articles');
   const [activeTab, setActiveTab] = useState("all");
 
   const filteredArticles =
     activeTab === "all"
       ? articles
       : articles.filter((a: any) => a.section2 === activeTab);
-
-  const totalCount = articles.length;
 
   return (
     <div
@@ -382,244 +394,98 @@ export default function MobileReporterClient({
         />
       </div>
 
-      {/* ═══ 카테고리 탭 ═══ */}
-      <div
-        className="hide-scrollbar"
-        style={{
-          display: "flex",
-          overflowX: "auto",
-          borderBottom: "1px solid #e5e7eb",
-          background: "#fff",
-          position: "sticky",
-          top: 0,
-          zIndex: 30,
-          WebkitOverflowScrolling: "touch",
-        }}
-      >
-        {CATEGORIES.map((cat) => (
-          <button
-            key={cat.key}
-            onClick={() => setActiveTab(cat.key)}
-            style={{
-              flexShrink: 0,
-              padding: "14px 16px",
-              fontSize: "14px",
-              fontWeight: activeTab === cat.key ? 800 : 500,
-              color: activeTab === cat.key ? "#111" : "#888",
-              background: "none",
-              border: "none",
-              borderBottom:
-                activeTab === cat.key
-                  ? "3px solid #111"
-                  : "3px solid transparent",
-              cursor: "pointer",
-              whiteSpace: "nowrap",
-              transition: "all 0.15s",
-            }}
-          >
-            {cat.label}
-          </button>
-        ))}
+      {/* ═══ 메인 탭 (전체기사 / 등록공실) ═══ */}
+      <div style={{ display: 'flex', borderBottom: '2px solid #e5e7eb', background: '#fff', position: 'sticky', top: 0, zIndex: 30 }}>
+        <button onClick={() => setMainTab('articles')} style={{ flex: 1, padding: '14px 0', fontSize: '15px', fontWeight: mainTab === 'articles' ? 800 : 600, color: mainTab === 'articles' ? '#111' : '#888', background: 'none', border: 'none', borderBottom: mainTab === 'articles' ? '3px solid #111' : '3px solid transparent', cursor: 'pointer' }}>
+          전체기사 <span style={{ color: '#3b82f6', fontSize: '13px' }}>{articles.length}</span>
+        </button>
+        <button onClick={() => setMainTab('vacancies')} style={{ flex: 1, padding: '14px 0', fontSize: '15px', fontWeight: mainTab === 'vacancies' ? 800 : 600, color: mainTab === 'vacancies' ? '#111' : '#888', background: 'none', border: 'none', borderBottom: mainTab === 'vacancies' ? '3px solid #f97316' : '3px solid transparent', cursor: 'pointer' }}>
+          등록공실 <span style={{ color: '#f97316', fontSize: '13px' }}>{vacancies.length}</span>
+        </button>
       </div>
 
-      {/* ═══ 기사 개수 표시 ═══ */}
-      <div
-        style={{
-          padding: "16px 16px 8px",
-          fontSize: "13px",
-          color: "#6b7280",
-          fontWeight: 600,
-        }}
-      >
-        총 <span style={{ color: "#3b82f6", fontWeight: 800 }}>{filteredArticles.length}</span>건
-      </div>
+      {mainTab === 'articles' ? (
+        <>
+          {/* ═══ 카테고리 서브탭 ═══ */}
+          <div className="hide-scrollbar" style={{ display: 'flex', overflowX: 'auto', borderBottom: '1px solid #e5e7eb', background: '#fff', WebkitOverflowScrolling: 'touch' }}>
+            {CATEGORIES.map((cat) => (
+              <button key={cat.key} onClick={() => setActiveTab(cat.key)} style={{ flexShrink: 0, padding: '12px 14px', fontSize: '13px', fontWeight: activeTab === cat.key ? 700 : 500, color: activeTab === cat.key ? '#111' : '#888', background: 'none', border: 'none', borderBottom: activeTab === cat.key ? '2px solid #111' : '2px solid transparent', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                {cat.label}
+              </button>
+            ))}
+          </div>
 
-      {/* ═══ 기사 목록 ═══ */}
-      <div style={{ flex: 1, padding: "0 16px 24px" }}>
-        {/* 상위 2개: 카드형 그리드 */}
-        {filteredArticles.length > 0 && (
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: "12px",
-              marginBottom: "16px",
-            }}
-          >
-            {filteredArticles.slice(0, 2).map((article: any) => (
-              <Link
-                key={article.id}
-                href={`/m/news/${article.id}`}
-                style={{ textDecoration: "none", color: "inherit" }}
-              >
-                <div
-                  style={{
-                    borderRadius: "12px",
-                    overflow: "hidden",
-                    background: "#f9fafb",
-                    border: "1px solid #f3f4f6",
-                  }}
-                >
-                  <div
-                    style={{
-                      width: "100%",
-                      aspectRatio: "16/10",
-                      background: article.thumbnail_url
-                        ? `url(${article.thumbnail_url}) center/cover`
-                        : "linear-gradient(135deg, #e0e7ff, #c7d2fe)",
-                      position: "relative",
-                    }}
-                  >
-                    {article.section2 && (
-                      <span
-                        style={{
-                          position: "absolute",
-                          top: 8,
-                          left: 8,
-                          background: "rgba(0,0,0,0.55)",
-                          color: "#fff",
-                          fontSize: 10,
-                          fontWeight: 700,
-                          padding: "2px 6px",
-                          borderRadius: 4,
-                        }}
-                      >
-                        {article.section2}
-                      </span>
-                    )}
-                  </div>
-                  <div style={{ padding: "10px" }}>
-                    <div
-                      style={{
-                        fontSize: "13px",
-                        fontWeight: 700,
-                        color: "#111",
-                        lineHeight: 1.4,
-                        overflow: "hidden",
-                        display: "-webkit-box",
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: "vertical",
-                        marginBottom: "6px",
-                      }}
-                    >
-                      {article.title}
+          {/* 기사 개수 */}
+          <div style={{ padding: '16px 16px 8px', fontSize: '13px', color: '#6b7280', fontWeight: 600 }}>
+            총 <span style={{ color: '#3b82f6', fontWeight: 800 }}>{filteredArticles.length}</span>건
+          </div>
+
+          {/* 기사 목록 */}
+          <div style={{ flex: 1, padding: '0 16px 24px' }}>
+            {filteredArticles.length > 0 && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+                {filteredArticles.slice(0, 2).map((article: any) => (
+                  <Link key={article.id} href={`/m/news/${article.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                    <div style={{ borderRadius: '12px', overflow: 'hidden', background: '#f9fafb', border: '1px solid #f3f4f6' }}>
+                      <div style={{ width: '100%', aspectRatio: '16/10', background: article.thumbnail_url ? `url(${article.thumbnail_url}) center/cover` : 'linear-gradient(135deg, #e0e7ff, #c7d2fe)', position: 'relative' }}>
+                        {article.section2 && <span style={{ position: 'absolute', top: 8, left: 8, background: 'rgba(0,0,0,0.55)', color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 4 }}>{article.section2}</span>}
+                      </div>
+                      <div style={{ padding: '10px' }}>
+                        <div style={{ fontSize: '13px', fontWeight: 700, color: '#111', lineHeight: 1.4, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', marginBottom: '6px' }}>{article.title}</div>
+                        <div style={{ fontSize: '11px', color: '#9ca3af' }}>{formatDate(article.published_at || article.created_at)}</div>
+                      </div>
                     </div>
-                    <div
-                      style={{
-                        fontSize: "11px",
-                        color: "#9ca3af",
-                      }}
-                    >
-                      {formatDate(article.published_at || article.created_at)}
+                  </Link>
+                ))}
+              </div>
+            )}
+            {filteredArticles.slice(2).map((article: any) => (
+              <Link key={article.id} href={`/m/news/${article.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                <div style={{ display: 'flex', gap: '12px', padding: '14px 0', borderBottom: '1px solid #f3f4f6', alignItems: 'flex-start' }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    {article.section2 && <div style={{ fontSize: '11px', fontWeight: 700, color: '#3b82f6', marginBottom: '4px' }}>{article.section2}</div>}
+                    <div style={{ fontSize: '15px', fontWeight: 700, color: '#111', lineHeight: 1.4, marginBottom: '6px', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{article.title}</div>
+                    <div style={{ fontSize: '13px', color: '#9ca3af', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', marginBottom: '4px' }}>{stripHtml(article.subtitle || article.content || '')}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', color: '#b0b0b0' }}>
+                      <span>{formatDate(article.published_at || article.created_at)}</span>
+                      <span>· {authorName}</span>
                     </div>
                   </div>
+                  {article.thumbnail_url && <div style={{ width: '84px', height: '64px', borderRadius: '8px', flexShrink: 0, background: `url(${article.thumbnail_url}) center/cover`, border: '1px solid #f3f4f6' }} />}
                 </div>
               </Link>
             ))}
+            {filteredArticles.length === 0 && <div style={{ textAlign: 'center', padding: '60px 0', color: '#9ca3af', fontSize: '14px' }}>이 카테고리에 작성된 기사가 없습니다.</div>}
           </div>
-        )}
-
-        {/* 나머지: 리스트형 */}
-        {filteredArticles.slice(2).map((article: any) => (
-          <Link
-            key={article.id}
-            href={`/m/news/${article.id}`}
-            style={{ textDecoration: "none", color: "inherit" }}
-          >
-            <div
-              style={{
-                display: "flex",
-                gap: "12px",
-                padding: "14px 0",
-                borderBottom: "1px solid #f3f4f6",
-                alignItems: "flex-start",
-              }}
-            >
-              <div style={{ flex: 1, minWidth: 0 }}>
-                {article.section2 && (
-                  <div
-                    style={{
-                      fontSize: "11px",
-                      fontWeight: 700,
-                      color: "#3b82f6",
-                      marginBottom: "4px",
-                    }}
-                  >
-                    {article.section2}
+        </>
+      ) : (
+        /* ═══ 등록공실 탭 ═══ */
+        <div style={{ flex: 1, padding: '16px' }}>
+          <div style={{ fontSize: '13px', color: '#6b7280', fontWeight: 600, marginBottom: '12px' }}>
+            총 <span style={{ color: '#f97316', fontWeight: 800 }}>{vacancies.length}</span>건
+          </div>
+          {vacancies.length > 0 ? (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              {vacancies.map((v: any) => (
+                <Link key={v.id} href={`/m/gongsil?id=${v.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                  <div style={{ borderRadius: '12px', overflow: 'hidden', border: '1px solid #e5e7eb', background: '#fff' }}>
+                    <div style={{ width: '100%', aspectRatio: '16/10', background: v.images?.[0] ? `url(${v.images[0]}) center/cover` : 'linear-gradient(135deg, #fef3c7, #fde68a)', position: 'relative' }}>
+                      <span style={{ position: 'absolute', top: 8, left: 8, background: '#f97316', color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 10 }}>{v.trade_type}</span>
+                    </div>
+                    <div style={{ padding: '10px' }}>
+                      <div style={{ fontSize: '15px', fontWeight: 800, color: '#111', marginBottom: '4px' }}>{formatPrice(v)}<span style={{ fontSize: '12px', fontWeight: 600, color: '#6b7280', marginLeft: '4px' }}>만원</span></div>
+                      <div style={{ fontSize: '12px', color: '#6b7280', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', marginBottom: '2px' }}>{v.building_name || [v.dong, v.sigungu].filter(Boolean).join(' ')}</div>
+                      <div style={{ fontSize: '11px', color: '#9ca3af' }}>{v.property_type} · {v.supply_m2 || '-'}㎡</div>
+                    </div>
                   </div>
-                )}
-                <div
-                  style={{
-                    fontSize: "15px",
-                    fontWeight: 700,
-                    color: "#111",
-                    lineHeight: 1.4,
-                    marginBottom: "6px",
-                    overflow: "hidden",
-                    display: "-webkit-box",
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: "vertical",
-                  }}
-                >
-                  {article.title}
-                </div>
-                <div
-                  style={{
-                    fontSize: "13px",
-                    color: "#9ca3af",
-                    overflow: "hidden",
-                    display: "-webkit-box",
-                    WebkitLineClamp: 1,
-                    WebkitBoxOrient: "vertical",
-                    marginBottom: "4px",
-                  }}
-                >
-                  {stripHtml(article.subtitle || article.content || "")}
-                </div>
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    fontSize: "11px",
-                    color: "#b0b0b0",
-                  }}
-                >
-                  <span>
-                    {formatDate(article.published_at || article.created_at)}
-                  </span>
-                  <span>· {authorName}</span>
-                </div>
-              </div>
-              {article.thumbnail_url && (
-                <div
-                  style={{
-                    width: "84px",
-                    height: "64px",
-                    borderRadius: "8px",
-                    flexShrink: 0,
-                    background: `url(${article.thumbnail_url}) center/cover`,
-                    border: "1px solid #f3f4f6",
-                  }}
-                />
-              )}
+                </Link>
+              ))}
             </div>
-          </Link>
-        ))}
-
-        {filteredArticles.length === 0 && (
-          <div
-            style={{
-              textAlign: "center",
-              padding: "60px 0",
-              color: "#9ca3af",
-              fontSize: "14px",
-            }}
-          >
-            이 카테고리에 작성된 기사가 없습니다.
-          </div>
-        )}
-      </div>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '60px 0', color: '#9ca3af', fontSize: '14px' }}>등록된 공실이 없습니다.</div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
