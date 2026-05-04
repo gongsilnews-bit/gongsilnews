@@ -29,7 +29,51 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [userRole, setUserRole] = useState<string>('');
 
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [isSearchActive, setIsSearchActive] = useState(false);
 
+  useEffect(() => {
+    const saved = localStorage.getItem("gongsil_recent_searches");
+    if (saved) {
+      try { setRecentSearches(JSON.parse(saved)); } catch(e) {}
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchWrapRef.current && !searchWrapRef.current.contains(e.target as Node)) {
+        setIsSearchActive(false);
+        searchWrapRef.current.classList.remove('active');
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleSearch = (query: string) => {
+    if (!query.trim()) return;
+    const term = query.trim();
+    const newSearches = [term, ...recentSearches.filter(t => t !== term)].slice(0, 10);
+    setRecentSearches(newSearches);
+    localStorage.setItem("gongsil_recent_searches", JSON.stringify(newSearches));
+    
+    router.push(`/news_all?q=${encodeURIComponent(term)}`);
+    searchWrapRef.current?.classList.remove('active');
+    setIsSearchActive(false);
+    if (searchInputRef.current) searchInputRef.current.value = '';
+  };
+  
+  const removeSearch = (term: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const newSearches = recentSearches.filter(t => t !== term);
+    setRecentSearches(newSearches);
+    localStorage.setItem("gongsil_recent_searches", JSON.stringify(newSearches));
+  };
+  
+  const clearSearches = () => {
+    setRecentSearches([]);
+    localStorage.removeItem("gongsil_recent_searches");
+  };
   useEffect(() => {
     const handleScroll = () => {
       if (headerRef.current) {
@@ -156,41 +200,71 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
           )}
         </div>
         <div className="top-bar-right">
-          <div className="top-search-wrap" ref={searchWrapRef}>
+          <div className={`top-search-wrap ${isSearchActive ? 'active' : ''}`} ref={searchWrapRef}>
             <input
               type="text"
               className="top-search-input"
               ref={searchInputRef}
               placeholder="검색어를 입력하세요"
+              onFocus={() => setIsSearchActive(true)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   const query = searchInputRef.current?.value.trim();
                   if (query) {
-                    router.push(`/news_all?q=${encodeURIComponent(query)}`);
-                    searchWrapRef.current?.classList.remove('active');
-                    if (searchInputRef.current) searchInputRef.current.value = '';
+                    handleSearch(query);
                   }
                 }
               }}
             />
             <div className="icon-tooltip-wrap" data-tooltip="검색">
               <svg onClick={() => {
-                const isActive = searchWrapRef.current?.classList.contains('active');
-                if (isActive) {
+                if (isSearchActive) {
                   const query = searchInputRef.current?.value.trim();
                   if (query) {
-                    router.push(`/news_all?q=${encodeURIComponent(query)}`);
-                    searchWrapRef.current?.classList.remove('active');
-                    if (searchInputRef.current) searchInputRef.current.value = '';
+                    handleSearch(query);
                   } else {
+                    setIsSearchActive(false);
                     searchWrapRef.current?.classList.remove('active');
                   }
                 } else {
+                  setIsSearchActive(true);
                   searchWrapRef.current?.classList.add('active');
-                  searchInputRef.current?.focus();
+                  setTimeout(() => searchInputRef.current?.focus(), 100);
                 }
               }} viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
             </div>
+
+            {/* 최근 검색어 레이어 */}
+            {isSearchActive && (
+              <div style={{ position: "absolute", top: "100%", right: 0, marginTop: "8px", width: "320px", background: "#fff", borderRadius: "12px", boxShadow: "0 10px 30px rgba(0,0,0,0.15)", border: "1px solid #e5e7eb", zIndex: 1000, overflow: "hidden", color: "#111" }}>
+                <div style={{ padding: "16px", borderBottom: "1px solid #f3f4f6", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontSize: "14px", fontWeight: "bold" }}>최근 검색어</span>
+                  {recentSearches.length > 0 && (
+                    <button onClick={clearSearches} style={{ background: "none", border: "none", fontSize: "12px", color: "#6b7280", cursor: "pointer" }}>전체 삭제</button>
+                  )}
+                </div>
+                <div style={{ maxHeight: "280px", overflowY: "auto", padding: "8px 0" }}>
+                  {recentSearches.length > 0 ? (
+                    recentSearches.map((term, idx) => (
+                      <div key={idx} onClick={() => handleSearch(term)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 16px", cursor: "pointer", transition: "background 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.background = "#f9fafb"} onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                          <span style={{ fontSize: "14px", color: "#374151" }}>{term}</span>
+                        </div>
+                        <button onClick={(e) => removeSearch(term, e)} style={{ background: "none", border: "none", padding: "4px", color: "#9ca3af", cursor: "pointer", display: "flex", alignItems: "center" }}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        </button>
+                      </div>
+                    ))
+                  ) : (
+                    <div style={{ padding: "30px 16px", textAlign: "center", fontSize: "13px", color: "#9ca3af" }}>최근 검색어가 없습니다.</div>
+                  )}
+                </div>
+                <div style={{ background: "#f9fafb", padding: "10px 16px", textAlign: "right", borderTop: "1px solid #f3f4f6" }}>
+                  <button onClick={() => { setIsSearchActive(false); searchWrapRef.current?.classList.remove('active'); }} style={{ background: "none", border: "none", fontSize: "12px", color: "#6b7280", cursor: "pointer", fontWeight: "bold" }}>닫기</button>
+                </div>
+              </div>
+            )}
           </div>
           {currentUser ? (
             <div style={{ display: "flex", alignItems: "center", gap: "12px", fontSize: "12px" }}>
