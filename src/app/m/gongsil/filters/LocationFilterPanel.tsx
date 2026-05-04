@@ -26,11 +26,18 @@ export default function LocationFilterPanel({ onLocationMove, onFilterChange, on
   const [regTab, setRegTab] = useState<"sido"|"gugun"|"dong">("sido");
   const [isExpanded, setIsExpanded] = useState(false);
 
+  useEffect(() => { loadSido(); }, []);
+
   useEffect(() => { 
-    if (tempFilters?.sido) setSelSido(tempFilters.sido);
-    if (tempFilters?.sigungu) setSelGugun(tempFilters.sigungu);
-    if (tempFilters?.dong) setSelDong(tempFilters.dong); // dong was not tracked as text, wait, we didn't have selDong state!
-    loadSido(); 
+    setSelSido(tempFilters?.sido || "");
+    setSelGugun(tempFilters?.sigungu || "");
+    setSelDong(tempFilters?.dong || "");
+    
+    if (!tempFilters?.sido) {
+      setSelSidoCode("");
+      setSelGugunCode("");
+      setRegTab("sido");
+    }
   }, [tempFilters]);
 
   const loadSido = async () => {
