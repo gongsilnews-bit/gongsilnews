@@ -433,7 +433,7 @@ export default function MarketingPage() {
                   <span style={{ color: "rgba(255,255,255,0.2)" }}>|</span>
                   <Link href="/marketing">광고안내</Link>
                   <span style={{ color: "rgba(255,255,255,0.2)" }}>|</span>
-                  <Link href="#">제휴문의</Link>
+                  <Link href="/partnership">제휴문의</Link>
                   <span style={{ color: "rgba(255,255,255,0.2)" }}>|</span>
                   <Link href="/terms">이용약관</Link>
                   <span style={{ color: "rgba(255,255,255,0.2)" }}>|</span>

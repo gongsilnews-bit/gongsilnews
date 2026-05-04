@@ -61,7 +61,7 @@ export default function Footer() {
             <div className="sitemap-title">서비스</div>
             <Link href="/about" className="sitemap-link">회사소개</Link>
             <Link href="/marketing" className="sitemap-link">광고안내</Link>
-            <Link href="#" className="sitemap-link">제휴문의</Link>
+            <Link href="/partnership" className="sitemap-link">제휴문의</Link>
             <Link href="/signup" className="sitemap-link">중개업소무료가입</Link>
           </div>
           {/* 약관/정책 */}
@@ -83,7 +83,7 @@ export default function Footer() {
             {divider}
             <Link href="/marketing" style={linkStyle}>광고안내</Link>
             {divider}
-            <Link href="#" style={linkStyle}>제휴문의</Link>
+            <Link href="/partnership" style={linkStyle}>제휴문의</Link>
             {divider}
             <Link href="/terms" style={linkStyle}>이용약관</Link>
             {divider}
