@@ -1,6 +1,6 @@
 import React from "react";
 import { getArticles, getAuthorProfileByName } from "@/app/actions/article";
-import { getAllActiveVacancies } from "@/app/actions/vacancy";
+import { getVacanciesByOwnerId } from "@/app/actions/vacancy";
 import MobileReporterClient from "./MobileReporterClient";
 
 export const revalidate = 60;
@@ -21,11 +21,13 @@ export default async function MobileReporterPage({
   const profile = profileRes.success ? profileRes.data : null;
   const articles = articlesRes.success ? articlesRes.data || [] : [];
 
-  // 기자의 등록공실 탭은 '우리 공실리스트(전체 활성 공실)'를 보여줌
+  // 프로필에서 member id를 가져와 해당 기자의 공실 목록도 조회
   let vacancies: any[] = [];
-  const vacRes = await getAllActiveVacancies();
-  if (vacRes.success && vacRes.data) {
-    vacancies = vacRes.data;
+  if (profile?.id) {
+    const vacRes = await getVacanciesByOwnerId(profile.id);
+    if (vacRes.success && vacRes.data) {
+      vacancies = vacRes.data;
+    }
   }
 
   return (

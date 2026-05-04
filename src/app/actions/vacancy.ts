@@ -346,31 +346,6 @@ export async function getVacancyListByKeyword(keyword: string) {
   }
 }
 
-// ── 플랫폼 전체 활성 공실 목록 조회 (기자 프로필용 '우리 공실리스트') ──
-export async function getAllActiveVacancies() {
-  const supabase = getAdminClient();
-  try {
-    const { data, error } = await supabase
-      .from('vacancies')
-      .select('*, vacancy_photos(url, sort_order)')
-      .eq('status', 'ACTIVE')
-      .order('created_at', { ascending: false });
-
-    if (error) return { success: false, error: error.message };
-
-    const withImages = data?.map(v => ({
-      ...v,
-      images: v.vacancy_photos
-        ? [...v.vacancy_photos].sort((a: any, b: any) => a.sort_order - b.sort_order).map((p: any) => p.url)
-        : [],
-    })) || [];
-
-    return { success: true, data: withImages };
-  } catch (error: any) {
-    return { success: false, error: error.message };
-  }
-}
-
 // ── 특정 회원의 공실 목록 조회 (기자 프로필용, role 무관하게 항상 owner_id 필터) ──
 export async function getVacanciesByOwnerId(ownerId: string) {
   const supabase = getAdminClient();
