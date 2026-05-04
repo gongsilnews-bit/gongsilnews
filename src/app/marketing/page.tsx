@@ -67,30 +67,46 @@ export default function MarketingPage() {
             padding: 80px 20px 120px;
           }
 
-          /* Hero Section */
-          .hero-section {
-            text-align: center;
-            padding: 60px 0 100px;
-            border-bottom: 1px solid #f0f0f0;
-            margin-bottom: 80px;
+          /* Hero Section (Main Style) */
+          .marketing-hero {
+            position: relative;
+            height: 600px;
+            background-image: url('https://digitalspecial.joongang.co.kr/_o/img/newsroom/2020/0715_marketing/images/main-bg@2x.jpg');
+            background-position: center;
+            background-size: cover;
+            background-repeat: no-repeat;
+            display: flex;
+            align-items: center;
+          }
+          .marketing-hero::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(to right, rgba(26, 32, 44, 0.9), rgba(26, 32, 44, 0.4));
+            z-index: 1;
+          }
+          .hero-content {
+            position: relative;
+            z-index: 2;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 40px;
+            width: 100%;
           }
           .hero-title {
-            font-size: 52px;
+            font-size: 56px;
             font-weight: 900;
-            color: #111;
-            margin: 0 0 24px;
-            letter-spacing: -1.5px;
+            color: #fff;
+            margin-bottom: 24px;
+            letter-spacing: -2px;
+            line-height: 1.2;
           }
-          .hero-subtitle {
-            font-size: 22px;
+          .hero-desc {
+            font-size: 24px;
             font-weight: 500;
-            color: #555;
+            color: rgba(255, 255, 255, 0.9);
             line-height: 1.6;
             word-break: keep-all;
-          }
-          .highlight-text {
-            color: #2563eb;
-            font-weight: 800;
           }
 
           /* Section Titles */
@@ -215,15 +231,83 @@ export default function MarketingPage() {
             color: #94a3b8;
           }
 
+          /* Contact Footer */
+          .contact-footer {
+            background: #1e293b;
+            color: #fff;
+            padding: 80px 40px;
+          }
+          .contact-footer-inner {
+            max-width: 1000px;
+            margin: 0 auto;
+            position: relative;
+          }
+          .contact-title {
+            font-size: 28px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            margin-bottom: 30px;
+          }
+          .contact-info {
+            font-size: 13px;
+            color: #94a3b8;
+            line-height: 1.8;
+            margin-bottom: 24px;
+          }
+          .contact-bottom {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 40px;
+            flex-wrap: wrap;
+            gap: 20px;
+          }
+          .contact-copy {
+            font-size: 13px;
+            font-weight: 700;
+            color: #f8fafc;
+          }
+          .contact-links {
+            display: flex;
+            gap: 24px;
+            flex-wrap: wrap;
+          }
+          .contact-links a {
+            font-size: 14px;
+            color: #cbd5e1;
+            text-decoration: none;
+            transition: color 0.2s;
+          }
+          .contact-links a:hover {
+            color: #fff;
+          }
+          .scroll-top-btn {
+            position: absolute;
+            right: 0;
+            bottom: -20px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border: none;
+            color: #1e293b;
+          }
+
           /* Responsive */
           @media (max-width: 768px) {
             .marketing-header { padding: 0 20px; height: 60px; }
+            .marketing-hero { height: 400px; }
+            .hero-content { padding: 0 20px; }
+            .hero-title { font-size: 36px; margin-bottom: 16px; }
+            .hero-desc { font-size: 18px; }
             .marketing-main { padding: 40px 20px 80px; }
-            .hero-section { padding: 40px 0 60px; margin-bottom: 50px; }
-            .hero-title { font-size: 36px; }
-            .hero-subtitle { font-size: 18px; }
             .service-grid, .contact-grid { grid-template-columns: 1fr; gap: 20px; }
             .download-banner { flex-direction: column; text-align: center; gap: 30px; padding: 40px 20px; }
+            .contact-footer { padding: 60px 20px; }
           }
         `}</style>
 
@@ -237,17 +321,19 @@ export default function MarketingPage() {
           </div>
         </header>
 
-        {/* ===== Main Content ===== */}
-        <main className="marketing-main">
-          
-          {/* Hero Section */}
-          <section className="hero-section fade-up">
-            <h1 className="hero-title">공실뉴스 <span className="highlight-text">비즈솔루션</span></h1>
-            <p className="hero-subtitle">
-              대한민국 11만 부동산과 임대인, 매수인을 연결하는<br />
+        {/* ===== Hero Section ===== */}
+        <section className="marketing-hero fade-up">
+          <div className="hero-content">
+            <h1 className="hero-title">공실뉴스<br/>비즈솔루션본부</h1>
+            <p className="hero-desc">
+              대한민국 11만 부동산과 임대인, 매수인을 연결하는<br/>
               부동산 전문 미디어의 강력한 마케팅 네트워크를 경험하세요.
             </p>
-          </section>
+          </div>
+        </section>
+
+        {/* ===== Main Content ===== */}
+        <main className="marketing-main">
 
           {/* Services Section */}
           <section className="fade-up delay-100">
@@ -335,6 +421,94 @@ export default function MarketingPage() {
           </section>
 
         </main>
+
+        {/* ===== Contact Footer ===== */}
+        <footer className="contact-footer">
+          <div className="contact-footer-inner">
+            {/* ── 상단 내비게이션 링크 ── */}
+            <div style={{ borderBottom: "1px solid rgba(255,255,255,0.1)", paddingBottom: 24, marginBottom: 32 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
+                <div className="contact-links" style={{ gap: 16 }}>
+                  <Link href="/about">회사소개</Link>
+                  <span style={{ color: "rgba(255,255,255,0.2)" }}>|</span>
+                  <Link href="/marketing">광고안내</Link>
+                  <span style={{ color: "rgba(255,255,255,0.2)" }}>|</span>
+                  <Link href="#">제휴문의</Link>
+                  <span style={{ color: "rgba(255,255,255,0.2)" }}>|</span>
+                  <Link href="/terms">이용약관</Link>
+                  <span style={{ color: "rgba(255,255,255,0.2)" }}>|</span>
+                  <Link href="#" style={{ fontWeight: 700, color: "#fff" }}>개인정보 처리방침</Link>
+                  <span style={{ color: "rgba(255,255,255,0.2)" }}>|</span>
+                  <Link href="/youth-policy">청소년 보호정책</Link>
+                  <span style={{ color: "rgba(255,255,255,0.2)" }}>|</span>
+                  <Link href="#">고충처리</Link>
+                </div>
+                {/* 우측 파트너 로고/링크 (선택) */}
+                <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                  <span style={{ fontSize: 11, color: "#94a3b8", fontWeight: 500 }}>DATA PARTNER</span>
+                  <span style={{ fontSize: 12, color: "#cbd5e1", fontWeight: 600, padding: "3px 8px", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 4 }}>공공데이터포털</span>
+                  <span style={{ fontSize: 12, color: "#cbd5e1", fontWeight: 600, padding: "3px 8px", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 4 }}>국토교통부</span>
+                </div>
+              </div>
+            </div>
+
+            {/* ── 하단 회사 정보 ── */}
+            <div style={{ display: "flex", gap: 32, alignItems: "flex-start", flexWrap: "wrap" }}>
+              {/* 로고 */}
+              <div style={{ flexShrink: 0 }}>
+                <div style={{ fontSize: 22, fontWeight: 900, color: "#fff", letterSpacing: -1, lineHeight: 1.2 }}>
+                  공실뉴스
+                </div>
+                <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2, letterSpacing: -0.3 }}>GONGSIL NEWS</div>
+              </div>
+
+              {/* 회사 정보 */}
+              <div style={{ flex: 1, minWidth: 300, fontSize: 13, color: "#94a3b8", lineHeight: 1.8, letterSpacing: -0.2 }}>
+                <div>
+                  주소 : 서울특별시 강남구 논현로115길 31, 105호 (논현동)
+                  <span style={{ color: "rgba(255,255,255,0.2)", margin: "0 8px" }}>|</span>
+                  인터넷신문 등록번호 : 서울 아55037
+                  <span style={{ color: "rgba(255,255,255,0.2)", margin: "0 8px" }}>|</span>
+                  등록일자 : 2023.09.05
+                </div>
+                <div>
+                  제호 : 공실뉴스
+                  <span style={{ color: "rgba(255,255,255,0.2)", margin: "0 8px" }}>|</span>
+                  법인명 : (주)공실마케팅
+                  <span style={{ color: "rgba(255,255,255,0.2)", margin: "0 8px" }}>|</span>
+                  사업자등록번호 : 337-81-03010
+                </div>
+                <div>
+                  대표자·발행인 : 김윤경
+                  <span style={{ color: "rgba(255,255,255,0.2)", margin: "0 8px" }}>|</span>
+                  편집인 : 김동현
+                  <span style={{ color: "rgba(255,255,255,0.2)", margin: "0 8px" }}>|</span>
+                  이메일 : master@gongsilnews.com
+                </div>
+                <div>
+                  고객센터 : 1555-5343 (평일 10:00~18:00)
+                </div>
+                <div style={{ marginTop: 12, fontSize: 12, color: "#64748b", lineHeight: 1.6 }}>
+                  공실뉴스에 게재된 모든 콘텐츠(기사)는 저작권법의 보호를 받으며, 무단 전재, 복사, 배포 등을 금합니다.(저작권 문의는 별도 안내)
+                </div>
+                <div style={{ marginTop: 8, fontSize: 12, color: "#64748b" }}>
+                  Copyright © GONGSIL NEWS Co., Ltd. All Rights Reserved.
+                </div>
+              </div>
+            </div>
+
+            {/* Scroll to Top Button */}
+            <button 
+              className="scroll-top-btn" 
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              aria-label="맨 위로 가기"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 19V5M5 12l7-7 7 7"/>
+              </svg>
+            </button>
+          </div>
+        </footer>
       </div>
     </>
   );
