@@ -29,7 +29,7 @@ export default function MobileNewsBookmarksClient() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        alert("로그인이 필요합니다.");
+        alert("회원가입하셔야 이용하실 수 있습니다!");
         router.push("/m");
         return;
       }

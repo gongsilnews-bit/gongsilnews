@@ -26,7 +26,7 @@ export default function QuickFloatingMenu() {
 
   const handleAuthClick = (href: string) => {
     if (!isLoggedIn) {
-      showToast("공실뉴스부동산 회원부터 이용하실 수 있습니다.. 🤍");
+      showToast("회원가입하셔야 이용하실 수 있습니다!");
       setTimeout(() => {
         setIsAuthModalOpen(true);
       }, 1200);
