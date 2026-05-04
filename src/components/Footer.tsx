@@ -27,7 +27,6 @@ export default function Footer() {
           <div className="sitemap-col">
             <div className="sitemap-title">뉴스</div>
             <Link href="/news_all" className="sitemap-link">전체뉴스</Link>
-            <Link href="/news_map" className="sitemap-link">우리동네뉴스</Link>
             <Link href="/news_finance" className="sitemap-link">부동산·주식·재테크</Link>
             <Link href="/news_politics" className="sitemap-link">정치·경제·사회</Link>
             <Link href="/news_law" className="sitemap-link">세무·법률</Link>
@@ -64,13 +63,15 @@ export default function Footer() {
             <Link href="/partnership" className="sitemap-link">제휴문의</Link>
             <Link href="/signup" className="sitemap-link">중개업소무료가입</Link>
           </div>
-          {/* 약관/정책 */}
+          {/* 우리동네부동산 */}
           <div className="sitemap-col">
-            <div className="sitemap-title">약관 및 정책</div>
-            <Link href="/terms" className="sitemap-link">이용약관</Link>
-            <Link href="#" className="sitemap-link">개인정보 처리방침</Link>
-            <Link href="/youth-policy" className="sitemap-link">청소년 보호정책</Link>
-            <Link href="#" className="sitemap-link">고충처리</Link>
+            <div className="sitemap-title">우리동네부동산</div>
+            <Link href="/?category=" className="sitemap-link">2차섹션 전체</Link>
+            <Link href="/?category=아파트·오피스텔" className="sitemap-link">아파트·오피스텔</Link>
+            <Link href="/?category=빌라·주택" className="sitemap-link">빌라·주택</Link>
+            <Link href="/?category=원룸·투룸(풀옵션)" className="sitemap-link">원룸·투룸</Link>
+            <Link href="/?category=상가·사무실·건물·공장·토지" className="sitemap-link">상가·사무실·공장·토지</Link>
+            <Link href="/?category=분양" className="sitemap-link">분양</Link>
           </div>
         </div>
       </div>
