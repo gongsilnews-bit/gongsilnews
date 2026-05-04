@@ -35,8 +35,7 @@ export async function geocodeAddress(address: string): Promise<{
       headers: {
         Authorization: `KakaoAK ${apiKey}`,
       },
-      // Next.js 캐싱: 같은 주소에 대해 1시간 캐시
-      next: { revalidate: 3600 },
+      cache: "no-store", // 캐싱 완전 비활성화 (오류 결과가 캐시되는 문제 방지)
     });
 
     if (!res.ok) {

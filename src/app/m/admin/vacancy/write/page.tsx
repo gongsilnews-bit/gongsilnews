@@ -296,7 +296,7 @@ function MobileVacancyWrite() {
       } catch (e) { console.error(e); }
       alert("좌표 및 주변환경(인프라) 설정 완료!"); 
     }
-    else alert("주소를 찾을 수 없습니다.");
+    else alert(`주소를 찾을 수 없습니다. (이유: ${res.error || "결과 없음"})`);
   };
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
