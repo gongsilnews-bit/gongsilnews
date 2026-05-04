@@ -43,7 +43,7 @@ export default function MobileLayout({ children }: { children: React.ReactNode }
           maxWidth: '448px',
           margin: '0 auto',
           backgroundColor: '#ffffff',
-          overflowX: 'hidden',
+          overflowX: 'clip',
         }}
       >
         {children}

@@ -286,7 +286,8 @@ export default function MobileStudyReadClient({ initialLecture }: { initialLectu
       )}
 
       {/* ── 4. 메뉴 탭바 (Sticky) ── */}
-      <div ref={tabBarRef} style={{ position: "sticky", top: 50, zIndex: 40, backgroundColor: "#fff", borderBottom: "1px solid #f0f0f0", overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+      <style>{`.sticky-tab-bar { position: -webkit-sticky; position: sticky; top: 50px; z-index: 40; background-color: #fff; border-bottom: 1px solid #f0f0f0; overflow-x: auto; -webkit-overflow-scrolling: touch; }`}</style>
+      <div ref={tabBarRef} className="sticky-tab-bar">
         <div style={{ display: "flex", whiteSpace: "nowrap", minWidth: "100%" }}>
           {tabs.map((tab) => {
             const isActive = activeTab === tab.id;
