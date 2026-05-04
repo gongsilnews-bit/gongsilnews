@@ -236,7 +236,7 @@ export default function ProfileCardPopover({
           {/* 액션 버튼들 */}
           <div style={{ display: "flex", justifyContent: "center", gap: 12, marginTop: 16 }}>
             {/* 1:1 대화 */}
-            <button
+            {/* <button
               onClick={() => {
                 if (userId) {
                   window.dispatchEvent(new CustomEvent("openGongsilTalk", { detail: { userId, userName: displayName, profileImage } }));
@@ -249,7 +249,7 @@ export default function ProfileCardPopover({
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={BLUE} strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
               </div>
               <span style={{ fontSize: 11, color: "#555", fontWeight: 600 }}>대화</span>
-            </button>
+            </button> */}
 
             {/* 전화 */}
             {phone && (

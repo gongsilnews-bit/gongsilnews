@@ -215,7 +215,7 @@ export default function GlobalDrawerMenu() {
     const realtor: any[] = [
       { icon: '👥', label: '고객관리', desc: '상담 고객 목록', href: '/m/admin/customer' },
       { icon: '💬', label: '댓글', desc: '댓글 관리', href: '/m/admin/comment' },
-      { icon: '🌐', label: '홈페이지', desc: '미니 홈페이지 관리', href: '/realty_admin?menu=homepage' },
+      // { icon: '🌐', label: '홈페이지', desc: '미니 홈페이지 관리', href: '/realty_admin?menu=homepage' },
       { icon: '⚙️', label: '정보설정', desc: '내 정보 및 업소 설정', href: '/m/admin/settings' },
     ];
     const admin: any[] = [
