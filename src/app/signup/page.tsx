@@ -73,10 +73,148 @@ export default function SignupPage() {
     <>
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} initialTab="signup" />
 
-      <div style={{ fontFamily: "'Pretendard Variable', -apple-system, sans-serif", background: "#fff", minHeight: "100vh" }}>
+      <div className="signup-page-container">
+        <style>{`
+          .signup-page-container {
+            font-family: 'Pretendard Variable', -apple-system, sans-serif;
+            background: #fff;
+            min-height: 100vh;
+          }
+          .signup-header {
+            position: sticky; top: 0; zIndex: 100; background: #fff; border-bottom: 1px solid #e5e7eb;
+            height: 64px; display: flex; align-items: center; justify-content: space-between; padding: 0 40px;
+          }
+          .signup-hero {
+            background: linear-gradient(135deg, #0f1b2d 0%, #1a3a6b 50%, #1e56a0 100%);
+            padding: 100px 40px 110px; text-align: center; position: relative; overflow: hidden;
+          }
+          .signup-hero-title {
+            font-size: 44px; font-weight: 900; color: #fff; line-height: 1.3; margin: 0 0 20px; letter-spacing: -1px;
+          }
+          .signup-hero-desc {
+            font-size: 18px; color: rgba(255,255,255,0.7); line-height: 1.7; margin: 0 0 44px; font-weight: 400;
+          }
+          .signup-stats-container {
+            max-width: 900px; margin: 0 auto; display: flex; gap: 20px; transform: translateY(-48px);
+          }
+          .signup-stats-card {
+            flex: 1; background: #fff; border-radius: 16px; padding: 32px 24px; text-align: center;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.08); border: 1px solid #f0f0f0; transition: transform 0.2s;
+          }
+          .signup-stats-value {
+            font-size: 36px; font-weight: 900; color: #1e56a0; letter-spacing: -1px;
+          }
+          .signup-feature-section {
+            padding: 40px 40px 80px; background: #f9fafb;
+          }
+          .signup-feature-item {
+            display: flex; align-items: center; gap: 60px; margin-bottom: 80px;
+            background: #fff; border-radius: 24px; padding: 48px 52px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.04); border: 1px solid #f0f0f0;
+          }
+          .signup-feature-item:last-child {
+            margin-bottom: 0;
+          }
+          .signup-feature-item.reverse {
+            flex-direction: row-reverse;
+          }
+          .signup-checklist-section {
+            background: #fff; padding: 80px 40px;
+          }
+          .signup-faq-section {
+            background: #f4f6fa; padding: 80px 40px;
+          }
+          .signup-cta-section {
+            background: linear-gradient(135deg, #0f1b2d 0%, #1a3a6b 100%); padding: 80px 40px; text-align: center;
+          }
+          .hero-btn {
+            background: #F59E0B; color: #111; border: none; border-radius: 12px; padding: 18px 48px;
+            font-size: 18px; font-weight: 800; cursor: pointer; font-family: inherit;
+            box-shadow: 0 8px 30px rgba(245,158,11,0.35); transition: all 0.2s; letter-spacing: -0.3px;
+          }
+          .hero-btn-outline {
+            background: rgba(255,255,255,0.12); color: #fff; border: 1px solid rgba(255,255,255,0.25);
+            border-radius: 12px; padding: 18px 36px; font-size: 18px; font-weight: 700; text-decoration: none;
+            font-family: inherit; transition: all 0.2s;
+          }
+
+          @media (max-width: 768px) {
+            .signup-header {
+              padding: 0 16px;
+              height: 56px;
+            }
+            .signup-header span {
+              font-size: 16px !important;
+            }
+            .signup-header button {
+              padding: 8px 16px !important;
+              font-size: 13px !important;
+            }
+            .signup-hero {
+              padding: 60px 20px 80px;
+            }
+            .signup-hero-title {
+              font-size: 28px;
+            }
+            .signup-hero-desc {
+              font-size: 15px;
+              margin: 0 0 30px;
+            }
+            .hero-btn, .hero-btn-outline {
+              width: 100%;
+              padding: 16px !important;
+              font-size: 16px !important;
+              text-align: center;
+            }
+            .signup-stats-container {
+              flex-direction: column;
+              transform: translateY(-30px);
+              gap: 12px;
+            }
+            .signup-stats-card {
+              padding: 24px 20px;
+            }
+            .signup-stats-value {
+              font-size: 28px;
+            }
+            .signup-feature-section {
+              padding: 20px 20px 60px;
+            }
+            .signup-feature-item {
+              flex-direction: column !important;
+              padding: 32px 24px;
+              gap: 24px;
+              margin-bottom: 24px;
+              text-align: center;
+            }
+            .signup-checklist-section {
+              padding: 60px 20px;
+            }
+            .signup-checklist-section h2 {
+              font-size: 24px !important;
+              margin-bottom: 24px !important;
+            }
+            .signup-faq-section {
+              padding: 60px 20px;
+            }
+            .signup-faq-section h2 {
+              font-size: 24px !important;
+              margin-bottom: 24px !important;
+            }
+            .signup-cta-section {
+              padding: 60px 20px;
+            }
+            .signup-cta-section h2 {
+              font-size: 24px !important;
+            }
+            footer {
+              padding: 30px 20px !important;
+            }
+          }
+        `}</style>
 
         {/* ===== Sticky Header ===== */}
-        <header style={{ position: "sticky", top: 0, zIndex: 100, background: "#fff", borderBottom: "1px solid #e5e7eb", height: 64, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 40px" }}>
+        <header className="signup-header">
           <Link href="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
             <PlayLogo size={36} />
             <span style={{ fontWeight: 900, fontSize: 18, color: "#111" }}>공실뉴스</span>
@@ -91,7 +229,7 @@ export default function SignupPage() {
         </header>
 
         {/* ===== Hero Section ===== */}
-        <section style={{ background: "linear-gradient(135deg, #0f1b2d 0%, #1a3a6b 50%, #1e56a0 100%)", padding: "100px 40px 110px", textAlign: "center", position: "relative", overflow: "hidden" }}>
+        <section className="signup-hero">
           {/* decorative circles */}
           <div style={{ position: "absolute", width: 400, height: 400, borderRadius: "50%", background: "rgba(255,255,255,0.03)", top: -120, right: -100 }} />
           <div style={{ position: "absolute", width: 300, height: 300, borderRadius: "50%", background: "rgba(255,255,255,0.02)", bottom: -80, left: -60 }} />
@@ -100,29 +238,29 @@ export default function SignupPage() {
             <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.12)", borderRadius: 50, padding: "8px 20px", marginBottom: 32, border: "1px solid rgba(255,255,255,0.15)" }}>
               <span style={{ fontSize: 14, color: "rgba(255,255,255,0.9)", fontWeight: 600 }}>🏢 전국 <strong style={{ color: "#F59E0B" }}>11만</strong> 중개사무소가 선택한 무료 플랫폼</span>
             </div>
-            <h1 style={{ fontSize: 44, fontWeight: 900, color: "#fff", lineHeight: 1.3, margin: "0 0 20px", letterSpacing: "-1px" }}>
+            <h1 className="signup-hero-title">
               부동산 중개사를 위한<br /><span style={{ color: "#F59E0B" }}>100% 무료</span> 정보채널
             </h1>
-            <p style={{ fontSize: 18, color: "rgba(255,255,255,0.7)", lineHeight: 1.7, margin: "0 0 44px", fontWeight: 400 }}>
+            <p className="signup-hero-desc">
               시세 뉴스, AI 특강, 공동중개망까지<br />중개 실무에 필요한 모든 것을 무료로 제공합니다.
             </p>
-            <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap" }}>
-              <button onClick={() => setIsAuthModalOpen(true)} style={{ background: "#F59E0B", color: "#111", border: "none", borderRadius: 12, padding: "18px 48px", fontSize: 18, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 8px 30px rgba(245,158,11,0.35)", transition: "all 0.2s", letterSpacing: "-0.3px" }}
+            <div className="hero-buttons" style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap" }}>
+              <button className="hero-btn" onClick={() => setIsAuthModalOpen(true)}
                 onMouseOver={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 12px 40px rgba(245,158,11,0.45)"; }}
                 onMouseOut={e => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "0 8px 30px rgba(245,158,11,0.35)"; }}
               >중개사무소 무료 회원가입</button>
-              <Link href="/" style={{ background: "rgba(255,255,255,0.12)", color: "#fff", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 12, padding: "18px 36px", fontSize: 18, fontWeight: 700, textDecoration: "none", fontFamily: "inherit", transition: "all 0.2s" }}>홈으로 이동</Link>
+              <Link href="/" className="hero-btn-outline">홈으로 이동</Link>
             </div>
           </div>
         </section>
 
         {/* ===== Stats Cards ===== */}
         <section style={{ background: "#f9fafb", padding: "0 40px", position: "relative", zIndex: 2 }}>
-          <div style={{ maxWidth: 900, margin: "0 auto", display: "flex", gap: 20, transform: "translateY(-48px)" }}>
+          <div className="signup-stats-container">
             {stats.map((s, i) => (
-              <div key={i} style={{ flex: 1, background: "#fff", borderRadius: 16, padding: "32px 24px", textAlign: "center", boxShadow: "0 8px 30px rgba(0,0,0,0.08)", border: "1px solid #f0f0f0", transition: "transform 0.2s" }}>
+              <div key={i} className="signup-stats-card">
                 <div style={{ fontSize: 13, fontWeight: 600, color: "#888", marginBottom: 6 }}>{s.label}</div>
-                <div style={{ fontSize: 36, fontWeight: 900, color: "#1e56a0", letterSpacing: "-1px" }}>{s.value}</div>
+                <div className="signup-stats-value">{s.value}</div>
                 <div style={{ fontSize: 12, color: "#bbb", marginTop: 4 }}>{s.sub}</div>
               </div>
             ))}
@@ -130,7 +268,7 @@ export default function SignupPage() {
         </section>
 
         {/* ===== Features Section ===== */}
-        <section style={{ padding: "40px 40px 80px", background: "#f9fafb" }}>
+        <section className="signup-feature-section">
           <div style={{ maxWidth: 960, margin: "0 auto" }}>
             <div style={{ textAlign: "center", marginBottom: 60 }}>
               <h2 style={{ fontSize: 32, fontWeight: 900, color: "#111", margin: "0 0 12px", letterSpacing: "-0.5px" }}>왜 <span style={{ color: "#1e56a0" }}>공실뉴스</span>인가요?</h2>
@@ -138,13 +276,7 @@ export default function SignupPage() {
             </div>
 
             {features.map((f, i) => (
-              <div key={i} style={{
-                display: "flex", alignItems: i % 2 === 1 ? "center" : "center",
-                flexDirection: i % 2 === 1 ? "row-reverse" : "row",
-                gap: 60, marginBottom: i < features.length - 1 ? 80 : 0,
-                background: "#fff", borderRadius: 24, padding: "48px 52px",
-                boxShadow: "0 4px 20px rgba(0,0,0,0.04)", border: "1px solid #f0f0f0",
-              }}>
+              <div key={i} className={`signup-feature-item ${i % 2 === 1 ? 'reverse' : ''}`}>
                 <div style={{ flex: "0 0 120px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
                   <div style={{ width: 100, height: 100, borderRadius: "50%", background: `${f.color}15`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 48, marginBottom: 8 }}>
                     {f.icon}
@@ -160,7 +292,7 @@ export default function SignupPage() {
         </section>
 
         {/* ===== Checklist Section ===== */}
-        <section style={{ background: "#fff", padding: "80px 40px" }}>
+        <section className="signup-checklist-section">
           <div style={{ maxWidth: 700, margin: "0 auto", textAlign: "center" }}>
             <h2 style={{ fontSize: 30, fontWeight: 900, color: "#111", margin: "0 0 40px", letterSpacing: "-0.5px" }}>공실뉴스 가입 혜택 요약</h2>
             <div style={{ display: "flex", flexDirection: "column", gap: 20, textAlign: "left" }}>
@@ -182,7 +314,7 @@ export default function SignupPage() {
         </section>
 
         {/* ===== FAQ Section ===== */}
-        <section style={{ background: "#f4f6fa", padding: "80px 40px" }}>
+        <section className="signup-faq-section">
           <div style={{ maxWidth: 700, margin: "0 auto" }}>
             <h2 style={{ textAlign: "center", fontSize: 28, fontWeight: 900, color: "#1e56a0", margin: "0 0 40px", letterSpacing: "-0.5px" }}>자주 묻는 질문</h2>
             {faqs.map((faq, i) => (
@@ -200,14 +332,14 @@ export default function SignupPage() {
         </section>
 
         {/* ===== Final CTA ===== */}
-        <section style={{ background: "linear-gradient(135deg, #0f1b2d 0%, #1a3a6b 100%)", padding: "80px 40px", textAlign: "center" }}>
+        <section className="signup-cta-section">
           <div style={{ maxWidth: 700, margin: "0 auto" }}>
             <PlayLogo size={56} />
             <h2 style={{ fontSize: 30, fontWeight: 900, color: "#fff", margin: "24px 0 12px", letterSpacing: "-0.5px" }}>
               대한민국 대표 부동산 정보채널,<br />공실뉴스를 지금 시작하세요.
             </h2>
             <p style={{ fontSize: 16, color: "rgba(255,255,255,0.6)", margin: "0 0 40px" }}>가입비·이용료 전혀 없이, 모든 기능을 무료로 이용하세요.</p>
-            <button onClick={() => setIsAuthModalOpen(true)} style={{ background: "#F59E0B", color: "#111", border: "none", borderRadius: 12, padding: "20px 64px", fontSize: 20, fontWeight: 900, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 8px 30px rgba(245,158,11,0.35)", transition: "all 0.2s", letterSpacing: "-0.3px" }}
+            <button className="hero-btn" onClick={() => setIsAuthModalOpen(true)}
               onMouseOver={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 12px 40px rgba(245,158,11,0.45)"; }}
               onMouseOut={e => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "0 8px 30px rgba(245,158,11,0.35)"; }}
             >중개사무소 무료 회원가입</button>
