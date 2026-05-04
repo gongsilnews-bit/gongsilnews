@@ -236,7 +236,7 @@ export async function getVacancyDetail(vacancyId: string) {
   try {
     const { data, error } = await supabase
       .from('vacancies')
-      .select('*')
+      .select('*, members!vacancies_owner_id_fkey(name, email, role, phone, sns_links, profile_image_url, agencies(*)), vacancy_photos(url, sort_order)')
       .eq('id', vacancyId)
       .single();
 
@@ -319,7 +319,7 @@ export async function getAgencyInfo(ownerId: string) {
 export async function getVacanciesForMap(options?: any) {
   const supabase = getAdminClient();
   try {
-    let query = supabase.from('vacancies').select('*, vacancy_photos(url, sort_order)').eq('status', 'ACTIVE').not('lat', 'is', null).not('lng', 'is', null).order('created_at', { ascending: false });
+    let query = supabase.from('vacancies').select('*, members!vacancies_owner_id_fkey(name, email, role, phone, sns_links, profile_image_url, agencies(*)), vacancy_photos(url, sort_order)').eq('status', 'ACTIVE').not('lat', 'is', null).not('lng', 'is', null).order('created_at', { ascending: false });
     const { data, error } = await query;
     if (error) return { success: false, error: error.message };
 
@@ -337,7 +337,7 @@ export async function getVacanciesForMap(options?: any) {
 export async function getVacancyListByKeyword(keyword: string) {
   const supabase = getAdminClient();
   try {
-    const { data, error } = await supabase.from('vacancies').select('*, vacancy_photos(url, sort_order)').neq('status', 'DELETED').or(`dong.ilike.%${keyword}%,sigungu.ilike.%${keyword}%,sido.ilike.%${keyword}%,building_name.ilike.%${keyword}%,detail_addr.ilike.%${keyword}%`).order('created_at', { ascending: false });
+    const { data, error } = await supabase.from('vacancies').select('*, members!vacancies_owner_id_fkey(name, email, role, phone, sns_links, profile_image_url, agencies(*)), vacancy_photos(url, sort_order)').neq('status', 'DELETED').or(`dong.ilike.%${keyword}%,sigungu.ilike.%${keyword}%,sido.ilike.%${keyword}%,building_name.ilike.%${keyword}%,detail_addr.ilike.%${keyword}%`).order('created_at', { ascending: false });
     if (error) throw error;
     const withImages = data?.map(v => ({ ...v, images: v.vacancy_photos ? [...v.vacancy_photos].sort((a: any, b: any) => a.sort_order - b.sort_order).map((p: any) => p.url) : [] })) || [];
     return { success: true, data: withImages };
@@ -352,7 +352,7 @@ export async function getVacanciesByOwnerId(ownerId: string) {
   try {
     const { data, error } = await supabase
       .from('vacancies')
-      .select('*, vacancy_photos(url, sort_order)')
+      .select('*, members!vacancies_owner_id_fkey(name, email, role, phone, sns_links, profile_image_url, agencies(*)), vacancy_photos(url, sort_order)')
       .eq('owner_id', ownerId)
       .eq('status', 'ACTIVE')
       .order('created_at', { ascending: false });
