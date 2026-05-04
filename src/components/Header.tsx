@@ -35,7 +35,14 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
   useEffect(() => {
     const saved = localStorage.getItem("gongsil_recent_searches");
     if (saved) {
-      try { setRecentSearches(JSON.parse(saved)); } catch(e) {}
+      try { 
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          // 모바일 등에서 {term, date} 객체 형태로 저장했을 수 있으므로 문자열로 정규화
+          const normalized = parsed.map(item => typeof item === 'string' ? item : item.term).filter(Boolean);
+          setRecentSearches(normalized);
+        }
+      } catch(e) {}
     }
   }, []);
 
