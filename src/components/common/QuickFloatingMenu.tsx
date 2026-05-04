@@ -1,11 +1,39 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import AuthModal from "@/components/AuthModal";
+import { createClient } from "@/utils/supabase/client";
 
 export default function QuickFloatingMenu() {
   const [isOpen, setIsOpen] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      setIsLoggedIn(!!user);
+    };
+    checkAuth();
+  }, []);
+
+  const handleAuthClick = (href: string) => {
+    if (!isLoggedIn) {
+      if (window.confirm("로그인이 필요한 서비스입니다.\n로그인 화면으로 이동할까요?")) {
+        setIsAuthModalOpen(true);
+      }
+      return;
+    }
+    if (href.startsWith("http")) {
+      window.open(href, "_blank");
+    } else {
+      window.location.href = href;
+    }
+  };
 
   return (
+    <>
     <div className="quick-menu" style={{ overflow: "visible", border: "none", boxShadow: "none", background: "transparent", width: 130 }}>
       {/* 빠른메뉴 헤더 */}
       <button
@@ -49,7 +77,7 @@ export default function QuickFloatingMenu() {
       }}>
         {/* 관심매물 */}
         <div
-          onClick={() => window.location.href = "/gongsil"}
+          onClick={() => handleAuthClick("/gongsil")}
           style={{
             display: "flex", alignItems: "center", gap: 10,
             padding: "12px 14px", cursor: "pointer",
@@ -68,7 +96,7 @@ export default function QuickFloatingMenu() {
 
         {/* 관심기사 */}
         <div
-          onClick={() => window.location.href = "/news_all?mode=bookmarks"}
+          onClick={() => handleAuthClick("/news_all?mode=bookmarks")}
           style={{
             display: "flex", alignItems: "center", gap: 10,
             padding: "12px 14px", cursor: "pointer",
@@ -108,7 +136,7 @@ export default function QuickFloatingMenu() {
 
         {/* 1:1 문의 */}
         <div
-          onClick={() => window.location.href = "#"}
+          onClick={() => handleAuthClick("#")}
           style={{
             display: "flex", alignItems: "center", gap: 10,
             padding: "12px 14px", cursor: "pointer",
@@ -146,5 +174,7 @@ export default function QuickFloatingMenu() {
         TOP
       </div>
     </div>
+    {isAuthModalOpen && <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />}
+    </>
   );
 }
