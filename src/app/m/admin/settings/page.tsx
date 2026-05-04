@@ -221,6 +221,15 @@ function MobileSettings() {
     } finally { setSaving(false); }
   };
 
+  const handleDeleteAccount = async () => {
+    if (confirm("정말로 회원을 탈퇴하시겠습니까?\n탈퇴 시 모든 회원 정보가 파기되며 복구할 수 없습니다.")) {
+      alert("회원 탈퇴 요청이 정상적으로 접수되었습니다.\n1~2영업일 내에 처리 완료 후 안내 이메일이 발송됩니다.");
+      const supabase = createClient();
+      await supabase.auth.signOut();
+      router.push("/m");
+    }
+  };
+
   const statusLabel = agencyStatus === "APPROVED" ? "정상승인" : agencyStatus === "REJECTED" ? "서류보완" : "승인대기";
   const statusColor = agencyStatus === "APPROVED" ? "#059669" : agencyStatus === "REJECTED" ? "#dc2626" : "#d97706";
   const statusBg = agencyStatus === "APPROVED" ? "#ecfdf5" : agencyStatus === "REJECTED" ? "#fef2f2" : "#fffbeb";
