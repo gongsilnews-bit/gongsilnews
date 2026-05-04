@@ -41,7 +41,8 @@ export default function HomeHeader({
   }, [router]);
 
   const handleLogoClick = (e: React.MouseEvent) => {
-    if (pathname === homeUrl || pathname + '/' === homeUrl || pathname === homeUrl + '/') {
+    const targetPath = homeUrl.split('?')[0];
+    if (pathname === targetPath || pathname + '/' === targetPath || pathname === targetPath + '/') {
       e.preventDefault();
       window.location.href = homeUrl;
     }

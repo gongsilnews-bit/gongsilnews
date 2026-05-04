@@ -728,7 +728,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
             sloganPrefix="내 지역부동산이 전하는 " 
             sloganHighlight="real 부동산정보" 
             highlightColor="#ffffff"
-            homeUrl="/m/news"
+            homeUrl="/m/news?tab=local"
           />
           <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minHeight: "calc(100vh - 50px - 60px)", paddingTop: "50px" }}>
             {/* ═══ 위치·카테고리 필터 바 ═══ */}
