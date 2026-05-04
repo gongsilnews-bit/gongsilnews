@@ -722,7 +722,7 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
                     <span style={{ fontWeight: 800, color: "#111", fontSize: 16 }}>{article.author_name || "공실뉴스"}</span>
                     <span style={{ color: "#666", fontSize: 14 }}>{authorRole === "ADMIN" ? "기자" : "객원기자"}</span>
-                    <Link href={isMobile ? `/m/news?author_name=${encodeURIComponent(article.author_name || "공실뉴스")}` : `/news_all?author_name=${encodeURIComponent(article.author_name || "공실뉴스")}`} style={{ background: "#e11d48", color: "#fff", fontSize: 11, fontWeight: "bold", padding: "4px 8px", borderRadius: 4, textDecoration: "none" }}>다른기사 보기</Link>
+                    <Link href={isMobile ? `/m/reporter/${encodeURIComponent(article.author_name || "공실뉴스")}` : `/reporter/${encodeURIComponent(article.author_name || "공실뉴스")}`} style={{ background: "#e11d48", color: "#fff", fontSize: 11, fontWeight: "bold", padding: "4px 8px", borderRadius: 4, textDecoration: "none" }}>다른기사 보기</Link>
                   </div>
                   {authorEmail && <div style={{ color: "#888", fontSize: 13 }}>{authorEmail}</div>}
                 </div>
