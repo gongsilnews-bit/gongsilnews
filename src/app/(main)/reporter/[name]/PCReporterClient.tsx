@@ -346,24 +346,40 @@ export default function PCReporterClient({
             {filteredArticles.length === 0 && <div style={{ textAlign: 'center', padding: '80px 0', color: '#9ca3af', fontSize: '15px' }}>이 카테고리에 작성된 기사가 없습니다.</div>}
           </>
         ) : (
-          /* 등록공실 */
+          /* 등록공실 - 기존 공실리스트 스타일 */
           <>
             <div style={{ fontSize: '14px', color: '#6b7280', fontWeight: 600, marginBottom: '16px' }}>
               총 <span style={{ color: '#f97316', fontWeight: 800 }}>{vacancies.length}</span>건
             </div>
             {vacancies.length > 0 ? (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+              <div>
                 {vacancies.map((v: any) => (
                   <Link key={v.id} href={`/m/gongsil?id=${v.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                    <div style={{ borderRadius: '12px', overflow: 'hidden', border: '1px solid #e5e7eb', background: '#fff', transition: 'box-shadow 0.2s' }} onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.1)')} onMouseLeave={e => (e.currentTarget.style.boxShadow = 'none')}>
-                      <div style={{ width: '100%', aspectRatio: '16/10', background: v.images?.[0] ? `url(${v.images[0]}) center/cover` : 'linear-gradient(135deg, #fef3c7, #fde68a)', position: 'relative' }}>
-                        <span style={{ position: 'absolute', top: 8, left: 8, background: '#f97316', color: '#fff', fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 10 }}>{v.trade_type}</span>
+                    <div style={{ display: 'flex', gap: '14px', padding: '16px 0', borderBottom: '1px solid #f3f4f6', cursor: 'pointer', transition: 'background 0.15s' }} onMouseEnter={e => (e.currentTarget.style.background = '#f9fafb')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                          <span style={{ fontSize: '13px', fontWeight: 700, color: '#ef4444' }}>{v.vacancy_no || '-'}</span>
+                          <span style={{ fontSize: '12px', color: '#9ca3af' }}>{v.created_at ? new Date(v.created_at).toLocaleDateString('ko-KR').slice(0, -1) : ''}</span>
+                        </div>
+                        <p style={{ fontSize: '16px', fontWeight: 800, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0, marginBottom: '4px' }}>
+                          {v.building_name || [v.dong, v.sigungu].filter(Boolean).join(' ')}
+                        </p>
+                        <p style={{ fontSize: '18px', fontWeight: 800, color: '#1a73e8', margin: 0, marginBottom: '6px' }}>
+                          {v.trade_type} {formatPrice(v)}
+                        </p>
+                        <p style={{ fontSize: '14px', color: '#6b7280', margin: 0, marginBottom: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {[v.property_type || '건물', v.direction, v.exclusive_m2 && `${v.exclusive_m2}㎡`].filter(Boolean).join(' | ')}
+                        </p>
+                        <p style={{ fontSize: '14px', color: '#6b7280', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {[v.room_count !== undefined ? `룸 ${v.room_count}개` : null, v.bath_count !== undefined ? `욕실 ${v.bath_count}개` : null].filter(Boolean).join(', ')}
+                        </p>
                       </div>
-                      <div style={{ padding: '12px' }}>
-                        <div style={{ fontSize: '16px', fontWeight: 800, color: '#111', marginBottom: '4px' }}>{formatPrice(v)}<span style={{ fontSize: '12px', fontWeight: 600, color: '#6b7280', marginLeft: '4px' }}>만원</span></div>
-                        <div style={{ fontSize: '13px', color: '#6b7280', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', marginBottom: '3px' }}>{v.building_name || [v.dong, v.sigungu].filter(Boolean).join(' ')}</div>
-                        <div style={{ fontSize: '12px', color: '#9ca3af' }}>{v.property_type} · {v.supply_m2 || '-'}㎡</div>
-                      </div>
+                      {v.images?.[0] && (
+                        <div style={{ width: '100px', height: '80px', borderRadius: '10px', overflow: 'hidden', flexShrink: 0, backgroundColor: '#e5e7eb', alignSelf: 'center' }}>
+                          <img src={v.images[0]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        </div>
+                      )}
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="2" style={{ flexShrink: 0, alignSelf: 'center' }}><polyline points="9 18 15 12 9 6"/></svg>
                     </div>
                   </Link>
                 ))}

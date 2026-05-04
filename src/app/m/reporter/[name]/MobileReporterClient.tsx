@@ -420,26 +420,9 @@ export default function MobileReporterClient({
             총 <span style={{ color: '#3b82f6', fontWeight: 800 }}>{filteredArticles.length}</span>건
           </div>
 
-          {/* 기사 목록 */}
+          {/* 기사 목록 - 리스트형 */}
           <div style={{ flex: 1, padding: '0 16px 24px' }}>
-            {filteredArticles.length > 0 && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
-                {filteredArticles.slice(0, 2).map((article: any) => (
-                  <Link key={article.id} href={`/m/news/${article.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                    <div style={{ borderRadius: '12px', overflow: 'hidden', background: '#f9fafb', border: '1px solid #f3f4f6' }}>
-                      <div style={{ width: '100%', aspectRatio: '16/10', background: article.thumbnail_url ? `url(${article.thumbnail_url}) center/cover` : 'linear-gradient(135deg, #e0e7ff, #c7d2fe)', position: 'relative' }}>
-                        {article.section2 && <span style={{ position: 'absolute', top: 8, left: 8, background: 'rgba(0,0,0,0.55)', color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 4 }}>{article.section2}</span>}
-                      </div>
-                      <div style={{ padding: '10px' }}>
-                        <div style={{ fontSize: '13px', fontWeight: 700, color: '#111', lineHeight: 1.4, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', marginBottom: '6px' }}>{article.title}</div>
-                        <div style={{ fontSize: '11px', color: '#9ca3af' }}>{formatDate(article.published_at || article.created_at)}</div>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            )}
-            {filteredArticles.slice(2).map((article: any) => (
+            {filteredArticles.map((article: any) => (
               <Link key={article.id} href={`/m/news/${article.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
                 <div style={{ display: 'flex', gap: '12px', padding: '14px 0', borderBottom: '1px solid #f3f4f6', alignItems: 'flex-start' }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -459,24 +442,40 @@ export default function MobileReporterClient({
           </div>
         </>
       ) : (
-        /* ═══ 등록공실 탭 ═══ */
-        <div style={{ flex: 1, padding: '16px' }}>
+        /* ═══ 등록공실 탭 - 기존 공실리스트 스타일 ═══ */
+        <div style={{ flex: 1, padding: '8px 16px 24px' }}>
           <div style={{ fontSize: '13px', color: '#6b7280', fontWeight: 600, marginBottom: '12px' }}>
             총 <span style={{ color: '#f97316', fontWeight: 800 }}>{vacancies.length}</span>건
           </div>
           {vacancies.length > 0 ? (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div>
               {vacancies.map((v: any) => (
                 <Link key={v.id} href={`/m/gongsil?id=${v.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                  <div style={{ borderRadius: '12px', overflow: 'hidden', border: '1px solid #e5e7eb', background: '#fff' }}>
-                    <div style={{ width: '100%', aspectRatio: '16/10', background: v.images?.[0] ? `url(${v.images[0]}) center/cover` : 'linear-gradient(135deg, #fef3c7, #fde68a)', position: 'relative' }}>
-                      <span style={{ position: 'absolute', top: 8, left: 8, background: '#f97316', color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 10 }}>{v.trade_type}</span>
+                  <div style={{ display: 'flex', gap: '12px', padding: '14px 0', borderBottom: '1px solid #f3f4f6', cursor: 'pointer' }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                        <span style={{ fontSize: '13px', fontWeight: 700, color: '#ef4444' }}>{v.vacancy_no || '-'}</span>
+                        <span style={{ fontSize: '12px', color: '#9ca3af' }}>{v.created_at ? new Date(v.created_at).toLocaleDateString('ko-KR').slice(0, -1) : ''}</span>
+                      </div>
+                      <p style={{ fontSize: '16px', fontWeight: 800, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0, marginBottom: '4px' }}>
+                        {v.building_name || [v.dong, v.sigungu].filter(Boolean).join(' ')}
+                      </p>
+                      <p style={{ fontSize: '18px', fontWeight: 800, color: '#1a73e8', margin: 0, marginBottom: '6px' }}>
+                        {v.trade_type} {formatPrice(v)}
+                      </p>
+                      <p style={{ fontSize: '14px', color: '#6b7280', margin: 0, marginBottom: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {[v.property_type || '건물', v.direction, v.exclusive_m2 && `${v.exclusive_m2}㎡`].filter(Boolean).join(' | ')}
+                      </p>
+                      <p style={{ fontSize: '14px', color: '#6b7280', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {[v.room_count !== undefined ? `룸 ${v.room_count}개` : null, v.bath_count !== undefined ? `욕실 ${v.bath_count}개` : null].filter(Boolean).join(', ')}
+                      </p>
                     </div>
-                    <div style={{ padding: '10px' }}>
-                      <div style={{ fontSize: '15px', fontWeight: 800, color: '#111', marginBottom: '4px' }}>{formatPrice(v)}<span style={{ fontSize: '12px', fontWeight: 600, color: '#6b7280', marginLeft: '4px' }}>만원</span></div>
-                      <div style={{ fontSize: '12px', color: '#6b7280', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', marginBottom: '2px' }}>{v.building_name || [v.dong, v.sigungu].filter(Boolean).join(' ')}</div>
-                      <div style={{ fontSize: '11px', color: '#9ca3af' }}>{v.property_type} · {v.supply_m2 || '-'}㎡</div>
-                    </div>
+                    {v.images?.[0] && (
+                      <div style={{ width: '90px', height: '72px', borderRadius: '10px', overflow: 'hidden', flexShrink: 0, backgroundColor: '#e5e7eb', alignSelf: 'center' }}>
+                        <img src={v.images[0]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      </div>
+                    )}
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="2" style={{ flexShrink: 0, alignSelf: 'center' }}><polyline points="9 18 15 12 9 6"/></svg>
                   </div>
                 </Link>
               ))}
