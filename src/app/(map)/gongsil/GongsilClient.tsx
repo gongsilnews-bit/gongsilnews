@@ -2073,8 +2073,10 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                     <div style={{ flex: 1, paddingRight: prop.images?.[0] ? 15 : 0, minWidth: 0 }}>
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6, flexWrap: "wrap" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          {showCommission && (
-                            <span style={{ display: "inline-block", fontSize: 11, color: "#fa5252", border: "1px solid #fa5252", padding: "1px 5px" }}>{prop.realtor_commission || prop.commission_type || "법정수수료"}</span>
+                          {showCommission && (prop.realtor_commission || prop.commission_type) && (
+                            <span style={{ display: "inline-block", fontSize: 11, color: "#fa5252", border: "1px solid #fa5252", padding: "1px 5px", borderRadius: 4, fontWeight: "bold" }}>
+                              {prop.realtor_commission || prop.commission_type}
+                            </span>
                           )}
                           <span style={{ fontSize: 12, color: "#fa5252", fontWeight: "bold" }}>{prop.vacancy_no}</span>
                           <span style={{ fontSize: 12, color: "#aaa" }}>{new Date(prop.created_at).toLocaleDateString('ko-KR', {year: 'numeric', month: '2-digit', day: '2-digit'}).replace(/\s/g, '')}</span>
@@ -2197,8 +2199,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
               <div style={{ padding: "40px 20px 20px 20px", borderBottom: "1px solid #f0f0f0" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, paddingRight: 30 }}>
                   <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                    {userLevel >= 2 && (
-                      <span style={{ fontSize: 13, fontWeight: "bold", color: "#ff5a5f", border: "1px solid #ff5a5f", padding: "2px 6px", borderRadius: 2 }}>{prop.realtor_commission || prop.commission_type || "법정수수료"}</span>
+                    {userLevel >= 2 && (prop.realtor_commission || prop.commission_type) && (
+                      <span style={{ fontSize: 13, fontWeight: "bold", color: "#ff5a5f", border: "1px solid #ff5a5f", padding: "2px 6px", borderRadius: 2 }}>{prop.realtor_commission || prop.commission_type}</span>
                     )}
                     <span style={{ color: "#e53e3e", fontSize: 14, fontWeight: "bold" }}>{prop.vacancy_no}</span>
                     <span style={{ fontSize: 12, color: "#888" }}>{new Date(prop.created_at).toLocaleDateString()}</span>

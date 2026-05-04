@@ -810,9 +810,9 @@ export default function HomepagePage() {
                   {/* 3. Main Info */}
                   <div style={{ flex: 1, minWidth: 0, paddingLeft: 20 }}>
                     <div style={{ display: "flex", gap: 6, marginBottom: 4, alignItems: "center" }}>
-                      {showCommission && (
+                      {showCommission && (v.realtor_commission || v.commission_type) && (
                         <span style={{ display: "inline-block", background: "#fff", color: "#fa5252", border: "1px solid #fa5252", fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 4 }}>
-                          {v.realtor_commission || "법정수수료"}
+                          {v.realtor_commission || v.commission_type}
                         </span>
                       )}
                       <span style={{ display: "inline-block", fontSize: 11, color: "#fa5252", border: "1px solid #fa5252", padding: "2px 6px", fontWeight: "bold", borderRadius: 4, background: "#fff" }}>
@@ -836,8 +836,8 @@ export default function HomepagePage() {
                     <div style={{ fontSize: 13, color: "#777", marginTop: 2 }}>
                       {v.floor || "해당층"}/{v.total_floors || "전체층"}, 
                       {v.parking_spots ? ` 주차${v.parking_spots}` : " 주차불가"}, 
-                      {v.completion_year ? ` ${v.completion_year}년` : " 연식미상"}, 
-                      {v.realtor_commission ? ` ${v.realtor_commission}` : " 무권리"}
+                      {v.completion_year ? ` ${v.completion_year}년` : " 연식미상"}
+                      {(v.realtor_commission || v.commission_type) && `, ${v.realtor_commission || v.commission_type}`}
                     </div>
                   </div>
 

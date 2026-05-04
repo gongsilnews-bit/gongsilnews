@@ -398,9 +398,9 @@ export default function HeroMapSection({ initialVacancies }: { initialVacancies?
                     </div>
                     
                     <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: "bold" }}>
-                      {showCommission && (
+                      {showCommission && (item.realtor_commission || item.commission_type) && (
                         <span style={{ color: "#e74c3c", border: "1px solid #e74c3c", padding: "1px 4px", borderRadius: 2, fontSize: 10, whiteSpace: "nowrap", letterSpacing: "-0.5px" }}>
-                          {item.commission_comment || item.commission_type || "공동중개"}
+                          {item.realtor_commission || item.commission_type}
                         </span>
                       )}
                       <span style={{ fontSize: 13, color: "#aaa" }}>{new Date(item.created_at).toLocaleDateString('ko-KR', {year: 'numeric', month: '2-digit', day: '2-digit'}).replace(/\s/g, '')}</span>

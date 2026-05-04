@@ -997,9 +997,9 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
                             </div>
                           )}
                           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                            {(viewerRole === 'REALTOR' || viewerRole === 'ADMIN') && (
-                              <span style={{ fontSize: 13, color: "#ef4444", border: "1px solid #fca5a5", padding: "2px 6px", borderRadius: 2 }}>
-                                {prop.realtor_commission || prop.commission_type || "법정수수료"}
+                            {(viewerRole === 'REALTOR' || viewerRole === 'ADMIN') && (prop.realtor_commission || prop.commission_type) && (
+                              <span style={{ display: "inline-block", fontSize: 11, color: "#fa5252", border: "1px solid #fa5252", padding: "1px 5px", borderRadius: 4, fontWeight: "bold" }}>
+                                {prop.realtor_commission || prop.commission_type}
                               </span>
                             )}
                             {prop.vacancy_no && (

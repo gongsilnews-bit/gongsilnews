@@ -172,7 +172,8 @@ export default function MobileHomeClient(props: Props) {
             className="no-scrollbar"
             style={{ 
               display: "flex", width: "100%", height: "100%", 
-              overflowX: "auto", scrollSnapType: "x mandatory", scrollBehavior: "smooth", WebkitOverflowScrolling: "touch"
+              overflowX: "auto", scrollSnapType: "x mandatory", scrollBehavior: "smooth", WebkitOverflowScrolling: "touch",
+              overscrollBehaviorX: "contain"
             }}
             onTouchStart={(e) => { e.stopPropagation(); setIsSwipingHero(true); }}
             onTouchEnd={() => setIsSwipingHero(false)}
@@ -186,7 +187,7 @@ export default function MobileHomeClient(props: Props) {
             }}
           >
             {headlineArticles.slice(0, 5).map((hero, i) => (
-              <Link key={i} href={`/m/news/${hero.article_no || hero.id}`} style={{ width: "100%", height: "100%", flexShrink: 0, scrollSnapAlign: "center", position: "relative", display: "block", textDecoration: "none" }}>
+              <Link key={i} href={`/m/news/${hero.article_no || hero.id}`} style={{ width: "100%", height: "100%", flexShrink: 0, scrollSnapAlign: "start", scrollSnapStop: "always", position: "relative", display: "block", textDecoration: "none" }}>
                 {hero.thumbnail_url
                   ? <img src={hero.thumbnail_url} alt={hero.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   : <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg,#1a2e50,#2d4a7a)" }} />}

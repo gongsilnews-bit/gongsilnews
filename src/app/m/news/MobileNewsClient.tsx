@@ -1159,7 +1159,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                 {/* 중요 뉴스 슬라이딩 캐러셀 */}
                 {importantArticles.length > 0 && (
                   <div style={{ padding: "20px 16px", borderBottom: "8px solid #f4f6f8" }}>
-                    <div style={{ display: 'flex', overflowX: 'auto', gap: '12px', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }} className="no-scrollbar">
+                    <div style={{ display: 'flex', overflowX: 'auto', gap: '12px', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', scrollSnapType: 'x mandatory', overscrollBehaviorX: 'contain' }} className="no-scrollbar">
                       {importantArticles.map((a: any) => (
                         <Link
                           href={`/m/news/${a.article_no || a.id}`}
@@ -1170,7 +1170,9 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                             textDecoration: "none",
                             display: "flex",
                             flexDirection: "column",
-                            gap: "8px"
+                            gap: "8px",
+                            scrollSnapAlign: "start",
+                            scrollSnapStop: "always"
                           }}
                         >
                           <div style={{ width: "100%", aspectRatio: "16/10", position: "relative", backgroundColor: "#f3f4f6", borderRadius: "8px", overflow: "hidden" }}>
