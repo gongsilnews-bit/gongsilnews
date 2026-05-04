@@ -1,4 +1,3 @@
-import Script from "next/script";
 import { getVacanciesForMap } from "@/app/actions/vacancy";
 import { getBannersByPlacement } from "@/app/actions/banner";
 import { getLectures } from "@/app/actions/lecture";
@@ -40,11 +39,7 @@ export default async function Home() {
   const mapArticles = mapNewsRes.success ? mapNewsRes.data || [] : [];
 
   return (
-    <>
-      <Script 
-        src={`//dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_APP_KEY || "435d3602201a49ea712e5f5a36fe6efc"}&libraries=services,clusterer&autoload=false`}
-        strategy="afterInteractive"
-      />
+      <>
       <main className="container px-20" style={{ position: "relative" }}>
         
         <QuickFloatingMenu />
