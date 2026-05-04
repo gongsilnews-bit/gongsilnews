@@ -241,7 +241,8 @@ function MobileVacancyWrite() {
   const handleSelectFromPhotoDb = async (photo: any) => {
     setShowPhotoDbModal(false);
     try {
-      const response = await fetch(photo.url);
+      const response = await fetch(photo.url, { cache: 'no-cache' });
+      if (!response.ok) throw new Error("Network response was not ok");
       const blob = await response.blob();
       const ext = photo.filename ? photo.filename.split(".").pop() : "webp";
       const file = new File([blob], photo.filename || `db_photo_${Date.now()}.${ext}`, { type: blob.type });
@@ -250,8 +251,8 @@ function MobileVacancyWrite() {
       const pv = URL.createObjectURL(compressed);
       setPhotos(prev => [...prev, compressed]);
       setPhotoPreview(prev => [...prev, pv]);
-    } catch (err) {
-      alert("사진을 불러오는 중 오류가 발생했습니다.");
+    } catch (err: any) {
+      alert(`사진을 불러오는 중 오류가 발생했습니다.\n(${err.message || err})`);
     }
   };
 
