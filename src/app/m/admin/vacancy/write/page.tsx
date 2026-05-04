@@ -833,7 +833,6 @@ function MobileVacancyWrite() {
           </button>
         </div>
       </div>
-      </div>
 
       {/* ── 포토 DB 모달 ── */}
       {showPhotoDbModal && (
