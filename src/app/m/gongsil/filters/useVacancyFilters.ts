@@ -14,6 +14,9 @@ export interface FilterState {
   ownerRole: string | null;        // 'USER' | 'REALTOR' | null(전체)
   commissionType: string | null;   // '법정수수료' | '공동수수료' 등
   themes: string[];                // 테마 키워드 (다중 선택)
+  sido: string | null;             // 시/도 필터
+  sigungu: string | null;          // 시/군/구 필터
+  dong: string | null;             // 읍/면/동 필터
 }
 
 export const initialFilterState: FilterState = {
@@ -30,6 +33,9 @@ export const initialFilterState: FilterState = {
   ownerRole: null,
   commissionType: null,
   themes: [],
+  sido: null,
+  sigungu: null,
+  dong: null,
 };
 
 export function useVacancyFilters(initialVacancies: any[]) {
@@ -125,6 +131,11 @@ export function useVacancyFilters(initialVacancies: any[]) {
         if (!match) return false;
       }
 
+      // 11. 위치 필터 (시/구/동)
+      if (filters.sido && v.sido !== filters.sido) return false;
+      if (filters.sigungu && v.sigungu !== filters.sigungu) return false;
+      if (filters.dong && v.dong !== filters.dong) return false;
+
       return true;
     });
   }, [initialVacancies, filters]);
@@ -149,6 +160,7 @@ export function useVacancyFilters(initialVacancies: any[]) {
     if (filters.commissionType !== null) count++;
     if (filters.themes.length > 0) count++;
     if (filters.keyword !== "") count++;
+    if (filters.sido || filters.sigungu || filters.dong) count++;
     return count;
   }, [filters]);
 

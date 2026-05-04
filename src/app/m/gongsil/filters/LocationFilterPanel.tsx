@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
+import { FilterState } from './useVacancyFilters';
 
 interface Props {
   onLocationMove: (lat: number, lng: number, zoom: number) => void;
+  onFilterChange?: (filters: Partial<FilterState>) => void;
   onClose: () => void;
   locLabel: string;
   setLocLabel: (label: string) => void;
 }
 
-export default function LocationFilterPanel({ onLocationMove, onClose, locLabel, setLocLabel }: Props) {
+export default function LocationFilterPanel({ onLocationMove, onFilterChange, onClose, locLabel, setLocLabel }: Props) {
   const [locTab, setLocTab] = useState<"region" | "keyword">("region");
   const [sidoList, setSidoList] = useState<any[]>([]);
   const [gugunList, setGugunList] = useState<any[]>([]);
@@ -95,13 +97,25 @@ export default function LocationFilterPanel({ onLocationMove, onClose, locLabel,
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", maxHeight: "200px", overflowY: "auto" }}>
             {regTab === "sido" && (sidoList.length > 0 ? sidoList.map(c => (
-              <button key={c.code} onClick={() => { setSelSidoCode(c.code); setSelSido(c.name); setSelGugun(""); setRegTab("gugun"); loadGugun(c.code); moveMap(c.name, 8); setLocLabel(c.name); }} style={gridBtnStyle(selSido === c.name)}>{c.name}</button>
+              <button key={c.code} onClick={() => { 
+                setSelSidoCode(c.code); setSelSido(c.name); setSelGugun(""); setRegTab("gugun"); loadGugun(c.code); 
+                moveMap(c.name, 8); setLocLabel(c.name);
+                if (onFilterChange) onFilterChange({ sido: c.name, sigungu: null, dong: null });
+              }} style={gridBtnStyle(selSido === c.name)}>{c.name}</button>
             )) : <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "20px", color: "#9ca3af" }}>로딩중...</div>)}
             {regTab === "gugun" && (!selSidoCode ? <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "20px", color: "#9ca3af" }}>시/도를 먼저 선택하세요</div> : gugunList.length > 0 ? gugunList.map(c => (
-              <button key={c.code} onClick={() => { setSelGugunCode(c.code); setSelGugun(c.name); setRegTab("dong"); loadDong(c.code); moveMap(`${selSido} ${c.name}`, 6); setLocLabel(`${c.name}`); }} style={gridBtnStyle(selGugun === c.name)}>{c.name}</button>
+              <button key={c.code} onClick={() => { 
+                setSelGugunCode(c.code); setSelGugun(c.name); setRegTab("dong"); loadDong(c.code); 
+                moveMap(`${selSido} ${c.name}`, 6); setLocLabel(`${c.name}`);
+                if (onFilterChange) onFilterChange({ sido: selSido, sigungu: c.name, dong: null });
+              }} style={gridBtnStyle(selGugun === c.name)}>{c.name}</button>
             )) : <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "20px", color: "#9ca3af" }}>로딩중...</div>)}
             {regTab === "dong" && (!selGugunCode ? <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "20px", color: "#9ca3af" }}>시/군/구를 먼저 선택하세요</div> : dongList.length > 0 ? dongList.map(c => (
-              <button key={c.code} onClick={() => { moveMap(`${selSido} ${selGugun} ${c.name}`, 4); setLocLabel(`${selGugun} ${c.name}`); onClose(); }} style={gridBtnStyle(false)}>{c.name}</button>
+              <button key={c.code} onClick={() => { 
+                moveMap(`${selSido} ${selGugun} ${c.name}`, 4); setLocLabel(`${selGugun} ${c.name}`); 
+                if (onFilterChange) onFilterChange({ sido: selSido, sigungu: selGugun, dong: c.name });
+                onClose(); 
+              }} style={gridBtnStyle(false)}>{c.name}</button>
             )) : <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "20px", color: "#9ca3af" }}>로딩중...</div>)}
           </div>
         </div>

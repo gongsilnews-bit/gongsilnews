@@ -14,6 +14,7 @@ interface MobileFilterBarProps {
   filters: FilterState;
   onFilterChange: (filters: Partial<FilterState>) => void;
   onLocationMove: (lat: number, lng: number, zoom: number) => void;
+  onShowList?: () => void;
   kakaoMapRef: React.MutableRefObject<any>;
 }
 
@@ -23,7 +24,7 @@ const PROPERTY_TYPES = [
 ];
 const TRADE_TYPES = ["매매", "전세", "월세", "단기"];
 
-export default function MobileFilterBar({ vacancies, filteredCount, filters, onFilterChange, onLocationMove, kakaoMapRef }: MobileFilterBarProps) {
+export default function MobileFilterBar({ vacancies, filteredCount, filters, onFilterChange, onLocationMove, onShowList, kakaoMapRef }: MobileFilterBarProps) {
   const [activePanel, setActivePanel] = useState<string | null>(null);
   const [fullFilterOpen, setFullFilterOpen] = useState(false);
 
@@ -167,6 +168,7 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
       {activePanel === "loc" && renderSheet("📍 위치 검색", (
         <LocationFilterPanel 
           onLocationMove={onLocationMove} 
+          onFilterChange={onFilterChange}
           onClose={() => setActivePanel(null)} 
           locLabel={locLabel} 
           setLocLabel={setLocLabel} 
@@ -217,6 +219,18 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
           </div>
 
           <div style={{ flex: 1, overflowY: "auto", padding: "0 20px 100px", WebkitOverflowScrolling: "touch", overscrollBehaviorY: "contain" }}>
+            {/* 위치 검색 */}
+            <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
+              <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>위치 (시/구/동)</div>
+              <LocationFilterPanel 
+                onLocationMove={onLocationMove} 
+                onFilterChange={handleTempFilterChange}
+                onClose={() => {}} 
+                locLabel={locLabel} 
+                setLocLabel={setLocLabel} 
+              />
+            </div>
+
             {/* 거래유형 */}
             <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
               <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>거래유형</div>
@@ -283,7 +297,11 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
             >
               ↻ 초기화
             </button>
-            <button onClick={() => { onFilterChange(tempFilters); setFullFilterOpen(false); }} style={{ flex: 1, padding: "14px", background: "#4b89ff", border: "none", borderRadius: "10px", fontSize: "15px", fontWeight: 800, color: "#fff", cursor: "pointer" }}>{filteredCount}개 공실광고 보기</button>
+            <button onClick={() => { 
+              onFilterChange(tempFilters); 
+              setFullFilterOpen(false); 
+              if (onShowList) onShowList(); 
+            }} style={{ flex: 1, padding: "14px", background: "#4b89ff", border: "none", borderRadius: "10px", fontSize: "15px", fontWeight: 800, color: "#fff", cursor: "pointer" }}>{filteredCount}개 공실광고 보기</button>
           </div>
         </div>
       )}

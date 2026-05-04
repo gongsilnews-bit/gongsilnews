@@ -114,6 +114,9 @@ function MobileGongsilContent() {
   // 현재 지도 화면 내에 보이는 공실광고 개수 상태
   const [visibleCount, setVisibleCount] = useState(0);
 
+  // 일반 리스트 뷰 상태
+  const [showListView, setShowListView] = useState(false);
+
   // Swipe gesture states
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
@@ -323,11 +326,13 @@ function MobileGongsilContent() {
       } else if (selectedCluster) {
         vacancyStackRef.current = [];
         setSelectedCluster(null);
+      } else if (showListView) {
+        setShowListView(false);
       }
     };
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
-  }, [selectedVacancy, selectedCluster, isEmbedded]);
+  }, [selectedVacancy, selectedCluster, isEmbedded, showListView]);
 
   // 데이터 로드
   useEffect(() => {
@@ -567,7 +572,8 @@ function MobileGongsilContent() {
       return;
     }
     if (selectedVacancy) { window.history.back(); return; }
-    if (selectedCluster) { window.history.back(); }
+    if (selectedCluster) { window.history.back(); return; }
+    if (showListView) { setShowListView(false); return; }
   };
 
   return (
@@ -634,6 +640,10 @@ function MobileGongsilContent() {
                 kakaoMapRef.current.panTo(new kakao.maps.LatLng(lat, lng));
                 kakaoMapRef.current.setLevel(zoom);
               }
+            }}
+            onShowList={() => {
+              window.history.pushState({ panel: "list" }, "");
+              setShowListView(true);
             }}
             kakaoMapRef={kakaoMapRef}
           />
@@ -729,20 +739,20 @@ function MobileGongsilContent() {
         )}
       </div>
 
-      {/* 슬라이딩 패널: 클러스터 리스트 */}
-      <div className={`list-panel ${selectedCluster ? "open" : ""}`} onClick={(e) => e.stopPropagation()}>
+      {/* 슬라이딩 패널: 클러스터/리스트 뷰 */}
+      <div className={`list-panel ${(selectedCluster || showListView) ? "open" : ""}`} onClick={(e) => e.stopPropagation()}>
         <div style={{ padding: "16px 20px", borderBottom: "1px solid #f3f4f6", display: "flex", justifyContent: "space-between", alignItems: "center", backgroundColor: "#fff" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <button onClick={goBack} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: "4px", marginLeft: "-4px" }}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
             </button>
             <h3 style={{ fontSize: "18px", fontWeight: 800, color: "#111827", margin: 0 }}>
-              공실광고 <span style={{ color: "#f97316" }}>{selectedCluster?.length || 0}</span>개
+              공실광고 <span style={{ color: "#f97316" }}>{(selectedCluster || (showListView ? filteredVacancies : null))?.length || 0}</span>개
             </h3>
           </div>
         </div>
         <div className="no-scrollbar" style={{ flex: 1, overflowY: "auto", padding: "8px 16px 20px" }}>
-          {selectedCluster?.map((v: any) => {
+          {(selectedCluster || (showListView ? filteredVacancies : []))?.map((v: any) => {
             const cardMasked = v.exposure_type === '부동산노출' && userLevel < 2;
             const cardAddr = v.building_name || [v.dong, v.sigungu].filter(Boolean).join(" ");
             return (
