@@ -39,33 +39,42 @@ function isNativeApp(): boolean {
  */
 function tryOpenNativeSettings(): boolean {
   // Android Bridge
-  if (window.Android?.openLocationSettings) {
-    window.Android.openLocationSettings();
-    return true;
-  }
-  if (window.Android?.openAppSettings) {
-    window.Android.openAppSettings();
-    return true;
+  if (window.Android) {
+    if (window.Android.openLocationSettings) {
+      window.Android.openLocationSettings();
+      return true;
+    }
+    if (window.Android.openAppSettings) {
+      window.Android.openAppSettings();
+      return true;
+    }
   }
 
   // iOS Bridge
-  if (window.webkit?.messageHandlers?.openLocationSettings) {
-    window.webkit.messageHandlers.openLocationSettings.postMessage("location");
-    return true;
-  }
-  if (window.webkit?.messageHandlers?.openSettings) {
-    window.webkit.messageHandlers.openSettings.postMessage("location");
-    return true;
+  if (window.webkit?.messageHandlers) {
+    if (window.webkit.messageHandlers.openLocationSettings) {
+      window.webkit.messageHandlers.openLocationSettings.postMessage("location");
+      return true;
+    }
+    if (window.webkit.messageHandlers.openSettings) {
+      window.webkit.messageHandlers.openSettings.postMessage("location");
+      return true;
+    }
   }
 
-  // Fallback: Android intent 스킴으로 위치 설정 열기 시도
+  // 🚨 앱(WebView) 환경인데 브릿지가 없는 경우, 아래의 intent:// 나 App-Prefs: 로 넘어가지 않도록 차단
+  // (웹뷰에서는 intent 스킴을 네이티브에서 가로채지 않으면 '항목을 찾을 수 없습니다' 에러 발생)
+  if (isNativeApp()) {
+    return false;
+  }
+
+  // Fallback: 일반 모바일 브라우저용 Android intent 스킴 시도
   const os = detectOS();
   if (os === "android") {
     try {
       window.location.href = "intent://settings/location#Intent;scheme=android-app;end;";
       return true;
     } catch (e) {
-      // intent 실패 시 앱 설정으로 시도
       try {
         window.location.href = "intent://#Intent;action=android.settings.LOCATION_SOURCE_SETTINGS;end;";
         return true;
@@ -73,7 +82,7 @@ function tryOpenNativeSettings(): boolean {
     }
   }
 
-  // Fallback: iOS 설정 앱 열기 시도
+  // Fallback: 일반 모바일 브라우저용 iOS 설정 앱 열기 시도
   if (os === "ios") {
     try {
       window.location.href = "App-Prefs:Privacy&path=LOCATION";
@@ -136,9 +145,9 @@ export function handleLocationPermissionDenied(): void {
       // 설정 이동 실패 시 추가 안내
       if (os === "android") {
         alert(
-          "자동 이동이 지원되지 않습니다.\n\n" +
-          "휴대폰 설정 > 앱 > 브라우저 > 권한 > 위치 허용\n" +
-          "설정 후 새로고침 해주세요."
+          "자동 설정 이동이 지원되지 않습니다.\n\n" +
+          "휴대폰 설정 > 애플리케이션 > 공실뉴스(또는 브라우저) > 권한 > 위치 허용\n" +
+          "설정 후 새로고침(또는 앱 재시작) 해주세요."
         );
       } else if (os === "ios") {
         alert(
