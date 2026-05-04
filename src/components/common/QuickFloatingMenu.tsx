@@ -8,6 +8,12 @@ export default function QuickFloatingMenu() {
   const [isOpen, setIsOpen] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 2500);
+  };
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -20,9 +26,10 @@ export default function QuickFloatingMenu() {
 
   const handleAuthClick = (href: string) => {
     if (!isLoggedIn) {
-      if (window.confirm("로그인이 필요한 서비스입니다.\n로그인 화면으로 이동할까요?")) {
+      showToast("공실뉴스부동산 회원부터 이용하실 수 있습니다.. 🤍");
+      setTimeout(() => {
         setIsAuthModalOpen(true);
-      }
+      }, 1200);
       return;
     }
     if (href.startsWith("http")) {
@@ -175,6 +182,17 @@ export default function QuickFloatingMenu() {
       </div>
     </div>
     {isAuthModalOpen && <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />}
+    {toastMessage && (
+      <div style={{ position: "fixed", top: "25%", left: "50%", transform: "translateX(-50%)", background: "rgba(0,0,0,0.85)", color: "#fff", padding: "14px 32px", borderRadius: 10, fontSize: 16, fontWeight: "bold", zIndex: 999999, boxShadow: "0 4px 20px rgba(0,0,0,0.3)", whiteSpace: "nowrap", animation: "toastFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)" }}>
+        {toastMessage}
+      </div>
+    )}
+    <style>{`
+      @keyframes toastFadeIn { 
+        from { opacity: 0; transform: translate(-50%, 15px); } 
+        to { opacity: 1; transform: translate(-50%, 0); } 
+      }
+    `}</style>
     </>
   );
 }
