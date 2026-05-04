@@ -31,7 +31,7 @@ export default function PrivacyHtmlPage() {
           <h3 style={{ fontSize: "16px", fontWeight: "bold", marginBottom: "12px" }}>✉️ 고객센터를 통한 삭제 요청 방법</h3>
           <p style={{ marginBottom: "8px" }}>앱에 접근할 수 없거나 직접 탈퇴가 어려운 경우, 아래 고객센터로 요청해 주시면 본인 확인 후 즉시 삭제 처리해 드립니다.</p>
           <ul style={{ paddingLeft: "20px", marginBottom: 0 }}>
-            <li><strong>이메일:</strong> gongsilnews@gmail.com (가입하신 이메일 주소 및 연락처 기재)</li>
+            <li><strong>이메일:</strong> master@gongsilnews.com (가입하신 이메일 주소 및 연락처 기재)</li>
             <li><strong>전화번호:</strong> 1588-0000 (공실뉴스 고객센터)</li>
           </ul>
         </div>
