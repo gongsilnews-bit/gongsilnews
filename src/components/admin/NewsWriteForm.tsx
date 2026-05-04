@@ -498,10 +498,19 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
       const sel = window.getSelection();
       sel?.removeAllRanges();
       sel?.addRange(range);
+      editorRef.current.focus();
     } else {
       // 저장된 커서가 없으면 에디터 맨 끝에 삽입
       editorRef.current.appendChild(wrapper);
       editorRef.current.appendChild(br);
+      // 추가 후 커서를 이미지 뒤로 자동 이동
+      const range = document.createRange();
+      range.setStartAfter(br);
+      range.collapse(true);
+      const sel = window.getSelection();
+      sel?.removeAllRanges();
+      sel?.addRange(range);
+      editorRef.current.focus();
     }
 
     // content 상태 업데이트
@@ -819,9 +828,17 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
       const sel = window.getSelection();
       sel?.removeAllRanges();
       sel?.addRange(range);
+      editorRef.current.focus();
     } else {
       editorRef.current.appendChild(wrapper);
       editorRef.current.appendChild(br);
+      const range = document.createRange();
+      range.setStartAfter(br);
+      range.collapse(true);
+      const sel = window.getSelection();
+      sel?.removeAllRanges();
+      sel?.addRange(range);
+      editorRef.current.focus();
     }
     setContent(editorRef.current.innerHTML || '');
   };
