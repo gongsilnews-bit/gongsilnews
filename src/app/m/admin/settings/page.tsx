@@ -364,6 +364,14 @@ function MobileSettings() {
             </div>
           </>
         )}
+
+        {/* ── 회원 탈퇴 버튼 ── */}
+        <div style={{ marginTop: 24, paddingBottom: 24, textAlign: "center" }}>
+          <button onClick={handleDeleteAccount}
+            style={{ background: "none", border: "none", color: "#9ca3af", fontSize: 13, textDecoration: "underline", cursor: "pointer", padding: "8px 16px" }}>
+            회원 탈퇴 (계정 삭제)
+          </button>
+        </div>
       </div>
 
       {/* 하단 저장 바 */}
