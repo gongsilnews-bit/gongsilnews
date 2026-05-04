@@ -32,13 +32,23 @@ const stripHtml = (html: string) =>
   html ? html.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim() : "";
 
 function formatPrice(v: any): string {
-  const dep = v.deposit || 0;
-  const rent = v.monthly_rent || 0;
-  const depStr = dep >= 10000 ? `${Math.floor(dep / 10000)}억${dep % 10000 !== 0 ? ` ${dep % 10000}` : ''}` : dep > 0 ? `${dep}` : '';
-  const rentStr = rent > 0 ? `${rent}` : '';
-  if (v.trade_type === '월세') return `${depStr}/${rentStr}`;
-  if (v.trade_type === '전세') return depStr;
-  if (v.trade_type === '매매') return v.sale_price ? `${v.sale_price >= 10000 ? `${Math.floor(v.sale_price / 10000)}억` : v.sale_price}` : '';
+  const formatValue = (val: number) => {
+    if (!val) return "";
+    if (val >= 100000000) {
+      const eok = Math.floor(val / 100000000);
+      const man = Math.floor((val % 100000000) / 10000);
+      return man > 0 ? `${eok}억 ${man.toLocaleString()}만` : `${eok}억`;
+    }
+    return `${Math.floor(val / 10000).toLocaleString()}만`;
+  };
+
+  if (v.trade_type === '매매') return formatValue(v.sale_price || 0);
+  if (v.trade_type === '전세') return formatValue(v.deposit || 0);
+  if (v.trade_type === '월세') {
+    const depStr = formatValue(v.deposit || 0);
+    const rentStr = formatValue(v.monthly_rent || 0);
+    return `${depStr || '0'} / ${rentStr || '0'}`;
+  }
   return '';
 }
 
