@@ -117,6 +117,9 @@ export default function MobileFooter() {
             편집인 : 김동현
           </div>
           <div>
+            이메일 : master@gongsilnews.com
+          </div>
+          <div>
             고객센터 : 1555-5343 (평일 10:00~18:00)
           </div>
         </div>

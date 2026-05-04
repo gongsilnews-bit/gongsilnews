@@ -69,6 +69,9 @@ export default function Footer() {
             <span style={{ color: "#d1d5db", margin: "0 8px" }}>|</span>
             편집인 : 김동현
             <span style={{ color: "#d1d5db", margin: "0 8px" }}>|</span>
+            이메일 : master@gongsilnews.com
+          </div>
+          <div>
             고객센터 : 1555-5343 (평일 10:00~18:00)
           </div>
           <div style={{ marginTop: 6, fontSize: 11, color: "#aaa", lineHeight: 1.6 }}>
