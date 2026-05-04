@@ -3,12 +3,15 @@
 import { useState, useEffect } from "react";
 import AuthModal from "@/components/AuthModal";
 import { createClient } from "@/utils/supabase/client";
+import { getMySubscriptions } from "@/app/actions/subscription";
 
 export default function QuickFloatingMenu() {
   const [isOpen, setIsOpen] = useState(true);
+  const [isSubOpen, setIsSubOpen] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [subscribedReporters, setSubscribedReporters] = useState<any[]>([]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -20,6 +23,10 @@ export default function QuickFloatingMenu() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       setIsLoggedIn(!!user);
+      if (user) {
+        const res = await getMySubscriptions(user.id);
+        if (res.success) setSubscribedReporters(res.reporters);
+      }
     };
     checkAuth();
   }, []);
@@ -156,6 +163,75 @@ export default function QuickFloatingMenu() {
           1:1문의
         </div>
       </div>
+
+      {/* ── 구독기자 섹션 ── */}
+      {isLoggedIn && subscribedReporters.length > 0 && (
+        <div style={{ marginTop: 8 }}>
+          <button
+            onClick={() => setIsSubOpen(!isSubOpen)}
+            style={{
+              width: "100%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "10px 14px",
+              background: "#fff",
+              color: "#333",
+              border: "1px solid #e0e0e0",
+              borderRadius: isSubOpen ? "8px 8px 0 0" : "8px",
+              cursor: "pointer",
+              fontSize: 12,
+              fontWeight: 800,
+              transition: "border-radius 0.2s",
+            }}
+          >
+            <span>
+              구독기자 <span style={{ color: "#f97316", fontWeight: 800 }}>{subscribedReporters.length}</span>
+            </span>
+            <svg
+              width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+              style={{ transform: isSubOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.25s ease" }}
+            >
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </button>
+          <div style={{
+            maxHeight: isSubOpen ? "300px" : "0",
+            overflow: "hidden",
+            transition: "max-height 0.3s ease",
+            background: "#fff",
+            border: isSubOpen ? "1px solid #e0e0e0" : "1px solid transparent",
+            borderTop: "none",
+            borderRadius: "0 0 8px 8px",
+            boxShadow: isSubOpen ? "0 4px 15px rgba(0,0,0,0.08)" : "none",
+          }}>
+            {subscribedReporters.map((r: any) => (
+              <div
+                key={r.id}
+                onClick={() => window.location.href = `/reporter/${r.id}`}
+                style={{
+                  display: "flex", alignItems: "center", gap: 8,
+                  padding: "10px 14px", cursor: "pointer",
+                  borderBottom: "1px solid #f5f5f5",
+                  fontSize: 12, fontWeight: 600, color: "#444",
+                  transition: "background 0.15s",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "#f9fafb")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
+              >
+                {r.profile_image_url ? (
+                  <img src={r.profile_image_url} alt="" style={{ width: 22, height: 22, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+                ) : (
+                  <div style={{ width: 22, height: 22, borderRadius: "50%", background: "#e5e7eb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: "#888", flexShrink: 0 }}>
+                    {(r.name || "?")[0]}
+                  </div>
+                )}
+                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.name || "기자"}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* TOP 버튼 — 항상 노출 */}
       <div

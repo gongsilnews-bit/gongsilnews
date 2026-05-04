@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import AuthModal from "@/components/AuthModal";
+import { toggleSubscription, getSubscriptionStatus, cheerReporter, getCheerStatus, getSubscriptionCount, getCheerCount } from "@/app/actions/subscription";
 
 const CATEGORIES = [
   { key: "all", label: "전체 기사" },
@@ -85,22 +86,66 @@ export default function PCReporterClient({
 
   const [userLevel, setUserLevel] = React.useState<number>(0);
   const [isAuthModalOpen, setIsAuthModalOpen] = React.useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [isCheered, setIsCheered] = useState(false);
+  const [subCount, setSubCount] = useState(profile.subscriber_count || 0);
+  const [cheerCount, setCheerCount] = useState(profile.point_balance || 0);
+  const [subLoading, setSubLoading] = useState(false);
+  const [cheerLoading, setCheerLoading] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     import("@/utils/supabase/client").then(({ createClient }) => {
       const supabase = createClient();
       supabase.auth.getUser().then(({ data }) => {
         if (data?.user) {
+          setCurrentUserId(data.user.id);
           supabase.from("members").select("role").eq("id", data.user.id).single().then(res => {
             if (res.data) {
               const r = res.data.role;
               setUserLevel(r === 'SUPER_ADMIN' || r === 'ADMIN' || r === '최고관리자' ? 3 : r === 'REALTOR' ? 2 : 1);
             }
           });
+          // 구독/응원 상태 로드
+          getSubscriptionStatus(profile.id, data.user.id).then(r => { if (r.success) setIsSubscribed(r.subscribed); });
+          getCheerStatus(profile.id, data.user.id).then(r => { if (r.success) setIsCheered(r.cheered); });
         }
       });
     });
-  }, []);
+    // 실시간 카운트 로드
+    getSubscriptionCount(profile.id).then(r => { if (r.success) setSubCount(r.count); });
+    getCheerCount(profile.id).then(r => { if (r.success) setCheerCount(r.count); });
+  }, [profile.id]);
+
+  const handleSubscribe = async () => {
+    if (!currentUserId) { setIsAuthModalOpen(true); return; }
+    if (subLoading) return;
+    setSubLoading(true);
+    const res = await toggleSubscription(profile.id, currentUserId);
+    if (res.success) {
+      setIsSubscribed(res.subscribed!);
+      setSubCount(res.count!);
+    }
+    setSubLoading(false);
+  };
+
+  const handleCheer = async () => {
+    if (!currentUserId) { setIsAuthModalOpen(true); return; }
+    if (cheerLoading || isCheered) {
+      if (isCheered) alert("오늘은 이미 응원했습니다! 내일 다시 응원해 주세요 😊");
+      return;
+    }
+    setCheerLoading(true);
+    const res = await cheerReporter(profile.id, currentUserId);
+    if (res.success) {
+      setIsCheered(true);
+      setCheerCount(res.count!);
+    } else if (res.error === "already_cheered") {
+      setIsCheered(true);
+      alert(res.message);
+    }
+    setCheerLoading(false);
+  };
 
   return (
     <div
@@ -188,7 +233,7 @@ export default function PCReporterClient({
 
           {/* 통계 */}
           <div style={{ textAlign: "center", fontSize: "13px", color: "rgba(255,255,255,0.7)", marginBottom: "16px" }}>
-            구독 {profile.subscriber_count || 0} | 응원 {profile.point_balance || 0}
+            구독 {subCount.toLocaleString()} | 응원 {cheerCount.toLocaleString()}
           </div>
 
           {/* SNS 아이콘 (공실상세 스타일) */}
@@ -231,11 +276,13 @@ export default function PCReporterClient({
 
           {/* 버튼들 */}
           <div style={{ display: "flex", gap: "8px" }}>
-            <button style={{ flex: 1, padding: "12px 0", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.2)", background: "transparent", color: "#fff", fontSize: "14px", fontWeight: "bold", cursor: "pointer" }}>
-              + 구독
+            <button onClick={handleSubscribe} disabled={subLoading}
+              style={{ flex: 1, padding: "12px 0", borderRadius: "10px", border: isSubscribed ? "none" : "1px solid rgba(255,255,255,0.2)", background: isSubscribed ? "rgba(255,255,255,0.15)" : "transparent", color: "#fff", fontSize: "14px", fontWeight: "bold", cursor: "pointer", transition: "all 0.2s" }}>
+              {subLoading ? "..." : isSubscribed ? "✓ 구독중" : "+ 구독"}
             </button>
-            <button style={{ flex: 1, padding: "12px 0", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.2)", background: "transparent", color: "#fff", fontSize: "14px", fontWeight: "bold", cursor: "pointer" }}>
-              👏 응원
+            <button onClick={handleCheer} disabled={cheerLoading}
+              style={{ flex: 1, padding: "12px 0", borderRadius: "10px", border: isCheered ? "none" : "1px solid rgba(255,255,255,0.2)", background: isCheered ? "rgba(255,255,255,0.15)" : "transparent", color: "#fff", fontSize: "14px", fontWeight: "bold", cursor: "pointer", transition: "all 0.2s" }}>
+              {cheerLoading ? "..." : isCheered ? "✓ 응원중" : "👏 응원"}
             </button>
           </div>
           <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
