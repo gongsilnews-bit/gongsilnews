@@ -103,7 +103,7 @@ export async function toggleVacancyBookmark(userId: string, vacancyId: string) {
     } else {
       // 3. 존재하지 않으면 추가 (찜)
       const { error: insertError } = await supabase
-        .from("vacancy_bookmarks")
+        .from("vacancy_wishlist")
         .insert({ user_id: userId, vacancy_id: vacancyId });
       
       if (insertError) return { success: false, error: insertError.message };
@@ -120,7 +120,7 @@ export async function getVacancyBookmarks(userId: string) {
   const supabase = getAdminClient();
   try {
     const { data, error } = await supabase
-      .from("vacancy_bookmarks")
+      .from("vacancy_wishlist")
       .select("vacancy_id")
       .eq("user_id", userId);
       

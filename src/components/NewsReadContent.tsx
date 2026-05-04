@@ -398,7 +398,7 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
       setIsBookmarked(res.isBookmarked!);
       setToastMessage(res.isBookmarked ? "기사를 찜했습니다." : "찜을 해제했습니다.");
     } else {
-      setToastMessage("처리 중 오류가 발생했습니다.");
+      setToastMessage("오류: " + res.error);
     }
   };
 
