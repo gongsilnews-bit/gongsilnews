@@ -506,7 +506,7 @@ export default function MobileReporterClient({
                           )}
                           {prop.vacancy_no && <span style={{ fontSize: "12px", fontWeight: 700, color: "#ef4444" }}>{prop.vacancy_no}</span>}
                           <span style={{ fontSize: "12px", color: "#9ca3af" }}>{createdDate}</span>
-                          {cardMasked && <span onClick={(e) => { e.preventDefault(); setIsAuthModalOpen(true); }} style={{ fontSize: "11px", color: "#3b82f6", fontWeight: 700, background: "#eef6ff", padding: "3px 8px", borderRadius: "4px", cursor: "pointer" }}>🔒 무료열람</span>}
+                          {cardMasked && <span onClick={(e) => { e.preventDefault(); setIsAuthModalOpen(true); }} style={{ fontSize: "11px", color: "#3b82f6", fontWeight: 700, background: "#eef6ff", padding: "3px 8px", borderRadius: "4px", cursor: "pointer" }}>🔒 가입 시 무료 열람</span>}
                         </div>
 
                         <div className="prop-title" style={{ fontSize: "16px", fontWeight: 700, color: cardMasked ? "#bbb" : "#111827", marginBottom: "4px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", letterSpacing: cardMasked ? 1 : 0 }}>
@@ -520,6 +520,15 @@ export default function MobileReporterClient({
                         <div className="prop-meta" style={{ fontSize: "13px", color: "#6b7280", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                           {detailStr}{prop.options && prop.options.length > 0 ? `, ${prop.options.join(", ")}` : ""}
                         </div>
+                        {prop.themes && prop.themes.length > 0 && (
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginTop: "8px" }}>
+                            {prop.themes.map((theme: string, idx: number) => (
+                              <span key={idx} style={{ background: "#f8fafc", color: "#3b82f6", fontSize: "12px", padding: "2px 8px", borderRadius: "12px", fontWeight: 700, border: "1px solid #bfdbfe" }}>
+                                {theme.startsWith('#') ? theme : `# ${theme}`}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
                       {thumb && (
                         <div className="prop-img-wrapper" style={{ flexShrink: 0, alignSelf: "center" }}>

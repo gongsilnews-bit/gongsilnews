@@ -976,7 +976,7 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
                         <div className="prop-info" style={{ minWidth: 0, overflow: "hidden", flex: 1, display: "flex", flexDirection: "column" }}>
                           <div className="prop-title" style={{ fontSize: 16, fontWeight: 700, color: cardMasked ? "#bbb" : "#111", marginBottom: 4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", letterSpacing: cardMasked ? 1 : 0 }}>
                             {title}
-                            {cardMasked && <span style={{ fontSize: "11px", color: "#3b82f6", fontWeight: 700, background: "#eef6ff", padding: "3px 8px", borderRadius: "4px", marginLeft: "8px", verticalAlign: "middle" }}>🔒 무료열람</span>}
+                            {cardMasked && <span style={{ fontSize: "11px", color: "#3b82f6", fontWeight: 700, background: "#eef6ff", padding: "3px 8px", borderRadius: "4px", marginLeft: "8px", verticalAlign: "middle" }}>🔒 가입 시 무료 열람</span>}
                           </div>
                           <div className="prop-price" style={{ color: "#1a73e8", fontWeight: 800, fontSize: 20, marginBottom: 6 }}>{price}</div>
                           <div className="prop-meta" style={{ fontSize: 14, color: "#666", marginBottom: 3 }}>
@@ -985,6 +985,15 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
                           <div className="prop-meta" style={{ fontSize: 14, color: "#666", marginBottom: 10, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                             {detailStr}{prop.options && prop.options.length > 0 ? `, ${prop.options.join(", ")}` : ""}
                           </div>
+                          {prop.themes && prop.themes.length > 0 && (
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "8px" }}>
+                              {prop.themes.map((theme: string, idx: number) => (
+                                <span key={idx} style={{ background: "#f8fafc", color: "#3b82f6", fontSize: "12px", padding: "2px 8px", borderRadius: "12px", fontWeight: 700, border: "1px solid #bfdbfe" }}>
+                                  {theme.startsWith('#') ? theme : `# ${theme}`}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                             {prop.commission_type && (viewerRole === 'REALTOR' || viewerRole === 'ADMIN') && (
                               <span style={{ fontSize: 13, color: "#ef4444", border: "1px solid #fca5a5", padding: "2px 6px", borderRadius: 2 }}>

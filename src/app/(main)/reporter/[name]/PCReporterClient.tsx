@@ -411,7 +411,7 @@ export default function PCReporterClient({
                             )}
                             {prop.vacancy_no && <span style={{ fontSize: "13px", fontWeight: 700, color: "#ef4444" }}>{prop.vacancy_no}</span>}
                             <span style={{ fontSize: "13px", color: "#9ca3af" }}>{createdDate}</span>
-                            {cardMasked && <span onClick={(e) => { e.preventDefault(); setIsAuthModalOpen(true); }} style={{ fontSize: "12px", color: "#3b82f6", fontWeight: 700, background: "#eef6ff", padding: "4px 10px", borderRadius: "4px", cursor: "pointer" }}>🔒 부동산회원 무료열람</span>}
+                            {cardMasked && <span onClick={(e) => { e.preventDefault(); setIsAuthModalOpen(true); }} style={{ fontSize: "12px", color: "#3b82f6", fontWeight: 700, background: "#eef6ff", padding: "4px 10px", borderRadius: "4px", cursor: "pointer" }}>🔒 가입 시 무료 열람</span>}
                           </div>
                           
                           <div style={{ fontSize: '18px', fontWeight: 700, color: cardMasked ? "#bbb" : '#111827', marginBottom: '6px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: cardMasked ? 1 : 0 }}>
@@ -426,6 +426,15 @@ export default function PCReporterClient({
                           <div style={{ fontSize: '14px', color: '#6b7280', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                             {detailStr}{prop.options && prop.options.length > 0 ? `, ${prop.options.join(", ")}` : ""}
                           </div>
+                          {prop.themes && prop.themes.length > 0 && (
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginTop: "8px" }}>
+                              {prop.themes.map((theme: string, idx: number) => (
+                                <span key={idx} style={{ background: "#f8fafc", color: "#3b82f6", fontSize: "12px", padding: "2px 8px", borderRadius: "12px", fontWeight: 700, border: "1px solid #bfdbfe" }}>
+                                  {theme.startsWith('#') ? theme : `# ${theme}`}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </div>
                         {thumb && (
                           <div style={{ width: '140px', height: '110px', borderRadius: '8px', overflow: 'hidden', flexShrink: 0, backgroundColor: '#f3f4f6', alignSelf: 'center', backgroundImage: `url(${thumb})`, backgroundSize: 'cover', backgroundPosition: 'center', border: '1px solid #f3f4f6' }} />
