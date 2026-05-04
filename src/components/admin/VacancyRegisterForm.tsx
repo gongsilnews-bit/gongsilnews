@@ -1500,9 +1500,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                   if (customStatus) {
                      alert(customStatus === "ACTIVE" ? "매물이 발행(등록) 되었습니다." : "매물이 반려 처리되었습니다.");
                   } else {
-                     const statusMsg = userRole === 'user'
-                       ? '공실이 등록되었습니다! 관리자 승인 후 광고가 시작됩니다.'
-                       : (editData ? '공실 수정이 완료되었습니다!' : '공실 등록이 완료되었습니다!');
+                     const statusMsg = editData ? '공실 수정이 완료되었습니다!' : '공실이 등록되었습니다! 광고가 바로 시작됩니다.';
                      alert(statusMsg);
                   }
                   onBack();
@@ -1587,15 +1585,15 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                   <button
                     type="button"
                     disabled={submitting}
-                    onClick={() => handleSubmit("PENDING")}
+                    onClick={() => handleSubmit("ACTIVE")}
                     style={{
                       flex: 1, padding: "18px 0", borderRadius: 10, border: "none",
-                      background: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)", color: "#fff",
+                      background: "linear-gradient(135deg, #10b981 0%, #059669 100%)", color: "#fff",
                       fontSize: 16, fontWeight: 700, cursor: submitting ? "not-allowed" : "pointer",
-                      boxShadow: "0 4px 12px rgba(37, 99, 235, 0.2)"
+                      boxShadow: "0 4px 12px rgba(16, 185, 129, 0.2)"
                     }}
                   >
-                    {submitting ? "처리 중..." : "✓ 승인신청"}
+                    {submitting ? "처리 중..." : (editData ? "✓ 공실 수정하기" : "✓ 공실 등록하기")}
                   </button>
                 </div>
               );

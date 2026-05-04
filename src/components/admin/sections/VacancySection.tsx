@@ -190,16 +190,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
             router.push(`${path}?menu=gongsil&action=write`);
           }} style={{ height: 36, padding: "0 16px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>+ 공실등록</button>
 
-          {role === "user" && (
-            <>
-              <button onClick={handleRequestApproval} style={{ height: 36, padding: "0 16px", background: "#8b5cf6", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
-                📋 승인신청
-              </button>
-              <span style={{ fontSize: 12, color: textSecondary, marginLeft: 4 }}>
-                ※ 반려 공실만 승인신청 가능
-              </span>
-            </>
-          )}
+
           
           {role === "admin" && (
             <>
@@ -298,7 +289,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                 const ownerInfo = row.members || {};
                 const agencyData = Array.isArray(ownerInfo.agencies) ? ownerInfo.agencies[0] : ownerInfo.agencies;
                 const agencyName = agencyData?.name || "";
-                const canToggleStatus = role === "admin" || role === "realtor";
+                const canToggleStatus = true; // 모든 역할에서 광고 ON/OFF 가능
 
                 return (
                   <tr key={row.id} style={{ borderBottom: `1px solid ${darkMode ? "#333" : "#f3f4f6"}`, transition: "background 0.15s" }}

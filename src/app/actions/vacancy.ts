@@ -89,8 +89,8 @@ export async function createVacancy(data: {
       }
     }
 
-    // 역할에 따라 초기 상태 결정
-    const status = data.owner_role === 'USER' ? 'PENDING' : 'ACTIVE';
+    // 모든 역할에서 즉시 광고 시작 (승인 불필요)
+    const status = 'ACTIVE';
 
     const insertData = {
       ...data,

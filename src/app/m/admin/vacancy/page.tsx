@@ -209,19 +209,20 @@ function MobileVacancyAdmin() {
               {/* 상단: 상태 + 매물종류 + 번호 */}
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  {(row.status === "ACTIVE" || row.status === "STOPPED") ? (
+                  {(row.status === "ACTIVE" || row.status === "STOPPED" || row.status === "PENDING") ? (
                     <button
                       onClick={async () => {
                         const isActive = row.status === "ACTIVE";
-                        const msg = isActive ? "광고를 종료하시겠습니까?" : "광고를 다시 시작하시겠습니까?";
+                        const isPending = row.status === "PENDING";
+                        const msg = isActive ? "광고를 종료하시겠습니까?" : "광고를 시작하시겠습니까?";
                         if (!confirm(msg)) return;
                         const newStatus = isActive ? "STOPPED" : "ACTIVE";
                         const res = await updateVacancyStatus(row.id, newStatus);
                         if (res.success) fetchVacancies();
                       }}
-                      style={{ padding: "4px 10px", background: st.bg, color: "#fff", borderRadius: 6, fontSize: 12, fontWeight: 700, border: "none", cursor: "pointer" }}
+                      style={{ padding: "4px 10px", background: row.status === "PENDING" ? "#8b5cf6" : st.bg, color: "#fff", borderRadius: 6, fontSize: 12, fontWeight: 700, border: "none", cursor: "pointer" }}
                     >
-                      {st.label}
+                      {row.status === "PENDING" ? "승인대기" : st.label}
                     </button>
                   ) : (
                     <span style={{ padding: "4px 10px", background: st.bg, color: "#fff", borderRadius: 6, fontSize: 12, fontWeight: 700 }}>{st.label}</span>
