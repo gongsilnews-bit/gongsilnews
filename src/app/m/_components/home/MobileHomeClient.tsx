@@ -66,14 +66,22 @@ export default function MobileHomeClient(props: Props) {
 
   // 화면 전환 애니메이션 상태 제거 (즉시 라우팅)
 
+  const heroScrollRef = useRef<HTMLDivElement>(null);
+
   // ── 헤드라인 자동 슬라이드 (3초마다) ──
   useEffect(() => {
-    if (headlineArticles.length <= 1) return;
+    if (headlineArticles.length <= 1 || isSwipingHero) return;
     const timer = setInterval(() => {
-      setHeroIdx((prev) => (prev + 1) % Math.min(headlineArticles.length, 5));
-    }, 3000);
+      if (heroScrollRef.current) {
+        const width = heroScrollRef.current.clientWidth;
+        const maxScroll = heroScrollRef.current.scrollWidth - width;
+        let nextScroll = heroScrollRef.current.scrollLeft + width;
+        if (nextScroll > maxScroll + 10) nextScroll = 0;
+        heroScrollRef.current.scrollTo({ left: nextScroll, behavior: "smooth" });
+      }
+    }, 3500);
     return () => clearInterval(timer);
-  }, [headlineArticles.length]);
+  }, [headlineArticles.length, isSwipingHero]);
   // ── 스와이프 탭 전환 ──
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
@@ -156,71 +164,47 @@ export default function MobileHomeClient(props: Props) {
       {/* 카테고리 바 높이만큼 공간 확보 */}
       <div style={{ height: "46px" }} />
 
-      {/* ① Hero 배너 (헤드라인 기사) — 좌우 스와이프로 기사 전환 */}
+      {/* ① Hero 배너 (헤드라인 기사) — CSS Scroll Snap 으로 변경하여 버벅임 제거 */}
       {headlineArticles.length > 0 && (
-        <div
-          style={{ position: "relative", width: "100%", aspectRatio: "16/9", maxHeight: 280, overflow: "hidden", cursor: "pointer", textDecoration: "none" }}
-          onTouchStart={(e) => {
-            e.stopPropagation();
-            (e.currentTarget as any)._heroStartX = e.touches[0].clientX;
-            setIsSwipingHero(true);
-          }}
-          onTouchMove={(e) => {
-            const startX = (e.currentTarget as any)._heroStartX;
-            if (startX != null) {
-              e.stopPropagation();
-              setSwipeOffset(e.touches[0].clientX - startX);
-            }
-          }}
-          onTouchEnd={(e) => {
-            e.stopPropagation();
-            setIsSwipingHero(false);
-            const startX = (e.currentTarget as any)._heroStartX;
-            if (startX == null) return;
-            const dx = e.changedTouches[0].clientX - startX;
-            (e.currentTarget as any)._heroStartX = null;
-            setSwipeOffset(0);
-            
-            if (Math.abs(dx) > 50) {
-              if (dx < 0 && heroIdx < Math.min(headlineArticles.length, 5) - 1) {
-                setHeroIdx(prev => prev + 1);
-              } else if (dx > 0 && heroIdx > 0) {
-                setHeroIdx(prev => prev - 1);
-              }
-            } else if (Math.abs(dx) < 10) {
-              // 클릭으로 간주하여 이동
-              router.push(`/m/news/${headlineArticles[heroIdx].article_no || headlineArticles[heroIdx].id}`);
-            }
-          }}
-        >
-          <div style={{
-            display: "flex",
-            width: "100%",
-            height: "100%",
-            transform: `translateX(calc(-${heroIdx * 100}% + ${swipeOffset}px))`,
-            transition: isSwipingHero ? "none" : "transform 0.4s cubic-bezier(0.25, 1, 0.5, 1)",
-          }}>
+        <div style={{ position: "relative", width: "100%", aspectRatio: "16/9", maxHeight: 280 }}>
+          <div
+            ref={heroScrollRef}
+            className="no-scrollbar"
+            style={{ 
+              display: "flex", width: "100%", height: "100%", 
+              overflowX: "auto", scrollSnapType: "x mandatory", scrollBehavior: "smooth", WebkitOverflowScrolling: "touch"
+            }}
+            onTouchStart={(e) => { e.stopPropagation(); setIsSwipingHero(true); }}
+            onTouchEnd={() => setIsSwipingHero(false)}
+            onScroll={(e) => {
+               const scrollLeft = e.currentTarget.scrollLeft;
+               const width = e.currentTarget.clientWidth;
+               if (width > 0) {
+                 const newIdx = Math.round(scrollLeft / width);
+                 if (newIdx !== heroIdx) setHeroIdx(newIdx);
+               }
+            }}
+          >
             {headlineArticles.slice(0, 5).map((hero, i) => (
-              <div key={i} style={{ width: "100%", height: "100%", flexShrink: 0, position: "relative" }}>
+              <Link key={i} href={`/m/news/${hero.article_no || hero.id}`} style={{ width: "100%", height: "100%", flexShrink: 0, scrollSnapAlign: "center", position: "relative", display: "block", textDecoration: "none" }}>
                 {hero.thumbnail_url
                   ? <img src={hero.thumbnail_url} alt={hero.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   : <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg,#1a2e50,#2d4a7a)" }} />}
-                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top,rgba(0,0,0,0.85) 0%,rgba(0,0,0,0.2) 55%,transparent 100%)" }} />
-                <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "16px", zIndex: 2 }}>
+                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top,rgba(0,0,0,0.85) 0%,rgba(0,0,0,0.2) 55%,transparent 100%)", pointerEvents: "none" }} />
+                <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "16px", zIndex: 2, pointerEvents: "none" }}>
                   <span style={{ background: "#dc2626", color: "#fff", fontSize: 12, fontWeight: 700, padding: "3px 8px", borderRadius: 3, display: "inline-block", marginBottom: 8, letterSpacing: "0.5px" }}>HEADLINE</span>
                   <h2 style={{ color: "#fff", fontSize: 19, fontWeight: 800, lineHeight: 1.45, wordBreak: "keep-all", margin: 0, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", letterSpacing: "-0.5px" }}>{hero.title}</h2>
                   <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 14, marginTop: 6, marginBottom: 0, letterSpacing: "-0.2px" }}>{hero.author_name} · {formatDate(hero.published_at || hero.created_at)}</p>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
           
           {/* 하단 점(인디케이터) */}
           {headlineArticles.length > 1 && (
-            <div style={{ position: "absolute", bottom: 12, right: 12, display: "flex", gap: 6, alignItems: "center", zIndex: 10 }}>
+            <div style={{ position: "absolute", bottom: 12, right: 12, display: "flex", gap: 6, alignItems: "center", zIndex: 10, pointerEvents: "none" }}>
               {headlineArticles.slice(0, 5).map((_, i) => (
-                <button key={i} onClick={(e) => { e.stopPropagation(); setHeroIdx(i); }}
-                  style={{ width: i === heroIdx ? 20 : 6, height: 6, borderRadius: 3, background: i === heroIdx ? "#fff" : "rgba(255,255,255,0.4)", border: "none", padding: 0, transition: "all 0.3s", cursor: "pointer" }} />
+                <div key={i} style={{ width: i === heroIdx ? 20 : 6, height: 6, borderRadius: 3, background: i === heroIdx ? "#fff" : "rgba(255,255,255,0.4)", transition: "all 0.3s" }} />
               ))}
             </div>
           )}

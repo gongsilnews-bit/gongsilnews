@@ -105,95 +105,44 @@ export default function PCReporterClient({
       >
         <div
           style={{
-            background: "linear-gradient(135deg, #2b1139 0%, #1a0824 100%)",
-            borderRadius: "20px",
+            background: "#fff",
+            borderRadius: "16px",
             padding: "28px 24px",
-            color: "#fff",
-            boxShadow: "0 8px 30px rgba(0,0,0,0.15)",
+            color: "#111",
+            border: "1px solid #e5e7eb",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
           }}
         >
-
-
           {/* 프로필 사진 */}
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              marginBottom: "20px",
-            }}
-          >
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: "20px" }}>
             {profile.profile_image_url ? (
-              <div
-                style={{
-                  width: "90px",
-                  height: "90px",
-                  borderRadius: "28px",
-                  overflow: "hidden",
-                  border: "3px solid rgba(255,255,255,0.2)",
-                  marginBottom: "14px",
-                }}
-              >
-                <img
-                  src={profile.profile_image_url}
-                  alt={profile.name}
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                  }}
-                />
+              <div style={{ width: "90px", height: "90px", borderRadius: "50%", overflow: "hidden", border: "2px solid #e5e7eb", marginBottom: "14px", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
+                <img src={profile.profile_image_url} alt={profile.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
               </div>
             ) : (
-              <div
-                style={{
-                  width: "90px",
-                  height: "90px",
-                  borderRadius: "28px",
-                  backgroundColor: "rgba(255,255,255,0.1)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  border: "3px solid rgba(255,255,255,0.2)",
-                  marginBottom: "14px",
-                }}
-              >
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
-                  <path
-                    d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21"
-                    stroke="white"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d="M12 11C14.2091 11 16 9.20914 16 7C16 4.79086 14.2091 3 12 3C9.79086 3 8 4.79086 8 7C8 9.20914 9.79086 11 12 11Z"
-                    stroke="white"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
+              <div style={{ width: "90px", height: "90px", borderRadius: "50%", backgroundColor: "#e8f0fe", display: "flex", alignItems: "center", justifyContent: "center", border: "2px solid #e5e7eb", marginBottom: "14px", fontSize: "32px", fontWeight: 700, color: "#508bf5" }}>
+                {(agencyInfo?.name || profile.name || '?')[0]}
               </div>
             )}
 
             {agencyInfo ? (
               <>
-                <div style={{ fontSize: "24px", fontWeight: 800, letterSpacing: "-0.5px", marginBottom: "10px" }}>
+                <div style={{ fontSize: "20px", fontWeight: 800, letterSpacing: "-0.5px", marginBottom: "10px", textAlign: "center" }}>
                   {agencyInfo.agency_name || profile.name}
                 </div>
-                <div style={{ fontSize: "13px", color: "rgba(255,255,255,0.7)", marginBottom: "4px" }}>
-                  대표 {agencyInfo.representative} <span style={{ margin: "0 6px", color: "rgba(255,255,255,0.3)" }}>|</span> 등록번호 {agencyInfo.registration_number}
+                <div style={{ fontSize: "13px", color: "#555", marginBottom: "4px", textAlign: "center" }}>
+                  대표 {agencyInfo.representative} <span style={{ margin: "0 6px", color: "#ccc" }}>|</span> 등록번호 {agencyInfo.registration_number}
                 </div>
-                <div style={{ fontSize: "13px", color: "rgba(255,255,255,0.7)", marginBottom: "4px" }}>
+                <div style={{ fontSize: "13px", color: "#555", marginBottom: "4px", textAlign: "center" }}>
                   {agencyInfo.address}
                 </div>
-                <div style={{ fontSize: "13px", color: "#60a5fa", fontWeight: "bold", marginBottom: "16px", display: "flex", flexDirection: "column", gap: "4px", alignItems: "center" }}>
+                <div style={{ fontSize: "14px", color: "#1a73e8", fontWeight: "bold", marginBottom: "16px", display: "flex", flexDirection: "column", gap: "4px", alignItems: "center" }}>
                   {agencyInfo.phone?.split(',').map((num: string, idx: number) => {
                     const cleanNum = num.trim();
                     return (
-                      <a key={idx} href={`tel:${cleanNum}`} style={{ color: "inherit", textDecoration: "none" }}>
-                        📞 {cleanNum}
+                      <a key={idx} href={`tel:${cleanNum}`} style={{ color: "inherit", textDecoration: "none", display: "flex", alignItems: "center", gap: "4px" }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                        {cleanNum}
                       </a>
                     );
                   })}
@@ -201,10 +150,10 @@ export default function PCReporterClient({
               </>
             ) : (
               <>
-                <span style={{ fontSize: "12px", fontWeight: "bold", background: "rgba(255,255,255,0.2)", padding: "3px 10px", borderRadius: "12px", marginBottom: "8px" }}>
+                <span style={{ fontSize: "12px", fontWeight: "bold", background: "#f1f3f5", color: "#555", padding: "3px 10px", borderRadius: "12px", marginBottom: "8px" }}>
                   {profile.role === "ADMIN" ? "기자" : "부동산기자"}
                 </span>
-                <div style={{ fontSize: "24px", fontWeight: 800, letterSpacing: "-0.5px", marginBottom: "10px" }}>
+                <div style={{ fontSize: "20px", fontWeight: 800, letterSpacing: "-0.5px", marginBottom: "10px", color: "#111" }}>
                   {profile.name}
                 </div>
               </>
@@ -212,12 +161,15 @@ export default function PCReporterClient({
           </div>
 
           {/* 소개글 */}
-          <div style={{ fontSize: "13px", lineHeight: "1.6", color: "rgba(255,255,255,0.85)", marginBottom: "18px", textAlign: "center", wordBreak: "keep-all" }}>
-            {agencyInfo?.intro || profile.introduction || "공실뉴스와 함께하는 소중한 기자님입니다. 항상 신속하고 정확한 뉴스를 전달하기 위해 최선을 다하겠습니다."}
-          </div>
+          {(agencyInfo?.intro || profile.introduction) && (
+            <div style={{ padding: "12px 14px", background: "#f8f9fa", borderRadius: "8px", fontSize: "13px", color: "#444", border: "1px solid #eee", lineHeight: 1.5, wordBreak: "keep-all", marginBottom: "16px", textAlign: "center" }}>
+              <div style={{ fontWeight: "bold", fontSize: "12px", color: "#888", marginBottom: "6px" }}>부동산 소개</div>
+              {agencyInfo?.intro || profile.introduction}
+            </div>
+          )}
 
           {/* 통계 */}
-          <div style={{ textAlign: "center", fontSize: "13px", color: "rgba(255,255,255,0.65)", marginBottom: "16px" }}>
+          <div style={{ textAlign: "center", fontSize: "13px", color: "#666", marginBottom: "16px" }}>
             구독 {profile.subscriber_count || 0} | 응원 {profile.point_balance || 0}
           </div>
 
@@ -261,18 +213,18 @@ export default function PCReporterClient({
 
           {/* 버튼들 */}
           <div style={{ display: "flex", gap: "8px" }}>
-            <button style={{ flex: 1, padding: "10px 0", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.4)", background: "rgba(255,255,255,0.1)", color: "#fff", fontSize: "13px", fontWeight: "bold", cursor: "pointer" }}>
+            <button style={{ flex: 1, padding: "12px 0", borderRadius: "10px", border: "1px solid #1a73e8", background: "#f4f8ff", color: "#1a73e8", fontSize: "14px", fontWeight: "bold", cursor: "pointer" }}>
               + 구독
             </button>
-            <button style={{ flex: 1, padding: "10px 0", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.4)", background: "transparent", color: "#fff", fontSize: "13px", fontWeight: "bold", cursor: "pointer" }}>
+            <button style={{ flex: 1, padding: "12px 0", borderRadius: "10px", border: "1px solid #e0e0e0", background: "#fff", color: "#555", fontSize: "14px", fontWeight: "bold", cursor: "pointer" }}>
               👏 응원
             </button>
           </div>
           <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
-            <button style={{ flex: 1, padding: "10px 0", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.4)", background: "transparent", color: "#fff", fontSize: "13px", cursor: "pointer" }}>
+            <button style={{ flex: 1, padding: "10px 0", borderRadius: "10px", border: "1px solid #e0e0e0", background: "#f8f9fa", color: "#444", fontSize: "13px", cursor: "pointer" }}>
               ✉️ 메일
             </button>
-            <button style={{ flex: 1, padding: "10px 0", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.4)", background: "transparent", color: "#fff", fontSize: "13px", cursor: "pointer" }}>
+            <button style={{ flex: 1, padding: "10px 0", borderRadius: "10px", border: "1px solid #e0e0e0", background: "#f8f9fa", color: "#444", fontSize: "13px", cursor: "pointer" }}>
               🔗 공유
             </button>
           </div>

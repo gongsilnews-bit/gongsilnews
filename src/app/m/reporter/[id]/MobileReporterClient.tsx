@@ -101,11 +101,11 @@ export default function MobileReporterClient({
         style={{
           position: "relative",
           width: "100%",
-          background: "linear-gradient(135deg, #2b1139 0%, #1a0824 100%)",
-          color: "#fff",
+          background: "#f4f5f7",
+          color: "#111",
           padding: "16px",
           paddingTop: "20px",
-          paddingBottom: "60px",
+          paddingBottom: "20px",
         }}
       >
         {/* 상단 네비 */}
@@ -114,7 +114,7 @@ export default function MobileReporterClient({
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            marginBottom: "24px",
+            marginBottom: "20px",
           }}
         >
           <button
@@ -122,7 +122,7 @@ export default function MobileReporterClient({
             style={{
               background: "none",
               border: "none",
-              color: "#fff",
+              color: "#111",
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
@@ -131,163 +131,93 @@ export default function MobileReporterClient({
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
               <path
                 d="M15 18L9 12L15 6"
-                stroke="white"
+                stroke="#111"
                 strokeWidth="1.5"
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
             </svg>
           </button>
-
         </div>
 
-        {/* 프로필 카드 */}
-        <div
-          style={{
-            background: "rgba(255, 255, 255, 0.05)",
-            backdropFilter: "blur(10px)",
-            WebkitBackdropFilter: "blur(10px)",
-            border: "1px solid rgba(255, 255, 255, 0.1)",
-            borderRadius: "20px",
-            padding: "24px",
-            position: "relative",
-            zIndex: 10,
-            boxShadow: "0 10px 30px rgba(0,0,0,0.2)",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "flex-start",
-              gap: "16px",
-              marginBottom: "20px",
-            }}
-          >
+        {/* 프로필 카드 (공실 상세 디자인 적용) */}
+        <div style={{ 
+          background: "#fff",
+          border: "1px solid #e5e7eb",
+          borderRadius: "16px",
+          padding: "24px 20px",
+          position: "relative",
+          zIndex: 10,
+          boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+          marginBottom: "30px",
+          color: "#111"
+        }}>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: "16px", marginBottom: "20px" }}>
             {profile.profile_image_url ? (
-              <div
-                style={{
-                  width: "72px",
-                  height: "72px",
-                  borderRadius: "24px",
-                  overflow: "hidden",
-                  flexShrink: 0,
-                  border: "2px solid rgba(255,255,255,0.2)",
-                }}
-              >
-                <img
-                  src={profile.profile_image_url}
-                  alt={profile.name}
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                  }}
-                />
-              </div>
+              <img 
+                src={profile.profile_image_url} 
+                alt="프로필" 
+                style={{ width: "72px", height: "72px", borderRadius: "50%", objectFit: "cover", flexShrink: 0, border: "2px solid #e5e7eb", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }} 
+              />
             ) : (
-              <div
-                style={{
-                  width: "72px",
-                  height: "72px",
-                  borderRadius: "24px",
-                  backgroundColor: "rgba(255,255,255,0.1)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                  border: "2px solid rgba(255,255,255,0.2)",
-                }}
-              >
-                <svg
-                  width="32"
-                  height="32"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                >
-                  <path
-                    d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21"
-                    stroke="white"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d="M12 11C14.2091 11 16 9.20914 16 7C16 4.79086 14.2091 3 12 3C9.79086 3 8 4.79086 8 7C8 9.20914 9.79086 11 12 11Z"
-                    stroke="white"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
+              <div style={{ width: "72px", height: "72px", borderRadius: "50%", background: "#e8f0fe", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "28px", fontWeight: 700, color: "#508bf5", flexShrink: 0, border: "2px solid #e5e7eb" }}>
+                {(agencyInfo?.name || profile.name || '?')[0]}
               </div>
             )}
 
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "4px" }}>
-              {agencyInfo ? (
-                <>
-                  <div style={{ fontSize: "24px", fontWeight: "800", letterSpacing: "-0.5px" }}>
-                    {agencyInfo.agency_name || profile.name}
-                  </div>
-                  <div style={{ fontSize: "12px", color: "rgba(255,255,255,0.7)" }}>
-                    대표 {agencyInfo.representative} <span style={{ margin: "0 4px", color: "rgba(255,255,255,0.3)" }}>|</span> 등록번호 {agencyInfo.registration_number}
-                  </div>
-                  <div style={{ fontSize: "12px", color: "rgba(255,255,255,0.7)" }}>
-                    {agencyInfo.address}
-                  </div>
-                  <div style={{ fontSize: "12px", color: "#60a5fa", fontWeight: "bold", marginTop: "2px", display: "flex", flexDirection: "column", gap: "2px" }}>
-                    {agencyInfo.phone?.split(',').map((num: string, idx: number) => {
-                      const cleanNum = num.trim();
-                      return (
-                        <a key={idx} href={`tel:${cleanNum}`} style={{ color: "inherit", textDecoration: "none" }}>
-                          📞 {cleanNum}
-                        </a>
-                      );
-                    })}
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <span style={{ fontSize: "13px", fontWeight: "bold", background: "rgba(255,255,255,0.2)", padding: "2px 8px", borderRadius: "12px" }}>
-                      {profile.role === "ADMIN" ? "기자" : "부동산기자"}
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: "18px", fontWeight: 800, color: "#111", marginBottom: "8px", display: "flex", alignItems: "center", gap: "6px" }}>
+                {agencyInfo ? agencyInfo.name : profile.name}
+              </div>
+              
+              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                {agencyInfo ? (
+                  <>
+                    <span style={{ fontSize: "13px", color: "#555" }}>
+                      대표 {agencyInfo.ceo_name || agencyInfo.representative} <span style={{ color: "#ccc", margin: "0 4px" }}>|</span> 등록번호 {agencyInfo.reg_num || agencyInfo.registration_number || '-'}
                     </span>
-                  </div>
-                  <div style={{ fontSize: "26px", fontWeight: "800", letterSpacing: "-0.5px" }}>
-                    {profile.name}
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-
-          <div style={{ fontSize: "15px", lineHeight: "1.6", color: "rgba(255,255,255,0.9)", marginBottom: "20px", wordBreak: "keep-all" }}>
-            {agencyInfo?.intro || profile.introduction || "공실뉴스와 함께하는 소중한 기자님입니다. 항상 신속하고 정확한 뉴스를 전달하기 위해 최선을 다하겠습니다."}
-          </div>
-
-          <div style={{ display: "flex", alignItems: "center", gap: "12px", fontSize: "13px", color: "rgba(255,255,255,0.7)", marginBottom: "16px", flexWrap: "wrap" }}>
-            <div>
-              구독 {profile.subscriber_count || 0} | 응원 {profile.point_balance || 0}
-            </div>
-            {profile.id && (
-              <>
-                <div style={{ width: 1, height: 10, background: "rgba(255,255,255,0.3)" }} />
-                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                    <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M12 16V12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M12 8H12.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <span style={{ fontSize: "13px", color: "#555" }}>
+                      {[agencyInfo.address, agencyInfo.address_detail].filter(Boolean).join(" ") || '-'}
+                    </span>
+                  </>
+                ) : (
+                  <span style={{ fontSize: "13px", color: "#555" }}>
+                    {profile.role === "ADMIN" ? "기자" : "일반회원"} <span style={{ color: "#ccc", margin: "0 4px" }}>|</span> {profile.name}
+                  </span>
+                )}
+                
+                <span style={{ fontSize: "14px", fontWeight: "bold", color: "#1a73e8", marginTop: "4px", display: "flex", alignItems: "center", gap: "4px" }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
                   </svg>
-                  <span>{profile.id.substring(0, 8)}</span>
-                </div>
-              </>
-            )}
+                  전화{" "}
+                  {agencyInfo?.phone?.split(',').map((num: string, idx: number, arr: string[]) => (
+                    <React.Fragment key={idx}>
+                      <a href={`tel:${num.trim()}`} style={{ color: "inherit", textDecoration: "none" }}>{num.trim()}</a>
+                      {idx < arr.length - 1 && ", "}
+                    </React.Fragment>
+                  )) || <a href={`tel:${profile.phone}`} style={{ color: "inherit", textDecoration: "none" }}>{profile.phone || "미등록"}</a>}
+                  {agencyInfo?.cell && agencyInfo.cell !== agencyInfo.phone && (
+                    <>, <a href={`tel:${agencyInfo.cell}`} style={{ color: "inherit", textDecoration: "none" }}>{agencyInfo.cell}</a></>
+                  )}
+                </span>
+              </div>
+            </div>
           </div>
 
-          {/* SNS 아이콘 (공실상세 스타일) */}
-          {agencyInfo?.sns_links && typeof agencyInfo.sns_links === 'object' && Object.keys(agencyInfo.sns_links).filter(k => k !== "api_info" && k !== "api_list" && agencyInfo.sns_links[k]).length > 0 && (
-            <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "flex-start", gap: "10px", marginBottom: "20px" }}>
-              {Object.keys(agencyInfo.sns_links).filter(k => k !== "api_info" && k !== "api_list" && agencyInfo.sns_links[k]).map(key => {
-                const link = agencyInfo.sns_links[key];
+          {/* 부동산 소개란 (본문처럼 삽입) */}
+          {(agencyInfo?.intro || profile.introduction) && (
+            <div style={{ padding: "12px 14px", background: "#f8f9fa", borderRadius: "8px", fontSize: "13px", color: "#444", border: "1px solid #eee", lineHeight: 1.5, wordBreak: "keep-all", marginBottom: "16px" }}>
+              <div style={{ fontWeight: "bold", fontSize: "12px", color: "#888", marginBottom: "6px" }}>부동산 소개</div>
+              {agencyInfo?.intro || profile.introduction}
+            </div>
+          )}
+
+          {/* SNS Links */}
+          {profile.sns_links && Object.keys(profile.sns_links).filter(k => k !== "api_info" && k !== "api_list" && profile.sns_links[k]?.url).length > 0 && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginBottom: "20px" }}>
+              {Object.keys(profile.sns_links).filter(k => k !== "api_info" && k !== "api_list" && profile.sns_links[k]?.url).map(key => {
+                const link = profile.sns_links[key].url;
                 const validUrl = link.startsWith('http') ? link : `https://${link}`;
                 let iconHtml;
                 switch(key) {
@@ -296,43 +226,38 @@ export default function MobileReporterClient({
                   case 'instagram': iconHtml = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>; break;
                   case 'facebook': iconHtml = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>; break;
                   case 'twitter': iconHtml = <svg viewBox="0 0 24 24" fill="currentColor"><path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"></path></svg>; break;
-                  case 'blog': iconHtml = <span style={{ fontSize: 13, fontWeight: "bold" }}>BLOG</span>; break;
-                  case 'cafe': iconHtml = <span style={{ fontSize: 13, fontWeight: "bold" }}>CAFE</span>; break;
+                  case 'blog': iconHtml = <span style={{ fontSize: "13px", fontWeight: "bold" }}>BLOG</span>; break;
+                  case 'cafe': iconHtml = <span style={{ fontSize: "13px", fontWeight: "bold" }}>CAFE</span>; break;
                   case 'kakao': iconHtml = <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3c-5.5 0-10 3.5-10 7.8 0 2.8 1.8 5.2 4.4 6.5l-1 3.7c-.1.3.3.6.5.4l4.3-2.9c.6.1 1.2.1 1.8.1 5.5 0 10-3.5 10-7.8S17.5 3 12 3z"></path></svg>; break;
                   case 'homepage': iconHtml = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>; break;
                   case 'shopping_mall': iconHtml = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>; break;
                   default: iconHtml = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>;
                 }
                 const titleNames: Record<string,string> = { homepage: "홈페이지", contact: "문의하기", shopping_mall: "쇼핑몰", blog: "블로그", cafe: "카페", youtube: "유튜브", facebook: "페이스북", twitter: "트위터", instagram: "인스타그램", kakao: "카카오", threads: "쓰레드" };
-                const titleName = titleNames[key] || key;
                 return (
                   <a 
-                    key={key} 
-                    href={validUrl} 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    title={titleName}
-                    style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 44, height: 44, borderRadius: "50%", background: "#f8f9fa", border: "1px solid #e0e0e0", color: "#444", transition: "all 0.2s", textDecoration: "none" }}
+                    key={key} href={validUrl} target="_blank" rel="noopener noreferrer" title={titleNames[key] || key}
+                    style={{ 
+                      display: "flex", alignItems: "center", justifyContent: "center", 
+                      width: "40px", height: "40px", borderRadius: "50%", 
+                      background: "#f8f9fa", border: "1px solid #e0e0e0", 
+                      color: "#444", transition: "all 0.2s", textDecoration: "none" 
+                    }}
                   >
-                    <div style={{ width: 22, height: 22, display: "flex", alignItems: "center", justifyContent: "center" }}>{iconHtml}</div>
+                    <div style={{ width: "20px", height: "20px", display: "flex", alignItems: "center", justifyContent: "center" }}>{iconHtml}</div>
                   </a>
                 );
               })}
             </div>
           )}
 
+          {/* 구독/응원 버튼 */}
           <div style={{ display: "flex", gap: "8px" }}>
-            <button style={{ flex: 1, padding: "12px 0", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.4)", background: "rgba(255,255,255,0.1)", color: "#fff", fontSize: "14px", fontWeight: "bold", display: "flex", justifyContent: "center", alignItems: "center", gap: "6px", cursor: "pointer" }}>
-              + 구독
+            <button style={{ flex: 1, padding: "12px 0", borderRadius: "8px", border: "1px solid #1a73e8", background: "#f4f8ff", color: "#1a73e8", fontSize: "14px", fontWeight: "bold", display: "flex", justifyContent: "center", alignItems: "center", gap: "6px", cursor: "pointer" }}>
+              + 구독 ({profile.subscriber_count || 0})
             </button>
-            <button style={{ flex: 1, padding: "12px 0", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.4)", background: "transparent", color: "#fff", fontSize: "14px", fontWeight: "bold", display: "flex", justifyContent: "center", alignItems: "center", gap: "6px", cursor: "pointer" }}>
-              👏 응원
-            </button>
-            <button style={{ width: "44px", height: "44px", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.4)", background: "transparent", color: "#fff", display: "flex", justifyContent: "center", alignItems: "center", flexShrink: 0, cursor: "pointer" }}>
-              ✉️
-            </button>
-            <button style={{ width: "44px", height: "44px", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.4)", background: "transparent", color: "#fff", display: "flex", justifyContent: "center", alignItems: "center", flexShrink: 0, cursor: "pointer" }}>
-              🔗
+            <button style={{ flex: 1, padding: "12px 0", borderRadius: "8px", border: "1px solid #e0e0e0", background: "#fff", color: "#555", fontSize: "14px", fontWeight: "bold", display: "flex", justifyContent: "center", alignItems: "center", gap: "6px", cursor: "pointer" }}>
+              👏 응원 ({profile.point_balance || 0})
             </button>
           </div>
         </div>
