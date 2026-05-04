@@ -85,11 +85,19 @@ function MobileVacancyWrite() {
   const [infrastructure, setInfrastructure] = useState<any>({});
 
   // 부동산 전용
-  const [realtorCommission, setRealtorCommission] = useState("공동중개 0%");
+  const [realtorCommission, setRealtorCommission] = useState("공동중개");
   const [exposureType, setExposureType] = useState("부동산노출");
   const [landlordName, setLandlordName] = useState("");
   const [landlordPhone, setLandlordPhone] = useState("");
   const [landlordMemo, setLandlordMemo] = useState("");
+
+  const [rCompany, setRCompany] = useState("착한임대부동산");
+  const [rRegNum, setRRegNum] = useState("1666-4414411");
+  const [rBoss, setRBoss] = useState("김동현");
+  const [rBizNum, setRBizNum] = useState("211-33-21777");
+  const [rTel, setRTel] = useState("02-541-1611");
+  const [rCell, setRCell] = useState("02-541-1611");
+  const [rAddr, setRAddr] = useState("서울 강남구 논현동 189-13");
 
   // 사진
   const [photos, setPhotos] = useState<File[]>([]);
@@ -665,14 +673,34 @@ function MobileVacancyWrite() {
           </div>
         </div>
 
-        {/* 7. 등록자 */}
-        <div style={{ background:"#fff", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.05)" }}>
-          <div style={{ fontSize:16, fontWeight:800, color:"#111", marginBottom:14 }}>👤 등록자 정보</div>
-          <div style={{ display:"flex", gap:10 }}>
-            <div style={{flex:1}}><label style={labelStyle}>이름</label><input type="text" value={clientName} onChange={e=>setClientName(e.target.value)} style={inputStyle}/></div>
-            <div style={{flex:1}}><label style={labelStyle}>연락처</label><input type="tel" value={clientPhone} onChange={e=>setClientPhone(e.target.value)} placeholder="010-0000-0000" style={inputStyle}/></div>
+        {/* 7. 등록자 / 부동산 기업 정보 */}
+        {isRealtor ? (
+          <div style={{ background:"#f0f2f5", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.05)", border:"1px solid #d1d5db" }}>
+            <div style={{ fontSize:15, fontWeight:800, color:"#111", marginBottom:14, display:"flex", alignItems:"center", gap:6 }}>
+              <span>🏘️</span> 부동산 / 기업 정보
+            </div>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px 10px", marginBottom:12 }}>
+              <div><label style={{...labelStyle,fontSize:12,marginBottom:4}}>상호명</label><input type="text" value={rCompany} onChange={e=>setRCompany(e.target.value)} style={{...inputStyle, background:"#fff"}}/></div>
+              <div><label style={{...labelStyle,fontSize:12,marginBottom:4}}>중개등록번호</label><input type="text" value={rRegNum} onChange={e=>setRRegNum(e.target.value)} style={{...inputStyle, background:"#fff"}}/></div>
+              <div><label style={{...labelStyle,fontSize:12,marginBottom:4}}>대표자명</label><input type="text" value={rBoss} onChange={e=>setRBoss(e.target.value)} style={{...inputStyle, background:"#fff"}}/></div>
+              <div><label style={{...labelStyle,fontSize:12,marginBottom:4}}>사업자등록번호</label><input type="text" value={rBizNum} onChange={e=>setRBizNum(e.target.value)} style={{...inputStyle, background:"#fff"}}/></div>
+              <div><label style={{...labelStyle,fontSize:12,marginBottom:4}}>일반번호</label><input type="tel" value={rTel} onChange={e=>setRTel(e.target.value)} style={{...inputStyle, background:"#fff"}}/></div>
+              <div><label style={{...labelStyle,fontSize:12,marginBottom:4}}>휴대번호</label><input type="tel" value={rCell} onChange={e=>setRCell(e.target.value)} style={{...inputStyle, background:"#fff"}}/></div>
+            </div>
+            <div>
+              <label style={{...labelStyle,fontSize:12,marginBottom:4}}>부동산 주소</label>
+              <input type="text" value={rAddr} onChange={e=>setRAddr(e.target.value)} style={{...inputStyle, background:"#fff"}}/>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div style={{ background:"#fff", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.05)" }}>
+            <div style={{ fontSize:16, fontWeight:800, color:"#111", marginBottom:14 }}>👤 등록자 정보</div>
+            <div style={{ display:"flex", gap:10 }}>
+              <div style={{flex:1}}><label style={labelStyle}>이름</label><input type="text" value={clientName} onChange={e=>setClientName(e.target.value)} style={inputStyle}/></div>
+              <div style={{flex:1}}><label style={labelStyle}>연락처</label><input type="tel" value={clientPhone} onChange={e=>setClientPhone(e.target.value)} placeholder="010-0000-0000" style={inputStyle}/></div>
+            </div>
+          </div>
+        )}
 
         {/* 8. 부동산 전용 (REALTOR/ADMIN만) */}
         {isRealtor && (
