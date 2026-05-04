@@ -10,6 +10,12 @@ export default function GlobalDrawerMenu() {
   const [memberData, setMemberData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [pendingCounts, setPendingCounts] = useState({ vacancies: 0, articles: 0, members: 0 });
+  const [userActivityCounts, setUserActivityCounts] = useState({
+    myArticles: 0,
+    myVacancies: 0,
+    bookmarkedArticles: 0,
+    bookmarkedVacancies: 0
+  });
   const searchParams = useSearchParams();
   const router = useRouter();
   const isOpen = searchParams.get('menu') === 'open';
@@ -89,6 +95,26 @@ export default function GlobalDrawerMenu() {
             setMemberData(data);
             const r = data.role?.trim().toUpperCase() || '';
             const isAdmin = r === 'ADMIN' || r === '최고관리자' || r.includes('관리자');
+
+            const [
+              { count: myArticlesCount },
+              { count: myVacanciesCount },
+              { count: bookmarkedArticlesCount },
+              { count: bookmarkedVacanciesCount }
+            ] = await Promise.all([
+              supabase.from('articles').select('*', { count: 'exact', head: true }).eq('author_id', user.id),
+              supabase.from('vacancies').select('*', { count: 'exact', head: true }).eq('member_id', user.id),
+              supabase.from('article_bookmarks').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
+              supabase.from('vacancy_wishlist').select('*', { count: 'exact', head: true }).eq('user_id', user.id)
+            ]);
+            
+            setUserActivityCounts({
+              myArticles: myArticlesCount || 0,
+              myVacancies: myVacanciesCount || 0,
+              bookmarkedArticles: bookmarkedArticlesCount || 0,
+              bookmarkedVacancies: bookmarkedVacanciesCount || 0
+            });
+
             if (isAdmin) {
               const [
                 { count: vCount },
@@ -378,19 +404,19 @@ export default function GlobalDrawerMenu() {
                 {[
                   { 
                     icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path></svg>, 
-                    label: '내가 등록한 기사', href: '/m/admin/article' 
+                    label: '내가 등록한 기사', href: '/m/admin/article', count: userActivityCounts.myArticles
                   },
                   { 
                     icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><path d="M9 22v-4h6v4"></path><path d="M8 6h.01"></path><path d="M16 6h.01"></path><path d="M12 6h.01"></path><path d="M12 10h.01"></path><path d="M12 14h.01"></path><path d="M16 10h.01"></path><path d="M16 14h.01"></path><path d="M8 10h.01"></path><path d="M8 14h.01"></path></svg>, 
-                    label: '내가 등록한 공실', href: '/m/admin/vacancy' 
+                    label: '내가 등록한 공실', href: '/m/admin/vacancy', count: userActivityCounts.myVacancies
                   },
                   { 
                     icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>, 
-                    label: '내가 찜한 기사', href: '/m/news_bookmarks' 
+                    label: '내가 찜한 기사', href: '/m/news_bookmarks', count: userActivityCounts.bookmarkedArticles
                   },
                   { 
                     icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>, 
-                    label: '내가 찜한 공실', href: '/m/gongsil_bookmarks' 
+                    label: '내가 찜한 공실', href: '/m/gongsil_bookmarks', count: userActivityCounts.bookmarkedVacancies
                   },
                 ].map((item) => (
                   <li key={item.label}>
@@ -405,7 +431,10 @@ export default function GlobalDrawerMenu() {
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <span style={{ display: 'flex', alignItems: 'center', color: '#6b7280' }}>{item.icon}</span>
-                        <span style={{ fontSize: '15px', fontWeight: 500 }}>{item.label}</span>
+                        <span style={{ fontSize: '15px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          {item.label}
+                          <span style={{ color: '#1e56a0', fontWeight: 700, fontSize: '14px' }}>{item.count}</span>
+                        </span>
                       </div>
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
                     </Link>
