@@ -468,6 +468,7 @@ export default function GlobalDrawerMenu() {
                   { name: "공실열람", path: "/m/gongsil" },
                   { name: "자료실", path: "/m/study" },
                   { name: "부동산특강", path: "/m/study" },
+                  { name: "회사소개", path: "/about" },
                   { name: "중개업소무료가입", path: "/signup" }
                 ].map(menu => (
                   <li key={menu.name}>

@@ -1,6 +1,6 @@
 import React from "react";
 import { getArticles, getAuthorProfileById } from "@/app/actions/article";
-import { getVacanciesByOwnerId } from "@/app/actions/vacancy";
+import { getVacanciesByOwnerId, getAgencyInfo } from "@/app/actions/vacancy";
 import MobileReporterClient from "./MobileReporterClient";
 
 export const revalidate = 60;
@@ -23,10 +23,15 @@ export default async function MobileReporterPage({
 
   // 프로필에서 member id를 가져와 해당 기자의 공실 목록도 조회
   let vacancies: any[] = [];
+  let agencyInfo: any = null;
   if (profile?.id) {
     const vacRes = await getVacanciesByOwnerId(profile.id);
     if (vacRes.success && vacRes.data) {
       vacancies = vacRes.data;
+    }
+    const agencyRes = await getAgencyInfo(profile.id);
+    if (agencyRes.success && agencyRes.data) {
+      agencyInfo = agencyRes.data;
     }
   }
 
@@ -35,6 +40,7 @@ export default async function MobileReporterPage({
       profile={profile || { name: "공실뉴스", role: "REALTOR", profile_image_url: null }}
       articles={articles}
       vacancies={vacancies}
+      agencyInfo={agencyInfo}
       authorName={profile?.name || "기자"}
     />
   );

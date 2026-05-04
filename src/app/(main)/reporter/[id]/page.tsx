@@ -1,6 +1,6 @@
 import React from "react";
 import { getArticles, getAuthorProfileById } from "@/app/actions/article";
-import { getVacanciesByOwnerId } from "@/app/actions/vacancy";
+import { getVacanciesByOwnerId, getAgencyInfo } from "@/app/actions/vacancy";
 import PCReporterClient from "./PCReporterClient";
 
 export const revalidate = 60;
@@ -22,10 +22,15 @@ export default async function PCReporterPage({
   const articles = articlesRes.success ? articlesRes.data || [] : [];
 
   let vacancies: any[] = [];
+  let agencyInfo: any = null;
   if (profile?.id) {
     const vacRes = await getVacanciesByOwnerId(profile.id);
     if (vacRes.success && vacRes.data) {
       vacancies = vacRes.data;
+    }
+    const agencyRes = await getAgencyInfo(profile.id);
+    if (agencyRes.success && agencyRes.data) {
+      agencyInfo = agencyRes.data;
     }
   }
 
@@ -34,6 +39,7 @@ export default async function PCReporterPage({
       profile={profile || { name: "공실뉴스", role: "REALTOR", profile_image_url: null }}
       articles={articles}
       vacancies={vacancies}
+      agencyInfo={agencyInfo}
       authorName={profile?.name || "기자"}
     />
   );

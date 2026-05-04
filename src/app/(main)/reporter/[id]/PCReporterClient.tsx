@@ -46,11 +46,13 @@ export default function PCReporterClient({
   profile,
   articles,
   vacancies,
+  agencyInfo,
   authorName,
 }: {
   profile: any;
   articles: any[];
   vacancies: any[];
+  agencyInfo?: any;
   authorName: string;
 }) {
   const [mainTab, setMainTab] = useState<'articles' | 'vacancies'>('articles');
@@ -197,121 +199,84 @@ export default function PCReporterClient({
               </div>
             )}
 
-            {/* 직함 & 이름 */}
-            <span
-              style={{
-                fontSize: "12px",
-                fontWeight: "bold",
-                background: "rgba(255,255,255,0.2)",
-                padding: "3px 10px",
-                borderRadius: "12px",
-                marginBottom: "8px",
-              }}
-            >
-              {profile.role === "ADMIN" ? "기자" : "부동산기자"}
-            </span>
-            <div
-              style={{
-                fontSize: "24px",
-                fontWeight: 800,
-                letterSpacing: "-0.5px",
-                marginBottom: "10px",
-              }}
-            >
-              {profile.name}
-            </div>
+            {agencyInfo ? (
+              <>
+                <div style={{ fontSize: "24px", fontWeight: 800, letterSpacing: "-0.5px", marginBottom: "10px" }}>
+                  {agencyInfo.agency_name || profile.name}
+                </div>
+                <div style={{ fontSize: "13px", color: "rgba(255,255,255,0.7)", marginBottom: "4px" }}>
+                  대표 {agencyInfo.representative} <span style={{ margin: "0 6px", color: "rgba(255,255,255,0.3)" }}>|</span> 등록번호 {agencyInfo.registration_number}
+                </div>
+                <div style={{ fontSize: "13px", color: "rgba(255,255,255,0.7)", marginBottom: "4px" }}>
+                  {agencyInfo.address}
+                </div>
+                <div style={{ fontSize: "13px", color: "#60a5fa", fontWeight: "bold", marginBottom: "16px" }}>
+                  📞 {agencyInfo.phone}
+                </div>
+              </>
+            ) : (
+              <>
+                <span style={{ fontSize: "12px", fontWeight: "bold", background: "rgba(255,255,255,0.2)", padding: "3px 10px", borderRadius: "12px", marginBottom: "8px" }}>
+                  {profile.role === "ADMIN" ? "기자" : "부동산기자"}
+                </span>
+                <div style={{ fontSize: "24px", fontWeight: 800, letterSpacing: "-0.5px", marginBottom: "10px" }}>
+                  {profile.name}
+                </div>
+              </>
+            )}
           </div>
 
           {/* 소개글 */}
-          <div
-            style={{
-              fontSize: "13px",
-              lineHeight: "1.6",
-              color: "rgba(255,255,255,0.85)",
-              marginBottom: "18px",
-              textAlign: "center",
-              wordBreak: "keep-all",
-            }}
-          >
-            {profile.introduction ||
-              "공실뉴스와 함께하는 소중한 기자님입니다. 항상 신속하고 정확한 뉴스를 전달하기 위해 최선을 다하겠습니다."}
+          <div style={{ fontSize: "13px", lineHeight: "1.6", color: "rgba(255,255,255,0.85)", marginBottom: "18px", textAlign: "center", wordBreak: "keep-all" }}>
+            {agencyInfo?.intro || profile.introduction || "공실뉴스와 함께하는 소중한 기자님입니다. 항상 신속하고 정확한 뉴스를 전달하기 위해 최선을 다하겠습니다."}
           </div>
 
           {/* 통계 */}
-          <div
-            style={{
-              textAlign: "center",
-              fontSize: "13px",
-              color: "rgba(255,255,255,0.65)",
-              marginBottom: "20px",
-            }}
-          >
-            구독 {profile.subscriber_count || 0} | 응원{" "}
-            {profile.point_balance || 0}
+          <div style={{ textAlign: "center", fontSize: "13px", color: "rgba(255,255,255,0.65)", marginBottom: "20px" }}>
+            구독 {profile.subscriber_count || 0} | 응원 {profile.point_balance || 0}
           </div>
 
-          {/* 버튼들 */}
-          <div style={{ display: "flex", gap: "8px" }}>
-            <button
-              style={{
-                flex: 1,
-                padding: "10px 0",
-                borderRadius: "10px",
-                border: "1px solid rgba(255,255,255,0.4)",
-                background: "rgba(255,255,255,0.1)",
-                color: "#fff",
-                fontSize: "13px",
-                fontWeight: "bold",
-                cursor: "pointer",
-              }}
-            >
-              + 구독
-            </button>
-            <button
-              style={{
-                flex: 1,
-                padding: "10px 0",
-                borderRadius: "10px",
-                border: "1px solid rgba(255,255,255,0.4)",
-                background: "transparent",
-                color: "#fff",
-                fontSize: "13px",
-                fontWeight: "bold",
-                cursor: "pointer",
-              }}
-            >
-              👏 응원
-            </button>
-          </div>
-          <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
-            <button
-              style={{
-                flex: 1,
-                padding: "10px 0",
-                borderRadius: "10px",
-                border: "1px solid rgba(255,255,255,0.4)",
-                background: "transparent",
-                color: "#fff",
-                fontSize: "13px",
-                cursor: "pointer",
-              }}
-            >
-              ✉️ 메일
-            </button>
-            <button
-              style={{
-                flex: 1,
-                padding: "10px 0",
-                borderRadius: "10px",
-                border: "1px solid rgba(255,255,255,0.4)",
-                background: "transparent",
-                color: "#fff",
-                fontSize: "13px",
-                cursor: "pointer",
-              }}
-            >
-              🔗 공유
-            </button>
+          {/* SNS 버튼들 (기존 홈피 스타일) */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+            {agencyInfo?.sns_links && typeof agencyInfo.sns_links === 'object' && Object.keys(agencyInfo.sns_links).length > 0 ? (
+              Object.entries(agencyInfo.sns_links).map(([key, url]) => {
+                if (!url || typeof url !== 'string' || !url.trim()) return null;
+                const titleNames: Record<string,string> = { homepage: "홈페이지", contact: "문의하기", shopping_mall: "쇼핑몰", blog: "블로그", cafe: "카페", youtube: "유튜브", facebook: "페이스북", twitter: "트위터", instagram: "인스타그램", kakao: "카카오", threads: "쓰레드" };
+                const titleName = titleNames[key] || key;
+                return (
+                  <a
+                    key={key}
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: "block",
+                      textAlign: "center",
+                      padding: "10px 0",
+                      borderRadius: "10px",
+                      border: "1px solid rgba(255,255,255,0.4)",
+                      background: "rgba(255,255,255,0.1)",
+                      color: "#fff",
+                      fontSize: "13px",
+                      fontWeight: "bold",
+                      textDecoration: "none"
+                    }}
+                  >
+                    {titleName}
+                  </a>
+                );
+              })
+            ) : (
+              // Fallback if no SNS links exist
+              <>
+                <button style={{ padding: "10px 0", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.4)", background: "rgba(255,255,255,0.1)", color: "#fff", fontSize: "13px", fontWeight: "bold", cursor: "pointer" }}>
+                  + 구독
+                </button>
+                <button style={{ padding: "10px 0", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.4)", background: "transparent", color: "#fff", fontSize: "13px", fontWeight: "bold", cursor: "pointer" }}>
+                  👏 응원
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>

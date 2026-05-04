@@ -46,11 +46,13 @@ export default function MobileReporterClient({
   profile,
   articles,
   vacancies,
+  agencyInfo,
   authorName,
 }: {
   profile: any;
   articles: any[];
   vacancies: any[];
+  agencyInfo?: any;
   authorName: string;
 }) {
   const router = useRouter();
