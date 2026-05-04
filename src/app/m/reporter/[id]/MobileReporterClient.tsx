@@ -281,7 +281,7 @@ export default function MobileReporterClient({
 
           {/* SNS Links */}
           {profile.sns_links && Object.keys(profile.sns_links).filter(k => k !== "api_info" && k !== "api_list" && profile.sns_links[k]?.url).length > 0 && (
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginBottom: "20px" }}>
+            <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "flex-start", gap: "10px", marginBottom: "20px" }}>
               {Object.keys(profile.sns_links).filter(k => k !== "api_info" && k !== "api_list" && profile.sns_links[k]?.url).map(key => {
                 const link = profile.sns_links[key].url;
                 const validUrl = link.startsWith('http') ? link : `https://${link}`;

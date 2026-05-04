@@ -238,10 +238,10 @@ export default function PCReporterClient({
           )}
 
           {/* SNS 아이콘 (부동산 소개 아래로 이동) */}
-          {agencyInfo?.sns_links && typeof agencyInfo.sns_links === 'object' && Object.keys(agencyInfo.sns_links).filter(k => k !== "api_info" && k !== "api_list" && agencyInfo.sns_links[k]).length > 0 && (
-            <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "10px", marginBottom: "20px" }}>
-              {Object.keys(agencyInfo.sns_links).filter(k => k !== "api_info" && k !== "api_list" && agencyInfo.sns_links[k]).map(key => {
-                const link = agencyInfo.sns_links[key];
+          {profile.sns_links && Object.keys(profile.sns_links).filter(k => k !== "api_info" && k !== "api_list" && profile.sns_links[k]?.url).length > 0 && (
+            <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "flex-start", gap: "10px", marginBottom: "20px" }}>
+              {Object.keys(profile.sns_links).filter(k => k !== "api_info" && k !== "api_list" && profile.sns_links[k]?.url).map(key => {
+                const link = profile.sns_links[key].url;
                 const validUrl = link.startsWith('http') ? link : `https://${link}`;
                 let iconHtml;
                 switch(key) {
