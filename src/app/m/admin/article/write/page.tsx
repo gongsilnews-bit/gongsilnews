@@ -625,8 +625,25 @@ function MobileArticleWrite() {
             </div>
           </div>
         </div>
-      </div>
 
+        {/* 하단 인라인 버튼 */}
+        <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+          <button
+            onClick={() => handleSave(true)}
+            disabled={saving}
+            style={{ flex: 2, height: 56, background: saving ? "#9ca3af" : "linear-gradient(135deg, #3b82f6, #2563eb)", color: "#fff", border: "none", borderRadius: 14, fontSize: 17, fontWeight: 800, cursor: saving ? "not-allowed" : "pointer", boxShadow: "0 4px 12px rgba(59,130,246,0.3)" }}
+          >
+            {saving ? "처리중..." : "📋 승인신청"}
+          </button>
+          <button
+            onClick={() => handleSave(false)}
+            disabled={saving}
+            style={{ flex: 1, height: 56, background: "#fff", color: "#374151", border: "1px solid #d1d5db", borderRadius: 14, fontSize: 15, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer" }}
+          >
+            {saving ? "저장중..." : "💾 임시저장"}
+          </button>
+        </div>
+      </div>
 
     </div>
   );
