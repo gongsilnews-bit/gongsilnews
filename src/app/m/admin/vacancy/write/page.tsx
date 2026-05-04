@@ -52,7 +52,7 @@ function MobileVacancyWrite() {
   const [exclusivePy, setExclusivePy] = useState("");
   const [supplyM2, setSupplyM2] = useState("");
   const [supplyPy, setSupplyPy] = useState("");
-  const [areaUnit, setAreaUnit] = useState<"m2"|"py">("m2");
+  const [areaUnit, setAreaUnit] = useState<"m2"|"py">("py");
   const [currentFloor, setCurrentFloor] = useState("");
   const [totalFloor, setTotalFloor] = useState("");
   const [roomCount, setRoomCount] = useState("1");
