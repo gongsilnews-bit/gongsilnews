@@ -71,54 +71,53 @@ export default function AboutPage() {
             padding: 0 40px;
           }
 
-          /* Main Content Wrapper */
-          .about-main {
-            max-width: 1000px;
-            margin: 0 auto;
-            padding: 100px 20px 120px;
-          }
-
-          /* Title Area */
-          .intro-label {
+          /* Hero Section (Main Style) */
+          .about-hero {
+            position: relative;
+            height: 600px;
+            background-image: url('https://digitalspecial.joongang.co.kr/_o/img/newsroom/2020/0715_marketing/images/main-bg@2x.jpg');
+            background-position: center;
+            background-size: cover;
+            background-repeat: no-repeat;
             display: flex;
             align-items: center;
-            gap: 12px;
-            margin-bottom: 12px;
           }
-          .intro-line {
-            width: 40px;
-            height: 2px;
-            background-color: #d97706;
+          .about-hero::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(to right, rgba(26, 32, 44, 0.9), rgba(26, 32, 44, 0.4));
+            z-index: 1;
           }
-          .intro-text {
-            font-size: 14px;
-            font-weight: 700;
-            color: #d97706;
-            letter-spacing: 1px;
+          .hero-content {
+            position: relative;
+            z-index: 2;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 40px;
+            width: 100%;
           }
-          .intro-title {
-            font-size: 48px;
+          .hero-title {
+            font-size: 56px;
             font-weight: 900;
-            color: #111;
-            margin: 0 0 40px;
-            letter-spacing: -1.5px;
+            color: #fff;
+            margin-bottom: 24px;
+            letter-spacing: -2px;
+            line-height: 1.2;
           }
-          .main-catchphrase {
-            font-size: 28px;
-            font-weight: 700;
-            color: #111;
-            line-height: 1.5;
-            margin: 0 0 80px;
-            letter-spacing: -1px;
+          .hero-desc {
+            font-size: 24px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.6;
             word-break: keep-all;
           }
-          .highlight-box {
-            background-color: #f59e0b;
-            color: #fff;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-weight: 800;
-            margin: 0 4px;
+
+          /* Main Content Wrapper */
+          .about-main {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 100px 40px 120px;
           }
 
           /* Two Columns */
@@ -126,22 +125,15 @@ export default function AboutPage() {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 80px;
+            align-items: center;
           }
 
           .text-paragraph {
-            font-size: 15px;
+            font-size: 17px;
             color: #333;
             line-height: 1.8;
             margin-bottom: 24px;
             word-break: keep-all;
-          }
-
-          .monitor-img {
-            width: 100%;
-            height: auto;
-            border-radius: 8px;
-            margin-top: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
           }
 
           .signature {
@@ -224,13 +216,13 @@ export default function AboutPage() {
           /* Responsive */
           @media (max-width: 768px) {
             .about-header { padding: 0 20px; height: 60px; }
-            .about-nav { display: none; } /* 모바일에서는 숨기고 햄버거 메뉴 활용 */
+            .about-hero { height: 400px; }
+            .hero-content { padding: 0 20px; }
+            .hero-title { font-size: 36px; margin-bottom: 16px; }
+            .hero-desc { font-size: 18px; }
             .about-main { padding: 60px 20px 80px; }
-            .intro-title { font-size: 36px; margin-bottom: 30px; }
-            .main-catchphrase { font-size: 22px; margin-bottom: 50px; }
             .content-grid { grid-template-columns: 1fr; gap: 40px; }
             .contact-footer { padding: 60px 20px; }
-            .contact-title { font-size: 24px; }
           }
         `}</style>
 
@@ -239,52 +231,40 @@ export default function AboutPage() {
           <Link href="/" style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
             <img src="/logo.png" alt="부동산 정보채널 공실뉴스" style={{ height: 32, width: "auto" }} />
           </Link>
+          <div style={{ fontSize: 16, fontWeight: 700, color: '#1e293b' }}>
+            회사소개
+          </div>
         </header>
+
+        {/* ===== Hero Section ===== */}
+        <section className="about-hero fade-up">
+          <div className="hero-content">
+            <h1 className="hero-title">공실뉴스<br/>비즈솔루션본부</h1>
+            <p className="hero-desc">
+              부동산 미디어의 디지털 혁신을 주도하며<br/>
+              객관적인 지역/단지 정보를 바탕으로 최고의 마케팅 솔루션을 제공합니다.
+            </p>
+          </div>
+        </section>
 
         {/* ===== Main Content ===== */}
         <main className="about-main">
-          {/* Title Area */}
-          <div className="fade-up">
-            <div className="intro-label">
-              <div className="intro-line"></div>
-              <span className="intro-text">INTRODUCTION</span>
-            </div>
-            <h1 className="intro-title">인사말</h1>
-            
-            <p className="main-catchphrase">
-              공실뉴스는 <span className="highlight-box">지역/단지 정보</span>를<br />
-              객관적으로 전하는 부동산 언론채널이 되겠습니다.
-            </p>
-          </div>
-
           {/* Two Columns Grid */}
           <div className="content-grid">
             {/* Left Column */}
             <div className="fade-up delay-100">
+              <h2 style={{ fontSize: 32, fontWeight: 900, marginBottom: 32, color: "#111", letterSpacing: "-1px" }}>
+                대한민국 10만 부동산을 위한<br/>프리미엄 네트워크
+              </h2>
               <p className="text-paragraph">
-                공실뉴스는 지역/단지 시세 및 정보를<br />
-                객관적으로 제공하는 부동산 언론채널이 되겠습니다.
+                공실뉴스는 지역/단지 시세 및 정보를 객관적으로 제공하는 부동산 언론채널이 되겠습니다.
               </p>
               <p className="text-paragraph">
-                대한민국 10만 부동산이 독자가 되고,<br />
-                또, 지역/단지 정보를 제공하는 로컬기자가 되어<br />
-                집을 구하는 매수자에게 가치 있는 정보를<br />
-                제공하도록 돕는 매체가 되겠습니다.
+                대한민국 10만 부동산이 독자가 되고, 또 지역/단지 정보를 제공하는 로컬기자가 되어 집을 구하는 매수자에게 가치 있는 정보를 제공하도록 돕는 매체가 되겠습니다.
               </p>
               <p className="text-paragraph">
-                또한, 임대인에게 필요한 세무, 법률, 인테리어, 경매, 건축정보를 현업에서 활발히 활동하는 전문가가 동영상뉴스로 제공합니다.
+                또한, 임대인에게 필요한 세무, 법률, 인테리어, 경매, 건축정보를 현업에서 활발히 활동하는 전문가가 동영상뉴스로 제공합니다. 빠른 공실계약을 위해 부동산과 임대인에게 필요한 온라인마케팅 교육 및 공실네트워크 플랫폼을 제공합니다.
               </p>
-              <p className="text-paragraph">
-                빠른 공실계약을 위해 부동산과 임대인에게 필요한<br />
-                온라인마케팅 교육 및 공실네트워크 플랫폼을 제공합니다.
-              </p>
-
-              {/* Placeholder for Monitor Image */}
-              <img 
-                src="https://images.unsplash.com/photo-1498050108023-c5249f4df085?q=80&w=1472&auto=format&fit=crop" 
-                alt="공실뉴스 웹사이트 모니터 화면" 
-                className="monitor-img"
-              />
             </div>
 
             {/* Right Column */}
@@ -323,18 +303,75 @@ export default function AboutPage() {
         {/* ===== Contact Footer ===== */}
         <footer className="contact-footer">
           <div className="contact-footer-inner">
-            <h2 className="contact-title">CONTACT US</h2>
-            <div className="contact-info">
-              서울특별시 강남구 논현로115길 31, 105호<br />
-              대표전화 : 1555-5343
+            {/* ── 상단 내비게이션 링크 ── */}
+            <div style={{ borderBottom: "1px solid rgba(255,255,255,0.1)", paddingBottom: 24, marginBottom: 32 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
+                <div className="contact-links" style={{ gap: 16 }}>
+                  <Link href="/about">회사소개</Link>
+                  <span style={{ color: "rgba(255,255,255,0.2)" }}>|</span>
+                  <Link href="/marketing">광고안내</Link>
+                  <span style={{ color: "rgba(255,255,255,0.2)" }}>|</span>
+                  <Link href="#">제휴문의</Link>
+                  <span style={{ color: "rgba(255,255,255,0.2)" }}>|</span>
+                  <Link href="/terms">이용약관</Link>
+                  <span style={{ color: "rgba(255,255,255,0.2)" }}>|</span>
+                  <Link href="#" style={{ fontWeight: 700, color: "#fff" }}>개인정보 처리방침</Link>
+                  <span style={{ color: "rgba(255,255,255,0.2)" }}>|</span>
+                  <Link href="/youth-policy">청소년 보호정책</Link>
+                  <span style={{ color: "rgba(255,255,255,0.2)" }}>|</span>
+                  <Link href="#">고충처리</Link>
+                </div>
+                {/* 우측 파트너 로고/링크 (선택) */}
+                <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                  <span style={{ fontSize: 11, color: "#94a3b8", fontWeight: 500 }}>DATA PARTNER</span>
+                  <span style={{ fontSize: 12, color: "#cbd5e1", fontWeight: 600, padding: "3px 8px", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 4 }}>공공데이터포털</span>
+                  <span style={{ fontSize: 12, color: "#cbd5e1", fontWeight: 600, padding: "3px 8px", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 4 }}>국토교통부</span>
+                </div>
+              </div>
             </div>
-            
-            <div className="contact-bottom">
-              <div className="contact-copy">© 공실뉴스</div>
-              <div className="contact-links">
-                <Link href="/">홈</Link>
-                <Link href="/news_all">실시간뉴스</Link>
-                <Link href="#">개인정보처리방침</Link>
+
+            {/* ── 하단 회사 정보 ── */}
+            <div style={{ display: "flex", gap: 32, alignItems: "flex-start", flexWrap: "wrap" }}>
+              {/* 로고 */}
+              <div style={{ flexShrink: 0 }}>
+                <div style={{ fontSize: 22, fontWeight: 900, color: "#fff", letterSpacing: -1, lineHeight: 1.2 }}>
+                  공실뉴스
+                </div>
+                <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2, letterSpacing: -0.3 }}>GONGSIL NEWS</div>
+              </div>
+
+              {/* 회사 정보 */}
+              <div style={{ flex: 1, minWidth: 300, fontSize: 13, color: "#94a3b8", lineHeight: 1.8, letterSpacing: -0.2 }}>
+                <div>
+                  주소 : 서울특별시 강남구 논현로115길 31, 105호 (논현동)
+                  <span style={{ color: "rgba(255,255,255,0.2)", margin: "0 8px" }}>|</span>
+                  인터넷신문 등록번호 : 서울 아55037
+                  <span style={{ color: "rgba(255,255,255,0.2)", margin: "0 8px" }}>|</span>
+                  등록일자 : 2023.09.05
+                </div>
+                <div>
+                  제호 : 공실뉴스
+                  <span style={{ color: "rgba(255,255,255,0.2)", margin: "0 8px" }}>|</span>
+                  법인명 : (주)공실마케팅
+                  <span style={{ color: "rgba(255,255,255,0.2)", margin: "0 8px" }}>|</span>
+                  사업자등록번호 : 337-81-03010
+                </div>
+                <div>
+                  대표자·발행인 : 김윤경
+                  <span style={{ color: "rgba(255,255,255,0.2)", margin: "0 8px" }}>|</span>
+                  편집인 : 김동현
+                  <span style={{ color: "rgba(255,255,255,0.2)", margin: "0 8px" }}>|</span>
+                  이메일 : master@gongsilnews.com
+                </div>
+                <div>
+                  고객센터 : 1555-5343 (평일 10:00~18:00)
+                </div>
+                <div style={{ marginTop: 12, fontSize: 12, color: "#64748b", lineHeight: 1.6 }}>
+                  공실뉴스에 게재된 모든 콘텐츠(기사)는 저작권법의 보호를 받으며, 무단 전재, 복사, 배포 등을 금합니다.(저작권 문의는 별도 안내)
+                </div>
+                <div style={{ marginTop: 8, fontSize: 12, color: "#64748b" }}>
+                  Copyright © GONGSIL NEWS Co., Ltd. All Rights Reserved.
+                </div>
               </div>
             </div>
 
