@@ -97,44 +97,74 @@ export default function LocationFilterPanel({ onLocationMove, onFilterChange, on
 
   if (variant === "inline") {
     return (
-      <div>
-        <div style={{ display: "flex", gap: "8px", marginBottom: isExpanded ? "12px" : "0" }}>
-          <button onClick={() => { setRegTab("sido"); setIsExpanded(true); }} style={inlinePillStyle(regTab === "sido" && isExpanded)}>
-            {selSido || "시/도"} ▾
+      <div style={{ position: "relative" }}>
+        {/* 선택 버튼들 (순차적 표시) */}
+        <div style={{ display: "flex", gap: "8px" }}>
+          {/* 시/도 버튼 (항상 표시) */}
+          <button onClick={() => { setRegTab("sido"); setIsExpanded(!isExpanded || regTab !== "sido"); }} style={inlinePillStyle(regTab === "sido" && isExpanded)}>
+            {selSido || "전국"} ▾
           </button>
-          <button onClick={() => { setRegTab("gugun"); setIsExpanded(true); }} style={inlinePillStyle(regTab === "gugun" && isExpanded)}>
-            {selGugun || "시/군/구"} ▾
-          </button>
-          <button onClick={() => { setRegTab("dong"); setIsExpanded(true); }} style={inlinePillStyle(regTab === "dong" && isExpanded)}>
-            {selDong || "읍/면/동"} ▾
-          </button>
+          
+          {/* 시/군/구 버튼 (시/도를 선택한 경우에만 표시) */}
+          {selSido && (
+            <button onClick={() => { setRegTab("gugun"); setIsExpanded(!isExpanded || regTab !== "gugun"); }} style={inlinePillStyle(regTab === "gugun" && isExpanded)}>
+              {selGugun || "시/군/구"} ▾
+            </button>
+          )}
+
+          {/* 읍/면/동 버튼 (시/군/구를 선택한 경우에만 표시) */}
+          {selGugun && (
+            <button onClick={() => { setRegTab("dong"); setIsExpanded(!isExpanded || regTab !== "dong"); }} style={inlinePillStyle(regTab === "dong" && isExpanded)}>
+              {selDong || "읍/면/동"} ▾
+            </button>
+          )}
         </div>
         
+        {/* 클릭한 곳 아래에 새창(Popover) 형태로 뜨는 지역 선택창 */}
         {isExpanded && (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", maxHeight: "200px", overflowY: "auto", padding: "8px", background: "#f9fafb", borderRadius: "12px", border: "1px solid #e5e7eb" }}>
-            {regTab === "sido" && (sidoList.length > 0 ? sidoList.map(c => (
-              <button key={c.code} onClick={() => { 
-                setSelSidoCode(c.code); setSelSido(c.name); setSelGugun(""); setSelDong(""); setRegTab("gugun"); loadGugun(c.code); 
-                moveMap(c.name, 8); if (setLocLabel) setLocLabel(c.name);
-                if (onFilterChange) onFilterChange({ sido: c.name, sigungu: null, dong: null });
-              }} style={gridBtnStyle(selSido === c.name)}>{c.name}</button>
-            )) : <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "20px", color: "#9ca3af" }}>로딩중...</div>)}
+          <div style={{ position: "absolute", top: "100%", left: 0, right: 0, marginTop: "10px", zIndex: 10020, background: "#fff", borderRadius: "14px", border: "1px solid #e5e7eb", boxShadow: "0 10px 30px rgba(0,0,0,0.15)", padding: "16px", animation: "fadeIn 0.2s" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+              <span style={{ fontSize: "15px", fontWeight: 800, color: "#111" }}>
+                {regTab === "sido" ? "시/도 선택" : regTab === "gugun" ? `${selSido} 하위 지역` : `${selGugun} 하위 지역`}
+              </span>
+              <button onClick={() => setIsExpanded(false)} style={{ background: "none", border: "none", fontSize: "20px", color: "#9ca3af", cursor: "pointer", padding: "0 4px" }}>✕</button>
+            </div>
             
-            {regTab === "gugun" && (!selSidoCode ? <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "20px", color: "#9ca3af" }}>시/도를 먼저 선택하세요</div> : gugunList.length > 0 ? gugunList.map(c => (
-              <button key={c.code} onClick={() => { 
-                setSelGugunCode(c.code); setSelGugun(c.name); setSelDong(""); setRegTab("dong"); loadDong(c.code); 
-                moveMap(`${selSido} ${c.name}`, 6); if (setLocLabel) setLocLabel(`${c.name}`);
-                if (onFilterChange) onFilterChange({ sido: selSido, sigungu: c.name, dong: null });
-              }} style={gridBtnStyle(selGugun === c.name)}>{c.name}</button>
-            )) : <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "20px", color: "#9ca3af" }}>로딩중...</div>)}
-            
-            {regTab === "dong" && (!selGugunCode ? <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "20px", color: "#9ca3af" }}>시/군/구를 먼저 선택하세요</div> : dongList.length > 0 ? dongList.map(c => (
-              <button key={c.code} onClick={() => { 
-                setSelDong(c.name); moveMap(`${selSido} ${selGugun} ${c.name}`, 4); if (setLocLabel) setLocLabel(`${selGugun} ${c.name}`); 
-                if (onFilterChange) onFilterChange({ sido: selSido, sigungu: selGugun, dong: c.name });
-                setIsExpanded(false);
-              }} style={gridBtnStyle(selDong === c.name)}>{c.name}</button>
-            )) : <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "20px", color: "#9ca3af" }}>로딩중...</div>)}
+            <div className="no-scrollbar" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", maxHeight: "240px", overflowY: "auto", paddingRight: "4px" }}>
+              {/* 시/도 탭일 때 "전국" 버튼 추가 */}
+              {regTab === "sido" && (
+                <button onClick={() => {
+                  setSelSidoCode(""); setSelSido(""); setSelGugun(""); setSelDong(""); 
+                  if (setLocLabel) setLocLabel("위치");
+                  if (onFilterChange) onFilterChange({ sido: null, sigungu: null, dong: null });
+                  setIsExpanded(false);
+                }} style={gridBtnStyle(!selSido)}>전국</button>
+              )}
+              
+              {regTab === "sido" && (sidoList.length > 0 ? sidoList.map(c => (
+                <button key={c.code} onClick={() => { 
+                  setSelSidoCode(c.code); setSelSido(c.name); setSelGugun(""); setSelDong(""); setRegTab("gugun"); loadGugun(c.code); 
+                  moveMap(c.name, 8); if (setLocLabel) setLocLabel(c.name);
+                  if (onFilterChange) onFilterChange({ sido: c.name, sigungu: null, dong: null });
+                }} style={gridBtnStyle(selSido === c.name)}>{c.name}</button>
+              )) : <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "20px", color: "#9ca3af" }}>로딩중...</div>)}
+              
+              {regTab === "gugun" && (!selSidoCode ? <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "20px", color: "#9ca3af" }}>시/도를 먼저 선택하세요</div> : gugunList.length > 0 ? gugunList.map(c => (
+                <button key={c.code} onClick={() => { 
+                  setSelGugunCode(c.code); setSelGugun(c.name); setSelDong(""); setRegTab("dong"); loadDong(c.code); 
+                  moveMap(`${selSido} ${c.name}`, 6); if (setLocLabel) setLocLabel(`${c.name}`);
+                  if (onFilterChange) onFilterChange({ sido: selSido, sigungu: c.name, dong: null });
+                }} style={gridBtnStyle(selGugun === c.name)}>{c.name}</button>
+              )) : <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "20px", color: "#9ca3af" }}>로딩중...</div>)}
+              
+              {regTab === "dong" && (!selGugunCode ? <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "20px", color: "#9ca3af" }}>시/군/구를 먼저 선택하세요</div> : dongList.length > 0 ? dongList.map(c => (
+                <button key={c.code} onClick={() => { 
+                  setSelDong(c.name); moveMap(`${selSido} ${selGugun} ${c.name}`, 4); if (setLocLabel) setLocLabel(`${selGugun} ${c.name}`); 
+                  if (onFilterChange) onFilterChange({ sido: selSido, sigungu: selGugun, dong: c.name });
+                  setIsExpanded(false);
+                }} style={gridBtnStyle(selDong === c.name)}>{c.name}</button>
+              )) : <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "20px", color: "#9ca3af" }}>로딩중...</div>)}
+            </div>
           </div>
         )}
       </div>
