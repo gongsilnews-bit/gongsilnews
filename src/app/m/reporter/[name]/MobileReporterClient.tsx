@@ -541,12 +541,7 @@ export default function MobileReporterClient({
           )}
         </div>
       )}
-            </div>
-          ) : (
-            <div style={{ textAlign: 'center', padding: '60px 0', color: '#9ca3af', fontSize: '14px' }}>등록된 공실이 없습니다.</div>
-          )}
-        </div>
-      )}
+
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} initialTab="login" />
     </div>
   );

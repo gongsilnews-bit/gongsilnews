@@ -300,7 +300,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
   };
   const fetchPhotoDb = async (searchStr: string, favOnly: boolean) => {
     setIsPhotoDbLoading(true);
-    const res = await getPhotoLibrary({ search: searchStr, isFavorite: favOnly });
+    const res = await getPhotoLibrary({ search: searchStr, isFavorite: favOnly, authorId: ownerId });
     if (res.success && res.data) {
       setPhotoDbItems(res.data);
     } else {

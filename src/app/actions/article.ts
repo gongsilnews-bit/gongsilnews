@@ -376,16 +376,20 @@ export async function getPhotoLibrary(filters?: {
   search?: string;
   isFavorite?: boolean;
   limit?: number;
+  authorId?: string | null;
 }) {
   const supabase = getAdminClient();
 
   try {
     let query = supabase
       .from("article_media")
-      .select("id, url, filename, caption, is_favorite, created_at, file_size")
+      .select(`id, url, filename, caption, is_favorite, created_at, file_size${filters?.authorId ? ', articles!inner(author_id)' : ''}`)
       .eq("media_type", "PHOTO")
       .order("created_at", { ascending: false });
 
+    if (filters?.authorId) {
+      query = query.eq('articles.author_id', filters.authorId);
+    }
     if (filters?.isFavorite) {
       query = query.eq("is_favorite", true);
     }
