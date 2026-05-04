@@ -672,7 +672,7 @@ function MobileGongsilContent() {
                     console.error("Geolocation error:", err);
                     handleLocationPermissionDenied();
                   },
-                  { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+                  { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
                 );
               } else {
                 handleLocationUnavailable();
