@@ -679,9 +679,9 @@ function MobileVacancyWrite() {
           <div style={{ background:"#fff", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.05)", border:"1px solid #dbeafe" }}>
             <div style={{ fontSize:16, fontWeight:800, color:"#2563eb", marginBottom:14 }}>🏘️ 부동산 전용</div>
 
-            <label style={labelStyle}>공동중개 수수료</label>
+            <label style={labelStyle}>중개보수 지급 <span style={{color:"#ef4444"}}>*</span></label>
             <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:14 }}>
-              {["공동중개 0%","공동중개 10%","공동중개 20%","공동중개 30%","공동중개 40%","공동중개 50%"].map(opt => (
+              {["공동중개","수수료25%","수수료50%","수수료75%","수수료100%"].map(opt => (
                 <button key={opt} type="button" onClick={()=>setRealtorCommission(opt)} style={{ padding:"8px 12px", borderRadius:8, fontSize:12, fontWeight: realtorCommission===opt?700:500, border: realtorCommission===opt?"2px solid #2563eb":"1px solid #d1d5db", background: realtorCommission===opt?"#eff6ff":"#fff", color: realtorCommission===opt?"#2563eb":"#374151", cursor:"pointer" }}>{opt}</button>
               ))}
             </div>
@@ -690,10 +690,13 @@ function MobileVacancyWrite() {
             <div style={{ display:"flex", gap:10, marginBottom:14 }}>
               <div onClick={()=>setExposureType("부동산노출")} style={{ flex:1, padding:12, borderRadius:10, cursor:"pointer", border: exposureType==="부동산노출"?"2px solid #3b82f6":"1px solid #d1d5db", background: exposureType==="부동산노출"?"#eff6ff":"#fff" }}>
                 <div style={{ fontSize:14, fontWeight:700, color: exposureType==="부동산노출"?"#2563eb":"#374151", marginBottom:4 }}>부동산노출</div>
-                <div style={{ fontSize:11, color: exposureType==="부동산노출"?"#3b82f6":"#9ca3af", lineHeight:1.4 }}>부동산만 열람 가능, 일반인 비공개</div>
+                <div style={{ fontSize:11, color: exposureType==="부동산노출"?"#3b82f6":"#9ca3af", lineHeight:1.4 }}>
+                  비로그인, 일반인로그인시 매물상세보기는 부동산엔 열람 가능하고<br/>
+                  비회원 일반인에게는 비공개
+                </div>
               </div>
               <div onClick={()=>setExposureType("부동산노출 + 일반인노출")} style={{ flex:1, padding:12, borderRadius:10, cursor:"pointer", border: exposureType==="부동산노출 + 일반인노출"?"2px solid #3b82f6":"1px solid #d1d5db", background: exposureType==="부동산노출 + 일반인노출"?"#eff6ff":"#fff" }}>
-                <div style={{ fontSize:14, fontWeight:700, color: exposureType==="부동산노출 + 일반인노출"?"#2563eb":"#374151", marginBottom:4 }}>부동산+일반인</div>
+                <div style={{ fontSize:14, fontWeight:700, color: exposureType==="부동산노출 + 일반인노출"?"#2563eb":"#374151", marginBottom:4 }}>부동산+일반인노출</div>
                 <div style={{ fontSize:11, color: exposureType==="부동산노출 + 일반인노출"?"#3b82f6":"#9ca3af" }}>모두에게 노출</div>
               </div>
             </div>
