@@ -60,8 +60,8 @@ export default function QuickFloatingMenu() {
           onMouseEnter={(e) => (e.currentTarget.style.background = "#f4f6fa")}
           onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="#4a6fad" stroke="#4a6fad" strokeWidth="0">
-            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4a6fad" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
           </svg>
           관심매물보기
         </div>
