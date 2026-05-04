@@ -12,10 +12,109 @@ function getAdminClient() {
 }
 
 // ==========================================
+// 북마크 카테고리 (bookmark_categories)
+// ==========================================
+
+export async function getBookmarkCategories(userId: string, type: 'ARTICLE' | 'VACANCY') {
+  const supabase = getAdminClient();
+  try {
+    const { data, error } = await supabase
+      .from("bookmark_categories")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("type", type)
+      .order("created_at", { ascending: true });
+      
+    if (error) return { success: false, error: error.message };
+    return { success: true, categories: data };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+export async function createBookmarkCategory(userId: string, name: string, type: 'ARTICLE' | 'VACANCY') {
+  const supabase = getAdminClient();
+  try {
+    const { data, error } = await supabase
+      .from("bookmark_categories")
+      .insert({ user_id: userId, name, type })
+      .select()
+      .single();
+      
+    if (error) return { success: false, error: error.message };
+    return { success: true, category: data };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+export async function updateBookmarkCategory(categoryId: string, name: string) {
+  const supabase = getAdminClient();
+  try {
+    const { error } = await supabase
+      .from("bookmark_categories")
+      .update({ name })
+      .eq("id", categoryId);
+      
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+export async function deleteBookmarkCategory(categoryId: string) {
+  const supabase = getAdminClient();
+  try {
+    const { error } = await supabase
+      .from("bookmark_categories")
+      .delete()
+      .eq("id", categoryId);
+      
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+export async function setArticleBookmarkCategory(userId: string, articleId: string | number, categoryId: string | null) {
+  const supabase = getAdminClient();
+  try {
+    const { error } = await supabase
+      .from("article_bookmarks")
+      .update({ category_id: categoryId })
+      .eq("user_id", userId)
+      .eq("article_id", articleId);
+      
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+export async function setVacancyBookmarkCategory(userId: string, vacancyId: string, categoryId: string | null) {
+  const supabase = getAdminClient();
+  try {
+    const { error } = await supabase
+      .from("vacancy_wishlist")
+      .update({ category_id: categoryId })
+      .eq("user_id", userId)
+      .eq("vacancy_id", vacancyId);
+      
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+// ==========================================
 // 기사 북마크 (article_bookmarks)
 // ==========================================
 
-export async function toggleArticleBookmark(userId: string, articleId: string | number) {
+export async function toggleArticleBookmark(userId: string, articleId: string | number, categoryId?: string | null) {
   const supabase = getAdminClient();
   try {
     // 1. 기존 북마크 확인
@@ -43,7 +142,7 @@ export async function toggleArticleBookmark(userId: string, articleId: string | 
       // 3. 존재하지 않으면 추가 (찜)
       const { error: insertError } = await supabase
         .from("article_bookmarks")
-        .insert({ user_id: userId, article_id: articleId });
+        .insert({ user_id: userId, article_id: articleId, category_id: categoryId || null });
       
       if (insertError) return { success: false, error: insertError.message };
       isBookmarked = true;
@@ -76,7 +175,7 @@ export async function getArticleBookmarks(userId: string) {
 // 공실 북마크 (vacancy_wishlist)
 // ==========================================
 
-export async function toggleVacancyBookmark(userId: string, vacancyId: string) {
+export async function toggleVacancyBookmark(userId: string, vacancyId: string, categoryId?: string | null) {
   const supabase = getAdminClient();
   try {
     // 1. 기존 북마크 확인
@@ -104,7 +203,7 @@ export async function toggleVacancyBookmark(userId: string, vacancyId: string) {
       // 3. 존재하지 않으면 추가 (찜)
       const { error: insertError } = await supabase
         .from("vacancy_wishlist")
-        .insert({ user_id: userId, vacancy_id: vacancyId });
+        .insert({ user_id: userId, vacancy_id: vacancyId, category_id: categoryId || null });
       
       if (insertError) return { success: false, error: insertError.message };
       isBookmarked = true;
