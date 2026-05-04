@@ -97,9 +97,17 @@ export default function LocationFilterPanel({ onLocationMove, onFilterChange, on
 
   if (variant === "inline") {
     return (
-      <div style={{ position: "relative" }}>
+      <div style={{ position: "relative", zIndex: isExpanded ? 10020 : 1 }}>
+        {/* 전체 화면을 덮는 검정색 배경 오버레이 (버튼과 팝업은 이 위에 표시됨) */}
+        {isExpanded && (
+          <div 
+            onClick={() => setIsExpanded(false)} 
+            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: -1, animation: "fadeIn 0.2s" }} 
+          />
+        )}
+
         {/* 선택 버튼들 (순차적 표시) */}
-        <div style={{ display: "flex", gap: "8px" }}>
+        <div style={{ display: "flex", gap: "8px", position: "relative", zIndex: 2 }}>
           {/* 시/도 버튼 (항상 표시) */}
           <button onClick={() => { setRegTab("sido"); setIsExpanded(!isExpanded || regTab !== "sido"); }} style={inlinePillStyle(regTab === "sido" && isExpanded)}>
             {selSido || "전국"} ▾
@@ -122,7 +130,7 @@ export default function LocationFilterPanel({ onLocationMove, onFilterChange, on
         
         {/* 클릭한 곳 아래에 새창(Popover) 형태로 뜨는 지역 선택창 */}
         {isExpanded && (
-          <div style={{ position: "absolute", top: "100%", left: 0, right: 0, marginTop: "10px", zIndex: 10020, background: "#fff", borderRadius: "14px", border: "1px solid #e5e7eb", boxShadow: "0 10px 30px rgba(0,0,0,0.15)", padding: "16px", animation: "fadeIn 0.2s" }}>
+          <div style={{ position: "absolute", top: "100%", left: 0, right: 0, marginTop: "10px", zIndex: 2, background: "#fff", borderRadius: "14px", border: "1px solid #e5e7eb", boxShadow: "0 10px 30px rgba(0,0,0,0.15)", padding: "16px", animation: "fadeIn 0.2s" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
               <span style={{ fontSize: "15px", fontWeight: 800, color: "#111" }}>
                 {regTab === "sido" ? "시/도 선택" : regTab === "gugun" ? `${selSido} 하위 지역` : `${selGugun} 하위 지역`}
