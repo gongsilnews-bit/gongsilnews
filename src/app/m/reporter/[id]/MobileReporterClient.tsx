@@ -101,8 +101,8 @@ export default function MobileReporterClient({
         style={{
           position: "relative",
           width: "100%",
-          background: "#f4f5f7",
-          color: "#111",
+          background: "linear-gradient(135deg, #2b1139 0%, #1a0824 100%)",
+          color: "#fff",
           padding: "16px",
           paddingTop: "20px",
           paddingBottom: "20px",
@@ -122,7 +122,7 @@ export default function MobileReporterClient({
             style={{
               background: "none",
               border: "none",
-              color: "#111",
+              color: "#fff",
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
@@ -131,7 +131,7 @@ export default function MobileReporterClient({
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
               <path
                 d="M15 18L9 12L15 6"
-                stroke="#111"
+                stroke="white"
                 strokeWidth="1.5"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -142,51 +142,53 @@ export default function MobileReporterClient({
 
         {/* 프로필 카드 (공실 상세 디자인 적용) */}
         <div style={{ 
-          background: "#fff",
-          border: "1px solid #e5e7eb",
-          borderRadius: "16px",
+          background: "rgba(255, 255, 255, 0.05)",
+          backdropFilter: "blur(10px)",
+          WebkitBackdropFilter: "blur(10px)",
+          border: "1px solid rgba(255, 255, 255, 0.1)",
+          borderRadius: "20px",
           padding: "24px 20px",
           position: "relative",
           zIndex: 10,
-          boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+          boxShadow: "0 10px 30px rgba(0,0,0,0.2)",
           marginBottom: "30px",
-          color: "#111"
+          color: "#fff"
         }}>
           <div style={{ display: "flex", alignItems: "flex-start", gap: "16px", marginBottom: "20px" }}>
             {profile.profile_image_url ? (
               <img 
                 src={profile.profile_image_url} 
                 alt="프로필" 
-                style={{ width: "72px", height: "72px", borderRadius: "50%", objectFit: "cover", flexShrink: 0, border: "2px solid #e5e7eb", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }} 
+                style={{ width: "72px", height: "72px", borderRadius: "24px", objectFit: "cover", flexShrink: 0, border: "2px solid rgba(255,255,255,0.2)" }} 
               />
             ) : (
-              <div style={{ width: "72px", height: "72px", borderRadius: "50%", background: "#e8f0fe", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "28px", fontWeight: 700, color: "#508bf5", flexShrink: 0, border: "2px solid #e5e7eb" }}>
+              <div style={{ width: "72px", height: "72px", borderRadius: "24px", background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "28px", fontWeight: 700, color: "#fff", flexShrink: 0, border: "2px solid rgba(255,255,255,0.2)" }}>
                 {(agencyInfo?.name || profile.name || '?')[0]}
               </div>
             )}
 
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: "18px", fontWeight: 800, color: "#111", marginBottom: "8px", display: "flex", alignItems: "center", gap: "6px" }}>
+              <div style={{ fontSize: "18px", fontWeight: 800, color: "#fff", marginBottom: "8px", display: "flex", alignItems: "center", gap: "6px" }}>
                 {agencyInfo ? agencyInfo.name : profile.name}
               </div>
               
               <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                 {agencyInfo ? (
                   <>
-                    <span style={{ fontSize: "13px", color: "#555" }}>
-                      대표 {agencyInfo.ceo_name || agencyInfo.representative} <span style={{ color: "#ccc", margin: "0 4px" }}>|</span> 등록번호 {agencyInfo.reg_num || agencyInfo.registration_number || '-'}
+                    <span style={{ fontSize: "13px", color: "rgba(255,255,255,0.7)" }}>
+                      대표 {agencyInfo.ceo_name || agencyInfo.representative} <span style={{ color: "rgba(255,255,255,0.3)", margin: "0 4px" }}>|</span> 등록번호 {agencyInfo.reg_num || agencyInfo.registration_number || '-'}
                     </span>
-                    <span style={{ fontSize: "13px", color: "#555" }}>
+                    <span style={{ fontSize: "13px", color: "rgba(255,255,255,0.7)" }}>
                       {[agencyInfo.address, agencyInfo.address_detail].filter(Boolean).join(" ") || '-'}
                     </span>
                   </>
                 ) : (
-                  <span style={{ fontSize: "13px", color: "#555" }}>
-                    {profile.role === "ADMIN" ? "기자" : "일반회원"} <span style={{ color: "#ccc", margin: "0 4px" }}>|</span> {profile.name}
+                  <span style={{ fontSize: "13px", color: "rgba(255,255,255,0.7)" }}>
+                    {profile.role === "ADMIN" ? "기자" : "일반회원"} <span style={{ color: "rgba(255,255,255,0.3)", margin: "0 4px" }}>|</span> {profile.name}
                   </span>
                 )}
                 
-                <span style={{ fontSize: "14px", fontWeight: "bold", color: "#1a73e8", marginTop: "4px", display: "flex", alignItems: "center", gap: "4px" }}>
+                <span style={{ fontSize: "14px", fontWeight: "bold", color: "#60a5fa", marginTop: "4px", display: "flex", alignItems: "center", gap: "4px" }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
                   </svg>
@@ -207,8 +209,8 @@ export default function MobileReporterClient({
 
           {/* 부동산 소개란 (본문처럼 삽입) */}
           {(agencyInfo?.intro || profile.introduction) && (
-            <div style={{ padding: "12px 14px", background: "#f8f9fa", borderRadius: "8px", fontSize: "13px", color: "#444", border: "1px solid #eee", lineHeight: 1.5, wordBreak: "keep-all", marginBottom: "16px" }}>
-              <div style={{ fontWeight: "bold", fontSize: "12px", color: "#888", marginBottom: "6px" }}>부동산 소개</div>
+            <div style={{ padding: "12px 14px", background: "rgba(255,255,255,0.05)", borderRadius: "8px", fontSize: "13px", color: "#eee", border: "1px solid rgba(255,255,255,0.1)", lineHeight: 1.5, wordBreak: "keep-all", marginBottom: "16px" }}>
+              <div style={{ fontWeight: "bold", fontSize: "12px", color: "#aaa", marginBottom: "6px" }}>부동산 소개</div>
               {agencyInfo?.intro || profile.introduction}
             </div>
           )}
@@ -240,8 +242,8 @@ export default function MobileReporterClient({
                     style={{ 
                       display: "flex", alignItems: "center", justifyContent: "center", 
                       width: "40px", height: "40px", borderRadius: "50%", 
-                      background: "#f8f9fa", border: "1px solid #e0e0e0", 
-                      color: "#444", transition: "all 0.2s", textDecoration: "none" 
+                      background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", 
+                      color: "#fff", transition: "all 0.2s", textDecoration: "none" 
                     }}
                   >
                     <div style={{ width: "20px", height: "20px", display: "flex", alignItems: "center", justifyContent: "center" }}>{iconHtml}</div>
@@ -253,10 +255,10 @@ export default function MobileReporterClient({
 
           {/* 구독/응원 버튼 */}
           <div style={{ display: "flex", gap: "8px" }}>
-            <button style={{ flex: 1, padding: "12px 0", borderRadius: "8px", border: "1px solid #1a73e8", background: "#f4f8ff", color: "#1a73e8", fontSize: "14px", fontWeight: "bold", display: "flex", justifyContent: "center", alignItems: "center", gap: "6px", cursor: "pointer" }}>
+            <button style={{ flex: 1, padding: "12px 0", borderRadius: "8px", border: "none", background: "#1a73e8", color: "#fff", fontSize: "14px", fontWeight: "bold", display: "flex", justifyContent: "center", alignItems: "center", gap: "6px", cursor: "pointer" }}>
               + 구독 ({profile.subscriber_count || 0})
             </button>
-            <button style={{ flex: 1, padding: "12px 0", borderRadius: "8px", border: "1px solid #e0e0e0", background: "#fff", color: "#555", fontSize: "14px", fontWeight: "bold", display: "flex", justifyContent: "center", alignItems: "center", gap: "6px", cursor: "pointer" }}>
+            <button style={{ flex: 1, padding: "12px 0", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.2)", background: "transparent", color: "#fff", fontSize: "14px", fontWeight: "bold", display: "flex", justifyContent: "center", alignItems: "center", gap: "6px", cursor: "pointer" }}>
               👏 응원 ({profile.point_balance || 0})
             </button>
           </div>
