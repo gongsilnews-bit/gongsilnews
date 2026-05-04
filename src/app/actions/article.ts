@@ -203,6 +203,7 @@ const getArticlesCached = unstable_cache(
     if (filters?.is_important !== undefined) query = query.eq("is_important", filters.is_important);
     if (filters?.is_headline !== undefined) query = query.eq("is_headline", filters.is_headline);
     if (filters?.author_name) query = query.eq("author_name", filters.author_name);
+    if (filters?.author_id) query = query.eq("author_id", filters.author_id);
     
     if (filters?.keyword) {
       // 키워드로 검색된 article_id 목록 추출
@@ -238,6 +239,7 @@ export async function getArticles(filters?: {
   limit?: number;
   keyword?: string;
   author_name?: string;
+  author_id?: string;
 }) {
   return await getArticlesCached(filters);
 }
@@ -516,6 +518,17 @@ export async function getAuthorProfileByName(name: string) {
   const supabase = getAdminClient();
   try {
     const { data, error } = await supabase.from('members').select('*').eq('name', name).limit(1).maybeSingle();
+    if (error) return { success: false, error: error.message };
+    return { success: true, data };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+export async function getAuthorProfileById(id: string) {
+  const supabase = getAdminClient();
+  try {
+    const { data, error } = await supabase.from('members').select('*').eq('id', id).limit(1).maybeSingle();
     if (error) return { success: false, error: error.message };
     return { success: true, data };
   } catch (err: any) {
