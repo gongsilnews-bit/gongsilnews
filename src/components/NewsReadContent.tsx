@@ -914,17 +914,16 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
           <div className="news-sidebar">
             {/* 1. 추천 공실 - 부동산회원이면 등록한 공실 전체 노출 */}
             {(() => {
-              const visibleVacancies = authorVacancies.filter(prop => {
-                if (prop.exposure_type === '부동산노출' && viewerRole !== 'REALTOR' && viewerRole !== 'ADMIN') return false;
-                return true;
-              });
+              const visibleVacancies = authorVacancies;
               if (authorRole !== "REALTOR" || visibleVacancies.length === 0) return null;
               
               return (
                 <div className="sb-widget">
                   <div className="sb-title">추천 공실</div>
                   {visibleVacancies.map((prop, i) => {
-                  const title = prop.building_name || prop.detail_addr || "이름없는 공실";
+                  const cardMasked = prop.exposure_type === '부동산노출' && viewerRole !== 'REALTOR' && viewerRole !== 'ADMIN';
+                  const cardAddr = prop.building_name || prop.detail_addr || "이름없는 공실";
+                  const title = cardMasked ? cardAddr.replace(/[^\s]/g, "X") : cardAddr;
                   
                   // 가격 포매팅 로직 개선 (원 단위 -> 억/천/백 혼합)
                   const formatMoney = (val: number) => {
@@ -961,6 +960,11 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
                       target={isMobile ? undefined : "_blank"} 
                       key={prop.id || i} 
                       onClick={(e) => {
+                        if (cardMasked) {
+                          e.preventDefault();
+                          setIsAuthModalOpen(true);
+                          return;
+                        }
                         if (isMobile) {
                           e.preventDefault();
                           setSelectedVacancyId(prop.id);
@@ -970,7 +974,10 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
                     >
                       <div className="prop-item" style={{ padding: "16px 0", borderBottom: "1px solid #f0f0f0", display: "flex", gap: 12, cursor: "pointer", background: "#fff", transition: "background 0.15s" }} onMouseEnter={e => e.currentTarget.style.background = '#f9fafb'} onMouseLeave={e => e.currentTarget.style.background = '#fff'}>
                         <div className="prop-info" style={{ minWidth: 0, overflow: "hidden", flex: 1, display: "flex", flexDirection: "column" }}>
-                          <div className="prop-title" style={{ fontSize: 16, fontWeight: 700, color: "#111", marginBottom: 4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{title}</div>
+                          <div className="prop-title" style={{ fontSize: 16, fontWeight: 700, color: cardMasked ? "#bbb" : "#111", marginBottom: 4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", letterSpacing: cardMasked ? 1 : 0 }}>
+                            {title}
+                            {cardMasked && <span style={{ fontSize: "11px", color: "#3b82f6", fontWeight: 700, background: "#eef6ff", padding: "3px 8px", borderRadius: "4px", marginLeft: "8px", verticalAlign: "middle" }}>🔒 무료열람</span>}
+                          </div>
                           <div className="prop-price" style={{ color: "#1a73e8", fontWeight: 800, fontSize: 20, marginBottom: 6 }}>{price}</div>
                           <div className="prop-meta" style={{ fontSize: 14, color: "#666", marginBottom: 3 }}>
                             {prop.property_type || "주택"} <span style={{color: "#ddd"}}>|</span> {prop.direction || "방향없음"} <span style={{color: "#ddd"}}>|</span> {prop.exclusive_m2 || 0}㎡

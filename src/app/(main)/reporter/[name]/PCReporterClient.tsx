@@ -2,6 +2,8 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import AuthModal from "@/components/AuthModal";
 
 const CATEGORIES = [
   { key: "all", label: "전체 기사" },
@@ -58,6 +60,25 @@ export default function PCReporterClient({
     activeTab === "all"
       ? articles
       : articles.filter((a: any) => a.section2 === activeTab);
+
+  const [userLevel, setUserLevel] = React.useState<number>(0);
+  const [isAuthModalOpen, setIsAuthModalOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    import("@/utils/supabase/client").then(({ createClient }) => {
+      const supabase = createClient();
+      supabase.auth.getUser().then(({ data }) => {
+        if (data?.user) {
+          supabase.from("members").select("role").eq("id", data.user.id).single().then(res => {
+            if (res.data) {
+              const r = res.data.role;
+              setUserLevel(r === 'SUPER_ADMIN' || r === 'ADMIN' || r === '최고관리자' ? 3 : r === 'REALTOR' ? 2 : 1);
+            }
+          });
+        }
+      });
+    });
+  }, []);
 
   return (
     <div
@@ -352,37 +373,72 @@ export default function PCReporterClient({
               총 <span style={{ color: '#3b82f6', fontWeight: 800 }}>{vacancies.length}</span>건
             </div>
             {vacancies.length > 0 ? (
-              <div>
-                {vacancies.map((v: any) => (
-                  <Link key={v.id} href={`/m/gongsil?id=${v.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                    <div style={{ display: 'flex', gap: '14px', padding: '16px 0', borderBottom: '1px solid #f3f4f6', cursor: 'pointer', transition: 'background 0.15s' }} onMouseEnter={e => (e.currentTarget.style.background = '#f9fafb')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                          <span style={{ fontSize: '13px', fontWeight: 700, color: '#ef4444' }}>{v.vacancy_no || '-'}</span>
-                          <span style={{ fontSize: '12px', color: '#9ca3af' }}>{v.created_at ? new Date(v.created_at).toLocaleDateString('ko-KR').slice(0, -1) : ''}</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {vacancies.map((prop: any, i: number) => {
+                  const cardMasked = prop.exposure_type === '부동산노출' && userLevel < 2;
+                  const cardAddr = prop.building_name || [prop.dong, prop.sigungu].filter(Boolean).join(" ") || "이름없는 공실";
+                  const title = cardMasked ? cardAddr.replace(/[^\s]/g, "X") : cardAddr;
+                  const showCommission = userLevel >= 2;
+
+                  let price = prop.trade_type;
+                  if (prop.trade_type === "매매" || prop.trade_type === "전세") price += ` ${prop.deposit >= 10000 ? `${Math.floor(prop.deposit/10000)}억${prop.deposit%10000!==0 ? ` ${prop.deposit%10000}`:''}` : prop.deposit}`;
+                  else if (prop.trade_type === "월세") price += ` ${prop.deposit >= 10000 ? `${Math.floor(prop.deposit/10000)}억${prop.deposit%10000!==0 ? ` ${prop.deposit%10000}`:''}` : prop.deposit} / ${prop.monthly_rent}`;
+                  
+                  const detailStr = `룸 ${prop.room_count||0}개, 욕실 ${prop.bath_count||0}개`;
+                  const thumb = prop.vacancy_photos && prop.vacancy_photos.length > 0 ? prop.vacancy_photos[0].url : "";
+                  const createdDate = prop.created_at ? new Date(prop.created_at).toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" }).replace(/\.$/, "") : "";
+
+                  return (
+                    <Link 
+                      key={prop.id || i} 
+                      href={`/gongsil?id=${prop.id}`} 
+                      target="_blank"
+                      style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
+                      onClick={(e) => {
+                        if (cardMasked) {
+                          e.preventDefault();
+                          setIsAuthModalOpen(true);
+                        }
+                      }}
+                    >
+                      <div style={{ display: 'flex', gap: '16px', padding: '20px', background: '#fff', borderRadius: '12px', border: '1px solid #e5e7eb', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }} onMouseEnter={e => {e.currentTarget.style.borderColor='#3b82f6'; e.currentTarget.style.boxShadow='0 4px 12px rgba(59,130,246,0.1)'}} onMouseLeave={e => {e.currentTarget.style.borderColor='#e5e7eb'; e.currentTarget.style.boxShadow='0 1px 3px rgba(0,0,0,0.02)'}}>
+                        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
+                            {showCommission && (prop.realtor_commission || prop.commission_type) && (
+                              <span style={{ fontSize: "12px", fontWeight: 700, color: "#ef4444", border: "1px solid #ef4444", padding: "2px 8px", borderRadius: "4px" }}>
+                                {prop.realtor_commission || prop.commission_type}
+                              </span>
+                            )}
+                            {prop.vacancy_no && <span style={{ fontSize: "13px", fontWeight: 700, color: "#ef4444" }}>{prop.vacancy_no}</span>}
+                            <span style={{ fontSize: "13px", color: "#9ca3af" }}>{createdDate}</span>
+                            {cardMasked && <span onClick={(e) => { e.preventDefault(); setIsAuthModalOpen(true); }} style={{ fontSize: "12px", color: "#3b82f6", fontWeight: 700, background: "#eef6ff", padding: "4px 10px", borderRadius: "4px", cursor: "pointer" }}>🔒 부동산회원 무료열람</span>}
+                          </div>
+                          
+                          <div style={{ fontSize: '18px', fontWeight: 700, color: cardMasked ? "#bbb" : '#111827', marginBottom: '6px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: cardMasked ? 1 : 0 }}>
+                            {title}
+                          </div>
+                          <div style={{ fontSize: '22px', fontWeight: 800, color: '#3b82f6', marginBottom: '8px' }}>
+                            {price}
+                          </div>
+                          <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {prop.property_type || "주택"} <span style={{color: "#e5e7eb"}}>|</span> {prop.direction || "방향없음"} <span style={{color: "#e5e7eb"}}>|</span> {prop.exclusive_m2 || 0}㎡
+                          </div>
+                          <div style={{ fontSize: '14px', color: '#6b7280', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {detailStr}{prop.options && prop.options.length > 0 ? `, ${prop.options.join(", ")}` : ""}
+                          </div>
                         </div>
-                        <p style={{ fontSize: '16px', fontWeight: 800, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0, marginBottom: '4px' }}>
-                          {v.building_name || [v.dong, v.sigungu].filter(Boolean).join(' ')}
-                        </p>
-                        <p style={{ fontSize: '18px', fontWeight: 800, color: '#1a73e8', margin: 0, marginBottom: '6px' }}>
-                          {v.trade_type} {formatPrice(v)}
-                        </p>
-                        <p style={{ fontSize: '14px', color: '#6b7280', margin: 0, marginBottom: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {[v.property_type || '건물', v.direction, v.exclusive_m2 && `${v.exclusive_m2}㎡`].filter(Boolean).join(' | ')}
-                        </p>
-                        <p style={{ fontSize: '14px', color: '#6b7280', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {[v.room_count !== undefined ? `룸 ${v.room_count}개` : null, v.bath_count !== undefined ? `욕실 ${v.bath_count}개` : null].filter(Boolean).join(', ')}
-                        </p>
+                        {thumb && (
+                          <div style={{ width: '140px', height: '110px', borderRadius: '8px', overflow: 'hidden', flexShrink: 0, backgroundColor: '#f3f4f6', alignSelf: 'center', backgroundImage: `url(${thumb})`, backgroundSize: 'cover', backgroundPosition: 'center', border: '1px solid #f3f4f6' }} />
+                        )}
+                        {!thumb && (
+                          <div style={{ width: '140px', height: '110px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, backgroundColor: '#f9fafb', alignSelf: 'center', border: '1px solid #f3f4f6' }}>
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
+                          </div>
+                        )}
                       </div>
-                      {v.images?.[0] && (
-                        <div style={{ width: '100px', height: '80px', borderRadius: '10px', overflow: 'hidden', flexShrink: 0, backgroundColor: '#e5e7eb', alignSelf: 'center' }}>
-                          <img src={v.images[0]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        </div>
-                      )}
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="2" style={{ flexShrink: 0, alignSelf: 'center' }}><polyline points="9 18 15 12 9 6"/></svg>
-                    </div>
-                  </Link>
-                ))}
+                    </Link>
+                  );
+                })}
               </div>
             ) : (
               <div style={{ textAlign: 'center', padding: '80px 0', color: '#9ca3af', fontSize: '15px' }}>등록된 공실이 없습니다.</div>
@@ -390,6 +446,7 @@ export default function PCReporterClient({
           </>
         )}
       </div>
+      <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} initialTab="login" />
     </div>
   );
 }
