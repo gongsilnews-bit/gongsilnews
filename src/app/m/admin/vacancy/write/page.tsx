@@ -28,8 +28,18 @@ function MobileVacancyWrite() {
   const [loadingEdit, setLoadingEdit] = useState(false);
 
   // 매물 기본
-  const [propertyType, setPropertyType] = useState("아파트·오피스텔");
+  const [propertyType, setPropertyTypeRaw] = useState("아파트·오피스텔");
   const [subCategory, setSubCategory] = useState("아파트");
+
+  // 대분류 변경 시 주소노출범위 기본값도 맞춰 갱신
+  const setPropertyType = (type: string) => {
+    setPropertyTypeRaw(type);
+    if (type === "아파트·오피스텔") {
+      setAddressExposure("비공개");
+    } else {
+      setAddressExposure("기본주소만공개");
+    }
+  };
   const [tradeType, setTradeType] = useState("매매");
 
   // 금액
@@ -57,7 +67,7 @@ function MobileVacancyWrite() {
   const [detailAddr, setDetailAddr] = useState("");
   const [aptDong, setAptDong] = useState("");
   const [hosu, setHosu] = useState("");
-  const [addressExposure, setAddressExposure] = useState("기본주소만공개");
+  const [addressExposure, setAddressExposure] = useState("비공개"); // 아파트·오피스텔 기본값
 
   // 기타
   const [parking, setParking] = useState("없음");
@@ -249,7 +259,10 @@ function MobileVacancyWrite() {
   };
 
   const handleGeocode = async () => {
-    const addr = [sido, sigungu, dong, detailAddr].filter(Boolean).join(" ");
+    // detailAddr에 이미 전체 주소가 담겨 있으면 그대로 사용, 아니면 조합
+    const addr = detailAddr
+      ? detailAddr
+      : [sido, sigungu, dong, buildingName].filter(Boolean).join(" ");
     if (!addr) { alert("주소를 입력해주세요."); return; }
     const res = await geocodeAddress(addr);
     if (res.success && res.lat && res.lng) { 

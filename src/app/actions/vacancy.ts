@@ -59,6 +59,7 @@ export async function createVacancy(data: {
   infrastructure?: Record<string, string[]>;
   approval_year?: number;
   total_units?: number;
+  status?: string;
 }) {
   const supabase = getAdminClient();
 
@@ -89,8 +90,8 @@ export async function createVacancy(data: {
       }
     }
 
-    // 모든 역할에서 즉시 광고 시작 (승인 불필요)
-    const status = 'ACTIVE';
+    // 클라이언트가 보낸 status 존중 (DRAFT=임시저장, ACTIVE=바로발행)
+    const status = data.status === 'DRAFT' ? 'DRAFT' : 'ACTIVE';
 
     const insertData = {
       ...data,
