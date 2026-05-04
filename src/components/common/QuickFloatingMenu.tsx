@@ -86,7 +86,7 @@ export default function QuickFloatingMenu() {
           관심기사
         </div>
 
-        {/* 카카오톡1:1문의 */}
+        {/* 카카오톡 1:1문의 -> 1:1문의 */}
         <div
           onClick={() => window.open("https://pf.kakao.com/_ckHkG/chat", "_blank")}
           style={{
@@ -99,10 +99,12 @@ export default function QuickFloatingMenu() {
           onMouseEnter={(e) => (e.currentTarget.style.background = "#f4f6fa")}
           onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
         >
-          <span style={{ width: 18, height: 18, borderRadius: 4, background: "#3B1E1E", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, color: "#fff", fontWeight: 800, letterSpacing: "-0.5px", flexShrink: 0 }}>
-            TALK
-          </span>
-          카카오톡1:1문의
+          <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
+            <rect width="24" height="24" rx="5" fill="#FEE500"/>
+            <path d="M12 5.5C7.3 5.5 3.5 8.35 3.5 11.87c0 2.22 1.5 4.19 3.75 5.3l-.95 3.55c-.08.31.25.55.51.38l4.2-2.77c.33.03.67.05 1.02.05 4.7 0 8.5-2.85 8.5-6.37S16.7 5.5 12 5.5z" fill="#3A1D1D"/>
+            <text x="12" y="14.3" fontFamily="Arial, sans-serif" fontWeight="900" fontSize="6.5" fill="#FEE500" textAnchor="middle">TALK</text>
+          </svg>
+          1:1문의
         </div>
 
         {/* 네이버 매물관리 */}
