@@ -14,16 +14,32 @@ import { getPermissionLevel } from "@/utils/permissionCheck";
 import { handleLocationPermissionDenied, handleLocationUnavailable } from "@/utils/locationPermission";
 
 function formatPrice(v: any): string {
-  const dep = v.deposit || 0;
-  const rent = v.monthly_rent || 0;
-  const sale = v.sale_price || 0;
-  const depStr = dep >= 10000 ? `${Math.floor(dep / 10000)}억${dep % 10000 !== 0 ? ` ${dep % 10000}` : ''}` : dep > 0 ? `${dep}` : '';
-  const rentStr = rent > 0 ? `${rent}` : '';
-  const saleStr = sale >= 10000 ? `${Math.floor(sale / 10000)}억${sale % 10000 !== 0 ? ` ${sale % 10000}` : ''}` : sale > 0 ? `${sale}` : '';
+  const formatValue = (val: number) => {
+    if (!val) return "";
+    const m = Math.floor(val / 10000);
+    if (m === 0) return "";
+    const e = Math.floor(m / 10000);
+    const r = m % 10000;
+    let result = "";
+    if (e > 0) result += `${e}억`;
+    if (r > 0) {
+      const c = Math.floor(r / 1000);
+      const rem = r % 1000;
+      let rest = "";
+      if (c > 0) rest += `${c}천`;
+      if (rem > 0) rest += `${rem}`;
+      result += (result ? " " : "") + rest + "만";
+    }
+    return result;
+  };
 
-  if (v.trade_type === '월세') return `${depStr}/${rentStr}`;
-  if (v.trade_type === '전세') return depStr;
-  if (v.trade_type === '매매') return saleStr;
+  if (v.trade_type === '매매') return formatValue(v.sale_price || 0);
+  if (v.trade_type === '전세') return formatValue(v.deposit || 0);
+  if (v.trade_type === '월세') {
+    const depStr = formatValue(v.deposit || 0);
+    const rentStr = formatValue(v.monthly_rent || 0);
+    return `${depStr || '0'} / ${rentStr || '0'}`;
+  }
   return '';
 }
 
@@ -1092,7 +1108,11 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                     <div style={{ flex: 1, minWidth: 0 }}>
                       {/* Badges & Date */}
                       <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px", flexWrap: "wrap" }}>
-                        {showCommission && <span style={{ fontSize: "12px", fontWeight: 700, color: "#ef4444", border: "1px solid #ef4444", padding: "1px 6px", borderRadius: "3px" }}>{v.realtor_commission || v.commission_type || "법정수수료"}</span>}
+                        {showCommission && (v.realtor_commission || v.commission_type) && (
+                          <span style={{ fontSize: "12px", fontWeight: 700, color: "#ef4444", border: "1px solid #ef4444", padding: "1px 6px", borderRadius: "3px" }}>
+                            {v.realtor_commission || v.commission_type}
+                          </span>
+                        )}
                         <span style={{ fontSize: "13px", fontWeight: 700, color: "#ef4444" }}>{v.vacancy_no || '-'}</span>
                         <span style={{ fontSize: "12px", color: "#9ca3af" }}>{v.created_at ? new Date(v.created_at).toLocaleDateString("ko-KR").slice(0, -1) : ""}</span>
                         {cardMasked && <span onClick={(e) => { e.stopPropagation(); setIsAuthModalOpen(true); }} style={{ fontSize: "11px", color: "#3b82f6", fontWeight: 700, background: "#eef6ff", padding: "3px 8px", borderRadius: "4px", cursor: "pointer" }}>🔒 부동산회원 무료열람</span>}

@@ -15,21 +15,34 @@ const NAVY = "#1a2e50";
 const BLUE = "#508bf5";
 
 const formatPrice = (deposit: number, monthlyRent?: number, tradeType?: string) => {
-  const d = deposit || 0;
-  if (d >= 100000000) {
-    const eok = Math.floor(d / 100000000);
-    const man = Math.floor((d % 100000000) / 10000);
-    const eokStr = man > 0 ? `${eok}억 ${man.toLocaleString()}만` : `${eok}억`;
-    if (tradeType === "월세" && monthlyRent) return `${eokStr} / ${(monthlyRent / 10000).toLocaleString()}만`;
-    return eokStr;
+  const formatValue = (val: number) => {
+    if (!val) return "";
+    const m = Math.floor(val / 10000);
+    if (m === 0) return "";
+    const e = Math.floor(m / 10000);
+    const r = m % 10000;
+    let result = "";
+    if (e > 0) result += `${e}억`;
+    if (r > 0) {
+      const c = Math.floor(r / 1000);
+      const rem = r % 1000;
+      let rest = "";
+      if (c > 0) rest += `${c}천`;
+      if (rem > 0) rest += `${rem}`;
+      result += (result ? " " : "") + rest + "만";
+    }
+    return result;
+  };
+
+  const depStr = formatValue(deposit);
+  if (tradeType === "월세" && monthlyRent) {
+    return `${depStr || '0'} / ${formatValue(monthlyRent)}`;
   }
-  const man = Math.floor(d / 10000);
-  if (tradeType === "월세" && monthlyRent) return `${man.toLocaleString()}만 / ${(monthlyRent / 10000).toLocaleString()}만`;
-  return `${man.toLocaleString()}만`;
+  return depStr || "0";
 };
 
 // ── 공실광고 상세 뷰  ──
-function VacancyDetailView({ vacancy, photos, isMyProperty, onBack, onInquiry }: { vacancy: any; photos: any[]; isMyProperty?: boolean; onBack: () => void; onInquiry?: (text: string) => void }) {
+function VacancyDetailView({ vacancy, photos, isMyProperty, userLevel, onBack, onInquiry }: { vacancy: any; photos: any[]; isMyProperty?: boolean; userLevel: number; onBack: () => void; onInquiry?: (text: string) => void }) {
   const [photoIdx, setPhotoIdx] = useState(0);
   const addr = [vacancy.sido, vacancy.sigungu, vacancy.dong, vacancy.detail_addr].filter(Boolean).join(" ");
   const price = formatPrice(vacancy.deposit, vacancy.monthly_rent, vacancy.trade_type);
@@ -80,7 +93,14 @@ function VacancyDetailView({ vacancy, photos, isMyProperty, onBack, onInquiry }:
             </span>
             <span style={{ fontSize: 11, color: "#888" }}>{vacancy.property_type}</span>
           </div>
-          <div style={{ fontWeight: 900, fontSize: 22, color: "#111", marginBottom: 4 }}>{price}</div>
+          <div style={{ fontWeight: 900, fontSize: 22, color: "#111", marginBottom: 4 }}>
+            {price}
+            {userLevel >= 2 && (vacancy.realtor_commission || vacancy.commission_type) && (
+              <span style={{ fontSize: 13, fontWeight: 700, color: "#fa5252", border: "1px solid #fa5252", padding: "2px 8px", borderRadius: 4, marginLeft: 10, verticalAlign: "middle" }}>
+                {vacancy.realtor_commission || vacancy.commission_type}
+              </span>
+            )}
+          </div>
           {vacancy.maintenance_fee > 0 && <div style={{ fontSize: 12, color: "#888" }}>관리비 {(vacancy.maintenance_fee / 10000).toLocaleString()}만원</div>}
           <div style={{ fontSize: 12, color: "#666", marginTop: 6, display: "flex", alignItems: "center", gap: 4 }}>
             <span>📍</span> {addr || "주소 미공개"}
@@ -145,6 +165,21 @@ export default function RealtorPropertyCard({ userId, userName, isMyProperty, on
   const [filter, setFilter] = useState<string>("전체");
   const [selectedVacancy, setSelectedVacancy] = useState<{ data: any; photos: any[] } | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [userLevel, setUserLevel] = useState<number>(0);
+
+  useEffect(() => {
+    async function checkUser() {
+      const { createClient } = await import("@/utils/supabase/client");
+      const { getPermissionLevel } = await import("@/utils/permissionCheck");
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: member } = await supabase.from("members").select("role, plan_type").eq("id", user.id).single();
+        if (member) setUserLevel(getPermissionLevel(member));
+      }
+    }
+    checkUser();
+  }, []);
 
   useEffect(() => {
     async function load() {

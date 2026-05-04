@@ -942,8 +942,7 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
                       let rest = "";
                       if (c > 0) rest += `${c}천`;
                       if (rem > 0) rest += `${rem}`;
-                      if (rest) result += result ? " " + rest : rest;
-                      if (e === 0 && c === 0 && rem > 0) result += "만";
+                      result += (result ? " " : "") + rest + "만";
                     }
                     return result || "0";
                   };

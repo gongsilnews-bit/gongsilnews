@@ -48,19 +48,13 @@ function formatPrice(v: any): string {
 
     let result = "";
     if (e > 0) result += `${e}억`;
-
     if (r > 0) {
       const c = Math.floor(r / 1000);
       const rem = r % 1000;
-      
       let rest = "";
       if (c > 0) rest += `${c}천`;
       if (rem > 0) rest += `${rem}`;
-      
-      if (rest) {
-        result += (result && !result.endsWith(" ") ? " " : "") + rest;
-        if (e === 0 && c === 0 && rem > 0) result += "만";
-      }
+      result += (result ? " " : "") + rest + "만";
     }
     return result || "";
   };

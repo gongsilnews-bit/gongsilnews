@@ -34,12 +34,21 @@ const stripHtml = (html: string) =>
 function formatPrice(v: any): string {
   const formatValue = (val: number) => {
     if (!val) return "";
-    if (val >= 100000000) {
-      const eok = Math.floor(val / 100000000);
-      const man = Math.floor((val % 100000000) / 10000);
-      return man > 0 ? `${eok}억 ${man.toLocaleString()}만` : `${eok}억`;
+    const m = Math.floor(val / 10000);
+    if (m === 0) return "";
+    const e = Math.floor(m / 10000);
+    const r = m % 10000;
+    let result = "";
+    if (e > 0) result += `${e}억`;
+    if (r > 0) {
+      const c = Math.floor(r / 1000);
+      const rem = r % 1000;
+      let rest = "";
+      if (c > 0) rest += `${c}천`;
+      if (rem > 0) rest += `${rem}`;
+      result += (result ? " " : "") + rest + "만";
     }
-    return `${Math.floor(val / 10000).toLocaleString()}만`;
+    return result;
   };
 
   if (v.trade_type === '매매') return formatValue(v.sale_price || 0);
