@@ -77,7 +77,7 @@ export async function deleteBoard(boardId: string) {
 export async function getBoardPosts(boardId: string, options?: { boardType?: string; userId?: string; isAdmin?: boolean }) {
   let query = supabase
     .from("board_posts")
-    .select("*, board_attachments(*), board_comments(author_id)")
+    .select("id, board_id, title, author_id, author_name, created_at, view_count, is_notice, thumbnail_url, youtube_url, external_url, board_comments(id)")
     .eq("board_id", boardId)
     .eq("is_deleted", false)
     .order("is_notice", { ascending: false })
