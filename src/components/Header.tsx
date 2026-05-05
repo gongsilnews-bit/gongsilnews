@@ -273,6 +273,11 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
               </div>
             )}
           </div>
+          
+          <div onClick={() => router.push('/signup')} style={{ cursor: "pointer", fontSize: "13px", fontWeight: "700", color: "#fcd34d", marginRight: "12px", whiteSpace: "nowrap" }}>
+            중개업소무료가입
+          </div>
+
           {currentUser ? (
             <div style={{ display: "flex", alignItems: "center", gap: "12px", fontSize: "12px" }}>
               <div style={{
@@ -339,6 +344,7 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
               </div>
               <span className="divider"></span>
               <Link href="/gongsil">공실열람</Link>
+              <Link href="/#special-lecture">부동산특강</Link>
               <div className="gnb-dropdown-parent" style={{ position: "relative", display: "inline-block" }}>
                 <Link href="/board" style={{ padding: "10px 0", transition: "color 0.2s" }}>자료실</Link>
                 <div className="gnb-dropdown">
@@ -351,8 +357,15 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
                   </ul>
                 </div>
               </div>
-              <Link href="/#special-lecture">부동산특강</Link>
-              <Link href="/signup">중개업소무료가입</Link>
+              <div className="gnb-dropdown-parent" style={{ position: "relative", display: "inline-block" }}>
+                <Link href="/board?id=free" style={{ padding: "10px 0", transition: "color 0.2s" }}>커뮤니티</Link>
+                <div className="gnb-dropdown">
+                  <ul>
+                    <li><a href="/board?id=free">자유게시판</a></li>
+                    <li><a href="/board?id=qna">Q&A</a></li>
+                  </ul>
+                </div>
+              </div>
             </nav>
           </div>
         </div>
