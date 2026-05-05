@@ -51,7 +51,19 @@ function MobileSettings() {
   const [memberId, setMemberId] = useState<string | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [tab, setTab] = useState<"basic" | "agency">("basic");
+  const [tab, setTab] = useState<"basic" | "agency" | "marketing">("basic");
+
+  /* 마케팅 정보 (SNS, API) */
+  const initialSnsObj = { url: "", login_id: "", login_pw: "", login_type: "일반" };
+  const [snsLinks, setSnsLinks] = useState<Record<string, typeof initialSnsObj>>({
+    homepage: { ...initialSnsObj }, contact: { ...initialSnsObj }, shopping_mall: { ...initialSnsObj }, 
+    blog: { ...initialSnsObj }, cafe: { ...initialSnsObj }, youtube: { ...initialSnsObj }, 
+    facebook: { ...initialSnsObj }, twitter: { ...initialSnsObj }, instagram: { ...initialSnsObj }, 
+    kakao: { ...initialSnsObj }, threads: { ...initialSnsObj }
+  });
+  const snsLabels: Record<string, string> = { homepage: "홈페이지", contact: "문의하기", shopping_mall: "쇼핑몰", blog: "블로그", cafe: "카페", youtube: "유튜브", facebook: "페이스북", twitter: "트위터", instagram: "인스타그램", kakao: "카카오", threads: "쓰레드" };
+  const initialApiObj = { provider: "챗GPT", key_value: "", login_id: "", login_pw: "" };
+  const [apiList, setApiList] = useState<typeof initialApiObj[]>([]);
   const [isRealtor, setIsRealtor] = useState(false);
 
   /* 기본 정보 */
@@ -105,6 +117,24 @@ function MobileSettings() {
         setIsRealtor(m.role === "REALTOR" || m.role === "부동산회원");
         if (m.profile_image_url) setProfilePreview(m.profile_image_url);
 
+        if (m.sns_links) {
+          setSnsLinks(prev => {
+            const merged = { ...prev };
+            Object.keys(m.sns_links).forEach(k => {
+              if (k === "api_list") return;
+              if (typeof m.sns_links[k] === "string") {
+                merged[k] = { ...merged[k], url: m.sns_links[k] };
+              } else if (m.sns_links[k]) {
+                merged[k] = { ...merged[k], ...m.sns_links[k] };
+              }
+            });
+            return merged;
+          });
+          if (m.sns_links.api_list && Array.isArray(m.sns_links.api_list)) {
+            setApiList(m.sns_links.api_list);
+          }
+        }
+
         if (res.agency) {
           const a = res.agency;
           setAgencyName(a.name || "");
@@ -154,6 +184,28 @@ function MobileSettings() {
     } else alert("우편번호 스크립트를 불러오는 중입니다.");
   };
 
+  const handleSnsObjChange = (key: string, field: string, value: string) => {
+    setSnsLinks(prev => ({ ...prev, [key]: { ...prev[key], [field]: value } }));
+  };
+
+  const handleCopy = async (text: string) => {
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      alert("클립보드에 복사되었습니다.");
+    } catch {
+      alert("복사에 실패했습니다.");
+    }
+  };
+
+  const handleAddApi = () => setApiList([...apiList, { ...initialApiObj }]);
+  const handleRemoveApi = (idx: number) => setApiList(apiList.filter((_, i) => i !== idx));
+  const handleApiChange = (idx: number, field: string, value: string) => {
+    const newList = [...apiList];
+    (newList[idx] as any)[field] = value;
+    setApiList(newList);
+  };
+
   const handlePhotoCapture = async (e: React.ChangeEvent<HTMLInputElement>, type: "profile" | "reg" | "biz") => {
     if (!e.target.files?.[0]) return;
     const compressed = await compressToWebP(e.target.files[0]);
@@ -181,6 +233,7 @@ function MobileSettings() {
         name, phone,
         ...(profileUrl ? { profile_image_url: profileUrl } : {}),
         ...((tab === "agency" || isRealtor) ? { role: "REALTOR" } : {}),
+        sns_links: { ...snsLinks, api_list: apiList },
       });
 
       /* 부동산 정보 */
@@ -265,7 +318,7 @@ function MobileSettings() {
 
       {/* 탭 */}
       <div style={{ display: "flex", background: "#fff", borderBottom: "1px solid #e5e7eb" }}>
-        {[{ key: "basic" as const, label: "기본정보" }, { key: "agency" as const, label: "부동산정보" }].map(t => (
+        {[{ key: "basic" as const, label: "기본정보" }, { key: "agency" as const, label: "부동산정보" }, { key: "marketing" as const, label: "마케팅정보" }].map(t => (
           <button key={t.key} onClick={() => setTab(t.key)}
             style={{ flex: 1, padding: "14px 0", border: "none", background: "none", fontSize: 14, fontWeight: tab === t.key ? 800 : 500, color: tab === t.key ? "#2563eb" : "#6b7280", borderBottom: tab === t.key ? "3px solid #2563eb" : "3px solid transparent", cursor: "pointer" }}>
             {t.label}
@@ -370,6 +423,73 @@ function MobileSettings() {
                 onPreview={() => bizCertPreview && setPreviewImg(bizCertPreview)}
                 onRemove={() => { setBizCertFile(null); setBizCertPreview(null); }}
               />
+            </div>
+          </>
+        )}
+
+        {/* ── 마케팅정보 탭 ── */}
+        {tab === "marketing" && (
+          <>
+            <div style={{ background: "#f8fafc", padding: "14px 16px", borderRadius: 10, fontSize: 13, color: "#64748b", lineHeight: 1.5, marginBottom: 16 }}>
+              아래 마케팅 항목은 원하시는 분만 입력하는 <strong style={{color: "#3b82f6"}}>선택사항</strong>입니다.<br/>
+              <span style={{color: "#ef4444", fontSize: 12}}>※ 우측에 메모하시는 ID/PW 정보는 관리자나 외부인에게 노출되지 않으며, **오직 본인만** 열람할 수 있도록 안전하게 보관됩니다.</span>
+            </div>
+
+            {/* API 관리 */}
+            <div style={{ background: "#fff", borderRadius: 14, padding: 16, border: "1px solid #e5e7eb", marginBottom: 16 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                <div style={{ fontSize: 14, fontWeight: 800, color: "#111" }}>🔑 API Key 메모</div>
+                <button onClick={handleAddApi} style={{ padding: "6px 12px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 12, fontWeight: "bold", cursor: "pointer" }}>+ 추가</button>
+              </div>
+              
+              {apiList.map((api, idx) => (
+                <div key={idx} style={{ background: "#f9fafb", borderRadius: 10, padding: 14, border: "1px solid #e5e7eb", marginBottom: 12 }}>
+                  <select value={api.provider} onChange={(e) => handleApiChange(idx, 'provider', e.target.value)} style={{ ...inputStyle, marginBottom: 8, background: "#fff" }}>
+                    <option value="챗GPT">챗GPT</option>
+                    <option value="클로드">클로드</option>
+                    <option value="구글">구글 (Gemini)</option>
+                    <option value="기타">기타 API</option>
+                  </select>
+                  <div style={{ display: "flex", position: "relative", marginBottom: 8 }}>
+                    <input type="text" value={api.key_value} onChange={(e) => handleApiChange(idx, 'key_value', e.target.value)} style={{ ...inputStyle, paddingRight: 40 }} placeholder="API Key 또는 주소" />
+                    <button onClick={() => handleCopy(api.key_value)} style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", padding: 4 }}>📋</button>
+                  </div>
+                  <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+                    <input type="text" value={api.login_id} onChange={(e) => handleApiChange(idx, 'login_id', e.target.value)} style={{ ...inputStyle, flex: 1 }} placeholder="ID" />
+                    <input type="password" value={api.login_pw} onChange={(e) => handleApiChange(idx, 'login_pw', e.target.value)} style={{ ...inputStyle, flex: 1 }} placeholder="비밀번호" />
+                  </div>
+                  <button onClick={() => handleRemoveApi(idx)} style={{ width: "100%", height: 36, background: "#fef2f2", color: "#ef4444", border: "1px solid #fecaca", borderRadius: 8, fontSize: 13, fontWeight: "bold", cursor: "pointer" }}>삭제</button>
+                </div>
+              ))}
+              {apiList.length === 0 && <div style={{ fontSize: 13, color: "#9ca3af", textAlign: "center", padding: "10px 0" }}>등록된 API 정보가 없습니다.</div>}
+            </div>
+
+            {/* SNS 링크 */}
+            <div style={{ background: "#fff", borderRadius: 14, padding: 16, border: "1px solid #e5e7eb", marginBottom: 16 }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "#111", marginBottom: 16 }}>🔗 마케팅 및 SNS 링크</div>
+              {Object.keys(snsLabels).map((key) => {
+                const sns = snsLinks[key] || initialSnsObj;
+                return (
+                  <div key={key} style={{ marginBottom: 20, paddingBottom: 20, borderBottom: "1px solid #f3f4f6" }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginBottom: 8 }}>{snsLabels[key]}</div>
+                    <div style={{ display: "flex", position: "relative", marginBottom: 8 }}>
+                      <input type="text" value={sns.url} onChange={(e) => handleSnsObjChange(key, 'url', e.target.value)} style={{ ...inputStyle, paddingRight: 40 }} placeholder={`${snsLabels[key]} 주소(URL) 입력`} />
+                      <button onClick={() => handleCopy(sns.url)} style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", padding: 4 }}>📋</button>
+                    </div>
+                    <select value={sns.login_type} onChange={(e) => handleSnsObjChange(key, 'login_type', e.target.value)} style={{ ...inputStyle, marginBottom: 8, background: "#f9fafb" }}>
+                      <option value="일반">일반/직접가입</option>
+                      <option value="네이버">네이버 가입</option>
+                      <option value="카카오">카카오 가입</option>
+                      <option value="구글">구글 가입</option>
+                      <option value="다음">다음(Daum)</option>
+                    </select>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <input type="text" value={sns.login_id} onChange={(e) => handleSnsObjChange(key, 'login_id', e.target.value)} style={{ ...inputStyle, flex: 1 }} placeholder="로그인 ID (메모)" />
+                      <input type="password" value={sns.login_pw} onChange={(e) => handleSnsObjChange(key, 'login_pw', e.target.value)} style={{ ...inputStyle, flex: 1 }} placeholder="비밀번호 (메모)" />
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </>
         )}
