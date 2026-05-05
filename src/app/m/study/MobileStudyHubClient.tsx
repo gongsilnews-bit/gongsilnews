@@ -8,10 +8,10 @@ export default function MobileStudyHubClient({ lectures }: any) {
   return (
     <div style={{ width: '100%', backgroundColor: '#f8f9fa', minHeight: '100vh', paddingBottom: '40px', paddingTop: '50px' }}>
       <HomeHeader 
-        bgColor="#1a2e50" 
+        bgColor="#16a34a" 
         logoText="부동산특강"
-        sloganPrefix="실전 "
-        sloganHighlight="부동산 마스터 클래스"
+        sloganPrefix="AI시대 부동산중개에 필요한 "
+        sloganHighlight="마케팅 특강"
         highlightColor="#fcd34d"
         homeUrl="/m/study"
       />

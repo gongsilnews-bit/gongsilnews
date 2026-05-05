@@ -171,12 +171,31 @@ export default function MobileStudyReadClient({ initialLecture }: { initialLectu
   };
 
   if (loading) return (
-    <div style={{ paddingTop: 50, minHeight: "100vh", backgroundColor: "#fff", display: "flex", flexDirection: "column" }}>
-      <HomeHeader bgColor="#16a34a" logoText="부동산특강" sloganPrefix="AI시대 부동산중개에 필요한 " sloganHighlight="마케팅 특강" highlightColor="#fcd34d" />
+    <div style={{ minHeight: "100vh", backgroundColor: "#fff", display: "flex", flexDirection: "column" }}>
+      <div style={{ position: 'sticky', top: 0, zIndex: 50, backgroundColor: '#fff', height: '54px', borderBottom: '1px solid #f3f4f6', display: 'flex', alignItems: 'center', padding: '0 16px' }}>
+        <button onClick={() => router.back()} style={{ background: 'none', border: 'none', padding: '8px', marginLeft: '-8px', cursor: 'pointer' }}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        </button>
+        <div style={{ flex: 1, textAlign: 'center', fontSize: '16px', fontWeight: 700, color: '#111827', paddingRight: '24px' }}>
+          부동산특강
+        </div>
+      </div>
       <div style={{ flex: 1, backgroundColor: "#fff" }} />
     </div>
   );
-  if (!lecture) return <div style={{ paddingTop: 50 }}><HomeHeader bgColor="#16a34a" logoText="부동산특강" sloganPrefix="AI시대 부동산중개에 필요한 " sloganHighlight="마케팅 특강" highlightColor="#fcd34d" /><div style={{ textAlign: "center", padding: 80, color: "#999" }}>📭 등록된 강의가 없습니다.</div></div>;
+  if (!lecture) return (
+    <div style={{ backgroundColor: "#fff", minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+      <div style={{ position: 'sticky', top: 0, zIndex: 50, backgroundColor: '#fff', height: '54px', borderBottom: '1px solid #f3f4f6', display: 'flex', alignItems: 'center', padding: '0 16px' }}>
+        <button onClick={() => router.back()} style={{ background: 'none', border: 'none', padding: '8px', marginLeft: '-8px', cursor: 'pointer' }}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        </button>
+        <div style={{ flex: 1, textAlign: 'center', fontSize: '16px', fontWeight: 700, color: '#111827', paddingRight: '24px' }}>
+          부동산특강
+        </div>
+      </div>
+      <div style={{ textAlign: "center", padding: 80, color: "#999" }}>📭 등록된 강의가 없습니다.</div>
+    </div>
+  );
 
   const displayPrice = lecture.discount_price || lecture.price;
   const originalPrice = lecture.discount_price ? lecture.price : null;
@@ -194,16 +213,15 @@ export default function MobileStudyReadClient({ initialLecture }: { initialLectu
 
   return (
     <div style={{ backgroundColor: "#fff", minHeight: "100vh", paddingTop: 50, paddingBottom: 76 }}>
-      <HomeHeader 
-        bgColor="#16a34a" 
-        logoText="부동산특강"
-        sloganPrefix="AI시대 부동산중개에 필요한 "
-        sloganHighlight="마케팅 특강"
-        highlightColor="#fcd34d"
-      />
-
-      {/* 헤더 하단 배경회색 구분선 */}
-      <div style={{ height: "9px", backgroundColor: "#F4F6F8", width: "100%", flexShrink: 0, borderBottom: "1px solid #e5e7eb" }} />
+      {/* Header */}
+      <div style={{ position: 'sticky', top: 0, zIndex: 50, backgroundColor: '#fff', height: '54px', borderBottom: '1px solid #f3f4f6', display: 'flex', alignItems: 'center', padding: '0 16px' }}>
+        <button onClick={() => router.back()} style={{ background: 'none', border: 'none', padding: '8px', marginLeft: '-8px', cursor: 'pointer' }}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        </button>
+        <div style={{ flex: 1, textAlign: 'center', fontSize: '16px', fontWeight: 700, color: '#111827', paddingRight: '24px' }}>
+          부동산특강
+        </div>
+      </div>
 
       {/* ── 1. 이미지 (비율 유지 축소) ── */}
       <div style={{ position: "relative", width: "100%", aspectRatio: "16/11", overflow: "hidden", background: "#f0f0f0" }}>
