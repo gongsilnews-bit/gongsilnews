@@ -242,7 +242,7 @@ function MobileVacancyAdmin() {
 
               {/* 주소 */}
               <div
-                onClick={() => router.push(`/user_admin?menu=gongsil&action=detail&id=${row.id}`)}
+                onClick={() => setPreviewId(row.id)}
                 style={{ fontSize: 16, fontWeight: 800, color: "#111", marginBottom: 6, cursor: "pointer", wordBreak: "keep-all" }}
               >
                 {addrText || "주소 미입력"}
