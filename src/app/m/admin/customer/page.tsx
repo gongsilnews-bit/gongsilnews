@@ -23,6 +23,13 @@ function MobileCustomerAdmin() {
   const [newMemo, setNewMemo] = useState("");
   const [memoLoading, setMemoLoading] = useState(false);
 
+  const formatPhone = (val: string) => {
+    const cleaned = val.replace(/\D/g, "").slice(0, 11);
+    if (cleaned.length <= 3) return cleaned;
+    if (cleaned.length <= 7) return `${cleaned.slice(0, 3)}-${cleaned.slice(3)}`;
+    return `${cleaned.slice(0, 3)}-${cleaned.slice(3, 7)}-${cleaned.slice(7, 11)}`;
+  };
+
   // 등록 폼
   const [form, setForm] = useState({ name: "", phone: "", type: "매수", budget: "", area: "", source: "오프라인(워크인)", notes: "" });
   const [saving, setSaving] = useState(false);
@@ -217,10 +224,10 @@ function MobileCustomerAdmin() {
           </button>
           <h1 style={{ fontSize: 18, fontWeight: 800, color: "#111", margin: 0 }}>새 고객 등록</h1>
         </div>
-        <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 16 }}>
+        <div style={{ padding: "16px 16px 100px", display: "flex", flexDirection: "column", gap: 16 }}>
           <div style={{ background: "#fff", borderRadius: 14, padding: 20, display: "flex", flexDirection: "column", gap: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
             <div><label style={labelStyle}>고객 이름 <span style={{ color: "#ef4444" }}>*</span></label><input type="text" value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="예: 홍길동" style={inputStyle} /></div>
-            <div><label style={labelStyle}>연락처 <span style={{ color: "#ef4444" }}>*</span></label><input type="tel" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} placeholder="010-0000-0000" style={inputStyle} /></div>
+            <div><label style={labelStyle}>연락처 <span style={{ color: "#ef4444" }}>*</span></label><input type="tel" value={form.phone} onChange={e => setForm({...form, phone: formatPhone(e.target.value)})} placeholder="010-0000-0000" style={inputStyle} /></div>
             <div style={{ display: "flex", gap: 12 }}>
               <div style={{ flex: 1 }}>
                 <label style={labelStyle}>상담 유형</label>
