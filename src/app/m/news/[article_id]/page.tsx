@@ -28,8 +28,10 @@ export async function generateStaticParams() {
 
 import NewsDetailHeader from "../_components/NewsDetailHeader";
 
-export default async function MobileNewsReadPage({ params }: { params: Promise<{ article_id: string }> }) {
+export default async function MobileNewsReadPage({ params, searchParams }: { params: Promise<{ article_id: string }>, searchParams?: Promise<{ [key: string]: string | string[] | undefined }> }) {
   const resolvedParams = await params;
+  const resolvedSearchParams = searchParams ? await searchParams : {};
+  const isEmbedded = resolvedSearchParams.embed === 'true';
   const articleId = typeof resolvedParams.article_id === "string" ? resolvedParams.article_id : null;
 
   // 서버에서 미리 데이터 가져오기 — 즉시 표시!
@@ -91,8 +93,16 @@ export default async function MobileNewsReadPage({ params }: { params: Promise<{
   // 모바일 전용 래퍼 클래스로 감싸주어 globals.css의 반응형 속성을 적용
   return (
     <div className="flex flex-col w-full bg-white min-h-screen mobile-news-detail-wrapper">
+      {isEmbedded && (
+        <style>{`
+          nav { display: none !important; }
+          .mobile-news-detail-wrapper { padding-bottom: 0 !important; }
+          div[style*="padding-bottom: 60px"] { padding-bottom: 0 !important; }
+        `}</style>
+      )}
+
       {/* 공통 모바일 뉴스 헤더 (상단 고정) */}
-      <NewsDetailHeader activeCategory={article.category} />
+      {!isEmbedded && <NewsDetailHeader activeCategory={article.category} />}
 
       <NewsReadContent article={article} popularArticles={popular} initialAuthorRole={authorRole} initialAuthorEmail={authorEmail} initialAuthorVacancies={authorVacancies} />
     </div>

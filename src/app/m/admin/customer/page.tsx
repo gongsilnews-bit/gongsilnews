@@ -45,6 +45,32 @@ function MobileCustomerAdmin() {
     })();
   }, []);
 
+  useEffect(() => {
+    const handlePopState = () => {
+      if (view !== "list") {
+        setView("list");
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [view]);
+
+  const goView = (newView: View) => {
+    if (newView !== "list") {
+      window.history.pushState({ view: newView }, "");
+    }
+    setView(newView);
+  };
+
+  const goBack = () => {
+    if (view !== "list") {
+      setView("list");
+      if (window.history.state?.view) {
+        window.history.back();
+      }
+    }
+  };
+
   const refresh = async () => {
     if (!memberId) return;
     setLoading(true);
@@ -75,7 +101,7 @@ function MobileCustomerAdmin() {
 
   const openDetail = async (c: any) => {
     setSelectedCustomer(c);
-    setView("detail");
+    goView("detail");
     setMemoLoading(true);
     const res = await getCustomerLogs(c.id);
     if (res.success) setMemos(res.data || []);
@@ -110,7 +136,7 @@ function MobileCustomerAdmin() {
     if (res.success) {
       alert("고객이 등록되었습니다!");
       setForm({ name: "", phone: "", type: "매수", budget: "", area: "", source: "오프라인(워크인)", notes: "" });
-      setView("list");
+      goBack();
       refresh();
     } else alert("오류: " + res.message);
   };
@@ -132,7 +158,7 @@ function MobileCustomerAdmin() {
     return (
       <div style={{ minHeight: "100dvh", background: "#f4f5f7", fontFamily: "'Pretendard Variable', -apple-system, sans-serif" }}>
         <div style={{ position: "sticky", top: 0, zIndex: 50, background: "#fff", borderBottom: "1px solid #e5e7eb", padding: "0 16px", height: 56, display: "flex", alignItems: "center", gap: 12 }}>
-          <button onClick={() => { setView("list"); refresh(); }} style={{ background: "none", border: "none", cursor: "pointer", padding: 4, display: "flex" }}>
+          <button onClick={() => { goBack(); refresh(); }} style={{ background: "none", border: "none", cursor: "pointer", padding: 4, display: "flex" }}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M15 18L9 12L15 6" stroke="#333" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </button>
           <h1 style={{ fontSize: 18, fontWeight: 800, color: "#111", margin: 0, flex: 1 }}>고객 상세</h1>
@@ -222,7 +248,7 @@ function MobileCustomerAdmin() {
     return (
       <div style={{ minHeight: "100dvh", background: "#f4f5f7", fontFamily: "'Pretendard Variable', -apple-system, sans-serif" }}>
         <div style={{ position: "sticky", top: 0, zIndex: 50, background: "#fff", borderBottom: "1px solid #e5e7eb", padding: "0 16px", height: 56, display: "flex", alignItems: "center", gap: 12 }}>
-          <button onClick={() => setView("list")} style={{ background: "none", border: "none", cursor: "pointer", padding: 4, display: "flex" }}>
+          <button onClick={goBack} style={{ background: "none", border: "none", cursor: "pointer", padding: 4, display: "flex" }}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M15 18L9 12L15 6" stroke="#333" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </button>
           <h1 style={{ fontSize: 18, fontWeight: 800, color: "#111", margin: 0 }}>새 고객 등록</h1>
@@ -332,7 +358,7 @@ function MobileCustomerAdmin() {
         })}
       </div>
 
-      <button onClick={() => setView("create")} style={{ position: "fixed", bottom: 80, right: 20, width: 56, height: 56, borderRadius: "50%", background: "linear-gradient(135deg, #3b82f6, #2563eb)", color: "#fff", border: "none", boxShadow: "0 4px 16px rgba(59,130,246,0.4)", fontSize: 28, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 40 }}>+</button>
+      <button onClick={() => goView("create")} style={{ position: "fixed", bottom: 80, right: 20, width: 56, height: 56, borderRadius: "50%", background: "linear-gradient(135deg, #3b82f6, #2563eb)", color: "#fff", border: "none", boxShadow: "0 4px 16px rgba(59,130,246,0.4)", fontSize: 28, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 40 }}>+</button>
 
       <style>{`.hide-scrollbar::-webkit-scrollbar{display:none}.hide-scrollbar{-ms-overflow-style:none;scrollbar-width:none}`}</style>
     </div>

@@ -24,6 +24,7 @@ function MobileArticleAdmin() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchKeyword, setSearchKeyword] = useState("");
   const [activeKeyword, setActiveKeyword] = useState("");
+  const [previewId, setPreviewId] = useState<string | null>(null);
 
   // 반려 모달
   const [showRejectModal, setShowRejectModal] = useState(false);
@@ -51,6 +52,40 @@ function MobileArticleAdmin() {
     }
     init();
   }, []);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      if (previewId) {
+        setPreviewId(null);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [previewId]);
+
+  const closePreview = () => {
+    if (previewId) {
+      setPreviewId(null);
+      if (window.history.state?.previewOpen) {
+        window.history.back();
+      }
+    }
+  };
+
+  const openPreview = (id: string) => {
+    window.history.pushState({ previewOpen: true }, "");
+    setPreviewId(String(id));
+  };
+
+  useEffect(() => {
+    const handleMessage = (e: MessageEvent) => {
+      if (e.data?.type === 'CLOSE_ARTICLE_OVERLAY') {
+        closePreview();
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [previewId]);
 
   // 기사 목록 로딩: 관리자면 전체, 일반이면 내 기사만
   useEffect(() => {
@@ -295,7 +330,7 @@ function MobileArticleAdmin() {
 
               {/* 제목 */}
               <div
-                onClick={() => router.push(`/m/news/${a.article_no || a.id}`)}
+                onClick={() => openPreview(a.article_no || a.id)}
                 style={{ fontSize: 16, fontWeight: 800, color: "#111", lineHeight: 1.4, marginBottom: 8, wordBreak: "keep-all", cursor: "pointer" }}
               >
                 {a.title || "(제목 없음)"}
@@ -354,7 +389,7 @@ function MobileArticleAdmin() {
                   </button>
                 )}
 
-                <button onClick={() => router.push(`/m/news/${a.article_no || a.id}`)} style={{ flex: 1, height: 38, background: "#eff6ff", color: "#2563eb", border: "1px solid #bfdbfe", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
+                <button onClick={() => openPreview(a.article_no || a.id)} style={{ flex: 1, height: 38, background: "#eff6ff", color: "#2563eb", border: "1px solid #bfdbfe", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
                   👁️ 미리보기
                 </button>
                 <button onClick={() => router.push(`/m/admin/article/write?id=${a.id}`)} style={{ flex: 1, height: 38, background: "#4b5563", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
@@ -445,6 +480,23 @@ function MobileArticleAdmin() {
                 반려 처리
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 미리보기 오버레이 (iframe) */}
+      {previewId && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 99999, background: "rgba(0,0,0,0.6)" }}>
+          <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column" }}>
+            <div style={{ height: "40px", background: "rgba(0,0,0,0.8)", display: "flex", justifyContent: "flex-end", padding: "0 16px" }}>
+              <button onClick={closePreview} style={{ background: "none", border: "none", color: "#fff", fontSize: "24px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                &times;
+              </button>
+            </div>
+            <iframe 
+              src={`/m/news/${previewId}?embed=true`} 
+              style={{ width: "100%", flex: 1, border: "none", background: "#f4f6f8" }}
+            />
           </div>
         </div>
       )}
