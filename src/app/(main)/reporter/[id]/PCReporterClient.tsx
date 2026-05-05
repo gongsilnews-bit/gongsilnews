@@ -190,8 +190,14 @@ export default function PCReporterClient({
 
             {agencyInfo ? (
               <>
-                <div style={{ fontSize: "24px", fontWeight: 800, letterSpacing: "-0.5px", marginBottom: "10px", textAlign: "center", color: "#fff" }}>
-                  {agencyInfo.agency_name || profile.name}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", marginBottom: "10px" }}>
+                  <div style={{ fontSize: "24px", fontWeight: 800, letterSpacing: "-0.5px", color: "#fff", textAlign: "center" }}>
+                    {agencyInfo.agency_name || profile.name}
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "4px", background: "rgba(255,255,255,0.15)", padding: "4px 8px", borderRadius: "12px", fontSize: "11px", fontWeight: 700, color: "#fff", border: "1px solid rgba(255,255,255,0.2)" }}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                    미니홈피
+                  </div>
                 </div>
                 <div style={{ fontSize: "13px", color: "rgba(255,255,255,0.7)", marginBottom: "4px", textAlign: "center" }}>
                   대표 {agencyInfo.representative || profile.name} <span style={{ margin: "0 6px", color: "rgba(255,255,255,0.3)" }}>|</span> 등록번호 {agencyInfo.registration_number || "-"}
@@ -222,8 +228,14 @@ export default function PCReporterClient({
                 <span style={{ fontSize: "12px", fontWeight: "bold", background: "rgba(255,255,255,0.1)", color: "#fff", padding: "3px 10px", borderRadius: "12px", marginBottom: "8px" }}>
                   {profile.role === "ADMIN" ? "기자" : "부동산기자"}
                 </span>
-                <div style={{ fontSize: "20px", fontWeight: 800, letterSpacing: "-0.5px", marginBottom: "10px", color: "#fff" }}>
-                  {profile.name}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", marginBottom: "10px" }}>
+                  <div style={{ fontSize: "20px", fontWeight: 800, letterSpacing: "-0.5px", color: "#fff", textAlign: "center" }}>
+                    {profile.name}
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "4px", background: "rgba(255,255,255,0.15)", padding: "4px 8px", borderRadius: "12px", fontSize: "11px", fontWeight: 700, color: "#fff", border: "1px solid rgba(255,255,255,0.2)" }}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                    미니홈피
+                  </div>
                 </div>
               </>
             )}
