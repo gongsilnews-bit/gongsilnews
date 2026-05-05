@@ -31,7 +31,7 @@ export async function getUserActivityCounts(userId: string) {
       { count: myLectures },
     ] = await Promise.all([
       supabase.from("articles").select("*", { count: "exact", head: true }).eq("author_id", userId),
-      supabase.from("vacancies").select("*", { count: "exact", head: true }).eq("member_id", userId),
+      supabase.from("vacancies").select("*", { count: "exact", head: true }).eq("owner_id", userId),
       supabase.from("article_bookmarks").select("*", { count: "exact", head: true }).eq("user_id", userId),
       supabase.from("vacancy_wishlist").select("*", { count: "exact", head: true }).eq("user_id", userId),
       supabase.from("reporter_subscriptions").select("*", { count: "exact", head: true }).eq("user_id", userId),

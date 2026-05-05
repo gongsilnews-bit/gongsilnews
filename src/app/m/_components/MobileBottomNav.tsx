@@ -173,7 +173,7 @@ function MobileBottomNavContent() {
                 )}
                 
                 {/* Unread Message Badge */}
-                {unreadCount > 0 && (
+                {unreadCount > 0 ? (
                   <span style={{
                     position: 'absolute',
                     top: -4,
@@ -192,6 +192,27 @@ function MobileBottomNavContent() {
                     zIndex: 10
                   }}>
                     {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                ) : (
+                  <span style={{
+                    position: 'absolute',
+                    top: -2,
+                    right: -6,
+                    backgroundColor: '#f97316',
+                    color: 'white',
+                    fontSize: '9px',
+                    fontWeight: '900',
+                    width: '16px',
+                    height: '16px',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: '2px solid #fff',
+                    zIndex: 10,
+                    boxShadow: '0 2px 4px rgba(249, 115, 22, 0.3)'
+                  }}>
+                    N
                   </span>
                 )}
                 {/* Admin Pending Count Badge */}
