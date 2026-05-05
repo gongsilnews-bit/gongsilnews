@@ -302,8 +302,8 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
   const handleSubmit = async (e?: React.MouseEvent | React.FormEvent, requestApproval: boolean = false) => {
     if (e) e.preventDefault();
     if (requestApproval) {
-      if (!agencyData.name || !agencyData.ceo_name || !agencyData.cell || !agencyData.phone || !agencyData.address || !agencyData.intro || !agencyData.reg_num || !agencyData.biz_num || (!files.reg_cert && !filePreviews.reg_cert) || (!files.biz_cert && !filePreviews.biz_cert)) {
-        alert("필수 정보를 모두 입력하고 서류를 첨부해야 승인대기 신청이 가능합니다.");
+      if (!agencyData.name || !agencyData.ceo_name || !agencyData.cell || !agencyData.phone || !agencyData.address || !agencyData.intro || !agencyData.biz_num || (!files.biz_cert && !filePreviews.biz_cert)) {
+        alert("필수 정보를 모두 입력하고 사업자등록증을 첨부해야 승인대기 신청이 가능합니다.");
         setActiveTab(1);
         return;
       }
@@ -407,13 +407,58 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
           finalStatus = "PENDING";
         }
 
+        // --- AI 자동 승인 에이전트 연동 ---
+        // 사업자등록증 파일이 신규로 업로드되었고, 아직 APPROVED가 아닐 때만 AI 검증 실행
+        let aiReason = "";
+        if (files.biz_cert && finalStatus !== "APPROVED") {
+          try {
+            const verifyFd = new FormData();
+            verifyFd.append("file", files.biz_cert);
+            verifyFd.append("companyName", agencyData.name);
+            verifyFd.append("representative", agencyData.ceo_name);
+
+            const verifyRes = await fetch("/api/agents/verify", {
+              method: "POST",
+              body: verifyFd,
+            });
+            const verifyResult = await verifyRes.json();
+            
+            if (verifyResult.status === "APPROVED") {
+              finalStatus = "APPROVED"; // 자동 승인
+              setAgencyData(prev => ({...prev, status: "APPROVED", rejection_reason: null}));
+              alert("🤖 AI 서류 검증 완료!\n서류와 정보가 일치하여 자동으로 [정상승인] 처리되었습니다.");
+            } else if (verifyResult.status === "NEEDS_REVIEW") {
+              let diffMsg = "";
+              if (verifyResult.diff && verifyResult.diff.found) {
+                const isNameDiff = verifyResult.diff.expected?.companyName !== verifyResult.diff.found?.companyName;
+                const isRepDiff = verifyResult.diff.expected?.representative !== verifyResult.diff.found?.representative;
+                diffMsg = "[불일치 내역]\n";
+                if (isNameDiff) diffMsg += `- 상호명 (입력: ${verifyResult.diff.expected?.companyName} / 서류: ${verifyResult.diff.found?.companyName})\n`;
+                if (isRepDiff) diffMsg += `- 대표자 (입력: ${verifyResult.diff.expected?.representative} / 서류: ${verifyResult.diff.found?.representative})\n`;
+              }
+              aiReason = "🤖 AI 자동 검증 보류: 서류 내용 불일치. " + diffMsg;
+              alert("🤖 AI 검증 안내: 서류와 입력하신 정보가 일부 불일치하여 관리자 수동 검토(승인대기)로 넘어갑니다.\n\n" + diffMsg + "\n\n서류에 적힌 텍스트와 완벽히 일치하게 입력하시면 즉시 자동 승인됩니다!");
+            } else if (verifyResult.status === "ERROR") {
+              alert("🤖 AI 검증 에러: " + verifyResult.message + "\n(임시로 승인대기 처리됩니다)");
+            }
+
+            // DB 업데이트에 AI의 판단 사유를 반영합니다
+            if (aiReason) {
+              setAgencyData(prev => ({...prev, rejection_reason: aiReason}));
+            }
+          } catch (e) {
+            console.error("AI Verify Error:", e);
+          }
+        }
+
         const finalAgencyData = {
           ...agencyData,
           reg_cert_url: regCertUrl,
           biz_cert_url: bizCertUrl,
           lat: coords?.lat || null,
           lng: coords?.lng || null,
-          status: finalStatus
+          status: finalStatus,
+          ...(aiReason ? { rejection_reason: aiReason } : {})
         };
 
         const agencyRes = await adminUpdateAgency(memberId, finalAgencyData);
@@ -814,10 +859,7 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
 
           <div style={rowStyle}>
             <div style={{ ...labelStyle, flexWrap: "wrap", flexDirection: "column", alignItems: "flex-start", gap: 4, justifyContent: "center", lineHeight: 1.2 }}>
-              등록번호
-              {!agencyData.reg_num && (
-                <span style={{ fontSize: 11, color: "#ef4444", fontWeight: "bold" }}>🚨 필수입력 누락</span>
-              )}
+              <div>중개등록번호<br/><span style={{fontSize: 11, color: "#888", fontWeight: "normal"}}>(선택)</span></div>
             </div>
             <div style={contentStyle}>
               <input type="text" name="reg_num" value={agencyData.reg_num} onChange={handleAgencyChange} style={{...inputStyle, maxWidth: 300}} placeholder="중개업 등록번호" />
@@ -826,10 +868,7 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
 
           <div style={rowStyle}>
             <div style={{ ...labelStyle, flexWrap: "wrap", flexDirection: "column", alignItems: "flex-start", gap: 4, justifyContent: "center", lineHeight: 1.2 }}>
-              등록증 사본 첨부
-              {!filePreviews.reg_cert && !files.reg_cert && (
-                <span style={{ fontSize: 11, color: "#ef4444", fontWeight: "bold" }}>🚨 필수첨부 누락</span>
-              )}
+              <div>등록증 사본 첨부<br/><span style={{fontSize: 11, color: "#888", fontWeight: "normal"}}>(선택)</span></div>
             </div>
             <div style={{ ...contentStyle, gap: 16 }}>
               {filePreviews.reg_cert && (

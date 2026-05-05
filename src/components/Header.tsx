@@ -131,7 +131,7 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
               .eq('owner_id', user.id)
               .single();
 
-            if (agencyData && (!agencyData.biz_cert_url || !agencyData.reg_cert_url)) {
+            if (agencyData && !agencyData.biz_cert_url) {
               setShowDocWarning(true);
             }
           }
@@ -164,7 +164,7 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
         <div style={{ background: '#fff5f5', borderBottom: '1px solid #fed7d7', padding: '12px 20px', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', zIndex: 100, position: 'relative' }}>
           <span style={{ fontSize: '18px' }}>🥺</span>
           <span style={{ fontSize: '14px', color: '#c53030', fontWeight: 700 }}>
-            소장님! 아직 필수 서류(사업자/개설등록증)를 다 내시지 않았어요! 서류 제출하셔야 공동중계를 무료로 쓰실 수 있어요 👉 
+            소장님! 아직 필수 서류(사업자등록증)를 내시지 않았어요! 서류 제출하셔야 공동중계를 무료로 쓰실 수 있어요 👉 
           </span>
           <Link href="/realty_admin?menu=settings" style={{ textDecoration: 'underline', color: '#e53e3e', fontSize: '14px', fontWeight: 800 }}>정보설정으로 가기</Link>
           <button onClick={() => setShowDocWarning(false)} style={{ background: 'none', border: 'none', marginLeft: '10px', cursor: 'pointer', color: '#c53030' }}>✕</button>

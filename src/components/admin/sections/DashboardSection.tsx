@@ -31,11 +31,12 @@ type QuickLink = { icon: React.ReactElement; label: string; count: string | numb
 interface DashboardSectionProps extends AdminSectionProps {
   role: "admin" | "realtor" | "user";
   agencyStatus?: string;
+  rejectionReason?: string;
   onMenuChange?: (menu: string) => void;
   memberId?: string;
 }
 
-export default function DashboardSection({ theme, role, agencyStatus, onMenuChange, memberId }: DashboardSectionProps) {
+export default function DashboardSection({ theme, role, agencyStatus, rejectionReason, onMenuChange, memberId }: DashboardSectionProps) {
   const { bg, cardBg, textPrimary, textSecondary, darkMode, border } = theme;
   const navigate = (menu: string) => { if (onMenuChange) onMenuChange(menu); };
 
@@ -112,9 +113,14 @@ export default function DashboardSection({ theme, role, agencyStatus, onMenuChan
       {role === "realtor" && agencyStatus === "PENDING" && (
         <div style={{ padding: "16px 20px", marginBottom: 24, borderRadius: 8, background: darkMode ? "#422814" : "#fffbeb", border: `1px solid ${darkMode ? "#78350f" : "#fef08a"}`, display: "flex", gap: 12, alignItems: "flex-start", color: darkMode ? "#fde68a" : "#92400e" }}>
           <span style={{ fontSize: 20 }}>⏳</span>
-          <div>
+          <div style={{ flex: 1 }}>
             <div style={{ fontWeight: 800, fontSize: 15, marginBottom: 4 }}>현재 서류 검토가 진행 중입니다.</div>
             <div style={{ fontSize: 13, opacity: 0.9 }}>제출해주신 중개업소 증빙 서류를 관리자가 검토하고 있습니다. 최종 승인 전까지 일부 기능 사용이 제한될 수 있습니다.</div>
+            {rejectionReason && (
+              <div style={{ marginTop: 10, padding: "8px 12px", background: darkMode ? "rgba(0,0,0,0.2)" : "rgba(255,255,255,0.6)", borderRadius: 6, fontSize: 13, fontWeight: 600, border: `1px dashed ${darkMode ? "#92400e" : "#fcd34d"}`, whiteSpace: "pre-wrap" }}>
+                {rejectionReason}
+              </div>
+            )}
           </div>
         </div>
       )}
