@@ -501,21 +501,29 @@ export default function GlobalDrawerMenu() {
               </ul>
             </div>
 
-            {/* ── 6. 기타 ── */}
+            {/* ── 6. 커뮤니티 ── */}
+            <div style={{ background: '#fff', marginBottom: '8px' }}>
+              <h3 style={{ padding: '16px 20px 8px', fontSize: '14px', fontWeight: 700, color: '#6b7280', margin: 0 }}>커뮤니티</h3>
+              <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+                {[
+                  { name: "자유게시판", path: "/m/board?id=free" },
+                  { name: "Q&A게시판", path: "/m/board?id=qna" },
+                  { name: "공지사항", path: "/m/board?id=notice" },
+                  { name: "1:1 문의", path: "/m/board?id=inquiry" }
+                ].map(menu => (
+                  <li key={menu.name}>
+                    <a href={menu.path} onClick={(e) => openOverlay(menu.path, e)} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #f9fafb', color: '#1f2937', textDecoration: 'none' }}>
+                      <span style={{ fontSize: '15px', fontWeight: 500 }}>{menu.name}</span>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* ── 7. 로그아웃 ── */}
             <div style={{ background: '#fff', marginBottom: '16px' }}>
               <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-                <li>
-                  <a href="/m/board?id=notice" onClick={(e) => { e.preventDefault(); router.push('/m/board?id=notice'); }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #f3f4f6', textDecoration: 'none', color: '#374151' }}>
-                    <span style={{ fontSize: '15px', fontWeight: 500 }}>공지사항 / 이벤트</span>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                  </a>
-                </li>
-                <li>
-                  <a href="/m/board?id=inquiry" onClick={(e) => openOverlay("/m/board?id=inquiry", e)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #f3f4f6', textDecoration: 'none', color: '#374151' }}>
-                    <span style={{ fontSize: '15px', fontWeight: 500 }}>1:1 문의</span>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                  </a>
-                </li>
                 <li>
                   <button
                     onClick={handleLogout}
