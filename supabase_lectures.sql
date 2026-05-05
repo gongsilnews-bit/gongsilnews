@@ -113,3 +113,31 @@ CREATE POLICY "reviews_public_read" ON lecture_reviews
   FOR SELECT USING (true);
 CREATE POLICY "reviews_service_all" ON lecture_reviews
   FOR ALL USING (true) WITH CHECK (true);
+
+-- ============================================================
+-- 5. lecture_enrollments (수강 등록/결제 내역)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS lecture_enrollments (
+  id           uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id      uuid NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+  lecture_id   uuid NOT NULL REFERENCES lectures(id) ON DELETE CASCADE,
+  points_paid  integer DEFAULT 0,
+  status       text NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'EXPIRED', 'REFUNDED')),
+  enrolled_at  timestamptz DEFAULT now(),
+  expires_at   timestamptz,
+  created_at   timestamptz DEFAULT now(),
+  updated_at   timestamptz DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_enrollments_user ON lecture_enrollments(user_id);
+CREATE INDEX IF NOT EXISTS idx_enrollments_lecture ON lecture_enrollments(lecture_id);
+
+ALTER TABLE lecture_enrollments ENABLE ROW LEVEL SECURITY;
+
+-- 본인 내역만 조회 가능
+CREATE POLICY "enrollments_user_read" ON lecture_enrollments
+  FOR SELECT USING (auth.uid() = user_id);
+
+-- service_role은 모든 권한 (결제, 등록 로직용)
+CREATE POLICY "enrollments_service_all" ON lecture_enrollments
+  FOR ALL USING (true) WITH CHECK (true);

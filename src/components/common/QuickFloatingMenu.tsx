@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import AuthModal from "@/components/AuthModal";
 import { createClient } from "@/utils/supabase/client";
 import { getMySubscriptions } from "@/app/actions/subscription";
+import { getMyEnrollments } from "@/app/actions/lecture";
 
 export default function QuickFloatingMenu() {
   const [isOpen, setIsOpen] = useState(true);
@@ -12,6 +13,8 @@ export default function QuickFloatingMenu() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [subscribedReporters, setSubscribedReporters] = useState<any[]>([]);
+  const [myEnrollments, setMyEnrollments] = useState<any[]>([]);
+  const [isLecOpen, setIsLecOpen] = useState(true);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -26,6 +29,9 @@ export default function QuickFloatingMenu() {
       if (user) {
         const res = await getMySubscriptions(user.id);
         if (res.success) setSubscribedReporters(res.reporters);
+        
+        const lecRes = await getMyEnrollments(user.id);
+        if (lecRes.success) setMyEnrollments(lecRes.data || []);
       }
     };
     checkAuth();
@@ -127,7 +133,7 @@ export default function QuickFloatingMenu() {
 
         {/* 내 수강특강 */}
         <div
-          onClick={() => handleAuthClick("/study_read")}
+          onClick={() => handleAuthClick("/my_lectures")}
           style={{
             display: "flex", alignItems: "center", gap: 10,
             padding: "12px 14px", cursor: "pointer",
