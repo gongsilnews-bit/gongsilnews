@@ -98,6 +98,17 @@ export async function getBoardPost(postId: string) {
   return { success: true, data };
 }
 
+/* ── 게시글 조회수 증가 ── */
+export async function incrementBoardView(postId: string) {
+  try {
+    const { error } = await supabase.rpc('increment_board_view', { p_post_id: postId });
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  } catch (e) {
+    return { success: false, error: "조회수 증가 실패" };
+  }
+}
+
 /* ── 게시글 저장 (생성/수정) ── */
 export async function saveBoardPost(payload: {
   id?: string;
