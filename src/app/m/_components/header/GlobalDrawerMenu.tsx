@@ -486,7 +486,6 @@ export default function GlobalDrawerMenu() {
                   { name: "공실열람", path: "/m/gongsil" },
                   { name: "자료실", path: "/m/study" },
                   { name: "부동산특강", path: "/m/study" },
-                  { name: "회사소개", path: "/about" },
                   { name: "중개업소무료가입", path: "/signup" }
                 ].map(menu => (
                   <li key={menu.name}>
@@ -510,30 +509,9 @@ export default function GlobalDrawerMenu() {
                 </li>
                 <li>
                   <a href="#" onClick={(e) => openOverlay("#", e)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #f3f4f6', textDecoration: 'none', color: '#374151' }}>
-                    <span style={{ fontSize: '15px', fontWeight: 500 }}>고객센터 (1555-5343)</span>
+                    <span style={{ fontSize: '15px', fontWeight: 500 }}>1:1 문의</span>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
                   </a>
-                </li>
-                <li>
-                  <button
-                    onClick={() => {
-                      if (confirm("정말로 회원을 탈퇴하시겠습니까? 탈퇴 시 모든 회원 정보가 파기되며 복구할 수 없습니다.")) {
-                        alert("회원 탈퇴 요청이 정상적으로 접수되었습니다. 1~2영업일 내에 처리 완료 후 안내 이메일이 발송됩니다.");
-                        handleLogout();
-                      }
-                    }}
-                    style={{
-                      width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      padding: '14px 20px', borderBottom: '1px solid #f3f4f6', color: '#6b7280', fontWeight: 500,
-                      fontSize: '15px', background: 'none', border: 'none',
-                      cursor: 'pointer', fontFamily: 'inherit',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      회원 탈퇴
-                    </div>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                  </button>
                 </li>
                 <li>
                   <button
