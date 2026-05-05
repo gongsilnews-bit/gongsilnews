@@ -742,7 +742,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
         <div className={slideAnim} style={{ flex: 1, display: "flex", flexDirection: "column" }}>
           <HomeHeader 
             bgColor="#ea580c" 
-            logoText="우리동네부동산"
+            logoText="우리동네뉴스"
             sloganPrefix="내 지역부동산이 전하는 " 
             sloganHighlight="real 부동산정보" 
             highlightColor="#ffffff"
