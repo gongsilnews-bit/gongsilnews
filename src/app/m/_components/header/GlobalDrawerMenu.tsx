@@ -22,6 +22,17 @@ export default function GlobalDrawerMenu() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const isOpen = searchParams.get('menu') === 'open';
+  const overlayParam = searchParams.get('overlay');
+  const overlayUrl = overlayParam ? decodeURIComponent(overlayParam) : null;
+
+  const openOverlay = (href: string, e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+    router.push(`${window.location.pathname}?menu=open&overlay=${encodeURIComponent(href)}`);
+  };
+
+  const closeOverlay = () => {
+    router.back();
+  };
 
   const touchStartX = useRef<number | null>(null);
   const [translateX, setTranslateX] = useState(0);
@@ -370,10 +381,10 @@ export default function GlobalDrawerMenu() {
                 <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#6b7280', marginBottom: '12px', padding: '0 4px' }}>관리 메뉴</h3>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
                   {menus.map((item: any) => (
-                    <Link
+                    <a
                       key={item.label}
                       href={item.href}
-                      
+                      onClick={(e) => openOverlay(item.href, e)}
                       style={{
                         position: 'relative',
                         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
@@ -390,7 +401,7 @@ export default function GlobalDrawerMenu() {
                         ) : null}
                       </span>
                       <span style={{ fontSize: '11px', fontWeight: 600, color: '#374151', textAlign: 'center', lineHeight: 1.3, wordBreak: 'keep-all' }}>{item.label}</span>
-                    </Link>
+                    </a>
                   ))}
                 </div>
               </div>
@@ -427,9 +438,9 @@ export default function GlobalDrawerMenu() {
                   },
                 ].map((item) => (
                   <li key={item.label}>
-                    <Link
+                    <a
                       href={item.href}
-                      
+                      onClick={(e) => openOverlay(item.href, e)}
                       style={{
                         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                         padding: '14px 20px', borderBottom: '1px solid #f3f4f6',
@@ -444,7 +455,7 @@ export default function GlobalDrawerMenu() {
                         </span>
                       </div>
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                    </Link>
+                    </a>
                   </li>
                 ))}
               </ul>
@@ -458,10 +469,10 @@ export default function GlobalDrawerMenu() {
                   const tabParam = menu === "전체뉴스" ? "all" : menu === "우리동네뉴스" ? "local" : menu;
                   return (
                   <li key={menu}>
-                    <Link href={`/m/news?tab=${tabParam}`}  style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #f9fafb', color: '#1f2937', textDecoration: 'none' }}>
+                    <a href={`/m/news?tab=${tabParam}`} onClick={(e) => openOverlay(`/m/news?tab=${tabParam}`, e)} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #f9fafb', color: '#1f2937', textDecoration: 'none' }}>
                       <span style={{ fontSize: '15px', fontWeight: 500 }}>{menu}</span>
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                    </Link>
+                    </a>
                   </li>
                 )})}
               </ul>
@@ -479,10 +490,10 @@ export default function GlobalDrawerMenu() {
                   { name: "중개업소무료가입", path: "/signup" }
                 ].map(menu => (
                   <li key={menu.name}>
-                    <Link href={menu.path}  style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #f9fafb', color: '#1f2937', textDecoration: 'none' }}>
+                    <a href={menu.path} onClick={(e) => openOverlay(menu.path, e)} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #f9fafb', color: '#1f2937', textDecoration: 'none' }}>
                       <span style={{ fontSize: '15px', fontWeight: 500 }}>{menu.name}</span>
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                    </Link>
+                    </a>
                   </li>
                 ))}
               </ul>
@@ -492,16 +503,16 @@ export default function GlobalDrawerMenu() {
             <div style={{ background: '#fff', marginBottom: '16px' }}>
               <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
                 <li>
-                  <Link href="#"  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #f3f4f6', textDecoration: 'none', color: '#374151' }}>
+                  <a href="#" onClick={(e) => openOverlay("#", e)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #f3f4f6', textDecoration: 'none', color: '#374151' }}>
                     <span style={{ fontSize: '15px', fontWeight: 500 }}>공지사항 / 이벤트</span>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                  </Link>
+                  </a>
                 </li>
                 <li>
-                  <Link href="#"  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #f3f4f6', textDecoration: 'none', color: '#374151' }}>
+                  <a href="#" onClick={(e) => openOverlay("#", e)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #f3f4f6', textDecoration: 'none', color: '#374151' }}>
                     <span style={{ fontSize: '15px', fontWeight: 500 }}>고객센터 (1555-5343)</span>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                  </Link>
+                  </a>
                 </li>
                 <li>
                   <button
@@ -548,8 +559,8 @@ export default function GlobalDrawerMenu() {
         {/* ── 풋터 영역 ── */}
         <div style={{ backgroundColor: '#f3f4f6', padding: '24px 20px 80px', marginTop: '16px' }}>
           <div style={{ marginBottom: '16px', display: 'flex', gap: '16px' }}>
-            <Link href="/terms"  style={{ fontSize: '13px', fontWeight: 700, color: '#4b5563', textDecoration: 'none' }}>이용약관</Link>
-            <Link href="#"  style={{ fontSize: '13px', fontWeight: 700, color: '#4b5563', textDecoration: 'none' }}>개인정보처리방침</Link>
+            <a href="/terms" onClick={(e) => openOverlay("/terms", e)} style={{ fontSize: '13px', fontWeight: 700, color: '#4b5563', textDecoration: 'none' }}>이용약관</a>
+            <a href="#" onClick={(e) => openOverlay("#", e)} style={{ fontSize: '13px', fontWeight: 700, color: '#4b5563', textDecoration: 'none' }}>개인정보처리방침</a>
           </div>
           <div style={{ fontSize: '12px', color: '#9ca3af', lineHeight: 1.6 }}>
             (주)공실마케팅<br/>
@@ -565,6 +576,24 @@ export default function GlobalDrawerMenu() {
           </div>
         </div>
       </div>
+
+      {/* 미리보기 오버레이 (iframe) */}
+      {overlayUrl && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 999999, background: "#fff", display: "flex", flexDirection: "column" }}>
+          <div style={{ height: "48px", background: "#fff", borderBottom: "1px solid #e5e7eb", display: "flex", alignItems: "center", padding: "0 16px", flexShrink: 0 }}>
+            <button onClick={closeOverlay} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: "8px" }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M15 18L9 12L15 6" stroke="#333" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </button>
+            <div style={{ flex: 1, textAlign: "center", fontSize: "16px", fontWeight: 700, color: "#111", paddingRight: "40px" }}>
+              공실뉴스
+            </div>
+          </div>
+          <iframe 
+            src={overlayUrl} 
+            style={{ width: "100%", flex: 1, border: "none", background: "#f4f6f8" }}
+          />
+        </div>
+      )}
     </>
   );
 }
