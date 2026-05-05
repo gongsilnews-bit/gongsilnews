@@ -484,6 +484,7 @@ export default function GlobalDrawerMenu() {
                 {[
                   { name: "공실열람", path: "/m/gongsil" },
                   { name: "자료실", path: "/m/board?id=drone" },
+                  { name: "커뮤니티", path: "/m/board?id=free" },
                   { name: "부동산특강", path: "/m/study" },
                   { name: "중개업소무료가입", path: "/signup" }
                 ].map(menu => (
