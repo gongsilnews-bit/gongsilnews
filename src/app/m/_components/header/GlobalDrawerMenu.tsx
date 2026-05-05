@@ -501,7 +501,7 @@ export default function GlobalDrawerMenu() {
             <div style={{ background: '#fff', marginBottom: '16px' }}>
               <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
                 <li>
-                  <a href="#" onClick={(e) => openOverlay("#", e)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #f3f4f6', textDecoration: 'none', color: '#374151' }}>
+                  <a href="/m/board?id=notice" onClick={(e) => { e.preventDefault(); router.push('/m/board?id=notice'); }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #f3f4f6', textDecoration: 'none', color: '#374151' }}>
                     <span style={{ fontSize: '15px', fontWeight: 500 }}>공지사항 / 이벤트</span>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
                   </a>
