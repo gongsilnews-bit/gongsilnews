@@ -522,26 +522,28 @@ export default function GlobalDrawerMenu() {
             </div>
 
             {/* ── 7. 로그아웃 ── */}
-            <div style={{ background: '#fff', marginBottom: '16px' }}>
-              <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-                <li>
-                  <button
-                    onClick={handleLogout}
-                    style={{
-                      width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      padding: '14px 20px', color: '#ef4444', fontWeight: 600,
-                      fontSize: '15px', background: 'none', border: 'none',
-                      cursor: 'pointer', fontFamily: 'inherit',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      로그아웃
-                    </div>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fca5a5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                  </button>
-                </li>
-              </ul>
-            </div>
+            {currentUser && (
+              <div style={{ background: '#fff', marginBottom: '16px' }}>
+                <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+                  <li>
+                    <button
+                      onClick={handleLogout}
+                      style={{
+                        width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        padding: '14px 20px', color: '#ef4444', fontWeight: 600,
+                        fontSize: '15px', background: 'none', border: 'none',
+                        cursor: 'pointer', fontFamily: 'inherit',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        로그아웃
+                      </div>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fca5a5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    </button>
+                  </li>
+                </ul>
+              </div>
+            )}
           </>
         )}
 

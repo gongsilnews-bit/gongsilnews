@@ -602,6 +602,24 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
     }
   }, [activeTab]);
 
+  // 스크롤 복원 효과: activeTab이나 기사 목록이 바뀔 때 세션스토리지에 저장된 위치로 복원
+  useEffect(() => {
+    const scrollKey = `news_scroll_${activeTab}`;
+    const savedScroll = sessionStorage.getItem(scrollKey);
+    if (savedScroll && articles.length > 0) {
+      // 렌더링 후 약간의 지연을 주어 정확한 스크롤 복구
+      setTimeout(() => {
+        window.scrollTo({ top: parseInt(savedScroll, 10), behavior: "instant" });
+        sessionStorage.removeItem(scrollKey); // 한 번 복원하면 삭제
+      }, 50);
+    }
+  }, [activeTab, articles]);
+
+  const handleArticleClick = () => {
+    // 기사 상세로 넘어가기 전에 현재 스크롤 위치 저장
+    sessionStorage.setItem(`news_scroll_${activeTab}`, window.scrollY.toString());
+  };
+
   return (
     <div
       onTouchStart={handleSwipeStart}
@@ -676,7 +694,14 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                 <button
                   key={cat.key}
                   data-active={activeTab === cat.key ? "true" : "false"}
-                  onClick={() => { setActiveTab(cat.key); setClusterMode(false); }}
+                  onClick={() => { 
+                    setActiveTab(cat.key); 
+                    setClusterMode(false); 
+                    // URL 주소창 탭 정보 동기화 (뒤로가기 시 복원 위함)
+                    const url = new URL(window.location.href);
+                    url.searchParams.set("tab", cat.key);
+                    window.history.replaceState(null, '', url.toString());
+                  }}
                   style={{
                     flexShrink: 0,
                     padding: "0 14px 0",
@@ -1186,6 +1211,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                         <Link
                           href={`/m/news/${a.article_no || a.id}`}
                           key={a.id}
+                          onClick={() => sessionStorage.setItem(`news_scroll_${activeTab}`, window.scrollY.toString())}
                           style={{
                             flexShrink: 0,
                             width: "calc(50% - 6px)", // Exactly 2 items visible
@@ -1227,6 +1253,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                   href={`/m/news/${a.article_no || a.id}`}
                   key={a.id}
                   className="article-row"
+                  onClick={() => sessionStorage.setItem(`news_scroll_${activeTab}`, window.scrollY.toString())}
                   style={{
                     display: "flex",
                     gap: "14px",
