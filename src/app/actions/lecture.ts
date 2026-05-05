@@ -401,7 +401,7 @@ export async function enrollLecture(lectureId: string, userId: string) {
     const { data: existingData } = await supabase
       .from("lecture_enrollments").select("id, status, expires_at")
       .eq("user_id", userId).eq("lecture_id", lectureId)
-      .order("enrolled_at", { ascending: false }).limit(1);
+      .order("created_at", { ascending: false }).limit(1);
       
     const existing = existingData && existingData.length > 0 ? existingData[0] : null;
     
@@ -458,16 +458,23 @@ export async function enrollLecture(lectureId: string, userId: string) {
 export async function checkEnrollment(lectureId: string, userId: string) {
   const supabase = getAdminClient();
   try {
-    const { data } = await supabase.from("lecture_enrollments")
+    const { data, error } = await supabase.from("lecture_enrollments")
       .select("id, status, expires_at, points_paid")
       .eq("user_id", userId).eq("lecture_id", lectureId).eq("status", "ACTIVE")
-      .order("enrolled_at", { ascending: false }).limit(1);
+      .order("created_at", { ascending: false }).limit(1);
     
+    if (error) {
+      console.error("checkEnrollment query error:", error);
+      return { success: false, enrolled: false, error: error.message };
+    }
     if (!data || data.length === 0) return { success: true, enrolled: false };
     const latest = data[0];
     if (latest.expires_at && new Date(latest.expires_at) < new Date()) return { success: true, enrolled: false, expired: true };
     return { success: true, enrolled: true, enrollment: latest };
-  } catch { return { success: false, enrolled: false }; }
+  } catch (err: any) { 
+    console.error("checkEnrollment exception:", err);
+    return { success: false, enrolled: false, error: err.message }; 
+  }
 }
 
 // ── 내 수강 특강 목록 ──
@@ -475,8 +482,8 @@ export async function getMyEnrollments(userId: string) {
   const supabase = getAdminClient();
   try {
     const { data: enrollments } = await supabase.from("lecture_enrollments")
-      .select("id, lecture_id, points_paid, enrolled_at, expires_at, status")
-      .eq("user_id", userId).eq("status", "ACTIVE").order("enrolled_at", { ascending: false });
+      .select("id, lecture_id, points_paid, created_at, expires_at, status")
+      .eq("user_id", userId).eq("status", "ACTIVE").order("created_at", { ascending: false });
     if (!enrollments || enrollments.length === 0) return { success: true, data: [] };
     const ids = enrollments.map(e => e.lecture_id);
     const { data: lectures } = await supabase.from("lectures")

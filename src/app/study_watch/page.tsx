@@ -66,11 +66,16 @@ function StudyWatchContent() {
 
         const isFree = (res.data.discount_price || res.data.price || 0) <= 0;
         let hasAccess = false;
+        let errorMessage = "수강 등록이 필요한 특강입니다.";
 
         const enrollRes = await checkEnrollment(lectureId, user.id);
         if (enrollRes.success && enrollRes.enrolled) {
           hasAccess = true;
         } else {
+          if (enrollRes.error) {
+            errorMessage = `수강 정보 확인 오류: ${enrollRes.error}`;
+            console.error("Enrollment check error:", enrollRes.error);
+          }
           // 작성자 또는 관리자인지 확인
           const { data: member } = await supabase.from("members").select("role").eq("id", user.id).single();
           if (res.data.author_id === user.id || member?.role === "ADMIN") {
@@ -79,7 +84,7 @@ function StudyWatchContent() {
         }
 
         if (!hasAccess) {
-          alert("수강 등록이 필요한 특강입니다.");
+          alert(errorMessage);
           router.replace(`/study_read?id=${lectureId}`);
           return;
         }

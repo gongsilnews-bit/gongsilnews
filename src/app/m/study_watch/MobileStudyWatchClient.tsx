@@ -29,12 +29,17 @@ export default function MobileStudyWatchClient({ initialLecture }: { initialLect
       }
 
       let hasAccess = false;
+      let errorMessage = "수강 등록이 필요한 특강입니다.";
       const isFree = (initialLecture.discount_price || initialLecture.price || 0) <= 0;
       const enrollRes = await checkEnrollment(initialLecture.id, user.id);
       
       if (enrollRes.success && enrollRes.enrolled) {
         hasAccess = true;
       } else {
+        if (enrollRes.error) {
+          errorMessage = `수강 정보 확인 오류: ${enrollRes.error}`;
+          console.error("Enrollment check error:", enrollRes.error);
+        }
         const { data: member } = await supabase.from("members").select("role").eq("id", user.id).single();
         if (initialLecture.author_id === user.id || member?.role === "ADMIN") {
           hasAccess = true;
@@ -42,7 +47,7 @@ export default function MobileStudyWatchClient({ initialLecture }: { initialLect
       }
 
       if (!hasAccess) {
-        alert("수강 등록이 필요한 특강입니다.");
+        alert(errorMessage);
         router.replace(`/m/study_read?id=${initialLecture.id}`);
         return;
       }
