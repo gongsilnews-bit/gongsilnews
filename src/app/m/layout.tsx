@@ -2,6 +2,7 @@ import React from "react";
 import MobileBottomNav from "./_components/MobileBottomNav";
 import GlobalDrawerMenu from './_components/header/GlobalDrawerMenu';
 import LocationPermissionInitializer from './_components/LocationPermissionInitializer';
+import RealtorApprovalNotice from '@/components/RealtorApprovalNotice';
 
 export const metadata = {
   title: "공실뉴스 (모바일)",
@@ -50,6 +51,7 @@ export default function MobileLayout({ children }: { children: React.ReactNode }
       {/* 공통 하단 탭바 및 전역 드로어 */}
       <React.Suspense fallback={null}>
         <GlobalDrawerMenu />
+        <RealtorApprovalNotice />
       </React.Suspense>
       <MobileBottomNav />
       <LocationPermissionInitializer />

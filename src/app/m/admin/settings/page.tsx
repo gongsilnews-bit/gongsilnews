@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, Suspense } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { adminGetMemberDetail, adminUpdateMember, adminUpdateAgency, adminUploadAgencyDocument } from "@/app/admin/actions";
 import { geocodeAddress } from "@/app/actions/geocode";
@@ -48,10 +48,12 @@ const formatBizNum = (v: string) => {
 
 function MobileSettings() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [memberId, setMemberId] = useState<string | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [tab, setTab] = useState<"basic" | "agency" | "marketing">("basic");
+  const initialTab = searchParams.get('tab') === 'agency' ? 'agency' : 'basic';
+  const [tab, setTab] = useState<"basic" | "agency" | "marketing">(initialTab as any);
 
   /* 마케팅 정보 (SNS, API) */
   const initialSnsObj = { url: "", login_id: "", login_pw: "", login_type: "일반" };
@@ -256,19 +258,31 @@ function MobileSettings() {
           if (r.success) bizUrl = r.url || null;
         }
 
+        // 반려 상태에서 재저장 시 → 자동으로 승인대기로 변경
+        const saveStatus = agencyStatus === 'REJECTED' ? 'PENDING' : agencyStatus;
+
         await adminUpdateAgency(memberId, {
           name: agencyName, ceo_name: ceoName, cell, phone: officePhone,
           zipcode, address, address_detail: addressDetail,
           intro, reg_num: regNum, biz_num: bizNum,
           reg_cert_url: regUrl, biz_cert_url: bizUrl,
           lat: coords?.lat || null, lng: coords?.lng || null,
-          status: agencyStatus,
+          status: saveStatus,
         });
       }
 
-      if (tab === "agency" && !isRealtor) setIsRealtor(true);
-
-      alert("저장되었습니다.");
+      if (tab === "agency" && !isRealtor) {
+        setIsRealtor(true);
+        alert("✅ 부동산회원 전환 신청이 완료되었습니다!\n\n서류 확인 후 승인 처리됩니다.\n(보통 당일~1영업일 소요)");
+        router.push("/m/admin/dashboard");
+      } else if (agencyStatus === 'REJECTED') {
+        setAgencyStatus('PENDING');
+        alert("✅ 서류가 재제출되었습니다!\n\n관리자 재심사 후 승인 처리됩니다.");
+        router.push("/m/admin/dashboard");
+      } else {
+        alert("저장되었습니다.");
+        router.push("/m?menu=open");
+      }
     } catch (err: any) {
       alert("저장 실패: " + err.message);
     } finally { setSaving(false); }
@@ -506,8 +520,8 @@ function MobileSettings() {
       {/* 하단 저장 바 */}
       <div style={{ position: "fixed", bottom: 65, left: 0, right: 0, background: "#fff", borderTop: "1px solid #e5e7eb", padding: "12px 16px", zIndex: 50 }}>
         <button onClick={handleSave} disabled={saving}
-          style={{ width: "100%", height: 52, borderRadius: 12, border: "none", background: "linear-gradient(135deg, #3b82f6, #2563eb)", color: "#fff", fontSize: 16, fontWeight: 800, cursor: "pointer", boxShadow: "0 4px 12px rgba(59,130,246,0.3)" }}>
-          {saving ? "저장 중..." : "💾 저장하기"}
+          style={{ width: "100%", height: 52, borderRadius: 12, border: "none", background: agencyStatus === 'REJECTED' ? "linear-gradient(135deg, #f59e0b, #d97706)" : "linear-gradient(135deg, #3b82f6, #2563eb)", color: "#fff", fontSize: 16, fontWeight: 800, cursor: "pointer", boxShadow: agencyStatus === 'REJECTED' ? "0 4px 12px rgba(245,158,11,0.3)" : "0 4px 12px rgba(59,130,246,0.3)" }}>
+          {saving ? "저장 중..." : agencyStatus === 'REJECTED' ? "📋 저장 및 재심사 요청" : "💾 저장하기"}
         </button>
       </div>
 

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { AdminSectionProps } from "./types";
 import MemberRegisterForm from "@/components/admin/MemberRegisterForm";
-import { adminGetMembers, adminSoftDeleteMember, adminRestoreMember, adminHardDeleteMember } from "@/app/admin/actions";
+import { adminGetMembers, adminSoftDeleteMember, adminRestoreMember, adminHardDeleteMember, adminApproveRealtorApplication, adminRejectRealtorApplication } from "@/app/admin/actions";
 
 interface MemberSectionProps extends AdminSectionProps {
   activeSubmenu: string;
@@ -19,6 +19,8 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
 
   const [searchMemberId, setSearchMemberId] = useState("");
+  const [rejectModalFor, setRejectModalFor] = useState<string | null>(null);
+  const [rejectReason, setRejectReason] = useState("사업자등록증이 불분명합니다");
 
   const [searchRole, setSearchRole] = useState("전체");
   const [searchKeyword, setSearchKeyword] = useState("");
@@ -298,6 +300,23 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
                           {isDormant ? "영구삭제" : "삭제"}
                         </button>
                         <button style={{ height: 30, padding: "0 12px", background: darkMode ? "#2c2d31" : "#fff", color: "#6b7280", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>수정내역</button>
+                        {/* 승인대기/서류보완 상태 원클릭 버튼 */}
+                        {(member.computedStatus === '승인대기' || member.computedStatus === '서류보완') && member.role === 'REALTOR' && (
+                          <>
+                            <button onClick={async () => {
+                              if (confirm(`'${member.name || member.email}' 회원을 부동산회원으로 승인하시겠습니까?`)) {
+                                const res = await adminApproveRealtorApplication(member.id);
+                                if (res.success) { alert('✅ 승인 완료!'); adminGetMembers().then(r => { if (r.success) setDbMembers(r.data || []) }); }
+                                else alert('승인 실패: ' + res.error);
+                              }
+                            }} style={{ height: 30, padding: "0 12px", background: "#10b981", color: "#fff", border: "none", borderRadius: 4, fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
+                              ✓ 승인
+                            </button>
+                            <button onClick={() => setRejectModalFor(member.id)} style={{ height: 30, padding: "0 12px", background: "#fff3cd", color: "#92400e", border: "1px solid #fbbf24", borderRadius: 4, fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
+                              ✗ 반려
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -315,6 +334,39 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
       </div>
       
 
+      {/* 반려 사유 모달 */}
+      {rejectModalFor && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center" }} onClick={() => setRejectModalFor(null)}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: cardBg, borderRadius: 14, padding: "28px 32px", width: 420, maxWidth: "90%", boxShadow: "0 25px 50px rgba(0,0,0,0.25)" }}>
+            <h3 style={{ fontSize: 18, fontWeight: 800, color: textPrimary, margin: "0 0 16px" }}>반려 사유</h3>
+            <select value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} style={{ width: "100%", height: 42, padding: "0 14px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 14, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", marginBottom: 12 }}>
+              <option value="사업자등록증이 불분명합니다">사업자등록증이 불분명합니다</option>
+              <option value="중개업등록증이 누락되었습니다">중개업등록증이 누락되었습니다</option>
+              <option value="서류 정보가 일치하지 않습니다">서류 정보가 일치하지 않습니다</option>
+              <option value="필수 정보가 미입력 되었습니다">필수 정보가 미입력 되었습니다</option>
+              <option value="기타">기타 (직접 입력)</option>
+            </select>
+            <textarea
+              placeholder="반려 사유를 직접 입력해주세요..."
+              value={rejectReason === "기타" ? "" : undefined}
+              onChange={(e) => setRejectReason(e.target.value)}
+              style={{ width: "100%", height: 80, padding: "12px 14px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 14, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", marginBottom: 16, resize: "none", fontFamily: "inherit", boxSizing: "border-box",
+                ...( ["사업자등록증이 불분명합니다","중개업등록증이 누락되었습니다","서류 정보가 일치하지 않습니다","필수 정보가 미입력 되었습니다"].includes(rejectReason) ? { display: "none" } : {})
+              }}
+            />
+            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+              <button onClick={() => setRejectModalFor(null)} style={{ height: 40, padding: "0 20px", background: darkMode ? "#2c2d31" : "#f3f4f6", color: textSecondary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>취소</button>
+              <button onClick={async () => {
+                const finalReason = rejectReason === "기타" ? "기타 사유" : rejectReason;
+                if (!finalReason.trim()) { alert("반려 사유를 입력해주세요."); return; }
+                const res = await adminRejectRealtorApplication(rejectModalFor, finalReason);
+                if (res.success) { alert('반려 처리 완료'); adminGetMembers().then(r => { if (r.success) setDbMembers(r.data || []) }); setRejectModalFor(null); setRejectReason("사업자등록증이 불분명합니다"); }
+                else alert('반려 실패: ' + res.error);
+              }} style={{ height: 40, padding: "0 20px", background: "#ef4444", color: "#fff", border: "none", borderRadius: 6, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>반려 확정</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -146,6 +146,46 @@ export async function adminUpdateAgency(memberId: string, agencyData: any) {
   }
 }
 
+// ── 부동산회원 승인 (agencies.status → APPROVED + members.role → REALTOR) ──
+export async function adminApproveRealtorApplication(memberId: string) {
+  const supabaseAdmin = getAdminClient();
+  try {
+    // 1. agencies 상태를 APPROVED로 변경
+    const { error: agencyError } = await supabaseAdmin
+      .from('agencies')
+      .update({ status: 'APPROVED', reject_reason: null })
+      .eq('owner_id', memberId);
+    if (agencyError) return { success: false, error: agencyError.message };
+
+    // 2. members.role을 REALTOR로 변경
+    const { error: memberError } = await supabaseAdmin
+      .from('members')
+      .update({ role: 'REALTOR' })
+      .eq('id', memberId);
+    if (memberError) return { success: false, error: memberError.message };
+
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+// ── 부동산회원 반려 (agencies.status → REJECTED + reject_reason 저장) ──
+export async function adminRejectRealtorApplication(memberId: string, reason: string) {
+  const supabaseAdmin = getAdminClient();
+  try {
+    const { error } = await supabaseAdmin
+      .from('agencies')
+      .update({ status: 'REJECTED', reject_reason: reason })
+      .eq('owner_id', memberId);
+    if (error) return { success: false, error: error.message };
+
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
 // ── 관리자 권한 파일 업로드 ──
 export async function adminUploadAgencyDocument(formData: FormData) {
   const file = formData.get('file') as File;

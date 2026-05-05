@@ -104,8 +104,14 @@ export default function GlobalDrawerMenu() {
             .select('name, email, role, profile_image_url, plan_type, signup_completed')
             .eq('id', user.id)
             .single();
+          // agencies 상태도 함께 조회
+          const { data: agencyData } = await supabase
+            .from('agencies')
+            .select('status')
+            .eq('owner_id', user.id)
+            .single();
           if (data) {
-            setMemberData(data);
+            setMemberData({ ...data, agencyStatus: agencyData?.status || null });
             const r = data.role?.trim().toUpperCase() || '';
             const isAdmin = r === 'ADMIN' || r === '최고관리자' || r.includes('관리자');
 
@@ -187,17 +193,25 @@ export default function GlobalDrawerMenu() {
     window.location.href = '/m';
   };
 
-  const getRoleLabel = (role?: string) => {
+  const getRoleLabel = (role?: string, agencyStatus?: string) => {
     const r = role?.trim().toUpperCase() || '';
     if (r === 'ADMIN' || r === '최고관리자' || r.includes('관리자')) return '최고관리자';
-    if (r === 'REALTOR' || r === '부동산회원' || r === '부동산' || r.includes('REALTOR')) return '부동산';
+    if (r === 'REALTOR' || r === '부동산회원' || r === '부동산' || r.includes('REALTOR')) {
+      if (agencyStatus === 'PENDING') return '승인대기';
+      if (agencyStatus === 'REJECTED') return '서류보완';
+      return '부동산';
+    }
     return '일반';
   };
 
-  const getRoleBadgeStyle = (role?: string): React.CSSProperties => {
+  const getRoleBadgeStyle = (role?: string, agencyStatus?: string): React.CSSProperties => {
     const r = role?.trim().toUpperCase() || '';
     if (r === 'ADMIN' || r === '최고관리자' || r.includes('관리자')) return { background: '#111827', color: '#fff' };
-    if (r === 'REALTOR' || r === '부동산회원' || r === '부동산' || r.includes('REALTOR')) return { background: '#2563eb', color: '#fff' };
+    if (r === 'REALTOR' || r === '부동산회원' || r === '부동산' || r.includes('REALTOR')) {
+      if (agencyStatus === 'PENDING') return { background: '#fbbf24', color: '#78350f' };
+      if (agencyStatus === 'REJECTED') return { background: '#ef4444', color: '#fff' };
+      return { background: '#2563eb', color: '#fff' };
+    }
     return { background: '#e5e7eb', color: '#374151' };
   };
 
@@ -357,10 +371,10 @@ export default function GlobalDrawerMenu() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                         <span style={{ fontSize: '18px', fontWeight: 800 }}>{memberData?.name || currentUser?.user_metadata?.full_name || '회원'}님</span>
                         <span style={{
-                          ...getRoleBadgeStyle(memberData?.role || 'USER'),
+                          ...getRoleBadgeStyle(memberData?.role || 'USER', memberData?.agencyStatus),
                           fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '10px',
                         }}>
-                          {getRoleLabel(memberData?.role || 'USER')}
+                          {getRoleLabel(memberData?.role || 'USER', memberData?.agencyStatus)}
                         </span>
                       </div>
                       <p style={{ fontSize: '12px', opacity: 0.8, margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -373,6 +387,43 @@ export default function GlobalDrawerMenu() {
                 </div>
               </div>
             )}
+
+            {/* ── 부동산회원 전환 유도 (일반회원에게만, 닫기 가능) ── */}
+            {currentUser && memberData && (memberData.role === 'USER' || (!memberData.role)) && (() => {
+              const dismissed = typeof window !== 'undefined' && localStorage.getItem(`realtor_banner_dismissed_${currentUser.id}`);
+              if (dismissed) return null;
+              return (
+                <div style={{ padding: '0 20px 10px', background: '#fff', position: 'relative' }}>
+                  <a
+                    href="/m/admin/settings?tab=agency"
+                    onClick={(e) => openOverlay('/m/admin/settings?tab=agency', e)}
+                    style={{
+                      display: 'block', textDecoration: 'none',
+                      background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+                      borderRadius: '12px', padding: '16px 20px',
+                      border: '1px solid #fbbf24',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <span style={{ fontSize: '28px' }}>🏡</span>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: '14px', fontWeight: 800, color: '#92400e', marginBottom: '2px' }}>
+                          부동산 중개사이신가요?
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#a16207', lineHeight: 1.4 }}>
+                          부동산회원 전환 시 공실광고 무료 등록!
+                        </div>
+                      </div>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#92400e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    </div>
+                  </a>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); localStorage.setItem(`realtor_banner_dismissed_${currentUser.id}`, 'true'); e.currentTarget.parentElement!.style.display = 'none'; }}
+                    style={{ position: 'absolute', top: 2, right: 24, width: 22, height: 22, borderRadius: '50%', background: 'rgba(146,64,14,0.15)', border: 'none', color: '#92400e', fontSize: 14, fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}
+                  >×</button>
+                </div>
+              );
+            })()}
 
             {/* ── 2. 관리 메뉴 그리드 ── */}
             {currentUser && (

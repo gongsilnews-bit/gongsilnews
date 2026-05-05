@@ -3,7 +3,7 @@
 import React, { useState, useEffect, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
-import { adminGetMembers, adminUpdateAgency, adminUpdateMember } from "@/app/admin/actions";
+import { adminGetMembers, adminApproveRealtorApplication, adminRejectRealtorApplication } from "@/app/admin/actions";
 
 function MobileMemberAdmin() {
   const router = useRouter();
@@ -13,6 +13,9 @@ function MobileMemberAdmin() {
   const [authChecked, setAuthChecked] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchKeyword, setSearchKeyword] = useState("");
+  const [rejectModalFor, setRejectModalFor] = useState<string | null>(null);
+  const [rejectReason, setRejectReason] = useState("사업자등록증이 불분명합니다");
+  const [customReason, setCustomReason] = useState("");
   const [activeKeyword, setActiveKeyword] = useState("");
 
   const fetchMembers = async () => {
@@ -62,6 +65,7 @@ function MobileMemberAdmin() {
     if (filter === "부동산회원" && m.role !== "REALTOR") return false;
     if (filter === "일반회원" && m.role !== "USER") return false;
     if (filter === "승인대기" && m.computedStatus !== "승인대기") return false;
+    if (filter === "서류보완" && m.computedStatus !== "서류보완") return false;
     
     // Keyword search
     if (activeKeyword) {
@@ -98,6 +102,7 @@ function MobileMemberAdmin() {
   const tabs = [
     { key: "전체", count: members.filter(m => !m.is_deleted).length },
     { key: "승인대기", count: members.filter(m => !m.is_deleted && m.computedStatus === "승인대기").length },
+    { key: "서류보완", count: members.filter(m => !m.is_deleted && m.computedStatus === "서류보완").length },
     { key: "최고관리자", count: members.filter(m => !m.is_deleted && m.role === "ADMIN").length },
     { key: "부동산회원", count: members.filter(m => !m.is_deleted && m.role === "REALTOR").length },
     { key: "일반회원", count: members.filter(m => !m.is_deleted && m.role === "USER").length },
@@ -165,8 +170,8 @@ function MobileMemberAdmin() {
           >
             {tab.key}
             <span style={{
-              background: tab.key === "전체" ? "#e5e7eb" : tab.key === "승인대기" ? "#fef3c7" : "#dbeafe",
-              color: tab.key === "전체" ? "#4b5563" : tab.key === "승인대기" ? "#92400e" : "#1e40af",
+              background: tab.key === "전체" ? "#e5e7eb" : tab.key === "승인대기" ? "#fef3c7" : tab.key === "서류보완" ? "#fee2e2" : "#dbeafe",
+              color: tab.key === "전체" ? "#4b5563" : tab.key === "승인대기" ? "#92400e" : tab.key === "서류보완" ? "#b91c1c" : "#1e40af",
               padding: "2px 7px", borderRadius: 10, fontSize: 11, fontWeight: 700,
             }}>
               {tab.count}
@@ -246,23 +251,18 @@ function MobileMemberAdmin() {
 
               {/* 액션 버튼 */}
               <div style={{ display: "flex", gap: 8, flexDirection: "column" }}>
-                {member.role === 'REALTOR' && member.computedStatus === '승인대기' && (
+                {member.role === 'REALTOR' && (member.computedStatus === '승인대기' || member.computedStatus === '서류보완') && (
                   <div style={{ display: "flex", gap: 8 }}>
                     <button onClick={async () => {
-                      if (!confirm(`${member.name} 회원의 부동산 권한을 승인하시겠습니까?`)) return;
-                      const res = await adminUpdateAgency(member.id, { status: "APPROVED" });
-                      if (res.success) { alert("승인되었습니다."); fetchMembers(); }
-                      else alert("승인 처리 중 오류가 발생했습니다.");
+                      if (!confirm(`${member.name} 회원을 부동산회원으로 승인하시겠습니까?`)) return;
+                      const res = await adminApproveRealtorApplication(member.id);
+                      if (res.success) { alert('✅ 승인 완료!'); fetchMembers(); }
+                      else alert('승인 실패: ' + res.error);
                     }} style={{ flex: 1, height: 38, background: "#10b981", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-                      ✅ 부동산 승인
+                      ✅ 승인
                     </button>
-                    <button onClick={async () => {
-                      if (!confirm("서류보완(반려) 요청 처리하시겠습니까?")) return;
-                      const res = await adminUpdateAgency(member.id, { status: "REJECTED" });
-                      if (res.success) { alert("반려 처리되었습니다."); fetchMembers(); }
-                      else alert("반려 처리 중 오류가 발생했습니다.");
-                    }} style={{ flex: 1, height: 38, background: "#ef4444", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-                      ❌ 반려 (서류보완)
+                    <button onClick={() => setRejectModalFor(member.id)} style={{ flex: 1, height: 38, background: "#ef4444", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                      ❌ 반려
                     </button>
                   </div>
                 )}
@@ -284,6 +284,41 @@ function MobileMemberAdmin() {
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
+
+      {/* 반려 사유 모달 */}
+      {rejectModalFor && (
+        <div onClick={() => setRejectModalFor(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 9999, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: "#fff", borderRadius: "20px 20px 0 0", padding: "24px 20px 36px", width: "100%", maxWidth: 448, animation: "slideUp 0.25s ease" }}>
+            <style>{`@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }`}</style>
+            <div style={{ width: 40, height: 4, borderRadius: 2, background: "#d1d5db", margin: "0 auto 20px" }} />
+            <h3 style={{ fontSize: 18, fontWeight: 800, color: "#111", margin: "0 0 16px" }}>반려 사유 선택</h3>
+            <select value={rejectReason} onChange={(e) => { setRejectReason(e.target.value); if (e.target.value !== '기타') setCustomReason(''); }} style={{ width: "100%", height: 46, padding: "0 14px", border: "1px solid #d1d5db", borderRadius: 10, fontSize: 15, outline: "none", marginBottom: 12, background: "#fff", color: "#111", boxSizing: "border-box" }}>
+              <option value="사업자등록증이 불분명합니다">사업자등록증이 불분명합니다</option>
+              <option value="중개업등록증이 누락되었습니다">중개업등록증이 누락되었습니다</option>
+              <option value="서류 정보가 일치하지 않습니다">서류 정보가 일치하지 않습니다</option>
+              <option value="필수 정보가 미입력 되었습니다">필수 정보가 미입력 되었습니다</option>
+              <option value="기타">기타 (직접 입력)</option>
+            </select>
+            {rejectReason === '기타' && (
+              <textarea
+                value={customReason}
+                onChange={(e) => setCustomReason(e.target.value)}
+                placeholder="반려 사유를 직접 입력해주세요..."
+                style={{ width: "100%", height: 80, padding: 14, border: "1px solid #d1d5db", borderRadius: 10, fontSize: 15, outline: "none", marginBottom: 12, resize: "none", fontFamily: "inherit", boxSizing: "border-box" }}
+              />
+            )}
+            <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
+              <button onClick={() => setRejectModalFor(null)} style={{ flex: 1, height: 48, background: "#f3f4f6", color: "#374151", border: "none", borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: "pointer" }}>취소</button>
+              <button onClick={async () => {
+                const finalReason = rejectReason === '기타' ? (customReason.trim() || '기타 사유') : rejectReason;
+                const res = await adminRejectRealtorApplication(rejectModalFor, finalReason);
+                if (res.success) { alert('반려 처리 완료'); fetchMembers(); setRejectModalFor(null); setRejectReason('사업자등록증이 불분명합니다'); setCustomReason(''); }
+                else alert('반려 실패: ' + res.error);
+              }} style={{ flex: 1, height: 48, background: "#ef4444", color: "#fff", border: "none", borderRadius: 10, fontSize: 15, fontWeight: 800, cursor: "pointer" }}>반려 확정</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
