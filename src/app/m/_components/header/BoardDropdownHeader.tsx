@@ -16,7 +16,6 @@ const QUICK_MENU = [
   {
     category: "자료실",
     items: [
-      { name: "부동산특강", path: "/m/study" },
       { name: "드론영상", path: "/m/board?id=drone" },
       { name: "APP(앱)", path: "/m/board?id=app" },
       { name: "AI 프롬프트", path: "/m/board?id=prompt" },
