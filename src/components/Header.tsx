@@ -327,7 +327,7 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
           <div className="header-bottom">
             <nav className="gnb-new">
               <Link href="/news_all" className={pathname === "/news_all" ? "active" : ""}>전체뉴스</Link>
-              <Link href="/news_map" className={pathname === "/news_map" ? "active" : ""}>우리동네뉴스</Link>
+              <Link href="/news_map" className={pathname === "/news_map" ? "active" : ""}>우리동네부동산</Link>
               <Link href="/news_finance" className={pathname === "/news_finance" ? "active" : ""}>부동산·주식·재테크</Link>
               <Link href="/news_politics" className={pathname === "/news_politics" ? "active" : ""}>정치·경제·사회</Link>
               <Link href="/news_law" className={pathname === "/news_law" ? "active" : ""}>세무·법률</Link>

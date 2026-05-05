@@ -440,7 +440,7 @@ export default function NewsMapClient({ initialArticles, initialPopularArticles 
         <Link href="/" style={{ marginRight: 8, display: "flex", alignItems: "center", textDecoration: "none" }}>
           <img src="/logo.png" alt="공실뉴스" style={{ height: 32 }} onError={(e) => { (e.target as HTMLImageElement).src = "https://via.placeholder.com/100x32?text=LOGO"; }} />
         </Link>
-        <h1 style={{ fontSize: 22, fontWeight: 900, margin: 0, color: "#111", letterSpacing: -0.5 }}>우리동네뉴스</h1>
+        <h1 style={{ fontSize: 22, fontWeight: 900, margin: 0, color: "#111", letterSpacing: -0.5 }}>우리동네부동산</h1>
         <div style={{ display: "flex", gap: 8, marginLeft: 12 }}>
           <select value={section1} onChange={(e) => { setSection1(e.target.value); setSection2(""); }}
             style={{ padding: "7px 12px", border: "1px solid #ddd", borderRadius: 6, outline: "none", fontSize: 13, fontWeight: 600, cursor: "pointer", background: "#fff" }}>
