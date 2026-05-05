@@ -49,6 +49,7 @@ const KAKAO_APP_KEY = process.env.NEXT_PUBLIC_KAKAO_APP_KEY || "435d3602201a49ea
 
 const CATEGORIES = [
   { key: "all", label: "전체뉴스" },
+  { key: "realestate", label: "우리동네부동산" },
   { key: "부동산·주식·재테크", label: "부동산·재테크" },
   { key: "정치·경제·사회", label: "정치·경제" },
   { key: "세무·법률", label: "세무·법률" },
@@ -271,7 +272,9 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
     const loadArticles = async () => {
       setLoading(true);
       const filters: any = { status: "APPROVED", limit: 30 };
-      if (activeTab !== "all" && activeTab !== "local") {
+      if (activeTab === "realestate") {
+        filters.section1 = "우리동네부동산";
+      } else if (activeTab !== "all" && activeTab !== "local") {
         filters.section2 = activeTab;
       }
       

@@ -16,7 +16,9 @@ export default async function MobileNewsPage({
   const keywordMatch = resolvedParams.keyword;
   
   const filters: any = { status: "APPROVED", limit: 30 };
-  if (tab !== "all" && tab !== "local") {
+  if (tab === "realestate") {
+    filters.section1 = "우리동네부동산";
+  } else if (tab !== "all" && tab !== "local") {
     if (tab === "etc") {
       filters.section2 = ["IT·가전·가구", "스포츠·연예·Car", "인물·미션·기타"];
     } else {

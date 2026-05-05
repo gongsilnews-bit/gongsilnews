@@ -48,6 +48,7 @@ interface Props {
 const CATEGORIES = [
   { key: "home", label: "홈" },
   { key: "all", label: "전체뉴스" },
+  { key: "realestate", label: "우리동네부동산" },
   { key: "부동산·주식·재테크", label: "부동산·재테크" },
   { key: "정치·경제·사회", label: "정치·경제" },
   { key: "세무·법률", label: "세무·법률" },
@@ -232,7 +233,7 @@ export default function MobileHomeClient(props: Props) {
         <div style={{ background: "#fff", marginBottom: 12, borderBottom: "1px solid #f0f0f0" }}>
           <div className="sec-hd">
             <h2>우리동네부동산</h2>
-            <Link href="/m/news" style={{ fontSize: 15, color: "#6b7280", textDecoration: "none" }}>더보기 ›</Link>
+            <Link href="/m/news?tab=realestate" style={{ fontSize: 15, color: "#6b7280", textDecoration: "none" }}>더보기 ›</Link>
           </div>
           <div className="no-scrollbar" style={{ display: "flex", gap: 12, padding: "0 16px 16px", overflowX: "auto" }} onTouchStart={(e) => e.stopPropagation()} onTouchEnd={(e) => e.stopPropagation()}>
             {mapArticles.slice(0, 5).map((a: any) => (
