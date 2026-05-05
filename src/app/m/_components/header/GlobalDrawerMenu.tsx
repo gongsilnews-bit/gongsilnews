@@ -483,7 +483,7 @@ export default function GlobalDrawerMenu() {
               <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
                 {[
                   { name: "공실열람", path: "/m/gongsil" },
-                  { name: "우리동네부동산", path: "/m/news?tab=realestate" },
+                  { name: "우리동네부동산", path: "/m/news?tab=local" },
                   { name: "부동산특강", path: "/m/study" },
                   { name: "드론영상", path: "/m/board?id=drone" },
                   { name: "APP(앱)", path: "/m/board?id=app" },
