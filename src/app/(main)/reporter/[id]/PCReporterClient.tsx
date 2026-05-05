@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import AuthModal from "@/components/AuthModal";
@@ -93,6 +93,79 @@ export default function PCReporterClient({
   const [cheerCount, setCheerCount] = useState(profile.point_balance || 0);
   const [subLoading, setSubLoading] = useState(false);
   const [cheerLoading, setCheerLoading] = useState(false);
+  const [showShareDropdown, setShowShareDropdown] = useState(false);
+  const shareDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Preload Kakao Share SDK
+  useEffect(() => {
+    const scriptId = "kakao-share-script";
+    if (document.getElementById(scriptId)) return;
+    const script = document.createElement("script");
+    script.id = scriptId;
+    script.src = "https://t1.kakaocdn.net/kakao_js_sdk/2.7.4/kakao.min.js";
+    script.onload = () => {
+      const Kakao = (window as any).Kakao;
+      if (Kakao && !Kakao.isInitialized()) {
+        const kakaoJsKey = process.env.NEXT_PUBLIC_KAKAO_JS_KEY || process.env.NEXT_PUBLIC_KAKAO_APP_KEY || "435d3602201a49ea712e5f5a36fe6efc";
+        Kakao.init(kakaoJsKey);
+      }
+    };
+    document.head.appendChild(script);
+  }, []);
+
+  // Close share dropdown on outside click
+  useEffect(() => {
+    if (!showShareDropdown) return;
+    const handleClick = (e: MouseEvent) => {
+      if (shareDropdownRef.current && !shareDropdownRef.current.contains(e.target as Node)) {
+        setShowShareDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [showShareDropdown]);
+
+  const handleCopyUrl = () => {
+    const url = window.location.href;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(() => {
+        alert('URL이 복사되었습니다.');
+      }).catch(() => {
+        alert('링크 복사에 실패했습니다.');
+      });
+    } else {
+      const input = document.createElement('input');
+      input.value = url;
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand('copy');
+      document.body.removeChild(input);
+      alert('URL이 복사되었습니다.');
+    }
+    setShowShareDropdown(false);
+  };
+
+  const handleKakaoShare = () => {
+    const Kakao = (window as any).Kakao;
+    if (!Kakao || !Kakao.isInitialized()) {
+      alert('카카오 SDK가 로드되지 않았습니다. 잠시 후 다시 시도해 주세요.');
+      return;
+    }
+    const url = `https://gongsilnews.com/reporter/${profile.id}`;
+    Kakao.Share.sendDefault({
+      objectType: 'feed',
+      content: {
+        title: `${agencyInfo?.agency_name || profile.name} 기자 프로필`,
+        description: '공실뉴스에서 기자의 기사와 공실을 확인해보세요.',
+        imageUrl: profile.profile_image_url || 'https://gongsilnews.com/logo.png',
+        link: { mobileWebUrl: url, webUrl: url },
+      },
+      buttons: [
+        { title: '프로필 보기', link: { mobileWebUrl: url, webUrl: url } },
+      ],
+    });
+    setShowShareDropdown(false);
+  };
 
   useEffect(() => {
     import("@/utils/supabase/client").then(({ createClient }) => {
@@ -332,27 +405,18 @@ export default function PCReporterClient({
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
               오시는길
             </button>
-            <button onClick={() => {
-              if (typeof navigator !== 'undefined') {
-                const url = window.location.href;
-                if (navigator.share) {
-                  navigator.share({
-                    title: `${agencyInfo?.agency_name || profile.name} 프로필`,
-                    text: '공실뉴스에서 기자의 기사와 공실을 확인해보세요.',
-                    url: url
-                  }).catch((err) => console.log('공유 취소됨', err));
-                } else {
-                  navigator.clipboard.writeText(url).then(() => {
-                    alert('링크가 복사되었습니다.');
-                  }).catch(() => {
-                    alert('링크 복사에 실패했습니다.');
-                  });
-                }
-              }
-            }} style={{ flex: 1, padding: "10px 0", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.05)", color: "#fff", fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
-              공유
-            </button>
+            <div style={{ position: "relative", flex: 1 }} ref={shareDropdownRef}>
+              <button onClick={() => setShowShareDropdown(!showShareDropdown)} style={{ width: "100%", padding: "10px 0", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.05)", color: "#fff", fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+                공유
+              </button>
+              {showShareDropdown && (
+                <div style={{ position: "absolute", bottom: "calc(100% + 8px)", left: "50%", transform: "translateX(-50%)", background: "#fff", border: "1px solid #ddd", borderRadius: "8px", boxShadow: "0 4px 12px rgba(0,0,0,0.15)", padding: "8px 0", zIndex: 100, minWidth: "140px" }}>
+                  <button onClick={handleCopyUrl} style={{ display: "block", width: "100%", padding: "10px 16px", textAlign: "left", background: "none", border: "none", fontSize: "14px", color: "#333", cursor: "pointer", fontWeight: "bold" }}>🔗 URL 복사</button>
+                  <button onClick={handleKakaoShare} style={{ display: "block", width: "100%", padding: "10px 16px", textAlign: "left", background: "none", border: "none", fontSize: "14px", color: "#333", cursor: "pointer", fontWeight: "bold" }}>💬 카카오톡 공유</button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

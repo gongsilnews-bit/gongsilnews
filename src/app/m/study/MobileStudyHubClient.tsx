@@ -203,9 +203,6 @@ export default function MobileStudyHubClient({ initialTab, initialSubtab, lectur
                         {lecture.category || "특강"}
                       </div>
                     )}
-                    <div style={{ position: 'absolute', top: 0, right: '16px', width: '28px', height: '36px', backgroundColor: '#ff4d4f', display: 'flex', justifyContent: 'center', paddingTop: '8px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', clipPath: 'polygon(0 0, 100% 0, 100% 100%, 50% 80%, 0 100%)' }}>
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-                    </div>
                   </div>
                   <div style={{ padding: '16px' }}>
                     <div style={{ color: '#3b82f6', fontSize: '12px', fontWeight: 700, marginBottom: '4px' }}>
