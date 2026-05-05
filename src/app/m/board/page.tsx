@@ -14,6 +14,9 @@ export default async function MobileBoardPage({ searchParams }: { searchParams: 
   const board = boardRes.success ? boardRes.data : null;
 
   let posts = [];
+  let serverUser = null;
+  let serverUserLevel = 0;
+
   if (board) {
     // Get current user auth
     const { createClient } = await import("@/utils/supabase/server");
@@ -21,8 +24,6 @@ export default async function MobileBoardPage({ searchParams }: { searchParams: 
     const { data: { user } } = await supabase.auth.getUser();
     
     let isAdmin = false;
-    let serverUser = null;
-    let serverUserLevel = 0;
     
     if (user) {
       const { data } = await supabase.from("members").select("role, plan_type").eq("id", user.id).single();

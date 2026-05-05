@@ -21,6 +21,8 @@ export default function BoardReadClient({
   comments: initialComments,
   prevPost,
   nextPost,
+  serverUser,
+  serverUserLevel,
 }: {
   post: any;
   board: any;

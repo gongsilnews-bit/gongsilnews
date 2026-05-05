@@ -14,6 +14,9 @@ export default async function BoardPage({ searchParams }: { searchParams: Promis
   const board = boardRes.success ? boardRes.data : null;
 
   let posts = [];
+  let serverUser = null;
+  let serverUserLevel = 0;
+
   if (board) {
     const { createClient } = await import("@/utils/supabase/server");
     const supabase = await createClient();
@@ -21,9 +24,15 @@ export default async function BoardPage({ searchParams }: { searchParams: Promis
     
     let isAdmin = false;
     if (user) {
-      const { data } = await supabase.from("members").select("role").eq("id", user.id).single();
+      const { data } = await supabase.from("members").select("role, plan_type").eq("id", user.id).single();
       const r = data?.role?.toUpperCase() || "";
       isAdmin = r === "ADMIN" || r === "최고관리자" || r.includes("관리자");
+      
+      if (data) {
+        const { getPermissionLevel } = await import("@/utils/permissionCheck");
+        serverUser = { id: user.id, role: data.role, email: user.email };
+        serverUserLevel = getPermissionLevel(data);
+      }
     }
 
     const postsRes = await getBoardPosts(boardId, {
@@ -32,18 +41,6 @@ export default async function BoardPage({ searchParams }: { searchParams: Promis
       isAdmin
     });
     posts = postsRes.success ? postsRes.data : [];
-  }
-
-  // 서버에서 가져온 유저 정보를 클라이언트에 전달 (이중 호출 방지)
-  let serverUser = null;
-  let serverUserLevel = 0;
-  if (user) {
-    const { getPermissionLevel } = await import("@/utils/permissionCheck");
-    const { data: memberData } = await supabase.from("members").select("role, plan_type").eq("id", user.id).single();
-    if (memberData) {
-      serverUser = { id: user.id, role: memberData.role, email: user.email };
-      serverUserLevel = getPermissionLevel(memberData);
-    }
   }
 
   return (
