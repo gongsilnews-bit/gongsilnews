@@ -253,10 +253,22 @@ export default function MobileStudyReadClient({ initialLecture }: { initialLectu
 
         {/* Features */}
         <div style={{ display: "flex", flexDirection: "column", gap: 8, fontSize: 13, color: "#555", marginBottom: 16, paddingBottom: 16, borderBottom: "1px solid #f0f0f0" }}>
-          <div>🎥 {totalLessons}개 강의 {lecture.total_duration ? `(총 ${lecture.total_duration})` : ""}</div>
-          <div>📝 수업 노트 및 PDF 교재 제공</div>
-          <div>💬 크리에이터 Q&A 및 피드백</div>
-          <div>♾️ 결제 후 {lecture.duration_months || 5}개월 무제한 수강</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
+            {totalLessons}개 강의 {lecture.total_duration ? `(총 ${lecture.total_duration})` : ""}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+            수업 노트 및 PDF 교재 제공
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+            크리에이터 Q&A 및 피드백
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            결제 후 {lecture.duration_months || 5}개월 무제한 수강
+          </div>
         </div>
       </div>
 
