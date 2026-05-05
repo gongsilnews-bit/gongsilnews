@@ -572,7 +572,13 @@ function StudyReadContent() {
                 </>
               ) : (
                 <div style={{ padding: 60, textAlign: "center", color: "#858a8d", border: "1px solid #f0f0f0", borderRadius: 12, background: "#fafafa" }}>
-                  <div className="text-[32px] mb-[12px]">💬</div>
+                  <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'center' }}>
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#b0b0b0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                      <line x1="9" y1="9" x2="15" y2="9"></line>
+                      <line x1="9" y1="13" x2="13" y2="13"></line>
+                    </svg>
+                  </div>
                   <div className="text-[16px] font-[600] text-[#3e4042]">아직 등록된 리뷰가 없습니다.</div>
                 </div>
               )}

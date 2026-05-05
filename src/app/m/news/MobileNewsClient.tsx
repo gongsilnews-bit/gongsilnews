@@ -126,23 +126,29 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
 
   useEffect(() => {
     const handlePopState = (e: PopStateEvent) => {
-      // 공실 오버레이 닫기
       if (selectedVacancyId && e.state?.panel !== 'vacancy-overlay') {
         setSelectedVacancyId(null);
-      }
-      // 기사 상세 패널 닫기
-      if (showDetail && e.state?.panel !== 'article-detail') {
-        setShowDetail(false);
       }
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [selectedVacancyId, showDetail]);
+  }, [selectedVacancyId]);
 
   // 기사 상세 보기 상태 (우리동네뉴스 슬라이딩 패널용)
   const [showDetail, setShowDetail] = useState(false);
   const [articleDetail, setArticleDetail] = useState<any | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+
+  // 기사 상세 패널 뒤로가기 처리 (showDetail 선언 이후에 배치)
+  useEffect(() => {
+    const handleDetailPopState = (e: PopStateEvent) => {
+      if (showDetail && e.state?.panel !== 'article-detail') {
+        setShowDetail(false);
+      }
+    };
+    window.addEventListener('popstate', handleDetailPopState);
+    return () => window.removeEventListener('popstate', handleDetailPopState);
+  }, [showDetail]);
 
   // 애니메이션 오버레이 상태는 완전히 제거됨 (즉각적인 화면 전환을 위해)
   // URL의 탭이 변경되면 activeTab 상태를 동기화
