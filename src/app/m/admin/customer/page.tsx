@@ -136,7 +136,10 @@ function MobileCustomerAdmin() {
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M15 18L9 12L15 6" stroke="#333" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </button>
           <h1 style={{ fontSize: 18, fontWeight: 800, color: "#111", margin: 0, flex: 1 }}>고객 상세</h1>
-          <a href={`tel:${sc.phone}`} style={{ background: "#10b981", color: "#fff", padding: "8px 16px", borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: "none", display: "flex", alignItems: "center", gap: 4 }}>📞 전화</a>
+          <div style={{ display: "flex", gap: "8px" }}>
+            <a href={`sms:${sc.phone}`} style={{ background: "#3b82f6", color: "#fff", padding: "8px 12px", borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: "none", display: "flex", alignItems: "center", gap: 4 }}>💬 문자</a>
+            <a href={`tel:${sc.phone}`} style={{ background: "#10b981", color: "#fff", padding: "8px 12px", borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: "none", display: "flex", alignItems: "center", gap: 4 }}>📞 전화</a>
+          </div>
         </div>
 
         {/* 프로필 카드 */}
@@ -320,7 +323,8 @@ function MobileCustomerAdmin() {
                 {c.budget && <span>💰 {c.budget}</span>}
               </div>
               <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-                <button onClick={e => { e.stopPropagation(); openDetail(c); }} style={{ flex: 1, height: 36, background: "#f3f4f6", color: "#374151", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>📝 상세/메모</button>
+                <button onClick={e => { e.stopPropagation(); openDetail(c); }} style={{ flex: 1, height: 36, background: "#f3f4f6", color: "#374151", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>📝 상세</button>
+                <a href={`sms:${c.phone}`} onClick={e => e.stopPropagation()} style={{ flex: 1, height: 36, background: "#3b82f6", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 4, textDecoration: "none" }}>💬 문자</a>
                 <a href={`tel:${c.phone}`} onClick={e => e.stopPropagation()} style={{ flex: 1, height: 36, background: "#10b981", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 4, textDecoration: "none" }}>📞 전화</a>
               </div>
             </div>
