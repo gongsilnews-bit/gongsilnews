@@ -15,6 +15,30 @@ function MobileBottomNavContent() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [adminPendingCount, setAdminPendingCount] = useState(0);
 
+  // 스크롤 반응형 하단바 상태
+  const [isVisible, setIsVisible] = useState(true);
+  const lastScrollY = React.useRef(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      
+      // 스크롤을 내릴 때 (현재 스크롤이 이전보다 크고, 상단에서 50px 이상 내려왔을 때)
+      if (currentScrollY > lastScrollY.current && currentScrollY > 50) {
+        setIsVisible(false);
+      } 
+      // 스크롤을 올릴 때
+      else if (currentScrollY < lastScrollY.current) {
+        setIsVisible(true);
+      }
+      
+      lastScrollY.current = currentScrollY;
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   useEffect(() => {
     const supabase = createClient();
 
@@ -105,8 +129,13 @@ function MobileBottomNavContent() {
 
   return (
     <nav 
-      className="fixed bottom-0 left-0 w-full z-50 bg-white border-t border-gray-200 pb-safe"
-      style={{ position: 'fixed', bottom: 0, left: 0, width: '100%', zIndex: 50, backgroundColor: '#ffffff', borderTop: '1px solid #e5e7eb' }}
+      className={`fixed bottom-0 left-0 w-full z-50 bg-white border-t border-gray-200 pb-safe transition-transform duration-300 ${isVisible ? 'translate-y-0' : 'translate-y-full'}`}
+      style={{ 
+        position: 'fixed', bottom: 0, left: 0, width: '100%', zIndex: 50, 
+        backgroundColor: '#ffffff', borderTop: '1px solid #e5e7eb',
+        transform: isVisible ? 'translateY(0)' : 'translateY(100%)',
+        transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+      }}
     >
       <div 
         className="max-w-md mx-auto flex justify-between items-center h-[60px] px-2"
