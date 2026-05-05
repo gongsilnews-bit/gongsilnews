@@ -27,6 +27,8 @@ export default function BoardReadClient({
   comments: any[];
   prevPost: any;
   nextPost: any;
+  serverUser?: any;
+  serverUserLevel?: number;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -46,11 +48,12 @@ export default function BoardReadClient({
   const [commentText, setCommentText] = useState("");
   const [guestName, setGuestName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [currentUser, setCurrentUser] = useState<any>(null);
-  const [userLevel, setUserLevel] = useState<number>(0);
-  const [isLevelChecking, setIsLevelChecking] = useState(true);
+  const [currentUser, setCurrentUser] = useState<any>(serverUser ?? null);
+  const [userLevel, setUserLevel] = useState<number>(serverUserLevel ?? 0);
+  const [isLevelChecking, setIsLevelChecking] = useState(!serverUser && !serverUserLevel);
 
   useEffect(() => {
+    if (serverUser || serverUserLevel) return;
     const fetchUser = async () => {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
@@ -64,7 +67,7 @@ export default function BoardReadClient({
       setIsLevelChecking(false);
     };
     fetchUser();
-  }, []);
+  }, [serverUser, serverUserLevel]);
 
   // 해시 링크 네비게이션 처리 (댓글 알림에서 이동 시)
   useEffect(() => {
@@ -188,7 +191,7 @@ export default function BoardReadClient({
       <div style={{ marginTop: 30, display: "flex", justifyContent: "space-between", alignItems: "flex-end", borderBottom: "2px solid #222", paddingBottom: 15, marginBottom: 0 }}>
         <div style={{ fontSize: 24, fontWeight: 800, color: "#102c57" }}>
           {boardName}
-          <span style={{ fontSize: 16, fontWeight: 500, color: "#666", marginLeft: 10 }}>(자료실)</span>
+          {board?.subtitle && <span style={{ fontSize: 16, fontWeight: 500, color: "#666", marginLeft: 10 }}>({board.subtitle})</span>}
         </div>
         <div style={{ display: "flex", border: "1px solid #ccc", borderRadius: 4, overflow: "hidden" }}>
           <input type="text" placeholder="제목 검색" style={{ border: "none", padding: "8px 12px", outline: "none", width: 200, fontSize: 14 }} />

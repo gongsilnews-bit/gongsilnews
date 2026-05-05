@@ -220,7 +220,7 @@ function MobileBoardAdmin() {
                 <select name="board_type" value={formData.board_type} onChange={handleFormChange}
                   style={{ width: "100%", padding: "12px 14px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, outline: "none", boxSizing: "border-box", background: "#fff" }}>
                   <option value="standard">일반 게시판</option>
-                  <option value="1to1">1:1 문의형 (비밀게시판)</option>
+                  <option value="inquiry">1:1 문의형 (비밀게시판)</option>
                 </select>
               </div>
 

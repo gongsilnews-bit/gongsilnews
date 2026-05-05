@@ -71,7 +71,7 @@ function hasVideoLink(p: any, skinType: string): boolean {
   return !!hasVideo;
 }
 
-export default function BoardClient({ board, initialPosts }: { board: any, initialPosts: any[] }) {
+export default function BoardClient({ board, initialPosts, serverUser, serverUserLevel }: { board: any, initialPosts: any[], serverUser?: any, serverUserLevel?: number }) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -96,11 +96,14 @@ export default function BoardClient({ board, initialPosts }: { board: any, initi
     setTimeout(() => setToastMessage(null), 2500);
   };
   
-  const [userLevel, setUserLevel] = useState<number>(0);
-  const [currentUser, setCurrentUser] = useState<any>(null);
-  const [isLevelChecking, setIsLevelChecking] = useState(true);
+  // 서버에서 전달받은 유저 정보를 바로 사용 (이중 호출 제거)
+  const [userLevel, setUserLevel] = useState<number>(serverUserLevel ?? 0);
+  const [currentUser, setCurrentUser] = useState<any>(serverUser ?? null);
+  const [isLevelChecking, setIsLevelChecking] = useState(!serverUser && !serverUserLevel);
 
   React.useEffect(() => {
+    // 서버에서 이미 전달받은 경우 클라이언트 호출 스킵
+    if (serverUser || serverUserLevel) return;
     const fetchUserLevel = async () => {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
@@ -114,7 +117,7 @@ export default function BoardClient({ board, initialPosts }: { board: any, initi
       setIsLevelChecking(false);
     };
     fetchUserLevel();
-  }, []);
+  }, [serverUser, serverUserLevel]);
   const itemsPerPage = 12;
 
   // URL 파라미터가 변경(뒤로가기 등)될 때 상태 동기화
@@ -226,7 +229,7 @@ export default function BoardClient({ board, initialPosts }: { board: any, initi
   const visiblePosts = filteredPosts.slice(startIndex, startIndex + itemsPerPage);
   
   const isListType = board.skin_type === "LIST";
-  const is1to1 = board.board_type === "1to1";
+  const is1to1 = board.board_type === "inquiry";
 
   if (isLevelChecking) {
     return <div style={{ padding: 100, textAlign: "center", color: "#666" }}>권한을 확인하는 중입니다...</div>;

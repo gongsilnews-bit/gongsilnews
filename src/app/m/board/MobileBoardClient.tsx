@@ -62,9 +62,38 @@ function hasVideoLink(p: any, skinType: string): boolean {
   return !!hasVideo;
 }
 
-export default function MobileBoardClient({ board, initialPosts }: { board: any, initialPosts: any[] }) {
+function getPermissionLevel(data: any): number {
+  if (data.role === 'admin') return 10;
+  if (data.plan_type === 'premium') return 5;
+  return 1;
+}
+
+export default function MobileBoardClient({ board, initialPosts, serverUser, serverUserLevel }: { board: any, initialPosts: any[], serverUser?: any, serverUserLevel?: number }) {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState("전체");
+  const searchParams = useSearchParams();
+  const initialTab = searchParams.get('tab') || "전체";
+  
+  const [activeTab, setActiveTab] = useState(initialTab);
+  const [currentUser, setCurrentUser] = useState<any>(serverUser ?? null);
+  const [userLevel, setUserLevel] = useState<number>(serverUserLevel ?? 0);
+  const [isLevelChecking, setIsLevelChecking] = useState(!serverUser && serverUserLevel === undefined);
+
+  React.useEffect(() => {
+    if (serverUser || serverUserLevel !== undefined) return;
+    const fetchUserLevel = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase.from('members').select('role, plan_type').eq('id', user.id).single();
+        if (data) {
+          setUserLevel(getPermissionLevel(data));
+          setCurrentUser({ ...user, role: data.role });
+        }
+      }
+      setIsLevelChecking(false);
+    };
+    fetchUserLevel();
+  }, [serverUser, serverUserLevel]);
 
   const tabs = ["전체"];
   if (board.categories) {
@@ -73,7 +102,7 @@ export default function MobileBoardClient({ board, initialPosts }: { board: any,
   }
 
   const isListType = board.skin_type === "LIST";
-  const is1to1 = board.board_type === "1to1";
+  const is1to1 = board.board_type === "inquiry";
 
   const filteredPosts = initialPosts.filter(p => {
     if (activeTab === "전체") return true;

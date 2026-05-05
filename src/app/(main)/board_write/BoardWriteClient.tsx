@@ -41,10 +41,14 @@ export default function BoardWriteClient({
   board,
   editPostId,
   editPost,
+  serverUser,
+  serverUserLevel
 }: {
   board: any;
   editPostId: string | null;
   editPost?: any;
+  serverUser?: any;
+  serverUserLevel?: number;
 }) {
   const router = useRouter();
   const boardId = board?.board_id || "drone";
@@ -97,10 +101,11 @@ export default function BoardWriteClient({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [userLevel, setUserLevel] = useState<number>(0);
-  const [isLevelChecking, setIsLevelChecking] = useState(true);
+  const [userLevel, setUserLevel] = useState<number>(serverUserLevel ?? 0);
+  const [isLevelChecking, setIsLevelChecking] = useState(!serverUser && !serverUserLevel);
 
   React.useEffect(() => {
+    if (serverUser || serverUserLevel) return;
     const fetchUser = async () => {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
@@ -113,7 +118,7 @@ export default function BoardWriteClient({
       setIsLevelChecking(false);
     };
     fetchUser();
-  }, []);
+  }, [serverUser, serverUserLevel]);
 
   const handleThumbnailClick = () => fileInputRef.current?.click();
   const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {

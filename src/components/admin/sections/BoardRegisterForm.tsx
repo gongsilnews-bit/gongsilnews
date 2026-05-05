@@ -204,7 +204,7 @@ export default function BoardRegisterForm({ onBack, darkMode = false, editBoardI
           <div style={contentStyle}>
             <select name="board_type" value={formData.board_type} onChange={handleChange} style={{ ...inputStyle, maxWidth: 250 }}>
               <option value="standard">일반 게시판</option>
-              <option value="1to1">1:1 문의형 (비밀게시판)</option>
+              <option value="inquiry">1:1 문의형 (비밀게시판)</option>
             </select>
           </div>
         </div>

@@ -21,10 +21,19 @@ export default async function MobileBoardPage({ searchParams }: { searchParams: 
     const { data: { user } } = await supabase.auth.getUser();
     
     let isAdmin = false;
+    let serverUser = null;
+    let serverUserLevel = 0;
+    
     if (user) {
-      const { data } = await supabase.from("members").select("role").eq("id", user.id).single();
+      const { data } = await supabase.from("members").select("role, plan_type").eq("id", user.id).single();
       const r = data?.role?.toUpperCase() || "";
       isAdmin = r === "ADMIN" || r === "최고관리자" || r.includes("관리자");
+      
+      if (data) {
+        const { getPermissionLevel } = await import("@/utils/permissionCheck");
+        serverUser = { id: user.id, role: data.role, email: user.email };
+        serverUserLevel = getPermissionLevel(data);
+      }
     }
 
     const postsRes = await getBoardPosts(boardId, {
@@ -38,7 +47,7 @@ export default async function MobileBoardPage({ searchParams }: { searchParams: 
   return (
     <Suspense fallback={<div style={{ padding: 40, textAlign: "center", color: "#666", minHeight: "100vh", paddingTop: "100px" }}>자료실을 불러오는 중...</div>}>
       {board ? (
-        <MobileBoardClient board={board} initialPosts={posts} />
+        <MobileBoardClient board={board} initialPosts={posts} serverUser={serverUser} serverUserLevel={serverUserLevel} />
       ) : (
         <div style={{ padding: 80, textAlign: "center", fontSize: 16, color: "#666", minHeight: "100vh", paddingTop: "100px" }}>존재하지 않는 자료실입니다.</div>
       )}

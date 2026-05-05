@@ -34,10 +34,22 @@ export default async function BoardPage({ searchParams }: { searchParams: Promis
     posts = postsRes.success ? postsRes.data : [];
   }
 
+  // 서버에서 가져온 유저 정보를 클라이언트에 전달 (이중 호출 방지)
+  let serverUser = null;
+  let serverUserLevel = 0;
+  if (user) {
+    const { getPermissionLevel } = await import("@/utils/permissionCheck");
+    const { data: memberData } = await supabase.from("members").select("role, plan_type").eq("id", user.id).single();
+    if (memberData) {
+      serverUser = { id: user.id, role: memberData.role, email: user.email };
+      serverUserLevel = getPermissionLevel(memberData);
+    }
+  }
+
   return (
     <Suspense fallback={<div style={{ padding: 40, textAlign: "center" }}>게시판을 불러오는 중...</div>}>
       {board ? (
-        <BoardClient board={board} initialPosts={posts} />
+        <BoardClient board={board} initialPosts={posts} serverUser={serverUser} serverUserLevel={serverUserLevel} />
       ) : (
         <div style={{ padding: 80, textAlign: "center", fontSize: 18, color: "#666" }}>존재하지 않는 게시판입니다.</div>
       )}

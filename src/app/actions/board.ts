@@ -83,7 +83,7 @@ export async function getBoardPosts(boardId: string, options?: { boardType?: str
     .order("is_notice", { ascending: false })
     .order("created_at", { ascending: false });
 
-  if (options?.boardType === "1to1" && !options?.isAdmin) {
+  if (options?.boardType === "inquiry" && !options?.isAdmin) {
     query = query.eq("author_id", options?.userId || "anonymous");
   }
 
@@ -265,4 +265,31 @@ export async function deleteBoardComment(commentId: string) {
     .eq("id", commentId);
   if (error) return { success: false, error: error.message };
   return { success: true };
+}
+
+/* ── 이전/다음 게시글 조회 (경량 쿼리) ── */
+export async function getAdjacentPosts(boardId: string, currentCreatedAt: string, currentId: string) {
+  // 이전 글 (현재 글보다 나중에 작성된 글 중 가장 오래된 글 - 내림차순 기준)
+  const { data: prevData } = await supabase
+    .from("board_posts")
+    .select("id, title, created_at")
+    .eq("board_id", boardId)
+    .eq("is_deleted", false)
+    .gt("created_at", currentCreatedAt)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .single();
+
+  // 다음 글 (현재 글보다 먼저 작성된 글 중 가장 최신 글 - 내림차순 기준)
+  const { data: nextData } = await supabase
+    .from("board_posts")
+    .select("id, title, created_at")
+    .eq("board_id", boardId)
+    .eq("is_deleted", false)
+    .lt("created_at", currentCreatedAt)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .single();
+
+  return { success: true, prev: prevData || null, next: nextData || null };
 }

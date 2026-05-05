@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { incrementBoardView } from "@/app/actions/board";
@@ -14,28 +14,41 @@ function getYoutubeId(url: string) {
   return match ? match[1] : null;
 }
 
-export default function MobileBoardReadClient({ post, board, comments, prevPost, nextPost }: any) {
+export default function MobileBoardReadClient({ 
+  post, 
+  board, 
+  comments, 
+  prevPost, 
+  nextPost,
+  serverUser,
+  serverUserLevel 
+}: any) {
   const router = useRouter();
-  const [userLevel, setUserLevel] = useState<number>(0);
-  const [isChecking, setIsChecking] = useState(true);
+  const searchParams = useSearchParams();
+  const [userLevel, setUserLevel] = useState<number>(serverUserLevel ?? 0);
+  const [isChecking, setIsChecking] = useState(serverUserLevel === undefined);
 
   useEffect(() => {
     async function checkAuth() {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data } = await supabase.from('members').select('role, plan_type').eq('id', user.id).single();
-        if (data) {
-          setUserLevel(getPermissionLevel(data));
+      if (serverUserLevel !== undefined) {
+        setIsChecking(false);
+      } else {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data } = await supabase.from('members').select('role, plan_type').eq('id', user.id).single();
+          if (data) {
+            setUserLevel(getPermissionLevel(data));
+          }
         }
+        setIsChecking(false);
       }
-      setIsChecking(false);
       
       // 조회수 증가
       incrementBoardView(post.id);
     }
     checkAuth();
-  }, [post.id]);
+  }, [post.id, serverUserLevel]);
 
   if (isChecking) {
     return <div style={{ padding: 100, textAlign: "center", color: "#666" }}>권한을 확인하는 중입니다...</div>;
@@ -52,7 +65,7 @@ export default function MobileBoardReadClient({ post, board, comments, prevPost,
   }
 
   const ytId = getYoutubeId(post.youtube_url);
-  const is1to1 = board?.board_type === "1to1";
+  const is1to1 = board?.board_type === "inquiry";
 
   return (
     <div style={{ backgroundColor: '#fff', minHeight: '100vh', paddingBottom: '80px' }}>

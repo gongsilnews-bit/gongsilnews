@@ -1,5 +1,5 @@
 import React, { Suspense } from "react";
-import { getBoardPost, getBoard, getBoardPosts, getBoardComments } from "@/app/actions/board";
+import { getBoardPost, getBoard, getBoardComments, getAdjacentPosts } from "@/app/actions/board";
 import MobileBoardReadClient from "./MobileBoardReadClient";
 
 export default async function MobileBoardReadPage({
@@ -29,10 +29,19 @@ export default async function MobileBoardReadPage({
   const { data: { user } } = await supabase.auth.getUser();
 
   let isAdmin = false;
+  let serverUser = null;
+  let serverUserLevel = 0;
+
   if (user) {
-    const { data } = await supabase.from("members").select("role").eq("id", user.id).single();
+    const { data } = await supabase.from("members").select("role, plan_type").eq("id", user.id).single();
     const r = data?.role?.toUpperCase() || "";
     isAdmin = r === "ADMIN" || r === "최고관리자" || r.includes("관리자");
+    
+    if (data) {
+      const { getPermissionLevel } = await import("@/utils/permissionCheck");
+      serverUser = { id: user.id, role: data.role, email: user.email };
+      serverUserLevel = getPermissionLevel(data);
+    }
   }
 
   const post = postRes.success ? postRes.data : null;
@@ -45,7 +54,7 @@ export default async function MobileBoardReadPage({
     board = boardRes.success ? (boardRes as any).data : null;
   }
 
-  if (board?.board_type === "1to1" && !isAdmin && post?.author_id !== user?.id) {
+  if (board?.board_type === "inquiry" && !isAdmin && post?.author_id !== user?.id) {
     return (
       <div style={{ padding: 80, textAlign: "center", fontSize: 16, color: "#999", minHeight: "100vh", paddingTop: "100px" }}>
         접근 권한이 없습니다.
@@ -55,17 +64,11 @@ export default async function MobileBoardReadPage({
 
   let prevPost = null;
   let nextPost = null;
-  if (board || post?.board_id) {
-    const allRes = await getBoardPosts(board?.board_id || post?.board_id, {
-      boardType: board?.board_type,
-      userId: user?.id,
-      isAdmin
-    });
-    if (allRes.success && allRes.data) {
-      const all = allRes.data;
-      const idx = all.findIndex((p: any) => p.id === postId);
-      prevPost = idx > 0 ? all[idx - 1] : null;
-      nextPost = idx < all.length - 1 ? all[idx + 1] : null;
+  if (post && (board || post?.board_id)) {
+    const adjRes = await getAdjacentPosts(board?.board_id || post?.board_id, post.created_at, postId);
+    if (adjRes.success) {
+      prevPost = adjRes.prev;
+      nextPost = adjRes.next;
     }
   }
 
@@ -85,6 +88,8 @@ export default async function MobileBoardReadPage({
         comments={comments || []}
         prevPost={prevPost}
         nextPost={nextPost}
+        serverUser={serverUser}
+        serverUserLevel={serverUserLevel}
       />
     </Suspense>
   );
