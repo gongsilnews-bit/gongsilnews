@@ -104,67 +104,86 @@ export default function MobileStudyHubClient({ initialTab, initialSubtab, lectur
         <div style={{ position: "relative", flex: 1, minWidth: 0, overflow: "hidden" }}>
           <div className="hide-scrollbar" style={{ overflowX: "auto", display: "flex", gap: "8px", padding: "0 16px", WebkitOverflowScrolling: "touch", alignItems: "center" }}>
             
-            <select 
-              value={activeTab} 
-              onChange={(e) => handleTabChange(e.target.value)} 
+            {/* 부동산특강 버튼 */}
+            <button 
+              onClick={() => handleTabChange("lecture")}
               style={{ 
-                padding: "7px 10px", borderRadius: "20px", fontSize: "14px", fontWeight: 700, 
-                border: "1.5px solid #2563eb", background: "#eff6ff", color: "#2563eb", 
+                padding: "7px 14px", borderRadius: "20px", fontSize: "14px", fontWeight: 700, 
+                border: activeTab === "lecture" ? "1.5px solid #2563eb" : "1px solid #d1d5db", 
+                background: activeTab === "lecture" ? "#eff6ff" : "#fff", 
+                color: activeTab === "lecture" ? "#2563eb" : "#4b5563", 
                 cursor: "pointer", outline: "none", flexShrink: 0, 
-                appearance: "none", WebkitAppearance: "none", 
-                paddingRight: "24px", 
-                backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%232563eb' fill='none' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E\")", 
-                backgroundRepeat: "no-repeat", backgroundPosition: "right 10px center" 
+                transition: "all 0.2s"
               }}
             >
-              <option value="lecture">🎓 부동산특강</option>
-              <option value="resource">📁 자료실</option>
-              <option value="community">💬 커뮤니티</option>
+              🎓 부동산특강
+            </button>
+
+            {/* 자료실 드롭다운 */}
+            <select 
+              value={activeTab === "resource" ? (initialSubtab || 'drone') : 'default'} 
+              onChange={(e) => {
+                if (e.target.value === 'default' || e.target.value === 'drone') {
+                  handleTabChange("resource");
+                } else {
+                  handleSubtabChange("resource", e.target.value);
+                }
+              }} 
+              style={{ 
+                padding: "7px 10px", borderRadius: "20px", fontSize: "14px", fontWeight: 700, 
+                border: activeTab === "resource" ? "1.5px solid #2563eb" : "1px solid #d1d5db", 
+                background: activeTab === "resource" ? "#eff6ff" : "#fff", 
+                color: activeTab === "resource" ? "#2563eb" : "#4b5563", 
+                cursor: "pointer", outline: "none", flexShrink: 0, 
+                appearance: "none", WebkitAppearance: "none", 
+                paddingRight: "28px", 
+                backgroundImage: activeTab === "resource" 
+                  ? "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%232563eb' fill='none' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E\")" 
+                  : "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%234b5563' fill='none' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E\")", 
+                backgroundRepeat: "no-repeat", backgroundPosition: "right 12px center",
+                transition: "all 0.2s"
+              }}
+            >
+              <option value="default">📁 자료실</option>
+              {resourceTabs.map(t => (
+                <option key={t.id} value={t.id}>{t.name}</option>
+              ))}
             </select>
 
-            {activeTab === "resource" && (
-              <select 
-                value={initialSubtab || 'drone'} 
-                onChange={(e) => handleSubtabChange("resource", e.target.value)} 
-                style={{ 
-                  padding: "7px 10px", borderRadius: "20px", fontSize: "14px", fontWeight: 700, 
-                  border: "1.5px solid #2563eb", background: "#eff6ff", color: "#2563eb", 
-                  cursor: "pointer", outline: "none", flexShrink: 0, 
-                  appearance: "none", WebkitAppearance: "none", 
-                  paddingRight: "24px", 
-                  backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%232563eb' fill='none' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E\")", 
-                  backgroundRepeat: "no-repeat", backgroundPosition: "right 10px center" 
-                }}
-              >
-                {resourceTabs.map(t => (
-                  <option key={t.id} value={t.id}>{t.name}</option>
-                ))}
-              </select>
-            )}
-
-            {activeTab === "community" && (
-              <select 
-                value={initialSubtab || 'free'} 
-                onChange={(e) => handleSubtabChange("community", e.target.value)} 
-                style={{ 
-                  padding: "7px 10px", borderRadius: "20px", fontSize: "14px", fontWeight: 700, 
-                  border: "1.5px solid #2563eb", background: "#eff6ff", color: "#2563eb", 
-                  cursor: "pointer", outline: "none", flexShrink: 0, 
-                  appearance: "none", WebkitAppearance: "none", 
-                  paddingRight: "24px", 
-                  backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%232563eb' fill='none' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E\")", 
-                  backgroundRepeat: "no-repeat", backgroundPosition: "right 10px center" 
-                }}
-              >
-                {communityTabs.map(t => (
-                  <option key={t.id} value={t.id}>{t.name}</option>
-                ))}
-              </select>
-            )}
+            {/* 커뮤니티 드롭다운 */}
+            <select 
+              value={activeTab === "community" ? (initialSubtab || 'free') : 'default'} 
+              onChange={(e) => {
+                if (e.target.value === 'default' || e.target.value === 'free') {
+                  handleTabChange("community");
+                } else {
+                  handleSubtabChange("community", e.target.value);
+                }
+              }} 
+              style={{ 
+                padding: "7px 10px", borderRadius: "20px", fontSize: "14px", fontWeight: 700, 
+                border: activeTab === "community" ? "1.5px solid #2563eb" : "1px solid #d1d5db", 
+                background: activeTab === "community" ? "#eff6ff" : "#fff", 
+                color: activeTab === "community" ? "#2563eb" : "#4b5563", 
+                cursor: "pointer", outline: "none", flexShrink: 0, 
+                appearance: "none", WebkitAppearance: "none", 
+                paddingRight: "28px", 
+                backgroundImage: activeTab === "community" 
+                  ? "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%232563eb' fill='none' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E\")" 
+                  : "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%234b5563' fill='none' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E\")", 
+                backgroundRepeat: "no-repeat", backgroundPosition: "right 12px center",
+                transition: "all 0.2s"
+              }}
+            >
+              <option value="default">💬 커뮤니티</option>
+              {communityTabs.map(t => (
+                <option key={t.id} value={t.id}>{t.name}</option>
+              ))}
+            </select>
 
             <div style={{ flexShrink: 0, width: "8px" }} />
           </div>
-          <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: "24px", background: "linear-gradient(to right, transparent, #fff)", pointerEvents: "none" }} />
+          <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: "24px", background: "linear-gradient(to right, transparent, #f8f9fa)", pointerEvents: "none" }} />
         </div>
       </div>
 
