@@ -361,6 +361,7 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
                 <Link href="/board?id=free" style={{ padding: "10px 0", transition: "color 0.2s" }}>커뮤니티</Link>
                 <div className="gnb-dropdown">
                   <ul>
+                    <li><a href="/board?id=notice">공지사항</a></li>
                     <li><a href="/board?id=free">자유게시판</a></li>
                     <li><a href="/board?id=qna">Q&A</a></li>
                   </ul>
