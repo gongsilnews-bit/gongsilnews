@@ -199,7 +199,7 @@ export default function PCReporterClient({
                 <div style={{ fontSize: "13px", color: "rgba(255,255,255,0.7)", marginBottom: "4px", textAlign: "center" }}>
                   {agencyInfo.address}
                 </div>
-                <div style={{ fontSize: "14px", color: "#60a5fa", fontWeight: "bold", marginBottom: "16px", display: "flex", flexDirection: "column", gap: "6px", alignItems: "center" }}>
+                <div style={{ fontSize: "15px", color: "#fff", fontWeight: "bold", marginBottom: "16px", display: "flex", flexDirection: "column", gap: "6px", alignItems: "center" }}>
                   {agencyInfo.phone && agencyInfo.phone.split(',').map((num: string, idx: number) => {
                     const cleanNum = num.trim();
                     return (
@@ -277,18 +277,38 @@ export default function PCReporterClient({
 
           {/* 통계 */}
           <div style={{ textAlign: "center", fontSize: "13px", color: "rgba(255,255,255,0.7)", marginBottom: "16px" }}>
-            구독 {subCount.toLocaleString()} | 응원 {cheerCount.toLocaleString()}
+            구독 <span style={{ color: "#fbbf24", fontWeight: "bold" }}>{subCount.toLocaleString()}</span> | 응원 <span style={{ color: "#fbbf24", fontWeight: "bold" }}>{cheerCount.toLocaleString()}</span>
           </div>
 
           {/* 버튼들 */}
           <div style={{ display: "flex", gap: "8px" }}>
             <button onClick={handleSubscribe} disabled={subLoading}
               style={{ flex: 1, padding: "12px 0", borderRadius: "10px", border: isSubscribed ? "none" : "1px solid rgba(255,255,255,0.2)", background: isSubscribed ? "rgba(255,255,255,0.15)" : "transparent", color: "#fff", fontSize: "14px", fontWeight: "bold", cursor: "pointer", transition: "all 0.2s" }}>
-              {subLoading ? "..." : isSubscribed ? "✓ 구독중" : "+ 구독"}
+              {subLoading ? "..." : isSubscribed ? (
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  구독중
+                </div>
+              ) : (
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                  구독
+                </div>
+              )}
             </button>
             <button onClick={handleCheer} disabled={cheerLoading}
               style={{ flex: 1, padding: "12px 0", borderRadius: "10px", border: isCheered ? "none" : "1px solid rgba(255,255,255,0.2)", background: isCheered ? "rgba(255,255,255,0.15)" : "transparent", color: "#fff", fontSize: "14px", fontWeight: "bold", cursor: "pointer", transition: "all 0.2s" }}>
-              {cheerLoading ? "..." : isCheered ? "✓ 응원중" : "👏 응원"}
+              {cheerLoading ? "..." : isCheered ? (
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  응원중
+                </div>
+              ) : (
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
+                  <span style={{ fontSize: "14px" }}>👏</span>
+                  응원
+                </div>
+              )}
             </button>
           </div>
           <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
@@ -300,7 +320,24 @@ export default function PCReporterClient({
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
               오시는길
             </button>
-            <button style={{ flex: 1, padding: "10px 0", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.05)", color: "#fff", fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
+            <button onClick={() => {
+              if (typeof navigator !== 'undefined') {
+                const url = window.location.href;
+                if (navigator.share) {
+                  navigator.share({
+                    title: `${agencyInfo?.agency_name || profile.name} 프로필`,
+                    text: '공실뉴스에서 기자의 기사와 공실을 확인해보세요.',
+                    url: url
+                  }).catch((err) => console.log('공유 취소됨', err));
+                } else {
+                  navigator.clipboard.writeText(url).then(() => {
+                    alert('링크가 복사되었습니다.');
+                  }).catch(() => {
+                    alert('링크 복사에 실패했습니다.');
+                  });
+                }
+              }
+            }} style={{ flex: 1, padding: "10px 0", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.05)", color: "#fff", fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
               공유
             </button>
