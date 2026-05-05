@@ -3,17 +3,24 @@
 import React, { useState, useEffect } from "react";
 import { AdminSectionProps } from "./types";
 import { getBoards, deleteBoard } from "@/app/actions/board";
+import { useRouter, useSearchParams } from "next/navigation";
 import BoardRegisterForm from "./BoardRegisterForm";
 
 export default function BoardSection({ theme }: AdminSectionProps) {
   const { bg, cardBg, textPrimary, textSecondary, darkMode, border } = theme;
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [dbBoards, setDbBoards] = useState<any[]>([]);
-  const [showBoardRegister, setShowBoardRegister] = useState(false);
-  const [selectedBoardId, setSelectedBoardId] = useState<string | null>(null);
+
+  const action = searchParams.get("action");
+  const editId = searchParams.get("edit_id");
+
+  const showBoardRegister = action === "create" || action === "edit";
+  const selectedBoardId = action === "edit" ? editId : null;
 
   useEffect(() => {
     getBoards().then(res => { if (res.success) setDbBoards(res.data || []); });
-  }, []);
+  }, [showBoardRegister]); // Refresh when returning from form
 
   if (showBoardRegister) {
     return (
@@ -21,22 +28,18 @@ export default function BoardSection({ theme }: AdminSectionProps) {
         darkMode={darkMode}
         editBoardId={selectedBoardId}
         onBack={() => {
-          setShowBoardRegister(false);
-          setSelectedBoardId(null);
-          getBoards().then(res => { if (res.success) setDbBoards(res.data || []); });
+          router.push("?menu=board", { scroll: false });
         }}
       />
     );
   }
 
   const openCreateForm = () => {
-    setSelectedBoardId(null);
-    setShowBoardRegister(true);
+    router.push("?menu=board&action=create", { scroll: false });
   };
 
   const openEditForm = (row: any) => {
-    setSelectedBoardId(row.board_id);
-    setShowBoardRegister(true);
+    router.push(`?menu=board&action=edit&edit_id=${row.board_id}`, { scroll: false });
   };
 
   const skinLabels: Record<string, string> = { FILE_THUMB: "자료실형 (영상/파일)", VIDEO_ALBUM: "자료실형 (영상/파일)", LIST: "일반 목록형", GALLERY: "갤러리형" };
