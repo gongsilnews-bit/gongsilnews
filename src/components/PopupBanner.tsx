@@ -74,16 +74,16 @@ export default function PopupBanner() {
         onClick={isMaintenance ? undefined : () => visiblePopups.forEach(p => handleClose(p.id))}
       />
 
-      {/* 팝업들 */}
-      {visiblePopups.map((popup, idx) => (
+      {/* 팝업들 (모바일 사용성 개선을 위해 순차적으로 하나씩 노출) */}
+      {visiblePopups.slice(0, 1).map((popup, idx) => (
         <div
           key={popup.id}
           style={{
             position: "fixed",
             top: "50%",
             left: "50%",
-            transform: `translate(-50%, -50%) translateY(${idx * 20}px)`,
-            zIndex: 9999999 + idx,
+            transform: `translate(-50%, -50%)`,
+            zIndex: 9999999,
             background: "#fff",
             borderRadius: 12,
             boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
