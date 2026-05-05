@@ -40,14 +40,38 @@ function MobileVacancyAdmin() {
   }, []);
 
   useEffect(() => {
+    const handlePopState = () => {
+      if (previewId) {
+        setPreviewId(null);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [previewId]);
+
+  const closePreview = () => {
+    if (previewId) {
+      setPreviewId(null);
+      if (window.history.state?.previewOpen) {
+        window.history.back();
+      }
+    }
+  };
+
+  const openPreview = (id: string) => {
+    window.history.pushState({ previewOpen: true }, "");
+    setPreviewId(id);
+  };
+
+  useEffect(() => {
     const handleMessage = (e: MessageEvent) => {
       if (e.data?.type === 'CLOSE_VACANCY_OVERLAY') {
-        setPreviewId(null);
+        closePreview();
       }
     };
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, []);
+  }, [previewId]);
 
   const fetchVacancies = async () => {
     if (!memberId) return;
@@ -242,7 +266,7 @@ function MobileVacancyAdmin() {
 
               {/* 주소 */}
               <div
-                onClick={() => setPreviewId(row.id)}
+                onClick={() => openPreview(row.id)}
                 style={{ fontSize: 16, fontWeight: 800, color: "#111", marginBottom: 6, cursor: "pointer", wordBreak: "keep-all" }}
               >
                 {addrText || "주소 미입력"}
@@ -266,7 +290,7 @@ function MobileVacancyAdmin() {
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 {/* 기본 3종 버튼 (미리보기, 수정, 삭제) - 항상 동일한 크기로 한 줄에 노출 */}
                 <div style={{ display: "flex", gap: 6 }}>
-                  <button onClick={() => setPreviewId(row.id)} style={{ flex: 1, height: 36, background: "#f0f9ff", color: "#2563eb", border: "1px solid #bfdbfe", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                  <button onClick={() => openPreview(row.id)} style={{ flex: 1, height: 36, background: "#f0f9ff", color: "#2563eb", border: "1px solid #bfdbfe", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                     👁️ 미리보기
                   </button>
                   <button onClick={() => router.push(`/m/admin/vacancy/write?id=${row.id}`)} style={{ flex: 1, height: 36, background: "#4b5563", color: "#fff", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
@@ -305,7 +329,7 @@ function MobileVacancyAdmin() {
         <div style={{ position: "fixed", inset: 0, zIndex: 99999, background: "rgba(0,0,0,0.6)" }}>
           <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column" }}>
             <div style={{ height: "40px", background: "rgba(0,0,0,0.8)", display: "flex", justifyContent: "flex-end", padding: "0 16px" }}>
-              <button onClick={() => setPreviewId(null)} style={{ background: "none", border: "none", color: "#fff", fontSize: "24px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <button onClick={closePreview} style={{ background: "none", border: "none", color: "#fff", fontSize: "24px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 &times;
               </button>
             </div>
