@@ -2,8 +2,10 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import HomeHeader from "../_components/HomeHeader";
+import { createClient } from "@/utils/supabase/client";
+import AuthModal from "@/components/AuthModal";
 
 function getYoutubeThumbnail(url: string): string | null {
   if (!url) return null;
@@ -77,6 +79,8 @@ export default function MobileBoardClient({ board, initialPosts, serverUser, ser
   const [currentUser, setCurrentUser] = useState<any>(serverUser ?? null);
   const [userLevel, setUserLevel] = useState<number>(serverUserLevel ?? 0);
   const [isLevelChecking, setIsLevelChecking] = useState(!serverUser && serverUserLevel === undefined);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [showMyPosts, setShowMyPosts] = useState(false);
 
   React.useEffect(() => {
     if (serverUser || serverUserLevel !== undefined) return;
@@ -105,6 +109,7 @@ export default function MobileBoardClient({ board, initialPosts, serverUser, ser
   const is1to1 = board.board_type === "inquiry";
 
   const filteredPosts = initialPosts.filter(p => {
+    if (showMyPosts && p.author_id !== currentUser?.id) return false;
     if (activeTab === "전체") return true;
     return p.title.includes(`[${activeTab}]`);
   });
@@ -113,25 +118,43 @@ export default function MobileBoardClient({ board, initialPosts, serverUser, ser
     return `/m/board_read?id=${postId}&board_id=${board.board_id}`;
   };
 
+  const handleWriteClick = () => {
+    if (!currentUser) {
+      setIsAuthModalOpen(true);
+      return;
+    }
+    const requiredLevel = is1to1 ? 1 : (board.perm_write || 1);
+    if (userLevel < requiredLevel) {
+      alert("이 게시판에 글을 작성할 권한이 없습니다.");
+      return;
+    }
+    router.push(`/m/board_write?board_id=${board.board_id}`);
+  };
+
   return (
-    <div style={{ width: '100%', backgroundColor: '#f8f9fa', minHeight: '100vh', paddingBottom: '40px', paddingTop: '50px' }}>
-      <HomeHeader 
-        bgColor="#2563eb" 
-        logoText="자료실"
-        sloganPrefix="실무에 필요한 "
-        sloganHighlight="핵심 자료"
-        highlightColor="#fcd34d"
-        homeUrl="/m/board?id=drone"
-      />
+    <div style={{ width: '100%', backgroundColor: '#f8f9fa', minHeight: '100vh', paddingBottom: '40px' }}>
 
       <div style={{ padding: '20px 16px' }}>
         <h1 style={{ fontSize: '20px', fontWeight: 900, color: '#1a2e50', display: 'flex', alignItems: 'center' }}>
           <span style={{ width: '6px', height: '20px', backgroundColor: '#1a2e50', marginRight: '8px', display: 'inline-block' }}></span>
           {board.name}
         </h1>
-        <p style={{ color: '#6b7280', fontSize: '14px', marginTop: '4px' }}>
-          {board.subtitle || "공실뉴스가 제공하는 자료실입니다."}
-        </p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
+          <p style={{ color: '#6b7280', fontSize: '14px' }}>
+            {board.subtitle || "공실뉴스가 제공하는 자료실입니다."}
+          </p>
+          {currentUser && (
+            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', color: '#4b5563', cursor: 'pointer', fontWeight: 600 }}>
+              <input 
+                type="checkbox" 
+                checked={showMyPosts} 
+                onChange={(e) => setShowMyPosts(e.target.checked)}
+                style={{ accentColor: '#2563eb', width: '16px', height: '16px' }}
+              />
+              내가 쓴 글
+            </label>
+          )}
+        </div>
       </div>
 
       {tabs.length > 1 && (
@@ -227,6 +250,40 @@ export default function MobileBoardClient({ board, initialPosts, serverUser, ser
           </div>
         )}
       </div>
+
+      {/* 글쓰기 플로팅 버튼 (FAB) */}
+      <button
+        onClick={handleWriteClick}
+        style={{
+          position: 'fixed',
+          bottom: '24px',
+          right: '24px',
+          width: '56px',
+          height: '56px',
+          borderRadius: '50%',
+          backgroundColor: '#2563eb',
+          color: '#fff',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)',
+          border: 'none',
+          cursor: 'pointer',
+          zIndex: 40,
+          transition: 'transform 0.2s, box-shadow 0.2s',
+        }}
+        onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.95)'}
+        onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
+        onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+      >
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+      </button>
+
+      <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} initialTab="login" />
+
       <style>{`
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

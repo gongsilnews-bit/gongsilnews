@@ -132,7 +132,7 @@ export default function MobileStudyHubClient({ initialTab, initialSubtab, lectur
               style={{ 
                 padding: "7px 10px", borderRadius: "20px", fontSize: "14px", fontWeight: 700, 
                 border: activeTab === "resource" ? "1.5px solid #2563eb" : "1px solid #d1d5db", 
-                background: activeTab === "resource" ? "#eff6ff" : "#fff", 
+                backgroundColor: activeTab === "resource" ? "#eff6ff" : "#fff", 
                 color: activeTab === "resource" ? "#2563eb" : "#4b5563", 
                 cursor: "pointer", outline: "none", flexShrink: 0, 
                 appearance: "none", WebkitAppearance: "none", 
@@ -140,7 +140,7 @@ export default function MobileStudyHubClient({ initialTab, initialSubtab, lectur
                 backgroundImage: activeTab === "resource" 
                   ? "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%232563eb' fill='none' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E\")" 
                   : "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%234b5563' fill='none' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E\")", 
-                backgroundRepeat: "no-repeat", backgroundPosition: "right 12px center",
+                backgroundRepeat: "no-repeat", backgroundPosition: "right 12px center", backgroundSize: "10px 6px",
                 transition: "all 0.2s"
               }}
             >
@@ -163,7 +163,7 @@ export default function MobileStudyHubClient({ initialTab, initialSubtab, lectur
               style={{ 
                 padding: "7px 10px", borderRadius: "20px", fontSize: "14px", fontWeight: 700, 
                 border: activeTab === "community" ? "1.5px solid #2563eb" : "1px solid #d1d5db", 
-                background: activeTab === "community" ? "#eff6ff" : "#fff", 
+                backgroundColor: activeTab === "community" ? "#eff6ff" : "#fff", 
                 color: activeTab === "community" ? "#2563eb" : "#4b5563", 
                 cursor: "pointer", outline: "none", flexShrink: 0, 
                 appearance: "none", WebkitAppearance: "none", 
@@ -171,7 +171,7 @@ export default function MobileStudyHubClient({ initialTab, initialSubtab, lectur
                 backgroundImage: activeTab === "community" 
                   ? "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%232563eb' fill='none' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E\")" 
                   : "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%234b5563' fill='none' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E\")", 
-                backgroundRepeat: "no-repeat", backgroundPosition: "right 12px center",
+                backgroundRepeat: "no-repeat", backgroundPosition: "right 12px center", backgroundSize: "10px 6px",
                 transition: "all 0.2s"
               }}
             >

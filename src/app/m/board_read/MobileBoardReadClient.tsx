@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { incrementBoardView } from "@/app/actions/board";
+import { incrementBoardView, saveBoardComment, deleteBoardPost } from "@/app/actions/board";
 import { getPermissionLevel, canAccessBoard, getLevelName } from "@/utils/permissionCheck";
 import { createClient } from "@/utils/supabase/client";
 
@@ -26,12 +26,19 @@ export default function MobileBoardReadClient({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [userLevel, setUserLevel] = useState<number>(serverUserLevel ?? 0);
+  const [currentUser, setCurrentUser] = useState<any>(serverUser ?? null);
   const [isChecking, setIsChecking] = useState(serverUserLevel === undefined);
+  
+  const [localComments, setLocalComments] = useState<any[]>(comments || []);
+  const [commentText, setCommentText] = useState("");
+  const [guestName, setGuestName] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     async function checkAuth() {
       if (serverUserLevel !== undefined) {
         setIsChecking(false);
+        setCurrentUser(serverUser);
       } else {
         const supabase = createClient();
         const { data: { user } } = await supabase.auth.getUser();
@@ -39,6 +46,7 @@ export default function MobileBoardReadClient({
           const { data } = await supabase.from('members').select('role, plan_type').eq('id', user.id).single();
           if (data) {
             setUserLevel(getPermissionLevel(data));
+            setCurrentUser({ ...user, role: data.role });
           }
         }
         setIsChecking(false);
@@ -48,7 +56,7 @@ export default function MobileBoardReadClient({
       incrementBoardView(post.id);
     }
     checkAuth();
-  }, [post.id, serverUserLevel]);
+  }, [post.id, serverUserLevel, serverUser]);
 
   if (isChecking) {
     return <div style={{ padding: 100, textAlign: "center", color: "#666" }}>권한을 확인하는 중입니다...</div>;
@@ -63,6 +71,49 @@ export default function MobileBoardReadClient({
       </div>
     );
   }
+
+  const handleCommentSubmit = async () => {
+    if (!commentText.trim()) return;
+    setIsSubmitting(true);
+    
+    let authorName = guestName || "게스트";
+    if (currentUser) {
+      const r = currentUser.role?.toUpperCase() || "";
+      if (r === "ADMIN" || r === "최고관리자" || r.includes("관리자")) {
+        authorName = "최고관리자";
+      } else {
+        authorName = currentUser.user_metadata?.full_name || currentUser.name || currentUser.email?.split('@')[0] || "익명";
+      }
+    }
+
+    const res = await saveBoardComment({
+      post_id: post.id,
+      author_id: currentUser?.id,
+      author_name: authorName,
+      content: commentText,
+    });
+    if (res.success) {
+      setLocalComments([...localComments, {
+        id: Date.now().toString(),
+        author_name: authorName,
+        content: commentText,
+        created_at: new Date().toISOString(),
+      }]);
+      setCommentText("");
+    }
+    setIsSubmitting(false);
+  };
+
+  const handleDelete = async () => {
+    if (!confirm("이 게시글을 삭제하시겠습니까?")) return;
+    const res = await deleteBoardPost(post.id);
+    if (res.success) {
+      alert("삭제되었습니다.");
+      router.replace(`/m/board?id=${board?.board_id}`);
+    } else {
+      alert("삭제 실패: " + res.error);
+    }
+  };
 
   const ytId = getYoutubeId(post.youtube_url);
   const is1to1 = board?.board_type === "inquiry";
@@ -170,6 +221,75 @@ export default function MobileBoardReadClient({
             <span style={{ fontSize: '15px', color: '#374151', fontWeight: 500, flex: 1, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{nextPost.title.replace(/^\[([^\]]+)\]\s*/, "")}</span>
           </Link>
         )}
+      </div>
+
+      {/* 액션 바 (수정/삭제) */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '0 16px', gap: '8px', marginTop: '16px' }}>
+        {(currentUser?.role?.toLowerCase() === 'admin' || currentUser?.role?.toLowerCase() === 'super_admin' || currentUser?.id === post.author_id) && (
+          <>
+            <Link href={`/m/board_write?board_id=${board?.board_id}&post_id=${post.id}`} style={{ border: '1px solid #d1d5db', background: '#fff', color: '#555', padding: '8px 16px', borderRadius: '4px', fontSize: '13px', fontWeight: 600, textDecoration: 'none' }}>수정</Link>
+            <button onClick={handleDelete} style={{ border: '1px solid #fca5a5', background: '#fff5f5', color: '#dc2626', padding: '8px 16px', borderRadius: '4px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>삭제</button>
+          </>
+        )}
+      </div>
+
+      {/* 댓글 영역 */}
+      <div style={{ marginTop: '24px', borderTop: '8px solid #f8f9fa', padding: '24px 16px' }}>
+        <div style={{ fontSize: '16px', fontWeight: 800, marginBottom: '20px', color: '#111827' }}>댓글 {localComments.length}개</div>
+
+        {/* 댓글 목록 */}
+        <div style={{ marginBottom: '24px' }}>
+          {localComments.map((c: any) => (
+            <div key={c.id} style={{ padding: '16px 0', borderBottom: '1px solid #f3f4f6' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '13px' }}>
+                <span style={{ fontWeight: 700, color: '#374151' }}>{c.author_name || '게스트'}</span>
+                <span style={{ color: '#9ca3af' }}>{new Date(c.created_at).toLocaleString('ko-KR')}</span>
+              </div>
+              <div style={{ fontSize: '14px', color: '#4b5563', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{c.content}</div>
+            </div>
+          ))}
+          {localComments.length === 0 && (
+            <div style={{ textAlign: 'center', color: '#9ca3af', padding: '24px 0', fontSize: '14px' }}>첫 댓글을 남겨보세요!</div>
+          )}
+        </div>
+
+        {/* 댓글 입력 */}
+        <div style={{ border: '1px solid #e5e7eb', borderRadius: '8px', padding: '16px', backgroundColor: '#f9fafb' }}>
+          <div style={{ fontSize: '13px', fontWeight: 700, color: '#374151', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {currentUser ? (
+              <span>{currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0]}님</span>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span>이름:</span>
+                <input 
+                  type="text" 
+                  placeholder="게스트" 
+                  value={guestName} 
+                  onChange={e => setGuestName(e.target.value)}
+                  style={{ padding: '4px 8px', border: '1px solid #d1d5db', borderRadius: '4px', width: '100px', fontSize: '13px' }}
+                  disabled={!canAccessBoard(userLevel, board?.perm_reply ?? 1)}
+                />
+              </div>
+            )}
+          </div>
+          <textarea
+            style={{ width: '100%', height: '60px', border: '1px solid #d1d5db', borderRadius: '4px', padding: '8px', resize: 'none', fontSize: '14px', outline: 'none', background: '#fff', color: '#333' }}
+            placeholder={canAccessBoard(userLevel, board?.perm_reply ?? 1) ? "댓글을 남겨보세요." : "권한이 없습니다."}
+            maxLength={400}
+            value={commentText}
+            onChange={e => setCommentText(e.target.value)}
+            disabled={!canAccessBoard(userLevel, board?.perm_reply ?? 1)}
+          />
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
+            <button
+              onClick={handleCommentSubmit}
+              disabled={isSubmitting || !canAccessBoard(userLevel, board?.perm_reply ?? 1)}
+              style={{ background: canAccessBoard(userLevel, board?.perm_reply ?? 1) ? '#2563eb' : '#cbd5e1', color: '#fff', border: 'none', borderRadius: '4px', padding: '8px 16px', fontWeight: 700, fontSize: '13px' }}
+            >
+              등록
+            </button>
+          </div>
+        </div>
       </div>
       
       {/* List Button */}
