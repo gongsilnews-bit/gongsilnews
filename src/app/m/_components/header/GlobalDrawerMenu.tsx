@@ -22,19 +22,13 @@ export default function GlobalDrawerMenu() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const isOpen = searchParams.get('menu') === 'open';
-  const overlayParam = searchParams.get('overlay');
-  const overlayUrl = overlayParam ? decodeURIComponent(overlayParam) : null;
-
   const openOverlay = (href: string, e?: React.MouseEvent) => {
     if (e) e.preventDefault();
-    const currentParams = new URLSearchParams(window.location.search);
-    currentParams.set('menu', 'open');
-    currentParams.set('overlay', encodeURIComponent(href));
-    router.push(`${window.location.pathname}?${currentParams.toString()}`);
-  };
-
-  const closeOverlay = () => {
-    router.back();
+    if (href === "#") return;
+    
+    // 기존 iframe 방식 대신 Next.js 표준 라우팅 방식 적용
+    // (이동 시 URL에서 menu=open 쿼리가 사라지므로 드로어가 자연스럽게 닫힘)
+    router.push(href);
   };
 
   const touchStartX = useRef<number | null>(null);
@@ -559,24 +553,6 @@ export default function GlobalDrawerMenu() {
           </div>
         </div>
       </div>
-
-      {/* 미리보기 오버레이 (iframe) */}
-      {overlayUrl && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 999999, background: "#fff", display: "flex", flexDirection: "column" }}>
-          <div style={{ height: "48px", background: "#fff", borderBottom: "1px solid #e5e7eb", display: "flex", alignItems: "center", padding: "0 16px", flexShrink: 0 }}>
-            <button onClick={closeOverlay} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: "8px" }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M15 18L9 12L15 6" stroke="#333" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            </button>
-            <div style={{ flex: 1, textAlign: "center", fontSize: "16px", fontWeight: 700, color: "#111", paddingRight: "40px" }}>
-              공실뉴스
-            </div>
-          </div>
-          <iframe 
-            src={overlayUrl} 
-            style={{ width: "100%", flex: 1, border: "none", background: "#f4f6f8" }}
-          />
-        </div>
-      )}
     </>
   );
 }

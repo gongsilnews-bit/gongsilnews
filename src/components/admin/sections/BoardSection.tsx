@@ -47,7 +47,7 @@ export default function BoardSection({ theme }: AdminSectionProps) {
   return (
     <div style={{ flex: 1, overflowY: "auto", padding: "20px 28px", background: bg }}>
       <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 24 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: 0 }}>게시판 리스트 및 설정</h1>
+        <h1 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: 0 }}>게시판 설정</h1>
         <button onClick={openCreateForm} style={{ height: 38, padding: "0 18px", background: darkMode ? "#2c2d31" : "#374151", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", transition: "background 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.background = darkMode ? "#3f3f46" : "#4b5563"} onMouseLeave={(e) => e.currentTarget.style.background = darkMode ? "#2c2d31" : "#374151"}>+ 새 게시판 생성</button>
       </div>
 
