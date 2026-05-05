@@ -126,13 +126,18 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
 
   useEffect(() => {
     const handlePopState = (e: PopStateEvent) => {
+      // 공실 오버레이 닫기
       if (selectedVacancyId && e.state?.panel !== 'vacancy-overlay') {
         setSelectedVacancyId(null);
+      }
+      // 기사 상세 패널 닫기
+      if (showDetail && e.state?.panel !== 'article-detail') {
+        setShowDetail(false);
       }
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [selectedVacancyId]);
+  }, [selectedVacancyId, showDetail]);
 
   // 기사 상세 보기 상태 (우리동네뉴스 슬라이딩 패널용)
   const [showDetail, setShowDetail] = useState(false);
@@ -328,20 +333,8 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
     };
     loadLocalArticles();
   }, []);
-  // 뒤로 가기(안드로이드 하드웨어 백버튼 등) 처리 - hash를 사용해야 Next.js 라우터와 충돌하지 않음
-  useEffect(() => {
-    const handleHashChange = () => {
-      if (window.location.hash !== "#detail" && showDetail) {
-        setShowDetail(false);
-      }
-    };
-    window.addEventListener("hashchange", handleHashChange);
-    // 현재 열려있는데 해시가 없다면(버그 방지) 해시 추가
-    if (showDetail && window.location.hash !== "#detail") {
-      window.location.hash = "detail";
-    }
-    return () => window.removeEventListener("hashchange", handleHashChange);
-  }, [showDetail]);
+  // 뒤로 가기(안드로이드 하드웨어 백버튼 등) 처리 - pushState로 통일하여 Next.js 라우터 충돌 방지
+  // popstate 핸들러는 위의 통합 useEffect에서 처리
 
   // 기사 상세 변경 시 스크롤 최상단 강제 초기화 (가장 확실한 방법)
   useEffect(() => {
@@ -364,7 +357,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
   // 기사 상세 조회 (우리동네뉴스는 인라인 패널, 나머지는 새 페이지)
   const handleSelectArticle = async (id: string, isLocal: boolean = false, e?: React.MouseEvent) => {
     if (isLocal) {
-      window.location.hash = "detail";
+      window.history.pushState({ panel: 'article-detail' }, '');
       setShowDetail(true);
       setDetailLoading(true);
       const res = await getArticleDetail(id);

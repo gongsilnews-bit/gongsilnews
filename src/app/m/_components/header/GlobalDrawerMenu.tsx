@@ -191,32 +191,37 @@ export default function GlobalDrawerMenu() {
     return { background: '#e5e7eb', color: '#374151' };
   };
 
+  // SVG 픽토그램 아이콘 (모던 & 프리미엄)
+  const svgIcon = (paths: string, color = '#1e56a0') => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{paths.split('|').map((d, i) => <path key={i} d={d} />)}</svg>
+  );
+
   const getAdminMenus = (role?: string) => {
     const r = role?.trim().toUpperCase() || '';
     const isAdmin = r === 'ADMIN' || r === '최고관리자' || r.includes('관리자');
     const isRealtor = r === 'REALTOR' || r === '부동산회원' || r === '부동산' || r.includes('REALTOR');
 
-    const dashboard = { icon: '📊', label: '대시보드', desc: '활동 요약 및 통계', href: '/m/admin/dashboard' };
-    const vacancy = { icon: '🏢', label: '공실관리', desc: '등록한 공실 공실광고 관리', href: '/m/admin/vacancy', badgeCount: isAdmin ? pendingCounts.vacancies : 0 };
-    const article = { icon: '📝', label: '기사관리', desc: '작성한 기사 관리', href: '/m/admin/article', badgeCount: isAdmin ? pendingCounts.articles : 0 };
-    const point = { icon: '💰', label: '포인트', desc: '포인트 내역 및 충전', href: '/m/admin/point' };
-    const member = { icon: '👥', label: '회원관리', desc: '전체 회원 관리', href: '/m/admin/member', badgeCount: isAdmin ? pendingCounts.members : 0 };
+    const dashboard = { icon: svgIcon('M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0h4', '#3b82f6'), label: '대시보드', desc: '활동 요약 및 통계', href: '/m/admin/dashboard' };
+    const vacancy = { icon: svgIcon('M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16|M3 21h18|M9 7h1|M9 11h1|M9 15h1|M14 7h1|M14 11h1|M14 15h1', '#0ea5e9'), label: '공실관리', desc: '등록한 공실 공실광고 관리', href: '/m/admin/vacancy', badgeCount: isAdmin ? pendingCounts.vacancies : 0 };
+    const article = { icon: svgIcon('M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5|M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z', '#8b5cf6'), label: '기사관리', desc: '작성한 기사 관리', href: '/m/admin/article', badgeCount: isAdmin ? pendingCounts.articles : 0 };
+    const point = { icon: svgIcon('M12 1v22|M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6', '#f59e0b'), label: '포인트', desc: '포인트 내역 및 충전', href: '/m/admin/point' };
+    const member = { icon: svgIcon('M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2|M23 21v-2a4 4 0 00-3-3.87|M9 7a4 4 0 100-8 4 4 0 000 8|M16 3.13a4 4 0 010 7.75', '#6366f1'), label: '회원관리', desc: '전체 회원 관리', href: '/m/admin/member', badgeCount: isAdmin ? pendingCounts.members : 0 };
 
     const realtor: any[] = [
-      { icon: '👥', label: '고객관리', desc: '상담 고객 목록', href: '/m/admin/customer' },
-      { icon: '💬', label: '댓글', desc: '댓글 관리', href: '/m/admin/comment' },
+      { icon: svgIcon('M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2|M9 7a4 4 0 100-8 4 4 0 000 8|M23 21v-2a4 4 0 00-3-3.87|M16 3.13a4 4 0 010 7.75', '#0d9488'), label: '고객관리', desc: '상담 고객 목록', href: '/m/admin/customer' },
+      { icon: svgIcon('M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z', '#f97316'), label: '댓글', desc: '댓글 관리', href: '/m/admin/comment' },
       // { icon: '🌐', label: '홈페이지', desc: '미니 홈페이지 관리', href: '/realty_admin?menu=homepage' },
-      { icon: '⚙️', label: '정보설정', desc: '내 정보 및 업소 설정', href: '/m/admin/settings' },
+      { icon: svgIcon('M12 15a3 3 0 100-6 3 3 0 000 6z|M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z', '#64748b'), label: '정보설정', desc: '내 정보 및 업소 설정', href: '/m/admin/settings' },
     ];
     const admin: any[] = [
-      { icon: '🖼️', label: '배너관리', desc: '광고 배너 관리', href: '/m/admin/banner' },
-      { icon: '📋', label: '게시판관리', desc: '게시판 관리', href: '/m/admin/board' },
-      { icon: '💬', label: '댓글', desc: '댓글 관리', href: '/m/admin/comment' },
-      { icon: '⚙️', label: '설정', desc: '내 정보 및 프로필', href: '/m/admin/settings' },
+      { icon: svgIcon('M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14|M4 20h16a2 2 0 002-2V6a2 2 0 00-2-2H4a2 2 0 00-2 2v12a2 2 0 002 2z', '#ec4899'), label: '배너관리', desc: '광고 배너 관리', href: '/m/admin/banner' },
+      { icon: svgIcon('M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2|M9 5a2 2 0 012-2h2a2 2 0 012 2|M9 12h6|M9 16h6', '#14b8a6'), label: '게시판관리', desc: '게시판 관리', href: '/m/admin/board' },
+      { icon: svgIcon('M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z', '#f97316'), label: '댓글', desc: '댓글 관리', href: '/m/admin/comment' },
+      { icon: svgIcon('M12 15a3 3 0 100-6 3 3 0 000 6z|M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z', '#64748b'), label: '설정', desc: '내 정보 및 프로필', href: '/m/admin/settings' },
     ];
     const user: any[] = [
-      { icon: '💬', label: '댓글', desc: '댓글 관리', href: '/m/admin/comment' },
-      { icon: '⚙️', label: '정보설정', desc: '내 프로필 정보 수정', href: '/m/admin/settings' },
+      { icon: svgIcon('M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z', '#f97316'), label: '댓글', desc: '댓글 관리', href: '/m/admin/comment' },
+      { icon: svgIcon('M12 15a3 3 0 100-6 3 3 0 000 6z|M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z', '#64748b'), label: '정보설정', desc: '내 프로필 정보 수정', href: '/m/admin/settings' },
     ];
 
     if (isAdmin) return [dashboard, member, vacancy, article, point, ...admin];
@@ -372,7 +377,7 @@ export default function GlobalDrawerMenu() {
                         textDecoration: 'none', transition: 'all 0.15s',
                       }}
                     >
-                      <span style={{ fontSize: '24px', marginBottom: '6px', position: 'relative' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '6px', position: 'relative', width: 28, height: 28 }}>
                         {item.icon}
                         {item.badgeCount ? (
                           <span style={{ position: 'absolute', top: -6, right: -12, background: '#f97316', color: '#fff', fontSize: 10, fontWeight: 800, padding: '2px 5px', borderRadius: 10, lineHeight: 1 }}>
