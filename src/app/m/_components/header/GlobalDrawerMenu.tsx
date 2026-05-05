@@ -484,7 +484,7 @@ export default function GlobalDrawerMenu() {
               <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
                 {[
                   { name: "공실열람", path: "/m/gongsil" },
-                  { name: "자료실", path: "/m/study" },
+                  { name: "자료실", path: "/m/board?id=drone" },
                   { name: "부동산특강", path: "/m/study" },
                   { name: "중개업소무료가입", path: "/signup" }
                 ].map(menu => (
