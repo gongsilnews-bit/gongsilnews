@@ -6,7 +6,7 @@
 
 /* ── Device Toggle ── */
 .adp-device-bar { display: flex; justify-content: center; margin-bottom: 20px; }
-.adp-device-btns { display: flex; gap: 4px; background: #fff; padding: 6px 8px; border-radius: 6px; border: 1px solid #ddd; box-shadow: 0 1px 3px rgba(0,0,0,0.05); transform: translateX(-100px); }
+.adp-device-btns { display: flex; gap: 4px; background: #fff; padding: 6px 8px; border-radius: 6px; border: 1px solid #ddd; box-shadow: 0 1px 3px rgba(0,0,0,0.05); transform: translateX(-50px); }
 .adp-device-btn { padding: 4px 16px; border-radius: 4px; border: none; background: transparent; cursor: pointer; font-size: 16px; transition: background .15s; }
 .adp-device-btn.adp-active { background: #0bc2c2; color: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.1); }
 .adp-device-btn:hover:not(.adp-active) { background: #f3f4f6; }

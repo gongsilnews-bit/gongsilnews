@@ -255,7 +255,7 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
     <div className="gdv-root gdv-page-body" style={{ flex: 1, overflowY: 'auto', height: '100%' }}>
       {/* Device Selector — centered across full width */}
       <div style={{ display: 'flex', justifyContent: 'center', paddingBottom: '15px' }}>
-        <div className="gdv-device-btns" style={{ transform: 'translateX(-100px)' }}>
+        <div className="gdv-device-btns" style={{ transform: 'translateX(-50px)' }}>
           <button className={`gdv-device-btn ${deviceMode==='pc'?'gdv-active':''}`} onClick={() => setDeviceMode('pc')} title="PC">🖥️</button>
           <button className={`gdv-device-btn ${deviceMode==='tablet'?'gdv-active':''}`} onClick={() => setDeviceMode('tablet')} title="태블릿">📱</button>
           <button className={`gdv-device-btn ${deviceMode==='mobile'?'gdv-active':''}`} onClick={() => setDeviceMode('mobile')} title="모바일">📲</button>
