@@ -157,7 +157,11 @@ export default function BoardWriteClient({
       drive_url: firstDrive || undefined,
       external_url: currentLinks.length > 0 ? JSON.stringify(currentLinks) : undefined,
       author_id: serverUser?.id || undefined,
-      author_name: isEditMode ? editPost?.author_name : (serverUser?.name || serverUser?.email?.split('@')[0] || "익명"),
+      author_name: isEditMode ? editPost?.author_name : (
+        (serverUser?.role?.toUpperCase() === "ADMIN" || serverUser?.role?.toUpperCase() === "최고관리자" || serverUser?.role?.includes("관리자"))
+          ? "최고관리자"
+          : (serverUser?.name || serverUser?.email?.split('@')[0] || "익명")
+      ),
     });
 
     if (res.success && res.postId) {

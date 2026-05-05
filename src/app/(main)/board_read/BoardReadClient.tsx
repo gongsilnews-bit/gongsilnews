@@ -131,9 +131,15 @@ export default function BoardReadClient({
     if (!commentText.trim()) return;
     setIsSubmitting(true);
     
-    const authorName = currentUser 
-      ? currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0]
-      : guestName || "게스트";
+    let authorName = guestName || "게스트";
+    if (currentUser) {
+      const r = currentUser.role?.toUpperCase() || "";
+      if (r === "ADMIN" || r === "최고관리자" || r.includes("관리자")) {
+        authorName = "최고관리자";
+      } else {
+        authorName = currentUser.user_metadata?.full_name || currentUser.name || currentUser.email?.split('@')[0] || "익명";
+      }
+    }
 
     const res = await saveBoardComment({
       post_id: post.id,

@@ -192,7 +192,9 @@ export default function BoardClient({ board, initialPosts, serverUser, serverUse
       title: postTitle,
       content: postContent,
       author_id: serverUser?.id || undefined,
-      author_name: serverUser?.name || serverUser?.email?.split('@')[0] || "익명",
+      author_name: (serverUser?.role?.toUpperCase() === "ADMIN" || serverUser?.role?.toUpperCase() === "최고관리자" || serverUser?.role?.includes("관리자"))
+        ? "최고관리자"
+        : (serverUser?.name || serverUser?.email?.split('@')[0] || "익명"),
       // thumbnail_url 등 기타 정보는 실제 구현 시 업로드 후 설정
     });
     setIsSubmitting(false);
