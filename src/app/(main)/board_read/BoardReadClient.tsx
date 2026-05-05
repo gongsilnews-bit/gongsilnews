@@ -485,23 +485,23 @@ export default function BoardReadClient({
 
           {/* 액션 바 */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24, marginTop: 12 }}>
-            <div style={{ display: "flex", gap: 10 }}>
-              <button style={{ border: "1px solid #fca5a5", background: "#fff5f5", color: "#dc2626", padding: "10px 18px", borderRadius: 6, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>신고</button>
-              <button style={{ border: "1px solid #e5e7eb", background: "#f9fafb", color: "#555", padding: "10px 18px", borderRadius: 6, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>차단</button>
+            <div style={{ display: "flex", gap: 6 }}>
+              <button style={{ border: "1px solid #fca5a5", background: "#fff5f5", color: "#dc2626", padding: "9px 17px", borderRadius: 3, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>신고</button>
+              <button style={{ border: "1px solid #e5e7eb", background: "#f9fafb", color: "#555", padding: "9px 17px", borderRadius: 3, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>차단</button>
             </div>
-            <div style={{ display: "flex", gap: 10 }}>
-              <Link href={listUrl} style={{ border: "1px solid #d1d5db", background: "#fff", color: "#555", padding: "10px 22px", borderRadius: 6, fontSize: 14, fontWeight: 600, textDecoration: "none", display: "inline-block" }}>목록</Link>
+            <div style={{ display: "flex", gap: 6 }}>
+              <Link href={listUrl} style={{ border: "1px solid #d1d5db", background: "#fff", color: "#555", padding: "9px 17px", borderRadius: 3, fontSize: 13, fontWeight: 600, textDecoration: "none", display: "inline-block" }}>목록</Link>
               {currentUser && (
-                <Link href={listUrl + (listUrl.includes("?") ? "&" : "?") + "mine=true"} style={{ border: "1px solid #cbd5e1", background: "#f1f5f9", color: "#475569", padding: "10px 22px", borderRadius: 6, fontSize: 14, fontWeight: 600, textDecoration: "none", display: "inline-block" }}>내가 등록한 글 보기</Link>
+                <Link href={listUrl + (listUrl.includes("?") ? "&" : "?") + "mine=true"} style={{ border: "1px solid #d1d5db", background: "#fff", color: "#555", padding: "9px 17px", borderRadius: 3, fontSize: 13, fontWeight: 600, textDecoration: "none", display: "inline-block" }}>내가등록한글 보기</Link>
               )}
               {(currentUser?.role?.toLowerCase() === 'admin' || currentUser?.role?.toLowerCase() === 'super_admin' || currentUser?.id === post.author_id) && (
                 <>
-                  <Link href={`/board_write?board_id=${boardId}&post_id=${post.id}`} style={{ border: "1px solid #d1d5db", background: "#fff", color: "#555", padding: "10px 18px", borderRadius: 6, fontSize: 14, fontWeight: 600, textDecoration: "none", display: "inline-block" }}>수정</Link>
-                  <button onClick={handleDelete} style={{ border: "1px solid #fca5a5", background: "#fff5f5", color: "#dc2626", padding: "10px 18px", borderRadius: 6, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>삭제</button>
+                  <Link href={`/board_write?board_id=${boardId}&post_id=${post.id}`} style={{ border: "1px solid #d1d5db", background: "#fff", color: "#555", padding: "9px 17px", borderRadius: 3, fontSize: 13, fontWeight: 600, textDecoration: "none", display: "inline-block" }}>수정</Link>
+                  <button onClick={handleDelete} style={{ border: "1px solid #fca5a5", background: "#fff5f5", color: "#dc2626", padding: "9px 17px", borderRadius: 3, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>삭제</button>
                 </>
               )}
               {canAccessBoard(userLevel, board?.perm_write ?? 5) && (
-                <Link href={`/board_write?board_id=${boardId}`} style={{ background: "#102c57", color: "#fff", padding: "10px 24px", borderRadius: 6, fontSize: 14, fontWeight: 700, textDecoration: "none", display: "inline-block" }}>글쓰기</Link>
+                <Link href={`/board_write?board_id=${boardId}`} style={{ background: "#102c57", color: "#fff", padding: "9px 17px", borderRadius: 3, fontSize: 13, fontWeight: 600, textDecoration: "none", display: "inline-block" }}>글등록하기</Link>
               )}
             </div>
           </div>

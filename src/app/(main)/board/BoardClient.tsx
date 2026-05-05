@@ -449,27 +449,27 @@ export default function BoardClient({ board, initialPosts }: { board: any, initi
               </div>
             </div>
 
-            {/* 하단 버튼 (내가 등록한 글 보기 & 글쓰기) */}
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+            {/* 하단 버튼 (내가 등록한 글 보기 & 글등록하기) */}
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 6, marginTop: 4 }}>
               {currentUser && (
                 <button 
                   onClick={toggleMyPosts}
                   style={{ 
-                    background: myPostsOnly ? "#333" : "#f1f5f9", 
-                    color: myPostsOnly ? "#fff" : "#475569", 
-                    padding: "8px 20px", borderRadius: 4, fontWeight: "bold", border: "1px solid #cbd5e1", cursor: "pointer" 
+                    background: myPostsOnly ? "#475569" : "#fff", 
+                    color: myPostsOnly ? "#fff" : "#555", 
+                    padding: "9px 17px", borderRadius: 3, fontWeight: 600, fontSize: 13, border: "1px solid #d1d5db", cursor: "pointer", lineHeight: 1.4
                   }}
                 >
-                  {myPostsOnly ? "전체 게시글 보기" : "내가 등록한 글 보기"}
+                  {myPostsOnly ? "전체글 보기" : "내가등록한글 보기"}
                 </button>
               )}
               {canAccessBoard(userLevel, board.perm_write ?? 5) && (
                 <a 
                   className="b-write-btn" 
                   href={`/board_write?board_id=${board.board_id}`}
-                  style={{ background: "#102c57", color: "#fff", padding: "8px 20px", borderRadius: 4, fontWeight: "bold", textDecoration: "none", display: "inline-block" }}
+                  style={{ background: "#102c57", color: "#fff", padding: "9px 17px", borderRadius: 3, fontWeight: 600, fontSize: 13, textDecoration: "none", display: "inline-block", lineHeight: 1.4 }}
                 >
-                  글쓰기
+                  글등록하기
                 </a>
               )}
             </div>
