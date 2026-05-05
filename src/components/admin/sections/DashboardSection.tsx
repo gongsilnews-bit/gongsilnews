@@ -53,7 +53,12 @@ export default function DashboardSection({ theme, role, agencyStatus, onMenuChan
       if (role === "admin") {
         const res = await adminGetDashboardData();
         if (res.success) {
-          setStats(res.stats || { vacanciesCount: 0, membersCount: 0, articlesCount: 0, commentsCount: 0 });
+          setStats({
+            vacanciesCount: res.stats?.vacanciesCount || 0,
+            membersCount: res.stats?.membersCount || 0,
+            articlesCount: res.stats?.articlesCount || 0,
+            commentsCount: res.stats?.commentsCount || 0,
+          });
           setRecentVacancies(res.recentVacancies || []);
           setRecentMembers(res.recentMembers || []);
           setRecentComments(res.recentComments || []);

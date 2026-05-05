@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import GongsilTalkOverlay from "@/components/GongsilTalkOverlay";
+import PopupBanner from "@/components/PopupBanner";
 
 export const metadata: Metadata = {
   title: "공실뉴스 - 부동산 중개망의 스마트한 변화",
@@ -33,6 +34,7 @@ export default function RootLayout({
     <html lang="ko">
       <body>
         {children}
+        <PopupBanner />
         <GongsilTalkOverlay />
       </body>
     </html>

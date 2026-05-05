@@ -399,6 +399,66 @@ export default function BoardReadClient({
             </div>
           </div>
 
+          {/* 댓글 */}
+          <div style={{ background: "#fff", border: "1px solid #e0e0e0", borderRadius: 8, padding: "28px 32px", marginBottom: 12 }}>
+            <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 20, color: "#111" }}>{comments.length}개의 댓글</div>
+
+            {/* 댓글 목록 */}
+            <div style={{ marginBottom: 24 }}>
+              {comments.map((c: any) => (
+                <div key={c.id} id={`comment-${c.id}`} style={{ paddingTop: 16, paddingBottom: 16, borderBottom: "1px solid #f0f0f0" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, fontSize: 13 }}>
+                    <span style={{ fontWeight: 700, color: "#374151" }}>{c.author_name || "게스트"}</span>
+                    <span style={{ color: "#9ca3af" }}>{new Date(c.created_at).toLocaleString("ko-KR")}</span>
+                  </div>
+                  <div style={{ fontSize: 15, color: "#4b5563", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{c.content}</div>
+                </div>
+              ))}
+              {comments.length === 0 && (
+                <div style={{ textAlign: "center", color: "#ccc", padding: "20px 0", fontSize: 14 }}>첫 댓글을 남겨보세요!</div>
+              )}
+            </div>
+
+            {/* 댓글 입력 */}
+            <div style={{ border: "1px solid #e5e7eb", borderRadius: 8, padding: 16 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#374151", marginBottom: 6, display: "flex", alignItems: "center", gap: 10 }}>
+                {currentUser ? (
+                  <span>{currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0]}님</span>
+                ) : (
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span>이름: </span>
+                    <input 
+                      type="text" 
+                      placeholder="게스트" 
+                      value={guestName} 
+                      onChange={e => setGuestName(e.target.value)}
+                      style={{ padding: "4px 8px", border: "1px solid #ccc", borderRadius: 4, width: 120, fontSize: 14 }}
+                      disabled={!canAccessBoard(userLevel, board?.perm_reply ?? 1)}
+                    />
+                  </div>
+                )}
+              </div>
+              <textarea
+                style={{ width: "100%", height: 80, border: "none", resize: "none", fontSize: 15, outline: "none", background: "transparent", color: "#333", fontFamily: "inherit", boxSizing: "border-box" }}
+                placeholder={canAccessBoard(userLevel, board?.perm_reply ?? 1) ? "게시물에 대한 의견을 남겨보세요. 바르고 고운 말을 사용해주세요." : "댓글 작성 권한이 없거나 로그인이 필요합니다."}
+                maxLength={400}
+                value={commentText}
+                onChange={e => setCommentText(e.target.value)}
+                disabled={!canAccessBoard(userLevel, board?.perm_reply ?? 1)}
+              />
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 10, borderTop: "1px solid #eee", paddingTop: 10 }}>
+                <span style={{ fontSize: 12, color: "#9ca3af" }}>{commentText.length} / 400</span>
+                <button
+                  onClick={handleCommentSubmit}
+                  disabled={isSubmitting || !canAccessBoard(userLevel, board?.perm_reply ?? 1)}
+                  style={{ background: canAccessBoard(userLevel, board?.perm_reply ?? 1) ? "#111" : "#ccc", color: "#fff", border: "none", borderRadius: 6, padding: "9px 24px", fontWeight: 700, fontSize: 14, cursor: canAccessBoard(userLevel, board?.perm_reply ?? 1) ? "pointer" : "not-allowed" }}
+                >
+                  댓글 등록
+                </button>
+              </div>
+            </div>
+          </div>
+
           {/* 이전/다음글 */}
           <div style={{ background: "#fff", border: "1px solid #e0e0e0", borderRadius: 8, overflow: "hidden", marginBottom: 12 }}>
             <div style={{ display: "flex", borderBottom: "1px solid #f0f0f0", minHeight: 52 }}>
@@ -431,6 +491,9 @@ export default function BoardReadClient({
             </div>
             <div style={{ display: "flex", gap: 10 }}>
               <Link href={listUrl} style={{ border: "1px solid #d1d5db", background: "#fff", color: "#555", padding: "10px 22px", borderRadius: 6, fontSize: 14, fontWeight: 600, textDecoration: "none", display: "inline-block" }}>목록</Link>
+              {currentUser && (
+                <Link href={listUrl + (listUrl.includes("?") ? "&" : "?") + "mine=true"} style={{ border: "1px solid #cbd5e1", background: "#f1f5f9", color: "#475569", padding: "10px 22px", borderRadius: 6, fontSize: 14, fontWeight: 600, textDecoration: "none", display: "inline-block" }}>내가 등록한 글 보기</Link>
+              )}
               {(currentUser?.role?.toLowerCase() === 'admin' || currentUser?.role?.toLowerCase() === 'super_admin' || currentUser?.id === post.author_id) && (
                 <>
                   <Link href={`/board_write?board_id=${boardId}&post_id=${post.id}`} style={{ border: "1px solid #d1d5db", background: "#fff", color: "#555", padding: "10px 18px", borderRadius: 6, fontSize: 14, fontWeight: 600, textDecoration: "none", display: "inline-block" }}>수정</Link>
@@ -441,51 +504,6 @@ export default function BoardReadClient({
                 <Link href={`/board_write?board_id=${boardId}`} style={{ background: "#102c57", color: "#fff", padding: "10px 24px", borderRadius: 6, fontSize: 14, fontWeight: 700, textDecoration: "none", display: "inline-block" }}>글쓰기</Link>
               )}
             </div>
-          </div>
-
-          {/* 댓글 */}
-          <div style={{ background: "#fff", border: "1px solid #e0e0e0", borderRadius: 8, padding: "28px 32px" }}>
-            <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 20, color: "#111" }}>{comments.length}개의 댓글</div>
-
-            {/* 댓글 입력 */}
-            {canAccessBoard(userLevel, board?.perm_reply ?? 1) ? (
-              <div style={{ border: "1px solid #e5e7eb", borderRadius: 8, padding: 16, marginBottom: 24 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "#374151", marginBottom: 6 }}>
-                  {currentUser ? (currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0]) : "게스트"}님
-                </div>
-                <textarea
-                  style={{ width: "100%", height: 80, border: "none", resize: "none", fontSize: 15, outline: "none", background: "transparent", color: "#333", fontFamily: "inherit", boxSizing: "border-box" }}
-                  placeholder="게시물에 대한 의견을 남겨보세요. 바르고 고운 말을 사용해주세요."
-                  maxLength={400}
-                  value={commentText}
-                onChange={e => setCommentText(e.target.value)}
-              />
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 10, borderTop: "1px solid #eee", paddingTop: 10 }}>
-                <span style={{ fontSize: 12, color: "#9ca3af" }}>{commentText.length} / 400</span>
-                <button
-                  onClick={handleCommentSubmit}
-                  disabled={isSubmitting}
-                  style={{ background: "#111", color: "#fff", border: "none", borderRadius: 6, padding: "9px 24px", fontWeight: 700, fontSize: 14, cursor: "pointer" }}
-                >
-                  댓글 등록
-                </button>
-              </div>
-            </div>
-            ) : null}
-
-            {/* 댓글 목록 */}
-            {comments.map((c: any) => (
-              <div key={c.id} id={`comment-${c.id}`} style={{ paddingTop: 16, paddingBottom: 16, borderTop: "1px solid #f0f0f0" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, fontSize: 13 }}>
-                  <span style={{ fontWeight: 700, color: "#374151" }}>{c.author_name || "게스트"}</span>
-                  <span style={{ color: "#9ca3af" }}>{new Date(c.created_at).toLocaleString("ko-KR")}</span>
-                </div>
-                <div style={{ fontSize: 15, color: "#4b5563", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{c.content}</div>
-              </div>
-            ))}
-            {comments.length === 0 && (
-              <div style={{ textAlign: "center", color: "#ccc", padding: "20px 0", fontSize: 14 }}>첫 댓글을 남겨보세요!</div>
-            )}
           </div>
         </div>
 

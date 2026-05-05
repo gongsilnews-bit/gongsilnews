@@ -52,6 +52,7 @@ export default function MobileBoardReadClient({ post, board, comments, prevPost,
   }
 
   const ytId = getYoutubeId(post.youtube_url);
+  const is1to1 = board?.board_type === "1to1";
 
   return (
     <div style={{ backgroundColor: '#fff', minHeight: '100vh', paddingBottom: '80px' }}>
@@ -67,6 +68,11 @@ export default function MobileBoardReadClient({ post, board, comments, prevPost,
 
       {/* Content */}
       <div style={{ padding: '20px 16px' }}>
+        {is1to1 && (
+          <div style={{ display: 'inline-block', fontSize: '12px', fontWeight: 700, backgroundColor: (comments && comments.length > 0) ? '#10b981' : '#f3f4f6', color: (comments && comments.length > 0) ? '#fff' : '#6b7280', padding: '4px 10px', borderRadius: '4px', marginBottom: '12px', marginRight: '8px' }}>
+            {(comments && comments.length > 0) ? '답변완료' : '답변대기'}
+          </div>
+        )}
         {post.title.match(/^\[([^\]]+)\]/) && (
           <div style={{ display: 'inline-block', fontSize: '13px', color: '#2563eb', fontWeight: 600, backgroundColor: '#eff6ff', padding: '4px 10px', borderRadius: '4px', marginBottom: '12px' }}>
             {post.title.match(/^\[([^\]]+)\]/)?.[0]}
@@ -87,8 +93,12 @@ export default function MobileBoardReadClient({ post, board, comments, prevPost,
             </div>
           </div>
           <div style={{ fontSize: '13px', color: '#6b7280', display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-            {post.view_count || 0}
+            {!is1to1 && (
+              <>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                {post.view_count || 0}
+              </>
+            )}
           </div>
         </div>
 

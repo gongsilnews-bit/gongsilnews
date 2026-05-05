@@ -81,6 +81,7 @@ export default function BoardClient({ board, initialPosts }: { board: any, initi
 
   const [activeTab, setActiveTab] = useState(initialTab);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [myPostsOnly, setMyPostsOnly] = useState(searchParams.get('mine') === 'true');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [postTitle, setPostTitle] = useState("");
   const [postContent, setPostContent] = useState("");
@@ -96,6 +97,7 @@ export default function BoardClient({ board, initialPosts }: { board: any, initi
   };
   
   const [userLevel, setUserLevel] = useState<number>(0);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [isLevelChecking, setIsLevelChecking] = useState(true);
 
   React.useEffect(() => {
@@ -106,6 +108,7 @@ export default function BoardClient({ board, initialPosts }: { board: any, initi
         const { data } = await supabase.from('members').select('role, plan_type').eq('id', user.id).single();
         if (data) {
           setUserLevel(getPermissionLevel(data));
+          setCurrentUser({ ...user, role: data.role });
         }
       }
       setIsLevelChecking(false);
@@ -136,6 +139,19 @@ export default function BoardClient({ board, initialPosts }: { board: any, initi
     const params = new URLSearchParams(searchParams);
     params.set("page", newPage.toString());
     params.set("tab", activeTab);
+    if (myPostsOnly) params.set("mine", "true"); else params.delete("mine");
+    params.set("id", board.board_id);
+    router.replace(`${pathname}?${params.toString()}`);
+  };
+
+  const toggleMyPosts = () => {
+    const newVal = !myPostsOnly;
+    setMyPostsOnly(newVal);
+    setCurrentPage(1);
+    const params = new URLSearchParams(searchParams);
+    params.set("page", "1");
+    params.set("tab", activeTab);
+    if (newVal) params.set("mine", "true"); else params.delete("mine");
     params.set("id", board.board_id);
     router.replace(`${pathname}?${params.toString()}`);
   };
@@ -197,8 +213,9 @@ export default function BoardClient({ board, initialPosts }: { board: any, initi
     }
   };
 
-  // 탭 필터링 및 제목 검색(추후 구현) 상태
+  // 탭 필터링 및 내가 등록한 글 보기 필터
   const filteredPosts = posts.filter(p => {
+    if (myPostsOnly && currentUser && p.author_id !== currentUser.id) return false;
     if (activeTab === "전체") return true;
     return p.title.includes(`[${activeTab}]`); // 간단한 태그 기반 필터 구현
   });
@@ -209,6 +226,7 @@ export default function BoardClient({ board, initialPosts }: { board: any, initi
   const visiblePosts = filteredPosts.slice(startIndex, startIndex + itemsPerPage);
   
   const isListType = board.skin_type === "LIST";
+  const is1to1 = board.board_type === "1to1";
 
   if (isLevelChecking) {
     return <div style={{ padding: 100, textAlign: "center", color: "#666" }}>권한을 확인하는 중입니다...</div>;
@@ -229,7 +247,7 @@ export default function BoardClient({ board, initialPosts }: { board: any, initi
       <main className="container px-20 b-layout" style={{ position: "relative", minHeight: "80vh" }}>
         
         <div className="b-list-area">
-          <div className="board-header">
+          <div className="board-header" style={{ borderBottom: "none", paddingBottom: 0 }}>
             <div className="board-title">
               {board.name}
               {board.subtitle && <span style={{ fontSize: 16, fontWeight: 500, color: "#666", marginLeft: 10 }}>({board.subtitle})</span>}
@@ -266,7 +284,7 @@ export default function BoardClient({ board, initialPosts }: { board: any, initi
                     <th style={{ textAlign: "left" }}>제목</th>
                     <th style={{ width: 100 }}>작성자</th>
                     <th style={{ width: 100 }}>작성일</th>
-                    <th style={{ width: 60 }}>조회</th>
+                    {!is1to1 && <th style={{ width: 60 }}>조회</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -288,12 +306,26 @@ export default function BoardClient({ board, initialPosts }: { board: any, initi
                           {p.title.match(/^\[([^\]]+)\]/) && (
                             <span className="cat-badge">{p.title.match(/^\[([^\]]+)\]/)?.[0]}</span>
                           )}
+                          {is1to1 && (
+                            <span style={{ 
+                              display: "inline-block", marginRight: 8, fontSize: 11, fontWeight: "bold", padding: "2px 6px", borderRadius: 4,
+                              background: (p.board_comments && p.board_comments.length > 0) ? "#10b981" : "#f3f4f6", 
+                              color: (p.board_comments && p.board_comments.length > 0) ? "#fff" : "#6b7280"
+                            }}>
+                              {(p.board_comments && p.board_comments.length > 0) ? "답변완료" : "답변대기"}
+                            </span>
+                          )}
                           {p.title.replace(/^\[([^\]]+)\]\s*/, "")}
+                          {p.board_comments && p.board_comments.length > 0 && (
+                            <span style={{ color: "#ef4444", fontWeight: "bold", fontSize: 13, marginLeft: 6 }}>
+                              [{p.board_comments.length}]
+                            </span>
+                          )}
                         </Link>
                       </td>
                       <td>{p.author_name || "익명"}</td>
                       <td>{new Date(p.created_at).toLocaleDateString()}</td>
-                      <td>{p.view_count || 0}</td>
+                      {!is1to1 && <td>{p.view_count || 0}</td>}
                     </tr>
                   )) : (
                     <tr>
@@ -327,12 +359,21 @@ export default function BoardClient({ board, initialPosts }: { board: any, initi
                     </div>
                     <div style={{ padding: 15 }}>
                       {p.title.match(/^\[([^\]]+)\]/) && (
-                        <div style={{ display: "inline-block", fontSize: 11, fontWeight: 700, color: "#508bf5", background: "rgba(80,139,245,0.1)", borderRadius: 4, padding: "2px 7px", marginBottom: 7 }}>{p.title.match(/^\[([^\]]+)\]/)?.[0]}</div>
+                        <div style={{ display: "inline-block", fontSize: 11, fontWeight: 700, color: "#508bf5", background: "rgba(80,139,245,0.1)", borderRadius: 4, padding: "2px 7px", marginBottom: 7, marginRight: 4 }}>{p.title.match(/^\[([^\]]+)\]/)?.[0]}</div>
+                      )}
+                      {is1to1 && (
+                        <div style={{ 
+                          display: "inline-block", fontSize: 11, fontWeight: "bold", padding: "2px 6px", borderRadius: 4, marginBottom: 7, marginRight: 4,
+                          background: (p.board_comments && p.board_comments.length > 0) ? "#10b981" : "#f3f4f6", 
+                          color: (p.board_comments && p.board_comments.length > 0) ? "#fff" : "#6b7280"
+                        }}>
+                          {(p.board_comments && p.board_comments.length > 0) ? "답변완료" : "답변대기"}
+                        </div>
                       )}
                       <div style={{ fontSize: 15, fontWeight: 700, color: "#111", marginBottom: 8, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{p.title.replace(/^\[([^\]]+)\]\s*/, "")}</div>
                       <div style={{ fontSize: 13, color: "#777", display: "flex", justifyContent: "space-between" }}>
                         <span>{p.author_name || "익명"}</span>
-                        <span>조회 {p.view_count || 0} · {new Date(p.created_at).toLocaleDateString()}</span>
+                        <span>{!is1to1 && `조회 ${p.view_count || 0} · `}{new Date(p.created_at).toLocaleDateString()}</span>
                       </div>
                     </div>
                   </div>
@@ -407,17 +448,31 @@ export default function BoardClient({ board, initialPosts }: { board: any, initi
                 </button>
               </div>
             </div>
-            {canAccessBoard(userLevel, board.perm_write ?? 5) && (
-              <div style={{ position: "absolute", right: 0 }}>
+
+            {/* 하단 버튼 (내가 등록한 글 보기 & 글쓰기) */}
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+              {currentUser && (
+                <button 
+                  onClick={toggleMyPosts}
+                  style={{ 
+                    background: myPostsOnly ? "#333" : "#f1f5f9", 
+                    color: myPostsOnly ? "#fff" : "#475569", 
+                    padding: "8px 20px", borderRadius: 4, fontWeight: "bold", border: "1px solid #cbd5e1", cursor: "pointer" 
+                  }}
+                >
+                  {myPostsOnly ? "전체 게시글 보기" : "내가 등록한 글 보기"}
+                </button>
+              )}
+              {canAccessBoard(userLevel, board.perm_write ?? 5) && (
                 <a 
                   className="b-write-btn" 
                   href={`/board_write?board_id=${board.board_id}`}
-                  style={{ background: "#102c57", color: "#fff", textDecoration: "none", display: "inline-block" }}
+                  style={{ background: "#102c57", color: "#fff", padding: "8px 20px", borderRadius: 4, fontWeight: "bold", textDecoration: "none", display: "inline-block" }}
                 >
                   글쓰기
                 </a>
-              </div>
-            )}
+              )}
+            </div>
           </div>
 
         </div>

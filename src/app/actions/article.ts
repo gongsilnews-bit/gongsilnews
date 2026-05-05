@@ -183,7 +183,7 @@ export async function saveArticle(data: {
 
 /* ── 캐싱된 기사 목록 조회 (기본) ── */
 const getArticlesCached = unstable_cache(
-  async (filters?: { status?: string; section1?: string; section2?: string | string[]; is_important?: boolean; is_headline?: boolean; limit?: number; keyword?: string; author_name?: string }) => {
+  async (filters?: { status?: string; section1?: string; section2?: string | string[]; is_important?: boolean; is_headline?: boolean; limit?: number; keyword?: string; author_name?: string; author_id?: string }) => {
     const supabase = getAdminClient();
     let query = supabase
       .from("articles")

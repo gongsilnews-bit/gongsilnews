@@ -35,7 +35,7 @@ function MobileBoardAdmin() {
   const [showForm, setShowForm] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
   const [formData, setFormData] = useState({
-    id: "", board_id: "", name: "", subtitle: "", skin_type: "LIST",
+    id: "", board_id: "", name: "", subtitle: "", board_type: "standard", skin_type: "LIST",
     columns_count: 3, perm_list: 0, perm_read: 0, perm_write: 5, categories: "",
     perm_reply: 1, perm_download: 1, use_print: false, use_editor: true,
     auto_spam_post: false, auto_spam_comment: false, require_approval: false,
@@ -85,7 +85,7 @@ function MobileBoardAdmin() {
 
   const resetForm = () => {
     setFormData({
-      id: "", board_id: "", name: "", subtitle: "", skin_type: "LIST",
+      id: "", board_id: "", name: "", subtitle: "", board_type: "standard", skin_type: "LIST",
       columns_count: 3, perm_list: 0, perm_read: 0, perm_write: 5, categories: "",
       perm_reply: 1, perm_download: 1, use_print: false, use_editor: true,
       auto_spam_post: false, auto_spam_comment: false, require_approval: false,
@@ -101,7 +101,7 @@ function MobileBoardAdmin() {
       const d = res.data;
       setFormData(prev => ({
         ...prev, id: d.id || "", board_id: d.board_id || "", name: d.name || "",
-        subtitle: d.subtitle || d.description || "", skin_type: d.skin_type || "LIST",
+        subtitle: d.subtitle || d.description || "", board_type: d.board_type || "standard", skin_type: d.skin_type || "LIST",
         columns_count: d.columns_count || 3, perm_list: d.perm_list ?? 0,
         perm_read: d.perm_read ?? 0, perm_write: d.perm_write ?? 5,
         categories: d.categories || "", perm_reply: d.perm_reply ?? 1,
@@ -145,7 +145,7 @@ function MobileBoardAdmin() {
     try {
       const payload = {
         id: formData.id || undefined, board_id: formData.board_id, name: formData.name,
-        subtitle: formData.subtitle, skin_type: formData.skin_type,
+        subtitle: formData.subtitle, board_type: formData.board_type, skin_type: formData.skin_type,
         columns_count: formData.columns_count, perm_list: formData.perm_list,
         perm_read: formData.perm_read, perm_write: formData.perm_write, categories: formData.categories
       };
@@ -213,6 +213,15 @@ function MobileBoardAdmin() {
                 <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#111", marginBottom: 6 }}>보조 타이틀</label>
                 <input name="subtitle" value={formData.subtitle} onChange={handleFormChange} placeholder="예) 회원가입 관련 서식 모음"
                   style={{ width: "100%", padding: "12px 14px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+              </div>
+
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#111", marginBottom: 6 }}>게시판 유형 *</label>
+                <select name="board_type" value={formData.board_type} onChange={handleFormChange}
+                  style={{ width: "100%", padding: "12px 14px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, outline: "none", boxSizing: "border-box", background: "#fff" }}>
+                  <option value="standard">일반 게시판</option>
+                  <option value="1to1">1:1 문의형 (비밀게시판)</option>
+                </select>
               </div>
 
               <div style={{ marginBottom: 24 }}>

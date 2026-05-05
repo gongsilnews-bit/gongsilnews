@@ -42,7 +42,7 @@ const formatPrice = (deposit: number, monthlyRent?: number, tradeType?: string) 
 };
 
 // ── 공실광고 상세 뷰  ──
-function VacancyDetailView({ vacancy, photos, isMyProperty, userLevel, onBack, onInquiry }: { vacancy: any; photos: any[]; isMyProperty?: boolean; userLevel: number; onBack: () => void; onInquiry?: (text: string) => void }) {
+function VacancyDetailView({ vacancy, photos, isMyProperty, userLevel = 0, onBack, onInquiry }: { vacancy: any; photos: any[]; isMyProperty?: boolean; userLevel?: number; onBack: () => void; onInquiry?: (text: string) => void }) {
   const [photoIdx, setPhotoIdx] = useState(0);
   const addr = [vacancy.sido, vacancy.sigungu, vacancy.dong, vacancy.detail_addr].filter(Boolean).join(" ");
   const price = formatPrice(vacancy.deposit, vacancy.monthly_rent, vacancy.trade_type);

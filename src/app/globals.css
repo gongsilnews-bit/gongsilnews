@@ -1020,7 +1020,7 @@ button { border: none; background: none; cursor: pointer; font-family: inherit; 
 }
 
 /* ========== 게시판 (Board, 자료실) CSS ========== */
-.board-header { margin-top: 30px; display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #222; padding-bottom: 15px; }
+.board-header { margin-top: 30px; display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 15px; }
 .board-title { font-size: 24px; font-weight: 800; color: #102c57; }
 .board-search-write { display: flex; gap: 15px; align-items: center; }
 .b-search { display: flex; border: 1px solid #ccc; border-radius: 4px; overflow: hidden; }

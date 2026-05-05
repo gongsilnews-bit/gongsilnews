@@ -1,6 +1,5 @@
 import React from "react";
 import MobileBottomNav from "./_components/MobileBottomNav";
-import PopupBanner from "@/components/PopupBanner";
 import GlobalDrawerMenu from './_components/header/GlobalDrawerMenu';
 import LocationPermissionInitializer from './_components/LocationPermissionInitializer';
 
@@ -15,7 +14,6 @@ export default function MobileLayout({ children }: { children: React.ReactNode }
   if (isMaintenance) {
     return (
       <div style={{ position: 'relative', width: '100%', minHeight: '100vh', backgroundColor: '#fff' }}>
-        <PopupBanner />
       </div>
     );
   }
@@ -54,7 +52,6 @@ export default function MobileLayout({ children }: { children: React.ReactNode }
         <GlobalDrawerMenu />
       </React.Suspense>
       <MobileBottomNav />
-      <PopupBanner />
       <LocationPermissionInitializer />
     </div>
   );

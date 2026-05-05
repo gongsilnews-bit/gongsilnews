@@ -25,6 +25,17 @@ export default async function BoardReadPage({
     getBoardComments(postId),
   ]);
 
+  const { createClient } = await import("@/utils/supabase/server");
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  let isAdmin = false;
+  if (user) {
+    const { data } = await supabase.from("members").select("role").eq("id", user.id).single();
+    const r = data?.role?.toUpperCase() || "";
+    isAdmin = r === "ADMIN" || r === "최고관리자" || r.includes("관리자");
+  }
+
   const post = postRes.success ? postRes.data : null;
   const comments = commentsRes.success ? commentsRes.data : [];
 
@@ -36,11 +47,23 @@ export default async function BoardReadPage({
     board = boardRes.success ? (boardRes as any).data : null;
   }
 
+  if (board?.board_type === "1to1" && !isAdmin && post?.author_id !== user?.id) {
+    return (
+      <div style={{ padding: 80, textAlign: "center", fontSize: 16, color: "#999" }}>
+        접근 권한이 없습니다.
+      </div>
+    );
+  }
+
   // 이전/다음 글
   let prevPost = null;
   let nextPost = null;
   if (board || post?.board_id) {
-    const allRes = await getBoardPosts(board?.board_id || post?.board_id);
+    const allRes = await getBoardPosts(board?.board_id || post?.board_id, {
+      boardType: board?.board_type,
+      userId: user?.id,
+      isAdmin
+    });
     if (allRes.success && allRes.data) {
       const all = allRes.data;
       const idx = all.findIndex((p: any) => p.id === postId);

@@ -73,6 +73,7 @@ export default function MobileBoardClient({ board, initialPosts }: { board: any,
   }
 
   const isListType = board.skin_type === "LIST";
+  const is1to1 = board.board_type === "1to1";
 
   const filteredPosts = initialPosts.filter(p => {
     if (activeTab === "전체") return true;
@@ -143,12 +144,17 @@ export default function MobileBoardClient({ board, initialPosts }: { board: any,
                       {p.title.match(/^\[([^\]]+)\]/)?.[0]}
                     </span>
                   )}
-                  <div style={{ fontSize: '16px', color: '#111827', fontWeight: 600, lineHeight: 1.4 }}>
+                  <div style={{ fontSize: '16px', color: '#111827', fontWeight: 600, lineHeight: 1.4, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    {is1to1 && (
+                      <span style={{ fontSize: '11px', fontWeight: 700, padding: '3px 6px', borderRadius: '4px', backgroundColor: (p.board_comments && p.board_comments.length > 0) ? '#10b981' : '#f3f4f6', color: (p.board_comments && p.board_comments.length > 0) ? '#fff' : '#6b7280', flexShrink: 0 }}>
+                        {(p.board_comments && p.board_comments.length > 0) ? '답변완료' : '답변대기'}
+                      </span>
+                    )}
                     {p.title.replace(/^\[([^\]]+)\]\s*/, "")}
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px', color: '#6b7280' }}>
                     <span>{p.author_name || "관리자"}</span>
-                    <span>조회 {p.view_count || 0} · {new Date(p.created_at).toLocaleDateString()}</span>
+                    <span>{!is1to1 && `조회 ${p.view_count || 0} · `}{new Date(p.created_at).toLocaleDateString()}</span>
                   </div>
                 </div>
               </Link>
@@ -174,11 +180,16 @@ export default function MobileBoardClient({ board, initialPosts }: { board: any,
                       </span>
                     )}
                     <div style={{ fontSize: '14px', color: '#111827', fontWeight: 700, lineHeight: 1.4, marginBottom: '8px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                      {is1to1 && (
+                        <span style={{ display: 'inline-block', marginRight: '6px', fontSize: '10px', fontWeight: 700, padding: '2px 4px', borderRadius: '4px', backgroundColor: (p.board_comments && p.board_comments.length > 0) ? '#10b981' : '#f3f4f6', color: (p.board_comments && p.board_comments.length > 0) ? '#fff' : '#6b7280' }}>
+                          {(p.board_comments && p.board_comments.length > 0) ? '답변완료' : '답변대기'}
+                        </span>
+                      )}
                       {p.title.replace(/^\[([^\]]+)\]\s*/, "")}
                     </div>
                     <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: '#9ca3af' }}>
                       <span style={{ textOverflow: 'ellipsis', whiteSpace: 'nowrap', overflow: 'hidden', maxWidth: '60px' }}>{p.author_name || "관리자"}</span>
-                      <span>조회 {p.view_count || 0}</span>
+                      <span>{!is1to1 && `조회 ${p.view_count || 0}`}</span>
                     </div>
                   </div>
                 </div>

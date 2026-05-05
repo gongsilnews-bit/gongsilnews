@@ -27,7 +27,10 @@ export default function GlobalDrawerMenu() {
 
   const openOverlay = (href: string, e?: React.MouseEvent) => {
     if (e) e.preventDefault();
-    router.push(`${window.location.pathname}?menu=open&overlay=${encodeURIComponent(href)}`);
+    const currentParams = new URLSearchParams(window.location.search);
+    currentParams.set('menu', 'open');
+    currentParams.set('overlay', encodeURIComponent(href));
+    router.push(`${window.location.pathname}?${currentParams.toString()}`);
   };
 
   const closeOverlay = () => {
@@ -39,7 +42,9 @@ export default function GlobalDrawerMenu() {
 
   const handleOpen = () => {
     if (!isOpen) {
-      router.push(window.location.pathname + '?menu=open');
+      const currentParams = new URLSearchParams(window.location.search);
+      currentParams.set('menu', 'open');
+      router.push(`${window.location.pathname}?${currentParams.toString()}`);
     }
   };
 
@@ -508,7 +513,7 @@ export default function GlobalDrawerMenu() {
                   </a>
                 </li>
                 <li>
-                  <a href="#" onClick={(e) => openOverlay("#", e)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #f3f4f6', textDecoration: 'none', color: '#374151' }}>
+                  <a href="/m/board?id=inquiry" onClick={(e) => openOverlay("/m/board?id=inquiry", e)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #f3f4f6', textDecoration: 'none', color: '#374151' }}>
                     <span style={{ fontSize: '15px', fontWeight: 500 }}>1:1 문의</span>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
                   </a>

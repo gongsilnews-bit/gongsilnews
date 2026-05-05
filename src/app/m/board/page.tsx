@@ -10,13 +10,30 @@ export default async function MobileBoardPage({ searchParams }: { searchParams: 
   const resolvedParams = await searchParams;
   const boardId = resolvedParams.id || "drone";
 
-  const [boardRes, postsRes] = await Promise.all([
-    getBoard(boardId),
-    getBoardPosts(boardId)
-  ]);
-
+  const boardRes = await getBoard(boardId);
   const board = boardRes.success ? boardRes.data : null;
-  const posts = postsRes.success ? postsRes.data : [];
+
+  let posts = [];
+  if (board) {
+    // Get current user auth
+    const { createClient } = await import("@/utils/supabase/server");
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    let isAdmin = false;
+    if (user) {
+      const { data } = await supabase.from("members").select("role").eq("id", user.id).single();
+      const r = data?.role?.toUpperCase() || "";
+      isAdmin = r === "ADMIN" || r === "최고관리자" || r.includes("관리자");
+    }
+
+    const postsRes = await getBoardPosts(boardId, {
+      boardType: board.board_type,
+      userId: user?.id,
+      isAdmin
+    });
+    posts = postsRes.success ? postsRes.data : [];
+  }
 
   return (
     <Suspense fallback={<div style={{ padding: 40, textAlign: "center", color: "#666", minHeight: "100vh", paddingTop: "100px" }}>자료실을 불러오는 중...</div>}>

@@ -39,6 +39,7 @@ export async function saveBoard(payload: {
   description?: string;
   categories?: string;
   skin_type?: string;
+  board_type?: string;
   columns_count?: number;
   perm_list?: number;
   perm_read?: number;
@@ -73,14 +74,20 @@ export async function deleteBoard(boardId: string) {
 }
 
 /* ── 게시글 목록 조회 ── */
-export async function getBoardPosts(boardId: string) {
-  const { data, error } = await supabase
+export async function getBoardPosts(boardId: string, options?: { boardType?: string; userId?: string; isAdmin?: boolean }) {
+  let query = supabase
     .from("board_posts")
-    .select("*, board_attachments(*)")
+    .select("*, board_attachments(*), board_comments(author_id)")
     .eq("board_id", boardId)
     .eq("is_deleted", false)
     .order("is_notice", { ascending: false })
     .order("created_at", { ascending: false });
+
+  if (options?.boardType === "1to1" && !options?.isAdmin) {
+    query = query.eq("author_id", options?.userId || "anonymous");
+  }
+
+  const { data, error } = await query;
 
   if (error) return { success: false, error: error.message, data: [] };
   return { success: true, data };

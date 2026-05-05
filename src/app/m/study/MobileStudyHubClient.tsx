@@ -99,84 +99,74 @@ export default function MobileStudyHubClient({ initialTab, initialSubtab, lectur
         homeUrl="/m/study"
       />
 
-      {/* 1-Depth: 메인 탭 (가로 스크롤) */}
-      <div style={{ padding: '20px 16px 12px', overflowX: 'auto', whiteSpace: 'nowrap', display: 'flex', gap: '8px', WebkitOverflowScrolling: 'touch', backgroundColor: '#fff', borderBottom: '1px solid #f3f4f6' }} className="hide-scrollbar">
-        {[
-          { id: "lecture", label: "🎓 부동산특강" },
-          { id: "resource", label: "📁 자료실" },
-          { id: "community", label: "💬 커뮤니티" }
-        ].map(t => (
-          <button
-            key={t.id}
-            onClick={() => handleTabChange(t.id)}
-            style={{
-              padding: '10px 20px',
-              borderRadius: '24px',
-              border: activeTab === t.id ? '1px solid #2563eb' : '1px solid #e5e7eb',
-              backgroundColor: activeTab === t.id ? '#eff6ff' : '#fff',
-              color: activeTab === t.id ? '#2563eb' : '#4b5563',
-              fontSize: '15px',
-              fontWeight: activeTab === t.id ? 700 : 500,
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px'
-            }}
-          >
-            {t.label}
-          </button>
-        ))}
+      {/* ═══ 탭 필터 바 ═══ */}
+      <div style={{ display: "flex", alignItems: "center", background: "#fff", borderBottom: "1px solid #e5e7eb", padding: "12px 0", flexShrink: 0, width: "100%" }}>
+        <div style={{ position: "relative", flex: 1, minWidth: 0, overflow: "hidden" }}>
+          <div className="hide-scrollbar" style={{ overflowX: "auto", display: "flex", gap: "8px", padding: "0 16px", WebkitOverflowScrolling: "touch", alignItems: "center" }}>
+            
+            <select 
+              value={activeTab} 
+              onChange={(e) => handleTabChange(e.target.value)} 
+              style={{ 
+                padding: "7px 10px", borderRadius: "20px", fontSize: "14px", fontWeight: 700, 
+                border: "1.5px solid #2563eb", background: "#eff6ff", color: "#2563eb", 
+                cursor: "pointer", outline: "none", flexShrink: 0, 
+                appearance: "none", WebkitAppearance: "none", 
+                paddingRight: "24px", 
+                backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%232563eb' fill='none' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E\")", 
+                backgroundRepeat: "no-repeat", backgroundPosition: "right 10px center" 
+              }}
+            >
+              <option value="lecture">🎓 부동산특강</option>
+              <option value="resource">📁 자료실</option>
+              <option value="community">💬 커뮤니티</option>
+            </select>
+
+            {activeTab === "resource" && (
+              <select 
+                value={initialSubtab || 'drone'} 
+                onChange={(e) => handleSubtabChange("resource", e.target.value)} 
+                style={{ 
+                  padding: "7px 10px", borderRadius: "20px", fontSize: "14px", fontWeight: 700, 
+                  border: "1.5px solid #2563eb", background: "#eff6ff", color: "#2563eb", 
+                  cursor: "pointer", outline: "none", flexShrink: 0, 
+                  appearance: "none", WebkitAppearance: "none", 
+                  paddingRight: "24px", 
+                  backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%232563eb' fill='none' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E\")", 
+                  backgroundRepeat: "no-repeat", backgroundPosition: "right 10px center" 
+                }}
+              >
+                {resourceTabs.map(t => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+              </select>
+            )}
+
+            {activeTab === "community" && (
+              <select 
+                value={initialSubtab || 'free'} 
+                onChange={(e) => handleSubtabChange("community", e.target.value)} 
+                style={{ 
+                  padding: "7px 10px", borderRadius: "20px", fontSize: "14px", fontWeight: 700, 
+                  border: "1.5px solid #2563eb", background: "#eff6ff", color: "#2563eb", 
+                  cursor: "pointer", outline: "none", flexShrink: 0, 
+                  appearance: "none", WebkitAppearance: "none", 
+                  paddingRight: "24px", 
+                  backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%232563eb' fill='none' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E\")", 
+                  backgroundRepeat: "no-repeat", backgroundPosition: "right 10px center" 
+                }}
+              >
+                {communityTabs.map(t => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+              </select>
+            )}
+
+            <div style={{ flexShrink: 0, width: "8px" }} />
+          </div>
+          <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: "24px", background: "linear-gradient(to right, transparent, #fff)", pointerEvents: "none" }} />
+        </div>
       </div>
-
-      {/* 2-Depth: 서브 탭 (자료실/커뮤니티인 경우) */}
-      {activeTab === "resource" && (
-        <div style={{ padding: '12px 16px', backgroundColor: '#fff', borderBottom: '1px solid #e5e7eb', overflowX: 'auto', whiteSpace: 'nowrap', display: 'flex', gap: '16px', WebkitOverflowScrolling: 'touch' }} className="hide-scrollbar">
-          {resourceTabs.map(t => (
-            <button
-              key={t.id}
-              onClick={() => handleSubtabChange("resource", t.id)}
-              style={{
-                background: 'none', border: 'none', padding: '4px 0',
-                color: initialSubtab === t.id ? '#111827' : '#9ca3af',
-                fontSize: '14px',
-                fontWeight: initialSubtab === t.id ? 700 : 500,
-                position: 'relative',
-                cursor: 'pointer'
-              }}
-            >
-              {t.name}
-              {initialSubtab === t.id && (
-                <div style={{ position: 'absolute', bottom: -12, left: 0, width: '100%', height: '2px', backgroundColor: '#111827' }} />
-              )}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {activeTab === "community" && (
-        <div style={{ padding: '12px 16px', backgroundColor: '#fff', borderBottom: '1px solid #e5e7eb', display: 'flex', gap: '20px' }}>
-          {communityTabs.map(t => (
-            <button
-              key={t.id}
-              onClick={() => handleSubtabChange("community", t.id)}
-              style={{
-                background: 'none', border: 'none', padding: '4px 0',
-                color: initialSubtab === t.id ? '#111827' : '#9ca3af',
-                fontSize: '15px',
-                fontWeight: initialSubtab === t.id ? 700 : 500,
-                position: 'relative',
-                cursor: 'pointer'
-              }}
-            >
-              {t.name}
-              {initialSubtab === t.id && (
-                <div style={{ position: 'absolute', bottom: -12, left: 0, width: '100%', height: '2px', backgroundColor: '#111827' }} />
-              )}
-            </button>
-          ))}
-        </div>
-      )}
 
       {/* 콘텐츠 영역 */}
       <div style={{ padding: '16px', paddingTop: '20px' }}>

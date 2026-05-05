@@ -16,6 +16,7 @@ export default function BoardRegisterForm({ onBack, darkMode = false, editBoardI
     board_id: "",
     name: "",
     subtitle: "",
+    board_type: "standard",
     skin_type: "LIST",
     columns_count: 3,
     perm_list: 0,
@@ -49,6 +50,7 @@ export default function BoardRegisterForm({ onBack, darkMode = false, editBoardI
             board_id: res.data.board_id || "",
             name: res.data.name || "",
             subtitle: res.data.subtitle || res.data.description || "",
+            board_type: res.data.board_type || "standard",
             skin_type: res.data.skin_type || "LIST",
             columns_count: res.data.columns_count || 3,
             perm_list: res.data.perm_list ?? 0,
@@ -99,6 +101,7 @@ export default function BoardRegisterForm({ onBack, darkMode = false, editBoardI
         board_id: formData.board_id,
         name: formData.name,
         subtitle: formData.subtitle,
+        board_type: formData.board_type,
         skin_type: formData.skin_type,
         columns_count: formData.columns_count,
         perm_list: formData.perm_list,
@@ -193,6 +196,16 @@ export default function BoardRegisterForm({ onBack, darkMode = false, editBoardI
           <div style={labelStyle}>보조 타이틀</div>
           <div style={contentStyle}>
             <input type="text" name="subtitle" value={formData.subtitle} onChange={handleChange} style={{...inputStyle, maxWidth: 500}} placeholder="예) 회원가입 관련 서식 모음" />
+          </div>
+        </div>
+
+        <div style={rowStyle}>
+          <div style={labelStyle}>게시판 유형 ⓘ</div>
+          <div style={contentStyle}>
+            <select name="board_type" value={formData.board_type} onChange={handleChange} style={{ ...inputStyle, maxWidth: 250 }}>
+              <option value="standard">일반 게시판</option>
+              <option value="1to1">1:1 문의형 (비밀게시판)</option>
+            </select>
           </div>
         </div>
 
