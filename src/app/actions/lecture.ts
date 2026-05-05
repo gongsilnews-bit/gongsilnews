@@ -398,9 +398,13 @@ export async function createLectureReview(data: {
 export async function enrollLecture(lectureId: string, userId: string) {
   const supabase = getAdminClient();
   try {
-    const { data: existing } = await supabase
+    const { data: existingData } = await supabase
       .from("lecture_enrollments").select("id, status, expires_at")
-      .eq("user_id", userId).eq("lecture_id", lectureId).maybeSingle();
+      .eq("user_id", userId).eq("lecture_id", lectureId)
+      .order("enrolled_at", { ascending: false }).limit(1);
+      
+    const existing = existingData && existingData.length > 0 ? existingData[0] : null;
+    
     if (existing && existing.status === "ACTIVE") {
       if (existing.expires_at && new Date(existing.expires_at) < new Date()) {
         await supabase.from("lecture_enrollments").delete().eq("id", existing.id);
@@ -456,10 +460,13 @@ export async function checkEnrollment(lectureId: string, userId: string) {
   try {
     const { data } = await supabase.from("lecture_enrollments")
       .select("id, status, expires_at, points_paid")
-      .eq("user_id", userId).eq("lecture_id", lectureId).eq("status", "ACTIVE").maybeSingle();
-    if (!data) return { success: true, enrolled: false };
-    if (data.expires_at && new Date(data.expires_at) < new Date()) return { success: true, enrolled: false, expired: true };
-    return { success: true, enrolled: true, enrollment: data };
+      .eq("user_id", userId).eq("lecture_id", lectureId).eq("status", "ACTIVE")
+      .order("enrolled_at", { ascending: false }).limit(1);
+    
+    if (!data || data.length === 0) return { success: true, enrolled: false };
+    const latest = data[0];
+    if (latest.expires_at && new Date(latest.expires_at) < new Date()) return { success: true, enrolled: false, expired: true };
+    return { success: true, enrolled: true, enrollment: latest };
   } catch { return { success: false, enrolled: false }; }
 }
 
