@@ -483,10 +483,13 @@ export default function GlobalDrawerMenu() {
               <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
                 {[
                   { name: "공실열람", path: "/m/gongsil" },
-                  { name: "자료실", path: "/m/board?id=drone" },
-                  { name: "커뮤니티", path: "/m/board?id=free" },
+                  { name: "우리동네부동산", path: "/m/news?tab=realestate" },
                   { name: "부동산특강", path: "/m/study" },
-                  { name: "중개업소무료가입", path: "/signup" }
+                  { name: "드론영상", path: "/m/board?id=drone" },
+                  { name: "APP(앱)", path: "/m/board?id=app" },
+                  { name: "AI 프롬프트", path: "/m/board?id=prompt" },
+                  { name: "음원", path: "/m/board?id=sound" },
+                  { name: "계약서/양식", path: "/m/board?id=doc" }
                 ].map(menu => (
                   <li key={menu.name}>
                     <a href={menu.path} onClick={(e) => openOverlay(menu.path, e)} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #f9fafb', color: '#1f2937', textDecoration: 'none' }}>
