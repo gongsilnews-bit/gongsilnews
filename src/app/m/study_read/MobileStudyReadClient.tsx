@@ -79,15 +79,22 @@ export default function MobileStudyReadClient({ initialLecture }: { initialLectu
 
   // 수강 등록 여부 확인
   useEffect(() => {
-    if (!lecture?.id || !user) return;
+    if (!lecture?.id || !user?.id) return;
     checkEnrollment(lecture.id, user.id).then(res => {
       if (res.success) setIsEnrolled(res.enrolled);
     });
-  }, [lecture?.id, user]);
+  }, [lecture?.id, user?.id]);
 
   const handleEnroll = async () => {
     if (!user) { alert("로그인이 필요합니다."); return; }
     if (isEnrolled) { router.push(`/m/study_watch?id=${lecture.id}`); return; }
+    // 결제 전 실시간 수강 여부 재확인 (이중 결제 방지)
+    const enrollCheck = await checkEnrollment(lecture.id, user.id);
+    if (enrollCheck.success && enrollCheck.enrolled) {
+      setIsEnrolled(true);
+      router.push(`/m/study_watch?id=${lecture.id}`);
+      return;
+    }
     const dp = lecture.discount_price || lecture.price || 0;
     if (dp <= 0) {
       setEnrolling(true);
