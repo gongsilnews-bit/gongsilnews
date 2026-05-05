@@ -156,7 +156,8 @@ export default function BoardWriteClient({
       youtube_url: firstYt || undefined,
       drive_url: firstDrive || undefined,
       external_url: currentLinks.length > 0 ? JSON.stringify(currentLinks) : undefined,
-      author_name: editPost?.author_name || "관리자",
+      author_id: serverUser?.id || undefined,
+      author_name: isEditMode ? editPost?.author_name : (serverUser?.name || serverUser?.email?.split('@')[0] || "익명"),
     });
 
     if (res.success && res.postId) {

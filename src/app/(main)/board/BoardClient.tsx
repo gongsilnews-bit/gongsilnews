@@ -191,7 +191,8 @@ export default function BoardClient({ board, initialPosts, serverUser, serverUse
       board_id: board.board_id,
       title: postTitle,
       content: postContent,
-      author_name: "관리자 (테스트)",
+      author_id: serverUser?.id || undefined,
+      author_name: serverUser?.name || serverUser?.email?.split('@')[0] || "익명",
       // thumbnail_url 등 기타 정보는 실제 구현 시 업로드 후 설정
     });
     setIsSubmitting(false);
