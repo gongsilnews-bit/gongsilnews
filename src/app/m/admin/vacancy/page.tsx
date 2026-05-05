@@ -18,6 +18,7 @@ function MobileVacancyAdmin() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [searchKeyword, setSearchKeyword] = useState("");
   const [activeKeyword, setActiveKeyword] = useState("");
+  const [previewId, setPreviewId] = useState<string | null>(null);
 
   useEffect(() => {
     async function init() {
@@ -36,6 +37,16 @@ function MobileVacancyAdmin() {
       setAuthChecked(true);
     }
     init();
+  }, []);
+
+  useEffect(() => {
+    const handleMessage = (e: MessageEvent) => {
+      if (e.data?.type === 'CLOSE_VACANCY_OVERLAY') {
+        setPreviewId(null);
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
   }, []);
 
   const fetchVacancies = async () => {
@@ -255,7 +266,7 @@ function MobileVacancyAdmin() {
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 {/* 기본 3종 버튼 (미리보기, 수정, 삭제) - 항상 동일한 크기로 한 줄에 노출 */}
                 <div style={{ display: "flex", gap: 6 }}>
-                  <button onClick={() => window.open(`/m/gongsil?id=${row.id}`, "_blank")} style={{ flex: 1, height: 36, background: "#f0f9ff", color: "#2563eb", border: "1px solid #bfdbfe", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                  <button onClick={() => setPreviewId(row.id)} style={{ flex: 1, height: 36, background: "#f0f9ff", color: "#2563eb", border: "1px solid #bfdbfe", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                     👁️ 미리보기
                   </button>
                   <button onClick={() => router.push(`/m/admin/vacancy/write?id=${row.id}`)} style={{ flex: 1, height: 36, background: "#4b5563", color: "#fff", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
@@ -288,6 +299,23 @@ function MobileVacancyAdmin() {
       >
         +
       </button>
+
+      {/* 미리보기 오버레이 (iframe) */}
+      {previewId && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 99999, background: "rgba(0,0,0,0.6)" }}>
+          <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column" }}>
+            <div style={{ height: "40px", background: "rgba(0,0,0,0.8)", display: "flex", justifyContent: "flex-end", padding: "0 16px" }}>
+              <button onClick={() => setPreviewId(null)} style={{ background: "none", border: "none", color: "#fff", fontSize: "24px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                &times;
+              </button>
+            </div>
+            <iframe 
+              src={`/m/gongsil?id=${previewId}&embed=true`} 
+              style={{ width: "100%", flex: 1, border: "none", background: "#f4f6f8" }}
+            />
+          </div>
+        </div>
+      )}
 
       <style>{`
         .hide-scrollbar::-webkit-scrollbar { display: none; }
