@@ -4,6 +4,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
+import { getUserActivityCounts } from '@/app/actions/userActivity';
 
 export default function GlobalDrawerMenu() {
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -15,7 +16,8 @@ export default function GlobalDrawerMenu() {
     myVacancies: 0,
     bookmarkedArticles: 0,
     bookmarkedVacancies: 0,
-    subscribedReporters: 0
+    subscribedReporters: 0,
+    myLectures: 0
   });
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -97,27 +99,11 @@ export default function GlobalDrawerMenu() {
             const r = data.role?.trim().toUpperCase() || '';
             const isAdmin = r === 'ADMIN' || r === '최고관리자' || r.includes('관리자');
 
-            const [
-              { count: myArticlesCount },
-              { count: myVacanciesCount },
-              { count: bookmarkedArticlesCount },
-              { count: bookmarkedVacanciesCount },
-              { count: subscribedReportersCount }
-            ] = await Promise.all([
-              supabase.from('articles').select('*', { count: 'exact', head: true }).eq('author_id', user.id),
-              supabase.from('vacancies').select('*', { count: 'exact', head: true }).eq('member_id', user.id),
-              supabase.from('article_bookmarks').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
-              supabase.from('vacancy_wishlist').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
-              supabase.from('reporter_subscriptions').select('*', { count: 'exact', head: true }).eq('user_id', user.id)
-            ]);
-            
-            setUserActivityCounts({
-              myArticles: myArticlesCount || 0,
-              myVacancies: myVacanciesCount || 0,
-              bookmarkedArticles: bookmarkedArticlesCount || 0,
-              bookmarkedVacancies: bookmarkedVacanciesCount || 0,
-              subscribedReporters: subscribedReportersCount || 0
-            });
+            // 서버 액션으로 카운트 조회 (Service Role Key → RLS 우회)
+            const activityRes = await getUserActivityCounts(user.id);
+            if (activityRes.success) {
+              setUserActivityCounts(activityRes.counts);
+            }
 
             if (isAdmin) {
               const [
@@ -428,7 +414,7 @@ export default function GlobalDrawerMenu() {
                   },
                   { 
                     icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>, 
-                    label: '내 수강특강', href: '/m/my_lectures', count: 0
+                    label: '내 수강특강', href: '/m/my_lectures', count: userActivityCounts.myLectures
                   },
                 ].map((item) => (
                   <li key={item.label}>

@@ -247,10 +247,6 @@ export default function MobileStudyReadClient({ initialLecture }: { initialLectu
         {monthlyPrice && <div style={{ fontSize: 14, fontWeight: 700, color: "#059669", marginBottom: 12 }}>월 {monthlyPrice.toLocaleString()}P <span style={{ color: "#999", fontWeight: 500 }}>({lecture.duration_months}개월)</span></div>}
 
         {/* CTA */}
-        <button style={{ width: "100%", padding: "14px 0", borderRadius: 8, border: "1px solid #e4e4e4", background: "#fff", fontSize: 14, fontWeight: 700, marginBottom: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-          쿠폰 받기
-        </button>
         <button onClick={handleEnroll} disabled={enrolling} style={{ width: "100%", padding: "14px 0", borderRadius: 8, border: "none", background: isEnrolled ? "#2563eb" : "#059669", color: "#fff", fontSize: 16, fontWeight: 700, marginBottom: 12 }}>
           {enrolling ? "처리 중..." : isEnrolled ? "▶ 수강 이어하기" : displayPrice ? `${displayPrice.toLocaleString()}P 결제 후 수강하기` : "무료 수강 시작하기"}
         </button>
