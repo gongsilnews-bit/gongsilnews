@@ -491,9 +491,6 @@ export default function BoardReadClient({
             </div>
             <div style={{ display: "flex", gap: 6 }}>
               <Link href={listUrl} style={{ border: "1px solid #d1d5db", background: "#fff", color: "#555", padding: "9px 17px", borderRadius: 3, fontSize: 13, fontWeight: 600, textDecoration: "none", display: "inline-block" }}>목록</Link>
-              {currentUser && (
-                <Link href={listUrl + (listUrl.includes("?") ? "&" : "?") + "mine=true"} style={{ border: "1px solid #d1d5db", background: "#fff", color: "#555", padding: "9px 17px", borderRadius: 3, fontSize: 13, fontWeight: 600, textDecoration: "none", display: "inline-block" }}>내가등록한글 보기</Link>
-              )}
               {(currentUser?.role?.toLowerCase() === 'admin' || currentUser?.role?.toLowerCase() === 'super_admin' || currentUser?.id === post.author_id) && (
                 <>
                   <Link href={`/board_write?board_id=${boardId}&post_id=${post.id}`} style={{ border: "1px solid #d1d5db", background: "#fff", color: "#555", padding: "9px 17px", borderRadius: 3, fontSize: 13, fontWeight: 600, textDecoration: "none", display: "inline-block" }}>수정</Link>
