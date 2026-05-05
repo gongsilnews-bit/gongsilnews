@@ -234,7 +234,7 @@ export default function MobileReporterClient({
                 {agencyInfo ? agencyInfo.name : profile.name}
                 <div style={{ display: "flex", alignItems: "center", gap: "4px", background: "rgba(255,255,255,0.15)", padding: "2px 6px", borderRadius: "8px", fontSize: "10px", fontWeight: 700, color: "#fff", border: "1px solid rgba(255,255,255,0.2)" }}>
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-                  미니홈피
+                  기자홈피
                 </div>
               </div>
               
@@ -254,7 +254,7 @@ export default function MobileReporterClient({
                   </span>
                 )}
                 
-                <div style={{ fontSize: "14px", color: "#60a5fa", fontWeight: "bold", marginTop: "4px", display: "flex", flexDirection: "column", gap: "6px" }}>
+                <div style={{ fontSize: "14px", color: "#fff", fontWeight: "bold", marginTop: "4px", display: "flex", flexDirection: "column", gap: "6px" }}>
                   {agencyInfo?.phone && agencyInfo.phone.split(',').map((num: string, idx: number) => {
                     const cleanNum = num.trim();
                     return (
@@ -330,11 +330,31 @@ export default function MobileReporterClient({
           <div style={{ display: "flex", gap: "8px" }}>
             <button onClick={handleSubscribe} disabled={subLoading}
               style={{ flex: 1, padding: "12px 0", borderRadius: "10px", border: isSubscribed ? "none" : "1px solid rgba(255,255,255,0.2)", background: isSubscribed ? "rgba(255,255,255,0.15)" : "transparent", color: "#fff", fontSize: "14px", fontWeight: "bold", cursor: "pointer", transition: "all 0.2s" }}>
-              {subLoading ? "..." : isSubscribed ? "✓ 구독중" : "+ 구독"}
+              {subLoading ? "..." : isSubscribed ? (
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  구독중
+                </div>
+              ) : (
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                  구독
+                </div>
+              )}
             </button>
             <button onClick={handleCheer} disabled={cheerLoading}
               style={{ flex: 1, padding: "12px 0", borderRadius: "10px", border: isCheered ? "none" : "1px solid rgba(255,255,255,0.2)", background: isCheered ? "rgba(255,255,255,0.15)" : "transparent", color: "#fff", fontSize: "14px", fontWeight: "bold", cursor: "pointer", transition: "all 0.2s" }}>
-              {cheerLoading ? "..." : isCheered ? "✓ 응원중" : "👏 응원"}
+              {cheerLoading ? "..." : isCheered ? (
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  응원중
+                </div>
+              ) : (
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
+                  <span style={{ fontSize: "14px" }}>👏</span>
+                  응원
+                </div>
+              )}
             </button>
           </div>
           <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>

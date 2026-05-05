@@ -234,7 +234,7 @@ export default function PCReporterClient({
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: "4px", background: "rgba(255,255,255,0.15)", padding: "4px 8px", borderRadius: "12px", fontSize: "11px", fontWeight: 700, color: "#fff", border: "1px solid rgba(255,255,255,0.2)" }}>
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-                    미니홈피
+                    기자홈피
                   </div>
                 </div>
               </>
@@ -298,7 +298,7 @@ export default function PCReporterClient({
               style={{ flex: 1, padding: "12px 0", borderRadius: "10px", border: isSubscribed ? "none" : "1px solid rgba(255,255,255,0.2)", background: isSubscribed ? "rgba(255,255,255,0.15)" : "transparent", color: "#fff", fontSize: "14px", fontWeight: "bold", cursor: "pointer", transition: "all 0.2s" }}>
               {subLoading ? "..." : isSubscribed ? (
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                   구독중
                 </div>
               ) : (
@@ -312,7 +312,7 @@ export default function PCReporterClient({
               style={{ flex: 1, padding: "12px 0", borderRadius: "10px", border: isCheered ? "none" : "1px solid rgba(255,255,255,0.2)", background: isCheered ? "rgba(255,255,255,0.15)" : "transparent", color: "#fff", fontSize: "14px", fontWeight: "bold", cursor: "pointer", transition: "all 0.2s" }}>
               {cheerLoading ? "..." : isCheered ? (
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                   응원중
                 </div>
               ) : (

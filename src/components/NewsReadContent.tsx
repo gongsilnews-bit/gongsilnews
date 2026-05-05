@@ -554,9 +554,9 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
                     <span style={{ fontSize: "13px", color: "#666" }}>기자</span>
                     {article.author_id && (
                       <Link href={`/${isMobile ? "m/" : ""}reporter/${article.author_id}`} style={{ textDecoration: "none" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "4px", background: "#f9fafb", padding: "2px 8px", borderRadius: "12px", fontSize: "11px", fontWeight: 700, color: "#1a73e8", border: "1px solid #e5e7eb", cursor: "pointer", transition: "all 0.2s" }} onMouseEnter={(e) => { e.currentTarget.style.background = "#eff6ff"; e.currentTarget.style.borderColor = "#bfdbfe"; }} onMouseLeave={(e) => { e.currentTarget.style.background = "#f9fafb"; e.currentTarget.style.borderColor = "#e5e7eb"; }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px", background: "#faf5ff", padding: "2px 8px", borderRadius: "12px", fontSize: "11px", fontWeight: 700, color: "#7e22ce", border: "1px solid #e9d5ff", cursor: "pointer", transition: "all 0.2s" }} onMouseEnter={(e) => { e.currentTarget.style.background = "#f3e8ff"; e.currentTarget.style.borderColor = "#d8b4fe"; }} onMouseLeave={(e) => { e.currentTarget.style.background = "#faf5ff"; e.currentTarget.style.borderColor = "#e9d5ff"; }}>
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-                          미니홈피
+                          기자홈피
                         </div>
                       </Link>
                     )}
@@ -732,7 +732,7 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
                     <span style={{ fontWeight: 800, color: "#111", fontSize: 16 }}>{article.author_name || "공실뉴스"}</span>
                     <span style={{ color: "#666", fontSize: 14 }}>{authorRole === "ADMIN" ? "기자" : "객원기자"}</span>
                     {article.author_id && (
-                      <Link href={isMobile ? `/m/reporter/${article.author_id}` : `/reporter/${article.author_id}`} style={{ background: "#e11d48", color: "#fff", fontSize: 11, fontWeight: "bold", padding: "4px 8px", borderRadius: 4, textDecoration: "none" }}>다른기사 보기</Link>
+                      <Link href={isMobile ? `/m/reporter/${article.author_id}` : `/reporter/${article.author_id}`} style={{ background: "#7e22ce", color: "#fff", fontSize: 11, fontWeight: "bold", padding: "4px 8px", borderRadius: 4, textDecoration: "none" }}>다른기사 보기</Link>
                     )}
                   </div>
                   {authorEmail && <div style={{ color: "#888", fontSize: 13 }}>{authorEmail}</div>}
