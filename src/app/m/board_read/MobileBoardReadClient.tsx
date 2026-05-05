@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
+import BoardDropdownHeader from "../_components/header/BoardDropdownHeader";
 import { incrementBoardView, saveBoardComment, deleteBoardPost } from "@/app/actions/board";
 import { getPermissionLevel, canAccessBoard, getLevelName } from "@/utils/permissionCheck";
 import { createClient } from "@/utils/supabase/client";
@@ -125,9 +126,7 @@ export default function MobileBoardReadClient({
         <button onClick={() => router.back()} style={{ background: 'none', border: 'none', padding: '8px', marginLeft: '-8px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
         </button>
-        <div style={{ flex: 1, textAlign: 'center', fontSize: '16px', fontWeight: 700, color: '#111827' }}>
-          {board?.name || "자료실"}
-        </div>
+        <BoardDropdownHeader currentBoardName={board?.name || "자료실"} />
         <button onClick={() => router.push('/m/search')} style={{ background: 'none', border: 'none', padding: '8px', marginRight: '-8px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
         </button>
