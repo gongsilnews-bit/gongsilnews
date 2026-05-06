@@ -17,29 +17,111 @@ interface Props {
   onNameChange: (id: string, name: string) => void;
 }
 
+type Period = "today" | "yesterday" | "week" | "month" | "all";
+
+function getPeriodDates(period: Period) {
+  const now = new Date();
+  const start = new Date(now);
+  const end = new Date(now);
+  const prevStart = new Date(now);
+  const prevEnd = new Date(now);
+  
+  if (period === "all") {
+    return { start: null, end: null, prevStart: null, prevEnd: null };
+  }
+  
+  if (period === "today") {
+    start.setHours(0,0,0,0);
+    prevStart.setDate(start.getDate() - 1);
+    prevStart.setHours(0,0,0,0);
+    prevEnd.setDate(end.getDate() - 1);
+    prevEnd.setHours(23,59,59,999);
+    return { start: start.toISOString(), end: end.toISOString(), prevStart: prevStart.toISOString(), prevEnd: prevEnd.toISOString() };
+  }
+  
+  if (period === "yesterday") {
+    start.setDate(start.getDate() - 1);
+    start.setHours(0,0,0,0);
+    end.setDate(end.getDate() - 1);
+    end.setHours(23,59,59,999);
+    prevStart.setDate(start.getDate() - 1);
+    prevStart.setHours(0,0,0,0);
+    prevEnd.setDate(end.getDate() - 1);
+    prevEnd.setHours(23,59,59,999);
+    return { start: start.toISOString(), end: end.toISOString(), prevStart: prevStart.toISOString(), prevEnd: prevEnd.toISOString() };
+  }
+
+  if (period === "week") {
+    start.setDate(start.getDate() - 7);
+    start.setHours(0,0,0,0);
+    prevStart.setDate(start.getDate() - 7);
+    prevStart.setHours(0,0,0,0);
+    prevEnd.setDate(start.getDate() - 1);
+    prevEnd.setHours(23,59,59,999);
+    return { start: start.toISOString(), end: end.toISOString(), prevStart: prevStart.toISOString(), prevEnd: prevEnd.toISOString() };
+  }
+
+  if (period === "month") {
+    start.setDate(1);
+    start.setHours(0,0,0,0);
+    prevStart.setMonth(prevStart.getMonth() - 1);
+    prevStart.setDate(1);
+    prevStart.setHours(0,0,0,0);
+    prevEnd.setDate(0);
+    prevEnd.setHours(23,59,59,999);
+    return { start: start.toISOString(), end: end.toISOString(), prevStart: prevStart.toISOString(), prevEnd: prevEnd.toISOString() };
+  }
+  return { start: null, end: null, prevStart: null, prevEnd: null };
+}
+
 export default function AgentDashboardTab({ theme, agentNames, onNameChange }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
+  const [period, setPeriod] = useState<Period>("all");
+  const [loadingStats, setLoadingStats] = useState(false);
+
+  // Current stats
   const [agentStats, setAgentStats] = useState<Record<string, { totalTokens: number; costKrw: number; messageCount: number }>>({});
   const [workStats, setWorkStats] = useState<any>(null);
+
+  // Previous stats
+  const [prevAgentStats, setPrevAgentStats] = useState<Record<string, { totalTokens: number; costKrw: number; messageCount: number }>>({});
+  const [prevWorkStats, setPrevWorkStats] = useState<any>(null);
+
   const [reportLoading, setReportLoading] = useState(false);
   const [dailyReport, setDailyReport] = useState<string | null>(null);
   const [reportDate, setReportDate] = useState<string>("");
   const [reportHistory, setReportHistory] = useState<{ id: string; content: string; created_at: string }[]>([]);
   const [selectedReportIdx, setSelectedReportIdx] = useState<number>(0);
 
-  // DB에서 에이전트별 통계 불러오기
+  // Fetch Stats when period changes
   useEffect(() => {
     const fetchStats = async () => {
+      setLoadingStats(true);
+      const dates = getPeriodDates(period);
+      
       const [costRes, workRes] = await Promise.all([
-        getAgentCostSummary(),
-        getAgentWorkStats(),
+        getAgentCostSummary(dates.start || undefined, dates.end || undefined),
+        getAgentWorkStats(dates.start || undefined, dates.end || undefined),
       ]);
-      if (costRes.perAgent) setAgentStats(costRes.perAgent);
+      setAgentStats(costRes.perAgent || {});
       setWorkStats(workRes);
+
+      if (dates.prevStart) {
+        const [pCostRes, pWorkRes] = await Promise.all([
+          getAgentCostSummary(dates.prevStart, dates.prevEnd!),
+          getAgentWorkStats(dates.prevStart, dates.prevEnd!),
+        ]);
+        setPrevAgentStats(pCostRes.perAgent || {});
+        setPrevWorkStats(pWorkRes);
+      } else {
+        setPrevAgentStats({});
+        setPrevWorkStats(null);
+      }
+      setLoadingStats(false);
     };
     fetchStats();
-  }, []);
+  }, [period]);
 
   // DB에서 저장된 보고서 불러오기
   useEffect(() => {
@@ -55,7 +137,6 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
     fetchReports();
   }, []);
 
-  // 이름 저장
   const saveName = (id: string) => {
     if (editValue.trim()) {
       onNameChange(id, editValue.trim());
@@ -69,6 +150,7 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
     padding: "24px 28px",
     boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
     border: `1px solid ${theme.border}`,
+    position: "relative",
   };
 
   // 전체 합산
@@ -76,15 +158,61 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
   const totalCost = Object.values(agentStats).reduce((s, a) => s + a.costKrw, 0);
   const totalTokens = Object.values(agentStats).reduce((s, a) => s + a.totalTokens, 0);
 
+  const prevTotalMessages = Object.values(prevAgentStats).reduce((s, a) => s + a.messageCount, 0);
+  const prevTotalCost = Object.values(prevAgentStats).reduce((s, a) => s + a.costKrw, 0);
+
+  const renderDelta = (cur: number, prev: number | undefined, isCost = false) => {
+    if (period === "all" || prev === undefined) return null;
+    const diff = cur - prev;
+    if (diff === 0) return <span style={{ fontSize: 11, color: theme.textSecondary, marginLeft: 6 }}>(-)</span>;
+    const format = isCost ? `₩${Math.abs(diff).toFixed(1)}` : Math.abs(diff);
+    if (diff > 0) return <span style={{ fontSize: 11, color: "#ef4444", marginLeft: 6 }}>▲ {format}</span>;
+    return <span style={{ fontSize: 11, color: "#3b82f6", marginLeft: 6 }}>▼ {format}</span>;
+  };
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 20, position: "relative" }}>
+      
+      {/* ── 상단 필터 ── */}
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: -10 }}>
+        <div style={{ display: "flex", background: theme.darkMode ? "#1a1b1e" : "#f1f5f9", borderRadius: 8, padding: 4 }}>
+          {[
+            { id: "today", label: "오늘" },
+            { id: "yesterday", label: "어제" },
+            { id: "week", label: "최근 7일" },
+            { id: "month", label: "이번 달" },
+            { id: "all", label: "전체 (누적)" },
+          ].map((p) => (
+            <button
+              key={p.id}
+              onClick={() => setPeriod(p.id as Period)}
+              style={{
+                padding: "6px 12px", fontSize: 13, fontWeight: period === p.id ? 700 : 500,
+                background: period === p.id ? "#fff" : "transparent",
+                color: period === p.id ? "#2563eb" : theme.textSecondary,
+                border: "none", borderRadius: 6, cursor: "pointer", fontFamily: "inherit",
+                boxShadow: period === p.id ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
+                transition: "all 0.2s"
+              }}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {loadingStats && (
+        <div style={{ position: "absolute", top: 50, left: 0, right: 0, bottom: 0, background: "rgba(255,255,255,0.5)", zIndex: 10, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <span style={{ fontSize: 14, fontWeight: 700, color: "#2563eb", background: "#fff", padding: "8px 16px", borderRadius: 20, boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}>데이터 불러오는 중...</span>
+        </div>
+      )}
 
       {/* ── 전체 요약 카드 ── */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
         {[
-          { label: "활성 에이전트", value: DEFAULT_AGENTS.filter(a => a.status === "running").length + "명", icon: "🟢", color: "#10b981" },
-          { label: "전체 대화 수", value: totalMessages + "건", icon: "📋", color: "#3b82f6" },
-          { label: "전체 API 비용", value: `₩${totalCost.toFixed(1)}`, icon: "💸", color: "#f59e0b" },
+          { label: "활성 에이전트", value: DEFAULT_AGENTS.filter(a => a.status === "running").length + "명", icon: "🟢", color: "#10b981", noDelta: true },
+          { label: "대화 수", value: totalMessages + "건", prev: prevTotalMessages, icon: "📋", color: "#3b82f6" },
+          { label: "API 비용", value: `₩${totalCost.toFixed(1)}`, prev: prevTotalCost, icon: "💸", color: "#f59e0b", isCost: true },
         ].map((card, i) => (
           <div key={i} style={{ ...cardStyle, display: "flex", alignItems: "center", gap: 16 }}>
             <div style={{
@@ -96,7 +224,10 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
             </div>
             <div>
               <div style={{ fontSize: 13, color: theme.textSecondary, marginBottom: 4 }}>{card.label}</div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: theme.textPrimary }}>{card.value}</div>
+              <div style={{ display: "flex", alignItems: "center" }}>
+                <span style={{ fontSize: 22, fontWeight: 800, color: theme.textPrimary }}>{card.value}</span>
+                {!card.noDelta && renderDelta(card.isCost ? totalCost : totalMessages, card.prev, card.isCost)}
+              </div>
             </div>
           </div>
         ))}
@@ -106,9 +237,14 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
       <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16 }}>
         {DEFAULT_AGENTS.map((agent) => {
           const stats = agentStats[agent.id] || { totalTokens: 0, costKrw: 0, messageCount: 0 };
+          const pStats = prevAgentStats[agent.id] || { totalTokens: 0, costKrw: 0, messageCount: 0 };
+
+          const agentWork = workStats ? workStats[agent.id === "articleReview" ? "article" : agent.id] : null;
+          const pAgentWork = prevWorkStats ? prevWorkStats[agent.id === "articleReview" ? "article" : agent.id] : null;
+
           return (
             <div key={agent.id} style={{ ...cardStyle }}>
-              {/* 헤더: 이모지 + 이름(수정 가능) + 상태 */}
+              {/* 헤더 */}
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
                 <span style={{ fontSize: 32 }}>{agent.emoji}</span>
                 <div style={{ flex: 1 }}>
@@ -155,15 +291,15 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
               </div>
 
               {/* 업무 처리 현황 */}
-              {workStats && (
+              {agentWork && (
                 <>
                   <div style={{ fontSize: 13, fontWeight: 700, color: theme.textSecondary, marginBottom: 8 }}>📋 업무 처리 현황</div>
-                  <div style={{ display: "grid", gridTemplateColumns: agent.id === "verify" ? "repeat(4, 1fr)" : "repeat(4, 1fr)", gap: 8, marginBottom: 16 }}>
-                    {agent.id === "verify" && workStats.verify && [
-                      { label: "가입승인", value: workStats.verify.approved, color: "#10b981", icon: "✅" },
-                      { label: "반려", value: workStats.verify.rejected, color: "#ef4444", icon: "❌" },
-                      { label: "대기중", value: workStats.verify.pending, color: "#f59e0b", icon: "⏳" },
-                      { label: "서류보완", value: workStats.verify.supplement, color: "#8b5cf6", icon: "📝" },
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginBottom: 16 }}>
+                    {agent.id === "verify" && [
+                      { label: "가입승인", value: agentWork.approved, prev: pAgentWork?.approved, color: "#10b981", icon: "✅" },
+                      { label: "반려", value: agentWork.rejected, prev: pAgentWork?.rejected, color: "#ef4444", icon: "❌" },
+                      { label: "대기중", value: agentWork.pending, prev: pAgentWork?.pending, color: "#f59e0b", icon: "⏳" },
+                      { label: "서류보완", value: agentWork.supplement, prev: pAgentWork?.supplement, color: "#8b5cf6", icon: "📝" },
                     ].map((stat, i) => (
                       <div key={i} style={{
                         textAlign: "center", padding: "10px 6px",
@@ -171,14 +307,17 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
                         borderRadius: 10, border: `1px solid ${theme.border}`,
                       }}>
                         <div style={{ fontSize: 11, color: theme.textSecondary, marginBottom: 2 }}>{stat.icon} {stat.label}</div>
-                        <div style={{ fontSize: 20, fontWeight: 800, color: stat.color }}>{stat.value}</div>
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                          <span style={{ fontSize: 20, fontWeight: 800, color: stat.color }}>{stat.value}</span>
+                          {renderDelta(stat.value, stat.prev)}
+                        </div>
                       </div>
                     ))}
-                    {agent.id === "articleReview" && workStats.article && [
-                      { label: "승인(게시)", value: workStats.article.approved, color: "#10b981", icon: "✅" },
-                      { label: "승인대기", value: workStats.article.pending, color: "#f59e0b", icon: "⏳" },
-                      { label: "작성중", value: workStats.article.draft, color: "#3b82f6", icon: "✍️" },
-                      { label: "반려", value: workStats.article.rejected, color: "#ef4444", icon: "❌" },
+                    {(agent.id === "articleReview" || agent.id === "article") && [
+                      { label: "승인(게시)", value: agentWork.approved, prev: pAgentWork?.approved, color: "#10b981", icon: "✅" },
+                      { label: "승인대기", value: agentWork.pending, prev: pAgentWork?.pending, color: "#f59e0b", icon: "⏳" },
+                      { label: "작성중", value: agentWork.draft, prev: pAgentWork?.draft, color: "#3b82f6", icon: "✍️" },
+                      { label: "반려", value: agentWork.rejected, prev: pAgentWork?.rejected, color: "#ef4444", icon: "❌" },
                     ].map((stat, i) => (
                       <div key={i} style={{
                         textAlign: "center", padding: "10px 6px",
@@ -186,22 +325,10 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
                         borderRadius: 10, border: `1px solid ${theme.border}`,
                       }}>
                         <div style={{ fontSize: 11, color: theme.textSecondary, marginBottom: 2 }}>{stat.icon} {stat.label}</div>
-                        <div style={{ fontSize: 20, fontWeight: 800, color: stat.color }}>{stat.value}</div>
-                      </div>
-                    ))}
-                    {agent.id === "article" && workStats.article && [
-                      { label: "승인(게시)", value: workStats.article.approved, color: "#10b981", icon: "✅" },
-                      { label: "승인대기", value: workStats.article.pending, color: "#f59e0b", icon: "⏳" },
-                      { label: "작성중", value: workStats.article.draft, color: "#3b82f6", icon: "✍️" },
-                      { label: "반려", value: workStats.article.rejected, color: "#ef4444", icon: "❌" },
-                    ].map((stat, i) => (
-                      <div key={i} style={{
-                        textAlign: "center", padding: "10px 6px",
-                        background: theme.darkMode ? "#1a1b1e" : "#f8fafc",
-                        borderRadius: 10, border: `1px solid ${theme.border}`,
-                      }}>
-                        <div style={{ fontSize: 11, color: theme.textSecondary, marginBottom: 2 }}>{stat.icon} {stat.label}</div>
-                        <div style={{ fontSize: 20, fontWeight: 800, color: stat.color }}>{stat.value}</div>
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                          <span style={{ fontSize: 20, fontWeight: 800, color: stat.color }}>{stat.value}</span>
+                          {renderDelta(stat.value, stat.prev)}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -212,9 +339,9 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
               <div style={{ fontSize: 13, fontWeight: 700, color: theme.textSecondary, marginBottom: 8 }}>💸 API 사용 통계</div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
                 {[
-                  { label: "대화 수", value: stats.messageCount + "건", color: "#3b82f6" },
-                  { label: "토큰 사용", value: stats.totalTokens.toLocaleString(), color: "#8b5cf6" },
-                  { label: "API 비용", value: `₩${stats.costKrw.toFixed(1)}`, color: "#f59e0b" },
+                  { label: "대화 수", value: stats.messageCount + "건", cur: stats.messageCount, prev: pStats.messageCount, color: "#3b82f6" },
+                  { label: "토큰 사용", value: stats.totalTokens.toLocaleString(), cur: stats.totalTokens, prev: pStats.totalTokens, color: "#8b5cf6" },
+                  { label: "API 비용", value: `₩${stats.costKrw.toFixed(1)}`, cur: stats.costKrw, prev: pStats.costKrw, color: "#f59e0b", isCost: true },
                 ].map((stat, i) => (
                   <div key={i} style={{
                     textAlign: "center", padding: "10px 6px",
@@ -222,7 +349,10 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
                     borderRadius: 10, border: `1px solid ${theme.border}`,
                   }}>
                     <div style={{ fontSize: 11, color: theme.textSecondary, marginBottom: 2 }}>{stat.label}</div>
-                    <div style={{ fontSize: 18, fontWeight: 800, color: stat.color }}>{stat.value}</div>
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                      <span style={{ fontSize: 18, fontWeight: 800, color: stat.color }}>{stat.value}</span>
+                      {renderDelta(stat.cur, stat.prev, stat.isCost)}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -245,7 +375,6 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
                 if (res.success) {
                   setDailyReport(res.report);
                   setReportDate(res.date);
-                  // 목록 갱신
                   const updated = await loadDailyReports(10);
                   if (updated.success) {
                     setReportHistory(updated.data);

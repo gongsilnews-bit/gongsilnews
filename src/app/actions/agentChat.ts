@@ -93,12 +93,17 @@ export async function loadAgentChats(channelId: string) {
 /**
  * 에이전트별 API 비용 및 통계를 조회합니다.
  */
-export async function getAgentCostSummary() {
+export async function getAgentCostSummary(startDate?: string, endDate?: string) {
   const supabase = getAdminClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from("agent_chats")
     .select("channel_id, cost_krw, total_tokens, role")
     .eq("role", "agent");
+
+  if (startDate) query = query.gte("created_at", startDate);
+  if (endDate) query = query.lte("created_at", endDate);
+
+  const { data, error } = await query;
 
   if (error || !data) return { totalCost: 0, totalTokens: 0, perAgent: {} };
 
@@ -123,49 +128,37 @@ export async function getAgentCostSummary() {
  * 에이전트별 실제 업무 처리 현황을 조회합니다.
  * (기존 members, articles 테이블에서 읽기 전용으로 통계만 가져옴)
  */
-export async function getAgentWorkStats() {
+export async function getAgentWorkStats(startDate?: string, endDate?: string) {
   const supabase = getAdminClient();
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const todayISO = today.toISOString();
 
-  // ── 회원승인 에이전트 업무 현황 ──
-  const [approved, rejected, pending, supplement] = await Promise.all([
-    supabase.from("members").select("id", { count: "exact", head: true }).eq("status", "APPROVED"),
-    supabase.from("members").select("id", { count: "exact", head: true }).eq("status", "REJECTED"),
-    supabase.from("members").select("id", { count: "exact", head: true }).eq("status", "PENDING"),
-    supabase.from("members").select("id", { count: "exact", head: true }).eq("status", "SUPPLEMENT"),
-  ]);
+  const getCount = async (table: string, filters: Record<string, any>) => {
+    let query = supabase.from(table).select("id", { count: "exact", head: true });
+    for (const [k, v] of Object.entries(filters)) {
+      query = query.eq(k, v);
+    }
+    if (startDate) query = query.gte("updated_at", startDate);
+    if (endDate) query = query.lte("updated_at", endDate);
+    const { count } = await query;
+    return count || 0;
+  };
 
-  // 오늘 처리 건수
-  const [todayApproved, todayRejected] = await Promise.all([
-    supabase.from("members").select("id", { count: "exact", head: true }).eq("status", "APPROVED").gte("updated_at", todayISO),
-    supabase.from("members").select("id", { count: "exact", head: true }).eq("status", "REJECTED").gte("updated_at", todayISO),
-  ]);
-
-  // ── 기사작성 에이전트 업무 현황 ──
-  const [articleApproved, articlePending, articleDraft, articleRejected] = await Promise.all([
-    supabase.from("articles").select("id", { count: "exact", head: true }).eq("status", "APPROVED").eq("is_deleted", false),
-    supabase.from("articles").select("id", { count: "exact", head: true }).eq("status", "PENDING").eq("is_deleted", false),
-    supabase.from("articles").select("id", { count: "exact", head: true }).eq("status", "DRAFT").eq("is_deleted", false),
-    supabase.from("articles").select("id", { count: "exact", head: true }).eq("status", "REJECTED").eq("is_deleted", false),
+  const [
+    approved, rejected, pending, supplement,
+    articleApproved, articlePending, articleDraft, articleRejected
+  ] = await Promise.all([
+    getCount("members", { status: "APPROVED" }),
+    getCount("members", { status: "REJECTED" }),
+    getCount("members", { status: "PENDING" }),
+    getCount("members", { status: "SUPPLEMENT" }),
+    getCount("articles", { status: "APPROVED", is_deleted: false }),
+    getCount("articles", { status: "PENDING", is_deleted: false }),
+    getCount("articles", { status: "DRAFT", is_deleted: false }),
+    getCount("articles", { status: "REJECTED", is_deleted: false }),
   ]);
 
   return {
-    verify: {
-      approved: approved.count || 0,
-      rejected: rejected.count || 0,
-      pending: pending.count || 0,
-      supplement: supplement.count || 0,
-      todayApproved: todayApproved.count || 0,
-      todayRejected: todayRejected.count || 0,
-    },
-    article: {
-      approved: articleApproved.count || 0,
-      pending: articlePending.count || 0,
-      draft: articleDraft.count || 0,
-      rejected: articleRejected.count || 0,
-    },
+    verify: { approved, rejected, pending, supplement },
+    article: { approved: articleApproved, pending: articlePending, draft: articleDraft, rejected: articleRejected },
   };
 }
 
