@@ -1707,7 +1707,6 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                   {saving ? "⏳ 저장 중..." : `수정저장 (수정 가능 횟수: ${3 - editCount}회 남음)`}
                 </button>
                 <div style={{ fontSize: 13, color: textSecondary, textAlign: 'center' }}>
-                  ※ 기사 내용은 즉시 반영되며, 백그라운드에서 AI가 재심사를 진행합니다.<br/>
                   ※ 3회 수정 이후에는 기사를 삭제하고 새로 작성해야 합니다.
                 </div>
               </div>
