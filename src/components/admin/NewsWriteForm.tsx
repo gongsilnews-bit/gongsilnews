@@ -1268,6 +1268,14 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
           await Promise.all(attachPromises);
         }
 
+        if (finalStatus === "PENDING" || finalStatus === "승인신청") {
+           fetch('/api/agents/article-review', { 
+             method: 'POST', 
+             headers: { 'Content-Type': 'application/json' },
+             body: JSON.stringify({ articleIds: [articleId] }) 
+           }).catch(console.error);
+        }
+
         alert("✅ 기사가 저장되었습니다!");
         window.location.href = isMemberMode ? memberReturnPath : "/admin?menu=article";
       } else {
