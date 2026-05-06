@@ -898,7 +898,7 @@ function MobileGongsilContent() {
                   <span style={{ fontSize: "14px", color: "#6b7280" }}>{selectedVacancy.created_at ? new Date(selectedVacancy.created_at).toLocaleDateString("ko-KR").slice(0, -1) : ""}</span>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: "4px", color: "#ef4444", fontSize: "14px", fontWeight: 600 }}>
-                  <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#ef4444" }}></span> 허위공실광고신고
+                  <span onClick={() => alert('준비중입니다.')} style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#ef4444", cursor: "pointer" }}></span> <span onClick={() => alert('준비중입니다.')} style={{ cursor: "pointer" }}>허위공실광고신고</span>
                 </div>
               </div>
 

@@ -225,7 +225,7 @@ export default function HomepageViewPage() {
                    <span style={{ fontSize: 13, color: "#888", fontWeight: 600 }}>등록 {vacancy.created_at ? new Date(vacancy.created_at).toLocaleDateString("ko-KR") : ""}</span>
                  </div>
                  <div style={{ display: "flex", gap: 12 }}>
-                    <span style={{ fontSize: 13, color: "#fa5252", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>🚨 허위공실광고신고</span>
+                    <span onClick={() => alert('준비중입니다.')} style={{ fontSize: 13, color: "#fa5252", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>🚨 허위공실광고신고</span>
                     <span style={{ fontSize: 13, color: "#999", cursor: "pointer" }}>인쇄</span>
                  </div>
               </div>

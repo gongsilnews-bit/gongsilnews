@@ -2201,7 +2201,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                     <span style={{ fontSize: 12, color: "#888" }}>{new Date(prop.created_at).toLocaleDateString()}</span>
                   </div>
                   <div style={{ display: "flex", gap: 10, fontSize: 11 }}>
-                    <button style={{ background: "none", border: "none", cursor: "pointer", color: "#ff5a5f", display: "flex", alignItems: "center", gap: 4, padding: 0, fontSize: 11 }}>● 허위공실광고신고</button>
+                    <button onClick={() => alert('준비중입니다.')} style={{ background: "none", border: "none", cursor: "pointer", color: "#ff5a5f", display: "flex", alignItems: "center", gap: 4, padding: 0, fontSize: 11 }}>● 허위공실광고신고</button>
                     <button onClick={() => handlePrint(prop)} style={{ background: "none", border: "none", cursor: "pointer", color: "#666", display: "flex", alignItems: "center", gap: 4, padding: 0, fontSize: 11 }}>🖨 인쇄</button>
                   </div>
                 </div>

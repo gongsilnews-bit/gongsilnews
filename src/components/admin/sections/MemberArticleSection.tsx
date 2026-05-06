@@ -5,6 +5,7 @@ import { AdminSectionProps } from "./types";
 import { getMyArticles, adminUpdateArticleStatus, deleteArticle } from "@/app/actions/article";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { createClient } from "@supabase/supabase-js";
 import NewsWriteForm from "@/components/admin/NewsWriteForm";
 import ArticleDetailPanel from "@/components/admin/sections/ArticleDetailPanel";
 
@@ -22,6 +23,7 @@ export default function MemberArticleSection({ theme, memberId, memberName, memb
   const [filter, setFilter] = useState("전체");
   const [checkedIds, setCheckedIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [toastMessage, setToastMessage] = useState<{ text: string; type: "success" | "error" | "info" } | null>(null);
   
   const [searchArticleNo, setSearchArticleNo] = useState("");
   const [searchSection, setSearchSection] = useState("전체");
@@ -42,7 +44,46 @@ export default function MemberArticleSection({ theme, memberId, memberName, memb
   };
 
   useEffect(() => {
-    if (memberId) fetchArticles();
+    if (!memberId) return;
+    fetchArticles();
+
+    // Supabase Realtime Subscription for Toast Notifications
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+    if (!supabaseUrl || !supabaseKey) return;
+
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    const channel = supabase.channel(`articles_updates_\${memberId}`)
+      .on("postgres_changes", {
+        event: "UPDATE",
+        schema: "public",
+        table: "articles",
+        filter: `author_id=eq.\${memberId}`
+      }, (payload: any) => {
+        const { old: oldData, new: newData } = payload;
+        
+        // 상태가 변경되었을 때만 알림 발생
+        if (oldData && newData && oldData.status !== newData.status) {
+          if (newData.status === "APPROVED") {
+            setToastMessage({ text: `🎉 작성하신 기사가 승인 및 발행되었습니다!`, type: "success" });
+          } else if (newData.status === "REJECTED") {
+            setToastMessage({ text: `⚠️ 작성하신 기사가 반려되었습니다. 사유를 확인해주세요.`, type: "error" });
+          } else if (newData.status === "PENDING") {
+            setToastMessage({ text: `⏳ 기사 승인 심사가 시작되었습니다.`, type: "info" });
+          }
+          
+          // 알림 후 데이터 새로고침
+          fetchArticles();
+          
+          // 5초 뒤 토스트 닫기
+          setTimeout(() => setToastMessage(null), 5000);
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [memberId]);
 
   const filtered = articles.filter(a => {
@@ -232,6 +273,11 @@ export default function MemberArticleSection({ theme, memberId, memberName, memb
                         반려 사유: {a.reject_reason}
                       </div>
                     )}
+                    {a.status === "APPROVED" && a.reject_reason && a.reject_reason.includes("[AI 승인") && (
+                      <div style={{ marginTop: 4, fontSize: 12, color: "#10b981", fontWeight: 600 }}>
+                        심사 피드백: {a.reject_reason}
+                      </div>
+                    )}
                   </td>
                   <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", color: textSecondary, fontSize: 12 }}>
                     {a.created_at ? new Date(a.created_at).toISOString().split("T")[0] : "-"}
@@ -263,6 +309,36 @@ export default function MemberArticleSection({ theme, memberId, memberName, memb
           </table>
         </div>
       </div>
+
+      {/* Toast Notification UI */}
+      {toastMessage && (
+        <div style={{
+          position: "fixed",
+          bottom: 40,
+          right: 40,
+          zIndex: 9999,
+          padding: "16px 24px",
+          background: toastMessage.type === "success" ? "#10b981" : toastMessage.type === "error" ? "#ef4444" : "#3b82f6",
+          color: "#fff",
+          borderRadius: 8,
+          boxShadow: "0 10px 25px rgba(0,0,0,0.2)",
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          fontWeight: 700,
+          fontSize: 15,
+          animation: "slideIn 0.3s ease-out forwards"
+        }}>
+          <span>{toastMessage.text}</span>
+          <button onClick={() => setToastMessage(null)} style={{ background: "none", border: "none", color: "#fff", cursor: "pointer", padding: 0, marginLeft: 10 }}>✕</button>
+          <style>{`
+            @keyframes slideIn {
+              from { transform: translateX(100%); opacity: 0; }
+              to { transform: translateX(0); opacity: 1; }
+            }
+          `}</style>
+        </div>
+      )}
     </div>
   );
 }
