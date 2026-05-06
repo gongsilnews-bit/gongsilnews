@@ -247,7 +247,23 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
   const handleMemberChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     let val = e.target.value;
     if (e.target.name === "phone") val = formatPhone(val);
-    setFormData({ ...formData, [e.target.name]: val });
+    
+    setFormData((prev) => {
+      const next = { ...prev, [e.target.name]: val };
+      if (e.target.name === "plan_type") {
+        if (val === "free") {
+          next.max_vacancies = 10;
+          next.max_articles_per_month = 0;
+        } else if (val === "news_premium") {
+          next.max_vacancies = 20;
+          next.max_articles_per_month = 10;
+        } else if (val === "vacancy_premium") {
+          next.max_vacancies = 50;
+          next.max_articles_per_month = 20;
+        }
+      }
+      return next;
+    });
   };
 
   const handleAgencyChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {

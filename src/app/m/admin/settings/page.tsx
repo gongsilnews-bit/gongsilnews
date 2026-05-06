@@ -310,9 +310,15 @@ function MobileSettings() {
           lat: coords?.lat || null, lng: coords?.lng || null,
           status: saveStatus,
         });
+
+        if (saveStatus === "APPROVED" && agencyStatus !== "APPROVED") {
+          const { adminApproveRealtorApplication } = await import("@/app/admin/actions");
+          await adminApproveRealtorApplication(memberId);
+          setIsRealtor(true);
+        }
       }
 
-      if (tab === "agency" && !isRealtor) {
+      if (tab === "agency" && !isRealtor && saveStatus !== "APPROVED") {
         setIsRealtor(true);
         alert("✅ 부동산회원 전환 신청이 완료되었습니다!\n\n서류 확인 후 승인 처리됩니다.\n(보통 당일~1영업일 소요)");
         router.push("/m/admin/dashboard");

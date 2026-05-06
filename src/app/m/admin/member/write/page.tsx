@@ -55,7 +55,17 @@ function MobileMemberWrite() {
     if (!confirm(`이 회원을 ${isApprove ? '승인' : '반려'} 처리하시겠습니까?`)) return;
 
     setLoading(true);
-    const res = await adminUpdateAgency(member.id, { status });
+    
+    let res;
+    if (isApprove) {
+      const { adminApproveRealtorApplication } = await import("@/app/admin/actions");
+      res = await adminApproveRealtorApplication(member.id);
+    } else {
+      const { adminRejectRealtorApplication } = await import("@/app/admin/actions");
+      const reason = prompt("반려 사유를 입력해주세요 (취소 시 '서류 불일치'로 자동 입력됩니다):") || "서류 불일치";
+      res = await adminRejectRealtorApplication(member.id, reason);
+    }
+
     if (res.success) {
       alert(`${isApprove ? '승인' : '반려'} 처리되었습니다.`);
       router.back();

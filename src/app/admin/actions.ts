@@ -157,10 +157,33 @@ export async function adminApproveRealtorApplication(memberId: string) {
       .eq('owner_id', memberId);
     if (agencyError) return { success: false, error: agencyError.message };
 
-    // 2. members.role을 REALTOR로 변경
+    // 2. 현재 회원의 plan_type을 확인
+    const { data: member } = await supabaseAdmin
+      .from('members')
+      .select('plan_type')
+      .eq('id', memberId)
+      .single();
+
+    const planType = member?.plan_type || 'free';
+    let maxVacancies = 10;
+    let maxArticles = 0;
+
+    if (planType === 'news_premium') {
+      maxVacancies = 20;
+      maxArticles = 10;
+    } else if (planType === 'vacancy_premium') {
+      maxVacancies = 50;
+      maxArticles = 20;
+    }
+
+    // 3. members.role을 REALTOR로 변경 및 요금제별 기본 한도 세팅
     const { error: memberError } = await supabaseAdmin
       .from('members')
-      .update({ role: 'REALTOR' })
+      .update({ 
+        role: 'REALTOR',
+        max_vacancies: maxVacancies,
+        max_articles_per_month: maxArticles
+      })
       .eq('id', memberId);
     if (memberError) return { success: false, error: memberError.message };
 
