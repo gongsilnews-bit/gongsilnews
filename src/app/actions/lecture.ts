@@ -280,13 +280,23 @@ export async function deleteLecture(lectureId: string) {
       .from("lectures")
       .update({ is_deleted: true, status: "DELETED" })
       .eq("id", lectureId);
-    if (error) return { success: false, error: error.message };
+    
+    if (error) {
+      console.error("deleteLecture error:", error);
+      return { success: false, error: error.message };
+    }
 
-    // @ts-ignore
-    revalidateTag("lectures");
+    try {
+      const { revalidateTag, revalidatePath } = require("next/cache");
+      revalidateTag("lectures");
+      revalidatePath("/", "layout");
+    } catch (cacheErr) {
+      console.error("Cache revalidate error:", cacheErr);
+    }
 
     return { success: true };
   } catch (err: any) {
+    console.error("deleteLecture exception:", err);
     return { success: false, error: err.message };
   }
 }

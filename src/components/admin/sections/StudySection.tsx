@@ -205,6 +205,7 @@ export default function StudySection({ theme }: AdminSectionProps) {
                       <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
                         <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
                           <button
+                            type="button"
                             onClick={() => router.push(`?menu=study&action=write&id=${row.id}`)}
                             style={{ height: 30, padding: "0 12px", background: darkMode ? "#374151" : "#4b5563", color: "#fff", border: "none", borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}
                           >
@@ -212,6 +213,7 @@ export default function StudySection({ theme }: AdminSectionProps) {
                             수정
                           </button>
                           <button
+                            type="button"
                             onClick={() => handleDelete(row.id)}
                             style={{ height: 30, padding: "0 12px", background: darkMode ? "#2c2d31" : "#fff", color: "#9ca3af", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}
                           >
