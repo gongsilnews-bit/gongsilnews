@@ -32,15 +32,6 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [isSearchActive, setIsSearchActive] = useState(false);
 
-  const [showPromoBanner, setShowPromoBanner] = useState(false);
-  
-  useEffect(() => {
-    // 하이드레이션 에러 방지를 위해 마운트 후에만 표시 확인
-    if (localStorage.getItem('hide_realtor_promo_banner') !== 'true') {
-      setShowPromoBanner(true);
-    }
-  }, []);
-
   useEffect(() => {
     const saved = localStorage.getItem("gongsil_recent_searches");
     if (saved) {
@@ -186,36 +177,6 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
           <BannerSlot placement="TOP_FULL" style={{ borderRadius: 0 }} initialBanners={topFullBanners} />
         </div>
       </div>
-
-      {/* 🎉 부동산 회원가입 유도 프로모션 배너 */}
-      {showPromoBanner && userRole !== 'REALTOR' && userRole !== 'ADMIN' && (
-        <div style={{ width: "100%", background: "linear-gradient(90deg, #10b981, #059669)", color: "#fff", padding: "12px 0", textAlign: "center", position: "relative", zIndex: 100 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "16px", flexWrap: "wrap", padding: "0 40px", cursor: "pointer" }} onClick={() => router.push('/signup')}>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-               <span style={{ fontSize: "20px" }}>🎉</span>
-               <span style={{ fontSize: "15px", fontWeight: 700 }}>11만 부동산을 위한 정보 채널, 공실뉴스!</span>
-            </div>
-            <div style={{ fontSize: "15px", fontWeight: 500, opacity: 0.95 }}>
-               부동산회원 가입하고 <strong style={{ color: "#fef08a", fontWeight: 800 }}>공동중개 10건 무료</strong> 및 <strong style={{ color: "#fef08a", fontWeight: 800 }}>기사 무료 열람</strong> 혜택 받으세요!
-            </div>
-            <button style={{ background: "#fff", color: "#059669", border: "none", borderRadius: "20px", padding: "6px 16px", fontSize: "13px", fontWeight: 800, cursor: "pointer", boxShadow: "0 2px 4px rgba(0,0,0,0.1)", marginLeft: "8px" }}>
-               무료가입하기 →
-            </button>
-          </div>
-          <button 
-            onClick={(e) => { 
-              e.stopPropagation(); 
-              setShowPromoBanner(false); 
-              localStorage.setItem('hide_realtor_promo_banner', 'true'); 
-            }} 
-            style={{ position: "absolute", right: "20px", top: "50%", transform: "translateY(-50%)", background: "rgba(255,255,255,0.2)", border: "none", color: "#fff", width: "24px", height: "24px", borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "14px", transition: "background 0.2s" }}
-            onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.3)"}
-            onMouseLeave={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.2)"}
-          >
-            ✕
-          </button>
-        </div>
-      )}
 
       {/* 1. Top Nav Bar */}
       <div className="top-bar">
