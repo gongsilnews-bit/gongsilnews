@@ -22,56 +22,39 @@ export default function Footer() {
           .sitemap-link { font-size: 13px; color: #555; text-decoration: none; transition: color 0.15s; letter-spacing: -0.3px; }
           .sitemap-link:hover { color: #2563eb; font-weight: 700; }
         `}</style>
-        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 20px", display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 20 }}>
-          {/* 뉴스 1 */}
+        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 20px", display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 40 }}>
+          {/* 공실뉴스 */}
           <div className="sitemap-col">
-            <div className="sitemap-title">뉴스</div>
+            <div className="sitemap-title">공실뉴스</div>
             <Link href="/news_all" className="sitemap-link">전체뉴스</Link>
+            <Link href="/news_map" className="sitemap-link">우리동네부동산</Link>
             <Link href="/news_finance" className="sitemap-link">부동산·주식·재테크</Link>
             <Link href="/news_politics" className="sitemap-link">정치·경제·사회</Link>
             <Link href="/news_law" className="sitemap-link">세무·법률</Link>
             <Link href="/news_life" className="sitemap-link">여행·건강·생활</Link>
-          </div>
-          {/* 뉴스 2 (기타) */}
-          <div className="sitemap-col">
-            <div className="sitemap-title">기타 뉴스</div>
             <Link href="/news_etc?cat=it" className="sitemap-link">IT·가전·가구</Link>
             <Link href="/news_etc?cat=sports" className="sitemap-link">스포츠·연예·Car</Link>
             <Link href="/news_etc?cat=mission" className="sitemap-link">인물·미션·기타</Link>
           </div>
-          {/* 공실 & 특강 */}
+          {/* 서비스 */}
           <div className="sitemap-col">
-            <div className="sitemap-title">공실 및 교육</div>
+            <div className="sitemap-title">서비스</div>
             <Link href="/gongsil" className="sitemap-link">공실열람</Link>
+            <Link href="/news_map" className="sitemap-link">우리동네뉴스</Link>
             <Link href="/#special-lecture" className="sitemap-link">부동산특강</Link>
-            <Link href="/study_read" className="sitemap-link">내 수강특강</Link>
-          </div>
-          {/* 자료실 */}
-          <div className="sitemap-col">
-            <div className="sitemap-title">자료실</div>
             <Link href="/board?id=drone" className="sitemap-link">드론영상</Link>
             <Link href="/board?id=app" className="sitemap-link">APP(앱)</Link>
             <Link href="/board?id=prompt" className="sitemap-link">AI 프롬프트</Link>
             <Link href="/board?id=sound" className="sitemap-link">음원</Link>
             <Link href="/board?id=doc" className="sitemap-link">계약서/양식</Link>
           </div>
-          {/* 서비스 */}
+          {/* 커뮤니티 */}
           <div className="sitemap-col">
-            <div className="sitemap-title">서비스</div>
-            <Link href="/about" className="sitemap-link">회사소개</Link>
-            <Link href="/marketing" className="sitemap-link">광고안내</Link>
-            <Link href="/partnership" className="sitemap-link">제휴문의</Link>
-            <Link href="/signup" className="sitemap-link">중개업소무료가입</Link>
-          </div>
-          {/* 우리동네부동산 */}
-          <div className="sitemap-col">
-            <div className="sitemap-title">우리동네부동산</div>
-            <Link href="/?category=" className="sitemap-link">2차섹션 전체</Link>
-            <Link href="/?category=아파트·오피스텔" className="sitemap-link">아파트·오피스텔</Link>
-            <Link href="/?category=빌라·주택" className="sitemap-link">빌라·주택</Link>
-            <Link href="/?category=원룸·투룸(풀옵션)" className="sitemap-link">원룸·투룸</Link>
-            <Link href="/?category=상가·사무실·건물·공장·토지" className="sitemap-link">상가·사무실·공장·토지</Link>
-            <Link href="/?category=분양" className="sitemap-link">분양</Link>
+            <div className="sitemap-title">커뮤니티</div>
+            <Link href="/board?id=free" className="sitemap-link">자유게시판</Link>
+            <Link href="/board?id=qna" className="sitemap-link">Q&A게시판</Link>
+            <Link href="/board?id=notice" className="sitemap-link">공지사항</Link>
+            <Link href="/board?id=inquiry" className="sitemap-link">1:1 문의</Link>
           </div>
         </div>
       </div>
