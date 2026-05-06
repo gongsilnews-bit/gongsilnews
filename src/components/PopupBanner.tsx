@@ -28,10 +28,14 @@ export default function PopupBanner() {
         const hidden = getCookie("popup_hidden_ids");
         const hiddenSet = new Set(hidden ? hidden.split(",") : []);
         const visible = res.data.filter((b: any) => !hiddenSet.has(b.id));
+        console.log("[PopupBanner] Fetched banners:", res.data);
+        console.log("[PopupBanner] Visible after cookie filter:", visible);
         setPopups(visible);
 
         // 노출 추적
         visible.forEach((b: any) => trackBannerView(b.id));
+      } else {
+        console.log("[PopupBanner] No active popup banners found or error:", res);
       }
     }
     load();
@@ -68,7 +72,7 @@ export default function PopupBanner() {
       <div
         style={{
           position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
-          background: isMaintenance ? "#ffffff" : "rgba(0,0,0,0.5)", zIndex: 9999998,
+          background: isMaintenance ? "#ffffff" : "rgba(0,0,0,0.5)", zIndex: 99999998,
           animation: "fadeIn 0.3s ease",
         }}
         onClick={isMaintenance ? undefined : () => visiblePopups.forEach(p => handleClose(p.id))}
@@ -83,7 +87,7 @@ export default function PopupBanner() {
             top: "50%",
             left: "50%",
             transform: `translate(-50%, -50%)`,
-            zIndex: 9999999,
+            zIndex: 99999999,
             background: "#fff",
             borderRadius: 12,
             boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
