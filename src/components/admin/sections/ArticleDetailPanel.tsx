@@ -24,6 +24,7 @@ export default function ArticleDetailPanel({ articleId, onBack, onEdit }: Articl
   // Sidebar memo
   const [memo, setMemo] = useState("");
   const [logs, setLogs] = useState<any[]>([]);
+  const [toastMessage, setToastMessage] = useState<{ text: string; type: "success" | "error" | "info" } | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
@@ -100,7 +101,7 @@ export default function ArticleDetailPanel({ articleId, onBack, onEdit }: Articl
   const hasYoutube = !!youtubeId;
 
   const articleUrl = `/news/${article.article_no || article.id}`;
-  const [toastMessage, setToastMessage] = useState<{ text: string; type: "success" | "error" | "info" } | null>(null);
+
   const isPublished = article?.status === 'APPROVED';
 
   const handleStatusChange = async (newStatus: string) => {
