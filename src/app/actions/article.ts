@@ -273,7 +273,7 @@ export async function getMyArticles(authorId: string) {
   try {
     const { data, error } = await supabase
       .from("articles")
-      .select("id, article_no, status, section1, section2, title, subtitle, content, author_name, author_id, published_at, created_at, updated_at, is_deleted, thumbnail_url, view_count, lat, lng, location_name, youtube_url, is_important, is_headline, article_keywords(keyword)")
+      .select("id, article_no, status, section1, section2, title, subtitle, content, author_name, author_id, published_at, created_at, updated_at, is_deleted, thumbnail_url, view_count, lat, lng, location_name, youtube_url, is_important, is_headline, reject_reason, article_keywords(keyword)")
       .eq("is_deleted", false)
       .eq("author_id", authorId)
       .order("created_at", { ascending: false });
