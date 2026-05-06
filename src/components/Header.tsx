@@ -183,28 +183,7 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
         <div className="top-bar-left">
           <div className="top-logo" onClick={() => window.location.href = "/"} style={{ cursor: "pointer" }}>공실뉴스</div>
           <div className="top-desc" style={{ marginRight: '16px' }}>11만 부동산을 위한 무료 정보 채널</div>
-          {currentUser && userRole && (
-            <button 
-              onClick={() => {
-                if (userRole === 'ADMIN') router.push('/admin');
-                else if (userRole === 'REALTOR') router.push('/realty_admin');
-                else router.push('/user_admin');
-              }}
-              style={{
-                background: '#e53e3e',
-                color: '#fff',
-                border: 'none',
-                padding: '4px 12px',
-                borderRadius: '4px',
-                fontSize: '12px',
-                fontWeight: 'bold',
-                cursor: 'pointer',
-                marginLeft: '10px'
-              }}
-            >
-              관리자페이지 이동 🚀
-            </button>
-          )}
+
         </div>
         <div className="top-bar-right">
           <div className={`top-search-wrap ${isSearchActive ? 'active' : ''}`} ref={searchWrapRef}>

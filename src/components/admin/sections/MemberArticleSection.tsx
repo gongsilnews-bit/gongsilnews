@@ -104,6 +104,7 @@ export default function MemberArticleSection({ theme, memberId, memberName, memb
 
   /* 승인신청: DRAFT → PENDING */
   const handleRequestApproval = async () => {
+    console.log("[DEBUG] handleRequestApproval called, checkedIds:", checkedIds);
     if (checkedIds.length === 0) { alert("승인신청할 기사를 선택하세요."); return; }
     const drafts = checkedIds.filter(id => {
       const a = articles.find(x => x.id === id);
@@ -216,7 +217,7 @@ export default function MemberArticleSection({ theme, memberId, memberName, memb
         {/* 액션 버튼 */}
         <div style={{ padding: "16px 24px", borderBottom: `1px solid ${border}`, display: "flex", gap: 10, alignItems: "center" }}>
           <button onClick={() => router.push("?menu=article&action=write")} style={{ display: "flex", alignItems: "center", height: 36, padding: "0 16px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", textDecoration: "none", gap: 6 }}>+ 새 기사 작성</button>
-          <button onClick={handleRequestApproval}
+          <button onClick={() => { handleRequestApproval(); }}
             style={{ height: 36, padding: "0 16px", background: "#8b5cf6", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
             📋 승인신청
           </button>
