@@ -53,6 +53,12 @@ export async function POST(req: Request) {
         }
       }
     }
+    
+    // AI 심사 결과가 DB에 반영되었으므로, Next.js 전체 기사 캐시를 무효화하여 최고관리자 화면 등에 즉각 반영되도록 합니다.
+    const { revalidateTag, revalidatePath } = require('next/cache');
+    revalidateTag('articles');
+    revalidatePath('/', 'layout');
+
     return NextResponse.json({ success: true });
   } catch (err: any) {
     console.error('AI API Route Error:', err);
