@@ -29,6 +29,7 @@ function MobileArticleAdmin() {
   // 반려 모달
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectTargetId, setRejectTargetId] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<{ text: string; type: "success" | "error" | "info" } | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [rejectCustom, setRejectCustom] = useState("");
 
