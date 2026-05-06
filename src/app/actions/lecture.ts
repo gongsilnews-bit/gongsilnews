@@ -108,43 +108,45 @@ export async function saveLecture(data: {
         .delete()
         .eq("lecture_id", lectureId);
 
-      for (const chapter of data.chapters) {
-        const { data: insertedChapter, error: chapterError } = await supabase
-          .from("lecture_chapters")
-          .insert({
-            lecture_id: lectureId,
-            chapter_no: chapter.chapter_no,
-            title: chapter.title,
-            sort_order: chapter.sort_order,
-          })
-          .select("id")
-          .single();
+      await Promise.all(
+        data.chapters.map(async (chapter) => {
+          const { data: insertedChapter, error: chapterError } = await supabase
+            .from("lecture_chapters")
+            .insert({
+              lecture_id: lectureId,
+              chapter_no: chapter.chapter_no,
+              title: chapter.title,
+              sort_order: chapter.sort_order,
+            })
+            .select("id")
+            .single();
 
-        if (chapterError) {
-          console.error("챕터 저장 실패:", chapterError.message);
-          continue;
-        }
-
-        if (chapter.lessons && chapter.lessons.length > 0) {
-          const lessonRows = chapter.lessons.map((lesson) => ({
-            chapter_id: insertedChapter.id,
-            lesson_no: lesson.lesson_no,
-            title: lesson.title,
-            video_url: lesson.video_url || null,
-            duration: lesson.duration || null,
-            is_preview: lesson.is_preview || false,
-            sort_order: lesson.sort_order,
-          }));
-
-          const { error: lessonError } = await supabase
-            .from("lecture_lessons")
-            .insert(lessonRows);
-
-          if (lessonError) {
-            console.error("레슨 저장 실패:", lessonError.message);
+          if (chapterError) {
+            console.error("챕터 저장 실패:", chapterError.message);
+            return;
           }
-        }
-      }
+
+          if (chapter.lessons && chapter.lessons.length > 0) {
+            const lessonRows = chapter.lessons.map((lesson) => ({
+              chapter_id: insertedChapter.id,
+              lesson_no: lesson.lesson_no,
+              title: lesson.title,
+              video_url: lesson.video_url || null,
+              duration: lesson.duration || null,
+              is_preview: lesson.is_preview || false,
+              sort_order: lesson.sort_order,
+            }));
+
+            const { error: lessonError } = await supabase
+              .from("lecture_lessons")
+              .insert(lessonRows);
+
+            if (lessonError) {
+              console.error("레슨 저장 실패:", lessonError.message);
+            }
+          }
+        })
+      );
     }
 
     // @ts-ignore
