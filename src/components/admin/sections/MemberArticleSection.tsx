@@ -111,13 +111,18 @@ export default function MemberArticleSection({ theme, memberId, memberName, memb
     });
     if (drafts.length === 0) { alert("작성중 또는 반려된 기사만 승인신청할 수 있습니다."); return; }
     if (!confirm(`선택한 ${drafts.length}건의 기사를 승인신청하시겠습니까?`)) return;
-    const res = await adminUpdateArticleStatus(drafts, "PENDING");
-    if (res.success) { 
-      setArticles(prev => prev.map(a => drafts.includes(a.id) ? { ...a, status: "PENDING" } : a));
-      fetch('/api/agents/article-review', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ articleIds: drafts }) }).catch(console.error); 
-      setCheckedIds([]); 
+    try {
+      const res = await adminUpdateArticleStatus(drafts, "PENDING");
+      if (res.success) { 
+        setArticles(prev => prev.map(a => drafts.includes(a.id) ? { ...a, status: "PENDING" } : a));
+        fetch('/api/agents/article-review', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ articleIds: drafts }) }).catch(console.error); 
+        setCheckedIds([]);
+        alert("승인신청이 완료되었습니다. AI 심사가 진행됩니다.");
+      }
+      else alert("승인신청 오류: " + (res.error || "알 수 없는 오류"));
+    } catch (err: any) {
+      alert("승인신청 중 예외 발생: " + err.message);
     }
-    else alert("오류: " + res.error);
   };
 
   /* 삭제 */
