@@ -297,24 +297,32 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
       const keywordMatch = searchParams.get("keyword");
         if (keywordMatch) {
           filters.keyword = keywordMatch;
-          // Fetch related vacancy count and list
-          const vRes = await getVacancyCountByKeyword(keywordMatch);
+          
+          const [vRes, listRes, res] = await Promise.all([
+            getVacancyCountByKeyword(keywordMatch),
+            getVacancyListByKeyword(keywordMatch),
+            getArticles(filters)
+          ]);
+
           if (vRes.success) setVacancyCount(vRes.count || 0);
           else setVacancyCount(0);
           
-          const listRes = await getVacancyListByKeyword(keywordMatch);
           if (listRes.success) setVacancyList(listRes.data || []);
           else setVacancyList([]);
+
+          if (res.success && res.data) {
+            setArticles(res.data);
+          }
         } else {
           setVacancyCount(0);
           setVacancyList([]);
+          const res = await getArticles(filters);
+          if (res.success && res.data) {
+            setArticles(res.data);
+          }
         }
-      
-      const res = await getArticles(filters);
-      if (res.success && res.data) {
-        setArticles(res.data);
-      }
-      setLoading(false);
+
+        setLoading(false);
     };
 
     if (activeTab !== "local" && activeTab !== initialTab) {
@@ -697,10 +705,9 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                   onClick={() => { 
                     setActiveTab(cat.key); 
                     setClusterMode(false); 
-                    // URL 주소창 탭 정보 동기화 (뒤로가기 시 복원 위함)
                     const url = new URL(window.location.href);
                     url.searchParams.set("tab", cat.key);
-                    window.history.replaceState(null, '', url.toString());
+                    router.replace(url.pathname + url.search, { scroll: false });
                   }}
                   style={{
                     flexShrink: 0,
@@ -1096,7 +1103,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
           )}
 
           {/* 스켈레톤 로딩 */}
-          {loading && (
+          {loading && articles.length === 0 && (
             <div style={{ padding: "16px" }}>
               {[1, 2, 3, 4, 5].map((i) => (
                 <div key={i} style={{ display: "flex", gap: "12px", padding: "16px 0", borderBottom: "1px solid #f3f4f6" }}>
@@ -1197,7 +1204,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
           )}
 
           {/* 실 기사 리스트 */}
-          {!loading && searchTab === 'article' && (() => {
+          {searchTab === 'article' && (() => {
             const importantArticles = articles.filter(a => a.is_important);
             const regularArticles = articles.filter(a => !a.is_important);
             
