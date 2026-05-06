@@ -52,6 +52,21 @@ export default function ArticleDetailPanel({ articleId, onBack, onEdit }: Articl
     supabase.from('article_comments').select('*').eq('article_id', articleId).order('created_at', { ascending: false }).limit(20).then(({ data }) => {
       // Use comments as pseudo-logs if no separate log table exists
     });
+
+    const channel = supabase.channel(`public:articles:${articleId}`)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'articles', filter: `id=eq.${articleId}` }, (payload) => {
+        const oldData = payload.old;
+        const newData = payload.new;
+        if (oldData && newData && oldData.status !== newData.status) {
+          if (newData.status === 'APPROVED') setToastMessage({ text: 'AI 심사가 완료되어 기사가 발행(승인)되었습니다!', type: 'success' });
+          else if (newData.status === 'REJECTED') setToastMessage({ text: 'AI 심사 결과 기사가 반려되었습니다.', type: 'error' });
+          setArticle(newData as any);
+          setTimeout(() => setToastMessage(null), 5000);
+        }
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, [articleId]);
 
   // Build edit history from article data
@@ -85,7 +100,8 @@ export default function ArticleDetailPanel({ articleId, onBack, onEdit }: Articl
   const hasYoutube = !!youtubeId;
 
   const articleUrl = `/news/${article.article_no || article.id}`;
-  const isPublished = article.status === 'APPROVED';
+  const [toastMessage, setToastMessage] = useState<{ text: string; type: "success" | "error" | "info" } | null>(null);
+  const isPublished = article?.status === 'APPROVED';
 
   const handleStatusChange = async (newStatus: string) => {
     const label = newStatus === 'APPROVED' ? '승인(발행)' : newStatus === 'REJECTED' ? '반려' : '상태변경';
@@ -133,6 +149,23 @@ export default function ArticleDetailPanel({ articleId, onBack, onEdit }: Articl
 
   return (
     <div className="adp-wrapper">
+      {toastMessage && (
+        <div style={{
+          position: "fixed", bottom: 40, right: 40, zIndex: 9999, padding: "16px 24px",
+          background: toastMessage.type === "success" ? "#10b981" : toastMessage.type === "error" ? "#ef4444" : "#3b82f6",
+          color: "#fff", borderRadius: 8, boxShadow: "0 10px 25px rgba(0,0,0,0.2)",
+          display: "flex", alignItems: "center", animation: "slideIn 0.3s ease-out forwards"
+        }}>
+          <span>{toastMessage.text}</span>
+          <button onClick={() => setToastMessage(null)} style={{ background: "none", border: "none", color: "#fff", cursor: "pointer", padding: 0, marginLeft: 10 }}>✕</button>
+          <style>{`
+            @keyframes slideIn {
+              from { transform: translateX(100%); opacity: 0; }
+              to { transform: translateX(0); opacity: 1; }
+            }
+          `}</style>
+        </div>
+      )}
       <div className="adp-main">
         {/* Device Toggle */}
         <div className="adp-device-bar">
@@ -180,6 +213,11 @@ export default function ArticleDetailPanel({ articleId, onBack, onEdit }: Articl
             {!isPublished && <button className="adp-toolbar-btn adp-red" onClick={() => handleStatusChange('REJECTED')}>🚫 반려</button>}
             {isPublished && (
               <span style={{ padding: '6px 14px', background: '#10b981', color: '#fff', borderRadius: 6, fontSize: 13, fontWeight: 700 }}>발행중</span>
+            )}
+            {article.reject_reason && (
+              <div style={{ marginLeft: 16, fontSize: 13, color: isPublished ? "#10b981" : "#ef4444", fontWeight: 600, background: isPublished ? "#ecfdf5" : "#fef2f2", padding: "6px 12px", borderRadius: 20 }}>
+                {isPublished ? "✅ AI 피드백:" : "🚫 반려 사유:"} {article.reject_reason}
+              </div>
             )}
           </div>
 
