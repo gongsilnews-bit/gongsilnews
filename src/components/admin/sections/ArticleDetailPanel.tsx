@@ -91,7 +91,16 @@ export default function ArticleDetailPanel({ articleId, onBack, onEdit }: Articl
     const label = newStatus === 'APPROVED' ? '승인(발행)' : newStatus === 'REJECTED' ? '반려' : '상태변경';
     if (!confirm(`이 기사를 ${label}하시겠습니까?`)) return;
     const res = await adminUpdateArticleStatus([article.id], newStatus as any);
-    if (res.success) setArticle({ ...article, status: newStatus });
+    if (res.success) {
+      setArticle({ ...article, status: newStatus });
+      if (newStatus === 'PENDING') {
+        fetch('/api/agents/article-review', { 
+          method: 'POST', 
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ articleIds: [article.id] }) 
+        }).catch(console.error);
+      }
+    }
   };
 
   // Root comments + children

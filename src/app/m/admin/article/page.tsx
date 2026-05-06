@@ -137,7 +137,10 @@ function MobileArticleAdmin() {
     }
     if (!confirm("이 기사를 승인신청하시겠습니까?")) return;
     const res = await adminUpdateArticleStatus([id], "PENDING");
-    if (res.success) await refreshArticles();
+    if (res.success) {
+      fetch('/api/agents/article-review', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ articleIds: [id] }) }).catch(console.error);
+      await refreshArticles();
+    }
     else alert("오류: " + res.error);
   };
 
