@@ -112,7 +112,7 @@ export default function RealtorApprovalNotice() {
               부동산회원 승인 완료!
             </h2>
             <p style={{ fontSize: 14, opacity: 0.9, margin: 0, lineHeight: 1.5 }}>
-              축하합니다! 이제 모든 서비스를 이용하실 수 있습니다.
+              이제 공동중개를 무료로 사용하실 수 있습니다.
             </p>
           </div>
 
@@ -122,12 +122,15 @@ export default function RealtorApprovalNotice() {
               background: "#f0fdf4", borderRadius: 12, padding: "16px 20px",
               marginBottom: 20, border: "1px solid #bbf7d0"
             }}>
-              <p style={{ fontSize: 14, color: "#166534", margin: 0, lineHeight: 1.6 }}>
-                ✅ 공실광고 무료 등록<br/>
-                ✅ 기사 작성 및 게재<br/>
-                ✅ 고객 관리 (CRM)<br/>
-                ✅ 전용 대시보드 이용
+              <p style={{ fontSize: 14, color: "#166534", margin: 0, lineHeight: 1.6, fontWeight: 600 }}>
+                ✅ 공동중개 10건 무료 등록<br/>
+                ✅ 공실뉴스 기사 무료 열람
               </p>
+            </div>
+
+            <div style={{ textAlign: "center", marginBottom: 20, color: "#4b5563", fontSize: 13, lineHeight: 1.6 }}>
+              11만 부동산을 위한 정보 채널<br/>
+              <strong style={{ color: "#111", fontSize: 14 }}>공실뉴스 부동산회원이 되신 것을 축하드립니다.</strong>
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
