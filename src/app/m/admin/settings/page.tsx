@@ -448,7 +448,7 @@ function MobileSettings() {
 
             {/* 등록번호 & 사업자번호 */}
             <div style={{ background: "#fff", borderRadius: 14, padding: 16, border: "1px solid #e5e7eb", marginBottom: 16 }}>
-              <Field label="중개등록번호 (선택)" value={regNum} onChange={setRegNum} />
+              <Field label="중개등록번호" value={regNum} onChange={setRegNum} required />
               <Field label="사업자등록번호" value={bizNum} onChange={v => setBizNum(formatBizNum(v))} placeholder="000-00-00000" required />
             </div>
 
@@ -461,7 +461,7 @@ function MobileSettings() {
 
               {/* 중개등록증 */}
               <DocUpload
-                label="중개등록증 (선택)"
+                label="중개등록증"
                 preview={regCertPreview}
                 inputRef={regCertRef}
                 onCapture={e => handlePhotoCapture(e, "reg")}

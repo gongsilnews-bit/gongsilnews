@@ -302,8 +302,8 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
   const handleSubmit = async (e?: React.MouseEvent | React.FormEvent, requestApproval: boolean = false) => {
     if (e) e.preventDefault();
     if (requestApproval) {
-      if (!agencyData.name || !agencyData.ceo_name || !agencyData.cell || !agencyData.phone || !agencyData.address || !agencyData.intro || !agencyData.biz_num || (!files.biz_cert && !filePreviews.biz_cert)) {
-        alert("필수 정보를 모두 입력하고 사업자등록증을 첨부해야 승인대기 신청이 가능합니다.");
+      if (!agencyData.name || !agencyData.ceo_name || !agencyData.cell || !agencyData.phone || !agencyData.address || !agencyData.intro || !agencyData.biz_num || !agencyData.reg_num || (!files.biz_cert && !filePreviews.biz_cert) || (!files.reg_cert && !filePreviews.reg_cert)) {
+        alert("필수 정보를 모두 입력하고 사업자등록증과 중개사무소 등록증을 첨부해야 승인대기 신청이 가능합니다.");
         setActiveTab(1);
         return;
       }
@@ -859,7 +859,10 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
 
           <div style={rowStyle}>
             <div style={{ ...labelStyle, flexWrap: "wrap", flexDirection: "column", alignItems: "flex-start", gap: 4, justifyContent: "center", lineHeight: 1.2 }}>
-              <div>중개등록번호<br/><span style={{fontSize: 11, color: "#888", fontWeight: "normal"}}>(선택)</span></div>
+              중개등록번호
+              {!agencyData.reg_num && (
+                <span style={{ fontSize: 11, color: "#ef4444", fontWeight: "bold" }}>🚨 필수입력 누락</span>
+              )}
             </div>
             <div style={contentStyle}>
               <input type="text" name="reg_num" value={agencyData.reg_num} onChange={handleAgencyChange} style={{...inputStyle, maxWidth: 300}} placeholder="중개업 등록번호" />
@@ -868,7 +871,10 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
 
           <div style={rowStyle}>
             <div style={{ ...labelStyle, flexWrap: "wrap", flexDirection: "column", alignItems: "flex-start", gap: 4, justifyContent: "center", lineHeight: 1.2 }}>
-              <div>등록증 사본 첨부<br/><span style={{fontSize: 11, color: "#888", fontWeight: "normal"}}>(선택)</span></div>
+              등록증 사본 첨부
+              {!filePreviews.reg_cert && !files.reg_cert && (
+                <span style={{ fontSize: 11, color: "#ef4444", fontWeight: "bold" }}>🚨 필수첨부 누락</span>
+              )}
             </div>
             <div style={{ ...contentStyle, gap: 16 }}>
               {filePreviews.reg_cert && (
