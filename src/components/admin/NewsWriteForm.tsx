@@ -60,6 +60,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
   const [photoFiles, setPhotoFiles] = useState<{ file: File | null; preview: string; caption: string; isCover: boolean; size: number; align: string; captionAlign: string; mediaId?: string }[]>([]);
   const [attachFiles, setAttachFiles] = useState<{ file: File; name: string }[]>([]);
   const [loadArticleId, setLoadArticleId] = useState<string | null>(null);
+  const [editCount, setEditCount] = useState<number>(0);
 
   /* ── 회원 모드 (URL 파라미터: role=member) ── */
   const [isMemberMode, setIsMemberMode] = useState(initialIsMemberMode);
@@ -195,6 +196,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
             if (d.series) setSeries(d.series);
             if (d.author_name) setReporterName(d.author_name);
             if (d.author_email) setReporterEmail(d.author_email);
+            if (d.edit_count !== undefined) setEditCount(d.edit_count || 0);
             if (d.author_id) setMemberAuthorId(d.author_id);
             if (d.title) setTitle(d.title);
             if (d.subtitle) setSubtitle(d.subtitle);
@@ -1697,6 +1699,17 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                   style={{ flex: 1, padding: "16px 0", background: saving ? "#9ca3af" : "#4b5563", color: "#fff", border: "none", borderRadius: 8, fontSize: 16, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer" }}>
                   수정저장
                 </button>
+              </div>
+            ) : status === 'APPROVED' ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <button type="button" disabled={saving || editCount >= 3} onClick={async () => { await handleSave('APPROVED'); }}
+                  style={{ flex: 1, padding: "16px 0", background: (saving || editCount >= 3) ? "#9ca3af" : "#3b82f6", color: "#fff", border: "none", borderRadius: 8, fontSize: 16, fontWeight: 700, cursor: (saving || editCount >= 3) ? "not-allowed" : "pointer" }}>
+                  {saving ? "⏳ 저장 중..." : `수정저장 (수정 가능 횟수: ${3 - editCount}회 남음)`}
+                </button>
+                <div style={{ fontSize: 13, color: textSecondary, textAlign: 'center' }}>
+                  ※ 기사 내용은 즉시 반영되며, 백그라운드에서 AI가 재심사를 진행합니다.<br/>
+                  ※ 3회 수정 이후에는 기사를 삭제하고 새로 작성해야 합니다.
+                </div>
               </div>
             ) : (
               <div style={{ display: 'flex', gap: 8 }}>

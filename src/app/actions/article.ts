@@ -122,6 +122,15 @@ export async function saveArticle(data: {
     // ---------------------------------------------
 
     if (articleId) {
+      // 수정 횟수 제한 체크 (발행된 기사만 카운트)
+      const { data: existing } = await supabase.from("articles").select("edit_count, status").eq("id", articleId).single();
+      if (existing && existing.status === "APPROVED" && (existing.edit_count || 0) >= 3) {
+        return { success: false, error: "수정 가능 횟수(3회)를 초과했습니다. 기사를 삭제 후 새로 작성해 주세요." };
+      }
+      // 발행된 기사를 수정하면 edit_count 증가
+      if (existing && existing.status === "APPROVED") {
+        (articleData as any).edit_count = (existing.edit_count || 0) + 1;
+      }
       // 수정
       const { error } = await supabase
         .from("articles")
@@ -189,7 +198,7 @@ const getArticlesCached = unstable_cache(
     const supabase = getAdminClient();
     let query = supabase
       .from("articles")
-      .select("id, article_no, status, section1, section2, title, subtitle, content, author_name, author_id, published_at, created_at, updated_at, is_deleted, thumbnail_url, view_count, lat, lng, location_name, youtube_url, is_important, is_headline, reject_reason, article_keywords(keyword)")
+      .select("id, article_no, status, section1, section2, title, subtitle, content, author_name, author_id, published_at, created_at, updated_at, is_deleted, thumbnail_url, view_count, lat, lng, location_name, youtube_url, is_important, is_headline, reject_reason, edit_count, article_keywords(keyword)")
       .eq("is_deleted", false)
       .order("created_at", { ascending: false });
 
@@ -273,7 +282,7 @@ export async function getMyArticles(authorId: string) {
   try {
     const { data, error } = await supabase
       .from("articles")
-      .select("id, article_no, status, section1, section2, title, subtitle, content, author_name, author_id, published_at, created_at, updated_at, is_deleted, thumbnail_url, view_count, lat, lng, location_name, youtube_url, is_important, is_headline, reject_reason, article_keywords(keyword)")
+      .select("id, article_no, status, section1, section2, title, subtitle, content, author_name, author_id, published_at, created_at, updated_at, is_deleted, thumbnail_url, view_count, lat, lng, location_name, youtube_url, is_important, is_headline, reject_reason, edit_count, article_keywords(keyword)")
       .eq("is_deleted", false)
       .eq("author_id", authorId)
       .order("created_at", { ascending: false });
