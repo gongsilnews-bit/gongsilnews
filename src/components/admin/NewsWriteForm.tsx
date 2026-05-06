@@ -170,6 +170,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
             const d = res.data;
             if (d.status === "PENDING") setStatus("승인신청");
             else if (d.status === "REJECTED") setStatus("반려");
+            else if (d.status === "APPROVED") setStatus("APPROVED");
             else setStatus("작성중");
             
             if (d.form_type === "CARD_NEWS") setFormType("카드뉴스");
