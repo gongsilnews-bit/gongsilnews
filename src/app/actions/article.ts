@@ -460,51 +460,6 @@ export async function adminUpdateArticleStatus(articleIds: string[], status: 'AP
       }
       return { success: false, error: error.message };
     }
-    if (status === "PENDING") {
-      try {
-        const isAuto = await isAgentAutoMode("articleReview");
-        if (isAuto) {
-          for (const aId of articleIds) {
-            const { data: art } = await supabase.from("articles").select("title, subtitle, content, section1, section2, author_name").eq("id", aId).single();
-            if (art) {
-              const reviewResult = await reviewArticleByAI({
-                articleId: aId,
-                title: art.title || "",
-                subtitle: art.subtitle || "",
-                content: art.content || "",
-                section1: art.section1 || "",
-                section2: art.section2 || "",
-                authorName: art.author_name || "알수없음",
-              });
-
-              if (reviewResult.status === "APPROVED") {
-                await supabase.from("articles").update({
-                  status: "APPROVED",
-                  reject_reason: `[AI 승인 - ${reviewResult.score}점] ${reviewResult.reason}`,
-                  published_at: new Date().toISOString(),
-                  updated_at: new Date().toISOString(),
-                }).eq("id", aId);
-              } else if (reviewResult.status === "REJECTED") {
-                await supabase.from("articles").update({
-                  status: "REJECTED",
-                  reject_reason: `[AI 반려 - ${reviewResult.score}점] ${reviewResult.reason}`,
-                  updated_at: new Date().toISOString(),
-                }).eq("id", aId);
-              } else {
-                await supabase.from("articles").update({
-                  reject_reason: `[AI 수정요청 - ${reviewResult.score}점] ${reviewResult.reason}`,
-                }).eq("id", aId);
-              }
-            }
-          }
-        }
-      } catch (aiErr: any) {
-        console.error("일괄 승인신청 중 AI 기사 심사 실패:", aiErr);
-        await supabase.from("articles").update({
-          reject_reason: `[AI 시스템 오류] 서버에서 AI 실행 중 문제가 발생했습니다: ${aiErr.message || String(aiErr)}`
-        }).in("id", articleIds);
-      }
-    }
     // @ts-ignore
     revalidateTag("articles");
     revalidatePath("/", "layout");
