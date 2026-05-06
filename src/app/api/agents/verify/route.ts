@@ -29,7 +29,34 @@ export async function POST(request: Request) {
       },
     });
 
-    // 4. 결과 반환
+    // 4. agent_chats에 로그 저장 (비용 및 토큰)
+    try {
+      const inTokens = result.usage?.inputTokens || 0;
+      const outTokens = result.usage?.outputTokens || 0;
+      const totalTokens = result.usage?.totalTokens || 0;
+      const costKrw = (inTokens * 0.075 / 1000000 * 1400) + (outTokens * 0.3 / 1000000 * 1400);
+
+      const { createClient } = require("@supabase/supabase-js");
+      const supabaseAdmin = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        { auth: { autoRefreshToken: false, persistSession: false } }
+      );
+
+      await supabaseAdmin.from("agent_chats").insert({
+        channel_id: "verify",
+        role: "agent",
+        content: `[서류 검증] ${companyName} (${representative}) → ${result.status}`,
+        input_tokens: inTokens,
+        output_tokens: outTokens,
+        total_tokens: totalTokens,
+        cost_krw: costKrw,
+      });
+    } catch (dbErr) {
+      console.error("Failed to log verify agent chat:", dbErr);
+    }
+
+    // 5. 결과 반환
     return NextResponse.json(result, { status: 200 });
     
   } catch (error) {

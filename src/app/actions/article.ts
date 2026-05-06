@@ -1,4 +1,6 @@
 "use server";
+import { revalidatePath } from "next/cache";
+import { reviewArticleByAI, isAgentAutoMode } from "@/app/actions/agentChat";
 
 import { createClient } from "@supabase/supabase-js";
 import { unstable_cache, revalidateTag } from "next/cache";
@@ -365,7 +367,8 @@ export async function deleteArticle(articleId: string) {
     if (error) return { success: false, error: error.message };
     
     // @ts-ignore
-    revalidateTag("articles"); // 캐시 무효화
+    revalidateTag("articles");
+    revalidatePath("/", "layout");
     
     return { success: true };
   } catch (err: any) {
@@ -451,14 +454,16 @@ export async function adminUpdateArticleStatus(articleIds: string[], status: 'AP
         if (fallbackError) return { success: false, error: fallbackError.message };
         
         // @ts-ignore
-        revalidateTag("articles"); // 캐시 무효화
+        revalidateTag("articles");
+    revalidatePath("/", "layout");
         return { success: true };
       }
       return { success: false, error: error.message };
     }
     
     // @ts-ignore
-    revalidateTag("articles"); // 캐시 무효화
+    revalidateTag("articles");
+    revalidatePath("/", "layout");
     return { success: true };
   } catch (err: any) {
     return { success: false, error: err.message };
@@ -477,7 +482,8 @@ export async function adminUpdateArticleFlags(articleId: string, isImportant: bo
     if (error) return { success: false, error: error.message };
     
     // @ts-ignore
-    revalidateTag("articles"); // 캐시 무효화
+    revalidateTag("articles");
+    revalidatePath("/", "layout");
     return { success: true };
   } catch (err: any) {
     return { success: false, error: err.message };

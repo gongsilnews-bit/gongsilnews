@@ -10,11 +10,16 @@ export interface VerifyAgentInput {
 }
 
 export interface VerifyAgentOutput {
-  status: "APPROVED" | "NEEDS_REVIEW" | "ERROR";
+  status: "APPROVED" | "REJECTED" | "NEEDS_REVIEW" | "ERROR";
   message: string;
   diff?: {
     expected: any;
     found: any;
+  };
+  usage?: {
+    inputTokens: number;
+    outputTokens: number;
+    totalTokens: number;
   };
 }
 
@@ -85,14 +90,21 @@ export class VerifyAgent {
       // 대표자명은 정확히 일치하는지 확인
       const isRepMatch = extractedData.representative === safeRepName;
       
+      const usageInfo = result.response.usageMetadata ? {
+        inputTokens: result.response.usageMetadata.promptTokenCount,
+        outputTokens: result.response.usageMetadata.candidatesTokenCount,
+        totalTokens: result.response.usageMetadata.totalTokenCount,
+      } : undefined;
+
       // 결과 판별
       if (isNameMatch && isRepMatch) {
-        return { status: "APPROVED", message: "서류 검증이 완료되었습니다. (자동 승인)" };
+        return { status: "APPROVED", message: "서류 검증이 완료되었습니다. (자동 승인)", usage: usageInfo };
       } else {
         return { 
           status: "NEEDS_REVIEW", 
           message: "입력한 정보와 서류 내용이 일치하지 않거나 누락되었습니다. 수동 검토가 필요합니다.",
-          diff: { expected: userInputData, found: extractedData }
+          diff: { expected: userInputData, found: extractedData },
+          usage: usageInfo
         };
       }
 
