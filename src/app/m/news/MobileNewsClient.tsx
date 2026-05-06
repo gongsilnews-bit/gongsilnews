@@ -120,7 +120,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
 
   useEffect(() => {
     if (selectedVacancyId) {
-      window.history.pushState({ panel: 'vacancy-overlay' }, '');
+      window.history.pushState({ ...window.history.state, panel: 'vacancy-overlay' }, '', window.location.href);
     }
   }, [selectedVacancyId]);
 
@@ -371,7 +371,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
   // 기사 상세 조회 (우리동네뉴스는 인라인 패널, 나머지는 새 페이지)
   const handleSelectArticle = async (id: string, isLocal: boolean = false, e?: React.MouseEvent) => {
     if (isLocal) {
-      window.history.pushState({ panel: 'article-detail' }, '');
+      window.history.pushState({ ...window.history.state, panel: 'article-detail' }, '', window.location.href);
       setShowDetail(true);
       setDetailLoading(true);
       const res = await getArticleDetail(id);
