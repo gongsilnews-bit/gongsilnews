@@ -105,11 +105,8 @@ export default function MemberArticleSection({ theme, memberId, memberName, memb
   /* 승인신청: DRAFT → PENDING */
   const handleRequestApproval = async () => {
     if (checkedIds.length === 0) { alert("승인신청할 기사를 선택하세요."); return; }
-    const drafts = checkedIds.filter(id => {
-      const a = articles.find(x => x.id === id);
-      return a && (a.status === "DRAFT" || a.status === "REJECTED");
-    });
-    if (drafts.length === 0) { alert("작성중 또는 반려된 기사만 승인신청할 수 있습니다."); return; }
+    const drafts = checkedIds;
+    if (drafts.length === 0) { alert("승인신청할 기사를 선택해 주세요."); return; }
     if (!confirm(`선택한 ${drafts.length}건의 기사를 승인신청하시겠습니까?`)) return;
     const res = await adminUpdateArticleStatus(drafts, "PENDING");
     if (res.success) { fetch('/api/agents/article-review', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ articleIds: drafts }) }).catch(console.error); await fetchArticles(); setCheckedIds([]); }
