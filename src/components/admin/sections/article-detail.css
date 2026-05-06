@@ -1,7 +1,7 @@
 /* ── Article Detail Panel (Admin Preview) ── */
 /* Prefix: .adp- = article-detail-panel */
 
-.adp-wrapper { display: flex; gap: 24px; padding: 20px 28px; background: #f8f9fa; min-height: 100%; }
+.adp-wrapper { display: flex; gap: 24px; padding: 20px 28px; background: #f8f9fa; height: 100%; overflow-y: auto; }
 .adp-main { flex: 1; min-width: 0; }
 
 /* ── Device Toggle ── */
