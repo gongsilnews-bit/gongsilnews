@@ -167,6 +167,45 @@ function StudyReadContent() {
     return () => { if (slideTimer.current) clearInterval(slideTimer.current); };
   }, [startAutoSlide]);
 
+  /* ── 카카오 SDK 로드 ── */
+  useEffect(() => {
+    const scriptId = "kakao-share-script";
+    if (document.getElementById(scriptId)) return;
+    const script = document.createElement("script");
+    script.id = scriptId;
+    script.src = "https://t1.kakaocdn.net/kakao_js_sdk/2.7.4/kakao.min.js";
+    script.onload = () => {
+      const Kakao = (window as any).Kakao;
+      if (Kakao && !Kakao.isInitialized()) {
+        const kakaoJsKey = process.env.NEXT_PUBLIC_KAKAO_JS_KEY || process.env.NEXT_PUBLIC_KAKAO_APP_KEY || "435d3602201a49ea712e5f5a36fe6efc";
+        Kakao.init(kakaoJsKey);
+      }
+    };
+    document.head.appendChild(script);
+  }, []);
+
+  /* ── 카카오톡 공유 ── */
+  const handleKakaoShare = () => {
+    const Kakao = (window as any).Kakao;
+    if (!Kakao || !Kakao.isInitialized()) {
+      alert("카카오 SDK 로드 중입니다. 잠시 후 시도해 주세요.");
+      return;
+    }
+    const shareUrl = `https://gongsilnews.com/study_read?id=${lecture.id}`;
+    Kakao.Share.sendDefault({
+      objectType: "feed",
+      content: {
+        title: lecture.title,
+        description: lecture.category || "부동산 특강 | 공실뉴스",
+        imageUrl: slideImages[0] || "",
+        link: { mobileWebUrl: shareUrl, webUrl: shareUrl },
+      },
+      buttons: [
+        { title: "특강 보기", link: { mobileWebUrl: shareUrl, webUrl: shareUrl } },
+      ],
+    });
+  };
+
   const goSlide = (dir: number) => {
     setCurrentSlide((prev) => (prev + dir + slideImages.length) % slideImages.length);
     startAutoSlide();
@@ -680,11 +719,11 @@ function StudyReadContent() {
 
               {/* Share & Like */}
               <div className="flex justify-center border-b" style={{ gap: 40, paddingBottom: 24, marginBottom: 24, borderColor: "#f0f0f0" }}>
-                <div className="flex flex-col items-center cursor-pointer group" style={{ gap: 6 }}>
+                <div className="flex flex-col items-center cursor-pointer group" style={{ gap: 6 }} onClick={() => alert('준비중입니다')}>
                   <svg className="transition-colors text-gray-500 group-hover:text-black" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
                   <span className="font-semibold transition-colors text-gray-500 group-hover:text-black" style={{ fontSize: 13 }}>1,043</span>
                 </div>
-                <div className="flex flex-col items-center cursor-pointer group" style={{ gap: 6 }}>
+                <div className="flex flex-col items-center cursor-pointer group" style={{ gap: 6 }} onClick={handleKakaoShare}>
                   <svg className="transition-colors text-gray-500 group-hover:text-black" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg>
                   <span className="font-semibold transition-colors text-gray-500 group-hover:text-black" style={{ fontSize: 13 }}>공유</span>
                 </div>
@@ -718,7 +757,7 @@ function StudyReadContent() {
       {/* ── 모바일 전용 고정 하단 결제 바 (lg:hidden) ── */}
       <div className="block lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 p-4" style={{ paddingBottom: "max(16px, env(safe-area-inset-bottom))", boxShadow: "0 -4px 12px rgba(0,0,0,0.05)" }}>
         <div className="flex gap-2">
-          <button className="flex items-center justify-center transition-colors hover:bg-gray-50" style={{ width: 52, height: 52, borderRadius: 8, border: "1px solid #e4e4e4", backgroundColor: "white", color: "#1a1a1a", flexShrink: 0 }}>
+          <button onClick={() => alert('준비중입니다')} className="flex items-center justify-center transition-colors hover:bg-gray-50" style={{ width: 52, height: 52, borderRadius: 8, border: "1px solid #e4e4e4", backgroundColor: "white", color: "#1a1a1a", flexShrink: 0 }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
           </button>
           <button 

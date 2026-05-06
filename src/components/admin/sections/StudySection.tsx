@@ -172,7 +172,7 @@ export default function StudySection({ theme }: AdminSectionProps) {
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 900 }}>
               <thead>
                 <tr style={{ background: darkMode ? "#2c2d31" : "#f9fafb" }}>
-                  {[{ w: 40, t: "" }, { w: 80, t: "공개상태" }, { w: 0, t: "강의명", a: "left" }, { w: 100, t: "카테고리" }, { w: 120, t: "수강료" }, { w: 180, t: "최초등록일" }, { w: 100, t: "관리" }].map((h, i) => (
+                  {[{ w: 40, t: "" }, { w: 80, t: "공개상태" }, { w: 0, t: "강의명", a: "left" }, { w: 100, t: "카테고리" }, { w: 120, t: "수강료" }, { w: 180, t: "최초등록일" }, { w: 160, t: "관리" }].map((h, i) => (
                     <th key={i} style={{ padding: "12px 10px", textAlign: (h.a || "center") as any, fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, ...(h.w ? { width: h.w } : {}) }}>
                       {i === 0 ? <input type="checkbox" checked={selectedIds.size === filtered.length && filtered.length > 0} onChange={toggleSelectAll} style={{ accentColor: "#3b82f6" }} /> : h.t}
                     </th>
@@ -214,8 +214,8 @@ export default function StudySection({ theme }: AdminSectionProps) {
                           </button>
                           <button
                             type="button"
-                            onClick={() => handleDelete(row.id)}
-                            style={{ height: 30, padding: "0 12px", background: darkMode ? "#2c2d31" : "#fff", color: "#9ca3af", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}
+                            onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleDelete(row.id); }}
+                            style={{ height: 30, padding: "0 12px", background: darkMode ? "#2c2d31" : "#fff", color: "#ef4444", border: `1px solid ${darkMode ? "#fca5a5" : "#fca5a5"}`, borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}
                           >
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                             삭제

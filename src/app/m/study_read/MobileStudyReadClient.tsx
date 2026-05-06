@@ -490,7 +490,7 @@ export default function MobileStudyReadClient({ initialLecture }: { initialLectu
       {/* ── 하단 고정 결제 바 ── */}
       <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 448, background: "#fff", borderTop: "1px solid #eee", padding: "10px 16px", paddingBottom: "max(10px, env(safe-area-inset-bottom))", zIndex: 50, boxShadow: "0 -2px 10px rgba(0,0,0,0.05)" }}>
         <div style={{ display: "flex", gap: 8 }}>
-          <button style={{ width: 46, height: 46, borderRadius: 8, border: "1px solid #e0e0e0", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <button onClick={() => alert('준비중입니다')} style={{ width: 46, height: 46, borderRadius: 8, border: "1px solid #e0e0e0", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
           </button>
           <button onClick={handleEnroll} disabled={enrolling} style={{ flex: 1, height: 46, borderRadius: 8, border: "none", background: isEnrolled ? "#2563eb" : "#059669", color: "#fff", fontSize: 15, fontWeight: 700 }}>
