@@ -235,6 +235,12 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
                   <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", color: textSecondary }}>{a.section1 || '-'}</td>
                   <td style={{ padding: "16px 10px", textAlign: "left", verticalAlign: "middle" }}>
                     <button onClick={() => router.push(`?menu=article&action=detail&id=${a.id}`)} style={{ background: "none", border: "none", fontWeight: 700, fontSize: 15, color: textPrimary, textDecoration: "none", cursor: "pointer", padding: 0 }}>{a.title}</button>
+                    {a.status === "REJECTED" && a.reject_reason && (
+                      <div style={{ marginTop: 4, fontSize: 12, color: "#ef4444", fontWeight: 600 }}>반려 사유: {a.reject_reason}</div>
+                    )}
+                    {a.status === "APPROVED" && a.reject_reason && a.reject_reason.includes("[AI 승인") && (
+                      <div style={{ marginTop: 4, fontSize: 12, color: "#10b981", fontWeight: 600 }}>심사 피드백: {a.reject_reason}</div>
+                    )}
                   </td>
                   <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", color: textPrimary }}>{a.author_name || '-'}</td>
                   <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", color: textSecondary, fontSize: 12 }}>{a.published_at ? new Date(a.published_at).toISOString().split('T')[0] : '-'}</td>
