@@ -500,6 +500,9 @@ export async function adminUpdateArticleStatus(articleIds: string[], status: 'AP
         }
       } catch (aiErr: any) {
         console.error("일괄 승인신청 중 AI 기사 심사 실패:", aiErr);
+        await supabase.from("articles").update({
+          reject_reason: `[AI 시스템 오류] 서버에서 AI 실행 중 문제가 발생했습니다: ${aiErr.message || String(aiErr)}`
+        }).in("id", articleIds);
       }
     }
     // @ts-ignore
