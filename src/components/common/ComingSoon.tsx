@@ -14,7 +14,7 @@ export default function ComingSoon() {
       </h1>
 
       {/* Sub Text */}
-      <p className="mt-8 md:mt-10 text-[#333333] text-lg md:text-xl font-bold tracking-[-0.5px]">
+      <p className="mt-8 md:mt-10 text-[#333333] text-2xl md:text-3xl font-[800] tracking-[-0.5px]">
         오픈베타 테스트중
       </p>
     </div>
