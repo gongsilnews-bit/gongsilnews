@@ -1,3 +1,4 @@
+import ComingSoon from "@/components/common/ComingSoon";
 
 export default function MapLayout({
   children,
@@ -7,7 +8,7 @@ export default function MapLayout({
   const isMaintenance = process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true";
 
   if (isMaintenance) {
-    return null;
+    return <ComingSoon />;
   }
 
   return (

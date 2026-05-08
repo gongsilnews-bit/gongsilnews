@@ -2,6 +2,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import RealEstateInfoBanner from "@/components/RealEstateInfoBanner";
 import { getBannersByPlacement } from "@/app/actions/banner";
+import ComingSoon from "@/components/common/ComingSoon";
 
 export default async function MainLayout({
   children,
@@ -16,7 +17,7 @@ export default async function MainLayout({
   const isMaintenance = process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true";
 
   if (isMaintenance) {
-    return null;
+    return <ComingSoon />;
   }
 
   return (

@@ -3,6 +3,7 @@ import MobileBottomNav from "./_components/MobileBottomNav";
 import GlobalDrawerMenu from './_components/header/GlobalDrawerMenu';
 import LocationPermissionInitializer from './_components/LocationPermissionInitializer';
 import RealtorApprovalNotice from '@/components/RealtorApprovalNotice';
+import ComingSoon from "@/components/common/ComingSoon";
 
 export const metadata = {
   title: "공실뉴스 (모바일)",
@@ -15,6 +16,7 @@ export default function MobileLayout({ children }: { children: React.ReactNode }
   if (isMaintenance) {
     return (
       <div style={{ position: 'relative', width: '100%', minHeight: '100vh', backgroundColor: '#fff' }}>
+        <ComingSoon />
       </div>
     );
   }
