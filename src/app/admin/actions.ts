@@ -44,7 +44,7 @@ export async function adminCreateMember(formData: FormData) {
       const { error: memberError } = await supabaseAdmin.from('members').upsert({
         id: authData.user.id,
         email, name, phone,
-        role: role === '최고관리자' ? 'ADMIN' : role === '부동산회원' ? 'REALTOR' : 'USER',
+        role: role === '최고관리자' ? 'ADMIN' : role === '부동산회원' ? 'REALTOR' : role === '비즈니스회원' ? 'BIZ' : 'USER',
         sns_links,
         signup_completed: true,
         plan_type: formData.get("plan_type") as string || 'free',
@@ -176,7 +176,6 @@ export async function adminApproveRealtorApplication(memberId: string) {
       maxArticles = 20;
     }
 
-    // 3. members.role을 REALTOR로 변경 및 요금제별 기본 한도 세팅
     const { error: memberError } = await supabaseAdmin
       .from('members')
       .update({ 
@@ -238,6 +237,9 @@ export async function adminGetMembers() {
     const { data: members, error } = await supabaseAdmin.from('members').select('*, agencies(*)').order('created_at', { ascending: false });
     if (error) return { success: false, error: error.message };
 
+    // 비즈니스 프로필은 별도 쿼리 (FK 관계가 members가 아닌 auth.users를 참조하므로)
+    const { data: bizProfiles } = await supabaseAdmin.from('business_profiles').select('*');
+
     const { data: vacancies } = await supabaseAdmin.from('vacancies').select('id, owner_id');
     const now = new Date();
     const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
@@ -255,8 +257,12 @@ export async function adminGetMembers() {
          }
       }
 
+      // 비즈니스 프로필 매칭
+      const bizProfile = bizProfiles?.find((bp: any) => bp.user_id === m.id) || null;
+
       return {
         ...m,
+        business_profiles: bizProfile,
         vacancies_count: vCount,
         articles_count: aCount,
         homepage_id
@@ -285,6 +291,12 @@ export async function adminGetMemberDetail(memberId: string) {
       if (agencyData) agency = agencyData;
     }
 
+    let businessProfile = null;
+    if (member.role === 'BIZ' || member.role === '비즈니스회원') {
+      const { data: bizData } = await supabaseAdmin.from('business_profiles').select('*').eq('user_id', memberId).single();
+      if (bizData) businessProfile = bizData;
+    }
+
     const countRes = await supabaseAdmin.from('members').select('*', { count: 'exact', head: true }).lte('created_at', member.created_at);
     if (countRes.error) {
       console.error("adminGetMemberDetail countError:", countRes.error);
@@ -292,7 +304,7 @@ export async function adminGetMemberDetail(memberId: string) {
     const count = countRes.count;
     member.memberNumber = String(count || 1).padStart(6, '0');
 
-    return { success: true, member, agency };
+    return { success: true, member, agency, businessProfile };
   } catch (error: any) {
     console.error("adminGetMemberDetail catch block error:", error);
     return { success: false, error: error.message };
@@ -330,6 +342,7 @@ export async function adminHardDeleteMember(memberId: string) {
     // 1. 연관된 데이터 우선 삭제 (외래키 제약조건 방지)
     await supabaseAdmin.from('vacancies').delete().eq('owner_id', memberId);
     await supabaseAdmin.from('agencies').delete().eq('owner_id', memberId);
+    await supabaseAdmin.from('business_profiles').delete().eq('user_id', memberId);
 
     // 2. members 테이블에서 삭제
     const { error: dbError } = await supabaseAdmin.from('members').delete().eq('id', memberId);
@@ -472,6 +485,79 @@ export async function memberGetDashboardData(memberId: string) {
       recentArticles: recentArticles || [],
       recentComments
     };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// ── 비즈니스 회원 관련 액션 ──
+// ══════════════════════════════════════════════════════════════
+
+// ── 비즈니스 프로필 생성/수정 (upsert) ──
+export async function adminUpdateBusinessProfile(memberId: string, bizData: any) {
+  const supabaseAdmin = getAdminClient();
+  try {
+    const { data: existing } = await supabaseAdmin
+      .from('business_profiles').select('id').eq('user_id', memberId).single();
+
+    if (existing) {
+      const { error } = await supabaseAdmin.from('business_profiles').update({
+        ...bizData,
+        updated_at: new Date().toISOString()
+      }).eq('user_id', memberId);
+      if (error) return { success: false, error: error.message };
+    } else {
+      const { error } = await supabaseAdmin.from('business_profiles').insert({
+        user_id: memberId,
+        ...bizData
+      });
+      if (error) return { success: false, error: error.message };
+    }
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+// ── 비즈니스 회원 승인 (business_profiles.status → APPROVED + members.role → BIZ) ──
+export async function adminApproveBusinessApplication(memberId: string) {
+  const supabaseAdmin = getAdminClient();
+  try {
+    // 1. business_profiles 상태를 APPROVED로 변경
+    const { error: bizError } = await supabaseAdmin
+      .from('business_profiles')
+      .update({ status: 'APPROVED', rejection_reason: null, updated_at: new Date().toISOString() })
+      .eq('user_id', memberId);
+    if (bizError) return { success: false, error: bizError.message };
+
+    // 2. members.role을 BIZ로 변경, 비즈니스 요금제 적용
+    const { error: memberError } = await supabaseAdmin
+      .from('members')
+      .update({
+        role: 'BIZ',
+        plan_type: 'biz_premium'
+      })
+      .eq('id', memberId);
+    if (memberError) return { success: false, error: memberError.message };
+
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+// ── 비즈니스 회원 반려 (business_profiles.status → REJECTED + rejection_reason 저장) ──
+export async function adminRejectBusinessApplication(memberId: string, reason: string) {
+  const supabaseAdmin = getAdminClient();
+  try {
+    const { error } = await supabaseAdmin
+      .from('business_profiles')
+      .update({ status: 'REJECTED', rejection_reason: reason, updated_at: new Date().toISOString() })
+      .eq('user_id', memberId);
+    if (error) return { success: false, error: error.message };
+
+    return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
   }

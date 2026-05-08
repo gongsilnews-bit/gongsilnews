@@ -208,7 +208,7 @@ export default function PCReporterClient({
                 marginBottom: "8px",
               }}
             >
-              {profile.role === "ADMIN" ? "기자" : "부동산기자"}
+              {profile.role === "ADMIN" ? "기자" : profile.role === "BIZ" ? (profile.business_type ? `${profile.business_type}기자` : "전문기자") : profile.role === "REALTOR" ? "부동산기자" : "시민기자"}
             </span>
             <div
               style={{

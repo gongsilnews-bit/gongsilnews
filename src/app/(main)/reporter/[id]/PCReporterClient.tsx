@@ -229,6 +229,7 @@ export default function PCReporterClient({
         display: "flex",
         gap: "32px",
         alignItems: "flex-start",
+        minHeight: "calc(100vh - 200px)",
       }}
     >
       {/* ═══ 좌측: 기자 프로필 카드 (고정) ═══ */}
@@ -299,7 +300,7 @@ export default function PCReporterClient({
             ) : (
               <>
                 <span style={{ fontSize: "12px", fontWeight: "bold", background: "rgba(255,255,255,0.1)", color: "#fff", padding: "3px 10px", borderRadius: "12px", marginBottom: "8px" }}>
-                  {profile.role === "ADMIN" ? "기자" : "부동산기자"}
+                  {profile.role === "ADMIN" ? "기자" : profile.role === "BIZ" ? (profile.business_type ? `${profile.business_type}기자` : "전문기자") : profile.role === "REALTOR" ? "부동산기자" : "시민기자"}
                 </span>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", marginBottom: "10px" }}>
                   <div style={{ fontSize: "20px", fontWeight: 800, letterSpacing: "-0.5px", color: "#fff", textAlign: "center" }}>
@@ -428,16 +429,18 @@ export default function PCReporterClient({
           <button onClick={() => setMainTab('articles')} style={{ padding: '14px 24px', fontSize: '15px', fontWeight: mainTab === 'articles' ? 800 : 600, color: mainTab === 'articles' ? '#111' : '#888', background: 'none', border: 'none', borderBottom: mainTab === 'articles' ? '3px solid #111' : '3px solid transparent', cursor: 'pointer', marginBottom: '-2px' }}>
             전체기사 <span style={{ color: '#f97316', fontSize: '13px' }}>{articles.length}</span>
           </button>
-          <button onClick={() => setMainTab('vacancies')} style={{ padding: '14px 24px', fontSize: '15px', fontWeight: mainTab === 'vacancies' ? 800 : 600, color: mainTab === 'vacancies' ? '#111' : '#888', background: 'none', border: 'none', borderBottom: mainTab === 'vacancies' ? '3px solid #3b82f6' : '3px solid transparent', cursor: 'pointer', marginBottom: '-2px' }}>
-            등록공실 <span style={{ color: '#3b82f6', fontSize: '13px' }}>{vacancies.length}</span>
-          </button>
+          {vacancies.length > 0 && (
+            <button onClick={() => setMainTab('vacancies')} style={{ padding: '14px 24px', fontSize: '15px', fontWeight: mainTab === 'vacancies' ? 800 : 600, color: mainTab === 'vacancies' ? '#111' : '#888', background: 'none', border: 'none', borderBottom: mainTab === 'vacancies' ? '3px solid #3b82f6' : '3px solid transparent', cursor: 'pointer', marginBottom: '-2px' }}>
+              등록공실 <span style={{ color: '#3b82f6', fontSize: '13px' }}>{vacancies.length}</span>
+            </button>
+          )}
         </div>
 
         {mainTab === 'articles' ? (
           <>
             {/* 카테고리 서브탭 */}
             <div style={{ display: 'flex', borderBottom: '1px solid #e5e7eb', marginBottom: '16px', gap: '4px', flexWrap: 'wrap' }}>
-              {CATEGORIES.map((cat) => (
+              {CATEGORIES.filter(cat => cat.key === "all" || articles.some((a: any) => a.section2 === cat.key)).map((cat) => (
                 <button key={cat.key} onClick={() => setActiveTab(cat.key)} style={{ padding: '10px 14px', fontSize: '13px', fontWeight: activeTab === cat.key ? 700 : 500, color: activeTab === cat.key ? '#111' : '#888', background: 'none', border: 'none', borderBottom: activeTab === cat.key ? '2px solid #111' : '2px solid transparent', cursor: 'pointer', whiteSpace: 'nowrap', marginBottom: '-1px' }}>
                   {cat.label}
                 </button>

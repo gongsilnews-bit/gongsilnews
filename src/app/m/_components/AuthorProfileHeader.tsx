@@ -42,7 +42,7 @@ export default function AuthorProfileHeader({ profile }: { profile: any }) {
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{ fontSize: '13px', fontWeight: 'bold', background: 'rgba(255,255,255,0.2)', padding: '2px 8px', borderRadius: '12px' }}>
-                {profile.role === 'ADMIN' ? '기자' : '부동산기자'}
+                {profile.role === 'ADMIN' ? '기자' : profile.role === 'BIZ' ? (profile.business_type ? `${profile.business_type}기자` : '전문기자') : profile.role === 'REALTOR' ? '부동산기자' : '시민기자'}
               </span>
             </div>
             <div style={{ fontSize: '26px', fontWeight: '800', letterSpacing: '-0.5px' }}>

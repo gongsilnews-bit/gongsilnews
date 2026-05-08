@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { adminCreateMember, adminUpdateAgency, adminUploadAgencyDocument, adminGetMemberDetail, adminUpdateMember } from "@/app/admin/actions";
+import { adminCreateMember, adminUpdateAgency, adminUploadAgencyDocument, adminGetMemberDetail, adminUpdateMember, adminUpdateBusinessProfile } from "@/app/admin/actions";
 import { geocodeAddress } from "@/app/actions/geocode";
 
 interface MemberRegisterFormProps {
@@ -44,6 +44,20 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
   });
 
   const [originalAgencyData, setOriginalAgencyData] = useState<any>(null);
+
+  // 비즈니스 프로필 관련 state
+  const [bizData, setBizData] = useState({
+    company_name: "",
+    ceo_name: "",
+    business_type: "",
+    contact_number: "",
+    address: "",
+    biz_num: "",
+    description: "",
+    status: "PENDING"
+  });
+  const [bizFiles, setBizFiles] = useState<{ biz_cert?: File }>({});
+  const [bizFilePreviews, setBizFilePreviews] = useState<{ biz_cert?: string }>({});
 
   const [files, setFiles] = useState<{ reg_cert?: File; biz_cert?: File }>({});
   const [filePreviews, setFilePreviews] = useState<{ reg_cert?: string; biz_cert?: string }>({});
@@ -108,7 +122,7 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
       setLoading(true);
       adminGetMemberDetail(editMemberId).then(res => {
         if (res.success && res.member) {
-          const roleMap: any = { 'ADMIN': '최고관리자', 'REALTOR': '부동산회원', 'USER': '일반회원' };
+          const roleMap: any = { 'ADMIN': '최고관리자', 'REALTOR': '부동산회원', 'BIZ': '비즈니스회원', 'USER': '일반회원' };
           setFormData({
             email: res.member.email || "",
             name: res.member.name || "",
@@ -171,6 +185,21 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
             if (res.agency.lat && res.agency.lng) {
               setCoords({ lat: Number(res.agency.lat), lng: Number(res.agency.lng) });
             }
+          }
+          if (res.businessProfile) {
+            setBizData({
+              company_name: res.businessProfile.company_name || "",
+              ceo_name: res.businessProfile.ceo_name || "",
+              business_type: res.businessProfile.business_type || "",
+              contact_number: res.businessProfile.contact_number || "",
+              address: res.businessProfile.address || "",
+              biz_num: res.businessProfile.biz_num || "",
+              description: res.businessProfile.description || "",
+              status: res.businessProfile.status || "PENDING"
+            });
+            setBizFilePreviews({
+              biz_cert: res.businessProfile.biz_cert_url || undefined
+            });
           }
         }
         setLoading(false);
@@ -371,7 +400,7 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
         const updateRes = await adminUpdateMember(editMemberId, {
           name: formData.name,
           phone: formData.phone,
-          role: formData.role === '최고관리자' ? 'ADMIN' : formData.role === '부동산회원' ? 'REALTOR' : 'USER',
+          role: formData.role === '최고관리자' ? 'ADMIN' : formData.role === '부동산회원' ? 'REALTOR' : formData.role === '비즈니스회원' ? 'BIZ' : 'USER',
           sns_links: { ...snsLinks, api_list: apiList },
           plan_type: formData.plan_type,
           plan_start_date: formData.plan_start_date || null,
@@ -483,6 +512,41 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
         }
       }
 
+      // ── 비즈니스 회원 정보 저장 ──
+      if (formData.role === "비즈니스회원" && memberId) {
+        let bizCertUrl = bizFilePreviews.biz_cert?.startsWith("http") ? bizFilePreviews.biz_cert : null;
+
+        if (bizFiles.biz_cert) {
+          const fileForm = new FormData();
+          fileForm.append("file", bizFiles.biz_cert);
+          fileForm.append("path", `${memberId}/biz_cert_${Date.now()}.webp`);
+          const uploadRes = await adminUploadAgencyDocument(fileForm);
+          if (uploadRes.success) bizCertUrl = uploadRes.url || null;
+        }
+
+        let bizStatus = bizData.status;
+        if (requestApproval) {
+          bizStatus = "PENDING";
+        }
+
+        const finalBizData = {
+          company_name: bizData.company_name,
+          ceo_name: bizData.ceo_name,
+          business_type: bizData.business_type,
+          contact_number: bizData.contact_number,
+          address: bizData.address,
+          biz_num: bizData.biz_num,
+          description: bizData.description,
+          biz_cert_url: bizCertUrl,
+          status: bizStatus
+        };
+
+        const bizRes = await adminUpdateBusinessProfile(memberId, finalBizData);
+        if (!bizRes.success) {
+          throw new Error("업체 정보 저장에 실패했습니다: " + bizRes.error);
+        }
+      }
+
       if (!isAdmin && agencyData.status === "APPROVED" && formData.role === "부동산회원") {
         // Find if we downgraded
         const wasDowngraded = isAdmin ? false : (!requestApproval && (
@@ -568,6 +632,9 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
         <button onClick={() => setActiveTab(0)} style={{ flex: 1, padding: "14px", background: activeTab === 0 ? (darkMode ? "#3b82f6" : "#2563eb") : (darkMode ? "#2c2d31" : "#fff"), color: activeTab === 0 ? "#fff" : (darkMode ? "#9ca3af" : "#6b7280"), border: activeTab !== 0 ? `1px solid ${darkMode ? "#333" : "#e5e7eb"}` : "none", borderBottom: activeTab === 0 ? "none" : `1px solid ${darkMode ? "#333" : "#e5e7eb"}`, borderRadius: "8px 8px 0 0", cursor: "pointer", fontWeight: "bold", transition: "all 0.2s" }}>기본정보</button>
         {formData.role === "부동산회원" && (
           <button onClick={() => setActiveTab(1)} style={{ flex: 1, padding: "14px", background: activeTab === 1 ? (darkMode ? "#3b82f6" : "#2563eb") : (darkMode ? "#2c2d31" : "#fff"), color: activeTab === 1 ? "#fff" : (darkMode ? "#9ca3af" : "#6b7280"), border: activeTab !== 1 ? `1px solid ${darkMode ? "#333" : "#e5e7eb"}` : "none", borderBottom: activeTab === 1 ? "none" : `1px solid ${darkMode ? "#333" : "#e5e7eb"}`, borderRadius: "8px 8px 0 0", cursor: "pointer", fontWeight: "bold", transition: "all 0.2s" }}>부동산정보</button>
+        )}
+        {formData.role === "비즈니스회원" && (
+          <button onClick={() => setActiveTab(3)} style={{ flex: 1, padding: "14px", background: activeTab === 3 ? (darkMode ? "#8b5cf6" : "#7c3aed") : (darkMode ? "#2c2d31" : "#fff"), color: activeTab === 3 ? "#fff" : (darkMode ? "#9ca3af" : "#6b7280"), border: activeTab !== 3 ? `1px solid ${darkMode ? "#333" : "#e5e7eb"}` : "none", borderBottom: activeTab === 3 ? "none" : `1px solid ${darkMode ? "#333" : "#e5e7eb"}`, borderRadius: "8px 8px 0 0", cursor: "pointer", fontWeight: "bold", transition: "all 0.2s" }}>비즈니스정보</button>
         )}
         <button onClick={() => setActiveTab(2)} style={{ flex: 1, padding: "14px", background: activeTab === 2 ? (darkMode ? "#3b82f6" : "#2563eb") : (darkMode ? "#2c2d31" : "#fff"), color: activeTab === 2 ? "#fff" : (darkMode ? "#9ca3af" : "#6b7280"), border: activeTab !== 2 ? `1px solid ${darkMode ? "#333" : "#e5e7eb"}` : "none", borderBottom: activeTab === 2 ? "none" : `1px solid ${darkMode ? "#333" : "#e5e7eb"}`, borderRadius: "8px 8px 0 0", cursor: "pointer", fontWeight: "bold", transition: "all 0.2s" }}>마케팅정보</button>
       </div>
@@ -657,22 +724,35 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
               <select name="role" value={formData.role} onChange={handleMemberChange} style={{ height: 40, padding: "0 14px", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 6, fontSize: 14, color: darkMode ? "#e1e4e8" : "#111827", background: darkMode ? "#2c2d31" : "#fff", outline: "none", width: 160 }}>
                 <option value="일반회원">일반회원</option>
                 <option value="부동산회원">부동산회원</option>
+                <option value="비즈니스회원">비즈니스회원</option>
                 <option value="최고관리자">최고관리자</option>
               </select>
             ) : (
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
                 <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? "#3b82f6" : "#2563eb", background: darkMode ? "#1e3a8a" : "#dbeafe", padding: "4px 10px", borderRadius: 6 }}>{formData.role}</span>
                 {formData.role === "일반회원" && (
-                  <button type="button" onClick={() => {
-                    if(confirm("부동산회원으로 전환을 신청하시겠습니까?\n\n전환 후 생성되는 '부동산정보' 탭에서 필수 서류와 중개업소 정보를 입력하고 저장하셔야 승인 처리가 시작됩니다.")) {
-                       setFormData({...formData, role: "부동산회원"});
-                       setActiveTab(1);
-                    }
-                  }} style={{ padding: "6px 12px", fontSize: 13, fontWeight: 600, color: "#fff", background: "#f59e0b", border: "none", borderRadius: 6, cursor: "pointer", transition: "background 0.2s" }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = "#d97706"}
-                  onMouseLeave={(e) => e.currentTarget.style.background = "#f59e0b"}>
-                    부동산회원 전환 신청 ✨
-                  </button>
+                  <>
+                    <button type="button" onClick={() => {
+                      if(confirm("부동산회원으로 전환을 신청하시겠습니까?\n\n전환 후 생성되는 '부동산정보' 탭에서 필수 서류와 중개업소 정보를 입력하고 저장하셔야 승인 처리가 시작됩니다.")) {
+                         setFormData({...formData, role: "부동산회원"});
+                         setActiveTab(1);
+                      }
+                    }} style={{ padding: "6px 12px", fontSize: 13, fontWeight: 600, color: "#fff", background: "#f59e0b", border: "none", borderRadius: 6, cursor: "pointer", transition: "background 0.2s" }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = "#d97706"}
+                    onMouseLeave={(e) => e.currentTarget.style.background = "#f59e0b"}>
+                      부동산회원 전환 신청 ✨
+                    </button>
+                    <button type="button" onClick={() => {
+                      if(confirm("비즈니스회원으로 전환을 신청하시겠습니까?\n\n전환 후 생성되는 '비즈니스정보' 탭에서 업체 정보와 사업자등록증을 입력하고 저장하셔야 승인 처리가 시작됩니다.")) {
+                         setFormData({...formData, role: "비즈니스회원"});
+                         setActiveTab(3);
+                      }
+                    }} style={{ padding: "6px 12px", fontSize: 13, fontWeight: 600, color: "#fff", background: "#8b5cf6", border: "none", borderRadius: 6, cursor: "pointer", transition: "background 0.2s" }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = "#7c3aed"}
+                    onMouseLeave={(e) => e.currentTarget.style.background = "#8b5cf6"}>
+                      비즈니스회원 전환 신청 🏢
+                    </button>
+                  </>
                 )}
               </div>
             )}
@@ -715,6 +795,42 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
                   <input type="number" name="max_articles_per_month" value={formData.max_articles_per_month} onChange={handleMemberChange} disabled={!isAdmin} style={{ ...inputStyle, flex: "none", width: 80, textAlign: 'right' }} min={0} />
                 </label>
                 <div style={{ width: '100%', fontSize: 12, color: "#888" }}>0으로 설정 시 해당 기능을 사용할 수 없으며, 매우 높은 숫자 입력 시 무제한과 동일합니다. (기본값: 공실광고 5, 기사 0)</div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {formData.role === "비즈니스회원" && (
+          <>
+            <div style={rowStyle}>
+              <div style={labelStyle}>비즈니스 요금제</div>
+              <div style={contentStyle}>
+                <select name="plan_type" value={formData.plan_type} onChange={handleMemberChange} disabled={!isAdmin} style={{ height: 40, padding: "0 14px", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 6, fontSize: 14, color: darkMode ? "#e1e4e8" : "#111827", background: darkMode ? "#2c2d31" : "#fff", outline: "none", width: 180 }}>
+                  <option value="biz_premium">비즈니스 프리미엄</option>
+                </select>
+              </div>
+            </div>
+            <div style={rowStyle}>
+              <div style={labelStyle}>요금제 적용기간</div>
+              <div style={{ ...contentStyle, gap: 12, alignItems: 'center' }}>
+                <input type="date" name="plan_start_date" value={formData.plan_start_date} onChange={handleMemberChange} disabled={!isAdmin} style={{ ...inputStyle, flex: "none", width: 160 }} />
+                <span style={{ fontWeight: "bold", color: darkMode ? "#ccc" : "#555" }}>~</span>
+                <input type="date" name="plan_end_date" value={formData.plan_end_date} onChange={handleMemberChange} disabled={!isAdmin} style={{ ...inputStyle, flex: "none", width: 160 }} />
+                <span style={{ fontSize: 12, color: "#888", marginLeft: 8 }}>종료일이 지나면 미니홈피가 비활성화됩니다.</span>
+              </div>
+            </div>
+            <div style={rowStyle}>
+              <div style={labelStyle}>개별 등록 한도 설정</div>
+              <div style={{ ...contentStyle, gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14 }}>
+                  <span style={{ fontWeight: 600, color: darkMode ? '#ccc' : '#444' }}>공실광고 등록(총 건수):</span>
+                  <input type="number" name="max_vacancies" value={formData.max_vacancies} onChange={handleMemberChange} disabled={!isAdmin} style={{ ...inputStyle, flex: "none", width: 80, textAlign: 'right' }} min={0} />
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14 }}>
+                  <span style={{ fontWeight: 600, color: darkMode ? '#ccc' : '#444' }}>뉴스 작성(월 단위):</span>
+                  <input type="number" name="max_articles_per_month" value={formData.max_articles_per_month} onChange={handleMemberChange} disabled={!isAdmin} style={{ ...inputStyle, flex: "none", width: 80, textAlign: 'right' }} min={0} />
+                </label>
+                <div style={{ width: '100%', fontSize: 12, color: "#888" }}>0으로 설정 시 해당 기능을 사용할 수 없으며, 매우 높은 숫자 입력 시 무제한과 동일합니다. (기본값: 공실광고 0, 기사 0)</div>
               </div>
             </div>
           </>
@@ -946,6 +1062,145 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
               )}
             </div>
           </div>
+
+        </div>
+      )}
+
+      {activeTab === 3 && formData.role === "비즈니스회원" && (
+        <div style={{ background: darkMode ? "#2c2d31" : "#fff", borderBottomLeftRadius: 12, borderBottomRightRadius: 12, border: `1px solid ${darkMode ? "#333" : "#e5e7eb"}`, borderTop: "none", overflow: "hidden", marginBottom: 24 }}>
+          
+          <div style={rowStyle}>
+            <div style={{ ...labelStyle, flexWrap: "wrap", flexDirection: "column" as const, alignItems: "flex-start", gap: 4, justifyContent: "center", lineHeight: 1.2 }}>
+              상호(사업장명)
+              {!bizData.company_name && (
+                <span style={{ fontSize: 11, color: "#ef4444", fontWeight: "bold" }}>🚨 필수입력 누락</span>
+              )}
+            </div>
+            <div style={contentStyle}>
+              <input type="text" name="company_name" value={bizData.company_name} onChange={(e) => setBizData({...bizData, company_name: e.target.value})} style={{...inputStyle, maxWidth: 300}} placeholder="업체명 입력" />
+            </div>
+          </div>
+
+          <div style={rowStyle}>
+            <div style={{ ...labelStyle, flexWrap: "wrap", flexDirection: "column" as const, alignItems: "flex-start", gap: 4, justifyContent: "center", lineHeight: 1.2 }}>
+              대표자명
+              {!bizData.ceo_name && (
+                <span style={{ fontSize: 11, color: "#ef4444", fontWeight: "bold" }}>🚨 필수입력 누락</span>
+              )}
+            </div>
+            <div style={contentStyle}>
+              <input type="text" name="ceo_name" value={bizData.ceo_name} onChange={(e) => setBizData({...bizData, ceo_name: e.target.value})} style={{...inputStyle, maxWidth: 300}} placeholder="대표자 이름" />
+            </div>
+          </div>
+
+          <div style={rowStyle}>
+            <div style={labelStyle}>업종</div>
+            <div style={contentStyle}>
+              <select value={bizData.business_type} onChange={(e) => setBizData({...bizData, business_type: e.target.value})} style={{ height: 40, padding: "0 14px", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 6, fontSize: 14, color: darkMode ? "#e1e4e8" : "#111827", background: darkMode ? "#2c2d31" : "#fff", outline: "none", width: 200 }}>
+                <option value="">선택해주세요</option>
+                <option value="인테리어">인테리어</option>
+                <option value="청소">청소</option>
+                <option value="이사">이사</option>
+                <option value="법무사">법무사</option>
+                <option value="세무사">세무사</option>
+                <option value="건축/설계">건축/설계</option>
+                <option value="금융/대출">금융/대출</option>
+                <option value="보험">보험</option>
+                <option value="광고/마케팅">광고/마케팅</option>
+                <option value="IT/소프트웨어">IT/소프트웨어</option>
+                <option value="교육">교육</option>
+                <option value="기타">기타</option>
+              </select>
+            </div>
+          </div>
+
+          <div style={rowStyle}>
+            <div style={labelStyle}>연락처</div>
+            <div style={contentStyle}>
+              <input type="text" name="contact_number" value={bizData.contact_number} onChange={(e) => setBizData({...bizData, contact_number: formatPhone(e.target.value)})} style={{...inputStyle, maxWidth: 200}} placeholder="010-0000-0000" />
+            </div>
+          </div>
+
+          <div style={rowStyle}>
+            <div style={labelStyle}>소재지</div>
+            <div style={{...contentStyle, gap: 8}}>
+              <input type="text" value={bizData.address} readOnly style={{...inputStyle, flex: 1}} placeholder="주소 검색 버튼을 클릭하세요" />
+              <button type="button" onClick={() => {
+                if ((window as any).daum && (window as any).daum.Postcode) {
+                  new (window as any).daum.Postcode({
+                    oncomplete: function(data: any) {
+                      setBizData(prev => ({...prev, address: data.address}));
+                    }
+                  }).open();
+                }
+              }} style={{ height: 40, padding: "0 14px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
+                주소검색
+              </button>
+            </div>
+          </div>
+
+          <div style={rowStyle}>
+            <div style={{ ...labelStyle, flexWrap: "wrap", flexDirection: "column" as const, alignItems: "flex-start", gap: 4, justifyContent: "center", lineHeight: 1.2 }}>
+              사업자등록번호
+              {!bizData.biz_num && (
+                <span style={{ fontSize: 11, color: "#ef4444", fontWeight: "bold" }}>🚨 필수입력 누락</span>
+              )}
+            </div>
+            <div style={contentStyle}>
+              <input type="text" name="biz_num" value={bizData.biz_num} onChange={(e) => setBizData({...bizData, biz_num: formatBizNum(e.target.value)})} style={{...inputStyle, maxWidth: 200}} placeholder="000-00-00000" />
+            </div>
+          </div>
+
+          <div style={rowStyle}>
+            <div style={{ ...labelStyle, flexWrap: "wrap", flexDirection: "column" as const, alignItems: "flex-start", gap: 4, justifyContent: "center", lineHeight: 1.2 }}>
+              사업자등록증 사본
+              {!bizFiles.biz_cert && !bizFilePreviews.biz_cert && (
+                <span style={{ fontSize: 11, color: "#ef4444", fontWeight: "bold" }}>🚨 필수첨부 누락</span>
+              )}
+            </div>
+            <div style={{...contentStyle, gap: 12}}>
+              {bizFilePreviews.biz_cert ? (
+                <div style={{ position: "relative", display: "inline-block" }}>
+                  <img src={bizFilePreviews.biz_cert} alt="사업자등록증" style={{ width: 80, height: 80, objectFit: "cover", borderRadius: 8, border: `1px solid ${darkMode ? "#444" : "#e5e7eb"}`, cursor: "pointer" }} onClick={() => setPreviewImage(bizFilePreviews.biz_cert!)} />
+                  <button onClick={() => { setBizFiles(prev => ({...prev, biz_cert: undefined})); setBizFilePreviews(prev => ({...prev, biz_cert: undefined})); }} style={{ position: "absolute", top: -6, right: -6, width: 20, height: 20, borderRadius: "50%", background: "#ef4444", color: "#fff", border: "2px solid #fff", fontSize: 12, fontWeight: "bold", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", lineHeight: 1 }}>&times;</button>
+                </div>
+              ) : (
+                <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                  <div style={{ width: 80, height: 80, borderRadius: 8, background: darkMode ? "#333" : "#f0f4f8", border: `2px dashed ${darkMode ? "#555" : "#d1d5db"}`, display: "flex", flexDirection: "column" as const, alignItems: "center", justifyContent: "center", gap: 4 }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    <span style={{ fontSize: 10, color: "#aaa" }}>파일 첨부</span>
+                  </div>
+                  <input type="file" accept="image/*" style={{ display: "none" }} onChange={async (e) => {
+                    if (e.target.files && e.target.files[0]) {
+                      const compressed = await compressToWebP(e.target.files[0]);
+                      setBizFiles(prev => ({...prev, biz_cert: compressed}));
+                      setBizFilePreviews(prev => ({...prev, biz_cert: URL.createObjectURL(compressed)}));
+                    }
+                  }} />
+                </label>
+              )}
+            </div>
+          </div>
+
+          <div style={rowStyle}>
+            <div style={labelStyle}>업체 소개</div>
+            <div style={contentStyle}>
+              <textarea name="description" value={bizData.description} onChange={(e) => setBizData({...bizData, description: e.target.value})} style={{ ...inputStyle, minHeight: 100, height: "auto", padding: "10px 14px", resize: "vertical" as const }} placeholder="업체 소개글을 입력해주세요 (미니홈피에 노출됩니다)" />
+            </div>
+          </div>
+
+          {isAdmin && (
+            <div style={rowStyle}>
+              <div style={labelStyle}>승인 상태</div>
+              <div style={contentStyle}>
+                <select value={bizData.status} onChange={(e) => setBizData({...bizData, status: e.target.value})} style={{ height: 40, padding: "0 14px", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 6, fontSize: 14, color: darkMode ? "#e1e4e8" : "#111827", background: darkMode ? "#2c2d31" : "#fff", outline: "none", width: 160 }}>
+                  <option value="PENDING">승인대기</option>
+                  <option value="APPROVED">정상승인</option>
+                  <option value="REJECTED">서류보완</option>
+                </select>
+              </div>
+            </div>
+          )}
 
         </div>
       )}

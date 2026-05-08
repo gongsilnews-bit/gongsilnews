@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { AdminSectionProps } from "./types";
 import MemberRegisterForm from "@/components/admin/MemberRegisterForm";
-import { adminGetMembers, adminSoftDeleteMember, adminRestoreMember, adminHardDeleteMember, adminApproveRealtorApplication, adminRejectRealtorApplication } from "@/app/admin/actions";
+import { adminGetMembers, adminSoftDeleteMember, adminRestoreMember, adminHardDeleteMember, adminApproveRealtorApplication, adminRejectRealtorApplication, adminApproveBusinessApplication, adminRejectBusinessApplication } from "@/app/admin/actions";
 
 interface MemberSectionProps extends AdminSectionProps {
   activeSubmenu: string;
@@ -48,10 +48,17 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
   const processedMembers = dbMembers.map(m => {
     let agencyStatus = null;
     if (m.agencies) agencyStatus = Array.isArray(m.agencies) ? m.agencies[0]?.status : m.agencies.status;
+    let bizStatus = null;
+    if (m.business_profiles) bizStatus = Array.isArray(m.business_profiles) ? m.business_profiles[0]?.status : m.business_profiles.status;
     let computedStatus = m.signup_completed ? '정상' : '승인대기';
     if (m.role === 'REALTOR') {
       if (agencyStatus === 'APPROVED') computedStatus = '정상';
       else if (agencyStatus === 'REJECTED') computedStatus = '서류보완';
+      else computedStatus = '승인대기';
+    }
+    if (m.role === 'BIZ') {
+      if (bizStatus === 'APPROVED') computedStatus = '정상';
+      else if (bizStatus === 'REJECTED') computedStatus = '서류보완';
       else computedStatus = '승인대기';
     }
     return { ...m, computedStatus };
@@ -85,7 +92,7 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
   }
   if (activeFilters.role !== "전체") {
     displayMembers = displayMembers.filter(m => {
-      const roleMap: any = { 'ADMIN': '최고관리자', 'REALTOR': '부동산회원', 'USER': '일반회원' };
+      const roleMap: any = { 'ADMIN': '최고관리자', 'REALTOR': '부동산회원', 'BIZ': '비즈니스회원', 'USER': '일반회원' };
       const displayRole = roleMap[m.role] || m.role || '일반회원';
       return displayRole === activeFilters.role;
     });
@@ -115,7 +122,7 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <label style={{ fontSize: 13, fontWeight: 600, color: textSecondary, whiteSpace: "nowrap" }}>회원구분</label>
           <select value={searchRole} onChange={e => setSearchRole(e.target.value)} style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", minWidth: 80 }}>
-            <option value="전체">전체</option><option value="최고관리자">최고관리자</option><option value="부동산회원">부동산회원</option><option value="일반회원">일반회원</option>
+            <option value="전체">전체</option><option value="최고관리자">최고관리자</option><option value="부동산회원">부동산회원</option><option value="비즈니스회원">비즈니스회원</option><option value="일반회원">일반회원</option>
           </select>
         </div>
         <input type="text" value={searchKeyword} onChange={e => setSearchKeyword(e.target.value)} onKeyDown={e => { if(e.key === 'Enter') { setActiveFilters({ memberId: searchMemberId, role: searchRole, keyword: searchKeyword }); if (searchMemberId || searchKeyword || searchRole !== "전체") onSubmenuChange?.("members_list"); } }} placeholder="이름 또는 이메일 검색" style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", flex: 1, minWidth: 180 }} />
@@ -219,11 +226,14 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
             </thead>
             <tbody>
               {displayMembers.length > 0 ? displayMembers.map((member, idx) => {
-                const roleMap: any = { 'ADMIN': '최고관리자', 'REALTOR': '무료부동산', 'USER': '일반회원' };
+                const roleMap: any = { 'ADMIN': '최고관리자', 'REALTOR': '무료부동산', 'BIZ': '비즈니스', 'USER': '일반회원' };
                 let displayRole = roleMap[member.role] || member.role || '일반회원';
                 if (member.role === 'REALTOR' && member.plan_type) {
                   if (member.plan_type === 'news_premium') displayRole = '공실뉴스';
                   else if (member.plan_type === 'vacancy_premium') displayRole = '공실등록';
+                }
+                if (member.role === 'BIZ' && member.plan_type === 'biz_premium') {
+                  displayRole = '비즈니스';
                 }
                 const createdDate = member.created_at ? new Date(member.created_at).toISOString().split('T')[0] : "-";
                 
@@ -300,12 +310,15 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
                           {isDormant ? "영구삭제" : "삭제"}
                         </button>
                         <button style={{ height: 30, padding: "0 12px", background: darkMode ? "#2c2d31" : "#fff", color: "#6b7280", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>수정내역</button>
-                        {/* 승인대기/서류보완 상태 원클릭 버튼 */}
-                        {(member.computedStatus === '승인대기' || member.computedStatus === '서류보완') && member.role === 'REALTOR' && (
+                        {/* 승인대기/서류보완 상태 원클릭 버튼 (부동산 + 비즈니스) */}
+                        {(member.computedStatus === '승인대기' || member.computedStatus === '서류보완') && (member.role === 'REALTOR' || member.role === 'BIZ') && (
                           <>
                             <button onClick={async () => {
-                              if (confirm(`'${member.name || member.email}' 회원을 부동산회원으로 승인하시겠습니까?`)) {
-                                const res = await adminApproveRealtorApplication(member.id);
+                              const roleLabel = member.role === 'BIZ' ? '비즈니스회원' : '부동산회원';
+                              if (confirm(`'${member.name || member.email}' 회원을 ${roleLabel}으로 승인하시겠습니까?`)) {
+                                const res = member.role === 'BIZ'
+                                  ? await adminApproveBusinessApplication(member.id)
+                                  : await adminApproveRealtorApplication(member.id);
                                 if (res.success) { alert('✅ 승인 완료!'); adminGetMembers().then(r => { if (r.success) setDbMembers(r.data || []) }); }
                                 else alert('승인 실패: ' + res.error);
                               }
@@ -359,7 +372,11 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
               <button onClick={async () => {
                 const finalReason = rejectReason === "기타" ? "기타 사유" : rejectReason;
                 if (!finalReason.trim()) { alert("반려 사유를 입력해주세요."); return; }
-                const res = await adminRejectRealtorApplication(rejectModalFor, finalReason);
+                // 해당 회원의 role을 찾아서 적절한 반려 함수 호출
+                const targetMember = dbMembers.find(m => m.id === rejectModalFor);
+                const res = targetMember?.role === 'BIZ'
+                  ? await adminRejectBusinessApplication(rejectModalFor, finalReason)
+                  : await adminRejectRealtorApplication(rejectModalFor, finalReason);
                 if (res.success) { alert('반려 처리 완료'); adminGetMembers().then(r => { if (r.success) setDbMembers(r.data || []) }); setRejectModalFor(null); setRejectReason("사업자등록증이 불분명합니다"); }
                 else alert('반려 실패: ' + res.error);
               }} style={{ height: 40, padding: "0 20px", background: "#ef4444", color: "#fff", border: "none", borderRadius: 6, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>반려 확정</button>

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { saveArticle, getPhotoLibrary, togglePhotoFavorite, getArticleDetail } from "@/app/actions/article";
+import { adminGetMembers } from "@/app/admin/actions";
 import { uploadArticleMediaDirect } from "@/utils/uploadDirect";
 import { geocodeAddress } from "@/app/actions/geocode";
 import { createClient } from "@/utils/supabase/client";
@@ -66,6 +67,48 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
   const [isMemberMode, setIsMemberMode] = useState(initialIsMemberMode);
   const [memberReturnPath, setMemberReturnPath] = useState("/admin?menu=article");
   const [memberAuthorId, setMemberAuthorId] = useState<string | null>(null);
+
+  /* ── 기자명 검색 (관리자 전용) ── */
+  const [reporterSearchQuery, setReporterSearchQuery] = useState("");
+  const [reporterSearchResults, setReporterSearchResults] = useState<any[]>([]);
+  const [allMembers, setAllMembers] = useState<any[]>([]);
+  const [showReporterDropdown, setShowReporterDropdown] = useState(false);
+  const reporterDropdownRef = React.useRef<HTMLDivElement>(null);
+
+  // 기자명 검색 필터
+  useEffect(() => {
+    if (!reporterSearchQuery.trim()) {
+      setReporterSearchResults([]);
+      return;
+    }
+    const q = reporterSearchQuery.toLowerCase();
+    const filtered = allMembers.filter(m =>
+      (m.name && m.name.toLowerCase().includes(q)) ||
+      (m.email && m.email.toLowerCase().includes(q))
+    ).slice(0, 8);
+    setReporterSearchResults(filtered);
+  }, [reporterSearchQuery, allMembers]);
+
+  // 드롭다운 바깥 클릭 시 닫기
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (reporterDropdownRef.current && !reporterDropdownRef.current.contains(e.target as Node)) {
+        setShowReporterDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  // 기자변경 버튼 클릭 시 회원목록 로드
+  const handleOpenReporterSearch = () => {
+    if (allMembers.length === 0) {
+      adminGetMembers().then(res => {
+        if (res.success && res.data) setAllMembers(res.data);
+      });
+    }
+    setShowReporterDropdown(!showReporterDropdown);
+  };
 
   /* ── 관련기사 관련 상태 ── */
   const [relatedArticles, setRelatedArticles] = useState<{id: string, title: string, section1: string, published_at: string}[]>([]);
@@ -1470,6 +1513,56 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                 style={{ width: 140, padding: "10px 14px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 14, color: textPrimary, background: cardBg, outline: "none", fontFamily: "inherit" }} />
               <input type="email" value={reporterEmail} onChange={e => setReporterEmail(e.target.value)}
                 style={{ flex: 1, padding: "10px 14px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 14, color: textPrimary, background: cardBg, outline: "none", fontFamily: "inherit" }} />
+              {/* 관리자용 기자 변경 검색 */}
+              {currentUserRole === 'ADMIN' && (
+                <div ref={reporterDropdownRef} style={{ position: "relative" }}>
+                  <button type="button" onClick={handleOpenReporterSearch}
+                    style={{ height: 42, padding: "0 14px", background: "#7c3aed", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 6 }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    기자변경
+                  </button>
+                  {showReporterDropdown && (
+                    <div style={{ position: "absolute", top: "100%", right: 0, marginTop: 6, width: 340, background: "#fff", borderRadius: 10, boxShadow: "0 8px 30px rgba(0,0,0,0.15)", border: `1px solid ${border}`, zIndex: 9999, overflow: "hidden" }}>
+                      <div style={{ padding: "12px 14px", borderBottom: `1px solid ${border}` }}>
+                        <input type="text" name="reporter_search_unique" autoComplete="off" value={reporterSearchQuery} onChange={e => setReporterSearchQuery(e.target.value)}
+                          placeholder="이름 또는 이메일로 검색..."
+                          autoFocus
+                          style={{ width: "100%", padding: "10px 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 14, color: textPrimary, background: "#f9fafb", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                      </div>
+                      <div style={{ maxHeight: 240, overflowY: "auto" }}>
+                        {reporterSearchResults.length > 0 ? reporterSearchResults.map(m => (
+                          <button key={m.id} type="button" onClick={() => {
+                            setReporterName(m.name || "");
+                            setReporterEmail(m.email || "");
+                            setMemberAuthorId(m.id);
+                            setShowReporterDropdown(false);
+                            setReporterSearchQuery("");
+                          }}
+                          style={{ width: "100%", padding: "10px 14px", border: "none", background: "none", cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 10, borderBottom: `1px solid #f3f4f6`, transition: "background 0.1s" }}
+                          onMouseEnter={e => e.currentTarget.style.background = "#f8f9ff"}
+                          onMouseLeave={e => e.currentTarget.style.background = "none"}>
+                            <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#e5e7eb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#6b7280", flexShrink: 0, overflow: "hidden" }}>
+                              {m.profile_image_url ? <img src={m.profile_image_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : (m.name?.[0] || "?")}
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: 14, fontWeight: 700, color: "#1f2937" }}>{m.name || "이름없음"}
+                                <span style={{ fontSize: 11, fontWeight: 600, color: "#9ca3af", marginLeft: 6 }}>
+                                  {m.role === 'ADMIN' ? '관리자' : m.role === 'REALTOR' ? '부동산' : m.role === 'BIZ' ? '비즈니스' : '일반'}
+                                </span>
+                              </div>
+                              <div style={{ fontSize: 12, color: "#9ca3af", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.email}</div>
+                            </div>
+                          </button>
+                        )) : reporterSearchQuery.trim() ? (
+                          <div style={{ padding: "20px 14px", textAlign: "center", color: "#9ca3af", fontSize: 13 }}>검색 결과가 없습니다.</div>
+                        ) : (
+                          <div style={{ padding: "20px 14px", textAlign: "center", color: "#9ca3af", fontSize: 13 }}>이름 또는 이메일을 입력하세요</div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* ── 구분선 ── */}

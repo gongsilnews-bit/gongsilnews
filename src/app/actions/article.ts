@@ -544,6 +544,16 @@ export async function getAuthorProfileById(id: string) {
   try {
     const { data, error } = await supabase.from('members').select('*').eq('id', id).limit(1).maybeSingle();
     if (error) return { success: false, error: error.message };
+    
+    // BIZ 회원이면 business_profiles에서 업종 정보도 가져옴
+    if (data && data.role === 'BIZ') {
+      const { data: bizProfile } = await supabase.from('business_profiles').select('business_type, company_name').eq('user_id', id).maybeSingle();
+      if (bizProfile) {
+        data.business_type = bizProfile.business_type;
+        data.company_name = bizProfile.company_name;
+      }
+    }
+    
     return { success: true, data };
   } catch (err: any) {
     return { success: false, error: err.message };
