@@ -52,7 +52,8 @@ export function middleware(request: NextRequest) {
       !url.pathname.startsWith('/auth') &&
       !url.pathname.startsWith('/admin') &&
       !url.pathname.startsWith('/realty_admin') &&
-      !url.pathname.startsWith('/user_admin')
+      !url.pathname.startsWith('/user_admin') &&
+      !url.pathname.startsWith('/com')
     ) {
       url.pathname = `/m${url.pathname === '/' ? '' : url.pathname}`;
       return NextResponse.rewrite(url);
