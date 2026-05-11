@@ -14,9 +14,16 @@ export default function ComingSoon() {
       </h1>
 
       {/* Sub Text */}
-      <p className="mt-8 md:mt-10 text-[#333333] text-2xl md:text-3xl font-[800] tracking-wider uppercase">
+      <p className="mt-8 md:mt-10 text-[#333333] text-2xl md:text-3xl font-[800] tracking-wider uppercase mb-16">
         Coming Soon
       </p>
+
+      {/* Privacy Policy Link for App Reviewers */}
+      <div className="absolute bottom-8 text-center">
+        <a href="/com/privacy.html" className="text-[#555555] text-sm md:text-base underline underline-offset-4 hover:text-black transition-colors">
+          개인정보 처리방침 및 계정 삭제 안내
+        </a>
+      </div>
     </div>
   );
 }
