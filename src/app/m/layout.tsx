@@ -11,15 +11,15 @@ export const metadata = {
 };
 
 export default function MobileLayout({ children }: { children: React.ReactNode }) {
-  const isMaintenance = process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true";
+  // const isMaintenance = process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true";
 
-  if (isMaintenance) {
-    return (
-      <div style={{ position: 'relative', width: '100%', minHeight: '100vh', backgroundColor: '#fff' }}>
-        <ComingSoon />
-      </div>
-    );
-  }
+  // if (isMaintenance) {
+  //   return (
+  //     <div style={{ position: 'relative', width: '100%', minHeight: '100vh', backgroundColor: '#fff' }}>
+  //       <ComingSoon />
+  //     </div>
+  //   );
+  // }
 
   return (
     <div

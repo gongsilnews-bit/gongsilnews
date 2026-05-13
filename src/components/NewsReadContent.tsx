@@ -106,6 +106,9 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
   // 커스텀 Confirm 모달 State
   const [confirmDialog, setConfirmDialog] = useState<{isOpen: boolean; message: string; onConfirm: () => void} | null>(null);
 
+  // 이미지 줌(라이트박스) State
+  const [zoomImage, setZoomImage] = useState<string | null>(null);
+
   // 작성자 정보 및 소속 공실 State
   const [authorRole, setAuthorRole] = useState<string | null>(initialAuthorRole);
   const [authorEmail, setAuthorEmail] = useState<string | null>(initialAuthorEmail);
@@ -672,6 +675,14 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
               ) : !hasYoutube && article.thumbnail_url && !(article.content && article.content.includes(article.thumbnail_url)) ? (
                 <div className="article-img-wrap" style={{ position: "relative", width: "100%", aspectRatio: "16/9", overflow: "hidden", borderRadius: "8px", marginBottom: "16px" }}>
                   <Image src={article.thumbnail_url} alt={article.title} fill style={{ objectFit: "cover" }} sizes="100vw" />
+                  <button 
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setZoomImage(article.thumbnail_url!); }}
+                    style={{ position: "absolute", bottom: "12px", right: "12px", background: "rgba(0,0,0,0.65)", color: "white", border: "1px solid rgba(255,255,255,0.2)", borderRadius: "20px", padding: "6px 12px", fontSize: "12px", fontWeight: "bold", display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", backdropFilter: "blur(4px)", zIndex: 10, transition: "all 0.2s" }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = "rgba(0,0,0,0.85)"}
+                    onMouseLeave={(e) => e.currentTarget.style.background = "rgba(0,0,0,0.65)"}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg> 확대보기
+                  </button>
                 </div>
               ) : null}
 
@@ -683,10 +694,23 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
                       .replace(/<button[^>]*class="editor-media-delete"[^>]*>.*?<\/button>/gi, '')
                       .replace(/<p[^>]*>\s*(?:<br>\s*)*<iframe[^>]*youtube\.com\/embed[^>]*>.*?<\/iframe>(?:\s*<br>\s*)*\s*<\/p>/gi, '')
                       .replace(/<div(?:(?!class="article-body")[^>]*)?>\s*(?:<br>\s*)*<iframe[^>]*youtube\.com\/embed[^>]*>.*?<\/iframe>(?:\s*<br>\s*)*\s*<\/div>/gi, '')
-                      .replace(/<iframe[^>]*youtube\.com\/embed[^>]*>.*?<\/iframe>/gi, '') 
+                      .replace(/<iframe[^>]*youtube\.com\/embed[^>]*>.*?<\/iframe>/gi, '')
+                      .replace(/<img([^>]*)>/gi, '<div class="zoom-img-wrapper" style="position:relative; display:inline-block; max-width:100%; margin:0 auto;"><img$1><button class="zoom-btn" style="position:absolute; bottom:12px; right:12px; background:rgba(0,0,0,0.65); color:white; border:1px solid rgba(255,255,255,0.2); padding:6px 12px; border-radius:20px; font-size:12px; font-weight:bold; cursor:pointer; display:flex; align-items:center; gap:6px; z-index:10; transition:all 0.2s;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg> 확대보기</button></div>')
                   }} 
                   onClick={(e) => {
                     const target = e.target as HTMLElement;
+                    
+                    const btn = target.closest('.zoom-btn');
+                    if (btn) {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      const img = btn.previousElementSibling as HTMLImageElement;
+                      if (img && img.tagName.toLowerCase() === 'img' && img.src) {
+                        setZoomImage(img.src);
+                      }
+                      return;
+                    }
+
                     const a = target.closest('a');
                     if (a && a.href) {
                       e.preventDefault();
@@ -1119,6 +1143,17 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
         )}
       </div>
 
+      {/* 이미지 라이트박스 (확대 보기) */}
+      {zoomImage && (
+        <div 
+          style={{ position: "fixed", top: 0, left: 0, width: "100vw", height: "100dvh", backgroundColor: "rgba(0,0,0,0.9)", zIndex: 99999999, display: "flex", alignItems: "center", justifyContent: "center", cursor: "zoom-out", animation: "fadeIn 0.2s ease" }}
+          onClick={() => setZoomImage(null)}
+        >
+          <img src={zoomImage} style={{ maxWidth: "95vw", maxHeight: "95dvh", objectFit: "contain", userSelect: "none" }} alt="Zoomed" />
+          <div style={{ position: "absolute", top: "20px", right: "20px", color: "white", fontSize: "36px", fontWeight: "300", cursor: "pointer", width: "40px", height: "40px", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.5)", borderRadius: "50%", lineHeight: 1 }}>✕</div>
+        </div>
+      )}
+
       <style>{`
         @keyframes toastFadeIn { from { opacity: 0; transform: translateX(-50%) translateY(-10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
         @keyframes dropdownFadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
@@ -1132,6 +1167,9 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
             max-width: none !important;
             border-radius: 0 !important;
           }
+        }
+        .article-body .zoom-btn:hover {
+          background: rgba(0,0,0,0.85) !important;
         }
       `}</style>
     </>

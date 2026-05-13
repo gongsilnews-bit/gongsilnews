@@ -14,11 +14,11 @@ export default async function MainLayout({
     getBannersByPlacement("HEADER_TEXT")
   ]);
 
-  const isMaintenance = process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true";
+  // const isMaintenance = process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true";
 
-  if (isMaintenance) {
-    return <ComingSoon />;
-  }
+  // if (isMaintenance) {
+  //   return <ComingSoon />;
+  // }
 
   return (
     <>
