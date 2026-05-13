@@ -2652,6 +2652,44 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
           onSuccess={() => alert("폴더 이동이 완료되었습니다.")}
         />
       )}
+      {/* 🛑 6월 1일 오픈 전 가림막 (오버레이) */}
+      <div style={{
+        position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', 
+        backgroundColor: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(8px)',
+        zIndex: 99999999, display: 'flex', flexDirection: 'column', 
+        alignItems: 'center', justifyContent: 'center', textAlign: 'center',
+        padding: 20
+      }}>
+        <div style={{ background: '#fff', padding: '40px 50px', borderRadius: 16, boxShadow: '0 20px 60px rgba(0,0,0,0.15)', border: '1px solid #eee' }}>
+          <div style={{ fontSize: 45, marginBottom: 15 }}>📢</div>
+          <h2 style={{ fontSize: 26, fontWeight: 900, color: '#111', marginBottom: 15, letterSpacing: '-0.5px' }}>
+            실시간 공실지도 서비스는 <span style={{ color: '#1a73e8' }}>6월 1일 정식 오픈</span>합니다!
+          </h2>
+          <p style={{ fontSize: 16, color: '#555', marginBottom: 30, lineHeight: 1.6 }}>
+            현재는 부동산 중개사무소 사전 매물 등록 기간입니다.<br/>
+            중개사무소 회원이시라면 가입 후 무료로 매물을 등록해 보세요.
+          </p>
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+            <Link href="/signup" style={{ textDecoration: 'none' }}>
+              <button 
+                style={{ background: '#1a73e8', color: '#fff', border: 'none', padding: '14px 28px', borderRadius: 8, fontSize: 16, fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s' }}
+              >
+                🚀 중개사무소 회원가입
+              </button>
+            </Link>
+            <Link href="/realty_admin" style={{ textDecoration: 'none' }}>
+              <button 
+                style={{ background: '#fff', color: '#1a73e8', border: '1px solid #1a73e8', padding: '14px 28px', borderRadius: 8, fontSize: 16, fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s' }}
+              >
+                💻 내 매물 등록하기
+              </button>
+            </Link>
+          </div>
+          <div style={{ marginTop: 25, fontSize: 14 }}>
+            <Link href="/" style={{ color: '#888', textDecoration: 'underline' }}>메인 뉴스홈으로 돌아가기</Link>
+          </div>
+        </div>
+      </div>
 
       <style>{`
         @keyframes toastFadeIn { from { opacity: 0; transform: translateX(-50%) translateY(-10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }

@@ -427,6 +427,41 @@ export default function HeroMapSection({ initialVacancies }: { initialVacancies?
           📋 공실광고 목록 보기
         </button>
       )}
+
+      {/* 🛑 6월 1일 오픈 전 가림막 (오버레이) */}
+      <div style={{
+        position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', 
+        backgroundColor: 'rgba(255,255,255,0.75)', backdropFilter: 'blur(6px)',
+        zIndex: 9999999, display: 'flex', flexDirection: 'column', 
+        alignItems: 'center', justifyContent: 'center', textAlign: 'center',
+        padding: 20
+      }}>
+        <div style={{ background: '#fff', padding: '30px 40px', borderRadius: 16, boxShadow: '0 10px 40px rgba(0,0,0,0.1)', border: '1px solid #eee' }}>
+          <div style={{ fontSize: 40, marginBottom: 15 }}>📢</div>
+          <h2 style={{ fontSize: 24, fontWeight: 900, color: '#111', marginBottom: 10, letterSpacing: '-0.5px' }}>
+            공실열람 지도는 <span style={{ color: '#1a73e8' }}>6월 1일 정식 오픈</span>합니다!
+          </h2>
+          <p style={{ fontSize: 16, color: '#555', marginBottom: 25, lineHeight: 1.6 }}>
+            현재는 부동산 중개사무소 사전 매물 등록 기간입니다.<br/>
+            중개사무소 회원이시라면 가입 후 무료로 매물을 등록해 보세요.
+          </p>
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+            <button 
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push('/signup'); }}
+              style={{ background: '#1a73e8', color: '#fff', border: 'none', padding: '12px 24px', borderRadius: 8, fontSize: 15, fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s' }}
+            >
+              🚀 중개사무소 회원가입
+            </button>
+            <button 
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push('/realty_admin'); }}
+              style={{ background: '#fff', color: '#1a73e8', border: '1px solid #1a73e8', padding: '12px 24px', borderRadius: 8, fontSize: 15, fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s' }}
+            >
+              💻 내 매물 등록하기
+            </button>
+          </div>
+        </div>
+      </div>
+
       {isAuthModalOpen && <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />}
     </div>
   );

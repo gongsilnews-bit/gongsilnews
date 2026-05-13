@@ -1295,6 +1295,45 @@ function MobileGongsilContent() {
           initialTab="login"
         />
       )}
+
+      {/* 🛑 6월 1일 오픈 전 가림막 (오버레이) */}
+      <div style={{
+        position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', 
+        backgroundColor: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(8px)',
+        zIndex: 99999999, display: 'flex', flexDirection: 'column', 
+        alignItems: 'center', justifyContent: 'center', textAlign: 'center',
+        padding: '0 20px', boxSizing: 'border-box'
+      }}>
+        <div style={{ background: '#fff', width: '100%', maxWidth: '400px', padding: '35px 25px', borderRadius: 16, boxShadow: '0 15px 40px rgba(0,0,0,0.12)', border: '1px solid #eee' }}>
+          <div style={{ fontSize: 40, marginBottom: 15 }}>📢</div>
+          <h2 style={{ fontSize: 20, fontWeight: 900, color: '#111', marginBottom: 15, letterSpacing: '-0.5px', wordBreak: 'keep-all' }}>
+            실시간 공실지도 서비스는<br/><span style={{ color: '#1a73e8' }}>6월 1일 정식 오픈</span>합니다!
+          </h2>
+          <p style={{ fontSize: 14, color: '#555', marginBottom: 25, lineHeight: 1.5, wordBreak: 'keep-all' }}>
+            현재는 부동산 중개사무소 사전 매물 등록 기간입니다.<br/>
+            중개사무소 회원이시라면 가입 후 무료로 매물을 등록해 보세요.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <Link href="/signup" style={{ textDecoration: 'none', width: '100%' }}>
+              <button 
+                style={{ width: '100%', background: '#1a73e8', color: '#fff', border: 'none', padding: '14px', borderRadius: 8, fontSize: 15, fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s' }}
+              >
+                🚀 중개사무소 회원가입
+              </button>
+            </Link>
+            <Link href="/realty_admin" style={{ textDecoration: 'none', width: '100%' }}>
+              <button 
+                style={{ width: '100%', background: '#fff', color: '#1a73e8', border: '1px solid #1a73e8', padding: '14px', borderRadius: 8, fontSize: 15, fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s' }}
+              >
+                💻 내 매물 등록하기
+              </button>
+            </Link>
+          </div>
+          <div style={{ marginTop: 25, fontSize: 13 }}>
+            <Link href="/" style={{ color: '#888', textDecoration: 'underline' }}>메인 뉴스홈으로 돌아가기</Link>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
