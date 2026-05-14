@@ -28,6 +28,7 @@ export default function Footer() {
             <div className="sitemap-title">공실뉴스</div>
             <Link href="/news_all" className="sitemap-link">전체뉴스</Link>
             <Link href="/news_map" className="sitemap-link">우리동네부동산</Link>
+            <Link href="/news_all?section1=부동산마케팅" className="sitemap-link">부동산마케팅</Link>
             <Link href="/news_finance" className="sitemap-link">부동산·주식·재테크</Link>
             <Link href="/news_politics" className="sitemap-link">정치·경제·사회</Link>
             <Link href="/news_law" className="sitemap-link">세무·법률</Link>

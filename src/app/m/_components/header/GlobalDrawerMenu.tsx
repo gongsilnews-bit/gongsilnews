@@ -515,7 +515,7 @@ export default function GlobalDrawerMenu() {
             <div style={{ background: '#fff', marginBottom: '8px' }}>
               <h3 style={{ padding: '16px 20px 8px', fontSize: '14px', fontWeight: 700, color: '#6b7280', margin: 0 }}>공실뉴스</h3>
               <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-                {["전체뉴스", "우리동네부동산", "부동산·주식·재테크", "정치·경제·사회", "세무·법률", "여행·건강·생활", "IT·가전·가구", "스포츠·연예·Car", "인물·미션·기타"].map(menu => {
+                {["전체뉴스", "우리동네부동산", "부동산마케팅", "부동산·주식·재테크", "정치·경제·사회", "세무·법률", "여행·건강·생활", "IT·가전·가구", "스포츠·연예·Car", "인물·미션·기타"].map(menu => {
                   const tabParam = menu === "전체뉴스" ? "all" : menu === "우리동네부동산" ? "realestate" : menu;
                   return (
                   <li key={menu}>

@@ -1490,6 +1490,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                 )}
                 {section1 === "뉴스/칼럼" && (
                   <>
+                    <option value="부동산마케팅">부동산마케팅</option>
                     <option value="부동산·주식·재테크">부동산·주식·재테크</option>
                     <option value="정치·경제·사회">정치·경제·사회</option>
                     <option value="세무·법률">세무·법률</option>
