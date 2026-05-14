@@ -11,6 +11,7 @@ const DEFAULT_NAMES: Record<string, string> = {
   verify: "회원승인 에이전트",
   articleReview: "기사심사 에이전트",
   article: "기사작성 에이전트",
+  pressRelease: "보도자료 에이전트",
 };
 
 /* 탭 정의 */

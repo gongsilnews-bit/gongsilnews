@@ -809,15 +809,8 @@ button { border: none; background: none; cursor: pointer; font-family: inherit; 
 .article-body p {
     margin-bottom: 24px;
 }
-.article-body b {
-    display: block;
-    margin: 30px 0 20px;
-    color: #111;
-    font-size: 19px;
+.article-body b, .article-body strong {
     font-weight: 700;
-    background: #fdfdfd;
-    padding: 15px;
-    border-left: 4px solid #ff8e15;
 }
 .article-img-wrap {
     width: 100%;

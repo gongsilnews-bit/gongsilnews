@@ -45,12 +45,8 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
     if (!initialData) getArticles().then(res => { if (res.success) setDbArticles(res.data || []); });
   }, []);
 
-  const baseArticles = dbArticles.filter(a => {
-    if (a.status === 'DRAFT' && (!currentUserId || a.author_id !== currentUserId)) {
-      return false; // hide other users' drafts
-    }
-    return true;
-  });
+  // 최고관리자 기사관리: AI 에이전트 초안 포함 모든 기사 표시
+  const baseArticles = dbArticles;
 
   const filtered = baseArticles.filter(a => {
     if (articleFilter === "승인대기" && a.status !== 'PENDING') return false;

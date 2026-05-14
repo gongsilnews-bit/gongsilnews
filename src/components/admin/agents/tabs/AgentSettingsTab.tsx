@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import type { AdminTheme } from "@/components/admin/sections/types";
-import { loadAgentModeConfig, saveAgentModeConfig, AgentModeConfig } from "@/app/actions/agentChat";
+import { loadAgentModeConfig, saveAgentModeConfig, AgentModeConfig, ArticleCronConfig, loadArticleCronConfig, saveArticleCronConfig } from "@/app/actions/agentChat";
 
 /* ── 에이전트별 기본 프롬프트 ── */
 const DEFAULT_PROMPTS: Record<string, { name: string; emoji: string; systemPrompt: string; examples: string }> = {
@@ -34,12 +34,47 @@ const DEFAULT_PROMPTS: Record<string, { name: string; emoji: string; systemPromp
     name: "기사작성 에이전트",
     emoji: "📰",
     systemPrompt: `너는 10년 차 부동산 전문 기자야.
-공실뉴스의 톤앤매너에 맞춰 전문적이면서도 읽기 쉬운 해요체로 기사를 작성해.
-마지막에는 관련 해시태그 3~5개를 달아줘.
-주관적 의견은 최소화하고, 데이터와 사실 기반으로 작성해.`,
-    examples: `[기사 문체 예시]
-"강남구 오피스텔 전세 시장이 올해 들어 눈에 띄는 변화를 보이고 있어요.
-국토교통부 실거래가 기준으로 1분기 평균 전세가가 전년 동기 대비 약 5% 하락했는데요..."`,
+블로그나 매거진 같은 가벼운 말투(~해요, ~있답니다)는 절대 금지한다.
+무조건 정통 뉴스 기사체(다/나/까, ~했다, ~밝혔다, ~전망이다)를 사용하여 철저히 객관적이고 건조하게 작성해라.
+부제목은 3줄 요약(명사형 종결)으로 간결하게 작성하고, 주관적 의견은 배제해라.`,
+    examples: `[부제목 작성 예시]
+강남구 오피스텔 전세가, 1분기 5% 하락
+고금리 장기화에 따른 매수 심리 위축
+하반기 금리 인하 전까지 관망세 지속 전망
+
+[본문 작성 예시]
+"올해 1분기 강남구 오피스텔 전세 시장이 뚜렷한 하락세를 보이고 있다... (3~4줄 도입부)"
+
+<b>■ 매수 심리 위축 원인</b>
+"고금리 기조가 장기화되면서 전세자금 대출에 대한 부담이 커진 것이 주된 원인으로 분석된다..."
+
+<b>■ 하반기 시장 전망</b>
+"전문가들은 하반기 금리 인하 신호가 나오기 전까지는 이러한 관망세가 지속될 것으로 내다보고 있다..."
+
+"결론적으로 당분간 강남구 오피스텔 전세 시장은 약세를 면치 못할 것으로 보인다... (3줄 결론)"`,
+  },
+  pressRelease: {
+    name: "보도자료 에이전트",
+    emoji: "🏛️",
+    systemPrompt: `너는 주요 경제지의 부동산 전문 기자다.
+감정을 배제하고 철저히 객관적인 정통 기사체(~다, ~밝혔다, ~전망이다)를 사용한다.
+팩트와 데이터를 기반으로 신뢰감 있게 보도자료를 분석 및 보도한다.
+
+[작성 규칙]
+1. 메인 타이틀: 기사의 핵심을 관통하는 명확한 헤드라인
+2. 3줄 부제목: 본문 시작 전 가장 중요한 팩트 3가지를 리드 형태로 요약
+3. 본문: 육하원칙에 입각한 스트레이트 기사 형태로 재구성
+4. 시장 전망: 상업용 부동산 시장 파급 효과 분석 단락 추가
+5. 출처 링크: 보도자료 원문 URL 명시
+6. 보도자료의 원문 팩트를 절대 왜곡하지 마라.`,
+    examples: `[기사 작성 예시]
+"국토교통부, 상가 임대차보호법 개정안 발표... 갱신요구권 12년으로 연장"
+
+- 상가 임대료 인상 상한선 5%에서 3%로 하향 조정
+- 계약갱신요구권 10년에서 12년으로 연장 추진
+- 서울 주요 상권 시범 적용 예정
+
+국토교통부는 14일 상가건물 임대차보호법 개정안을 발표했다. 이번 개정안은..."`,
   },
 };
 
@@ -55,6 +90,12 @@ export default function AgentSettingsTab({ theme, agentNames }: Props) {
     verify: { mode: "auto" },
     articleReview: { mode: "auto" },
     article: { mode: "manual" },
+    pressRelease: { mode: "manual" },
+  });
+  const [cronConfig, setCronConfig] = useState<ArticleCronConfig>({
+    isActive: true,
+    hours: [8, 14, 23],
+    categories: []
   });
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -63,6 +104,7 @@ export default function AgentSettingsTab({ theme, agentNames }: Props) {
     loadAgentModeConfig().then((config) => {
       setModes(config);
     });
+    loadArticleCronConfig().then(c => setCronConfig(c));
   }, []);
 
   const current = prompts[selectedAgent];
@@ -86,6 +128,9 @@ export default function AgentSettingsTab({ theme, agentNames }: Props) {
     setLoading(true);
     try {
       await saveAgentModeConfig(modes);
+      if (selectedAgent === "article") {
+        await saveArticleCronConfig(cronConfig);
+      }
       // TODO: 프롬프트 DB 저장 연동 (Phase 3)
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
@@ -195,6 +240,58 @@ export default function AgentSettingsTab({ theme, agentNames }: Props) {
               {currentMode.mode === "scheduled" && "설정된 시간에만 자동으로 처리하며, 그 외 시간은 수동으로 전환됩니다."}
             </div>
           </div>
+
+          {/* 기사작성 에이전트 전용: 동적 스케줄러 설정 */}
+          {selectedAgent === "article" && (
+            <div style={{ padding: "16px", background: theme.darkMode ? "#1e293b" : "#f0fdf4", borderRadius: 10, border: `1px solid ${theme.darkMode ? "#334155" : "#bbf7d0"}`, marginBottom: 20 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                <label style={{ fontSize: 14, fontWeight: 700, color: theme.darkMode ? "#cbd5e1" : "#166534" }}>
+                  ⏱️ 자동화 스케줄러 (일일 브리핑)
+                </label>
+                <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", color: theme.textPrimary }}>
+                  <input type="checkbox" checked={cronConfig.isActive} onChange={(e) => setCronConfig(p => ({...p, isActive: e.target.checked}))} style={{ accentColor: "#22c55e", width: 16, height: 16 }} />
+                  스케줄러 활성화
+                </label>
+              </div>
+
+              {cronConfig.isActive && (
+                <>
+                  <div style={{ marginBottom: 16 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: theme.textSecondary, marginBottom: 8 }}>🕒 실행 시간 선택 (한국시간 정각 기준)</div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                      {[8, 11, 14, 17, 20, 23].map(h => (
+                        <label key={h} style={{ display: "flex", alignItems: "center", gap: 4, background: theme.darkMode ? "#334155" : "#fff", padding: "6px 12px", borderRadius: 20, border: `1px solid ${cronConfig.hours.includes(h) ? "#22c55e" : theme.border}`, cursor: "pointer" }}>
+                          <input type="checkbox" checked={cronConfig.hours.includes(h)} onChange={(e) => {
+                            const newHours = e.target.checked ? [...cronConfig.hours, h] : cronConfig.hours.filter(x => x !== h);
+                            setCronConfig(p => ({...p, hours: newHours}));
+                          }} style={{ display: "none" }} />
+                          <span style={{ fontSize: 13, fontWeight: cronConfig.hours.includes(h) ? 700 : 500, color: cronConfig.hours.includes(h) ? "#22c55e" : theme.textPrimary }}>{String(h).padStart(2, '0')}:00</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: theme.textSecondary, marginBottom: 8 }}>📂 수집 카테고리 선택</div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                      {[
+                        "부동산·주식·재테크", "정치·경제·사회", "세무·법률",
+                        "여행·건강·생활", "IT·가전·가구", "스포츠·연예·CAR", "인물·미션·기타"
+                      ].map(cat => (
+                        <label key={cat} style={{ display: "flex", alignItems: "center", gap: 4, background: theme.darkMode ? "#334155" : "#fff", padding: "6px 12px", borderRadius: 20, border: `1px solid ${cronConfig.categories.includes(cat) ? "#3b82f6" : theme.border}`, cursor: "pointer" }}>
+                          <input type="checkbox" checked={cronConfig.categories.includes(cat)} onChange={(e) => {
+                            const newCats = e.target.checked ? [...cronConfig.categories, cat] : cronConfig.categories.filter(x => x !== cat);
+                            setCronConfig(p => ({...p, categories: newCats}));
+                          }} style={{ display: "none" }} />
+                          <span style={{ fontSize: 13, fontWeight: cronConfig.categories.includes(cat) ? 700 : 500, color: cronConfig.categories.includes(cat) ? "#3b82f6" : theme.textPrimary }}>{cat}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
 
           {/* 시스템 프롬프트 */}
           <label style={{ fontSize: 14, fontWeight: 700, color: theme.textPrimary, marginBottom: 8, display: "block" }}>

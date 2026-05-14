@@ -30,7 +30,136 @@ export async function sendAgentMessage(params: {
       content: params.userMessage,
     });
 
-    // 2. Gemini 호출
+    // --- 수동 보도자료 기사 생성 연동 (pressRelease 채널) ---
+    if (params.channelId === "pressRelease" && params.userMessage.length > 50) {
+      const { PressReleaseAgent } = await import("@/lib/agents/PressReleaseAgent");
+      
+      // 혹시 URL이 포함되어 있으면 출처로 사용하기 위해 추출
+      const urlMatch = params.userMessage.match(/https?:\/\/[^\s]+/);
+      const sourceUrl = urlMatch ? urlMatch[0] : "수동 입력 (AI 비서실)";
+
+      const aiResult = await PressReleaseAgent.writeArticle({
+        pressReleaseText: params.userMessage,
+        sourceUrl: sourceUrl
+      });
+
+      // 출처 추가
+      let finalContent = aiResult.content;
+      finalContent += `\n<p style="margin-top:24px;padding-top:16px;border-top:1px solid #e5e7eb;font-size:13px;color:#6b7280;">📎 출처: <a href="${sourceUrl}" target="_blank" rel="noopener noreferrer">${sourceUrl}</a></p>`;
+
+      // 어드민 정보
+      const { data: admin } = await supabase.from('members').select('id, name, email').eq('email', 'gongsilnews@gmail.com').single();
+
+      // DB 저장
+      const { data: article } = await supabase
+        .from('articles')
+        .insert({
+          title: aiResult.title,
+          subtitle: aiResult.subtitle,
+          content: finalContent,
+          section1: "부동산·주식·재테크",
+          section2: aiResult.section2 || "일반",
+          status: 'DRAFT',
+          author_id: admin?.id || null,
+          author_name: admin?.name || '공실뉴스 AI 비서',
+          author_email: admin?.email || 'gongsilnews@gmail.com',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }).select('id').single();
+
+      const text = `✅ **기사 초안이 성공적으로 작성되었습니다!**\n\n📌 **제목:** ${aiResult.title}\n📂 **카테고리:** 부동산·주식·재테크 > ${aiResult.section2}\n\n[기사관리 > 작성중] 탭에서 확인 및 승인해주세요.`;
+      
+      const tokens = aiResult.usage?.totalTokens || 0;
+      const costKrw = Math.round((tokens * 0.00000045) * 1350 * 100) / 100; // 대략적인 계산
+
+      await supabase.from("agent_chats").insert({
+        channel_id: params.channelId,
+        role: "agent",
+        content: text,
+        input_tokens: aiResult.usage?.inputTokens || 0,
+        output_tokens: aiResult.usage?.outputTokens || 0,
+        total_tokens: tokens,
+        cost_krw: costKrw,
+      });
+
+      // 캐시 갱신
+      require("next/cache").revalidateTag("articles");
+
+      return {
+        success: true,
+        message: text,
+        usage: { inputTokens: aiResult.usage?.inputTokens || 0, outputTokens: aiResult.usage?.outputTokens || 0, totalTokens: tokens, costKrw },
+      };
+    }
+    
+    // --- 수동 기사 작성 에이전트 연동 (article 채널) ---
+    if (params.channelId === "article" && params.userMessage.length > 10) {
+      const { NewsArticleAgent } = await import("@/lib/agents/NewsArticleAgent");
+
+      // AI에게 지시받은 내용을 기반으로 기사를 작성하도록 요청
+      const aiResult = await NewsArticleAgent.writeArticle({
+        sourceText: params.userMessage, // 키워드나 지시사항을 소스로 전달
+        category: "부동산·주식·재테크" // 기본값, 실제로는 AI가 판별하게 고도화 가능
+      });
+
+      const { data: admin } = await supabase.from('members').select('id, name, email').eq('email', 'gongsilnews@gmail.com').single();
+
+      // DB 저장
+      const { data: article } = await supabase
+        .from('articles')
+        .insert({
+          title: aiResult.title,
+          subtitle: aiResult.subtitle,
+          content: aiResult.content,
+          section1: "부동산·주식·재테크",
+          section2: "일반",
+          status: 'DRAFT',
+          author_id: admin?.id || null,
+          author_name: admin?.name || '공실뉴스 AI 비서',
+          author_email: admin?.email || 'gongsilnews@gmail.com',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }).select('id').single();
+
+      // 키워드를 별도 테이블에 저장
+      if (article?.id && aiResult.keywords) {
+        const keywordList = aiResult.keywords.split(',').map((k: string) => k.trim()).filter((k: string) => k);
+        if (keywordList.length > 0) {
+          const keywordRows = keywordList.map((kw: string) => ({
+            article_id: article.id,
+            keyword: kw,
+          }));
+          await supabase.from("article_keywords").insert(keywordRows);
+        }
+      }
+
+      const text = `✅ **기사 초안이 성공적으로 작성되었습니다!**\n\n📌 **제목:** ${aiResult.title}\n\n[기사관리 > 작성중] 탭에서 확인 및 승인해주세요.`;
+      
+      const tokens = aiResult.usage?.totalTokens || 0;
+      const costKrw = Math.round((tokens * 0.00000045) * 1350 * 100) / 100;
+
+      await supabase.from("agent_chats").insert({
+        channel_id: params.channelId,
+        role: "agent",
+        content: text,
+        input_tokens: aiResult.usage?.inputTokens || 0,
+        output_tokens: aiResult.usage?.outputTokens || 0,
+        total_tokens: tokens,
+        cost_krw: costKrw,
+      });
+
+      // 캐시 갱신
+      require("next/cache").revalidateTag("articles");
+
+      return {
+        success: true,
+        message: text,
+        usage: { inputTokens: aiResult.usage?.inputTokens || 0, outputTokens: aiResult.usage?.outputTokens || 0, totalTokens: tokens, costKrw },
+      };
+    }
+    // ----------------------------------------------------
+
+    // 2. 일반 Gemini 채팅 호출
     const genAI = await getGenAIClient();
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
     const fullPrompt = `${params.systemPrompt}\n\n[사용자 지시]\n${params.userMessage}`;
@@ -430,4 +559,40 @@ export async function isAgentAutoMode(agentId: string): Promise<boolean> {
   }
 
   return false;
+}
+
+// ── 기사작성 스케줄러(Cron) DB 설정 함수 ──
+export interface ArticleCronConfig {
+  isActive: boolean;
+  hours: number[];
+  categories: string[];
+}
+
+export async function loadArticleCronConfig(): Promise<ArticleCronConfig> {
+  const supabase = getAdminClient();
+  const { data } = await supabase.from('agent_settings').select('settings').eq('id', 'article_cron').single();
+  if (data?.settings) {
+    return data.settings as ArticleCronConfig;
+  }
+  return {
+    isActive: true,
+    hours: [8, 14, 23],
+    categories: [
+      "부동산·주식·재테크", "정치·경제·사회", "세무·법률",
+      "여행·건강·생활", "IT·가전·가구", "스포츠·연예·CAR", "인물·미션·기타"
+    ]
+  };
+}
+
+export async function saveArticleCronConfig(config: ArticleCronConfig) {
+  const supabase = getAdminClient();
+  const { error } = await supabase
+    .from('agent_settings')
+    .upsert({ id: 'article_cron', settings: config, updated_at: new Date().toISOString() });
+  
+  if (error) {
+    console.error("saveArticleCronConfig error:", error);
+    return false;
+  }
+  return true;
 }

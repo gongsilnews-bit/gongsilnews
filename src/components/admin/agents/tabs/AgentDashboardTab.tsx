@@ -8,7 +8,8 @@ import { getAgentCostSummary, getAgentWorkStats, generateDailyReport, loadDailyR
 const DEFAULT_AGENTS = [
   { id: "verify", emoji: "🛡️", defaultName: "회원승인 에이전트", description: "부동산 중개사 서류를 자동 검증합니다.", status: "running" as const },
   { id: "articleReview", emoji: "🔍", defaultName: "기사심사 에이전트", description: "기사 품질·홍보성 문구를 자동 검토합니다.", status: "running" as const },
-  { id: "article", emoji: "📰", defaultName: "기사작성 에이전트", description: "부동산 뉴스 기사 초안을 작성합니다.", status: "standby" as const },
+  { id: "article", emoji: "📰", defaultName: "기사작성 에이전트", description: "부동산 뉴스 기사 초안을 작성합니다.", status: "running" as const },
+  { id: "pressRelease", emoji: "🏛️", defaultName: "보도자료 에이전트", description: "국토부 보도자료를 분석해 기사로 작성합니다.", status: "running" as const },
 ];
 
 interface Props {
@@ -239,8 +240,9 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
           const stats = agentStats[agent.id] || { totalTokens: 0, costKrw: 0, messageCount: 0 };
           const pStats = prevAgentStats[agent.id] || { totalTokens: 0, costKrw: 0, messageCount: 0 };
 
-          const agentWork = workStats ? workStats[agent.id === "articleReview" ? "article" : agent.id] : null;
-          const pAgentWork = prevWorkStats ? prevWorkStats[agent.id === "articleReview" ? "article" : agent.id] : null;
+          const workKey = (agent.id === "articleReview" || agent.id === "pressRelease") ? "article" : agent.id;
+          const agentWork = workStats ? workStats[workKey] : null;
+          const pAgentWork = prevWorkStats ? prevWorkStats[workKey] : null;
 
           return (
             <div key={agent.id} style={{ ...cardStyle }}>
@@ -313,7 +315,7 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
                         </div>
                       </div>
                     ))}
-                    {(agent.id === "articleReview" || agent.id === "article") && [
+                    {(agent.id === "articleReview" || agent.id === "article" || agent.id === "pressRelease") && [
                       { label: "승인(게시)", value: agentWork.approved, prev: pAgentWork?.approved, color: "#10b981", icon: "✅" },
                       { label: "승인대기", value: agentWork.pending, prev: pAgentWork?.pending, color: "#f59e0b", icon: "⏳" },
                       { label: "작성중", value: agentWork.draft, prev: pAgentWork?.draft, color: "#3b82f6", icon: "✍️" },
@@ -356,6 +358,49 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
                   </div>
                 ))}
               </div>
+
+              {/* 기사작성 에이전트 전용: 자동화 스케줄러 UI */}
+              {agent.id === "article" && (
+                <div style={{ marginTop: 16, padding: 12, background: theme.darkMode ? "#1e293b" : "#f0fdf4", borderRadius: 10, border: `1px solid ${theme.darkMode ? "#334155" : "#bbf7d0"}` }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: theme.darkMode ? "#cbd5e1" : "#166534" }}>⏱️ 자동화 스케줄러 (일일 브리핑)</div>
+                    <span style={{ fontSize: 11, background: "#22c55e", color: "#fff", padding: "2px 6px", borderRadius: 4, fontWeight: 700 }}>ON</span>
+                  </div>
+                  <div style={{ fontSize: 12, color: theme.darkMode ? "#94a3b8" : "#15803d", marginBottom: 10, lineHeight: 1.4 }}>
+                    • <b>수집 시간:</b> 매일 08:00, 14:00, 23:00<br/>
+                    • <b>수집 범위:</b> 7대 카테고리 (각 1건씩, 총 21건/일)<br/>
+                    • <b>저장 방식:</b> 출처 미표기 원본 재창조 후 [작성중] 상태 보관
+                  </div>
+                  <button 
+                    onClick={async () => {
+                      if (!confirm("7개 카테고리의 뉴스를 수집하고 기사를 작성합니다. 약 1~2분이 소요됩니다. 진행하시겠습니까?")) return;
+                      try {
+                        const res = await fetch("/api/cron/news-article?manual=true");
+                        const data = await res.json();
+                        
+                        const hasErrors = data.results?.some((r: any) => r.status === 'error');
+                        
+                        if (data.success && !hasErrors) {
+                          alert(`✅ 성공적으로 ${data.results?.length || 0}건의 기사가 생성되었습니다! [기사관리 > 작성중] 탭을 확인해주세요.`);
+                        } else if (hasErrors) {
+                          const errorMsgs = data.results.filter((r:any) => r.status === 'error').map((r:any) => `[${r.category}] ${r.message}`).join('\\n');
+                          alert("❌ 일부 기사 생성 중 구글 AI 한도 초과 등의 오류가 발생했습니다:\\n\\n" + errorMsgs);
+                        } else {
+                          alert("❌ 오류가 발생했습니다: " + JSON.stringify(data.results));
+                        }
+                      } catch (e) {
+                        alert("❌ 네트워크 오류가 발생했습니다.");
+                      }
+                    }}
+                    style={{
+                      width: "100%", padding: "8px", background: "#10b981", color: "#fff",
+                      border: "none", borderRadius: 6, fontWeight: 700, fontSize: 12, cursor: "pointer"
+                    }}>
+                    ⚡ 지금 즉시 1회 수집 실행하기 (테스트)
+                  </button>
+                </div>
+              )}
+
             </div>
           );
         })}
