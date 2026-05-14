@@ -650,6 +650,37 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
           `}</style>
         </div>
       )}
+      {/* ── AI 멘트 마법사 로딩 오버레이 ── */}
+      {isAIGenerating && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+          background: "rgba(0,0,0,0.45)", backdropFilter: "blur(3px)",
+          zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center",
+        }}>
+          <div style={{
+            background: darkMode ? "#25262b" : "#fff", borderRadius: 20, padding: "40px 48px",
+            boxShadow: "0 20px 60px rgba(0,0,0,0.3)", textAlign: "center", maxWidth: 380,
+          }}>
+            <div style={{ fontSize: 40, marginBottom: 16, animation: "aiSpin 2s linear infinite" }}>✨</div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: darkMode ? "#e1e4e8" : "#111827", marginBottom: 8 }}>
+              AI 멘트 마법사 작성 중
+            </div>
+            <div style={{ fontSize: 13, color: darkMode ? "#9ca3af" : "#6b7280", lineHeight: 1.6 }}>
+              매물 정보를 바탕으로 매력적인<br />전달사항을 작성하고 있습니다...
+            </div>
+            <div style={{
+              marginTop: 20, height: 4, background: darkMode ? "#333" : "#e5e7eb", borderRadius: 2, overflow: "hidden",
+            }}>
+              <div style={{
+                height: "100%", background: "linear-gradient(90deg, #8b5cf6, #a78bfa, #8b5cf6)",
+                backgroundSize: "200% 100%",
+                animation: "aiProgress 1.5s ease-in-out infinite",
+                borderRadius: 2,
+              }} />
+            </div>
+          </div>
+        </div>
+      )}
       {/* ── 타이틀 및 백버튼 ── */}
       <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "28px 24px 20px", borderBottom: `1px solid ${border}`, background: cardBg }}>
         <button type="button" onClick={onBack} style={{ height: 36, padding: "0 16px", background: "#fff", color: "#4b5563", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, boxShadow: "0 1px 2px rgba(0,0,0,0.05)" }}>
