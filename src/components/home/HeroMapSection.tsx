@@ -432,7 +432,7 @@ export default function HeroMapSection({ initialVacancies }: { initialVacancies?
       <div style={{
         position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', 
         backgroundColor: 'rgba(255,255,255,0.75)', backdropFilter: 'blur(6px)',
-        zIndex: 9999999, display: 'flex', flexDirection: 'column', 
+        zIndex: 100, display: 'flex', flexDirection: 'column', 
         alignItems: 'center', justifyContent: 'center', textAlign: 'center',
         padding: 20
       }}>
