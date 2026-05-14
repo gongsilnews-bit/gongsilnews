@@ -29,6 +29,7 @@ export default async function MobileHomePage() {
   const lectures = lecturesRes.success ? (lecturesRes.data || []) : [];
 
   // 카테고리 분류 (PC와 동일)
+  const marketingArts = allNewsArticles.filter((a: any) => a.section2 === "부동산마케팅").slice(0, 6);
   const financeArts = allNewsArticles.filter((a: any) => a.section2 === "부동산·주식·재테크").slice(0, 6);
   const politicsArts = allNewsArticles.filter((a: any) => a.section2 === "정치·경제·사회").slice(0, 4);
   const lawArts = allNewsArticles.filter((a: any) => a.section2 === "세무·법률").slice(0, 4);
@@ -42,6 +43,7 @@ export default async function MobileHomePage() {
       <MobileHomeClient
         vacancies={vacancies.slice(0, 5)}
         headlineArticles={headlineArticles}
+        marketingArticles={marketingArts}
         financeArticles={financeArts}
         politicsArticles={politicsArts}
         lawArticles={lawArts}

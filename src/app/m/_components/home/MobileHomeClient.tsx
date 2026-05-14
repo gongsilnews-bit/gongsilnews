@@ -34,6 +34,7 @@ function formatPrice(v: any): string {
 interface Props {
   vacancies: any[];
   headlineArticles: any[];
+  marketingArticles: any[];
   financeArticles: any[];
   politicsArticles: any[];
   lawArticles: any[];
@@ -60,7 +61,7 @@ const CATEGORIES = [
 ];
 
 export default function MobileHomeClient(props: Props) {
-  const { vacancies, headlineArticles, financeArticles, politicsArticles, lawArticles, lifeArticles, itArticles, sportsArticles, peopleArticles, mapArticles, lectures } = props;
+  const { vacancies, headlineArticles, marketingArticles, financeArticles, politicsArticles, lawArticles, lifeArticles, itArticles, sportsArticles, peopleArticles, mapArticles, lectures } = props;
   const router = useRouter();
   const [heroIdx, setHeroIdx] = useState(0);
   const [swipeOffset, setSwipeOffset] = useState(0);
@@ -239,6 +240,9 @@ export default function MobileHomeClient(props: Props) {
         </div>
       </div>
 
+
+      {/* ② 부동산마케팅 */}
+      <NewsSection title="부동산마케팅" href="/m/news?tab=부동산마케팅" articles={marketingArticles} />
 
       {/* ③ 부동산·주식·재테크 */}
       <NewsSection title="부동산·주식·재테크" href="/m/news?tab=부동산·주식·재테크" articles={financeArticles} />
