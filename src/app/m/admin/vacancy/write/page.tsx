@@ -45,6 +45,9 @@ function MobileVacancyWrite() {
   const [authChecked, setAuthChecked] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [loadingEdit, setLoadingEdit] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1);
+  const TOTAL_STEPS = 4;
+  const STEP_LABELS = ["기본정보", "면적·위치", "사진·상세", "최종확인"];
 
   // 공실광고 기본
   const [propertyType, setPropertyTypeRaw] = useState("아파트·오피스텔");
@@ -488,28 +491,69 @@ function MobileVacancyWrite() {
     </div>
   );
 
+  const StepIndicator = () => (
+    <div style={{ display:"flex", alignItems:"center", justifyContent:"center", padding:"16px 24px 8px", gap:0 }}>
+      {STEP_LABELS.map((label, i) => {
+        const step = i + 1;
+        const isActive = currentStep === step;
+        const isDone = currentStep > step;
+        return (
+          <React.Fragment key={step}>
+            {i > 0 && <div style={{ width:28, height:2, background: isDone ? "#10b981" : "#e5e7eb", flexShrink:0 }} />}
+            <div onClick={() => { if (isDone || isActive) setCurrentStep(step); }} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4, cursor: isDone || isActive ? "pointer" : "default", minWidth: 52 }}>
+              <div style={{ width:28, height:28, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:800, color: isActive ? "#fff" : isDone ? "#fff" : "#9ca3af", background: isActive ? "#3b82f6" : isDone ? "#10b981" : "#e5e7eb", transition:"all 0.2s" }}>
+                {isDone ? "✓" : step}
+              </div>
+              <span style={{ fontSize:11, fontWeight: isActive ? 800 : 500, color: isActive ? "#3b82f6" : isDone ? "#10b981" : "#9ca3af", whiteSpace:"nowrap" }}>{label}</span>
+            </div>
+          </React.Fragment>
+        );
+      })}
+    </div>
+  );
+
+  const BottomNav = () => (
+    <div style={{ position:"fixed", bottom:0, left:0, right:0, zIndex:50, background:"#fff", borderTop:"1px solid #e5e7eb", padding:"10px 16px", paddingBottom:"max(10px, env(safe-area-inset-bottom))", display:"flex", gap:8, alignItems:"center" }}>
+      <button type="button" disabled={submitting} onClick={()=>handleSubmit("DRAFT")}
+        style={{ height:46, padding:"0 14px", background:"#f9fafb", color:"#6b7280", border:"1px solid #d1d5db", borderRadius:10, fontSize:13, fontWeight:700, cursor:"pointer", flexShrink:0 }}>
+        💾 임시저장
+      </button>
+      <div style={{ flex:1 }} />
+      {currentStep > 1 && (
+        <button type="button" onClick={()=>setCurrentStep(s=>s-1)}
+          style={{ height:46, padding:"0 20px", background:"#fff", color:"#374151", border:"1px solid #d1d5db", borderRadius:10, fontSize:14, fontWeight:700, cursor:"pointer" }}>
+          ← 이전
+        </button>
+      )}
+      {currentStep < TOTAL_STEPS ? (
+        <button type="button" onClick={()=>setCurrentStep(s=>s+1)}
+          style={{ height:46, padding:"0 24px", background:"linear-gradient(135deg,#3b82f6,#2563eb)", color:"#fff", border:"none", borderRadius:10, fontSize:14, fontWeight:800, cursor:"pointer", boxShadow:"0 2px 8px rgba(59,130,246,0.3)" }}>
+          다음 →
+        </button>
+      ) : (
+        <button type="button" disabled={submitting} onClick={()=>handleSubmit("ACTIVE")}
+          style={{ height:46, padding:"0 24px", background: submitting?"#9ca3af":"linear-gradient(135deg,#10b981,#059669)", color:"#fff", border:"none", borderRadius:10, fontSize:14, fontWeight:800, cursor: submitting?"not-allowed":"pointer", boxShadow:"0 2px 8px rgba(16,185,129,0.3)" }}>
+          {submitting ? "처리중..." : editId ? "✅ 수정완료" : "✅ 광고등록"}
+        </button>
+      )}
+    </div>
+  );
+
   return (
     <div style={{ minHeight:"100dvh", background:"#f4f5f7", fontFamily:"'Pretendard Variable', -apple-system, sans-serif" }}>
       {/* 헤더 */}
       <div style={{ position:"fixed", top:0, left:0, right:0, zIndex:50, background:"#fff", borderBottom:"1px solid #e5e7eb", padding:"0 16px", height:56, display:"flex", alignItems:"center", gap:12 }}>
-        <button onClick={() => router.push("/m/admin/vacancy")} style={{ background:"none", border:"none", cursor:"pointer", padding:4, display:"flex" }}>
+        <button onClick={() => { if (currentStep > 1) { setCurrentStep(s=>s-1); } else { router.push("/m/admin/vacancy"); }}} style={{ background:"none", border:"none", cursor:"pointer", padding:4, display:"flex" }}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M15 18L9 12L15 6" stroke="#333" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </button>
-        <h1 style={{ fontSize:18, fontWeight:800, color:"#111", margin:0, flex:1 }}>{editId ? "공실수정" : "공실등록"}</h1>
-        <div style={{ display:"flex", gap:8, flexShrink:0 }}>
-          <button type="button" disabled={submitting} onClick={()=>handleSubmit("DRAFT")}
-            style={{ height:36, padding:"0 14px", background:"#fff", color:"#374151", border:"1px solid #d1d5db", borderRadius:8, fontSize:13, fontWeight:700, cursor: submitting?"not-allowed":"pointer" }}>
-            {submitting ? "저장중..." : "임시저장"}
-          </button>
-          <button type="button" disabled={submitting} onClick={()=>handleSubmit("ACTIVE")}
-            style={{ height:36, padding:"0 14px", background:"linear-gradient(135deg,#10b981,#059669)", color:"#fff", border:"none", borderRadius:8, fontSize:13, fontWeight:700, cursor: submitting?"not-allowed":"pointer" }}>
-            {submitting ? "처리중..." : editId ? "수정완료" : "광고등록"}
-          </button>
-        </div>
+        <h1 style={{ fontSize:18, fontWeight:800, color:"#111", margin:0, flex:1 }}>{editId ? "공실수정" : "공실등록"} <span style={{fontSize:13, color:"#6b7280", fontWeight:600}}>({currentStep}/{TOTAL_STEPS})</span></h1>
       </div>
-      <div style={{ height:56 }} /> {/* 헤더 높이만큼 공간 확보 */}
+      <div style={{ height:56 }} />
 
-      <div style={{ padding:"16px 16px 32px" }}>
+      <StepIndicator />
+      <div style={{ padding:"8px 16px 100px" }}>
+        {/* ═══ STEP 1: 기본정보 ═══ */}
+        {currentStep === 1 && (<>
         {/* 1. 공실광고분류 */}
         <div style={{ background:"#fff", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.05)" }}>
           <div style={{ fontSize:16, fontWeight:800, color:"#111", marginBottom:14 }}>📋 공실광고분류</div>
@@ -551,7 +595,10 @@ function MobileVacancyWrite() {
             <span style={{ color:"#6b7280", fontSize:13, flexShrink:0 }}>만원</span>
           </div>
         </div>
+        </>)}
 
+        {/* ═══ STEP 2: 면적·위치 ═══ */}
+        {currentStep === 2 && (<>
         {/* 3. 면적/층수 */}
         <div style={{ background:"#fff", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.05)" }}>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
@@ -673,7 +720,10 @@ function MobileVacancyWrite() {
           </button>
           {coords && <div style={{ marginTop:6, fontSize:12, color:"#10b981", fontWeight:600 }}>✓ 좌표: {coords.lat.toFixed(5)}, {coords.lng.toFixed(5)}</div>}
         </div>
+        </>)}
 
+        {/* ═══ STEP 3: 사진·상세 ═══ */}
+        {currentStep === 3 && (<>
         {/* 5. 추가 */}
         <div style={{ background:"#fff", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.05)" }}>
           <div style={{ fontSize:16, fontWeight:800, color:"#111", marginBottom:14 }}>🏠 추가정보</div>
@@ -766,6 +816,35 @@ function MobileVacancyWrite() {
             )}
           </div>
         </div>
+        </>)}
+
+        {/* ═══ STEP 4: 최종확인 ═══ */}
+        {currentStep === 4 && (<>
+        {/* 미리보기 요약 */}
+        <div style={{ background:"#fff", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.05)", border:"1px solid #10b981" }}>
+          <div style={{ fontSize:16, fontWeight:800, color:"#10b981", marginBottom:14 }}>📋 입력 정보 요약</div>
+          <div style={{ display:"flex", flexDirection:"column", gap:10, fontSize:14, color:"#374151" }}>
+            <div style={{ display:"flex", justifyContent:"space-between" }}><span style={{color:"#6b7280"}}>매물유형</span><span style={{fontWeight:700}}>{propertyType} · {subCategory}</span></div>
+            <div style={{ display:"flex", justifyContent:"space-between" }}><span style={{color:"#6b7280"}}>거래유형</span><span style={{fontWeight:700}}>{tradeType}</span></div>
+            <div style={{ display:"flex", justifyContent:"space-between" }}><span style={{color:"#6b7280"}}>{tradeType==="매매"?"매매가":"보증금"}</span><span style={{fontWeight:700, color:"#ef4444"}}>{deposit ? formatKorean(deposit) : "미입력"}</span></div>
+            {(tradeType==="월세"||tradeType==="단기") && <div style={{ display:"flex", justifyContent:"space-between" }}><span style={{color:"#6b7280"}}>월세</span><span style={{fontWeight:700, color:"#ef4444"}}>{monthly ? formatKorean(monthly) : "미입력"}</span></div>}
+            <div style={{ borderTop:"1px dashed #e5e7eb", paddingTop:10 }} />
+            <div style={{ display:"flex", justifyContent:"space-between" }}><span style={{color:"#6b7280"}}>위치</span><span style={{fontWeight:700}}>{[sido,sigungu,dong].filter(Boolean).join(" ") || "미입력"}</span></div>
+            <div style={{ display:"flex", justifyContent:"space-between" }}><span style={{color:"#6b7280"}}>면적</span><span style={{fontWeight:700}}>{exclusiveM2 ? `전용 ${exclusiveM2}m²` : "미입력"}{supplyM2 ? ` / 공급 ${supplyM2}m²` : ""}</span></div>
+            {!isCommercial && <div style={{ display:"flex", justifyContent:"space-between" }}><span style={{color:"#6b7280"}}>방/욕실/방향</span><span style={{fontWeight:700}}>{roomCount}방 {bathCount}욕실 {direction}</span></div>}
+            <div style={{ borderTop:"1px dashed #e5e7eb", paddingTop:10 }} />
+            <div style={{ display:"flex", justifyContent:"space-between" }}><span style={{color:"#6b7280"}}>사진</span><span style={{fontWeight:700}}>{photos.length}장 등록됨</span></div>
+            <div style={{ display:"flex", justifyContent:"space-between" }}><span style={{color:"#6b7280"}}>좌표</span><span style={{fontWeight:700, color: coords ? "#10b981" : "#ef4444"}}>{coords ? "✓ 설정됨" : "✗ 미설정"}</span></div>
+            {selectedThemes.length > 0 && <div style={{ display:"flex", justifyContent:"space-between", flexWrap:"wrap" }}><span style={{color:"#6b7280"}}>테마</span><span style={{fontWeight:600, color:"#3b82f6"}}>{selectedThemes.map(t=>`#${t}`).join(" ")}</span></div>}
+          </div>
+          <div style={{ marginTop:12, display:"flex", gap:6 }}>
+            {[1,2,3].map(s => (
+              <button key={s} type="button" onClick={()=>setCurrentStep(s)} style={{ flex:1, height:36, background:"#f0f9ff", color:"#2563eb", border:"1px solid #bfdbfe", borderRadius:8, fontSize:12, fontWeight:700, cursor:"pointer" }}>
+                {STEP_LABELS[s-1]} 수정
+              </button>
+            ))}
+          </div>
+        </div>
 
         {/* 7. 등록자 / 부동산 기업 정보 */}
         {isRealtor ? (
@@ -836,22 +915,10 @@ function MobileVacancyWrite() {
           </div>
         )}
 
-        {/* 등록 버튼 (인라인) */}
-        <div style={{ display:"flex", gap:10, marginTop: 8 }}>
-          <button type="button" disabled={submitting} onClick={()=>handleSubmit("ACTIVE")}
-            style={{ flex:2, height:56, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: submitting?"#9ca3af":"linear-gradient(135deg,#10b981,#059669)", color:"#fff", border:"none", borderRadius:14, fontSize:17, fontWeight:800, cursor: submitting?"not-allowed":"pointer", boxShadow:"0 4px 12px rgba(16,185,129,0.3)" }}>
-            {submitting ? "처리 중..." : editId ? (
-              <>✅ 수정완료</>
-            ) : (
-              <><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg> 광고등록</>
-            )}
-          </button>
-          <button type="button" disabled={submitting} onClick={()=>handleSubmit("DRAFT")}
-            style={{ flex:1, height:56, background:"#fff", color:"#374151", border:"1px solid #d1d5db", borderRadius:14, fontSize:15, fontWeight:700, cursor: submitting?"not-allowed":"pointer" }}>
-            {submitting ? "저장중..." : "💾 임시저장"}
-          </button>
-        </div>
+        </>)}
       </div>
+
+      <BottomNav />
 
       {/* ── 포토 DB 모달 ── */}
       {showPhotoDbModal && (
