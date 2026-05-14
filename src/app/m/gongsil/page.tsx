@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { getVacancies, getVacancyDetail } from "@/app/actions/vacancy";
 import { toggleVacancyBookmark, getVacancyBookmarks } from "@/app/actions/bookmark";
 import { getPermissionLevel } from "@/utils/permissionCheck";
