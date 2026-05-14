@@ -9,14 +9,14 @@ interface CategoryNewsGridProps {
 
 export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [], issueRightBanners }: CategoryNewsGridProps) {
   // JS에서 카테고리별 분류 (DB 쿼리 8개 → 0개)
+  const rawMarketingArts = allNewsArticles.filter(a => a.section2 === "부동산마케팅").slice(0, 10);
   const rawFinanceArts = allNewsArticles.filter(a => a.section2 === "부동산·주식·재테크").slice(0, 10);
   const rawPoliticsArts = allNewsArticles.filter(a => a.section2 === "정치·경제·사회").slice(0, 10);
   const rawLawArts = allNewsArticles.filter(a => a.section2 === "세무·법률").slice(0, 10);
-  const rawLifeArts = allNewsArticles.filter(a => a.section2 === "여행·건강·생활").slice(0, 10);
   const rawMapArts = mapArticles.slice(0, 30);
 
   const rawEtcArts = allNewsArticles
-    .filter(a => ["IT·가전·가구", "스포츠·연예·Car", "인물·미션·기타"].includes(a.section2))
+    .filter(a => ["여행·건강·생활", "IT·가전·가구", "스포츠·연예·Car", "인물·미션·기타"].includes(a.section2))
     .slice(0, 30);
   rawEtcArts.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
@@ -60,10 +60,10 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
   // 필터링 적용 (사진이나 동영상이 있는 기사만)
   const filterMedia = (arts: any[]) => arts.filter(a => a.thumbnail_url || extractYoutubeIdInfo(a).hasVideo).slice(0, 2);
 
+  const marketingArts = filterMedia(rawMarketingArts);
   const financeArts = filterMedia(rawFinanceArts);
   const politicsArts = filterMedia(rawPoliticsArts);
   const lawArts = filterMedia(rawLawArts);
-  const lifeArts = filterMedia(rawLifeArts);
   const etcArts = filterMedia(rawEtcArts);
   
   // 공통 기사 렌더링 함수 (2단 리스트용) 전에 mapArts 필터링
@@ -111,19 +111,33 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
         .vid-title { font-size: 16px; font-weight: 700; line-height: 1.4; color: #111; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
       `}</style>
       
-      {/* 5. Hot Issue: 부동산·주식·재테크 */}
+      {/* 5. Hot Issue: 부동산마케팅 */}
       <div className="mt-50 mb-50">
         <div className="sec-title-wrap">
-          <Link href="/news_finance" style={{ textDecoration: "none" }}><h2 className="sec-title">부동산·주식·재테크 &gt;</h2></Link>
+          <Link href="/news_all?tab=부동산마케팅" style={{ textDecoration: "none" }}><h2 className="sec-title">부동산마케팅 &gt;</h2></Link>
         </div>
         <div className="hot-issue-wrap">
           <div className="hi-left">
             <div className="hi-list">
-              {renderArticleList(financeArts)}
+              {renderArticleList(marketingArts)}
             </div>
           </div>
           <div className="hi-right">
             <BannerSlot placement="MAIN_ISSUE_RIGHT" initialBanners={issueRightBanners} />
+          </div>
+        </div>
+      </div>
+
+      {/* 5-2. 부동산·주식·재테크 */}
+      <div className="mt-50 mb-50">
+        <div className="hot-issue-wrap" style={{ gap: 40 }}>
+          <div className="hi-left" style={{ flex: 1, minWidth: 0 }}>
+            <div className="sec-title-wrap">
+              <Link href="/news_finance" style={{ textDecoration: "none" }}><h2 className="sec-title">부동산·주식·재테크 &gt;</h2></Link>
+            </div>
+            <div className="hi-list">
+              {renderArticleList(financeArts)}
+            </div>
           </div>
         </div>
       </div>
@@ -176,18 +190,10 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
         </div>
       </div>
 
-      {/* 7-3. 여행·건강·생활 + 기타 (2단 병렬 한 칸씩 당김) */}
+      {/* 7-3. 기타 (여행·건강·생활 포함) */}
       <div className="mt-50 mb-50">
         <div className="hot-issue-wrap" style={{ gap: 40 }}>
-          <div className="hi-left" style={{ flex: 1, minWidth: 0, width: "calc(50% - 20px)" }}>
-            <div className="sec-title-wrap">
-               <Link href="/news_life" style={{ textDecoration: "none" }}><h2 className="sec-title">여행·건강·생활 &gt;</h2></Link>
-            </div>
-            <div className="hi-list">
-              {renderArticleList(lifeArts)}
-            </div>
-          </div>
-          <div className="hi-left" style={{ flex: 1, minWidth: 0, width: "calc(50% - 20px)" }}>
+          <div className="hi-left" style={{ flex: 1, minWidth: 0 }}>
             <div className="sec-title-wrap">
                <Link href="/news_etc" style={{ textDecoration: "none" }}><h2 className="sec-title">기타 &gt;</h2></Link>
             </div>
