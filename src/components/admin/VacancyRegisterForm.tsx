@@ -1410,15 +1410,16 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
             {/* ── 공실 등록하기 / 승인 / 반려 / 수정저장 버튼 ── */}
             {(() => {
               const handleSubmit = async (customStatus?: string) => {
+                const isDraft = customStatus === "DRAFT";
                 if (!propertyType || !tradeType) {
                   alert("공실광고 분류와 거래유형은 필수입니다.");
                   return;
                 }
-                if (!sido || !sigungu || !dong) {
+                if (!isDraft && (!sido || !sigungu || !dong)) {
                   alert("시/도, 시/군/구, 읍/면/동/리는 필수입니다.");
                   return;
                 }
-                if (userRole !== 'realtor' && (!clientName || !clientPhone)) {
+                if (!isDraft && userRole !== 'realtor' && (!clientName || !clientPhone)) {
                   alert("의뢰인 이름과 연락처는 필수입니다.");
                   return;
                 }
@@ -1505,7 +1506,13 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                   }
 
                   if (customStatus) {
-                     alert(customStatus === "ACTIVE" ? "공실광고가 발행(등록) 되었습니다." : "공실광고가 반려 처리되었습니다.");
+                     if (customStatus === "DRAFT") {
+                       alert("💾 임시저장 되었습니다.\n\n공실관리 목록에서 이어서 작성하실 수 있습니다.");
+                     } else if (customStatus === "ACTIVE") {
+                       alert("공실광고가 발행(등록) 되었습니다.");
+                     } else {
+                       alert("공실광고가 반려 처리되었습니다.");
+                     }
                   } else {
                      const statusMsg = editData ? '공실 수정이 완료되었습니다!' : '공실이 등록되었습니다! 광고가 바로 시작됩니다.';
                      alert(statusMsg);
@@ -1539,45 +1546,75 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
 
               if (userRole === "admin" && !editData) {
                 return (
-                  <button
-                    type="button"
-                    disabled={submitting}
-                    onClick={() => handleSubmit("ACTIVE")}
-                    style={{
-                      width: "100%", height: 56, border: "none", borderRadius: 10,
-                      background: submitting ? "#9ca3af" : "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-                      color: "#fff", fontSize: 18, fontWeight: 800,
-                      cursor: submitting ? "not-allowed" : "pointer",
-                      marginTop: 32, display: "flex", alignItems: "center", justifyContent: "center", gap: 8
-                    }}
-                  >
-                    {submitting ? "처리 중..." : (
-                      <><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg> 광고등록</>
-                    )}
-                  </button>
+                  <div style={{ display: "flex", gap: 12, marginTop: 32 }}>
+                    <button
+                      type="button"
+                      disabled={submitting}
+                      onClick={() => handleSubmit("DRAFT")}
+                      style={{
+                        flex: "0 0 140px", height: 56, border: `1px solid ${border}`, borderRadius: 10,
+                        background: darkMode ? "#2c2d33" : "#f1f5f9", color: darkMode ? "#e1e4e8" : "#475569",
+                        fontSize: 15, fontWeight: 700, cursor: submitting ? "not-allowed" : "pointer",
+                        display: "flex", alignItems: "center", justifyContent: "center", gap: 6
+                      }}
+                    >
+                      💾 임시저장
+                    </button>
+                    <button
+                      type="button"
+                      disabled={submitting}
+                      onClick={() => handleSubmit("ACTIVE")}
+                      style={{
+                        flex: 1, height: 56, border: "none", borderRadius: 10,
+                        background: submitting ? "#9ca3af" : "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                        color: "#fff", fontSize: 18, fontWeight: 800,
+                        cursor: submitting ? "not-allowed" : "pointer",
+                        display: "flex", alignItems: "center", justifyContent: "center", gap: 8
+                      }}
+                    >
+                      {submitting ? "처리 중..." : (
+                        <><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg> 광고등록</>
+                      )}
+                    </button>
+                  </div>
                 );
               }
 
               if (userRole === "realtor") {
                 return (
-                  <button
-                    type="button"
-                    disabled={submitting}
-                    onClick={() => handleSubmit("ACTIVE")}
-                    style={{
-                      width: "100%", height: 56, border: "none", borderRadius: 10,
-                      background: submitting ? "#9ca3af" : "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
-                      color: "#fff", fontSize: 18, fontWeight: 800,
-                      cursor: submitting ? "not-allowed" : "pointer",
-                      marginTop: 32, display: "flex", alignItems: "center", justifyContent: "center", gap: 8
-                    }}
-                  >
-                    {submitting ? "처리 중..." : (editData ? (
-                      <>✅ 수정완료</>
-                    ) : (
-                      <><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg> 광고등록</>
-                    ))}
-                  </button>
+                  <div style={{ display: "flex", gap: 12, marginTop: 32 }}>
+                    <button
+                      type="button"
+                      disabled={submitting}
+                      onClick={() => handleSubmit("DRAFT")}
+                      style={{
+                        flex: "0 0 140px", height: 56, border: `1px solid ${border}`, borderRadius: 10,
+                        background: darkMode ? "#2c2d33" : "#f1f5f9", color: darkMode ? "#e1e4e8" : "#475569",
+                        fontSize: 15, fontWeight: 700, cursor: submitting ? "not-allowed" : "pointer",
+                        display: "flex", alignItems: "center", justifyContent: "center", gap: 6
+                      }}
+                    >
+                      💾 임시저장
+                    </button>
+                    <button
+                      type="button"
+                      disabled={submitting}
+                      onClick={() => handleSubmit("ACTIVE")}
+                      style={{
+                        flex: 1, height: 56, border: "none", borderRadius: 10,
+                        background: submitting ? "#9ca3af" : "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
+                        color: "#fff", fontSize: 18, fontWeight: 800,
+                        cursor: submitting ? "not-allowed" : "pointer",
+                        display: "flex", alignItems: "center", justifyContent: "center", gap: 8
+                      }}
+                    >
+                      {submitting ? "처리 중..." : (editData ? (
+                        <>✅ 수정완료</>
+                      ) : (
+                        <><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg> 광고등록</>
+                      ))}
+                    </button>
+                  </div>
                 );
               }
 
