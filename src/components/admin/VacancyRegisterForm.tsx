@@ -139,6 +139,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
   // AI 연동
   const aiFileRef = React.useRef<HTMLInputElement>(null);
   const [parsingAi, setParsingAi] = useState(false);
+  const [aiDone, setAiDone] = useState(false); // AI 분석 완료 후 수동 입력 필드 강조용
 
   useEffect(() => {
     if (initialClientName) setClientName(initialClientName);
@@ -647,6 +648,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
           <style>{`
             @keyframes aiSpin { to { transform: rotate(360deg); } }
             @keyframes aiProgress { 0% { background-position: 200% 0; width: 30%; } 50% { width: 70%; } 100% { background-position: -200% 0; width: 30%; } }
+            @keyframes aiPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); } 50% { box-shadow: 0 0 0 6px rgba(239,68,68,0); } }
           `}</style>
         </div>
       )}
@@ -751,7 +753,8 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                     if (p.building_name) setBuildingName(p.building_name);
                     if (p.description) setDescription(p.description);
                     
-                    alert('✅ AI 이미지 분석 완료! 추출된 정보가 자동으로 입력되었습니다.\n\n※ 주소는 [🔍 주소 검색] 버튼으로 직접 검색해주세요.');
+                    setAiDone(true);
+                    alert('✅ AI 이미지 분석 완료! 추출된 정보가 자동으로 입력되었습니다.\n\n※ 빨간 테두리로 표시된 항목은 직접 입력해주세요.');
                   } catch(err: any) {
                     alert('오류 발생: ' + err.message);
                   } finally {
@@ -1781,20 +1784,29 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
           <div style={{ background: cardBg, borderRadius: 14, padding: "28px 24px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
             <h2 style={{ fontSize: 17, fontWeight: 800, color: textPrimary, margin: "0 0 16px", borderBottom: `2px solid ${textPrimary}`, paddingBottom: 12 }}>작성 체크리스트</h2>
             <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
-              {checkItems.map((item, i) => (
-                <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
-                  {item.done ? (
-                    <span style={{ color: "#10b981", fontWeight: 700 }}>✓</span>
-                  ) : (
-                    <span style={{ color: "#d1d5db", fontSize: 16 }}>○</span>
-                  )}
-                  <span style={{ color: item.done ? "#10b981" : textSecondary, fontWeight: item.done ? 600 : 400 }}>{item.label}</span>
-                </div>
-              ))}
+              {checkItems.map((item, i) => {
+                const needsManual = aiDone && !item.done;
+                return (
+                  <div key={i} style={{
+                    display: "flex", alignItems: "center", gap: 8, fontSize: 14,
+                    ...(needsManual ? { background: darkMode ? "#3b1c1c" : "#fef2f2", padding: "8px 12px", borderRadius: 8, border: "1px solid #fca5a5", animation: "aiPulse 2s ease-in-out infinite" } : {})
+                  }}>
+                    {item.done ? (
+                      <span style={{ color: "#10b981", fontWeight: 700 }}>✓</span>
+                    ) : needsManual ? (
+                      <span style={{ color: "#ef4444", fontSize: 16 }}>⚠</span>
+                    ) : (
+                      <span style={{ color: "#d1d5db", fontSize: 16 }}>○</span>
+                    )}
+                    <span style={{ color: item.done ? "#10b981" : needsManual ? "#ef4444" : textSecondary, fontWeight: item.done ? 600 : needsManual ? 700 : 400 }}>{item.label}</span>
+                    {needsManual && <span style={{ marginLeft: "auto", fontSize: 11, fontWeight: 700, color: "#ef4444", background: darkMode ? "#5c1a1a" : "#fee2e2", padding: "2px 8px", borderRadius: 10 }}>📌 직접 입력</span>}
+                  </div>
+                );
+              })}
             </div>
             {/* 프로그레스 바 */}
             <div style={{ height: 8, background: darkMode ? "#333" : "#e5e7eb", borderRadius: 4, overflow: "hidden" }}>
-              <div style={{ height: "100%", width: `${progress}%`, background: "#10b981", borderRadius: 4, transition: "width 0.4s ease" }} />
+              <div style={{ height: "100%", width: `${progress}%`, background: progress === 100 ? "#10b981" : aiDone ? "#f59e0b" : "#10b981", borderRadius: 4, transition: "width 0.4s ease" }} />
             </div>
             <div style={{ textAlign: "right", fontSize: 12, color: textSecondary, marginTop: 6 }}>진행률 {progress}%</div>
           </div>
