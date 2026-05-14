@@ -82,6 +82,7 @@ export class NewsArticleAgent {
         subtitle: parsed.subtitle,
         content: parsed.content,
         keywords: parsed.keywords,
+        sourceUrl: parsed.sourceUrl,
         usage: tokenUsage,
       };
 

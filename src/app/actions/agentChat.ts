@@ -104,13 +104,19 @@ export async function sendAgentMessage(params: {
 
       const { data: admin } = await supabase.from('members').select('id, name, email').eq('email', 'gongsilnews@gmail.com').single();
 
+      // 출처 URL 본문 하단에 추가
+      let finalContent = aiResult.content;
+      if (aiResult.sourceUrl && aiResult.sourceUrl.startsWith('http')) {
+        finalContent += `\n<p style="margin-top:24px;padding-top:16px;border-top:1px solid #e5e7eb;font-size:13px;color:#6b7280;">📎 원문 참고: <a href="${aiResult.sourceUrl}" target="_blank" rel="noopener noreferrer">${aiResult.sourceUrl}</a></p>`;
+      }
+
       // DB 저장
       const { data: article } = await supabase
         .from('articles')
         .insert({
           title: aiResult.title,
           subtitle: aiResult.subtitle,
-          content: aiResult.content,
+          content: finalContent,
           section1: "부동산·주식·재테크",
           section2: "일반",
           status: 'DRAFT',

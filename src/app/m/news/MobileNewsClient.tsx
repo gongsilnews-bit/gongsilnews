@@ -154,11 +154,15 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
   // 애니메이션 오버레이 상태는 완전히 제거됨 (즉각적인 화면 전환을 위해)
   // URL의 탭이 변경되면 activeTab 상태를 동기화
   useEffect(() => {
+    if (pathname === "/m/news_marketing") {
+      if (activeTab !== "부동산마케팅") setActiveTab("부동산마케팅");
+      return;
+    }
     const tab = searchParams.get("tab") || "all";
     if (tab !== activeTab) {
       setActiveTab(tab);
     }
-  }, [searchParams]);
+  }, [searchParams, pathname, activeTab]);
   const [visibleArticles, setVisibleArticles] = useState<any[]>([]);
   const [vacancyCount, setVacancyCount] = useState<number>(0);
   const [vacancyList, setVacancyList] = useState<any[]>([]);
