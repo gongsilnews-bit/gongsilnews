@@ -141,7 +141,7 @@ button { border: none; background: none; cursor: pointer; font-family: inherit; 
     margin-bottom: 24px;
 }
 .header img.ht-logo {
-    height: 50px;
+    height: 70px;
     cursor: pointer;
 }
 .ht-left, .ht-right { flex: 1; }
