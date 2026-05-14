@@ -428,31 +428,31 @@ export default function HeroMapSection({ initialVacancies }: { initialVacancies?
         </button>
       )}
 
-      {/* 🛑 6월 1일 오픈 안내 배너 (우측 하단 컴팩트) */}
+      {/* 🛑 6월 1일 오픈 안내 배너 (우측 하단) */}
       <div style={{
         position: 'absolute', bottom: 20, right: 20,
-        zIndex: 100, maxWidth: 280,
+        zIndex: 100, maxWidth: 340,
       }}>
-        <div style={{ background: '#fff', padding: '18px 22px', borderRadius: 12, boxShadow: '0 4px 20px rgba(0,0,0,0.15)', border: '1px solid #e0e0e0' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-            <span style={{ fontSize: 22 }}>📢</span>
-            <h3 style={{ fontSize: 15, fontWeight: 900, color: '#111', margin: 0, letterSpacing: '-0.3px', lineHeight: 1.3 }}>
+        <div style={{ background: '#fff', padding: '24px 28px', borderRadius: 12, boxShadow: '0 4px 20px rgba(0,0,0,0.15)', border: '1px solid #e0e0e0' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+            <span style={{ fontSize: 28 }}>📢</span>
+            <h3 style={{ fontSize: 18, fontWeight: 900, color: '#111', margin: 0, letterSpacing: '-0.3px', lineHeight: 1.4 }}>
               공실열람 지도는<br/><span style={{ color: '#1a73e8' }}>6월 1일 정식 오픈</span>합니다!
             </h3>
           </div>
-          <p style={{ fontSize: 12, color: '#666', margin: '0 0 14px 0', lineHeight: 1.5 }}>
+          <p style={{ fontSize: 14, color: '#666', margin: '0 0 18px 0', lineHeight: 1.5 }}>
             현재 사전 매물 등록 기간입니다.<br/>중개사무소 회원 가입 후 무료 등록하세요.
           </p>
-          <div style={{ display: 'flex', gap: 6 }}>
+          <div style={{ display: 'flex', gap: 8 }}>
             <button 
               onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push('/signup'); }}
-              style={{ flex: 1, background: '#1a73e8', color: '#fff', border: 'none', padding: '8px 0', borderRadius: 6, fontSize: 12, fontWeight: 'bold', cursor: 'pointer' }}
+              style={{ flex: 1, background: '#1a73e8', color: '#fff', border: 'none', padding: '12px 0', borderRadius: 6, fontSize: 14, fontWeight: 'bold', cursor: 'pointer' }}
             >
               🚀 회원가입
             </button>
             <button 
               onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push('/realty_admin'); }}
-              style={{ flex: 1, background: '#fff', color: '#1a73e8', border: '1px solid #1a73e8', padding: '8px 0', borderRadius: 6, fontSize: 12, fontWeight: 'bold', cursor: 'pointer' }}
+              style={{ flex: 1, background: '#fff', color: '#1a73e8', border: '1px solid #1a73e8', padding: '12px 0', borderRadius: 6, fontSize: 14, fontWeight: 'bold', cursor: 'pointer' }}
             >
               💻 매물 등록
             </button>
