@@ -116,7 +116,7 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
       {/* 5. Hot Issue: 부동산마케팅 */}
       <div className="mt-50 mb-50">
         <div className="sec-title-wrap">
-          <Link href="/news_all?tab=부동산마케팅" style={{ textDecoration: "none" }}><h2 className="sec-title">부동산마케팅 &gt;</h2></Link>
+          <Link href="/news_marketing" style={{ textDecoration: "none" }}><h2 className="sec-title">부동산마케팅 &gt;</h2></Link>
         </div>
         <div className="hot-issue-wrap">
           <div className="hi-left">
