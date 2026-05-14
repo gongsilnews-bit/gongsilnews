@@ -843,8 +843,8 @@ button { border: none; background: none; cursor: pointer; font-family: inherit; 
     border: none !important;
     outline: none !important;
 }
-.article-body button,
-.article-body [role="button"] {
+.article-body button:not(.zoom-btn),
+.article-body [role="button"]:not(.zoom-btn) {
     display: none !important;
 }
 /* figure > figcaption 빈 캡션 숨김 */
