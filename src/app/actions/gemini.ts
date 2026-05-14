@@ -2,37 +2,37 @@
 
 import { createClient } from "@supabase/supabase-js";
 
+// ── 최고관리자 이메일 (이 계정의 마케팅정보에 등록된 Gemini API Key를 공용으로 사용) ──
+const ADMIN_EMAIL = "gongsilnews@gmail.com";
+
 export async function generatePropertyDescription(data: any) {
   try {
-    // 1. 보안이 적용된 관리자용 Supabase 클라이언트 초기화 (Service Role Key 사용)
+    // 1. 보안이 적용된 관리자용 Supabase 클라이언트 초기화
     const supabaseAdmin = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-    // 2. 최고관리자(SUPER_ADMIN)의 구글 API 키 추출
-    const { data: admins, error } = await supabaseAdmin
+    // 2. 최고관리자(ADMIN_EMAIL)의 마케팅 정보에서 공용 Gemini API Key 가져오기
+    const { data: adminData, error } = await supabaseAdmin
       .from("members")
-      .select("marketing_api_keys")
-      .eq("role", "SUPER_ADMIN")
-      .limit(1);
+      .select("sns_links")
+      .eq("email", ADMIN_EMAIL)
+      .single();
 
-    if (error || !admins || admins.length === 0) {
+    if (error || !adminData) {
       console.error("최고관리자 계정을 찾을 수 없습니다:", error);
-      return { success: false, error: "관리자 설정 오류 (API 키 조회 실패)" };
+      return { success: false, error: "관리자 계정 정보를 불러올 수 없습니다." };
     }
 
-    const marketingKeys = admins[0].marketing_api_keys;
-    if (!marketingKeys || !Array.isArray(marketingKeys)) {
-      return { success: false, error: "구글(Gemini) API 키가 아직 설정되지 않았습니다. 정보설정 > 마케팅정보에 키를 등록해주세요." };
+    const apiList = adminData.sns_links?.api_list || [];
+    const geminiApi = apiList.find((api: any) => api.provider === "구글" || api.provider === "구글 (Gemini)");
+
+    if (!geminiApi || !geminiApi.key_value) {
+      return { success: false, error: "AI 기능이 아직 설정되지 않았습니다. 관리자에게 문의하세요." };
     }
 
-    const geminiKeyObj = marketingKeys.find((k: any) => k.provider === "구글");
-    if (!geminiKeyObj || !geminiKeyObj.key_value) {
-      return { success: false, error: "구글(Gemini) API 키가 아직 설정되지 않았습니다. 정보설정 > 마케팅정보에 키를 등록해주세요." };
-    }
-
-    const apiKey = geminiKeyObj.key_value;
+    const apiKey = geminiApi.key_value;
 
     // 3. Gemini 처리를 위한 프롬프트 가공
     const prompt = `
@@ -61,39 +61,46 @@ export async function generatePropertyDescription(data: any) {
 5. 너무 길지 않도록 핵심만 간결하게(약 4~5문장 내외) 정리하세요.
 `;
 
-    // 4. Gemini 1.5 Flash API 호출 (네이티브 fetch 사용)
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [{ text: prompt }]
-          }
-        ],
-        generationConfig: {
-          temperature: 0.7,
+    // 4. Gemini API 호출 (최신 모델부터 폴백)
+    const models = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
+    let lastError = "";
+
+    for (const model of models) {
+      try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+        const response = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.7 }
+          })
+        });
+
+        if (!response.ok) {
+          const errRes = await response.json().catch(() => ({}));
+          lastError = errRes?.error?.message || `${model} 모델 호출 실패 (${response.status})`;
+          console.log(`Gemini model [${model}] failed: ${lastError}`);
+          continue;
         }
-      })
-    });
 
-    if (!response.ok) {
-      const errRes = await response.json();
-      console.error("Gemini API 오류:", errRes);
-      return { success: false, error: "AI 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요." };
+        const json = await response.json();
+        const generatedText = json.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (!generatedText) {
+          lastError = "AI가 텍스트를 생성하지 못했습니다.";
+          continue;
+        }
+
+        console.log(`Success with Gemini model: ${model}!`);
+        return { success: true, text: generatedText.trim() };
+      } catch (err: any) {
+        lastError = err.message;
+        console.log(`Gemini model [${model}] error: ${err.message}`);
+      }
     }
 
-    const json = await response.json();
-    const generatedText = json.candidates?.[0]?.content?.parts?.[0]?.text;
-
-    if (!generatedText) {
-      return { success: false, error: "선택된 데이터로 멘트를 생성할 수 없습니다." };
-    }
-
-    return { success: true, text: generatedText.trim() };
+    return { success: false, error: `AI 생성 실패: ${lastError}` };
   } catch (err: any) {
     console.error("generatePropertyDescription 오류:", err);
     return { success: false, error: "서버 내부 오류가 발생했습니다." };
