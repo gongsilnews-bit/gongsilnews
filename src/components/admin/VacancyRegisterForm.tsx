@@ -656,7 +656,12 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                       setSubCategory(SUB_CATEGORIES[p.property_type]?.[0] || "");
                     }
                     if (p.trade_type) setTradeType(p.trade_type);
-                    if (p.deposit) setDeposit(String(p.deposit));
+                    // 매매가: trade_type이 매매일 때 sale_price를 deposit(보증금) 필드에 매핑
+                    if (p.trade_type === "매매" && p.sale_price) {
+                      setDeposit(String(p.sale_price));
+                    } else if (p.deposit) {
+                      setDeposit(String(p.deposit));
+                    }
                     if (p.monthly_rent) setMonthly(String(p.monthly_rent));
                     if (p.maintenance_fee) setMaintenance(String(p.maintenance_fee));
                     if (p.current_floor) setCurrentFloor(String(p.current_floor));
@@ -671,9 +676,11 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                       setExclusiveM2(String(p.exclusive_m2));
                       setExclusivePy((Number(p.exclusive_m2) * 0.3025).toFixed(1));
                     }
+                    if (p.direction) setDirection(p.direction);
+                    if (p.building_name) setBuildingName(p.building_name);
                     if (p.description) setDescription(p.description);
                     
-                    alert('이미지 분석을 통해 공실광고 정보가 자동으로 채워졌습니다!');
+                    alert('✅ AI 이미지 분석 완료! 추출된 정보가 자동으로 입력되었습니다.\n\n※ 주소는 [🔍 주소 검색] 버튼으로 직접 검색해주세요.');
                   } catch(err: any) {
                     alert('오류 발생: ' + err.message);
                   } finally {
@@ -688,7 +695,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
               <span style={{ fontSize: 22 }}>✨</span>
               <div style={{ textAlign: "left" }}>
                 <div style={{ fontSize: 14, fontWeight: 800, color: "#d97706" }}>{parsingAi ? "AI 분석 중..." : "이미지로 등록하기"}</div>
-                <div style={{ fontSize: 11, color: "#b45309", marginTop: 2 }}>{parsingAi ? "잠시만 기다려주세요..." : "전단지, 매신저 캡처 자동 분석"}</div>
+                <div style={{ fontSize: 11, color: "#b45309", marginTop: 2 }}>{parsingAi ? "잠시만 기다려주세요..." : "네이버부동산, 전단지, 캡처 자동 분석"}</div>
               </div>
             </button>
 
