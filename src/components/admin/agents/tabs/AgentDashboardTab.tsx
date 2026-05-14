@@ -371,11 +371,25 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
                     • <b>수집 범위:</b> 7대 카테고리 (각 1건씩, 총 21건/일)<br/>
                     • <b>저장 방식:</b> 출처 미표기 원본 재창조 후 [작성중] 상태 보관
                   </div>
-                  <button 
-                    onClick={async () => {
-                      if (!confirm("7개 카테고리의 뉴스를 수집하고 기사를 작성합니다. 약 1~2분이 소요됩니다. 진행하시겠습니까?")) return;
-                      try {
-                        const res = await fetch("/api/cron/news-article?manual=true");
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    <select id="manual-category-select" style={{ padding: "8px", borderRadius: "6px", border: "1px solid #10b981", fontSize: "12px", outline: "none", color: "#047857", fontWeight: "bold", background: "#ecfdf5" }}>
+                      <option value="ALL">전체 7개 (오류 위험)</option>
+                      <option value="부동산·주식·재테크">부동산·주식·재테크 1개만</option>
+                      <option value="정치·경제·사회">정치·경제·사회 1개만</option>
+                      <option value="세무·법률">세무·법률 1개만</option>
+                      <option value="여행·건강·생활">여행·건강·생활 1개만</option>
+                      <option value="IT·가전·가구">IT·가전·가구 1개만</option>
+                      <option value="스포츠·연예·CAR">스포츠·연예·CAR 1개만</option>
+                      <option value="인물·미션·기타">인물·미션·기타 1개만</option>
+                    </select>
+                    <button 
+                      onClick={async () => {
+                        const cat = (document.getElementById('manual-category-select') as HTMLSelectElement)?.value || 'ALL';
+                        const msg = cat === 'ALL' ? "7개 카테고리의 뉴스를 수집합니다. 무료 한도 초과 오류가 발생할 수 있습니다.\\n진행하시겠습니까?" : `[${cat}] 카테고리 기사 1건만 안전하게 수집합니다.\\n진행하시겠습니까?`;
+                        if (!confirm(msg)) return;
+                        try {
+                          const url = cat === 'ALL' ? "/api/cron/news-article?manual=true" : `/api/cron/news-article?manual=true&category=${encodeURIComponent(cat)}`;
+                          const res = await fetch(url);
                         const data = await res.json();
                         
                         const hasErrors = data.results?.some((r: any) => r.status === 'error');
@@ -383,8 +397,8 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
                         if (data.success && !hasErrors) {
                           alert(`✅ 성공적으로 ${data.results?.length || 0}건의 기사가 생성되었습니다! [기사관리 > 작성중] 탭을 확인해주세요.`);
                         } else if (hasErrors) {
-                          const errorMsgs = data.results.filter((r:any) => r.status === 'error').map((r:any) => `[${r.category}] ${r.message}`).join('\\n');
-                          alert("❌ 일부 기사 생성 중 구글 AI 한도 초과 등의 오류가 발생했습니다:\\n\\n" + errorMsgs);
+                          const errorMsgs = data.results.filter((r:any) => r.status === 'error').map((r:any) => `[${r.category}] ${r.message}`).join('\n');
+                          alert("❌ 일부 기사 생성 중 구글 AI 한도 초과 등의 오류가 발생했습니다:\n\n" + errorMsgs);
                         } else {
                           alert("❌ 오류가 발생했습니다: " + JSON.stringify(data.results));
                         }
@@ -393,11 +407,12 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
                       }
                     }}
                     style={{
-                      width: "100%", padding: "8px", background: "#10b981", color: "#fff",
+                      flex: 1, padding: "8px", background: "#10b981", color: "#fff",
                       border: "none", borderRadius: 6, fontWeight: 700, fontSize: 12, cursor: "pointer"
                     }}>
-                    ⚡ 지금 즉시 1회 수집 실행하기 (테스트)
+                    ⚡ 실행하기
                   </button>
+                  </div>
                 </div>
               )}
 

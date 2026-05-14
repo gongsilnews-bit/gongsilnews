@@ -30,7 +30,9 @@ const FULL_CATEGORY_MAP = [
 export async function GET(req: Request) {
   const authHeader = req.headers.get('authorization');
   const isVercelCron = authHeader === `Bearer ${process.env.CRON_SECRET}`;
-  const isManualRun = req.url.includes('manual=true'); 
+  const urlObj = new URL(req.url);
+  const isManualRun = urlObj.searchParams.get('manual') === 'true';
+  const manualCategory = urlObj.searchParams.get('category');
   
   if (!isVercelCron && process.env.CRON_SECRET && !isManualRun) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -69,7 +71,11 @@ export async function GET(req: Request) {
   const { data: admin } = await supabase.from('members').select('id, name, email').eq('email', 'gongsilnews@gmail.com').single();
 
   // 설정된 카테고리만 필터링해서 수집
-  const activeCategories = FULL_CATEGORY_MAP.filter(c => config.categories.includes(c.category));
+  let activeCategories = FULL_CATEGORY_MAP.filter(c => config.categories.includes(c.category));
+
+  if (isManualRun && manualCategory) {
+    activeCategories = FULL_CATEGORY_MAP.filter(c => c.category === manualCategory);
+  }
 
   const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
