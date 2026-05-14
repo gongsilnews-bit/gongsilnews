@@ -1,6 +1,5 @@
 "use server";
 
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { createClient } from "@supabase/supabase-js";
 
 // ── 최고관리자 이메일 (이 계정의 마케팅정보에 등록된 Gemini API Key를 공용으로 사용) ──
@@ -42,7 +41,7 @@ export async function extractPropertyInfoFromImage(base64Data: string, mimeType:
 
     const apiKey = geminiApi.key_value;
 
-    // 3. 공용 프롬프트 및 이미지 파라미터 준비
+    // 3. 공용 프롬프트 준비
     const prompt = `
 너는 부동산 매물 정보 추출 전문 AI야.
 이 사진은 부동산 매물 정보가 담긴 이미지야. 네이버부동산 캡처, 직방/다방 캡처, 전단지, 메신저 대화 캡처, 손글씨 메모 등 다양한 형태일 수 있어.
@@ -75,50 +74,61 @@ JSON 구조:
   "description": "매물의 특징 및 장점을 2~3문장으로 요약 작성"
 }`;
 
-    const imageParts = [
-      {
-        inlineData: {
-          data: base64Data,
-          mimeType
-        }
-      }
-    ];
-
-    const genAI = new GoogleGenerativeAI(apiKey);
-
-    // 4. 강건한 에러 폴백 처리: 최신 모델부터 순차적으로 시도
-    const candidates = [
-       "gemini-2.5-flash",
-       "gemini-2.0-flash",
-       "gemini-1.5-flash",
-    ];
-
+    // 4. REST API 직접 호출 (폐기된 SDK 대신 네이티브 fetch 사용)
+    const models = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
     let lastError = "사용 가능한 모델이 없습니다.";
     let parsedData = null;
 
-    for (const modelName of candidates) {
-       try {
-          console.log(`Trying Gemini model: ${modelName}...`);
-          const model = genAI.getGenerativeModel({ model: modelName });
-          const result = await model.generateContent([prompt, ...imageParts]);
-          const responseText = result.response.text();
-          
-          const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-          if (jsonMatch) {
-             parsedData = JSON.parse(jsonMatch[0]);
-             console.log(`Success with Gemini model: ${modelName}!`);
-             break; // 성공 시 루프 탈출
-          } else {
-             lastError = "AI가 유효한 JSON을 반환하지 않았습니다.";
-          }
-       } catch (err: any) {
-          console.log(`Gemini model [${modelName}] failed: ${err.message}`);
-          lastError = err.message;
-       }
+    for (const model of models) {
+      try {
+        console.log(`Trying Gemini model: ${model}...`);
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+        
+        const response = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{
+              parts: [
+                { text: prompt },
+                { inlineData: { mimeType, data: base64Data } }
+              ]
+            }],
+            generationConfig: { temperature: 0.2 }
+          })
+        });
+
+        if (!response.ok) {
+          const errRes = await response.json().catch(() => ({}));
+          lastError = errRes?.error?.message || `${model} 모델 호출 실패 (${response.status})`;
+          console.log(`Gemini model [${model}] failed: ${lastError}`);
+          continue;
+        }
+
+        const json = await response.json();
+        const responseText = json.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (!responseText) {
+          lastError = "AI가 텍스트를 생성하지 못했습니다.";
+          continue;
+        }
+
+        const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          parsedData = JSON.parse(jsonMatch[0]);
+          console.log(`Success with Gemini model: ${model}!`);
+          break;
+        } else {
+          lastError = "AI가 유효한 JSON을 반환하지 않았습니다.";
+        }
+      } catch (err: any) {
+        console.log(`Gemini model [${model}] error: ${err.message}`);
+        lastError = err.message;
+      }
     }
 
     if (!parsedData) {
-       return { success: false, error: lastError + " (모든 호환 모델 시도 실패)" };
+      return { success: false, error: lastError + " (모든 호환 모델 시도 실패)" };
     }
 
     return {
