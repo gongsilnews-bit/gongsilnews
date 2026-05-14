@@ -677,11 +677,11 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
                   <Image src={article.thumbnail_url} alt={article.title} fill style={{ objectFit: "cover" }} sizes="100vw" />
                   <button 
                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); setZoomImage(article.thumbnail_url!); }}
-                    style={{ position: "absolute", bottom: "12px", right: "12px", background: "rgba(0,0,0,0.65)", color: "white", border: "1px solid rgba(255,255,255,0.2)", borderRadius: "20px", padding: "6px 12px", fontSize: "12px", fontWeight: "bold", display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", backdropFilter: "blur(4px)", zIndex: 10, transition: "all 0.2s" }}
+                    style={{ position: "absolute", bottom: "10px", right: "10px", width: "36px", height: "36px", background: "rgba(0,0,0,0.5)", color: "white", border: "none", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", backdropFilter: "blur(4px)", zIndex: 10, transition: "all 0.2s", boxShadow: "0 2px 6px rgba(0,0,0,0.3)" }}
                     onMouseEnter={(e) => e.currentTarget.style.background = "rgba(0,0,0,0.85)"}
-                    onMouseLeave={(e) => e.currentTarget.style.background = "rgba(0,0,0,0.65)"}
+                    onMouseLeave={(e) => e.currentTarget.style.background = "rgba(0,0,0,0.5)"}
                   >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg> 확대보기
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                   </button>
                 </div>
               ) : null}
@@ -695,7 +695,7 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
                       .replace(/<p[^>]*>\s*(?:<br>\s*)*<iframe[^>]*youtube\.com\/embed[^>]*>.*?<\/iframe>(?:\s*<br>\s*)*\s*<\/p>/gi, '')
                       .replace(/<div(?:(?!class="article-body")[^>]*)?>\s*(?:<br>\s*)*<iframe[^>]*youtube\.com\/embed[^>]*>.*?<\/iframe>(?:\s*<br>\s*)*\s*<\/div>/gi, '')
                       .replace(/<iframe[^>]*youtube\.com\/embed[^>]*>.*?<\/iframe>/gi, '')
-                      .replace(/<img([^>]*)>/gi, '<div class="zoom-img-wrapper" style="position:relative; display:inline-block; max-width:100%; margin:0 auto;"><img$1><button class="zoom-btn" style="position:absolute; bottom:12px; right:12px; background:rgba(0,0,0,0.65); color:white; border:1px solid rgba(255,255,255,0.2); padding:6px 12px; border-radius:20px; font-size:12px; font-weight:bold; cursor:pointer; display:flex; align-items:center; gap:6px; z-index:10; transition:all 0.2s;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg> 확대보기</button></div>')
+                      .replace(/<img([^>]*)>/gi, '<span class="zoom-img-wrapper" style="position:relative; display:inline-block; max-width:100%;"><img$1><button class="zoom-btn" style="position:absolute; bottom:10px; right:10px; width:36px; height:36px; background:rgba(0,0,0,0.5); color:white; border:none; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:10; transition:all 0.2s; box-shadow:0 2px 6px rgba(0,0,0,0.3);"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></button></span>')
                   }} 
                   onClick={(e) => {
                     const target = e.target as HTMLElement;
