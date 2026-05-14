@@ -610,6 +610,46 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
 
   return (
     <div style={{ flex: 1, background: bg, position: "relative", overflowY: "auto", height: "100%" }}>
+      {/* ── AI 이미지 분석 로딩 오버레이 ── */}
+      {parsingAi && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+          background: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)",
+          zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center",
+        }}>
+          <div style={{
+            background: darkMode ? "#25262b" : "#fff", borderRadius: 20, padding: "48px 56px",
+            boxShadow: "0 20px 60px rgba(0,0,0,0.3)", textAlign: "center", maxWidth: 400,
+          }}>
+            <div style={{
+              width: 64, height: 64, margin: "0 auto 24px",
+              border: "4px solid #e5e7eb", borderTopColor: "#f59e0b",
+              borderRadius: "50%",
+              animation: "aiSpin 1s linear infinite",
+            }} />
+            <div style={{ fontSize: 20, fontWeight: 800, color: darkMode ? "#e1e4e8" : "#111827", marginBottom: 10 }}>
+              ✨ AI가 매물 정보를 분석 중입니다
+            </div>
+            <div style={{ fontSize: 14, color: darkMode ? "#9ca3af" : "#6b7280", lineHeight: 1.6 }}>
+              이미지에서 매물 유형, 금액, 면적, 층수 등을<br />자동으로 추출하여 입력하고 있습니다...
+            </div>
+            <div style={{
+              marginTop: 24, height: 4, background: darkMode ? "#333" : "#e5e7eb", borderRadius: 2, overflow: "hidden",
+            }}>
+              <div style={{
+                height: "100%", background: "linear-gradient(90deg, #f59e0b, #f97316, #f59e0b)",
+                backgroundSize: "200% 100%",
+                animation: "aiProgress 1.5s ease-in-out infinite",
+                borderRadius: 2,
+              }} />
+            </div>
+          </div>
+          <style>{`
+            @keyframes aiSpin { to { transform: rotate(360deg); } }
+            @keyframes aiProgress { 0% { background-position: 200% 0; width: 30%; } 50% { width: 70%; } 100% { background-position: -200% 0; width: 30%; } }
+          `}</style>
+        </div>
+      )}
       {/* ── 타이틀 및 백버튼 ── */}
       <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "28px 24px 20px", borderBottom: `1px solid ${border}`, background: cardBg }}>
         <button type="button" onClick={onBack} style={{ height: 36, padding: "0 16px", background: "#fff", color: "#4b5563", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, boxShadow: "0 1px 2px rgba(0,0,0,0.05)" }}>
