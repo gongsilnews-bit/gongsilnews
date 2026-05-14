@@ -86,15 +86,11 @@ JSON 구조:
 
     const genAI = new GoogleGenerativeAI(apiKey);
 
-    // 4. 강건한 에러 폴백 처리: 최신 모델부터 구형 모델까지 순차적으로 시도하여 권한이 있는 모델을 찾아냅니다.
+    // 4. 강건한 에러 폴백 처리: 최신 모델부터 순차적으로 시도
     const candidates = [
+       "gemini-2.5-flash",
        "gemini-2.0-flash",
-       "gemini-2.0-flash-exp",
        "gemini-1.5-flash",
-       "gemini-1.5-flash-latest",
-       "gemini-1.5-pro",
-       "gemini-1.5-pro-latest",
-       "gemini-pro-vision"
     ];
 
     let lastError = "사용 가능한 모델이 없습니다.";
