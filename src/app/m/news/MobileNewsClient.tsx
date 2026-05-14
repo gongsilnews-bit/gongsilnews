@@ -704,6 +704,14 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                   key={cat.key}
                   data-active={activeTab === cat.key ? "true" : "false"}
                   onClick={() => { 
+                    if (cat.key === "부동산마케팅") {
+                      router.push("/m/news_marketing");
+                      return;
+                    }
+                    if (pathname === "/m/news_marketing") {
+                      router.push(`/m/news?tab=${cat.key}`);
+                      return;
+                    }
                     setActiveTab(cat.key); 
                     setClusterMode(false); 
                     const url = new URL(window.location.href);

@@ -138,6 +138,10 @@ export default function MobileHomeClient(props: Props) {
             key={cat.key}
             onClick={() => {
               if (cat.key === "home") return;
+              if (cat.key === "부동산마케팅") {
+                router.push("/m/news_marketing");
+                return;
+              }
               router.push(`/m/news?tab=${cat.key}`);
             }}
             style={{
