@@ -1,6 +1,6 @@
 "use server";
 
-import { getGenAIClient } from "@/lib/agents/core";
+import { generateWithGemini } from "@/lib/agents/core";
 import { ArticleReviewAgent } from "@/lib/agents/ArticleReviewAgent";
 import { createClient } from "@supabase/supabase-js";
 
@@ -166,17 +166,13 @@ export async function sendAgentMessage(params: {
     // ----------------------------------------------------
 
     // 2. 일반 Gemini 채팅 호출
-    const genAI = await getGenAIClient();
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
     const fullPrompt = `${params.systemPrompt}\n\n[사용자 지시]\n${params.userMessage}`;
-    const result = await model.generateContent(fullPrompt);
-    const response = result.response;
-    const text = response.text();
+    const result = await generateWithGemini(fullPrompt, { temperature: 0.7 });
+    const text = result.text;
 
     // 3. 토큰 사용량 추출
-    const usage = response.usageMetadata;
-    const inputTokens = usage?.promptTokenCount || 0;
-    const outputTokens = usage?.candidatesTokenCount || 0;
+    const inputTokens = result.usage?.inputTokens || 0;
+    const outputTokens = result.usage?.outputTokens || 0;
     const costUsd = (inputTokens * 0.00000015) + (outputTokens * 0.0000006);
     const costKrw = Math.round(costUsd * 1350 * 100) / 100;
 
@@ -401,9 +397,6 @@ export async function generateDailyReport() {
   }
 
   // ── Gemini에게 보고서 작성 요청 ──
-  const genAI = await getGenAIClient();
-  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-
   const reportPrompt = `
 너는 공실뉴스 AI 비서실의 총괄 비서야. 아래 데이터를 바탕으로 ${dateStr} 일간 업무 보고서를 작성해.
 존댓말(해요체)로, 간결하면서도 핵심을 짚는 보고서를 작성해줘.
@@ -445,8 +438,8 @@ ${Object.entries(todayCostByAgent).map(([k, v]) => `- ${k}: ${v.count}건 대화
    - 전반적인 운영 상태 평가 (1~2문장)
 `;
 
-  const result = await model.generateContent(reportPrompt);
-  const reportText = result.response.text();
+  const reportResult = await generateWithGemini(reportPrompt, { temperature: 0.5 });
+  const reportText = reportResult.text;
 
   // 보고서를 DB에 저장
   await supabase.from("agent_chats").insert({
