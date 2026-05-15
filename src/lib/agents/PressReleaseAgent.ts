@@ -1,4 +1,4 @@
-import { getGenAIClient } from "./core";
+import { generateWithGemini } from "./core";
 
 export interface PressReleaseInput {
   pressReleaseText: string;   // 보도자료 원문 텍스트
@@ -25,9 +25,6 @@ export class PressReleaseAgent {
    */
   static async writeArticle(input: PressReleaseInput): Promise<PressReleaseOutput> {
     try {
-      const genAI = await getGenAIClient();
-      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-
       const prompt = `
 너는 주요 경제지의 부동산 전문 기자다.
 감정을 배제하고 철저히 객관적인 정통 기사체(~다, ~밝혔다, ~전망이다)를 사용한다.
@@ -64,17 +61,16 @@ ${input.sourceUrl ? `[출처 URL]\n${input.sourceUrl}` : ''}
 }
       `;
 
-      const result = await model.generateContent(prompt);
-      const responseText = result.response.text();
+      const result = await generateWithGemini(prompt, { temperature: 0.5 });
 
       // JSON 파싱
-      const cleanJson = responseText.replace(/```json\n?|```/g, "").trim();
+      const cleanJson = result.text.replace(/```json\n?|```/g, "").trim();
 
       let parsed;
       try {
         parsed = JSON.parse(cleanJson);
       } catch (parseError) {
-        console.error("[보도자료 에이전트] JSON Parsing Error:", responseText);
+        console.error("[보도자료 에이전트] JSON Parsing Error:", result.text);
         throw new Error("AI가 기사를 올바른 형식으로 생성하지 못했습니다. 다시 시도해주세요.");
       }
 
@@ -85,11 +81,7 @@ ${input.sourceUrl ? `[출처 URL]\n${input.sourceUrl}` : ''}
         section1: parsed.section1 || "부동산정책",
         section2: parsed.section2 || "",
         keywords: parsed.keywords || "",
-        usage: result.response.usageMetadata ? {
-          inputTokens: result.response.usageMetadata.promptTokenCount,
-          outputTokens: result.response.usageMetadata.candidatesTokenCount,
-          totalTokens: result.response.usageMetadata.totalTokenCount,
-        } : undefined,
+        usage: result.usage,
       };
 
     } catch (error: any) {

@@ -1,4 +1,4 @@
-import { getGenAIClient } from "./core";
+import { generateWithGemini } from "./core";
 
 export interface ArticleReviewInput {
   title: string;
@@ -33,9 +33,6 @@ export class ArticleReviewAgent {
    */
   static async reviewArticle(input: ArticleReviewInput): Promise<ArticleReviewOutput> {
     try {
-      const genAI = await getGenAIClient();
-      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-
       // HTML 태그 제거하여 순수 텍스트 추출
       const plainContent = input.content
         .replace(/<[^>]*>/g, " ")
@@ -102,17 +99,16 @@ ${input.imageUrls?.length ? "- 이미지 URL: " + input.imageUrls.slice(0, 5).jo
 }
       `;
 
-      const result = await model.generateContent(prompt);
-      const responseText = result.response.text();
+      const result = await generateWithGemini(prompt, { temperature: 0.3 });
 
       // JSON 파싱
-      const cleanJson = responseText.replace(/```json\n?|```/g, "").trim();
+      const cleanJson = result.text.replace(/```json\n?|```/g, "").trim();
 
       let parsed;
       try {
         parsed = JSON.parse(cleanJson);
       } catch (parseError) {
-        console.error("ArticleReviewAgent JSON Parsing Error:", responseText);
+        console.error("ArticleReviewAgent JSON Parsing Error:", result.text);
         return {
           status: "REVISION_NEEDED",
           score: 50,
@@ -136,11 +132,7 @@ ${input.imageUrls?.length ? "- 이미지 URL: " + input.imageUrls.slice(0, 5).jo
           promotionCheck: parsed.details?.promotionCheck || { pass: true, comment: "", flaggedKeywords: [] },
           factCheck: parsed.details?.factCheck || { pass: true, comment: "" },
         },
-        usage: result.response.usageMetadata ? {
-          inputTokens: result.response.usageMetadata.promptTokenCount,
-          outputTokens: result.response.usageMetadata.candidatesTokenCount,
-          totalTokens: result.response.usageMetadata.totalTokenCount,
-        } : undefined,
+        usage: result.usage,
       };
 
     } catch (error: any) {

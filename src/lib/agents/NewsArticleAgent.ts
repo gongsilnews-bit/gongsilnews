@@ -1,4 +1,4 @@
-import { getGenAIClient } from "./core";
+import { generateWithGemini } from "./core";
 
 export interface NewsArticleRequest {
   sourceText: string; // 검색된 여러 기사들의 원문이나 요약본 (팩트 덩어리)
@@ -23,9 +23,6 @@ export class NewsArticleAgent {
    * 입력된 뉴스 소스(요약본 후보군)를 바탕으로 가장 핫한 뉴스를 골라 완전히 새로운 기사를 작성합니다.
    */
   static async writeArticle(req: NewsArticleRequest): Promise<NewsArticleResult> {
-    const genAI = await getGenAIClient();
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-
     const systemPrompt = `너는 '공실뉴스' 플랫폼의 편집국장이자 수석 기자야.
 너에게는 오늘 발생한 여러 개의 최신 뉴스 후보 목록이 제공될 거야.
 너의 첫 번째 임무는 이 후보들 중에서 **대중의 클릭을 가장 많이 유도할 수 있고, 논란이나 화제가 될 만한 가장 'HOT'한 뉴스 딱 1개**를 스스로 선택하는 거야.
@@ -61,21 +58,13 @@ export class NewsArticleAgent {
     const userPrompt = `[오늘의 최신 뉴스 후보 목록]\n${req.sourceText}\n\n위 후보들 중 대중이 가장 열광할 만한 1개의 뉴스를 선택하여, 저작권에 걸리지 않는 완전히 새로운 [${req.category}] 카테고리 기사를 JSON으로 작성해라.`;
 
     try {
-      const result = await model.generateContent(`${systemPrompt}\n\n${userPrompt}`);
-      const response = result.response;
-      let text = response.text();
+      const result = await generateWithGemini(`${systemPrompt}\n\n${userPrompt}`, { temperature: 0.7 });
+      let text = result.text;
 
       // JSON 파싱을 위한 전처리 (마크다운 제거)
       text = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
 
       const parsed = JSON.parse(text);
-
-      const usage = response.usageMetadata;
-      const tokenUsage = usage ? {
-        inputTokens: usage.promptTokenCount,
-        outputTokens: usage.candidatesTokenCount,
-        totalTokens: usage.totalTokenCount,
-      } : undefined;
 
       return {
         title: parsed.title,
@@ -83,7 +72,7 @@ export class NewsArticleAgent {
         content: parsed.content,
         keywords: parsed.keywords,
         sourceUrl: parsed.sourceUrl,
-        usage: tokenUsage,
+        usage: result.usage,
       };
 
     } catch (error: any) {

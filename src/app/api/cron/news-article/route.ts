@@ -3,7 +3,7 @@ import Parser from 'rss-parser';
 import { NewsArticleAgent } from '@/lib/agents/NewsArticleAgent';
 import { createClient } from '@supabase/supabase-js';
 
-export const maxDuration = 120; // Vercel 최대 실행 시간 2분
+export const maxDuration = 300; // Vercel 최대 실행 시간 5분 (7개 카테고리 × 8초 딜레이 대비)
 
 function getAdminClient() {
   return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
@@ -144,8 +144,8 @@ export async function GET(req: Request) {
       results.push({ category: item.category, status: 'error', message: err.message });
     }
     
-    // 구글 Gemini AI의 무료 티어 제한(1분당 15회) 방지를 위해 카테고리당 4초씩 대기
-    await delay(4500);
+    // 구글 Gemini AI의 무료 티어 제한(분당 30회) 방지를 위해 카테고리당 8초씩 대기
+    await delay(8000);
   }
 
   const { revalidateTag } = require('next/cache');
