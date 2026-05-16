@@ -665,8 +665,8 @@ function MobileVacancyWrite() {
             <div style={{flex:1}}>{exclusiveM2 ? (areaUnit==="m2" ? `≈ ${(parseFloat(exclusiveM2)*0.3025).toFixed(1)}평` : `≈ ${parseFloat(exclusiveM2).toFixed(1)}m²`) : ""}</div>
           </div>
           <div style={{ display:"flex", gap:10, marginBottom:10 }}>
-            <div style={{flex:1}}><label style={labelStyle}>해당층</label><input type="text" value={currentFloor} onChange={e=>setCurrentFloor(e.target.value)} placeholder="3" style={inputStyle}/></div>
             <div style={{flex:1}}><label style={labelStyle}>전체층</label><input type="number" value={totalFloor} onChange={e=>setTotalFloor(e.target.value)} placeholder="15" style={inputStyle}/></div>
+            <div style={{flex:1}}><label style={labelStyle}>해당층</label><input type="text" value={currentFloor} onChange={e=>setCurrentFloor(e.target.value)} placeholder="3" style={inputStyle}/></div>
           </div>
           {!isCommercial && (
             <div style={{ display:"flex", gap:10 }}>
