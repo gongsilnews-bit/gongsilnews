@@ -906,6 +906,38 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
               <span style={{ color: textSecondary, fontSize: 14, flexShrink: 0 }}>만원</span>
             </div>
 
+            {/* 면적 */}
+            <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
+              <div style={{ flex: 1 }}>
+                <label style={labelStyle}>공급면적</label>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <input type="number" placeholder="예: 84" value={supplyM2}
+                    onChange={(e) => handleM2Change(e.target.value, setSupplyM2, setSupplyPy)}
+                    style={{ ...inputStyle, flex: 1 }} />
+                  <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>m²</span>
+                  <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>=</span>
+                  <input type="number" placeholder="예: 25.4" value={supplyPy}
+                    onChange={(e) => handlePyChange(e.target.value, setSupplyPy, setSupplyM2)}
+                    style={{ ...inputStyle, flex: 1 }} />
+                  <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>평</span>
+                </div>
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={labelStyle}>전용면적</label>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <input type="number" placeholder="예: 59" value={exclusiveM2}
+                    onChange={(e) => handleM2Change(e.target.value, setExclusiveM2, setExclusivePy)}
+                    style={{ ...inputStyle, flex: 1 }} />
+                  <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>m²</span>
+                  <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>=</span>
+                  <input type="number" placeholder="예: 18.8" value={exclusivePy}
+                    onChange={(e) => handlePyChange(e.target.value, setExclusivePy, setExclusiveM2)}
+                    style={{ ...inputStyle, flex: 1 }} />
+                  <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>평</span>
+                </div>
+              </div>
+            </div>
+
             {/* 공통 필드: 해당층 / 전체층 */}
             <div style={{ display: "flex", gap: 24, marginBottom: isCommercial ? 24 : 16 }}>
               <div style={{ flex: 1 }}>
@@ -949,38 +981,6 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                 </div>
               </>
             )}
-
-            {/* 면적 */}
-            <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
-              <div style={{ flex: 1 }}>
-                <label style={labelStyle}>공급면적</label>
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <input type="number" placeholder="예: 84" value={supplyM2}
-                    onChange={(e) => handleM2Change(e.target.value, setSupplyM2, setSupplyPy)}
-                    style={{ ...inputStyle, flex: 1 }} />
-                  <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>m²</span>
-                  <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>=</span>
-                  <input type="number" placeholder="예: 25.4" value={supplyPy}
-                    onChange={(e) => handlePyChange(e.target.value, setSupplyPy, setSupplyM2)}
-                    style={{ ...inputStyle, flex: 1 }} />
-                  <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>평</span>
-                </div>
-              </div>
-              <div style={{ flex: 1 }}>
-                <label style={labelStyle}>전용면적</label>
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <input type="number" placeholder="예: 59" value={exclusiveM2}
-                    onChange={(e) => handleM2Change(e.target.value, setExclusiveM2, setExclusivePy)}
-                    style={{ ...inputStyle, flex: 1 }} />
-                  <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>m²</span>
-                  <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>=</span>
-                  <input type="number" placeholder="예: 18.8" value={exclusivePy}
-                    onChange={(e) => handlePyChange(e.target.value, setExclusivePy, setExclusiveM2)}
-                    style={{ ...inputStyle, flex: 1 }} />
-                  <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>평</span>
-                </div>
-              </div>
-            </div>
 
             {/* 주차 / 입주가능일 */}
             <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
