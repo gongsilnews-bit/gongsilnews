@@ -419,12 +419,53 @@ function MobileVacancyWrite() {
     else alert(`주소를 찾을 수 없습니다. (이유: ${res.error || "결과 없음"})`);
   };
 
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const compressToWebP = (file: File): Promise<File> => {
+    if (!file.type.startsWith("image/")) return Promise.resolve(file);
+    return new Promise((resolve) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const MAX_WIDTH = 1920;
+        const MAX_HEIGHT = 1080;
+        let width = img.width;
+        let height = img.height;
+        if (width > height) {
+          if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+        } else {
+          if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) { URL.revokeObjectURL(url); return resolve(file); }
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob((blob) => {
+          URL.revokeObjectURL(url);
+          if (!blob) return resolve(file);
+          const newName = file.name.replace(/\.[^/.]+$/, "") + ".webp";
+          resolve(new File([blob], newName, { type: "image/webp" }));
+        }, "image/webp", 0.8);
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+      img.src = url;
+    });
+  };
+
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
     const totalCount = existingPhotoUrls.length + photos.length;
     const files = Array.from(e.target.files).slice(0, 5 - totalCount);
-    setPhotos(prev => [...prev, ...files]);
-    files.forEach(f => { const r = new FileReader(); r.onload = () => setPhotoPreview(prev => [...prev, r.result as string]); r.readAsDataURL(f); });
+    
+    // WebP 압축 적용
+    const compressed = await Promise.all(files.map(f => compressToWebP(f)));
+    
+    setPhotos(prev => [...prev, ...compressed]);
+    compressed.forEach(f => { 
+      const r = new FileReader(); 
+      r.onload = () => setPhotoPreview(prev => [...prev, r.result as string]); 
+      r.readAsDataURL(f); 
+    });
   };
 
   const removePhoto = (i: number) => {
