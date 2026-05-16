@@ -10,9 +10,6 @@ function MobileBottomNavContent() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const tab = searchParams.get('tab');
-
-  // 공실등록/수정 페이지에서는 전역 탭바 숨김 (폼 전용 BottomNav 사용)
-  if (pathname.startsWith('/m/admin/vacancy/write')) return null;
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [profileImg, setProfileImg] = useState<string | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -25,16 +22,16 @@ function MobileBottomNavContent() {
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
-      
+
       // 스크롤을 내릴 때 (현재 스크롤이 이전보다 크고, 상단에서 50px 이상 내려왔을 때)
       if (currentScrollY > lastScrollY.current && currentScrollY > 50) {
         setIsVisible(false);
-      } 
+      }
       // 스크롤을 올릴 때
       else if (currentScrollY < lastScrollY.current) {
         setIsVisible(true);
       }
-      
+
       lastScrollY.current = currentScrollY;
     };
 
@@ -108,39 +105,39 @@ function MobileBottomNavContent() {
   }, []);
 
   const navItems = [
-    { 
-      name: "홈", path: "/m", 
+    {
+      name: "홈", path: "/m",
       icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
     },
-    { 
-      name: "우리동네", path: "/m/news?tab=local", 
+    {
+      name: "우리동네", path: "/m/news?tab=local",
       icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
     },
-    { 
-      name: "공실", path: "/m/gongsil", 
+    {
+      name: "공실", path: "/m/gongsil",
       icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
     },
-    { 
-      name: "부동산특강", path: "/m/study", 
+    {
+      name: "부동산특강", path: "/m/study",
       icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c3 3 9 3 12 0v-5"></path></svg>
     },
-    { 
-      name: "마이", path: "/m/mypage", 
+    {
+      name: "마이", path: "/m/mypage",
       icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
     },
   ];
 
   return (
-    <nav 
+    <nav
       className={`fixed bottom-0 left-0 w-full z-50 bg-white border-t border-gray-200 pb-safe transition-transform duration-300 ${isVisible ? 'translate-y-0' : 'translate-y-full'}`}
-      style={{ 
-        position: 'fixed', bottom: 0, left: 0, width: '100%', zIndex: 50, 
+      style={{
+        position: 'fixed', bottom: 0, left: 0, width: '100%', zIndex: 50,
         backgroundColor: '#ffffff', borderTop: '1px solid #e5e7eb',
         transform: isVisible ? 'translateY(0)' : 'translateY(100%)',
         transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
       }}
     >
-      <div 
+      <div
         className="max-w-md mx-auto flex justify-between items-center h-[60px] px-2"
         style={{ maxWidth: '448px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '60px', padding: '0 8px' }}
       >
@@ -155,7 +152,7 @@ function MobileBottomNavContent() {
               if (pathname.startsWith("/m/news") && tab === "local") return true;
               return false;
             }
-            return pathname === item.path || 
+            return pathname === item.path ||
               (item.path !== "/m" && pathname.startsWith(item.path.split('?')[0]));
           })();
 
@@ -174,7 +171,7 @@ function MobileBottomNavContent() {
                 ) : (
                   item.icon
                 )}
-                
+
                 {/* Unread Message Badge */}
                 {unreadCount > 0 ? (
                   <span style={{
@@ -271,7 +268,7 @@ function MobileBottomNavContent() {
 export default function MobileBottomNav() {
   return (
     <Suspense fallback={
-      <nav 
+      <nav
         className="fixed bottom-0 left-0 w-full z-50 bg-white border-t border-gray-200 pb-safe"
         style={{ position: 'fixed', bottom: 0, left: 0, width: '100%', zIndex: 50, backgroundColor: '#ffffff', borderTop: '1px solid #e5e7eb', height: '60px' }}
       />
