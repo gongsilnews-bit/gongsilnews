@@ -47,7 +47,7 @@ function MobileVacancyWrite() {
   const [loadingEdit, setLoadingEdit] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const TOTAL_STEPS = 4;
-  const STEP_LABELS = ["기본정보", "면적·위치", "사진·상세", "최종확인"];
+  const STEP_LABELS = ["기본정보", "위치정보", "사진·상세", "최종확인"];
 
   // 공실광고 기본
   const [propertyType, setPropertyTypeRaw] = useState("아파트·오피스텔");
@@ -595,11 +595,8 @@ function MobileVacancyWrite() {
             <span style={{ color:"#6b7280", fontSize:13, flexShrink:0 }}>만원</span>
           </div>
         </div>
-        </>)}
 
-        {/* ═══ STEP 2: 면적·위치 ═══ */}
-        {currentStep === 2 && (<>
-        {/* 3. 면적/층수 */}
+        {/* 3. 면적·층수 (Step 1 통합) */}
         <div style={{ background:"#fff", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.05)" }}>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
             <div style={{ fontSize:16, fontWeight:800, color:"#111" }}>📐 면적·층수</div>
@@ -610,14 +607,6 @@ function MobileVacancyWrite() {
           </div>
           <div style={{ display:"flex", gap:10, marginBottom:4 }}>
             <div style={{flex:1}}>
-              <label style={labelStyle}>전용면적({areaUnit==="m2"?"m²":"평"})</label>
-              {areaUnit==="m2" ? (
-                <input type="number" value={exclusiveM2} onChange={e=>handleM2Change(e.target.value, setExclusiveM2, setExclusivePy)} placeholder="59" style={inputStyle}/>
-              ) : (
-                <input type="number" value={exclusivePy} onChange={e=>handlePyChange(e.target.value, setExclusivePy, setExclusiveM2)} placeholder="17.8" style={inputStyle}/>
-              )}
-            </div>
-            <div style={{flex:1}}>
               <label style={labelStyle}>공급면적({areaUnit==="m2"?"m²":"평"})</label>
               {areaUnit==="m2" ? (
                 <input type="number" value={supplyM2} onChange={e=>handleM2Change(e.target.value, setSupplyM2, setSupplyPy)} placeholder="84" style={inputStyle}/>
@@ -625,10 +614,18 @@ function MobileVacancyWrite() {
                 <input type="number" value={supplyPy} onChange={e=>handlePyChange(e.target.value, setSupplyPy, setSupplyM2)} placeholder="25.4" style={inputStyle}/>
               )}
             </div>
+            <div style={{flex:1}}>
+              <label style={labelStyle}>전용면적({areaUnit==="m2"?"m²":"평"})</label>
+              {areaUnit==="m2" ? (
+                <input type="number" value={exclusiveM2} onChange={e=>handleM2Change(e.target.value, setExclusiveM2, setExclusivePy)} placeholder="59" style={inputStyle}/>
+              ) : (
+                <input type="number" value={exclusivePy} onChange={e=>handlePyChange(e.target.value, setExclusivePy, setExclusiveM2)} placeholder="17.8" style={inputStyle}/>
+              )}
+            </div>
           </div>
           <div style={{ display:"flex", gap:10, marginBottom:10, fontSize:12, color:"#f97316", fontWeight:600, padding:"0 2px" }}>
-            <div style={{flex:1}}>{exclusiveM2 ? (areaUnit==="m2" ? `≈ ${(parseFloat(exclusiveM2)*0.3025).toFixed(1)}평` : `≈ ${parseFloat(exclusiveM2).toFixed(1)}m²`) : ""}</div>
             <div style={{flex:1}}>{supplyM2 ? (areaUnit==="m2" ? `≈ ${(parseFloat(supplyM2)*0.3025).toFixed(1)}평` : `≈ ${parseFloat(supplyM2).toFixed(1)}m²`) : ""}</div>
+            <div style={{flex:1}}>{exclusiveM2 ? (areaUnit==="m2" ? `≈ ${(parseFloat(exclusiveM2)*0.3025).toFixed(1)}평` : `≈ ${parseFloat(exclusiveM2).toFixed(1)}m²`) : ""}</div>
           </div>
           <div style={{ display:"flex", gap:10, marginBottom:10 }}>
             <div style={{flex:1}}><label style={labelStyle}>해당층</label><input type="text" value={currentFloor} onChange={e=>setCurrentFloor(e.target.value)} placeholder="3" style={inputStyle}/></div>
@@ -657,6 +654,29 @@ function MobileVacancyWrite() {
             </div>
           )}
         </div>
+
+        {/* 주차·입주 (Step 1 통합) */}
+        <div style={{ background:"#fff", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.05)" }}>
+          <div style={{ fontSize:16, fontWeight:800, color:"#111", marginBottom:14 }}>🚗 주차·입주</div>
+          <div style={{ display:"flex", gap:10 }}>
+            <div style={{flex:1}}>
+              <label style={labelStyle}>주차</label>
+              <select value={parking} onChange={e=>setParking(e.target.value)} style={{...inputStyle,cursor:"pointer"}}>
+                {["없음","가능","1대","2대","3대이상"].map(o=><option key={o}>{o}</option>)}
+              </select>
+            </div>
+            <div style={{flex:1}}>
+              <label style={labelStyle}>입주가능일</label>
+              <select value={moveInDate} onChange={e=>setMoveInDate(e.target.value)} style={{...inputStyle,cursor:"pointer"}}>
+                {["즉시입주(공실)","1개월 이내","2개월 이내","3개월 이내","날짜 협의"].map(o=><option key={o}>{o}</option>)}
+              </select>
+            </div>
+          </div>
+        </div>
+        </>)}
+
+        {/* ═══ STEP 2: 위치정보 ═══ */}
+        {currentStep === 2 && (<>
 
         {/* 4. 주소 */}
         <div style={{ background:"#fff", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.05)" }}>
@@ -719,6 +739,22 @@ function MobileVacancyWrite() {
             📍 좌표 자동설정
           </button>
           {coords && <div style={{ marginTop:6, fontSize:12, color:"#10b981", fontWeight:600 }}>✓ 좌표: {coords.lat.toFixed(5)}, {coords.lng.toFixed(5)}</div>}
+
+          {/* 주변환경 (좌표 기반 자동생성) */}
+          <div style={{ marginTop:12 }}>
+            <label style={labelStyle}>🏙️ 주변환경 (좌표 기반 자동생성)</label>
+            <div style={{ background:"#f9fafb", border:"1px solid #e5e7eb", borderRadius:8, padding:12, fontSize:13, color:"#6b7280" }}>
+              {Object.keys(infrastructure).length > 0 ? (
+                Object.entries(infrastructure).map(([category, items]: [string, any]) => (
+                  <div key={category} style={{ marginBottom:6 }}>
+                    <strong style={{ color:"#374151" }}>{category}:</strong> {Array.isArray(items) ? items.join(", ") : ""}
+                  </div>
+                ))
+              ) : (
+                "위 '좌표 자동설정' 버튼을 누르면 주변 인프라가 자동 검색됩니다."
+              )}
+            </div>
+          </div>
         </div>
         </>)}
 
@@ -726,24 +762,9 @@ function MobileVacancyWrite() {
         {currentStep === 3 && (<>
         {/* 5. 추가 */}
         <div style={{ background:"#fff", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.05)" }}>
-          <div style={{ fontSize:16, fontWeight:800, color:"#111", marginBottom:14 }}>🏠 추가정보</div>
-          <div style={{ display:"flex", gap:10, marginBottom:10 }}>
-            <div style={{flex:1}}>
-              <label style={labelStyle}>주차</label>
-              <select value={parking} onChange={e=>setParking(e.target.value)} style={{...inputStyle,cursor:"pointer"}}>
-                {["없음","가능","1대","2대"].map(o=><option key={o}>{o}</option>)}
-              </select>
-            </div>
-            <div style={{flex:1}}>
-              <label style={labelStyle}>입주가능일</label>
-              <select value={moveInDate} onChange={e=>setMoveInDate(e.target.value)} style={{...inputStyle,cursor:"pointer"}}>
-                {["즉시입주(공실)","1개월 이내","2개월 이내","3개월 이내","날짜 협의"].map(o=><option key={o}>{o}</option>)}
-              </select>
-            </div>
-          </div>
-
+          <div style={{ fontSize:16, fontWeight:800, color:"#111", marginBottom:14 }}>🏷️ 상세정보</div>
           {/* 옵션 & 테마 & 주변환경 */}
-          <div style={{ marginTop: 16, borderTop: "1px dashed #e5e7eb", paddingTop: 16 }}>
+          <div>
             {/* 테마 */}
             <label style={labelStyle}>테마 선택</label>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
@@ -770,20 +791,6 @@ function MobileVacancyWrite() {
             <div style={{ display:"flex", gap:6, marginBottom: 16 }}>
               <input type="text" value={customOptionInput} onChange={e=>setCustomOptionInput(e.target.value)} placeholder="직접 입력 (예: 붙박이장)" style={{...inputStyle, flex:1}} onKeyDown={e=>{if(e.key==='Enter') {e.preventDefault(); addCustomOption();}}} />
               <button type="button" onClick={addCustomOption} style={{ background:"#374151", color:"#fff", border:"none", borderRadius:8, padding:"0 16px", fontWeight:700 }}>추가</button>
-            </div>
-
-            {/* 주변환경 (자동 검색) */}
-            <label style={labelStyle}>주변환경 (좌표 기반 자동생성)</label>
-            <div style={{ background:"#f9fafb", border:"1px solid #e5e7eb", borderRadius:8, padding:12, fontSize:13, color:"#6b7280" }}>
-              {Object.keys(infrastructure).length > 0 ? (
-                Object.entries(infrastructure).map(([category, items]: [string, any]) => (
-                  <div key={category} style={{ marginBottom:6 }}>
-                    <strong style={{ color:"#374151" }}>{category}:</strong> {Array.isArray(items) ? items.join(", ") : ""}
-                  </div>
-                ))
-              ) : (
-                "상단 소재지 '좌표 자동설정'을 누르면 주변 인프라가 자동 검색됩니다."
-              )}
             </div>
           </div>
 
