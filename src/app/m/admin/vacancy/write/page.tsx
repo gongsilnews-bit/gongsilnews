@@ -724,7 +724,7 @@ function MobileVacancyWrite() {
           </div>
           <div style={{ display:"flex", gap:10, marginBottom:10 }}>
             <div style={{flex:1}}><label style={labelStyle}>전체층</label><input type="number" value={totalFloor} onChange={e=>setTotalFloor(e.target.value)} placeholder="15" style={inputStyle}/></div>
-            <div style={{flex:1}}><label style={labelStyle}>해당층</label><input type="text" value={currentFloor} onChange={e=>setCurrentFloor(e.target.value)} placeholder="3" style={inputStyle}/></div>
+            <div style={{flex:1}}><label style={labelStyle}>해당층 <span style={{fontSize:11, color:"#9ca3af", fontWeight:400}}>(직접입력)</span></label><input type="text" value={currentFloor} onChange={e=>setCurrentFloor(e.target.value)} placeholder="예: 3" style={inputStyle}/></div>
           </div>
           <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:14 }}>
             {['반지하', '옥탑', '지하 1층', '지하 2층', '전체층'].map(f => (
