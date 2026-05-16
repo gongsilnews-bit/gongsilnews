@@ -136,6 +136,17 @@ function MobileVacancyWrite() {
   const isCommercial = propertyType === "상가·사무실·건물·공장·토지";
   const isRealtor = userRole === "REALTOR" || userRole === "ADMIN";
 
+  // 모바일 키보드 감지 (하단 버튼 숨김용)
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const threshold = window.innerHeight * 0.75;
+    const onResize = () => setIsKeyboardOpen(vv.height < threshold);
+    vv.addEventListener('resize', onResize);
+    return () => vv.removeEventListener('resize', onResize);
+  }, []);
+
   // PC와 동일한 주소 공개/비공개 판정 로직
   const isFieldExposed = (field: "detailAddr" | "buildingName" | "aptDong" | "hosu") => {
     if (propertyType === "아파트·오피스텔") {
@@ -539,7 +550,7 @@ function MobileVacancyWrite() {
   );
 
   const BottomNav = () => (
-    <div style={{ position:"fixed", bottom:0, left:0, right:0, zIndex:50, background:"#fff", borderTop:"1px solid #e5e7eb", padding:"10px 16px", paddingBottom:"max(10px, env(safe-area-inset-bottom))", display:"flex", gap:8, alignItems:"center" }}>
+    <div style={{ position:"fixed", bottom:0, left:0, right:0, zIndex:50, background:"#fff", borderTop:"1px solid #e5e7eb", padding:"10px 16px", paddingBottom:"max(10px, env(safe-area-inset-bottom))", display:"flex", gap:8, alignItems:"center", transform: isKeyboardOpen ? 'translateY(100%)' : 'translateY(0)', transition: 'transform 0.2s ease' }}>
       <button type="button" disabled={submitting} onClick={()=>handleSubmit("DRAFT")}
         style={{ height:46, padding:"0 14px", background:"#f9fafb", color:"#6b7280", border:"1px solid #d1d5db", borderRadius:10, fontSize:13, fontWeight:700, cursor:"pointer", flexShrink:0 }}>
         💾 임시저장
