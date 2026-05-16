@@ -998,70 +998,6 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
               </div>
             </div>
 
-            {/* ── 편의시설 / 옵션 ── */}
-            <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
-              <div style={{ flex: 1 }}>
-                <label style={labelStyle}>옵션</label>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 10, background: darkMode ? "#1a1b1e" : "#f9fafb", padding: 16, borderRadius: 8, border: `1px solid ${border}` }}>
-                  {currentOptionList.map(opt => (
-                    <button
-                      key={opt}
-                      type="button"
-                      onClick={() => toggleOption(opt)}
-                      style={{
-                        padding: "6px 14px", borderRadius: 20, fontSize: 13, cursor: "pointer",
-                        border: selectedOptions.includes(opt) ? "1px solid #3b82f6" : `1px solid ${border}`,
-                        background: selectedOptions.includes(opt) ? (darkMode ? "#1e3a8a" : "#eff6ff") : cardBg,
-                        color: selectedOptions.includes(opt) ? "#3b82f6" : textSecondary,
-                        fontWeight: selectedOptions.includes(opt) ? 700 : 500,
-                        transition: "all 0.2s"
-                      }}
-                    >
-                      {opt} {selectedOptions.includes(opt) && "✓"}
-                    </button>
-                  ))}
-                  <div style={{ display: "flex", alignItems: "center", width: "100%", marginTop: 8 }}>
-                    <input type="text" placeholder="+ 옵션 직접 입력" value={customOptionInput} onChange={e => setCustomOptionInput(e.target.value)} onKeyDown={e => e.key === "Enter" && (e.preventDefault(), addCustomOption())}
-                      style={{ flex: 1, padding: "8px 12px", border: `1px dashed ${border}`, borderRadius: 20, fontSize: 13, background: "transparent", outline: "none", color: textPrimary }} />
-                    <button type="button" onClick={addCustomOption} style={{ marginLeft: 8, padding: "6px 12px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 20, fontSize: 13, cursor: "pointer" }}>추가</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* ── 테마 섹션 ── */}
-            <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
-              <div style={{ flex: 1 }}>
-                <label style={{ ...labelStyle, display: "flex", alignItems: "center", gap: 6 }}>
-                  테마 (해시태그) <span style={{ fontSize: 12, fontWeight: 500, color: textSecondary }}>홈페이지 및 목록에 노출됩니다</span>
-                </label>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 10, background: darkMode ? "#1a1b1e" : "#f0fdf4", padding: 16, borderRadius: 8, border: `1px solid ${darkMode ? "#333" : "#bbf7d0"}` }}>
-                  {currentThemeList.map(theme => (
-                    <button
-                      key={theme}
-                      type="button"
-                      onClick={() => toggleTheme(theme)}
-                      style={{
-                        padding: "6px 14px", borderRadius: 20, fontSize: 13, cursor: "pointer",
-                        border: selectedThemes.includes(theme) ? "1px solid #10b981" : `1px solid ${border}`,
-                        background: selectedThemes.includes(theme) ? (darkMode ? "#064e3b" : "#d1fae5") : cardBg,
-                        color: selectedThemes.includes(theme) ? "#10b981" : textSecondary,
-                        fontWeight: selectedThemes.includes(theme) ? 700 : 500,
-                        transition: "all 0.2s"
-                      }}
-                    >
-                      # {theme} {selectedThemes.includes(theme) && "✓"}
-                    </button>
-                  ))}
-                  <div style={{ display: "flex", alignItems: "center", width: "100%", marginTop: 8 }}>
-                    <input type="text" placeholder="+ 테마 직접 입력" value={customThemeInput} onChange={e => setCustomThemeInput(e.target.value)} onKeyDown={e => e.key === "Enter" && (e.preventDefault(), addCustomTheme())}
-                      style={{ flex: 1, padding: "8px 12px", border: `1px dashed ${darkMode ? "#444" : "#86efac"}`, borderRadius: 20, fontSize: 13, background: "transparent", outline: "none", color: textPrimary }} />
-                    <button type="button" onClick={addCustomTheme} style={{ marginLeft: 8, padding: "6px 12px", background: "#10b981", color: "#fff", border: "none", borderRadius: 20, fontSize: 13, cursor: "pointer" }}>추가</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
             {/* ── 구분선 ── */}
             <div style={{ borderTop: `1px dashed ${border}`, margin: "32px 0" }} />
 
@@ -1127,40 +1063,6 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
               </button>
             </div>
 
-            {/* 노출 범위 설정 */}
-            {userRole !== "user" && (
-              <div style={{ background: darkMode ? "#1a1b1e" : "#f9fafb", padding: "16px 20px", borderRadius: 10, border: `1px solid ${border}`, marginBottom: 24 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: textPrimary, marginBottom: 12 }}>주소 노출 범위 설정</div>
-                <div style={{ display: "flex", gap: 20 }}>
-                  {propertyType === "아파트·오피스텔" ? (
-                    <>
-                      <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14, cursor: "pointer" }}>
-                        <input type="radio" name="addressExposure" checked={addressExposure === "동/호수공개"} onChange={() => setAddressExposure("동/호수공개")} /> 동/호수공개
-                      </label>
-                      <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14, cursor: "pointer" }}>
-                        <input type="radio" name="addressExposure" checked={addressExposure === "동수공개"} onChange={() => setAddressExposure("동수공개")} /> 동수공개
-                      </label>
-                      <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14, cursor: "pointer" }}>
-                        <input type="radio" name="addressExposure" checked={addressExposure === "비공개"} onChange={() => setAddressExposure("비공개")} /> 비공개
-                      </label>
-                    </>
-                  ) : (
-                    <>
-                      <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14, cursor: "pointer" }}>
-                        <input type="radio" name="addressExposure" checked={addressExposure === "번지공개"} onChange={() => setAddressExposure("번지공개")} /> 번지공개
-                      </label>
-                      <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14, cursor: "pointer" }}>
-                        <input type="radio" name="addressExposure" checked={addressExposure === "본번지만공개"} onChange={() => setAddressExposure("본번지만공개")} /> 본번지만공개
-                      </label>
-                      <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14, cursor: "pointer" }}>
-                        <input type="radio" name="addressExposure" checked={addressExposure === "기본주소만공개"} onChange={() => setAddressExposure("기본주소만공개")} /> 기본주소만공개
-                      </label>
-                    </>
-                  )}
-                </div>
-              </div>
-            )}
-
             <div style={{ display: "flex", gap: 24, marginBottom: 16 }}>
               <div style={{ flex: 1 }}>
                 <label style={labelStyle}>시/도 {reqMark}</label>
@@ -1205,6 +1107,40 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                 </div>
               )}
             </div>
+
+            {/* 노출 범위 설정 */}
+            {userRole !== "user" && (
+              <div style={{ background: darkMode ? "#1a1b1e" : "#f9fafb", padding: "16px 20px", borderRadius: 10, border: `1px solid ${border}`, marginBottom: 24 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: textPrimary, marginBottom: 12 }}>주소 노출 범위 설정</div>
+                <div style={{ display: "flex", gap: 20 }}>
+                  {propertyType === "아파트·오피스텔" ? (
+                    <>
+                      <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14, cursor: "pointer" }}>
+                        <input type="radio" name="addressExposure" checked={addressExposure === "동/호수공개"} onChange={() => setAddressExposure("동/호수공개")} /> 동/호수공개
+                      </label>
+                      <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14, cursor: "pointer" }}>
+                        <input type="radio" name="addressExposure" checked={addressExposure === "동수공개"} onChange={() => setAddressExposure("동수공개")} /> 동수공개
+                      </label>
+                      <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14, cursor: "pointer" }}>
+                        <input type="radio" name="addressExposure" checked={addressExposure === "비공개"} onChange={() => setAddressExposure("비공개")} /> 비공개
+                      </label>
+                    </>
+                  ) : (
+                    <>
+                      <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14, cursor: "pointer" }}>
+                        <input type="radio" name="addressExposure" checked={addressExposure === "번지공개"} onChange={() => setAddressExposure("번지공개")} /> 번지공개
+                      </label>
+                      <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14, cursor: "pointer" }}>
+                        <input type="radio" name="addressExposure" checked={addressExposure === "본번지만공개"} onChange={() => setAddressExposure("본번지만공개")} /> 본번지만공개
+                      </label>
+                      <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14, cursor: "pointer" }}>
+                        <input type="radio" name="addressExposure" checked={addressExposure === "기본주소만공개"} onChange={() => setAddressExposure("기본주소만공개")} /> 기본주소만공개
+                      </label>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
 
             <div style={{ background: darkMode ? "#1e3a5f" : "#eff6ff", borderRadius: 8, padding: "12px 16px", marginBottom: 8, fontSize: 13, color: "#3b82f6", fontWeight: 600 }}>
               확인 주소: {(() => {
@@ -1299,6 +1235,102 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
               </div>
             )}
 
+            {/* ── 섹션 4: 상세 ── */}
+            <h2 style={{ fontSize: 20, fontWeight: 800, color: textPrimary, margin: "32px 0 24px", borderBottom: `2px solid ${textPrimary}`, paddingBottom: 16 }}>
+              상세 (특징, 전달사항 등)
+            </h2>
+            {/* ── 편의시설 / 옵션 ── */}
+            <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
+              <div style={{ flex: 1 }}>
+                <label style={labelStyle}>옵션</label>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 10, background: darkMode ? "#1a1b1e" : "#f9fafb", padding: 16, borderRadius: 8, border: `1px solid ${border}` }}>
+                  {currentOptionList.map(opt => (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => toggleOption(opt)}
+                      style={{
+                        padding: "6px 14px", borderRadius: 20, fontSize: 13, cursor: "pointer",
+                        border: selectedOptions.includes(opt) ? "1px solid #3b82f6" : `1px solid ${border}`,
+                        background: selectedOptions.includes(opt) ? (darkMode ? "#1e3a8a" : "#eff6ff") : cardBg,
+                        color: selectedOptions.includes(opt) ? "#3b82f6" : textSecondary,
+                        fontWeight: selectedOptions.includes(opt) ? 700 : 500,
+                        transition: "all 0.2s"
+                      }}
+                    >
+                      {opt} {selectedOptions.includes(opt) && "✓"}
+                    </button>
+                  ))}
+                  <div style={{ display: "flex", alignItems: "center", width: "100%", marginTop: 8 }}>
+                    <input type="text" placeholder="+ 옵션 직접 입력" value={customOptionInput} onChange={e => setCustomOptionInput(e.target.value)} onKeyDown={e => e.key === "Enter" && (e.preventDefault(), addCustomOption())}
+                      style={{ flex: 1, padding: "8px 12px", border: `1px dashed ${border}`, borderRadius: 20, fontSize: 13, background: "transparent", outline: "none", color: textPrimary }} />
+                    <button type="button" onClick={addCustomOption} style={{ marginLeft: 8, padding: "6px 12px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 20, fontSize: 13, cursor: "pointer" }}>추가</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* ── 테마 섹션 ── */}
+            <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
+              <div style={{ flex: 1 }}>
+                <label style={{ ...labelStyle, display: "flex", alignItems: "center", gap: 6 }}>
+                  테마 (해시태그) <span style={{ fontSize: 12, fontWeight: 500, color: textSecondary }}>홈페이지 및 목록에 노출됩니다</span>
+                </label>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 10, background: darkMode ? "#1a1b1e" : "#f0fdf4", padding: 16, borderRadius: 8, border: `1px solid ${darkMode ? "#333" : "#bbf7d0"}` }}>
+                  {currentThemeList.map(theme => (
+                    <button
+                      key={theme}
+                      type="button"
+                      onClick={() => toggleTheme(theme)}
+                      style={{
+                        padding: "6px 14px", borderRadius: 20, fontSize: 13, cursor: "pointer",
+                        border: selectedThemes.includes(theme) ? "1px solid #10b981" : `1px solid ${border}`,
+                        background: selectedThemes.includes(theme) ? (darkMode ? "#064e3b" : "#d1fae5") : cardBg,
+                        color: selectedThemes.includes(theme) ? "#10b981" : textSecondary,
+                        fontWeight: selectedThemes.includes(theme) ? 700 : 500,
+                        transition: "all 0.2s"
+                      }}
+                    >
+                      # {theme} {selectedThemes.includes(theme) && "✓"}
+                    </button>
+                  ))}
+                  <div style={{ display: "flex", alignItems: "center", width: "100%", marginTop: 8 }}>
+                    <input type="text" placeholder="+ 테마 직접 입력" value={customThemeInput} onChange={e => setCustomThemeInput(e.target.value)} onKeyDown={e => e.key === "Enter" && (e.preventDefault(), addCustomTheme())}
+                      style={{ flex: 1, padding: "8px 12px", border: `1px dashed ${darkMode ? "#444" : "#86efac"}`, borderRadius: 20, fontSize: 13, background: "transparent", outline: "none", color: textPrimary }} />
+                    <button type="button" onClick={addCustomTheme} style={{ marginLeft: 8, padding: "6px 12px", background: "#10b981", color: "#fff", border: "none", borderRadius: 20, fontSize: 13, cursor: "pointer" }}>추가</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* ── 전달사항 ── */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-start", gap: 12, marginTop: 32, marginBottom: 10 }}>
+              <label style={{ ...labelStyle, margin: 0 }}>전달사항 (특징, 입주일 등)</label>
+              <button 
+                type="button" 
+                onClick={handleGenerateAI}
+                disabled={isAIGenerating}
+                style={{ 
+                  height: 32, padding: "0 14px", border: "none", borderRadius: 8, 
+                  background: isAIGenerating ? "#e5e7eb" : (darkMode ? "#3b2f1e" : "#fef3c7"), 
+                  cursor: isAIGenerating ? "not-allowed" : "pointer", 
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 13, fontWeight: 700, 
+                  color: isAIGenerating ? "#9ca3af" : "#d97706", transition: "all 0.2s" 
+                }} 
+                onMouseEnter={e => !isAIGenerating && (e.currentTarget.style.opacity = "0.8")} 
+                onMouseLeave={e => !isAIGenerating && (e.currentTarget.style.opacity = "1")}
+              >
+                {isAIGenerating ? "⏳ 멘트 생성 중..." : "✨ AI 멘트 마법사"}
+              </button>
+            </div>
+            <textarea
+              placeholder="공실광고의 특징, 입주 가능일 등 상세 내용을 입력해주세요."
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={6}
+              style={{ ...inputStyle, height: "auto", padding: "14px 16px", resize: "vertical", fontFamily: "inherit", lineHeight: 1.6 }}
+            />
+
             {/* ── 섹션 3: 사진 ── */}
             <h2 style={{ fontSize: 20, fontWeight: 800, color: textPrimary, margin: "32px 0 24px", borderBottom: `2px solid ${textPrimary}`, paddingBottom: 16 }}>
               사진 (최대 5장)
@@ -1350,38 +1382,6 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
             <div style={{ background: darkMode ? "#1a1b1e" : "#fffbeb", borderRadius: 8, padding: "10px 14px", fontSize: 12, color: "#92400e", lineHeight: 1.5, marginBottom: 32 }}>
               💡 <strong>Tip:</strong> 드래그 앤 드롭으로 방 사진을 편리하게 추가하세요. 사진은 워터마크가 자동으로 적용됩니다.
             </div>
-
-            {/* ── 섹션 4: 상세 ── */}
-            <h2 style={{ fontSize: 20, fontWeight: 800, color: textPrimary, margin: "32px 0 24px", borderBottom: `2px solid ${textPrimary}`, paddingBottom: 16 }}>
-              상세 (특징, 전달사항 등)
-            </h2>
-            {/* ── 전달사항 ── */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-start", gap: 12, marginTop: 32, marginBottom: 10 }}>
-              <label style={{ ...labelStyle, margin: 0 }}>전달사항 (특징, 입주일 등)</label>
-              <button 
-                type="button" 
-                onClick={handleGenerateAI}
-                disabled={isAIGenerating}
-                style={{ 
-                  height: 32, padding: "0 14px", border: "none", borderRadius: 8, 
-                  background: isAIGenerating ? "#e5e7eb" : (darkMode ? "#3b2f1e" : "#fef3c7"), 
-                  cursor: isAIGenerating ? "not-allowed" : "pointer", 
-                  display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 13, fontWeight: 700, 
-                  color: isAIGenerating ? "#9ca3af" : "#d97706", transition: "all 0.2s" 
-                }} 
-                onMouseEnter={e => !isAIGenerating && (e.currentTarget.style.opacity = "0.8")} 
-                onMouseLeave={e => !isAIGenerating && (e.currentTarget.style.opacity = "1")}
-              >
-                {isAIGenerating ? "⏳ 멘트 생성 중..." : "✨ AI 멘트 마법사"}
-              </button>
-            </div>
-            <textarea
-              placeholder="공실광고의 특징, 입주 가능일 등 상세 내용을 입력해주세요."
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={6}
-              style={{ ...inputStyle, height: "auto", padding: "14px 16px", resize: "vertical", fontFamily: "inherit", lineHeight: 1.6 }}
-            />
 
             {userRole !== "realtor" ? (
               <>
