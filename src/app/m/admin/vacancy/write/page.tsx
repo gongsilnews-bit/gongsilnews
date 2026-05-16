@@ -3,9 +3,8 @@
 import React, { useState, useEffect, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
-import { createVacancy, updateVacancy, getVacancyDetail, saveVacancyPhoto } from "@/app/actions/vacancy";
+import { createVacancy, updateVacancy, getVacancyDetail, saveVacancyPhoto, uploadVacancyPhoto } from "@/app/actions/vacancy";
 import { getPhotoLibrary, togglePhotoFavorite } from "@/app/actions/article";
-import { uploadVacancyPhotoDirect } from "@/utils/uploadDirect";
 import { geocodeAddress } from "@/app/actions/geocode";
 
 const SUB_CATEGORIES: Record<string, string[]> = {
@@ -501,28 +500,28 @@ function MobileVacancyWrite() {
       // 사진 처리: 새 사진이 추가되었거나 기존 사진이 변경된 경우
       if (result.id && photos.length > 0) {
         const startIdx = existingPhotoUrls.length;
-        let photoErrors = 0;
+        let photoErrors: string[] = [];
         for (let i = 0; i < photos.length; i++) {
           try {
             const path = `${result.id}/${startIdx + i}_${Date.now()}.webp`;
-            const up = await uploadVacancyPhotoDirect(photos[i], path);
+            const formData = new FormData();
+            formData.append('file', photos[i]);
+            formData.append('path', path);
+            const up = await uploadVacancyPhoto(formData);
             if (up.success && up.url) {
               const saveRes = await saveVacancyPhoto(result.id, up.url, startIdx + i);
               if (!saveRes.success) {
-                console.error('[사진 DB 저장 실패]', saveRes.error);
-                photoErrors++;
+                photoErrors.push(`DB저장: ${saveRes.error}`);
               }
             } else {
-              console.error('[사진 업로드 실패]', up.error);
-              photoErrors++;
+              photoErrors.push(`업로드: ${up.error}`);
             }
           } catch (e: any) {
-            console.error('[사진 처리 오류]', e.message);
-            photoErrors++;
+            photoErrors.push(`오류: ${e.message}`);
           }
         }
-        if (photoErrors > 0) {
-          alert(`사진 ${photoErrors}장 저장에 문제가 있었습니다. 수정 화면에서 다시 확인해주세요.`);
+        if (photoErrors.length > 0) {
+          alert(`사진 저장 오류:\n${photoErrors.join('\n')}`);
         }
       }
 
