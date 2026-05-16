@@ -567,7 +567,7 @@ function MobileVacancyWrite() {
       }
 
       alert(status === "DRAFT" ? "임시저장 완료!" : editId ? "수정 완료!" : "등록 완료! 광고가 바로 시작됩니다.");
-      router.push("/m/admin/vacancy");
+      router.replace("/m/admin/vacancy");
     } catch (err: any) { alert("오류: " + err.message); } finally { setSubmitting(false); }
   };
 
@@ -638,7 +638,7 @@ function MobileVacancyWrite() {
     <div style={{ minHeight:"100dvh", background:"#f4f5f7", fontFamily:"'Pretendard Variable', -apple-system, sans-serif" }}>
       {/* 헤더 */}
       <div style={{ position:"fixed", top:0, left:0, right:0, zIndex:50, background:"#fff", borderBottom:"1px solid #e5e7eb", padding:"0 16px", height:56, display:"flex", alignItems:"center", gap:12 }}>
-        <button onClick={() => { if (currentStep > 1) { setCurrentStep(s=>s-1); } else { router.push("/m/admin/vacancy"); }}} style={{ background:"none", border:"none", cursor:"pointer", padding:4, display:"flex" }}>
+        <button onClick={() => { if (currentStep > 1) { setCurrentStep(s=>s-1); } else { router.replace("/m/admin/vacancy"); }}} style={{ background:"none", border:"none", cursor:"pointer", padding:4, display:"flex" }}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M15 18L9 12L15 6" stroke="#333" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </button>
         <h1 style={{ fontSize:18, fontWeight:800, color:"#111", margin:0, flex:1 }}>{editId ? "공실수정" : "공실등록"} <span style={{fontSize:13, color:"#6b7280", fontWeight:600}}>({currentStep}/{TOTAL_STEPS})</span></h1>
