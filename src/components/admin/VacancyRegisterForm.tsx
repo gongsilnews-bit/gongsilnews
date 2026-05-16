@@ -1356,27 +1356,40 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
             <h2 style={{ fontSize: 20, fontWeight: 800, color: textPrimary, margin: "32px 0 24px", borderBottom: `2px solid ${textPrimary}`, paddingBottom: 16 }}>
               사진 (최대 5장)
             </h2>
-            {/* 포토DB 간편검색 */}
-            <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "16px 0 20px" }}>
-              <input type="text" placeholder="포토DB 간편검색" value={photoDbSearch} onChange={e => setPhotoDbSearch(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handlePhotoDbSearch(e); } }} onClick={openPhotoDbModal} style={{ ...inputStyle, height: 40, flex: 1 }} />
-              <button type="button" onClick={openPhotoDbModal} style={{ width: 40, height: 40, border: `1px solid ${border}`, borderRadius: 8, background: cardBg, cursor: "pointer", fontSize: 18, display: "flex", alignItems: "center", justifyContent: "center" }}>🔍</button>
-            </div>
+            {/* ── 사진 등록 컨트롤 (포토DB + 드래그앤드롭) ── */}
+            <div style={{ display: "flex", gap: 24, marginBottom: 16 }}>
+              {/* 왼쪽: 포토DB 간편검색 */}
+              <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: textPrimary, marginBottom: 10 }}>포토DB에서 불러오기</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <input type="text" placeholder="포토DB 간편검색" value={photoDbSearch} onChange={e => setPhotoDbSearch(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handlePhotoDbSearch(e); } }} onClick={openPhotoDbModal} style={{ ...inputStyle, height: 48, flex: 1 }} />
+                  <button type="button" onClick={openPhotoDbModal} style={{ width: 48, height: 48, border: `1px solid ${border}`, borderRadius: 8, background: cardBg, cursor: "pointer", fontSize: 18, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>🔍</button>
+                </div>
+                <div style={{ fontSize: 12, color: textSecondary, marginTop: 10, lineHeight: 1.5 }}>
+                  * 키워드를 검색하거나 돋보기를 클릭하여<br/>기존 포토DB에 저장된 사진을 간편하게 추가하세요.
+                </div>
+              </div>
 
-            {/* 사진 등록 영역 */}
-            <div
-              style={{
-                border: `2px dashed ${border}`, borderRadius: 12, padding: "40px 20px",
-                textAlign: "center", cursor: "pointer", marginBottom: 16,
-                transition: "border-color 0.2s, background 0.2s",
-              }}
-              onDragOver={(e) => { e.preventDefault(); e.currentTarget.style.borderColor = "#3b82f6"; e.currentTarget.style.background = darkMode ? "#1e3a5f" : "#eff6ff"; }}
-              onDragLeave={(e) => { e.currentTarget.style.borderColor = border; e.currentTarget.style.background = "transparent"; }}
-              onDrop={(e) => { e.preventDefault(); e.currentTarget.style.borderColor = border; e.currentTarget.style.background = "transparent"; const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith("image/")); addPhotos(files); }}
-              onClick={() => { const input = document.createElement("input"); input.type = "file"; input.accept = "image/*"; input.multiple = true; input.onchange = (e: any) => { const files = Array.from(e.target.files || []) as File[]; addPhotos(files); }; input.click(); }}
-            >
-              <div style={{ fontSize: 36, color: "#9ca3af", marginBottom: 8 }}>☁️</div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: textPrimary }}>사진 마우스 끌어오기</div>
-              <div style={{ fontSize: 12, color: textSecondary, marginTop: 4 }}>또는 클릭하여 업로드 (자동 압축)</div>
+              {/* 오른쪽: 사진 마우스 끌어오기 */}
+              <div style={{ flex: 1.5, display: "flex", flexDirection: "column" }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: textPrimary, marginBottom: 10 }}>내 PC에서 직접 업로드</div>
+                <div
+                  style={{
+                    border: `2px dashed ${border}`, borderRadius: 12, padding: "24px 20px",
+                    textAlign: "center", cursor: "pointer", flex: 1, minHeight: 120,
+                    display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center",
+                    transition: "border-color 0.2s, background 0.2s", boxSizing: "border-box"
+                  }}
+                  onDragOver={(e) => { e.preventDefault(); e.currentTarget.style.borderColor = "#3b82f6"; e.currentTarget.style.background = darkMode ? "#1e3a5f" : "#eff6ff"; }}
+                  onDragLeave={(e) => { e.currentTarget.style.borderColor = border; e.currentTarget.style.background = "transparent"; }}
+                  onDrop={(e) => { e.preventDefault(); e.currentTarget.style.borderColor = border; e.currentTarget.style.background = "transparent"; const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith("image/")); addPhotos(files); }}
+                  onClick={() => { const input = document.createElement("input"); input.type = "file"; input.accept = "image/*"; input.multiple = true; input.onchange = (e: any) => { const files = Array.from(e.target.files || []) as File[]; addPhotos(files); }; input.click(); }}
+                >
+                  <div style={{ fontSize: 28, color: "#9ca3af", marginBottom: 8 }}>☁️</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: textPrimary }}>사진 마우스 끌어오기</div>
+                  <div style={{ fontSize: 12, color: textSecondary, marginTop: 4 }}>또는 클릭하여 업로드 (자동 압축)</div>
+                </div>
+              </div>
             </div>
 
             {/* 업로드된 사진 미리보기 */}
