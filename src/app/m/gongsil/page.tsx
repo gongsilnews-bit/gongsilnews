@@ -155,8 +155,8 @@ function MobileGongsilContent() {
       const client = createClient();
       const { data } = await client.auth.getUser();
       if (data?.user) {
-        setCurrentUser(data.user);
         const { data: memberData } = await client.from('members').select('role, plan_type').eq('id', data.user.id).single();
+        setCurrentUser({ ...data.user, role: memberData?.role });
         if (memberData) {
           setUserLevel(getPermissionLevel(memberData));
         } else {
@@ -1298,6 +1298,7 @@ function MobileGongsilContent() {
       )}
 
       {/* 🛑 6월 1일 오픈 전 가림막 (오버레이) */}
+      {(!currentUser || (currentUser.role !== 'ADMIN' && (!selectedVacancy || selectedVacancy.owner_id !== currentUser.id))) && (
       <div style={{
         position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', 
         backgroundColor: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(8px)',
@@ -1335,6 +1336,7 @@ function MobileGongsilContent() {
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 }

@@ -533,9 +533,9 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
       const client = createClient();
       const { data } = await client.auth.getUser();
       if (data?.user) {
-        setCurrentUser(data.user);
         // 회원 레벨 산출
         const { data: memberData } = await client.from('members').select('role, plan_type').eq('id', data.user.id).single();
+        setCurrentUser({ ...data.user, role: memberData?.role });
         if (memberData) {
           setUserLevel(getPermissionLevel(memberData));
         } else {
@@ -2653,6 +2653,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
         />
       )}
       {/* 🛑 6월 1일 오픈 전 가림막 (오버레이) */}
+      {(!currentUser || (currentUser.role !== 'ADMIN' && (!activeProperty || dbVacancies.find(v => v.id === activeProperty)?.owner_id !== currentUser.id))) && (
       <div style={{
         position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', 
         backgroundColor: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(8px)',
@@ -2690,6 +2691,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
           </div>
         </div>
       </div>
+      )}
 
       <style>{`
         @keyframes toastFadeIn { from { opacity: 0; transform: translateX(-50%) translateY(-10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
