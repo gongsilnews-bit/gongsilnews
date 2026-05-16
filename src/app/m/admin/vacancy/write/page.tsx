@@ -124,6 +124,7 @@ function MobileVacancyWrite() {
   // 사진
   const [photos, setPhotos] = useState<File[]>([]);
   const [photoPreview, setPhotoPreview] = useState<string[]>([]);
+  const [existingPhotoUrls, setExistingPhotoUrls] = useState<string[]>([]); // 수정 모드: DB 기존 사진 URL
 
   /* ── 포토 DB 상태 ── */
   const [showPhotoDbModal, setShowPhotoDbModal] = useState(false);
@@ -210,6 +211,13 @@ function MobileVacancyWrite() {
         if (d.options) setSelectedOptions(d.options);
         if (d.themes) setSelectedThemes(d.themes);
         if (d.infrastructure) setInfrastructure(d.infrastructure);
+        // 기존 사진 로드
+        if (d.vacancy_photos && d.vacancy_photos.length > 0) {
+          const sorted = [...d.vacancy_photos].sort((a: any, b: any) => a.sort_order - b.sort_order);
+          const urls = sorted.map((p: any) => p.url);
+          setExistingPhotoUrls(urls);
+          setPhotoPreview(urls);
+        }
       }
       setLoadingEdit(false);
     })();
@@ -400,12 +408,25 @@ function MobileVacancyWrite() {
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
-    const files = Array.from(e.target.files).slice(0, 5 - photos.length);
+    const totalCount = existingPhotoUrls.length + photos.length;
+    const files = Array.from(e.target.files).slice(0, 5 - totalCount);
     setPhotos(prev => [...prev, ...files]);
     files.forEach(f => { const r = new FileReader(); r.onload = () => setPhotoPreview(prev => [...prev, r.result as string]); r.readAsDataURL(f); });
   };
 
-  const removePhoto = (i: number) => { setPhotos(prev => prev.filter((_,idx) => idx!==i)); setPhotoPreview(prev => prev.filter((_,idx) => idx!==i)); };
+  const removePhoto = (i: number) => {
+    const existingCount = existingPhotoUrls.length;
+    if (i < existingCount) {
+      // 기존 DB 사진 삭제
+      setExistingPhotoUrls(prev => prev.filter((_,idx) => idx!==i));
+      setPhotoPreview(prev => prev.filter((_,idx) => idx!==i));
+    } else {
+      // 새로 추가한 사진 삭제
+      const newIdx = i - existingCount;
+      setPhotos(prev => prev.filter((_,idx) => idx!==newIdx));
+      setPhotoPreview(prev => prev.filter((_,idx) => idx!==i));
+    }
+  };
 
   const formatKorean = (v: string) => {
     const n = parseInt(v); if (isNaN(n) || n<=0) return "";
@@ -463,11 +484,16 @@ function MobileVacancyWrite() {
 
       if (!result.success) { alert("실패: " + result.error); return; }
 
-      if (photos.length > 0 && result.id) {
-        for (let i = 0; i < photos.length; i++) {
-          const path = `${result.id}/${i}_${Date.now()}.webp`;
-          const up = await uploadVacancyPhotoDirect(photos[i], path);
-          if (up.success && up.url) await saveVacancyPhoto(result.id, up.url, i);
+      // 사진 처리: 새 사진이 추가되었거나 기존 사진이 변경된 경우
+      if (result.id) {
+        // 수정 모드: 기존 사진 유지 + 새 사진 업로드
+        const startIdx = existingPhotoUrls.length;
+        if (photos.length > 0) {
+          for (let i = 0; i < photos.length; i++) {
+            const path = `${result.id}/${startIdx + i}_${Date.now()}.webp`;
+            const up = await uploadVacancyPhotoDirect(photos[i], path);
+            if (up.success && up.url) await saveVacancyPhoto(result.id, up.url, startIdx + i);
+          }
         }
       }
 
@@ -802,7 +828,7 @@ function MobileVacancyWrite() {
 
         {/* 6. 사진 */}
         <div style={{ background:"#fff", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.05)" }}>
-          <div style={{ fontSize:16, fontWeight:800, color:"#111", marginBottom:14 }}>📸 사진 ({photos.length}/5)</div>
+          <div style={{ fontSize:16, fontWeight:800, color:"#111", marginBottom:14 }}>📸 사진 ({photoPreview.length}/5)</div>
           <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:10 }}>
             {photoPreview.map((src,i) => (
               <div key={i} style={{ position:"relative", width:80, height:80, borderRadius:10, overflow:"hidden" }}>
@@ -810,7 +836,7 @@ function MobileVacancyWrite() {
                 <button onClick={()=>removePhoto(i)} style={{ position:"absolute", top:2, right:2, width:22, height:22, borderRadius:"50%", background:"rgba(0,0,0,0.6)", color:"#fff", border:"none", fontSize:12, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>✕</button>
               </div>
             ))}
-            {photos.length < 5 && (
+            {photoPreview.length < 5 && (
               <>
                 <label style={{ width:80, height:80, borderRadius:10, border:"2px dashed #d1d5db", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", fontSize:28, color:"#9ca3af" }}>
                   +<input type="file" accept="image/*" multiple hidden onChange={handlePhotoChange}/>
@@ -840,7 +866,7 @@ function MobileVacancyWrite() {
             <div style={{ display:"flex", justifyContent:"space-between" }}><span style={{color:"#6b7280"}}>면적</span><span style={{fontWeight:700}}>{exclusiveM2 ? `전용 ${exclusiveM2}m²` : "미입력"}{supplyM2 ? ` / 공급 ${supplyM2}m²` : ""}</span></div>
             {!isCommercial && <div style={{ display:"flex", justifyContent:"space-between" }}><span style={{color:"#6b7280"}}>방/욕실/방향</span><span style={{fontWeight:700}}>{roomCount}방 {bathCount}욕실 {direction}</span></div>}
             <div style={{ borderTop:"1px dashed #e5e7eb", paddingTop:10 }} />
-            <div style={{ display:"flex", justifyContent:"space-between" }}><span style={{color:"#6b7280"}}>사진</span><span style={{fontWeight:700}}>{photos.length}장 등록됨</span></div>
+            <div style={{ display:"flex", justifyContent:"space-between" }}><span style={{color:"#6b7280"}}>사진</span><span style={{fontWeight:700}}>{photoPreview.length}장 등록됨</span></div>
             <div style={{ display:"flex", justifyContent:"space-between" }}><span style={{color:"#6b7280"}}>좌표</span><span style={{fontWeight:700, color: coords ? "#10b981" : "#ef4444"}}>{coords ? "✓ 설정됨" : "✗ 미설정"}</span></div>
             {selectedThemes.length > 0 && <div style={{ display:"flex", justifyContent:"space-between", flexWrap:"wrap" }}><span style={{color:"#6b7280"}}>테마</span><span style={{fontWeight:600, color:"#3b82f6"}}>{selectedThemes.map(t=>`#${t}`).join(" ")}</span></div>}
           </div>
