@@ -7,6 +7,7 @@ import { createVacancy, syncVacancyPhotos, updateVacancy, uploadVacancyPhoto } f
 import { getPhotoLibrary, togglePhotoFavorite } from "@/app/actions/article";
 import { extractPropertyInfoFromImage } from "@/app/actions/ai";
 import { generatePropertyDescription } from "@/app/actions/gemini";
+import { useRouter } from "next/navigation";
 
 /* ──────────────────────────────────────────────
    공실등록 폼 컴포넌트 (register.html 1:1 복제)
@@ -37,6 +38,8 @@ const SUB_CATEGORIES: Record<string, string[]> = {
 const COMMERCIAL_CATEGORY = "상가·사무실·건물·공장·토지";
 
 export default function VacancyRegisterForm({ onBack, darkMode = false, userRole = "admin", initialClientName = "", initialClientPhone = "", ownerId = "", editData }: VacancyRegisterFormProps) {
+  const router = useRouter();
+
   // ── 상태 관리 ──
   const [propertyType, setPropertyType] = useState<string>("아파트·오피스텔");
   const [subCategory, setSubCategory] = useState<string>("아파트");
@@ -203,13 +206,32 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
   const [exposureType, setExposureType] = useState("부동산노출"); // Default changed
   
   // 수정 가능한 부동산/기업정보
-  const [rCompany, setRCompany] = useState("착한임대부동산");
-  const [rRegNum, setRRegNum] = useState("1666-4414411");
-  const [rBoss, setRBoss] = useState("김동현");
-  const [rBizNum, setRBizNum] = useState("211-33-21777");
-  const [rTel, setRTel] = useState("02-541-1611");
-  const [rCell, setRCell] = useState("02-541-1611");
-  const [rAddr, setRAddr] = useState("서울 강남구 논현동 189-13");
+  const [rCompany, setRCompany] = useState("");
+  const [rRegNum, setRRegNum] = useState("");
+  const [rBoss, setRBoss] = useState("");
+  const [rBizNum, setRBizNum] = useState("");
+  const [rTel, setRTel] = useState("");
+  const [rCell, setRCell] = useState("");
+  const [rAddr, setRAddr] = useState("");
+
+  useEffect(() => {
+    if (userRole === "realtor" && ownerId) {
+      const fetchAgency = async () => {
+        const supabase = createClient();
+        const { data } = await supabase.from('agencies').select('*').eq('owner_id', ownerId).single();
+        if (data) {
+          if (data.name) setRCompany(data.name);
+          if (data.reg_num) setRRegNum(data.reg_num);
+          if (data.ceo_name) setRBoss(data.ceo_name);
+          if (data.biz_num) setRBizNum(data.biz_num);
+          if (data.phone) setRTel(data.phone);
+          if (data.cell) setRCell(data.cell);
+          if (data.address) setRAddr(data.address + (data.address_detail ? ` ${data.address_detail}` : ''));
+        }
+      };
+      fetchAgency();
+    }
+  }, [userRole, ownerId]);
 
   const [landlordName, setLandlordName] = useState("");
   const [landlordPhone, setLandlordPhone] = useState("");
@@ -1484,36 +1506,40 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                 <div style={{ background: darkMode ? "#1a1b1e" : "#f0f2f5", padding: "20px 24px", borderRadius: 10, border: `1px solid ${border}`, marginBottom: 24 }}>
                   <h3 style={{ fontSize: 15, fontWeight: 800, margin: "0 0 16px", display: "flex", gap: 8, alignItems: "center" }}>
                     <span>🏘️</span> 부동산 / 기업 정보
+                    <button type="button" onClick={() => router.push("/realty_admin?menu=settings&tab=agency")} style={{ marginLeft: "auto", padding: "4px 12px", fontSize: 12, fontWeight: 700, color: "#e11d48", background: "#ffe4e6", border: "1px solid #fda4af", borderRadius: 6, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                      수정
+                    </button>
                   </h3>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px 24px", marginBottom: 16 }}>
                     <div>
                       <label style={{ ...labelStyle, fontSize: 12, marginBottom: 6 }}>상호명</label>
-                      <input type="text" value={rCompany} onChange={(e) => setRCompany(e.target.value)} style={{ ...inputStyle, background: cardBg, color: textPrimary }} />
+                      <input type="text" value={rCompany} readOnly style={{ ...inputStyle, background: darkMode ? "#333" : "#e5e7eb", color: darkMode ? "#9ca3af" : "#6b7280" }} />
                     </div>
                     <div>
                       <label style={{ ...labelStyle, fontSize: 12, marginBottom: 6 }}>중개등록번호</label>
-                      <input type="text" value={rRegNum} onChange={(e) => setRRegNum(e.target.value)} style={{ ...inputStyle, background: cardBg, color: textPrimary }} />
+                      <input type="text" value={rRegNum} readOnly style={{ ...inputStyle, background: darkMode ? "#333" : "#e5e7eb", color: darkMode ? "#9ca3af" : "#6b7280" }} />
                     </div>
                     <div>
                       <label style={{ ...labelStyle, fontSize: 12, marginBottom: 6 }}>대표자명</label>
-                      <input type="text" value={rBoss} onChange={(e) => setRBoss(e.target.value)} style={{ ...inputStyle, background: cardBg, color: textPrimary }} />
+                      <input type="text" value={rBoss} readOnly style={{ ...inputStyle, background: darkMode ? "#333" : "#e5e7eb", color: darkMode ? "#9ca3af" : "#6b7280" }} />
                     </div>
                     <div>
                       <label style={{ ...labelStyle, fontSize: 12, marginBottom: 6 }}>사업자등록번호</label>
-                      <input type="text" value={rBizNum} onChange={(e) => setRBizNum(e.target.value)} style={{ ...inputStyle, background: cardBg, color: textPrimary }} />
+                      <input type="text" value={rBizNum} readOnly style={{ ...inputStyle, background: darkMode ? "#333" : "#e5e7eb", color: darkMode ? "#9ca3af" : "#6b7280" }} />
                     </div>
                     <div>
                       <label style={{ ...labelStyle, fontSize: 12, marginBottom: 6 }}>일반번호</label>
-                      <input type="text" value={rTel} onChange={(e) => setRTel(e.target.value)} style={{ ...inputStyle, background: cardBg, color: textPrimary }} />
+                      <input type="text" value={rTel} readOnly style={{ ...inputStyle, background: darkMode ? "#333" : "#e5e7eb", color: darkMode ? "#9ca3af" : "#6b7280" }} />
                     </div>
                     <div>
                       <label style={{ ...labelStyle, fontSize: 12, marginBottom: 6 }}>휴대번호</label>
-                      <input type="text" value={rCell} onChange={(e) => setRCell(e.target.value)} style={{ ...inputStyle, background: cardBg, color: textPrimary }} />
+                      <input type="text" value={rCell} readOnly style={{ ...inputStyle, background: darkMode ? "#333" : "#e5e7eb", color: darkMode ? "#9ca3af" : "#6b7280" }} />
                     </div>
                   </div>
                   <div>
                     <label style={{ ...labelStyle, fontSize: 12, marginBottom: 6 }}>부동산 주소</label>
-                    <input type="text" value={rAddr} onChange={(e) => setRAddr(e.target.value)} style={{ ...inputStyle, background: cardBg, color: textPrimary }} />
+                    <input type="text" value={rAddr} readOnly style={{ ...inputStyle, background: darkMode ? "#333" : "#e5e7eb", color: darkMode ? "#9ca3af" : "#6b7280" }} />
                   </div>
                 </div>
 
