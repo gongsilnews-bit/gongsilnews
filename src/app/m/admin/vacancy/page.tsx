@@ -259,9 +259,12 @@ function MobileVacancyAdmin() {
                       {st.label}
                     </span>
                   )}
-                  <span style={{ fontSize: 13, color: "#374151", fontWeight: 700 }}>{row.sub_category || row.property_type}</span>
+                  <span style={{ fontSize: 13, color: "#374151", fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}>
+                    {row.sub_category || row.property_type}
+                    <span style={{ color: "#ef4444", fontSize: 12 }}>No.{row.vacancy_no || "-"}</span>
+                  </span>
                 </div>
-                <span style={{ fontSize: 11, color: "#9ca3af" }}>#{row.vacancy_no || "-"} · {daysSinceCreated}일</span>
+                <span style={{ fontSize: 11, color: "#9ca3af" }}>{daysSinceCreated}일</span>
               </div>
 
               {/* 주소 */}
