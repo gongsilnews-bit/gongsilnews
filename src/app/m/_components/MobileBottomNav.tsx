@@ -10,6 +10,10 @@ function MobileBottomNavContent() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const tab = searchParams.get('tab');
+
+  // 공실등록/수정 페이지에서는 전역 탭바 숨김 (폼 전용 BottomNav 사용)
+  if (pathname.startsWith('/m/admin/vacancy/write')) return null;
+
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [profileImg, setProfileImg] = useState<string | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
