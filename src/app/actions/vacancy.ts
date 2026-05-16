@@ -161,6 +161,29 @@ export async function saveVacancyPhoto(vacancyId: string, url: string, sortOrder
   }
 }
 
+// ── 공실 사진 전체 동기화 (기존 데이터 삭제 후 새로 삽입) ──
+export async function syncVacancyPhotos(vacancyId: string, urls: string[]) {
+  const supabase = getAdminClient();
+  try {
+    // 1. 기존 사진 삭제
+    await supabase.from('vacancy_photos').delete().eq('vacancy_id', vacancyId);
+    
+    // 2. 새 사진 URL 삽입
+    if (urls.length > 0) {
+      const insertData = urls.map((url, i) => ({
+        vacancy_id: vacancyId,
+        url,
+        sort_order: i
+      }));
+      const { error } = await supabase.from('vacancy_photos').insert(insertData);
+      if (error) return { success: false, error: error.message };
+    }
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
 // ── 공실 목록 조회 ──
 export async function getVacancies(options?: {
   ownerId?: string;

@@ -3,7 +3,7 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { geocodeAddress } from "@/app/actions/geocode";
 import { createClient } from "@/utils/supabase/client";
-import { createVacancy, saveVacancyPhoto, updateVacancy } from "@/app/actions/vacancy";
+import { createVacancy, syncVacancyPhotos, updateVacancy } from "@/app/actions/vacancy";
 import { getPhotoLibrary, togglePhotoFavorite } from "@/app/actions/article";
 import { uploadVacancyPhotoDirect } from "@/utils/uploadDirect";
 import { extractPropertyInfoFromImage } from "@/app/actions/ai";
@@ -193,6 +193,10 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
     if (editData.lat && editData.lng) setCoords({ lat: editData.lat, lng: editData.lng });
     if (editData.infrastructure) setInfrastructure(editData.infrastructure);
     if (editData.consent !== undefined) setConsent(editData.consent);
+    if (editData.vacancy_photos && editData.vacancy_photos.length > 0) {
+      const sorted = [...editData.vacancy_photos].sort((a: any, b: any) => a.sort_order - b.sort_order);
+      setExistingPhotoUrls(sorted.map((p: any) => p.url));
+    }
   }, [editData]);
 
   // 부동산 회원 전용 (Landlord/Realtor info)
@@ -222,6 +226,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
 
   // 사진
   const [photos, setPhotos] = useState<File[]>([]);
+  const [existingPhotoUrls, setExistingPhotoUrls] = useState<string[]>([]);
 
   /* ── 이전 공실광고 모달 상태 ── */
   const [showPrevMenuModal, setShowPrevMenuModal] = useState(false);
@@ -282,6 +287,10 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
     if (editData.lat && editData.lng) setCoords({ lat: editData.lat, lng: editData.lng });
     if (editData.infrastructure) setInfrastructure(editData.infrastructure);
     if (editData.consent !== undefined) setConsent(editData.consent);
+    if (editData.vacancy_photos && editData.vacancy_photos.length > 0) {
+      const sorted = [...editData.vacancy_photos].sort((a: any, b: any) => a.sort_order - b.sort_order);
+      setExistingPhotoUrls(sorted.map((p: any) => p.url));
+    }
     
     setShowPrevMenuModal(false);
   };
@@ -381,8 +390,11 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
   };
 
   const addPhotos = async (files: File[]) => {
-    const compressed = await Promise.all(files.map(f => compressToWebP(f)));
-    setPhotos(prev => [...prev, ...compressed].slice(0, 5));
+    const totalCount = existingPhotoUrls.length + photos.length;
+    if (totalCount >= 5) { alert('사진은 최대 5장까지만 등록 가능합니다.'); return; }
+    const allowedFiles = files.slice(0, 5 - totalCount);
+    const compressed = await Promise.all(allowedFiles.map(f => compressToWebP(f)));
+    setPhotos(prev => [...prev, ...compressed]);
   };
 
   // ── 면적 자동 변환 ──
@@ -1315,10 +1327,17 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
             </div>
 
             {/* 업로드된 사진 미리보기 */}
-            {photos.length > 0 && (
+            {(existingPhotoUrls.length > 0 || photos.length > 0) && (
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
+                {existingPhotoUrls.map((url, i) => (
+                  <div key={`exist-${i}`} style={{ width: 64, height: 64, borderRadius: 8, overflow: "hidden", position: "relative", border: `1px solid ${border}` }}>
+                    <img src={url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    <button type="button" onClick={() => setExistingPhotoUrls(prev => prev.filter((_, j) => j !== i))}
+                      style={{ position: "absolute", top: 2, right: 2, width: 18, height: 18, borderRadius: "50%", background: "rgba(0,0,0,0.5)", color: "#fff", border: "none", fontSize: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+                  </div>
+                ))}
                 {photos.map((p, i) => (
-                  <div key={i} style={{ width: 64, height: 64, borderRadius: 8, overflow: "hidden", position: "relative", border: `1px solid ${border}` }}>
+                  <div key={`new-${i}`} style={{ width: 64, height: 64, borderRadius: 8, overflow: "hidden", position: "relative", border: `1px solid ${border}` }}>
                     <img src={URL.createObjectURL(p)} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     <button type="button" onClick={() => setPhotos(prev => prev.filter((_, j) => j !== i))}
                       style={{ position: "absolute", top: 2, right: 2, width: 18, height: 18, borderRadius: "50%", background: "rgba(0,0,0,0.5)", color: "#fff", border: "none", fontSize: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
@@ -1616,16 +1635,24 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                     return;
                   }
 
-                  // 사진 업로드 (클라이언트 직접 → Supabase Storage, 병렬 처리)
+                  // 사진 동기화 (기존 유지 + 신규 추가 - 삭제 반영)
+                  let finalUrls = [...existingPhotoUrls];
                   if (photos.length > 0 && result.id) {
                     const uploadPromises = photos.map(async (photo, i) => {
-                      const storagePath = `${result.id}/${i}_${Date.now()}.webp`;
+                      const startIdx = existingPhotoUrls.length;
+                      const storagePath = `${result.id}/${startIdx + i}_${Date.now()}.webp`;
                       const uploadRes = await uploadVacancyPhotoDirect(photo, storagePath);
                       if (uploadRes.success && uploadRes.url) {
-                        await saveVacancyPhoto(result.id!, uploadRes.url, i);
+                        return uploadRes.url;
                       }
+                      return null;
                     });
-                    await Promise.all(uploadPromises);
+                    const uploadedUrls = (await Promise.all(uploadPromises)).filter(Boolean) as string[];
+                    finalUrls = [...finalUrls, ...uploadedUrls];
+                  }
+
+                  if (result.id) {
+                    await syncVacancyPhotos(result.id, finalUrls);
                   }
 
                   if (customStatus) {

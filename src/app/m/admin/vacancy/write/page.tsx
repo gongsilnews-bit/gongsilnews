@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
-import { createVacancy, updateVacancy, getVacancyDetail, saveVacancyPhoto, uploadVacancyPhoto } from "@/app/actions/vacancy";
+import { createVacancy, updateVacancy, getVacancyDetail, syncVacancyPhotos, uploadVacancyPhoto } from "@/app/actions/vacancy";
 import { getPhotoLibrary, togglePhotoFavorite } from "@/app/actions/article";
 import { geocodeAddress } from "@/app/actions/geocode";
 
@@ -538,7 +538,8 @@ function MobileVacancyWrite() {
 
       if (!result.success) { alert("실패: " + result.error); return; }
 
-      // 사진 처리: 새 사진이 추가되었거나 기존 사진이 변경된 경우
+      // 사진 동기화 (기존 유지 + 신규 추가 - 삭제 반영)
+      let finalUrls = [...existingPhotoUrls];
       if (result.id && photos.length > 0) {
         const startIdx = existingPhotoUrls.length;
         let photoErrors: string[] = [];
@@ -550,10 +551,7 @@ function MobileVacancyWrite() {
             formData.append('path', path);
             const up = await uploadVacancyPhoto(formData);
             if (up.success && up.url) {
-              const saveRes = await saveVacancyPhoto(result.id, up.url, startIdx + i);
-              if (!saveRes.success) {
-                photoErrors.push(`DB저장: ${saveRes.error}`);
-              }
+              finalUrls.push(up.url);
             } else {
               photoErrors.push(`업로드: ${up.error}`);
             }
@@ -564,6 +562,9 @@ function MobileVacancyWrite() {
         if (photoErrors.length > 0) {
           alert(`사진 저장 오류:\n${photoErrors.join('\n')}`);
         }
+      }
+      if (result.id) {
+        await syncVacancyPhotos(result.id, finalUrls);
       }
 
       alert(status === "DRAFT" ? "임시저장 완료!" : editId ? "수정 완료!" : "등록 완료! 광고가 바로 시작됩니다.");
