@@ -3,9 +3,8 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { geocodeAddress } from "@/app/actions/geocode";
 import { createClient } from "@/utils/supabase/client";
-import { createVacancy, syncVacancyPhotos, updateVacancy } from "@/app/actions/vacancy";
+import { createVacancy, syncVacancyPhotos, updateVacancy, uploadVacancyPhoto } from "@/app/actions/vacancy";
 import { getPhotoLibrary, togglePhotoFavorite } from "@/app/actions/article";
-import { uploadVacancyPhotoDirect } from "@/utils/uploadDirect";
 import { extractPropertyInfoFromImage } from "@/app/actions/ai";
 import { generatePropertyDescription } from "@/app/actions/gemini";
 
@@ -1639,9 +1638,12 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                   let finalUrls = [...existingPhotoUrls];
                   if (photos.length > 0 && result.id) {
                     const uploadPromises = photos.map(async (photo, i) => {
+                      const formData = new FormData();
+                      formData.append('file', photo);
                       const startIdx = existingPhotoUrls.length;
-                      const storagePath = `${result.id}/${startIdx + i}_${Date.now()}.webp`;
-                      const uploadRes = await uploadVacancyPhotoDirect(photo, storagePath);
+                      formData.append('path', `${result.id}/${startIdx + i}_${Date.now()}.webp`);
+                      
+                      const uploadRes = await uploadVacancyPhoto(formData);
                       if (uploadRes.success && uploadRes.url) {
                         return uploadRes.url;
                       }
