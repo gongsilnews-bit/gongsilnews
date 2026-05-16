@@ -25,6 +25,26 @@ interface VacancyRegisterFormProps {
   editData?: any;
 }
 
+// ── 전화번호 자동 하이픈 변환 유틸 ──
+const formatPhoneNumber = (val: string) => {
+  if (!val) return "";
+  let onlyNums = val.replace(/[^0-9]/g, "");
+  if (onlyNums.startsWith("02")) {
+    if (onlyNums.length <= 2) return onlyNums;
+    if (onlyNums.length <= 5) return `${onlyNums.slice(0, 2)}-${onlyNums.slice(2)}`;
+    if (onlyNums.length <= 9) return `${onlyNums.slice(0, 2)}-${onlyNums.slice(2, 5)}-${onlyNums.slice(5)}`;
+    return `${onlyNums.slice(0, 2)}-${onlyNums.slice(2, 6)}-${onlyNums.slice(6, 10)}`;
+  } else if (onlyNums.startsWith("1")) {
+    if (onlyNums.length <= 4) return onlyNums;
+    return `${onlyNums.slice(0, 4)}-${onlyNums.slice(4, 8)}`;
+  } else {
+    if (onlyNums.length <= 3) return onlyNums;
+    if (onlyNums.length <= 7) return `${onlyNums.slice(0, 3)}-${onlyNums.slice(3)}`;
+    if (onlyNums.length <= 10) return `${onlyNums.slice(0, 3)}-${onlyNums.slice(3, 6)}-${onlyNums.slice(6)}`;
+    return `${onlyNums.slice(0, 3)}-${onlyNums.slice(3, 7)}-${onlyNums.slice(7, 11)}`;
+  }
+};
+
 // ── 1차→2차 카테고리 매핑 (원본 register.html에서 추출) ──
 const SUB_CATEGORIES: Record<string, string[]> = {
   "아파트·오피스텔": ["아파트", "아파트분양권", "재건축", "오피스텔", "오피스텔분양권", "재개발"],
@@ -1451,7 +1471,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                 <input type="text" placeholder="의뢰인 이름" value={clientName} onChange={(e) => setClientName(e.target.value)} style={{ ...inputStyle, marginBottom: 20 }} />
 
                 <label style={labelStyle}>의뢰인 연락처 {reqMark}</label>
-                <input type="tel" placeholder="010-0000-0000" value={clientPhone} onChange={(e) => setClientPhone(e.target.value)} style={{ ...inputStyle, marginBottom: 20 }} />
+                <input type="tel" placeholder="010-0000-0000" value={clientPhone} onChange={(e) => setClientPhone(formatPhoneNumber(e.target.value))} style={{ ...inputStyle, marginBottom: 20 }} />
 
                 <label style={labelStyle}>소유주와의 관계</label>
                 <select value={ownerRelation} onChange={(e) => setOwnerRelation(e.target.value)} style={{ ...inputStyle, marginBottom: 24, cursor: "pointer" }}>
@@ -1565,7 +1585,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                   <input type="text" placeholder="예: 착한임대" value={landlordName} onChange={(e) => setLandlordName(e.target.value)} style={{ ...inputStyle, marginBottom: 16, background: cardBg }} />
 
                   <label style={labelStyle}>임대인 연락처 <span style={{ color: "#ef4444" }}>*</span></label>
-                  <input type="text" placeholder="예: 010-8831-9450" value={landlordPhone} onChange={(e) => setLandlordPhone(e.target.value)} style={{ ...inputStyle, marginBottom: 16, background: cardBg }} />
+                  <input type="text" placeholder="예: 010-8831-9450" value={landlordPhone} onChange={(e) => setLandlordPhone(formatPhoneNumber(e.target.value))} style={{ ...inputStyle, marginBottom: 16, background: cardBg }} />
 
                   <label style={labelStyle}>메모</label>
                   <textarea placeholder="임대인 특이사항 등 중개사님만 보는 메모를 입력하세요." value={landlordMemo} onChange={(e) => setLandlordMemo(e.target.value)} rows={4} style={{ ...inputStyle, height: "auto", resize: "vertical", background: cardBg }} />
