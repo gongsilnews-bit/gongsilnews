@@ -726,6 +726,24 @@ function MobileVacancyWrite() {
             <div style={{flex:1}}><label style={labelStyle}>전체층</label><input type="number" value={totalFloor} onChange={e=>setTotalFloor(e.target.value)} placeholder="15" style={inputStyle}/></div>
             <div style={{flex:1}}><label style={labelStyle}>해당층</label><input type="text" value={currentFloor} onChange={e=>setCurrentFloor(e.target.value)} placeholder="3" style={inputStyle}/></div>
           </div>
+          <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:14 }}>
+            {['반지하', '옥탑', '지하 1층', '지하 2층', '전체층'].map(f => (
+              <button 
+                key={f} 
+                type="button" 
+                onClick={() => setCurrentFloor(f)} 
+                style={{ 
+                  padding:"4px 10px", borderRadius:20, border:"1px solid #e5e7eb", 
+                  background: currentFloor === f ? "#3b82f6" : "#f9fafb", 
+                  fontSize:12, fontWeight:600, 
+                  color: currentFloor === f ? "#fff" : "#6b7280", 
+                  cursor:"pointer", transition:"all 0.2s" 
+                }}
+              >
+                {f}
+              </button>
+            ))}
+          </div>
           {!isCommercial && (
             <div style={{ display:"flex", gap:10 }}>
               <div style={{flex:1}}>
