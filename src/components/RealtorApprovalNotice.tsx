@@ -186,7 +186,7 @@ export default function RealtorApprovalNotice() {
         <div style={{ display: "flex", gap: 8 }}>
           <button
             onClick={() => {
-              router.push(isMobile ? "/m/admin/settings" : "/realty_admin?menu=settings&tab=agency");
+              router.push(isMobile ? "/m/admin/settings?tab=agency" : "/realty_admin?menu=settings&tab=agency");
               setRejectInfo(null);
             }}
             style={{
