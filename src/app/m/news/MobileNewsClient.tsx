@@ -784,7 +784,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
 
       {/* 우리동네뉴스: 카카오 지도 + 목록 스플릿 뷰 */}
       {activeTab === "local" ? (
-        <div className={slideAnim} style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+        <div className={slideAnim} style={{ position: "fixed", top: 0, bottom: "60px", left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: "448px", display: "flex", flexDirection: "column", zIndex: 10, background: "#fff" }}>
           <HomeHeader 
             bgColor="#ea580c" 
             logoText="우리동네뉴스"
@@ -793,7 +793,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
             highlightColor="#ffffff"
             homeUrl="/m/news?tab=realestate"
           />
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minHeight: "calc(100vh - 50px - 60px)", paddingTop: "50px" }}>
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", paddingTop: "50px" }}>
             {/* ═══ 위치·카테고리 필터 바 ═══ */}
             <style>{`
               @keyframes newsSheetUp { from { transform: translateX(-50%) translateY(100%); } to { transform: translateX(-50%) translateY(0); } }
