@@ -219,7 +219,8 @@ function MobileSettings() {
     else { setBizCertFile(compressed); setBizCertPreview(preview); }
   };
 
-  const handleSave = async () => {
+  const handleSave = async (isTempSave: boolean | React.MouseEvent = false) => {
+    const isTemp = typeof isTempSave === 'boolean' ? isTempSave : false;
     if (!memberId) return;
     setSaving(true);
     try {
@@ -260,8 +261,8 @@ function MobileSettings() {
           if (r.success) bizUrl = r.url || null;
         }
 
-        // 반려 상태에서 재저장 시 → 자동으로 승인대기로 변경
-        let saveStatus = agencyStatus === 'REJECTED' ? 'PENDING' : agencyStatus;
+        // 반려 상태에서 재저장 시 → 자동으로 승인대기로 변경 (임시저장이 아닐 때만)
+        let saveStatus = (!isTemp && agencyStatus === 'REJECTED') ? 'PENDING' : agencyStatus;
 
         // [AI 서류 자동 검증]
         let aiReason = "";
@@ -321,18 +322,22 @@ function MobileSettings() {
       }
 
       if (tab === "agency" && !isRealtor && saveStatus !== "APPROVED") {
-        setIsRealtor(true);
-        setRejectReason(null);
-        alert("✅ 부동산회원 전환 신청이 완료되었습니다!\n\n서류 확인 후 승인 처리됩니다.\n(보통 당일~1영업일 소요)");
-        router.push("/m/admin/dashboard");
-      } else if (agencyStatus === 'REJECTED') {
+        if (!isTemp) {
+          setIsRealtor(true);
+          setRejectReason(null);
+          alert("✅ 부동산회원 전환 신청이 완료되었습니다!\n\n서류 확인 후 승인 처리됩니다.\n(보통 당일~1영업일 소요)");
+          router.push("/m/admin/dashboard");
+        } else {
+          alert("임시저장되었습니다.");
+        }
+      } else if (!isTemp && agencyStatus === 'REJECTED') {
         setAgencyStatus('PENDING');
         setRejectReason(null);
         alert("✅ 서류가 재제출되었습니다!\n\n관리자 재심사 후 승인 처리됩니다.");
         router.push("/m/admin/dashboard");
       } else {
-        alert("저장되었습니다.");
-        router.push("/m?menu=open");
+        alert(isTemp ? "임시저장되었습니다." : "저장되었습니다.");
+        if (!isTemp) router.push("/m?menu=open");
       }
     } catch (err: any) {
       alert("저장 실패: " + err.message);
@@ -375,9 +380,9 @@ function MobileSettings() {
           </button>
           <h1 style={{ fontSize: 18, fontWeight: 800, color: "#111", margin: 0 }}>정보설정</h1>
         </div>
-        <button onClick={handleSave} disabled={saving}
-          style={{ height: 36, padding: "0 16px", background: "linear-gradient(135deg, #3b82f6, #2563eb)", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-          {saving ? "저장중..." : "저장"}
+        <button onClick={() => handleSave(true)} disabled={saving}
+          style={{ height: 36, padding: "0 16px", background: "#f3f4f6", color: "#374151", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+          {saving ? "저장중..." : "임시저장"}
         </button>
       </div>
 
@@ -391,7 +396,7 @@ function MobileSettings() {
         ))}
       </div>
 
-      <div style={{ padding: "16px 16px 120px" }}>
+      <div style={{ padding: "16px 16px 40px" }}>
         {/* ── 기본정보 탭 ── */}
         {tab === "basic" && (
           <>
@@ -619,48 +624,36 @@ function MobileSettings() {
           </>
         )}
 
-        {/* ── 회원 탈퇴 버튼 ── */}
-        <div style={{ marginTop: 24, paddingBottom: 24, textAlign: "center" }}>
-          <button onClick={handleDeleteAccount}
-            style={{ background: "none", border: "none", color: "#9ca3af", fontSize: 13, textDecoration: "underline", cursor: "pointer", padding: "8px 16px" }}>
-            회원 탈퇴 (계정 삭제)
-          </button>
-        </div>
-      </div>
-
-      {/* 하단 저장 바 - 상태별 버튼 분리 */}
-      <div style={{ position: "fixed", bottom: 65, left: 0, right: 0, background: "#fff", borderTop: "1px solid #e5e7eb", padding: "12px 16px", zIndex: 50 }}>
-        {/* 부동산 탭이고 아직 신청 전(신규) 또는 반려 상태일 때: 임시저장 + 승인신청 분리 */}
-        {tab === "agency" && (!isRealtor || agencyStatus === "REJECTED") ? (
-          <div style={{ display: "flex", gap: 10 }}>
+        {/* ── 하단 버튼 영역 (스크롤 끝, 고정바 아님) ── */}
+        <div style={{ marginTop: 32, marginBottom: 16 }}>
+          {tab === "agency" && (!isRealtor || agencyStatus === "REJECTED") ? (
             <button onClick={() => {
-              // 임시 저장: 상태 변경 없이 데이터만 저장
-              handleSave();
-            }} disabled={saving}
-              style={{ flex: 1, height: 52, borderRadius: 12, border: "1px solid #d1d5db", background: "#fff", color: "#374151", fontSize: 15, fontWeight: 700, cursor: "pointer" }}>
-              {saving ? "저장 중..." : "💾 임시 저장"}
-            </button>
-            <button onClick={() => {
-              // 필수 항목 검증
               if (!agencyName || !ceoName || !cell || !officePhone || !address || !intro || !bizNum || !regNum || (!bizCertPreview && !bizCertFile) || (!regCertPreview && !regCertFile)) {
                 alert("필수 정보를 모두 입력하고 사업자등록증과 중개사무소 등록증을 첨부해야 승인 신청이 가능합니다.");
                 return;
               }
               if (confirm(agencyStatus === "REJECTED" ? "수정된 정보로 재심사를 신청하시겠습니까?" : "부동산회원 승인 심사를 신청하시겠습니까?\n\n제출 후 관리자 검토가 진행됩니다.")) {
-                handleSave();
+                handleSave(false);
               }
             }} disabled={saving}
-              style={{ flex: 1.5, height: 52, borderRadius: 12, border: "none", background: agencyStatus === "REJECTED" ? "linear-gradient(135deg, #f59e0b, #d97706)" : "linear-gradient(135deg, #3b82f6, #2563eb)", color: "#fff", fontSize: 15, fontWeight: 800, cursor: "pointer", boxShadow: agencyStatus === "REJECTED" ? "0 4px 12px rgba(245,158,11,0.3)" : "0 4px 12px rgba(59,130,246,0.3)" }}>
+              style={{ width: "100%", height: 56, borderRadius: 12, border: "none", background: agencyStatus === "REJECTED" ? "linear-gradient(135deg, #f59e0b, #d97706)" : "linear-gradient(135deg, #3b82f6, #2563eb)", color: "#fff", fontSize: 16, fontWeight: 800, cursor: "pointer", boxShadow: agencyStatus === "REJECTED" ? "0 4px 12px rgba(245,158,11,0.3)" : "0 4px 12px rgba(59,130,246,0.3)" }}>
               {saving ? "처리 중..." : agencyStatus === "REJECTED" ? "📋 수정 후 재심사 신청" : "📋 승인 심사 신청하기"}
             </button>
-          </div>
-        ) : (
-          /* 승인대기 또는 정상승인: 단일 저장 버튼 */
-          <button onClick={handleSave} disabled={saving}
-            style={{ width: "100%", height: 52, borderRadius: 12, border: "none", background: "linear-gradient(135deg, #3b82f6, #2563eb)", color: "#fff", fontSize: 16, fontWeight: 800, cursor: "pointer", boxShadow: "0 4px 12px rgba(59,130,246,0.3)" }}>
-            {saving ? "저장 중..." : "💾 정보 수정 저장"}
+          ) : (
+            <button onClick={() => handleSave(false)} disabled={saving}
+              style={{ width: "100%", height: 56, borderRadius: 12, border: "none", background: "linear-gradient(135deg, #3b82f6, #2563eb)", color: "#fff", fontSize: 16, fontWeight: 800, cursor: "pointer", boxShadow: "0 4px 12px rgba(59,130,246,0.3)" }}>
+              {saving ? "저장 중..." : "💾 정보 수정 저장"}
+            </button>
+          )}
+        </div>
+
+        {/* ── 회원 탈퇴 버튼 ── */}
+        <div style={{ paddingBottom: 24, textAlign: "center" }}>
+          <button onClick={handleDeleteAccount}
+            style={{ background: "none", border: "none", color: "#9ca3af", fontSize: 13, textDecoration: "underline", cursor: "pointer", padding: "8px 16px" }}>
+            회원 탈퇴 (계정 삭제)
           </button>
-        )}
+        </div>
       </div>
 
       {/* 이미지 확대 모달 */}
