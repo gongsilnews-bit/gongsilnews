@@ -125,12 +125,29 @@ export default function DashboardSection({ theme, role, agencyStatus, rejectionR
         </div>
       )}
       {role === "realtor" && agencyStatus === "REJECTED" && (
-        <div style={{ padding: "16px 20px", marginBottom: 24, borderRadius: 8, background: darkMode ? "#451a1a" : "#fef2f2", border: `1px solid ${darkMode ? "#7f1d1d" : "#fecaca"}`, display: "flex", gap: 12, alignItems: "flex-start", color: darkMode ? "#fca5a5" : "#b91c1c" }}>
-          <span style={{ fontSize: 20 }}>🚨</span>
-          <div>
-            <div style={{ fontWeight: 800, fontSize: 15, marginBottom: 4 }}>제출하신 서류의 보완이 필요합니다.</div>
-            <div style={{ fontSize: 13, opacity: 0.9 }}>제출된 서류가 미비하여 승인이 거절되었습니다. 좌측의 <strong>[정보설정]</strong> 메뉴로 이동하여 서류를 다시 첨부해 주시기 바랍니다.</div>
+        <div style={{ padding: "16px 20px", marginBottom: 24, borderRadius: 10, background: darkMode ? "#451a1a" : "#fef2f2", border: `1.5px solid ${darkMode ? "#7f1d1d" : "#fecaca"}`, color: darkMode ? "#fca5a5" : "#b91c1c" }}>
+          <div style={{ display: "flex", gap: 12, alignItems: "flex-start", marginBottom: rejectionReason ? 12 : 0 }}>
+            <span style={{ fontSize: 20 }}>🚨</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 800, fontSize: 15, marginBottom: 4 }}>서류 보완이 필요합니다</div>
+              <div style={{ fontSize: 13, opacity: 0.9 }}>제출된 서류가 미비하여 승인이 거절되었습니다. 좌측의 <strong>[정보설정]</strong> 메뉴로 이동하여 정보를 수정한 후 재심사를 신청해 주세요.</div>
+            </div>
           </div>
+          {rejectionReason && (
+            <div style={{ background: darkMode ? "rgba(0,0,0,0.2)" : "#fff", border: `1px solid ${darkMode ? "#7f1d1d" : "#fecaca"}`, borderRadius: 8, padding: "12px 16px", marginTop: 4 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: darkMode ? "#fca5a5" : "#b91c1c", marginBottom: 4 }}>📌 반려 사유</div>
+              <div style={{ fontSize: 14, color: darkMode ? "#fca5a5" : "#991b1b", lineHeight: 1.6, fontWeight: 600, whiteSpace: "pre-wrap" }}>{rejectionReason}</div>
+            </div>
+          )}
+          <button onClick={() => navigate("settings")} style={{ marginTop: 12, height: 36, padding: "0 16px", background: darkMode ? "#7f1d1d" : "#ef4444", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+            📋 서류 수정 및 재심사 신청하기
+          </button>
+        </div>
+      )}
+      {role === "realtor" && agencyStatus === "APPROVED" && (
+        <div style={{ padding: "14px 20px", marginBottom: 24, borderRadius: 10, background: darkMode ? "#064e3b" : "#ecfdf5", border: `1.5px solid ${darkMode ? "#065f46" : "#a7f3d0"}`, display: "flex", gap: 12, alignItems: "center", color: darkMode ? "#6ee7b7" : "#065f46" }}>
+          <span style={{ fontSize: 20 }}>✅</span>
+          <div style={{ fontWeight: 700, fontSize: 14 }}>부동산회원 정상 승인 완료 — 모든 서비스를 정상적으로 이용할 수 있습니다.</div>
         </div>
       )}
 

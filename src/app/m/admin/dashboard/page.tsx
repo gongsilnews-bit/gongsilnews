@@ -32,6 +32,8 @@ function MobileDashboard() {
   const [recentArticles, setRecentArticles] = useState<any[]>([]);
   const [recentComments, setRecentComments] = useState<any[]>([]);
   const [lastUpdated, setLastUpdated] = useState("");
+  const [agencyStatus, setAgencyStatus] = useState<string | null>(null);
+  const [rejectReason, setRejectReason] = useState<string | null>(null);
 
   const fetchData = useCallback(async (currentRole: string, memberId: string) => {
     setLoading(true);
@@ -85,6 +87,19 @@ function MobileDashboard() {
       let currentRole: "admin" | "realtor" | "user" = "user";
       if (["ADMIN", "SUPER_ADMIN", "최고관리자"].includes(data.role)) currentRole = "admin";
       else if (["REALTOR", "부동산회원"].includes(data.role)) currentRole = "realtor";
+
+      // 부동산회원인 경우 agency 상태 조회
+      if (currentRole === "realtor") {
+        const { data: agency } = await supabase
+          .from("agencies")
+          .select("status, reject_reason")
+          .eq("owner_id", user.id)
+          .single();
+        if (agency) {
+          setAgencyStatus(agency.status);
+          setRejectReason(agency.reject_reason || null);
+        }
+      }
       
       setRole(currentRole);
       setAuthChecked(true);
@@ -149,6 +164,46 @@ function MobileDashboard() {
           {loading ? "갱신중..." : "⟳ 새로고침"}
         </button>
       </div>
+
+      {/* 부동산회원 승인 상태 배너 */}
+      {role === "realtor" && agencyStatus === "PENDING" && (
+        <div style={{ margin: "12px 16px 0", padding: "14px 16px", borderRadius: 12, background: "#fffbeb", border: "1.5px solid #fde68a", display: "flex", gap: 10, alignItems: "flex-start" }}>
+          <span style={{ fontSize: 22, flexShrink: 0, lineHeight: 1 }}>⏳</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 800, fontSize: 14, color: "#92400e", marginBottom: 4 }}>현재 서류 검토가 진행 중입니다</div>
+            <div style={{ fontSize: 12, color: "#a16207", lineHeight: 1.5 }}>제출해주신 중개업소 증빙 서류를 관리자가 검토하고 있습니다. 최종 승인 전까지 일부 기능 사용이 제한될 수 있습니다.</div>
+          </div>
+        </div>
+      )}
+      {role === "realtor" && agencyStatus === "REJECTED" && (
+        <div style={{ margin: "12px 16px 0", padding: "14px 16px", borderRadius: 12, background: "#fef2f2", border: "1.5px solid #fecaca" }}>
+          <div style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: rejectReason ? 10 : 0 }}>
+            <span style={{ fontSize: 22, flexShrink: 0, lineHeight: 1 }}>🚨</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 800, fontSize: 14, color: "#b91c1c", marginBottom: 4 }}>서류 보완이 필요합니다</div>
+              <div style={{ fontSize: 12, color: "#dc2626", lineHeight: 1.5 }}>제출된 서류가 미비하여 승인이 거절되었습니다. 아래 반려 사유를 확인하고 정보를 수정한 후 재심사를 신청해 주세요.</div>
+            </div>
+          </div>
+          {rejectReason && (
+            <div style={{ background: "#fff", border: "1px solid #fecaca", borderRadius: 8, padding: "10px 14px", marginTop: 4 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#b91c1c", marginBottom: 4 }}>📌 반려 사유</div>
+              <div style={{ fontSize: 13, color: "#991b1b", lineHeight: 1.5, fontWeight: 600, whiteSpace: "pre-wrap" }}>{rejectReason}</div>
+            </div>
+          )}
+          <button
+            onClick={() => router.push("/m/admin/settings?tab=agency")}
+            style={{ width: "100%", marginTop: 10, height: 42, borderRadius: 8, border: "none", background: "linear-gradient(135deg, #ef4444, #dc2626)", color: "#fff", fontSize: 14, fontWeight: 800, cursor: "pointer", boxShadow: "0 2px 8px rgba(239,68,68,0.3)" }}
+          >
+            📋 서류 수정 및 재심사 신청하기
+          </button>
+        </div>
+      )}
+      {role === "realtor" && agencyStatus === "APPROVED" && (
+        <div style={{ margin: "12px 16px 0", padding: "10px 16px", borderRadius: 12, background: "#ecfdf5", border: "1.5px solid #a7f3d0", display: "flex", gap: 8, alignItems: "center" }}>
+          <span style={{ fontSize: 18 }}>✅</span>
+          <span style={{ fontWeight: 700, fontSize: 13, color: "#065f46" }}>부동산회원 정상 승인 완료</span>
+        </div>
+      )}
 
       {/* 마지막 갱신 */}
       {lastUpdated && (

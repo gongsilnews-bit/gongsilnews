@@ -89,6 +89,7 @@ function MobileSettings() {
   const [regNum, setRegNum] = useState("");
   const [bizNum, setBizNum] = useState("");
   const [agencyStatus, setAgencyStatus] = useState("PENDING");
+  const [rejectReason, setRejectReason] = useState<string | null>(null);
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
 
   /* 서류 사진 */
@@ -150,6 +151,7 @@ function MobileSettings() {
           setRegNum(a.reg_num || "");
           setBizNum(a.biz_num || "");
           setAgencyStatus(a.status || "PENDING");
+          setRejectReason(a.reject_reason || null);
           if (a.reg_cert_url) setRegCertPreview(a.reg_cert_url);
           if (a.biz_cert_url) setBizCertPreview(a.biz_cert_url);
           if (a.lat && a.lng) setCoords({ lat: Number(a.lat), lng: Number(a.lng) });
@@ -320,10 +322,12 @@ function MobileSettings() {
 
       if (tab === "agency" && !isRealtor && saveStatus !== "APPROVED") {
         setIsRealtor(true);
+        setRejectReason(null);
         alert("✅ 부동산회원 전환 신청이 완료되었습니다!\n\n서류 확인 후 승인 처리됩니다.\n(보통 당일~1영업일 소요)");
         router.push("/m/admin/dashboard");
       } else if (agencyStatus === 'REJECTED') {
         setAgencyStatus('PENDING');
+        setRejectReason(null);
         alert("✅ 서류가 재제출되었습니다!\n\n관리자 재심사 후 승인 처리됩니다.");
         router.push("/m/admin/dashboard");
       } else {
@@ -425,6 +429,66 @@ function MobileSettings() {
         {/* ── 부동산정보 탭 ── */}
         {tab === "agency" && (
           <>
+            {/* 승인 상태 Step Indicator */}
+            <div style={{ background: "#fff", borderRadius: 14, padding: 16, border: "1px solid #e5e7eb", marginBottom: 16 }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "#111", marginBottom: 12 }}>📋 승인 진행 상태</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 0 }}>
+                {/* Step 1: 작성 중 */}
+                <div style={{ flex: 1, textAlign: "center" }}>
+                  <div style={{ width: 32, height: 32, borderRadius: "50%", margin: "0 auto 6px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 800, color: "#fff", background: !isRealtor && agencyStatus !== "PENDING" && agencyStatus !== "APPROVED" && agencyStatus !== "REJECTED" ? "#3b82f6" : "#d1d5db" }}>1</div>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: !isRealtor && agencyStatus !== "PENDING" && agencyStatus !== "APPROVED" && agencyStatus !== "REJECTED" ? "#3b82f6" : "#9ca3af" }}>작성 중</div>
+                </div>
+                <div style={{ width: 40, height: 2, background: agencyStatus === "PENDING" || agencyStatus === "APPROVED" || agencyStatus === "REJECTED" ? "#3b82f6" : "#e5e7eb", flexShrink: 0 }} />
+                {/* Step 2: 심사 대기 */}
+                <div style={{ flex: 1, textAlign: "center" }}>
+                  <div style={{ width: 32, height: 32, borderRadius: "50%", margin: "0 auto 6px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 800, color: "#fff", background: agencyStatus === "PENDING" ? "#f59e0b" : agencyStatus === "APPROVED" ? "#d1d5db" : agencyStatus === "REJECTED" ? "#d1d5db" : "#d1d5db" }}>2</div>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: agencyStatus === "PENDING" ? "#f59e0b" : "#9ca3af" }}>심사 대기</div>
+                </div>
+                <div style={{ width: 40, height: 2, background: agencyStatus === "APPROVED" || agencyStatus === "REJECTED" ? (agencyStatus === "APPROVED" ? "#10b981" : "#ef4444") : "#e5e7eb", flexShrink: 0 }} />
+                {/* Step 3: 결과 */}
+                <div style={{ flex: 1, textAlign: "center" }}>
+                  <div style={{ width: 32, height: 32, borderRadius: "50%", margin: "0 auto 6px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 800, color: "#fff", background: agencyStatus === "APPROVED" ? "#10b981" : agencyStatus === "REJECTED" ? "#ef4444" : "#d1d5db" }}>{agencyStatus === "APPROVED" ? "✓" : agencyStatus === "REJECTED" ? "!" : "3"}</div>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: agencyStatus === "APPROVED" ? "#10b981" : agencyStatus === "REJECTED" ? "#ef4444" : "#9ca3af" }}>{agencyStatus === "APPROVED" ? "승인 완료" : agencyStatus === "REJECTED" ? "서류 보완" : "승인 완료"}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* 반려 사유 알림 박스 */}
+            {agencyStatus === "REJECTED" && (
+              <div style={{ background: "#fef2f2", borderRadius: 14, padding: 16, border: "1.5px solid #fecaca", marginBottom: 16 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                  <span style={{ fontSize: 18 }}>🚨</span>
+                  <span style={{ fontSize: 14, fontWeight: 800, color: "#b91c1c" }}>심사 반려 - 서류 보완이 필요합니다</span>
+                </div>
+                {rejectReason && (
+                  <div style={{ background: "#fff", border: "1px solid #fecaca", borderRadius: 8, padding: "12px 14px", marginBottom: 8 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: "#b91c1c", marginBottom: 4 }}>📌 반려 사유</div>
+                    <div style={{ fontSize: 13, color: "#991b1b", lineHeight: 1.5, fontWeight: 600, whiteSpace: "pre-wrap" }}>{rejectReason}</div>
+                  </div>
+                )}
+                <div style={{ fontSize: 12, color: "#dc2626", lineHeight: 1.5 }}>아래 정보를 수정한 후 하단의 <strong>[수정 후 재심사 신청]</strong> 버튼을 눌러주세요.</div>
+              </div>
+            )}
+
+            {/* 승인대기 안내 */}
+            {agencyStatus === "PENDING" && isRealtor && (
+              <div style={{ background: "#fffbeb", borderRadius: 14, padding: "12px 16px", border: "1.5px solid #fde68a", marginBottom: 16, display: "flex", gap: 10, alignItems: "center" }}>
+                <span style={{ fontSize: 18 }}>⏳</span>
+                <div style={{ fontSize: 13, color: "#92400e", lineHeight: 1.4 }}>
+                  <strong>서류 검토 중입니다.</strong> 관리자 확인 후 승인 처리됩니다.
+                </div>
+              </div>
+            )}
+
+            {/* 승인 완료 안내 */}
+            {agencyStatus === "APPROVED" && (
+              <div style={{ background: "#ecfdf5", borderRadius: 14, padding: "12px 16px", border: "1.5px solid #a7f3d0", marginBottom: 16, display: "flex", gap: 10, alignItems: "center" }}>
+                <span style={{ fontSize: 18 }}>✅</span>
+                <div style={{ fontSize: 13, color: "#065f46", lineHeight: 1.4 }}>
+                  <strong>정상 승인 완료.</strong> 부동산회원 서비스를 정상적으로 이용할 수 있습니다.
+                </div>
+              </div>
+            )}
             <div style={{ background: "#fff", borderRadius: 14, padding: 16, border: "1px solid #e5e7eb", marginBottom: 16 }}>
               <Field label="상호(사업장명)" value={agencyName} onChange={setAgencyName} required />
               <Field label="대표자명" value={ceoName} onChange={setCeoName} required />
@@ -564,12 +628,39 @@ function MobileSettings() {
         </div>
       </div>
 
-      {/* 하단 저장 바 */}
+      {/* 하단 저장 바 - 상태별 버튼 분리 */}
       <div style={{ position: "fixed", bottom: 65, left: 0, right: 0, background: "#fff", borderTop: "1px solid #e5e7eb", padding: "12px 16px", zIndex: 50 }}>
-        <button onClick={handleSave} disabled={saving}
-          style={{ width: "100%", height: 52, borderRadius: 12, border: "none", background: agencyStatus === 'REJECTED' ? "linear-gradient(135deg, #f59e0b, #d97706)" : "linear-gradient(135deg, #3b82f6, #2563eb)", color: "#fff", fontSize: 16, fontWeight: 800, cursor: "pointer", boxShadow: agencyStatus === 'REJECTED' ? "0 4px 12px rgba(245,158,11,0.3)" : "0 4px 12px rgba(59,130,246,0.3)" }}>
-          {saving ? "저장 중..." : agencyStatus === 'REJECTED' ? "📋 저장 및 재심사 요청" : "💾 저장하기"}
-        </button>
+        {/* 부동산 탭이고 아직 신청 전(신규) 또는 반려 상태일 때: 임시저장 + 승인신청 분리 */}
+        {tab === "agency" && (!isRealtor || agencyStatus === "REJECTED") ? (
+          <div style={{ display: "flex", gap: 10 }}>
+            <button onClick={() => {
+              // 임시 저장: 상태 변경 없이 데이터만 저장
+              handleSave();
+            }} disabled={saving}
+              style={{ flex: 1, height: 52, borderRadius: 12, border: "1px solid #d1d5db", background: "#fff", color: "#374151", fontSize: 15, fontWeight: 700, cursor: "pointer" }}>
+              {saving ? "저장 중..." : "💾 임시 저장"}
+            </button>
+            <button onClick={() => {
+              // 필수 항목 검증
+              if (!agencyName || !ceoName || !cell || !officePhone || !address || !intro || !bizNum || !regNum || (!bizCertPreview && !bizCertFile) || (!regCertPreview && !regCertFile)) {
+                alert("필수 정보를 모두 입력하고 사업자등록증과 중개사무소 등록증을 첨부해야 승인 신청이 가능합니다.");
+                return;
+              }
+              if (confirm(agencyStatus === "REJECTED" ? "수정된 정보로 재심사를 신청하시겠습니까?" : "부동산회원 승인 심사를 신청하시겠습니까?\n\n제출 후 관리자 검토가 진행됩니다.")) {
+                handleSave();
+              }
+            }} disabled={saving}
+              style={{ flex: 1.5, height: 52, borderRadius: 12, border: "none", background: agencyStatus === "REJECTED" ? "linear-gradient(135deg, #f59e0b, #d97706)" : "linear-gradient(135deg, #3b82f6, #2563eb)", color: "#fff", fontSize: 15, fontWeight: 800, cursor: "pointer", boxShadow: agencyStatus === "REJECTED" ? "0 4px 12px rgba(245,158,11,0.3)" : "0 4px 12px rgba(59,130,246,0.3)" }}>
+              {saving ? "처리 중..." : agencyStatus === "REJECTED" ? "📋 수정 후 재심사 신청" : "📋 승인 심사 신청하기"}
+            </button>
+          </div>
+        ) : (
+          /* 승인대기 또는 정상승인: 단일 저장 버튼 */
+          <button onClick={handleSave} disabled={saving}
+            style={{ width: "100%", height: 52, borderRadius: 12, border: "none", background: "linear-gradient(135deg, #3b82f6, #2563eb)", color: "#fff", fontSize: 16, fontWeight: 800, cursor: "pointer", boxShadow: "0 4px 12px rgba(59,130,246,0.3)" }}>
+            {saving ? "저장 중..." : "💾 정보 수정 저장"}
+          </button>
+        )}
       </div>
 
       {/* 이미지 확대 모달 */}

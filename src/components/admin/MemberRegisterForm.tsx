@@ -44,6 +44,7 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
   });
 
   const [originalAgencyData, setOriginalAgencyData] = useState<any>(null);
+  const [rejectReason, setRejectReason] = useState<string | null>(null);
 
   // 비즈니스 프로필 관련 state
   const [bizData, setBizData] = useState({
@@ -170,6 +171,7 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
               biz_num: res.agency.biz_num || "",
               status: res.agency.status || "PENDING"
             });
+            setRejectReason(res.agency.reject_reason || null);
             setOriginalAgencyData({
               name: res.agency.name || "",
               ceo_name: res.agency.ceo_name || "",
@@ -882,6 +884,67 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
 
       {activeTab === 1 && formData.role === "부동산회원" && (
         <div style={{ background: darkMode ? "#2c2d31" : "#fff", borderBottomLeftRadius: 12, borderBottomRightRadius: 12, border: `1px solid ${darkMode ? "#333" : "#e5e7eb"}`, borderTop: "none", overflow: "hidden", marginBottom: 24 }}>
+
+          {/* 승인 상태 Step Indicator */}
+          <div style={{ padding: "20px 20px 16px", borderBottom: `1px solid ${darkMode ? "#333" : "#e5e7eb"}`, background: darkMode ? "#25262b" : "#f8fafc" }}>
+            <div style={{ fontSize: 14, fontWeight: 800, color: darkMode ? "#e1e4e8" : "#111", marginBottom: 16 }}>📋 승인 진행 상태</div>
+            <div style={{ display: "flex", alignItems: "center", maxWidth: 500 }}>
+              {/* Step 1 */}
+              <div style={{ flex: 1, textAlign: "center" }}>
+                <div style={{ width: 36, height: 36, borderRadius: "50%", margin: "0 auto 6px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 800, color: "#fff", background: agencyData.status !== "PENDING" && agencyData.status !== "APPROVED" && agencyData.status !== "REJECTED" ? "#3b82f6" : "#d1d5db", transition: "all 0.3s" }}>1</div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: agencyData.status !== "PENDING" && agencyData.status !== "APPROVED" && agencyData.status !== "REJECTED" ? "#3b82f6" : (darkMode ? "#6b7280" : "#9ca3af") }}>작성 중</div>
+              </div>
+              <div style={{ width: 60, height: 2, background: agencyData.status === "PENDING" || agencyData.status === "APPROVED" || agencyData.status === "REJECTED" ? "#3b82f6" : (darkMode ? "#444" : "#e5e7eb"), flexShrink: 0 }} />
+              {/* Step 2 */}
+              <div style={{ flex: 1, textAlign: "center" }}>
+                <div style={{ width: 36, height: 36, borderRadius: "50%", margin: "0 auto 6px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 800, color: "#fff", background: agencyData.status === "PENDING" ? "#f59e0b" : "#d1d5db", transition: "all 0.3s" }}>2</div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: agencyData.status === "PENDING" ? "#f59e0b" : (darkMode ? "#6b7280" : "#9ca3af") }}>심사 대기</div>
+              </div>
+              <div style={{ width: 60, height: 2, background: agencyData.status === "APPROVED" || agencyData.status === "REJECTED" ? (agencyData.status === "APPROVED" ? "#10b981" : "#ef4444") : (darkMode ? "#444" : "#e5e7eb"), flexShrink: 0 }} />
+              {/* Step 3 */}
+              <div style={{ flex: 1, textAlign: "center" }}>
+                <div style={{ width: 36, height: 36, borderRadius: "50%", margin: "0 auto 6px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 800, color: "#fff", background: agencyData.status === "APPROVED" ? "#10b981" : agencyData.status === "REJECTED" ? "#ef4444" : "#d1d5db", transition: "all 0.3s" }}>{agencyData.status === "APPROVED" ? "✓" : agencyData.status === "REJECTED" ? "!" : "3"}</div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: agencyData.status === "APPROVED" ? "#10b981" : agencyData.status === "REJECTED" ? "#ef4444" : (darkMode ? "#6b7280" : "#9ca3af") }}>{agencyData.status === "APPROVED" ? "승인 완료" : agencyData.status === "REJECTED" ? "서류 보완" : "승인 완료"}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* 반려 사유 경고 박스 */}
+          {agencyData.status === "REJECTED" && (
+            <div style={{ margin: "16px 20px", padding: 16, borderRadius: 10, background: darkMode ? "#451a1a" : "#fef2f2", border: `1.5px solid ${darkMode ? "#7f1d1d" : "#fecaca"}` }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                <span style={{ fontSize: 18 }}>🚨</span>
+                <span style={{ fontSize: 14, fontWeight: 800, color: darkMode ? "#fca5a5" : "#b91c1c" }}>심사 반려 - 서류 보완이 필요합니다</span>
+              </div>
+              {rejectReason && (
+                <div style={{ background: darkMode ? "rgba(0,0,0,0.2)" : "#fff", border: `1px solid ${darkMode ? "#7f1d1d" : "#fecaca"}`, borderRadius: 8, padding: "12px 14px", marginBottom: 8 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: darkMode ? "#fca5a5" : "#b91c1c", marginBottom: 4 }}>📌 반려 사유</div>
+                  <div style={{ fontSize: 14, color: darkMode ? "#fca5a5" : "#991b1b", lineHeight: 1.6, fontWeight: 600, whiteSpace: "pre-wrap" }}>{rejectReason}</div>
+                </div>
+              )}
+              <div style={{ fontSize: 13, color: darkMode ? "#fca5a5" : "#dc2626", lineHeight: 1.5 }}>아래 정보를 수정한 후 하단의 <strong>[수정 후 재심사 신청]</strong> 버튼을 눌러주세요.</div>
+            </div>
+          )}
+
+          {/* 승인대기 안내 */}
+          {agencyData.status === "PENDING" && editMemberId && (
+            <div style={{ margin: "16px 20px", padding: "12px 16px", borderRadius: 10, background: darkMode ? "#422814" : "#fffbeb", border: `1.5px solid ${darkMode ? "#78350f" : "#fde68a"}`, display: "flex", gap: 10, alignItems: "center" }}>
+              <span style={{ fontSize: 18 }}>⏳</span>
+              <div style={{ fontSize: 13, color: darkMode ? "#fde68a" : "#92400e", lineHeight: 1.4 }}>
+                <strong>서류 검토 중입니다.</strong> 관리자 확인 후 승인 처리됩니다.
+              </div>
+            </div>
+          )}
+
+          {/* 승인 완료 안내 */}
+          {agencyData.status === "APPROVED" && (
+            <div style={{ margin: "16px 20px", padding: "12px 16px", borderRadius: 10, background: darkMode ? "#064e3b" : "#ecfdf5", border: `1.5px solid ${darkMode ? "#065f46" : "#a7f3d0"}`, display: "flex", gap: 10, alignItems: "center" }}>
+              <span style={{ fontSize: 18 }}>✅</span>
+              <div style={{ fontSize: 13, color: darkMode ? "#6ee7b7" : "#065f46", lineHeight: 1.4 }}>
+                <strong>정상 승인 완료.</strong> 부동산회원 서비스를 정상적으로 이용할 수 있습니다.
+              </div>
+            </div>
+          )}
           
           <div style={{ ...rowStyle, borderTop: "none" }}>
             <div style={{ ...labelStyle, flexWrap: "wrap", flexDirection: "column", alignItems: "flex-start", gap: 4, justifyContent: "center", lineHeight: 1.2 }}>
@@ -1333,19 +1396,43 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
 
       {/* 액션 버튼 */}
       <div style={{ display: "flex", gap: 10, paddingBottom: 60, flexWrap: "wrap", alignItems: "center" }}>
+        {/* 부동산회원 && 비관리자: 상태별 버튼 분리 */}
         {formData.role === "부동산회원" && !isAdmin && agencyData.status === "REJECTED" && (
-          <button onClick={(e) => handleSubmit(e, true)} disabled={loading} style={{ height: 42, padding: "0 24px", background: "#10b981", color: "#fff", border: "none", borderRadius: 6, fontSize: 14, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1 }}>
-            {loading ? "처리 중..." : "승인대기 신청"}
+          <>
+            <button onClick={(e) => handleSubmit(e, false)} disabled={loading} style={{ height: 42, padding: "0 24px", background: "#fff", color: "#374151", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 6, fontSize: 14, fontWeight: 600, cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1 }}>
+              {loading ? "저장 중..." : "💾 임시 저장"}
+            </button>
+            <button onClick={(e) => {
+              if (confirm("수정된 정보로 재심사를 신청하시겠습니까?")) {
+                handleSubmit(e, true);
+              }
+            }} disabled={loading} style={{ height: 42, padding: "0 24px", background: "linear-gradient(135deg, #f59e0b, #d97706)", color: "#fff", border: "none", borderRadius: 6, fontSize: 14, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1, boxShadow: "0 2px 8px rgba(245,158,11,0.3)" }}>
+              {loading ? "처리 중..." : "📋 수정 후 재심사 신청"}
+            </button>
+          </>
+        )}
+        {formData.role === "부동산회원" && !isAdmin && agencyData.status !== "REJECTED" && agencyData.status !== "APPROVED" && !editMemberId && (
+          <>
+            <button onClick={(e) => handleSubmit(e, false)} disabled={loading} style={{ height: 42, padding: "0 24px", background: "#fff", color: "#374151", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 6, fontSize: 14, fontWeight: 600, cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1 }}>
+              {loading ? "저장 중..." : "💾 임시 저장"}
+            </button>
+            <button onClick={(e) => {
+              if (confirm("부동산회원 승인 심사를 신청하시겠습니까?\n\n제출 후 관리자 검토가 진행됩니다.")) {
+                handleSubmit(e, true);
+              }
+            }} disabled={loading} style={{ height: 42, padding: "0 24px", background: "linear-gradient(135deg, #3b82f6, #2563eb)", color: "#fff", border: "none", borderRadius: 6, fontSize: 14, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1, boxShadow: "0 2px 8px rgba(59,130,246,0.3)" }}>
+              {loading ? "처리 중..." : "📋 승인 심사 신청하기"}
+            </button>
+          </>
+        )}
+        {/* 정상승인 또는 PENDING 상태 또는 관리자: 단일 저장 버튼 */}
+        {(isAdmin || agencyData.status === "APPROVED" || (agencyData.status === "PENDING" && editMemberId) || formData.role !== "부동산회원") && (
+          <button onClick={(e) => handleSubmit(e, false)} disabled={loading} style={{ height: 42, padding: "0 24px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 14, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1 }}>
+            {loading ? "저장 중..." : isAdmin ? "저장" : "💾 정보 수정 저장"}
           </button>
         )}
-        <button onClick={(e) => handleSubmit(e, false)} disabled={loading} style={{ height: 42, padding: "0 24px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 14, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1 }}>
-          {loading ? "등록 중..." : "저장"}
-        </button>
         <button onClick={onBack} style={{ height: 42, padding: "0 24px", background: darkMode ? "#2c2d31" : "#fff", color: darkMode ? "#e1e4e8" : "#111827", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 6, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
           목록
-        </button>
-        <button onClick={onBack} style={{ height: 42, padding: "0 24px", background: darkMode ? "#2c2d31" : "#fff", color: darkMode ? "#e1e4e8" : "#111827", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 6, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
-          취소
         </button>
 
         {!isAdmin && editMemberId && (
