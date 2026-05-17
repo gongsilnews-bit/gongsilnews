@@ -118,10 +118,10 @@ function RealtyAdminContent() {
       setUserName(member.name || "이름없음");
       setPlanType(member.plan_type || "free");
 
-      const { data: agencyData } = await supabase.from("agencies").select("status, biz_cert_url, reg_cert_url, rejection_reason").eq("owner_id", member.id).single();
+      const { data: agencyData } = await supabase.from("agencies").select("status, biz_cert_url, reg_cert_url, reject_reason").eq("owner_id", member.id).single();
       if (agencyData) {
         if (agencyData.status) setAgencyStatus(agencyData.status);
-        if (agencyData.rejection_reason) setRejectionReason(agencyData.rejection_reason);
+        if (agencyData.reject_reason) setRejectionReason(agencyData.reject_reason);
         if (!agencyData.biz_cert_url) setShowDocWarning(true);
       }
 
