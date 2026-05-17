@@ -28,6 +28,7 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
   const [showDocWarning, setShowDocWarning] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [userRole, setUserRole] = useState<string>('');
+  const [agencyStatus, setAgencyStatus] = useState<string>('');
 
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [isSearchActive, setIsSearchActive] = useState(false);
@@ -119,19 +120,24 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
         if (data) {
           setCurrentUser(user);
           setUserRole(data.role);
+
+          const { data: agencyData } = await supabase
+            .from('agencies')
+            .select('biz_cert_url, reg_cert_url, status')
+            .eq('owner_id', user.id)
+            .single();
+
+          if (agencyData) {
+            setAgencyStatus(agencyData.status || '');
+          }
+
           if (data.signup_completed === false) {
             setSignupEmail(data.email || user.email || '');
             setSignupName(data.name || user.user_metadata?.full_name || '');
             setIsSignupCompleteOpen(true);
-          } else if (data.role === 'REALTOR') {
+          } else if (data.role === 'REALTOR' && agencyData) {
             // 부동산 회원인데 서류를 제출 안했는지 체크
-            const { data: agencyData } = await supabase
-              .from('agencies')
-              .select('biz_cert_url, reg_cert_url')
-              .eq('owner_id', user.id)
-              .single();
-
-            if (agencyData && !agencyData.biz_cert_url) {
+            if (!agencyData.biz_cert_url) {
               setShowDocWarning(true);
             }
           }
@@ -260,7 +266,7 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
           {currentUser ? (
             <div style={{ display: "flex", alignItems: "center", gap: "12px", fontSize: "12px" }}>
               <div style={{
-                background: userRole === 'ADMIN' ? '#111827' : userRole === 'REALTOR' ? '#2563eb' : 'rgba(255, 255, 255, 0.3)',
+                background: userRole === 'ADMIN' ? '#111827' : agencyStatus === 'REJECTED' ? '#ef4444' : userRole === 'REALTOR' ? '#2563eb' : 'rgba(255, 255, 255, 0.3)',
                 color: '#fff',
                 padding: '4px 10px',
                 borderRadius: '4px',
@@ -268,11 +274,12 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
                 cursor: 'pointer',
                 fontSize: '11px',
               }} onClick={() => { 
-                if (userRole === 'ADMIN') router.push('/admin'); 
+                if (agencyStatus === 'REJECTED') window.open('/realty_admin?menu=settings&tab=agency', '_blank');
+                else if (userRole === 'ADMIN') router.push('/admin'); 
                 else if (userRole === 'REALTOR') router.push('/realty_admin');
                 else router.push('/user_admin');
               }}>
-                {userRole === 'ADMIN' ? '최고관리자 >>' : userRole === 'REALTOR' ? '부동산회원 >>' : '일반회원 >>'}
+                {userRole === 'ADMIN' ? '최고관리자 >>' : agencyStatus === 'REJECTED' ? '서류보완 >>' : userRole === 'REALTOR' ? '부동산회원 >>' : '일반회원 >>'}
               </div>
               <div style={{ color: "rgba(255,255,255,0.7)", cursor: "pointer", fontWeight: "600", fontSize: "13px", whiteSpace: "nowrap" }} onClick={async () => {
                 const supabase = createClient();

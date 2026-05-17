@@ -17,6 +17,7 @@ export default function MapTopAuthButtons({ themeColor = "#1a73e8" }: { themeCol
   
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [userRole, setUserRole] = useState<string>('');
+  const [agencyStatus, setAgencyStatus] = useState<string>('');
 
   const searchWrapRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -36,6 +37,16 @@ export default function MapTopAuthButtons({ themeColor = "#1a73e8" }: { themeCol
           setCurrentUser(user);
           setUserRole(data.role || 'USER');
           
+          const { data: agencyData } = await supabase
+            .from('agencies')
+            .select('status')
+            .eq('owner_id', user.id)
+            .single();
+
+          if (agencyData) {
+            setAgencyStatus(agencyData.status || '');
+          }
+
           if (data.signup_completed === false) {
             setSignupEmail(data.email || user.email || '');
             setSignupName(data.name || user.user_metadata?.full_name || '');
@@ -108,7 +119,7 @@ export default function MapTopAuthButtons({ themeColor = "#1a73e8" }: { themeCol
         {currentUser ? (
           <div style={{ display: "flex", alignItems: "center", gap: "12px", fontSize: "12px" }}>
             <div style={{
-              background: userRole === 'ADMIN' ? '#111827' : userRole === 'REALTOR' ? '#2563eb' : '#6b7280',
+              background: userRole === 'ADMIN' ? '#111827' : agencyStatus === 'REJECTED' ? '#ef4444' : userRole === 'REALTOR' ? '#2563eb' : '#6b7280',
               color: '#fff',
               padding: '5px 12px',
               borderRadius: '20px',
@@ -116,11 +127,12 @@ export default function MapTopAuthButtons({ themeColor = "#1a73e8" }: { themeCol
               cursor: 'pointer',
               fontSize: '12px',
             }} onClick={() => { 
-              if (userRole === 'ADMIN') router.push('/admin'); 
+              if (agencyStatus === 'REJECTED') window.open('/realty_admin?menu=settings&tab=agency', '_blank');
+              else if (userRole === 'ADMIN') router.push('/admin'); 
               else if (userRole === 'REALTOR') router.push('/realty_admin');
               else router.push('/user_admin');
             }}>
-              {userRole === 'ADMIN' ? '최고관리자 >>' : userRole === 'REALTOR' ? '부동산회원 >>' : '일반회원 >>'}
+              {userRole === 'ADMIN' ? '최고관리자 >>' : agencyStatus === 'REJECTED' ? '서류보완 >>' : userRole === 'REALTOR' ? '부동산회원 >>' : '일반회원 >>'}
             </div>
             <div style={{ color: "#555", cursor: "pointer", fontWeight: "600", fontSize: "13px" }} onClick={handleLogout}>
               로그아웃
