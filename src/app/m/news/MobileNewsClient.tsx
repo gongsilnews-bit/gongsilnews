@@ -1379,7 +1379,10 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
             {/* 본문 */}
             <div
               style={{ fontSize: "16px", lineHeight: 1.8, color: "#333", wordBreak: "keep-all" }}
-              dangerouslySetInnerHTML={{ __html: articleDetail.content || "" }}
+              dangerouslySetInnerHTML={{ 
+                __html: (articleDetail.content || "")
+                  .replace(/<button[^>]*class="editor-media-delete"[^>]*>.*?<\/button>/gi, '') 
+              }}
               onClick={(e) => {
                 const target = e.target as HTMLElement;
                 const a = target.closest('a');
