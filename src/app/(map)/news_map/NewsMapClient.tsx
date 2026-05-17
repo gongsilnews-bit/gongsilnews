@@ -326,6 +326,7 @@ export default function NewsMapClient({ initialArticles, initialPopularArticles 
           averageCenter: true,
           minLevel: 4,
           gridSize: 60,
+          disableClickZoom: true,
           calculator: [5, 10, 30, 50],
           texts: (count: number) => count.toString(),
           styles: [
@@ -337,8 +338,13 @@ export default function NewsMapClient({ initialArticles, initialPopularArticles 
           ]
         });
 
-        // 클러스터 클릭 이벤트: 해당 클러스터의 기사들만 사이드바에 표시
+        // 클러스터 클릭 이벤트: 해당 클러스터의 기사들만 사이드바에 표시 및 적절히 줌인
         kakao.maps.event.addListener(clustererRef.current, 'clusterclick', (cluster: any) => {
+          let targetLevel = kakaoMapRef.current.getLevel() - 2;
+          if (targetLevel < 3) targetLevel = 3;
+          kakaoMapRef.current.setLevel(targetLevel, { anchor: cluster.getCenter() });
+          kakaoMapRef.current.panTo(cluster.getCenter());
+
           const clusterMarkers = cluster.getMarkers();
           const clusterArticleIds = clusterMarkers.map((m: any) => m._articleId).filter(Boolean);
           const matched = geoArticles.filter(a => clusterArticleIds.includes(a.id));

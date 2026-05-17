@@ -404,7 +404,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
 
       const map = new kakao.maps.Map(mapRef.current, {
         center: new kakao.maps.LatLng(37.5665, 126.978),
-        level: 7,
+        level: 6,
       });
       kakaoMapRef.current = map;
       setMapLoaded(true);
@@ -458,6 +458,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
         averageCenter: true,
         minLevel: 4,
         gridSize: 60,
+        disableClickZoom: true,
         calculator: [5, 10, 30, 50],
         texts: (count: number) => count.toString(),
         styles: [
@@ -470,6 +471,11 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
       });
 
       kakao.maps.event.addListener(clustererRef.current, 'clusterclick', (cluster: any) => {
+        let targetLevel = kakaoMapRef.current.getLevel() - 2;
+        if (targetLevel < 3) targetLevel = 3;
+        kakaoMapRef.current.setLevel(targetLevel, { anchor: cluster.getCenter() });
+        kakaoMapRef.current.panTo(cluster.getCenter());
+
         const clusterMarkers = cluster.getMarkers();
         const clusterArticleIds = clusterMarkers.map((m: any) => m._articleId).filter(Boolean);
         const matched = localArticles.filter(a => clusterArticleIds.includes(a.id));
