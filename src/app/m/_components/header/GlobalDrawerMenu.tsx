@@ -370,9 +370,16 @@ export default function GlobalDrawerMenu() {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                         <span style={{ fontSize: '18px', fontWeight: 800 }}>{memberData?.name || currentUser?.user_metadata?.full_name || '회원'}님</span>
-                        <span style={{
+                        <span 
+                          onClick={() => {
+                            if (memberData?.agencyStatus === 'REJECTED') {
+                              openOverlay('/m/admin/settings?tab=agency');
+                            }
+                          }}
+                          style={{
                           ...getRoleBadgeStyle(memberData?.role || 'USER', memberData?.agencyStatus),
                           fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '10px',
+                          cursor: memberData?.agencyStatus === 'REJECTED' ? 'pointer' : 'default'
                         }}>
                           {getRoleLabel(memberData?.role || 'USER', memberData?.agencyStatus)}
                         </span>
