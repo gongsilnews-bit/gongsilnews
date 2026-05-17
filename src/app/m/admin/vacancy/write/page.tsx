@@ -482,6 +482,25 @@ function MobileVacancyWrite() {
     }
   };
 
+  const formatPhone = (v: string) => {
+    let val = v.replace(/[^0-9]/g, "");
+    if (val.startsWith("02")) {
+      if (val.length < 3) return val;
+      if (val.length < 6) return val.replace(/(\d{2})(\d{1,3})/, "$1-$2");
+      if (val.length < 10) return val.replace(/(\d{2})(\d{3})(\d{1,4})/, "$1-$2-$3");
+      return val.replace(/(\d{2})(\d{4})(\d{1,4})/, "$1-$2-$3");
+    } else if (val.startsWith("15") || val.startsWith("16") || val.startsWith("18")) {
+      // 1588-0000 
+      if (val.length < 5) return val;
+      return val.replace(/(\d{4})(\d{1,4})/, "$1-$2");
+    } else {
+      if (val.length < 4) return val;
+      if (val.length < 7) return val.replace(/(\d{3})(\d{1,3})/, "$1-$2");
+      if (val.length < 11) return val.replace(/(\d{3})(\d{3})(\d{1,4})/, "$1-$2-$3");
+      return val.replace(/(\d{3})(\d{4})(\d{1,4})/, "$1-$2-$3");
+    }
+  };
+
   const formatKorean = (v: string) => {
     const n = parseInt(v); if (isNaN(n) || n<=0) return "";
     const eok = Math.floor(n/10000); const man = n%10000;
@@ -978,8 +997,8 @@ function MobileVacancyWrite() {
               <div><label style={{...labelStyle,fontSize:12,marginBottom:4}}>중개등록번호</label><input type="text" value={rRegNum} onChange={e=>setRRegNum(e.target.value)} style={{...inputStyle, background:"#fff"}}/></div>
               <div><label style={{...labelStyle,fontSize:12,marginBottom:4}}>대표자명</label><input type="text" value={rBoss} onChange={e=>setRBoss(e.target.value)} style={{...inputStyle, background:"#fff"}}/></div>
               <div><label style={{...labelStyle,fontSize:12,marginBottom:4}}>사업자등록번호</label><input type="text" value={rBizNum} onChange={e=>setRBizNum(e.target.value)} style={{...inputStyle, background:"#fff"}}/></div>
-              <div><label style={{...labelStyle,fontSize:12,marginBottom:4}}>일반번호</label><input type="tel" value={rTel} onChange={e=>setRTel(e.target.value)} style={{...inputStyle, background:"#fff"}}/></div>
-              <div><label style={{...labelStyle,fontSize:12,marginBottom:4}}>휴대번호</label><input type="tel" value={rCell} onChange={e=>setRCell(e.target.value)} style={{...inputStyle, background:"#fff"}}/></div>
+              <div><label style={{...labelStyle,fontSize:12,marginBottom:4}}>일반번호</label><input type="tel" value={rTel} onChange={e=>setRTel(formatPhone(e.target.value))} style={{...inputStyle, background:"#fff"}}/></div>
+              <div><label style={{...labelStyle,fontSize:12,marginBottom:4}}>휴대번호</label><input type="tel" value={rCell} onChange={e=>setRCell(formatPhone(e.target.value))} style={{...inputStyle, background:"#fff"}}/></div>
             </div>
             <div>
               <label style={{...labelStyle,fontSize:12,marginBottom:4}}>부동산 주소</label>
@@ -991,7 +1010,7 @@ function MobileVacancyWrite() {
             <div style={{ fontSize:16, fontWeight:800, color:"#111", marginBottom:14 }}>👤 등록자 정보</div>
             <div style={{ display:"flex", gap:10 }}>
               <div style={{flex:1}}><label style={labelStyle}>이름</label><input type="text" value={clientName} onChange={e=>setClientName(e.target.value)} style={inputStyle}/></div>
-              <div style={{flex:1}}><label style={labelStyle}>연락처</label><input type="tel" value={clientPhone} onChange={e=>setClientPhone(e.target.value)} placeholder="010-0000-0000" style={inputStyle}/></div>
+              <div style={{flex:1}}><label style={labelStyle}>연락처</label><input type="tel" value={clientPhone} onChange={e=>setClientPhone(formatPhone(e.target.value))} placeholder="010-0000-0000" style={inputStyle}/></div>
             </div>
           </div>
         )}
@@ -1028,7 +1047,7 @@ function MobileVacancyWrite() {
               <div style={{ fontSize:13, fontWeight:700, color:"#ea580c", marginBottom:8 }}>🔐 임대인 정보 (비공개)</div>
               <div style={{ display:"flex", gap:8, marginBottom:8 }}>
                 <div style={{flex:1}}><label style={{...labelStyle,fontSize:12}}>임대인명</label><input type="text" value={landlordName} onChange={e=>setLandlordName(e.target.value)} placeholder="이름" style={inputStyle}/></div>
-                <div style={{flex:1}}><label style={{...labelStyle,fontSize:12}}>연락처</label><input type="tel" value={landlordPhone} onChange={e=>setLandlordPhone(e.target.value)} placeholder="010-0000-0000" style={inputStyle}/></div>
+                <div style={{flex:1}}><label style={{...labelStyle,fontSize:12}}>연락처</label><input type="tel" value={landlordPhone} onChange={e=>setLandlordPhone(formatPhone(e.target.value))} placeholder="010-0000-0000" style={inputStyle}/></div>
               </div>
               <label style={{...labelStyle,fontSize:12}}>메모</label>
               <textarea value={landlordMemo} onChange={e=>setLandlordMemo(e.target.value)} placeholder="임대인 특이사항 등 중개사님만 보는 메모" rows={2} style={{...inputStyle, height:"auto", padding:10, resize:"vertical", lineHeight:1.4}}/>
