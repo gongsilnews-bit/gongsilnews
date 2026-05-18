@@ -287,7 +287,7 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
           }}>
             
             {/* --- 좌측 그룹: 로고 + 메뉴 (Top State에서는 전체 중앙 정렬됨) --- */}
-            <div style={{ display: "flex", alignItems: isSmallHeader ? "center" : "flex-end", gap: isSmallHeader ? "24px" : "30px", flex: 1, minWidth: 0 }}>
+            <div style={{ display: "flex", alignItems: isSmallHeader ? "center" : "flex-end", gap: isSmallHeader ? "16px" : "20px", flex: 1, minWidth: 0 }}>
               {/* 1. 로고 (isSmallHeader에 따라 크기만 변경) */}
               <div style={{ display: "flex", alignItems: "flex-end", cursor: "pointer", flexShrink: 0 }} onClick={() => window.location.href = "/"}>
                 <img src="/logo.png" style={{ height: isSmallHeader ? "45px" : "70px", transition: "height 0.3s ease" }} alt="부동산 정보채널 공실뉴스" />
@@ -300,7 +300,7 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
                 </div>
               ) : (
                 <nav className="gnb-new" style={{ 
-                  display: "flex", alignItems: "center", gap: "20px", 
+                  display: "flex", alignItems: "center", gap: "14px", 
                   justifyContent: "flex-start",
                   transition: "all 0.3s ease",
                   whiteSpace: "nowrap",
@@ -308,9 +308,10 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
                   flex: 1
                 }}>
                   <Link href="/news_map" className={pathname === "/news_map" ? "active" : ""}>우리동네뉴스</Link>
-                  <Link href="/news_politics" className={pathname === "/news_politics" || pathname === "/news_law" ? "active" : ""}>부동산·경제</Link>
-                  <Link href="/news_marketing" className={pathname === "/news_marketing" ? "active" : ""}>실무노하우</Link>
-                  <Link href="/news_etc" className={pathname === "/news_etc" || pathname === "/news_life" ? "active" : ""}>오피니언</Link>
+                  <Link href="/news_local" className={pathname === "/news_local" ? "active" : ""}>공실뉴스</Link>
+                  <Link href="/news_politics" className={pathname === "/news_politics" ? "active" : ""}>부동산·경제</Link>
+                  <Link href="/news_marketing" className={pathname === "/news_marketing" ? "active" : ""}>AI마케팅</Link>
+                  <Link href="/news_etc" className={pathname === "/news_etc" ? "active" : ""}>라이프·오피니언</Link>
 
                   {isSmallHeader && <span className="divider" style={{ width: 1, height: 16, backgroundColor: "#ddd", margin: "0 4px" }}></span>}
                   
@@ -477,6 +478,87 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
                   <button onClick={clearSearches} style={{ background: "none", border: "none", fontSize: "13px", color: "#888", cursor: "pointer", textDecoration: "underline" }}>전체 기록 삭제</button>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      , document.body)}
+
+      {/* 햄버거 메가 메뉴 (Portal 사용) */}
+      {isMegaMenuOpen && typeof document !== 'undefined' && createPortal(
+        <div style={{
+          position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh", 
+          background: "rgba(255, 255, 255, 0.98)", zIndex: 9999999, 
+          overflowY: "auto", padding: "60px 20px"
+        }}>
+          {/* 닫기 버튼 */}
+          <button 
+            onClick={() => setIsMegaMenuOpen(false)}
+            style={{ position: "absolute", top: "40px", right: "60px", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+          >
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="1.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+          
+          <div style={{ maxWidth: 1200, margin: "0 auto", marginTop: 40 }}>
+            <h2 style={{ fontSize: 32, fontWeight: 900, marginBottom: 40, borderBottom: "4px solid #111", paddingBottom: 20, color: "#111" }}>전체 서비스</h2>
+            
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 40 }}>
+              {/* 1. 공실뉴스 */}
+              <div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: "#111", marginBottom: 20 }}>공실뉴스</div>
+                <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 14 }}>
+                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_local"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>아파트/오피스텔</a></li>
+                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_local"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>빌라/주택</a></li>
+                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_local"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>원룸/투룸(풀옵션)</a></li>
+                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_local"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>상가/사무실/공장/토지</a></li>
+                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_local"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>신축/분양/경매</a></li>
+                </ul>
+              </div>
+
+              {/* 2. 부동산 경제 */}
+              <div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: "#111", marginBottom: 20 }}>부동산 경제</div>
+                <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 14 }}>
+                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_politics"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>부동산 정책/동향</a></li>
+                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_politics"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>경제/재테크/주식</a></li>
+                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_politics"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>법률/세무 지식</a></li>
+                </ul>
+              </div>
+
+              {/* 3. AI마케팅 */}
+              <div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: "#111", marginBottom: 20 }}>AI마케팅</div>
+                <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 14 }}>
+                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_marketing"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>AI/NEWS</a></li>
+                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_marketing"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>부동산유튜브/블로그</a></li>
+                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_marketing"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>공실/임대관리</a></li>
+                </ul>
+              </div>
+
+              {/* 4. 라이프.오피니언 */}
+              <div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: "#111", marginBottom: 20 }}>라이프·오피니언</div>
+                <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 14 }}>
+                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_etc"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>인물/인터뷰</a></li>
+                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_etc"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>부동산/인테리어 꿀팁</a></li>
+                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_etc"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>맛집/여행/건강</a></li>
+                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_etc"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>자유 에세이</a></li>
+                </ul>
+              </div>
+              
+              {/* 플랫폼 서비스 */}
+              <div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: "#ef4444", marginBottom: 20 }}>플랫폼 서비스</div>
+                <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 14 }}>
+                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_map"); }} style={{ fontSize: 16, color: "#ef4444", textDecoration: "none", fontWeight: 700 }}>우리동네뉴스 (공실열람)</a></li>
+                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/#special-lecture"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>부동산특강</a></li>
+                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/board"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>자료실 (드론/서식 등)</a></li>
+                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/board?id=free"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>커뮤니티</a></li>
+                </ul>
+              </div>
+            </div>
+            
+            <div style={{ marginTop: 60, padding: "20px 0", borderTop: "1px solid #e5e7eb", textAlign: "center", color: "#888", fontSize: 14 }}>
+              부동산 정보채널 공실뉴스
             </div>
           </div>
         </div>

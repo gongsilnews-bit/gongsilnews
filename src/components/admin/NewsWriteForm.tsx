@@ -1473,31 +1473,43 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
               <select value={section1} onChange={e => { setSection1(e.target.value); setSection2(""); }}
                 style={{ width: 180, padding: "8px 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 14, color: textPrimary, background: cardBg, outline: "none", fontFamily: "inherit", cursor: "pointer", appearance: "none", backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 12px center" }}>
                 <option value="" disabled style={{ color: textMuted }}>1차섹션 선택</option>
-                <option value="우리동네부동산">우리동네부동산</option>
-                <option value="뉴스/칼럼">뉴스/칼럼</option>
+                <option value="공실뉴스">공실뉴스</option>
+                <option value="부동산·경제">부동산·경제</option>
+                <option value="AI마케팅">AI마케팅</option>
+                <option value="라이프·오피니언">라이프·오피니언</option>
               </select>
               <select value={section2} onChange={e => setSection2(e.target.value)}
                 style={{ width: 180, padding: "8px 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 14, color: textPrimary, background: cardBg, outline: "none", fontFamily: "inherit", cursor: "pointer", appearance: "none", backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 12px center" }}>
                 <option value="" disabled style={{ color: textMuted }}>2차섹션 전체</option>
-                {section1 === "우리동네부동산" && (
+                {section1 === "공실뉴스" && (
                   <>
-                    <option value="아파트·오피스텔">아파트·오피스텔</option>
-                    <option value="빌라·주택">빌라·주택</option>
-                    <option value="원룸·투룸">원룸·투룸</option>
-                    <option value="상가·업무·공장·토지">상가·업무·공장·토지</option>
-                    <option value="분양">분양</option>
+                    <option value="아파트/오피스텔">아파트/오피스텔</option>
+                    <option value="빌라/주택">빌라/주택</option>
+                    <option value="원룸/투룸(풀옵션)">원룸/투룸(풀옵션)</option>
+                    <option value="상가/사무실/공장/토지">상가/사무실/공장/토지</option>
+                    <option value="신축/분양/경매">신축/분양/경매</option>
                   </>
                 )}
-                {section1 === "뉴스/칼럼" && (
+                {section1 === "부동산·경제" && (
                   <>
-                    <option value="부동산마케팅">부동산마케팅</option>
-                    <option value="부동산·주식·재테크">부동산·주식·재테크</option>
-                    <option value="정치·경제·사회">정치·경제·사회</option>
-                    <option value="세무·법률">세무·법률</option>
-                    <option value="여행·건강·생활">여행·건강·생활</option>
-                    <option value="IT·가전·가구">IT·가전·가구</option>
-                    <option value="스포츠·연예·Car">스포츠·연예·Car</option>
-                    <option value="인물·미션·기타">인물·미션·기타</option>
+                    <option value="부동산 정책/동향">부동산 정책/동향</option>
+                    <option value="경제/재테크/주식">경제/재테크/주식</option>
+                    <option value="법률/세무 지식">법률/세무 지식</option>
+                  </>
+                )}
+                {section1 === "AI마케팅" && (
+                  <>
+                    <option value="AI/NEWS">AI/NEWS</option>
+                    <option value="부동산유튜브/블로그">부동산유튜브/블로그</option>
+                    <option value="공실/임대관리">공실/임대관리</option>
+                  </>
+                )}
+                {section1 === "라이프·오피니언" && (
+                  <>
+                    <option value="인물/인터뷰">인물/인터뷰</option>
+                    <option value="부동산/인테리어 꿀팁">부동산/인테리어 꿀팁</option>
+                    <option value="맛집/여행/건강">맛집/여행/건강</option>
+                    <option value="자유 에세이">자유 에세이</option>
                   </>
                 )}
               </select>

@@ -25,17 +25,12 @@ export default function Footer() {
         <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 20px", display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 40 }}>
           {/* 공실뉴스 */}
           <div className="sitemap-col">
-            <div className="sitemap-title">공실뉴스</div>
-            <Link href="/news_all" className="sitemap-link">전체뉴스</Link>
-            <Link href="/news_map" className="sitemap-link">우리동네부동산</Link>
-            <Link href="/news_all?section1=부동산마케팅" className="sitemap-link">부동산마케팅</Link>
-            <Link href="/news_finance" className="sitemap-link">부동산·주식·재테크</Link>
-            <Link href="/news_politics" className="sitemap-link">정치·경제·사회</Link>
-            <Link href="/news_law" className="sitemap-link">세무·법률</Link>
-            <Link href="/news_life" className="sitemap-link">여행·건강·생활</Link>
-            <Link href="/news_etc?cat=it" className="sitemap-link">IT·가전·가구</Link>
-            <Link href="/news_etc?cat=sports" className="sitemap-link">스포츠·연예·Car</Link>
-            <Link href="/news_etc?cat=mission" className="sitemap-link">인물·미션·기타</Link>
+            <div className="sitemap-title">뉴스</div>
+            <Link href="/news_map" className="sitemap-link">우리동네뉴스</Link>
+            <Link href="/news_local" className="sitemap-link">공실뉴스</Link>
+            <Link href="/news_politics" className="sitemap-link">부동산·경제</Link>
+            <Link href="/news_marketing" className="sitemap-link">AI마케팅</Link>
+            <Link href="/news_etc" className="sitemap-link">라이프·오피니언</Link>
           </div>
           {/* 서비스 */}
           <div className="sitemap-col">

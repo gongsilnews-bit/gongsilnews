@@ -122,12 +122,20 @@ export async function saveArticle(data: {
     // ---------------------------------------------
 
     if (articleId) {
-      // 수정 횟수 제한 체크 (발행된 기사만 카운트)
-      const { data: existing } = await supabase.from("articles").select("edit_count, status").eq("id", articleId).single();
-      if (existing && existing.status === "APPROVED" && (existing.edit_count || 0) >= 3) {
+      // 수정 횟수 제한 체크 (발행된 기사만 카운트, 최고관리자는 제한 없음)
+      const { data: existing } = await supabase.from("articles").select("edit_count, status, author_id").eq("id", articleId).single();
+      
+      // 관리자 여부 확인
+      let isAdmin = false;
+      if (data.author_id) {
+        const { data: currentMember } = await supabase.from('members').select('role').eq('id', data.author_id).single();
+        if (currentMember?.role === 'ADMIN') isAdmin = true;
+      }
+      
+      if (!isAdmin && existing && existing.status === "APPROVED" && (existing.edit_count || 0) >= 3) {
         return { success: false, error: "수정 가능 횟수(3회)를 초과했습니다. 기사를 삭제 후 새로 작성해 주세요." };
       }
-      // 발행된 기사를 수정하면 edit_count 증가
+      // 발행된 기사를 수정하면 edit_count 증가 (관리자도 카운트는 하되 제한만 안 걸림)
       if (existing && existing.status === "APPROVED") {
         (articleData as any).edit_count = (existing.edit_count || 0) + 1;
       }

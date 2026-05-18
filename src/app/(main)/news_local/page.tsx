@@ -1,12 +1,11 @@
 import NewsListLayout from "@/components/NewsListLayout";
 import { getArticles } from "@/app/actions/article";
 
-export default async function NewsMarketingPage() {
-  // Fetch all articles for section1 = 'AI마케팅'
+export default async function NewsLocalPage() {
   const [articlesRes, popularRes, importantRes] = await Promise.all([
-    getArticles({ status: "APPROVED", section1: "AI마케팅" }),
-    getArticles({ status: "APPROVED", section1: "AI마케팅", limit: 50 }),
-    getArticles({ status: "APPROVED", is_important: true, section1: "AI마케팅", limit: 15 })
+    getArticles({ status: "APPROVED", section1: "공실뉴스" }),
+    getArticles({ status: "APPROVED", section1: "공실뉴스", limit: 50 }),
+    getArticles({ status: "APPROVED", is_important: true, section1: "공실뉴스", limit: 15 })
   ]);
 
   const articles = articlesRes.success ? (articlesRes.data || []) : [];
@@ -15,11 +14,11 @@ export default async function NewsMarketingPage() {
     : [];
   const importantArticles = importantRes.success ? (importantRes.data || []) : [];
 
-  const subCategories = ["AI/NEWS", "부동산유튜브/블로그", "공실/임대관리"];
+  const subCategories = ["아파트/오피스텔", "빌라/주택", "원룸/투룸(풀옵션)", "상가/사무실/공장/토지", "신축/분양/경매"];
 
   return <NewsListLayout 
-    category="AI마케팅" 
-    title="AI마케팅" 
+    category="공실뉴스" 
+    title="공실뉴스" 
     initialArticles={articles} 
     initialPopular={popular} 
     importantArticles={importantArticles} 
