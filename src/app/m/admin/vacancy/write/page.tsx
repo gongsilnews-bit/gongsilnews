@@ -606,6 +606,58 @@ function MobileVacancyWrite() {
     </div>
   );
 
+  const handleNextStep = () => {
+    if (currentStep === 1) {
+      if (!deposit) {
+        const el = document.getElementById("input-deposit");
+        el?.scrollIntoView({ behavior: "smooth", block: "center" });
+        el?.focus();
+        return;
+      }
+      if ((tradeType === "월세" || tradeType === "단기") && !monthly) {
+        const el = document.getElementById("input-monthly");
+        el?.scrollIntoView({ behavior: "smooth", block: "center" });
+        el?.focus();
+        return;
+      }
+      if (!exclusiveM2 && !exclusivePy) {
+        const el = areaUnit === "m2" ? document.getElementById("input-exclusiveM2") : document.getElementById("input-exclusivePy");
+        el?.scrollIntoView({ behavior: "smooth", block: "center" });
+        el?.focus();
+        return;
+      }
+    }
+    
+    if (currentStep === 2) {
+      if (!sido) {
+        const el = document.getElementById("input-sido");
+        el?.scrollIntoView({ behavior: "smooth", block: "center" });
+        el?.focus();
+        return;
+      }
+      if (!sigungu) {
+        const el = document.getElementById("input-sigungu");
+        el?.scrollIntoView({ behavior: "smooth", block: "center" });
+        el?.focus();
+        return;
+      }
+      if (!dong) {
+        const el = document.getElementById("input-dong");
+        el?.scrollIntoView({ behavior: "smooth", block: "center" });
+        el?.focus();
+        return;
+      }
+      if (!detailAddr) {
+        const el = document.getElementById("input-detailAddr");
+        el?.scrollIntoView({ behavior: "smooth", block: "center" });
+        el?.focus();
+        return;
+      }
+    }
+    
+    setCurrentStep(s => s + 1);
+  };
+
   const StepIndicator = () => (
     <div style={{ display:"flex", alignItems:"center", justifyContent:"center", padding:"16px 24px 8px", gap:0 }}>
       {STEP_LABELS.map((label, i) => {
@@ -641,7 +693,7 @@ function MobileVacancyWrite() {
         </button>
       )}
       {currentStep < TOTAL_STEPS ? (
-        <button type="button" onClick={()=>setCurrentStep(s=>s+1)}
+        <button type="button" onClick={handleNextStep}
           style={{ height:46, padding:"0 24px", background:"linear-gradient(135deg,#3b82f6,#2563eb)", color:"#fff", border:"none", borderRadius:10, fontSize:14, fontWeight:800, cursor:"pointer", boxShadow:"0 2px 8px rgba(59,130,246,0.3)" }}>
           다음 →
         </button>
@@ -692,14 +744,14 @@ function MobileVacancyWrite() {
 
           <label style={labelStyle}>{tradeType==="매매"?"매매가":"보증금"} {deposit && <span style={{color:"#f97316", fontWeight:600}}>{formatKorean(deposit)}</span>}</label>
           <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:10 }}>
-            <input type="number" value={deposit} onChange={e=>setDeposit(e.target.value)} placeholder="만원 단위" style={inputStyle} />
+            <input id="input-deposit" type="number" value={deposit} onChange={e=>setDeposit(e.target.value)} placeholder="만원 단위" style={inputStyle} />
             <span style={{ color:"#6b7280", fontSize:13, flexShrink:0 }}>만원</span>
           </div>
 
           {(tradeType==="월세"||tradeType==="단기") && (<>
             <label style={labelStyle}>월세 {monthly && <span style={{color:"#f97316",fontWeight:600}}>{formatKorean(monthly)}</span>}</label>
             <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:10 }}>
-              <input type="number" value={monthly} onChange={e=>setMonthly(e.target.value)} placeholder="만원 단위" style={inputStyle} />
+              <input id="input-monthly" type="number" value={monthly} onChange={e=>setMonthly(e.target.value)} placeholder="만원 단위" style={inputStyle} />
               <span style={{ color:"#6b7280", fontSize:13, flexShrink:0 }}>만원</span>
             </div>
           </>)}
@@ -732,9 +784,9 @@ function MobileVacancyWrite() {
             <div style={{flex:1}}>
               <label style={labelStyle}>전용면적({areaUnit==="m2"?"m²":"평"})</label>
               {areaUnit==="m2" ? (
-                <input type="number" value={exclusiveM2} onChange={e=>handleM2Change(e.target.value, setExclusiveM2, setExclusivePy)} placeholder="59" style={inputStyle}/>
+                <input id="input-exclusiveM2" type="number" value={exclusiveM2} onChange={e=>handleM2Change(e.target.value, setExclusiveM2, setExclusivePy)} placeholder="59" style={inputStyle}/>
               ) : (
-                <input type="number" value={exclusivePy} onChange={e=>handlePyChange(e.target.value, setExclusivePy, setExclusiveM2)} placeholder="17.8" style={inputStyle}/>
+                <input id="input-exclusivePy" type="number" value={exclusivePy} onChange={e=>handlePyChange(e.target.value, setExclusivePy, setExclusiveM2)} placeholder="17.8" style={inputStyle}/>
               )}
             </div>
           </div>
@@ -818,15 +870,15 @@ function MobileVacancyWrite() {
             🔍 주소 검색
           </button>
           <div style={{ display:"flex", gap:8, marginBottom:10 }}>
-            <div style={{flex:1}}><label style={labelStyle}>시/도</label><input type="text" value={sido} onChange={e=>setSido(e.target.value)} placeholder="서울" style={inputStyle}/></div>
-            <div style={{flex:1}}><label style={labelStyle}>시/군/구</label><input type="text" value={sigungu} onChange={e=>setSigungu(e.target.value)} placeholder="강남구" style={inputStyle}/></div>
+            <div style={{flex:1}}><label style={labelStyle}>시/도</label><input id="input-sido" type="text" value={sido} onChange={e=>setSido(e.target.value)} placeholder="서울" style={inputStyle}/></div>
+            <div style={{flex:1}}><label style={labelStyle}>시/군/구</label><input id="input-sigungu" type="text" value={sigungu} onChange={e=>setSigungu(e.target.value)} placeholder="강남구" style={inputStyle}/></div>
           </div>
           <div style={{ display:"flex", gap:8, marginBottom:10 }}>
-            <div style={{flex:1}}><label style={labelStyle}>동/읍/면</label><input type="text" value={dong} onChange={e=>setDong(e.target.value)} placeholder="논현동" style={inputStyle}/></div>
+            <div style={{flex:1}}><label style={labelStyle}>동/읍/면</label><input id="input-dong" type="text" value={dong} onChange={e=>setDong(e.target.value)} placeholder="논현동" style={inputStyle}/></div>
             <div style={{flex:1}}><label style={labelStyle}>건물명 {!isFieldExposed("buildingName") && <PrivateTag/>}</label><input type="text" value={buildingName} onChange={e=>setBuildingName(e.target.value)} placeholder="건물명" style={inputStyle}/></div>
           </div>
           <label style={labelStyle}>상세주소 {!isFieldExposed("detailAddr") && <PrivateTag/>}</label>
-          <input type="text" value={detailAddr} onChange={e=>setDetailAddr(e.target.value)} placeholder="상세주소 입력" style={{...inputStyle, marginBottom:10}}/>
+          <input id="input-detailAddr" type="text" value={detailAddr} onChange={e=>setDetailAddr(e.target.value)} placeholder="상세주소 입력" style={{...inputStyle, marginBottom:10}}/>
 
           {/* 동/호수 (아파트인 경우) */}
           {propertyType === "아파트·오피스텔" && (

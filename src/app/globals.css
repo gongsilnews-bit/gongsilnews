@@ -161,8 +161,9 @@ button { border: none; background: none; cursor: pointer; font-family: inherit; 
 }
 .gnb-new {
     display: flex;
-    justify-content: space-between;
-    font-size: 16px;
+    justify-content: center;
+    gap: 32px;
+    font-size: 17px;
     font-weight: 800;
     color: #222;
     align-items: center;

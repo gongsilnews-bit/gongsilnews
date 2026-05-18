@@ -46,14 +46,22 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
   const [selectedVacancyId, setSelectedVacancyId] = useState<string | null>(null);
 
   useEffect(() => {
+    // Set article title globally for the sticky header
+    if (article?.title) {
+      window.dispatchEvent(new CustomEvent('setGlobalArticleTitle', { detail: article.title }));
+    }
+
     const handleMessage = (e: MessageEvent) => {
       if (e.data?.type === 'CLOSE_VACANCY_OVERLAY') {
         window.history.back(); // Trigger popstate
       }
     };
     window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, []);
+    return () => {
+      window.removeEventListener('message', handleMessage);
+      window.dispatchEvent(new CustomEvent('setGlobalArticleTitle', { detail: null }));
+    };
+  }, [article?.title]);
 
   useEffect(() => {
     if (selectedVacancyId) {

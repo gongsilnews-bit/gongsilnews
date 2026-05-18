@@ -1,33 +1,27 @@
 import NewsListLayout from "@/components/NewsListLayout";
 import { getArticles } from "@/app/actions/article";
 
-export default async function NewsEtcPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
-  const resolvedParams = await searchParams;
-  const cat = typeof resolvedParams.cat === 'string' ? resolvedParams.cat : undefined;
-
-  let displayTitle = "기타 전체보기";
-  let categoryFilter: string | string[] = ["IT·가전·가구", "스포츠·연예·Car", "인물·미션·기타"];
-
-  if (cat === "it") {
-    displayTitle = "IT·가전·가구";
-    categoryFilter = "IT·가전·가구";
-  } else if (cat === "sports") {
-    displayTitle = "스포츠·연예·Car";
-    categoryFilter = "스포츠·연예·Car";
-  } else if (cat === "mission") {
-    displayTitle = "인물·미션·기타";
-    categoryFilter = "인물·미션·기타";
-  }
-
-  const [articlesRes, popularRes] = await Promise.all([
-    getArticles({ status: "APPROVED", section2: categoryFilter }),
-    getArticles({ status: "APPROVED", section2: categoryFilter, limit: 50 }),
+export default async function NewsEtcPage() {
+  const [articlesRes, popularRes, importantRes] = await Promise.all([
+    getArticles({ status: "APPROVED", section1: "오피니언" }),
+    getArticles({ status: "APPROVED", section1: "오피니언", limit: 50 }),
+    getArticles({ status: "APPROVED", is_important: true, section1: "오피니언", limit: 15 })
   ]);
 
   const articles = articlesRes.success ? (articlesRes.data || []) : [];
   const popular = popularRes.success
     ? [...(popularRes.data || [])].sort((a, b) => (b.view_count || 0) - (a.view_count || 0)).slice(0, 5)
     : [];
+  const importantArticles = importantRes.success ? (importantRes.data || []) : [];
 
-  return <NewsListLayout category={typeof categoryFilter === 'string' ? categoryFilter : "기타"} title={displayTitle} initialArticles={articles} initialPopular={popular} />;
+  const subCategories = ["전문가 칼럼", "인터뷰(피플)", "자유 에세이"];
+
+  return <NewsListLayout 
+    category="오피니언" 
+    title="오피니언" 
+    initialArticles={articles} 
+    initialPopular={popular} 
+    importantArticles={importantArticles} 
+    subCategories={subCategories}
+  />;
 }

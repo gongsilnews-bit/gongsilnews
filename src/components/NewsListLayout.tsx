@@ -35,9 +35,10 @@ interface NewsListLayoutProps {
   importantArticles?: Article[];
   searchQuery?: string;
   isBookmarkMode?: boolean;
+  subCategories?: string[];
 }
 
-export default function NewsListLayout({ category, title, initialArticles, initialPopular, importantArticles = [], searchQuery, isBookmarkMode = false }: NewsListLayoutProps) {
+export default function NewsListLayout({ category, title, initialArticles, initialPopular, importantArticles = [], searchQuery, isBookmarkMode = false, subCategories = [] }: NewsListLayoutProps) {
   const router = useRouter();
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -45,6 +46,7 @@ export default function NewsListLayout({ category, title, initialArticles, initi
   const [bookmarks, setBookmarks] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null | 'ALL'>('ALL');
+  const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(null);
   
   // 모달 상태
   const [showCategoryModal, setShowCategoryModal] = useState(false);
@@ -84,7 +86,7 @@ export default function NewsListLayout({ category, title, initialArticles, initi
   }, [isBookmarkMode, showCategoryModal]);
 
   // 북마크 모드면 북마크된 기사 중 카테고리에 맞는 기사만 필터
-  const displayArticles = isBookmarkMode
+  let displayArticles = isBookmarkMode
     ? initialArticles.filter(a => {
         if (!bookmarkIds.includes(a.id)) return false;
         if (selectedCategoryId === 'ALL') return true;
@@ -93,6 +95,11 @@ export default function NewsListLayout({ category, title, initialArticles, initi
         return b.category_id === selectedCategoryId;
       })
     : initialArticles;
+
+  // 서브 카테고리 필터 적용 (section2 기준)
+  if (selectedSubCategory && !isBookmarkMode) {
+    displayArticles = displayArticles.filter(a => a.section2 === selectedSubCategory);
+  }
 
   const displayTitle = isBookmarkMode ? "📌 관심기사" : title;
 
@@ -176,7 +183,42 @@ export default function NewsListLayout({ category, title, initialArticles, initi
 
   return (
     <>
-      <main className="container px-20" style={{ position: "relative" }}>
+      <main className="container px-20" style={{ position: "relative", paddingTop: "20px" }}>
+        
+        {/* 전체 가로 폭을 차지하는 카테고리 헤더 (중앙일보 스타일) */}
+        <div style={{ 
+          display: "flex", alignItems: "flex-end", gap: "24px", 
+          paddingBottom: "12px", marginBottom: "24px" 
+        }}>
+          <div 
+            onClick={() => { setSelectedSubCategory(null); setCurrentPage(1); }}
+            style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "32px", fontWeight: "900", color: "#111", letterSpacing: "-1px", lineHeight: "1", cursor: "pointer" }}
+            title="전체 기사 보기"
+          >
+            {displayTitle}
+          </div>
+          
+          {!isBookmarkMode && subCategories && subCategories.length > 0 && (
+            <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "3px" }}>
+              {subCategories.map(sub => (
+                <button
+                  key={sub}
+                  onClick={() => { setSelectedSubCategory(sub); setCurrentPage(1); }}
+                  style={{ background: "none", border: "none", fontSize: "16px", fontWeight: selectedSubCategory === sub ? "800" : "500", color: selectedSubCategory === sub ? "#111" : "#6b7280", cursor: "pointer", padding: 0 }}
+                >
+                  {sub}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {isBookmarkMode && (
+            <span style={{ fontSize: 13, color: "#9ca3af", fontWeight: 500, marginBottom: "4px" }}>
+              총 {displayArticles.length}건
+            </span>
+          )}
+        </div>
+
         <div className="news-layout">
           {/* 좌측 뉴스 리스트 */}
           <div className="news-list-area">
@@ -184,16 +226,6 @@ export default function NewsListLayout({ category, title, initialArticles, initi
             {!isBookmarkMode && importantArticles.length > 0 && (
               <ImportantNewsRotate articles={importantArticles} />
             )}
-
-            <div className="list-header">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-              {displayTitle}
-              {isBookmarkMode && (
-                <span style={{ fontSize: 13, color: "#9ca3af", fontWeight: 500, marginLeft: 8 }}>
-                  총 {displayArticles.length}건
-                </span>
-              )}
-            </div>
 
             {/* Category Tabs for Bookmark Mode */}
             {isBookmarkMode && (

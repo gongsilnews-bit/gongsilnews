@@ -2,10 +2,11 @@ import NewsListLayout from "@/components/NewsListLayout";
 import { getArticles } from "@/app/actions/article";
 
 export default async function NewsPoliticsPage() {
+  // Fetch all articles for section1 = '부동산·경제'
   const [articlesRes, popularRes, importantRes] = await Promise.all([
-    getArticles({ status: "APPROVED", section2: "정치·경제·사회" }),
-    getArticles({ status: "APPROVED", section2: "정치·경제·사회", limit: 50 }),
-    getArticles({ status: "APPROVED", is_important: true, section2: "정치·경제·사회", limit: 15 })
+    getArticles({ status: "APPROVED", section1: "부동산·경제" }),
+    getArticles({ status: "APPROVED", section1: "부동산·경제", limit: 50 }),
+    getArticles({ status: "APPROVED", is_important: true, section1: "부동산·경제", limit: 15 })
   ]);
 
   const articles = articlesRes.success ? (articlesRes.data || []) : [];
@@ -14,5 +15,14 @@ export default async function NewsPoliticsPage() {
     : [];
   const importantArticles = importantRes.success ? (importantRes.data || []) : [];
 
-  return <NewsListLayout category="정치·경제·사회" title="정치·경제·사회" initialArticles={articles} initialPopular={popular} importantArticles={importantArticles} />;
+  const subCategories = ["부동산 정책/동향", "세무/법률 지식", "경제/재테크"];
+
+  return <NewsListLayout 
+    category="부동산·경제" 
+    title="부동산·경제" 
+    initialArticles={articles} 
+    initialPopular={popular} 
+    importantArticles={importantArticles} 
+    subCategories={subCategories}
+  />;
 }
