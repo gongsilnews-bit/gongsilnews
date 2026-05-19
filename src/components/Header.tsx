@@ -315,7 +315,39 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
 
                   {isSmallHeader && <span className="divider" style={{ width: 1, height: 16, backgroundColor: "#ddd", margin: "0 4px" }}></span>}
                   
-                  <Link href="/gongsil" style={{ color: "#102c57", fontWeight: 800, marginLeft: !isSmallHeader ? "auto" : "0" }}>공실열람</Link>
+                  <div style={{ position: "relative", marginLeft: !isSmallHeader ? "auto" : "0", display: "flex", alignItems: "center" }}>
+                    {/* 말풍선 */}
+                    <div style={{ 
+                      position: "absolute", 
+                      top: "-26px", 
+                      left: "50%", 
+                      transform: "translateX(-50%)", 
+                      backgroundColor: "#ef4444", 
+                      color: "#fff", 
+                      fontSize: "11px", 
+                      fontWeight: 900, 
+                      padding: "3px 8px", 
+                      borderRadius: "6px", 
+                      whiteSpace: "nowrap",
+                      zIndex: 10,
+                      boxShadow: "0 2px 5px rgba(239, 68, 68, 0.4)",
+                      letterSpacing: "-0.5px"
+                    }}>
+                      6/1 OPEN
+                      <div style={{
+                        position: "absolute",
+                        bottom: "-4px",
+                        left: "50%",
+                        transform: "translateX(-50%)",
+                        width: 0,
+                        height: 0,
+                        borderLeft: "4px solid transparent",
+                        borderRight: "4px solid transparent",
+                        borderTop: "5px solid #ef4444"
+                      }} />
+                    </div>
+                    <Link href="/gongsil" style={{ color: "#102c57", fontWeight: 800, display: "block" }}>공실열람</Link>
+                  </div>
                   <Link href="/#special-lecture">부동산특강</Link>
                   <div className="gnb-dropdown-parent" style={{ position: "relative", display: "inline-block" }}>
                     <Link href="/board" style={{ padding: "10px 0", transition: "color 0.2s" }}>자료실</Link>
