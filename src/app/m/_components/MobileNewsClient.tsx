@@ -515,8 +515,15 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
 
         // 2개 이상: 줌인 + 리스트 업데이트
         suppressIdleRef.current = true;
-        let targetLevel = kakaoMapRef.current.getLevel() - 2;
-        if (targetLevel < 3) targetLevel = 3;
+        let targetLevel: number;
+        if (matched.length <= 5) {
+          // 소규모 클러스터: minLevel(4) 아래로 바로 줌인 → 1번 클릭에 반드시 풀림
+          targetLevel = 3;
+        } else {
+          // 대규모 클러스터: 공격적으로 -3 레벨, 최소 2
+          targetLevel = kakaoMapRef.current.getLevel() - 3;
+          if (targetLevel < 2) targetLevel = 2;
+        }
         kakaoMapRef.current.setLevel(targetLevel, { anchor: cluster.getCenter() });
         kakaoMapRef.current.panTo(cluster.getCenter());
         setTimeout(() => { suppressIdleRef.current = false; }, 600);
