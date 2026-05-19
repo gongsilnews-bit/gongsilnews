@@ -48,11 +48,11 @@ const SearchOverlay = dynamic(() => import("../_components/header/SearchOverlay"
 const KAKAO_APP_KEY = process.env.NEXT_PUBLIC_KAKAO_APP_KEY || "435d3602201a49ea712e5f5a36fe6efc";
 
 const CATEGORIES = [
-  { key: "local", label: "우리동네뉴스", path: "/m/news_map" },
-  { key: "news_gongsil", label: "공실뉴스", path: "/m/news_gongsil" },
-  { key: "news_politics", label: "부동산·경제", path: "/m/news_politics" },
-  { key: "news_marketing", label: "AI마케팅", path: "/m/news_marketing" },
-  { key: "news_etc", label: "라이프·오피니언", path: "/m/news_etc" },
+  { key: "local", label: "우리동네뉴스", path: "/m/news_map", section1: "" },
+  { key: "news_gongsil", label: "공실뉴스", path: "/m/news_gongsil", section1: "공실뉴스" },
+  { key: "news_politics", label: "부동산·경제", path: "/m/news_politics", section1: "부동산·경제" },
+  { key: "news_marketing", label: "AI마케팅", path: "/m/news_marketing", section1: "AI마케팅" },
+  { key: "news_etc", label: "라이프·오피니언", path: "/m/news_etc", section1: "라이프·오피니언" },
 ];
 
 function formatDate(d: string) {
@@ -277,8 +277,10 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
 
   // 일반 뉴스 로드 (서버에서 받은 initialArticles 최우선 사용)
   useEffect(() => {
-    const keywordMatch = searchParams.get("keyword");
-    const authorMatch = searchParams.get("author_name");
+    const keywordMatch = searchParams.get("keyword") || "";
+    const authorMatch = searchParams.get("author_name") || "";
+    const savedKeyword = initialKeyword || "";
+    const savedAuthor = initialAuthorName || "";
 
     const loadSearchData = async () => {
       setLoading(true);
@@ -306,12 +308,27 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
       setLoading(false);
     };
 
-    if (keywordMatch !== initialKeyword || authorMatch !== initialAuthorName) {
+    if (keywordMatch !== savedKeyword || authorMatch !== savedAuthor) {
       loadSearchData();
     } else {
       setArticles(initialArticles);
     }
   }, [searchParams, initialArticles, initialKeyword, initialAuthorName]);
+
+  // 탭 전환 시 해당 카테고리 기사를 클라이언트에서 직접 fetch (SPA 전환으로 서버 컴포넌트가 안 돌 때 대비)
+  useEffect(() => {
+    if (activeTab === initialTab || activeTab === "local") return;
+    const cat = CATEGORIES.find(c => c.key === activeTab);
+    if (!cat || !cat.section1) return;
+
+    const fetchCategoryArticles = async () => {
+      setLoading(true);
+      const res = await getArticles({ status: "APPROVED", limit: 30, section1: cat.section1 });
+      if (res.success && res.data) setArticles(res.data);
+      setLoading(false);
+    };
+    fetchCategoryArticles();
+  }, [activeTab, initialTab]);
 
   // 우리동네뉴스 (lat/lng 있는 기사) 로드
   useEffect(() => {
