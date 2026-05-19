@@ -8,9 +8,10 @@ interface MapSearchBarProps {
   mapCenterRegion?: { sido: string; gugun: string; dong: string } | null;
   themeColor?: string;
   isPushedDown?: boolean;
+  children?: React.ReactNode;
 }
 
-export default function MapSearchBar({ onSearchCoord, onRegionSelect, mapCenterRegion, themeColor = "#ff8e15", isPushedDown = false }: MapSearchBarProps) {
+export default function MapSearchBar({ onSearchCoord, onRegionSelect, mapCenterRegion, themeColor = "#ff8e15", isPushedDown = false, children }: MapSearchBarProps) {
   const [activePanel, setActivePanel] = useState<"region" | "search" | null>(null);
   const [activeTab, setActiveTab] = useState<"sido" | "gugun" | "dong">("sido");
 
@@ -214,7 +215,7 @@ export default function MapSearchBar({ onSearchCoord, onRegionSelect, mapCenterR
   }, []);
 
   return (
-    <div style={{ position: "absolute", top: position.y, left: position.x, zIndex: 9 }}>
+    <div style={{ position: "absolute", top: position.y, left: position.x, zIndex: 9, display: "flex", alignItems: "center", gap: 8 }}>
       <style>{`
         #wishFloatingFilter { display: flex; background: #fff; padding: 5px 15px; border-radius: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border: 1px solid #ddd; align-items: center; gap: 10px; font-size: 14px; color: #333; transition: box-shadow 0.2s; cursor: ${isDragActive ? 'grabbing' : 'grab'}; }
         #wishFloatingFilter:hover { box-shadow: 0 6px 15px rgba(0,0,0,0.15); }
@@ -245,6 +246,9 @@ export default function MapSearchBar({ onSearchCoord, onRegionSelect, mapCenterR
           검색 🔍
         </span>
       </div>
+
+      {/* 추가 children (섹션 필터, 버튼 등) */}
+      {children}
 
       {/* 지역 선택 캐스케이딩 패널 */}
       {activePanel === "region" && (
