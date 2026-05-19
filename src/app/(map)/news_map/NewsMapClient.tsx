@@ -557,7 +557,7 @@ export default function NewsMapClient({ initialArticles, initialPopularArticles 
       <main style={{ display: "flex", flex: 1, minHeight: 0, position: "relative" }}>
 
         {/* ── 좌측 사이드바 ── */}
-        <aside style={{ width: 380, minWidth: 380, height: "100%", background: "#fff", borderRight: "1px solid #e5e5e5", display: "flex", flexDirection: "column", zIndex: 20 }}>
+        <aside className="desktop-sidebar" style={{ width: 380, minWidth: 380, height: "100%", background: "#fff", borderRight: "1px solid #e5e5e5", display: "flex", flexDirection: "column", zIndex: 20 }}>
           {/* 상단 헤더 */}
           <div style={{ padding: "14px 20px", borderBottom: "1px solid #eee", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0, background: clusterMode ? "#fff7ed" : "#fff" }}>
             <h2 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: "#111", display: "flex", alignItems: "center", gap: 6 }}>
@@ -649,7 +649,7 @@ export default function NewsMapClient({ initialArticles, initialPopularArticles 
 
 
           {/* ── 1. 리스트 패널 (우→좌 슬라이드) ── */}
-          <div style={{
+          <div className="mobile-full-panel" style={{
             position: "absolute", top: 0, right: 0, width: 420, maxWidth: "100%", height: "100%",
             borderLeft: "1px solid #ddd", boxShadow: "-5px 0 30px rgba(0,0,0,0.15)", background: "#fff",
             zIndex: 1500, display: "flex", flexDirection: "column",
@@ -710,7 +710,7 @@ export default function NewsMapClient({ initialArticles, initialPopularArticles 
           </div>
 
           {/* ── 2. 기사 상세 뷰 (우→좌 슬라이드) ── */}
-          <div style={{
+          <div className="mobile-full-panel" style={{
             position: "absolute", top: 0, right: 0, width: 750, maxWidth: "100%", height: "100%",
             borderLeft: "1px solid #ddd", boxShadow: "-5px 0 30px rgba(0,0,0,0.15)", background: "#fff",
             zIndex: 2000, overflowY: "auto",
@@ -879,6 +879,14 @@ export default function NewsMapClient({ initialArticles, initialPopularArticles 
         @keyframes spin {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
+        }
+        @media (max-width: 768px) {
+          .desktop-sidebar {
+            display: none !important;
+          }
+          .mobile-full-panel {
+            width: 100% !important;
+          }
         }
       `}</style>
     </div>
