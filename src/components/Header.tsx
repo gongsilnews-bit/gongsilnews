@@ -404,7 +404,7 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
         {/* === [Reading Progress Bar] 기사 읽기 모드일 때 하단에 진행바 표시 === */}
         {isScrolled && articleTitle && (
           <div style={{ position: "absolute", bottom: "-3px", left: 0, width: "100%", height: "3px", backgroundColor: "transparent" }}>
-            <div style={{ height: "100%", backgroundColor: "#ef4444", width: `${scrollProgress}%`, transition: "width 0.1s ease-out" }} />
+            <div style={{ height: "100%", backgroundColor: "#102c57", width: `${scrollProgress}%`, transition: "width 0.1s ease-out" }} />
           </div>
         )}
       </header>
