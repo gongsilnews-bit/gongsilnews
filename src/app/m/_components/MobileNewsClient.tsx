@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, Suspense } from "react";
+import React, { useState, useEffect, useRef, Suspense, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -302,18 +302,22 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
   useEffect(() => { if (activeTab === 'local' && sidoList.length === 0) loadSidoData(); }, [activeTab]);
 
   // 섹션 필터가 적용된 localArticles (지도 마커 + 리스트 모두에 사용)
-  const filteredLocalArticles = localArticles.filter((a: any) => {
-    if (section1Filter && a.section1 !== section1Filter) return false;
-    if (section2Filter && a.section2 !== section2Filter) return false;
-    return true;
-  });
+  const filteredLocalArticles = useMemo(() => {
+    return localArticles.filter((a: any) => {
+      if (section1Filter && a.section1 !== section1Filter) return false;
+      if (section2Filter && a.section2 !== section2Filter) return false;
+      return true;
+    });
+  }, [localArticles, section1Filter, section2Filter]);
 
   // 섹션 필터 적용 (section1/section2 정확 매칭)
-  const filteredVisibleArticles = visibleArticles.filter((a: any) => {
-    if (section1Filter && a.section1 !== section1Filter) return false;
-    if (section2Filter && a.section2 !== section2Filter) return false;
-    return true;
-  });
+  const filteredVisibleArticles = useMemo(() => {
+    return visibleArticles.filter((a: any) => {
+      if (section1Filter && a.section1 !== section1Filter) return false;
+      if (section2Filter && a.section2 !== section2Filter) return false;
+      return true;
+    });
+  }, [visibleArticles, section1Filter, section2Filter]);
 
   useEffect(() => { clusterModeRef.current = clusterMode; }, [clusterMode]);
 
@@ -422,7 +426,13 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
       // 2. 백그라운드에서 상세 데이터 보완 (조회수 증가, 댓글, 키워드 등)
       const res = await getArticleDetail(id);
       if (res.success && res.data) {
-        setArticleDetail(res.data);
+        setArticleDetail((prev: any) => {
+          if (prev && prev.id === res.data.id && prev.content?.includes("iframe")) {
+            // 유튜브 등 iframe이 포함된 경우, 렌더링 깜빡임(영상 끊김)을 방지하기 위해 기존 content 유지
+            return { ...res.data, content: prev.content };
+          }
+          return res.data;
+        });
       }
       setDetailLoading(false);
     } else {
@@ -541,7 +551,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
     markersRef.current = [];
 
     const newMarkers: any[] = [];
-    filteredLocalArticles.forEach((a) => {
+    filteredLocalArticles.forEach((a: any) => {
       if (!a.lat || !a.lng) return;
       const size = 48;
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
@@ -595,7 +605,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
       if (!bounds) return;
       const sw = bounds.getSouthWest();
       const ne = bounds.getNorthEast();
-      const visible = filteredLocalArticles.filter((a) => {
+      const visible = filteredLocalArticles.filter((a: any) => {
         if (!a.lat || !a.lng) return false;
         return a.lat >= sw.getLat() && a.lat <= ne.getLat() && a.lng >= sw.getLng() && a.lng <= ne.getLng();
       });
