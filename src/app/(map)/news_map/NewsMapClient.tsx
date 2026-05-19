@@ -590,6 +590,7 @@ export default function NewsMapClient({ initialArticles, initialPopularArticles 
             transform: showDetail ? "translateX(0)" : "translateX(-100%)",
             opacity: showDetail ? 1 : 0,
             visibility: showDetail ? "visible" : "hidden",
+            pointerEvents: showDetail ? "auto" : "none",
             transition: "transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease, visibility 0.4s"
           }}>
             {/* 닫기 버튼은 항상 렌더링 (로딩 중에도 닫을 수 있게) */}
