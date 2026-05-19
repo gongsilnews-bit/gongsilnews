@@ -71,35 +71,49 @@ export default function Footer() {
 
       {/* ── 사이트맵 (PC 전용) ── */}
       <div className="pc-sitemap">
-        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 20px", display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 40 }}>
-          {/* 뉴스 */}
+        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 20px", display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 40 }}>
+          {/* 1. 공실뉴스 */}
           <div className="sitemap-col">
-            <div className="sitemap-title">뉴스</div>
-            <Link href="/news_map" className="sitemap-link">우리동네뉴스</Link>
-            <Link href="/news_gongsil" className="sitemap-link">공실뉴스</Link>
-            <Link href="/news_politics" className="sitemap-link">부동산·경제</Link>
-            <Link href="/news_marketing" className="sitemap-link">AI마케팅</Link>
-            <Link href="/news_etc" className="sitemap-link">라이프·오피니언</Link>
+            <div className="sitemap-title" style={{ fontSize: 16 }}>공실뉴스</div>
+            <Link href="/news_gongsil" className="sitemap-link">아파트/오피스텔</Link>
+            <Link href="/news_gongsil" className="sitemap-link">빌라/주택</Link>
+            <Link href="/news_gongsil" className="sitemap-link">원룸/투룸(풀옵션)</Link>
+            <Link href="/news_gongsil" className="sitemap-link">상가/사무실/공장/토지</Link>
+            <Link href="/news_gongsil" className="sitemap-link">신축/분양/경매</Link>
           </div>
-          {/* 서비스 */}
+
+          {/* 2. 부동산 경제 */}
           <div className="sitemap-col">
-            <div className="sitemap-title">서비스</div>
-            <Link href="/gongsil" className="sitemap-link">공실열람</Link>
-            <Link href="/news_map" className="sitemap-link">우리동네뉴스</Link>
+            <div className="sitemap-title" style={{ fontSize: 16 }}>부동산 경제</div>
+            <Link href="/news_politics" className="sitemap-link">부동산 정책/동향</Link>
+            <Link href="/news_politics" className="sitemap-link">경제/재테크/주식</Link>
+            <Link href="/news_politics" className="sitemap-link">법률/세무 지식</Link>
+          </div>
+
+          {/* 3. AI마케팅 */}
+          <div className="sitemap-col">
+            <div className="sitemap-title" style={{ fontSize: 16 }}>AI마케팅</div>
+            <Link href="/news_marketing" className="sitemap-link">AI/NEWS</Link>
+            <Link href="/news_marketing" className="sitemap-link">부동산유튜브/블로그</Link>
+            <Link href="/news_marketing" className="sitemap-link">공실/임대관리</Link>
+          </div>
+
+          {/* 4. 라이프.오피니언 */}
+          <div className="sitemap-col">
+            <div className="sitemap-title" style={{ fontSize: 16 }}>라이프·오피니언</div>
+            <Link href="/news_etc" className="sitemap-link">인물/인터뷰</Link>
+            <Link href="/news_etc" className="sitemap-link">부동산/인테리어 꿀팁</Link>
+            <Link href="/news_etc" className="sitemap-link">맛집/여행/건강</Link>
+            <Link href="/news_etc" className="sitemap-link">자유 에세이</Link>
+          </div>
+          
+          {/* 5. 플랫폼 서비스 */}
+          <div className="sitemap-col">
+            <div className="sitemap-title" style={{ fontSize: 16, color: "#ef4444" }}>플랫폼 서비스</div>
+            <Link href="/news_map" className="sitemap-link" style={{ color: "#ef4444", fontWeight: 700 }}>우리동네뉴스 (공실열람)</Link>
             <Link href="/#special-lecture" className="sitemap-link">부동산특강</Link>
-            <Link href="/board?id=drone" className="sitemap-link">드론영상</Link>
-            <Link href="/board?id=app" className="sitemap-link">APP(앱)</Link>
-            <Link href="/board?id=prompt" className="sitemap-link">AI 프롬프트</Link>
-            <Link href="/board?id=sound" className="sitemap-link">음원</Link>
-            <Link href="/board?id=doc" className="sitemap-link">계약서/양식</Link>
-          </div>
-          {/* 커뮤니티 */}
-          <div className="sitemap-col">
-            <div className="sitemap-title">커뮤니티</div>
-            <Link href="/board?id=free" className="sitemap-link">자유게시판</Link>
-            <Link href="/board?id=qna" className="sitemap-link">Q&A게시판</Link>
-            <Link href="/board?id=notice" className="sitemap-link">공지사항</Link>
-            <Link href="/board?id=inquiry" className="sitemap-link">1:1 문의</Link>
+            <Link href="/board" className="sitemap-link">자료실 (드론/서식 등)</Link>
+            <Link href="/board?id=free" className="sitemap-link">커뮤니티</Link>
           </div>
         </div>
       </div>
