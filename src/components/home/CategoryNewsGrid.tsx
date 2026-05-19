@@ -114,10 +114,7 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
         </div>
       </div>
 
-      {/* 중간이슈 배너 */}
-      <div style={{ maxWidth: 1200, margin: "30px auto" }}>
-        <BannerSlot placement="MAIN_MIDDLE_ISSUE" style={{ borderRadius: 8, overflow: "hidden" }} initialBanners={middleIssueBanners} />
-      </div>
+
 
       {/* 6. Video News: 공실뉴스 */}
       <div className="video-wrap mb-50">
@@ -179,13 +176,7 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
             </div>
           </div>
           <div className="hi-right">
-            <div style={{ width: "100%", height: "100%", minHeight: 250, background: "linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", border: "1px dashed #ced4da" }}>
-              <div style={{ textAlign: "center", color: "#868e96" }}>
-                <div style={{ fontSize: 32, marginBottom: 8 }}>📢</div>
-                <div style={{ fontSize: 14, fontWeight: 600 }}>배너 광고 영역</div>
-                <div style={{ fontSize: 12, marginTop: 4 }}>BANNER AD</div>
-              </div>
-            </div>
+            <BannerSlot placement="MAIN_MIDDLE_ISSUE" initialBanners={middleIssueBanners} />
           </div>
         </div>
       </div>
