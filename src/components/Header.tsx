@@ -580,9 +580,9 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
               
               {/* 플랫폼 서비스 */}
               <div>
-                <div style={{ fontSize: 20, fontWeight: 800, color: "#ef4444", marginBottom: 20 }}>플랫폼 서비스</div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: "#111", marginBottom: 20 }}>플랫폼 서비스</div>
                 <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 14 }}>
-                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_map"); }} style={{ fontSize: 16, color: "#ef4444", textDecoration: "none", fontWeight: 700 }}>우리동네뉴스 (공실열람)</a></li>
+                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_map"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>우리동네뉴스 (공실열람)</a></li>
                   <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/#special-lecture"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>부동산특강</a></li>
                   <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/board"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>자료실 (드론/서식 등)</a></li>
                   <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/board?id=free"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>커뮤니티</a></li>

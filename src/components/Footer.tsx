@@ -109,8 +109,8 @@ export default function Footer() {
           
           {/* 5. 플랫폼 서비스 */}
           <div className="sitemap-col">
-            <div className="sitemap-title" style={{ fontSize: 18, color: "#ef4444" }}>플랫폼 서비스</div>
-            <Link href="/news_map" className="sitemap-link" style={{ color: "#ef4444", fontWeight: 700 }}>우리동네뉴스 (공실열람)</Link>
+            <div className="sitemap-title" style={{ fontSize: 18 }}>플랫폼 서비스</div>
+            <Link href="/news_map" className="sitemap-link">우리동네뉴스 (공실열람)</Link>
             <Link href="/#special-lecture" className="sitemap-link">부동산특강</Link>
             <Link href="/board" className="sitemap-link">자료실 (드론/서식 등)</Link>
             <Link href="/board?id=free" className="sitemap-link">커뮤니티</Link>
