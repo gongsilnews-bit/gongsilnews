@@ -13,8 +13,8 @@ export default function Footer() {
           .pc-sitemap { display: block !important; }
         }
         .sitemap-col { display: flex; flex-direction: column; gap: 10px; }
-        .sitemap-title { font-size: 15px; font-weight: 800; color: #111; margin-bottom: 12px; }
-        .sitemap-link { font-size: 14px; color: #555; text-decoration: none; transition: color 0.15s; letter-spacing: -0.3px; }
+        .sitemap-title { font-size: 16px; font-weight: 800; color: #111; margin-bottom: 12px; }
+        .sitemap-link { font-size: 15px; color: #555; text-decoration: none; transition: color 0.15s; letter-spacing: -0.3px; }
         .sitemap-link:hover { color: #2563eb; font-weight: 700; }
 
         /* ── 다크 테마 하단 푸터 스타일 ── */
@@ -74,7 +74,7 @@ export default function Footer() {
         <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 20px", display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 40 }}>
           {/* 1. 공실뉴스 */}
           <div className="sitemap-col">
-            <div className="sitemap-title" style={{ fontSize: 17 }}>공실뉴스</div>
+            <div className="sitemap-title" style={{ fontSize: 18 }}>공실뉴스</div>
             <Link href="/news_gongsil" className="sitemap-link">아파트/오피스텔</Link>
             <Link href="/news_gongsil" className="sitemap-link">빌라/주택</Link>
             <Link href="/news_gongsil" className="sitemap-link">원룸/투룸(풀옵션)</Link>
@@ -84,7 +84,7 @@ export default function Footer() {
 
           {/* 2. 부동산 경제 */}
           <div className="sitemap-col">
-            <div className="sitemap-title" style={{ fontSize: 17 }}>부동산 경제</div>
+            <div className="sitemap-title" style={{ fontSize: 18 }}>부동산 경제</div>
             <Link href="/news_politics" className="sitemap-link">부동산 정책/동향</Link>
             <Link href="/news_politics" className="sitemap-link">경제/재테크/주식</Link>
             <Link href="/news_politics" className="sitemap-link">법률/세무 지식</Link>
@@ -92,7 +92,7 @@ export default function Footer() {
 
           {/* 3. AI마케팅 */}
           <div className="sitemap-col">
-            <div className="sitemap-title" style={{ fontSize: 17 }}>AI마케팅</div>
+            <div className="sitemap-title" style={{ fontSize: 18 }}>AI마케팅</div>
             <Link href="/news_marketing" className="sitemap-link">AI/NEWS</Link>
             <Link href="/news_marketing" className="sitemap-link">부동산유튜브/블로그</Link>
             <Link href="/news_marketing" className="sitemap-link">공실/임대관리</Link>
@@ -100,7 +100,7 @@ export default function Footer() {
 
           {/* 4. 라이프.오피니언 */}
           <div className="sitemap-col">
-            <div className="sitemap-title" style={{ fontSize: 17 }}>라이프·오피니언</div>
+            <div className="sitemap-title" style={{ fontSize: 18 }}>라이프·오피니언</div>
             <Link href="/news_etc" className="sitemap-link">인물/인터뷰</Link>
             <Link href="/news_etc" className="sitemap-link">부동산/인테리어 꿀팁</Link>
             <Link href="/news_etc" className="sitemap-link">맛집/여행/건강</Link>
@@ -109,7 +109,7 @@ export default function Footer() {
           
           {/* 5. 플랫폼 서비스 */}
           <div className="sitemap-col">
-            <div className="sitemap-title" style={{ fontSize: 17, color: "#ef4444" }}>플랫폼 서비스</div>
+            <div className="sitemap-title" style={{ fontSize: 18, color: "#ef4444" }}>플랫폼 서비스</div>
             <Link href="/news_map" className="sitemap-link" style={{ color: "#ef4444", fontWeight: 700 }}>우리동네뉴스 (공실열람)</Link>
             <Link href="/#special-lecture" className="sitemap-link">부동산특강</Link>
             <Link href="/board" className="sitemap-link">자료실 (드론/서식 등)</Link>
