@@ -48,7 +48,6 @@ const SearchOverlay = dynamic(() => import("../_components/header/SearchOverlay"
 const KAKAO_APP_KEY = process.env.NEXT_PUBLIC_KAKAO_APP_KEY || "435d3602201a49ea712e5f5a36fe6efc";
 
 const CATEGORIES = [
-  { key: "local", label: "우리동네뉴스", path: "/m/news_map", section1: "" },
   { key: "news_gongsil", label: "공실뉴스", path: "/m/news_gongsil", section1: "공실뉴스" },
   { key: "news_politics", label: "부동산·경제", path: "/m/news_politics", section1: "부동산·경제" },
   { key: "news_marketing", label: "AI마케팅", path: "/m/news_marketing", section1: "AI마케팅" },

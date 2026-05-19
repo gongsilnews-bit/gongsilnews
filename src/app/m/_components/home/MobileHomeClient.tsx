@@ -44,7 +44,6 @@ interface Props {
 
 const CATEGORIES = [
   { key: "home", label: "홈", path: "/m" },
-  { key: "local", label: "우리동네뉴스", path: "/m/news_map" },
   { key: "news_gongsil", label: "공실뉴스", path: "/m/news_gongsil" },
   { key: "news_politics", label: "부동산·경제", path: "/m/news_politics" },
   { key: "news_marketing", label: "AI마케팅", path: "/m/news_marketing" },

@@ -523,7 +523,6 @@ export default function GlobalDrawerMenu() {
               <h3 style={{ padding: '16px 20px 8px', fontSize: '14px', fontWeight: 700, color: '#6b7280', margin: 0 }}>뉴스</h3>
               <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
                 {[
-                  { name: "우리동네뉴스", path: "/m/news_map" },
                   { name: "공실뉴스", path: "/m/news_gongsil" },
                   { name: "부동산·경제", path: "/m/news_politics" },
                   { name: "AI마케팅", path: "/m/news_marketing" },
@@ -545,7 +544,6 @@ export default function GlobalDrawerMenu() {
               <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
                 {[
                   { name: "공실열람", path: "/m/gongsil" },
-                  { name: "우리동네뉴스", path: "/m/news_map" },
                   { name: "부동산특강", path: "/m/study" },
                   { name: "드론영상", path: "/m/board?id=drone" },
                   { name: "APP(앱)", path: "/m/board?id=app" },
