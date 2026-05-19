@@ -125,7 +125,7 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
       {/* 6. Video News: 공실뉴스 */}
       <div className="video-wrap mb-50">
         <div className="sec-title-wrap">
-          <Link href="/news_local" style={{ textDecoration: "none" }}><h2 className="sec-title">공실뉴스 &gt;</h2></Link>
+          <Link href="/news_gongsil" style={{ textDecoration: "none" }}><h2 className="sec-title">공실뉴스 &gt;</h2></Link>
         </div>
         <div className="video-grid">
           {mapArts.length > 0 ? (

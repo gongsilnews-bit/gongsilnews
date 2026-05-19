@@ -27,7 +27,7 @@ export default function Footer() {
           <div className="sitemap-col">
             <div className="sitemap-title">뉴스</div>
             <Link href="/news_map" className="sitemap-link">우리동네뉴스</Link>
-            <Link href="/news_local" className="sitemap-link">공실뉴스</Link>
+            <Link href="/news_gongsil" className="sitemap-link">공실뉴스</Link>
             <Link href="/news_politics" className="sitemap-link">부동산·경제</Link>
             <Link href="/news_marketing" className="sitemap-link">AI마케팅</Link>
             <Link href="/news_etc" className="sitemap-link">라이프·오피니언</Link>
