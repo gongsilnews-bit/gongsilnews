@@ -38,7 +38,15 @@ interface NewsListLayoutProps {
   subCategories?: string[];
 }
 
-export default function NewsListLayout({ category, title, initialArticles, initialPopular, importantArticles = [], searchQuery, isBookmarkMode = false, subCategories = [] }: NewsListLayoutProps) {
+export default function NewsListLayout(props: NewsListLayoutProps) {
+  return (
+    <React.Suspense fallback={<div style={{ padding: '20px', textAlign: 'center' }}>Loading...</div>}>
+      <NewsListLayoutInner {...props} />
+    </React.Suspense>
+  );
+}
+
+function NewsListLayoutInner({ category, title, initialArticles, initialPopular, importantArticles = [], searchQuery, isBookmarkMode = false, subCategories = [] }: NewsListLayoutProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
