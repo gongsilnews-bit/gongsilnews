@@ -18,13 +18,12 @@ const parser = new Parser({
 });
 
 const FULL_CATEGORY_MAP = [
-  { category: "부동산·주식·재테크", keyword: "부동산 OR 주식 OR 재테크" },
-  { category: "정치·경제·사회", keyword: "정치 OR 경제 OR 사회" },
-  { category: "세무·법률", keyword: "세금 OR 세무 OR 법률 OR 판례" },
-  { category: "여행·건강·생활", keyword: "여행 OR 건강 OR 생활가이드" },
-  { category: "IT·가전·가구", keyword: "IT신제품 OR 가전제품 OR 인테리어가구" },
-  { category: "스포츠·연예·CAR", keyword: "스포츠 OR 연예 OR 신차출시" },
-  { category: "인물·미션·기타", keyword: "인물인터뷰 OR 트렌드 OR 휴먼스토리" }
+  { section1: "부동산·경제", section2: "부동산 정책/동향", keyword: "부동산 정책 OR 부동산 동향 OR 아파트 분양" },
+  { section1: "부동산·경제", section2: "법률/세무 지식", keyword: "부동산 세금 OR 취득세 OR 종부세 OR 부동산 판례 OR 전세사기" },
+  { section1: "부동산·경제", section2: "경제/재테크/주식", keyword: "금리 인하 OR 주식 시장 OR 경제 전망 OR 재테크" },
+  { section1: "AI마케팅", section2: "AI/NEWS", keyword: "생성형 AI OR 챗GPT OR 프롭테크" },
+  { section1: "라이프·오피니언", section2: "맛집/여행/건강", keyword: "국내 여행 OR 해외 여행 OR 건강 관리 OR 맛집 추천" },
+  { section1: "라이프·오피니언", section2: "IT/가전/가구", keyword: "스마트폰 출시 OR IT 신제품 OR 스마트홈" }
 ];
 
 export async function GET(req: Request) {
@@ -48,7 +47,7 @@ export async function GET(req: Request) {
   const config = configData?.settings || {
     isActive: true,
     hours: [8, 14, 23],
-    categories: FULL_CATEGORY_MAP.map(c => c.category)
+    categories: FULL_CATEGORY_MAP.map(c => c.section2)
   };
 
   // 수동 실행이 아닌 경우(Cron 자동 실행인 경우) 시간과 활성화 여부 체크
@@ -71,10 +70,10 @@ export async function GET(req: Request) {
   const { data: admin } = await supabase.from('members').select('id, name, email').eq('email', 'gongsilnews@gmail.com').single();
 
   // 설정된 카테고리만 필터링해서 수집
-  let activeCategories = FULL_CATEGORY_MAP.filter(c => config.categories.includes(c.category));
+  let activeCategories = FULL_CATEGORY_MAP.filter(c => config.categories.includes(c.section2));
 
   if (isManualRun && manualCategory) {
-    activeCategories = FULL_CATEGORY_MAP.filter(c => c.category === manualCategory);
+    activeCategories = FULL_CATEGORY_MAP.filter(c => c.section2 === manualCategory);
   }
 
   const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
@@ -85,7 +84,7 @@ export async function GET(req: Request) {
       const feed = await parser.parseURL(rssUrl);
       
       if (!feed.items || feed.items.length === 0) {
-        results.push({ category: item.category, status: 'skipped (no news)' });
+        results.push({ category: item.section2, status: 'skipped (no news)' });
         continue;
       }
 
@@ -97,7 +96,7 @@ export async function GET(req: Request) {
       // 에이전트(편집국장)에게 10개 던져주고 1개 골라서 쓰라고 요청
       const aiResult = await NewsArticleAgent.writeArticle({
         sourceText: candidateNews,
-        category: item.category
+        category: item.section2
       });
 
       // AI가 선택한 뉴스의 원문 출처(URL) 추가
@@ -112,8 +111,8 @@ export async function GET(req: Request) {
           title: aiResult.title,
           subtitle: aiResult.subtitle,
           content: finalContent,
-          section1: item.category,
-          section2: "일반",
+          section1: item.section1,
+          section2: item.section2,
           status: 'DRAFT',
           author_id: admin?.id || null,
           author_name: admin?.name || '공실뉴스 AI 비서',
@@ -137,11 +136,11 @@ export async function GET(req: Request) {
         }
       }
 
-      results.push({ category: item.category, status: 'success', articleId: article?.id, title: aiResult.title });
+      results.push({ category: item.section2, status: 'success', articleId: article?.id, title: aiResult.title });
 
     } catch (err: any) {
-      console.error(`[Cron News - ${item.category}] Error:`, err);
-      results.push({ category: item.category, status: 'error', message: err.message });
+      console.error(`[Cron News - ${item.section2}] Error:`, err);
+      results.push({ category: item.section2, status: 'error', message: err.message });
     }
     
     // 구글 Gemini AI의 무료 티어 제한(분당 30회) 방지를 위해 카테고리당 8초씩 대기
