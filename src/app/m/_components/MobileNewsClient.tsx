@@ -575,6 +575,11 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
   const tabBarRef = useRef<HTMLDivElement>(null);
 
   const handleSwipeStart = (e: React.TouchEvent) => {
+    if ((e.target as HTMLElement).closest('.map-container')) {
+      touchStartX.current = null;
+      touchStartY.current = null;
+      return;
+    }
     touchStartX.current = e.touches[0].clientX;
     touchStartY.current = e.touches[0].clientY;
     touchStartTime.current = Date.now();
@@ -888,10 +893,8 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
 
             {/* 상단: 카카오 지도 */}
           <div
+            className="map-container"
             style={{ position: "relative", width: "100%", height: "45vh", borderBottom: "1px solid #ddd", flexShrink: 0 }}
-            onTouchStart={(e) => e.stopPropagation()}
-            onTouchMove={(e) => e.stopPropagation()}
-            onTouchEnd={(e) => e.stopPropagation()}
           >
             <div ref={mapRef} style={{ width: "100%", height: "100%" }} />
 
