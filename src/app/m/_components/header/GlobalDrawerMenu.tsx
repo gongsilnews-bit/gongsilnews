@@ -518,20 +518,24 @@ export default function GlobalDrawerMenu() {
               </ul>
             </div>
 
-            {/* ── 4. 공실뉴스 ── */}
+            {/* ── 4. 뉴스 ── */}
             <div style={{ background: '#fff', marginBottom: '8px' }}>
-              <h3 style={{ padding: '16px 20px 8px', fontSize: '14px', fontWeight: 700, color: '#6b7280', margin: 0 }}>공실뉴스</h3>
+              <h3 style={{ padding: '16px 20px 8px', fontSize: '14px', fontWeight: 700, color: '#6b7280', margin: 0 }}>뉴스</h3>
               <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-                {["전체뉴스", "우리동네부동산", "부동산마케팅", "부동산·주식·재테크", "정치·경제·사회", "세무·법률", "여행·건강·생활", "IT·가전·가구", "스포츠·연예·Car", "인물·미션·기타"].map(menu => {
-                  const tabParam = menu === "전체뉴스" ? "all" : menu === "우리동네부동산" ? "realestate" : menu;
-                  return (
-                  <li key={menu}>
-                    <a href={`/m/news?tab=${tabParam}`} onClick={(e) => openOverlay(`/m/news?tab=${tabParam}`, e)} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #f9fafb', color: '#1f2937', textDecoration: 'none' }}>
-                      <span style={{ fontSize: '15px', fontWeight: 500 }}>{menu}</span>
+                {[
+                  { name: "우리동네뉴스", path: "/m/news_map" },
+                  { name: "공실뉴스", path: "/m/news_gongsil" },
+                  { name: "부동산·경제", path: "/m/news_politics" },
+                  { name: "AI마케팅", path: "/m/news_marketing" },
+                  { name: "라이프·오피니언", path: "/m/news_etc" }
+                ].map(menu => (
+                  <li key={menu.name}>
+                    <a href={menu.path} onClick={(e) => openOverlay(menu.path, e)} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #f9fafb', color: '#1f2937', textDecoration: 'none' }}>
+                      <span style={{ fontSize: '15px', fontWeight: 500 }}>{menu.name}</span>
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
                     </a>
                   </li>
-                )})}
+                ))}
               </ul>
             </div>
 
@@ -541,7 +545,7 @@ export default function GlobalDrawerMenu() {
               <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
                 {[
                   { name: "공실열람", path: "/m/gongsil" },
-                  { name: "우리동네뉴스", path: "/m/news?tab=local" },
+                  { name: "우리동네뉴스", path: "/m/news_map" },
                   { name: "부동산특강", path: "/m/study" },
                   { name: "드론영상", path: "/m/board?id=drone" },
                   { name: "APP(앱)", path: "/m/board?id=app" },

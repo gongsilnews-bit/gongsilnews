@@ -114,7 +114,7 @@ function MobileBottomNavContent() {
       icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
     },
     {
-      name: "우리동네", path: "/m/news?tab=local",
+      name: "우리동네", path: "/m/news_map",
       icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
     },
     {
@@ -149,11 +149,11 @@ function MobileBottomNavContent() {
           const isActive = (() => {
             if (item.name === "홈") {
               if (pathname === "/m") return true;
-              if (pathname.startsWith("/m/news") && tab !== "local") return true;
+              if (pathname.startsWith("/m/news") && !pathname.startsWith("/m/news_map")) return true;
               return false;
             }
             if (item.name === "우리동네") {
-              if (pathname.startsWith("/m/news") && tab === "local") return true;
+              if (pathname.startsWith("/m/news_map")) return true;
               return false;
             }
             return pathname === item.path ||

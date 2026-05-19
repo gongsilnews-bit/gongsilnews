@@ -48,16 +48,11 @@ const SearchOverlay = dynamic(() => import("../_components/header/SearchOverlay"
 const KAKAO_APP_KEY = process.env.NEXT_PUBLIC_KAKAO_APP_KEY || "435d3602201a49ea712e5f5a36fe6efc";
 
 const CATEGORIES = [
-  { key: "all", label: "전체뉴스" },
-  { key: "realestate", label: "우리동네부동산" },
-  { key: "부동산마케팅", label: "부동산마케팅" },
-  { key: "부동산·주식·재테크", label: "부동산·재테크" },
-  { key: "정치·경제·사회", label: "정치·경제" },
-  { key: "세무·법률", label: "세무·법률" },
-  { key: "여행·건강·생활", label: "여행·생활" },
-  { key: "IT·가전·가구", label: "IT·가전·가구" },
-  { key: "스포츠·연예·Car", label: "스포츠·연예·Car" },
-  { key: "인물·미션·기타", label: "인물·미션·기타" },
+  { key: "local", label: "우리동네뉴스", path: "/m/news_map" },
+  { key: "news_gongsil", label: "공실뉴스", path: "/m/news_gongsil" },
+  { key: "news_politics", label: "부동산·경제", path: "/m/news_politics" },
+  { key: "news_marketing", label: "AI마케팅", path: "/m/news_marketing" },
+  { key: "news_etc", label: "라이프·오피니언", path: "/m/news_etc" },
 ];
 
 function formatDate(d: string) {
@@ -152,18 +147,13 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
   }, [showDetail]);
 
   // 애니메이션 오버레이 상태는 완전히 제거됨 (즉각적인 화면 전환을 위해)
-  // URL의 탭이 변경되면 activeTab 상태를 동기화
+  // URL의 탭이 변경되면 activeTab 상태를 동기화 (구버전 파라미터 로직 제거)
   useEffect(() => {
-    if (pathname === "/m/news_marketing") {
-      if (activeTab !== "부동산마케팅") setActiveTab("부동산마케팅");
-      return;
+    if (initialTab !== activeTab) {
+      setActiveTab(initialTab);
     }
-    const tab = searchParams.get("tab") || "all";
-    if (tab !== activeTab) {
-      setActiveTab(tab);
-    }
-  }, [searchParams, pathname, activeTab]);
-  const [visibleArticles, setVisibleArticles] = useState<any[]>([]);
+  }, [initialTab]);
+  const [visibleArticles, setVisibleArticles] = useState<any[]>(initialArticles || []);
   const [vacancyCount, setVacancyCount] = useState<number>(0);
   const [vacancyList, setVacancyList] = useState<any[]>([]);
   const [searchTab, setSearchTab] = useState<'article' | 'vacancy'>('article');
@@ -283,63 +273,43 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
 
   useEffect(() => { clusterModeRef.current = clusterMode; }, [clusterMode]);
 
-  // 일반 뉴스 로드
+  // 일반 뉴스 로드 (서버에서 받은 initialArticles 최우선 사용)
   useEffect(() => {
-    const loadArticles = async () => {
+    const keywordMatch = searchParams.get("keyword");
+    const authorMatch = searchParams.get("author_name");
+
+    const loadSearchData = async () => {
       setLoading(true);
       const filters: any = { status: "APPROVED", limit: 30 };
-      if (activeTab === "realestate") {
-        filters.section1 = "우리동네부동산";
-      } else if (activeTab !== "all" && activeTab !== "local") {
-        filters.section2 = activeTab;
+      if (authorMatch) filters.author_name = authorMatch;
+      if (keywordMatch) filters.keyword = keywordMatch;
+
+      if (keywordMatch) {
+        const [vRes, listRes, res] = await Promise.all([
+          getVacancyCountByKeyword(keywordMatch),
+          getVacancyListByKeyword(keywordMatch),
+          getArticles(filters)
+        ]);
+        if (vRes.success) setVacancyCount(vRes.count || 0);
+        else setVacancyCount(0);
+        if (listRes.success) setVacancyList(listRes.data || []);
+        else setVacancyList([]);
+        if (res.success && res.data) setArticles(res.data);
+      } else {
+        setVacancyCount(0);
+        setVacancyList([]);
+        const res = await getArticles(filters);
+        if (res.success && res.data) setArticles(res.data);
       }
-      
-      const authorMatch = searchParams.get("author_name");
-      if (authorMatch) {
-        filters.author_name = authorMatch;
-      }
-      
-      const keywordMatch = searchParams.get("keyword");
-        if (keywordMatch) {
-          filters.keyword = keywordMatch;
-          
-          const [vRes, listRes, res] = await Promise.all([
-            getVacancyCountByKeyword(keywordMatch),
-            getVacancyListByKeyword(keywordMatch),
-            getArticles(filters)
-          ]);
-
-          if (vRes.success) setVacancyCount(vRes.count || 0);
-          else setVacancyCount(0);
-          
-          if (listRes.success) setVacancyList(listRes.data || []);
-          else setVacancyList([]);
-
-          if (res.success && res.data) {
-            setArticles(res.data);
-          }
-        } else {
-          setVacancyCount(0);
-          setVacancyList([]);
-          const res = await getArticles(filters);
-          if (res.success && res.data) {
-            setArticles(res.data);
-          }
-        }
-
-        setLoading(false);
+      setLoading(false);
     };
 
-    if (activeTab !== "local" && activeTab !== initialTab) {
-      loadArticles();
-    } else if (activeTab === initialTab && articles.length === 0) {
-      loadArticles();
-    } else if (searchParams.get("author_name") !== initialAuthorName) {
-      loadArticles();
-    } else if (searchParams.get("keyword") !== initialKeyword) {
-      loadArticles();
+    if (keywordMatch !== initialKeyword || authorMatch !== initialAuthorName) {
+      loadSearchData();
+    } else {
+      setArticles(initialArticles);
     }
-  }, [activeTab, searchParams, initialTab, articles.length, initialAuthorName, initialKeyword]);
+  }, [searchParams, initialArticles, initialKeyword, initialAuthorName]);
 
   // 우리동네뉴스 (lat/lng 있는 기사) 로드
   useEffect(() => {
