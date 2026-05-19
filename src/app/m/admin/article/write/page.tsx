@@ -499,20 +499,17 @@ function MobileArticleWrite() {
               )}
               {section1 === "AI마케팅" && (
                 <>
-                  <option value="AI 활용법">AI 활용법</option>
-                  <option value="SNS 마케팅">SNS 마케팅</option>
-                  <option value="부동산 중개 실무">부동산 중개 실무</option>
-                  <option value="홍보/광고 전략">홍보/광고 전략</option>
-                  <option value="플랫폼 활용/노하우">플랫폼 활용/노하우</option>
+                  <option value="AI/NEWS">AI/NEWS</option>
+                  <option value="부동산유튜브/블로그">부동산유튜브/블로그</option>
+                  <option value="공실/임대관리">공실/임대관리</option>
                 </>
               )}
               {section1 === "라이프·오피니언" && (
                 <>
-                  <option value="자유 에세이">자유 에세이</option>
+                  <option value="인물/인터뷰">인물/인터뷰</option>
+                  <option value="부동산/인테리어 꿀팁">부동산/인테리어 꿀팁</option>
                   <option value="맛집/여행/건강">맛집/여행/건강</option>
-                  <option value="IT/가전/가구">IT/가전/가구</option>
-                  <option value="스포츠/연예/Car">스포츠/연예/Car</option>
-                  <option value="기타">기타</option>
+                  <option value="자유 에세이">자유 에세이</option>
                 </>
               )}
             </select>

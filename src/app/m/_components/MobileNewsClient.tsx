@@ -217,12 +217,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
   const [section1Filter, setSection1Filter] = useState("");
   const [section2Filter, setSection2Filter] = useState("");
 
-  const SECTION2_MAP: Record<string, string[]> = {
-    "공실뉴스": ["아파트/오피스텔", "빌라/주택", "원룸/투룸(풀옵션)", "상가/사무실/공장/토지", "신축/분양/경매"],
-    "부동산·경제": ["부동산 정책/동향", "경제/재테크/주식", "법률/세무 지식"],
-    "AI마케팅": ["AI 활용법", "SNS 마케팅", "부동산 중개 실무", "홍보/광고 전략", "플랫폼 활용/노하우"],
-    "라이프·오피니언": ["자유 에세이", "맛집/여행/건강", "IT/가전/가구", "스포츠/연예/Car", "기타"],
-  };
+
 
   const loadSidoData = async () => {
     try {
