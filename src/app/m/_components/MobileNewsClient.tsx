@@ -208,8 +208,10 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
   const [section2Filter, setSection2Filter] = useState("");
 
   const SECTION2_MAP: Record<string, string[]> = {
-    "우리동네부동산": ["아파트·오피스텔", "빌라·주택", "원룸·투룸", "상가·사무실·공장·토지", "분양"],
-    "뉴스/칼럼": ["부동산·주식·재테크", "정치·경제·사회", "세무·법률", "여행·건강·생활", "IT·가전·가구", "스포츠·연예·Car", "인물·미션·기타"],
+    "공실뉴스": ["아파트/오피스텔", "빌라/주택", "원룸/투룸(풀옵션)", "상가/사무실/공장/토지", "신축/분양/경매"],
+    "부동산·경제": ["부동산 정책/동향", "경제/재테크/주식", "법률/세무 지식"],
+    "AI마케팅": ["AI 활용법", "SNS 마케팅", "부동산 중개 실무", "홍보/광고 전략", "플랫폼 활용/노하우"],
+    "라이프·오피니언": ["자유 에세이", "맛집/여행/건강", "IT/가전/가구", "스포츠/연예/Car", "기타"],
   };
 
   const loadSidoData = async () => {
@@ -760,8 +762,10 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                   </button>
                   <select value={section1Filter} onChange={(e) => { setSection1Filter(e.target.value); setSection2Filter(""); }} style={{ padding: "7px 10px", borderRadius: "20px", fontSize: "13px", fontWeight: 600, border: section1Filter ? "1.5px solid #ea580c" : "1px solid #d1d5db", background: section1Filter ? "#fff7ed" : "#fff", color: section1Filter ? "#ea580c" : "#374151", cursor: "pointer", outline: "none", flexShrink: 0, appearance: "none" as any, WebkitAppearance: "none" as any, paddingRight: "24px", backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23666' fill='none' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 10px center" }}>
                     <option value="">1차섹션 전체</option>
-                    <option value="우리동네부동산">우리동네부동산</option>
-                    <option value="뉴스/칼럼">뉴스/칼럼</option>
+                    <option value="공실뉴스">공실뉴스</option>
+                    <option value="부동산·경제">부동산·경제</option>
+                    <option value="AI마케팅">AI마케팅</option>
+                    <option value="라이프·오피니언">라이프·오피니언</option>
                   </select>
                   <select value={section2Filter} onChange={(e) => setSection2Filter(e.target.value)} style={{ padding: "7px 10px", borderRadius: "20px", fontSize: "13px", fontWeight: 600, border: section2Filter ? "1.5px solid #ea580c" : "1px solid #d1d5db", background: section2Filter ? "#fff7ed" : "#fff", color: section2Filter ? "#ea580c" : "#374151", cursor: "pointer", outline: "none", flexShrink: 0, appearance: "none" as any, WebkitAppearance: "none" as any, paddingRight: "24px", backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23666' fill='none' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 10px center" }}>
                     <option value="">2차섹션 전체</option>
