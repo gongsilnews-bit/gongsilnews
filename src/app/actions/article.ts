@@ -201,54 +201,6 @@ export async function saveArticle(data: {
 }
 
 /* ── 캐싱된 기사 목록 조회 (기본) ── */
-const getArticlesCached = unstable_cache(
-  async (filters?: { status?: string; section1?: string; section2?: string | string[]; is_important?: boolean; is_headline?: boolean; limit?: number; keyword?: string; author_name?: string; author_id?: string }) => {
-    const supabase = getAdminClient();
-    let query = supabase
-      .from("articles")
-      .select("id, article_no, status, section1, section2, title, subtitle, content, author_name, author_id, published_at, created_at, updated_at, is_deleted, thumbnail_url, view_count, lat, lng, location_name, youtube_url, is_important, is_headline, reject_reason, edit_count, article_keywords(keyword)")
-      .eq("is_deleted", false)
-      .order("created_at", { ascending: false });
-
-    if (filters?.status) query = query.eq("status", filters.status);
-    if (filters?.section1) query = query.eq("section1", filters.section1);
-    if (filters?.section2) {
-      if (Array.isArray(filters.section2)) {
-        query = query.in("section2", filters.section2);
-      } else {
-        query = query.eq("section2", filters.section2);
-      }
-    }
-    if (filters?.is_important !== undefined) query = query.eq("is_important", filters.is_important);
-    if (filters?.is_headline !== undefined) query = query.eq("is_headline", filters.is_headline);
-    if (filters?.author_name) query = query.eq("author_name", filters.author_name);
-    if (filters?.author_id) query = query.eq("author_id", filters.author_id);
-    
-    if (filters?.keyword) {
-      // 키워드로 검색된 article_id 목록 추출
-      const { data: kwData, error: kwError } = await supabase
-        .from("article_keywords")
-        .select("article_id")
-        .eq("keyword", filters.keyword);
-        
-      if (!kwError && kwData && kwData.length > 0) {
-        query = query.in("id", kwData.map((k: any) => k.article_id));
-      } else {
-        // 일치하는 키워드가 없는 경우 빈 배열 즉시 리턴
-        return { success: true, data: [] };
-      }
-    }
-
-    if (filters?.limit) query = query.limit(filters.limit);
-
-    const { data, error } = await query;
-    if (error) return { success: false, error: error.message };
-    return { success: true, data };
-  },
-  ["articles-list"],
-  { tags: ["articles"], revalidate: 300 } // 5분 캐시
-);
-
 export async function getArticles(filters?: {
   status?: string;
   section1?: string;
@@ -260,7 +212,57 @@ export async function getArticles(filters?: {
   author_name?: string;
   author_id?: string;
 }) {
-  return await getArticlesCached(filters);
+  const cacheKey = JSON.stringify(filters || {});
+  
+  const fetcher = unstable_cache(
+    async () => {
+      const supabase = getAdminClient();
+      let query = supabase
+        .from("articles")
+        .select("id, article_no, status, section1, section2, title, subtitle, content, author_name, author_id, published_at, created_at, updated_at, is_deleted, thumbnail_url, view_count, lat, lng, location_name, youtube_url, is_important, is_headline, reject_reason, edit_count, article_keywords(keyword)")
+        .eq("is_deleted", false)
+        .order("created_at", { ascending: false });
+
+      if (filters?.status) query = query.eq("status", filters.status);
+      if (filters?.section1) query = query.eq("section1", filters.section1);
+      if (filters?.section2) {
+        if (Array.isArray(filters.section2)) {
+          query = query.in("section2", filters.section2);
+        } else {
+          query = query.eq("section2", filters.section2);
+        }
+      }
+      if (filters?.is_important !== undefined) query = query.eq("is_important", filters.is_important);
+      if (filters?.is_headline !== undefined) query = query.eq("is_headline", filters.is_headline);
+      if (filters?.author_name) query = query.eq("author_name", filters.author_name);
+      if (filters?.author_id) query = query.eq("author_id", filters.author_id);
+      
+      if (filters?.keyword) {
+        // 키워드로 검색된 article_id 목록 추출
+        const { data: kwData, error: kwError } = await supabase
+          .from("article_keywords")
+          .select("article_id")
+          .eq("keyword", filters.keyword);
+          
+        if (!kwError && kwData && kwData.length > 0) {
+          query = query.in("id", kwData.map((k: any) => k.article_id));
+        } else {
+          // 일치하는 키워드가 없는 경우 빈 배열 즉시 리턴
+          return { success: true, data: [] };
+        }
+      }
+
+      if (filters?.limit) query = query.limit(filters.limit);
+
+      const { data, error } = await query;
+      if (error) return { success: false, error: error.message };
+      return { success: true, data };
+    },
+    ["articles-list", cacheKey],
+    { tags: ["articles"], revalidate: 300 } // 5분 캐시
+  );
+
+  return await fetcher();
 }
 
 /* ── 제목/본문 텍스트 검색 ── */
