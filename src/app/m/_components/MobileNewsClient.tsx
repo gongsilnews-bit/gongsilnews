@@ -1034,6 +1034,47 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                 </p>
               </div>
             )}
+
+            {/* 지도위 기사 목록 보기 버튼 */}
+            {visibleArticles.length > 0 && mapLoaded && (
+              <div style={{ position: "absolute", bottom: "24px", left: "0", width: "100%", display: "flex", justifyContent: "center", zIndex: 20 }}>
+                <button
+                  onClick={() => {
+                    setListPanelArticles(visibleArticles);
+                    setShowListPanel(true);
+                    const params = new URLSearchParams(window.location.search);
+                    if (params.get('panel') !== 'list-panel') {
+                      params.set('panel', 'list-panel');
+                      window.history.pushState({ panel: 'list-panel' }, '', '?' + params.toString());
+                    }
+                  }}
+                  style={{
+                    background: "#ea580c",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: "30px",
+                    padding: "12px 24px",
+                    fontSize: "16px",
+                    fontWeight: 800,
+                    boxShadow: "0 6px 16px rgba(234,88,12,0.4)",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                  }}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="8" y1="6" x2="21" y2="6"></line>
+                    <line x1="8" y1="12" x2="21" y2="12"></line>
+                    <line x1="8" y1="18" x2="21" y2="18"></line>
+                    <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                    <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                    <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                  </svg>
+                  지도 위 기사 {visibleArticles.length}개
+                </button>
+              </div>
+            )}
           </div>
 
           {/* ── 리스트 패널 (우→좌 슬라이드) ── */}
