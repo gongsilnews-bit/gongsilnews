@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import ImportantNewsRotate from "./ImportantNewsRotate";
 import BannerSlot from "./BannerSlot";
 import { createClient } from "@/utils/supabase/client";
@@ -40,13 +40,31 @@ interface NewsListLayoutProps {
 
 export default function NewsListLayout({ category, title, initialArticles, initialPopular, importantArticles = [], searchQuery, isBookmarkMode = false, subCategories = [] }: NewsListLayoutProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
 
   const [currentPage, setCurrentPage] = useState(1);
   const [bookmarkIds, setBookmarkIds] = useState<string[]>([]);
   const [bookmarks, setBookmarks] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null | 'ALL'>('ALL');
-  const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(null);
+  const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(searchParams.get("section2") || null);
+
+  useEffect(() => {
+    setSelectedSubCategory(searchParams.get("section2") || null);
+  }, [searchParams]);
+
+  const handleSubCategoryClick = (sub: string | null) => {
+    setSelectedSubCategory(sub);
+    setCurrentPage(1);
+    const params = new URLSearchParams(searchParams.toString());
+    if (sub) {
+      params.set("section2", sub);
+    } else {
+      params.delete("section2");
+    }
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  };
   
   // 모달 상태
   const [showCategoryModal, setShowCategoryModal] = useState(false);
@@ -191,7 +209,7 @@ export default function NewsListLayout({ category, title, initialArticles, initi
           paddingBottom: "12px", marginBottom: "24px" 
         }}>
           <div 
-            onClick={() => { setSelectedSubCategory(null); setCurrentPage(1); }}
+            onClick={() => handleSubCategoryClick(null)}
             style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "32px", fontWeight: "900", color: "#111", letterSpacing: "-1px", lineHeight: "1", cursor: "pointer" }}
             title="전체 기사 보기"
           >
@@ -203,7 +221,7 @@ export default function NewsListLayout({ category, title, initialArticles, initi
               {subCategories.map(sub => (
                 <button
                   key={sub}
-                  onClick={() => { setSelectedSubCategory(sub); setCurrentPage(1); }}
+                  onClick={() => handleSubCategoryClick(sub)}
                   style={{ background: "none", border: "none", fontSize: "16px", fontWeight: selectedSubCategory === sub ? "800" : "500", color: selectedSubCategory === sub ? "#111" : "#6b7280", cursor: "pointer", padding: 0 }}
                 >
                   {sub}
