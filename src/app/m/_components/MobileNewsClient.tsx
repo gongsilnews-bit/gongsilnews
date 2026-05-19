@@ -486,6 +486,11 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
     }
   }, [activeTab, localArticles]);
 
+  const localArticlesRef = useRef<any[]>([]);
+  useEffect(() => {
+    localArticlesRef.current = localArticles;
+  }, [localArticles]);
+
   // 지도에 마커 업데이트 (localArticles 변경 시)
   useEffect(() => {
     if (!kakaoMapRef.current || !mapLoaded) return;
@@ -499,7 +504,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
         averageCenter: true,
         minLevel: 4,
         gridSize: 60,
-        disableClickZoom: false,
+        disableClickZoom: true,
         calculator: [5, 10, 30, 50],
         texts: (count: number) => count.toString(),
         styles: [
@@ -514,7 +519,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
       kakao.maps.event.addListener(clustererRef.current, 'clusterclick', (cluster: any) => {
         const clusterMarkers = cluster.getMarkers();
         const clusterArticleIds = clusterMarkers.map((m: any) => m._articleId).filter(Boolean);
-        const matched = localArticles.filter(a => clusterArticleIds.includes(a.id));
+        const matched = localArticlesRef.current.filter(a => clusterArticleIds.includes(a.id));
 
         suppressIdleRef.current = true;
         kakaoMapRef.current.panTo(cluster.getCenter());
