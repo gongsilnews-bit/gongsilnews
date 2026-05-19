@@ -508,11 +508,11 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
         calculator: [5, 10, 30, 50],
         texts: (count: number) => count.toString(),
         styles: [
-          { width: '38px', height: '38px', background: 'rgba(255, 142, 21, 0.85)', color: '#fff', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', fontWeight: 'bold', fontSize: '14px', border: '3px solid rgba(255,255,255,0.7)', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' },
-          { width: '44px', height: '44px', background: 'rgba(255, 130, 0, 0.88)', color: '#fff', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', fontWeight: 'bold', fontSize: '15px', border: '3px solid rgba(255,255,255,0.7)', boxShadow: '0 2px 8px rgba(0,0,0,0.2)' },
-          { width: '52px', height: '52px', background: 'rgba(230, 115, 0, 0.9)', color: '#fff', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', fontWeight: 'bold', fontSize: '16px', border: '3px solid rgba(255,255,255,0.7)', boxShadow: '0 3px 10px rgba(0,0,0,0.25)' },
-          { width: '60px', height: '60px', background: 'rgba(204, 102, 0, 0.92)', color: '#fff', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', fontWeight: 'bold', fontSize: '17px', border: '3px solid rgba(255,255,255,0.7)', boxShadow: '0 3px 12px rgba(0,0,0,0.3)' },
-          { width: '70px', height: '70px', background: 'rgba(178, 89, 0, 0.95)', color: '#fff', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', fontWeight: 'bold', fontSize: '19px', border: '3px solid rgba(255,255,255,0.7)', boxShadow: '0 4px 14px rgba(0,0,0,0.35)' }
+          { width: '56px', height: '56px', background: 'rgba(255, 142, 21, 0.85)', color: '#fff', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', fontWeight: 'bold', fontSize: '20px', border: '3px solid rgba(255,255,255,0.7)', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' },
+          { width: '66px', height: '66px', background: 'rgba(255, 130, 0, 0.88)', color: '#fff', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', fontWeight: 'bold', fontSize: '22px', border: '3px solid rgba(255,255,255,0.7)', boxShadow: '0 2px 8px rgba(0,0,0,0.2)' },
+          { width: '78px', height: '78px', background: 'rgba(230, 115, 0, 0.9)', color: '#fff', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', fontWeight: 'bold', fontSize: '24px', border: '3px solid rgba(255,255,255,0.7)', boxShadow: '0 3px 10px rgba(0,0,0,0.25)' },
+          { width: '90px', height: '90px', background: 'rgba(204, 102, 0, 0.92)', color: '#fff', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', fontWeight: 'bold', fontSize: '26px', border: '3px solid rgba(255,255,255,0.7)', boxShadow: '0 3px 12px rgba(0,0,0,0.3)' },
+          { width: '105px', height: '105px', background: 'rgba(178, 89, 0, 0.95)', color: '#fff', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', fontWeight: 'bold', fontSize: '28px', border: '3px solid rgba(255,255,255,0.7)', boxShadow: '0 4px 14px rgba(0,0,0,0.35)' }
         ]
       });
 
@@ -543,10 +543,10 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
     const newMarkers: any[] = [];
     filteredLocalArticles.forEach((a) => {
       if (!a.lat || !a.lng) return;
-      const size = 32;
+      const size = 48;
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
-        <circle cx="${size / 2}" cy="${size / 2}" r="${size / 2 - 2}" fill="#ff8e15" stroke="white" stroke-width="2.5"/>
-        <text x="50%" y="50%" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="13" font-weight="bold" font-family="sans-serif">1</text>
+        <circle cx="${size / 2}" cy="${size / 2}" r="${size / 2 - 2}" fill="#ff8e15" stroke="white" stroke-width="3"/>
+        <text x="50%" y="50%" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="19" font-weight="bold" font-family="sans-serif">1</text>
       </svg>`;
 
       const markerImage = new kakao.maps.MarkerImage(
