@@ -1072,7 +1072,6 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
             </div>
           </div>
         </div>
-        </div>
       ) : (
         /* 일반 뉴스 리스트 뷰 */
         <div className={slideAnim} style={{ flex: 1, paddingBottom: "20px" }}>
