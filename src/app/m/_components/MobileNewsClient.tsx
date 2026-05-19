@@ -586,28 +586,22 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
 
     if (dx < 0 && currentIdx < CATEGORIES.length - 1) {
       // ← 왼쪽 스와이프 → 다음 탭
-      const next = CATEGORIES[currentIdx + 1].key;
+      const next = CATEGORIES[currentIdx + 1];
       setSlideAnim("slide-out-left");
       setTimeout(() => {
-        setActiveTab(next);
-        setClusterMode(false);
-        setSlideAnim("slide-in-right");
-        setTimeout(() => setSlideAnim(""), 200);
+        router.push(next.path);
       }, 150);
     } else if (dx > 0) {
       // → 오른쪽 스와이프 → 이전 탭
       if (currentIdx === 0) {
-        // 첫 번째 탭에서 오른쪽 스와이프 시 홈으로 가는 기능은 오동작 우려가 커서 애니메이션만 주고 튕겨내도록 처리
+        // 첫 번째 탭에서 오른쪽 스와이프 시 튕겨내도록 처리
         setSlideAnim("slide-in-left");
         setTimeout(() => setSlideAnim(""), 200);
       } else if (currentIdx > 0) {
-        const prev = CATEGORIES[currentIdx - 1].key;
+        const prev = CATEGORIES[currentIdx - 1];
         setSlideAnim("slide-out-right");
         setTimeout(() => {
-          setActiveTab(prev);
-          setClusterMode(false);
-          setSlideAnim("slide-in-left");
-          setTimeout(() => setSlideAnim(""), 200);
+          router.push(prev.path);
         }, 150);
       }
     }
