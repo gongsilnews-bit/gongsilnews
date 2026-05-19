@@ -55,6 +55,14 @@ const CATEGORIES = [
   { key: "news_etc", label: "라이프·오피니언", path: "/m/news_etc", section1: "라이프·오피니언" },
 ];
 
+// PC와 동일한 2차 카테고리 맵
+const SECTION2_MAP: Record<string, string[]> = {
+  "공실뉴스": ["아파트/오피스텔", "빌라/주택", "원룸/투룸(풀옵션)", "상가/사무실/공장/토지", "신축/분양/경매"],
+  "부동산·경제": ["부동산 정책/동향", "경제/재테크/주식", "법률/세무 지식"],
+  "AI마케팅": ["AI/NEWS", "부동산유튜브/블로그", "공실/임대관리"],
+  "라이프·오피니언": ["인물/인터뷰", "부동산/인테리어 꿀팁", "맛집/여행/건강", "자유 에세이"],
+};
+
 function formatDate(d: string) {
   if (!d) return "";
   const dt = new Date(d);
@@ -103,6 +111,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedVacancyId, setSelectedVacancyId] = useState<string | null>(null);
+  const [section2Tab, setSection2Tab] = useState<string>("");
 
   useEffect(() => {
     const handleMessage = (e: MessageEvent) => {
@@ -151,6 +160,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
   useEffect(() => {
     if (initialTab !== activeTab) {
       setActiveTab(initialTab);
+      setSection2Tab(""); // 1차 카테고리 변경 시 2차 탭 초기화
     }
   }, [initialTab]);
   const [visibleArticles, setVisibleArticles] = useState<any[]>(initialArticles || []);
@@ -1067,6 +1077,69 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
       ) : (
         /* 일반 뉴스 리스트 뷰 */
         <div className={slideAnim} style={{ flex: 1, paddingBottom: "20px" }}>
+          {/* 2차 카테고리 탭바 (PC와 동일) */}
+          {(() => {
+            const cat = CATEGORIES.find(c => c.key === activeTab);
+            const subs = cat?.section1 ? SECTION2_MAP[cat.section1] : null;
+            if (!subs || subs.length === 0) return null;
+            return (
+              <div
+                className="hide-scrollbar"
+                onTouchStart={(e) => e.stopPropagation()}
+                onTouchEnd={(e) => e.stopPropagation()}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  overflowX: "auto",
+                  WebkitOverflowScrolling: "touch",
+                  background: "#fff",
+                  borderBottom: "1px solid #e5e7eb",
+                  padding: "0 4px",
+                  flexShrink: 0,
+                }}
+              >
+                <button
+                  onClick={() => setSection2Tab("")}
+                  style={{
+                    flexShrink: 0,
+                    padding: "12px 14px",
+                    fontSize: "14px",
+                    fontWeight: section2Tab === "" ? 700 : 500,
+                    color: section2Tab === "" ? "#1a2e50" : "#888",
+                    background: "none",
+                    border: "none",
+                    borderBottom: section2Tab === "" ? "2px solid #1a2e50" : "2px solid transparent",
+                    cursor: "pointer",
+                    whiteSpace: "nowrap",
+                    letterSpacing: "-0.3px",
+                  }}
+                >
+                  전체
+                </button>
+                {subs.map(sub => (
+                  <button
+                    key={sub}
+                    onClick={() => setSection2Tab(sub)}
+                    style={{
+                      flexShrink: 0,
+                      padding: "12px 14px",
+                      fontSize: "14px",
+                      fontWeight: section2Tab === sub ? 700 : 500,
+                      color: section2Tab === sub ? "#1a2e50" : "#888",
+                      background: "none",
+                      border: "none",
+                      borderBottom: section2Tab === sub ? "2px solid #1a2e50" : "2px solid transparent",
+                      cursor: "pointer",
+                      whiteSpace: "nowrap",
+                      letterSpacing: "-0.3px",
+                    }}
+                  >
+                    {sub}
+                  </button>
+                ))}
+              </div>
+            );
+          })()}
           {/* Author Profile Header */}
           {(authorProfile || initialAuthorName) && (
             <AuthorProfileHeader profile={authorProfile || { name: initialAuthorName, role: 'REALTOR', profile_image_url: null }} />
@@ -1198,8 +1271,11 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
 
           {/* 실 기사 리스트 */}
           {searchTab === 'article' && (() => {
-            const importantArticles = articles.filter(a => a.is_important);
-            const regularArticles = articles.filter(a => !a.is_important);
+            const filteredBySection2 = section2Tab
+              ? articles.filter(a => a.section2 === section2Tab)
+              : articles;
+            const importantArticles = filteredBySection2.filter(a => a.is_important);
+            const regularArticles = filteredBySection2.filter(a => !a.is_important);
             
             return (
               <div>
