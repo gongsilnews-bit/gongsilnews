@@ -22,8 +22,10 @@ const FULL_CATEGORY_MAP = [
   { section1: "부동산·경제", section2: "법률/세무 지식", keyword: "부동산 세금 OR 취득세 OR 종부세 OR 부동산 판례 OR 전세사기" },
   { section1: "부동산·경제", section2: "경제/재테크/주식", keyword: "금리 인하 OR 주식 시장 OR 경제 전망 OR 재테크" },
   { section1: "AI마케팅", section2: "AI/NEWS", keyword: "생성형 AI OR 챗GPT OR 프롭테크" },
-  { section1: "라이프·오피니언", section2: "맛집/여행/건강", keyword: "국내 여행 OR 해외 여행 OR 건강 관리 OR 맛집 추천" },
-  { section1: "라이프·오피니언", section2: "IT/가전/가구", keyword: "스마트폰 출시 OR IT 신제품 OR 스마트홈" }
+  { section1: "AI마케팅", section2: "부동산유튜브/블로그", keyword: "site:youtube.com 부동산 마케팅 OR site:blog.naver.com 공인중개사 마케팅" },
+  { section1: "라이프·오피니언", section2: "맛집/여행/건강", keyword: "site:blog.naver.com 국내 여행 OR site:blog.naver.com 맛집 추천 OR 건강 관리" },
+  { section1: "라이프·오피니언", section2: "IT/가전/가구", keyword: "스마트폰 출시 OR IT 신제품 OR 스마트홈" },
+  { section1: "라이프·오피니언", section2: "스포츠/연예/Car", keyword: "프로야구 OR K리그 OR 연예계 이슈 OR 신차 출시" }
 ];
 
 export async function GET(req: Request) {

@@ -276,7 +276,7 @@ export default function AgentSettingsTab({ theme, agentNames }: Props) {
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                       {[
                         "부동산 정책/동향", "법률/세무 지식", "경제/재테크/주식",
-                        "AI/NEWS", "맛집/여행/건강", "IT/가전/가구"
+                        "AI/NEWS", "부동산유튜브/블로그", "맛집/여행/건강", "IT/가전/가구", "스포츠/연예/Car"
                       ].map(cat => (
                         <label key={cat} style={{ display: "flex", alignItems: "center", gap: 4, background: theme.darkMode ? "#334155" : "#fff", padding: "6px 12px", borderRadius: 20, border: `1px solid ${cronConfig.categories.includes(cat) ? "#3b82f6" : theme.border}`, cursor: "pointer" }}>
                           <input type="checkbox" checked={cronConfig.categories.includes(cat)} onChange={(e) => {
