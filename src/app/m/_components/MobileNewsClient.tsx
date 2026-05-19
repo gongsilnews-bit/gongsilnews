@@ -420,7 +420,11 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
         setDetailLoading(true);
       }
 
-      window.history.pushState({ ...window.history.state, panel: 'article-detail' }, '', window.location.href);
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('panel') !== 'article-detail') {
+        params.set('panel', 'article-detail');
+        window.history.pushState({ panel: 'article-detail' }, '', '?' + params.toString());
+      }
       setShowDetail(true);
 
       // 2. 백그라운드에서 상세 데이터 보완 (조회수 증가, 댓글, 키워드 등)
@@ -1101,14 +1105,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
               {listPanelArticles.map((article: any) => (
                 <div
                   key={article.id}
-                  onClick={() => {
-                    const params = new URLSearchParams(window.location.search);
-                    if (params.get('panel') !== 'article-detail') {
-                      params.set('panel', 'article-detail');
-                      window.history.pushState({ panel: 'article-detail' }, '', '?' + params.toString());
-                    }
-                    handleSelectArticle(article.id, true);
-                  }}
+                  onClick={() => handleSelectArticle(article.id, true)}
                   style={{ display: "flex", flexDirection: "column", padding: "20px 16px", borderBottom: "1px solid #f0f0f0", cursor: "pointer", background: "#fff" }}
                 >
                   <div style={{ fontSize: "11px", fontWeight: 800, color: "#dc2626", marginBottom: "8px" }}>NEWS</div>
