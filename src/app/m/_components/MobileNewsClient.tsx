@@ -266,6 +266,13 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
 
   useEffect(() => { if (activeTab === 'local' && sidoList.length === 0) loadSidoData(); }, [activeTab]);
 
+  // 섹션 필터가 적용된 localArticles (지도 마커 + 리스트 모두에 사용)
+  const filteredLocalArticles = localArticles.filter((a: any) => {
+    if (section1Filter && a.section1 !== section1Filter) return false;
+    if (section2Filter && a.section2 !== section2Filter) return false;
+    return true;
+  });
+
   // 섹션 필터 적용 (section1/section2 정확 매칭)
   const filteredVisibleArticles = visibleArticles.filter((a: any) => {
     if (section1Filter && a.section1 !== section1Filter) return false;
@@ -479,7 +486,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
     markersRef.current = [];
 
     const newMarkers: any[] = [];
-    localArticles.forEach((a) => {
+    filteredLocalArticles.forEach((a) => {
       if (!a.lat || !a.lng) return;
       const size = 32;
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
@@ -521,7 +528,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
       if (!bounds) return;
       const sw = bounds.getSouthWest();
       const ne = bounds.getNorthEast();
-      const visible = localArticles.filter((a) => {
+      const visible = filteredLocalArticles.filter((a) => {
         if (!a.lat || !a.lng) return false;
         return a.lat >= sw.getLat() && a.lat <= ne.getLat() && a.lng >= sw.getLng() && a.lng <= ne.getLng();
       });
@@ -536,7 +543,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
     return () => {
       kakao.maps.event.removeListener(kakaoMapRef.current, "idle", updateVisible);
     };
-  }, [localArticles, mapLoaded]);
+  }, [filteredLocalArticles, mapLoaded]);
 
   // ── 스와이프(좌우 슬라이드) 탭 전환 ──
   const touchStartX = useRef<number | null>(null);
