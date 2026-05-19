@@ -12,7 +12,7 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
   const marketingArts = allNewsArticles.filter(a => a.section1 === "AI마케팅").slice(0, 2);
   const economyArts = allNewsArticles.filter(a => a.section1 === "부동산·경제").slice(0, 2);
   const lawArts = allNewsArticles.filter(a => a.section1 === "부동산·경제" && a.section2 === "법률/세무 지식").slice(0, 2);
-  const lifeArts = allNewsArticles.filter(a => a.section1 === "라이프·오피니언").slice(0, 3);
+  const lifeArts = allNewsArticles.filter(a => a.section1 === "라이프·오피니언").slice(0, 2);
   const gongsilArts = allNewsArticles.filter(a => a.section1 === "공실뉴스").slice(0, 3);
 
   // 날짜 포맷팅
