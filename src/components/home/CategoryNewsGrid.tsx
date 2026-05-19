@@ -9,11 +9,11 @@ interface CategoryNewsGridProps {
 
 export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [], issueRightBanners }: CategoryNewsGridProps) {
   // JS에서 새 카테고리별 분류
-  const rawMarketingArts = allNewsArticles.filter(a => a.section1 === "AI마케팅" || a.section2 === "부동산마케팅").slice(0, 10);
-  const rawPolicyArts = allNewsArticles.filter(a => a.section2 === "부동산 정책/동향" || a.section2 === "정치·경제·사회" || a.section2 === "부동산·주식·재테크").slice(0, 10);
-  const rawLawArts = allNewsArticles.filter(a => a.section2 === "법률/세무 지식" || a.section2 === "세무·법률").slice(0, 10);
-  const rawLifeArts = allNewsArticles.filter(a => a.section1 === "라이프·오피니언" || a.section2 === "여행·건강·생활" || a.section2 === "인물·미션·기타" || a.section2 === "IT·가전·가구" || a.section2 === "스포츠·연예·Car").slice(0, 10);
-  const rawMapArts = mapArticles.slice(0, 30);
+  const marketingArts = allNewsArticles.filter(a => a.section1 === "AI마케팅").slice(0, 2);
+  const economyArts = allNewsArticles.filter(a => a.section1 === "부동산·경제").slice(0, 2);
+  const lawArts = allNewsArticles.filter(a => a.section1 === "부동산·경제" && a.section2 === "법률/세무 지식").slice(0, 2);
+  const lifeArts = allNewsArticles.filter(a => a.section1 === "라이프·오피니언").slice(0, 4);
+  const gongsilArts = allNewsArticles.filter(a => a.section1 === "공실뉴스").slice(0, 3);
 
   // 날짜 포맷팅
   const formatDate = (dateStr: string) => {
@@ -52,16 +52,7 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
     return "https://via.placeholder.com/300x200?text=No+Image";
   };
 
-  // 필터링 적용 (사진이나 동영상이 있는 기사만)
-  const filterMedia = (arts: any[]) => arts.filter(a => a.thumbnail_url || extractYoutubeIdInfo(a).hasVideo).slice(0, 2);
-
-  const marketingArts = filterMedia(rawMarketingArts);
-  const policyArts = filterMedia(rawPolicyArts);
-  const lawArts = filterMedia(rawLawArts);
-  const lifeArts = filterMedia(rawLifeArts);
-  
-  // 공통 기사 렌더링 함수 (2단 리스트용) 전에 mapArts 필터링
-  const mapArts = rawMapArts.filter((item: any) => extractYoutubeIdInfo(item).hasVideo).slice(0, 3);
+  // 공통 기사 렌더링 함수 (2단 리스트용)
 
   // 공통 기사 렌더링 함수 (2단 리스트용)
   const renderArticleList = (articles: any[]) => {
@@ -128,8 +119,8 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
           <Link href="/news_gongsil" style={{ textDecoration: "none" }}><h2 className="sec-title">공실뉴스 &gt;</h2></Link>
         </div>
         <div className="video-grid">
-          {mapArts.length > 0 ? (
-            mapArts.map((item, i) => {
+          {gongsilArts.length > 0 ? (
+            gongsilArts.map((item, i) => {
               const ytInfo = extractYoutubeIdInfo(item);
               const thumbSrc = getThumbnailSrc(item, ytInfo);
               return (
@@ -156,7 +147,7 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
               <Link href="/news_politics" style={{ textDecoration: "none" }}><h2 className="sec-title">부동산·경제 &gt;</h2></Link>
             </div>
             <div className="hi-list">
-              {renderArticleList(policyArts)}
+              {renderArticleList(economyArts)}
             </div>
           </div>
           <div className="hi-left" style={{ flex: 1, minWidth: 0, width: "calc(50% - 20px)" }}>

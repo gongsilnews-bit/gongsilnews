@@ -31,8 +31,8 @@ export default async function Home() {
     getBannersByPlacement("MAIN_ISSUE_RIGHT"),
     getLectures({ status: "ACTIVE" }),
     // ✅ 기사 8개 쿼리 → 2개로 통합
-    getArticles({ status: "APPROVED", section1: "뉴스/칼럼", limit: 100 }),
-    getArticles({ status: "APPROVED", section1: "우리동네부동산", limit: 30 }),
+    getArticles({ status: "APPROVED", limit: 100 }),
+    getArticles({ status: "APPROVED", section1: "우리동네뉴스", limit: 30 }),
   ]);
 
   const allNewsArticles = allNewsRes.success ? allNewsRes.data || [] : [];
