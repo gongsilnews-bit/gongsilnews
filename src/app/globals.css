@@ -968,7 +968,7 @@ button { border: none; background: none; cursor: pointer; font-family: inherit; 
     top: 0;
     left: 0;
     height: 4px;
-    background: #508bf5;
+    background: #f59e0b;
     z-index: 999999;
     transition: width 0.1s;
 }
