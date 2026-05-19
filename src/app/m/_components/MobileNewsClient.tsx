@@ -580,8 +580,6 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
     
     if (Math.abs(dx) < 90) return;
 
-    if (activeTab === "local") return; // 우리동네에서는 스와이프로 탭 전환하지 않음
-
     const currentIdx = CATEGORIES.findIndex((c) => c.key === activeTab);
 
     if (dx < 0 && currentIdx < CATEGORIES.length - 1) {
