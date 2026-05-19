@@ -47,17 +47,11 @@ interface Props {
 }
 
 const CATEGORIES = [
-  { key: "home", label: "홈" },
-  { key: "all", label: "전체뉴스" },
-  { key: "realestate", label: "우리동네부동산" },
-  { key: "부동산마케팅", label: "부동산마케팅" },
-  { key: "부동산·주식·재테크", label: "부동산·재테크" },
-  { key: "정치·경제·사회", label: "정치·경제" },
-  { key: "세무·법률", label: "세무·법률" },
-  { key: "여행·건강·생활", label: "여행·생활" },
-  { key: "IT·가전·가구", label: "IT·가전·가구" },
-  { key: "스포츠·연예·Car", label: "스포츠·연예·Car" },
-  { key: "인물·미션·기타", label: "인물·미션·기타" },
+  { key: "home", label: "홈", path: "/m" },
+  { key: "local", label: "우리동네뉴스", path: "/m/news_map" },
+  { key: "news_politics", label: "부동산·경제", path: "/m/news_politics" },
+  { key: "news_marketing", label: "AI마케팅", path: "/m/news_marketing" },
+  { key: "news_etc", label: "라이프·오피니언", path: "/m/news_etc" },
 ];
 
 export default function MobileHomeClient(props: Props) {
@@ -66,8 +60,6 @@ export default function MobileHomeClient(props: Props) {
   const [heroIdx, setHeroIdx] = useState(0);
   const [swipeOffset, setSwipeOffset] = useState(0);
   const [isSwipingHero, setIsSwipingHero] = useState(false);
-
-  // 화면 전환 애니메이션 상태 제거 (즉시 라우팅)
 
   const heroScrollRef = useRef<HTMLDivElement>(null);
 
@@ -85,6 +77,7 @@ export default function MobileHomeClient(props: Props) {
     }, 3500);
     return () => clearInterval(timer);
   }, [headlineArticles.length, isSwipingHero]);
+  
   // ── 스와이프 탭 전환 ──
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
@@ -101,8 +94,8 @@ export default function MobileHomeClient(props: Props) {
     touchStartY.current = null;
     if (Math.abs(dy) > Math.abs(dx)) return;
     if (dx < -60) {
-      // ← 왼쪽 스와이프 → 전체뉴스로 이동
-      router.push("/m/news?tab=all");
+      // ← 왼쪽 스와이프 → 우리동네뉴스로 이동 (기존 전체뉴스를 대체)
+      router.push("/m/news_map");
     }
   };
 
@@ -111,7 +104,8 @@ export default function MobileHomeClient(props: Props) {
       onTouchStart={handleSwipeStart}
       onTouchEnd={handleSwipeEnd}
       style={{ display: "flex", flexDirection: "column", width: "100%", background: "#F4F6F8", minHeight: "100vh", paddingBottom: "80px", letterSpacing: "-0.3px", overflow: "hidden" }}
-    >      {/* 네비게이션 메뉴 (네이버 모바일 스타일 가로 스와이프) */}
+    >
+      {/* 네비게이션 메뉴 (네이버 모바일 스타일 가로 스와이프) */}
       <div
         className="hide-scrollbar"
         onTouchStart={(e) => e.stopPropagation()}
@@ -138,11 +132,7 @@ export default function MobileHomeClient(props: Props) {
             key={cat.key}
             onClick={() => {
               if (cat.key === "home") return;
-              if (cat.key === "부동산마케팅") {
-                router.push("/m/news_marketing");
-                return;
-              }
-              router.push(`/m/news?tab=${cat.key}`);
+              router.push(cat.path);
             }}
             style={{
               flexShrink: 0,
@@ -161,7 +151,7 @@ export default function MobileHomeClient(props: Props) {
             <span style={{
               display: "inline-block",
               paddingBottom: "5px",
-              borderBottom: cat.key === "home" ? "5px solid #102142" : "5px solid transparent",
+              borderBottom: cat.key === "home" ? "3px solid #1a2e50" : "3px solid transparent",
             }}>
               {cat.label}
             </span>
@@ -246,17 +236,17 @@ export default function MobileHomeClient(props: Props) {
 
 
       {/* ② 부동산마케팅 */}
-      <NewsSection title="부동산마케팅" href="/m/news?tab=부동산마케팅" articles={marketingArticles} />
+      <NewsSection title="AI마케팅" href="/m/news_marketing" articles={marketingArticles} />
 
-      {/* ③ 부동산·주식·재테크 */}
-      <NewsSection title="부동산·주식·재테크" href="/m/news?tab=부동산·주식·재테크" articles={financeArticles} />
+      {/* ③ 부동산·주식·재테크 -> 부동산·경제 */}
+      <NewsSection title="부동산·경제" href="/m/news_politics" articles={financeArticles} />
 
       {/* ④ 우리동네부동산 (PC VideoGrid 대응) */}
       {mapArticles.length > 0 && (
         <div style={{ background: "#fff", marginBottom: 12, borderBottom: "1px solid #f0f0f0" }}>
           <div className="sec-hd">
-            <h2>우리동네부동산</h2>
-            <Link href="/m/news?tab=realestate" style={{ fontSize: 15, color: "#6b7280", textDecoration: "none" }}>더보기 ›</Link>
+            <h2>우리동네뉴스</h2>
+            <Link href="/m/news_map" style={{ fontSize: 15, color: "#6b7280", textDecoration: "none" }}>더보기 ›</Link>
           </div>
           <div className="no-scrollbar" style={{ display: "flex", gap: 12, padding: "0 16px 16px", overflowX: "auto" }} onTouchStart={(e) => e.stopPropagation()} onTouchEnd={(e) => e.stopPropagation()}>
             {mapArticles.slice(0, 5).map((a: any) => (
@@ -282,23 +272,23 @@ export default function MobileHomeClient(props: Props) {
         </div>
       )}
 
-      {/* ⑤ 정치·경제·사회 */}
-      <NewsSection title="정치·경제·사회" href="/m/news?tab=정치·경제·사회" articles={politicsArticles} />
+      {/* ⑤ 정치·경제·사회 -> 부동산·경제로 통합, 여기서는 생략하거나 제목만 유지(하지만 링크는 통합) */}
+      <NewsSection title="정치·경제·사회" href="/m/news_politics" articles={politicsArticles} />
 
-      {/* ⑥ 세무·법률 */}
-      <NewsSection title="세무·법률" href="/m/news?tab=세무·법률" articles={lawArticles} />
+      {/* ⑥ 세무·법률 -> 부동산·경제로 통합 */}
+      <NewsSection title="세무·법률" href="/m/news_politics" articles={lawArticles} />
 
-      {/* ⑦ 여행·건강·생활 */}
-      <NewsSection title="여행·건강·생활" href="/m/news?tab=여행·건강·생활" articles={lifeArticles} />
+      {/* ⑦ 여행·건강·생활 -> 라이프·오피니언 */}
+      <NewsSection title="여행·건강·생활" href="/m/news_etc" articles={lifeArticles} />
 
-      {/* ⑧ IT·가전·가구 */}
-      <NewsSection title="IT·가전·가구" href="/m/news?tab=IT·가전·가구" articles={itArticles} />
+      {/* ⑧ IT·가전·가구 -> 라이프·오피니언 */}
+      <NewsSection title="IT·가전·가구" href="/m/news_etc" articles={itArticles} />
 
-      {/* ⑨ 스포츠·연예·Car */}
-      <NewsSection title="스포츠·연예·Car" href="/m/news?tab=스포츠·연예·Car" articles={sportsArticles} />
+      {/* ⑨ 스포츠·연예·Car -> 라이프·오피니언 */}
+      <NewsSection title="스포츠·연예·Car" href="/m/news_etc" articles={sportsArticles} />
 
-      {/* ⑩ 인물·미션·기타 */}
-      <NewsSection title="인물·미션·기타" href="/m/news?tab=인물·미션·기타" articles={peopleArticles} />
+      {/* ⑩ 인물·미션·기타 -> 라이프·오피니언 */}
+      <NewsSection title="인물·미션·기타" href="/m/news_etc" articles={peopleArticles} />
 
       {/* ⑨ 부동산특강 (PC SpecialLectureBanner 대응) */}
       {lectures.length > 0 && (
