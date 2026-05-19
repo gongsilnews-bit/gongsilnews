@@ -522,17 +522,18 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
           background: "rgba(255, 255, 255, 0.98)", zIndex: 9999999, 
           overflowY: "auto", padding: "60px 20px"
         }}>
-          {/* 닫기 버튼 */}
-          <button 
-            onClick={() => setIsMegaMenuOpen(false)}
-            style={{ position: "absolute", top: "40px", right: "60px", background: "none", border: "none", cursor: "pointer", padding: 0 }}
-          >
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="1.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-          </button>
+
           
-          <div style={{ maxWidth: 1200, margin: "0 auto", marginTop: 40 }}>
-            <h2 style={{ fontSize: 32, fontWeight: 900, marginBottom: 40, borderBottom: "4px solid #111", paddingBottom: 20, color: "#111" }}>전체 서비스</h2>
-            
+          <div style={{ maxWidth: 1200, margin: "0 auto", marginTop: 40, position: "relative" }}>
+            {/* 닫기 버튼 */}
+            <button 
+              onClick={() => setIsMegaMenuOpen(false)}
+              style={{ position: "absolute", top: "-5px", right: "0px", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+            >
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="1.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+
+            <h2 style={{ fontSize: 32, fontWeight: 900, marginBottom: 40, borderBottom: "4px solid #111", paddingBottom: 20, color: "#111", paddingRight: 50 }}>전체 서비스</h2>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 40 }}>
               {/* 1. 공실뉴스 */}
               <div>
