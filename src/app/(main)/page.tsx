@@ -21,6 +21,7 @@ export default async function Home() {
     { data: mainTopBanners },
     { data: mainBottomBanners },
     { data: issueRightBanners },
+    { data: middleIssueBanners },
     { data: lecturesData },
     allNewsRes,
     mapNewsRes,
@@ -29,6 +30,7 @@ export default async function Home() {
     getBannersByPlacement("MAIN_TOP"),
     getBannersByPlacement("MAIN_BOTTOM_FULL"),
     getBannersByPlacement("MAIN_ISSUE_RIGHT"),
+    getBannersByPlacement("MAIN_MIDDLE_ISSUE"),
     getLectures({ status: "ACTIVE" }),
     // ✅ 기사 8개 쿼리 → 2개로 통합
     getArticles({ status: "APPROVED", limit: 100 }),
@@ -63,6 +65,7 @@ export default async function Home() {
           allNewsArticles={allNewsArticles}
           mapArticles={mapArticles}
           issueRightBanners={issueRightBanners}
+          middleIssueBanners={middleIssueBanners}
         />
       </main>
 

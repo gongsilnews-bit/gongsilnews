@@ -5,9 +5,10 @@ interface CategoryNewsGridProps {
   allNewsArticles?: any[];
   mapArticles?: any[];
   issueRightBanners?: any[];
+  middleIssueBanners?: any[];
 }
 
-export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [], issueRightBanners }: CategoryNewsGridProps) {
+export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [], issueRightBanners, middleIssueBanners }: CategoryNewsGridProps) {
   // JS에서 새 카테고리별 분류
   const marketingArts = allNewsArticles.filter(a => a.section1 === "AI마케팅").slice(0, 2);
   const economyArts = allNewsArticles.filter(a => a.section1 === "부동산·경제").slice(0, 2);
@@ -111,6 +112,11 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
             <BannerSlot placement="MAIN_ISSUE_RIGHT" initialBanners={issueRightBanners} />
           </div>
         </div>
+      </div>
+
+      {/* 중간이슈 배너 */}
+      <div style={{ maxWidth: 1200, margin: "30px auto" }}>
+        <BannerSlot placement="MAIN_MIDDLE_ISSUE" style={{ borderRadius: 8, overflow: "hidden" }} initialBanners={middleIssueBanners} />
       </div>
 
       {/* 6. Video News: 공실뉴스 */}

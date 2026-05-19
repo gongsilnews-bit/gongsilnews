@@ -12,6 +12,7 @@ const PLACEMENT_OPTIONS = [
   { value: "MAIN_MIDDLE", label: "메인 중간" },
   { value: "MAIN_BOTTOM_FULL", label: "메인 최하단 롤링" },
   { value: "MAIN_ISSUE_RIGHT", label: "메인 이슈 우측" },
+  { value: "MAIN_MIDDLE_ISSUE", label: "중간이슈 배너" },
   { value: "SIDEBAR", label: "뉴스상세사이드바" },
   { value: "LIST_INLINE", label: "뉴스 리스트형" },
   { value: "LIST_SIDEBAR", label: "뉴스 리스트 사이드바" },

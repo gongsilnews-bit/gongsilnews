@@ -12,6 +12,7 @@ const PLACEMENT_OPTIONS = [
   { value: "MAIN_MIDDLE", label: "메인 중간" },
   { value: "MAIN_BOTTOM_FULL", label: "메인 최하단 롤링" },
   { value: "MAIN_ISSUE_RIGHT", label: "메인 이슈 우측" },
+  { value: "MAIN_MIDDLE_ISSUE", label: "중간이슈 배너" },
   { value: "SIDEBAR", label: "뉴스상세사이드바" },
   { value: "LIST_INLINE", label: "뉴스 리스트형" },
   { value: "LIST_SIDEBAR", label: "뉴스 리스트 사이드바" },
@@ -81,6 +82,18 @@ const PLACEMENT_CARDS = [
         <path d="M50 20 L50 70" />
         <path d="M8 25 L45 25 M8 30 L45 30" stroke="#e5e7eb" strokeWidth="1" />
         <rect x="55" y="25" width="35" height="35" fill={selected ? "#3b82f6" : "#e5e7eb"} stroke="none" rx="2" />
+      </svg>
+    )
+  },
+  { 
+    value: "MAIN_MIDDLE_ISSUE", label: "중간이슈 배너", size: "1200x150px",
+    icon: (selected: boolean) => (
+      <svg width="48" height="36" viewBox="0 0 100 75" fill="none" stroke="#ccc" strokeWidth="2">
+        <rect x="5" y="5" width="90" height="65" rx="4" fill="#fff" />
+        <path d="M5 20 L95 20" />
+        <path d="M8 25 L92 25 M8 30 L92 30" stroke="#e5e7eb" strokeWidth="1" />
+        <rect x="10" y="35" width="80" height="18" fill={selected ? "#3b82f6" : "#e5e7eb"} stroke="none" rx="3" />
+        <path d="M8 58 L92 58 M8 63 L60 63" stroke="#e5e7eb" strokeWidth="1" />
       </svg>
     )
   },
