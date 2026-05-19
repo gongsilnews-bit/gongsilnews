@@ -8,14 +8,11 @@ import dynamic from "next/dynamic";
 const SearchOverlay = dynamic(() => import("@/app/m/_components/header/SearchOverlay"), { ssr: false });
 
 const CATEGORIES = [
-  { key: "all", label: "전체뉴스" },
-  { key: "realestate", label: "우리동네부동산" },
-  { key: "부동산마케팅", label: "부동산마케팅" },
-  { key: "부동산·주식·재테크", label: "부동산·재테크" },
-  { key: "정치·경제·사회", label: "정치·경제" },
-  { key: "세무·법률", label: "세무·법률" },
-  { key: "여행·건강·생활", label: "여행·생활" },
-  { key: "etc", label: "기타" },
+  { key: "local", label: "우리동네뉴스", path: "/m/news_map" },
+  { key: "news_gongsil", label: "공실뉴스", path: "/m/news_gongsil" },
+  { key: "news_politics", label: "부동산·경제", path: "/m/news_politics" },
+  { key: "news_marketing", label: "AI마케팅", path: "/m/news_marketing" },
+  { key: "news_etc", label: "라이프·오피니언", path: "/m/news_etc" },
 ];
 
 export default function NewsDetailHeader({ activeCategory }: { activeCategory: string }) {
@@ -72,19 +69,16 @@ export default function NewsDetailHeader({ activeCategory }: { activeCategory: s
           }}
         >
           {CATEGORIES.map((cat) => {
-            const isActive = activeCategory === cat.key;
-            const targetUrl = `/m/news?tab=${cat.key}`;
-            
             return (
               <Link
                 key={cat.key}
-                href={targetUrl}
+                href={cat.path}
                 style={{
                   flexShrink: 0,
                   padding: "0 14px 0",
                   fontSize: "17px",
-                  fontWeight: isActive ? 700 : 500,
-                  color: isActive ? "#1a2e50" : "#222222",
+                  fontWeight: 500,
+                  color: "#222222",
                   background: "none",
                   textDecoration: "none",
                   cursor: "pointer",
@@ -97,7 +91,7 @@ export default function NewsDetailHeader({ activeCategory }: { activeCategory: s
                 <span style={{
                   display: "inline-block",
                   paddingBottom: "3px",
-                  borderBottom: isActive ? "3px solid #1a2e50" : "3px solid transparent",
+                  borderBottom: "3px solid transparent",
                 }}>
                   {cat.label}
                 </span>
