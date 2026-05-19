@@ -159,19 +159,31 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
 
   // 기사 상세 보기 상태 (우리동네뉴스 슬라이딩 패널용)
   const [showDetail, setShowDetail] = useState(false);
+  const [showListPanel, setShowListPanel] = useState(false);
+  const [listPanelArticles, setListPanelArticles] = useState<any[]>([]);
   const [articleDetail, setArticleDetail] = useState<any | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
 
   // 기사 상세 패널 뒤로가기 처리 (showDetail 선언 이후에 배치)
+  // 기사 상세/리스트 패널 뒤로가기 처리
   useEffect(() => {
     const handleDetailPopState = (e: PopStateEvent) => {
-      if (showDetail && e.state?.panel !== 'article-detail') {
+      const searchParams = new URLSearchParams(window.location.search);
+      const panel = searchParams.get('panel');
+      if (panel === 'article-detail') {
+        setShowDetail(true);
+        setShowListPanel(true);
+      } else if (panel === 'list-panel') {
         setShowDetail(false);
+        setShowListPanel(true);
+      } else {
+        setShowDetail(false);
+        setShowListPanel(false);
       }
     };
     window.addEventListener('popstate', handleDetailPopState);
     return () => window.removeEventListener('popstate', handleDetailPopState);
-  }, [showDetail]);
+  }, []);
 
   // 애니메이션 오버레이 상태는 완전히 제거됨 (즉각적인 화면 전환을 위해)
   // URL의 탭이 변경되면 activeTab 상태를 동기화 (구버전 파라미터 로직 제거)
@@ -504,23 +516,18 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
         const clusterArticleIds = clusterMarkers.map((m: any) => m._articleId).filter(Boolean);
         const matched = localArticles.filter(a => clusterArticleIds.includes(a.id));
 
-        // 기사가 1개인 클러스터: 바로 기사 상세 열기
-        if (matched.length === 1) {
-          suppressIdleRef.current = true;
-          kakaoMapRef.current.panTo(cluster.getCenter());
-          setTimeout(() => { suppressIdleRef.current = false; }, 600);
-          handleSelectArticle(matched[0].id, true);
-          return;
-        }
-
-        // 2개 이상: 카카오 내장 줌이 자동 처리 (disableClickZoom: false)
-        // 하단 리스트만 업데이트
         suppressIdleRef.current = true;
+        kakaoMapRef.current.panTo(cluster.getCenter());
         setTimeout(() => { suppressIdleRef.current = false; }, 600);
 
         if (matched.length > 0) {
-          setVisibleArticles(matched);
-          setClusterMode(true);
+          setListPanelArticles(matched);
+          setShowListPanel(true);
+          const params = new URLSearchParams(window.location.search);
+          if (params.get('panel') !== 'list-panel') {
+            params.set('panel', 'list-panel');
+            window.history.pushState({ panel: 'list-panel' }, '', '?' + params.toString());
+          }
         }
       });
     }
@@ -551,10 +558,19 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
       (marker as any)._articleId = a.id;
 
       kakao.maps.event.addListener(marker, "click", () => {
+        const matched = filteredLocalArticles.filter((la: any) => la.lat === a.lat && la.lng === a.lng);
+        setListPanelArticles(matched.length > 0 ? matched : [a]);
+        setShowListPanel(true);
+        
         suppressIdleRef.current = true;
         kakaoMapRef.current.panTo(new kakao.maps.LatLng(a.lat, a.lng));
         setTimeout(() => { suppressIdleRef.current = false; }, 600);
-        handleSelectArticle(a.id, true);
+        
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('panel') !== 'list-panel') {
+          params.set('panel', 'list-panel');
+          window.history.pushState({ panel: 'list-panel' }, '', '?' + params.toString());
+        }
       });
 
       newMarkers.push(marker);
@@ -1013,96 +1029,46 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                 </p>
               </div>
             )}
-          </div>
+            <div ref={mapRef} style={{ width: "100%", flex: 1, flexShrink: 0, background: "#e8eaed" }} />
 
-          {/* 하단: 보이는 기사 리스트 */}
-          <div style={{ flex: "1 1 50%", overflowY: "auto", background: "#f9fafb", display: "flex", flexDirection: "column" }}>
-            <div style={{ padding: "12px 16px", background: "#fff", borderBottom: "1px solid #f0f0f0", position: "sticky", top: 0, zIndex: 10, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4b89ff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
-                  <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
-                </svg>
-                <h3 style={{ fontSize: "15px", fontWeight: 800, color: "#111" }}>
-                  {clusterMode ? (
-                    <><span style={{ color: "#ff8e15" }}>선택 지역</span> 기사 {filteredVisibleArticles.length}개</>
-                  ) : (
-                    <>지도영역 기사 {filteredVisibleArticles.length}개</>
-                  )}
-                </h3>
-              </div>
-              {clusterMode && (
-                <button
-                  onClick={() => {
-                    setClusterMode(false);
-                    if (kakaoMapRef.current) {
-                      (window as any).kakao.maps.event.trigger(kakaoMapRef.current, 'idle');
-                    }
-                  }}
-                  style={{
-                    padding: "4px 12px",
-                    background: "#f3f4f6",
-                    border: "1px solid #ddd",
-                    borderRadius: "20px",
-                    fontSize: "12px",
-                    fontWeight: 700,
-                    color: "#555",
-                    cursor: "pointer"
-                  }}
-                >
-                  전체보기
-                </button>
-              )}
+          {/* ── 리스트 패널 (우→좌 슬라이드) ── */}
+          <div className={`news-detail-panel ${showListPanel ? "open" : ""}`} style={{ zIndex: 1500 }}>
+            {/* 헤더 */}
+            <div style={{ position: "sticky", top: 0, zIndex: 50, background: "#fff", display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderBottom: "1px solid #f0f0f0" }}>
+              <button onClick={() => window.history.back()} style={{ background: "none", border: "none", display: "flex", alignItems: "center", justifyContent: "center", padding: 0, cursor: "pointer" }}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#111" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+              </button>
+              <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "#111" }}>해당 지역 기사 {listPanelArticles.length}개</h2>
             </div>
-
-            <div style={{ padding: "0 16px 20px", background: "#fff", flex: 1 }}>
-              {filteredVisibleArticles.map((article: any) => (
+            
+            <div style={{ flex: 1, overflowY: "auto", background: "#fff", paddingBottom: "40px" }}>
+              {listPanelArticles.map((article: any) => (
                 <div
                   key={article.id}
-                  className="article-row"
-                  onClick={() => handleSelectArticle(article.id, true)}
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    padding: "20px 0",
-                    borderBottom: "1px solid #f0f0f0",
-                    cursor: "pointer",
-                    background: "#fff",
-                    transition: "background 0.15s ease",
+                  onClick={() => {
+                    const params = new URLSearchParams(window.location.search);
+                    if (params.get('panel') !== 'article-detail') {
+                      params.set('panel', 'article-detail');
+                      window.history.pushState({ panel: 'article-detail' }, '', '?' + params.toString());
+                    }
+                    handleSelectArticle(article.id, true);
                   }}
+                  style={{ display: "flex", flexDirection: "column", padding: "20px 16px", borderBottom: "1px solid #f0f0f0", cursor: "pointer", background: "#fff" }}
                 >
-                  {/* 상단 NEWS 태그 (카테고리 제거) */}
-                  <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px" }}>
-                    <span style={{ fontSize: "11px", fontWeight: 800, color: "#dc2626" }}>NEWS</span>
-                  </div>
-
-                  {/* 제목 */}
-                  <div style={{ fontSize: "17px", fontWeight: 800, color: "#111", lineHeight: 1.35, marginBottom: "10px", wordBreak: "keep-all" }}>
-                    {article.title}
-                  </div>
-
-                  {/* 요약 (본문 또는 부제목) */}
+                  <div style={{ fontSize: "11px", fontWeight: 800, color: "#dc2626", marginBottom: "8px" }}>NEWS</div>
+                  <div style={{ fontSize: "17px", fontWeight: 800, color: "#111", lineHeight: 1.35, marginBottom: "10px", wordBreak: "keep-all" }}>{article.title}</div>
                   <div style={{ fontSize: "14px", color: "#666", lineHeight: 1.5, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", marginBottom: "14px" }}>
                     {article.subtitle || stripHtml(article.content || "").slice(0, 100)}
                   </div>
-
-                  {/* 하단 날짜, 작성자 및 상세보기 버튼 */}
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "13px" }}>
                     <span style={{ color: "#222222", fontWeight: 500 }}>
                       {formatDate(article.published_at || article.created_at)} · {article.author_name || "공실뉴스"}
                       {article.location_name && ` · 📍${article.location_name}`}
                     </span>
-                    <span style={{ color: "#f97316", fontWeight: 700 }}>
-                      기사상세보기 &gt;
-                    </span>
+                    <span style={{ color: "#f97316", fontWeight: 700 }}>기사상세보기 &gt;</span>
                   </div>
                 </div>
               ))}
-              {filteredVisibleArticles.length === 0 && mapLoaded && (
-                <div style={{ textAlign: "center", padding: "40px 0", color: "#9ca3af" }}>
-                  <p style={{ fontSize: "14px" }}>현재 지도 영역에 기사가 없습니다.</p>
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -1420,10 +1386,12 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
         </div>
       )}
       {/* 기사 상세 뷰 (모바일 슬라이딩 패널) - 우리동네뉴스 전용 */}
-      <div ref={detailPanelRef} className={`news-detail-panel ${showDetail ? "open" : ""}`}>
+      <div ref={detailPanelRef} className={`news-detail-panel ${showDetail ? "open" : ""}`} style={{ zIndex: 2000 }}>
         {/* 헤더 */}
-        <div style={{ position: "sticky", top: 0, zIndex: 50, background: "#fff", display: "flex", justifyContent: "flex-end", padding: "12px 16px", borderBottom: "1px solid #f0f0f0" }}>
-          <button onClick={() => window.history.back()} style={{ background: "none", border: "none", fontSize: "24px", cursor: "pointer", color: "#999" }}>✕</button>
+        <div style={{ position: "sticky", top: 0, zIndex: 50, background: "#fff", display: "flex", alignItems: "center", padding: "12px 16px", borderBottom: "1px solid #f0f0f0" }}>
+          <button onClick={() => window.history.back()} style={{ background: "none", border: "none", display: "flex", alignItems: "center", justifyContent: "center", padding: 0, cursor: "pointer" }}>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#111" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+          </button>
         </div>
 
         {/* 로딩 상태 */}
