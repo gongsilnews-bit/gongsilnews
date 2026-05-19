@@ -111,7 +111,25 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedVacancyId, setSelectedVacancyId] = useState<string | null>(null);
-  const [section2Tab, setSection2Tab] = useState<string>("");
+  const [section2Tab, setSection2Tab] = useState<string>(searchParams.get("section2") || "");
+
+  // URL 파라미터가 변경되면 상태 동기화 (뒤로가기 시 복구용)
+  useEffect(() => {
+    setSection2Tab(searchParams.get("section2") || "");
+  }, [searchParams]);
+
+  // 2차 탭 클릭 시 상태 변경 및 URL 업데이트 (history에 저장되어 뒤로가기 시 복구 가능)
+  const handleSection2Click = (sub: string) => {
+    setSection2Tab(sub);
+    const params = new URLSearchParams(searchParams.toString());
+    if (sub) {
+      params.set("section2", sub);
+    } else {
+      params.delete("section2");
+    }
+    // 스크롤 위치를 유지하며 URL만 조용히 변경
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  };
 
   useEffect(() => {
     const handleMessage = (e: MessageEvent) => {
@@ -160,7 +178,6 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
   useEffect(() => {
     if (initialTab !== activeTab) {
       setActiveTab(initialTab);
-      setSection2Tab(""); // 1차 카테고리 변경 시 2차 탭 초기화
     }
   }, [initialTab]);
   const [visibleArticles, setVisibleArticles] = useState<any[]>(initialArticles || []);
@@ -1088,7 +1105,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                 }}
               >
                 <button
-                  onClick={() => setSection2Tab("")}
+                  onClick={() => handleSection2Click("")}
                   style={{
                     flexShrink: 0,
                     padding: "12px 14px",
@@ -1108,7 +1125,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                 {subs.map(sub => (
                   <button
                     key={sub}
-                    onClick={() => setSection2Tab(sub)}
+                    onClick={() => handleSection2Click(sub)}
                     style={{
                       flexShrink: 0,
                       padding: "12px 14px",
