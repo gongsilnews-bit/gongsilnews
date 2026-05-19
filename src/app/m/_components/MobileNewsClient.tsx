@@ -487,7 +487,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
         averageCenter: true,
         minLevel: 4,
         gridSize: 60,
-        disableClickZoom: true,
+        disableClickZoom: false,
         calculator: [5, 10, 30, 50],
         texts: (count: number) => count.toString(),
         styles: [
@@ -513,20 +513,10 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
           return;
         }
 
-        // 2개 이상: 클러스터 내 모든 마커가 보이도록 자동 맞춤 줌
+        // 2개 이상: 카카오 내장 줌이 자동 처리 (disableClickZoom: false)
+        // 하단 리스트만 업데이트
         suppressIdleRef.current = true;
-        const bounds = new kakao.maps.LatLngBounds();
-        matched.forEach((a: any) => {
-          if (a.lat && a.lng) bounds.extend(new kakao.maps.LatLng(a.lat, a.lng));
-        });
-        kakaoMapRef.current.setBounds(bounds, 80); // 80px 여백
-        // setBounds 후에도 클러스터링 레벨(4+)이면 한 단계 더 줌인
-        setTimeout(() => {
-          if (kakaoMapRef.current.getLevel() >= 4) {
-            kakaoMapRef.current.setLevel(3);
-          }
-          suppressIdleRef.current = false;
-        }, 300);
+        setTimeout(() => { suppressIdleRef.current = false; }, 600);
 
         if (matched.length > 0) {
           setVisibleArticles(matched);
