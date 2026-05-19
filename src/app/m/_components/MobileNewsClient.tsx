@@ -215,6 +215,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
   const markersRef = useRef<any[]>([]);
   const clustererRef = useRef<any>(null);
   const clusterModeRef = useRef(false);
+  const suppressIdleRef = useRef(false);
   const detailPanelRef = useRef<HTMLDivElement>(null);
 
   // ── 우리동네뉴스 위치 필터 상태 ──
@@ -394,9 +395,19 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
   // 기사 상세 조회 (우리동네뉴스는 인라인 패널, 나머지는 새 페이지)
   const handleSelectArticle = async (id: string, isLocal: boolean = false, e?: React.MouseEvent) => {
     if (isLocal) {
+      // 1. 로컬 데이터에서 즉시 표시 (네트워크 대기 없이 0ms 렌더링)
+      const localMatch = localArticles.find((a: any) => a.id === id);
+      if (localMatch) {
+        setArticleDetail(localMatch);
+        setDetailLoading(false);
+      } else {
+        setDetailLoading(true);
+      }
+
       window.history.pushState({ ...window.history.state, panel: 'article-detail' }, '', window.location.href);
       setShowDetail(true);
-      setDetailLoading(true);
+
+      // 2. 백그라운드에서 상세 데이터 보완 (조회수 증가, 댓글, 키워드 등)
       const res = await getArticleDetail(id);
       if (res.success && res.data) {
         setArticleDetail(res.data);
@@ -489,14 +500,27 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
       });
 
       kakao.maps.event.addListener(clustererRef.current, 'clusterclick', (cluster: any) => {
+        const clusterMarkers = cluster.getMarkers();
+        const clusterArticleIds = clusterMarkers.map((m: any) => m._articleId).filter(Boolean);
+        const matched = localArticles.filter(a => clusterArticleIds.includes(a.id));
+
+        // 기사가 1개인 클러스터: 바로 기사 상세 열기
+        if (matched.length === 1) {
+          suppressIdleRef.current = true;
+          kakaoMapRef.current.panTo(cluster.getCenter());
+          setTimeout(() => { suppressIdleRef.current = false; }, 600);
+          handleSelectArticle(matched[0].id, true);
+          return;
+        }
+
+        // 2개 이상: 줌인 + 리스트 업데이트
+        suppressIdleRef.current = true;
         let targetLevel = kakaoMapRef.current.getLevel() - 2;
         if (targetLevel < 3) targetLevel = 3;
         kakaoMapRef.current.setLevel(targetLevel, { anchor: cluster.getCenter() });
         kakaoMapRef.current.panTo(cluster.getCenter());
+        setTimeout(() => { suppressIdleRef.current = false; }, 600);
 
-        const clusterMarkers = cluster.getMarkers();
-        const clusterArticleIds = clusterMarkers.map((m: any) => m._articleId).filter(Boolean);
-        const matched = localArticles.filter(a => clusterArticleIds.includes(a.id));
         if (matched.length > 0) {
           setVisibleArticles(matched);
           setClusterMode(true);
@@ -530,7 +554,9 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
       (marker as any)._articleId = a.id;
 
       kakao.maps.event.addListener(marker, "click", () => {
+        suppressIdleRef.current = true;
         kakaoMapRef.current.panTo(new kakao.maps.LatLng(a.lat, a.lng));
+        setTimeout(() => { suppressIdleRef.current = false; }, 600);
         handleSelectArticle(a.id, true);
       });
 
@@ -546,6 +572,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
 
     const updateVisible = () => {
       if (clusterModeRef.current) return;
+      if (suppressIdleRef.current) return;
       const bounds = kakaoMapRef.current.getBounds();
       if (!bounds) return;
       const sw = bounds.getSouthWest();
