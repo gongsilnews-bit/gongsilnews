@@ -15,6 +15,9 @@ export default function NewsMapClient({ initialArticles, initialPopularArticles 
   const [activeArticleId, setActiveArticleId] = useState<string | null>(null);
   const [articleDetail, setArticleDetail] = useState<any>(null);
   const [showDetail, setShowDetail] = useState(false);
+  const [showListPanel, setShowListPanel] = useState(false);
+  const [listPanelArticles, setListPanelArticles] = useState<any[]>([]);
+  const [listPanelTitle, setListPanelTitle] = useState<string>("");
   const [commentText, setCommentText] = useState("");
   const [popularArticles, setPopularArticles] = useState<any[]>(initialPopularArticles);
   const [loading, setLoading] = useState(false);
@@ -132,6 +135,42 @@ export default function NewsMapClient({ initialArticles, initialPopularArticles 
       }
       infoWindowRef.current = null;
     }
+  }, []);
+
+  /* ── 뒤로가기 제어 로직 ── */
+  const handleCloseDetail = useCallback(() => {
+    if (window.location.search.includes('view=detail')) {
+      window.history.back();
+    } else {
+      setShowDetail(false);
+    }
+  }, []);
+
+  const handleCloseListPanel = useCallback(() => {
+    if (window.location.search.includes('view=list')) {
+      window.history.back();
+    } else {
+      setShowListPanel(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const searchParams = new URLSearchParams(window.location.search);
+      const view = searchParams.get('view');
+      if (view === 'detail') {
+        setShowDetail(true);
+        setShowListPanel(true);
+      } else if (view === 'list') {
+        setShowDetail(false);
+        setShowListPanel(true);
+      } else {
+        setShowDetail(false);
+        setShowListPanel(false);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
   /* ── InfoWindow 내 버튼 텍스트 동기화 ── */
@@ -354,6 +393,18 @@ export default function NewsMapClient({ initialArticles, initialPopularArticles 
             setActiveArticleId(null);
             setShowDetail(false);
             closeInfoWindow();
+            
+            // 모바일 공실열람 스타일: 클러스터 클릭 시에도 리스트 패널 오픈
+            setListPanelArticles(matched);
+            setListPanelTitle("선택 지역 기사");
+            setShowListPanel(true);
+            
+            // 브라우저 뒤로가기 지원
+            const searchParams = new URLSearchParams(window.location.search);
+            if (searchParams.get('view') !== 'list') {
+              searchParams.set('view', 'list');
+              window.history.pushState({ view: 'list' }, '', '?' + searchParams.toString());
+            }
           }
         });
     }
@@ -399,10 +450,21 @@ export default function NewsMapClient({ initialArticles, initialPopularArticles 
         marker.setZIndex(0);
       });
 
-      // 개별 마커 클릭 → 말풍선 표시
+      // 개별 마커 클릭 → 모바일 공실열람 스타일 리스트 띄우기
       kakao.maps.event.addListener(marker, 'click', () => {
-        showArticleOnMap(art);
-        setActiveArticleId(art.id);
+        // 기존 말풍선(CustomOverlay) 로직 제거하고 리스트 패널 슬라이드 띄우기
+        const sameLocationArticles = geoArticles.filter(a => a.lat === art.lat && a.lng === art.lng);
+        setListPanelArticles(sameLocationArticles.length > 0 ? sameLocationArticles : [art]);
+        setListPanelTitle(art.location_name || "해당 위치 기사");
+        setShowListPanel(true);
+        kakaoMapRef.current.panTo(position);
+
+        // 브라우저 뒤로가기 지원
+        const searchParams = new URLSearchParams(window.location.search);
+        if (searchParams.get('view') !== 'list') {
+          searchParams.set('view', 'list');
+          window.history.pushState({ view: 'list' }, '', '?' + searchParams.toString());
+        }
       });
 
       newMarkers.push(marker);
@@ -422,22 +484,26 @@ export default function NewsMapClient({ initialArticles, initialPopularArticles 
 
   }, [geoArticles, showArticleOnMap, closeInfoWindow, mapLoaded]);
 
-  /* ── 전체보기 (클러스터 필터 해제, 뷰포트 기반으로 복원) ── */
   const handleShowAll = useCallback(() => {
     setClusterMode(false);
     setActiveArticleId(null);
     setShowDetail(false);
+    setShowListPanel(false);
     closeInfoWindow();
     updateVisibleArticles();
   }, [closeInfoWindow, updateVisibleArticles]);
 
-  /* ── 사이드바 기사 클릭 시 지도 이동 + 말풍선 ── */
   const handleListArticleClick = useCallback((article: any) => {
     setActiveArticleId(article.id);
-    showArticleOnMap(article);
+    // 모바일 리스트 -> 상세 보기 시 URL 상태 변경
+    const searchParams = new URLSearchParams(window.location.search);
+    if (searchParams.get('view') !== 'detail') {
+      searchParams.set('view', 'detail');
+      window.history.pushState({ view: 'detail' }, '', '?' + searchParams.toString());
+    }
     // 상세도 미리 로드
-    handleSelectArticle(article.id, false);
-  }, [showArticleOnMap, handleSelectArticle]);
+    handleSelectArticle(article.id, true);
+  }, [handleSelectArticle]);
 
   return (
     <div style={{ height: "100vh", display: "flex", flexDirection: "column", overflow: "hidden", fontFamily: "'Pretendard', sans-serif" }}>
@@ -582,19 +648,82 @@ export default function NewsMapClient({ initialArticles, initialPopularArticles 
         <div style={{ flex: 1, height: "100%", position: "relative", minWidth: 0, background: "#e8eaed", overflow: "hidden" }}>
 
 
-          {/* 기사 상세 뷰 (좌→우 슬라이드) - 항상 렌더링 유지하여 CSS transform 애니메이션 발동 */}
+          {/* ── 1. 리스트 패널 (우→좌 슬라이드) ── */}
           <div style={{
-            position: "absolute", top: 0, left: 0, width: 750, maxWidth: "100%", height: "100%",
-            borderRight: "1px solid #ddd", boxShadow: "5px 0 30px rgba(0,0,0,0.15)", background: "#fff",
+            position: "absolute", top: 0, right: 0, width: 420, maxWidth: "100%", height: "100%",
+            borderLeft: "1px solid #ddd", boxShadow: "-5px 0 30px rgba(0,0,0,0.15)", background: "#fff",
+            zIndex: 1500, display: "flex", flexDirection: "column",
+            transform: showListPanel ? "translateX(0)" : "translateX(100%)",
+            opacity: showListPanel ? 1 : 0,
+            visibility: showListPanel ? "visible" : "hidden",
+            pointerEvents: showListPanel ? "auto" : "none",
+            transition: "transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease, visibility 0.4s"
+          }}>
+            {/* 리스트 패널 상단 (뒤로가기 포함) */}
+            <div style={{ position: "sticky", top: 0, background: "#fff", zIndex: 10, padding: "16px 20px", borderBottom: "1px solid #eee", display: "flex", alignItems: "center", gap: 12 }}>
+              <button onClick={handleCloseListPanel} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }} title="뒤로가기">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#111" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+              </button>
+              <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "#111" }}>{listPanelTitle || "기사 목록"}</h2>
+            </div>
+            
+            {/* 리스트 목록 */}
+            <div style={{ flex: 1, overflowY: "auto" }}>
+              {listPanelArticles.length === 0 ? (
+                <div style={{ padding: 40, textAlign: "center", color: "#888", fontSize: 14 }}>표시할 기사가 없습니다.</div>
+              ) : (
+                listPanelArticles.map((item) => {
+                  const isActive = activeArticleId === item.id;
+                  return (
+                    <div
+                      key={item.id}
+                      onClick={() => handleListArticleClick(item)}
+                      style={{
+                        padding: "16px 20px",
+                        borderBottom: "1px solid #f0f0f0",
+                        cursor: "pointer",
+                        background: isActive ? "#fff7ed" : "#fff",
+                        borderLeft: isActive ? "4px solid #ff8e15" : "4px solid transparent",
+                        transition: "background 0.2s"
+                      }}
+                    >
+                      <div style={{ fontSize: 11, color: "#ff8e15", fontWeight: "bold", marginBottom: 5, display: "flex", alignItems: "center", gap: 4 }}>
+                        <span style={{ background: "#fff7ed", padding: "2px 6px", borderRadius: 3, border: "1px solid #ffdfb8" }}>
+                          {item.section1 || "뉴스"} &gt; {item.section2 || "전체"}
+                        </span>
+                        {item.location_name && <span style={{ color: "#999", fontSize: 10 }}>📍{item.location_name}</span>}
+                      </div>
+                      <div style={{ fontSize: 15, fontWeight: 700, lineHeight: 1.4, marginBottom: 8, color: "#111", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                        {item.title}
+                      </div>
+                      <div style={{ fontSize: 13, color: "#666", marginBottom: 10, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                        {item.subtitle || stripHtml(item.content || "").slice(0, 80)}
+                      </div>
+                      <div style={{ fontSize: 12, color: "#999" }}>
+                        {formatDate(item.published_at || item.created_at)} · {item.author_name || "공실뉴스"}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+
+          {/* ── 2. 기사 상세 뷰 (우→좌 슬라이드) ── */}
+          <div style={{
+            position: "absolute", top: 0, right: 0, width: 750, maxWidth: "100%", height: "100%",
+            borderLeft: "1px solid #ddd", boxShadow: "-5px 0 30px rgba(0,0,0,0.15)", background: "#fff",
             zIndex: 2000, overflowY: "auto",
-            transform: showDetail ? "translateX(0)" : "translateX(-100%)",
+            transform: showDetail ? "translateX(0)" : "translateX(100%)",
             opacity: showDetail ? 1 : 0,
             visibility: showDetail ? "visible" : "hidden",
             pointerEvents: showDetail ? "auto" : "none",
             transition: "transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease, visibility 0.4s"
           }}>
-            {/* 닫기 버튼은 항상 렌더링 (로딩 중에도 닫을 수 있게) */}
-            <button onClick={() => setShowDetail(false)} style={{ position: "absolute", top: 10, right: 10, background: "none", border: "none", fontSize: 32, color: "#999", cursor: "pointer", padding: 10, lineHeight: 1, zIndex: 10 }} title="닫기">✕</button>
+            {/* 뒤로가기 버튼 */}
+            <button onClick={handleCloseDetail} style={{ position: "absolute", top: 12, left: 16, background: "#fff", border: "1px solid #ddd", borderRadius: "50%", width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", zIndex: 10, boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }} title="뒤로가기">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#111" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            </button>
 
             {articleDetail ? (
               <div style={{ maxWidth: 1200, margin: "0 auto", padding: "20px 40px 40px", position: "relative" }}>
