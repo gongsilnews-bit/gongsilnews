@@ -26,7 +26,7 @@ export async function generateStaticParams() {
   return [];
 }
 
-import NewsDetailHeader from "../_components/NewsDetailHeader";
+import MobileNewsTabBar from "@/app/m/_components/header/MobileNewsTabBar";
 
 export default async function MobileNewsReadPage({ params, searchParams }: { params: Promise<{ article_id: string }>, searchParams?: Promise<{ [key: string]: string | string[] | undefined }> }) {
   const resolvedParams = await params;
@@ -102,7 +102,7 @@ export default async function MobileNewsReadPage({ params, searchParams }: { par
       )}
 
       {/* 공통 모바일 뉴스 헤더 (상단 고정) */}
-      {!isEmbedded && <NewsDetailHeader activeCategory={article.category} />}
+      {!isEmbedded && <MobileNewsTabBar />}
 
       <NewsReadContent article={article} popularArticles={popular} initialAuthorRole={authorRole} initialAuthorEmail={authorEmail} initialAuthorVacancies={authorVacancies} />
     </div>

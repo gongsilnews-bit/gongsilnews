@@ -2,7 +2,6 @@
 
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import dynamic from "next/dynamic";
 
 const SearchOverlay = dynamic(() => import("@/app/m/_components/header/SearchOverlay"), { ssr: false });
@@ -15,7 +14,12 @@ const CATEGORIES = [
   { key: "news_etc", label: "라이프·오피니언", path: "/m/news_etc" },
 ];
 
-export default function NewsDetailHeader({ activeCategory }: { activeCategory: string }) {
+interface MobileNewsTabBarProps {
+  /** 현재 활성화된 탭 key (없으면 하이라이트 없음) */
+  activeTab?: string;
+}
+
+export default function MobileNewsTabBar({ activeTab }: MobileNewsTabBarProps) {
   const router = useRouter();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const tabBarRef = useRef<HTMLDivElement>(null);
@@ -58,6 +62,8 @@ export default function NewsDetailHeader({ activeCategory }: { activeCategory: s
         <div
           ref={tabBarRef}
           className="hide-scrollbar"
+          onTouchStart={(e) => e.stopPropagation()}
+          onTouchEnd={(e) => e.stopPropagation()}
           style={{
             flex: 1,
             display: "flex",
@@ -68,36 +74,34 @@ export default function NewsDetailHeader({ activeCategory }: { activeCategory: s
             scrollBehavior: "smooth",
           }}
         >
-          {CATEGORIES.map((cat) => {
-            return (
-              <Link
-                key={cat.key}
-                href={cat.path}
-                style={{
-                  flexShrink: 0,
-                  padding: "0 14px 0",
-                  fontSize: "17px",
-                  fontWeight: 500,
-                  color: "#222222",
-                  background: "none",
-                  textDecoration: "none",
-                  cursor: "pointer",
-                  transition: "all 0.2s",
-                  whiteSpace: "nowrap",
-                  display: "inline-block",
-                  letterSpacing: "-0.3px",
-                }}
-              >
-                <span style={{
-                  display: "inline-block",
-                  paddingBottom: "3px",
-                  borderBottom: "3px solid transparent",
-                }}>
-                  {cat.label}
-                </span>
-              </Link>
-            );
-          })}
+          {CATEGORIES.map((cat) => (
+            <button
+              key={cat.key}
+              data-active={activeTab === cat.key ? "true" : "false"}
+              onClick={() => router.push(cat.path)}
+              style={{
+                flexShrink: 0,
+                padding: "0 14px 0",
+                fontSize: "17px",
+                fontWeight: activeTab === cat.key ? 700 : 500,
+                color: activeTab === cat.key ? "#1a2e50" : "#222222",
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                transition: "color 0.2s",
+                whiteSpace: "nowrap",
+                letterSpacing: "-0.3px",
+              }}
+            >
+              <span style={{
+                display: "inline-block",
+                paddingBottom: "3px",
+                borderBottom: activeTab === cat.key ? "3px solid #1a2e50" : "3px solid transparent",
+              }}>
+                {cat.label}
+              </span>
+            </button>
+          ))}
           {/* 검색 버튼에 가려지지 않도록 끝부분 여백 추가 */}
           <div style={{ flexShrink: 0, width: "40px" }} />
         </div>
