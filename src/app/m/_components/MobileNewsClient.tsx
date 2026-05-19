@@ -592,9 +592,11 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
     } else if (dx > 0) {
       // → 오른쪽 스와이프 → 이전 탭
       if (currentIdx === 0) {
-        // 첫 번째 탭에서 오른쪽 스와이프 시 튕겨내도록 처리
-        setSlideAnim("slide-in-left");
-        setTimeout(() => setSlideAnim(""), 200);
+        // 첫 번째 탭에서 오른쪽으로 스와이프 시 모바일 홈(/m)으로 이동
+        setSlideAnim("slide-out-right");
+        setTimeout(() => {
+          router.push("/m");
+        }, 150);
       } else if (currentIdx > 0) {
         const prev = CATEGORIES[currentIdx - 1];
         setSlideAnim("slide-out-right");
