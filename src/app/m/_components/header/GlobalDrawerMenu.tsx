@@ -56,17 +56,17 @@ export default function GlobalDrawerMenu() {
     window.addEventListener('open-drawer', onOpenDrawer);
     window.addEventListener('close-drawer', onCloseDrawer);
 
-    // 엣지 스와이프(열기) 감지 - 화면 맨 왼쪽 30px 이내에서 터치 시작 시
+    // 엣지 스와이프(열기) 감지 - 화면 맨 오른쪽 30px 이내에서 터치 시작 시
     const handleTouchStart = (e: TouchEvent) => {
       const touch = e.touches[0];
-      if (touch.clientX < 30) {
+      if (touch.clientX > window.innerWidth - 30) {
         touchStartX.current = touch.clientX;
       }
     };
     const handleTouchMove = (e: TouchEvent) => {
       if (touchStartX.current !== null && !isOpen) {
-        const diff = e.touches[0].clientX - touchStartX.current;
-        if (diff > 40) { // 오른쪽으로 40px 이상 당기면 열기
+        const diff = touchStartX.current - e.touches[0].clientX; // 왼쪽으로 당기는 거리
+        if (diff > 40) { // 왼쪽으로 40px 이상 당기면 열기
           handleOpen();
           touchStartX.current = null;
         }
@@ -156,13 +156,13 @@ export default function GlobalDrawerMenu() {
     if (touchStartX.current === null) return;
     const currentX = e.touches[0].clientX;
     const diff = currentX - touchStartX.current;
-    if (diff < 0) { // 왼쪽으로 스와이프할 때만 (닫는 방향)
+    if (diff > 0) { // 오른쪽으로 스와이프할 때만 (닫는 방향)
       setTranslateX(diff);
     }
   };
 
   const onDrawerTouchEnd = () => {
-    if (translateX < -80) {
+    if (translateX > 80) {
       handleClose();
     } else {
       setTranslateX(0);
@@ -267,7 +267,7 @@ export default function GlobalDrawerMenu() {
         style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
           backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 9998,
-          opacity: isOpen ? Math.max(0, 1 + translateX / 300) : 0,
+          opacity: isOpen ? Math.max(0, 1 - translateX / 300) : 0,
           pointerEvents: isOpen ? 'auto' : 'none',
           transition: translateX === 0 ? 'opacity 0.3s' : 'none'
         }} 
@@ -279,13 +279,13 @@ export default function GlobalDrawerMenu() {
         onTouchMove={onDrawerTouchMove}
         onTouchEnd={onDrawerTouchEnd}
         style={{
-          position: 'fixed', top: 0, left: 0, bottom: 0,
+          position: 'fixed', top: 0, right: 0, bottom: 0,
           width: '100%', maxWidth: '448px',
           backgroundColor: '#f4f5f7', zIndex: 9999,
           overflowY: 'auto', WebkitOverflowScrolling: 'touch',
-          transform: `translateX(${isOpen ? (translateX < 0 ? translateX : 0) + 'px' : '-100%'})`,
+          transform: `translateX(${isOpen ? (translateX > 0 ? translateX : 0) + 'px' : '100%'})`,
           transition: translateX === 0 ? 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)' : 'none',
-          boxShadow: '4px 0 15px rgba(0,0,0,0.1)',
+          boxShadow: '-4px 0 15px rgba(0,0,0,0.1)',
           pointerEvents: isOpen ? 'auto' : 'none'
         }}
       >
