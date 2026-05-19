@@ -931,10 +931,10 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
               </>
             )}
 
-            {/* 상단: 카카오 지도 */}
+            {/* 상단: 카카오 지도 (풀화면) */}
           <div
             className="map-container"
-            style={{ position: "relative", width: "100%", height: "45vh", borderBottom: "1px solid #ddd", flexShrink: 0 }}
+            style={{ position: "relative", width: "100%", flex: 1, flexShrink: 0 }}
           >
             <div ref={mapRef} style={{ width: "100%", height: "100%" }} />
 
@@ -1029,7 +1029,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                 </p>
               </div>
             )}
-            <div ref={mapRef} style={{ width: "100%", flex: 1, flexShrink: 0, background: "#e8eaed" }} />
+          </div>
 
           {/* ── 리스트 패널 (우→좌 슬라이드) ── */}
           <div className={`news-detail-panel ${showListPanel ? "open" : ""}`} style={{ zIndex: 1500 }}>
@@ -1071,6 +1071,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
               ))}
             </div>
           </div>
+        </div>
         </div>
       ) : (
         /* 일반 뉴스 리스트 뷰 */
