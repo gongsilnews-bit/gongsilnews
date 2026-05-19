@@ -34,14 +34,10 @@ function formatPrice(v: any): string {
 interface Props {
   vacancies: any[];
   headlineArticles: any[];
+  gongsilArticles: any[];
+  realestateArticles: any[];
   marketingArticles: any[];
-  financeArticles: any[];
-  politicsArticles: any[];
-  lawArticles: any[];
   lifeArticles: any[];
-  itArticles: any[];
-  sportsArticles: any[];
-  peopleArticles: any[];
   mapArticles: any[];
   lectures: any[];
 }
@@ -56,7 +52,7 @@ const CATEGORIES = [
 ];
 
 export default function MobileHomeClient(props: Props) {
-  const { vacancies, headlineArticles, marketingArticles, financeArticles, politicsArticles, lawArticles, lifeArticles, itArticles, sportsArticles, peopleArticles, mapArticles, lectures } = props;
+  const { vacancies, headlineArticles, gongsilArticles, realestateArticles, marketingArticles, lifeArticles, mapArticles, lectures } = props;
   const router = useRouter();
   const [heroIdx, setHeroIdx] = useState(0);
   const [swipeOffset, setSwipeOffset] = useState(0);
@@ -236,13 +232,13 @@ export default function MobileHomeClient(props: Props) {
       </div>
 
 
-      {/* ② 부동산마케팅 */}
-      <NewsSection title="AI마케팅" href="/m/news_marketing" articles={marketingArticles} />
+      {/* ② 공실뉴스 */}
+      <NewsSection title="공실뉴스" href="/m/news_gongsil" articles={gongsilArticles} />
 
-      {/* ③ 부동산·주식·재테크 -> 부동산·경제 */}
-      <NewsSection title="부동산·경제" href="/m/news_politics" articles={financeArticles} />
+      {/* ③ 부동산·경제 */}
+      <NewsSection title="부동산·경제" href="/m/news_politics" articles={realestateArticles} />
 
-      {/* ④ 우리동네부동산 (PC VideoGrid 대응) */}
+      {/* ④ 우리동네뉴스 (PC VideoGrid 대응) */}
       {mapArticles.length > 0 && (
         <div style={{ background: "#fff", marginBottom: 12, borderBottom: "1px solid #f0f0f0" }}>
           <div className="sec-hd">
@@ -273,23 +269,11 @@ export default function MobileHomeClient(props: Props) {
         </div>
       )}
 
-      {/* ⑤ 정치·경제·사회 -> 부동산·경제로 통합, 여기서는 생략하거나 제목만 유지(하지만 링크는 통합) */}
-      <NewsSection title="정치·경제·사회" href="/m/news_politics" articles={politicsArticles} />
+      {/* ⑤ AI마케팅 */}
+      <NewsSection title="AI마케팅" href="/m/news_marketing" articles={marketingArticles} />
 
-      {/* ⑥ 세무·법률 -> 부동산·경제로 통합 */}
-      <NewsSection title="세무·법률" href="/m/news_politics" articles={lawArticles} />
-
-      {/* ⑦ 여행·건강·생활 -> 라이프·오피니언 */}
-      <NewsSection title="여행·건강·생활" href="/m/news_etc" articles={lifeArticles} />
-
-      {/* ⑧ IT·가전·가구 -> 라이프·오피니언 */}
-      <NewsSection title="IT·가전·가구" href="/m/news_etc" articles={itArticles} />
-
-      {/* ⑨ 스포츠·연예·Car -> 라이프·오피니언 */}
-      <NewsSection title="스포츠·연예·Car" href="/m/news_etc" articles={sportsArticles} />
-
-      {/* ⑩ 인물·미션·기타 -> 라이프·오피니언 */}
-      <NewsSection title="인물·미션·기타" href="/m/news_etc" articles={peopleArticles} />
+      {/* ⑥ 라이프·오피니언 */}
+      <NewsSection title="라이프·오피니언" href="/m/news_etc" articles={lifeArticles} />
 
       {/* ⑨ 부동산특강 (PC SpecialLectureBanner 대응) */}
       {lectures.length > 0 && (

@@ -11,46 +11,41 @@ export default async function MobileHomePage() {
   const [
     vacancyRes,
     headlineRes,
-    allNewsRes,
+    gongsilRes,
+    realestateRes,
+    marketingRes,
+    lifeRes,
     mapNewsRes,
     lecturesRes,
   ] = await Promise.all([
     getVacanciesForMap(),
     getArticles({ status: "APPROVED", is_headline: true, limit: 8 }),
-    getArticles({ status: "APPROVED", section1: "뉴스/칼럼", limit: 100 }),
+    getArticles({ status: "APPROVED", section1: "공실뉴스", limit: 6 }),
+    getArticles({ status: "APPROVED", section1: "부동산·경제", limit: 6 }),
+    getArticles({ status: "APPROVED", section1: "AI마케팅", limit: 6 }),
+    getArticles({ status: "APPROVED", section1: "라이프·오피니언", limit: 6 }),
     getArticles({ status: "APPROVED", section1: "우리동네부동산", limit: 10 }),
     getLectures({ status: "ACTIVE" }),
   ]);
 
   const vacancies = vacancyRes.data || [];
   const headlineArticles = headlineRes.success ? (headlineRes.data || []) : [];
-  const allNewsArticles = allNewsRes.success ? (allNewsRes.data || []) : [];
+  const gongsilArticles = gongsilRes.success ? (gongsilRes.data || []) : [];
+  const realestateArticles = realestateRes.success ? (realestateRes.data || []) : [];
+  const marketingArticles = marketingRes.success ? (marketingRes.data || []) : [];
+  const lifeArticles = lifeRes.success ? (lifeRes.data || []) : [];
   const mapArticles = mapNewsRes.success ? (mapNewsRes.data || []) : [];
   const lectures = lecturesRes.success ? (lecturesRes.data || []) : [];
-
-  // 카테고리 분류 (PC와 동일)
-  const marketingArts = allNewsArticles.filter((a: any) => a.section2 === "부동산마케팅").slice(0, 6);
-  const financeArts = allNewsArticles.filter((a: any) => a.section2 === "부동산·주식·재테크").slice(0, 6);
-  const politicsArts = allNewsArticles.filter((a: any) => a.section2 === "정치·경제·사회").slice(0, 4);
-  const lawArts = allNewsArticles.filter((a: any) => a.section2 === "세무·법률").slice(0, 4);
-  const lifeArts = allNewsArticles.filter((a: any) => a.section2 === "여행·건강·생활").slice(0, 4);
-  const itArts = allNewsArticles.filter((a: any) => a.section2 === "IT·가전·가구").slice(0, 4);
-  const sportsArts = allNewsArticles.filter((a: any) => a.section2 === "스포츠·연예·Car").slice(0, 4);
-  const peopleArts = allNewsArticles.filter((a: any) => a.section2 === "인물·미션·기타").slice(0, 4);
 
   return (
     <>
       <MobileHomeClient
         vacancies={vacancies.slice(0, 5)}
         headlineArticles={headlineArticles}
-        marketingArticles={marketingArts}
-        financeArticles={financeArts}
-        politicsArticles={politicsArts}
-        lawArticles={lawArts}
-        lifeArticles={lifeArts}
-        itArticles={itArts}
-        sportsArticles={sportsArts}
-        peopleArticles={peopleArts}
+        gongsilArticles={gongsilArticles}
+        realestateArticles={realestateArticles}
+        marketingArticles={marketingArticles}
+        lifeArticles={lifeArticles}
         mapArticles={mapArticles}
         lectures={lectures.slice(0, 4)}
       />
