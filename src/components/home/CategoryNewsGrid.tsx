@@ -12,7 +12,7 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
   const marketingArts = allNewsArticles.filter(a => a.section1 === "AI마케팅").slice(0, 2);
   const economyArts = allNewsArticles.filter(a => a.section1 === "부동산·경제").slice(0, 2);
   const lawArts = allNewsArticles.filter(a => a.section1 === "부동산·경제" && a.section2 === "법률/세무 지식").slice(0, 2);
-  const lifeArts = allNewsArticles.filter(a => a.section1 === "라이프·오피니언").slice(0, 4);
+  const lifeArts = allNewsArticles.filter(a => a.section1 === "라이프·오피니언").slice(0, 3);
   const gongsilArts = allNewsArticles.filter(a => a.section1 === "공실뉴스").slice(0, 3);
 
   // 날짜 포맷팅
@@ -166,8 +166,21 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
         <div className="sec-title-wrap">
           <Link href="/news_etc" style={{ textDecoration: "none" }}><h2 className="sec-title">라이프·오피니언 &gt;</h2></Link>
         </div>
-        <div className="hi-list">
-          {renderArticleList(lifeArts)}
+        <div className="hot-issue-wrap">
+          <div className="hi-left">
+            <div className="hi-list">
+              {renderArticleList(lifeArts)}
+            </div>
+          </div>
+          <div className="hi-right">
+            <div style={{ width: "100%", height: "100%", minHeight: 250, background: "linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", border: "1px dashed #ced4da" }}>
+              <div style={{ textAlign: "center", color: "#868e96" }}>
+                <div style={{ fontSize: 32, marginBottom: 8 }}>📢</div>
+                <div style={{ fontSize: 14, fontWeight: 600 }}>배너 광고 영역</div>
+                <div style={{ fontSize: 12, marginTop: 4 }}>BANNER AD</div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </>
