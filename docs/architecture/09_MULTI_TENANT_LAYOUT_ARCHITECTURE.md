@@ -28,7 +28,22 @@
 - **역할**: 권한이 부여된 관리자를 위한 껍데기
 - **특징**: 좌측 검은색 통합 메뉴 사이드바를 유지하기 위해, 일반 고객용 `Header` 및 `Footer`의 영향을 받지 않도록 설계됩니다.
 
-## 4. 향후 확장 로드맵 (Next Steps)
-1. **[완료]** 라우트 그룹 `(main)`과 `(map)` 분리 및 하드코딩 컴포넌트 일괄 제거 다이어트
-2. **[대기]** Vercel Middleware(`middleware.ts`) 구축을 통해 서브도메인 접속 시 DB에서 테마 정보를 Fetch 해오는 로직 개발
-3. **[대기]** Vercel 통신망에 와일드카드 도메인 (`*.gongsilnews.com`) 매핑 등록
+## 4. 구현 및 확장 완료 현황 (Implementation Status)
+1. **[완료]** 라우트 그룹 `(main)`과 `(map)` 분리 및 하드코딩 컴포넌트 일괄 제거
+2. **[완료]** Vercel Middleware (`src/middleware.ts`) 구축 완료 및 시스템 공용 경로(`/admin`, `/auth`, `/api` 등)의 예외 처리를 통한 완벽한 서브도메인 간섭 차단
+3. **[완료]** 다중 테넌트 격리 라우트 `src/app/_sites/[subdomain]/` 및 `SubdomainClient.tsx` 신설 완료
+4. **[완료]** 단일 프로젝트 통합 아키텍처 의사결정 완료: DB 데이터 연동, 요금제 권한 조회, 공실매물/작성기사 컴포넌트 바인딩 및 카카오맵 오시는길 자동 렌더링 구현 완료
+5. **[대기]** Vercel 통신망에 와일드카드 도메인 (`*.gongsilnews.com`) CNAME 등록 매핑 진행 예정
+
+---
+
+## 5. 프로젝트 통합 유지보수 및 혼선 방지 3대 규칙 (Segregation Rules)
+하나의 `gongsilnews` 프로젝트 안에서 미니 홈페이지 기능을 혼선 없이 확장하기 위해 아래 격리 규칙을 준수합니다.
+
+1. **라우트 차단 규칙 (Route Exclusion)**
+   * `src/middleware.ts`에 신규 전역 라우트(예: `/new_route`)를 개발하는 경우, 미들웨어의 예외 배열에 해당 경로를 추가하여 서브도메인(`_sites/`) 내부로 리다이렉트되지 않고 메인으로 정상 이동할 수 있도록 관리합니다.
+2. **부동산 전용 코드의 물리적 격리 (Physical Folder Isolation)**
+   * 미니홈피의 레이아웃, 헤더, 커스텀 푸터 등 모든 UI는 공용 컴포넌트와 섞이지 않도록 `src/app/_sites/[subdomain]/` 폴더 내부에 격리하여 정의합니다.
+3. **상태 기반 권한 제어 (Status-driven Feature Gating)**
+   * `members` 테이블의 `plan_type` 정보 및 `plan_end_date`를 조회하여 만료 시 미니홈피 접근을 자동으로 통제하며, 추가 요금 결제 시 별도의 백엔드 코드 수정 없이 미니홈피가 즉시 자동 활성화됩니다.
+

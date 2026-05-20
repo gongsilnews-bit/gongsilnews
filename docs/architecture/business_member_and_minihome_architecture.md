@@ -84,3 +84,21 @@ const canAccessMiniHome = (userRole: string, planType: string, status: string) =
 3. **[UI/컴포넌트]** ✅ 완료 - `MemberRegisterForm.tsx`에 `BIZ` 역할 선택, '비즈니스정보' 탭 폼, 요금제 표시 추가.
 4. **[관리자 페이지]** ✅ 완료 - `MemberSection.tsx`에 비즈니스 회원 상태 계산, 필터, 승인/반려 버튼, 반려 모달 분기 처리 추가.
 5. **[미니홈피 페이지]** ✅ 완료 - `/biz/[id]` 라우트, `BizPageClient.tsx` 미니홈피 UI, `businessProfile.ts` 공개 API 구현.
+6. **[서브도메인 멀티테넌트 통합]** ✅ 완료 - `src/middleware.ts` 연동 검증, `_sites/[subdomain]` 동적 뷰어 및 `SubdomainClient.tsx` 최고급 템플릿 개발 완료. 
+
+---
+
+## 7. 단일 프로젝트 통합 아키텍처 의사결정 및 버그 예방 규칙
+홈페이지 기능(SaaS)을 타 프로젝트로 분리하지 않고 `gongsilnews` 내에 `_sites` 구조로 완전히 통합하기로 결정했습니다. 나중에 발생할 수 있는 소스 꼬임이나 버그를 완벽하게 차단하기 위해 아래 3대 규칙을 강제합니다.
+
+### 7.1. 시스템 공용 경로 예외 처리 규칙 (Route Segregation)
+* 부동산 개별 서브도메인(`ID.gongsilnews.com`) 접속 시, 미들웨어(`src/middleware.ts`)는 주소를 `_sites/[subdomain]` 내부로 리다이렉트합니다.
+* 하지만 `/admin`, `/auth`, `/api`, `/realty_admin` 등 시스템 핵심 공용 경로는 미들웨어에서 **강제 예외(Skip) 처리**되어 항상 메인 사이트의 기능을 바라보도록 설계되었습니다. 신규 시스템 전역 페이지 추가 시 미들웨어 예외 목록에 무조건 등재해야 합니다.
+
+### 7.2. 물리적 코드 격리 규칙 (Component Segregation)
+* 개별 홈페이지에 사용되는 모든 맞춤형 컴포넌트(GNB, Hero 배너, 매물/기사 카드, 오시는길 위젯)는 일반 메인 페이지용 컴포넌트와 절대 혼용하지 않습니다.
+* 모든 미니홈피 UI 코드는 오직 `src/app/_sites/[subdomain]/` 폴더 내부 및 해당 폴더 하위 전용 컴포넌트에서만 작성하고 완결합니다.
+
+### 7.3. 도메인 와일드카드 매핑 (DNS wildcard)
+* Vercel 배포 시스템에 `*.gongsilnews.com` 와일드카드 CNAME 도메인을 매핑함으로써 신규 부동산 가입자가 생기더라도 DNS 레코드를 매번 추가할 필요 없이 즉시 자동 연동 및 SSL 인증서가 발급됩니다.
+
