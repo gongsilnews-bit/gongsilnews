@@ -970,8 +970,8 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
           {/* 검색 오버레이 */}
           {isSearchOpen && <SearchOverlay isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />}
 
-      {/* 우리동네뉴스: 카카오 지도 + 목록 스플릿 뷰 */}
-      {activeTab === "local" ? (
+      {/* 우리동네뉴스: 카카오 지도 + 목록 스플릿 뷰 (키워드 검색이나 작가 검색이 아닐 때만 지도 뷰로 렌더링) */}
+      {(activeTab === "local" && !searchParams.get("keyword") && !searchParams.get("author_name") && !initialKeyword && !initialAuthorName) ? (
         <div className={slideAnim} style={{ position: "fixed", top: "56px", bottom: "60px", left: "50%", transform: `translateX(calc(-50% + ${swipeDeltaX}px))`, transition: touchStartX.current !== null ? "none" : "transform 0.3s cubic-bezier(0.25, 1, 0.5, 1)", width: "100%", maxWidth: "448px", display: "flex", flexDirection: "column", zIndex: 10, background: "#fff" }}>
           <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", paddingTop: "0px" }}>
             {/* ═══ 위치·카테고리 필터 바 ═══ */}
