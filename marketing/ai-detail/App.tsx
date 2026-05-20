@@ -1270,6 +1270,15 @@ ${clone.outerHTML}
           <span>이미지 내보내기</span>
         </button>
 
+        {/* HTML Export Button */}
+        <button 
+          onClick={downloadHtml}
+          className="py-3 px-5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 active:scale-95 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all duration-150 shadow-sm"
+        >
+          <CodeBracketIcon className="w-4 h-4 text-gray-500" />
+          <span>HTML 저장</span>
+        </button>
+
         {/* Share Button (Relative Container for Popover) */}
         <div ref={sharePopoverRef} className="relative">
           <button 
