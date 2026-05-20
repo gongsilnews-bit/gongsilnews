@@ -578,6 +578,57 @@ function App() {
     }
   };
 
+  const handleCopyShareLink = async () => {
+    const params = new URLSearchParams(window.location.search);
+    const vacancyId = params.get("vacancy_id");
+    if (!vacancyId) {
+      alert("공실 ID를 찾을 수 없습니다.");
+      return;
+    }
+    
+    // 1. 공유하기 전 최신 편집 데이터를 무조건 선저장
+    setIsSavingCloud(true);
+    try {
+      localStorage.setItem(`easyflyer_saved_${vacancyId}`, JSON.stringify(state));
+      setIsLoadedFromStorage(true);
+
+      const res = await fetch("/api/vacancy/save-flyer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ vacancyId, flyerState: state })
+      });
+      const json = await res.json();
+      if (!json.success) {
+        throw new Error(json.error || "서버 응답 오류");
+      }
+    } catch (err: any) {
+      console.warn("클라우드 동기화 저장 실패:", err);
+    } finally {
+      setIsSavingCloud(false);
+    }
+
+    // 2. 공유 고유 URL 주소 빌드
+    const shareUrl = `${window.location.origin}/flyer/${vacancyId}`;
+    
+    // 3. 브라우저 클립보드 복사
+    try {
+      if (navigator.clipboard) {
+        await navigator.clipboard.writeText(shareUrl);
+        alert(`🎉 전단지가 성공적으로 저장되고, 공유 링크가 복사되었습니다!\n\n📋 복사된 주소:\n${shareUrl}\n\n카카오톡이나 문자에 붙여넣어 다른 사람에게 자유롭게 보내보세요!`);
+      } else {
+        const tempInput = document.createElement("input");
+        tempInput.value = shareUrl;
+        document.body.appendChild(tempInput);
+        tempInput.select();
+        document.execCommand("copy");
+        document.body.removeChild(tempInput);
+        alert(`🎉 전단지가 성공적으로 저장되고, 공유 링크가 복사되었습니다!\n\n📋 복사된 주소:\n${shareUrl}\n\n카카오톡이나 문자에 붙여넣어 다른 사람에게 자유롭게 보내보세요!`);
+      }
+    } catch (e) {
+      alert(`공유 주소:\n${shareUrl}\n\n위 주소를 마우스 드래그로 복사해서 상대방에게 전달해 주세요.`);
+    }
+  };
+
   const handleResetAndRegenerate = async () => {
     const params = new URLSearchParams(window.location.search);
     const vacancyId = params.get("vacancy_id");
@@ -1066,6 +1117,16 @@ ${clone.outerHTML}
                         </svg>
                     )}
                     <span>{isSavingCloud ? "저장 중..." : "임시 저장"}</span>
+                </button>
+                <button 
+                    onClick={handleCopyShareLink} 
+                    className="px-3 py-2 bg-blue-50 border border-blue-200 text-blue-600 hover:text-blue-700 text-xs sm:text-sm font-bold flex items-center gap-1.5 hover:bg-blue-100 active:scale-95 rounded-lg transition-all duration-200"
+                    title="전단지를 저장하고, 다른 사람에게 공유할 수 있는 링크 주소를 복사합니다."
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.2} stroke="currentColor" className="w-3.5 h-3.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935-2.186 2.25 2.25 0 00-3.935 2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" />
+                    </svg>
+                    <span>링크 복사</span>
                 </button>
                 <div className="h-5 w-[1px] bg-gray-200 mx-1"></div>
                 <button onClick={downloadHtml} className="px-3 py-2 bg-white border text-xs sm:text-sm font-semibold flex items-center gap-1.5 hover:bg-gray-50 rounded-lg transition-colors" style={{ borderColor: state.colorTheme.primary, color: state.colorTheme.primary }}>
