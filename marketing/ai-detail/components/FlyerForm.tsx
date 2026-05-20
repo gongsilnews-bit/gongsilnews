@@ -19,11 +19,12 @@ interface FlyerFormProps {
   currentLayout: FlyerLayout;
   onColorSelect: (color: FlyerColor) => void;
   onLayoutSelect: (layout: FlyerLayout) => void;
+  isUploadingImage?: Record<string, boolean>;
 }
 
 const FlyerForm: React.FC<FlyerFormProps> = ({ 
     info, setInfo, onImageUpload, onGenerate, onAnalyzeImage, onAnalyzeAgentImage, onAnalyzeComplexImage, isGenerating, uploadedImages, 
-    colors, layouts, currentColor, currentLayout, onColorSelect, onLayoutSelect 
+    colors, layouts, currentColor, currentLayout, onColorSelect, onLayoutSelect, isUploadingImage
 }) => {
   const analysisInputRef = useRef<HTMLInputElement>(null);
   const agentImageInputRef = useRef<HTMLInputElement>(null);
@@ -81,7 +82,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
       if (e.target.files && e.target.files[0]) {
           const file = e.target.files[0];
           setAgentFile(file);
-          setAgentImagePreview(URL.createObjectURL(file));
+          onImageUpload('agentImage', file);
       }
   };
 
@@ -452,15 +453,31 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
              {/* Main Photo */}
             <div className="pt-2">
                 <label className="block text-xs font-semibold text-gray-500 mb-1">메인 매물 사진 (전단지 배경)</label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center relative hover:bg-gray-50 transition-colors group overflow-hidden h-32 flex items-center justify-center">
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center relative hover:bg-gray-50 transition-colors group overflow-hidden h-32 flex items-center justify-center bg-gray-50">
                     {uploadedImages.mainImage ? (
                         <img src={uploadedImages.mainImage} className="absolute inset-0 w-full h-full object-cover" />
                     ) : null}
-                    <div className={`flex flex-col items-center relative z-10 ${uploadedImages.mainImage ? 'bg-white/80 p-2 rounded' : ''}`}>
-                        <PhotoIcon className="w-6 h-6 text-gray-400 group-hover:text-gray-600" />
-                        <span className="text-xs text-gray-400 mt-1">클릭하여 업로드</span>
-                    </div>
-                    <input type="file" accept="image/*" onChange={handleFileChange('mainImage')} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20" />
+                    {isUploadingImage && isUploadingImage.mainImage ? (
+                        <div className="absolute inset-0 bg-slate-900/60 flex flex-col items-center justify-center text-white text-xs font-bold gap-2 z-30">
+                            <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span>압축 및 저장 중...</span>
+                        </div>
+                    ) : (
+                        <div className={`flex flex-col items-center relative z-10 ${uploadedImages.mainImage ? 'bg-white/80 p-2 rounded' : ''}`}>
+                            <PhotoIcon className="w-6 h-6 text-gray-400 group-hover:text-gray-600" />
+                            <span className="text-xs text-gray-400 mt-1">클릭하여 업로드</span>
+                        </div>
+                    )}
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      onChange={handleFileChange('mainImage')} 
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20" 
+                      disabled={isUploadingImage && !!isUploadingImage.mainImage}
+                    />
                 </div>
             </div>
         </div>
@@ -636,12 +653,21 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                                 ) : (
                                     <PhotoIcon className="w-6 h-6 text-gray-400" />
                                 )}
+                                {isUploadingImage && isUploadingImage[`complexImage-${section.id}`] ? (
+                                    <div className="absolute inset-0 bg-slate-900/60 flex items-center justify-center text-white z-30">
+                                        <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                    </div>
+                                ) : null}
                                 <input 
                                     id={`complex-upload-${section.id}`}
                                     type="file" 
                                     accept="image/*" 
                                     onChange={handleComplexFileChange(section.id)} 
-                                    className="absolute inset-0 opacity-0 cursor-pointer" 
+                                    className="absolute inset-0 opacity-0 cursor-pointer"
+                                    disabled={isUploadingImage && !!isUploadingImage[`complexImage-${section.id}`]}
                                 />
                             </div>
                             <div className="flex-1">
@@ -673,7 +699,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                           <div key={item.id} className="flex gap-3 items-start bg-white p-3 rounded border border-gray-100">
                               
                               {section.type !== 'table' && section.type !== 'sns' && (
-                                <div className="w-16 h-16 bg-gray-100 rounded flex-shrink-0 overflow-hidden relative group cursor-pointer border hover:border-gray-400">
+                                <div className="w-16 h-16 bg-gray-100 rounded flex-shrink-0 overflow-hidden relative group cursor-pointer border hover:border-gray-400 flex items-center justify-center">
                                     {previewUrl ? (
                                         <img src={previewUrl} className="w-full h-full object-cover" />
                                     ) : (
@@ -681,7 +707,21 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                                             <PhotoIcon className="w-6 h-6" />
                                         </div>
                                     )}
-                                    <input type="file" accept="image/*" onChange={handleFileChange(item.imageKey)} className="absolute inset-0 opacity-0 cursor-pointer" />
+                                    {isUploadingImage && isUploadingImage[item.imageKey] ? (
+                                        <div className="absolute inset-0 bg-slate-900/60 flex items-center justify-center text-white z-30">
+                                            <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                        </div>
+                                    ) : null}
+                                    <input 
+                                      type="file" 
+                                      accept="image/*" 
+                                      onChange={handleFileChange(item.imageKey)} 
+                                      className="absolute inset-0 opacity-0 cursor-pointer" 
+                                      disabled={isUploadingImage && !!isUploadingImage[item.imageKey]}
+                                    />
                                 </div>
                               )}
 
@@ -777,17 +817,26 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                 <label className="block text-[10px] font-bold text-gray-400 mb-2">명함/로고 사진 (자동 입력)</label>
                 <div className="flex gap-3 items-center">
                     <div className="relative w-16 h-16 bg-gray-100 rounded border border-dashed border-gray-300 flex items-center justify-center cursor-pointer hover:bg-gray-50 overflow-hidden">
-                        {agentImagePreview || uploadedImages.agentImage ? (
-                            <img src={agentImagePreview || uploadedImages.agentImage} className="w-full h-full object-cover" />
+                        {uploadedImages.agentImage ? (
+                            <img src={uploadedImages.agentImage} className="w-full h-full object-cover" />
                         ) : (
                             <PhotoIcon className="w-6 h-6 text-gray-400" />
                         )}
+                        {isUploadingImage && isUploadingImage.agentImage ? (
+                            <div className="absolute inset-0 bg-slate-900/60 flex items-center justify-center text-white z-30">
+                                <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                            </div>
+                        ) : null}
                         <input 
                             ref={agentImageInputRef}
                             type="file" 
                             accept="image/*" 
                             onChange={handleAgentImageFileChange} 
-                            className="absolute inset-0 opacity-0 cursor-pointer" 
+                            className="absolute inset-0 opacity-0 cursor-pointer"
+                            disabled={isUploadingImage && !!isUploadingImage.agentImage}
                         />
                     </div>
                     <div className="flex-1">

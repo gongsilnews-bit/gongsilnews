@@ -198,6 +198,95 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, sections, on
     )
 }
 
+const compressToWebP = (file: File, quality = 0.85): Promise<Blob> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const MAX_WIDTH = 1920;
+        const MAX_HEIGHT = 1920;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          reject(new Error("Canvas context is null"));
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              resolve(blob);
+            } else {
+              reject(new Error("WebP conversion failed"));
+            }
+          },
+          "image/webp",
+          quality
+        );
+      };
+      img.onerror = (err) => reject(err);
+      img.src = event.target?.result as string;
+    };
+    reader.onerror = (err) => reject(err);
+    reader.readAsDataURL(file);
+  });
+};
+
+const uploadImageToServer = async (file: File | Blob, vacancyId: string): Promise<string> => {
+  const formData = new FormData();
+  const uploadFile = file instanceof File ? file : new File([file], "image.webp", { type: "image/webp" });
+  formData.append("file", uploadFile);
+  formData.append("vacancyId", vacancyId);
+
+  try {
+    const res = await fetch("/api/vacancy/upload-image", {
+      method: "POST",
+      body: formData,
+    });
+    
+    const text = await res.text();
+    let json: any = {};
+    try {
+      json = JSON.parse(text);
+    } catch (e) {
+      console.error("Failed to parse response as JSON:", text);
+      if (text.includes("<!DOCTYPE") || text.includes("<html") || res.status >= 500) {
+        throw new Error("서버가 현재 일시적인 점검 중이거나 준비되지 않았습니다. 잠시 후 다시 시도해 주세요.");
+      }
+      throw new Error(text.substring(0, 100) || `업로드 중 서버 오류가 발생했습니다. (상태 코드: ${res.status})`);
+    }
+
+    if (json.success && json.url) {
+      return json.url;
+    }
+    throw new Error(json.error || "업로드에 실패했습니다.");
+  } catch (err: any) {
+    console.error("Upload network/server error:", err);
+    throw new Error(err.message || "네트워크 연결 오류가 발생했습니다.");
+  }
+};
+
 function App() {
   const [state, setState] = useState<FlyerState>({
     info: INITIAL_INFO,
@@ -220,200 +309,309 @@ function App() {
 
   // 5. URL 파라미터 기반 공실 데이터 연동 로드
   const [loadingData, setLoadingData] = useState(false);
+  const [isLoadedFromStorage, setIsLoadedFromStorage] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [isSavingCloud, setIsSavingCloud] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState<Record<string, boolean>>({});
+
+  const loadVacancyDataDirectly = async (vacancyId: string) => {
+    setLoadingData(true);
+    try {
+      const res = await fetch(`/api/vacancy/detail?id=${vacancyId}`);
+      const json = await res.json();
+      if (json.success && json.data) {
+        const v = json.data;
+
+        // 1. Supabase 클라우드 동기화 데이터 우선 로드
+        const supabaseFlyerSettings = v.infrastructure?._flyer_settings;
+        if (supabaseFlyerSettings) {
+          setState(supabaseFlyerSettings);
+          setIsLoadedFromStorage(true);
+          setIsInitialized(true);
+          setLoadingData(false);
+          return;
+        }
+
+        // 2. 브라우저 로컬 스토리지 캐시 로드
+        const savedStr = localStorage.getItem(`easyflyer_saved_${vacancyId}`);
+        if (savedStr) {
+          try {
+            const savedState = JSON.parse(savedStr);
+            setState(savedState);
+            setIsLoadedFromStorage(true);
+            setIsInitialized(true);
+            setLoadingData(false);
+            return;
+          } catch (e) {
+            console.error("로컬 저장소 데이터 로드 실패, 새로 생성합니다:", e);
+          }
+        }
+        
+        // 포맷팅 헬퍼들
+        const formatAmount = (amt: number) => {
+          if (!amt) return '';
+          const m = Math.round(amt / 10000); // 원 → 만원
+          if (m === 0) return '';
+          const e = Math.floor(m / 10000); // 만원 → 억
+          const r = m % 10000;
+          let result = '';
+          if (e > 0) result += `${e}억`;
+          if (r > 0) {
+            const c = Math.floor(r / 1000);
+            const rem = r % 1000;
+            let rest = '';
+            if (c > 0) rest += `${c}천`;
+            if (rem > 0) rest += `${rem}`;
+            if (rest) {
+              result += (result && !result.endsWith(' ') ? ' ' : '') + rest;
+              if (e === 0 && c === 0 && rem > 0) result += '만';
+            }
+          }
+          return result || '';
+        };
+
+        const priceText = v.trade_type === '매매' ? `매매 ${formatAmount(v.deposit)}`
+          : v.trade_type === '전세' ? `전세 ${formatAmount(v.deposit)}`
+          : `${v.trade_type} ${formatAmount(v.deposit)}/${Math.round((v.monthly_rent || 0) / 10000)}만`;
+
+        const supArea = v.supply_m2 ? parseFloat(v.supply_m2) : 0;
+        const excArea = v.exclusive_m2 ? parseFloat(v.exclusive_m2) : 0;
+        const fmtM2 = (m2: number) => m2 ? `${m2}㎡(${(m2 / 3.3058).toFixed(1)}평)` : '';
+        let areaDisplay = '-';
+        if (supArea && excArea) areaDisplay = `공급 ${fmtM2(supArea)} / 전용 ${fmtM2(excArea)}`;
+        else if (supArea) areaDisplay = `공급 ${fmtM2(supArea)}`;
+        else if (excArea) areaDisplay = `전용 ${fmtM2(excArea)}`;
+
+        // 중개사/명함 데이터 매핑
+        const owner = v.members || {};
+        const agency = Array.isArray(owner.agencies) ? owner.agencies[0] : owner.agencies;
+        
+        const agentName = agency?.name || owner.company_name || owner.name || "공실뉴스 중개소";
+        const agentRepresentative = agency ? `대표 공인중개사 ${agency.ceo_name}` : (owner.ceo_name ? `대표 ${owner.ceo_name}` : `대표 ${owner.name}`);
+        const agentPhone = agency?.phone || owner.tel_num || v.client_phone || "";
+        const agentMobile = agency?.cell || owner.cell_num || "";
+        
+        const additionalInfo: string[] = [];
+        if (agency?.reg_num || owner.company_reg_no) {
+          additionalInfo.push(`등록번호: ${agency?.reg_num || owner.company_reg_no}`);
+        }
+        const fullAddress = [agency?.address || owner.address, agency?.address_detail || owner.address_detail].filter(Boolean).join(" ");
+        if (fullAddress) {
+          additionalInfo.push(`소재지: ${fullAddress}`);
+        }
+
+        // 아파트 브랜드 자동 감지해서 컬러 테마 설정
+        let autoTheme = COLORS[0]; // 기본 Teal
+        const buildingLower = (v.building_name || "").toLowerCase();
+        if (buildingLower.includes("롯데") || buildingLower.includes("캐슬")) autoTheme = COLORS[1]; // Gold
+        else if (buildingLower.includes("푸르지오")) autoTheme = COLORS[2]; // Green
+        else if (buildingLower.includes("힐스") || buildingLower.includes("현대")) autoTheme = COLORS[3]; // Burgundy
+        else if (buildingLower.includes("아크로") || buildingLower.includes("자이")) autoTheme = COLORS[4]; // Orange
+
+        // 매물 사진들 매핑
+        const newImages: Record<string, any> = {};
+        const photos = json.photos || [];
+        if (photos.length > 0) {
+          const imageSlots = [
+            'mainImage', 
+            'subImage1', 'subImage2', 
+            'featureImage1', 'featureImage2', 'featureImage3', 'featureImage4'
+          ];
+          photos.forEach((ph: any, i: number) => {
+            if (i < imageSlots.length) {
+              newImages[imageSlots[i]] = ph.url;
+            }
+          });
+        }
+
+        // 복합 단지 테이블 조립
+        const newSections = INITIAL_INFO.sections.map(sec => {
+          if (sec.type !== 'table') return sec;
+          
+          const newItems = sec.items.map(item => {
+            if (item.title === '세대수' && v.total_units) return { ...item, text: `${v.total_units}세대` };
+            if (item.title === '저/최고층' && v.current_floor && v.total_floor) return { ...item, text: `${v.current_floor}층/${v.total_floor}층` };
+            if (item.title === '사용승인일' && v.approval_year) return { ...item, text: `${v.approval_year}년` };
+            if (item.title === '건설사' && v.constructor_name) return { ...item, text: v.constructor_name };
+            if (item.title === '주소') return { ...item, text: [v.sido, v.sigungu, v.dong].filter(Boolean).join(" ") };
+            if (item.title === '면적' && areaDisplay !== '-') return { ...item, text: areaDisplay };
+            return item;
+          });
+
+          return { ...sec, items: newItems };
+        });
+
+        const mappedInfo: PropertyInfo = {
+          promotionText: priceText,
+          address: v.building_name || [v.sido, v.sigungu, v.dong].filter(Boolean).join(" ") || "공실 매물 정보",
+          subTitle: `${v.property_type || "프리미엄"} | ${v.direction || "방향 없음"} | ${areaDisplay}`,
+          transactionType: v.trade_type || "월세",
+          priceMain: formatAmount(v.deposit) || "",
+          priceSub: v.monthly_rent ? `${Math.round(v.monthly_rent / 10000)}만` : "",
+          managementFee: v.maintenance_fee ? `${Math.round(v.maintenance_fee / 10000)}만원` : "없음",
+          area: areaDisplay,
+          floor: `${v.current_floor || "-"}층 / 총 ${v.total_floor || "-"}층`,
+          direction: v.direction || "남향",
+          roomCount: `${v.room_count || "-"}개 / ${v.bathroom_count || "-"}개`,
+          parking: v.parking || "없음",
+          moveInDate: v.move_in_date || "즉시 입주 가능",
+          options: Array.isArray(v.options) ? v.options.join(", ") : (v.options || ""),
+          
+          agentName,
+          agentRepresentative,
+          agentPhone,
+          agentMobile,
+          agentMapUrl: fullAddress ? `https://map.naver.com/p/search/${encodeURIComponent(fullAddress)}` : "",
+          consultationUrl: "",
+          agentAdditionalInfo: additionalInfo,
+
+          noticeTitle: "PREMIUM LISTING DETAIL",
+          noticeContent: v.description || "상세 설명이 등록되지 않았습니다.",
+          sections: newSections
+        };
+
+        // AI 문구 자동 생성 작동
+        setIsGenerating(true);
+        const aiCopy = await generateFlyerCopy(mappedInfo);
+        
+        const finalSections = [...mappedInfo.sections];
+        
+        // Grid Section
+        const gridIndex = finalSections.findIndex(s => s.type === 'grid');
+        if (gridIndex !== -1 && aiCopy.gridInfo) {
+          const sec = { ...finalSections[gridIndex] };
+          sec.title = aiCopy.gridInfo.title || sec.title;
+          sec.intro = aiCopy.gridInfo.intro || sec.intro;
+          sec.items = sec.items.map((it, idx) => ({
+            ...it,
+            text: aiCopy.gridInfo?.features[idx] || it.text
+          }));
+          finalSections[gridIndex] = sec;
+        }
+
+        // List Section
+        const listIndex = finalSections.findIndex(s => s.type === 'list');
+        if (listIndex !== -1 && aiCopy.listInfo) {
+          const sec = { ...finalSections[listIndex] };
+          sec.title = aiCopy.listInfo.title || sec.title;
+          sec.intro = aiCopy.listInfo.intro || sec.intro;
+          sec.description = aiCopy.listInfo.description || sec.description;
+          sec.items = sec.items.map((it, idx) => ({
+            ...it,
+            title: aiCopy.listInfo?.items[idx]?.title || it.title,
+            text: aiCopy.listInfo?.items[idx]?.description || it.text
+          }));
+          finalSections[listIndex] = sec;
+        }
+
+        setState(prev => ({
+          ...prev,
+          ...newImages,
+          colorTheme: autoTheme,
+          info: {
+            ...mappedInfo,
+            sections: finalSections
+          },
+          generated: aiCopy
+        }));
+        
+        setIsGenerating(false);
+        setIsInitialized(true);
+      }
+    } catch (err) {
+      console.error("공실 데이터 연동 오류:", err);
+    } finally {
+      setLoadingData(false);
+    }
+  };
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const vacancyId = params.get("vacancy_id");
 
     if (vacancyId) {
-      const loadVacancyData = async () => {
-        setLoadingData(true);
-        try {
-          const res = await fetch(`/api/vacancy/detail?id=${vacancyId}`);
-          const json = await res.json();
-          if (json.success && json.data) {
-            const v = json.data;
-            
-            // 포맷팅 헬퍼들
-            const formatAmount = (amt: number) => {
-              if (!amt) return '';
-              const m = Math.round(amt / 10000); // 원 → 만원
-              if (m === 0) return '';
-              const e = Math.floor(m / 10000); // 만원 → 억
-              const r = m % 10000;
-              let result = '';
-              if (e > 0) result += `${e}억`;
-              if (r > 0) {
-                const c = Math.floor(r / 1000);
-                const rem = r % 1000;
-                let rest = '';
-                if (c > 0) rest += `${c}천`;
-                if (rem > 0) rest += `${rem}`;
-                if (rest) {
-                  result += (result && !result.endsWith(' ') ? ' ' : '') + rest;
-                  if (e === 0 && c === 0 && rem > 0) result += '만';
-                }
-              }
-              return result || '';
-            };
-
-            const priceText = v.trade_type === '매매' ? `매매 ${formatAmount(v.deposit)}`
-              : v.trade_type === '전세' ? `전세 ${formatAmount(v.deposit)}`
-              : `${v.trade_type} ${formatAmount(v.deposit)}/${Math.round((v.monthly_rent || 0) / 10000)}만`;
-
-            const supArea = v.supply_m2 ? parseFloat(v.supply_m2) : 0;
-            const excArea = v.exclusive_m2 ? parseFloat(v.exclusive_m2) : 0;
-            const fmtM2 = (m2: number) => m2 ? `${m2}㎡(${(m2 / 3.3058).toFixed(1)}평)` : '';
-            let areaDisplay = '-';
-            if (supArea && excArea) areaDisplay = `공급 ${fmtM2(supArea)} / 전용 ${fmtM2(excArea)}`;
-            else if (supArea) areaDisplay = `공급 ${fmtM2(supArea)}`;
-            else if (excArea) areaDisplay = `전용 ${fmtM2(excArea)}`;
-
-            // 중개사/명함 데이터 매핑
-            const owner = v.members || {};
-            const agency = Array.isArray(owner.agencies) ? owner.agencies[0] : owner.agencies;
-            
-            const agentName = agency?.name || owner.company_name || owner.name || "공실뉴스 중개소";
-            const agentRepresentative = agency ? `대표 공인중개사 ${agency.ceo_name}` : (owner.ceo_name ? `대표 ${owner.ceo_name}` : `대표 ${owner.name}`);
-            const agentPhone = agency?.phone || owner.tel_num || v.client_phone || "";
-            const agentMobile = agency?.cell || owner.cell_num || "";
-            
-            const additionalInfo: string[] = [];
-            if (agency?.reg_num || owner.company_reg_no) {
-              additionalInfo.push(`등록번호: ${agency?.reg_num || owner.company_reg_no}`);
-            }
-            const fullAddress = [agency?.address || owner.address, agency?.address_detail || owner.address_detail].filter(Boolean).join(" ");
-            if (fullAddress) {
-              additionalInfo.push(`소재지: ${fullAddress}`);
-            }
-
-            // 아파트 브랜드 자동 감지해서 컬러 테마 설정
-            let autoTheme = COLORS[0]; // 기본 Teal
-            const buildingLower = (v.building_name || "").toLowerCase();
-            if (buildingLower.includes("롯데") || buildingLower.includes("캐슬")) autoTheme = COLORS[1]; // Gold
-            else if (buildingLower.includes("푸르지오")) autoTheme = COLORS[2]; // Green
-            else if (buildingLower.includes("힐스") || buildingLower.includes("현대")) autoTheme = COLORS[3]; // Burgundy
-            else if (buildingLower.includes("아크로") || buildingLower.includes("자이")) autoTheme = COLORS[4]; // Orange
-
-            // 매물 사진들 매핑
-            const newImages: Record<string, any> = {};
-            const photos = json.photos || [];
-            if (photos.length > 0) {
-              const imageSlots = [
-                'mainImage', 
-                'subImage1', 'subImage2', 
-                'featureImage1', 'featureImage2', 'featureImage3', 'featureImage4'
-              ];
-              photos.forEach((ph: any, i: number) => {
-                if (i < imageSlots.length) {
-                  newImages[imageSlots[i]] = ph.url;
-                }
-              });
-            }
-
-            // 복합 단지 테이블 조립
-            const newSections = INITIAL_INFO.sections.map(sec => {
-              if (sec.type !== 'table') return sec;
-              
-              const newItems = sec.items.map(item => {
-                if (item.title === '세대수' && v.total_units) return { ...item, text: `${v.total_units}세대` };
-                if (item.title === '저/최고층' && v.current_floor && v.total_floor) return { ...item, text: `${v.current_floor}층/${v.total_floor}층` };
-                if (item.title === '사용승인일' && v.approval_year) return { ...item, text: `${v.approval_year}년` };
-                if (item.title === '건설사' && v.constructor_name) return { ...item, text: v.constructor_name };
-                if (item.title === '주소') return { ...item, text: [v.sido, v.sigungu, v.dong].filter(Boolean).join(" ") };
-                if (item.title === '면적' && areaDisplay !== '-') return { ...item, text: areaDisplay };
-                return item;
-              });
-
-              return { ...sec, items: newItems };
-            });
-
-            const mappedInfo: PropertyInfo = {
-              promotionText: priceText,
-              address: v.building_name || [v.sido, v.sigungu, v.dong].filter(Boolean).join(" ") || "공실 매물 정보",
-              subTitle: `${v.property_type || "프리미엄"} | ${v.direction || "방향 없음"} | ${areaDisplay}`,
-              transactionType: v.trade_type || "월세",
-              priceMain: formatAmount(v.deposit) || "",
-              priceSub: v.monthly_rent ? `${Math.round(v.monthly_rent / 10000)}만` : "",
-              managementFee: v.maintenance_fee ? `${Math.round(v.maintenance_fee / 10000)}만원` : "없음",
-              area: areaDisplay,
-              floor: `${v.current_floor || "-"}층 / 총 ${v.total_floor || "-"}층`,
-              direction: v.direction || "남향",
-              roomCount: `${v.room_count || "-"}개 / ${v.bathroom_count || "-"}개`,
-              parking: v.parking || "없음",
-              moveInDate: v.move_in_date || "즉시 입주 가능",
-              options: Array.isArray(v.options) ? v.options.join(", ") : (v.options || ""),
-              
-              agentName,
-              agentRepresentative,
-              agentPhone,
-              agentMobile,
-              agentMapUrl: fullAddress ? `https://map.naver.com/p/search/${encodeURIComponent(fullAddress)}` : "",
-              consultationUrl: "",
-              agentAdditionalInfo: additionalInfo,
-
-              noticeTitle: "PREMIUM LISTING DETAIL",
-              noticeContent: v.description || "상세 설명이 등록되지 않았습니다.",
-              sections: newSections
-            };
-
-            // AI 문구 자동 생성 작동
-            setIsGenerating(true);
-            const aiCopy = await generateFlyerCopy(mappedInfo);
-            
-            const finalSections = [...mappedInfo.sections];
-            
-            // Grid Section
-            const gridIndex = finalSections.findIndex(s => s.type === 'grid');
-            if (gridIndex !== -1 && aiCopy.gridInfo) {
-              const sec = { ...finalSections[gridIndex] };
-              sec.title = aiCopy.gridInfo.title || sec.title;
-              sec.intro = aiCopy.gridInfo.intro || sec.intro;
-              sec.items = sec.items.map((it, idx) => ({
-                ...it,
-                text: aiCopy.gridInfo?.features[idx] || it.text
-              }));
-              finalSections[gridIndex] = sec;
-            }
-
-            // List Section
-            const listIndex = finalSections.findIndex(s => s.type === 'list');
-            if (listIndex !== -1 && aiCopy.listInfo) {
-              const sec = { ...finalSections[listIndex] };
-              sec.title = aiCopy.listInfo.title || sec.title;
-              sec.intro = aiCopy.listInfo.intro || sec.intro;
-              sec.description = aiCopy.listInfo.description || sec.description;
-              sec.items = sec.items.map((it, idx) => ({
-                ...it,
-                title: aiCopy.listInfo?.items[idx]?.title || it.title,
-                text: aiCopy.listInfo?.items[idx]?.description || it.text
-              }));
-              finalSections[listIndex] = sec;
-            }
-
-            setState(prev => ({
-              ...prev,
-              ...newImages,
-              colorTheme: autoTheme,
-              info: {
-                ...mappedInfo,
-                sections: finalSections
-              },
-              generated: aiCopy
-            }));
-            
-            setIsGenerating(false);
-          }
-        } catch (err) {
-          console.error("공실 데이터 연동 오류:", err);
-        } finally {
-          setLoadingData(false);
-        }
-      };
-
-      loadVacancyData();
+      loadVacancyDataDirectly(vacancyId);
     }
   }, []);
+
+  // 자동 임시저장
+  useEffect(() => {
+    if (!isInitialized) return;
+    const params = new URLSearchParams(window.location.search);
+    const vacancyId = params.get("vacancy_id");
+    if (vacancyId && !loadingData && !isGenerating) {
+      localStorage.setItem(`easyflyer_saved_${vacancyId}`, JSON.stringify(state));
+    }
+  }, [state, loadingData, isGenerating, isInitialized]);
+
+  const handleSaveToStorage = async () => {
+    const params = new URLSearchParams(window.location.search);
+    const vacancyId = params.get("vacancy_id");
+    if (!vacancyId) {
+      alert("공실 ID를 찾을 수 없습니다.");
+      return;
+    }
+    
+    // 1. 브라우저 로컬 저장소 즉시 보존
+    localStorage.setItem(`easyflyer_saved_${vacancyId}`, JSON.stringify(state));
+    setIsLoadedFromStorage(true);
+
+    // 2. Supabase 클라우드 동기화 저장
+    setIsSavingCloud(true);
+    try {
+      const res = await fetch("/api/vacancy/save-flyer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ vacancyId, flyerState: state })
+      });
+      const json = await res.json();
+      if (json.success) {
+        alert("성공적으로 저장되었습니다");
+      } else {
+        throw new Error(json.error || "서버 응답 오류");
+      }
+    } catch (err: any) {
+      console.error("클라우드 저장 실패:", err);
+      alert("로컬 저장은 성공했으나, 다른 기기와의 클라우드 동기화 중 오류가 발생했습니다: " + err.message);
+    } finally {
+      setIsSavingCloud(false);
+    }
+  };
+
+  const handleResetAndRegenerate = async () => {
+    const params = new URLSearchParams(window.location.search);
+    const vacancyId = params.get("vacancy_id");
+    if (!vacancyId) return;
+
+    if (window.confirm("임시저장된 편집 데이터가 삭제되고, AI가 새로 홍보 카피를 작성합니다. 계속하시겠습니까?")) {
+      // 1. 브라우저 캐시 삭제
+      localStorage.removeItem(`easyflyer_saved_${vacancyId}`);
+      setIsLoadedFromStorage(false);
+      setIsInitialized(false);
+
+      // 2. Supabase 클라우드 백업 비우기
+      setLoadingData(true);
+      try {
+        const detailRes = await fetch(`/api/vacancy/detail?id=${vacancyId}`);
+        const detailJson = await detailRes.json();
+        if (detailJson.success && detailJson.data) {
+          const currentInfra = detailJson.data.infrastructure || {};
+          const { _flyer_settings, ...restInfra } = currentInfra;
+          
+          await fetch("/api/vacancy/save-flyer", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ vacancyId, flyerState: null }) // null 전달하여 삭제
+          });
+        }
+      } catch (e) {
+        console.error("클라우드 데이터 초기화 실패:", e);
+      }
+
+      // 3. 처음부터 AI 재생성 로드
+      await loadVacancyDataDirectly(vacancyId);
+    }
+  };
 
   const handleInfoChange = (newInfo: PropertyInfo) => {
     setState(prev => ({ ...prev, info: newInfo }));
@@ -427,12 +625,28 @@ function App() {
     setState(prev => ({ ...prev, layoutTheme: layout }));
   };
 
-  const handleImageUpload = (key: string, file: File) => {
-    const objectUrl = URL.createObjectURL(file);
-    setState(prev => ({
-      ...prev,
-      [key]: objectUrl
-    }));
+  const handleImageUpload = async (key: string, file: File): Promise<string | undefined> => {
+    const params = new URLSearchParams(window.location.search);
+    const vacancyId = params.get("vacancy_id") || "unknown";
+
+    setIsUploadingImage(prev => ({ ...prev, [key]: true }));
+
+    try {
+      const compressedBlob = await compressToWebP(file, 0.82);
+      const publicUrl = await uploadImageToServer(compressedBlob, vacancyId);
+
+      setState(prev => ({
+        ...prev,
+        [key]: publicUrl
+      }));
+      return publicUrl;
+    } catch (err: any) {
+      console.error("이미지 업로드 실패:", err);
+      alert("이미지 업로드 및 최적화 중 오류가 발생했습니다: " + err.message);
+      return undefined;
+    } finally {
+      setIsUploadingImage(prev => ({ ...prev, [key]: false }));
+    }
   };
 
   // 1. Text-based Generation
@@ -451,8 +665,20 @@ function App() {
 
   // 2. Image-based Analysis & Generation
   const handleAnalyzeImage = async (files: File[]) => {
+    const params = new URLSearchParams(window.location.search);
+    const vacancyId = params.get("vacancy_id") || "unknown";
+
     setIsGenerating(true);
     try {
+        const imageSlots = [
+            'mainImage', 
+            'subImage1', 'subImage2', 
+            'featureImage1', 'featureImage2', 'featureImage3', 'featureImage4'
+        ];
+        
+        const newImages: Record<string, string> = {};
+        let fileSlotIndex = 0;
+
         const imagesData = await Promise.all(files.map(async (file) => ({
             data: await fileToGenerativePart(file),
             mimeType: file.type
@@ -460,22 +686,25 @@ function App() {
 
         const { info: extractedInfo, generated } = await extractPropertyInfoFromImages(imagesData);
 
-        // Map uploaded files to object URLs for flyer display
-        const newImages: Record<string, string> = {};
-        const imageSlots = [
-            'mainImage', 
-            'subImage1', 'subImage2', 
-            'featureImage1', 'featureImage2', 'featureImage3', 'featureImage4'
-        ];
-        
-        let fileIndex = 0;
-        
-        imageSlots.forEach(slot => {
-            if (!state[slot] && fileIndex < files.length) {
-                newImages[slot] = URL.createObjectURL(files[fileIndex]);
-                fileIndex++;
+        await Promise.all(files.map(async (file) => {
+            while (fileSlotIndex < imageSlots.length && state[imageSlots[fileSlotIndex]]) {
+                fileSlotIndex++;
             }
-        });
+            if (fileSlotIndex < imageSlots.length) {
+                const slot = imageSlots[fileSlotIndex];
+                setIsUploadingImage(prev => ({ ...prev, [slot]: true }));
+                try {
+                  const compressedBlob = await compressToWebP(file, 0.82);
+                  const publicUrl = await uploadImageToServer(compressedBlob, vacancyId);
+                  newImages[slot] = publicUrl;
+                } catch (e) {
+                  console.error(`${slot} 업로드 실패:`, e);
+                } finally {
+                  setIsUploadingImage(prev => ({ ...prev, [slot]: false }));
+                }
+                fileSlotIndex++;
+            }
+        }));
 
         const mergedInfo: PropertyInfo = {
             ...state.info,
@@ -488,17 +717,17 @@ function App() {
     } catch (e) {
         console.error(e);
         alert("이미지 분석 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+    } finally {
         setIsGenerating(false); 
     }
   };
 
   // 3. Agent Image Analysis
   const handleAnalyzeAgentImage = async (file: File) => {
-      // Set the image first
-      handleImageUpload('agentImage', file);
-      
       setIsGenerating(true);
       try {
+          await handleImageUpload('agentImage', file);
+          
           const base64 = await fileToGenerativePart(file);
           const extractedAgentInfo = await extractAgentInfoFromImage(base64, file.type);
           
@@ -521,10 +750,10 @@ function App() {
 
   // 4. Complex Info Analysis
   const handleAnalyzeComplexImage = async (sectionId: string, file: File) => {
-      handleImageUpload(`complexImage-${sectionId}`, file);
-      
       setIsGenerating(true);
       try {
+          await handleImageUpload(`complexImage-${sectionId}`, file);
+          
           const base64 = await fileToGenerativePart(file);
           const extractedData = await extractComplexInfoFromImage(base64, file.type);
           
@@ -779,20 +1008,71 @@ ${clone.outerHTML}
         onExport={downloadJpg}
       />
       
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-xl font-serif" style={{ backgroundColor: state.colorTheme.primary }}>
-                    {state.colorTheme.name[0]}
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+        <div className="max-w-[1600px] mx-auto px-4 lg:px-8 h-16 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+                <img 
+                  src="/logo.png" 
+                  className="h-9 w-auto object-contain cursor-pointer transition-all duration-300 hover:scale-105 active:scale-95" 
+                  alt="공실뉴스 로고" 
+                  onClick={() => window.location.href = "/"}
+                />
+                <div className="flex flex-col">
+                  <h1 className="text-base sm:text-lg font-black text-gray-900 tracking-tight flex items-center gap-2">
+                    AI매물상세보기
+                    <span className="text-xs text-gray-400 font-normal hidden sm:inline">공실뉴스</span>
+                  </h1>
+                  {isInitialized && (
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                      </span>
+                      <span className="text-[10px] text-emerald-600 font-bold tracking-tight">
+                        {isLoadedFromStorage ? "임시저장 편집중" : "자동 저장 활성"}
+                      </span>
+                    </div>
+                  )}
                 </div>
-                <h1 className="text-xl font-bold text-gray-800">EasyRealtor AI <span className="text-xs text-gray-500 font-normal ml-2">부동산 전단지 제작</span></h1>
             </div>
-            <div className="flex gap-3">
-                <button onClick={downloadHtml} className="px-4 py-2 bg-white border text-sm font-medium flex items-center gap-2 hover:bg-gray-50 rounded-lg" style={{ borderColor: state.colorTheme.primary, color: state.colorTheme.primary }}>
-                    <CodeBracketIcon className="w-4 h-4" /> HTML 저장
+            <div className="flex gap-2 sm:gap-3 items-center">
+                {isLoadedFromStorage && (
+                    <button 
+                        onClick={handleResetAndRegenerate} 
+                        className="px-3 py-2 bg-rose-50 border border-rose-200 text-rose-600 hover:text-rose-700 text-xs sm:text-sm font-semibold flex items-center gap-1.5 hover:bg-rose-100 active:scale-95 rounded-lg transition-all duration-200"
+                        title="임시저장 데이터를 지우고 AI로 처음부터 다시 생성합니다."
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.2} stroke="currentColor" className="w-3.5 h-3.5">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                        </svg>
+                        <span className="hidden md:inline">AI 새로 생성</span>
+                        <span className="md:hidden">초기화</span>
+                    </button>
+                )}
+                <button 
+                    onClick={handleSaveToStorage} 
+                    disabled={isSavingCloud}
+                    className="px-3 py-2 bg-emerald-50 border border-emerald-200 text-emerald-600 hover:text-emerald-700 text-xs sm:text-sm font-semibold flex items-center gap-1.5 hover:bg-emerald-100 active:scale-95 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="현재 작업 내용을 수동으로 임시저장합니다."
+                >
+                    {isSavingCloud ? (
+                        <svg className="animate-spin h-3.5 w-3.5 text-emerald-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.2} stroke="currentColor" className="w-3.5 h-3.5">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" />
+                        </svg>
+                    )}
+                    <span>{isSavingCloud ? "저장 중..." : "임시 저장"}</span>
                 </button>
-                <button onClick={() => setShowExportModal(true)} className="px-4 py-2 text-white rounded-lg text-sm font-medium flex items-center gap-2 hover:opacity-90 transition-opacity" style={{ backgroundColor: state.colorTheme.primary }}>
-                    <ArrowDownTrayIcon className="w-4 h-4" /> 이미지 저장
+                <div className="h-5 w-[1px] bg-gray-200 mx-1"></div>
+                <button onClick={downloadHtml} className="px-3 py-2 bg-white border text-xs sm:text-sm font-semibold flex items-center gap-1.5 hover:bg-gray-50 rounded-lg transition-colors" style={{ borderColor: state.colorTheme.primary, color: state.colorTheme.primary }}>
+                    <CodeBracketIcon className="w-3.5 h-3.5" /> HTML 저장
+                </button>
+                <button onClick={() => setShowExportModal(true)} className="px-3.5 py-2 text-white rounded-lg text-xs sm:text-sm font-semibold flex items-center gap-1.5 hover:opacity-90 active:scale-95 transition-all" style={{ backgroundColor: state.colorTheme.primary }}>
+                    <ArrowDownTrayIcon className="w-3.5 h-3.5" /> 이미지 저장
                 </button>
             </div>
         </div>
@@ -816,6 +1096,7 @@ ${clone.outerHTML}
             currentLayout={state.layoutTheme}
             onColorSelect={handleColorChange}
             onLayoutSelect={handleLayoutChange}
+            isUploadingImage={isUploadingImage}
           />
         </div>
         <div className="col-span-12 lg:col-span-8 xl:col-span-9 bg-gray-200/50 rounded-xl border border-gray-300 overflow-hidden flex flex-col">

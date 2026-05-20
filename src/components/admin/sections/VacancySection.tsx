@@ -330,35 +330,74 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                         </div>
                       )}
                     </td>
-                    <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
-                      <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+                    <td style={{ padding: "12px 10px", textAlign: "center", verticalAlign: "middle" }}>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "center" }}>
                         {role === "admin" && row.owner_role === "REALTOR" ? (
-                          <span style={{ height: 30, padding: "0 12px", background: "#f3f4f6", color: "#9ca3af", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 4, fontSize: 12, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 4, whiteSpace: "nowrap" }}>
-                            🔒 열람불가
-                          </span>
+                          <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+                            <span style={{ height: 30, padding: "0 12px", background: "#f3f4f6", color: "#9ca3af", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 4, fontSize: 12, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 4, whiteSpace: "nowrap" }}>
+                              🔒 열람불가
+                            </span>
+                            <button onClick={async () => {
+                              if (!confirm("이 공실을 삭제하시겠습니까?")) return;
+                              const res = await deleteVacancy(row.id);
+                              if (res.success) fetchAllVacancies();
+                            }} style={{ height: 30, padding: "0 12px", background: darkMode ? "#2c2d31" : "#fff", color: "#9ca3af", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                              삭제
+                            </button>
+                          </div>
                         ) : (
-                        <>
-                          <button onClick={() => window.open(`/m/gongsil?id=${row.id}`, '_blank')} style={{ height: 30, padding: "0 12px", background: darkMode ? "#1e293b" : "#eff6ff", color: darkMode ? "#93c5fd" : "#2563eb", border: `1px solid ${darkMode ? "#334155" : "#bfdbfe"}`, borderRadius: 4, fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0, cursor: "pointer" }}>
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                            미리보기
-                          </button>
-                          <button onClick={async () => {
-                            const path = role === "realtor" ? "/realty_admin" : role === "user" ? "/user_admin" : "/admin";
-                            router.push(`${path}?menu=gongsil&action=write&id=${row.id}`);
-                          }} style={{ height: 30, padding: "0 12px", background: darkMode ? "#374151" : "#4b5563", color: "#fff", border: "none", borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                            수정
-                          </button>
-                        </>
+                          <>
+                            <button 
+                              onClick={() => window.open(`/marketing/ai-detail?vacancy_id=${row.id}`, '_blank')}
+                              style={{ 
+                                height: 30, 
+                                width: "100%", 
+                                padding: "0 12px", 
+                                background: "#f97316", 
+                                color: "#fff", 
+                                border: "none", 
+                                borderRadius: 6, 
+                                fontSize: 12, 
+                                fontWeight: 700, 
+                                cursor: "pointer", 
+                                display: "flex", 
+                                alignItems: "center", 
+                                justifyContent: "center", 
+                                gap: 4,
+                                whiteSpace: "nowrap",
+                                boxShadow: "0 2px 4px rgba(249, 115, 22, 0.2)",
+                                transition: "all 0.2s"
+                              }}
+                              onMouseEnter={(e) => { e.currentTarget.style.background = "#ea580c"; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.background = "#f97316"; }}
+                            >
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                              AI 매물상세페이지
+                            </button>
+                            <div style={{ display: "flex", gap: 6, justifyContent: "center", width: "100%" }}>
+                              <button onClick={() => window.open(`/m/gongsil?id=${row.id}`, '_blank')} style={{ height: 30, padding: "0 10px", background: darkMode ? "#1e293b" : "#eff6ff", color: darkMode ? "#93c5fd" : "#2563eb", border: `1px solid ${darkMode ? "#334155" : "#bfdbfe"}`, borderRadius: 4, fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0, cursor: "pointer" }}>
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                미리보기
+                              </button>
+                              <button onClick={async () => {
+                                const path = role === "realtor" ? "/realty_admin" : role === "user" ? "/user_admin" : "/admin";
+                                router.push(`${path}?menu=gongsil&action=write&id=${row.id}`);
+                              }} style={{ height: 30, padding: "0 10px", background: darkMode ? "#374151" : "#4b5563", color: "#fff", border: "none", borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                수정
+                              </button>
+                              <button onClick={async () => {
+                                if (!confirm("이 공실을 삭제하시겠습니까?")) return;
+                                const res = await deleteVacancy(row.id);
+                                if (res.success) fetchAllVacancies();
+                              }} style={{ height: 30, padding: "0 10px", background: darkMode ? "#2c2d31" : "#fff", color: "#9ca3af", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                                삭제
+                              </button>
+                            </div>
+                          </>
                         )}
-                        <button onClick={async () => {
-                          if (!confirm("이 공실을 삭제하시겠습니까?")) return;
-                          const res = await deleteVacancy(row.id);
-                          if (res.success) fetchAllVacancies();
-                        }} style={{ height: 30, padding: "0 12px", background: darkMode ? "#2c2d31" : "#fff", color: "#9ca3af", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                          삭제
-                        </button>
                       </div>
                     </td>
                   </tr>

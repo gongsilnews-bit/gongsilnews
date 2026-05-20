@@ -27,8 +27,12 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return [
       {
-        source: '/marketing/apartment/:path*',
-        destination: 'http://localhost:3005/:path*',
+        source: '/marketing/ai-detail',
+        destination: 'http://localhost:3005/marketing/ai-detail/',
+      },
+      {
+        source: '/marketing/ai-detail/:path*',
+        destination: 'http://localhost:3005/marketing/ai-detail/:path*',
       },
     ];
   },

@@ -65,7 +65,14 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
       supabase.from("property_inquiries").select("*").eq("property_id", vacancyId).order("created_at", { ascending: false })
     ]);
     if (res.success) {
-      setVacancy(res.data);
+      const photoList = res.photos || res.data?.vacancy_photos || [];
+      const vacancyData = {
+        ...res.data,
+        images: photoList && photoList.length > 0
+          ? [...photoList].sort((a: any, b: any) => a.sort_order - b.sort_order).map((p: any) => p.url)
+          : []
+      };
+      setVacancy(vacancyData);
       // Load realtor info
       if (res.data?.owner_id) {
         const { data: member } = await supabase.from("members").select("*").eq("id", res.data.owner_id).maybeSingle();
@@ -311,20 +318,6 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
               <button className="gdv-btn-toolbar" onClick={onBack}>➖ 목록</button>
               <button className="gdv-btn-toolbar" onClick={onEdit}>✏️ 수정</button>
               <button className="gdv-btn-toolbar" onClick={async () => { if(confirm('이 공실을 삭제하시겠습니까?')) { await deleteVacancy(vacancyId); onBack(); } }}>🗑️ 삭제</button>
-              <button 
-                className="gdv-btn-toolbar" 
-                style={{ 
-                  background: 'linear-gradient(135deg, #f59e0b, #d97706)', 
-                  color: '#fff', 
-                  fontWeight: 'bold', 
-                  border: 'none',
-                  boxShadow: '0 2px 4px rgba(217, 119, 6, 0.3)',
-                  cursor: 'pointer'
-                }} 
-                onClick={() => window.open(`/marketing/apartment?vacancy_id=${vacancyId}`, '_blank')}
-              >
-                🪄 AI 홍보물 제작
-              </button>
               <button className="gdv-btn-toolbar" onClick={copyShareLink}>🔗 주소복사</button>
               <button className="gdv-btn-toolbar" onClick={() => window.open(`/gongsil?id=${vacancyId}`)}>💻 미리보기</button>
               <button className={`gdv-btn-toolbar ${isAdOn ? 'gdv-blue' : ''}`} onClick={toggleStatus}>
