@@ -306,6 +306,8 @@ function App() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
   const flyerRef = useRef<HTMLDivElement>(null);
+  const [showSharePopover, setShowSharePopover] = useState(false);
+  const sharePopoverRef = useRef<HTMLDivElement>(null);
 
   // 5. URL 파라미터 기반 공실 데이터 연동 로드
   const [loadingData, setLoadingData] = useState(false);
@@ -533,6 +535,113 @@ function App() {
       loadVacancyDataDirectly(vacancyId);
     }
   }, []);
+
+  // 카카오 SDK 로드 및 외부 클릭 감지
+  useEffect(() => {
+    const scriptId = "kakao-share-script";
+    if (!document.getElementById(scriptId)) {
+      const script = document.createElement("script");
+      script.id = scriptId;
+      script.src = "https://t1.kakaocdn.net/kakao_js_sdk/2.7.4/kakao.min.js";
+      script.onload = () => {
+        const Kakao = (window as any).Kakao;
+        if (Kakao && !Kakao.isInitialized()) {
+          const kakaoJsKey = "435d3602201a49ea712e5f5a36fe6efc";
+          Kakao.init(kakaoJsKey);
+        }
+      };
+      document.head.appendChild(script);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!showSharePopover) return;
+    const handleClick = (e: MouseEvent) => {
+      if (sharePopoverRef.current && !sharePopoverRef.current.contains(e.target as Node)) {
+        setShowSharePopover(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [showSharePopover]);
+
+  const handleSaveToStorageQuietly = async () => {
+    const params = new URLSearchParams(window.location.search);
+    const vacancyId = params.get("vacancy_id");
+    if (!vacancyId) return;
+    localStorage.setItem(`easyflyer_saved_${vacancyId}`, JSON.stringify(state));
+    setIsLoadedFromStorage(true);
+    try {
+      await fetch("/api/vacancy/save-flyer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ vacancyId, flyerState: state })
+      });
+    } catch (err) {
+      console.warn("Silent cloud save failed:", err);
+    }
+  };
+
+  const handleKakaoShare = async () => {
+    const Kakao = (window as any).Kakao;
+    if (!Kakao || !Kakao.isInitialized()) {
+      alert("카카오 SDK 로드 중입니다. 잠시 후 시도해 주세요.");
+      return;
+    }
+    const params = new URLSearchParams(window.location.search);
+    const vacancyId = params.get("vacancy_id");
+    if (!vacancyId) return;
+
+    const shareUrl = `https://gongsilnews.com/flyer/${vacancyId}`;
+    
+    // First, save the current flyer state before sharing
+    await handleSaveToStorageQuietly();
+
+    Kakao.Share.sendDefault({
+      objectType: "feed",
+      content: {
+        title: state.info.address || "매물 전단지",
+        description: state.info.promotionText || "공실뉴스에서 제공하는 검증된 매물 전단지입니다.",
+        imageUrl: state.mainImage || "https://gongsilnews.com/logo.png",
+        link: { mobileWebUrl: shareUrl, webUrl: shareUrl },
+      },
+      buttons: [
+        { title: "전단지 보기", link: { mobileWebUrl: shareUrl, webUrl: shareUrl } },
+      ],
+    });
+    setShowSharePopover(false);
+  };
+
+  const handleCopyUrl = async () => {
+    const params = new URLSearchParams(window.location.search);
+    const vacancyId = params.get("vacancy_id");
+    if (!vacancyId) {
+      alert("공실 ID를 찾을 수 없습니다.");
+      return;
+    }
+    
+    // Save first
+    await handleSaveToStorageQuietly();
+
+    const shareUrl = `https://gongsilnews.com/flyer/${vacancyId}`;
+    try {
+      if (navigator.clipboard) {
+        await navigator.clipboard.writeText(shareUrl);
+        alert(`📋 공유 링크가 클립보드에 복사되었습니다!\n\n${shareUrl}`);
+      } else {
+        const tempInput = document.createElement("input");
+        tempInput.value = shareUrl;
+        document.body.appendChild(tempInput);
+        tempInput.select();
+        document.execCommand("copy");
+        document.body.removeChild(tempInput);
+        alert(`📋 공유 링크가 클립보드에 복사되었습니다!\n\n${shareUrl}`);
+      }
+    } catch (e) {
+      alert(`📋 공유 주소:\n${shareUrl}\n\n위 주소를 복사해 전달해 주세요.`);
+    }
+    setShowSharePopover(false);
+  };
 
   // 자동 임시저장
   useEffect(() => {
@@ -1061,51 +1170,32 @@ ${clone.outerHTML}
       
       <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
         <div className="max-w-[1600px] mx-auto px-4 lg:px-8 h-16 flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4">
                 <img 
                   src="/logo.png" 
                   className="h-9 w-auto object-contain cursor-pointer transition-all duration-300 hover:scale-105 active:scale-95" 
                   alt="공실뉴스 로고" 
                   onClick={() => window.location.href = "/"}
                 />
-                <div className="flex flex-col">
+                <div className="flex items-center gap-3">
                   <h1 className="text-base sm:text-lg font-black text-gray-900 tracking-tight">
                     AI매물상세보기
                   </h1>
+                  {isLoadedFromStorage && (
+                      <button 
+                          onClick={handleResetAndRegenerate} 
+                          className="px-2.5 py-1.5 bg-rose-50 border border-rose-200 text-rose-600 hover:text-rose-700 text-xs font-semibold flex items-center gap-1.5 hover:bg-rose-100 active:scale-95 rounded-lg transition-all duration-200"
+                          title="임시저장 데이터를 지우고 AI로 처음부터 다시 생성합니다."
+                      >
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.2} stroke="currentColor" className="w-3.5 h-3.5">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                          </svg>
+                          <span>AI 새로 생성</span>
+                      </button>
+                  )}
                 </div>
             </div>
-            <div className="flex gap-2 sm:gap-3 items-center">
-                {isLoadedFromStorage && (
-                    <button 
-                        onClick={handleResetAndRegenerate} 
-                        className="px-3 py-2 bg-rose-50 border border-rose-200 text-rose-600 hover:text-rose-700 text-xs sm:text-sm font-semibold flex items-center gap-1.5 hover:bg-rose-100 active:scale-95 rounded-lg transition-all duration-200"
-                        title="임시저장 데이터를 지우고 AI로 처음부터 다시 생성합니다."
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.2} stroke="currentColor" className="w-3.5 h-3.5">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
-                        </svg>
-                        <span className="hidden md:inline">AI 새로 생성</span>
-                        <span className="md:hidden">초기화</span>
-                    </button>
-                )}
-                <button 
-                    onClick={handleCopyShareLink} 
-                    className="px-3 py-2 bg-blue-50 border border-blue-200 text-blue-600 hover:text-blue-700 text-xs sm:text-sm font-bold flex items-center gap-1.5 hover:bg-blue-100 active:scale-95 rounded-lg transition-all duration-200"
-                    title="전단지를 저장하고, 다른 사람에게 공유할 수 있는 링크 주소를 복사합니다."
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.2} stroke="currentColor" className="w-3.5 h-3.5">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935-2.186 2.25 2.25 0 00-3.935 2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" />
-                    </svg>
-                    <span>링크 복사</span>
-                </button>
-                <div className="h-5 w-[1px] bg-gray-200 mx-1"></div>
-                <button onClick={downloadHtml} className="px-3 py-2 bg-white border text-xs sm:text-sm font-semibold flex items-center gap-1.5 hover:bg-gray-50 rounded-lg transition-colors" style={{ borderColor: state.colorTheme.primary, color: state.colorTheme.primary }}>
-                    <CodeBracketIcon className="w-3.5 h-3.5" /> HTML 저장
-                </button>
-                <button onClick={() => setShowExportModal(true)} className="px-3.5 py-2 text-white rounded-lg text-xs sm:text-sm font-semibold flex items-center gap-1.5 hover:opacity-90 active:scale-95 transition-all" style={{ backgroundColor: state.colorTheme.primary }}>
-                    <ArrowDownTrayIcon className="w-3.5 h-3.5" /> 이미지 내보내기
-                </button>
-            </div>
+            <div></div>
         </div>
       </header>
 
@@ -1143,6 +1233,85 @@ ${clone.outerHTML}
             </div>
         </div>
       </main>
+
+      {/* Floating Bottom Action Bar */}
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[90] w-[95%] sm:w-auto sm:min-w-[520px] bg-white/95 backdrop-blur-md border border-gray-200/80 p-4 rounded-2xl shadow-[0_15px_35px_-5px_rgba(0,0,0,0.15)] flex items-center justify-between gap-4">
+        {/* Save Button */}
+        <button 
+          onClick={handleSaveToStorage}
+          disabled={isSavingCloud}
+          className="flex-1 py-3 px-6 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:opacity-95 active:scale-95 transition-all duration-150 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+          style={{ backgroundColor: state.colorTheme.primary }}
+        >
+          {isSavingCloud ? (
+            <>
+              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+              <span>저장 중...</span>
+            </>
+          ) : (
+            <>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                <path fillRule="evenodd" d="M19.916 4.626a.75.75 0 01.208 1.04l-9 13.5a.75.75 0 01-1.154.114l-6-6a.75.75 0 011.06-1.06l5.353 5.353 8.493-12.739a.75.75 0 011.04-.208z" clipRule="evenodd" />
+              </svg>
+              <span>저장하기</span>
+            </>
+          )}
+        </button>
+
+        {/* Image Export Button */}
+        <button 
+          onClick={() => setShowExportModal(true)}
+          className="py-3 px-5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 active:scale-95 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all duration-150 shadow-sm"
+        >
+          <ArrowDownTrayIcon className="w-4 h-4 text-gray-500" />
+          <span>이미지 내보내기</span>
+        </button>
+
+        {/* Share Button (Relative Container for Popover) */}
+        <div ref={sharePopoverRef} className="relative">
+          <button 
+            onClick={() => setShowSharePopover(!showSharePopover)}
+            className="py-3 px-5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 active:scale-95 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all duration-150 shadow-sm"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4 text-gray-500">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935-2.186 2.25 2.25 0 00-3.935 2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" />
+            </svg>
+            <span>공유하기</span>
+          </button>
+
+          {/* Share Dropdown Popover */}
+          {showSharePopover && (
+            <div className="absolute bottom-[60px] right-0 bg-white border border-gray-200/80 rounded-xl shadow-[0_6px_24px_rgba(0,0,0,0.15)] w-48 z-[100] overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-150">
+              <button 
+                onClick={handleKakaoShare}
+                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 border-b border-gray-100 transition-colors text-left"
+              >
+                <div className="w-8 h-8 rounded-full bg-[#FEE500] flex items-center justify-center shrink-0">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="#3C1E1E">
+                    <path d="M12 3c-5.5 0-10 3.5-10 7.8 0 2.8 1.8 5.2 4.4 6.5l-1 3.7c-.1.3.3.6.5.4l4.3-2.9c.6.1 1.2.1 1.8.1 5.5 0 10-3.5 10-7.8S17.5 3 12 3z"></path>
+                  </svg>
+                </div>
+                <span className="text-sm font-semibold text-gray-700">카카오톡 공유</span>
+              </button>
+              <button 
+                onClick={handleCopyUrl}
+                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left"
+              >
+                <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                  </svg>
+                </div>
+                <span className="text-sm font-semibold text-gray-700">URL 복사</span>
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 8px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }

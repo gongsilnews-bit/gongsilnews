@@ -99,12 +99,15 @@ export default async function FlyerDetailPage({ params }: FlyerPageProps) {
     );
   }
 
-  const state = res.flyer.flyer_state;
-  const { info, mainImage, colorTheme, layoutTheme } = state;
-  const primaryColor = colorTheme?.primary || "#00788c";
-  const secondaryColor = colorTheme?.secondary || "#00c6d7";
-  const darkColor = colorTheme?.dark || "#003845";
-  const layout = layoutTheme?.type || "type1";
+  const state = res.flyer.flyer_state || {};
+  const info = state.info || {};
+  const mainImage = state.mainImage;
+  const colorTheme = state.colorTheme || {};
+  const layoutTheme = state.layoutTheme || {};
+  const primaryColor = colorTheme.primary || "#00788c";
+  const secondaryColor = colorTheme.secondary || "#00c6d7";
+  const darkColor = colorTheme.dark || "#003845";
+  const layout = layoutTheme.type || "type1";
 
   const placeholder = "https://placehold.co/860x600/e2e8f0/1e293b?text=Property";
   const mainImgSrc = mainImage || placeholder;
