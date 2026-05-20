@@ -1039,24 +1039,26 @@ function MobileGongsilContent() {
                   )}
 
                   {/* 주변환경 (인프라) */}
-                  {selectedVacancy.infrastructure && Object.keys(selectedVacancy.infrastructure).length > 0 && (
+                  {selectedVacancy.infrastructure && Object.keys(selectedVacancy.infrastructure).filter(k => !k.startsWith('_')).length > 0 && (
                     <div style={{ paddingTop: "24px", marginTop: "24px", borderTop: "1px dashed #e5e7eb" }}>
                       <div style={{ fontSize: "16px", fontWeight: 800, color: "#111827", marginBottom: "16px" }}>주변환경</div>
                       <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                        {Object.entries(selectedVacancy.infrastructure).map(([category, items]) => {
-                          const itemList = Array.isArray(items) ? items : [];
-                          if (itemList.length === 0) return null;
-                          return (
-                            <div key={category} style={{ display: "flex", gap: "12px" }}>
-                              <div style={{ width: "80px", fontSize: "14px", fontWeight: 700, color: "#6b7280", paddingTop: "2px" }}>{category}</div>
-                              <div style={{ flex: 1, display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                                {itemList.map((item: any) => (
-                                  <span key={item} style={{ background: "#f3f4f6", color: "#374151", fontSize: "13px", padding: "4px 10px", borderRadius: "12px" }}>{String(item)}</span>
-                                ))}
+                        {Object.entries(selectedVacancy.infrastructure)
+                          .filter(([category]) => !category.startsWith('_'))
+                          .map(([category, items]) => {
+                            const itemList = Array.isArray(items) ? items : [];
+                            if (itemList.length === 0) return null;
+                            return (
+                              <div key={category} style={{ display: "flex", gap: "12px" }}>
+                                <div style={{ width: "80px", fontSize: "14px", fontWeight: 700, color: "#6b7280", paddingTop: "2px" }}>{category}</div>
+                                <div style={{ flex: 1, display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                                  {itemList.map((item: any) => (
+                                    <span key={item} style={{ background: "#f3f4f6", color: "#374151", fontSize: "13px", padding: "4px 10px", borderRadius: "12px" }}>{String(item)}</span>
+                                  ))}
+                                </div>
                               </div>
-                            </div>
-                          );
-                        })}
+                            );
+                          })}
                       </div>
                     </div>
                   )}

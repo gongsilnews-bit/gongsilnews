@@ -2317,24 +2317,30 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                 )}
 
                 {/* ──── 주변환경 (인프라) ──── */}
-                {prop.infrastructure && Object.keys(prop.infrastructure).length > 0 && (
+                {prop.infrastructure && Object.keys(prop.infrastructure).filter(k => !k.startsWith('_')).length > 0 && (
                   <div style={{ padding: "10px 20px 20px" }}>
                     <div style={{ fontSize: 16, fontWeight: 800, color: "#222", marginBottom: 20, borderTop: "1px dashed #eee", paddingTop: 20 }}>주변환경</div>
                     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                      {Object.entries(prop.infrastructure).map(([catName, places]: [string, any]) => (
-                        <div key={catName} style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-                          <span style={{ fontSize: 13, fontWeight: "bold", color: "#666", width: 65, flexShrink: 0, marginTop: 4 }}>
-                            {catName}
-                          </span>
-                          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, flex: 1 }}>
-                            {(places as string[]).map((place: string, idx: number) => (
-                              <div key={idx} style={{ fontSize: 13, color: "#333", background: "#f5f5f5", padding: "4px 10px", borderRadius: 4 }}>
-                                {place}
+                      {Object.entries(prop.infrastructure)
+                        .filter(([catName]) => !catName.startsWith('_'))
+                        .map(([catName, places]: [string, any]) => {
+                          const placeList = Array.isArray(places) ? places : [];
+                          if (placeList.length === 0) return null;
+                          return (
+                            <div key={catName} style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                              <span style={{ fontSize: 13, fontWeight: "bold", color: "#666", width: 65, flexShrink: 0, marginTop: 4 }}>
+                                {catName}
+                              </span>
+                              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, flex: 1 }}>
+                                {placeList.map((place: string, idx: number) => (
+                                  <div key={idx} style={{ fontSize: 13, color: "#333", background: "#f5f5f5", padding: "4px 10px", borderRadius: 4 }}>
+                                    {place}
+                                  </div>
+                                ))}
                               </div>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
+                            </div>
+                          );
+                        })}
                     </div>
                   </div>
                 )}
