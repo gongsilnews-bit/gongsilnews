@@ -1682,6 +1682,63 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
         )}
       </div>
       
+      {/* 플로팅 지도 <-> 목록 토글 버튼 (심플 원형 오렌지) */}
+      {!showDetail && (
+        <>
+          {/* 목록 페이지일 때 -> 지도보기 버튼 */}
+          {activeTab !== 'local' && searchTab === 'article' && (
+            <Link
+              href="/m/news_map"
+              style={{
+                position: "fixed",
+                bottom: "80px",
+                right: "16px",
+                width: "52px",
+                height: "52px",
+                borderRadius: "50%",
+                backgroundColor: "#ea580c",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                boxShadow: "0 4px 14px rgba(234, 88, 12, 0.4)",
+                zIndex: 9998,
+                cursor: "pointer",
+                border: "none",
+                outline: "none"
+              }}
+            >
+              <span style={{ fontSize: "24px", userSelect: "none" }}>🗺️</span>
+            </Link>
+          )}
+
+          {/* 지도 페이지일 때 -> 목록보기 버튼 */}
+          {activeTab === 'local' && (
+            <Link
+              href="/m/news_gongsil"
+              style={{
+                position: "fixed",
+                bottom: "80px",
+                right: "16px",
+                width: "52px",
+                height: "52px",
+                borderRadius: "50%",
+                backgroundColor: "#ea580c",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                boxShadow: "0 4px 14px rgba(234, 88, 12, 0.4)",
+                zIndex: 9998,
+                cursor: "pointer",
+                border: "none",
+                outline: "none"
+              }}
+            >
+              <span style={{ fontSize: "24px", userSelect: "none" }}>📝</span>
+            </Link>
+          )}
+        </>
+      )}
+
       {isAuthModalOpen && (
         <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} initialTab="login" />
       )}
