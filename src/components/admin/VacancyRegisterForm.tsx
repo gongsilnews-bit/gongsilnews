@@ -1241,35 +1241,40 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                     <option value="5000">반경 5km</option>
                   </select>
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 12, background: darkMode ? "#1a1b1e" : "#f9fafb", padding: 16, borderRadius: 8, border: `1px solid ${border}` }}>
-                  {Object.entries(infrastructure).map(([catName, places]) => (
-                    <div key={catName} style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: textPrimary, width: 65, flexShrink: 0, marginTop: 4 }}>
-                        {catName}
-                      </span>
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, flex: 1 }}>
-                        {places.map((place, idx) => (
-                          <div key={idx} style={{ display: "flex", alignItems: "center", padding: "2px 8px 2px 10px", background: cardBg, border: `1px solid ${border}`, borderRadius: 16 }}>
-                            <span style={{ fontSize: 13, color: textSecondary }}>{place}</span>
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveInfra(catName, idx)}
-                              style={{ marginLeft: 4, background: "transparent", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 14, fontWeight: 700, padding: "0 4px", display: "flex", alignItems: "center" }}
-                              title="삭제"
-                            >✕</button>
+                 <div style={{ display: "flex", flexDirection: "column", gap: 12, background: darkMode ? "#1a1b1e" : "#f9fafb", padding: 16, borderRadius: 8, border: `1px solid ${border}` }}>
+                  {Object.entries(infrastructure)
+                    .filter(([catName]) => !catName.startsWith('_'))
+                    .map(([catName, places]) => {
+                      const placeList = Array.isArray(places) ? places : [];
+                      return (
+                        <div key={catName} style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: textPrimary, width: 65, flexShrink: 0, marginTop: 4 }}>
+                            {catName}
+                          </span>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, flex: 1 }}>
+                            {placeList.map((place, idx) => (
+                              <div key={idx} style={{ display: "flex", alignItems: "center", padding: "2px 8px 2px 10px", background: cardBg, border: `1px solid ${border}`, borderRadius: 16 }}>
+                                <span style={{ fontSize: 13, color: textSecondary }}>{place}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveInfra(catName, idx)}
+                                  style={{ marginLeft: 4, background: "transparent", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 14, fontWeight: 700, padding: "0 4px", display: "flex", alignItems: "center" }}
+                                  title="삭제"
+                                >✕</button>
+                              </div>
+                            ))}
+                            <div style={{ display: "flex", alignItems: "center" }}>
+                              <input type="text" value={addInfraInput[catName] || ""} onChange={(e) => setAddInfraInput(prev => ({ ...prev, [catName]: e.target.value }))}
+                                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddInfra(catName); } }}
+                                placeholder="+ 직접 추가 (엔터)"
+                                style={{ fontSize: 12, padding: "3px 10px", borderRadius: 16, border: `1px dashed ${border}`, background: "transparent", outline: "none", width: 120, color: textPrimary }}
+                              />
+                            </div>
                           </div>
-                        ))}
-                        <div style={{ display: "flex", alignItems: "center" }}>
-                          <input type="text" value={addInfraInput[catName] || ""} onChange={(e) => setAddInfraInput(prev => ({ ...prev, [catName]: e.target.value }))}
-                            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddInfra(catName); } }}
-                            placeholder="+ 직접 추가 (엔터)"
-                            style={{ fontSize: 12, padding: "3px 10px", borderRadius: 16, border: `1px dashed ${border}`, background: "transparent", outline: "none", width: 120, color: textPrimary }}
-                          />
                         </div>
-                      </div>
-                    </div>
-                  ))}
-                  {Object.keys(infrastructure).length === 0 && (
+                      );
+                    })}
+                  {Object.keys(infrastructure).filter(k => !k.startsWith('_')).length === 0 && (
                     <div style={{ fontSize: 13, color: textSecondary, textAlign: "center", padding: "10px 0" }}>지정된 반경 내에 추출된 인프라 정보가 없습니다. 직접 추가 기능을 이용해 보세요.</div>
                   )}
                 </div>
