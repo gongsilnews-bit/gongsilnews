@@ -117,23 +117,26 @@ export default async function FlyerDetailPage({ params }: FlyerPageProps) {
   const placeholder = "https://placehold.co/860x600/e2e8f0/1e293b?text=Property";
   const mainImgSrc = mainImage || placeholder;
 
-  const formatPrice = (value: string) => {
-    if (!value) return "";
-    const num = parseInt(value.replace(/[^0-9]/g, ""), 10);
-    if (isNaN(num)) return value;
-    if (value.includes("억")) return value;
+  const formatPrice = (value: any) => {
+    if (value === undefined || value === null) return "";
+    const strVal = String(value);
+    if (!strVal) return "";
+    const num = parseInt(strVal.replace(/[^0-9]/g, ""), 10);
+    if (isNaN(num)) return strVal;
+    if (strVal.includes("억")) return strVal;
     if (num >= 10000) {
       const eok = Math.floor(num / 10000);
       const man = num % 10000;
       return `${eok}억${man > 0 ? ` ${man.toLocaleString()}` : ""}`;
     }
-    return value;
+    return strVal;
   };
 
-  const getPriceLabel = (type: string) => {
-    if (type === "매매") return "매매가";
-    if (type === "전세") return "전세금";
-    if (type === "월세" || type === "단기임대") return "보증금 / 월세";
+  const getPriceLabel = (type: any) => {
+    const strType = String(type || "");
+    if (strType === "매매") return "매매가";
+    if (strType === "전세") return "전세금";
+    if (strType === "월세" || strType === "단기임대") return "보증금 / 월세";
     return "가격";
   };
 
@@ -141,10 +144,26 @@ export default async function FlyerDetailPage({ params }: FlyerPageProps) {
 
   // Formatted Stats
   const statsItems = [
-    { label: "Price", value: `${formatPrice(info.priceMain)}${isRent && info.priceSub ? ` / ${info.priceSub}` : ""}`, sub: getPriceLabel(info.transactionType) },
-    { label: "Area", value: info.area ? info.area.split("/")[0] : "-", sub: "전용면적" },
-    { label: "Rooms", value: info.roomCount || "-", sub: "방 / 욕실" },
-    { label: "Move-in", value: info.moveInDate ? info.moveInDate.split(" ")[0] : "-", sub: "입주가능일" }
+    { 
+      label: "Price", 
+      value: `${formatPrice(info.priceMain)}${isRent && info.priceSub ? ` / ${formatPrice(info.priceSub)}` : ""}`, 
+      sub: getPriceLabel(info.transactionType) 
+    },
+    { 
+      label: "Area", 
+      value: info.area ? String(info.area).split("/")[0] : "-", 
+      sub: "전용면적" 
+    },
+    { 
+      label: "Rooms", 
+      value: info.roomCount ? String(info.roomCount) : "-", 
+      sub: "방 / 욕실" 
+    },
+    { 
+      label: "Move-in", 
+      value: info.moveInDate ? String(info.moveInDate).split(" ")[0] : "-", 
+      sub: "입주가능일" 
+    }
   ];
 
   // Helper for rendering section header
@@ -369,7 +388,7 @@ export default async function FlyerDetailPage({ params }: FlyerPageProps) {
               { l: "해당층/총층", v: info.floor || "-" },
               { l: "방향", v: info.direction || "-" },
               { l: "주차가능대수", v: info.parking || "-" },
-              { l: "옵션 정보", v: (info.options && info.options.length > 0) ? info.options : "없음", full: true }
+              { l: "옵션 정보", v: (Array.isArray(info.options) && info.options.length > 0) ? info.options.join(", ") : (typeof info.options === "string" ? info.options : "없음"), full: true }
             ].map((item, i) => (
               <div key={i} className={`flex justify-between border-b border-gray-100 pb-3 ${item.full ? "col-span-1 md:col-span-2" : ""}`}>
                 <span className="text-gray-400">{item.l}</span>
@@ -573,9 +592,15 @@ export default async function FlyerDetailPage({ params }: FlyerPageProps) {
               )}
             </div>
 
-            {info.agentAdditionalInfo && info.agentAdditionalInfo.map((line: string, idx: number) => (
-              <p key={idx} className="text-xs opacity-50 mb-1">{line}</p>
-            ))}
+            {Array.isArray(info.agentAdditionalInfo) ? (
+              info.agentAdditionalInfo.map((line: string, idx: number) => (
+                <p key={idx} className="text-xs opacity-50 mb-1">{line}</p>
+              ))
+            ) : (
+              info.agentAdditionalInfo && (
+                <p className="text-xs opacity-50 mb-1">{String(info.agentAdditionalInfo)}</p>
+              )
+            )}
 
             {info.consultationUrl && (
               <a
