@@ -1317,7 +1317,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
               <div style={{ padding: "20px 20px 12px", backgroundColor: "#fff", borderBottom: "1px solid #f3f4f6" }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                   <span style={{ fontSize: "13px", fontWeight: 600, color: "#6b7280", letterSpacing: "-0.3px" }}>
-                    <span style={{ fontWeight: 800, color: "#111", borderBottom: "1px solid #9ca3af", paddingBottom: "1px" }}>{displayName} 대표님</span>을 위한
+                    <span style={{ fontWeight: 800, color: "#111", background: "linear-gradient(180deg, transparent 50%, rgba(254, 240, 138, 0.9) 50%)", padding: "2px 4px", borderRadius: "2px" }}>{displayName} 대표님</span>을 위한
                   </span>
                   <h2 style={{ fontSize: "19px", fontWeight: 900, color: "#ea580c", margin: 0, letterSpacing: "-0.5px", lineHeight: 1.3 }}>
                     {mentalText} <span style={{ color: "#111", fontWeight: "normal" }}>News</span>
