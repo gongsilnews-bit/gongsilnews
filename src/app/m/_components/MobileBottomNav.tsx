@@ -121,8 +121,30 @@ function MobileBottomNavContent() {
     },
     {
       name: "공실", path: "/m/gongsil",
-      icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>,
-      iconFilled: <svg width="24" height="24" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" fill="currentColor"/><circle cx="12" cy="10" r="3" fill="white"/></svg>,
+      icon: (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="4" y="2" width="16" height="20" rx="2" ry="2" />
+          <path d="M9 22v-4h6v4" />
+          <line x1="8" y1="6" x2="10" y2="6" />
+          <line x1="14" y1="6" x2="16" y2="6" />
+          <line x1="8" y1="10" x2="10" y2="10" />
+          <line x1="14" y1="10" x2="16" y2="10" />
+          <line x1="8" y1="14" x2="10" y2="14" />
+          <line x1="14" y1="14" x2="16" y2="14" />
+        </svg>
+      ),
+      iconFilled: (
+        <svg width="24" height="24" viewBox="0 0 24 24">
+          <rect x="4" y="2" width="16" height="20" rx="2" fill="currentColor" />
+          <path d="M9 22v-4h6v4z" fill="white" />
+          <rect x="8" y="5" width="2" height="2" rx="0.5" fill="white" />
+          <rect x="14" y="5" width="2" height="2" rx="0.5" fill="white" />
+          <rect x="8" y="9" width="2" height="2" rx="0.5" fill="white" />
+          <rect x="14" y="9" width="2" height="2" rx="0.5" fill="white" />
+          <rect x="8" y="13" width="2" height="2" rx="0.5" fill="white" />
+          <rect x="14" y="13" width="2" height="2" rx="0.5" fill="white" />
+        </svg>
+      ),
     },
     {
       name: "부동산특강", path: "/m/study",
