@@ -127,6 +127,89 @@ export async function saveHomepageSettings(ownerId: string, inputData: {
   }
 }
 
+// ── 서브도메인으로 홈페이지 설정 및 프로필 조회 (공개 서비스용) ──
+export async function getHomepageSettingsBySubdomain(subdomain: string) {
+  const supabase = getAdminClient();
+  try {
+    const { data: hs, error } = await supabase
+      .from('homepage_settings')
+      .select('*')
+      .eq('subdomain', subdomain)
+      .eq('is_active', true)
+      .single();
+
+    if (error || !hs) return { success: false, error: "존재하지 않거나 비활성화된 홈페이지입니다." };
+
+    // 회원 정보 조회
+    const { data: member } = await supabase
+      .from('members')
+      .select('id, name, email, role, phone, plan_type, plan_end_date, profile_image_url, sns_links')
+      .eq('id', hs.owner_id)
+      .single();
+
+    if (!member) return { success: false, error: "회원 정보를 찾을 수 없습니다." };
+
+    // 요금제 혜택 등급 검사
+    const isPremium =
+      member.role === 'SUPER_ADMIN' ||
+      member.role === 'ADMIN' ||
+      member.role === '최고관리자' ||
+      ((member.plan_type === 'news_premium' ||
+        member.plan_type === 'vacancy_premium' ||
+        member.plan_type === 'biz_premium') &&
+        (!member.plan_end_date || new Date(member.plan_end_date) >= new Date()));
+
+    if (!isPremium) {
+      return { success: false, error: "유료 프리미엄 회원 전용 서비스입니다. 이용권 결제 또는 연장이 필요합니다." };
+    }
+
+    let companyProfile: any = null;
+
+    if (member.role === 'REALTOR') {
+      const { data: agency } = await supabase
+        .from('agencies')
+        .select('*')
+        .eq('owner_id', hs.owner_id)
+        .single();
+      companyProfile = agency || null;
+    } else if (member.role === 'BIZ') {
+      const { data: biz } = await supabase
+        .from('business_profiles')
+        .select('*')
+        .eq('user_id', hs.owner_id)
+        .single();
+      companyProfile = biz || null;
+    }
+
+    const flatSettings = {
+      ...hs.settings,
+      theme_name: hs.settings?.theme_name || "template01",
+      logo_url: hs.settings?.header?.logo_url || null,
+      favicon_url: hs.settings?.header?.favicon_url || null,
+      site_title: hs.settings?.header?.site_title || null,
+      contact_phone: hs.settings?.location_map?.contact_number || null,
+      company_intro: hs.settings?.company_info_page?.greeting_text || null,
+    };
+
+    return {
+      success: true,
+      data: {
+        settings: {
+          id: hs.id,
+          subdomain: hs.subdomain,
+          is_active: hs.is_active,
+          created_at: hs.created_at,
+          ...flatSettings
+        },
+        member,
+        companyProfile
+      }
+    };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
 // ── 서브도메인 중복 검사 ──
 export async function checkSubdomainAvailable(subdomain: string, ownerId?: string) {
   const supabase = getAdminClient();
