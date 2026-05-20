@@ -279,6 +279,26 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
     }
   };
 
+  const adjustColor = (hex: string, percent: number): string => {
+    let cleanHex = hex.replace(/^\s*#|\s*$/g, '');
+    if (cleanHex.length === 3) {
+      cleanHex = cleanHex.replace(/(.)/g, '$1$1');
+    }
+    let r = parseInt(cleanHex.substring(0, 2), 16);
+    let g = parseInt(cleanHex.substring(2, 4), 16);
+    let b = parseInt(cleanHex.substring(4, 6), 16);
+
+    r = Math.min(255, Math.max(0, r + Math.round(percent * 2.55)));
+    g = Math.min(255, Math.max(0, g + Math.round(percent * 2.55)));
+    b = Math.min(255, Math.max(0, b + Math.round(percent * 2.55)));
+
+    const rHex = r.toString(16).padStart(2, '0');
+    const gHex = g.toString(16).padStart(2, '0');
+    const bHex = b.toString(16).padStart(2, '0');
+
+    return `#${rHex}${gHex}${bHex}`;
+  };
+
   const primaryColor = currentColor.primary;
 
   return (
@@ -290,7 +310,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
              <SwatchIcon className="w-5 h-5" />
              디자인 색상 선택
         </h3>
-        <div className="flex gap-3 mb-6">
+        <div className="flex items-center gap-3 mb-6 flex-wrap">
             {colors.map(color => (
                 <button
                     key={color.id}
@@ -302,6 +322,40 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                     {currentColor.id === color.id && <div className="w-2 h-2 bg-white rounded-full"></div>}
                 </button>
             ))}
+
+            {/* Custom Color Picker Swatch */}
+            <div 
+                className={`relative w-10 h-10 rounded-full border-2 transition-all shadow-sm flex items-center justify-center cursor-pointer hover:scale-105 ${currentColor.id === 'custom' ? 'border-gray-800 scale-110 ring-2 ring-offset-2 ring-gray-300' : 'border-dashed border-gray-300'}`}
+                style={{ 
+                    background: currentColor.id === 'custom' 
+                        ? currentColor.primary 
+                        : 'linear-gradient(45deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8b00ff)' 
+                }}
+                title="직접 색상 선택 (컬러 바)"
+            >
+                <input 
+                    type="color"
+                    value={currentColor.id === 'custom' ? currentColor.primary : '#00788c'}
+                    onChange={(e) => {
+                        const val = e.target.value;
+                        onColorSelect({
+                            id: 'custom',
+                            name: '사용자 지정',
+                            primary: val,
+                            secondary: adjustColor(val, 40),
+                            dark: adjustColor(val, -45)
+                        });
+                    }}
+                    className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+                />
+                {currentColor.id === 'custom' ? (
+                    <div className="w-2 h-2 bg-white rounded-full shadow-sm"></div>
+                ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4 text-white drop-shadow-md">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                )}
+            </div>
         </div>
 
         <h3 className="text-sm font-bold text-gray-700 flex items-center gap-2 mb-3">
