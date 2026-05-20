@@ -1320,7 +1320,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                     <span style={{ fontWeight: 800, color: "#111", borderBottom: "1px solid #9ca3af", paddingBottom: "1px" }}>{displayName} 대표님</span>을 위한
                   </span>
                   <h2 style={{ fontSize: "19px", fontWeight: 900, color: "#ea580c", margin: 0, letterSpacing: "-0.5px", lineHeight: 1.3 }}>
-                    {mentalText} <span style={{ color: "#111" }}>News</span>
+                    {mentalText} <span style={{ color: "#111", fontWeight: "normal" }}>News</span>
                   </h2>
                 </div>
               </div>
