@@ -96,6 +96,9 @@ function MobileVacancyWrite() {
   const [description, setDescription] = useState("");
   const [clientName, setClientName] = useState("");
   const [clientPhone, setClientPhone] = useState("");
+  const [commissionType, setCommissionType] = useState("법정수수료");
+  const [commissionEtc, setCommissionEtc] = useState("");
+  const [ownerRelation, setOwnerRelation] = useState("본인");
   const [coords, setCoords] = useState<{lat:number;lng:number}|null>(null);
 
   // 옵션/테마/주변환경
@@ -212,6 +215,9 @@ function MobileVacancyWrite() {
         if (d.description) setDescription(d.description);
         if (d.client_name) setClientName(d.client_name);
         if (d.client_phone) setClientPhone(d.client_phone);
+        if (d.commission_type) setCommissionType(d.commission_type);
+        if (d.commission_etc) setCommissionEtc(d.commission_etc);
+        if (d.owner_relation) setOwnerRelation(d.owner_relation);
         if (d.lat && d.lng) setCoords({lat:d.lat,lng:d.lng});
         if (d.realtor_commission) setRealtorCommission(d.realtor_commission);
         if (d.exposure_type) setExposureType(d.exposure_type);
@@ -538,6 +544,9 @@ function MobileVacancyWrite() {
         lat: coords?.lat, lng: coords?.lng,
         parking, move_in_date: moveInDate, description: description||undefined,
         client_name: clientName, client_phone: clientPhone,
+        commission_type: isRealtor ? undefined : commissionType,
+        commission_etc: isRealtor ? undefined : commissionEtc,
+        owner_relation: isRealtor ? undefined : ownerRelation,
         options: selectedOptions, themes: selectedThemes, infrastructure,
         realtor_commission: isRealtor ? realtorCommission : undefined,
         exposure_type: isRealtor ? exposureType : undefined,
@@ -1028,6 +1037,12 @@ function MobileVacancyWrite() {
             <div style={{ display:"flex", justifyContent:"space-between" }}><span style={{color:"#6b7280"}}>사진</span><span style={{fontWeight:700}}>{photoPreview.length}장 등록됨</span></div>
             <div style={{ display:"flex", justifyContent:"space-between" }}><span style={{color:"#6b7280"}}>좌표</span><span style={{fontWeight:700, color: coords ? "#10b981" : "#ef4444"}}>{coords ? "✓ 설정됨" : "✗ 미설정"}</span></div>
             {selectedThemes.length > 0 && <div style={{ display:"flex", justifyContent:"space-between", flexWrap:"wrap" }}><span style={{color:"#6b7280"}}>테마</span><span style={{fontWeight:600, color:"#3b82f6"}}>{selectedThemes.map(t=>`#${t}`).join(" ")}</span></div>}
+            {!isRealtor && (
+              <div style={{ display:"flex", justifyContent:"space-between" }}>
+                <span style={{color:"#6b7280"}}>중개보수</span>
+                <span style={{fontWeight:700, color:"#2563eb"}}>{commissionType}{commissionEtc ? ` (${commissionEtc})` : ""}</span>
+              </div>
+            )}
           </div>
           <div style={{ marginTop:12, display:"flex", gap:6 }}>
             {[1,2,3].map(s => (
@@ -1058,13 +1073,40 @@ function MobileVacancyWrite() {
             </div>
           </div>
         ) : (
-          <div style={{ background:"#fff", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.05)" }}>
-            <div style={{ fontSize:16, fontWeight:800, color:"#111", marginBottom:14 }}>👤 등록자 정보</div>
-            <div style={{ display:"flex", gap:10 }}>
-              <div style={{flex:1}}><label style={labelStyle}>이름</label><input type="text" value={clientName} onChange={e=>setClientName(e.target.value)} style={inputStyle}/></div>
-              <div style={{flex:1}}><label style={labelStyle}>연락처</label><input type="tel" value={clientPhone} onChange={e=>setClientPhone(formatPhone(e.target.value))} placeholder="010-0000-0000" style={inputStyle}/></div>
+          <>
+            {/* 7-1. 중개수수료 동의 및 지급여부 설정 */}
+            <div style={{ background:"#fff", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.05)" }}>
+              <div style={{ fontSize:16, fontWeight:800, color:"#111", marginBottom:14 }}>💰 중개수수료</div>
+              <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                  <label style={{ display:"flex", alignItems:"center", gap:6, fontSize:14, fontWeight:600, color:"#374151", flexShrink:0 }}>
+                    <input type="radio" checked readOnly style={{ accentColor:"#2563eb", width:18, height:18 }} />
+                    법정수수료 지급
+                  </label>
+                  <input type="text" placeholder="예: 추가사항 입력 (선택)" value={commissionEtc} onChange={(e) => setCommissionEtc(e.target.value)}
+                    style={{ ...inputStyle, flex:1, height:38, fontSize:13 }} />
+                </div>
+                <div style={{ background:"#eff6ff", borderRadius:10, padding:"12px 14px", fontSize:12, color:"#1e40af", lineHeight:1.5 }}>
+                  ⓘ 공실광고의뢰서 작성자는 법정수수료를 지급하는 것에 대하여 동의하며, 중개수수료 지급관련 민원이 발생될 경우 <strong>공실뉴스</strong> 공실광고 등록에 제한이 될 수 있음을 확인합니다.
+                </div>
+              </div>
             </div>
-          </div>
+
+            {/* 7-2. 등록자 정보 및 관계 */}
+            <div style={{ background:"#fff", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.05)" }}>
+              <div style={{ fontSize:16, fontWeight:800, color:"#111", marginBottom:14 }}>👤 등록자 정보</div>
+              <div style={{ display:"flex", gap:10, marginBottom:12 }}>
+                <div style={{flex:1}}><label style={labelStyle}>이름</label><input type="text" value={clientName} onChange={e=>setClientName(e.target.value)} style={inputStyle}/></div>
+                <div style={{flex:1}}><label style={labelStyle}>연락처</label><input type="tel" value={clientPhone} onChange={e=>setClientPhone(formatPhone(e.target.value))} placeholder="010-0000-0000" style={inputStyle}/></div>
+              </div>
+              <div>
+                <label style={labelStyle}>소유주와의 관계</label>
+                <select value={ownerRelation} onChange={(e) => setOwnerRelation(e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
+                  <option>본인</option><option>가족</option><option>지인</option><option>임차인</option><option>법인</option><option>기타</option>
+                </select>
+              </div>
+            </div>
+          </>
         )}
 
         {/* 8. 부동산 전용 (REALTOR/ADMIN만) */}
