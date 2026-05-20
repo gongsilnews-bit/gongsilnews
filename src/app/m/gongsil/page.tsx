@@ -1088,33 +1088,46 @@ function MobileGongsilContent() {
                       <img src={selectedVacancy.members?.profile_image_url || selectedVacancy.members?.avatar_url || "https://via.placeholder.com/64"} onError={(e) => { e.currentTarget.src = "https://via.placeholder.com/64?text=Profile"; }} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     </div>
                     <div style={{ flex: 1 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px", flexWrap: "wrap" }}>
-                        <h3 style={{ fontSize: "20px", fontWeight: 800, color: "#111827" }}>
-                          {(() => {
-                            const agencyInfo = Array.isArray(selectedVacancy.members?.agencies) ? selectedVacancy.members.agencies[0] : selectedVacancy.members?.agencies;
-                            return agencyInfo?.name || selectedVacancy.members?.full_name || "착한임대";
-                          })()}
-                        </h3>
-                        {selectedVacancy.members?.role === 'REPORTER' && (
-                          <a href={`/m/reporter/${selectedVacancy.members?.id}`} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: "4px", padding: "2px 8px", borderRadius: "9999px", fontSize: "12px", fontWeight: 700, background: "#fdf2f8", color: "#db2777", border: "1px solid #fbcfe8", textDecoration: "none", cursor: "pointer" }} onClick={(e) => e.stopPropagation()}>
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-                            기자홈피
-                          </a>
-                        )}
-                        <button style={{ background: "#f3f4f6", border: "1px solid #e5e7eb", borderRadius: "4px", padding: "2px 6px", display: "flex", alignItems: "center" }}>
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4b5563" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                        </button>
-                      </div>
                       {(() => {
                         const agencyInfo = Array.isArray(selectedVacancy.members?.agencies) ? selectedVacancy.members.agencies[0] : selectedVacancy.members?.agencies;
                         const phoneStr = [agencyInfo?.phone, agencyInfo?.cell].filter(Boolean).join(', ') || selectedVacancy.members?.phone || selectedVacancy.client_phone || "미등록";
                         const firstPhone = phoneStr !== "미등록" ? phoneStr.split(',')[0].trim() : "";
+                        const displayName = agencyInfo 
+                          ? (agencyInfo.name || selectedVacancy.members?.full_name || "중개업소")
+                          : (selectedVacancy.members?.full_name || selectedVacancy.members?.name || selectedVacancy.client_name || "일반회원");
+                        
                         return (
                           <>
-                            <p style={{ fontSize: "15px", color: "#6b7280", marginBottom: "4px" }}>
-                              대표 {agencyInfo?.ceo_name || selectedVacancy.members?.name || "김동현"} | 등록번호 {agencyInfo?.reg_num || "미등록"}
-                            </p>
-                            <p style={{ fontSize: "15px", color: "#6b7280", marginBottom: "12px" }}>{agencyInfo?.address || selectedVacancy.sido + " " + selectedVacancy.sigungu}</p>
+                            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px", flexWrap: "wrap" }}>
+                              <h3 style={{ fontSize: "20px", fontWeight: 800, color: "#111827" }}>
+                                {displayName}
+                              </h3>
+                              {selectedVacancy.members?.role === 'REPORTER' && (
+                                <a href={`/m/reporter/${selectedVacancy.members?.id}`} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: "4px", padding: "2px 8px", borderRadius: "9999px", fontSize: "12px", fontWeight: 700, background: "#fdf2f8", color: "#db2777", border: "1px solid #fbcfe8", textDecoration: "none", cursor: "pointer" }} onClick={(e) => e.stopPropagation()}>
+                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                                  기자홈피
+                                </a>
+                              )}
+                              <button style={{ background: "#f3f4f6", border: "1px solid #e5e7eb", borderRadius: "4px", padding: "2px 6px", display: "flex", alignItems: "center" }}>
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4b5563" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                              </button>
+                            </div>
+                            
+                            {agencyInfo ? (
+                              <>
+                                <p style={{ fontSize: "15px", color: "#6b7280", marginBottom: "4px" }}>
+                                  대표 {agencyInfo.ceo_name || "-"} | 등록번호 {agencyInfo.reg_num || "미등록"}
+                                </p>
+                                <p style={{ fontSize: "15px", color: "#6b7280", marginBottom: "12px" }}>{agencyInfo.address || selectedVacancy.sido + " " + selectedVacancy.sigungu}</p>
+                              </>
+                            ) : (
+                              <>
+                                <p style={{ fontSize: "15px", color: "#6b7280", marginBottom: "12px" }}>
+                                  일반회원 <span style={{color:"#ccc", margin:"0 6px"}}>|</span> {selectedVacancy.members?.name || selectedVacancy.client_name || "임대인"}
+                                </p>
+                              </>
+                            )}
+
                             <a href={firstPhone ? `tel:${firstPhone}` : undefined} style={{ display: "flex", alignItems: "center", gap: "6px", color: "#1a73e8", fontSize: "16px", fontWeight: 700, textDecoration: "none" }}>
                               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
                               전화 {phoneStr}
@@ -1125,13 +1138,19 @@ function MobileGongsilContent() {
                     </div>
                   </div>
                   
-                  {/* 소개글 박스 */}
-                  <div style={{ background: "#f8f9fa", borderRadius: "8px", padding: "16px", marginBottom: "20px" }}>
-                    <h4 style={{ fontSize: "14px", fontWeight: 700, color: "#9ca3af", marginBottom: "8px" }}>부동산 소개</h4>
-                    <p style={{ fontSize: "15px", color: "#4b5563", lineHeight: 1.6 }}>
-                      임대차 계약 만료 전, 묵시적 갱신과 계약갱신청구권의 차이를 아는 것이 자산을 지키는 핵심입니다. 세입자에게 더 유리한 거주 기간 확보 전략과 복비 부담 주체를 명확히 정리해 드립니다.
-                    </p>
-                  </div>
+                  {/* 소개글 박스 (중개업소이고 소개글 정보가 등록되어 있을 때만 노출) */}
+                  {(() => {
+                    const agencyInfo = Array.isArray(selectedVacancy.members?.agencies) ? selectedVacancy.members.agencies[0] : selectedVacancy.members?.agencies;
+                    if (!agencyInfo || !agencyInfo.intro) return null;
+                    return (
+                      <div style={{ background: "#f8f9fa", borderRadius: "8px", padding: "16px", marginBottom: "20px" }}>
+                        <h4 style={{ fontSize: "14px", fontWeight: 700, color: "#9ca3af", marginBottom: "8px" }}>부동산 소개</h4>
+                        <p style={{ fontSize: "15px", color: "#4b5563", lineHeight: 1.6 }}>
+                          {agencyInfo.intro}
+                        </p>
+                      </div>
+                    );
+                  })()}
                   
                   {/* 뱃지 아이콘들 */}
                   <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", marginBottom: "30px", justifyContent: "center" }}>
