@@ -2035,8 +2035,9 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                 const isActiveAndShowing = activeProperty === prop.id && showDetail;
                 const addrText = [prop.dong, prop.building_name].filter(Boolean).join(" ");
                 const priceText = getPriceText(prop);
-                // 마스킹 판별: 부동산노출 전용 + 부동산회원 미만
-                const isMasked = prop.exposure_type === '부동산노출' && userLevel < 2;
+                // 마스킹 판별: 부동산노출 전용 + 부동산회원 미만 (본인 등록 매물 제외)
+                const isMyProperty = currentUser && prop && prop.owner_id === currentUser.id;
+                const isMasked = prop.exposure_type === '부동산노출' && userLevel < 2 && !isMyProperty;
                 const showCommission = userLevel >= 2; // 중개보수는 부동산회원 이상만
 
                 return (

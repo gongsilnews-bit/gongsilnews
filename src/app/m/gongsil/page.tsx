@@ -785,7 +785,8 @@ function MobileGongsilContent() {
         </div>
         <div className="no-scrollbar" style={{ flex: 1, overflowY: "auto", padding: "8px 16px 20px" }}>
           {(selectedCluster || (showListView ? filteredVacancies : []))?.map((v: any) => {
-            const cardMasked = v.exposure_type === '부동산노출' && userLevel < 2;
+            const isMyProperty = currentUser && v && v.owner_id === currentUser.id;
+            const cardMasked = v.exposure_type === '부동산노출' && userLevel < 2 && !isMyProperty;
             const cardAddr = v.building_name || [v.dong, v.sigungu].filter(Boolean).join(" ");
             return (
             <div
@@ -894,7 +895,8 @@ function MobileGongsilContent() {
         </div>
 
         {selectedVacancy && (() => {
-          const detailMasked = selectedVacancy.exposure_type === '부동산노출' && userLevel < 2;
+          const isMyProperty = currentUser && selectedVacancy && selectedVacancy.owner_id === currentUser.id;
+          const detailMasked = selectedVacancy.exposure_type === '부동산노출' && userLevel < 2 && !isMyProperty;
           const detailAddr = selectedVacancy.building_name || [selectedVacancy.dong, selectedVacancy.sigungu].filter(Boolean).join(" ");
           return (
           <>
