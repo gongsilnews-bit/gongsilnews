@@ -111,23 +111,28 @@ function MobileBottomNavContent() {
   const navItems = [
     {
       name: "홈", path: "/m",
-      icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+      icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>,
+      iconFilled: <svg width="24" height="24" viewBox="0 0 24 24"><path d="M12 2.5L2 10.5V22h20V10.5L12 2.5z" fill="currentColor"/><rect x="9" y="13" width="6" height="9" rx="1" fill="white"/></svg>,
     },
     {
       name: "우리동네", path: "/m/news_map",
-      icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+      icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>,
+      iconFilled: <svg width="24" height="24" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" fill="currentColor"/><circle cx="12" cy="10" r="3" fill="white"/></svg>,
     },
     {
       name: "공실", path: "/m/gongsil",
-      icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+      icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>,
+      iconFilled: <svg width="24" height="24" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" fill="currentColor"/><circle cx="12" cy="10" r="3" fill="white"/></svg>,
     },
     {
       name: "부동산특강", path: "/m/study",
-      icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c3 3 9 3 12 0v-5"></path></svg>
+      icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c3 3 9 3 12 0v-5"></path></svg>,
+      iconFilled: <svg width="24" height="24" viewBox="0 0 24 24"><path d="M2 10l10-5 10 5-10 5z" fill="currentColor"/><path d="M6 12v5c3 3 9 3 12 0v-5L12 15 6 12z" fill="currentColor" opacity=".6"/><rect x="21" y="10" width="2" height="6" rx="1" fill="currentColor"/></svg>,
     },
     {
       name: "마이", path: "/m/mypage",
-      icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+      icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>,
+      iconFilled: <svg width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="7" r="4" fill="currentColor"/><path d="M4 21v-2a4 4 0 014-4h8a4 4 0 014 4v2H4z" fill="currentColor"/></svg>,
     },
   ];
 
@@ -164,16 +169,15 @@ function MobileBottomNavContent() {
             <button
               key={item.name}
               onClick={() => window.dispatchEvent(new Event('open-drawer'))}
-              className="flex flex-col items-center justify-center w-full h-full cursor-pointer"
-              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', position: 'relative', background: 'none', border: 'none', padding: 0 }}
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', position: 'relative', background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: isActive ? '#ea580c' : '#333' }}
             >
-              <span className={`text-xl mb-1 ${isActive ? "opacity-100 scale-110" : `opacity-50 ${profileImg ? "" : "grayscale"}`} transition-all duration-200`} style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <span style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '2px' }}>
                 {profileImg ? (
-                  <div style={{ width: 24, height: 24, borderRadius: '50%', overflow: 'hidden', border: isActive ? '2px solid #1a2e50' : '1px solid #ccc' }}>
+                  <div style={{ width: 24, height: 24, borderRadius: '50%', overflow: 'hidden', border: isActive ? '2px solid #ea580c' : '1px solid #ccc' }}>
                     <img src={profileImg} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   </div>
                 ) : (
-                  item.icon
+                  isActive ? item.iconFilled : item.icon
                 )}
 
                 {/* Unread Message Badge */}
@@ -244,7 +248,7 @@ function MobileBottomNavContent() {
                   </span>
                 )}
               </span>
-              <span className={`text-[10px] font-bold ${isActive ? "text-[#1a2e50]" : "text-gray-400"}`}>
+              <span style={{ fontSize: '10px', fontWeight: isActive ? 700 : 500, color: isActive ? '#ea580c' : '#333' }}>
                 {item.name}
               </span>
             </button>
@@ -252,13 +256,12 @@ function MobileBottomNavContent() {
             <Link
               key={item.name}
               href={item.path}
-              className="flex flex-col items-center justify-center w-full h-full"
-              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', position: 'relative' }}
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', position: 'relative', textDecoration: 'none', color: isActive ? '#ea580c' : '#333' }}
             >
-              <span className={`text-xl mb-1 ${isActive ? "opacity-100 scale-110" : "opacity-50 grayscale"} transition-all duration-200`} style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {item.icon}
+              <span style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '2px' }}>
+                {isActive ? item.iconFilled : item.icon}
               </span>
-              <span className={`text-[10px] font-bold ${isActive ? "text-[#1a2e50]" : "text-gray-400"}`}>
+              <span style={{ fontSize: '10px', fontWeight: isActive ? 700 : 500, color: isActive ? '#ea580c' : '#333' }}>
                 {item.name}
               </span>
             </Link>
