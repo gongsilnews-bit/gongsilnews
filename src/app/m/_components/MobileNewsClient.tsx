@@ -54,6 +54,20 @@ const CATEGORIES = [
   { key: "news_etc", label: "라이프·오피니언", path: "/m/news_etc", section1: "라이프·오피니언" },
 ];
 
+const KEY_TO_SECTION1: Record<string, string> = {
+  "news_gongsil": "공실뉴스",
+  "news_politics": "부동산·경제",
+  "news_marketing": "AI마케팅",
+  "news_etc": "라이프·오피니언"
+};
+
+const SECTION1_TO_KEY: Record<string, string> = {
+  "공실뉴스": "news_gongsil",
+  "부동산·경제": "news_politics",
+  "AI마케팅": "news_marketing",
+  "라이프·오피니언": "news_etc"
+};
+
 // PC와 동일한 2차 카테고리 맵
 const SECTION2_MAP: Record<string, string[]> = {
   "공실뉴스": ["아파트/오피스텔", "빌라/주택", "원룸/투룸(풀옵션)", "상가/사무실/공장/토지", "신축/분양/경매"],
@@ -320,8 +334,14 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
   const [locKeyword, setLocKeyword] = useState("");
   const [locResults, setLocResults] = useState<any[]>([]);
   const [locTab, setLocTab] = useState<"region"|"keyword">("region");
-  const [section1Filter, setSection1Filter] = useState("");
-  const [section2Filter, setSection2Filter] = useState("");
+  const [section1Filter, setSection1Filter] = useState(searchParams.get("section1") || "");
+  const [section2Filter, setSection2Filter] = useState(searchParams.get("section2") || "");
+
+  // URL 파라미터가 변경되면 지도 필터도 동기화 (뒤로가기/전환용)
+  useEffect(() => {
+    setSection1Filter(searchParams.get("section1") || "");
+    setSection2Filter(searchParams.get("section2") || "");
+  }, [searchParams]);
 
 
 
@@ -1686,69 +1706,77 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
       {!showDetail && (
         <>
           {/* 목록 페이지일 때 -> 지도보기 버튼 */}
-          {activeTab !== 'local' && searchTab === 'article' && (
-            <Link
-              href="/m/news_map"
-              style={{
-                position: "fixed",
-                bottom: "80px",
-                right: "16px",
-                width: "52px",
-                height: "52px",
-                borderRadius: "50%",
-                backgroundColor: "#ea580c",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                boxShadow: "0 4px 14px rgba(234, 88, 12, 0.4)",
-                zIndex: 9998,
-                cursor: "pointer",
-                border: "none",
-                outline: "none",
-                color: "#fff"
-              }}
-            >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ userSelect: "none" }}>
-                <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21" />
-                <line x1="9" y1="3" x2="9" y2="18" />
-                <line x1="15" y1="6" x2="15" y2="21" />
-              </svg>
-            </Link>
-          )}
+          {activeTab !== 'local' && searchTab === 'article' && (() => {
+            const section1 = KEY_TO_SECTION1[activeTab] || "";
+            const mapUrl = `/m/news_map?from=${activeTab}${section1 ? `&section1=${encodeURIComponent(section1)}` : ""}${section2Tab ? `&section2=${encodeURIComponent(section2Tab)}` : ""}`;
+            return (
+              <Link
+                href={mapUrl}
+                style={{
+                  position: "fixed",
+                  bottom: "80px",
+                  right: "16px",
+                  width: "52px",
+                  height: "52px",
+                  borderRadius: "50%",
+                  backgroundColor: "#ea580c",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  boxShadow: "0 4px 14px rgba(234, 88, 12, 0.4)",
+                  zIndex: 9998,
+                  cursor: "pointer",
+                  border: "none",
+                  outline: "none",
+                  color: "#fff"
+                }}
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ userSelect: "none" }}>
+                  <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21" />
+                  <line x1="9" y1="3" x2="9" y2="18" />
+                  <line x1="15" y1="6" x2="15" y2="21" />
+                </svg>
+              </Link>
+            );
+          })()}
 
           {/* 지도 페이지일 때 -> 목록보기 버튼 */}
-          {activeTab === 'local' && (
-            <Link
-              href="/m/news_gongsil"
-              style={{
-                position: "fixed",
-                bottom: "80px",
-                right: "16px",
-                width: "52px",
-                height: "52px",
-                borderRadius: "50%",
-                backgroundColor: "#ea580c",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                boxShadow: "0 4px 14px rgba(234, 88, 12, 0.4)",
-                zIndex: 9998,
-                cursor: "pointer",
-                border: "none",
-                outline: "none",
-                color: "#fff"
-              }}
-            >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ userSelect: "none" }}>
-                <line x1="8" y1="6" x2="21" y2="6" />
-                <line x1="8" y1="12" x2="21" y2="12" />
-                <line x1="8" y1="18" x2="21" y2="18" />
-                <line x1="3" y1="6" x2="3.01" y2="6" />
-                <line x1="3" y1="12" x2="3.01" y2="12" />
-                <line x1="3" y1="18" x2="3.01" y2="18" />
-              </svg>
-            </Link>
-          )}
+          {activeTab === 'local' && (() => {
+            const targetTab = SECTION1_TO_KEY[section1Filter] || searchParams.get("from") || "news_gongsil";
+            const listUrl = `/m/${targetTab}${section2Filter ? `?section2=${encodeURIComponent(section2Filter)}` : ""}`;
+            return (
+              <Link
+                href={listUrl}
+                style={{
+                  position: "fixed",
+                  bottom: "80px",
+                  right: "16px",
+                  width: "52px",
+                  height: "52px",
+                  borderRadius: "50%",
+                  backgroundColor: "#ea580c",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  boxShadow: "0 4px 14px rgba(234, 88, 12, 0.4)",
+                  zIndex: 9998,
+                  cursor: "pointer",
+                  border: "none",
+                  outline: "none",
+                  color: "#fff"
+                }}
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ userSelect: "none" }}>
+                  <line x1="8" y1="6" x2="21" y2="6" />
+                  <line x1="8" y1="12" x2="21" y2="12" />
+                  <line x1="8" y1="18" x2="21" y2="18" />
+                  <line x1="3" y1="6" x2="3.01" y2="6" />
+                  <line x1="3" y1="12" x2="3.01" y2="12" />
+                  <line x1="3" y1="18" x2="3.01" y2="18" />
+                </svg>
+              </Link>
+            );
+          })()}
         </>
       )}
 
