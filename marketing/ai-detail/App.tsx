@@ -572,10 +572,11 @@ function App() {
     localStorage.setItem(`easyflyer_saved_${vacancyId}`, JSON.stringify(state));
     setIsLoadedFromStorage(true);
     try {
+      const htmlContent = await generateHtmlContent();
       await fetch("/api/vacancy/save-flyer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ vacancyId, flyerState: state })
+        body: JSON.stringify({ vacancyId, flyerState: { ...state, htmlContent } })
       });
     } catch (err) {
       console.warn("Silent cloud save failed:", err);
@@ -592,7 +593,7 @@ function App() {
     const vacancyId = params.get("vacancy_id");
     if (!vacancyId) return;
 
-    const shareUrl = `https://gongsilnews.com/flyer/${vacancyId}`;
+    const shareUrl = `${window.location.origin}/flyer/${vacancyId}.html`;
     
     // First, save the current flyer state before sharing
     await handleSaveToStorageQuietly();
@@ -623,7 +624,7 @@ function App() {
     // Save first
     await handleSaveToStorageQuietly();
 
-    const shareUrl = `https://gongsilnews.com/flyer/${vacancyId}`;
+    const shareUrl = `${window.location.origin}/flyer/${vacancyId}.html`;
     try {
       if (navigator.clipboard) {
         await navigator.clipboard.writeText(shareUrl);
@@ -668,10 +669,11 @@ function App() {
     // 2. Supabase 클라우드 동기화 저장
     setIsSavingCloud(true);
     try {
+      const htmlContent = await generateHtmlContent();
       const res = await fetch("/api/vacancy/save-flyer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ vacancyId, flyerState: state })
+        body: JSON.stringify({ vacancyId, flyerState: { ...state, htmlContent } })
       });
       const json = await res.json();
       if (json.success) {
@@ -701,10 +703,11 @@ function App() {
       localStorage.setItem(`easyflyer_saved_${vacancyId}`, JSON.stringify(state));
       setIsLoadedFromStorage(true);
 
+      const htmlContent = await generateHtmlContent();
       const res = await fetch("/api/vacancy/save-flyer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ vacancyId, flyerState: state })
+        body: JSON.stringify({ vacancyId, flyerState: { ...state, htmlContent } })
       });
       const json = await res.json();
       if (!json.success) {
@@ -717,7 +720,7 @@ function App() {
     }
 
     // 2. 공유 고유 URL 주소 빌드
-    const shareUrl = `${window.location.origin}/flyer/${vacancyId}`;
+    const shareUrl = `${window.location.origin}/flyer/${vacancyId}.html`;
     
     // 3. 브라우저 클립보드 복사
     try {
@@ -1004,8 +1007,8 @@ function App() {
       setIsGenerating(false);
   };
 
-  const downloadHtml = async () => {
-    if (!flyerRef.current) return;
+  const generateHtmlContent = async (): Promise<string | null> => {
+    if (!flyerRef.current) return null;
     try {
         const clone = flyerRef.current.cloneNode(true) as HTMLElement;
         const imgs = clone.querySelectorAll('img');
@@ -1040,7 +1043,7 @@ function App() {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>${state.info.address} - 매물정보</title>
+<title>${state.info.address || "공실뉴스 매물 전단지"} - 매매 ${state.info.priceMain || ""}</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
 <link href="https://fonts.googleapis.com/css2?family=Song+Myung:wght@400&display=swap" rel="stylesheet">
@@ -1066,6 +1069,18 @@ function App() {
 ${clone.outerHTML}
 </body>
 </html>`;
+
+        return html;
+    } catch (err) {
+        console.error("HTML generation error:", err);
+        return null;
+    }
+  };
+
+  const downloadHtml = async () => {
+    try {
+        const html = await generateHtmlContent();
+        if (!html) throw new Error("Generated HTML is empty");
 
         const blob = new Blob([html], { type: 'text/html' });
         const link = document.createElement('a');
