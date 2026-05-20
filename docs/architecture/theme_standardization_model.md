@@ -34,3 +34,5 @@
 - 기존 `template01` (사무실/상가) 및 `template02` (원룸/투룸)의 메인 페이지(`page.tsx`) 구조를 위의 순서에 맞게 통일.
 - 부족한 섹션 (예: `template01`의 문의남기기, 두 템플릿 공통으로 뉴스기사 미리보기 및 오시는길 등) 컴포넌트를 각각의 디자인 톤앤매너에 맞게 추가 구현.
 - 위 구조를 바탕으로 Supabase의 `homepage_settings` (또는 관련 설정 DB 테이블) 스키마를 JSON 타입 등의 유연한 형태로 정립.
+- **[업데이트]** 사용자가 직접 마우스 클릭으로 조립하고 색상을 제어할 수 있는 [블록형 노코드 홈페이지 빌더 기획 설계안](file:///c:/Users/user/Desktop/gongsilnews/docs/architecture/no_code_homepage_builder_architecture.md) 수립 완료 및 연계 개발 준비 대기.
+
