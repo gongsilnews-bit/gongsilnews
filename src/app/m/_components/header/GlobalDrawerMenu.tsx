@@ -56,36 +56,9 @@ export default function GlobalDrawerMenu() {
     window.addEventListener('open-drawer', onOpenDrawer);
     window.addEventListener('close-drawer', onCloseDrawer);
 
-    // 엣지 스와이프(열기) 감지 - 화면 맨 오른쪽 30px 이내에서 터치 시작 시
-    const handleTouchStart = (e: TouchEvent) => {
-      const touch = e.touches[0];
-      if (touch.clientX > window.innerWidth - 30) {
-        touchStartX.current = touch.clientX;
-      }
-    };
-    const handleTouchMove = (e: TouchEvent) => {
-      if (touchStartX.current !== null && !isOpen) {
-        const diff = touchStartX.current - e.touches[0].clientX; // 왼쪽으로 당기는 거리
-        if (diff > 40) { // 왼쪽으로 40px 이상 당기면 열기
-          handleOpen();
-          touchStartX.current = null;
-        }
-      }
-    };
-    const handleTouchEnd = () => {
-      touchStartX.current = null;
-    };
-
-    window.addEventListener('touchstart', handleTouchStart);
-    window.addEventListener('touchmove', handleTouchMove);
-    window.addEventListener('touchend', handleTouchEnd);
-
     return () => {
       window.removeEventListener('open-drawer', onOpenDrawer);
       window.removeEventListener('close-drawer', onCloseDrawer);
-      window.removeEventListener('touchstart', handleTouchStart);
-      window.removeEventListener('touchmove', handleTouchMove);
-      window.removeEventListener('touchend', handleTouchEnd);
     };
   }, [isOpen, router]);
 
