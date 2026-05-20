@@ -161,11 +161,11 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, sections, on
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4">
             <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
                 <div className="p-4 border-b flex justify-between items-center bg-gray-50">
-                    <h3 className="font-bold text-lg text-gray-800">이미지 저장 옵션</h3>
+                    <h3 className="font-bold text-lg text-gray-800">이미지 내보내기 옵션</h3>
                     <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><XMarkIcon className="w-5 h-5"/></button>
                 </div>
                 <div className="p-4">
-                    <p className="text-sm text-gray-500 mb-4">저장하고 싶은 섹션만 선택하세요.</p>
+                    <p className="text-sm text-gray-500 mb-4">내보내고 싶은 섹션만 선택하세요.</p>
                     <div className="flex justify-end mb-2">
                         <button onClick={toggleAll} className="text-xs font-bold text-blue-600 hover:underline">
                             {selected.size === sections.length ? '전체 해제' : '전체 선택'}
@@ -190,7 +190,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, sections, on
                         disabled={selected.size === 0}
                         className="flex-1 py-2.5 rounded-lg bg-blue-600 text-white font-bold text-sm hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        선택한 섹션 저장 ({selected.size})
+                        선택한 섹션 내보내기 ({selected.size})
                     </button>
                 </div>
             </div>
@@ -1103,7 +1103,7 @@ ${clone.outerHTML}
                     <CodeBracketIcon className="w-3.5 h-3.5" /> HTML 저장
                 </button>
                 <button onClick={() => setShowExportModal(true)} className="px-3.5 py-2 text-white rounded-lg text-xs sm:text-sm font-semibold flex items-center gap-1.5 hover:opacity-90 active:scale-95 transition-all" style={{ backgroundColor: state.colorTheme.primary }}>
-                    <ArrowDownTrayIcon className="w-3.5 h-3.5" /> 이미지 저장
+                    <ArrowDownTrayIcon className="w-3.5 h-3.5" /> 이미지 내보내기
                 </button>
             </div>
         </div>
