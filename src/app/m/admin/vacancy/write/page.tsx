@@ -884,50 +884,52 @@ function MobileVacancyWrite() {
           </div>
           <div style={{ display:"flex", gap:8, marginBottom:10 }}>
             <div style={{flex:1}}><label style={labelStyle}>동/읍/면</label><input id="input-dong" type="text" value={dong} onChange={e=>setDong(e.target.value)} placeholder="논현동" style={inputStyle}/></div>
-            <div style={{flex:1}}><label style={labelStyle}>건물명 {!isFieldExposed("buildingName") && <PrivateTag/>}</label><input type="text" value={buildingName} onChange={e=>setBuildingName(e.target.value)} placeholder="건물명" style={inputStyle}/></div>
+            <div style={{flex:1}}><label style={labelStyle}>건물명 {!isFieldExposed("buildingName") && isRealtor && <PrivateTag/>}</label><input type="text" value={buildingName} onChange={e=>setBuildingName(e.target.value)} placeholder="건물명" style={inputStyle}/></div>
           </div>
-          <label style={labelStyle}>상세주소 {!isFieldExposed("detailAddr") && <PrivateTag/>}</label>
+          <label style={labelStyle}>상세주소 {!isFieldExposed("detailAddr") && isRealtor && <PrivateTag/>}</label>
           <input id="input-detailAddr" type="text" value={detailAddr} onChange={e=>setDetailAddr(e.target.value)} placeholder="상세주소 입력" style={{...inputStyle, marginBottom:10}}/>
 
           {/* 동/호수 (아파트인 경우) */}
           {propertyType === "아파트·오피스텔" && (
             <div style={{ display:"flex", gap:8, marginBottom:10 }}>
-              <div style={{flex:1}}><label style={labelStyle}>동 {!isFieldExposed("aptDong") && <PrivateTag/>}</label><input type="text" value={aptDong} onChange={e=>setAptDong(e.target.value)} placeholder="101동" style={inputStyle}/></div>
-              <div style={{flex:1}}><label style={labelStyle}>호수 {!isFieldExposed("hosu") && <PrivateTag/>}</label><input type="text" value={hosu} onChange={e=>setHosu(e.target.value)} placeholder="405호" style={inputStyle}/></div>
+              <div style={{flex:1}}><label style={labelStyle}>동 {!isFieldExposed("aptDong") && isRealtor && <PrivateTag/>}</label><input type="text" value={aptDong} onChange={e=>setAptDong(e.target.value)} placeholder="101동" style={inputStyle}/></div>
+              <div style={{flex:1}}><label style={labelStyle}>호수 {!isFieldExposed("hosu") && isRealtor && <PrivateTag/>}</label><input type="text" value={hosu} onChange={e=>setHosu(e.target.value)} placeholder="405호" style={inputStyle}/></div>
             </div>
           )}
           {propertyType !== "아파트·오피스텔" && (
             <div style={{ marginBottom:10 }}>
-              <label style={labelStyle}>호수 {!isFieldExposed("hosu") && <PrivateTag/>}</label>
+              <label style={labelStyle}>호수 {!isFieldExposed("hosu") && isRealtor && <PrivateTag/>}</label>
               <input type="text" value={hosu} onChange={e=>setHosu(e.target.value)} placeholder="101호" style={inputStyle}/>
             </div>
           )}
 
           {/* 주소 공개 설정 */}
-          <div style={{ background:"#f9fafb", padding:12, borderRadius:10, border:"1px solid #e5e7eb", marginBottom:12 }}>
-            <div style={{ fontSize:13, fontWeight:700, color:"#374151", marginBottom:8 }}>🔒 주소 노출 범위</div>
-            <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
-              {propertyType === "아파트·오피스텔" ? (
-                <>
-                  {["동/호수공개","동수공개","비공개"].map(opt => (
-                    <label key={opt} style={{ display:"flex", alignItems:"center", gap:4, fontSize:13, cursor:"pointer", padding:"6px 10px", borderRadius:8, background: addressExposure===opt?"#eff6ff":"#fff", border: addressExposure===opt?"1px solid #3b82f6":"1px solid #d1d5db" }}>
-                      <input type="radio" name="addrExp" checked={addressExposure===opt} onChange={()=>setAddressExposure(opt)} style={{accentColor:"#3b82f6"}}/>
-                      {opt}
-                    </label>
-                  ))}
-                </>
-              ) : (
-                <>
-                  {["번지공개","본번지만공개","기본주소만공개"].map(opt => (
-                    <label key={opt} style={{ display:"flex", alignItems:"center", gap:4, fontSize:13, cursor:"pointer", padding:"6px 10px", borderRadius:8, background: addressExposure===opt?"#eff6ff":"#fff", border: addressExposure===opt?"1px solid #3b82f6":"1px solid #d1d5db" }}>
-                      <input type="radio" name="addrExp" checked={addressExposure===opt} onChange={()=>setAddressExposure(opt)} style={{accentColor:"#3b82f6"}}/>
-                      {opt}
-                    </label>
-                  ))}
-                </>
-              )}
+          {isRealtor && (
+            <div style={{ background:"#f9fafb", padding:12, borderRadius:10, border:"1px solid #e5e7eb", marginBottom:12 }}>
+              <div style={{ fontSize:13, fontWeight:700, color:"#374151", marginBottom:8 }}>🔒 주소 노출 범위</div>
+              <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+                {propertyType === "아파트·오피스텔" ? (
+                  <>
+                    {["동/호수공개","동수공개","비공개"].map(opt => (
+                      <label key={opt} style={{ display:"flex", alignItems:"center", gap:4, fontSize:13, cursor:"pointer", padding:"6px 10px", borderRadius:8, background: addressExposure===opt?"#eff6ff":"#fff", border: addressExposure===opt?"1px solid #3b82f6":"1px solid #d1d5db" }}>
+                        <input type="radio" name="addrExp" checked={addressExposure===opt} onChange={()=>setAddressExposure(opt)} style={{accentColor:"#3b82f6"}}/>
+                        {opt}
+                      </label>
+                    ))}
+                  </>
+                ) : (
+                  <>
+                    {["번지공개","본번지만공개","기본주소만공개"].map(opt => (
+                      <label key={opt} style={{ display:"flex", alignItems:"center", gap:4, fontSize:13, cursor:"pointer", padding:"6px 10px", borderRadius:8, background: addressExposure===opt?"#eff6ff":"#fff", border: addressExposure===opt?"1px solid #3b82f6":"1px solid #d1d5db" }}>
+                        <input type="radio" name="addrExp" checked={addressExposure===opt} onChange={()=>setAddressExposure(opt)} style={{accentColor:"#3b82f6"}}/>
+                        {opt}
+                      </label>
+                    ))}
+                  </>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
           <button type="button" onClick={handleGeocode} style={{ width:"100%", height:40, background:"#374151", color:"#fff", border:"none", borderRadius:8, fontSize:13, fontWeight:700, cursor:"pointer" }}>
             📍 좌표 자동설정
