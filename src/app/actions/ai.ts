@@ -76,7 +76,7 @@ JSON 구조:
 
     // 4. REST API 직접 호출 (폐기된 SDK 대신 네이티브 fetch 사용)
     const models = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
-    let lastError = "사용 가능한 모델이 없습니다.";
+    const errors: string[] = [];
     let parsedData = null;
 
     for (const model of models) {
@@ -100,8 +100,9 @@ JSON 구조:
 
         if (!response.ok) {
           const errRes = await response.json().catch(() => ({}));
-          lastError = errRes?.error?.message || `${model} 모델 호출 실패 (${response.status})`;
-          console.log(`Gemini model [${model}] failed: ${lastError}`);
+          const errMsg = errRes?.error?.message || `${model} 모델 호출 실패 (${response.status})`;
+          errors.push(`[${model}] ${errMsg}`);
+          console.log(`Gemini model [${model}] failed: ${errMsg}`);
           continue;
         }
 
@@ -109,7 +110,7 @@ JSON 구조:
         const responseText = json.candidates?.[0]?.content?.parts?.[0]?.text;
 
         if (!responseText) {
-          lastError = "AI가 텍스트를 생성하지 못했습니다.";
+          errors.push(`[${model}] AI가 텍스트를 생성하지 못했습니다.`);
           continue;
         }
 
@@ -119,16 +120,16 @@ JSON 구조:
           console.log(`Success with Gemini model: ${model}!`);
           break;
         } else {
-          lastError = "AI가 유효한 JSON을 반환하지 않았습니다.";
+          errors.push(`[${model}] AI가 유효한 JSON을 반환하지 않았습니다.`);
         }
       } catch (err: any) {
         console.log(`Gemini model [${model}] error: ${err.message}`);
-        lastError = err.message;
+        errors.push(`[${model}] ${err.message}`);
       }
     }
 
     if (!parsedData) {
-      return { success: false, error: lastError + " (모든 호환 모델 시도 실패)" };
+      return { success: false, error: errors.join(" | ") };
     }
 
     return {

@@ -63,7 +63,7 @@ export async function generatePropertyDescription(data: any) {
 
     // 4. Gemini API 호출 (최신 모델부터 폴백)
     const models = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
-    let lastError = "";
+    const errors: string[] = [];
 
     for (const model of models) {
       try {
@@ -79,8 +79,9 @@ export async function generatePropertyDescription(data: any) {
 
         if (!response.ok) {
           const errRes = await response.json().catch(() => ({}));
-          lastError = errRes?.error?.message || `${model} 모델 호출 실패 (${response.status})`;
-          console.log(`Gemini model [${model}] failed: ${lastError}`);
+          const errMsg = errRes?.error?.message || `${model} 모델 호출 실패 (${response.status})`;
+          errors.push(`[${model}] ${errMsg}`);
+          console.log(`Gemini model [${model}] failed: ${errMsg}`);
           continue;
         }
 
@@ -88,19 +89,19 @@ export async function generatePropertyDescription(data: any) {
         const generatedText = json.candidates?.[0]?.content?.parts?.[0]?.text;
 
         if (!generatedText) {
-          lastError = "AI가 텍스트를 생성하지 못했습니다.";
+          errors.push(`[${model}] AI가 텍스트를 생성하지 못했습니다.`);
           continue;
         }
 
         console.log(`Success with Gemini model: ${model}!`);
         return { success: true, text: generatedText.trim() };
       } catch (err: any) {
-        lastError = err.message;
+        errors.push(`[${model}] ${err.message}`);
         console.log(`Gemini model [${model}] error: ${err.message}`);
       }
     }
 
-    return { success: false, error: `AI 생성 실패: ${lastError}` };
+    return { success: false, error: `AI 생성 실패: ${errors.join(" | ")}` };
   } catch (err: any) {
     console.error("generatePropertyDescription 오류:", err);
     return { success: false, error: "서버 내부 오류가 발생했습니다." };
