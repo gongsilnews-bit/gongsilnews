@@ -90,8 +90,8 @@ export default function MobileHomeClient(props: Props) {
     touchStartY.current = null;
     if (Math.abs(dy) > Math.abs(dx)) return;
     if (dx < -60) {
-      // ← 왼쪽 스와이프 → 우리동네뉴스로 이동 (기존 전체뉴스를 대체)
-      router.push("/m/news_map");
+      // ← 왼쪽 스와이프 → 다음 카테고리(공실뉴스)로 이동
+      router.push("/m/news_gongsil");
     }
   };
 
