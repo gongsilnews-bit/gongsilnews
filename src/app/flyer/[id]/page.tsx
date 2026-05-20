@@ -56,9 +56,10 @@ export async function generateMetadata({ params }: FlyerPageProps): Promise<Meta
     };
   }
 
-  const state = res.flyer.flyer_state;
-  const title = `${state.info.address || "매물"} - ${state.info.promotionText || "부동산 상세 정보"}`;
-  const description = state.info.subTitle || "공실뉴스에서 제공하는 검증된 매물 정보입니다.";
+  const state = res.flyer.flyer_state || {};
+  const info = state.info || {};
+  const title = `${info.address || "매물"} - ${info.promotionText || "부동산 상세 정보"}`;
+  const description = info.subTitle || "공실뉴스에서 제공하는 검증된 매물 정보입니다.";
 
   return {
     title: `${title} | 공실뉴스`,
