@@ -1,16 +1,55 @@
 import React from "react";
 import { Metadata } from "next";
-import { getVacancyDetail } from "@/app/actions/vacancy";
+import { createClient } from "@supabase/supabase-js";
+
+// Force Server-Side Rendering (SSR) for real-time live flyer updates
+export const dynamic = "force-dynamic";
 
 interface FlyerPageProps {
   params: Promise<{ id: string }>;
 }
 
+async function fetchFlyerData(vacancyId: string) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  const supabase = createClient(supabaseUrl, serviceKey, {
+    auth: { autoRefreshToken: false, persistSession: false }
+  });
+
+  try {
+    const { data: vacancy, error: vacancyErr } = await supabase
+      .from('vacancies')
+      .select('*, members!vacancies_owner_id_fkey(name, email, role, phone, sns_links, profile_image_url, agencies(*)), vacancy_photos(url, sort_order)')
+      .eq('id', vacancyId)
+      .single();
+
+    if (vacancyErr) {
+      console.error("Vacancy load error:", vacancyErr);
+      return null;
+    }
+
+    const { data: flyer, error: flyerErr } = await supabase
+      .from('vacancy_flyers')
+      .select('*')
+      .eq('vacancy_id', vacancyId)
+      .maybeSingle();
+
+    if (flyerErr) {
+      console.warn("Flyer load skipped or failed:", flyerErr);
+    }
+
+    return { vacancy, flyer };
+  } catch (err) {
+    console.error("fetchFlyerData exception:", err);
+    return null;
+  }
+}
+
 export async function generateMetadata({ params }: FlyerPageProps): Promise<Metadata> {
   const { id } = await params;
-  const res = await getVacancyDetail(id);
+  const res = await fetchFlyerData(id);
   
-  if (!res.success || !res.flyer) {
+  if (!res || !res.flyer) {
     return {
       title: "매물 전단지 - 공실뉴스",
       description: "존재하지 않거나 삭제된 매물 전단지입니다.",
@@ -34,9 +73,9 @@ export async function generateMetadata({ params }: FlyerPageProps): Promise<Meta
 
 export default async function FlyerDetailPage({ params }: FlyerPageProps) {
   const { id } = await params;
-  const res = await getVacancyDetail(id);
+  const res = await fetchFlyerData(id);
 
-  if (!res.success || !res.flyer) {
+  if (!res || !res.flyer) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4 text-center">
         <div className="bg-white p-8 rounded-2xl shadow-sm max-w-md w-full border border-gray-100">
