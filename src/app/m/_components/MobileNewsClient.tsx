@@ -1483,6 +1483,11 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
             const importantArticles = filteredBySection2.filter(a => a.is_important);
             const regularArticles = filteredBySection2.filter(a => !a.is_important);
             
+            const currentCatLabel = CATEGORIES.find(c => c.key === activeTab)?.label || "공실뉴스";
+            const popularArticles = [...filteredBySection2]
+              .sort((a, b) => (b.view_count || 0) - (a.view_count || 0))
+              .slice(0, 5);
+            
             return (
               <div>
                 {/* 중요 뉴스 슬라이딩 캐러셀 */}
@@ -1525,6 +1530,68 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                           </div>
                         </Link>
                       ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 많이 본 뉴스 순위 리스트 (2차 카테고리가 전체일 때만 노출) */}
+                {section2Tab === "" && popularArticles.length > 0 && (
+                  <div style={{ padding: "20px 16px", borderBottom: "8px solid #f4f6f8", backgroundColor: "#fff" }}>
+                    <div style={{ display: "flex", alignItems: "center", marginBottom: "16px", paddingBottom: "8px", borderBottom: "1px solid #f3f4f6" }}>
+                      <span style={{ fontSize: "15px", fontWeight: 800, color: "#ea580c" }}>{currentCatLabel}</span>
+                      <span style={{ fontSize: "15px", fontWeight: 800, color: "#1f2937", marginLeft: "5px" }}>많이 본 뉴스</span>
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                      {popularArticles.map((a: any, idx: number) => {
+                        const rank = idx + 1;
+                        const isTop3 = rank <= 3;
+                        return (
+                          <Link
+                            href={`/m/news/${a.article_no || a.id}`}
+                            key={`popular-${a.id}`}
+                            onClick={() => sessionStorage.setItem(`news_scroll_${activeTab}`, window.scrollY.toString())}
+                            style={{
+                              display: "flex",
+                              alignItems: "flex-start",
+                              gap: "12px",
+                              textDecoration: "none",
+                              cursor: "pointer",
+                              padding: "4px 0"
+                            }}
+                          >
+                            <span
+                              style={{
+                                fontSize: "15px",
+                                fontWeight: 800,
+                                fontStyle: "italic",
+                                color: isTop3 ? "#ea580c" : "#71717a",
+                                width: "18px",
+                                textAlign: "center",
+                                flexShrink: 0,
+                                marginTop: "1px"
+                              }}
+                            >
+                              {rank}
+                            </span>
+                            <span
+                              style={{
+                                fontSize: "14px",
+                                fontWeight: 600,
+                                color: "#1f2937",
+                                lineHeight: "1.4",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                display: "-webkit-box",
+                                WebkitLineClamp: 1,
+                                WebkitBoxOrient: "vertical",
+                                wordBreak: "keep-all"
+                              }}
+                            >
+                              {a.title}
+                            </span>
+                          </Link>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
