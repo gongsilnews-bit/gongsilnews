@@ -323,7 +323,7 @@ function App() {
         const v = json.data;
 
         // 1. Supabase 클라우드 동기화 데이터 우선 로드
-        const supabaseFlyerSettings = v.infrastructure?._flyer_settings;
+        const supabaseFlyerSettings = json.flyer?.flyer_state || v.infrastructure?._flyer_settings;
         if (supabaseFlyerSettings) {
           setState(supabaseFlyerSettings);
           setIsLoadedFromStorage(true);

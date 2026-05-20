@@ -272,7 +272,20 @@ export async function getVacancyDetail(vacancyId: string) {
       .eq('vacancy_id', vacancyId)
       .order('sort_order', { ascending: true });
 
-    return { success: true, data, photos: photos || [] };
+    // Flyer 조회 (오류 시에도 에러 없이 null 처리되도록 안전하게 조회)
+    let flyer = null;
+    try {
+      const { data: flyerData } = await supabase
+        .from('vacancy_flyers')
+        .select('*')
+        .eq('vacancy_id', vacancyId)
+        .maybeSingle();
+      flyer = flyerData;
+    } catch (e) {
+      console.warn("vacancy_flyers table load skipped or failed:", e);
+    }
+
+    return { success: true, data, photos: photos || [], flyer };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -394,3 +407,42 @@ export async function getVacanciesByOwnerId(ownerId: string) {
     return { success: false, error: error.message };
   }
 }
+
+// ── AI 매물 상세페이지 (Flyer) 저장/삭제 ──
+export async function saveVacancyFlyer(vacancyId: string, flyerState: any) {
+  const supabase = getAdminClient();
+  try {
+    if (flyerState === null) {
+      const { error } = await supabase
+        .from('vacancy_flyers')
+        .delete()
+        .eq('vacancy_id', vacancyId);
+      if (error) return { success: false, error: error.message };
+      return { success: true };
+    }
+
+    const { data: existing } = await supabase
+      .from('vacancy_flyers')
+      .select('id')
+      .eq('vacancy_id', vacancyId)
+      .maybeSingle();
+
+    if (existing) {
+      const { error } = await supabase
+        .from('vacancy_flyers')
+        .update({ flyer_state: flyerState, updated_at: new Date().toISOString() })
+        .eq('vacancy_id', vacancyId);
+      if (error) return { success: false, error: error.message };
+    } else {
+      const { error } = await supabase
+        .from('vacancy_flyers')
+        .insert({ vacancy_id: vacancyId, flyer_state: flyerState });
+      if (error) return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+

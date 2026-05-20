@@ -34,7 +34,7 @@ try {
   
   // 6. Run Next.js build
   console.log('=== RUNNING NEXT.JS BUILD ===');
-  execSync('next build', { stdio: 'inherit' });
+  execSync('npx next build', { stdio: 'inherit' });
   
   console.log('=== ALL BUILDS COMPLETED SUCCESSFULLY ===');
 } catch (error) {

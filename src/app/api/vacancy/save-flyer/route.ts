@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { updateVacancy, getVacancyDetail } from "@/app/actions/vacancy";
+import { saveVacancyFlyer } from "@/app/actions/vacancy";
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,24 +10,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Vacancy ID is required." }, { status: 400 });
     }
 
-    // 1. Fetch current vacancy detail to preserve existing infrastructure settings
-    const detailRes = await getVacancyDetail(vacancyId);
-    if (!detailRes.success || !detailRes.data) {
-      return NextResponse.json({ success: false, error: detailRes.error || "Vacancy not found." }, { status: 404 });
-    }
-
-    const currentInfra = detailRes.data.infrastructure || {};
-
-    // 2. Merge flyer settings under the _flyer_settings key of the JSONB column
-    const updatedInfra = {
-      ...currentInfra,
-      _flyer_settings: flyerState
-    };
-
-    // 3. Save back to Supabase
-    const updateRes = await updateVacancy(vacancyId, { infrastructure: updatedInfra });
-    if (!updateRes.success) {
-      return NextResponse.json({ success: false, error: updateRes.error }, { status: 500 });
+    // Save directly using the server action to the vacancy_flyers table
+    const saveRes = await saveVacancyFlyer(vacancyId, flyerState);
+    if (!saveRes.success) {
+      return NextResponse.json({ success: false, error: saveRes.error }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });
