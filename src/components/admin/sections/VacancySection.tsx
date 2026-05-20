@@ -348,34 +348,32 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                           </div>
                         ) : (
                           <>
-                            <button 
-                              onClick={() => window.open(`/marketing/ai-detail?vacancy_id=${row.id}`, '_blank')}
-                              style={{ 
-                                height: 30, 
-                                width: "100%", 
-                                padding: "0 12px", 
-                                background: "#f97316", 
-                                color: "#fff", 
-                                border: "none", 
-                                borderRadius: 6, 
-                                fontSize: 12, 
-                                fontWeight: 700, 
-                                cursor: "pointer", 
-                                display: "flex", 
-                                alignItems: "center", 
-                                justifyContent: "center", 
-                                gap: 4,
-                                whiteSpace: "nowrap",
-                                boxShadow: "0 2px 4px rgba(249, 115, 22, 0.2)",
-                                transition: "all 0.2s"
-                              }}
-                              onMouseEnter={(e) => { e.currentTarget.style.background = "#ea580c"; }}
-                              onMouseLeave={(e) => { e.currentTarget.style.background = "#f97316"; }}
-                            >
-                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                              AI 매물상세페이지
-                            </button>
                             <div style={{ display: "flex", gap: 6, justifyContent: "center", width: "100%" }}>
+                              <button 
+                                onClick={() => window.open(`/marketing/ai-detail?vacancy_id=${row.id}`, '_blank')}
+                                style={{ 
+                                  height: 30, 
+                                  padding: "0 10px", 
+                                  background: darkMode ? "#00667a" : "#00788c", 
+                                  color: "#fff", 
+                                  border: "none", 
+                                  borderRadius: 4, 
+                                  fontSize: 12, 
+                                  fontWeight: 600, 
+                                  cursor: "pointer", 
+                                  display: "flex", 
+                                  alignItems: "center", 
+                                  gap: 4, 
+                                  whiteSpace: "nowrap", 
+                                  flexShrink: 0,
+                                  transition: "all 0.15s"
+                                }}
+                                onMouseEnter={(e) => { e.currentTarget.style.background = darkMode ? "#005566" : "#00667a"; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.background = darkMode ? "#00667a" : "#00788c"; }}
+                              >
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                                AI 매물상세페이지
+                              </button>
                               <button onClick={() => window.open(`/m/gongsil?id=${row.id}`, '_blank')} style={{ height: 30, padding: "0 10px", background: darkMode ? "#1e293b" : "#eff6ff", color: darkMode ? "#93c5fd" : "#2563eb", border: `1px solid ${darkMode ? "#334155" : "#bfdbfe"}`, borderRadius: 4, fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0, cursor: "pointer" }}>
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                                 미리보기
