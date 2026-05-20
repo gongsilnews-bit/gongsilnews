@@ -100,6 +100,36 @@ const SECTION2_ICONS_FILLED: Record<string, React.ReactNode> = {
   "자유 에세이": <svg width="28" height="28" viewBox="0 0 24 24"><path d="M12 19l7-7 3 3-7 7-3-3z" fill="currentColor"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" fill="currentColor"/><circle cx="11" cy="11" r="2" fill="white"/></svg>,
 };
 
+const PERSONALIZED_MENTAL_MAP: Record<string, Record<string, string>> = {
+  "news_gongsil": {
+    "전체": "실시간 중개용 공실 소식",
+    "아파트/오피스텔": "공동중개 추천 아파트·오피스텔",
+    "빌라/주택": "계약 확률 높은 빌라·주택 매물",
+    "원룸/투룸(풀옵션)": "원룸·투룸 실무 트렌드",
+    "상가/사무실/공장/토지": "고수익 상가·사무실 실무 정보",
+    "신축/분양/경매": "단기 차익 신축·분양·경매 뉴스"
+  },
+  "news_politics": {
+    "전체": "고객 브리핑용 오늘의 시장 동향",
+    "부동산 정책/동향": "상담 필수 정책 분석 & 규제 동향",
+    "경제/재테크/주식": "거시경제·재테크 바이블",
+    "법률/세무 지식": "고객이 묻기 전에 대비하는 세무·법률 솔루션"
+  },
+  "news_marketing": {
+    "전체": "매물 문의 폭발하는 마케팅 비법",
+    "AI/NEWS": "업무 시간을 절반으로 줄여줄 AI 활용법",
+    "부동산유튜브/블로그": "지역 1등 중개업소 블로그·유튜브 공략법",
+    "공실/임대관리": "효율적인 공실·임대관리 노하우"
+  },
+  "news_etc": {
+    "전체": "일의 보람과 성공을 더해줄 스토리",
+    "인물/인터뷰": "억대 연봉 중개사들의 실전 성공 인터뷰",
+    "부동산/인테리어 꿀팁": "실전 공간/인테리어 노하우",
+    "맛집/여행/건강": "현장 활동이 많은 대표님 전용 건강 바이블",
+    "자유 에세이": "일상의 쉼표, 감성 에세이"
+  }
+};
+
 function formatDate(d: string) {
   if (!d) return "";
   const dt = new Date(d);
@@ -237,6 +267,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
   const [clusterMode, setClusterMode] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [memberName, setMemberName] = useState<string>("부동산");
   const [userLevel, setUserLevel] = useState<number>(0);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
@@ -248,11 +279,19 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
       if (data?.user) {
         setCurrentUser(data.user);
         const { data: memberData } = await client.from('members')
-          .select('role, plan_type').eq('id', data.user.id).single();
+          .select('name, role, plan_type').eq('id', data.user.id).single();
         if (memberData) {
           setUserLevel(getPermissionLevel(memberData));
+          if (memberData.name) {
+            setMemberName(memberData.name);
+          } else if (data.user.user_metadata?.full_name) {
+            setMemberName(data.user.user_metadata.full_name);
+          }
         } else {
           setUserLevel(1);
+          if (data.user.user_metadata?.full_name) {
+            setMemberName(data.user.user_metadata.full_name);
+          }
         }
       }
     }
@@ -1260,6 +1299,30 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                     </button>
                   );
                 })}
+              </div>
+            );
+          })()}
+
+          {/* 2줄 프리미엄 개인화 헤더 카드 */}
+          {(() => {
+            const isKeywordSearch = !!(initialKeyword || searchParams.get("keyword"));
+            const isAuthorView = !!(authorProfile || initialAuthorName);
+            if (isKeywordSearch || isAuthorView) return null;
+
+            const activeSub = section2Tab || "전체";
+            const mentalText = PERSONALIZED_MENTAL_MAP[activeTab]?.[activeSub] || "추천 뉴스";
+            const displayName = memberName || "부동산";
+
+            return (
+              <div style={{ padding: "20px 20px 12px", backgroundColor: "#fff", borderBottom: "1px solid #f3f4f6" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                  <span style={{ fontSize: "13px", fontWeight: 600, color: "#6b7280", letterSpacing: "-0.3px" }}>
+                    <span style={{ fontWeight: 800, color: "#111", borderBottom: "1px solid #9ca3af", paddingBottom: "1px" }}>{displayName} 대표님</span>을 위한
+                  </span>
+                  <h2 style={{ fontSize: "19px", fontWeight: 900, color: "#ea580c", margin: 0, letterSpacing: "-0.5px", lineHeight: 1.3 }}>
+                    {mentalText} <span style={{ color: "#111" }}>News</span>
+                  </h2>
+                </div>
               </div>
             );
           })()}
