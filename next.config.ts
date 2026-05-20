@@ -24,6 +24,14 @@ const nextConfig: NextConfig = {
       bodySizeLimit: '10mb',
     },
   },
+  async rewrites() {
+    return [
+      {
+        source: '/marketing/apartment/:path*',
+        destination: 'http://localhost:3005/:path*',
+      },
+    ];
+  },
 };
 
 export default nextConfig;
