@@ -81,6 +81,25 @@ const SECTION2_ICONS: Record<string, React.ReactNode> = {
   "자유 에세이": <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
 };
 
+const SECTION2_ICONS_FILLED: Record<string, React.ReactNode> = {
+  "전체": <svg width="28" height="28" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5" fill="currentColor"/><rect x="14" y="3" width="7" height="7" rx="1.5" fill="currentColor"/><rect x="3" y="14" width="7" height="7" rx="1.5" fill="currentColor"/><rect x="14" y="14" width="7" height="7" rx="1.5" fill="currentColor"/></svg>,
+  "아파트/오피스텔": <svg width="28" height="28" viewBox="0 0 24 24"><path d="M6 2h12a2 2 0 012 2v18H4V4a2 2 0 012-2z" fill="currentColor"/><rect x="10" y="18" width="4" height="4" rx=".5" fill="white"/><rect x="7" y="5" width="2.5" height="2" rx=".5" fill="white"/><rect x="14.5" y="5" width="2.5" height="2" rx=".5" fill="white"/><rect x="7" y="9" width="2.5" height="2" rx=".5" fill="white"/><rect x="14.5" y="9" width="2.5" height="2" rx=".5" fill="white"/><rect x="7" y="13" width="2.5" height="2" rx=".5" fill="white"/><rect x="14.5" y="13" width="2.5" height="2" rx=".5" fill="white"/></svg>,
+  "빌라/주택": <svg width="28" height="28" viewBox="0 0 24 24"><path d="M12 2.5L2 10.5V22h20V10.5L12 2.5z" fill="currentColor"/><rect x="9" y="13" width="6" height="9" rx="1" fill="white"/></svg>,
+  "원룸/투룸(풀옵션)": <svg width="28" height="28" viewBox="0 0 24 24"><rect x="1" y="3" width="3" height="18" rx="1.5" fill="currentColor"/><path d="M4 8h16a2 2 0 012 2v11H4V8z" fill="currentColor"/><rect x="4" y="16.5" width="18" height="1.5" fill="white"/></svg>,
+  "상가/사무실/공장/토지": <svg width="28" height="28" viewBox="0 0 24 24"><path d="M2 7h20v14a2 2 0 01-2 2H4a2 2 0 01-2-2V7z" fill="currentColor"/><path d="M6 3.5c.5-.6 1.3-.8 2-.6L12 4l4-1.1c.7-.2 1.5 0 2 .6L22 7H2l4-3.5z" fill="currentColor"/><line x1="12" y1="7" x2="12" y2="23" stroke="white" strokeWidth="1.5"/><line x1="2" y1="11" x2="22" y2="11" stroke="white" strokeWidth="1.5"/></svg>,
+  "신축/분양/경매": <svg width="28" height="28" viewBox="0 0 24 24"><circle cx="16" cy="5" r="3" fill="currentColor"/><path d="M14 9L5 18a2 2 0 002.8 2.8l9-9L14 9z" fill="currentColor"/><path d="M15 4l-3 3M17 6l-3 3" stroke="white" strokeWidth="1.2"/></svg>,
+  "부동산 정책/동향": <svg width="28" height="28" viewBox="0 0 24 24"><path d="M14.5 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V7.5L14.5 2z" fill="currentColor"/><path d="M14 2v6h6" fill="white" opacity=".3"/><rect x="8" y="12" width="8" height="1.5" rx=".5" fill="white"/><rect x="8" y="16" width="6" height="1.5" rx=".5" fill="white"/></svg>,
+  "경제/재테크/주식": <svg width="28" height="28" viewBox="0 0 24 24"><path d="M3 3h2v16h16v2H3V3z" fill="currentColor"/><path d="M7 14l3-3 4 4 5-5v8H7v-4z" fill="currentColor" opacity=".3"/><path d="M7 14l3-3 4 4 5-5" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  "법률/세무 지식": <svg width="28" height="28" viewBox="0 0 24 24"><rect x="11" y="2" width="2" height="18" rx="1" fill="currentColor"/><rect x="7" y="20" width="10" height="2.5" rx="1" fill="currentColor"/><rect x="3" y="7" width="18" height="2" rx="1" fill="currentColor"/><path d="M4 14h6L7 9 4 14z" fill="currentColor"/><path d="M14 14h6l-3-5-3 5z" fill="currentColor"/></svg>,
+  "AI/NEWS": <svg width="28" height="28" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="3" fill="currentColor"/><circle cx="9" cy="10" r="1.5" fill="white"/><circle cx="15" cy="10" r="1.5" fill="white"/><rect x="8" y="14" width="8" height="2" rx="1" fill="white"/></svg>,
+  "부동산유튜브/블로그": <svg width="28" height="28" viewBox="0 0 24 24"><path d="M22.54 6.42a2.78 2.78 0 00-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 00-1.94 2A29 29 0 001 11.75a29 29 0 00.46 5.33A2.78 2.78 0 003.4 19.1c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 001.94-2 29 29 0 00.46-5.33 29 29 0 00-.46-5.33z" fill="currentColor"/><polygon points="9.75 15.02 15.5 11.75 9.75 8.48" fill="white"/></svg>,
+  "공실/임대관리": <svg width="28" height="28" viewBox="0 0 24 24"><path d="M2 18v3c0 .6.4 1 1 1h4v-3h3v-3h2l1.4-1.4a6.5 6.5 0 10-4-4L2 18z" fill="currentColor"/><circle cx="16.5" cy="7.5" r="1.5" fill="white"/></svg>,
+  "인물/인터뷰": <svg width="28" height="28" viewBox="0 0 24 24"><circle cx="12" cy="8" r="5" fill="currentColor"/><path d="M4 21a8 8 0 0116 0H4z" fill="currentColor"/></svg>,
+  "부동산/인테리어 꿀팁": <svg width="28" height="28" viewBox="0 0 24 24"><path d="M12 2a6 6 0 00-6 6c0 1.23.23 2.23 1.5 3.5.76.76 1.23 1.52 1.41 2.5h6.18c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0018 8a6 6 0 00-6-6z" fill="currentColor"/><rect x="9" y="16" width="6" height="2" rx="1" fill="currentColor"/><rect x="10" y="20" width="4" height="2" rx="1" fill="currentColor"/></svg>,
+  "맛집/여행/건강": <svg width="28" height="28" viewBox="0 0 24 24"><path d="M3 2c0-.6.4-1 1-1s1 .4 1 1v7a2 2 0 01-2 2v10c0 .6.4 1 1 1h2c.6 0 1-.4 1-1V11a2 2 0 01-2-2V2c0-.6.4-1 1-1s1 .4 1 1v7c.6 0 1-.4 1-1V2c0-.6.4-1 1-1s1 .4 1 1v6c0 1.7-1.3 3-3 3v10c0 .6-.4 1-1 1H4c-.6 0-1-.4-1-1V11c-1.7 0-3-1.3-3-3V2c0-.6.4-1 1-1z" fill="currentColor" transform="translate(1,0)"/><path d="M20 2c0-.6.4-1 1-1s1 .4 1 1v13h1c1.1 0 2-.9 2-2V7a5 5 0 00-5-5v13h0v6c0 .6-.4 1-1 1s-1-.4-1-1V2z" fill="currentColor" transform="translate(-2,0)"/></svg>,
+  "자유 에세이": <svg width="28" height="28" viewBox="0 0 24 24"><path d="M12 19l7-7 3 3-7 7-3-3z" fill="currentColor"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" fill="currentColor"/><circle cx="11" cy="11" r="2" fill="white"/></svg>,
+};
+
 function formatDate(d: string) {
   if (!d) return "";
   const dt = new Date(d);
@@ -1183,78 +1202,64 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                 style={{
                   display: "grid",
                   gridTemplateColumns: `repeat(${Math.max(4, Math.min(5, subs.length + 1))}, 1fr)`,
-                  gap: "8px",
-                  padding: "16px",
+                  gap: "4px",
+                  padding: "14px 12px",
                   background: "#fff",
                   borderBottom: "8px solid #f4f6f8",
                 }}
               >
                 {/* '전체' 아이콘 */}
-                <button
-                  onClick={() => handleSection2Click("")}
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    gap: "8px",
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    padding: 0,
-                  }}
-                >
-                  <div style={{
-                    width: "56px",
-                    height: "56px",
-                    borderRadius: "16px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    background: section2Tab === "" ? "#fff7ed" : "#f8f9fa",
-                    border: section2Tab === "" ? "1.5px solid #ea580c" : "1px solid #eaeaea",
-                    color: section2Tab === "" ? "#ea580c" : "#333",
-                    transition: "all 0.2s"
-                  }}>
-                    {SECTION2_ICONS["전체"]}
-                  </div>
-                  <span style={{ fontSize: "13px", fontWeight: section2Tab === "" ? 700 : 500, color: section2Tab === "" ? "#ea580c" : "#666", letterSpacing: "-0.5px" }}>전체</span>
-                </button>
+                {(() => {
+                  const isActive = section2Tab === "";
+                  return (
+                    <button
+                      onClick={() => handleSection2Click("")}
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        gap: "6px",
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        padding: "4px 0",
+                        color: isActive ? "#ea580c" : "#333",
+                        transition: "color 0.2s",
+                      }}
+                    >
+                      {isActive ? SECTION2_ICONS_FILLED["전체"] : SECTION2_ICONS["전체"]}
+                      <span style={{ fontSize: "12px", fontWeight: isActive ? 700 : 400, color: isActive ? "#ea580c" : "#333", letterSpacing: "-0.5px", lineHeight: 1.2 }}>전체</span>
+                    </button>
+                  );
+                })()}
                 
                 {/* 각 2차 카테고리 아이콘 */}
-                {subs.map(sub => (
-                  <button
-                    key={sub}
-                    onClick={() => handleSection2Click(sub)}
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      gap: "8px",
-                      background: "none",
-                      border: "none",
-                      cursor: "pointer",
-                      padding: 0,
-                    }}
-                  >
-                    <div style={{
-                      width: "56px",
-                      height: "56px",
-                      borderRadius: "16px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      background: section2Tab === sub ? "#fff7ed" : "#f8f9fa",
-                      border: section2Tab === sub ? "1.5px solid #ea580c" : "1px solid #eaeaea",
-                      color: section2Tab === sub ? "#ea580c" : "#333",
-                      transition: "all 0.2s"
-                    }}>
-                      {SECTION2_ICONS[sub] || SECTION2_ICONS["전체"]}
-                    </div>
-                    <span style={{ fontSize: "13px", fontWeight: section2Tab === sub ? 700 : 500, color: section2Tab === sub ? "#ea580c" : "#666", letterSpacing: "-0.5px", textAlign: "center", wordBreak: "keep-all", lineHeight: 1.2 }}>
-                      {sub}
-                    </span>
-                  </button>
-                ))}
+                {subs.map(sub => {
+                  const isActive = section2Tab === sub;
+                  return (
+                    <button
+                      key={sub}
+                      onClick={() => handleSection2Click(sub)}
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        gap: "6px",
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        padding: "4px 0",
+                        color: isActive ? "#ea580c" : "#333",
+                        transition: "color 0.2s",
+                      }}
+                    >
+                      {isActive ? (SECTION2_ICONS_FILLED[sub] || SECTION2_ICONS_FILLED["전체"]) : (SECTION2_ICONS[sub] || SECTION2_ICONS["전체"])}
+                      <span style={{ fontSize: "12px", fontWeight: isActive ? 700 : 400, color: isActive ? "#ea580c" : "#333", letterSpacing: "-0.5px", textAlign: "center", wordBreak: "keep-all", lineHeight: 1.2 }}>
+                        {sub}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             );
           })()}
