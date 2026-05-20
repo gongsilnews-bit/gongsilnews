@@ -1,7 +1,6 @@
 import React from "react";
 import { Metadata } from "next";
 import { getVacancyDetail } from "@/app/actions/vacancy";
-import { MapPinIcon, PhoneIcon, ShareIcon } from "@heroicons/react/24/solid";
 
 interface FlyerPageProps {
   params: Promise<{ id: string }>;
@@ -425,7 +424,9 @@ export default async function FlyerDetailPage({ params }: FlyerPageProps) {
                                 rel="noopener noreferrer"
                                 className="hover:underline flex items-center gap-1 text-blue-600 font-medium"
                               >
-                                <MapPinIcon className="w-3.5 h-3.5" />
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5">
+                                  <path fillRule="evenodd" d="M11.54 22.351l.07.04.028.016a.76.76 0 00.723 0l.028-.015.071-.041a16.975 16.975 0 001.155-1.155A15.75 15.75 0 0018 12a6 6 0 10-12 0c0 3.342 1.22 6.002 2.64 7.646a17.078 17.078 0 001.9 1.705zM12 13.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3z" clipRule="evenodd" />
+                                </svg>
                                 <span>{item.text}</span>
                               </a>
                             ) : (
@@ -491,7 +492,9 @@ export default async function FlyerDetailPage({ params }: FlyerPageProps) {
                   className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
                   title="중개업소 위치 지도 보기"
                 >
-                  <MapPinIcon className="w-3.5 h-3.5 text-white" />
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5 text-white">
+                    <path fillRule="evenodd" d="M11.54 22.351l.07.04.028.016a.76.76 0 00.723 0l.028-.015.071-.041a16.975 16.975 0 001.155-1.155A15.75 15.75 0 0018 12a6 6 0 10-12 0c0 3.342 1.22 6.002 2.64 7.646a17.078 17.078 0 001.9 1.705zM12 13.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3z" clipRule="evenodd" />
+                  </svg>
                 </a>
               )}
             </div>
@@ -505,7 +508,9 @@ export default async function FlyerDetailPage({ params }: FlyerPageProps) {
                 href={`tel:${info.agentPhone}`}
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white text-gray-900 font-bold hover:bg-gray-50 transition-colors shadow-sm"
               >
-                <PhoneIcon className="w-4 h-4" />
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                  <path fillRule="evenodd" d="M1.5 4.5a3 3 0 013-3h1.372c.86 0 1.61.586 1.819 1.42l.548 2.196c.19.758-.014 1.56-.537 2.127l-.83.902a14.975 14.975 0 006.275 6.275l.902-.83c.568-.523 1.37-.727 2.127-.537l2.196.548c.843.209 1.42.96 1.42 1.82V19.5a3 3 0 01-3 3h-2.25C8.552 22.5 1.5 15.448 1.5 6.75V4.5z" clipRule="evenodd" />
+                </svg>
                 <span>유선 전화 ({info.agentPhone})</span>
               </a>
               {info.agentMobile && (
@@ -513,7 +518,9 @@ export default async function FlyerDetailPage({ params }: FlyerPageProps) {
                   href={`tel:${info.agentMobile}`}
                   className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white/10 border border-white/15 text-white font-bold hover:bg-white/15 transition-colors"
                 >
-                  <PhoneIcon className="w-4 h-4" />
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                    <path fillRule="evenodd" d="M1.5 4.5a3 3 0 013-3h1.372c.86 0 1.61.586 1.819 1.42l.548 2.196c.19.758-.014 1.56-.537 2.127l-.83.902a14.975 14.975 0 006.275 6.275l.902-.83c.568-.523 1.37-.727 2.127-.537l2.196.548c.843.209 1.42.96 1.42 1.82V19.5a3 3 0 01-3 3h-2.25C8.552 22.5 1.5 15.448 1.5 6.75V4.5z" clipRule="evenodd" />
+                  </svg>
                   <span>휴대폰 ({info.agentMobile})</span>
                 </a>
               )}
@@ -557,7 +564,10 @@ export default async function FlyerDetailPage({ params }: FlyerPageProps) {
             className="p-3 text-gray-600 bg-gray-50 border border-gray-200/60 rounded-xl hover:bg-gray-100 transition-colors flex items-center justify-center"
             title="공유 링크 복사"
           >
-            <ShareIcon className="w-5 h-5" />
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+              <path fillRule="evenodd" d="M15.75 2.25a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0V3.75h-1.5a.75.75 0 010-1.5h2.25zM18 8.25a.75.75 0 01-.75.75h-1.5v1.5a.75.75 0 01-1.5 0v-2.25A.75.75 0 0115 7.5h2.25a.75.75 0 01.75.75zM12.75 12a.75.75 0 01.75-.75h1.5v-1.5a.75.75 0 011.5 0v2.25a.75.75 0 01-.75.75h-2.25a.75.75 0 01-.75-.75z" />
+              <path d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935-2.186 2.25 2.25 0 00-3.935 2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" />
+            </svg>
           </button>
           
           {/* Direct Call Button */}
@@ -566,7 +576,9 @@ export default async function FlyerDetailPage({ params }: FlyerPageProps) {
             className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-white font-bold text-sm shadow-sm transition-all"
             style={{ backgroundColor: primaryColor }}
           >
-            <PhoneIcon className="w-4 h-4" />
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+              <path fillRule="evenodd" d="M1.5 4.5a3 3 0 013-3h1.372c.86 0 1.61.586 1.819 1.42l.548 2.196c.19.758-.014 1.56-.537 2.127l-.83.902a14.975 14.975 0 006.275 6.275l.902-.83c.568-.523 1.37-.727 2.127-.537l2.196.548c.843.209 1.42.96 1.42 1.82V19.5a3 3 0 01-3 3h-2.25C8.552 22.5 1.5 15.448 1.5 6.75V4.5z" clipRule="evenodd" />
+            </svg>
             <span>전화 문의</span>
           </a>
         </div>
