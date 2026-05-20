@@ -318,13 +318,28 @@ function MobileVacancyAdmin() {
         onClick={() => router.push("/m/admin/vacancy/write")}
         style={{
           position: "fixed", bottom: 80, right: 20, width: 56, height: 56,
-          borderRadius: "50%", background: "linear-gradient(135deg, #3b82f6, #2563eb)",
-          color: "#fff", border: "none", boxShadow: "0 4px 16px rgba(59,130,246,0.4)",
-          fontSize: 28, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+          borderRadius: "50%", background: "linear-gradient(135deg, #3b82f6, #1d4ed8)",
+          color: "#fff", border: "none", boxShadow: "0 6px 20px rgba(29, 78, 216, 0.4)",
+          cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
           zIndex: 40,
+          transition: "transform 0.15s ease",
         }}
+        onMouseDown={(e) => { e.currentTarget.style.transform = "scale(0.92)"; }}
+        onMouseUp={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
+        onTouchStart={(e) => { e.currentTarget.style.transform = "scale(0.92)"; }}
+        onTouchEnd={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
       >
-        +
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ pointerEvents: "none" }}>
+          <rect x="4" y="2" width="10" height="15" rx="1.5" ry="1.5" />
+          <line x1="7" y1="5" x2="8" y2="5" />
+          <line x1="7" y1="8" x2="8" y2="8" />
+          <line x1="7" y1="11" x2="8" y2="11" />
+          <line x1="11" y1="5" x2="12" y2="5" />
+          <line x1="11" y1="8" x2="12" y2="8" />
+          <line x1="11" y1="11" x2="12" y2="11" />
+          <path d="M9 17v-3h2v3" />
+          <path d="M14 17h6M17 14v6" stroke="#ffffff" strokeWidth="2.5" />
+        </svg>
       </button>
 
       {/* 미리보기 오버레이 (iframe) */}
