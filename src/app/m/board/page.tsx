@@ -2,6 +2,8 @@ import React, { Suspense } from "react";
 import { getBoard, getBoardPosts } from "@/app/actions/board";
 import MobileBoardClient from "./MobileBoardClient";
 
+export const dynamic = 'force-dynamic';
+
 export const metadata = {
   title: "자료실 - 공실뉴스",
 };
