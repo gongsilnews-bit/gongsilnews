@@ -25,14 +25,26 @@ const nextConfig: NextConfig = {
     },
   },
   async rewrites() {
+    if (process.env.NODE_ENV !== 'production') {
+      return [
+        {
+          source: '/marketing/ai-detail',
+          destination: 'http://localhost:3005/marketing/ai-detail/',
+        },
+        {
+          source: '/marketing/ai-detail/:path*',
+          destination: 'http://localhost:3005/marketing/ai-detail/:path*',
+        },
+      ];
+    }
     return [
       {
         source: '/marketing/ai-detail',
-        destination: 'http://localhost:3005/marketing/ai-detail/',
+        destination: '/marketing/ai-detail/index.html',
       },
       {
-        source: '/marketing/ai-detail/:path*',
-        destination: 'http://localhost:3005/marketing/ai-detail/:path*',
+        source: '/marketing/ai-detail/',
+        destination: '/marketing/ai-detail/index.html',
       },
     ];
   },
