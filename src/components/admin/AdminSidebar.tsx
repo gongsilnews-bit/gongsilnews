@@ -38,6 +38,7 @@ const MENU_ITEMS: MenuItem[] = [
   { key: "study", label: "특강관리", icon: <IconStudy /> },
 
   { key: "board", label: "게시판", icon: <IconBoard /> },
+  { key: "inquiry", label: "문의관리", icon: <IconEdit /> },
   { key: "ad", label: "광고", icon: <IconAd />, dividerBefore: true },
   // { key: "plugin", label: "부동산홈페이지", icon: <IconPlugin /> },
   { key: "stats", label: "통계", icon: <IconStats /> },
