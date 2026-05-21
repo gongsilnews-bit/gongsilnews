@@ -222,28 +222,13 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
                     </td>
                     <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
                       <span style={{ 
-                        display: "inline-block", 
-                        padding: "4px 12px", 
-                        borderRadius: 30, 
-                        fontSize: 12, 
-                        fontWeight: 700,
-                        background: row.type.includes("구해요") || row.type.includes("임차") || row.type.includes("매수")
-                          ? (darkMode ? "rgba(239, 68, 68, 0.15)" : "#fef2f2")
-                          : row.type.includes("내놔요") || row.type.includes("임대인") || row.type.includes("매도") || row.type.includes("임대")
-                          ? (darkMode ? "rgba(59, 130, 246, 0.15)" : "#eff6ff")
-                          : (darkMode ? "rgba(156, 163, 175, 0.15)" : "#f3f4f6"),
+                        fontSize: 14, 
+                        fontWeight: 805,
                         color: row.type.includes("구해요") || row.type.includes("임차") || row.type.includes("매수")
                           ? "#ef4444"
                           : row.type.includes("내놔요") || row.type.includes("임대인") || row.type.includes("매도") || row.type.includes("임대")
                           ? "#3b82f6"
-                          : "#4b5563",
-                        border: `1px solid ${
-                          row.type.includes("구해요") || row.type.includes("임차") || row.type.includes("매수")
-                            ? "rgba(239, 68, 68, 0.2)"
-                            : row.type.includes("내놔요") || row.type.includes("임대인") || row.type.includes("매도") || row.type.includes("임대")
-                            ? "rgba(59, 130, 246, 0.2)"
-                            : "rgba(156, 163, 175, 0.2)"
-                        }`
+                          : "#4b5563"
                       }}>
                         {row.type.includes("구해요") || row.type.includes("임차") || row.type.includes("매수")
                           ? "매물구해요"
