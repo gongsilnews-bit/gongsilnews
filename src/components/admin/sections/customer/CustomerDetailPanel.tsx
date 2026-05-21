@@ -92,6 +92,15 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
     }
   }
 
+  // 1-2. 매물 구분 및 희망 지역 파싱
+  let propertyType = "아파트";
+  let areaText = customer.area || "지역 미정";
+  if (customer.area && customer.area.includes(" / ")) {
+    const parts = customer.area.split(" / ");
+    propertyType = parts[0];
+    areaText = parts.slice(1).join(" / ");
+  }
+
   // 2. 접수일 포맷팅
   const dt = new Date(customer.created_at);
   const dateStr = dt.toLocaleDateString() + ' ' + dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -183,8 +192,11 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
               {customer.type}
             </div>
             
+            <div style={{ color: textSecondary, fontWeight: 700 }}>매물 구분</div>
+            <div style={{ color: textPrimary, fontWeight: 800 }}>{propertyType}</div>
+
             <div style={{ color: textSecondary, fontWeight: 700 }}>희망 지역</div>
-            <div style={{ color: textPrimary, fontWeight: 800 }}>{customer.area}</div>
+            <div style={{ color: textPrimary, fontWeight: 800 }}>{areaText}</div>
             
             <div style={{ color: textSecondary, fontWeight: 700 }}>거래 구분</div>
             <div style={{ color: textPrimary, fontWeight: 800 }}>{transactionType}</div>
