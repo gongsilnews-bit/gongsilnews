@@ -90,6 +90,7 @@ export default function CustomerModal({ theme, memberId, customer, onClose, onSa
         budget,
         area,
         move_in_condition,
+        status: customer.status || "신규",
         notes: ""
       };
     }
@@ -108,6 +109,7 @@ export default function CustomerModal({ theme, memberId, customer, onClose, onSa
       budget: "",
       area: "",
       move_in_condition: "즉시 입주 / 협의 가능",
+      status: "신규",
       notes: ""
     };
   });
@@ -191,7 +193,8 @@ export default function CustomerModal({ theme, memberId, customer, onClose, onSa
           type: typeLabel,
           budget: budgetString,
           area: areaLabel,
-          source: formData.source
+          source: formData.source,
+          status: formData.status
         });
         setLoading(false);
         if (res.success) {
@@ -328,6 +331,23 @@ export default function CustomerModal({ theme, memberId, customer, onClose, onSa
               </select>
             </div>
           </div>
+
+          {/* 4. 수정 모드일 때만 노출되는 진행 상태 변경 셀렉터 */}
+          {customer && (
+            <div>
+              <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: textSecondary, marginBottom: 8 }}>
+                현재 진행 상태 <span style={{ color: "#ef4444" }}>*</span>
+              </label>
+              <select name="status" value={formData.status} onChange={handleChange}
+                style={{ width: "100%", height: 42, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 8, background: darkMode ? "#1f2023" : "#fff", color: textPrimary, outline: "none", fontSize: 14, fontWeight: 700 }}>
+                <option value="신규">신규접수</option>
+                <option value="진행중">진행중</option>
+                <option value="계약완료">계약완료</option>
+                <option value="보류/종료">보류/종료</option>
+                <option value="휴지통">휴지통</option>
+              </select>
+            </div>
+          )}
 
           {/* 📢 매물내놔요 또는 🔎 매물구해요 일때 거래구분 및 초정밀 금액 입력 영역 */}
           {(formData.role === "매물구해요" || formData.role === "매물내놔요") && (
