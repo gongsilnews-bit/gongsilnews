@@ -19,6 +19,7 @@ export default function CustomerModal({ theme, memberId, onClose, onSave }: Cust
     phone: "",
     role: "매물구해요",       // 손님 구분 (매물내놔요, 매물구해요, 공동중개, 기타)
     property_type: "아파트", // 매물 구분
+    source: "오프라인(워크인)", // 유입 경로 (유입방법)
     transaction_type: "월세", // 거래 구분 (매매, 전세, 월세)
     price_buy: "",          // 매매가
     price_deposit: "",      // 보증금 / 전세금
@@ -84,7 +85,7 @@ export default function CustomerModal({ theme, memberId, onClose, onSave }: Cust
       type: typeLabel,
       budget: budgetString,
       area: areaLabel,
-      source: "오프라인(워크인)",
+      source: formData.source,
       notes: formData.notes
     });
     setLoading(false);
@@ -174,7 +175,7 @@ export default function CustomerModal({ theme, memberId, onClose, onSave }: Cust
             </div>
           </div>
 
-          {/* 3. 손님 구분 및 5. 매물 구분 (Side-by-Side!) */}
+          {/* 3. 손님 구분 및 유입 경로 (Side-by-Side!) */}
           <div style={{ display: "flex", gap: 16 }}>
             <div style={{ flex: 1 }}>
               <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: textSecondary, marginBottom: 8 }}>
@@ -189,18 +190,15 @@ export default function CustomerModal({ theme, memberId, onClose, onSave }: Cust
             </div>
             <div style={{ flex: 1 }}>
               <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: textSecondary, marginBottom: 8 }}>
-                매물 구분
+                유입 경로 <span style={{ color: "#ef4444" }}>*</span>
               </label>
-              <select name="property_type" value={formData.property_type} onChange={handleChange}
-                style={{ width: "100%", height: 42, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 8, background: darkMode ? "#1f2023" : "#fff", color: textPrimary, outline: "none", fontSize: 14 }}>
-                <option value="아파트">아파트</option>
-                <option value="빌라/다세대">빌라/다세대</option>
-                <option value="상가/사무실">상가/사무실</option>
-                <option value="오피스텔">오피스텔</option>
-                <option value="원룸/투룸">원룸/투룸</option>
-                <option value="단독/전원주택">단독/전원주택</option>
-                <option value="빌딩/건물">빌딩/건물</option>
-                <option value="토지/임야">토지/임야</option>
+              <select name="source" value={formData.source} onChange={handleChange}
+                style={{ width: "100%", height: 42, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 8, background: darkMode ? "#1f2023" : "#fff", color: textPrimary, outline: "none", fontSize: 14, fontWeight: 700 }}>
+                <option value="전화 문의">📞 전화 문의</option>
+                <option value="오프라인(워크인)">👣 오프라인 (워크인 방문)</option>
+                <option value="네이버 광고">💚 네이버 광고 (플레이스 등)</option>
+                <option value="공실뉴스">📰 공실뉴스 웹사이트</option>
+                <option value="기타">☕ 기타 경로</option>
               </select>
             </div>
           </div>
@@ -312,6 +310,29 @@ export default function CustomerModal({ theme, memberId, onClose, onSave }: Cust
             <input type="text" name="area" value={formData.area} onChange={handleChange} placeholder={areaPlaceholderText}
               style={{ width: "100%", height: 42, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 8, background: darkMode ? "#1f2023" : "#fff", color: textPrimary, outline: "none", fontSize: 14 }} 
             />
+          </div>
+
+          {/* 매물 구분 (하단에 크게 배치!) */}
+          <div>
+            <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: textSecondary, marginBottom: 8 }}>
+              🏢 매물 구분 <span style={{ color: "#ef4444" }}>*</span>
+            </label>
+            <select name="property_type" value={formData.property_type} onChange={handleChange}
+              style={{ 
+                width: "100%", height: 46, padding: "0 16px", border: `2px solid ${darkMode ? border : "#3b82f6"}`, borderRadius: 8, 
+                background: darkMode ? "#1f2023" : "#fff", color: textPrimary, outline: "none", 
+                fontSize: 15, fontWeight: 800, cursor: "pointer",
+                boxShadow: "0 2px 6px rgba(59, 130, 246, 0.05)"
+              }}>
+              <option value="아파트">🏢 아파트</option>
+              <option value="빌라/다세대">🏡 빌라 / 다세대</option>
+              <option value="상가/사무실">💼 상가 / 사무실</option>
+              <option value="오피스텔">🏢 오피스텔</option>
+              <option value="원룸/투룸">🚪 원룸 / 투룸</option>
+              <option value="단독/전원주택">🏡 단독 / 전원주택</option>
+              <option value="빌딩/건물">🏢 빌딩 / 건물</option>
+              <option value="토지/임야">🌳 토지 / 임야</option>
+            </select>
           </div>
           
           {/* 8. 첫 상담메모 */}
