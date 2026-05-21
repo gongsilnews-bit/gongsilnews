@@ -6,6 +6,7 @@ import VacancyRegisterForm from "@/components/admin/VacancyRegisterForm";
 import VacancyDetailPanel from "./VacancyDetailPanel";
 import { getVacancies, updateVacancyStatus, updateVacancy, deleteVacancy, getVacancyDetail } from "@/app/actions/vacancy";
 import { useRouter, useSearchParams } from "next/navigation";
+import { createClient } from "@/utils/supabase/client";
 
 interface VacancySectionProps extends AdminSectionProps {
   role: "admin" | "realtor" | "user";
@@ -24,6 +25,29 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
   
   const [dbVacancies, setDbVacancies] = useState<any[]>(initialData || []);
   const [editingVacancy, setEditingVacancy] = useState<any>(null);
+  const [flyerMap, setFlyerMap] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    async function checkFlyers() {
+      if (dbVacancies.length === 0) return;
+      const supabase = createClient();
+      const ids = dbVacancies.map((v: any) => v.id);
+      
+      const { data: flyers } = await supabase
+        .from("vacancy_flyers")
+        .select("vacancy_id")
+        .in("vacancy_id", ids);
+        
+      if (flyers) {
+        const map: Record<string, boolean> = {};
+        flyers.forEach((f: any) => {
+          map[f.vacancy_id] = true;
+        });
+        setFlyerMap(map);
+      }
+    }
+    checkFlyers();
+  }, [dbVacancies]);
   const showRegisterForm = action === "write";
   const [activeTab, setActiveTab] = useState("전체");
 
@@ -349,31 +373,51 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                         ) : (
                           <>
                             <div style={{ display: "flex", gap: 6, justifyContent: "center", width: "100%" }}>
-                              <button 
-                                onClick={() => window.open(`/marketing/ai-detail?vacancy_id=${row.id}`, '_blank')}
-                                style={{ 
-                                  height: 30, 
-                                  padding: "0 10px", 
-                                  background: darkMode ? "#00667a" : "#00788c", 
-                                  color: "#fff", 
-                                  border: "none", 
-                                  borderRadius: 4, 
-                                  fontSize: 12, 
-                                  fontWeight: 600, 
-                                  cursor: "pointer", 
-                                  display: "flex", 
-                                  alignItems: "center", 
-                                  gap: 4, 
-                                  whiteSpace: "nowrap", 
-                                  flexShrink: 0,
-                                  transition: "all 0.15s"
-                                }}
-                                onMouseEnter={(e) => { e.currentTarget.style.background = darkMode ? "#005566" : "#00667a"; }}
-                                onMouseLeave={(e) => { e.currentTarget.style.background = darkMode ? "#00667a" : "#00788c"; }}
-                              >
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                                AI 온라인전단지
-                              </button>
+                              {(role === "admin" || role === "realtor") && (() => {
+                                const hasFlyer = flyerMap[row.id];
+                                return (
+                                  <button 
+                                    onClick={() => window.open(`/marketing/ai-detail?vacancy_id=${row.id}`, '_blank')}
+                                    style={{ 
+                                      height: 30, 
+                                      padding: "0 10px", 
+                                      background: hasFlyer 
+                                        ? (darkMode ? "#059669" : "#10b981") 
+                                        : (darkMode ? "#2a2d35" : "#f3f4f6"), 
+                                      color: hasFlyer 
+                                        ? "#fff" 
+                                        : (darkMode ? "#7c8ba1" : "#8a94a6"), 
+                                      border: hasFlyer 
+                                        ? "none" 
+                                        : `1px solid ${darkMode ? "#444" : "#e5e7eb"}`, 
+                                      borderRadius: 4, 
+                                      fontSize: 12, 
+                                      fontWeight: 700, 
+                                      cursor: "pointer", 
+                                      display: "flex", 
+                                      alignItems: "center", 
+                                      gap: 4, 
+                                      whiteSpace: "nowrap", 
+                                      flexShrink: 0,
+                                      transition: "all 0.15s"
+                                    }}
+                                    onMouseEnter={(e) => { 
+                                      e.currentTarget.style.background = hasFlyer 
+                                        ? (darkMode ? "#047857" : "#059669") 
+                                        : (darkMode ? "#343842" : "#e5e7eb"); 
+                                    }}
+                                    onMouseLeave={(e) => { 
+                                      e.currentTarget.style.background = hasFlyer 
+                                        ? (darkMode ? "#059669" : "#10b981") 
+                                        : (darkMode ? "#2a2d35" : "#f3f4f6"); 
+                                    }}
+                                    title={hasFlyer ? "AI 온라인전단지 완성됨 (클릭하여 편집/수정)" : "AI 온라인전단지 미작성 (클릭하여 제작)"}
+                                  >
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                                    {hasFlyer ? "AI 온라인전단지 (완성)" : "AI 온라인전단지 (미작성)"}
+                                  </button>
+                                );
+                              })()}
                               <button onClick={() => window.open(`/m/gongsil?id=${row.id}`, '_blank')} style={{ height: 30, padding: "0 10px", background: darkMode ? "#1e293b" : "#eff6ff", color: darkMode ? "#93c5fd" : "#2563eb", border: `1px solid ${darkMode ? "#334155" : "#bfdbfe"}`, borderRadius: 4, fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0, cursor: "pointer" }}>
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                                 미리보기

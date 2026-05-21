@@ -19,6 +19,8 @@ function MobileVacancyAdmin() {
   const [searchKeyword, setSearchKeyword] = useState("");
   const [activeKeyword, setActiveKeyword] = useState("");
   const [previewId, setPreviewId] = useState<string | null>(null);
+  const [flyerMap, setFlyerMap] = useState<Record<string, boolean>>({});
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   useEffect(() => {
     async function init() {
@@ -30,6 +32,7 @@ function MobileVacancyAdmin() {
         setMemberId(data.id);
         setUserName(data.name || "이름없음");
         setUserPhone(data.phone || "");
+        setUserRole(data.role);
         if (data.role === 'ADMIN' || data.role === 'SUPER_ADMIN' || data.role === '최고관리자') {
           setIsAdmin(true);
         }
@@ -77,7 +80,27 @@ function MobileVacancyAdmin() {
     if (!memberId) return;
     setLoading(true);
     const res = await getVacancies({ ownerId: memberId });
-    if (res.success) setVacancies(res.data || []);
+    if (res.success) {
+      const list = res.data || [];
+      setVacancies(list);
+      
+      if (list.length > 0) {
+        const supabase = createClient();
+        const ids = list.map((v: any) => v.id);
+        const { data: flyers } = await supabase
+          .from("vacancy_flyers")
+          .select("vacancy_id")
+          .in("vacancy_id", ids);
+          
+        if (flyers) {
+          const map: Record<string, boolean> = {};
+          flyers.forEach((f: any) => {
+            map[f.vacancy_id] = true;
+          });
+          setFlyerMap(map);
+        }
+      }
+    }
     setLoading(false);
   };
 
@@ -307,6 +330,77 @@ function MobileVacancyAdmin() {
                     🗑️ 삭제
                   </button>
                 </div>
+
+                {/* AI 온라인 전단지 전용 공유 / 비활성 버튼 */}
+                {(userRole === 'ADMIN' || userRole === 'SUPER_ADMIN' || userRole === '최고관리자' || userRole === '부동산' || userRole === 'REALTOR') && (() => {
+                  const hasFlyer = flyerMap[row.id];
+                  if (hasFlyer) {
+                    return (
+                      <button 
+                        onClick={() => {
+                          const shareUrl = `${window.location.origin}/m/gongsil?id=${row.id}`;
+                          if (navigator.share) {
+                            navigator.share({
+                              title: `[공실뉴스 온라인전단지] ${row.building_name || '매물 정보'}`,
+                              text: `선명하고 투명한 매물 상세 전단지입니다.`,
+                              url: shareUrl
+                            }).catch(() => {});
+                          } else {
+                            navigator.clipboard.writeText(shareUrl);
+                            alert("온라인전단지 링크 주소가 복사되었습니다.\n원하는 대화방에 붙여넣어 전송해보세요!");
+                          }
+                        }}
+                        style={{ 
+                          width: "100%", 
+                          height: 38, 
+                          background: "linear-gradient(135deg, #10b981, #059669)", 
+                          color: "#fff", 
+                          border: "none", 
+                          borderRadius: 8, 
+                          fontSize: 13, 
+                          fontWeight: 800, 
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: 6,
+                          boxShadow: "0 2px 4px rgba(16, 185, 129, 0.15)",
+                          marginTop: 4
+                        }}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg>
+                        📢 AI 전단지 공유하기
+                      </button>
+                    );
+                  } else {
+                    return (
+                      <button 
+                        onClick={() => {
+                          alert("이 매물은 아직 AI 온라인전단지가 제작되지 않았습니다.\nPC 버전 공실관리에서 전단지를 먼저 제작/저장해 주세요!");
+                        }}
+                        style={{ 
+                          width: "100%", 
+                          height: 38, 
+                          background: "#e5e7eb", 
+                          color: "#9ca3af", 
+                          border: "1px solid #d1d5db", 
+                          borderRadius: 8, 
+                          fontSize: 13, 
+                          fontWeight: 700, 
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: 6,
+                          marginTop: 4
+                        }}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.6 }}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                        📢 AI 전단지 미작성 (PC에서 제작 필요)
+                      </button>
+                    );
+                  }
+                })()}
               </div>
             </div>
           );

@@ -325,13 +325,11 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
 
             {/* Custom Color Picker Swatch */}
             <div 
-                className={`relative w-10 h-10 rounded-full border-2 transition-all shadow-sm flex items-center justify-center cursor-pointer hover:scale-105 ${currentColor.id === 'custom' ? 'border-gray-800 scale-110 ring-2 ring-offset-2 ring-gray-300' : 'border-dashed border-gray-300'}`}
+                className={`relative w-10 h-10 rounded-full border-2 transition-all shadow-sm flex items-center justify-center cursor-pointer hover:scale-105 ${currentColor.id === 'custom' ? 'border-gray-800 scale-110 ring-2 ring-offset-2 ring-gray-300' : 'border-gray-200'}`}
                 style={{ 
-                    background: currentColor.id === 'custom' 
-                        ? currentColor.primary 
-                        : 'linear-gradient(45deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8b00ff)' 
+                    backgroundColor: '#f1f5f9'
                 }}
-                title="직접 색상 선택 (컬러 바)"
+                title="직접 색상 선택"
             >
                 <input 
                     type="color"
@@ -346,14 +344,26 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                             dark: adjustColor(val, -45)
                         });
                     }}
-                    className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+                    className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
                 />
-                {currentColor.id === 'custom' ? (
-                    <div className="w-2 h-2 bg-white rounded-full shadow-sm"></div>
-                ) : (
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4 text-white drop-shadow-md">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                    </svg>
+                
+                {/* Paintbrush icon matching user image */}
+                <svg 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    fill="none" 
+                    viewBox="0 0 24 24" 
+                    strokeWidth="1.8" 
+                    stroke="currentColor" 
+                    className={`w-5 h-5 transition-colors ${currentColor.id === 'custom' ? 'text-gray-900' : 'text-slate-400'}`}
+                >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.53 16.122A3 3 0 0 0 13.5 20.38m-3.97-4.258 5.764-5.764L15 6.622l-1.242-.88 2.84-2.84a1.2 1.2 0 1 1 1.697 1.696L15.45 6.439l-.88-1.242-5.764 5.764M9.53 16.122a3 3 0 0 0-3.97-4.258m3.97 4.258H3" />
+                </svg>
+
+                {currentColor.id === 'custom' && (
+                    <div 
+                        className="absolute bottom-1 right-1 w-2.5 h-2.5 rounded-full border border-white shadow-sm"
+                        style={{ backgroundColor: currentColor.primary }}
+                    />
                 )}
             </div>
         </div>
@@ -928,19 +938,19 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
             </button>
         </div>
 
-        <div className="flex gap-2 pt-4 pb-8">
+        <div className="grid grid-cols-2 gap-3 pt-4 pb-8">
              {['grid', 'list', 'table', 'sns'].map(type => (
                  <button 
                     key={type}
                     onClick={() => addSection(type as SectionType)}
-                    className="flex-1 py-3 bg-white border rounded-lg shadow-sm text-sm font-bold flex items-center justify-center gap-2 hover:opacity-80 transition-opacity"
+                    className="py-3 bg-white border rounded-lg shadow-sm text-[13px] font-bold flex items-center justify-center gap-2 hover:bg-slate-50 hover:opacity-90 active:scale-95 transition-all"
                     style={{ borderColor: primaryColor, color: primaryColor }}
                 >
-                    {type === 'grid' && <Squares2X2Icon className="w-5 h-5" />}
-                    {type === 'list' && <ListBulletIcon className="w-5 h-5" />}
-                    {type === 'table' && <TableCellsIcon className="w-5 h-5" />}
-                    {type === 'sns' && <ShareIcon className="w-5 h-5" />}
-                    {type === 'grid' ? '사진특징' : type === 'list' ? '상세설명' : type === 'table' ? '단지정보' : 'SNS'} 섹션 추가
+                    {type === 'grid' && <Squares2X2Icon className="w-4 h-4" />}
+                    {type === 'list' && <ListBulletIcon className="w-4 h-4" />}
+                    {type === 'table' && <TableCellsIcon className="w-4 h-4" />}
+                    {type === 'sns' && <ShareIcon className="w-4 h-4" />}
+                    {type === 'grid' ? '사진특징' : type === 'list' ? '상세설명' : type === 'table' ? '단지정보' : 'SNS'} 추가
                 </button>
              ))}
         </div>

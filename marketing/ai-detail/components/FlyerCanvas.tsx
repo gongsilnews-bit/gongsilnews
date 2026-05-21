@@ -340,7 +340,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data }, ref)
                             </div>
                             <div className={`flex flex-col justify-center p-8 bg-gray-50 ${isReversed ? 'md:order-1' : ''}`}>
                                 <h4 className={`text-xl md:text-2xl font-extrabold text-gray-900 mb-4 ${headingFont}`}>{item.title}</h4>
-                                <p className={`text-gray-700 text-sm leading-8 ${bodyFont}`}>{item.text}</p>
+                                <p className={`text-gray-800 text-base md:text-sm leading-8 ${bodyFont}`}>{item.text}</p>
                             </div>
                         </div>
                      )
@@ -358,7 +358,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data }, ref)
                                      <img src={imgSrc} className="w-full h-full object-cover grayscale-[20%]" />
                                 </div>
                                 <div className="col-span-1 md:col-span-4 flex items-end">
-                                    <p className={`text-gray-600 text-base md:text-lg leading-relaxed ${bodyFont}`}>{item.text}</p>
+                                    <p className={`text-gray-700 text-base md:text-lg leading-relaxed ${bodyFont}`}>{item.text}</p>
                                 </div>
                             </div>
                         </div>
@@ -374,7 +374,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data }, ref)
                          <div className="w-full md:w-1/2 flex flex-col justify-center px-8 md:px-16 py-12 bg-gray-50/50">
                              <div className="w-8 h-0.5 mb-6" style={{ backgroundColor: primaryColor }}></div>
                              <h4 className={`text-xl md:text-2xl font-bold text-gray-800 mb-4 ${headingFont}`}>{item.title}</h4>
-                             <p className={`text-gray-600 text-sm leading-8 break-keep whitespace-pre-wrap ${bodyFont}`}>
+                             <p className={`text-gray-700 text-base md:text-sm leading-8 break-keep whitespace-pre-wrap ${bodyFont}`}>
                                  {item.text}
                              </p>
                          </div>
@@ -394,10 +394,10 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data }, ref)
                 <div className="grid grid-cols-1 md:grid-cols-2">
                     {section.items.map((item, idx) => (
                         <div key={item.id} className={`flex border-b border-gray-200 ${idx % 2 === 1 ? 'md:border-l border-gray-200' : ''}`}>
-                            <div className={`w-28 md:w-32 p-4 text-sm flex items-center justify-center text-center shrink-0 border-r border-gray-200 ${layout === 'type4' ? 'bg-gray-800 text-white font-bold' : 'bg-gray-50 text-gray-600 font-bold'}`}>
+                            <div className={`w-28 md:w-32 py-5 px-3 text-[17px] md:text-sm flex items-center justify-center text-center shrink-0 border-r border-gray-200 ${layout === 'type4' ? 'bg-gray-800 text-white font-extrabold' : 'bg-gray-50 text-gray-800 font-extrabold'}`}>
                                 {item.title}
                             </div>
-                            <div className={`flex-1 p-4 text-sm text-gray-700 flex items-center break-keep ${bodyFont}`}>
+                            <div className={`flex-1 py-5 px-4 text-[18px] md:text-sm text-gray-950 font-extrabold flex items-center break-keep ${bodyFont}`}>
                                 {(item.title === '주소' || item.title === '소재지' || item.title === '위치') && item.text ? (
                                     <a 
                                         href={`https://map.naver.com/p/search/${encodeURIComponent(item.text)}`} 
@@ -418,8 +418,8 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data }, ref)
                     ))}
                     {section.items.length % 2 !== 0 && (
                         <div className="hidden md:flex border-b border-gray-200 border-l border-gray-200">
-                             <div className={`w-32 p-4 shrink-0 border-r border-gray-200 ${layout === 'type4' ? 'bg-gray-800' : 'bg-gray-50'}`}></div>
-                             <div className="flex-1 p-4"></div>
+                             <div className={`w-32 py-5 shrink-0 border-r border-gray-200 ${layout === 'type4' ? 'bg-gray-800' : 'bg-gray-50'}`}></div>
+                             <div className="flex-1 py-5 px-4"></div>
                         </div>
                     )}
                 </div>
@@ -516,7 +516,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data }, ref)
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6 text-sm">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-7 text-[16px] md:text-sm">
                 {[
                     { l: '공급/전용면적', v: info.area },
                     { l: '해당층/총층', v: info.floor },
@@ -524,18 +524,18 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data }, ref)
                     { l: '주차가능대수', v: info.parking },
                     { l: '옵션 정보', v: info.options, full: true }
                 ].map((item, i) => (
-                    <div key={i} className={`flex justify-between border-b border-gray-100 pb-3 ${item.full ? 'col-span-1 md:col-span-2' : ''}`}>
-                        <span className="text-gray-500">{item.l}</span>
-                        <span className="font-bold text-gray-800">{item.v}</span>
+                    <div key={i} className={`flex justify-between border-b border-gray-150 pb-4 ${item.full ? 'col-span-1 md:col-span-2' : ''}`}>
+                        <span className="text-gray-700 font-bold text-[16px] md:text-sm">{item.l}</span>
+                        <span className="font-extrabold text-gray-950 text-[18px] md:text-[15px]">{item.v}</span>
                     </div>
                 ))}
 
                 {/* Notice Box */}
-                <div className={`col-span-1 md:col-span-2 p-6 mt-2 ${layout === 'type4' ? 'border-2 border-gray-100 bg-white' : 'bg-[#f4f6f8] rounded-sm'}`}>
+                <div className={`col-span-1 md:col-span-2 p-6 mt-4 ${layout === 'type4' ? 'border-2 border-gray-100 bg-white' : 'bg-[#f4f6f8] rounded-sm'}`}>
                     <span className="font-bold block mb-2 text-xs" style={{ color: primaryColor }}>
                         {info.noticeTitle || "DETAIL INFO"}
                     </span>
-                    <p className={`text-gray-700 leading-relaxed whitespace-pre-wrap ${bodyFont}`}>
+                    <p className={`text-gray-950 text-[17px] md:text-sm font-bold leading-relaxed whitespace-pre-wrap ${bodyFont}`}>
                         {info.noticeContent}
                     </p>
                 </div>
@@ -629,15 +629,22 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data }, ref)
                         </div>
                     )}
 
-                    <a 
-                        href={info.consultationUrl || '#'} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="w-full max-w-md py-5 mt-10 text-white text-2xl font-bold tracking-widest hover:opacity-90 transition-colors block text-center rounded-xl shadow-md"
-                        style={{ backgroundColor: primaryColor }}
-                    >
-                        매물 내놔요
-                    </a>
+                    <div className="flex gap-4 w-full max-w-md mt-10">
+                        <a 
+                            href={`tel:${info.agentMobile || info.agentPhone || ''}`}
+                            className="flex-1 py-5 text-white text-2xl font-bold tracking-widest hover:opacity-90 transition-colors block text-center rounded-xl shadow-md"
+                            style={{ backgroundColor: primaryColor }}
+                        >
+                            전화하기
+                        </a>
+                        <a 
+                            href={`sms:${info.agentMobile || info.agentPhone || ''}`}
+                            className="flex-1 py-5 text-white text-2xl font-bold tracking-widest hover:opacity-90 transition-colors block text-center rounded-xl shadow-md"
+                            style={{ backgroundColor: secondaryColor }}
+                        >
+                            문자보내기
+                        </a>
+                    </div>
                 </div>
                 
                 <div className="mt-16 text-xs text-gray-600 text-center">

@@ -315,11 +315,17 @@ function App() {
   const [isInitialized, setIsInitialized] = useState(false);
   const [isSavingCloud, setIsSavingCloud] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState<Record<string, boolean>>({});
+  const [authError, setAuthError] = useState<string | null>(null);
 
   const loadVacancyDataDirectly = async (vacancyId: string) => {
     setLoadingData(true);
     try {
       const res = await fetch(`/api/vacancy/detail?id=${vacancyId}`);
+      if (res.status === 401 || res.status === 403) {
+        setAuthError(res.status === 401 ? "unauthorized" : "forbidden");
+        setLoadingData(false);
+        return;
+      }
       const json = await res.json();
       if (json.success && json.data) {
         const v = json.data;
@@ -1165,6 +1171,32 @@ ${clone.outerHTML}
       sections.push({ id: 'agent-info', label: '중개사 정보 (Footer)' });
       return sections;
   };
+
+  if (authError) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4 text-white font-sans">
+        <div className="max-w-md w-full bg-slate-800/80 border border-slate-700 p-8 rounded-2xl shadow-2xl text-center backdrop-blur-md">
+          <div className="w-16 h-16 bg-amber-500/10 border border-amber-500/20 rounded-full flex items-center justify-center mx-auto mb-6 text-amber-500">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-8 h-8">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m0-10.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.75c0 5.592 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.57-.598-3.75h-.152c-3.196 0-6.1-1.249-8.25-3.286zm0 13.036h.008v.008H12v-.008z" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-black mb-3 text-slate-100 tracking-tight">AI 온라인전단지 접근 제한</h2>
+          <p className="text-slate-400 text-sm leading-relaxed mb-8">
+            {authError === "unauthorized" 
+              ? "이 서비스를 이용하시려면 로그인이 필요합니다." 
+              : "AI 온라인전단지 서비스는 공실뉴스 [부동산 회원] 및 [최고 관리자]만 이용하실 수 있습니다. 일반 회원은 이용이 불가능합니다."}
+          </p>
+          <button 
+            onClick={() => window.location.href = "/"}
+            className="w-full py-3 px-6 bg-amber-500 hover:bg-amber-600 active:scale-95 text-slate-950 font-bold text-sm rounded-xl shadow-lg transition-all duration-150"
+          >
+            홈으로 돌아가기
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col font-sans relative">
