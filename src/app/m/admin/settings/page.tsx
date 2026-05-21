@@ -6,23 +6,31 @@ import { createClient } from "@/utils/supabase/client";
 import { adminGetMemberDetail, adminUpdateMember, adminUpdateAgency, adminUploadAgencyDocument } from "@/app/admin/actions";
 import { geocodeAddress } from "@/app/actions/geocode";
 
-/* ── WebP 압축 ── */
-const compressToWebP = (file: File, maxWidth = 1920, quality = 0.8): Promise<File> =>
-  new Promise((resolve) => {
-    if (!file.type.startsWith("image/")) { resolve(file); return; }
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      let w = img.width, h = img.height;
-      if (w > maxWidth) { h = Math.round(h * maxWidth / w); w = maxWidth; }
-      canvas.width = w; canvas.height = h;
-      canvas.getContext("2d")!.drawImage(img, 0, 0, w, h);
-      canvas.toBlob(blob => {
-        resolve(new File([blob!], file.name.replace(/\.[^.]+$/, ".webp"), { type: "image/webp" }));
-      }, "image/webp", quality);
+import imageCompression from "browser-image-compression";
+
+/* ── WebP 압축 (browser-image-compression 활용) ── */
+const compressToWebP = async (file: File, maxWidth = 1200, quality = 0.8): Promise<File> => {
+  if (!file.type.startsWith("image/") && !file.name.toLowerCase().endsWith(".heic")) {
+    return file;
+  }
+  try {
+    const options = {
+      maxSizeMB: 1,          // 최대 용량 1MB 제한
+      maxWidthOrHeight: maxWidth, // 가로세로 최대 maxWidth 리사이징
+      useWebWorker: true,
+      fileType: "image/webp", // WebP 포맷으로 변환 강제
+      initialQuality: quality
     };
-    img.src = URL.createObjectURL(file);
-  });
+    // HEIC 및 고해상도 처리를 완벽하게 모바일 하드웨어 단에서 최적화 지원
+    const compressedBlob = await imageCompression(file, options);
+    return new File([compressedBlob], file.name.replace(/\.[^/.]+$/, "") + ".webp", {
+      type: "image/webp"
+    });
+  } catch (error) {
+    console.error("압축 실패, 원본 업로드:", error);
+    return file;
+  }
+};
 
 const formatPhone = (v: string) => {
   const r = v.replace(/[^0-9]/g, "");

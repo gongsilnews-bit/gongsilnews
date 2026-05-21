@@ -35,6 +35,11 @@ export default function MobileBoardReadClient({
   const [guestName, setGuestName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // 이전글/다음글 이동 등으로 comments가 변경되면 상태를 동기화
+  useEffect(() => {
+    setLocalComments(comments || []);
+  }, [comments]);
+
   useEffect(() => {
     async function checkAuth() {
       if (serverUserLevel !== undefined) {

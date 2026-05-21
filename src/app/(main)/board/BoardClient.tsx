@@ -91,6 +91,11 @@ export default function BoardClient({ board, initialPosts, serverUser, serverUse
   
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  // 페이지 이동 시 initialPosts 변경을 감지하여 posts 상태를 강제 동기화
+  React.useEffect(() => {
+    setPosts(initialPosts);
+  }, [initialPosts]);
+
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 2500);

@@ -50,6 +50,11 @@ export default function BoardReadClient({
   const [commentText, setCommentText] = useState("");
   const [guestName, setGuestName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // 이전글/다음글 이동 등으로 initialComments가 변경되면 상태를 동기화
+  useEffect(() => {
+    setComments(initialComments);
+  }, [initialComments]);
   const [currentUser, setCurrentUser] = useState<any>(serverUser ?? null);
   const [userLevel, setUserLevel] = useState<number>(serverUserLevel ?? 0);
   const [isLevelChecking, setIsLevelChecking] = useState(!serverUser && !serverUserLevel);
