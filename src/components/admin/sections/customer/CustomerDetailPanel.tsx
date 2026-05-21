@@ -129,7 +129,7 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
               style={{
                 height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, 
                 fontSize: 14, fontWeight: 700,
-                color: customer.status === "신규" ? "#ef4444" : customer.status === "진행중" ? "#3b82f6" : customer.status === "계약완료" ? "#10b981" : "#9ca3af",
+                color: textPrimary,
                 background: darkMode ? "#1f2023" : "#fff", outline: "none", flex: 1
             }}>
               <option value="신규">신규 유입</option>
