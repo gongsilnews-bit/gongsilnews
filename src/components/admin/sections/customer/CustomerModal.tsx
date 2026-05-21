@@ -30,8 +30,27 @@ export default function CustomerModal({ theme, memberId, onClose, onSave }: Cust
     notes: ""               // 상담 메모
   });
 
+  // 연락처 한국형 하이픈 자동 연동 포맷터
+  const formatPhone = (value: string) => {
+    const clean = value.replace(/[^0-9]/g, "");
+    if (clean.startsWith("02")) {
+      if (clean.length <= 2) return clean;
+      if (clean.length <= 5) return `${clean.slice(0, 2)}-${clean.slice(2)}`;
+      if (clean.length <= 9) return `${clean.slice(0, 2)}-${clean.slice(2, 5)}-${clean.slice(5)}`;
+      return `${clean.slice(0, 2)}-${clean.slice(2, 6)}-${clean.slice(6, 10)}`;
+    }
+    if (clean.length <= 3) return clean;
+    if (clean.length <= 7) return `${clean.slice(0, 3)}-${clean.slice(3)}`;
+    if (clean.length <= 10) return `${clean.slice(0, 3)}-${clean.slice(3, 6)}-${clean.slice(6)}`;
+    return `${clean.slice(0, 3)}-${clean.slice(3, 7)}-${clean.slice(7, 11)}`;
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    let { name, value } = e.target;
+    if (name === "phone") {
+      value = formatPhone(value);
+    }
+    setFormData({ ...formData, [name]: value });
   };
 
   const handleSave = async () => {
