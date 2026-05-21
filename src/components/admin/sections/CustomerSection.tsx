@@ -162,7 +162,7 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
               ? dbCustomers.filter(c => c.status !== "휴지통").length 
               : dbCustomers.filter(c => c.status === tab).length;
             const badgeColor = tab === "전체" ? "#e5e7eb" 
-                             : tab === "신규" ? "#ef4444" 
+                             : tab === "신규" ? "#8b5cf6" 
                              : tab === "진행중" ? "#3b82f6" 
                              : tab === "계약완료" ? "#10b981" 
                              : tab === "휴지통" ? "#6b7280"
@@ -232,7 +232,7 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
               ) : filteredCustomers.map((row, index) => {
                 const dateStr = new Date(row.created_at).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' });
                 const isNew = row.status === "신규";
-                const badgeColor = row.status === "신규" ? "#ef4444" : row.status === "진행중" ? "#3b82f6" : row.status === "계약완료" ? "#10b981" : "#9ca3af";
+                const badgeColor = row.status === "신규" ? "#8b5cf6" : row.status === "진행중" ? "#3b82f6" : row.status === "계약완료" ? "#10b981" : "#9ca3af";
                 const serialNum = filteredCustomers.length - index;
 
                 return (
