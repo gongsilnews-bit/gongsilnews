@@ -184,3 +184,105 @@ export async function getRelatedCustomers(phone: string, currentCustomerId: stri
 
   return { success: true, data };
 }
+
+export async function registerIncomingInquiry(ownerId: string, data: {
+  name: string;
+  phone: string;
+  type: string;
+  budget?: string;
+  area?: string;
+  source: string;
+  notes?: string;
+  is_registered_member?: boolean;
+  target_vacancy_id?: string;
+  source_flyer_id?: string;
+}) {
+  const supabase = getAdminClient();
+  
+  // 1. 소속 부동산 ID 찾기
+  const { data: agency } = await supabase.from("agencies").select("id").eq("owner_id", ownerId).single();
+  if (!agency) return { success: false, message: "부동산 정보를 찾을 수 없습니다." };
+
+  // 2. 동일 연락처 중복 여부 확인
+  const { data: existingCustomer } = await supabase
+    .from("crm_customers")
+    .select("*")
+    .eq("agency_id", agency.id)
+    .eq("phone", data.phone)
+    .limit(1);
+
+  let customer = existingCustomer && existingCustomer.length > 0 ? existingCustomer[0] : null;
+
+  if (customer) {
+    // [중복된 경우]: 기존 고객 상태를 "신규"로 복구하고 최신 유입 정보 갱신
+    const { data: updatedCustomer, error: updateError } = await supabase
+      .from("crm_customers")
+      .update({
+        status: "신규",
+        is_registered_member: data.is_registered_member ?? customer.is_registered_member,
+        target_vacancy_id: data.target_vacancy_id ?? customer.target_vacancy_id,
+        source_flyer_id: data.source_flyer_id ?? customer.source_flyer_id,
+        source: data.source
+      })
+      .eq("id", customer.id)
+      .select()
+      .single();
+
+    if (updateError) {
+      console.error("Error updating existing customer during inquiry:", updateError);
+      return { success: false, message: updateError.message };
+    }
+    
+    customer = updatedCustomer;
+
+    // 추가 의뢰 로그 등록
+    let logContent = `[🖥️ 추가 문의 자동 연동]\n• 유입 경로: ${data.source}\n`;
+    if (data.area) logContent += `• 희망 조건: ${data.area}\n`;
+    if (data.budget) logContent += `• 희망 예산: ${data.budget}\n`;
+    if (data.notes) logContent += `• 접수 메시지:\n${data.notes}`;
+
+    await supabase.from("crm_logs").insert([{
+      customer_id: customer.id,
+      type: "memo",
+      content: logContent
+    }]);
+  } else {
+    // [신규 고객인 경우]: 신규 레코드 생성
+    const { data: newCustomer, error: insertError } = await supabase
+      .from("crm_customers")
+      .insert([{
+        agency_id: agency.id,
+        name: data.name,
+        phone: data.phone,
+        type: data.type,
+        budget: data.budget || "금액 조건 없음",
+        area: data.area || "지역 미정",
+        source: data.source,
+        status: "신규",
+        is_registered_member: data.is_registered_member || false,
+        target_vacancy_id: data.target_vacancy_id || null,
+        source_flyer_id: data.source_flyer_id || null
+      }])
+      .select()
+      .single();
+
+    if (insertError) {
+      console.error("Error creating new customer from inquiry:", insertError);
+      return { success: false, message: insertError.message };
+    }
+
+    customer = newCustomer;
+
+    // 최초 의뢰 로그 등록
+    let logContent = `[🖥️ 첫 문의 자동 연동]\n• 유입 경로: ${data.source}\n`;
+    if (data.notes) logContent += `• 접수 메시지:\n${data.notes}`;
+
+    await supabase.from("crm_logs").insert([{
+      customer_id: customer.id,
+      type: "memo",
+      content: logContent
+    }]);
+  }
+
+  return { success: true, data: customer };
+}
