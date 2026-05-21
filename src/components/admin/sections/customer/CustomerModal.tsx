@@ -81,7 +81,7 @@ export default function CustomerModal({ theme, memberId, customer, onClose, onSa
         phone: customer.phone || "",
         role,
         property_type,
-        source: customer.source || "오프라인(워크인)",
+        source: customer.source || "오프라인",
         transaction_type,
         price_buy,
         price_deposit,
@@ -100,7 +100,7 @@ export default function CustomerModal({ theme, memberId, customer, onClose, onSa
       phone: "",
       role: "매물구해요",
       property_type: "아파트",
-      source: "오프라인(워크인)",
+      source: "오프라인",
       transaction_type: "월세",
       price_buy: "",
       price_deposit: "",
@@ -325,9 +325,10 @@ export default function CustomerModal({ theme, memberId, customer, onClose, onSa
               </label>
               <select name="source" value={formData.source} onChange={handleChange}
                 style={{ width: "100%", height: 42, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 8, background: darkMode ? "#1f2023" : "#fff", color: textPrimary, outline: "none", fontSize: 14, fontWeight: 700 }}>
-                <option value="전화 문의">전화 문의</option>
-                <option value="오프라인(워크인)">오프라인(워크인)</option>
-                <option value="네이버 광고">네이버 광고</option>
+                <option value="오프라인">오프라인</option>
+                <option value="네이버광고">네이버광고</option>
+                <option value="공실뉴스">공실뉴스</option>
+                <option value="기타">기타</option>
               </select>
             </div>
           </div>
