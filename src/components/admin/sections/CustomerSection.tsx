@@ -82,9 +82,9 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
 
       {/* 필터 검색 바 (독립 컨테이너로 위로 분리) */}
       <div style={{ padding: "16px 24px", background: cardBg, borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", marginBottom: 20, display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
           <span style={{ fontSize: 13, fontWeight: 700, color: textPrimary, whiteSpace: "nowrap", marginRight: 4 }}>고객 구분</span>
-          {["전체", "매수", "임차(전월세)", "매도", "임대(전월세)"].map(type => (
+          {["전체", "매수", "임차(전월세)", "매도", "임대(전월세)", "임대인", "공동중개"].map(type => (
             <button 
               key={type}
               onClick={() => toggleSearchType(type)}
@@ -97,7 +97,7 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
                 color: searchTypes.includes(type) ? "#3b82f6" : textSecondary
               }}
             >
-              {type === "전체" ? "전체" : type === "매수" ? "매수" : type === "임차(전월세)" ? "임차(월세/전세)" : type === "매도" ? "매도" : "임대(월세/전세)"}
+              {type === "전체" ? "전체" : type === "매수" ? "매수" : type === "임차(전월세)" ? "임차(월세)" : type === "매도" ? "매도" : type === "임대(전월세)" ? "임대(월세)" : type === "임대인" ? "임대인(건물주) 🏢" : "공동중개 🤝"}
             </button>
           ))}
         </div>
@@ -220,8 +220,39 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
                         {row.status}
                       </span>
                     </td>
-                    <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, fontWeight: 700, color: textSecondary }}>
-                      {row.type}
+                    <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
+                      <span style={{ 
+                        display: "inline-block", 
+                        padding: "4px 12px", 
+                        borderRadius: 30, 
+                        fontSize: 12, 
+                        fontWeight: 700,
+                        background: row.type.includes("임차") || row.type === "매수"
+                          ? (darkMode ? "rgba(59, 130, 246, 0.15)" : "#eff6ff")
+                          : row.type.includes("임대") || row.type.includes("임대인")
+                          ? (darkMode ? "rgba(16, 185, 129, 0.15)" : "#ecfdf5")
+                          : row.type === "공동중개"
+                          ? (darkMode ? "rgba(139, 92, 246, 0.15)" : "#f5f3ff")
+                          : (darkMode ? "rgba(245, 158, 11, 0.15)" : "#fffbeb"),
+                        color: row.type.includes("임차") || row.type === "매수"
+                          ? "#3b82f6"
+                          : row.type.includes("임대") || row.type.includes("임대인")
+                          ? "#10b981"
+                          : row.type === "공동중개"
+                          ? "#8b5cf6"
+                          : "#f59e0b",
+                        border: `1px solid ${
+                          row.type.includes("임차") || row.type === "매수"
+                            ? "rgba(59, 130, 246, 0.2)"
+                            : row.type.includes("임대") || row.type.includes("임대인")
+                            ? "rgba(16, 185, 129, 0.2)"
+                            : row.type === "공동중개"
+                            ? "rgba(139, 92, 246, 0.2)"
+                            : "rgba(245, 158, 11, 0.2)"
+                        }`
+                      }}>
+                        {row.type === "임대인" ? "🏢 임대인(건물주)" : row.type === "공동중개" ? "🤝 공동중개" : row.type}
+                      </span>
                     </td>
                     <td style={{ padding: "16px 10px", verticalAlign: "middle" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>

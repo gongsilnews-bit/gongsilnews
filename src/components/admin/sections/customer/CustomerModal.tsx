@@ -107,6 +107,8 @@ export default function CustomerModal({ theme, memberId, onClose, onSave }: Cust
                 <option value="임차(전월세)">임차(전월세) 찾음</option>
                 <option value="매도">매도 내놓음</option>
                 <option value="임대(전월세)">임대 내놓음</option>
+                <option value="임대인">🏢 임대인 (건물주)</option>
+                <option value="공동중개">🤝 공동중개 (부동산)</option>
               </select>
             </div>
             <div style={{ flex: 1 }}>

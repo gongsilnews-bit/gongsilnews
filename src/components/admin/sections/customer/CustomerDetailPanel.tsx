@@ -144,6 +144,91 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
           </div>
         </div>
 
+        {/* 🌟 [공실 CRM 플러스] 유형별 B2B 프리미엄 특화 액션 카드 */}
+        {customer.type === "임대인" || customer.type.includes("임대") || customer.type.includes("매도") ? (
+          /* 🏢 [임대인 / 매도 공급측] 원클릭 공실등록 매핑 배너 */
+          <div style={{ padding: "20px 24px", borderBottom: `8px solid ${darkMode ? "#1f2023" : "#f1f5f9"}`, background: darkMode ? "#1c2c22" : "#f0fdf4" }}>
+            <h4 style={{ margin: "0 0 8px 0", fontSize: 14, fontWeight: 800, color: "#10b981", display: "flex", alignItems: "center", gap: 6 }}>
+              🏢 임대인 의뢰 광고 연동 서비스
+            </h4>
+            <p style={{ margin: "0 0 14px 0", fontSize: 12, color: darkMode ? "#a7f3d0" : "#047857", lineHeight: 1.5, fontWeight: 600 }}>
+              접수된 매물의 상세 스펙(주소, 의뢰인 연락처, 예산 등)을 그대로 전송하여 3초 만에 <b>공실뉴스 광고 매물</b>로 등록할 수 있습니다.
+            </p>
+            <button 
+              onClick={() => {
+                const prefillParams = new URLSearchParams({
+                  menu: "gongsil",
+                  action: "write",
+                  prefill_name: customer.name,
+                  prefill_phone: customer.phone,
+                  prefill_area: customer.area,
+                  prefill_budget: customer.budget
+                }).toString();
+                alert(`🎉 [공실 CRM 플러스] 임대인 매물 데이터를 자동 연동하였습니다!\n\n• 임대인: ${customer.name}\n• 연락처: ${customer.phone}\n• 의뢰주소: ${customer.area}\n• 희망예산: ${customer.budget}\n\n확인 버튼을 누르면 공실광고 등록 화면으로 이동합니다.`);
+                window.location.href = `/realty_admin?${prefillParams}`;
+              }}
+              style={{
+                width: "100%", height: 38, background: "#10b981", color: "#fff",
+                border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700,
+                cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                boxShadow: "0 2px 4px rgba(16, 185, 129, 0.2)", transition: "all 0.2s"
+              }}
+            >
+              ⚡ 공실광고 즉시 등록하기 (양식 자동 완성)
+            </button>
+          </div>
+        ) : (
+          /* 🎁 [임차 / 매수 / 공동중개 수요측] AI 전단지 맞춤 매칭 제안 카드 */
+          <div style={{ padding: "20px 24px", borderBottom: `8px solid ${darkMode ? "#1f2023" : "#f1f5f9"}`, background: darkMode ? "#1a2536" : "#f0f7ff" }}>
+            <h4 style={{ margin: "0 0 8px 0", fontSize: 14, fontWeight: 800, color: "#3b82f6", display: "flex", alignItems: "center", gap: 6 }}>
+              🎁 AI 스마트 전단지 맞춤 제안
+            </h4>
+            <p style={{ margin: "0 0 12px 0", fontSize: 12, color: darkMode ? "#93c5fd" : "#1d4ed8", lineHeight: 1.5, fontWeight: 600 }}>
+              내가 기존에 제작한 부동산 AI 전단지(EasyFlyer AI)를 선택하여 카톡/문자 전송용 브리핑 링크를 생성합니다.
+            </p>
+            
+            <div style={{ marginBottom: 12 }}>
+              <select 
+                style={{
+                  width: "100%", height: 38, border: `1px solid ${border}`, borderRadius: 6,
+                  fontSize: 13, fontWeight: 600, color: textPrimary, background: darkMode ? "#1f2023" : "#fff",
+                  outline: "none", padding: "0 10px"
+                }}
+                defaultValue="1"
+              >
+                <option value="1">📝 [전단지] 강남 테헤란 원룸 풀옵션 (보증금 1천 / 월세 95)</option>
+                <option value="2">📝 [전단지] 서초 신축 아파트 쓰리룸 (보증금 5억 / 전세)</option>
+                <option value="3">📝 [전단지] 논현동 먹자골목 코너 상가 1층 (보증금 5천 / 월세 350)</option>
+              </select>
+            </div>
+
+            <div style={{ display: "flex", gap: 8 }}>
+              <input 
+                type="text" 
+                readOnly
+                value={`https://gongsilnews.com/marketing/ai-detail/index.html?vacancy_id=4c178199-5c6a-4d92-bb8f-8d26ea3309bd&c_id=${customerId}`}
+                style={{
+                  flex: 1, height: 38, padding: "0 10px", border: `1px solid ${border}`, borderRadius: 6,
+                  fontSize: 12, color: textSecondary, background: darkMode ? "#1f2023" : "#f8fafc", outline: "none"
+                }}
+              />
+              <button 
+                onClick={() => {
+                  navigator.clipboard.writeText(`[공실뉴스 맞춤형 매물 안내]\n김정민 공인중개사가 제안해 드리는 맞춤형 모바일 스마트 전단지입니다. 아래 링크에서 상세 사진 및 정보를 편하게 확인해 보세요! 🏠\n\nhttps://gongsilnews.com/marketing/ai-detail/index.html?vacancy_id=4c178199-5c6a-4d92-bb8f-8d26ea3309bd&c_id=${customerId}`);
+                  alert("🎉 [공실 CRM 플러스] 스마트 전단지 모바일 브리핑 링크가 복사되었습니다!\n\n카카오톡 대화창이나 휴대폰 문자 메시지에 바로 붙여넣기(Ctrl+V) 하여 전송해 주세요.");
+                }}
+                style={{
+                  height: 38, padding: "0 14px", background: "#3b82f6", color: "#fff",
+                  border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700,
+                  cursor: "pointer", whiteSpace: "nowrap"
+                }}
+              >
+                📋 링크 복사
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* 타임라인 (메모) 영역 */}
         <div style={{ flex: 1, overflowY: "auto", padding: "24px", background: darkMode ? "#222" : "#fff", display: "flex", flexDirection: "column" }}>
           <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 800, color: textPrimary }}>상담 타임라인 (메모)</h3>
