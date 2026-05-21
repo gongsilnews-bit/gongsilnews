@@ -217,6 +217,7 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
                 <th style={{ padding: "12px 10px", textAlign: "left", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 180 }}>이름 / 연락처</th>
                 <th style={{ padding: "12px 10px", textAlign: "left", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 180 }}>희망지역</th>
                 <th style={{ padding: "12px 10px", textAlign: "left", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 180 }}>의뢰예산</th>
+                <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 100 }}>입주일</th>
                 <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 120 }}>유입경로</th>
                 <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 100 }}>접수일</th>
                 <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 110 }}>관리</th>
@@ -224,9 +225,9 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={9} style={{ padding: 40, textAlign: "center", color: textSecondary, fontSize: 14 }}>문의 데이터를 불러오는 중입니다...</td></tr>
+                <tr><td colSpan={10} style={{ padding: 40, textAlign: "center", color: textSecondary, fontSize: 14 }}>문의 데이터를 불러오는 중입니다...</td></tr>
               ) : filteredCustomers.length === 0 ? (
-                <tr><td colSpan={9} style={{ padding: 40, textAlign: "center", color: textSecondary, fontSize: 14 }}>조건에 맞는 문의가 없습니다.</td></tr>
+                <tr><td colSpan={10} style={{ padding: 40, textAlign: "center", color: textSecondary, fontSize: 14 }}>조건에 맞는 문의가 없습니다.</td></tr>
               ) : filteredCustomers.map((row, index) => {
                 const dateStr = new Date(row.created_at).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' });
                 const isNew = row.status === "신규";
@@ -286,14 +287,10 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
                           const parts = row.area.split(" / ");
                           const propType = parts[0];
                           const areaText = parts[1] || "";
-                          const moveIn = parts[2] || "";
                           return (
-                            <div>
-                              <div style={{ fontWeight: 800, color: textPrimary, fontSize: 14, marginBottom: 2 }}>
-                                <span style={{ color: textSecondary, fontWeight: 700, marginRight: 6 }}>[{propType}]</span>
-                                {areaText}
-                              </div>
-                              {moveIn && <div style={{ fontSize: 12, color: textSecondary, fontWeight: 600 }}>{moveIn}</div>}
+                            <div style={{ fontWeight: 800, color: textPrimary, fontSize: 14 }}>
+                              <span style={{ color: textSecondary, fontWeight: 700, marginRight: 6 }}>[{propType}]</span>
+                              {areaText}
                             </div>
                           );
                         }
@@ -310,6 +307,28 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
                           ? "#ef4444"
                           : textSecondary
                       }}>{row.budget}</div>
+                    </td>
+                    <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
+                      {(() => {
+                        if (row.area && row.area.includes(" / ")) {
+                          const parts = row.area.split(" / ");
+                          const moveIn = parts[2] || "";
+                          return (
+                            <span style={{ 
+                              display: "inline-block", 
+                              padding: "4px 8px", 
+                              borderRadius: 6, 
+                              background: darkMode ? "#232428" : "#f1f5f9",
+                              color: textPrimary,
+                              fontSize: 12,
+                              fontWeight: 700
+                            }}>
+                              {moveIn || "-"}
+                            </span>
+                          );
+                        }
+                        return <span style={{ color: textSecondary, fontSize: 12 }}>-</span>;
+                      })()}
                     </td>
                     <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
                       <span style={{
