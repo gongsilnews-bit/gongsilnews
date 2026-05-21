@@ -96,10 +96,8 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
   const dt = new Date(customer.created_at);
   const dateStr = dt.toLocaleDateString() + ' ' + dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-  // 3. 첫 메모 및 추가 메모 파싱
-  const allNotes = memos.filter(memo => memo.type !== "system");
-  const firstMemo = allNotes[0]?.content || "최초 접수 상담 메모 없음";
-  const additionalNotes = allNotes.slice(1).reverse();
+  // 3. 상담 메모 파싱 (전체 메모를 역순으로 렌더링)
+  const allNotes = memos.filter(memo => memo.type !== "system").reverse();
 
   return (
     <div style={{
@@ -199,20 +197,6 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
             
             <div style={{ color: textSecondary, fontWeight: 700 }}>접수일</div>
             <div style={{ color: textPrimary, fontWeight: 800 }}>{dateStr}</div>
-
-            <div style={{ color: textSecondary, fontWeight: 700 }}>첫 메모</div>
-            <div style={{ 
-              color: textPrimary, 
-              fontWeight: 700, 
-              background: darkMode ? "#2c2d31" : "#f8fafc", 
-              padding: "12px 16px", 
-              borderRadius: 10, 
-              border: `1px solid ${border}`,
-              lineHeight: 1.5,
-              fontSize: 14
-            }}>
-              {firstMemo}
-            </div>
           </div>
         </div>
 
@@ -251,9 +235,9 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
           </div>
         )}
 
-        {/* 추가 메모 영역 */}
+        {/* 상담 메모 영역 */}
         <div style={{ flex: 1, overflowY: "auto", padding: "24px", background: darkMode ? "#222" : "#fff", display: "flex", flexDirection: "column" }}>
-          <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 800, color: textPrimary }}>추가 메모</h3>
+          <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 800, color: textPrimary }}>상담 메모</h3>
           
           {/* 메모 입력창 (상단 배치) */}
           <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 24, padding: "16px", background: darkMode ? "#2c2d31" : "#f8fafc", borderRadius: 12, border: `1px solid ${border}` }}>
@@ -269,14 +253,14 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
             </div>
           </div>
 
-          {/* 추가 메모 리스트 (하단 배치) */}
+          {/* 상담 메모 리스트 (하단 배치) */}
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {additionalNotes.length === 0 ? (
+            {allNotes.length === 0 ? (
               <div style={{ fontSize: 14, color: textSecondary, textAlign: "center", padding: "20px 0" }}>
-                등록된 추가 메모가 없습니다.
+                등록된 상담 메모가 없습니다.
               </div>
             ) : (
-              additionalNotes.map(memo => {
+              allNotes.map(memo => {
                 const dt = new Date(memo.created_at);
                 const dateStr = dt.toLocaleDateString() + ' ' + dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                 return (
