@@ -27,13 +27,17 @@ export default function CustomerModal({ theme, memberId, customer, onClose, onSa
         role = "기타";
       }
 
-      // 2. property_type & area 분석
+      // 2. property_type, area & move_in_condition 분석
       let property_type = "아파트";
       let area = customer.area || "";
+      let move_in_condition = "즉시 입주 / 협의 가능";
       if (customer.area && customer.area.includes(" / ")) {
         const parts = customer.area.split(" / ");
         property_type = parts[0];
-        area = parts.slice(1).join(" / ");
+        area = parts[1] || "";
+        if (parts[2]) {
+          move_in_condition = parts[2];
+        }
       }
 
       // 3. budget & transaction_type 분석
@@ -85,6 +89,7 @@ export default function CustomerModal({ theme, memberId, customer, onClose, onSa
         price_maintenance,
         budget,
         area,
+        move_in_condition,
         notes: ""
       };
     }
@@ -102,6 +107,7 @@ export default function CustomerModal({ theme, memberId, customer, onClose, onSa
       price_maintenance: "",
       budget: "",
       area: "",
+      move_in_condition: "즉시 입주 / 협의 가능",
       notes: ""
     };
   });
@@ -146,8 +152,8 @@ export default function CustomerModal({ theme, memberId, customer, onClose, onSa
     const typeLabel = formData.role;
     
     const areaLabel = formData.property_type 
-      ? `${formData.property_type} / ${formData.area || "지역미정"}`
-      : formData.area || "지역미정";
+      ? `${formData.property_type} / ${formData.area || "지역미정"} / ${formData.move_in_condition || "즉시 입주 / 협의 가능"}`
+      : `${formData.area || "지역미정"} / ${formData.move_in_condition || "즉시 입주 / 협의 가능"}`;
 
     let budgetString = "";
     if (formData.role === "매물구해요" || formData.role === "매물내놔요") {
@@ -226,7 +232,7 @@ export default function CustomerModal({ theme, memberId, customer, onClose, onSa
     ? "보유 건물 주소 (상세호수) *"
     : formData.role === "기타"
     ? "관련 지역 / 주소"
-    : "희망 지역 / 입주 조건 *";
+    : "희망 지역 *";
 
   const areaPlaceholderText = formData.role === "매물내놔요"
     ? "예: 서초동 아크로빌라 102호"
@@ -313,10 +319,8 @@ export default function CustomerModal({ theme, memberId, customer, onClose, onSa
               <select name="source" value={formData.source} onChange={handleChange}
                 style={{ width: "100%", height: 42, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 8, background: darkMode ? "#1f2023" : "#fff", color: textPrimary, outline: "none", fontSize: 14, fontWeight: 700 }}>
                 <option value="전화 문의">전화 문의</option>
-                <option value="오프라인(워크인)">오프라인 (워크인 방문)</option>
-                <option value="네이버 광고">네이버 광고 (플레이스 등)</option>
-                <option value="공실뉴스">공실뉴스 웹사이트</option>
-                <option value="기타">기타 경로</option>
+                <option value="오프라인(워크인)">오프라인(워크인)</option>
+                <option value="네이버 광고">네이버 광고</option>
               </select>
             </div>
           </div>
@@ -449,6 +453,18 @@ export default function CustomerModal({ theme, memberId, customer, onClose, onSa
               style={{ width: "100%", height: 42, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 8, background: darkMode ? "#1f2023" : "#fff", color: textPrimary, outline: "none", fontSize: 14 }} 
             />
           </div>
+
+          {/* 입주 조건 입력 필드 */}
+          {(formData.role === "매물구해요" || formData.role === "매물내놔요") && (
+            <div>
+              <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: textSecondary, marginBottom: 8 }}>
+                입주 조건 <span style={{ color: "#ef4444" }}>*</span>
+              </label>
+              <input type="text" name="move_in_condition" value={formData.move_in_condition} onChange={handleChange} placeholder="예: 즉시 입주 / 협의 가능"
+                style={{ width: "100%", height: 42, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 8, background: darkMode ? "#1f2023" : "#fff", color: textPrimary, outline: "none", fontSize: 14 }} 
+              />
+            </div>
+          )}
 
 
           
