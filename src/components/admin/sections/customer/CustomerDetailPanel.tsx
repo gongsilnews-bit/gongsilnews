@@ -152,8 +152,8 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
           </div>
         </div>
 
-        {/* [공실 CRM 플러스] 유형별 B2B 프리미엄 특화 액션 카드 */}
-        {customer.type === "임대인" || customer.type.includes("임대") || customer.type.includes("매도") ? (
+        {/* [공실 CRM 플러스] 유형별 B2B 프리미엄 특화 액션 카드 (임대인 전용) */}
+        {(customer.type === "임대인" || customer.type.includes("임대") || customer.type.includes("매도")) && (
           /* [임대인 / 매도 공급측] 원클릭 공실등록 매핑 배너 */
           <div style={{ padding: "20px 24px", borderBottom: `8px solid ${darkMode ? "#1f2023" : "#f1f5f9"}`, background: darkMode ? "#1c2c22" : "#f0fdf4" }}>
             <h4 style={{ margin: "0 0 8px 0", fontSize: 14, fontWeight: 800, color: "#10b981", display: "flex", alignItems: "center", gap: 6 }}>
@@ -184,68 +184,6 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
             >
               공실광고 즉시 등록하기 (양식 자동 완성)
             </button>
-          </div>
-        ) : (
-          /* [임차 / 매수 / 공동중개 수요측] AI 전단지 맞춤 매칭 제안 카드 */
-          <div style={{ padding: "20px 24px", borderBottom: `8px solid ${darkMode ? "#1f2023" : "#f1f5f9"}`, background: darkMode ? "#1a2536" : "#f0f7ff" }}>
-            <h4 style={{ margin: "0 0 8px 0", fontSize: 14, fontWeight: 800, color: "#3b82f6", display: "flex", alignItems: "center", gap: 6 }}>
-              🎁 AI 스마트 전단지 맞춤 제안
-            </h4>
-            <p style={{ margin: "0 0 12px 0", fontSize: 12, color: darkMode ? "#93c5fd" : "#1d4ed8", lineHeight: 1.5, fontWeight: 600 }}>
-              기제작된 부동산 AI 전단지(EasyFlyer)를 선택하여 고객 브리핑 링크를 실시간 공유합니다.
-            </p>
-            
-            <div style={{ marginBottom: 12 }}>
-              <select 
-                style={{
-                  width: "100%", height: 38, border: `1px solid ${border}`, borderRadius: 6,
-                  fontSize: 13, fontWeight: 600, color: textPrimary, background: darkMode ? "#1f2023" : "#fff",
-                  outline: "none", padding: "0 10px"
-                }}
-                value={selectedFlyer?.vacancy_id || ""}
-                onChange={(e) => {
-                  const flyer = flyers.find(f => f.vacancy_id === e.target.value);
-                  if (flyer) setSelectedFlyer(flyer);
-                }}
-              >
-                {flyers.length === 0 ? (
-                  <option value="">생성된 AI 전단지가 없습니다.</option>
-                ) : (
-                  flyers.map(f => (
-                    <option key={f.id} value={f.vacancy_id}>{f.title}</option>
-                  ))
-                )}
-              </select>
-            </div>
-
-            <div style={{ display: "flex", gap: 8 }}>
-              <input 
-                type="text" 
-                readOnly
-                value={selectedFlyer ? selectedFlyer.url : "생성된 AI 전단지가 없습니다."}
-                style={{
-                  flex: 1, height: 38, padding: "0 10px", border: `1px solid ${border}`, borderRadius: 6,
-                  fontSize: 12, color: textSecondary, background: darkMode ? "#1f2023" : "#f8fafc", outline: "none"
-                }}
-              />
-              <button 
-                onClick={() => {
-                  if (!selectedFlyer) {
-                    alert("선택된 전단지가 없습니다.");
-                    return;
-                  }
-                  navigator.clipboard.writeText(`[공실뉴스 맞춤형 매물 안내]\n${customer.name} 고객님을 위한 맞춤형 모바일 스마트 전단지입니다. 아래 링크에서 상세 사진 및 정보를 편하게 확인해 보세요! 🏠\n\n${selectedFlyer.url}`);
-                  alert("[공실 CRM 플러스] 스마트 전단지 모바일 브리핑 링크가 복사되었습니다!\n\n카카오톡 대화창이나 휴대폰 문자 메시지에 바로 붙여넣기(Ctrl+V) 하여 전송해 주세요.");
-                }}
-                style={{
-                  height: 38, padding: "0 14px", background: "#3b82f6", color: "#fff",
-                  border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700,
-                  cursor: "pointer", whiteSpace: "nowrap"
-                }}
-              >
-                링크 복사
-              </button>
-            </div>
           </div>
         )}
 
