@@ -125,3 +125,45 @@ export async function updateCustomerStatus(customerId: string, newStatus: string
 
   return { success: true, data };
 }
+
+export async function updateCustomer(customerId: string, data: {
+  name: string;
+  phone?: string;
+  type?: string;
+  budget?: string;
+  area?: string;
+  source?: string;
+  status?: string;
+}) {
+  const supabase = getAdminClient();
+  const { data: customer, error } = await supabase
+    .from("crm_customers")
+    .update(data)
+    .eq("id", customerId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error updating customer:", error);
+    return { success: false, message: error.message };
+  }
+
+  return { success: true, data: customer };
+}
+
+export async function deleteCustomer(customerId: string) {
+  const supabase = getAdminClient();
+  // Delete logs first to satisfy foreign key constraints (if ON DELETE CASCADE is not set)
+  await supabase.from("crm_logs").delete().eq("customer_id", customerId);
+  const { error } = await supabase
+    .from("crm_customers")
+    .delete()
+    .eq("id", customerId);
+
+  if (error) {
+    console.error("Error deleting customer:", error);
+    return { success: false, message: error.message };
+  }
+
+  return { success: true };
+}

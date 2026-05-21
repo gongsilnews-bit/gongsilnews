@@ -20,6 +20,7 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
   const [searchTypes, setSearchTypes] = useState<string[]>(["전체"]);
   const [activeFilters, setActiveFilters] = useState({ keyword: "", types: ["전체"] });
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingCustomer, setEditingCustomer] = useState<any | null>(null);
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | string | null>(null);
 
   const [dbCustomers, setDbCustomers] = useState<any[]>([]);
@@ -32,6 +33,22 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
       setDbCustomers(res.data);
     }
     setLoading(false);
+  };
+
+  const handleDeleteCustomer = async (customerId: string) => {
+    if (!confirm("⚠️ 정말 이 고객 정보를 삭제하시겠습니까?\n삭제된 데이터는 복구할 수 없습니다.")) return;
+    try {
+      const { deleteCustomer } = await import("@/app/actions/customer");
+      const res = await deleteCustomer(customerId);
+      if (res.success) {
+        alert("🎉 고객 정보가 정상적으로 삭제되었습니다.");
+        fetchAllCustomers();
+      } else {
+        alert("⚠️ 삭제 실패: " + res.message);
+      }
+    } catch (err: any) {
+      alert("⚠️ 오류 발생: " + err.message);
+    }
   };
 
   useEffect(() => {
@@ -264,8 +281,36 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
                     </td>
                     <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
                       <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
-                        <button style={{ height: 30, padding: "0 10px", background: darkMode ? "#374151" : "#f1f5f9", color: textPrimary, border: "none", borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
-                          상세보기
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingCustomer(row);
+                            setIsModalOpen(true);
+                          }}
+                          style={{ 
+                            height: 30, padding: "0 10px", 
+                            background: "#4b5563", color: "#fff", 
+                            border: "none", borderRadius: 6, fontSize: 12, fontWeight: 700, 
+                            cursor: "pointer", display: "flex", alignItems: "center", gap: 4,
+                            whiteSpace: "nowrap" 
+                          }}
+                        >
+                          📝 수정
+                        </button>
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteCustomer(row.id);
+                          }}
+                          style={{ 
+                            height: 30, padding: "0 10px", 
+                            background: darkMode ? "#1f2023" : "#fff", color: textSecondary, 
+                            border: `1px solid ${border}`, borderRadius: 6, fontSize: 12, fontWeight: 700, 
+                            cursor: "pointer", display: "flex", alignItems: "center", gap: 4,
+                            whiteSpace: "nowrap" 
+                          }}
+                        >
+                          🗑️ 삭제
                         </button>
                       </div>
                     </td>
@@ -287,7 +332,11 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
         <CustomerModal 
           theme={theme} 
           memberId={memberId} 
-          onClose={() => setIsModalOpen(false)} 
+          customer={editingCustomer}
+          onClose={() => {
+            setIsModalOpen(false);
+            setEditingCustomer(null);
+          }} 
           onSave={fetchAllCustomers} 
         />
       )}

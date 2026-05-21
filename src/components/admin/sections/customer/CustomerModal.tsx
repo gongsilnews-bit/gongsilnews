@@ -6,28 +6,104 @@ import { createCustomer } from "@/app/actions/customer";
 interface CustomerModalProps {
   theme: AdminTheme;
   memberId: string;
+  customer?: any; // 수정 모드일 때 전달받을 기존 고객 데이터
   onClose: () => void;
   onSave: () => void;
 }
 
-export default function CustomerModal({ theme, memberId, onClose, onSave }: CustomerModalProps) {
+export default function CustomerModal({ theme, memberId, customer, onClose, onSave }: CustomerModalProps) {
   const { bg, cardBg, textPrimary, textSecondary, darkMode, border } = theme;
   const [loading, setLoading] = useState(false);
   
-  const [formData, setFormData] = useState({
-    name: "",
-    phone: "",
-    role: "매물구해요",       // 손님 구분 (매물내놔요, 매물구해요, 공동중개, 기타)
-    property_type: "아파트", // 매물 구분
-    source: "오프라인(워크인)", // 유입 경로 (유입방법)
-    transaction_type: "월세", // 거래 구분 (매매, 전세, 월세)
-    price_buy: "",          // 매매가
-    price_deposit: "",      // 보증금 / 전세금
-    price_monthly: "",      // 월세
-    price_maintenance: "",  // 관리비
-    budget: "",             // 기타용 단일 금액 필드
-    area: "",               // 지역 / 주소
-    notes: ""               // 상담 메모
+  const [formData, setFormData] = useState(() => {
+    if (customer) {
+      // 1. role (유형) 분석
+      let role = "매물구해요";
+      if (customer.type?.includes("내놔요") || customer.type?.includes("임대") || customer.type?.includes("매도")) {
+        role = "매물내놔요";
+      } else if (customer.type?.includes("공동")) {
+        role = "공동중개";
+      } else if (customer.type?.includes("기타")) {
+        role = "기타";
+      }
+
+      // 2. property_type & area 분석
+      let property_type = "아파트";
+      let area = customer.area || "";
+      if (customer.area && customer.area.includes(" / ")) {
+        const parts = customer.area.split(" / ");
+        property_type = parts[0];
+        area = parts.slice(1).join(" / ");
+      }
+
+      // 3. budget & transaction_type 분석
+      let transaction_type = "월세";
+      let price_buy = "";
+      let price_deposit = "";
+      let price_monthly = "";
+      let price_maintenance = "";
+      let budget = "";
+
+      const budgetStr = customer.budget || "";
+      if (budgetStr.startsWith("[")) {
+        const match = budgetStr.match(/^\[(.*?)\]\s*(.*)$/);
+        if (match) {
+          transaction_type = match[1]; // "매매", "월세", "전세"
+          const details = match[2];
+          
+          if (transaction_type === "매매") {
+            const buyMatch = details.match(/매매\s+([^\(]+)/);
+            if (buyMatch) price_buy = buyMatch[1].trim();
+          } else if (transaction_type === "전세") {
+            const depMatch = details.match(/전세\(보증금\)\s+([^\(]+)/);
+            if (depMatch) price_deposit = depMatch[1].trim();
+          } else if (transaction_type === "월세") {
+            const wmMatch = details.match(/보증금\s+([^\/]+)\/([^\s\(]+)/);
+            if (wmMatch) {
+              price_deposit = wmMatch[1].trim();
+              price_monthly = wmMatch[2].trim();
+            }
+          }
+          
+          const maintMatch = details.match(/\(관비\s+([^\)]+)\)/);
+          if (maintMatch) price_maintenance = maintMatch[1].trim();
+        }
+      } else {
+        budget = budgetStr;
+      }
+
+      return {
+        name: customer.name || "",
+        phone: customer.phone || "",
+        role,
+        property_type,
+        source: customer.source || "오프라인(워크인)",
+        transaction_type,
+        price_buy,
+        price_deposit,
+        price_monthly,
+        price_maintenance,
+        budget,
+        area,
+        notes: ""
+      };
+    }
+    
+    return {
+      name: "",
+      phone: "",
+      role: "매물구해요",
+      property_type: "아파트",
+      source: "오프라인(워크인)",
+      transaction_type: "월세",
+      price_buy: "",
+      price_deposit: "",
+      price_monthly: "",
+      price_maintenance: "",
+      budget: "",
+      area: "",
+      notes: ""
+    };
   });
 
   // 연락처 한국형 하이픈 자동 연동 포맷터
@@ -67,15 +143,12 @@ export default function CustomerModal({ theme, memberId, onClose, onSave }: Cust
       return;
     }
     
-    // 구분(role) 값을 바로 type 컬럼에 매핑!
     const typeLabel = formData.role;
     
-    // 매물구분(property_type)을 지역(area) 필드와 슬래시로 결합하여 매핑!
     const areaLabel = formData.property_type 
       ? `${formData.property_type} / ${formData.area || "지역미정"}`
       : formData.area || "지역미정";
 
-    // 상세 거래 정보 문자열 구성! (예: "[월세] 보증금 5,000/120 (관비 10)")
     let budgetString = "";
     if (formData.role === "매물구해요" || formData.role === "매물내놔요") {
       const parts = [];
@@ -98,23 +171,49 @@ export default function CustomerModal({ theme, memberId, onClose, onSave }: Cust
     }
 
     setLoading(true);
-    const res = await createCustomer(memberId, {
-      name: formData.name,
-      phone: formData.phone,
-      type: typeLabel,
-      budget: budgetString,
-      area: areaLabel,
-      source: formData.source,
-      notes: formData.notes
-    });
-    setLoading(false);
-    
-    if (res.success) {
-      alert("🎉 고객 정보가 등록되었습니다!");
-      onSave(); // 부모 컴포넌트 데이터 갱신
-      onClose();
-    } else {
-      alert("오류가 발생했습니다: " + res.message);
+    try {
+      if (customer) {
+        // 수정 모드
+        const { updateCustomer } = await import("@/app/actions/customer");
+        const res = await updateCustomer(customer.id, {
+          name: formData.name,
+          phone: formData.phone,
+          type: typeLabel,
+          budget: budgetString,
+          area: areaLabel,
+          source: formData.source
+        });
+        setLoading(false);
+        if (res.success) {
+          alert("🎉 고객 정보가 수정되었습니다!");
+          onSave();
+          onClose();
+        } else {
+          alert("오류가 발생했습니다: " + res.message);
+        }
+      } else {
+        // 신규 등록 모드
+        const res = await createCustomer(memberId, {
+          name: formData.name,
+          phone: formData.phone,
+          type: typeLabel,
+          budget: budgetString,
+          area: areaLabel,
+          source: formData.source,
+          notes: formData.notes
+        });
+        setLoading(false);
+        if (res.success) {
+          alert("🎉 고객 정보가 등록되었습니다!");
+          onSave();
+          onClose();
+        } else {
+          alert("오류가 발생했습니다: " + res.message);
+        }
+      }
+    } catch (err: any) {
+      setLoading(false);
+      alert("⚠️ 에러가 발생했습니다: " + err.message);
     }
   };
 
@@ -160,7 +259,7 @@ export default function CustomerModal({ theme, memberId, onClose, onSave }: Cust
           background: darkMode ? "#2c2d31" : "#f9fafb"
         }}>
           <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: textPrimary, display: "flex", alignItems: "center", gap: 6 }}>
-            새 고객 등록
+            {customer ? "고객 정보 수정" : "새 고객 등록"}
           </h2>
           <button onClick={onClose} style={{
             background: "none", border: "none", fontSize: 24, 
@@ -353,13 +452,14 @@ export default function CustomerModal({ theme, memberId, onClose, onSave }: Cust
 
 
           
-          {/* 8. 첫 상담메모 */}
-          <div>
-            <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: textSecondary, marginBottom: 8 }}>첫 상담 메모</label>
-            <textarea name="notes" value={formData.notes} onChange={handleChange} placeholder="빠른 입주 희망, 반려동물 동반 등 상세 요구사항 메모..."
-              style={{ width: "100%", height: 80, padding: "12px", border: `1px solid ${border}`, borderRadius: 8, background: darkMode ? "#1f2023" : "#fff", color: textPrimary, outline: "none", resize: "none", fontFamily: "inherit", fontSize: 14 }} 
-            />
-          </div>
+          {!customer && (
+            <div>
+              <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: textSecondary, marginBottom: 8 }}>첫 상담 메모</label>
+              <textarea name="notes" value={formData.notes} onChange={handleChange} placeholder="빠른 입주 희망, 반려동물 동반 등 상세 요구사항 메모..."
+                style={{ width: "100%", height: 80, padding: "12px", border: `1px solid ${border}`, borderRadius: 8, background: darkMode ? "#1f2023" : "#fff", color: textPrimary, outline: "none", resize: "none", fontFamily: "inherit", fontSize: 14 }} 
+              />
+            </div>
+          )}
 
         </div>
 
@@ -384,7 +484,7 @@ export default function CustomerModal({ theme, memberId, onClose, onSave }: Cust
             boxShadow: "0 2px 4px rgba(59, 130, 246, 0.3)",
             opacity: loading ? 0.7 : 1, fontSize: 13
           }}>
-            {loading ? "등록 중..." : "고객 등록하기"}
+            {loading ? (customer ? "수정 중..." : "등록 중...") : (customer ? "수정 완료" : "고객 등록하기")}
           </button>
         </div>
       </div>
