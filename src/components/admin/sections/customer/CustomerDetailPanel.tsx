@@ -163,14 +163,14 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
         </div>
 
         {/* 상세 정보 테이블 요약 */}
-        <div style={{ padding: "20px 24px", borderBottom: `8px solid ${darkMode ? "#1f2023" : "#f1f5f9"}` }}>
-          <div style={{ display: "grid", gridTemplateColumns: "100px 1fr", gap: "10px", fontSize: 14 }}>
-            <div style={{ color: textSecondary, fontWeight: 600 }}>유입 경로</div>
-            <div style={{ color: textPrimary, fontWeight: 700 }}>{customer.source}</div>
-            <div style={{ color: textSecondary, fontWeight: 600 }}>희망 지역</div>
-            <div style={{ color: textPrimary, fontWeight: 700 }}>{customer.area}</div>
-            <div style={{ color: textSecondary, fontWeight: 600 }}>가용 예산</div>
-            <div style={{ color: textPrimary, fontWeight: 700 }}>{customer.budget}</div>
+        <div style={{ padding: "24px", borderBottom: `8px solid ${darkMode ? "#1f2023" : "#f1f5f9"}` }}>
+          <div style={{ display: "grid", gridTemplateColumns: "115px 1fr", gap: "14px", fontSize: 16 }}>
+            <div style={{ color: textSecondary, fontWeight: 700 }}>유입 경로</div>
+            <div style={{ color: textPrimary, fontWeight: 800 }}>{customer.source}</div>
+            <div style={{ color: textSecondary, fontWeight: 700 }}>희망 지역</div>
+            <div style={{ color: textPrimary, fontWeight: 800 }}>{customer.area}</div>
+            <div style={{ color: textSecondary, fontWeight: 700 }}>가용 예산</div>
+            <div style={{ color: textPrimary, fontWeight: 800 }}>{customer.budget}</div>
           </div>
         </div>
 
@@ -209,12 +209,42 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
           </div>
         )}
 
-        {/* 타임라인 (메모) 영역 */}
+        {/* 상담 메모 영역 */}
         <div style={{ flex: 1, overflowY: "auto", padding: "24px", background: darkMode ? "#222" : "#fff", display: "flex", flexDirection: "column" }}>
-          <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 800, color: textPrimary }}>상담 타임라인 (메모)</h3>
+          <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 800, color: textPrimary }}>상담 메모</h3>
           
-          {/* 메모 입력창 */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 24, padding: "16px", background: darkMode ? "#2c2d31" : "#f8fafc", borderRadius: 12, border: `1px solid ${border}` }}>
+          {/* 상담 메모 리스트 (상단 배치) */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
+            {memos.filter(memo => memo.type !== "system").length === 0 ? (
+              <div style={{ fontSize: 14, color: textSecondary, textAlign: "center", padding: "20px 0" }}>
+                등록된 상담 메모가 없습니다.
+              </div>
+            ) : (
+              memos.filter(memo => memo.type !== "system").map(memo => {
+                const dt = new Date(memo.created_at);
+                const dateStr = dt.toLocaleDateString() + ' ' + dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                return (
+                  <div key={memo.id} style={{ 
+                    padding: "16px", 
+                    background: darkMode ? "#2c2d31" : "#f8fafc", 
+                    borderRadius: 12, 
+                    border: `1px solid ${border}`,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 6
+                  }}>
+                    <div style={{ fontSize: 11, color: textSecondary, fontWeight: 700 }}>{dateStr}</div>
+                    <div style={{ fontSize: 14, color: textPrimary, fontWeight: 600, lineHeight: 1.5, whiteSpace: "pre-wrap" }}>
+                      {memo.content}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* 메모 입력창 (하단으로 배치 이동) */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "16px", background: darkMode ? "#2c2d31" : "#f8fafc", borderRadius: 12, border: `1px solid ${border}` }}>
             <textarea 
               value={newMemo} onChange={(e) => setNewMemo(e.target.value)}
               placeholder="상담 내용, 특이사항, 다음 약속일정 등을 자유롭게 남겨보세요."
@@ -225,35 +255,6 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
                 메모 남기기
               </button>
             </div>
-          </div>
-
-          {/* 타임라인 로그 리스트 */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            {/* 최근 순으로 뒤집어서 보여줌 */}
-            {[...memos].reverse().map(memo => {
-              const dt = new Date(memo.created_at);
-              const dateStr = dt.toLocaleDateString() + ' ' + dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-              return (
-                <div key={memo.id} style={{ display: "flex", gap: 12 }}>
-                  <div style={{ width: 2, background: border, position: "relative", marginTop: 8 }}>
-                    <div style={{ position: "absolute", top: 0, left: -4, width: 10, height: 10, borderRadius: "50%", background: memo.type === "system" ? "#9ca3af" : "#3b82f6" }} />
-                  </div>
-                  <div style={{ flex: 1, paddingBottom: 16 }}>
-                    <div style={{ fontSize: 12, color: textSecondary, marginBottom: 4, fontWeight: 600 }}>{dateStr}</div>
-                    <div style={{ 
-                      fontSize: 14, color: memo.type === "system" ? textSecondary : textPrimary,
-                      padding: memo.type === "system" ? 0 : "12px 16px",
-                      background: memo.type === "system" ? "transparent" : (darkMode ? "#2c2d31" : "#f8fafc"),
-                      borderRadius: memo.type === "system" ? 0 : 8,
-                      border: memo.type === "system" ? "none" : `1px solid ${border}`,
-                      fontStyle: memo.type === "system" ? "italic" : "normal"
-                    }}>
-                      {memo.content}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
           </div>
 
         </div>
