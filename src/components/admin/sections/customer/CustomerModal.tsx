@@ -157,21 +157,25 @@ export default function CustomerModal({ theme, memberId, customer, onClose, onSa
 
     let budgetString = "";
     if (formData.role === "매물구해요" || formData.role === "매물내놔요") {
-      const parts = [];
-      parts.push(`[${formData.transaction_type}]`);
-      if (formData.transaction_type === "매매" && formData.price_buy) {
-        parts.push(`매매 ${formData.price_buy}`);
-      } else if (formData.transaction_type === "전세" && formData.price_deposit) {
-        parts.push(`전세(보증금) ${formData.price_deposit}`);
-      } else if (formData.transaction_type === "월세") {
-        if (formData.price_deposit || formData.price_monthly) {
-          parts.push(`보증금 ${formData.price_deposit || 0}/${formData.price_monthly || 0}`);
+      if (formData.transaction_type === "기타") {
+        budgetString = `[기타] ${formData.budget || "금액 협의"}`;
+      } else {
+        const parts = [];
+        parts.push(`[${formData.transaction_type}]`);
+        if (formData.transaction_type === "매매" && formData.price_buy) {
+          parts.push(`매매 ${formData.price_buy}`);
+        } else if (formData.transaction_type === "전세" && formData.price_deposit) {
+          parts.push(`전세(보증금) ${formData.price_deposit}`);
+        } else if (formData.transaction_type === "월세") {
+          if (formData.price_deposit || formData.price_monthly) {
+            parts.push(`보증금 ${formData.price_deposit || 0}/${formData.price_monthly || 0}`);
+          }
         }
+        if (formData.price_maintenance) {
+          parts.push(`(관비 ${formData.price_maintenance})`);
+        }
+        budgetString = parts.join(" ") || "금액 협의";
       }
-      if (formData.price_maintenance) {
-        parts.push(`(관비 ${formData.price_maintenance})`);
-      }
-      budgetString = parts.join(" ") || "금액 협의";
     } else {
       budgetString = formData.budget || "금액 협의";
     }
@@ -348,11 +352,11 @@ export default function CustomerModal({ theme, memberId, customer, onClose, onSa
                 </select>
               </div>
 
-              {/* 거래구분 세그먼트 셀렉터 (매매, 전세, 월세) */}
+              {/* 거래구분 세그먼트 셀렉터 (매매, 전세, 월세, 기타) */}
               <div>
                 <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: textSecondary, marginBottom: 6 }}>거래 구분</label>
                 <div style={{ display: "flex", gap: 8 }}>
-                  {["매매", "전세", "월세"].map(type => {
+                  {["매매", "전세", "월세", "기타"].map(type => {
                     const isSelected = formData.transaction_type === type;
                     return (
                       <button
@@ -375,64 +379,97 @@ export default function CustomerModal({ theme, memberId, customer, onClose, onSa
                 </div>
               </div>
 
-              {/* 매매/보증금/월세/관리비 동적 그리드 */}
-              <div style={{ display: "flex", gap: 12 }}>
-                {formData.transaction_type === "매매" && (
-                  <div style={{ flex: 1 }}>
-                    <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: textSecondary, marginBottom: 6 }}>매매가</label>
-                    <input
-                      type="text"
-                      name="price_buy"
-                      value={formData.price_buy}
-                      onChange={handleChange}
-                      placeholder="예: 12억 또는 120,000"
-                      style={{ width: "100%", height: 38, padding: "0 10px", border: `1px solid ${border}`, borderRadius: 6, background: darkMode ? "#1f2023" : "#fff", color: textPrimary, fontSize: 13 }}
-                    />
-                  </div>
-                )}
-
-                {(formData.transaction_type === "전세" || formData.transaction_type === "월세") && (
-                  <div style={{ flex: 1 }}>
-                    <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: textSecondary, marginBottom: 6 }}>
-                      {formData.transaction_type === "전세" ? "전세금" : "보증금"}
-                    </label>
-                    <input
-                      type="text"
-                      name="price_deposit"
-                      value={formData.price_deposit}
-                      onChange={handleChange}
-                      placeholder="예: 5,000 또는 5억"
-                      style={{ width: "100%", height: 38, padding: "0 10px", border: `1px solid ${border}`, borderRadius: 6, background: darkMode ? "#1f2023" : "#fff", color: textPrimary, fontSize: 13 }}
-                    />
-                  </div>
-                )}
-
-                {formData.transaction_type === "월세" && (
-                  <div style={{ flex: 1 }}>
-                    <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: textSecondary, marginBottom: 6 }}>월세</label>
-                    <input
-                      type="text"
-                      name="price_monthly"
-                      value={formData.price_monthly}
-                      onChange={handleChange}
-                      placeholder="예: 120"
-                      style={{ width: "100%", height: 38, padding: "0 10px", border: `1px solid ${border}`, borderRadius: 6, background: darkMode ? "#1f2023" : "#fff", color: textPrimary, fontSize: 13 }}
-                    />
-                  </div>
-                )}
-
-                <div style={{ width: 110 }}>
-                  <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: textSecondary, marginBottom: 6 }}>관리비</label>
+              {/* 금액 입력 영역 */}
+              {formData.transaction_type === "기타" ? (
+                <div>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: textSecondary, marginBottom: 6 }}>금액 / 예산 조건</label>
                   <input
                     type="text"
-                    name="price_maintenance"
-                    value={formData.price_maintenance}
+                    name="budget"
+                    value={formData.budget}
                     onChange={handleChange}
-                    placeholder="예: 10"
-                    style={{ width: "100%", height: 38, padding: "0 10px", border: `1px solid ${border}`, borderRadius: 6, background: darkMode ? "#1f2023" : "#fff", color: textPrimary, fontSize: 13 }}
+                    placeholder="예: 보증금 5천에 월세 150 이내 / 금액 협의"
+                    style={{ width: "100%", height: 38, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, background: darkMode ? "#1f2023" : "#fff", color: textPrimary, outline: "none", fontSize: 13 }} 
                   />
                 </div>
+              ) : (
+                <div style={{ display: "flex", gap: 12 }}>
+                  {formData.transaction_type === "매매" && (
+                    <div style={{ flex: 1 }}>
+                      <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: textSecondary, marginBottom: 6 }}>매매가</label>
+                      <input
+                        type="text"
+                        name="price_buy"
+                        value={formData.price_buy}
+                        onChange={handleChange}
+                        placeholder="예: 12억 또는 120,000"
+                        style={{ width: "100%", height: 38, padding: "0 10px", border: `1px solid ${border}`, borderRadius: 6, background: darkMode ? "#1f2023" : "#fff", color: textPrimary, fontSize: 13 }}
+                      />
+                    </div>
+                  )}
+
+                  {(formData.transaction_type === "전세" || formData.transaction_type === "월세") && (
+                    <div style={{ flex: 1 }}>
+                      <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: textSecondary, marginBottom: 6 }}>
+                        {formData.transaction_type === "전세" ? "전세금" : "보증금"}
+                      </label>
+                      <input
+                        type="text"
+                        name="price_deposit"
+                        value={formData.price_deposit}
+                        onChange={handleChange}
+                        placeholder="예: 5,000 또는 5억"
+                        style={{ width: "100%", height: 38, padding: "0 10px", border: `1px solid ${border}`, borderRadius: 6, background: darkMode ? "#1f2023" : "#fff", color: textPrimary, fontSize: 13 }}
+                      />
+                    </div>
+                  )}
+
+                  {formData.transaction_type === "월세" && (
+                    <div style={{ flex: 1 }}>
+                      <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: textSecondary, marginBottom: 6 }}>월세</label>
+                      <input
+                        type="text"
+                        name="price_monthly"
+                        value={formData.price_monthly}
+                        onChange={handleChange}
+                        placeholder="예: 120"
+                        style={{ width: "100%", height: 38, padding: "0 10px", border: `1px solid ${border}`, borderRadius: 6, background: darkMode ? "#1f2023" : "#fff", color: textPrimary, fontSize: 13 }}
+                      />
+                    </div>
+                  )}
+
+                  <div style={{ width: 110 }}>
+                    <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: textSecondary, marginBottom: 6 }}>관리비</label>
+                    <input
+                      type="text"
+                      name="price_maintenance"
+                      value={formData.price_maintenance}
+                      onChange={handleChange}
+                      placeholder="예: 10"
+                      style={{ width: "100%", height: 38, padding: "0 10px", border: `1px solid ${border}`, borderRadius: 6, background: darkMode ? "#1f2023" : "#fff", color: textPrimary, fontSize: 13 }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* 희망 지역 (매물내놔요 일 때는 보유 건물 주소) */}
+              <div>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: textSecondary, marginBottom: 6 }}>{areaLabelText}</label>
+                <input type="text" name="area" value={formData.area} onChange={handleChange} placeholder={areaPlaceholderText}
+                  style={{ width: "100%", height: 38, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, background: darkMode ? "#1f2023" : "#fff", color: textPrimary, outline: "none", fontSize: 13 }} 
+                />
               </div>
+
+              {/* 입주 조건 */}
+              <div>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: textSecondary, marginBottom: 6 }}>
+                  입주 조건 <span style={{ color: "#ef4444" }}>*</span>
+                </label>
+                <input type="text" name="move_in_condition" value={formData.move_in_condition} onChange={handleChange} placeholder="예: 즉시 입주 / 협의 가능"
+                  style={{ width: "100%", height: 38, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, background: darkMode ? "#1f2023" : "#fff", color: textPrimary, outline: "none", fontSize: 13 }} 
+                />
+              </div>
+
             </div>
           )}
 
@@ -446,21 +483,11 @@ export default function CustomerModal({ theme, memberId, customer, onClose, onSa
             </div>
           )}
 
-          {/* 지역 / 주소 입력 필드 (동적 연동) */}
-          <div>
-            <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: textSecondary, marginBottom: 8 }}>{areaLabelText}</label>
-            <input type="text" name="area" value={formData.area} onChange={handleChange} placeholder={areaPlaceholderText}
-              style={{ width: "100%", height: 42, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 8, background: darkMode ? "#1f2023" : "#fff", color: textPrimary, outline: "none", fontSize: 14 }} 
-            />
-          </div>
-
-          {/* 입주 조건 입력 필드 */}
-          {(formData.role === "매물구해요" || formData.role === "매물내놔요") && (
+          {/* 🤝 공동중개 또는 ☕ 기타 일때만 단순 지역/주소 텍스트 필드 노출 */}
+          {!(formData.role === "매물구해요" || formData.role === "매물내놔요") && (
             <div>
-              <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: textSecondary, marginBottom: 8 }}>
-                입주 조건 <span style={{ color: "#ef4444" }}>*</span>
-              </label>
-              <input type="text" name="move_in_condition" value={formData.move_in_condition} onChange={handleChange} placeholder="예: 즉시 입주 / 협의 가능"
+              <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: textSecondary, marginBottom: 8 }}>{areaLabelText}</label>
+              <input type="text" name="area" value={formData.area} onChange={handleChange} placeholder={areaPlaceholderText}
                 style={{ width: "100%", height: 42, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 8, background: darkMode ? "#1f2023" : "#fff", color: textPrimary, outline: "none", fontSize: 14 }} 
               />
             </div>
