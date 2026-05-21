@@ -215,7 +215,8 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
                 <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 80 }}>상태</th>
                 <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 100 }}>고객유형</th>
                 <th style={{ padding: "12px 10px", textAlign: "left", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 180 }}>이름 / 연락처</th>
-                <th style={{ padding: "12px 10px", textAlign: "left", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 250 }}>희망지역 / 가용 예산</th>
+                <th style={{ padding: "12px 10px", textAlign: "left", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 180 }}>희망지역</th>
+                <th style={{ padding: "12px 10px", textAlign: "left", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 180 }}>의뢰예산</th>
                 <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 120 }}>유입경로</th>
                 <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 100 }}>접수일</th>
                 <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 110 }}>관리</th>
@@ -223,9 +224,9 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={8} style={{ padding: 40, textAlign: "center", color: textSecondary, fontSize: 14 }}>문의 데이터를 불러오는 중입니다...</td></tr>
+                <tr><td colSpan={9} style={{ padding: 40, textAlign: "center", color: textSecondary, fontSize: 14 }}>문의 데이터를 불러오는 중입니다...</td></tr>
               ) : filteredCustomers.length === 0 ? (
-                <tr><td colSpan={8} style={{ padding: 40, textAlign: "center", color: textSecondary, fontSize: 14 }}>조건에 맞는 문의가 없습니다.</td></tr>
+                <tr><td colSpan={9} style={{ padding: 40, textAlign: "center", color: textSecondary, fontSize: 14 }}>조건에 맞는 문의가 없습니다.</td></tr>
               ) : filteredCustomers.map((row, index) => {
                 const dateStr = new Date(row.created_at).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' });
                 const isNew = row.status === "신규";
@@ -296,12 +297,13 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
                             </div>
                           );
                         }
-                        return <div style={{ fontWeight: 800, color: textPrimary, fontSize: 14, marginBottom: 4 }}>{row.area}</div>;
+                        return <div style={{ fontWeight: 800, color: textPrimary, fontSize: 14 }}>{row.area}</div>;
                       })()}
+                    </td>
+                    <td style={{ padding: "16px 10px", verticalAlign: "middle" }}>
                       <div style={{ 
-                        fontSize: 13, 
+                        fontSize: 14, 
                         fontWeight: 800,
-                        marginTop: 4,
                         color: row.type.includes("구해요") || row.type.includes("임차") || row.type.includes("매수")
                           ? "#3b82f6"
                           : row.type.includes("내놔요") || row.type.includes("임대인") || row.type.includes("매도") || row.type.includes("임대")
