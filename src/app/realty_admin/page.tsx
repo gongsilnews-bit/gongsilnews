@@ -15,7 +15,6 @@ const MemberArticleSection = lazy(() => import("@/components/admin/sections/Memb
 const MyPointSection = lazy(() => import("@/components/admin/sections/MyPointSection"));
 const HomepageSection = lazy(() => import("@/components/admin/sections/HomepageSection"));
 const CustomerSection = lazy(() => import("@/components/admin/sections/CustomerSection"));
-const CommentSection = lazy(() => import("@/components/admin/sections/CommentSection"));
 
 /* ── 부동산관리자 메뉴 ── */
 const REALTY_MENU: MenuItem[] = [
@@ -24,7 +23,6 @@ const REALTY_MENU: MenuItem[] = [
   { key: "article", label: "기사관리", icon: <IconArticle /> },
   { key: "study", label: "특강관리", icon: <IconStudy /> },
   { key: "customer", label: "고객관리", icon: <IconCustomer /> },
-  { key: "comment", label: "댓글", icon: <IconComment /> },
   { key: "point", label: "포인트", icon: <IconPoint /> },
   { key: "homepage", label: "홈페이지", icon: <IconHomepage /> },
   { key: "manual", label: "매뉴얼", icon: <IconManual /> },
@@ -227,7 +225,6 @@ function RealtyAdminContent() {
           )}
           {/* {activeMenu === "homepage" && memberId && <HomepageSection theme={theme} memberId={memberId} planType={planType} />} - 임시 숨김 */}
           {activeMenu === "customer" && memberId && <CustomerSection theme={theme} role="realtor" memberId={memberId} />}
-          {activeMenu === "comment" && memberId && <CommentSection theme={theme} role="realtor" memberId={memberId} />}
           {["homepage", "study", "manual"].includes(activeMenu) && (
             <div style={{ flex: 1, margin: 16, marginBottom: 0, background: theme.cardBg, borderTopLeftRadius: 12, borderTopRightRadius: 12, boxShadow: "0 4px 6px rgba(0,0,0,0.05)", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <div style={{ textAlign: "center", color: "#9ca3af" }}>
