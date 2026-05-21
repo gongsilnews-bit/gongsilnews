@@ -93,18 +93,19 @@ export default function DashboardSection({ theme, role, agencyStatus, rejectionR
     { icon: "🏢", label: "공실 등록 물건", value: stats.vacanciesCount.toLocaleString(), sub: "전체 등록 공실", color: "#3b82f6", menu: "gongsil" },
     { icon: "👤", label: "전체 회원", value: stats.membersCount.toLocaleString(), sub: "전체 가입 회원", color: "#10b981", menu: "members" },
     { icon: "📰", label: "등록 기사", value: stats.articlesCount.toLocaleString(), sub: "전체 등록 기사", color: "#f59e0b", menu: "article" },
-    { icon: "💬", label: "댓글 / 문의", value: stats.commentsCount.toLocaleString(), sub: "전체 댓글 및 문의", color: "#ef4444", menu: "comment" },
+    { icon: "✉️", label: "접수된 문의", value: stats.commentsCount.toLocaleString(), sub: "전체 접수된 문의", color: "#ef4444", menu: "inquiry" },
   ] : [
     { icon: "🏢", label: "내 공실 물건", value: stats.vacanciesCount.toLocaleString(), sub: "내가 등록한 공실", color: "#3b82f6", menu: "gongsil" },
     { icon: "📰", label: "내 기사", value: stats.articlesCount.toLocaleString(), sub: "내가 작성한 기사", color: "#f59e0b", menu: "article" },
-    { icon: "💬", label: "받은 댓글", value: stats.commentsCount.toLocaleString(), sub: "내 글에 달린 댓글", color: "#ef4444", menu: "comment" },
   ];
 
   const quickLinks: QuickLink[] = [
     { icon: <IconBuilding />, label: "공실 관리", count: stats.vacanciesCount, menu: "gongsil" },
     { icon: <IconArticle />, label: "기사 관리", count: stats.articlesCount, menu: "article" },
-    ...(role === "admin" ? [{ icon: <IconMembers />, label: "회원 관리", count: stats.membersCount, menu: "members" }] : []),
-    { icon: <SvgIcon strokeWidth={2}><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></SvgIcon>, label: "댓글 관리", count: stats.commentsCount, menu: "comment" },
+    ...(role === "admin" ? [
+      { icon: <IconMembers />, label: "회원 관리", count: stats.membersCount, menu: "members" },
+      { icon: <SvgIcon strokeWidth={2}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4z"/></SvgIcon>, label: "문의 관리", count: stats.commentsCount, menu: "inquiry" }
+    ] : []),
   ];
 
   return (
@@ -268,21 +269,21 @@ export default function DashboardSection({ theme, role, agencyStatus, rejectionR
         </div>
       </div>
 
-      {/* 하단: 바로가기 + 최근 댓글 */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+      {/* 하단: 바로가기 */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 16 }}>
         {/* 바로가기 */}
         <div style={{ background: cardBg, borderRadius: 14, padding: 22, boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
           <div style={{ fontSize: 14, fontWeight: 700, color: darkMode ? "#e1e4e8" : "#374151", margin: "0 0 16px" }}>⚡ 바로가기</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
             {quickLinks.map((ql, i) => (
               <a key={i} onClick={() => navigate(ql.menu)} style={{
                 display: "flex", alignItems: "center", gap: 10,
-                padding: "11px 14px", borderRadius: 10, background: darkMode ? "#2c2d31" : "#f9fafb",
+                padding: "12px 16px", borderRadius: 10, background: darkMode ? "#2c2d31" : "#f9fafb",
                 cursor: "pointer", textDecoration: "none", color: darkMode ? "#e1e4e8" : "#374151",
                 fontSize: 13, fontWeight: 600, transition: "background 0.2s, transform 0.15s",
                 border: `1px solid ${darkMode ? "#444" : "#e5e7eb"}`,
               }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = darkMode ? "#38393e" : "#eff6ff"; e.currentTarget.style.transform = "translateX(4px)"; }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = darkMode ? "#38393e" : "#eff6ff"; e.currentTarget.style.transform = "translateY(-2px)"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.background = darkMode ? "#2c2d31" : "#f9fafb"; e.currentTarget.style.transform = "none"; }}
               >
                 <span style={{ width: 18, height: 18, display: "flex", flexShrink: 0 }}>
@@ -292,41 +293,6 @@ export default function DashboardSection({ theme, role, agencyStatus, rejectionR
                 {ql.count !== "" && <span style={{ marginLeft: "auto", fontSize: 12, fontWeight: 700, color: "#3b82f6", background: darkMode ? "#1e3a5f" : "#eff6ff", padding: "2px 8px", borderRadius: 10 }}>{loading ? "-" : ql.count}</span>}
               </a>
             ))}
-          </div>
-        </div>
-
-        {/* 최근 댓글 / 문의 */}
-        <div style={{ background: cardBg, borderRadius: 14, padding: 22, boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
-          <div onClick={() => navigate("comment")} style={{ fontSize: 14, fontWeight: 700, color: darkMode ? "#e1e4e8" : "#374151", margin: "0 0 16px", display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-            💬 {role === "admin" ? "최근 댓글 / 문의" : "내 글에 달린 댓글"}
-            <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 20, background: darkMode ? "#1e3a5f" : "#eff6ff", color: "#3b82f6", fontWeight: 600 }}>{recentComments.length}</span>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {loading ? (
-              <div style={{ color: "#9ca3af", fontSize: 13, textAlign: "center", padding: 20 }}>로딩 중...</div>
-            ) : recentComments.length === 0 ? (
-              <div style={{ color: "#9ca3af", fontSize: 13, textAlign: "center", padding: 20 }}>댓글 없음</div>
-            ) : (
-              recentComments.map((c, i) => (
-                <div key={c.id || i} onClick={() => navigate("comment")} style={{
-                  display: "flex", flexDirection: "column", gap: 4,
-                  padding: "10px 14px", borderRadius: 8, cursor: "pointer",
-                  background: darkMode ? "#2c2d31" : "#f9fafb",
-                  border: `1px solid ${darkMode ? "#444" : "#e5e7eb"}`,
-                  transition: "background 0.15s",
-                }} onMouseEnter={e => e.currentTarget.style.background = darkMode ? "#38393e" : "#eff6ff"} onMouseLeave={e => e.currentTarget.style.background = darkMode ? "#2c2d31" : "#f9fafb"}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: c.type === 'article' ? '#2563eb' : c.type === 'vacancy' ? '#d97706' : '#7c3aed', background: darkMode ? "rgba(255,255,255,0.06)" : `${c.type === 'article' ? '#2563eb' : c.type === 'vacancy' ? '#d97706' : '#7c3aed'}10`, padding: "2px 6px", borderRadius: 4 }}>
-                      {c.type === 'article' ? '기사' : c.type === 'vacancy' ? '공실' : '게시판'}
-                    </span>
-                    <span style={{ fontSize: 11, color: "#9ca3af" }}>{formatTimeAgo(c.created_at)}</span>
-                  </div>
-                  <div style={{ fontSize: 13, color: textPrimary, fontWeight: 500, lineHeight: 1.4, wordBreak: "break-all" }}>
-                    {c.is_secret ? "🔒 비밀 댓글입니다" : (c.content.length > 50 ? c.content.slice(0, 50) + '...' : c.content)}
-                  </div>
-                </div>
-              ))
-            )}
           </div>
         </div>
       </div>
