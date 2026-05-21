@@ -268,26 +268,14 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
                     </td>
                     <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
                       {(() => {
-                        const mType = (() => {
-                          if (!row.is_registered_member) {
-                            return { label: "비회원", bg: darkMode ? "rgba(107, 114, 128, 0.15)" : "#f3f4f6", color: darkMode ? "#9ca3af" : "#4b5563" };
-                          }
-                          if (row.type?.includes("공동중개") || row.client_role === "realtor" || row.type?.includes("중개")) {
-                            return { label: "부동산", bg: darkMode ? "rgba(245, 158, 11, 0.15)" : "#fef3c7", color: darkMode ? "#fbbf24" : "#b45309" };
-                          }
-                          return { label: "일반", bg: darkMode ? "rgba(59, 130, 246, 0.15)" : "#eff6ff", color: darkMode ? "#60a5fa" : "#1d4ed8" };
+                        const label = (() => {
+                          if (!row.is_registered_member) return "비회원";
+                          if (row.type?.includes("공동중개") || row.client_role === "realtor" || row.type?.includes("중개")) return "부동산";
+                          return "일반";
                         })();
                         return (
-                          <span style={{ 
-                            display: "inline-block", 
-                            padding: "4px 10px", 
-                            borderRadius: 20, 
-                            background: mType.bg, 
-                            color: mType.color, 
-                            fontWeight: 800, 
-                            fontSize: 12 
-                          }}>
-                            {mType.label}
+                          <span style={{ fontWeight: 800, color: textPrimary, fontSize: 14 }}>
+                            {label}
                           </span>
                         );
                       })()}
@@ -332,54 +320,17 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
                           const parts = row.area.split(" / ");
                           const moveIn = parts[2] || "";
                           return (
-                            <span style={{ 
-                              display: "inline-block", 
-                              padding: "4px 8px", 
-                              borderRadius: 6, 
-                              background: darkMode ? "#232428" : "#f1f5f9",
-                              color: textPrimary,
-                              fontSize: 12,
-                              fontWeight: 700
-                            }}>
+                            <span style={{ fontWeight: 800, color: textPrimary, fontSize: 14 }}>
                               {moveIn || "-"}
                             </span>
                           );
                         }
-                        return <span style={{ color: textSecondary, fontSize: 12 }}>-</span>;
+                        return <span style={{ fontWeight: 800, color: textPrimary, fontSize: 14 }}>-</span>;
                       })()}
                     </td>
                     <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
-                      <span style={{
-                        display: "inline-block",
-                        padding: "4px 10px",
-                        borderRadius: 20,
-                        fontSize: 12,
-                        fontWeight: 700,
-                        background: row.source?.includes("전단지")
-                          ? (darkMode ? "rgba(249, 115, 22, 0.15)" : "#fff7ed")
-                          : row.source?.includes("네이버")
-                          ? (darkMode ? "rgba(16, 185, 129, 0.15)" : "#e6fbf1")
-                          : row.source?.includes("공실뉴스")
-                          ? (darkMode ? "rgba(59, 130, 246, 0.15)" : "#eff6ff")
-                          : (darkMode ? "#2c2d31" : "#f3f4f6"),
-                        color: row.source?.includes("전단지")
-                          ? "#f97316"
-                          : row.source?.includes("네이버")
-                          ? "#10b981"
-                          : row.source?.includes("공실뉴스")
-                          ? "#3b82f6"
-                          : textSecondary,
-                        border: `1px solid ${
-                          row.source?.includes("전단지")
-                            ? "rgba(249, 115, 22, 0.2)"
-                            : row.source?.includes("네이버")
-                            ? "rgba(16, 185, 129, 0.2)"
-                            : row.source?.includes("공실뉴스")
-                            ? "rgba(59, 130, 246, 0.2)"
-                            : "transparent"
-                        }`
-                      }}>
-                        {row.source || "기타 유입"}
+                      <span style={{ fontWeight: 800, color: textPrimary, fontSize: 14 }}>
+                        {row.source || "오프라인"}
                       </span>
                     </td>
                     <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 13, color: textSecondary }}>
