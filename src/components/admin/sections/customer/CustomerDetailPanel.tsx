@@ -106,7 +106,7 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
                 </span>
                 {customer.user_id && (
                   <span style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", background: "#dbeafe", color: "#1e40af", borderRadius: 4, display: "flex", alignItems: "center", gap: 4 }} title="홈페이지 가입 회원">
-                    🔒 가입회원
+                    가입회원
                   </span>
                 )}
               </div>
@@ -115,7 +115,7 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
               {/* 회원 ID 표시 박스 */}
               {customer.user_id && (
                 <div style={{ marginTop: 8, fontSize: 12, color: textSecondary, background: darkMode ? "#1f2023" : "#fff", padding: "6px 10px", borderRadius: 6, border: `1px solid ${border}`, display: "inline-block" }}>
-                  👤 웹사이트 계정: <span style={{ fontWeight: 700, color: textPrimary }}>{customer.account_email}</span>
+                  웹사이트 계정: <span style={{ fontWeight: 700, color: textPrimary }}>{customer.account_email}</span>
                 </div>
               )}
             </div>
@@ -132,10 +132,10 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
                 color: customer.status === "신규" ? "#ef4444" : customer.status === "진행중" ? "#3b82f6" : customer.status === "계약완료" ? "#10b981" : "#9ca3af",
                 background: darkMode ? "#1f2023" : "#fff", outline: "none", flex: 1
             }}>
-              <option value="신규">🔴 신규 유입</option>
-              <option value="진행중">🔵 진행중 (상담/투어)</option>
-              <option value="계약완료">🟢 계약 완료</option>
-              <option value="보류/종료">⚫ 보류 및 종료</option>
+              <option value="신규">신규 유입</option>
+              <option value="진행중">진행중 (상담/투어)</option>
+              <option value="계약완료">계약 완료</option>
+              <option value="보류/종료">보류 및 종료</option>
             </select>
           </div>
         </div>
@@ -152,12 +152,12 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
           </div>
         </div>
 
-        {/* 🌟 [공실 CRM 플러스] 유형별 B2B 프리미엄 특화 액션 카드 */}
+        {/* [공실 CRM 플러스] 유형별 B2B 프리미엄 특화 액션 카드 */}
         {customer.type === "임대인" || customer.type.includes("임대") || customer.type.includes("매도") ? (
-          /* 🏢 [임대인 / 매도 공급측] 원클릭 공실등록 매핑 배너 */
+          /* [임대인 / 매도 공급측] 원클릭 공실등록 매핑 배너 */
           <div style={{ padding: "20px 24px", borderBottom: `8px solid ${darkMode ? "#1f2023" : "#f1f5f9"}`, background: darkMode ? "#1c2c22" : "#f0fdf4" }}>
             <h4 style={{ margin: "0 0 8px 0", fontSize: 14, fontWeight: 800, color: "#10b981", display: "flex", alignItems: "center", gap: 6 }}>
-              🏢 임대인 의뢰 광고 연동 서비스
+              임대인 의뢰 광고 연동 서비스
             </h4>
             <p style={{ margin: "0 0 14px 0", fontSize: 12, color: darkMode ? "#a7f3d0" : "#047857", lineHeight: 1.5, fontWeight: 600 }}>
               접수된 매물의 상세 스펙(주소, 의뢰인 연락처, 예산 등)을 그대로 전송하여 3초 만에 <b>공실뉴스 광고 매물</b>로 등록할 수 있습니다.
@@ -172,7 +172,7 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
                   prefill_area: customer.area,
                   prefill_budget: customer.budget
                 }).toString();
-                alert(`🎉 [공실 CRM 플러스] 임대인 매물 데이터를 자동 연동하였습니다!\n\n• 임대인: ${customer.name}\n• 연락처: ${customer.phone}\n• 의뢰주소: ${customer.area}\n• 희망예산: ${customer.budget}\n\n확인 버튼을 누르면 공실광고 등록 화면으로 이동합니다.`);
+                alert(`[공실 CRM 플러스] 임대인 매물 데이터를 자동 연동하였습니다!\n\n• 임대인: ${customer.name}\n• 연락처: ${customer.phone}\n• 의뢰주소: ${customer.area}\n• 희망예산: ${customer.budget}\n\n확인 버튼을 누르면 공실광고 등록 화면으로 이동합니다.`);
                 window.location.href = `/realty_admin?${prefillParams}`;
               }}
               style={{
@@ -182,11 +182,11 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
                 boxShadow: "0 2px 4px rgba(16, 185, 129, 0.2)", transition: "all 0.2s"
               }}
             >
-              ⚡ 공실광고 즉시 등록하기 (양식 자동 완성)
+              공실광고 즉시 등록하기 (양식 자동 완성)
             </button>
           </div>
         ) : (
-          /* 🎁 [임차 / 매수 / 공동중개 수요측] AI 전단지 맞춤 매칭 제안 카드 */
+          /* [임차 / 매수 / 공동중개 수요측] AI 전단지 맞춤 매칭 제안 카드 */
           <div style={{ padding: "20px 24px", borderBottom: `8px solid ${darkMode ? "#1f2023" : "#f1f5f9"}`, background: darkMode ? "#1a2536" : "#f0f7ff" }}>
             <h4 style={{ margin: "0 0 8px 0", fontSize: 14, fontWeight: 800, color: "#3b82f6", display: "flex", alignItems: "center", gap: 6 }}>
               🎁 AI 스마트 전단지 맞춤 제안
@@ -235,7 +235,7 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
                     return;
                   }
                   navigator.clipboard.writeText(`[공실뉴스 맞춤형 매물 안내]\n${customer.name} 고객님을 위한 맞춤형 모바일 스마트 전단지입니다. 아래 링크에서 상세 사진 및 정보를 편하게 확인해 보세요! 🏠\n\n${selectedFlyer.url}`);
-                  alert("🎉 [공실 CRM 플러스] 스마트 전단지 모바일 브리핑 링크가 복사되었습니다!\n\n카카오톡 대화창이나 휴대폰 문자 메시지에 바로 붙여넣기(Ctrl+V) 하여 전송해 주세요.");
+                  alert("[공실 CRM 플러스] 스마트 전단지 모바일 브리핑 링크가 복사되었습니다!\n\n카카오톡 대화창이나 휴대폰 문자 메시지에 바로 붙여넣기(Ctrl+V) 하여 전송해 주세요.");
                 }}
                 style={{
                   height: 38, padding: "0 14px", background: "#3b82f6", color: "#fff",
@@ -243,7 +243,7 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
                   cursor: "pointer", whiteSpace: "nowrap"
                 }}
               >
-                📋 링크 복사
+                링크 복사
               </button>
             </div>
           </div>

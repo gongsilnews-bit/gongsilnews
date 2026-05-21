@@ -481,7 +481,7 @@ export async function getVacancyFlyers() {
       return {
         id: f.id,
         vacancy_id: f.vacancy_id,
-        title: `📝 [전단지] ${title} (${priceText}${region ? ` / ${region}` : ""})`,
+        title: `[전단지] ${title} (${priceText}${region ? ` / ${region}` : ""})`,
         url: `https://www.gongsilnews.com/flyer/${f.vacancy_id}.html`
       };
     });
