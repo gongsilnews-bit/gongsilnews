@@ -92,13 +92,17 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
     }
   }
 
-  // 1-2. 매물 구분 및 희망 지역 파싱
+  // 1-2. 매물 구분, 희망 지역, 입주 조건 파싱
   let propertyType = "아파트";
   let areaText = customer.area || "지역 미정";
+  let moveInCondition = "즉시 입주 / 협의 가능";
   if (customer.area && customer.area.includes(" / ")) {
     const parts = customer.area.split(" / ");
     propertyType = parts[0];
-    areaText = parts.slice(1).join(" / ");
+    areaText = parts[1] || "지역 미정";
+    if (parts[2]) {
+      moveInCondition = parts[2];
+    }
   }
 
   // 2. 접수일 포맷팅
@@ -207,8 +211,8 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
               fontWeight: 800 
             }}>{priceText}</div>
             
-            <div style={{ color: textSecondary, fontWeight: 700 }}>거래 희망일</div>
-            <div style={{ color: textPrimary, fontWeight: 800 }}>즉시 입주 / 협의 가능</div>
+            <div style={{ color: textSecondary, fontWeight: 700 }}>입주 조건</div>
+            <div style={{ color: textPrimary, fontWeight: 800 }}>{moveInCondition}</div>
             
             <div style={{ color: textSecondary, fontWeight: 700 }}>접수일</div>
             <div style={{ color: textPrimary, fontWeight: 800 }}>{dateStr}</div>

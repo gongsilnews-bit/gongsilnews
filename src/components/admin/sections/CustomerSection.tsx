@@ -36,15 +36,15 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
   };
 
   const handleDeleteCustomer = async (customerId: string) => {
-    if (!confirm("⚠️ 정말 이 고객 정보를 삭제하시겠습니까?\n삭제된 데이터는 복구할 수 없습니다.")) return;
+    if (!confirm("⚠️ 이 고객 정보를 휴지통으로 이동하시겠습니까?")) return;
     try {
-      const { deleteCustomer } = await import("@/app/actions/customer");
-      const res = await deleteCustomer(customerId);
+      const { updateCustomerStatus } = await import("@/app/actions/customer");
+      const res = await updateCustomerStatus(customerId, "휴지통");
       if (res.success) {
-        alert("🎉 고객 정보가 정상적으로 삭제되었습니다.");
+        alert("📥 고객 정보가 휴지통으로 이동되었습니다.");
         fetchAllCustomers();
       } else {
-        alert("⚠️ 삭제 실패: " + res.message);
+        alert("⚠️ 이동 실패: " + res.message);
       }
     } catch (err: any) {
       alert("⚠️ 오류 발생: " + err.message);
@@ -56,8 +56,13 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
   }, [memberId]);
 
   let filteredCustomers = dbCustomers.filter(c => {
-    // 탭 필터링
-    if (activeTab !== "전체" && c.status !== activeTab) return false;
+    // 휴지통 필터링
+    if (activeTab === "휴지통") {
+      if (c.status !== "휴지통") return false;
+    } else {
+      if (c.status === "휴지통") return false;
+      if (activeTab !== "전체" && c.status !== activeTab) return false;
+    }
     // 유형 다중 필터링
     if (!activeFilters.types.includes("전체") && !activeFilters.types.includes(c.type)) return false;
     // 검색어 필터링
@@ -152,12 +157,15 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
       <div style={{ background: cardBg, borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", overflow: "hidden" }}>
         {/* 필터 탭 */}
         <div style={{ display: "flex", borderBottom: `1px solid ${border}`, background: darkMode ? "#2c2d31" : "#fafafa", padding: "0 16px" }}>
-          {["전체", "신규", "진행중", "계약완료", "보류/종료"].map(tab => {
-            const count = tab === "전체" ? dbCustomers.length : dbCustomers.filter(c => c.status === tab).length;
+          {["전체", "신규", "진행중", "계약완료", "보류/종료", "휴지통"].map(tab => {
+            const count = tab === "전체" 
+              ? dbCustomers.filter(c => c.status !== "휴지통").length 
+              : dbCustomers.filter(c => c.status === tab).length;
             const badgeColor = tab === "전체" ? "#e5e7eb" 
                              : tab === "신규" ? "#ef4444" 
                              : tab === "진행중" ? "#3b82f6" 
                              : tab === "계약완료" ? "#10b981" 
+                             : tab === "휴지통" ? "#6b7280"
                              : "#9ca3af";
             const badgeTextColor = tab === "전체" ? "#4b5563" : "#fff";
 
@@ -262,10 +270,28 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
                       <div style={{ fontSize: 14, color: textSecondary, fontWeight: 600 }}>{row.phone}</div>
                     </td>
                     <td style={{ padding: "16px 10px", verticalAlign: "middle" }}>
-                      <div style={{ fontWeight: 600, color: textPrimary, fontSize: 14, marginBottom: 4 }}>{row.area}</div>
+                      {(() => {
+                        if (row.area && row.area.includes(" / ")) {
+                          const parts = row.area.split(" / ");
+                          const propType = parts[0];
+                          const areaText = parts[1] || "";
+                          const moveIn = parts[2] || "";
+                          return (
+                            <div>
+                              <div style={{ fontWeight: 800, color: textPrimary, fontSize: 14, marginBottom: 2 }}>
+                                <span style={{ color: textSecondary, fontWeight: 700, marginRight: 6 }}>[{propType}]</span>
+                                {areaText}
+                              </div>
+                              {moveIn && <div style={{ fontSize: 12, color: textSecondary, fontWeight: 600 }}>{moveIn}</div>}
+                            </div>
+                          );
+                        }
+                        return <div style={{ fontWeight: 800, color: textPrimary, fontSize: 14, marginBottom: 4 }}>{row.area}</div>;
+                      })()}
                       <div style={{ 
                         fontSize: 13, 
-                        fontWeight: 700,
+                        fontWeight: 800,
+                        marginTop: 4,
                         color: row.type.includes("구해요") || row.type.includes("임차") || row.type.includes("매수")
                           ? "#3b82f6"
                           : row.type.includes("내놔요") || row.type.includes("임대인") || row.type.includes("매도") || row.type.includes("임대")
@@ -281,37 +307,98 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
                     </td>
                     <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
                       <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setEditingCustomer(row);
-                            setIsModalOpen(true);
-                          }}
-                          style={{ 
-                            height: 30, padding: "0 10px", 
-                            background: "#4b5563", color: "#fff", 
-                            border: "none", borderRadius: 6, fontSize: 12, fontWeight: 700, 
-                            cursor: "pointer", display: "flex", alignItems: "center", gap: 4,
-                            whiteSpace: "nowrap" 
-                          }}
-                        >
-                          📝 수정
-                        </button>
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteCustomer(row.id);
-                          }}
-                          style={{ 
-                            height: 30, padding: "0 10px", 
-                            background: darkMode ? "#1f2023" : "#fff", color: textSecondary, 
-                            border: `1px solid ${border}`, borderRadius: 6, fontSize: 12, fontWeight: 700, 
-                            cursor: "pointer", display: "flex", alignItems: "center", gap: 4,
-                            whiteSpace: "nowrap" 
-                          }}
-                        >
-                          🗑️ 삭제
-                        </button>
+                        {activeTab === "휴지통" ? (
+                          <>
+                            <button 
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                if (!confirm("♻️ 이 고객 정보를 원래대로 복구하시겠습니까?")) return;
+                                try {
+                                  const { updateCustomerStatus } = await import("@/app/actions/customer");
+                                  const res = await updateCustomerStatus(row.id, "신규");
+                                  if (res.success) {
+                                    alert("🎉 고객 정보가 복구되었습니다.");
+                                    fetchAllCustomers();
+                                  } else {
+                                    alert("⚠️ 복구 실패: " + res.message);
+                                  }
+                                } catch (err: any) {
+                                  alert("⚠️ 오류 발생: " + err.message);
+                                }
+                              }}
+                              style={{ 
+                                height: 30, padding: "0 10px", 
+                                background: "#10b981", color: "#fff", 
+                                border: "none", borderRadius: 6, fontSize: 12, fontWeight: 700, 
+                                cursor: "pointer", display: "flex", alignItems: "center", gap: 4,
+                                whiteSpace: "nowrap" 
+                              }}
+                            >
+                              ♻️ 복구
+                            </button>
+                            <button 
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                if (!confirm("⚠️ 정말 이 고객 정보를 영구적으로 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.")) return;
+                                try {
+                                  const { deleteCustomer } = await import("@/app/actions/customer");
+                                  const res = await deleteCustomer(row.id);
+                                  if (res.success) {
+                                    alert("🗑️ 영구 삭제가 완료되었습니다.");
+                                    fetchAllCustomers();
+                                  } else {
+                                    alert("⚠️ 삭제 실패: " + res.message);
+                                  }
+                                } catch (err: any) {
+                                  alert("⚠️ 오류 발생: " + err.message);
+                                }
+                              }}
+                              style={{ 
+                                height: 30, padding: "0 10px", 
+                                background: darkMode ? "#1f2023" : "#fff", color: "#ef4444", 
+                                border: `1px solid ${border}`, borderRadius: 6, fontSize: 12, fontWeight: 700, 
+                                cursor: "pointer", display: "flex", alignItems: "center", gap: 4,
+                                whiteSpace: "nowrap" 
+                              }}
+                            >
+                              💥 영구삭제
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingCustomer(row);
+                                setIsModalOpen(true);
+                              }}
+                              style={{ 
+                                height: 30, padding: "0 10px", 
+                                background: "#4b5563", color: "#fff", 
+                                border: "none", borderRadius: 6, fontSize: 12, fontWeight: 700, 
+                                cursor: "pointer", display: "flex", alignItems: "center",
+                                whiteSpace: "nowrap" 
+                              }}
+                            >
+                              수정
+                            </button>
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteCustomer(row.id);
+                              }}
+                              style={{ 
+                                height: 30, padding: "0 10px", 
+                                background: darkMode ? "#1f2023" : "#fff", color: textSecondary, 
+                                border: `1px solid ${border}`, borderRadius: 6, fontSize: 12, fontWeight: 700, 
+                                cursor: "pointer", display: "flex", alignItems: "center", gap: 4,
+                                whiteSpace: "nowrap" 
+                              }}
+                            >
+                              🗑️ 삭제
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>
