@@ -132,8 +132,8 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
                 color: textPrimary,
                 background: darkMode ? "#1f2023" : "#fff", outline: "none", flex: 1
             }}>
-              <option value="신규">신규 유입</option>
-              <option value="진행중">진행중 (상담/투어)</option>
+              <option value="신규">접수</option>
+              <option value="진행중">진행중</option>
               <option value="계약완료">계약 완료</option>
               <option value="보류/종료">보류 및 종료</option>
             </select>
