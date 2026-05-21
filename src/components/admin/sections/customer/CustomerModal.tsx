@@ -160,7 +160,7 @@ export default function CustomerModal({ theme, memberId, onClose, onSave }: Cust
           background: darkMode ? "#2c2d31" : "#f9fafb"
         }}>
           <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: textPrimary, display: "flex", alignItems: "center", gap: 6 }}>
-            👤 새 고객 등록
+            새 고객 등록
           </h2>
           <button onClick={onClose} style={{
             background: "none", border: "none", fontSize: 24, 
@@ -202,9 +202,9 @@ export default function CustomerModal({ theme, memberId, onClose, onSave }: Cust
               </label>
               <select name="role" value={formData.role} onChange={handleChange}
                 style={{ width: "100%", height: 42, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 8, background: darkMode ? "#1f2023" : "#fff", color: textPrimary, outline: "none", fontSize: 14, fontWeight: 700 }}>
-                <option value="매물구해요">🔎 매물구해요 (임차 / 매수 손님)</option>
-                <option value="매물내놔요">📢 매물내놔요 (임대 / 매도 의뢰)</option>
-                <option value="기타">☕ 기타 (일반 문의 / 기타)</option>
+                <option value="매물구해요">매물구해요 (임차 / 매수 손님)</option>
+                <option value="매물내놔요">매물내놔요 (임대 / 매도 의뢰)</option>
+                <option value="기타">기타 (일반 문의 / 기타)</option>
               </select>
             </div>
             <div style={{ flex: 1 }}>
@@ -213,11 +213,11 @@ export default function CustomerModal({ theme, memberId, onClose, onSave }: Cust
               </label>
               <select name="source" value={formData.source} onChange={handleChange}
                 style={{ width: "100%", height: 42, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 8, background: darkMode ? "#1f2023" : "#fff", color: textPrimary, outline: "none", fontSize: 14, fontWeight: 700 }}>
-                <option value="전화 문의">📞 전화 문의</option>
-                <option value="오프라인(워크인)">👣 오프라인 (워크인 방문)</option>
-                <option value="네이버 광고">💚 네이버 광고 (플레이스 등)</option>
-                <option value="공실뉴스">📰 공실뉴스 웹사이트</option>
-                <option value="기타">☕ 기타 경로</option>
+                <option value="전화 문의">전화 문의</option>
+                <option value="오프라인(워크인)">오프라인 (워크인 방문)</option>
+                <option value="네이버 광고">네이버 광고 (플레이스 등)</option>
+                <option value="공실뉴스">공실뉴스 웹사이트</option>
+                <option value="기타">기타 경로</option>
               </select>
             </div>
           </div>
@@ -227,21 +227,21 @@ export default function CustomerModal({ theme, memberId, onClose, onSave }: Cust
             <div style={{ display: "flex", flexDirection: "column", gap: 14, padding: "16px", background: darkMode ? "#242528" : "#f3f4f6", borderRadius: 12, border: `1px solid ${border}` }}>
               {/* 매물 구분 (카드 내부 최상단 배치!) */}
               <div>
-                <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: textSecondary, marginBottom: 6 }}>🏢 매물 구분</label>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: textSecondary, marginBottom: 6 }}>매물 구분</label>
                 <select name="property_type" value={formData.property_type} onChange={handleChange}
                   style={{ 
                     width: "100%", height: 38, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, 
                     background: darkMode ? "#1f2023" : "#fff", color: textPrimary, outline: "none", 
                     fontSize: 13, fontWeight: 700, cursor: "pointer"
                   }}>
-                  <option value="아파트">🏢 아파트</option>
-                  <option value="빌라/다세대">🏡 빌라 / 다세대</option>
-                  <option value="상가/사무실">💼 상가 / 사무실</option>
-                  <option value="오피스텔">🏢 오피스텔</option>
-                  <option value="원룸/투룸">🚪 원룸 / 투룸</option>
-                  <option value="단독/전원주택">🏡 단독 / 전원주택</option>
-                  <option value="빌딩/건물">🏢 빌딩 / 건물</option>
-                  <option value="토지/임야">🌳 토지 / 임야</option>
+                  <option value="아파트">아파트</option>
+                  <option value="빌라/다세대">빌라 / 다세대</option>
+                  <option value="상가/사무실">상가 / 사무실</option>
+                  <option value="오피스텔">오피스텔</option>
+                  <option value="원룸/투룸">원룸 / 투룸</option>
+                  <option value="단독/전원주택">단독 / 전원주택</option>
+                  <option value="빌딩/건물">빌딩 / 건물</option>
+                  <option value="토지/임야">토지 / 임야</option>
                 </select>
               </div>
 

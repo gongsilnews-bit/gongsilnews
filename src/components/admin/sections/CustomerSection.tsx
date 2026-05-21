@@ -97,7 +97,7 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
                 color: searchTypes.includes(type) ? "#3b82f6" : textSecondary
               }}
             >
-              {type === "전체" ? "전체" : type === "매물내놔요" ? "📢 매물내놔요" : type === "매물구해요" ? "🔎 매물구해요" : "☕ 기타"}
+              {type === "전체" ? "전체" : type === "매물내놔요" ? "매물내놔요" : type === "매물구해요" ? "매물구해요" : "기타"}
             </button>
           ))}
         </div>
@@ -246,10 +246,10 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
                         }`
                       }}>
                         {row.type.includes("구해요") || row.type.includes("임차") || row.type.includes("매수")
-                          ? "🔎 매물구해요"
+                          ? "매물구해요"
                           : row.type.includes("내놔요") || row.type.includes("임대인") || row.type.includes("매도") || row.type.includes("임대")
-                          ? "📢 매물내놔요"
-                          : "☕ 기타"}
+                          ? "매물내놔요"
+                          : "기타"}
                       </span>
                     </td>
                     <td style={{ padding: "16px 10px", verticalAlign: "middle" }}>
