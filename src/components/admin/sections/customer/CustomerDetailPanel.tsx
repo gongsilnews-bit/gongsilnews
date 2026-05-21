@@ -79,6 +79,26 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
     return null;
   }
 
+  // 1. 거래 구분 및 금액 파싱
+  const budgetStr = customer.budget || "";
+  let transactionType = "정보 없음";
+  let priceText = budgetStr;
+  
+  if (budgetStr.startsWith("[")) {
+    const match = budgetStr.match(/^\[(.*?)\]\s*(.*)$/);
+    if (match) {
+      transactionType = match[1]; // "매매", "월세", "전세" 등
+      priceText = match[2]; // "매매 21억 (관비 10)"
+    }
+  }
+
+  // 2. 접수일 포맷팅
+  const dt = new Date(customer.created_at);
+  const dateStr = dt.toLocaleDateString() + ' ' + dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  // 3. 첫 메모 파싱
+  const firstMemo = memos.filter(memo => memo.type !== "system")[0]?.content || "최초 접수 상담 메모 없음";
+
   return (
     <div style={{
       position: "fixed", top: 0, right: 0, width: "100vw", height: "100vh",
@@ -106,25 +126,15 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
                   fontWeight: 800, 
                   padding: "4px 12px", 
                   borderRadius: 30,
-                  background: customer.type.includes("구해요") || customer.type.includes("임차") || customer.type.includes("매수")
-                    ? (darkMode ? "rgba(59, 130, 246, 0.15)" : "#eff6ff")
-                    : customer.type.includes("내놔요") || customer.type.includes("임대인") || customer.type.includes("매도") || customer.type.includes("임대")
-                    ? (darkMode ? "rgba(16, 185, 129, 0.15)" : "#ecfdf5")
-                    : (darkMode ? "rgba(156, 163, 175, 0.15)" : "#f3f4f6"),
-                  color: customer.type.includes("구해요") || customer.type.includes("임차") || customer.type.includes("매수")
-                    ? "#3b82f6"
-                    : customer.type.includes("내놔요") || customer.type.includes("임대인") || customer.type.includes("매도") || customer.type.includes("임대")
-                    ? "#10b981"
-                    : "#4b5563",
+                  background: customer.source?.includes("오프라인")
+                    ? (darkMode ? "rgba(245, 158, 11, 0.15)" : "#fef3c7")
+                    : (darkMode ? "rgba(59, 130, 246, 0.15)" : "#eff6ff"),
+                  color: customer.source?.includes("오프라인") ? "#d97706" : "#3b82f6",
                   border: `1px solid ${
-                    customer.type.includes("구해요") || customer.type.includes("임차") || customer.type.includes("매수")
-                      ? "rgba(59, 130, 246, 0.2)"
-                      : customer.type.includes("내놔요") || customer.type.includes("임대인") || customer.type.includes("매도") || customer.type.includes("임대")
-                      ? "rgba(16, 185, 129, 0.2)"
-                      : "rgba(156, 163, 175, 0.2)"
+                    customer.source?.includes("오프라인") ? "rgba(245, 158, 11, 0.2)" : "rgba(59, 130, 246, 0.2)"
                   }`
                 }}>
-                  {customer.type}
+                  {customer.source || "유입 정보 없음"}
                 </span>
                 {customer.user_id && (
                   <span style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", background: "#dbeafe", color: "#1e40af", borderRadius: 4, display: "flex", alignItems: "center", gap: 4 }} title="홈페이지 가입 회원">
@@ -164,13 +174,43 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
 
         {/* 상세 정보 테이블 요약 */}
         <div style={{ padding: "24px", borderBottom: `8px solid ${darkMode ? "#1f2023" : "#f1f5f9"}` }}>
-          <div style={{ display: "grid", gridTemplateColumns: "115px 1fr", gap: "14px", fontSize: 16 }}>
-            <div style={{ color: textSecondary, fontWeight: 700 }}>유입 경로</div>
-            <div style={{ color: textPrimary, fontWeight: 800 }}>{customer.source}</div>
+          <div style={{ display: "grid", gridTemplateColumns: "115px 1fr", gap: "16px", fontSize: 16 }}>
+            <div style={{ color: textSecondary, fontWeight: 700 }}>구분</div>
+            <div style={{ 
+              color: customer.type?.includes("구해요") || customer.type?.includes("임차") || customer.type?.includes("매수") ? "#3b82f6" : "#10b981", 
+              fontWeight: 800 
+            }}>
+              {customer.type}
+            </div>
+            
             <div style={{ color: textSecondary, fontWeight: 700 }}>희망 지역</div>
             <div style={{ color: textPrimary, fontWeight: 800 }}>{customer.area}</div>
-            <div style={{ color: textSecondary, fontWeight: 700 }}>가용 예산</div>
-            <div style={{ color: textPrimary, fontWeight: 800 }}>{customer.budget}</div>
+            
+            <div style={{ color: textSecondary, fontWeight: 700 }}>거래 구분</div>
+            <div style={{ color: textPrimary, fontWeight: 800 }}>{transactionType}</div>
+            
+            <div style={{ color: textSecondary, fontWeight: 700 }}>금액</div>
+            <div style={{ color: textPrimary, fontWeight: 800 }}>{priceText}</div>
+            
+            <div style={{ color: textSecondary, fontWeight: 700 }}>거래 희망일</div>
+            <div style={{ color: textPrimary, fontWeight: 800 }}>즉시 입주 / 협의 가능</div>
+            
+            <div style={{ color: textSecondary, fontWeight: 700 }}>접수일</div>
+            <div style={{ color: textPrimary, fontWeight: 800 }}>{dateStr}</div>
+
+            <div style={{ color: textSecondary, fontWeight: 700 }}>첫 메모</div>
+            <div style={{ 
+              color: textPrimary, 
+              fontWeight: 700, 
+              background: darkMode ? "#2c2d31" : "#f8fafc", 
+              padding: "12px 16px", 
+              borderRadius: 10, 
+              border: `1px solid ${border}`,
+              lineHeight: 1.5,
+              fontSize: 14
+            }}>
+              {firstMemo}
+            </div>
           </div>
         </div>
 
