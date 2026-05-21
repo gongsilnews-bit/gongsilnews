@@ -255,8 +255,22 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
         <div style={{ flex: 1, overflowY: "auto", padding: "24px", background: darkMode ? "#222" : "#fff", display: "flex", flexDirection: "column" }}>
           <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 800, color: textPrimary }}>추가 메모</h3>
           
-          {/* 추가 메모 리스트 (상단 배치) */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
+          {/* 메모 입력창 (상단 배치) */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 24, padding: "16px", background: darkMode ? "#2c2d31" : "#f8fafc", borderRadius: 12, border: `1px solid ${border}` }}>
+            <textarea 
+              value={newMemo} onChange={(e) => setNewMemo(e.target.value)}
+              placeholder="상담 내용, 특이사항, 다음 약속일정 등을 자유롭게 남겨보세요."
+              style={{ width: "100%", height: 80, padding: 0, border: "none", background: "transparent", color: textPrimary, outline: "none", resize: "none", fontFamily: "inherit", fontSize: 14 }}
+            />
+            <div style={{ display: "flex", justifyContent: "flex-end" }}>
+              <button onClick={handleAddMemo} style={{ padding: "8px 16px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                메모 남기기
+              </button>
+            </div>
+          </div>
+
+          {/* 추가 메모 리스트 (하단 배치) */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {additionalNotes.length === 0 ? (
               <div style={{ fontSize: 14, color: textSecondary, textAlign: "center", padding: "20px 0" }}>
                 등록된 추가 메모가 없습니다.
@@ -283,20 +297,6 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
                 );
               })
             )}
-          </div>
-
-          {/* 메모 입력창 (하단으로 배치 이동) */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "16px", background: darkMode ? "#2c2d31" : "#f8fafc", borderRadius: 12, border: `1px solid ${border}` }}>
-            <textarea 
-              value={newMemo} onChange={(e) => setNewMemo(e.target.value)}
-              placeholder="상담 내용, 특이사항, 다음 약속일정 등을 자유롭게 남겨보세요."
-              style={{ width: "100%", height: 80, padding: 0, border: "none", background: "transparent", color: textPrimary, outline: "none", resize: "none", fontFamily: "inherit", fontSize: 14 }}
-            />
-            <div style={{ display: "flex", justifyContent: "flex-end" }}>
-              <button onClick={handleAddMemo} style={{ padding: "8px 16px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-                메모 남기기
-              </button>
-            </div>
           </div>
 
         </div>
