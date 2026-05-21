@@ -10,9 +10,10 @@ interface CustomerDetailPanelProps {
   customerId: string;
   customer: any;
   onClose: () => void;
+  onOpenFullMatching?: () => void;
 }
 
-export default function CustomerDetailPanel({ theme, customerId, customer, onClose }: CustomerDetailPanelProps) {
+export default function CustomerDetailPanel({ theme, customerId, customer, onClose, onOpenFullMatching }: CustomerDetailPanelProps) {
   const { bg, cardBg, textPrimary, textSecondary, darkMode, border } = theme;
   
   // API로 연동할 데이터
@@ -174,7 +175,21 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
                 </div>
               )}
             </div>
-            <button onClick={onClose} style={{ background: "none", border: "none", fontSize: 24, color: textSecondary, cursor: "pointer" }}>&times;</button>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              {onOpenFullMatching && (
+                <button 
+                  onClick={onOpenFullMatching}
+                  style={{
+                    height: 32, padding: "0 12px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 800, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4, transition: "background 0.2s", whiteSpace: "nowrap"
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#2563eb"}
+                  onMouseLeave={e => e.currentTarget.style.background = "#3b82f6"}
+                >
+                  🖥️ 상세매칭 전체화면
+                </button>
+              )}
+              <button onClick={onClose} style={{ background: "none", border: "none", fontSize: 24, color: textSecondary, cursor: "pointer" }}>&times;</button>
+            </div>
           </div>
 
           {/* 상태 변경 셀렉트 */}
