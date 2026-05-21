@@ -177,7 +177,7 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
           <div style={{ display: "grid", gridTemplateColumns: "115px 1fr", gap: "16px", fontSize: 16 }}>
             <div style={{ color: textSecondary, fontWeight: 700 }}>구분</div>
             <div style={{ 
-              color: customer.type?.includes("구해요") || customer.type?.includes("임차") || customer.type?.includes("매수") ? "#3b82f6" : "#10b981", 
+              color: customer.type?.includes("구해요") || customer.type?.includes("임차") || customer.type?.includes("매수") ? "#ef4444" : "#3b82f6", 
               fontWeight: 800 
             }}>
               {customer.type}

@@ -228,20 +228,20 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
                         fontSize: 12, 
                         fontWeight: 700,
                         background: row.type.includes("구해요") || row.type.includes("임차") || row.type.includes("매수")
-                          ? (darkMode ? "rgba(59, 130, 246, 0.15)" : "#eff6ff")
+                          ? (darkMode ? "rgba(239, 68, 68, 0.15)" : "#fef2f2")
                           : row.type.includes("내놔요") || row.type.includes("임대인") || row.type.includes("매도") || row.type.includes("임대")
-                          ? (darkMode ? "rgba(16, 185, 129, 0.15)" : "#ecfdf5")
+                          ? (darkMode ? "rgba(59, 130, 246, 0.15)" : "#eff6ff")
                           : (darkMode ? "rgba(156, 163, 175, 0.15)" : "#f3f4f6"),
                         color: row.type.includes("구해요") || row.type.includes("임차") || row.type.includes("매수")
-                          ? "#3b82f6"
+                          ? "#ef4444"
                           : row.type.includes("내놔요") || row.type.includes("임대인") || row.type.includes("매도") || row.type.includes("임대")
-                          ? "#10b981"
+                          ? "#3b82f6"
                           : "#4b5563",
                         border: `1px solid ${
                           row.type.includes("구해요") || row.type.includes("임차") || row.type.includes("매수")
-                            ? "rgba(59, 130, 246, 0.2)"
+                            ? "rgba(239, 68, 68, 0.2)"
                             : row.type.includes("내놔요") || row.type.includes("임대인") || row.type.includes("매도") || row.type.includes("임대")
-                            ? "rgba(16, 185, 129, 0.2)"
+                            ? "rgba(59, 130, 246, 0.2)"
                             : "rgba(156, 163, 175, 0.2)"
                         }`
                       }}>
