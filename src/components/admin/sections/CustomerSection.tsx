@@ -264,9 +264,18 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
                       </span>
                     </td>
                     <td style={{ padding: "16px 10px", verticalAlign: "middle" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4, flexWrap: "wrap" }}>
                         <span style={{ fontWeight: 800, color: textPrimary, fontSize: 15 }}>{row.name}</span>
                         {isNew && <span style={{ background: "#fef08a", color: "#854d0e", fontSize: 10, fontWeight: 800, padding: "2px 6px", borderRadius: 10 }}>N</span>}
+                        {row.is_registered_member ? (
+                          <span style={{ background: darkMode ? "rgba(16, 185, 129, 0.15)" : "#e6fbf1", color: "#10b981", fontSize: 10, fontWeight: 800, padding: "2px 8px", borderRadius: 12, border: "1px solid rgba(16, 185, 129, 0.2)", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                            🟢 회원
+                          </span>
+                        ) : (
+                          <span style={{ background: row.source?.includes("전단지") ? (darkMode ? "rgba(249, 115, 22, 0.15)" : "#fff7ed") : (darkMode ? "rgba(14, 116, 144, 0.15)" : "#ecfeff"), color: row.source?.includes("전단지") ? "#f97316" : "#0e7490", fontSize: 10, fontWeight: 800, padding: "2px 8px", borderRadius: 12, border: `1px solid ${row.source?.includes("전단지") ? "rgba(249, 115, 22, 0.2)" : "rgba(14, 116, 144, 0.2)"}`, display: "inline-flex", alignItems: "center", gap: 4 }}>
+                            {row.source?.includes("전단지") ? "📢 전단지 QR" : "🌐 비회원"}
+                          </span>
+                        )}
                       </div>
                       <div style={{ fontSize: 14, color: textSecondary, fontWeight: 600 }}>{row.phone}</div>
                     </td>
@@ -300,8 +309,39 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
                           : textSecondary
                       }}>{row.budget}</div>
                     </td>
-                    <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 13, color: textSecondary }}>
-                      {row.source}
+                    <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
+                      <span style={{
+                        display: "inline-block",
+                        padding: "4px 10px",
+                        borderRadius: 20,
+                        fontSize: 12,
+                        fontWeight: 700,
+                        background: row.source?.includes("전단지")
+                          ? (darkMode ? "rgba(249, 115, 22, 0.15)" : "#fff7ed")
+                          : row.source?.includes("네이버")
+                          ? (darkMode ? "rgba(16, 185, 129, 0.15)" : "#e6fbf1")
+                          : row.source?.includes("공실뉴스")
+                          ? (darkMode ? "rgba(59, 130, 246, 0.15)" : "#eff6ff")
+                          : (darkMode ? "#2c2d31" : "#f3f4f6"),
+                        color: row.source?.includes("전단지")
+                          ? "#f97316"
+                          : row.source?.includes("네이버")
+                          ? "#10b981"
+                          : row.source?.includes("공실뉴스")
+                          ? "#3b82f6"
+                          : textSecondary,
+                        border: `1px solid ${
+                          row.source?.includes("전단지")
+                            ? "rgba(249, 115, 22, 0.2)"
+                            : row.source?.includes("네이버")
+                            ? "rgba(16, 185, 129, 0.2)"
+                            : row.source?.includes("공실뉴스")
+                            ? "rgba(59, 130, 246, 0.2)"
+                            : "transparent"
+                        }`
+                      }}>
+                        {row.source || "기타 유입"}
+                      </span>
                     </td>
                     <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 13, color: textSecondary }}>
                       {dateStr}

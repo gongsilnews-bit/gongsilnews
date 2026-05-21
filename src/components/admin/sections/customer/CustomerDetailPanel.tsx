@@ -229,6 +229,119 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
           </div>
         </div>
 
+        {/* [문의접수 2.0] 문의 연동 매물 정보 & 전단지 유입 트래킹 */}
+        <div style={{ padding: "20px 24px", borderBottom: `8px solid ${darkMode ? "#1f2023" : "#f1f5f9"}`, background: darkMode ? "#1a2230" : "#f8fafc" }}>
+          <h5 style={{ margin: "0 0 12px 0", fontSize: 14, fontWeight: 800, color: "#3b82f6", display: "flex", alignItems: "center", gap: 6 }}>
+            🎯 문의 연동 매물 정보
+          </h5>
+          
+          {/* 매물 카드 */}
+          <div style={{
+            display: "flex",
+            gap: 12,
+            padding: 12,
+            borderRadius: 10,
+            background: cardBg,
+            border: `1px solid ${darkMode ? "#344966" : "#e2e8f0"}`,
+            marginBottom: 12
+          }}>
+            <div style={{
+              width: 50, height: 50, borderRadius: 8, background: "#3b82f6", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 22, fontWeight: 800
+            }}>
+              🏢
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: textPrimary, marginBottom: 2 }}>
+                [10번 매물] 서초동 아크로빌 102호
+              </div>
+              <div style={{ fontSize: 12, color: textSecondary, fontWeight: 700, marginBottom: 4 }}>
+                서초동 1302-3 | 아파트
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 800, color: "#ef4444" }}>
+                매매 21억 <span style={{ fontSize: 11, color: textSecondary, fontWeight: 600 }}>(관리비 10만)</span>
+              </div>
+            </div>
+          </div>
+
+          {/* 마케팅 유입 성과 정보 */}
+          <div style={{
+            padding: "8px 12px",
+            borderRadius: 6,
+            background: darkMode ? "rgba(249, 115, 22, 0.1)" : "#fff7ed",
+            border: `1px solid ${darkMode ? "rgba(249, 115, 22, 0.2)" : "#ffedd5"}`
+          }}>
+            <div style={{ fontSize: 12, color: "#f97316", fontWeight: 800, display: "flex", alignItems: "center", gap: 4 }}>
+              📢 유입 매체: {customer.source?.includes("전단지") ? "오프라인 전단지 QR 코드 스캔" : "공실뉴스 온라인 상세페이지"}
+            </div>
+            {customer.source?.includes("전단지") && (
+              <div style={{ fontSize: 11, color: textSecondary, fontWeight: 600, marginTop: 2 }}>
+                부착 구역: [강남역 5번 출구 앞 전신주 부착분] (ID: flyer-sc-01)
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* [문의접수 2.0] 유사 매물 자동 매칭 추천 */}
+        <div style={{ padding: "20px 24px", borderBottom: `8px solid ${darkMode ? "#1f2023" : "#f1f5f9"}` }}>
+          <h5 style={{ margin: "0 0 4px 0", fontSize: 14, fontWeight: 800, color: "#10b981", display: "flex", alignItems: "center", gap: 6 }}>
+            💡 실시간 유사 매물 자동 매칭
+          </h5>
+          <p style={{ margin: "0 0 16px 0", fontSize: 11, color: textSecondary, fontWeight: 600 }}>
+            소장님의 공실 DB에서 희망 조건과 가장 잘 부합하는 추천 후보 매물들입니다.
+          </p>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {/* 매칭 카드 1 */}
+            <div style={{
+              padding: 12,
+              borderRadius: 10,
+              background: darkMode ? "#232428" : "#f8fafc",
+              border: `1px solid ${border}`,
+              cursor: "pointer",
+              transition: "transform 0.2s"
+            }} onClick={() => alert("💡 이 추천 매물 제안 메시지가 고객님께 전송됩니다!")}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                <span style={{ fontSize: 11, fontWeight: 800, padding: "2px 6px", background: "#e6fbf1", color: "#10b981", borderRadius: 4 }}>
+                  95% 일치 (가격 인근)
+                </span>
+                <span style={{ fontSize: 11, color: textSecondary, fontWeight: 700 }}>
+                  [12번 매물]
+                </span>
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 800, color: textPrimary, marginBottom: 2 }}>
+                서초동 현대아이파크 305호
+              </div>
+              <div style={{ fontSize: 12, color: textSecondary, fontWeight: 700, marginBottom: 4 }}>
+                매도인: 김옥순 | 전세 8억 (관비 5만)
+              </div>
+            </div>
+
+            {/* 매칭 카드 2 */}
+            <div style={{
+              padding: 12,
+              borderRadius: 10,
+              background: darkMode ? "#232428" : "#f8fafc",
+              border: `1px solid ${border}`,
+              cursor: "pointer"
+            }} onClick={() => alert("💡 이 추천 매물 제안 메시지가 고객님께 전송됩니다!")}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                <span style={{ fontSize: 11, fontWeight: 800, padding: "2px 6px", background: "#eff6ff", color: "#3b82f6", borderRadius: 4 }}>
+                  90% 일치 (평형 유사)
+                </span>
+                <span style={{ fontSize: 11, color: textSecondary, fontWeight: 700 }}>
+                  [15번 매물]
+                </span>
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 800, color: textPrimary, marginBottom: 2 }}>
+                서초동 삼성래미안 1002호
+              </div>
+              <div style={{ fontSize: 12, color: textSecondary, fontWeight: 700, marginBottom: 4 }}>
+                매도인: 박영수 | 매매 23억 (관비 12만)
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* [공실 CRM 플러스] 동일 연락처의 다른 의뢰 내역 감지 배너 */}
         {relatedCustomers.length > 0 && (
           <div style={{ padding: "20px 24px", borderBottom: `8px solid ${darkMode ? "#1f2023" : "#f1f5f9"}`, background: darkMode ? "#1a2436" : "#f0f7ff" }}>
