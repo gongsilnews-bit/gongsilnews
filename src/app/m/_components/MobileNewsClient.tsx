@@ -1240,7 +1240,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                       {formatDate(article.published_at || article.created_at)} · {article.author_name || "공실뉴스"}
                       {article.location_name && ` · 📍${article.location_name}`}
                     </span>
-                    <span style={{ color: "#508bf5", fontWeight: 700 }}>기사상세보기 &gt;</span>
+                    <span style={{ color: "#f97316", fontWeight: 700 }}>기사상세보기 &gt;</span>
                   </div>
                 </div>
               ))}
@@ -1790,11 +1790,11 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                   width: "52px",
                   height: "52px",
                   borderRadius: "50%",
-                  backgroundColor: "#508bf5",
+                  backgroundColor: "#ea580c",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  boxShadow: "0 4px 14px rgba(80, 139, 245, 0.4)",
+                  boxShadow: "0 4px 14px rgba(234, 88, 12, 0.4)",
                   zIndex: 9998,
                   cursor: "pointer",
                   border: "none",
@@ -1824,11 +1824,11 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                   width: "52px",
                   height: "52px",
                   borderRadius: "50%",
-                  backgroundColor: "#508bf5",
+                  backgroundColor: "#ea580c",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  boxShadow: "0 4px 14px rgba(80, 139, 245, 0.4)",
+                  boxShadow: "0 4px 14px rgba(234, 88, 12, 0.4)",
                   zIndex: 9998,
                   cursor: "pointer",
                   border: "none",
