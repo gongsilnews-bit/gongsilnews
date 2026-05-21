@@ -1251,6 +1251,30 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
       ) : (
         /* 일반 뉴스 리스트 뷰 */
         <div className={slideAnim} style={{ flex: 1, paddingBottom: "20px", transform: `translateX(${swipeDeltaX}px)`, transition: touchStartX.current !== null ? "none" : "transform 0.3s cubic-bezier(0.25, 1, 0.5, 1)" }}>
+          {/* 2줄 프리미엄 개인화 헤더 카드 */}
+          {(() => {
+            const isKeywordSearch = !!(initialKeyword || searchParams.get("keyword"));
+            const isAuthorView = !!(authorProfile || initialAuthorName);
+            if (isKeywordSearch || isAuthorView) return null;
+
+            const activeSub = section2Tab || "전체";
+            const mentalText = PERSONALIZED_MENTAL_MAP[activeTab]?.[activeSub] || "추천 뉴스";
+            const displayName = memberName || "부동산";
+
+            return (
+              <div style={{ padding: "20px 20px 12px", backgroundColor: "#fff", borderBottom: "8px solid #f4f6f8" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                  <span style={{ fontSize: "13px", fontWeight: 600, color: "#6b7280", letterSpacing: "-0.3px" }}>
+                    <span style={{ fontWeight: 800, color: "#111", background: "linear-gradient(180deg, transparent 50%, rgba(254, 240, 138, 0.9) 50%)", padding: "2px 4px", borderRadius: "2px" }}>{displayName} 대표님</span>을 위한
+                  </span>
+                  <h2 style={{ fontSize: "19px", fontWeight: 900, color: "#ea580c", margin: 0, letterSpacing: "-0.5px", lineHeight: 1.3 }}>
+                    {mentalText} <span style={{ color: "#111", fontWeight: "normal" }}>News</span>
+                  </h2>
+                </div>
+              </div>
+            );
+          })()}
+
           {/* 2차 카테고리 탭바 (PC와 동일) */}
           {(() => {
             const cat = CATEGORIES.find(c => c.key === activeTab);
@@ -1319,30 +1343,6 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                     </button>
                   );
                 })}
-              </div>
-            );
-          })()}
-
-          {/* 2줄 프리미엄 개인화 헤더 카드 */}
-          {(() => {
-            const isKeywordSearch = !!(initialKeyword || searchParams.get("keyword"));
-            const isAuthorView = !!(authorProfile || initialAuthorName);
-            if (isKeywordSearch || isAuthorView) return null;
-
-            const activeSub = section2Tab || "전체";
-            const mentalText = PERSONALIZED_MENTAL_MAP[activeTab]?.[activeSub] || "추천 뉴스";
-            const displayName = memberName || "부동산";
-
-            return (
-              <div style={{ padding: "20px 20px 12px", backgroundColor: "#fff", borderBottom: "1px solid #f3f4f6" }}>
-                <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                  <span style={{ fontSize: "13px", fontWeight: 600, color: "#6b7280", letterSpacing: "-0.3px" }}>
-                    <span style={{ fontWeight: 800, color: "#111", background: "linear-gradient(180deg, transparent 50%, rgba(254, 240, 138, 0.9) 50%)", padding: "2px 4px", borderRadius: "2px" }}>{displayName} 대표님</span>을 위한
-                  </span>
-                  <h2 style={{ fontSize: "19px", fontWeight: 900, color: "#ea580c", margin: 0, letterSpacing: "-0.5px", lineHeight: 1.3 }}>
-                    {mentalText} <span style={{ color: "#111", fontWeight: "normal" }}>News</span>
-                  </h2>
-                </div>
               </div>
             );
           })()}
@@ -1490,9 +1490,75 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
             
             return (
               <div>
-                {/* 중요 뉴스 슬라이딩 캐러셀 */}
+                {/* 많이 본 뉴스 순위 리스트 (2차 카테고리가 전체일 때만 노출) */}
+                {section2Tab === "" && popularArticles.length > 0 && (
+                  <div style={{ padding: "20px 16px", borderBottom: "8px solid #f4f6f8", backgroundColor: "#fff" }}>
+                    <div style={{ display: "flex", alignItems: "center", marginBottom: "16px", paddingBottom: "8px", borderBottom: "1px solid #f3f4f6" }}>
+                      <span style={{ fontSize: "16px", fontWeight: 800, color: "#ea580c" }}>{currentCatLabel}</span>
+                      <span style={{ fontSize: "16px", fontWeight: 800, color: "#1f2937", marginLeft: "5px" }}>많이 본 뉴스</span>
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                      {popularArticles.map((a: any, idx: number) => {
+                        const rank = idx + 1;
+                        const isTop3 = rank <= 3;
+                        return (
+                          <Link
+                            href={`/m/news/${a.article_no || a.id}`}
+                            key={`popular-${a.id}`}
+                            onClick={() => sessionStorage.setItem(`news_scroll_${activeTab}`, window.scrollY.toString())}
+                            style={{
+                              display: "flex",
+                              alignItems: "flex-start",
+                              gap: "12px",
+                              textDecoration: "none",
+                              cursor: "pointer",
+                              padding: "4px 0"
+                            }}
+                          >
+                            <span
+                              style={{
+                                fontSize: "17px",
+                                fontWeight: 800,
+                                fontStyle: "italic",
+                                color: isTop3 ? "#ea580c" : "#71717a",
+                                width: "18px",
+                                textAlign: "center",
+                                flexShrink: 0,
+                                marginTop: "1px"
+                              }}
+                            >
+                              {rank}
+                            </span>
+                            <span
+                              style={{
+                                fontSize: "16px",
+                                fontWeight: 600,
+                                color: "#1f2937",
+                                lineHeight: "1.4",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                display: "-webkit-box",
+                                WebkitLineClamp: 1,
+                                WebkitBoxOrient: "vertical",
+                                wordBreak: "keep-all"
+                              }}
+                            >
+                              {a.title}
+                            </span>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* 중요 뉴스 슬라이딩 캐러셀 (추천) */}
                 {importantArticles.length > 0 && (
                   <div style={{ padding: "20px 16px", borderBottom: "8px solid #f4f6f8" }}>
+                    <div style={{ display: "flex", alignItems: "center", marginBottom: "16px", paddingBottom: "8px", borderBottom: "1px solid #f3f4f6" }}>
+                      <span style={{ fontSize: "16px", fontWeight: 800, color: "#ea580c" }}>{currentCatLabel}</span>
+                      <span style={{ fontSize: "16px", fontWeight: 800, color: "#1f2937", marginLeft: "5px" }}>추천 뉴스</span>
+                    </div>
                     <div style={{ display: 'flex', overflowX: 'auto', gap: '12px', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', scrollSnapType: 'x mandatory', overscrollBehaviorX: 'contain' }} className="no-scrollbar">
                       {importantArticles.map((a: any) => (
                         <Link
@@ -1530,68 +1596,6 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                           </div>
                         </Link>
                       ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* 많이 본 뉴스 순위 리스트 (2차 카테고리가 전체일 때만 노출) */}
-                {section2Tab === "" && popularArticles.length > 0 && (
-                  <div style={{ padding: "20px 16px", borderBottom: "8px solid #f4f6f8", backgroundColor: "#fff" }}>
-                    <div style={{ display: "flex", alignItems: "center", marginBottom: "16px", paddingBottom: "8px", borderBottom: "1px solid #f3f4f6" }}>
-                      <span style={{ fontSize: "15px", fontWeight: 800, color: "#ea580c" }}>{currentCatLabel}</span>
-                      <span style={{ fontSize: "15px", fontWeight: 800, color: "#1f2937", marginLeft: "5px" }}>많이 본 뉴스</span>
-                    </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                      {popularArticles.map((a: any, idx: number) => {
-                        const rank = idx + 1;
-                        const isTop3 = rank <= 3;
-                        return (
-                          <Link
-                            href={`/m/news/${a.article_no || a.id}`}
-                            key={`popular-${a.id}`}
-                            onClick={() => sessionStorage.setItem(`news_scroll_${activeTab}`, window.scrollY.toString())}
-                            style={{
-                              display: "flex",
-                              alignItems: "flex-start",
-                              gap: "12px",
-                              textDecoration: "none",
-                              cursor: "pointer",
-                              padding: "4px 0"
-                            }}
-                          >
-                            <span
-                              style={{
-                                fontSize: "15px",
-                                fontWeight: 800,
-                                fontStyle: "italic",
-                                color: isTop3 ? "#ea580c" : "#71717a",
-                                width: "18px",
-                                textAlign: "center",
-                                flexShrink: 0,
-                                marginTop: "1px"
-                              }}
-                            >
-                              {rank}
-                            </span>
-                            <span
-                              style={{
-                                fontSize: "14px",
-                                fontWeight: 600,
-                                color: "#1f2937",
-                                lineHeight: "1.4",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                display: "-webkit-box",
-                                WebkitLineClamp: 1,
-                                WebkitBoxOrient: "vertical",
-                                wordBreak: "keep-all"
-                              }}
-                            >
-                              {a.title}
-                            </span>
-                          </Link>
-                        );
-                      })}
                     </div>
                   </div>
                 )}
