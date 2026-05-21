@@ -115,7 +115,7 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
     <div style={{ flex: 1, overflowY: "auto", padding: "20px 28px", background: bg }}>
       {/* 타이틀 */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: 0 }}>문의접수</h1>
+        <h1 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: 0 }}>고객문의</h1>
         <span style={{ fontSize: 13, color: "#111", fontWeight: 600 }}>
           (진행중 {dbCustomers.filter(c => c.status === "진행중").length}명 / 
           전체 {dbCustomers.length}명)
@@ -216,7 +216,7 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
           <button 
             onClick={() => setIsModalOpen(true)}
             style={{ height: 36, padding: "0 16px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
-            + 새 문의 접수
+            + 새 고객문의 등록
           </button>
           
           <button style={{ height: 36, padding: "0 16px", background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>

@@ -251,18 +251,20 @@ export default function CustomerModal({ theme, memberId, customer, onClose, onSa
     <div style={{
       position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh",
       background: "rgba(0,0,0,0.5)", zIndex: 9999,
-      display: "flex", alignItems: "center", justifyContent: "center",
+      display: "flex", alignItems: "center", justifyContent: "flex-end",
       backdropFilter: "blur(4px)"
     }}>
       <div style={{
         background: cardBg, 
         width: 520, 
-        borderRadius: 16,
-        boxShadow: "0 10px 25px rgba(0,0,0,0.2)",
+        height: "100vh",
+        borderRadius: "16px 0 0 16px",
+        boxShadow: "-10px 0 25px rgba(0,0,0,0.15)",
         display: "flex", flexDirection: "column",
         overflow: "hidden",
-        border: `1px solid ${border}`,
-        animation: "modalFadeIn 0.25s ease-out"
+        border: "none",
+        borderLeft: `1px solid ${border}`,
+        animation: "drawerSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)"
       }}>
         {/* 모달 헤더 */}
         <div style={{
@@ -272,7 +274,7 @@ export default function CustomerModal({ theme, memberId, customer, onClose, onSa
           background: darkMode ? "#2c2d31" : "#f9fafb"
         }}>
           <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: textPrimary, display: "flex", alignItems: "center", gap: 6 }}>
-            {customer ? "문의 정보 수정" : "새 문의 접수"}
+            {customer ? "고객문의 수정" : "새 고객문의 등록"}
           </h2>
           <button onClick={onClose} style={{
             background: "none", border: "none", fontSize: 24, 
@@ -284,7 +286,7 @@ export default function CustomerModal({ theme, memberId, customer, onClose, onSa
         </div>
 
         {/* 모달 바디 (상세 폼 영역) */}
-        <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: 16, overflowY: "auto", maxHeight: "70vh" }}>
+        <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: 16, overflowY: "auto", flex: 1 }}>
           
           {/* 1, 2. 이름 및 연락처 (필수) */}
           <div style={{ display: "flex", gap: 16 }}>
@@ -548,15 +550,15 @@ export default function CustomerModal({ theme, memberId, customer, onClose, onSa
             boxShadow: "0 2px 4px rgba(59, 130, 246, 0.3)",
             opacity: loading ? 0.7 : 1, fontSize: 13
           }}>
-            {loading ? (customer ? "수정 중..." : "등록 중...") : (customer ? "수정 완료" : "문의 등록하기")}
+            {loading ? (customer ? "수정 중..." : "등록 중...") : (customer ? "수정 완료" : "고객문의 등록")}
           </button>
         </div>
       </div>
       
       <style>{`
-        @keyframes modalFadeIn {
-          from { opacity: 0; transform: scale(0.95); }
-          to { opacity: 1; transform: scale(1); }
+        @keyframes drawerSlideIn {
+          from { transform: translateX(100%); }
+          to { transform: translateX(0); }
         }
       `}</style>
     </div>
