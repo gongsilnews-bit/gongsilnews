@@ -499,47 +499,223 @@ const App: React.FC = () => {
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-tight">프롬프트 개수</label>
-                  <input type="number" name="promptCount" value={formData.promptCount} onChange={handleInputChange} min="1" max="10" className={commonInputClass} />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-tight">문체</label>
-                  <select name="writingStyle" value={formData.writingStyle} onChange={handleInputChange} className={commonInputClass}>
-                    {WRITING_STYLE_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                  </select>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-6 pt-2">
+                  {/* 프롬프트 개수 */}
                   <div>
-                    <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-tight">기사 글자 수</label>
-                    <input type="number" name="articleLength" value={formData.articleLength} onChange={handleInputChange} step="100" className={commonInputClass} />
+                    <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-tight">프롬프트 개수</label>
+                    <div className="flex gap-2">
+                      {[1, 2, 3, 4, 5].map(num => {
+                        const isSelected = formData.promptCount === num;
+                        return (
+                          <button
+                            key={num}
+                            type="button"
+                            onClick={() => setFormData(prev => ({ ...prev, promptCount: num }))}
+                            className={`w-10 h-10 rounded-lg border font-bold text-sm transition-all flex items-center justify-center shadow-sm cursor-pointer ${
+                              isSelected
+                                ? 'bg-[#f4a71b] border-[#f4a71b] text-white font-extrabold scale-105'
+                                : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300'
+                            }`}
+                          >
+                            {num}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-tight">블로그 글자 수</label>
-                    <input type="number" name="blogLength" value={formData.blogLength} onChange={handleInputChange} step="100" className={commonInputClass} />
-                  </div>
-                </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                  {/* 문체 */}
                   <div>
-                    <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-tight">톤 & 채널</label>
-                    <select name="tone" value={formData.tone} onChange={handleInputChange} className={commonInputClass}>
-                      {TONE_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                    </select>
+                    <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-tight">문체 (말투)</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {WRITING_STYLE_OPTIONS.map(opt => {
+                        const isSelected = formData.writingStyle === opt.value;
+                        return (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            onClick={() => setFormData(prev => ({ ...prev, writingStyle: opt.value }))}
+                            className={`py-2.5 px-1 rounded-lg border text-xs font-bold transition-all shadow-sm cursor-pointer ${
+                              isSelected
+                                ? 'bg-[#f4a71b] border-[#f4a71b] text-white font-extrabold'
+                                : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300'
+                            }`}
+                          >
+                            {opt.label}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-tight">타깃</label>
-                    <select name="audience" value={formData.audience} onChange={handleInputChange} className={commonInputClass}>
-                      {AUDIENCE_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                    </select>
-                  </div>
-                </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-tight">채널명</label>
-                  <input type="text" name="channelName" value={formData.channelName} onChange={handleInputChange} placeholder="채널명 (예: 공실뉴스)" className={commonInputClass} />
+                  {/* 글 분량 조절 */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* 기사 글자 수 */}
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-tight">기사 분량 (글자 수)</label>
+                      <div className="grid grid-cols-4 gap-1.5 mb-2">
+                        {[
+                          { value: 'short', label: '짧게', length: 500 },
+                          { value: 'medium', label: '보통', length: 1000 },
+                          { value: 'long', label: '길게', length: 1500 },
+                          { value: 'custom', label: '직접' }
+                        ].map(p => {
+                          const isSelected = p.value === 'custom'
+                            ? ![500, 1000, 1500].includes(formData.articleLength)
+                            : formData.articleLength === p.length;
+                          return (
+                            <button
+                              key={p.value}
+                              type="button"
+                              onClick={() => {
+                                if (p.value === 'custom') {
+                                  setFormData(prev => ({ ...prev, articleLength: 1200 })); // default custom length
+                                } else {
+                                  setFormData(prev => ({ ...prev, articleLength: p.length as number }));
+                                }
+                              }}
+                              className={`py-2 rounded-lg border text-xs font-bold transition-all shadow-sm cursor-pointer ${
+                                isSelected
+                                  ? 'bg-[#f4a71b] border-[#f4a71b] text-white font-extrabold'
+                                  : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300'
+                              }`}
+                            >
+                              {p.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {![500, 1000, 1500].includes(formData.articleLength) && (
+                        <div className="flex items-center gap-2 mt-2 animate-in slide-in-from-top-2 duration-200">
+                          <input
+                            type="number"
+                            name="articleLength"
+                            value={formData.articleLength}
+                            onChange={handleInputChange}
+                            step="100"
+                            className={`${commonInputClass} py-2 text-xs`}
+                            placeholder="직접 입력 (자)"
+                          />
+                          <span className="text-xs text-gray-500 font-bold shrink-0">자</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 블로그 글자 수 */}
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-tight">블로그 분량 (글자 수)</label>
+                      <div className="grid grid-cols-4 gap-1.5 mb-2">
+                        {[
+                          { value: 'short', label: '짧게', length: 500 },
+                          { value: 'medium', label: '보통', length: 1000 },
+                          { value: 'long', label: '길게', length: 1500 },
+                          { value: 'custom', label: '직접' }
+                        ].map(p => {
+                          const isSelected = p.value === 'custom'
+                            ? ![500, 1000, 1500].includes(formData.blogLength)
+                            : formData.blogLength === p.length;
+                          return (
+                            <button
+                              key={p.value}
+                              type="button"
+                              onClick={() => {
+                                if (p.value === 'custom') {
+                                  setFormData(prev => ({ ...prev, blogLength: 800 })); // default custom length
+                                } else {
+                                  setFormData(prev => ({ ...prev, blogLength: p.length as number }));
+                                }
+                              }}
+                              className={`py-2 rounded-lg border text-xs font-bold transition-all shadow-sm cursor-pointer ${
+                                isSelected
+                                  ? 'bg-[#f4a71b] border-[#f4a71b] text-white font-extrabold'
+                                  : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300'
+                              }`}
+                            >
+                              {p.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {![500, 1000, 1500].includes(formData.blogLength) && (
+                        <div className="flex items-center gap-2 mt-2 animate-in slide-in-from-top-2 duration-200">
+                          <input
+                            type="number"
+                            name="blogLength"
+                            value={formData.blogLength}
+                            onChange={handleInputChange}
+                            step="100"
+                            className={`${commonInputClass} py-2 text-xs`}
+                            placeholder="직접 입력 (자)"
+                          />
+                          <span className="text-xs text-gray-500 font-bold shrink-0">자</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* 톤 & 타깃 */}
+                  <div className="space-y-4">
+                    {/* 톤 & 채널 */}
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-tight">톤 & 채널 스타일</label>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        {TONE_OPTIONS.map(opt => {
+                          const isSelected = formData.tone === opt.value;
+                          return (
+                            <button
+                              key={opt.value}
+                              type="button"
+                              onClick={() => setFormData(prev => ({ ...prev, tone: opt.value }))}
+                              className={`py-2 px-1 rounded-lg border text-xs font-bold transition-all shadow-sm cursor-pointer ${
+                                isSelected
+                                  ? 'bg-[#f4a71b] border-[#f4a71b] text-white font-extrabold'
+                                  : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300'
+                              }`}
+                            >
+                              {opt.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* 타깃 */}
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-tight">타깃 독자층</label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {AUDIENCE_OPTIONS.map(opt => {
+                          const isSelected = formData.audience === opt.value;
+                          return (
+                            <button
+                              key={opt.value}
+                              type="button"
+                              onClick={() => setFormData(prev => ({ ...prev, audience: opt.value }))}
+                              className={`py-2 px-1 rounded-lg border text-xs font-bold transition-all shadow-sm cursor-pointer ${
+                                isSelected
+                                  ? 'bg-[#f4a71b] border-[#f4a71b] text-white font-extrabold'
+                                  : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300'
+                              }`}
+                            >
+                              {opt.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 채널명 */}
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-tight">채널명</label>
+                    <input
+                      type="text"
+                      name="channelName"
+                      value={formData.channelName}
+                      onChange={handleInputChange}
+                      placeholder="채널명 (예: 공실뉴스)"
+                      className={commonInputClass}
+                    />
+                  </div>
                 </div>
               </div>
             </section>

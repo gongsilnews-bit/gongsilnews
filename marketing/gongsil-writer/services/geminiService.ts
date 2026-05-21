@@ -1,6 +1,6 @@
 
 import { GoogleGenAI } from "@google/genai";
-import { FormData, ImageAspectRatio, ImageStyle, TransactionType } from '../types';
+import { FormData, ImageAspectRatio, ImageStyle, TransactionType, WritingStyle } from '../types';
 import { SYSTEM_PROMPT, CONTENT_TYPE_OPTIONS } from '../constants';
 
 const constructUserPrompt = (formData: FormData): string => {
@@ -47,6 +47,17 @@ ${priceInfo}
 `;
   }
 
+  const styleDirectives = formData.writingStyle === WritingStyle.FORMAL
+    ? `- 문체 적용 지침 (존댓말 선택됨):
+      * [기사]: 신뢰감 있고 격식 높은 리포트 스타일인 하십시오체와 해요체 혼용(~습니다, ~입니다, ~합니다)으로 단정하고 엄격하게 서술하십시오.
+      * [블로그]: 구독자와 따뜻하게 소통하는 해요체(~해요, ~합니다) 중심의 친근하지만 전문적인 부동산 컨설턴트 톤앤매너로 서술하십시오.
+      * [쇼츠 대본]: 구어체 경어(~요, ~습니다)를 사용하여 명료하고 귀에 쏙 들어오게 나레이션하십시오.
+      * [카드뉴스/기타]: 짧고 군더더기 없는 경조체 종결어미를 사용하십시오.`
+    : `- 문체 적용 지침 (반말 선택됨):
+      * [기사]: 중립적이고 사실만을 전달하는 뉴스 저널리즘 표준 평어체(~다, ~한다)로 흔들림 없이 정교하게 작성하십시오.
+      * [블로그]: 친근한 대화형 반말체(~야, ~어, ~했어) 또는 깊이 있는 사색을 유도하는 독백체(~다, ~한다)를 트렌디하게 조합하여 매력적인 글을 만들어 주십시오.
+      * [쇼츠 대본]: 숏폼 트렌드에 어울리는 감각적이고 속도감 있는 구어체 반말(~어, ~지, ~야, ~래)을 적용하여 시청자 이탈을 막는 강한 후킹을 구축하십시오.
+      * [카드뉴스/기타]: 가독성이 탁월하고 요약력이 우수한 평어체로 군더더기 없이 종결하십시오.`;
 
   return `
 [원문/자료]
@@ -57,8 +68,9 @@ ${formData.sourceText || '(파일 참조)'}
 - 요청 콘텐츠: ${requestedContentTypes}
 ${keywordsInfo}- 톤/채널: ${formData.tone}
 - 문체: ${formData.writingStyle}
-- 기사 길이: ${formData.articleLength}자 내외
-- 블로그 길이: ${formData.blogLength}자 내외
+${styleDirectives}
+- 기사 길이: ${formData.articleLength}자 내외 (이 요구사항을 철저히 준수하여 분량을 채우십시오)
+- 블로그 길이: ${formData.blogLength}자 내외 (이 요구사항을 철저히 준수하여 분량을 채우십시오)
 ${promptCountInfo}- 타깃: ${formData.audience}
 - 채널명: ${formData.channelName || '공실뉴스'}
 
