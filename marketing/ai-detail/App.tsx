@@ -1194,7 +1194,7 @@ ${clone.outerHTML}
                 />
                 <div className="flex items-center gap-3">
                   <h1 className="text-base sm:text-lg font-black text-gray-900 tracking-tight">
-                    AI매물상세보기
+                    AI온라인전단지
                   </h1>
                   {isLoadedFromStorage && (
                       <button 
