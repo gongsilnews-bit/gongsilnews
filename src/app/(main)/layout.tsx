@@ -3,6 +3,7 @@ import Footer from "@/components/Footer";
 import RealEstateInfoBanner from "@/components/RealEstateInfoBanner";
 import { getBannersByPlacement } from "@/app/actions/banner";
 import ComingSoon from "@/components/common/ComingSoon";
+import GlobalInquiryWidget from "@/components/common/GlobalInquiryWidget";
 
 export default async function MainLayout({
   children,
@@ -26,6 +27,7 @@ export default async function MainLayout({
       {/* 하위의 모든 page.tsx 파일 내용물이 이 자리에 렌더링 됩니다 */}
       {children}
       <RealEstateInfoBanner />
+      <GlobalInquiryWidget />
       <Footer />
     </>
   );
