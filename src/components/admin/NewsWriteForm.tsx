@@ -3153,18 +3153,18 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
               <button type="button" onClick={() => setAiWizardTab("vacancy")}
                 style={{
                   flex: 1, padding: "18px 0", border: "none", background: "none",
-                  borderBottom: aiWizardTab === "vacancy" ? "3px solid #f97316" : "3px solid transparent",
+                  borderBottom: aiWizardTab === "vacancy" ? "3px solid #0f172a" : "3px solid transparent",
                   fontSize: 16, fontWeight: aiWizardTab === "vacancy" ? 900 : 700,
-                  color: aiWizardTab === "vacancy" ? "#f97316" : textSecondary, cursor: "pointer", transition: "all 0.15s"
+                  color: aiWizardTab === "vacancy" ? "#0f172a" : textSecondary, cursor: "pointer", transition: "all 0.15s"
                 }}>
                 🏢 내 등록 매물 연동 초안 쓰기
               </button>
               <button type="button" onClick={() => setAiWizardTab("news")}
                 style={{
                   flex: 1, padding: "18px 0", border: "none", background: "none",
-                  borderBottom: aiWizardTab === "news" ? "3px solid #f97316" : "3px solid transparent",
+                  borderBottom: aiWizardTab === "news" ? "3px solid #0f172a" : "3px solid transparent",
                   fontSize: 16, fontWeight: aiWizardTab === "news" ? 900 : 700,
-                  color: aiWizardTab === "news" ? "#f97316" : textSecondary, cursor: "pointer", transition: "all 0.15s"
+                  color: aiWizardTab === "news" ? "#0f172a" : textSecondary, cursor: "pointer", transition: "all 0.15s"
                 }}>
                 📰 일반 외부 자료/보도초안 쓰기
               </button>
@@ -3181,9 +3181,9 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                       onClick={() => setDirectVacancyMode("select")}
                       style={{
                         flex: 1, padding: "10px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer",
-                        border: directVacancyMode === "select" ? "2px solid #f97316" : `1px solid ${border}`,
-                        background: directVacancyMode === "select" ? "#fff7ed" : "#fff",
-                        color: directVacancyMode === "select" ? "#f97316" : textSecondary,
+                        border: directVacancyMode === "select" ? "2px solid #0f172a" : `1px solid ${border}`,
+                        background: directVacancyMode === "select" ? "#f1f5f9" : "#fff",
+                        color: directVacancyMode === "select" ? "#0f172a" : textSecondary,
                         transition: "all 0.15s"
                       }}
                     >
@@ -3194,9 +3194,9 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                       onClick={() => setDirectVacancyMode("direct")}
                       style={{
                         flex: 1, padding: "10px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer",
-                        border: directVacancyMode === "direct" ? "2px solid #f97316" : `1px solid ${border}`,
-                        background: directVacancyMode === "direct" ? "#fff7ed" : "#fff",
-                        color: directVacancyMode === "direct" ? "#f97316" : textSecondary,
+                        border: directVacancyMode === "direct" ? "2px solid #0f172a" : `1px solid ${border}`,
+                        background: directVacancyMode === "direct" ? "#f1f5f9" : "#fff",
+                        color: directVacancyMode === "direct" ? "#0f172a" : textSecondary,
                         transition: "all 0.15s"
                       }}
                     >
@@ -3316,9 +3316,9 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                             {["매매", "전세", "월세"].map(x => (
                               <button key={x} type="button" onClick={() => setDirectTradeType(x)}
                                 style={{
-                                  flex: 1, padding: "10px 0", border: directTradeType === x ? "2px solid #f97316" : `1px solid ${border}`,
-                                  borderRadius: 6, fontSize: 13, fontWeight: 700, background: directTradeType === x ? "#fff7ed" : "#fff",
-                                  color: directTradeType === x ? "#f97316" : textSecondary, cursor: "pointer"
+                                  flex: 1, padding: "10px 0", border: directTradeType === x ? "2px solid #0f172a" : `1px solid ${border}`,
+                                  borderRadius: 6, fontSize: 13, fontWeight: 700, background: directTradeType === x ? "#f1f5f9" : "#fff",
+                                  color: directTradeType === x ? "#0f172a" : textSecondary, cursor: "pointer"
                                 }}>{x}</button>
                             ))}
                           </div>
@@ -3383,9 +3383,9 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                             {["가능", "불가"].map(x => (
                               <button key={x} type="button" onClick={() => setDirectParking(x)}
                                 style={{
-                                  flex: 1, padding: "10px 0", border: directParking === x ? "2px solid #f97316" : `1px solid ${border}`,
-                                  borderRadius: 6, fontSize: 13, fontWeight: 700, background: directParking === x ? "#fff7ed" : "#fff",
-                                  color: directParking === x ? "#f97316" : textSecondary, cursor: "pointer"
+                                  flex: 1, padding: "10px 0", border: directParking === x ? "2px solid #0f172a" : `1px solid ${border}`,
+                                  borderRadius: 6, fontSize: 13, fontWeight: 700, background: directParking === x ? "#f1f5f9" : "#fff",
+                                  color: directParking === x ? "#0f172a" : textSecondary, cursor: "pointer"
                                 }}>{x}</button>
                             ))}
                           </div>
@@ -3407,9 +3407,9 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                                 }}
                                 style={{
                                   padding: "6px 12px", borderRadius: 14, fontSize: 13, fontWeight: 600, cursor: "pointer",
-                                  border: isSelected ? "2px solid #f97316" : `1px solid ${border}`,
-                                  background: isSelected ? "#fff7ed" : "#fff",
-                                  color: isSelected ? "#f97316" : textSecondary,
+                                  border: isSelected ? "2px solid #0f172a" : `1px solid ${border}`,
+                                  background: isSelected ? "#f1f5f9" : "#fff",
+                                  color: isSelected ? "#0f172a" : textSecondary,
                                   transition: "all 0.1s"
                                 }}
                               >
@@ -3590,10 +3590,10 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                     <button
                       key={t} type="button" onClick={() => setAiTone(t)}
                       style={{
-                        padding: "12px 0", border: aiTone === t ? "2px solid #f97316" : `1px solid ${border}`,
+                        padding: "12px 0", border: aiTone === t ? "2px solid #0f172a" : `1px solid ${border}`,
                         borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer",
-                        background: aiTone === t ? "#fff7ed" : "#fff",
-                        color: aiTone === t ? "#f97316" : textSecondary,
+                        background: aiTone === t ? "#f1f5f9" : "#fff",
+                        color: aiTone === t ? "#0f172a" : textSecondary,
                         transition: "all 0.15s"
                       }}
                     >
@@ -3614,10 +3614,10 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                     <button
                       key={a} type="button" onClick={() => setAiAudience(a)}
                       style={{
-                        padding: "12px 0", border: aiAudience === a ? "2px solid #f97316" : `1px solid ${border}`,
+                        padding: "12px 0", border: aiAudience === a ? "2px solid #0f172a" : `1px solid ${border}`,
                         borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer",
-                        background: aiAudience === a ? "#fff7ed" : "#fff",
-                        color: aiAudience === a ? "#f97316" : textSecondary,
+                        background: aiAudience === a ? "#f1f5f9" : "#fff",
+                        color: aiAudience === a ? "#0f172a" : textSecondary,
                         transition: "all 0.15s"
                       }}
                     >
@@ -3646,10 +3646,10 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                         <button
                           key={len} type="button" onClick={() => setAiLengthType(len.split("(")[0])}
                           style={{
-                            padding: "10px 0", border: isSelected ? "2px solid #f97316" : `1px solid ${border}`,
+                            padding: "10px 0", border: isSelected ? "2px solid #0f172a" : `1px solid ${border}`,
                             borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer",
-                            background: isSelected ? "#fff7ed" : "#fff",
-                            color: isSelected ? "#f97316" : textSecondary,
+                            background: isSelected ? "#f1f5f9" : "#fff",
+                            color: isSelected ? "#0f172a" : textSecondary,
                             transition: "all 0.15s"
                           }}
                         >
@@ -3689,10 +3689,10 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                         <button
                           key={pattern.k} type="button" onClick={() => setAiLayoutPattern(pattern.k)}
                           style={{
-                            padding: "10px 4px", border: isSelected ? "2px solid #f97316" : `1px solid ${border}`,
+                            padding: "10px 4px", border: isSelected ? "2px solid #0f172a" : `1px solid ${border}`,
                             borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer",
-                            background: isSelected ? "#fff7ed" : "#fff",
-                            color: isSelected ? "#f97316" : textSecondary,
+                            background: isSelected ? "#f1f5f9" : "#fff",
+                            color: isSelected ? "#0f172a" : textSecondary,
                             transition: "all 0.15s",
                             display: "flex",
                             flexDirection: "column",
@@ -3702,7 +3702,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                           }}
                         >
                           <span>{pattern.l}</span>
-                          <span style={{ fontSize: 11, fontWeight: 500, color: isSelected ? "#ea580c" : textMuted }}>{pattern.d}</span>
+                          <span style={{ fontSize: 11, fontWeight: 500, color: isSelected ? "#0f172a" : textMuted }}>{pattern.d}</span>
                         </button>
                       );
                     })}
@@ -3719,10 +3719,10 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                       <button
                         key={style} type="button" onClick={() => setAiStyleType(style)}
                         style={{
-                          padding: "10px 0", border: aiStyleType === style ? "2px solid #f97316" : `1px solid ${border}`,
+                          padding: "10px 0", border: aiStyleType === style ? "2px solid #0f172a" : `1px solid ${border}`,
                           borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer",
-                          background: aiStyleType === style ? "#fff7ed" : "#fff",
-                          color: aiStyleType === style ? "#f97316" : textSecondary,
+                          background: aiStyleType === style ? "#f1f5f9" : "#fff",
+                          color: aiStyleType === style ? "#0f172a" : textSecondary,
                           transition: "all 0.15s"
                         }}
                       >
@@ -3742,10 +3742,10 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                       <button
                         key={ending} type="button" onClick={() => setAiEndingType(ending)}
                         style={{
-                          padding: "10px 0", border: aiEndingType === ending ? "2px solid #f97316" : `1px solid ${border}`,
+                          padding: "10px 0", border: aiEndingType === ending ? "2px solid #0f172a" : `1px solid ${border}`,
                           borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer",
-                          background: aiEndingType === ending ? "#fff7ed" : "#fff",
-                          color: aiEndingType === ending ? "#f97316" : textSecondary,
+                          background: aiEndingType === ending ? "#f1f5f9" : "#fff",
+                          color: aiEndingType === ending ? "#0f172a" : textSecondary,
                           transition: "all 0.15s"
                         }}
                       >
@@ -3773,10 +3773,10 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                 disabled={aiWizardTab === "vacancy" && directVacancyMode === "select" && myVacancies.length === 0}
                 style={{
                   padding: "12px 36px",
-                  background: (aiWizardTab === "vacancy" && directVacancyMode === "select" && myVacancies.length === 0) ? "#d1d5db" : "linear-gradient(135deg, #f59e0b, #f97316)",
+                  background: (aiWizardTab === "vacancy" && directVacancyMode === "select" && myVacancies.length === 0) ? "#d1d5db" : "linear-gradient(135deg, #1e293b, #0f172a)",
                   color: "#fff", border: "none", borderRadius: 8, fontSize: 15, fontWeight: 900,
                   cursor: (aiWizardTab === "vacancy" && directVacancyMode === "select" && myVacancies.length === 0) ? "not-allowed" : "pointer",
-                  boxShadow: (aiWizardTab === "vacancy" && directVacancyMode === "select" && myVacancies.length === 0) ? "none" : "0 4px 12px rgba(249, 115, 22, 0.25)"
+                  boxShadow: (aiWizardTab === "vacancy" && directVacancyMode === "select" && myVacancies.length === 0) ? "none" : "0 4px 12px rgba(15, 23, 42, 0.25)"
                 }}
               >
                 🪄 5대 초안 즉시 생성하기
