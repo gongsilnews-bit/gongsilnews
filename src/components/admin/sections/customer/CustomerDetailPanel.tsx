@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { AdminTheme } from "../types";
 import { getCustomerLogs, addCustomerLog, updateCustomerStatus } from "@/app/actions/customer";
+import { getVacancyFlyers } from "@/app/actions/vacancy";
 
 interface CustomerDetailPanelProps {
   theme: AdminTheme;
@@ -18,24 +19,31 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
   const [memos, setMemos] = useState<any[]>([]);
   const [newMemo, setNewMemo] = useState("");
   const [loading, setLoading] = useState(true);
+  const [flyers, setFlyers] = useState<any[]>([]);
+  const [selectedFlyer, setSelectedFlyer] = useState<any>(null);
 
-  // 부모에서 불러온 고객 목록을 넘겨주는 대신 개별 쿼리하거나, 
-  // 실제로는 getCustomer API를 따로 만들어서 호출하는 것이 정석입니다.
-  // 여기서는 단순히 로그를 가져올 때, supabase client를 쓰거나 임시로 부모가 넘기는 방식을 써야 하지만
-  // 백엔드 구현상 '고객 상세'도 함께 불러오도록 하겠습니다.
-  
   const fetchLogs = async () => {
     setLoading(true);
     const res = await getCustomerLogs(customerId);
     if (res.success && res.data) {
       setMemos(res.data);
     }
-    // TODO: 원래는 getCustomerDetail 도 불러야 합니다. 고객 상세 정보가 필요하므로.
     setLoading(false);
+  };
+
+  const fetchFlyers = async () => {
+    const res = await getVacancyFlyers();
+    if (res.success && res.data) {
+      setFlyers(res.data);
+      if (res.data.length > 0) {
+        setSelectedFlyer(res.data[0]);
+      }
+    }
   };
 
   useEffect(() => {
     fetchLogs();
+    fetchFlyers();
   }, [customerId]);
 
   const handleAddMemo = async () => {
@@ -184,7 +192,7 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
               🎁 AI 스마트 전단지 맞춤 제안
             </h4>
             <p style={{ margin: "0 0 12px 0", fontSize: 12, color: darkMode ? "#93c5fd" : "#1d4ed8", lineHeight: 1.5, fontWeight: 600 }}>
-              내가 기존에 제작한 부동산 AI 전단지(EasyFlyer AI)를 선택하여 카톡/문자 전송용 브리핑 링크를 생성합니다.
+              기제작된 부동산 AI 전단지(EasyFlyer)를 선택하여 고객 브리핑 링크를 실시간 공유합니다.
             </p>
             
             <div style={{ marginBottom: 12 }}>
@@ -194,11 +202,19 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
                   fontSize: 13, fontWeight: 600, color: textPrimary, background: darkMode ? "#1f2023" : "#fff",
                   outline: "none", padding: "0 10px"
                 }}
-                defaultValue="1"
+                value={selectedFlyer?.vacancy_id || ""}
+                onChange={(e) => {
+                  const flyer = flyers.find(f => f.vacancy_id === e.target.value);
+                  if (flyer) setSelectedFlyer(flyer);
+                }}
               >
-                <option value="1">📝 [전단지] 강남 테헤란 원룸 풀옵션 (보증금 1천 / 월세 95)</option>
-                <option value="2">📝 [전단지] 서초 신축 아파트 쓰리룸 (보증금 5억 / 전세)</option>
-                <option value="3">📝 [전단지] 논현동 먹자골목 코너 상가 1층 (보증금 5천 / 월세 350)</option>
+                {flyers.length === 0 ? (
+                  <option value="">생성된 AI 전단지가 없습니다.</option>
+                ) : (
+                  flyers.map(f => (
+                    <option key={f.id} value={f.vacancy_id}>{f.title}</option>
+                  ))
+                )}
               </select>
             </div>
 
@@ -206,7 +222,7 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
               <input 
                 type="text" 
                 readOnly
-                value={`https://gongsilnews.com/marketing/ai-detail/index.html?vacancy_id=4c178199-5c6a-4d92-bb8f-8d26ea3309bd&c_id=${customerId}`}
+                value={selectedFlyer ? selectedFlyer.url : "생성된 AI 전단지가 없습니다."}
                 style={{
                   flex: 1, height: 38, padding: "0 10px", border: `1px solid ${border}`, borderRadius: 6,
                   fontSize: 12, color: textSecondary, background: darkMode ? "#1f2023" : "#f8fafc", outline: "none"
@@ -214,7 +230,11 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
               />
               <button 
                 onClick={() => {
-                  navigator.clipboard.writeText(`[공실뉴스 맞춤형 매물 안내]\n김정민 공인중개사가 제안해 드리는 맞춤형 모바일 스마트 전단지입니다. 아래 링크에서 상세 사진 및 정보를 편하게 확인해 보세요! 🏠\n\nhttps://gongsilnews.com/marketing/ai-detail/index.html?vacancy_id=4c178199-5c6a-4d92-bb8f-8d26ea3309bd&c_id=${customerId}`);
+                  if (!selectedFlyer) {
+                    alert("선택된 전단지가 없습니다.");
+                    return;
+                  }
+                  navigator.clipboard.writeText(`[공실뉴스 맞춤형 매물 안내]\n${customer.name} 고객님을 위한 맞춤형 모바일 스마트 전단지입니다. 아래 링크에서 상세 사진 및 정보를 편하게 확인해 보세요! 🏠\n\n${selectedFlyer.url}`);
                   alert("🎉 [공실 CRM 플러스] 스마트 전단지 모바일 브리핑 링크가 복사되었습니다!\n\n카카오톡 대화창이나 휴대폰 문자 메시지에 바로 붙여넣기(Ctrl+V) 하여 전송해 주세요.");
                 }}
                 style={{

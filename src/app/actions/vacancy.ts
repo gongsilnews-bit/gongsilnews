@@ -446,3 +446,49 @@ export async function saveVacancyFlyer(vacancyId: string, flyerState: any) {
   }
 }
 
+// ── AI 전단지 목록 조회 (고객관리 매칭용) ──
+export async function getVacancyFlyers() {
+  const supabase = getAdminClient();
+  try {
+    const { data, error } = await supabase
+      .from('vacancy_flyers')
+      .select('id, vacancy_id, flyer_state, created_at, vacancies(building_name, sido, sigungu, dong, deposit, monthly_rent, trade_type)')
+      .order('created_at', { ascending: false });
+
+    if (error) return { success: false, error: error.message };
+
+    // 실제 등록된 전단지 매핑
+    const mapped = data?.map(f => {
+      const vacancies = f.vacancies as any;
+      const title = f.flyer_state?.title || vacancies?.building_name || "이름 없는 전단지";
+      const deposit = vacancies?.deposit || 0;
+      const monthly_rent = vacancies?.monthly_rent || 0;
+      const trade_type = vacancies?.trade_type || "";
+      
+      let priceText = "";
+      if (trade_type === "월세") {
+        priceText = `보증금 ${deposit}/${monthly_rent}`;
+      } else if (trade_type === "전세") {
+        priceText = `전세 ${deposit}`;
+      } else if (trade_type === "매매") {
+        priceText = `매매 ${deposit}`;
+      } else {
+        priceText = `금액 ${deposit}`;
+      }
+
+      const region = vacancies?.dong || "";
+
+      return {
+        id: f.id,
+        vacancy_id: f.vacancy_id,
+        title: `📝 [전단지] ${title} (${priceText}${region ? ` / ${region}` : ""})`,
+        url: `https://www.gongsilnews.com/flyer/${f.vacancy_id}.html`
+      };
+    });
+
+    return { success: true, data: mapped || [] };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
