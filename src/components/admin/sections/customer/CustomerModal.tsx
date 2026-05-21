@@ -206,6 +206,26 @@ export default function CustomerModal({ theme, memberId, onClose, onSave }: Cust
           {/* 📢 매물내놔요 또는 🔎 매물구해요 일때 거래구분 및 초정밀 금액 입력 영역 */}
           {(formData.role === "매물구해요" || formData.role === "매물내놔요") && (
             <div style={{ display: "flex", flexDirection: "column", gap: 14, padding: "16px", background: darkMode ? "#242528" : "#f3f4f6", borderRadius: 12, border: `1px solid ${border}` }}>
+              {/* 매물 구분 (카드 내부 최상단 배치!) */}
+              <div>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: textSecondary, marginBottom: 6 }}>🏢 매물 구분</label>
+                <select name="property_type" value={formData.property_type} onChange={handleChange}
+                  style={{ 
+                    width: "100%", height: 38, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, 
+                    background: darkMode ? "#1f2023" : "#fff", color: textPrimary, outline: "none", 
+                    fontSize: 13, fontWeight: 700, cursor: "pointer"
+                  }}>
+                  <option value="아파트">🏢 아파트</option>
+                  <option value="빌라/다세대">🏡 빌라 / 다세대</option>
+                  <option value="상가/사무실">💼 상가 / 사무실</option>
+                  <option value="오피스텔">🏢 오피스텔</option>
+                  <option value="원룸/투룸">🚪 원룸 / 투룸</option>
+                  <option value="단독/전원주택">🏡 단독 / 전원주택</option>
+                  <option value="빌딩/건물">🏢 빌딩 / 건물</option>
+                  <option value="토지/임야">🌳 토지 / 임야</option>
+                </select>
+              </div>
+
               {/* 거래구분 세그먼트 셀렉터 (매매, 전세, 월세) */}
               <div>
                 <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: textSecondary, marginBottom: 6 }}>거래 구분</label>
@@ -312,28 +332,7 @@ export default function CustomerModal({ theme, memberId, onClose, onSave }: Cust
             />
           </div>
 
-          {/* 매물 구분 (하단에 크게 배치!) */}
-          <div>
-            <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: textSecondary, marginBottom: 8 }}>
-              🏢 매물 구분 <span style={{ color: "#ef4444" }}>*</span>
-            </label>
-            <select name="property_type" value={formData.property_type} onChange={handleChange}
-              style={{ 
-                width: "100%", height: 46, padding: "0 16px", border: `2px solid ${darkMode ? border : "#3b82f6"}`, borderRadius: 8, 
-                background: darkMode ? "#1f2023" : "#fff", color: textPrimary, outline: "none", 
-                fontSize: 15, fontWeight: 800, cursor: "pointer",
-                boxShadow: "0 2px 6px rgba(59, 130, 246, 0.05)"
-              }}>
-              <option value="아파트">🏢 아파트</option>
-              <option value="빌라/다세대">🏡 빌라 / 다세대</option>
-              <option value="상가/사무실">💼 상가 / 사무실</option>
-              <option value="오피스텔">🏢 오피스텔</option>
-              <option value="원룸/투룸">🚪 원룸 / 투룸</option>
-              <option value="단독/전원주택">🏡 단독 / 전원주택</option>
-              <option value="빌딩/건물">🏢 빌딩 / 건물</option>
-              <option value="토지/임야">🌳 토지 / 임야</option>
-            </select>
-          </div>
+
           
           {/* 8. 첫 상담메모 */}
           <div>
