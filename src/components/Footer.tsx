@@ -125,11 +125,11 @@ export default function Footer() {
         <div style={{ borderBottom: "1px solid rgba(255,255,255,0.1)", paddingBottom: 24, marginBottom: 32 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
             <div className="contact-links">
-              <Link href="/about">회사소개</Link>
+              <Link href="/about" onClick={() => window.scrollTo({ top: 0, behavior: 'instant' })}>회사소개</Link>
               <span style={{ color: "rgba(255,255,255,0.2)" }}>|</span>
-              <Link href="/marketing">광고안내</Link>
+              <Link href="/marketing" onClick={() => window.scrollTo({ top: 0, behavior: 'instant' })}>광고안내</Link>
               <span style={{ color: "rgba(255,255,255,0.2)" }}>|</span>
-              <Link href="/partnership">제휴문의</Link>
+              <Link href="/partnership" onClick={() => window.scrollTo({ top: 0, behavior: 'instant' })}>제휴문의</Link>
               <span style={{ color: "rgba(255,255,255,0.2)" }}>|</span>
               <Link href="/terms">이용약관</Link>
               <span style={{ color: "rgba(255,255,255,0.2)" }}>|</span>
