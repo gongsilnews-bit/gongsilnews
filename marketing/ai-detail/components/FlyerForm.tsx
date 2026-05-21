@@ -325,9 +325,9 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
 
             {/* Custom Color Picker Swatch */}
             <div 
-                className={`relative w-10 h-10 rounded-full border-2 transition-all shadow-sm flex items-center justify-center cursor-pointer hover:scale-105 ${currentColor.id === 'custom' ? 'border-gray-800 scale-110 ring-2 ring-offset-2 ring-gray-300' : 'border-gray-200'}`}
+                className={`relative w-10 h-10 rounded-full border transition-all shadow-sm flex items-center justify-center cursor-pointer hover:scale-105 ${currentColor.id === 'custom' ? 'border-gray-800 scale-110 ring-2 ring-offset-2 ring-gray-300' : 'border-gray-200 hover:border-gray-300'}`}
                 style={{ 
-                    backgroundColor: '#f1f5f9'
+                    backgroundColor: currentColor.id === 'custom' ? '#f0f5fa' : '#ffffff'
                 }}
                 title="직접 색상 선택"
             >
@@ -354,7 +354,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                     viewBox="0 0 24 24" 
                     strokeWidth="1.8" 
                     stroke="currentColor" 
-                    className={`w-5 h-5 transition-colors ${currentColor.id === 'custom' ? 'text-gray-900' : 'text-slate-400'}`}
+                    className={`w-5 h-5 transition-colors ${currentColor.id === 'custom' ? 'text-slate-800' : 'text-slate-400'}`}
                 >
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9.53 16.122A3 3 0 0 0 13.5 20.38m-3.97-4.258 5.764-5.764L15 6.622l-1.242-.88 2.84-2.84a1.2 1.2 0 1 1 1.697 1.696L15.45 6.439l-.88-1.242-5.764 5.764M9.53 16.122a3 3 0 0 0-3.97-4.258m3.97 4.258H3" />
                 </svg>
@@ -938,19 +938,21 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
             </button>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 pt-4 pb-8">
+        <div className="grid grid-cols-2 gap-2 pt-4 pb-8">
              {['grid', 'list', 'table', 'sns'].map(type => (
                  <button 
                     key={type}
                     onClick={() => addSection(type as SectionType)}
-                    className="py-3 bg-white border rounded-lg shadow-sm text-[13px] font-bold flex items-center justify-center gap-2 hover:bg-slate-50 hover:opacity-90 active:scale-95 transition-all"
+                    className="py-3 px-1 bg-white border rounded-lg shadow-sm font-bold flex items-center justify-center gap-1.5 hover:bg-slate-50 hover:opacity-90 active:scale-95 transition-all cursor-pointer"
                     style={{ borderColor: primaryColor, color: primaryColor }}
                 >
-                    {type === 'grid' && <Squares2X2Icon className="w-4 h-4" />}
-                    {type === 'list' && <ListBulletIcon className="w-4 h-4" />}
-                    {type === 'table' && <TableCellsIcon className="w-4 h-4" />}
-                    {type === 'sns' && <ShareIcon className="w-4 h-4" />}
-                    {type === 'grid' ? '사진특징' : type === 'list' ? '상세설명' : type === 'table' ? '단지정보' : 'SNS'} 추가
+                    {type === 'grid' && <Squares2X2Icon className="w-4 h-4 flex-shrink-0" />}
+                    {type === 'list' && <ListBulletIcon className="w-4 h-4 flex-shrink-0" />}
+                    {type === 'table' && <TableCellsIcon className="w-4 h-4 flex-shrink-0" />}
+                    {type === 'sns' && <ShareIcon className="w-4 h-4 flex-shrink-0" />}
+                    <span className="whitespace-nowrap text-[11.5px] md:text-xs">
+                        {type === 'grid' ? '사진특징' : type === 'list' ? '상세설명' : type === 'table' ? '단지정보' : 'SNS'} 섹션 추가
+                    </span>
                 </button>
              ))}
         </div>
