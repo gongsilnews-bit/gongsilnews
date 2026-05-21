@@ -17,8 +17,7 @@ export default function CustomerModal({ theme, memberId, onClose, onSave }: Cust
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
-    role: "임차인",          // 3. 구분 (필수)
-    status: "매물찾아요",    // 4. 진행상황 (필수)
+    role: "매물구해요",       // 3. 구분 (매물내놔요, 매물구해요, 공동중개, 기타)
     property_type: "아파트", // 5. 매물구분
     budget: "",             // 6. 금액
     area: "",               // 7. 지역
@@ -26,15 +25,7 @@ export default function CustomerModal({ theme, memberId, onClose, onSave }: Cust
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    if (name === "role") {
-      let defaultStatus = "매물찾아요";
-      if (value === "임대인") defaultStatus = "매물내놔요";
-      if (value === "부동산") defaultStatus = "공동중개협업";
-      setFormData(prev => ({ ...prev, role: value, status: defaultStatus }));
-    } else {
-      setFormData(prev => ({ ...prev, [name]: value }));
-    }
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSave = async () => {
@@ -50,13 +41,9 @@ export default function CustomerModal({ theme, memberId, onClose, onSave }: Cust
       alert("⚠️ 구분을 선택해 주세요 (필수).");
       return;
     }
-    if (!formData.status) {
-      alert("⚠️ 진행상황을 선택해 주세요 (필수).");
-      return;
-    }
     
-    // 구분(role)과 진행상황(status)을 결합하여 type 컬럼에 깔끔하게 매핑!
-    const typeLabel = `${formData.role} (${formData.status})`;
+    // 구분(role) 값을 바로 type 컬럼에 매핑하여 단순화!
+    const typeLabel = formData.role;
     
     // 매물구분(property_type)을 지역(area) 필드와 슬래시로 결합하여 매핑!
     const areaLabel = formData.property_type 
@@ -85,29 +72,37 @@ export default function CustomerModal({ theme, memberId, onClose, onSave }: Cust
   };
 
   // 6. 금액(budget) 라벨 및 플레이스홀더 동적 연동
-  const budgetLabelText = formData.role === "임대인"
+  const budgetLabelText = formData.role === "매물내놔요"
     ? "희망 의뢰 가격 (접수가) *"
-    : formData.role === "부동산"
+    : formData.role === "공동중개"
     ? "공동중개 수수료 조건 / 금액 *"
+    : formData.role === "기타"
+    ? "금액 / 예산 조건"
     : "가용 예산 (보증금/월세) *";
 
-  const budgetPlaceholderText = formData.role === "임대인"
+  const budgetPlaceholderText = formData.role === "매물내놔요"
     ? "예: 매매 10억 / 전세 3억"
-    : formData.role === "부동산"
+    : formData.role === "공동중개"
     ? "예: 수수료 5:5 / 보증금 5천"
+    : formData.role === "기타"
+    ? "예: 금액 조건 없음 등 자유 기입"
     : "예: 보증금 5천 / 월세 100";
 
   // 7. 지역(area) 라벨 및 플레이스홀더 동적 연동
-  const areaLabelText = formData.role === "임대인"
+  const areaLabelText = formData.role === "매물내놔요"
     ? "보유 건물 주소 (상세호수) *"
-    : formData.role === "부동산"
+    : formData.role === "공동중개"
     ? "협업 대상 매물 주소 *"
+    : formData.role === "기타"
+    ? "관련 지역 / 주소"
     : "희망 지역 / 입주 조건 *";
 
-  const areaPlaceholderText = formData.role === "임대인"
+  const areaPlaceholderText = formData.role === "매물내놔요"
     ? "예: 서초동 아크로빌라 102호"
-    : formData.role === "부동산"
+    : formData.role === "공동중개"
     ? "예: 역삼동 신축 상가건물"
+    : formData.role === "기타"
+    ? "예: 전국구 / 강남권 등 자유 기입"
     : "예: 강남역 도보 5분 인근";
 
   return (
@@ -169,31 +164,18 @@ export default function CustomerModal({ theme, memberId, onClose, onSave }: Cust
             </div>
           </div>
 
-          {/* 3, 4. 구분 및 진행상황 (필수) */}
-          <div style={{ display: "flex", gap: 16 }}>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: textSecondary, marginBottom: 8 }}>
-                구분 <span style={{ color: "#ef4444" }}>*</span>
-              </label>
-              <select name="role" value={formData.role} onChange={handleChange}
-                style={{ width: "100%", height: 42, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 8, background: darkMode ? "#1f2023" : "#fff", color: textPrimary, outline: "none", fontSize: 14, fontWeight: 700 }}>
-                <option value="임대인">🏢 임대인 (건물주)</option>
-                <option value="임차인">🏠 임차인 (손님)</option>
-                <option value="부동산">🤝 부동산 (공동중개)</option>
-              </select>
-            </div>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: textSecondary, marginBottom: 8 }}>
-                진행상황 <span style={{ color: "#ef4444" }}>*</span>
-              </label>
-              <select name="status" value={formData.status} onChange={handleChange}
-                style={{ width: "100%", height: 42, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 8, background: darkMode ? "#1f2023" : "#fff", color: textPrimary, outline: "none", fontSize: 14, fontWeight: 700 }}>
-                <option value="매수">매수</option>
-                <option value="매물찾아요">매물 찾아요</option>
-                <option value="매물내놔요">매물 내놔요</option>
-                <option value="공동중개협업">공동중개 협업</option>
-              </select>
-            </div>
+          {/* 3. 구분 (필수) */}
+          <div>
+            <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: textSecondary, marginBottom: 8 }}>
+              손님 구분 <span style={{ color: "#ef4444" }}>*</span>
+            </label>
+            <select name="role" value={formData.role} onChange={handleChange}
+              style={{ width: "100%", height: 42, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 8, background: darkMode ? "#1f2023" : "#fff", color: textPrimary, outline: "none", fontSize: 14, fontWeight: 700 }}>
+              <option value="매물내놔요">📢 매물내놔요 (임대 / 매도 의뢰)</option>
+              <option value="매물구해요">🔎 매물구해요 (임차 / 매수 손님)</option>
+              <option value="공동중개">🤝 공동중개 (협업 중개사)</option>
+              <option value="기타">☕ 기타 (일반 문의 / 기타)</option>
+            </select>
           </div>
 
           {/* 5. 매물구분 */}
@@ -233,7 +215,7 @@ export default function CustomerModal({ theme, memberId, onClose, onSave }: Cust
           {/* 8. 첫 상담메모 */}
           <div>
             <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: textSecondary, marginBottom: 8 }}>첫 상담 메모</label>
-            <textarea name="notes" value={formData.notes} onChange={handleChange} placeholder="빠른 입주 희망, 반려동물 동반 등 상세 유구사항 메모..."
+            <textarea name="notes" value={formData.notes} onChange={handleChange} placeholder="빠른 입주 희망, 반려동물 동반 등 상세 요구사항 메모..."
               style={{ width: "100%", height: 80, padding: "12px", border: `1px solid ${border}`, borderRadius: 8, background: darkMode ? "#1f2023" : "#fff", color: textPrimary, outline: "none", resize: "none", fontFamily: "inherit", fontSize: 14 }} 
             />
           </div>
@@ -275,3 +257,4 @@ export default function CustomerModal({ theme, memberId, onClose, onSave }: Cust
     </div>
   );
 }
+
