@@ -198,7 +198,7 @@ export default function CustomerModal({ theme, memberId, customer, onClose, onSa
         });
         setLoading(false);
         if (res.success) {
-          alert("🎉 고객 정보가 수정되었습니다!");
+          alert("🎉 문의 정보가 수정되었습니다!");
           onSave();
           onClose();
         } else {
@@ -217,7 +217,7 @@ export default function CustomerModal({ theme, memberId, customer, onClose, onSa
         });
         setLoading(false);
         if (res.success) {
-          alert("🎉 고객 정보가 등록되었습니다!");
+          alert("🎉 문의 정보가 접수되었습니다!");
           onSave();
           onClose();
         } else {
@@ -272,7 +272,7 @@ export default function CustomerModal({ theme, memberId, customer, onClose, onSa
           background: darkMode ? "#2c2d31" : "#f9fafb"
         }}>
           <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: textPrimary, display: "flex", alignItems: "center", gap: 6 }}>
-            {customer ? "고객 정보 수정" : "새 고객 등록"}
+            {customer ? "문의 정보 수정" : "새 문의 접수"}
           </h2>
           <button onClick={onClose} style={{
             background: "none", border: "none", fontSize: 24, 
@@ -290,7 +290,7 @@ export default function CustomerModal({ theme, memberId, customer, onClose, onSa
           <div style={{ display: "flex", gap: 16 }}>
             <div style={{ flex: 1 }}>
               <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: textSecondary, marginBottom: 8 }}>
-                고객 이름 <span style={{ color: "#ef4444" }}>*</span>
+                의뢰인 이름 <span style={{ color: "#ef4444" }}>*</span>
               </label>
               <input type="text" name="name" value={formData.name} onChange={handleChange} placeholder="예: 홍길동"
                 style={{ width: "100%", height: 42, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 8, background: darkMode ? "#1f2023" : "#fff", color: textPrimary, outline: "none", fontSize: 14 }} 

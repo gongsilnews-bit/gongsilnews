@@ -105,7 +105,7 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
       {/* 필터 검색 바 (독립 컨테이너로 위로 분리) */}
       <div style={{ padding: "16px 24px", background: cardBg, borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", marginBottom: 20, display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          <span style={{ fontSize: 13, fontWeight: 700, color: textPrimary, whiteSpace: "nowrap", marginRight: 4 }}>고객 구분</span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: textPrimary, whiteSpace: "nowrap", marginRight: 4 }}>문의 구분</span>
           {["전체", "매물내놔요", "매물구해요", "기타"].map(type => (
             <button 
               key={type}
@@ -131,7 +131,7 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
               if (searchKeyword || !searchTypes.includes("전체")) setActiveTab("전체"); 
             } 
           }}
-          placeholder="고객 이름 또는 연락처 검색" 
+          placeholder="의뢰인 이름 또는 연락처 검색" 
           style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", flex: 1, minWidth: 180 }} 
         />
         <button 
@@ -196,7 +196,7 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
           <button 
             onClick={() => setIsModalOpen(true)}
             style={{ height: 36, padding: "0 16px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
-            + 새 고객 등록
+            + 새 문의 접수
           </button>
           
           <button style={{ height: 36, padding: "0 16px", background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
