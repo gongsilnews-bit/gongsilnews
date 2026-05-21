@@ -2,18 +2,21 @@
 
 import React, { useState, useEffect } from "react";
 import { AdminTheme } from "../types";
-import { getCustomerLogs, addCustomerLog, updateCustomerStatus, getRelatedCustomers } from "@/app/actions/customer";
+import { getCustomerLogs, addCustomerLog, updateCustomerStatus, getRelatedCustomers, getCustomerDetail } from "@/app/actions/customer";
 import { getVacancyFlyers } from "@/app/actions/vacancy";
 
 interface CustomerDetailPanelProps {
   theme: AdminTheme;
   customerId: string;
-  customer: any;
+  customer?: any;
   onClose: () => void;
 }
 
 export default function CustomerDetailPanel({ theme, customerId, customer, onClose }: CustomerDetailPanelProps) {
   const { bg, cardBg, textPrimary, textSecondary, darkMode, border } = theme;
+  
+  const [localCustomer, setLocalCustomer] = useState<any>(customer || null);
+  const [customerLoading, setCustomerLoading] = useState(!customer);
   
   // API로 연동할 데이터
   const [memos, setMemos] = useState<any[]>([]);
@@ -22,6 +25,20 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
   const [flyers, setFlyers] = useState<any[]>([]);
   const [selectedFlyer, setSelectedFlyer] = useState<any>(null);
   const [relatedCustomers, setRelatedCustomers] = useState<any[]>([]);
+
+  const loadCustomer = async () => {
+    if (!customer || String(customer.id) !== String(customerId)) {
+      setCustomerLoading(true);
+      const res = await getCustomerDetail(customerId);
+      if (res.success && res.data) {
+        setLocalCustomer(res.data);
+      }
+      setCustomerLoading(false);
+    } else {
+      setLocalCustomer(customer);
+      setCustomerLoading(false);
+    }
+  };
 
   const fetchLogs = async () => {
     setLoading(true);
@@ -43,18 +60,24 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
   };
 
   const fetchRelatedCustomers = async () => {
-    if (!customer?.phone) return;
-    const res = await getRelatedCustomers(customer.phone, customerId);
+    if (!localCustomer?.phone) return;
+    const res = await getRelatedCustomers(localCustomer.phone, customerId);
     if (res.success && res.data) {
       setRelatedCustomers(res.data);
     }
   };
 
   useEffect(() => {
-    fetchLogs();
-    fetchFlyers();
-    fetchRelatedCustomers();
+    loadCustomer();
   }, [customerId, customer]);
+
+  useEffect(() => {
+    if (localCustomer) {
+      fetchLogs();
+      fetchFlyers();
+      fetchRelatedCustomers();
+    }
+  }, [customerId, localCustomer]);
 
   const handleAddMemo = async () => {
     if (!newMemo.trim()) return;
@@ -75,22 +98,34 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
   };
 
   const handleStatusChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
-    if (!customer) return;
+    if (!localCustomer) return;
     const newStatus = e.target.value;
     
     // DB 업데이트
     await updateCustomerStatus(customerId, newStatus);
-    await addCustomerLog(customerId, "system", `상태를 [${customer.status}]에서 [${newStatus}](으)로 변경함.`);
-    fetchLogs(); // 여기 하위 컴포넌트 로그 다시 불러오고, 부모 업데이트는 onClose 트리거로 처리하거나 이벤트를 주면 됩니다만 
-                 // 지금 구현에서는 패널을 닫았다 열면 부모가 최신화 되므로 괜찮습니다.
+    await addCustomerLog(customerId, "system", `상태를 [${localCustomer.status}]에서 [${newStatus}](으)로 변경함.`);
+    setLocalCustomer((prev: any) => ({ ...prev, status: newStatus }));
+    fetchLogs();
   };
 
-  if (!customer) {
-    return null;
+  if (customerLoading) {
+    return (
+      <div style={{ flex: 1, padding: 40, textAlign: "center", color: textSecondary, background: bg, fontSize: 14 }}>
+        문의 상세 정보를 불러오는 중입니다...
+      </div>
+    );
+  }
+
+  if (!localCustomer) {
+    return (
+      <div style={{ flex: 1, padding: 40, textAlign: "center", color: textSecondary, background: bg, fontSize: 14 }}>
+        문의 정보를 찾을 수 없습니다.
+      </div>
+    );
   }
 
   // 1. 거래 구분 및 금액 파싱
-  const budgetStr = customer.budget || "";
+  const budgetStr = localCustomer.budget || "";
   let transactionType = "정보 없음";
   let priceText = budgetStr;
   
@@ -104,10 +139,10 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
 
   // 1-2. 매물 구분, 희망 지역, 입주 조건 파싱
   let propertyType = "아파트";
-  let areaText = customer.area || "지역 미정";
+  let areaText = localCustomer.area || "지역 미정";
   let moveInCondition = "즉시 입주 / 협의 가능";
-  if (customer.area && customer.area.includes(" / ")) {
-    const parts = customer.area.split(" / ");
+  if (localCustomer.area && localCustomer.area.includes(" / ")) {
+    const parts = localCustomer.area.split(" / ");
     propertyType = parts[0];
     areaText = parts[1] || "지역 미정";
     if (parts[2]) {
@@ -116,7 +151,7 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
   }
 
   // 2. 접수일 포맷팅
-  const dt = new Date(customer.created_at);
+  const dt = new Date(localCustomer.created_at);
   const dateStr = dt.toLocaleDateString() + ' ' + dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
   // 3. 상담 메모 파싱 (전체 메모를 역순으로 렌더링)
@@ -124,68 +159,25 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
 
   return (
     <div style={{
-      position: "fixed", top: 0, right: 0, width: "100vw", height: "100vh",
-      background: "rgba(0,0,0,0.3)", zIndex: 9999,
-      display: "flex", justifyContent: "flex-end"
+      display: "flex", gap: "24px", padding: "20px 28px", background: bg, minHeight: "100%", width: "100%", overflowY: "auto"
     }}>
-      {/* 백그라운드 클릭 시 닫기 */}
-      <div style={{ flex: 1 }} onClick={onClose} />
-      
-      {/* 우측 슬라이드 패널 */}
-      <div style={{
-        width: 720, background: cardBg,
-        boxShadow: "-4px 0 15px rgba(0,0,0,0.1)",
-        display: "flex", flexDirection: "column",
-        animation: "slideInRight 0.3s ease-out"
-      }}>
-        {/* 상단 프로필 헤더 */}
-        <div style={{ padding: "24px", borderBottom: `1px solid ${border}`, background: darkMode ? "#2c2d31" : "#f8fafc" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
-            <div>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 8 }}>
-                <h2 style={{ margin: 0, fontSize: 24, fontWeight: 850, color: textPrimary }}>{customer.name}</h2>
-                <span style={{ 
-                  fontSize: 14, 
-                  fontWeight: 800, 
-                  padding: "4px 12px", 
-                  borderRadius: 30,
-                  background: customer.source?.includes("오프라인")
-                    ? (darkMode ? "rgba(245, 158, 11, 0.15)" : "#fef3c7")
-                    : (darkMode ? "rgba(59, 130, 246, 0.15)" : "#eff6ff"),
-                  color: customer.source?.includes("오프라인") ? "#d97706" : "#3b82f6",
-                  border: `1px solid ${
-                    customer.source?.includes("오프라인") ? "rgba(245, 158, 11, 0.2)" : "rgba(59, 130, 246, 0.2)"
-                  }`
-                }}>
-                  {customer.source || "유입 정보 없음"}
-                </span>
-                {customer.user_id && (
-                  <span style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", background: "#dbeafe", color: "#1e40af", borderRadius: 4, display: "flex", alignItems: "center", gap: 4 }} title="홈페이지 가입 회원">
-                    가입회원
-                  </span>
-                )}
-              </div>
-              <div style={{ fontSize: 22, color: textPrimary, fontWeight: 800, letterSpacing: "-0.5px", marginTop: 4 }}>{customer.phone}</div>
-              
-              {/* 회원 ID 표시 박스 */}
-              {customer.user_id && (
-                <div style={{ marginTop: 8, fontSize: 12, color: textSecondary, background: darkMode ? "#1f2023" : "#fff", padding: "6px 10px", borderRadius: 6, border: `1px solid ${border}`, display: "inline-block" }}>
-                  웹사이트 계정: <span style={{ fontWeight: 700, color: textPrimary }}>{customer.account_email}</span>
-                </div>
-              )}
-            </div>
-            <button onClick={onClose} style={{ background: "none", border: "none", fontSize: 24, color: textSecondary, cursor: "pointer" }}>&times;</button>
-          </div>
-
-          {/* 상태 변경 셀렉트 */}
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 16 }}>
-            <span style={{ fontSize: 13, fontWeight: 700, color: textSecondary }}>현재 진행상태</span>
-            <select value={customer.status} onChange={handleStatusChange}
+      {/* 좌측 상세 정보 영역 */}
+      <div style={{ flex: 1.5, display: "flex", flexDirection: "column", gap: "20px", minWidth: 0 }}>
+        
+        {/* 상단 컨트롤 바 */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: cardBg, padding: "16px 24px", borderRadius: 12, border: `1px solid ${border}`, boxShadow: "0 2px 8px rgba(0,0,0,0.02)" }}>
+          <button onClick={onClose} style={{ display: "flex", alignItems: "center", gap: 6, background: darkMode ? "#2c2d31" : "#fff", border: `1px solid ${border}`, borderRadius: 6, padding: "8px 16px", fontSize: 13, fontWeight: 700, color: textPrimary, cursor: "pointer" }}>
+            ← 문의 목록
+          </button>
+          
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: textSecondary }}>진행상태</span>
+            <select value={localCustomer.status} onChange={handleStatusChange}
               style={{
                 height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, 
-                fontSize: 14, fontWeight: 700,
+                fontSize: 13, fontWeight: 700,
                 color: textPrimary,
-                background: darkMode ? "#1f2023" : "#fff", outline: "none", flex: 1
+                background: darkMode ? "#1f2023" : "#fff", outline: "none"
             }}>
               <option value="신규">신규접수</option>
               <option value="진행중">진행중</option>
@@ -195,15 +187,51 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
           </div>
         </div>
 
-        {/* 상세 정보 테이블 요약 */}
-        <div style={{ padding: "24px", borderBottom: `8px solid ${darkMode ? "#1f2023" : "#f1f5f9"}` }}>
-          <div style={{ display: "grid", gridTemplateColumns: "115px 1fr", gap: "16px", fontSize: 16 }}>
-            <div style={{ color: textSecondary, fontWeight: 700 }}>구분</div>
+        {/* 메인 상세 정보 카드 */}
+        <div style={{ background: cardBg, borderRadius: 12, border: `1px solid ${border}`, padding: "28px", boxShadow: "0 2px 8px rgba(0,0,0,0.02)" }}>
+          {/* 고객 기본 정보 */}
+          <div style={{ borderBottom: `1px solid ${border}`, paddingBottom: "20px", marginBottom: "20px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", marginBottom: 12 }}>
+              <h2 style={{ margin: 0, fontSize: 24, fontWeight: 850, color: textPrimary }}>{localCustomer.name}</h2>
+              <span style={{ 
+                fontSize: 13, 
+                fontWeight: 800, 
+                padding: "4px 12px", 
+                borderRadius: 30,
+                background: localCustomer.source?.includes("오프라인")
+                  ? (darkMode ? "rgba(245, 158, 11, 0.15)" : "#fef3c7")
+                  : (darkMode ? "rgba(59, 130, 246, 0.15)" : "#eff6ff"),
+                color: localCustomer.source?.includes("오프라인") ? "#d97706" : "#3b82f6",
+                border: `1px solid ${
+                  localCustomer.source?.includes("오프라인") ? "rgba(245, 158, 11, 0.2)" : "rgba(59, 130, 246, 0.2)"
+                }`
+              }}>
+                {localCustomer.source || "유입 정보 없음"}
+              </span>
+              {localCustomer.user_id && (
+                <span style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", background: "#dbeafe", color: "#1e40af", borderRadius: 4 }}>
+                  가입회원
+                </span>
+              )}
+            </div>
+            
+            <div style={{ fontSize: 20, color: textPrimary, fontWeight: 800, letterSpacing: "-0.5px" }}>{localCustomer.phone}</div>
+            
+            {localCustomer.user_id && (
+              <div style={{ marginTop: 12, fontSize: 12, color: textSecondary, background: darkMode ? "#1f2023" : "#f8fafc", padding: "8px 12px", borderRadius: 6, border: `1px solid ${border}`, display: "inline-block" }}>
+                웹사이트 계정: <span style={{ fontWeight: 700, color: textPrimary }}>{localCustomer.account_email}</span>
+              </div>
+            )}
+          </div>
+
+          {/* 상세 요약 그리드 */}
+          <div style={{ display: "grid", gridTemplateColumns: "130px 1fr", gap: "20px 16px", fontSize: 15 }}>
+            <div style={{ color: textSecondary, fontWeight: 700 }}>의뢰 구분</div>
             <div style={{ 
-              color: customer.type?.includes("구해요") || customer.type?.includes("임차") || customer.type?.includes("매수") ? "#3b82f6" : "#ef4444", 
+              color: localCustomer.type?.includes("구해요") || localCustomer.type?.includes("임차") || localCustomer.type?.includes("매수") ? "#3b82f6" : "#ef4444", 
               fontWeight: 800 
             }}>
-              {customer.type}
+              {localCustomer.type}
             </div>
             
             <div style={{ color: textSecondary, fontWeight: 700 }}>매물 구분</div>
@@ -215,43 +243,50 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
             <div style={{ color: textSecondary, fontWeight: 700 }}>거래 구분</div>
             <div style={{ color: textPrimary, fontWeight: 800 }}>{transactionType}</div>
             
-            <div style={{ color: textSecondary, fontWeight: 700 }}>금액</div>
+            <div style={{ color: textSecondary, fontWeight: 700 }}>금액 / 예산</div>
             <div style={{ 
-              color: customer.type?.includes("구해요") || customer.type?.includes("임차") || customer.type?.includes("매수") ? "#3b82f6" : "#ef4444", 
+              color: localCustomer.type?.includes("구해요") || localCustomer.type?.includes("임차") || localCustomer.type?.includes("매수") ? "#3b82f6" : "#ef4444", 
               fontWeight: 800 
             }}>{priceText}</div>
             
             <div style={{ color: textSecondary, fontWeight: 700 }}>입주 조건</div>
             <div style={{ color: textPrimary, fontWeight: 800 }}>{moveInCondition}</div>
             
-            <div style={{ color: textSecondary, fontWeight: 700 }}>접수일</div>
+            <div style={{ color: textSecondary, fontWeight: 700 }}>접수일시</div>
             <div style={{ color: textPrimary, fontWeight: 800 }}>{dateStr}</div>
           </div>
         </div>
 
-        {/* 상담 메모 영역 */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "24px", background: darkMode ? "#222" : "#fff", display: "flex", flexDirection: "column" }}>
-          <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 800, color: textPrimary }}>상담 메모</h3>
+      </div>
+
+      {/* 우측 상담 기록(상담 메모) 영역 */}
+      <div style={{ width: 400, display: "flex", flexDirection: "column", gap: "20px", flexShrink: 0 }}>
+        
+        {/* 메모 입력 및 내역 카드 */}
+        <div style={{ background: cardBg, borderRadius: 12, border: `1px solid ${border}`, padding: "24px", boxShadow: "0 2px 8px rgba(0,0,0,0.02)", display: "flex", flexDirection: "column", height: "calc(100vh - 120px)" }}>
+          <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 800, color: textPrimary }}>📝 상담 기록 작성</h3>
           
-          {/* 메모 입력창 (상단 배치) */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 24, padding: "16px", background: darkMode ? "#2c2d31" : "#f8fafc", borderRadius: 12, border: `1px solid ${border}` }}>
+          {/* 메모 입력창 */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20, padding: "16px", background: darkMode ? "#2c2d31" : "#f8fafc", borderRadius: 12, border: `1px solid ${border}` }}>
             <textarea 
               value={newMemo} onChange={(e) => setNewMemo(e.target.value)}
-              placeholder="상담 내용, 특이사항, 다음 약속일정 등을 자유롭게 남겨보세요."
+              placeholder="상담 내용, 특이사항, 다음 약속일정 등을 기록해 보세요."
               style={{ width: "100%", height: 80, padding: 0, border: "none", background: "transparent", color: textPrimary, outline: "none", resize: "none", fontFamily: "inherit", fontSize: 14 }}
             />
             <div style={{ display: "flex", justifyContent: "flex-end" }}>
               <button onClick={handleAddMemo} style={{ padding: "8px 16px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-                메모 남기기
+                기록 등록
               </button>
             </div>
           </div>
 
-          {/* 상담 메모 리스트 (하단 배치) */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <h3 style={{ margin: "0 0 12px 0", fontSize: 15, fontWeight: 800, color: textPrimary, borderTop: `1px solid ${border}`, paddingTop: "16px" }}>📋 상담 이력</h3>
+          
+          {/* 상담 이력 리스트 */}
+          <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 12, paddingRight: 4 }}>
             {allNotes.length === 0 ? (
-              <div style={{ fontSize: 14, color: textSecondary, textAlign: "center", padding: "20px 0" }}>
-                등록된 상담 메모가 없습니다.
+              <div style={{ fontSize: 14, color: textSecondary, textAlign: "center", padding: "40px 0" }}>
+                등록된 상담 기록이 없습니다.
               </div>
             ) : (
               allNotes.map(memo => {
@@ -276,17 +311,9 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
               })
             )}
           </div>
-
         </div>
 
       </div>
-
-      <style>{`
-        @keyframes slideInRight {
-          from { transform: translateX(100%); }
-          to { transform: translateX(0); }
-        }
-      `}</style>
     </div>
   );
 }

@@ -286,3 +286,20 @@ export async function registerIncomingInquiry(ownerId: string, data: {
 
   return { success: true, data: customer };
 }
+
+export async function getCustomerDetail(customerId: string) {
+  const supabase = getAdminClient();
+  const { data, error } = await supabase
+    .from("crm_customers")
+    .select("*")
+    .eq("id", customerId)
+    .single();
+
+  if (error) {
+    console.error("Error fetching customer detail:", error);
+    return { success: false, message: error.message };
+  }
+
+  return { success: true, data };
+}
+

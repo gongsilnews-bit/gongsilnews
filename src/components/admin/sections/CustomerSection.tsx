@@ -5,6 +5,7 @@ import { AdminTheme } from "./types";
 import CustomerModal from "./customer/CustomerModal";
 import CustomerDetailPanel from "./customer/CustomerDetailPanel";
 import { getCustomers } from "@/app/actions/customer";
+import { useRouter, useSearchParams } from "next/navigation";
 
 interface CustomerSectionProps {
   theme: AdminTheme;
@@ -15,13 +16,18 @@ interface CustomerSectionProps {
 export default function CustomerSection({ theme, role, memberId }: CustomerSectionProps) {
   const { bg, cardBg, textPrimary, textSecondary, darkMode, border } = theme;
   
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const action = searchParams.get("action");
+  const urlCustomerId = searchParams.get("id");
+  const showDetail = action === "detail" && urlCustomerId;
+
   const [activeTab, setActiveTab] = useState("전체");
   const [searchKeyword, setSearchKeyword] = useState("");
   const [searchTypes, setSearchTypes] = useState<string[]>(["전체"]);
   const [activeFilters, setActiveFilters] = useState({ keyword: "", types: ["전체"] });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<any | null>(null);
-  const [selectedCustomerId, setSelectedCustomerId] = useState<number | string | null>(null);
 
   const [dbCustomers, setDbCustomers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -54,6 +60,20 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
   useEffect(() => {
     fetchAllCustomers();
   }, [memberId]);
+
+  if (showDetail && urlCustomerId) {
+    return (
+      <CustomerDetailPanel 
+        theme={theme} 
+        customerId={urlCustomerId as string} 
+        customer={dbCustomers.find(c => String(c.id) === String(urlCustomerId))}
+        onClose={() => {
+          router.push("?menu=customer");
+          fetchAllCustomers();
+        }} 
+      />
+    );
+  }
 
   let filteredCustomers = dbCustomers.filter(c => {
     // 휴지통 필터링
@@ -239,7 +259,7 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
                   <tr key={row.id} style={{ borderBottom: `1px solid ${darkMode ? "#333" : "#f3f4f6"}`, transition: "background 0.15s", cursor: "pointer" }}
                     onMouseEnter={(e) => { e.currentTarget.style.background = darkMode ? "#3a3b3f" : "#f0fdf4"; }}
                     onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
-                    onClick={() => setSelectedCustomerId(row.id)}
+                    onClick={() => router.push(`?menu=customer&action=detail&id=${row.id}`)}
                   >
                     <td style={{ padding: "16px 4px", textAlign: "center", verticalAlign: "middle", fontWeight: 800, color: textSecondary, fontSize: 14 }} onClick={e => e.stopPropagation()}>
                       {serialNum}
@@ -455,16 +475,6 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
             setEditingCustomer(null);
           }} 
           onSave={fetchAllCustomers} 
-        />
-      )}
-
-      {/* 문의 상세 패널 (슬라이드 아웃) */}
-      {selectedCustomerId && (
-        <CustomerDetailPanel 
-          theme={theme} 
-          customerId={selectedCustomerId as string} 
-          customer={dbCustomers.find(c => c.id === selectedCustomerId)}
-          onClose={() => { setSelectedCustomerId(null); fetchAllCustomers(); }} 
         />
       )}
     </div>
