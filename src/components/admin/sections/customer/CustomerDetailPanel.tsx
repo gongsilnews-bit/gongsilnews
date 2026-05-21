@@ -96,8 +96,10 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
   const dt = new Date(customer.created_at);
   const dateStr = dt.toLocaleDateString() + ' ' + dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-  // 3. 첫 메모 파싱
-  const firstMemo = memos.filter(memo => memo.type !== "system")[0]?.content || "최초 접수 상담 메모 없음";
+  // 3. 첫 메모 및 추가 메모 파싱
+  const allNotes = memos.filter(memo => memo.type !== "system");
+  const firstMemo = allNotes[0]?.content || "최초 접수 상담 메모 없음";
+  const additionalNotes = allNotes.slice(1).reverse();
 
   return (
     <div style={{
@@ -249,18 +251,18 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
           </div>
         )}
 
-        {/* 상담 메모 영역 */}
+        {/* 추가 메모 영역 */}
         <div style={{ flex: 1, overflowY: "auto", padding: "24px", background: darkMode ? "#222" : "#fff", display: "flex", flexDirection: "column" }}>
-          <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 800, color: textPrimary }}>상담 메모</h3>
+          <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 800, color: textPrimary }}>추가 메모</h3>
           
-          {/* 상담 메모 리스트 (상단 배치) */}
+          {/* 추가 메모 리스트 (상단 배치) */}
           <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
-            {memos.filter(memo => memo.type !== "system").length === 0 ? (
+            {additionalNotes.length === 0 ? (
               <div style={{ fontSize: 14, color: textSecondary, textAlign: "center", padding: "20px 0" }}>
-                등록된 상담 메모가 없습니다.
+                등록된 추가 메모가 없습니다.
               </div>
             ) : (
-              memos.filter(memo => memo.type !== "system").map(memo => {
+              additionalNotes.map(memo => {
                 const dt = new Date(memo.created_at);
                 const dateStr = dt.toLocaleDateString() + ' ' + dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                 return (
