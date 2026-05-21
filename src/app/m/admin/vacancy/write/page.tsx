@@ -6,6 +6,7 @@ import { createClient } from "@/utils/supabase/client";
 import { createVacancy, updateVacancy, getVacancyDetail, syncVacancyPhotos, uploadVacancyPhoto } from "@/app/actions/vacancy";
 import { getPhotoLibrary, togglePhotoFavorite } from "@/app/actions/article";
 import { geocodeAddress } from "@/app/actions/geocode";
+import imageCompression from "browser-image-compression";
 
 const SUB_CATEGORIES: Record<string, string[]> = {
   "아파트·오피스텔": ["아파트", "오피스텔", "재건축", "재개발"],
@@ -14,23 +15,27 @@ const SUB_CATEGORIES: Record<string, string[]> = {
   "상가·사무실·건물·공장·토지": ["상가", "사무실", "공장/창고", "건물", "토지"],
 };
 
-/* ── WebP 압축 ── */
-const compressToWebP = (file: File, maxWidth = 1920, quality = 0.8): Promise<File> =>
-  new Promise((resolve) => {
-    if (!file.type.startsWith("image/")) { resolve(file); return; }
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      let w = img.width, h = img.height;
-      if (w > maxWidth) { h = Math.round(h * maxWidth / w); w = maxWidth; }
-      canvas.width = w; canvas.height = h;
-      canvas.getContext("2d")!.drawImage(img, 0, 0, w, h);
-      canvas.toBlob(blob => {
-        resolve(new File([blob!], file.name.replace(/\.[^.]+$/, ".webp"), { type: "image/webp" }));
-      }, "image/webp", quality);
+/* ── WebP 압축 (browser-image-compression 활용) ── */
+const compressToWebP = async (file: File, maxWidth = 1920, quality = 0.8): Promise<File> => {
+  if (!file.type.startsWith("image/") && !file.name.toLowerCase().endsWith(".heic")) {
+    return file;
+  }
+  try {
+    const options = {
+      maxSizeMB: 1, // 최대 1MB 이하로 압축
+      maxWidthOrHeight: maxWidth, // 최대 해상도 제한
+      useWebWorker: true,
+      fileType: "image/webp", // WebP 변환 강제
+      initialQuality: quality
     };
-    img.src = URL.createObjectURL(file);
-  });
+    const compressedBlob = await imageCompression(file, options);
+    const newName = file.name.replace(/\.[^.]+$/, ".webp");
+    return new File([compressedBlob], newName, { type: "image/webp" });
+  } catch (error) {
+    console.error("Image compression failed, returning original file:", error);
+    return file;
+  }
+};
 
 function MobileVacancyWrite() {
   const router = useRouter();
@@ -425,38 +430,6 @@ function MobileVacancyWrite() {
     else alert(`주소를 찾을 수 없습니다. (이유: ${res.error || "결과 없음"})`);
   };
 
-  const compressToWebP = (file: File): Promise<File> => {
-    if (!file.type.startsWith("image/")) return Promise.resolve(file);
-    return new Promise((resolve) => {
-      const url = URL.createObjectURL(file);
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        const MAX_WIDTH = 1920;
-        const MAX_HEIGHT = 1080;
-        let width = img.width;
-        let height = img.height;
-        if (width > height) {
-          if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
-        } else {
-          if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
-        }
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) { URL.revokeObjectURL(url); return resolve(file); }
-        ctx.drawImage(img, 0, 0, width, height);
-        canvas.toBlob((blob) => {
-          URL.revokeObjectURL(url);
-          if (!blob) return resolve(file);
-          const newName = file.name.replace(/\.[^/.]+$/, "") + ".webp";
-          resolve(new File([blob], newName, { type: "image/webp" }));
-        }, "image/webp", 0.8);
-      };
-      img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
-      img.src = url;
-    });
-  };
 
   const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
