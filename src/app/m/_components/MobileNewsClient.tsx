@@ -1520,7 +1520,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                                 fontSize: "17px",
                                 fontWeight: 800,
                                 fontStyle: "italic",
-                                color: isTop3 ? "#ea580c" : "#71717a",
+                                color: isTop3 ? "#ff6b00" : "#71717a",
                                 width: "18px",
                                 textAlign: "center",
                                 flexShrink: 0,
@@ -1634,7 +1634,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                   {/* 오른쪽 텍스트 컨텐츠 */}
                   <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, justifyContent: "center" }}>
                     <div style={{ fontSize: "13px", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "6px", marginBottom: "6px" }}>
-                      <span style={{ color: "#1a73e8", fontWeight: 700 }}>{a.section2 || "뉴스"}</span>
+                      <span style={{ color: "#ff6b00", fontWeight: 700 }}>{a.section2 || "뉴스"}</span>
                       <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                         <span style={{ color: "#666", fontWeight: 500 }}>
                           {formatDate(a.published_at || a.created_at)} · {a.author_name || "공실뉴스"}
