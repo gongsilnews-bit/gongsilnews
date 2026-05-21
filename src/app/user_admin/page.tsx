@@ -21,7 +21,6 @@ const USER_MENU: MenuItem[] = [
   { key: "article", label: "기사관리", icon: <IconArticle /> },
   { key: "study", label: "특강관리", icon: <IconStudy /> },
   { key: "customer", label: "고객관리", icon: <IconCustomer /> },
-  { key: "comment", label: "댓글", icon: <IconComment /> },
   { key: "point", label: "포인트", icon: <IconPoint /> },
   { key: "manual", label: "매뉴얼", icon: <IconManual /> },
   { key: "settings", label: "정보설정", icon: <IconSettings />, separated: true },
@@ -188,7 +187,7 @@ function UserAdminContent() {
               {memberId ? <MemberRegisterForm editMemberId={memberId} onBack={() => setActiveMenu("dashboard")} /> : <div style={{ textAlign: "center", padding: 40, color: theme.textSecondary }}>사용자 정보를 불러오는 중입니다...</div>}
             </div>
           )}
-          {["study", "customer", "comment", "manual"].includes(activeMenu) && (
+          {["study", "customer", "manual"].includes(activeMenu) && (
             <div style={{ flex: 1, margin: 16, marginBottom: 0, background: theme.cardBg, borderTopLeftRadius: 12, borderTopRightRadius: 12, boxShadow: "0 4px 6px rgba(0,0,0,0.05)", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <div style={{ textAlign: "center", color: "#9ca3af" }}>
                 <div style={{ fontSize: 48, marginBottom: 16 }}>🚧</div>
