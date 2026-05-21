@@ -1,0 +1,6 @@
+{
+  "name": "[기사작성] 공실NEWS 부동산 매물 콘텐츠 AI R1.2",
+  "description": "부동산 매물 정보, 데이터, 톤을 입력하여 쇼츠 대본, 기사, 카드뉴스 카피를 한번에 생성하는 AI 웹앱입니다. (R1.2 2026-02-03 Update)",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}

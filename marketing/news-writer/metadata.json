@@ -1,0 +1,5 @@
+{
+  "name": "[기사작성] 공실뉴스 뉴스/칼럼 기사 AI N1.2",
+  "description": "뉴스 소스, 데이터, 톤을 입력하여 쇼츠 대본, 기사, 카드뉴스 카피를 한번에 생성하는 AI 웹앱입니다.",
+  "requestFramePermissions": []
+}
