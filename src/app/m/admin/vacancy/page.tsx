@@ -19,7 +19,7 @@ function MobileVacancyAdmin() {
   const [searchKeyword, setSearchKeyword] = useState("");
   const [activeKeyword, setActiveKeyword] = useState("");
   const [previewId, setPreviewId] = useState<string | null>(null);
-  const [flyerPreviewId, setFlyerPreviewId] = useState<string | null>(null);
+  const [shareMenuVacancy, setShareMenuVacancy] = useState<any | null>(null);
   const [flyerMap, setFlyerMap] = useState<Record<string, boolean>>({});
   const [userRole, setUserRole] = useState<string | null>(null);
 
@@ -48,13 +48,27 @@ function MobileVacancyAdmin() {
       if (previewId) {
         setPreviewId(null);
       }
-      if (flyerPreviewId) {
-        setFlyerPreviewId(null);
-      }
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [previewId, flyerPreviewId]);
+  }, [previewId]);
+
+  // Load Kakao SDK dynamically
+  useEffect(() => {
+    const scriptId = "kakao-share-script";
+    if (!document.getElementById(scriptId)) {
+      const script = document.createElement("script");
+      script.id = scriptId;
+      script.src = "https://t1.kakaocdn.net/kakao_js_sdk/2.7.4/kakao.min.js";
+      script.onload = () => {
+        const Kakao = (window as any).Kakao;
+        if (Kakao && !Kakao.isInitialized()) {
+          Kakao.init("435d3602201a49ea712e5f5a36fe6efc");
+        }
+      };
+      document.head.appendChild(script);
+    }
+  }, []);
 
   const closePreview = () => {
     if (previewId) {
@@ -70,18 +84,53 @@ function MobileVacancyAdmin() {
     setPreviewId(id);
   };
 
-  const closeFlyerPreview = () => {
-    if (flyerPreviewId) {
-      setFlyerPreviewId(null);
-      if (window.history.state?.flyerPreviewOpen) {
-        window.history.back();
-      }
+  const handleKakaoShare = (vacancy: any) => {
+    const Kakao = (window as any).Kakao;
+    if (!Kakao || !Kakao.isInitialized()) {
+      alert("카카오 SDK를 불러오고 있습니다. 잠시 후 다시 시도해 주세요.");
+      return;
     }
+    const shareUrl = `${window.location.origin}/flyer/${vacancy.id}.html`;
+    
+    Kakao.Share.sendDefault({
+      objectType: "feed",
+      content: {
+        title: `[공실뉴스 온라인전단지] ${vacancy.building_name || '매물 정보'}`,
+        description: `선명하고 투명한 매물 상세 전단지입니다.`,
+        imageUrl: "https://gongsilnews.com/logo.png",
+        link: {
+          mobileWebUrl: shareUrl,
+          webUrl: shareUrl
+        }
+      },
+      buttons: [
+        {
+          title: "전단지 보기",
+          link: {
+            mobileWebUrl: shareUrl,
+            webUrl: shareUrl
+          }
+        }
+      ]
+    });
+    setShareMenuVacancy(null);
   };
 
-  const openFlyerPreview = (id: string) => {
-    window.history.pushState({ flyerPreviewOpen: true }, "");
-    setFlyerPreviewId(id);
+  const handleCopyUrl = (vacancy: any) => {
+    const shareUrl = `${window.location.origin}/flyer/${vacancy.id}.html`;
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      alert("온라인전단지 링크 주소가 복사되었습니다.\n원하는 대화방에 붙여넣어 전송해보세요!");
+    }).catch(() => {
+      // Fallback
+      const textArea = document.createElement("textarea");
+      textArea.value = shareUrl;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textArea);
+      alert("온라인전단지 링크 주소가 복사되었습니다.\n원하는 대화방에 붙여넣어 전송해보세요!");
+    });
+    setShareMenuVacancy(null);
   };
 
   useEffect(() => {
@@ -354,62 +403,29 @@ function MobileVacancyAdmin() {
                   const hasFlyer = flyerMap[row.id];
                   if (hasFlyer) {
                     return (
-                      <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
-                        <button 
-                          onClick={() => openFlyerPreview(row.id)}
-                          style={{ 
-                            flex: 1, 
-                            height: 38, 
-                            background: "#f0fdf4", 
-                            color: "#16a34a", 
-                            border: "1px solid #bbf7d0", 
-                            borderRadius: 8, 
-                            fontSize: 12, 
-                            fontWeight: 700, 
-                            cursor: "pointer",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            gap: 4
-                          }}
-                        >
-                          👁️ 전단지 미리보기
-                        </button>
-                        <button 
-                          onClick={() => {
-                            const shareUrl = `${window.location.origin}/flyer/${row.id}.html`;
-                            if (navigator.share) {
-                              navigator.share({
-                                title: `[공실뉴스 온라인전단지] ${row.building_name || '매물 정보'}`,
-                                text: `선명하고 투명한 매물 상세 전단지입니다.`,
-                                url: shareUrl
-                              }).catch(() => {});
-                            } else {
-                              navigator.clipboard.writeText(shareUrl);
-                              alert("온라인전단지 링크 주소가 복사되었습니다.\n원하는 대화방에 붙여넣어 전송해보세요!");
-                            }
-                          }}
-                          style={{ 
-                            flex: 1, 
-                            height: 38, 
-                            background: "linear-gradient(135deg, #10b981, #059669)", 
-                            color: "#fff", 
-                            border: "none", 
-                            borderRadius: 8, 
-                            fontSize: 12, 
-                            fontWeight: 700, 
-                            cursor: "pointer",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            gap: 4,
-                            boxShadow: "0 2px 4px rgba(16, 185, 129, 0.15)"
-                          }}
-                        >
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg>
-                          📢 공유하기
-                        </button>
-                      </div>
+                      <button 
+                        onClick={() => setShareMenuVacancy(row)}
+                        style={{ 
+                          width: "100%", 
+                          height: 38, 
+                          background: "linear-gradient(135deg, #10b981, #059669)", 
+                          color: "#fff", 
+                          border: "none", 
+                          borderRadius: 8, 
+                          fontSize: 13, 
+                          fontWeight: 800, 
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: 6,
+                          boxShadow: "0 2px 4px rgba(16, 185, 129, 0.15)",
+                          marginTop: 4
+                        }}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg>
+                        📢 AI 전단지 공유하기
+                      </button>
                     );
                   } else {
                     return (
@@ -475,21 +491,75 @@ function MobileVacancyAdmin() {
         </svg>
       </button>
 
-      {/* 전단지 미리보기 오버레이 (iframe) */}
-      {flyerPreviewId && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 99999, background: "rgba(0,0,0,0.6)" }}>
-          <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column" }}>
-            <div style={{ height: "40px", background: "rgba(0,0,0,0.8)", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 16px" }}>
-              <span style={{ color: "#fff", fontSize: 14, fontWeight: 700 }}>온라인 전단지 미리보기</span>
-              <button onClick={closeFlyerPreview} style={{ background: "none", border: "none", color: "#fff", fontSize: "24px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                &times;
+      {/* 공유 메뉴 바텀 시트 */}
+      {shareMenuVacancy && (
+        <div style={{ position:"fixed", inset:0, zIndex:99999, background:"rgba(0,0,0,0.5)", display:"flex", alignItems:"flex-end" }}>
+          <div onClick={() => setShareMenuVacancy(null)} style={{ position:"absolute", inset:0 }} />
+          
+          <div style={{ 
+            position:"relative", 
+            width:"100%", 
+            background:"#fff", 
+            borderTopLeftRadius:20, 
+            borderTopRightRadius:20, 
+            padding:"20px 16px min(30px, env(safe-area-inset-bottom))", 
+            boxShadow:"0 -4px 20px rgba(0,0,0,0.15)",
+            animation:"slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1)" 
+          }}>
+            <div style={{ width:40, height:4, background:"#e5e7eb", borderRadius:2, margin:"0 auto 16px" }} />
+            
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
+              <span style={{ fontSize:16, fontWeight:800, color:"#111" }}>📢 온라인 전단지 공유하기</span>
+              <button onClick={() => setShareMenuVacancy(null)} style={{ background:"none", border:"none", fontSize:20, color:"#9ca3af", cursor:"pointer" }}>&times;</button>
+            </div>
+            
+            <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+              <button onClick={() => handleKakaoShare(shareMenuVacancy)} style={{ 
+                width:"100%", 
+                height:52, 
+                borderRadius:12, 
+                border:"none", 
+                background:"#fee500", 
+                color:"#191919", 
+                fontSize:15, 
+                fontWeight:800, 
+                cursor:"pointer",
+                display:"flex",
+                alignItems:"center",
+                justifyContent: "center",
+                gap:10
+              }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3c-5.523 0-10 3.582-10 8 0 2.923 1.947 5.482 4.887 6.837l-1.002 3.676c-.104.382.133.771.516.843.125.023.252.011.368-.035l4.242-2.545c.323.053.652.083.989.083 5.523 0 10-3.582 10-8s-4.477-8-10-8z"/></svg>
+                카카오톡 공유
+              </button>
+              
+              <button onClick={() => handleCopyUrl(shareMenuVacancy)} style={{ 
+                width:"100%", 
+                height:52, 
+                borderRadius:12, 
+                border:"1px solid #e5e7eb", 
+                background:"#fff", 
+                color:"#374151", 
+                fontSize:15, 
+                fontWeight:700, 
+                cursor:"pointer",
+                display:"flex",
+                alignItems:"center",
+                justifyContent:"center",
+                gap:10
+              }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                URL 복사
               </button>
             </div>
-            <iframe 
-              src={`/flyer/${flyerPreviewId}.html`} 
-              style={{ width: "100%", flex: 1, border: "none", background: "#fff" }}
-            />
           </div>
+          
+          <style>{`
+            @keyframes slideUp {
+              from { transform: translateY(100%); }
+              to { transform: translateY(0); }
+            }
+          `}</style>
         </div>
       )}
 
