@@ -1520,7 +1520,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                                 fontSize: "17px",
                                 fontWeight: 800,
                                 fontStyle: "italic",
-                                color: isTop3 ? "#ff6b00" : "#71717a",
+                                color: isTop3 ? "#ea580c" : "#71717a",
                                 width: "18px",
                                 textAlign: "center",
                                 flexShrink: 0,
