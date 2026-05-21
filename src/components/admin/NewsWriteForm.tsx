@@ -57,6 +57,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
   const [fileCollapsed, setFileCollapsed] = useState(false);
   const [saving, setSaving] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
   const [articleCoords, setArticleCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [geocoding, setGeocoding] = useState(false);
   const [photoFiles, setPhotoFiles] = useState<{ file: File | null; preview: string; caption: string; isCover: boolean; size: number; align: string; captionAlign: string; mediaId?: string }[]>([]);
@@ -357,8 +358,10 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
         const supabase = createClient();
         const { data: authData } = await supabase.auth.getUser();
         if (authData?.user?.id) {
+          setCurrentUserId(authData.user.id);
           const { data: m } = await supabase.from('members').select('name, email, role').eq('id', authData.user.id).single();
           if (m) {
+            setCurrentUserRole(m.role || null);
             // 새 글 쓰기일 때만 초기값 세팅 (기존 글 수정 시에는 DB 정보로 덮어씌워짐)
             if (!articleId) {
               setReporterName(m.name || "작성자");
