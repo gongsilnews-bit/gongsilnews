@@ -167,3 +167,20 @@ export async function deleteCustomer(customerId: string) {
 
   return { success: true };
 }
+
+export async function getRelatedCustomers(phone: string, currentCustomerId: string) {
+  const supabase = getAdminClient();
+  const { data, error } = await supabase
+    .from("crm_customers")
+    .select("*")
+    .eq("phone", phone)
+    .neq("id", currentCustomerId)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Error fetching related customers:", error);
+    return { success: false, message: error.message };
+  }
+
+  return { success: true, data };
+}

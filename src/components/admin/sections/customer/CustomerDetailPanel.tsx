@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { AdminTheme } from "../types";
-import { getCustomerLogs, addCustomerLog, updateCustomerStatus } from "@/app/actions/customer";
+import { getCustomerLogs, addCustomerLog, updateCustomerStatus, getRelatedCustomers } from "@/app/actions/customer";
 import { getVacancyFlyers } from "@/app/actions/vacancy";
 
 interface CustomerDetailPanelProps {
@@ -21,6 +21,7 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
   const [loading, setLoading] = useState(true);
   const [flyers, setFlyers] = useState<any[]>([]);
   const [selectedFlyer, setSelectedFlyer] = useState<any>(null);
+  const [relatedCustomers, setRelatedCustomers] = useState<any[]>([]);
 
   const fetchLogs = async () => {
     setLoading(true);
@@ -41,10 +42,19 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
     }
   };
 
+  const fetchRelatedCustomers = async () => {
+    if (!customer?.phone) return;
+    const res = await getRelatedCustomers(customer.phone, customerId);
+    if (res.success && res.data) {
+      setRelatedCustomers(res.data);
+    }
+  };
+
   useEffect(() => {
     fetchLogs();
     fetchFlyers();
-  }, [customerId]);
+    fetchRelatedCustomers();
+  }, [customerId, customer]);
 
   const handleAddMemo = async () => {
     if (!newMemo.trim()) return;
@@ -218,6 +228,63 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
             <div style={{ color: textPrimary, fontWeight: 800 }}>{dateStr}</div>
           </div>
         </div>
+
+        {/* [공실 CRM 플러스] 동일 연락처의 다른 의뢰 내역 감지 배너 */}
+        {relatedCustomers.length > 0 && (
+          <div style={{ padding: "20px 24px", borderBottom: `8px solid ${darkMode ? "#1f2023" : "#f1f5f9"}`, background: darkMode ? "#1a2436" : "#f0f7ff" }}>
+            <h5 style={{ margin: "0 0 10px 0", fontSize: 13, fontWeight: 800, color: "#3b82f6", display: "flex", alignItems: "center", gap: 6 }}>
+              👥 이 고객의 다른 의뢰 내역 ({relatedCustomers.length}건)
+            </h5>
+            <p style={{ margin: "0 0 12px 0", fontSize: 11, color: textSecondary, lineHeight: 1.4, fontWeight: 600 }}>
+              동일한 연락처로 등록된 별도의 매물 의뢰 내역이 존재합니다. 상담 시 함께 참고하세요.
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {relatedCustomers.map((rc) => {
+                const isBuySide = rc.type.includes("구해요") || rc.type.includes("임차") || rc.type.includes("매수");
+                // Parse area text
+                let propType = "아파트";
+                let cleanArea = rc.area;
+                if (rc.area && rc.area.includes(" / ")) {
+                  const parts = rc.area.split(" / ");
+                  propType = parts[0];
+                  cleanArea = parts[1] || "";
+                }
+                return (
+                  <div key={rc.id} style={{
+                    padding: "10px 12px",
+                    borderRadius: 8,
+                    background: darkMode ? "#23334d" : "#fff",
+                    border: `1px solid ${darkMode ? "#344966" : "#dbeafe"}`,
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.05)"
+                  }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                      <span style={{
+                        fontSize: 11,
+                        fontWeight: 800,
+                        padding: "2px 6px",
+                        borderRadius: 4,
+                        background: isBuySide ? "rgba(59, 130, 246, 0.15)" : "rgba(239, 68, 68, 0.15)",
+                        color: isBuySide ? "#3b82f6" : "#ef4444"
+                      }}>
+                        {rc.type}
+                      </span>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: textSecondary }}>
+                        {rc.status === "신규" ? "신규접수" : rc.status}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: textPrimary, marginBottom: 2 }}>
+                      <span style={{ color: textSecondary, fontWeight: 600, marginRight: 6 }}>[{propType}]</span>
+                      {cleanArea}
+                    </div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: isBuySide ? "#3b82f6" : "#ef4444" }}>
+                      {rc.budget}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* [공실 CRM 플러스] 유형별 B2B 프리미엄 특화 액션 카드 (임대인 전용) */}
         {(customer.type === "임대인" || customer.type.includes("임대") || customer.type.includes("매도")) && (
