@@ -99,9 +99,31 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
         <div style={{ padding: "24px", borderBottom: `1px solid ${border}`, background: darkMode ? "#2c2d31" : "#f8fafc" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
             <div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: textPrimary }}>{customer.name}</h2>
-                <span style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", background: "#f3f4f6", color: "#4b5563", borderRadius: 4 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 8 }}>
+                <h2 style={{ margin: 0, fontSize: 24, fontWeight: 850, color: textPrimary }}>{customer.name}</h2>
+                <span style={{ 
+                  fontSize: 14, 
+                  fontWeight: 800, 
+                  padding: "4px 12px", 
+                  borderRadius: 30,
+                  background: customer.type.includes("구해요") || customer.type.includes("임차") || customer.type.includes("매수")
+                    ? (darkMode ? "rgba(59, 130, 246, 0.15)" : "#eff6ff")
+                    : customer.type.includes("내놔요") || customer.type.includes("임대인") || customer.type.includes("매도") || customer.type.includes("임대")
+                    ? (darkMode ? "rgba(16, 185, 129, 0.15)" : "#ecfdf5")
+                    : (darkMode ? "rgba(156, 163, 175, 0.15)" : "#f3f4f6"),
+                  color: customer.type.includes("구해요") || customer.type.includes("임차") || customer.type.includes("매수")
+                    ? "#3b82f6"
+                    : customer.type.includes("내놔요") || customer.type.includes("임대인") || customer.type.includes("매도") || customer.type.includes("임대")
+                    ? "#10b981"
+                    : "#4b5563",
+                  border: `1px solid ${
+                    customer.type.includes("구해요") || customer.type.includes("임차") || customer.type.includes("매수")
+                      ? "rgba(59, 130, 246, 0.2)"
+                      : customer.type.includes("내놔요") || customer.type.includes("임대인") || customer.type.includes("매도") || customer.type.includes("임대")
+                      ? "rgba(16, 185, 129, 0.2)"
+                      : "rgba(156, 163, 175, 0.2)"
+                  }`
+                }}>
                   {customer.type}
                 </span>
                 {customer.user_id && (
@@ -110,7 +132,7 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
                   </span>
                 )}
               </div>
-              <div style={{ fontSize: 15, color: textSecondary, fontWeight: 600 }}>{customer.phone}</div>
+              <div style={{ fontSize: 22, color: textPrimary, fontWeight: 800, letterSpacing: "-0.5px", marginTop: 4 }}>{customer.phone}</div>
               
               {/* 회원 ID 표시 박스 */}
               {customer.user_id && (
