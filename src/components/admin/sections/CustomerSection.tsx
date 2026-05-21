@@ -214,6 +214,7 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
                 </th>
                 <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 80 }}>상태</th>
                 <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 100 }}>고객유형</th>
+                <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 100 }}>회원구분</th>
                 <th style={{ padding: "12px 10px", textAlign: "left", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 180 }}>이름 / 연락처</th>
                 <th style={{ padding: "12px 10px", textAlign: "left", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 180 }}>희망지역</th>
                 <th style={{ padding: "12px 10px", textAlign: "left", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 180 }}>의뢰예산</th>
@@ -225,9 +226,9 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={10} style={{ padding: 40, textAlign: "center", color: textSecondary, fontSize: 14 }}>문의 데이터를 불러오는 중입니다...</td></tr>
+                <tr><td colSpan={11} style={{ padding: 40, textAlign: "center", color: textSecondary, fontSize: 14 }}>문의 데이터를 불러오는 중입니다...</td></tr>
               ) : filteredCustomers.length === 0 ? (
-                <tr><td colSpan={10} style={{ padding: 40, textAlign: "center", color: textSecondary, fontSize: 14 }}>조건에 맞는 문의가 없습니다.</td></tr>
+                <tr><td colSpan={11} style={{ padding: 40, textAlign: "center", color: textSecondary, fontSize: 14 }}>조건에 맞는 문의가 없습니다.</td></tr>
               ) : filteredCustomers.map((row, index) => {
                 const dateStr = new Date(row.created_at).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' });
                 const isNew = row.status === "신규";
@@ -265,19 +266,36 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
                           : "기타"}
                       </span>
                     </td>
+                    <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
+                      {(() => {
+                        const mType = (() => {
+                          if (!row.is_registered_member) {
+                            return { label: "비회원", bg: darkMode ? "rgba(107, 114, 128, 0.15)" : "#f3f4f6", color: darkMode ? "#9ca3af" : "#4b5563" };
+                          }
+                          if (row.type?.includes("공동중개") || row.client_role === "realtor" || row.type?.includes("중개")) {
+                            return { label: "부동산", bg: darkMode ? "rgba(245, 158, 11, 0.15)" : "#fef3c7", color: darkMode ? "#fbbf24" : "#b45309" };
+                          }
+                          return { label: "일반", bg: darkMode ? "rgba(59, 130, 246, 0.15)" : "#eff6ff", color: darkMode ? "#60a5fa" : "#1d4ed8" };
+                        })();
+                        return (
+                          <span style={{ 
+                            display: "inline-block", 
+                            padding: "4px 10px", 
+                            borderRadius: 20, 
+                            background: mType.bg, 
+                            color: mType.color, 
+                            fontWeight: 800, 
+                            fontSize: 12 
+                          }}>
+                            {mType.label}
+                          </span>
+                        );
+                      })()}
+                    </td>
                     <td style={{ padding: "16px 10px", verticalAlign: "middle" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4, flexWrap: "wrap" }}>
                         <span style={{ fontWeight: 800, color: textPrimary, fontSize: 15 }}>{row.name}</span>
                         {isNew && <span style={{ background: "#fef08a", color: "#854d0e", fontSize: 10, fontWeight: 800, padding: "2px 6px", borderRadius: 10 }}>N</span>}
-                        {row.is_registered_member ? (
-                          <span style={{ background: darkMode ? "rgba(16, 185, 129, 0.15)" : "#e6fbf1", color: "#10b981", fontSize: 10, fontWeight: 800, padding: "2px 8px", borderRadius: 12, border: "1px solid rgba(16, 185, 129, 0.2)", display: "inline-flex", alignItems: "center", gap: 4 }}>
-                            🟢 회원
-                          </span>
-                        ) : (
-                          <span style={{ background: row.source?.includes("전단지") ? (darkMode ? "rgba(249, 115, 22, 0.15)" : "#fff7ed") : (darkMode ? "rgba(14, 116, 144, 0.15)" : "#ecfeff"), color: row.source?.includes("전단지") ? "#f97316" : "#0e7490", fontSize: 10, fontWeight: 800, padding: "2px 8px", borderRadius: 12, border: `1px solid ${row.source?.includes("전단지") ? "rgba(249, 115, 22, 0.2)" : "rgba(14, 116, 144, 0.2)"}`, display: "inline-flex", alignItems: "center", gap: 4 }}>
-                            {row.source?.includes("전단지") ? "📢 전단지 QR" : "🌐 비회원"}
-                          </span>
-                        )}
                       </div>
                       <div style={{ fontSize: 14, color: textSecondary, fontWeight: 600 }}>{row.phone}</div>
                     </td>
