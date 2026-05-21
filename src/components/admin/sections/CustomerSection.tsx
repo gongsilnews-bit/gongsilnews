@@ -209,15 +209,15 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 1000 }}>
             <thead>
               <tr style={{ background: darkMode ? "#2c2d31" : "#f9fafb" }}>
-                <th style={{ padding: "12px 4px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 30 }}>
-                  <input type="checkbox" style={{ accentColor: "#3b82f6" }} />
+                <th style={{ padding: "12px 4px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 80 }}>
+                  고객번호
                 </th>
                 <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 80 }}>상태</th>
                 <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 100 }}>고객유형</th>
                 <th style={{ padding: "12px 10px", textAlign: "left", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 180 }}>이름 / 연락처</th>
                 <th style={{ padding: "12px 10px", textAlign: "left", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 250 }}>희망지역 / 가용 예산</th>
                 <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 120 }}>유입경로</th>
-                <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 100 }}>등록일</th>
+                <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 100 }}>접수일</th>
                 <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 110 }}>관리</th>
               </tr>
             </thead>
@@ -226,10 +226,11 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
                 <tr><td colSpan={8} style={{ padding: 40, textAlign: "center", color: textSecondary, fontSize: 14 }}>고객 데이터를 불러오는 중입니다...</td></tr>
               ) : filteredCustomers.length === 0 ? (
                 <tr><td colSpan={8} style={{ padding: 40, textAlign: "center", color: textSecondary, fontSize: 14 }}>조건에 맞는 고객이 없습니다.</td></tr>
-              ) : filteredCustomers.map((row) => {
+              ) : filteredCustomers.map((row, index) => {
                 const dateStr = new Date(row.created_at).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' });
                 const isNew = row.status === "신규";
                 const badgeColor = row.status === "신규" ? "#ef4444" : row.status === "진행중" ? "#3b82f6" : row.status === "계약완료" ? "#10b981" : "#9ca3af";
+                const serialNum = filteredCustomers.length - index;
 
                 return (
                   <tr key={row.id} style={{ borderBottom: `1px solid ${darkMode ? "#333" : "#f3f4f6"}`, transition: "background 0.15s", cursor: "pointer" }}
@@ -237,8 +238,8 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
                     onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
                     onClick={() => setSelectedCustomerId(row.id)}
                   >
-                    <td style={{ padding: "16px 4px", textAlign: "center", verticalAlign: "middle" }} onClick={e => e.stopPropagation()}>
-                      <input type="checkbox" value={row.id} style={{ accentColor: "#3b82f6" }} />
+                    <td style={{ padding: "16px 4px", textAlign: "center", verticalAlign: "middle", fontWeight: 800, color: textSecondary, fontSize: 14 }} onClick={e => e.stopPropagation()}>
+                      {serialNum}
                     </td>
                     <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
                       <span style={{ display: "inline-block", padding: "4px 8px", borderRadius: 4, background: badgeColor, color: "#fff", fontWeight: 700, fontSize: 12 }}>
