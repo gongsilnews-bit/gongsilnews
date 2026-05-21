@@ -9,6 +9,7 @@ export default function MarketingPage() {
 
   // Fade-up animation observer
   useEffect(() => {
+    window.scrollTo(0, 0);
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
