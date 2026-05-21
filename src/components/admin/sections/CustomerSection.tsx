@@ -281,9 +281,8 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
                       })()}
                     </td>
                     <td style={{ padding: "16px 10px", verticalAlign: "middle" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4, flexWrap: "wrap" }}>
-                        <span style={{ fontWeight: 800, color: textPrimary, fontSize: 15 }}>{row.name}</span>
-                        {isNew && <span style={{ background: "#fef08a", color: "#854d0e", fontSize: 10, fontWeight: 800, padding: "2px 6px", borderRadius: 10 }}>N</span>}
+                      <div style={{ fontWeight: 800, color: textPrimary, fontSize: 15, marginBottom: 4 }}>
+                        {row.name}
                       </div>
                       <div style={{ fontSize: 14, color: textSecondary, fontWeight: 600 }}>{row.phone}</div>
                     </td>
