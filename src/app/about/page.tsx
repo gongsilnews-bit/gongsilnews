@@ -23,7 +23,11 @@ export default function AboutPage() {
 
   // Fade-up animation observer
   useEffect(() => {
-    window.scrollTo(0, 0);
+    // Next.js 라우팅 트랜지션 완료 후 스크롤을 확실하게 최상단으로 강제 스냅
+    const timer = setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: "instant" });
+    }, 50);
+
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
@@ -33,7 +37,10 @@ export default function AboutPage() {
     }, { threshold: 0.1, rootMargin: "0px 0px -50px 0px" });
 
     document.querySelectorAll('.fade-up').forEach((el) => observer.observe(el));
-    return () => observer.disconnect();
+    return () => {
+      clearTimeout(timer);
+      observer.disconnect();
+    };
   }, []);
 
   return (
