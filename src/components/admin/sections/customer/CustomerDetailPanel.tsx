@@ -233,10 +233,10 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
         {relatedCustomers.length > 0 && (
           <div style={{ padding: "20px 24px", borderBottom: `8px solid ${darkMode ? "#1f2023" : "#f1f5f9"}`, background: darkMode ? "#1a2436" : "#f0f7ff" }}>
             <h5 style={{ margin: "0 0 10px 0", fontSize: 13, fontWeight: 800, color: "#3b82f6", display: "flex", alignItems: "center", gap: 6 }}>
-              👥 이 고객의 다른 의뢰 내역 ({relatedCustomers.length}건)
+              👥 이 의뢰인의 다른 문의 내역 ({relatedCustomers.length}건)
             </h5>
             <p style={{ margin: "0 0 12px 0", fontSize: 11, color: textSecondary, lineHeight: 1.4, fontWeight: 600 }}>
-              동일한 연락처로 등록된 별도의 매물 의뢰 내역이 존재합니다. 상담 시 함께 참고하세요.
+              동일한 연락처로 등록된 별도의 문의 내역이 존재합니다. 상담 시 함께 참고하세요.
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {relatedCustomers.map((rc) => {

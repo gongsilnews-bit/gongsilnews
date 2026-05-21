@@ -36,12 +36,12 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
   };
 
   const handleDeleteCustomer = async (customerId: string) => {
-    if (!confirm("⚠️ 이 고객 정보를 휴지통으로 이동하시겠습니까?")) return;
+    if (!confirm("⚠️ 이 문의 정보를 휴지통으로 이동하시겠습니까?")) return;
     try {
       const { updateCustomerStatus } = await import("@/app/actions/customer");
       const res = await updateCustomerStatus(customerId, "휴지통");
       if (res.success) {
-        alert("📥 고객 정보가 휴지통으로 이동되었습니다.");
+        alert("📥 문의 정보가 휴지통으로 이동되었습니다.");
         fetchAllCustomers();
       } else {
         alert("⚠️ 이동 실패: " + res.message);
@@ -223,9 +223,9 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={8} style={{ padding: 40, textAlign: "center", color: textSecondary, fontSize: 14 }}>고객 데이터를 불러오는 중입니다...</td></tr>
+                <tr><td colSpan={8} style={{ padding: 40, textAlign: "center", color: textSecondary, fontSize: 14 }}>문의 데이터를 불러오는 중입니다...</td></tr>
               ) : filteredCustomers.length === 0 ? (
-                <tr><td colSpan={8} style={{ padding: 40, textAlign: "center", color: textSecondary, fontSize: 14 }}>조건에 맞는 고객이 없습니다.</td></tr>
+                <tr><td colSpan={8} style={{ padding: 40, textAlign: "center", color: textSecondary, fontSize: 14 }}>조건에 맞는 문의가 없습니다.</td></tr>
               ) : filteredCustomers.map((row, index) => {
                 const dateStr = new Date(row.created_at).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' });
                 const isNew = row.status === "신규";
@@ -313,12 +313,12 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
                             <button 
                               onClick={async (e) => {
                                 e.stopPropagation();
-                                if (!confirm("♻️ 이 고객 정보를 원래대로 복구하시겠습니까?")) return;
+                                if (!confirm("♻️ 이 문의 정보를 원래대로 복구하시겠습니까?")) return;
                                 try {
                                   const { updateCustomerStatus } = await import("@/app/actions/customer");
                                   const res = await updateCustomerStatus(row.id, "신규");
                                   if (res.success) {
-                                    alert("🎉 고객 정보가 복구되었습니다.");
+                                    alert("🎉 문의 정보가 복구되었습니다.");
                                     fetchAllCustomers();
                                   } else {
                                     alert("⚠️ 복구 실패: " + res.message);
@@ -340,7 +340,7 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
                             <button 
                               onClick={async (e) => {
                                 e.stopPropagation();
-                                if (!confirm("⚠️ 정말 이 고객 정보를 영구적으로 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.")) return;
+                                if (!confirm("⚠️ 정말 이 문의 정보를 영구적으로 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.")) return;
                                 try {
                                   const { deleteCustomer } = await import("@/app/actions/customer");
                                   const res = await deleteCustomer(row.id);
@@ -415,7 +415,7 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
         </div>
       </div>
       
-      {/* 새 고객 등록 모달 */}
+      {/* 새 문의 등록 모달 */}
       {isModalOpen && (
         <CustomerModal 
           theme={theme} 
@@ -429,7 +429,7 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
         />
       )}
 
-      {/* 고객 상세 패널 (슬라이드 아웃) */}
+      {/* 문의 상세 패널 (슬라이드 아웃) */}
       {selectedCustomerId && (
         <CustomerDetailPanel 
           theme={theme} 
