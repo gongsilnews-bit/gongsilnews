@@ -548,7 +548,7 @@ export default function CustomerModal({ theme, memberId, customer, onClose, onSa
             boxShadow: "0 2px 4px rgba(59, 130, 246, 0.3)",
             opacity: loading ? 0.7 : 1, fontSize: 13
           }}>
-            {loading ? (customer ? "수정 중..." : "등록 중...") : (customer ? "수정 완료" : "고객 등록하기")}
+            {loading ? (customer ? "수정 중..." : "등록 중...") : (customer ? "수정 완료" : "문의 등록하기")}
           </button>
         </div>
       </div>
