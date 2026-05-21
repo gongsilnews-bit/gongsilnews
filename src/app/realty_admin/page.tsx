@@ -67,6 +67,7 @@ function RealtyAdminContent() {
   const [rejectionReason, setRejectionReason] = useState<string>("");
   const [showDocWarning, setShowDocWarning] = useState(false);
   const [planType, setPlanType] = useState<string>("free");
+  const [userRole, setUserRole] = useState<string>("");
 
   /* ── 프리페치 데이터 저장소 ── */
   const [prefetchedData, setPrefetchedData] = useState<Record<string, any[]>>({});
@@ -98,15 +99,15 @@ function RealtyAdminContent() {
         return;
       }
 
-      // 🔐 role 체크: REALTOR만 접근 가능
+      // 🔐 회원정보 조회 (로그인 필수)
       const { data: member } = await supabase
         .from("members")
         .select("id, name, role, plan_type")
         .eq("id", user.id)
         .single();
 
-      if (!member || member.role !== "REALTOR") {
-        alert("⚠️ 부동산회원만 접근할 수 있습니다.");
+      if (!member) {
+        alert("⚠️ 회원정보를 찾을 수 없습니다. 다시 로그인해 주세요.");
         window.location.href = "/";
         return;
       }
@@ -115,6 +116,7 @@ function RealtyAdminContent() {
       setMemberId(member.id);
       setUserName(member.name || "이름없음");
       setPlanType(member.plan_type || "free");
+      setUserRole(member.role || "USER");
 
       const { data: agencyData } = await supabase.from("agencies").select("status, biz_cert_url, reg_cert_url, reject_reason").eq("owner_id", member.id).single();
       if (agencyData) {
@@ -214,17 +216,17 @@ function RealtyAdminContent() {
         </header>
 
         <Suspense fallback={<AdminLoadingFallback />}>
-          {activeMenu === "dashboard" && <DashboardSection theme={theme} role="realtor" agencyStatus={agencyStatus} rejectionReason={rejectionReason} memberId={memberId || undefined} onMenuChange={(menu) => { setActiveMenu(menu); router.push(`?menu=${menu}`, { scroll: false }); }} />}
-          {activeMenu === "gongsil" && memberId && <VacancySection theme={theme} role="realtor" ownerId={memberId} ownerName={userName} initialData={prefetchedData["gongsil"]} />}
-          {activeMenu === "article" && memberId && <MemberArticleSection theme={theme} memberId={memberId} memberName={userName} memberEmail={userEmail || undefined} role="realtor" />}
-          {activeMenu === "point" && memberId && <MyPointSection theme={theme} memberId={memberId} role="realtor" />}
+          {activeMenu === "dashboard" && <DashboardSection theme={theme} role={userRole === "ADMIN" ? "admin" : userRole === "REALTOR" ? "realtor" : "user"} agencyStatus={agencyStatus} rejectionReason={rejectionReason} memberId={memberId || undefined} onMenuChange={(menu) => { setActiveMenu(menu); router.push(`?menu=${menu}`, { scroll: false }); }} />}
+          {activeMenu === "gongsil" && memberId && <VacancySection theme={theme} role={userRole === "ADMIN" ? "admin" : userRole === "REALTOR" ? "realtor" : "user"} ownerId={memberId} ownerName={userName} initialData={prefetchedData["gongsil"]} />}
+          {activeMenu === "article" && memberId && <MemberArticleSection theme={theme} memberId={memberId} memberName={userName} memberEmail={userEmail || undefined} role={userRole === "ADMIN" ? "admin" : userRole === "REALTOR" ? "realtor" : "user"} />}
+          {activeMenu === "point" && memberId && <MyPointSection theme={theme} memberId={memberId} role={userRole === "ADMIN" ? "admin" : userRole === "REALTOR" ? "realtor" : "user"} />}
           {activeMenu === "settings" && (
             <div style={{ flex: 1, padding: "20px 28px", overflowY: "auto", background: theme.cardBg, margin: 16, marginBottom: 0, borderTopLeftRadius: 12, borderTopRightRadius: 12, boxShadow: "0 4px 6px rgba(0,0,0,0.05)" }}>
               {memberId ? <MemberRegisterForm editMemberId={memberId} onBack={() => setActiveMenu("dashboard")} initialTab={searchParams.get("tab") === "agency" ? 1 : 0} /> : <div style={{ textAlign: "center", padding: 40, color: theme.textSecondary }}>사용자 정보를 불러오는 중입니다...</div>}
             </div>
           )}
           {/* {activeMenu === "homepage" && memberId && <HomepageSection theme={theme} memberId={memberId} planType={planType} />} - 임시 숨김 */}
-          {activeMenu === "customer" && memberId && <CustomerSection theme={theme} role="realtor" memberId={memberId} />}
+          {activeMenu === "customer" && memberId && <CustomerSection theme={theme} role={userRole === "ADMIN" ? "admin" : userRole === "REALTOR" ? "realtor" : "user"} memberId={memberId} />}
           {["homepage", "study", "manual"].includes(activeMenu) && (
             <div style={{ flex: 1, margin: 16, marginBottom: 0, background: theme.cardBg, borderTopLeftRadius: 12, borderTopRightRadius: 12, boxShadow: "0 4px 6px rgba(0,0,0,0.05)", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <div style={{ textAlign: "center", color: "#9ca3af" }}>
