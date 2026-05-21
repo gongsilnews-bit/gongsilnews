@@ -98,28 +98,19 @@ export default function CustomerModal({ theme, memberId, onClose, onSave }: Cust
     }
   };
 
-  // 금액(budget) 라벨 및 플레이스홀더 (공동중개, 기타용)
-  const budgetLabelText = formData.role === "공동중개"
-    ? "공동중개 수수료 조건 / 금액 *"
-    : "금액 / 예산 조건";
-
-  const budgetPlaceholderText = formData.role === "공동중개"
-    ? "예: 수수료 5:5 / 보증금 5천"
-    : "예: 금액 조건 없음 등 자유 기입";
+  // 금액(budget) 라벨 및 플레이스홀더 (기타용)
+  const budgetLabelText = "금액 / 예산 조건";
+  const budgetPlaceholderText = "예: 금액 조건 없음 등 자유 기입";
 
   // 지역(area) 라벨 및 플레이스홀더 동적 연동
   const areaLabelText = formData.role === "매물내놔요"
     ? "보유 건물 주소 (상세호수) *"
-    : formData.role === "공동중개"
-    ? "협업 대상 매물 주소 *"
     : formData.role === "기타"
     ? "관련 지역 / 주소"
     : "희망 지역 / 입주 조건 *";
 
   const areaPlaceholderText = formData.role === "매물내놔요"
     ? "예: 서초동 아크로빌라 102호"
-    : formData.role === "공동중개"
-    ? "예: 역삼동 신축 상가건물"
     : formData.role === "기타"
     ? "예: 전국구 / 강남권 등 자유 기입"
     : "예: 강남역 도보 5분 인근";
@@ -193,7 +184,6 @@ export default function CustomerModal({ theme, memberId, onClose, onSave }: Cust
                 style={{ width: "100%", height: 42, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 8, background: darkMode ? "#1f2023" : "#fff", color: textPrimary, outline: "none", fontSize: 14, fontWeight: 700 }}>
                 <option value="매물구해요">🔎 매물구해요 (임차 / 매수 손님)</option>
                 <option value="매물내놔요">📢 매물내놔요 (임대 / 매도 의뢰)</option>
-                <option value="공동중개">🤝 공동중개 (협업 중개사)</option>
                 <option value="기타">☕ 기타 (일반 문의 / 기타)</option>
               </select>
             </div>

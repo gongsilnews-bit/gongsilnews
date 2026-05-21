@@ -84,7 +84,7 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
       <div style={{ padding: "16px 24px", background: cardBg, borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", marginBottom: 20, display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
           <span style={{ fontSize: 13, fontWeight: 700, color: textPrimary, whiteSpace: "nowrap", marginRight: 4 }}>고객 구분</span>
-          {["전체", "매물내놔요", "매물구해요", "공동중개", "기타"].map(type => (
+          {["전체", "매물내놔요", "매물구해요", "기타"].map(type => (
             <button 
               key={type}
               onClick={() => toggleSearchType(type)}
@@ -97,7 +97,7 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
                 color: searchTypes.includes(type) ? "#3b82f6" : textSecondary
               }}
             >
-              {type === "전체" ? "전체" : type === "매물내놔요" ? "📢 매물내놔요" : type === "매물구해요" ? "🔎 매물구해요" : type === "공동중개" ? "🤝 공동중개" : "☕ 기타"}
+              {type === "전체" ? "전체" : type === "매물내놔요" ? "📢 매물내놔요" : type === "매물구해요" ? "🔎 매물구해요" : "☕ 기타"}
             </button>
           ))}
         </div>
@@ -231,23 +231,17 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
                           ? (darkMode ? "rgba(59, 130, 246, 0.15)" : "#eff6ff")
                           : row.type.includes("내놔요") || row.type.includes("임대인") || row.type.includes("매도") || row.type.includes("임대")
                           ? (darkMode ? "rgba(16, 185, 129, 0.15)" : "#ecfdf5")
-                          : row.type.includes("공동중개")
-                          ? (darkMode ? "rgba(139, 92, 246, 0.15)" : "#f5f3ff")
                           : (darkMode ? "rgba(156, 163, 175, 0.15)" : "#f3f4f6"),
                         color: row.type.includes("구해요") || row.type.includes("임차") || row.type.includes("매수")
                           ? "#3b82f6"
                           : row.type.includes("내놔요") || row.type.includes("임대인") || row.type.includes("매도") || row.type.includes("임대")
                           ? "#10b981"
-                          : row.type.includes("공동중개")
-                          ? "#8b5cf6"
                           : "#4b5563",
                         border: `1px solid ${
                           row.type.includes("구해요") || row.type.includes("임차") || row.type.includes("매수")
                             ? "rgba(59, 130, 246, 0.2)"
                             : row.type.includes("내놔요") || row.type.includes("임대인") || row.type.includes("매도") || row.type.includes("임대")
                             ? "rgba(16, 185, 129, 0.2)"
-                            : row.type.includes("공동중개")
-                            ? "rgba(139, 92, 246, 0.2)"
                             : "rgba(156, 163, 175, 0.2)"
                         }`
                       }}>
@@ -255,8 +249,6 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
                           ? "🔎 매물구해요"
                           : row.type.includes("내놔요") || row.type.includes("임대인") || row.type.includes("매도") || row.type.includes("임대")
                           ? "📢 매물내놔요"
-                          : row.type.includes("공동중개")
-                          ? "🤝 공동중개"
                           : "☕ 기타"}
                       </span>
                     </td>
