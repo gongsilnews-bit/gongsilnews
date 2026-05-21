@@ -2366,14 +2366,22 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                     )}
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: 18, fontWeight: 800, color: "#111", marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
-                        {agencyInfo ? agencyInfo.name : (prop.members ? prop.members.name : prop.client_name)}
-                        {prop.owner_id && (
-                          <Link href={`/reporter/${prop.owner_id}`} style={{ textDecoration: "none" }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: "4px", background: "#faf5ff", padding: "2px 8px", borderRadius: "12px", fontSize: "11px", fontWeight: 700, color: "#7e22ce", border: "1px solid #e9d5ff", cursor: "pointer", transition: "all 0.2s" }} onMouseEnter={(e) => { e.currentTarget.style.background = "#f3e8ff"; e.currentTarget.style.borderColor = "#d8b4fe"; }} onMouseLeave={(e) => { e.currentTarget.style.background = "#faf5ff"; e.currentTarget.style.borderColor = "#e9d5ff"; }}>
-                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-                              기자홈피
-                            </div>
+                        {prop.owner_id ? (
+                          <Link 
+                            href={`/reporter/${prop.owner_id}`} 
+                            style={{ 
+                              color: "#111", 
+                              textDecoration: "none", 
+                              cursor: "pointer",
+                              transition: "color 0.2s"
+                            }}
+                            onMouseEnter={(e) => { e.currentTarget.style.textDecoration = 'underline'; e.currentTarget.style.color = '#3b82f6'; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.textDecoration = 'none'; e.currentTarget.style.color = '#111'; }}
+                          >
+                            {agencyInfo ? agencyInfo.name : (prop.members ? prop.members.name : prop.client_name)}
                           </Link>
+                        ) : (
+                          <span>{agencyInfo ? agencyInfo.name : (prop.members ? prop.members.name : prop.client_name)}</span>
                         )}
                         {/* <button onClick={(e) => { e.preventDefault(); window.dispatchEvent(new CustomEvent("openGongsilTalk", { detail: { userId: prop.owner_id, userName: agencyInfo?.name || prop.members?.name || prop.client_name, profileImage: prop.members?.profile_image_url } })); }} title="공실Talk" style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px", borderRadius: 4, background: "#f8f9fa", border: "1px solid #e0e0e0", textDecoration: "none", cursor: "pointer", transition: "all 0.2s", color: "#444", fontSize: 13, fontWeight: "600", flexShrink: 0 }}
                           onMouseEnter={(e) => { e.currentTarget.style.background = "#eaf4ff"; e.currentTarget.style.borderColor = "#1a73e8"; e.currentTarget.style.color = "#1a73e8"; }}
