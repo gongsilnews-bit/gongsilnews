@@ -161,7 +161,7 @@ function MobileCustomerAdmin() {
           <button onClick={() => { goBack(); refresh(); }} style={{ background: "none", border: "none", cursor: "pointer", padding: 4, display: "flex" }}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M15 18L9 12L15 6" stroke="#333" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </button>
-          <h1 style={{ fontSize: 18, fontWeight: 800, color: "#111", margin: 0, flex: 1 }}>고객 상세</h1>
+          <h1 style={{ fontSize: 18, fontWeight: 800, color: "#111", margin: 0, flex: 1 }}>고객/문의 상세</h1>
           <div style={{ display: "flex", gap: "8px" }}>
             <a href={`sms:${sc.phone}`} style={{ background: "#3b82f6", color: "#fff", padding: "8px 12px", borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: "none", display: "flex", alignItems: "center", gap: 4 }}>💬 문자</a>
             <a href={`tel:${sc.phone}`} style={{ background: "#10b981", color: "#fff", padding: "8px 12px", borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: "none", display: "flex", alignItems: "center", gap: 4 }}>📞 전화</a>
@@ -251,7 +251,7 @@ function MobileCustomerAdmin() {
           <button onClick={goBack} style={{ background: "none", border: "none", cursor: "pointer", padding: 4, display: "flex" }}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M15 18L9 12L15 6" stroke="#333" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </button>
-          <h1 style={{ fontSize: 18, fontWeight: 800, color: "#111", margin: 0 }}>새 고객 등록</h1>
+          <h1 style={{ fontSize: 18, fontWeight: 800, color: "#111", margin: 0 }}>새 고객/문의 등록</h1>
         </div>
         <div style={{ padding: "16px 16px 100px", display: "flex", flexDirection: "column", gap: 16 }}>
           <div style={{ background: "#fff", borderRadius: 14, padding: 20, display: "flex", flexDirection: "column", gap: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
@@ -267,7 +267,7 @@ function MobileCustomerAdmin() {
               <div style={{ flex: 1 }}>
                 <label style={labelStyle}>유입 경로</label>
                 <select value={form.source} onChange={e => setForm({...form, source: e.target.value})} style={inputStyle}>
-                  <option value="오프라인(워크인)">오프라인(워크인)</option><option value="전화 문의">전화 문의</option><option value="지인 소개">지인 소개</option>
+                  <option value="오프라인(워크인)">오프라인(워크인)</option><option value="전화 문의">전화 문의</option><option value="지인 소개">지인 소개</option><option value="공실뉴스">공실뉴스</option>
                 </select>
               </div>
             </div>
@@ -291,7 +291,7 @@ function MobileCustomerAdmin() {
           <button onClick={() => router.push('/m?menu=open')} style={{ background: "none", border: "none", cursor: "pointer", padding: 4, display: "flex" }}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M15 18L9 12L15 6" stroke="#333" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </button>
-          <h1 style={{ fontSize: 18, fontWeight: 800, color: "#111", margin: 0 }}>고객관리</h1>
+          <h1 style={{ fontSize: 18, fontWeight: 800, color: "#111", margin: 0 }}>고객/문의</h1>
           <span style={{ fontSize: 12, color: "#6b7280", fontWeight: 600 }}>
             진행중 {customers.filter(c => c.status === "진행중").length}명 / 전체 {customers.length}명
           </span>
@@ -323,7 +323,7 @@ function MobileCustomerAdmin() {
 
       <div style={{ margin: "12px 16px 0", padding: "10px 14px", background: "#eff6ff", borderRadius: 10, border: "1px solid #bfdbfe", display: "flex", alignItems: "center", gap: 8 }}>
         <span style={{ fontSize: 16 }}>👥</span>
-        <span style={{ fontSize: 12, color: "#1d4ed8", fontWeight: 600, lineHeight: 1.4 }}>고객을 등록하고 상담 내역을 기록하여 체계적으로 관리하세요.</span>
+        <span style={{ fontSize: 12, color: "#1d4ed8", fontWeight: 600, lineHeight: 1.4 }}>고객/문의를 등록하고 상담 내역을 기록하여 체계적으로 관리하세요.</span>
       </div>
 
       <div style={{ padding: "12px 16px 100px" }}>

@@ -132,7 +132,7 @@ function MobileDashboard() {
     { icon: "🏢", label: "공실관리", href: "/m/admin/vacancy", roles: ["admin", "realtor", "user"] },
     { icon: "📝", label: "기사관리", href: "/m/admin/article", roles: ["admin", "realtor", "user"] },
     { icon: "👥", label: "회원관리", href: "/m/admin/member", roles: ["admin"] },
-    { icon: "👥", label: "고객관리", href: "/m/admin/customer", roles: ["realtor"] },
+    { icon: "👥", label: "고객/문의", href: "/m/admin/customer", roles: ["realtor"] },
     { icon: (
       <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '22px', height: '22px', borderRadius: '50%', background: 'linear-gradient(135deg, #F59E0B, #D97706)', color: '#fff', fontSize: '13px', fontWeight: 900, boxShadow: '0 2px 4px rgba(245, 158, 11, 0.4)', fontFamily: 'system-ui, sans-serif' }}>
         G

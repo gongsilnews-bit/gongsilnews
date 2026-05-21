@@ -209,7 +209,7 @@ export default function GlobalDrawerMenu() {
     const member = { icon: '👥', label: '회원관리', desc: '전체 회원 관리', href: '/m/admin/member', badgeCount: isAdmin ? pendingCounts.members : 0 };
 
     const realtor: any[] = [
-      { icon: '👥', label: '고객관리', desc: '상담 고객 목록', href: '/m/admin/customer' },
+      { icon: '👥', label: '고객/문의', desc: '상담 고객 목록', href: '/m/admin/customer' },
       { icon: '⚙️', label: '정보설정', desc: '내 정보 및 업소 설정', href: '/m/admin/settings' },
     ];
     const admin: any[] = [
