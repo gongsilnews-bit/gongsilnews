@@ -195,13 +195,17 @@ ${sourceText ? `[추가 참고 자료/원고]\n${sourceText}` : ""}
 주어진 톤앤매너: [${tone}] (오피셜 칼럼, 친근한 대화체, 전문가 정보 제공 중 하나)
 주어진 타깃 독자: [${audience}] (일반 매수자/세입자, 부동산 투자자, 동료 중개업자 중 하나)
 
+[JSON 포맷팅 절대 규칙]
+1. 결과는 반드시 표준 JSON 스펙을 충족해야 하며 JSON.parse()로 즉시 파싱될 수 있어야 한다.
+2. 모든 문자열 값 내부에 포함된 큰따옴표(")는 백슬래시를 사용해 반드시 이스케이프(\") 처리되어야 한다. (예: "그랑디오스 \\"ACROHILLS\\" 아파트" 형식)
+3. 줄바꿈 문자는 절대로 문자열 내에 그대로 들어오면 안 되며, 반드시 이스케이프된 역슬래시 n(\\n)으로 표현되어야 한다.
+
 [요구 채널 및 지침]
 1. 기사 초안 (content_article): 객관적이고 신뢰감 높은 뉴스 형식의 보도 기사. 제목과 부제목은 상위 필드("title", "subtitle")에 따로 넣고 본문(최소 3~4문단)만 마크다운으로 여기에 작성해라.
 2. 블로그글 (content_blog): 네이버 블로그에 적합하게 이모지와 소제목을 적절히 사용한 친밀하고 상세한 정보성 포스팅 원고. 마지막엔 핵심 태그 3~5개를 달아라.
 3. 쇼츠 대본 (content_shorts): 유튜브 쇼츠/릴스용 약 40~50초 분량의 대본. 영상 화면 구성 지문(Visual)과 나레이션 대사(Audio)를 타임라인별로 한눈에 보게 구성해라.
 4. SNS 피드 (content_sns): 인스타그램이나 카카오톡 채널 메시지 전송용 해시태그를 포함한 짧고 강렬한 본문(약 3~4문장).
 
-결과는 마크다운 코드 블록(예: \`\`\`json) 없이 오직 파싱 가능한 순수한 JSON 객체만 반환해라. JSON 외에 다른 서두나 꼬리말을 절대 붙이지 마라.
 JSON 구조는 다음과 같아야 한다:
 {
   "title": "기사 헤드라인 제목",
@@ -263,7 +267,7 @@ JSON 구조는 다음과 같아야 한다:
 
     // 마크다운 백틱 가드 제거 후 JSON 파싱
     let cleanJsonStr = generatedRawText.trim();
-    if (cleanJsonStr.startsWith("```")) {
+    if (cleanJsonStr.includes("```")) {
       const startIdx = cleanJsonStr.indexOf("{");
       const endIdx = cleanJsonStr.lastIndexOf("}");
       if (startIdx !== -1 && endIdx !== -1) {
@@ -271,7 +275,29 @@ JSON 구조는 다음과 같아야 한다:
       }
     }
 
-    const parsedData = JSON.parse(cleanJsonStr);
+    let parsedData;
+    try {
+      parsedData = JSON.parse(cleanJsonStr);
+    } catch (parseErr: any) {
+      console.warn("JSON.parse primary failed, attempting escape repair...", parseErr);
+      try {
+        // 줄바꿈이나 이스케이프 문자 복구 시도
+        let repaired = cleanJsonStr;
+        repaired = repaired.replace(/[\r\n]+/g, "\\n");
+        repaired = repaired
+          .replace(/{\\n/g, "{\n")
+          .replace(/}\\n/g, "\n}")
+          .replace(/",\\n/g, '",\n')
+          .replace(/:\\n/g, ":\n")
+          .replace(/\\n\s*"/g, '\n  "');
+
+        parsedData = JSON.parse(repaired);
+      } catch (secondErr: any) {
+        console.error("JSON repair parsing failed:", secondErr);
+        throw new Error(`AI의 JSON 출력 구조가 올바르지 않습니다. 다시 한 번 생성을 시도해 주세요. (${parseErr.message})`);
+      }
+    }
+
     return {
       success: true,
       data: parsedData
