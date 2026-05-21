@@ -177,7 +177,7 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
           <div style={{ display: "grid", gridTemplateColumns: "115px 1fr", gap: "16px", fontSize: 16 }}>
             <div style={{ color: textSecondary, fontWeight: 700 }}>구분</div>
             <div style={{ 
-              color: customer.type?.includes("구해요") || customer.type?.includes("임차") || customer.type?.includes("매수") ? "#ef4444" : "#3b82f6", 
+              color: customer.type?.includes("구해요") || customer.type?.includes("임차") || customer.type?.includes("매수") ? "#3b82f6" : "#ef4444", 
               fontWeight: 800 
             }}>
               {customer.type}
@@ -190,7 +190,10 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
             <div style={{ color: textPrimary, fontWeight: 800 }}>{transactionType}</div>
             
             <div style={{ color: textSecondary, fontWeight: 700 }}>금액</div>
-            <div style={{ color: textPrimary, fontWeight: 800 }}>{priceText}</div>
+            <div style={{ 
+              color: customer.type?.includes("구해요") || customer.type?.includes("임차") || customer.type?.includes("매수") ? "#3b82f6" : "#ef4444", 
+              fontWeight: 800 
+            }}>{priceText}</div>
             
             <div style={{ color: textSecondary, fontWeight: 700 }}>거래 희망일</div>
             <div style={{ color: textPrimary, fontWeight: 800 }}>즉시 입주 / 협의 가능</div>

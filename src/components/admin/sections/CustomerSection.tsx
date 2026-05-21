@@ -225,9 +225,9 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
                         fontSize: 14, 
                         fontWeight: 805,
                         color: row.type.includes("구해요") || row.type.includes("임차") || row.type.includes("매수")
-                          ? "#ef4444"
-                          : row.type.includes("내놔요") || row.type.includes("임대인") || row.type.includes("매도") || row.type.includes("임대")
                           ? "#3b82f6"
+                          : row.type.includes("내놔요") || row.type.includes("임대인") || row.type.includes("매도") || row.type.includes("임대")
+                          ? "#ef4444"
                           : "#4b5563"
                       }}>
                         {row.type.includes("구해요") || row.type.includes("임차") || row.type.includes("매수")
@@ -246,7 +246,15 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
                     </td>
                     <td style={{ padding: "16px 10px", verticalAlign: "middle" }}>
                       <div style={{ fontWeight: 600, color: textPrimary, fontSize: 14, marginBottom: 4 }}>{row.area}</div>
-                      <div style={{ fontSize: 13, color: textSecondary }}>{row.budget}</div>
+                      <div style={{ 
+                        fontSize: 13, 
+                        fontWeight: 700,
+                        color: row.type.includes("구해요") || row.type.includes("임차") || row.type.includes("매수")
+                          ? "#3b82f6"
+                          : row.type.includes("내놔요") || row.type.includes("임대인") || row.type.includes("매도") || row.type.includes("임대")
+                          ? "#ef4444"
+                          : textSecondary
+                      }}>{row.budget}</div>
                     </td>
                     <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 13, color: textSecondary }}>
                       {row.source}
