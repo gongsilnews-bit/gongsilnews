@@ -629,9 +629,9 @@ function MobileVacancyWrite() {
         flex:1, 
         minHeight:42, 
         padding:"8px 4px", 
-        border: sel ? "1px solid #f4a71b" : "1px solid #e5e7eb", 
+        border: sel ? "1px solid #2563eb" : "1px solid #e5e7eb", 
         borderRadius:10, 
-        background: sel ? "#f4a71b" : "#fff", 
+        background: sel ? "#2563eb" : "#fff", 
         color: sel ? "#fff" : "#4b5563", 
         fontSize:13, 
         fontWeight: sel ? 800 : 600, 
@@ -639,7 +639,7 @@ function MobileVacancyWrite() {
         wordBreak:"keep-all", 
         lineHeight:1.3, 
         textAlign:"center",
-        boxShadow: sel ? "0 2px 6px rgba(244,167,27,0.15)" : "none",
+        boxShadow: sel ? "0 2px 6px rgba(37,99,235,0.15)" : "none",
         transition: "all 0.15s ease" 
       }}
     >
@@ -718,10 +718,10 @@ function MobileVacancyWrite() {
           <React.Fragment key={step}>
             {i > 0 && <div style={{ width:28, height:2, background: isDone ? "#10b981" : "#e5e7eb", flexShrink:0 }} />}
             <div onClick={() => { if (isDone || isActive) setCurrentStep(step); }} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4, cursor: isDone || isActive ? "pointer" : "default", minWidth: 52 }}>
-              <div style={{ width:28, height:28, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:800, color: isActive ? "#fff" : isDone ? "#fff" : "#9ca3af", background: isActive ? "#f4a71b" : isDone ? "#10b981" : "#e5e7eb", transition:"all 0.2s" }}>
+              <div style={{ width:28, height:28, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:800, color: isActive ? "#fff" : isDone ? "#fff" : "#9ca3af", background: isActive ? "#2563eb" : isDone ? "#10b981" : "#e5e7eb", transition:"all 0.2s" }}>
                 {isDone ? "✓" : step}
               </div>
-              <span style={{ fontSize:11, fontWeight: isActive ? 800 : 500, color: isActive ? "#f4a71b" : isDone ? "#10b981" : "#9ca3af", whiteSpace:"nowrap" }}>{label}</span>
+              <span style={{ fontSize:11, fontWeight: isActive ? 800 : 500, color: isActive ? "#2563eb" : isDone ? "#10b981" : "#9ca3af", whiteSpace:"nowrap" }}>{label}</span>
             </div>
           </React.Fragment>
         );
@@ -744,7 +744,7 @@ function MobileVacancyWrite() {
       )}
       {currentStep < TOTAL_STEPS ? (
         <button type="button" onClick={handleNextStep}
-          style={{ height:46, padding:"0 24px", background:"linear-gradient(135deg,#f4a71b,#d89316)", color:"#fff", border:"none", borderRadius:10, fontSize:14, fontWeight:800, cursor:"pointer", boxShadow:"0 4px 12px rgba(244,167,27,0.25)" }}>
+          style={{ height:46, padding:"0 24px", background:"linear-gradient(135deg,#2563eb,#d89316)", color:"#fff", border:"none", borderRadius:10, fontSize:14, fontWeight:800, cursor:"pointer", boxShadow:"0 4px 12px rgba(37,99,235,0.25)" }}>
           다음 →
         </button>
       ) : (
@@ -773,7 +773,7 @@ function MobileVacancyWrite() {
         {currentStep === 1 && (<>
         {/* 1. 공실광고분류 */}
         <div style={{ background:"#fff", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.03)", border:"1px solid #f3f4f6" }}>
-          <div style={{ fontSize:16, fontWeight:800, color:"#111", borderLeft:"4px solid #f4a71b", paddingLeft:10, marginBottom:14 }}>공실광고분류</div>
+          <div style={{ fontSize:16, fontWeight:800, color:"#111", borderLeft:"4px solid #2563eb", paddingLeft:10, marginBottom:14 }}>공실광고분류</div>
           <label style={labelStyle}>대분류</label>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6, marginBottom:12 }}>
             {Object.keys(SUB_CATEGORIES).map(t => <SBtn key={t} label={t} sel={propertyType===t} onClick={() => { setPropertyType(t); setSubCategory(SUB_CATEGORIES[t][0]); }} />)}
@@ -786,20 +786,20 @@ function MobileVacancyWrite() {
 
         {/* 2. 거래/금액 */}
         <div style={{ background:"#fff", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.03)", border:"1px solid #f3f4f6" }}>
-          <div style={{ fontSize:16, fontWeight:800, color:"#111", borderLeft:"4px solid #f4a71b", paddingLeft:10, marginBottom:14 }}>거래정보</div>
+          <div style={{ fontSize:16, fontWeight:800, color:"#111", borderLeft:"4px solid #2563eb", paddingLeft:10, marginBottom:14 }}>거래정보</div>
           <label style={labelStyle}>거래유형</label>
           <div style={{ display:"flex", gap:8, marginBottom:14 }}>
             {["매매","전세","월세","단기"].map(t => <SBtn key={t} label={t} sel={tradeType===t} onClick={() => setTradeType(t)} />)}
           </div>
 
-          <label style={labelStyle}>{tradeType==="매매"?"매매가":"보증금"} {deposit && <span style={{color:"#f4a71b", fontWeight:600}}>{formatKorean(deposit)}</span>}</label>
+          <label style={labelStyle}>{tradeType==="매매"?"매매가":"보증금"} {deposit && <span style={{color:"#2563eb", fontWeight:600}}>{formatKorean(deposit)}</span>}</label>
           <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:10 }}>
             <input id="input-deposit" type="number" value={deposit} onChange={e=>setDeposit(e.target.value)} placeholder="만원 단위" style={inputStyle} />
             <span style={{ color:"#6b7280", fontSize:13, flexShrink:0 }}>만원</span>
           </div>
 
           {(tradeType==="월세"||tradeType==="단기") && (<>
-            <label style={labelStyle}>월세 {monthly && <span style={{color:"#f4a71b",fontWeight:600}}>{formatKorean(monthly)}</span>}</label>
+            <label style={labelStyle}>월세 {monthly && <span style={{color:"#2563eb",fontWeight:600}}>{formatKorean(monthly)}</span>}</label>
             <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:10 }}>
               <input id="input-monthly" type="number" value={monthly} onChange={e=>setMonthly(e.target.value)} placeholder="만원 단위" style={inputStyle} />
               <span style={{ color:"#6b7280", fontSize:13, flexShrink:0 }}>만원</span>
@@ -816,10 +816,10 @@ function MobileVacancyWrite() {
         {/* 3. 면적·층수 (Step 1 통합) */}
         <div style={{ background:"#fff", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.03)", border:"1px solid #f3f4f6" }}>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
-            <div style={{ fontSize:16, fontWeight:800, color:"#111", borderLeft:"4px solid #f4a71b", paddingLeft:10 }}>면적·층수</div>
+            <div style={{ fontSize:16, fontWeight:800, color:"#111", borderLeft:"4px solid #2563eb", paddingLeft:10 }}>면적·층수</div>
             <div style={{ display:"flex", borderRadius:8, overflow:"hidden", border:"1px solid #e5e7eb" }}>
-              <button type="button" onClick={()=>setAreaUnit("m2")} style={{ padding:"6px 14px", fontSize:12, fontWeight:800, border:"none", cursor:"pointer", background: areaUnit==="m2"?"#f4a71b":"#fff", color: areaUnit==="m2"?"#fff":"#6b7280" }}>m²</button>
-              <button type="button" onClick={()=>setAreaUnit("py")} style={{ padding:"6px 14px", fontSize:12, fontWeight:800, border:"none", cursor:"pointer", background: areaUnit==="py"?"#f4a71b":"#fff", color: areaUnit==="py"?"#fff":"#6b7280" }}>평</button>
+              <button type="button" onClick={()=>setAreaUnit("m2")} style={{ padding:"6px 14px", fontSize:12, fontWeight:800, border:"none", cursor:"pointer", background: areaUnit==="m2"?"#2563eb":"#fff", color: areaUnit==="m2"?"#fff":"#6b7280" }}>m²</button>
+              <button type="button" onClick={()=>setAreaUnit("py")} style={{ padding:"6px 14px", fontSize:12, fontWeight:800, border:"none", cursor:"pointer", background: areaUnit==="py"?"#2563eb":"#fff", color: areaUnit==="py"?"#fff":"#6b7280" }}>평</button>
             </div>
           </div>
           <div style={{ display:"flex", gap:10, marginBottom:4 }}>
@@ -840,7 +840,7 @@ function MobileVacancyWrite() {
               )}
             </div>
           </div>
-          <div style={{ display:"flex", gap:10, marginBottom:10, fontSize:12, color:"#f4a71b", fontWeight:600, padding:"0 2px" }}>
+          <div style={{ display:"flex", gap:10, marginBottom:10, fontSize:12, color:"#2563eb", fontWeight:600, padding:"0 2px" }}>
             <div style={{flex:1}}>{supplyM2 ? (areaUnit==="m2" ? `≈ ${(parseFloat(supplyM2)*0.3025).toFixed(1)}평` : `≈ ${parseFloat(supplyM2).toFixed(1)}m²`) : ""}</div>
             <div style={{flex:1}}>{exclusiveM2 ? (areaUnit==="m2" ? `≈ ${(parseFloat(exclusiveM2)*0.3025).toFixed(1)}평` : `≈ ${parseFloat(exclusiveM2).toFixed(1)}m²`) : ""}</div>
           </div>
@@ -856,11 +856,11 @@ function MobileVacancyWrite() {
                 onClick={() => setCurrentFloor(f)} 
                 style={{ 
                   padding:"4px 12px", borderRadius:20, 
-                  border: currentFloor === f ? "1px solid #f4a71b" : "1px solid #e5e7eb", 
-                  background: currentFloor === f ? "#f4a71b" : "#fff", 
+                  border: currentFloor === f ? "1px solid #2563eb" : "1px solid #e5e7eb", 
+                  background: currentFloor === f ? "#2563eb" : "#fff", 
                   fontSize:12, fontWeight: currentFloor === f ? 800 : 600, 
                   color: currentFloor === f ? "#fff" : "#6b7280", 
-                  boxShadow: currentFloor === f ? "0 2px 6px rgba(244,167,27,0.15)" : "none",
+                  boxShadow: currentFloor === f ? "0 2px 6px rgba(37,99,235,0.15)" : "none",
                   cursor:"pointer", transition:"all 0.15s ease" 
                 }}
               >
@@ -894,7 +894,7 @@ function MobileVacancyWrite() {
 
         {/* 주차·입주 (Step 1 통합) */}
         <div style={{ background:"#fff", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.03)", border:"1px solid #f3f4f6" }}>
-          <div style={{ fontSize:16, fontWeight:800, color:"#111", borderLeft:"4px solid #f4a71b", paddingLeft:10, marginBottom:14 }}>주차·입주</div>
+          <div style={{ fontSize:16, fontWeight:800, color:"#111", borderLeft:"4px solid #2563eb", paddingLeft:10, marginBottom:14 }}>주차·입주</div>
           <div style={{ display:"flex", gap:10 }}>
             <div style={{flex:1}}>
               <label style={labelStyle}>주차</label>
@@ -917,7 +917,7 @@ function MobileVacancyWrite() {
 
         {/* 4. 주소 */}
         <div style={{ background:"#fff", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.03)", border:"1px solid #f3f4f6" }}>
-          <div style={{ fontSize:16, fontWeight:800, color:"#111", borderLeft:"4px solid #f4a71b", paddingLeft:10, marginBottom:14 }}>위치/주소</div>
+          <div style={{ fontSize:16, fontWeight:800, color:"#111", borderLeft:"4px solid #2563eb", paddingLeft:10, marginBottom:14 }}>위치/주소</div>
           <button type="button" onClick={handlePostcodeSearch} style={{ width:"100%", height:46, background:"linear-gradient(135deg,#10b981,#059669)", color:"#fff", border:"none", borderRadius:10, fontSize:15, fontWeight:800, cursor:"pointer", marginBottom:14, display:"flex", alignItems:"center", justifyContent:"center", gap:8, boxShadow:"0 2px 8px rgba(16,185,129,0.2)" }}>
             🔍 주소 검색
           </button>
@@ -954,8 +954,8 @@ function MobileVacancyWrite() {
                 {propertyType === "아파트·오피스텔" ? (
                   <>
                     {["동/호수공개","동수공개","비공개"].map(opt => (
-                      <label key={opt} style={{ display:"flex", alignItems:"center", gap:4, fontSize:13, cursor:"pointer", padding:"6px 10px", borderRadius:8, background: addressExposure===opt?"#fffbeb":"#fff", border: addressExposure===opt?"1px solid #f4a71b":"1px solid #d1d5db" }}>
-                        <input type="radio" name="addrExp" checked={addressExposure===opt} onChange={()=>setAddressExposure(opt)} style={{accentColor:"#f4a71b"}}/>
+                      <label key={opt} style={{ display:"flex", alignItems:"center", gap:4, fontSize:13, cursor:"pointer", padding:"6px 10px", borderRadius:8, background: addressExposure===opt?"#eff6ff":"#fff", border: addressExposure===opt?"1px solid #2563eb":"1px solid #d1d5db" }}>
+                        <input type="radio" name="addrExp" checked={addressExposure===opt} onChange={()=>setAddressExposure(opt)} style={{accentColor:"#2563eb"}}/>
                         {opt}
                       </label>
                     ))}
@@ -963,8 +963,8 @@ function MobileVacancyWrite() {
                 ) : (
                   <>
                     {["번지공개","본번지만공개","기본주소만공개"].map(opt => (
-                      <label key={opt} style={{ display:"flex", alignItems:"center", gap:4, fontSize:13, cursor:"pointer", padding:"6px 10px", borderRadius:8, background: addressExposure===opt?"#fffbeb":"#fff", border: addressExposure===opt?"1px solid #f4a71b":"1px solid #d1d5db" }}>
-                        <input type="radio" name="addrExp" checked={addressExposure===opt} onChange={()=>setAddressExposure(opt)} style={{accentColor:"#f4a71b"}}/>
+                      <label key={opt} style={{ display:"flex", alignItems:"center", gap:4, fontSize:13, cursor:"pointer", padding:"6px 10px", borderRadius:8, background: addressExposure===opt?"#eff6ff":"#fff", border: addressExposure===opt?"1px solid #2563eb":"1px solid #d1d5db" }}>
+                        <input type="radio" name="addrExp" checked={addressExposure===opt} onChange={()=>setAddressExposure(opt)} style={{accentColor:"#2563eb"}}/>
                         {opt}
                       </label>
                     ))}
@@ -1001,7 +1001,7 @@ function MobileVacancyWrite() {
         {currentStep === 3 && (<>
         {/* 5. 추가 */}
         <div style={{ background:"#fff", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.03)", border:"1px solid #f3f4f6" }}>
-          <div style={{ fontSize:16, fontWeight:800, color:"#111", borderLeft:"4px solid #f4a71b", paddingLeft:10, marginBottom:14 }}>상세정보</div>
+          <div style={{ fontSize:16, fontWeight:800, color:"#111", borderLeft:"4px solid #2563eb", paddingLeft:10, marginBottom:14 }}>상세정보</div>
           {/* 옵션 & 테마 & 주변환경 */}
           <div>
             {/* 테마 */}
@@ -1018,10 +1018,10 @@ function MobileVacancyWrite() {
                     fontSize:12, 
                     fontWeight: selectedThemes.includes(t) ? 800 : 600, 
                     cursor:"pointer", 
-                    border: selectedThemes.includes(t) ? "1px solid #f4a71b" : "1px solid #e5e7eb", 
-                    background: selectedThemes.includes(t) ? "#f4a71b" : "#fff", 
+                    border: selectedThemes.includes(t) ? "1px solid #2563eb" : "1px solid #e5e7eb", 
+                    background: selectedThemes.includes(t) ? "#2563eb" : "#fff", 
                     color: selectedThemes.includes(t) ? "#fff" : "#6b7280",
-                    boxShadow: selectedThemes.includes(t) ? "0 2px 6px rgba(244,167,27,0.15)" : "none",
+                    boxShadow: selectedThemes.includes(t) ? "0 2px 6px rgba(37,99,235,0.15)" : "none",
                     transition:"all 0.15s ease"
                   }}
                 >
@@ -1048,10 +1048,10 @@ function MobileVacancyWrite() {
                     fontSize:12, 
                     fontWeight: selectedOptions.includes(opt) ? 800 : 600, 
                     cursor:"pointer", 
-                    border: selectedOptions.includes(opt) ? "1px solid #f4a71b" : "1px solid #e5e7eb", 
-                    background: selectedOptions.includes(opt) ? "#f4a71b" : "#fff", 
+                    border: selectedOptions.includes(opt) ? "1px solid #2563eb" : "1px solid #e5e7eb", 
+                    background: selectedOptions.includes(opt) ? "#2563eb" : "#fff", 
                     color: selectedOptions.includes(opt) ? "#fff" : "#6b7280",
-                    boxShadow: selectedOptions.includes(opt) ? "0 2px 6px rgba(244,167,27,0.15)" : "none",
+                    boxShadow: selectedOptions.includes(opt) ? "0 2px 6px rgba(37,99,235,0.15)" : "none",
                     transition:"all 0.15s ease"
                   }}
                 >
@@ -1073,7 +1073,7 @@ function MobileVacancyWrite() {
 
         {/* 6. 사진 */}
         <div style={{ background:"#fff", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.03)", border:"1px solid #f3f4f6" }}>
-          <div style={{ fontSize:16, fontWeight:800, color:"#111", borderLeft:"4px solid #f4a71b", paddingLeft:10, marginBottom:14 }}>사진 등록 ({photoPreview.length}/5)</div>
+          <div style={{ fontSize:16, fontWeight:800, color:"#111", borderLeft:"4px solid #2563eb", paddingLeft:10, marginBottom:14 }}>사진 등록 ({photoPreview.length}/5)</div>
           <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:10 }}>
             {photoPreview.map((src,i) => (
               <div key={i} style={{ position:"relative", width:80, height:80, borderRadius:10, overflow:"hidden", border:"1px solid #e5e7eb" }}>
@@ -1113,17 +1113,17 @@ function MobileVacancyWrite() {
             <div style={{ borderTop:"1px dashed #e5e7eb", paddingTop:10 }} />
             <div style={{ display:"flex", justifyContent:"space-between" }}><span style={{color:"#6b7280"}}>사진</span><span style={{fontWeight:700}}>{photoPreview.length}장 등록됨</span></div>
             <div style={{ display:"flex", justifyContent:"space-between" }}><span style={{color:"#6b7280"}}>좌표</span><span style={{fontWeight:700, color: coords ? "#10b981" : "#ef4444"}}>{coords ? "✓ 설정됨" : "✗ 미설정"}</span></div>
-            {selectedThemes.length > 0 && <div style={{ display:"flex", justifyContent:"space-between", flexWrap:"wrap" }}><span style={{color:"#6b7280"}}>테마</span><span style={{fontWeight:600, color:"#f4a71b"}}>{selectedThemes.map(t=>`#${t}`).join(" ")}</span></div>}
+            {selectedThemes.length > 0 && <div style={{ display:"flex", justifyContent:"space-between", flexWrap:"wrap" }}><span style={{color:"#6b7280"}}>테마</span><span style={{fontWeight:600, color:"#2563eb"}}>{selectedThemes.map(t=>`#${t}`).join(" ")}</span></div>}
             {!isRealtor && (
               <div style={{ display:"flex", justifyContent:"space-between" }}>
                 <span style={{color:"#6b7280"}}>중개보수</span>
-                <span style={{fontWeight:700, color:"#f4a71b"}}>{commissionType}{commissionEtc ? ` (${commissionEtc})` : ""}</span>
+                <span style={{fontWeight:700, color:"#2563eb"}}>{commissionType}{commissionEtc ? ` (${commissionEtc})` : ""}</span>
               </div>
             )}
           </div>
           <div style={{ marginTop:12, display:"flex", gap:6 }}>
             {[1,2,3].map(s => (
-              <button key={s} type="button" onClick={()=>setCurrentStep(s)} style={{ flex:1, height:36, background:"#fffbeb", color:"#f4a71b", border:"1px solid #fde68a", borderRadius:8, fontSize:12, fontWeight:700, cursor:"pointer" }}>
+              <button key={s} type="button" onClick={()=>setCurrentStep(s)} style={{ flex:1, height:36, background:"#eff6ff", color:"#2563eb", border:"1px solid #bfdbfe", borderRadius:8, fontSize:12, fontWeight:700, cursor:"pointer" }}>
                 {STEP_LABELS[s-1]} 수정
               </button>
             ))}
@@ -1133,7 +1133,7 @@ function MobileVacancyWrite() {
         {/* 7. 등록자 / 부동산 기업 정보 */}
         {isRealtor ? (
           <div style={{ background:"#f9fafb", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.03)", border:"1px solid #e5e7eb" }}>
-            <div style={{ fontSize:15, fontWeight:800, color:"#111", borderLeft:"4px solid #f4a71b", paddingLeft:10, marginBottom:14 }}>부동산 / 기업 정보</div>
+            <div style={{ fontSize:15, fontWeight:800, color:"#111", borderLeft:"4px solid #2563eb", paddingLeft:10, marginBottom:14 }}>부동산 / 기업 정보</div>
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px 10px", marginBottom:12 }}>
               <div><label style={{...labelStyle,fontSize:12,marginBottom:4}}>상호명</label><input type="text" value={rCompany} onChange={e=>setRCompany(e.target.value)} style={{...inputStyle, background:"#fff"}}/></div>
               <div><label style={{...labelStyle,fontSize:12,marginBottom:4}}>중개등록번호</label><input type="text" value={rRegNum} onChange={e=>setRRegNum(e.target.value)} style={{...inputStyle, background:"#fff"}}/></div>
@@ -1151,17 +1151,17 @@ function MobileVacancyWrite() {
           <>
             {/* 7-1. 중개수수료 동의 및 지급여부 설정 */}
             <div style={{ background:"#fff", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.03)", border:"1px solid #f3f4f6" }}>
-              <div style={{ fontSize:16, fontWeight:800, color:"#111", borderLeft:"4px solid #f4a71b", paddingLeft:10, marginBottom:14 }}>중개수수료</div>
+              <div style={{ fontSize:16, fontWeight:800, color:"#111", borderLeft:"4px solid #2563eb", paddingLeft:10, marginBottom:14 }}>중개수수료</div>
               <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
                 <div style={{ display:"flex", alignItems:"center", gap:10 }}>
                   <label style={{ display:"flex", alignItems:"center", gap:6, fontSize:14, fontWeight:600, color:"#374151", flexShrink:0 }}>
-                    <input type="radio" checked readOnly style={{ accentColor:"#f4a71b", width:18, height:18 }} />
+                    <input type="radio" checked readOnly style={{ accentColor:"#2563eb", width:18, height:18 }} />
                     법정수수료 지급
                   </label>
                   <input type="text" placeholder="예: 추가사항 입력 (선택)" value={commissionEtc} onChange={(e) => setCommissionEtc(e.target.value)}
                     style={{ ...inputStyle, flex:1, height:38, fontSize:13 }} />
                 </div>
-                <div style={{ background:"#fffbeb", borderRadius:10, padding:"12px 14px", fontSize:12, color:"#b45309", border:"1px solid #fde68a", lineHeight:1.5 }}>
+                <div style={{ background:"#eff6ff", borderRadius:10, padding:"12px 14px", fontSize:12, color:"#1e40af", border:"1px solid #bfdbfe", lineHeight:1.5 }}>
                   ⓘ 공실광고의뢰서 작성자는 법정수수료를 지급하는 것에 대하여 동의하며, 중개수수료 지급관련 민원이 발생될 경우 <strong>공실뉴스</strong> 공실광고 등록에 제한이 될 수 있음을 확인합니다.
                 </div>
               </div>
@@ -1169,7 +1169,7 @@ function MobileVacancyWrite() {
 
             {/* 7-2. 등록자 정보 및 관계 */}
             <div style={{ background:"#fff", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.03)", border:"1px solid #f3f4f6" }}>
-              <div style={{ fontSize:16, fontWeight:800, color:"#111", borderLeft:"4px solid #f4a71b", paddingLeft:10, marginBottom:14 }}>등록자 정보</div>
+              <div style={{ fontSize:16, fontWeight:800, color:"#111", borderLeft:"4px solid #2563eb", paddingLeft:10, marginBottom:14 }}>등록자 정보</div>
               <div style={{ display:"flex", gap:10, marginBottom:12 }}>
                 <div style={{flex:1}}><label style={labelStyle}>이름</label><input type="text" value={clientName} onChange={e=>setClientName(e.target.value)} style={inputStyle}/></div>
                 <div style={{flex:1}}><label style={labelStyle}>연락처</label><input type="tel" value={clientPhone} onChange={e=>setClientPhone(formatPhone(e.target.value))} placeholder="010-0000-0000" style={inputStyle}/></div>
@@ -1187,7 +1187,7 @@ function MobileVacancyWrite() {
         {/* 8. 부동산 전용 (REALTOR/ADMIN만) */}
         {isRealtor && (
           <div style={{ background:"#fff", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.03)", border:"1px solid #f3f4f6" }}>
-            <div style={{ fontSize:16, fontWeight:800, color:"#f4a71b", borderLeft:"4px solid #f4a71b", paddingLeft:10, marginBottom:14 }}>부동산 전용</div>
+            <div style={{ fontSize:16, fontWeight:800, color:"#2563eb", borderLeft:"4px solid #2563eb", paddingLeft:10, marginBottom:14 }}>부동산 전용</div>
 
             <label style={labelStyle}>중개보수 지급 <span style={{color:"#ef4444"}}>*</span></label>
             <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:14 }}>
@@ -1201,11 +1201,11 @@ function MobileVacancyWrite() {
                     borderRadius:10, 
                     fontSize:12, 
                     fontWeight: realtorCommission===opt?800:600, 
-                    border: realtorCommission===opt?"1px solid #f4a71b":"1px solid #e5e7eb", 
-                    background: realtorCommission===opt?"#f4a71b":"#fff", 
+                    border: realtorCommission===opt?"1px solid #2563eb":"1px solid #e5e7eb", 
+                    background: realtorCommission===opt?"#2563eb":"#fff", 
                     color: realtorCommission===opt?"#fff":"#374151", 
                     cursor:"pointer",
-                    boxShadow: realtorCommission===opt?"0 2px 6px rgba(244,167,27,0.15)":"none",
+                    boxShadow: realtorCommission===opt?"0 2px 6px rgba(37,99,235,0.15)":"none",
                     transition:"all 0.15s ease"
                   }}
                 >
@@ -1216,16 +1216,16 @@ function MobileVacancyWrite() {
 
             <label style={labelStyle}>노출선택 <span style={{color:"#ef4444"}}>*</span></label>
             <div style={{ display:"flex", gap:10, marginBottom:14 }}>
-              <div onClick={()=>setExposureType("부동산노출")} style={{ flex:1, padding:12, borderRadius:10, cursor:"pointer", border: exposureType==="부동산노출"?"1px solid #f4a71b":"1px solid #e5e7eb", background: exposureType==="부동산노출"?"#fffbeb":"#fff", transition:"all 0.15s ease" }}>
-                <div style={{ fontSize:14, fontWeight:800, color: exposureType==="부동산노출"?"#f4a71b":"#374151", marginBottom:4 }}>부동산노출</div>
-                <div style={{ fontSize:11, color: exposureType==="부동산노출"?"#f4a71b":"#9ca3af", lineHeight:1.4 }}>
+              <div onClick={()=>setExposureType("부동산노출")} style={{ flex:1, padding:12, borderRadius:10, cursor:"pointer", border: exposureType==="부동산노출"?"1px solid #2563eb":"1px solid #e5e7eb", background: exposureType==="부동산노출"?"#eff6ff":"#fff", transition:"all 0.15s ease" }}>
+                <div style={{ fontSize:14, fontWeight:800, color: exposureType==="부동산노출"?"#2563eb":"#374151", marginBottom:4 }}>부동산노출</div>
+                <div style={{ fontSize:11, color: exposureType==="부동산노출"?"#2563eb":"#9ca3af", lineHeight:1.4 }}>
                   비로그인, 일반인로그인시 공실광고상세보기는 부동산엔 열람 가능하고<br/>
                   비회원 일반인에게는 비공개
                 </div>
               </div>
-              <div onClick={()=>setExposureType("부동산노출 + 일반인노출")} style={{ flex:1, padding:12, borderRadius:10, cursor:"pointer", border: exposureType==="부동산노출 + 일반인노출"?"1px solid #f4a71b":"1px solid #e5e7eb", background: exposureType==="부동산노출 + 일반인노출"?"#fffbeb":"#fff", transition:"all 0.15s ease" }}>
-                <div style={{ fontSize:14, fontWeight:800, color: exposureType==="부동산노출 + 일반인노출"?"#f4a71b":"#374151", marginBottom:4 }}>부동산+일반인노출</div>
-                <div style={{ fontSize:11, color: exposureType==="부동산노출 + 일반인노출"?"#f4a71b":"#9ca3af" }}>모두에게 노출</div>
+              <div onClick={()=>setExposureType("부동산노출 + 일반인노출")} style={{ flex:1, padding:12, borderRadius:10, cursor:"pointer", border: exposureType==="부동산노출 + 일반인노출"?"1px solid #2563eb":"1px solid #e5e7eb", background: exposureType==="부동산노출 + 일반인노출"?"#eff6ff":"#fff", transition:"all 0.15s ease" }}>
+                <div style={{ fontSize:14, fontWeight:800, color: exposureType==="부동산노출 + 일반인노출"?"#2563eb":"#374151", marginBottom:4 }}>부동산+일반인노출</div>
+                <div style={{ fontSize:11, color: exposureType==="부동산노출 + 일반인노출"?"#2563eb":"#9ca3af" }}>모두에게 노출</div>
               </div>
             </div>
 
