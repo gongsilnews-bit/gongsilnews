@@ -157,7 +157,7 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
                   borderBottom: activeTab === tab ? "3px solid #3b82f6" : "3px solid transparent", 
                   cursor: "pointer", display: "flex", alignItems: "center", gap: 6 
                 }}>
-                {tab === "신규" ? "접수" : tab}
+                {tab === "신규" ? "신규접수" : tab}
                 <span style={{ background: badgeColor, color: badgeTextColor, padding: "2px 8px", borderRadius: 10, fontSize: 11, fontWeight: 700 }}>
                   {count}
                 </span>
@@ -217,7 +217,7 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
                     </td>
                     <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
                       <span style={{ display: "inline-block", padding: "4px 8px", borderRadius: 4, background: badgeColor, color: "#fff", fontWeight: 700, fontSize: 12 }}>
-                        {row.status === "신규" ? "접수" : row.status}
+                        {row.status === "신규" ? "신규접수" : row.status}
                       </span>
                     </td>
                     <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
