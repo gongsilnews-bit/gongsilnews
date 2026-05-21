@@ -122,11 +122,10 @@ function MobileDashboard() {
     { icon: "🏢", label: "공실", value: stats.vacanciesCount, color: "#3b82f6", href: "/m/admin/vacancy" },
     { icon: "👤", label: "회원", value: stats.membersCount, color: "#10b981", href: "/m/admin/member" },
     { icon: "📰", label: "기사", value: stats.articlesCount, color: "#f59e0b", href: "/m/admin/article" },
-    { icon: "💬", label: "댓글", value: stats.commentsCount, color: "#ef4444", href: "/m/admin/comment" },
+    { icon: "✉️", label: "문의", value: stats.commentsCount, color: "#ef4444", href: "/m/admin/inquiry" },
   ] : [
     { icon: "🏢", label: "내 공실", value: stats.vacanciesCount, color: "#3b82f6", href: "/m/admin/vacancy" },
     { icon: "📰", label: "내 기사", value: stats.articlesCount, color: "#f59e0b", href: "/m/admin/article" },
-    { icon: "💬", label: "내 댓글", value: stats.commentsCount, color: "#ef4444", href: "/m/admin/comment" },
   ];
 
   const quickLinks = [
@@ -141,7 +140,7 @@ function MobileDashboard() {
     ), label: "포인트", href: "/m/admin/point", roles: ["admin", "realtor", "user"] },
     { icon: "🖼️", label: "배너관리", href: "/m/admin/banner", roles: ["admin"] },
     { icon: "📋", label: "게시판관리", href: "/m/admin/board", roles: ["admin"] },
-    { icon: "💬", label: "댓글관리", href: "/m/admin/comment", roles: ["admin", "realtor", "user"] },
+    { icon: "✉️", label: "문의관리", href: "/m/admin/inquiry", roles: ["admin"] },
     { icon: "🌐", label: "홈페이지", href: "/realty_admin?menu=homepage", roles: ["realtor"] },
     { icon: "⚙️", label: "설정", href: "/m/admin/settings", roles: ["admin", "realtor", "user"] },
   ].filter(link => link.roles.includes(role));
@@ -213,7 +212,7 @@ function MobileDashboard() {
       )}
 
       {/* KPI 카드 */}
-      <div style={{ padding: "8px 16px 0", display: "grid", gridTemplateColumns: role === "admin" ? "1fr 1fr" : "repeat(3, 1fr)", gap: 10 }}>
+      <div style={{ padding: "8px 16px 0", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
         {kpiCards.map((card, i) => (
           <div key={i} onClick={() => router.push(card.href)}
             style={{
@@ -315,37 +314,6 @@ function MobileDashboard() {
                 </div>
               ))
             )
-          )}
-        </div>
-
-        {/* 최근 댓글 */}
-        <div style={{ background: "#fff", borderRadius: 14, padding: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.06)", marginBottom: 12 }}>
-          <div onClick={() => router.push("/m/admin/comment")} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, cursor: "pointer" }}>
-            <div style={{ fontSize: 15, fontWeight: 800, color: "#111", display: "flex", alignItems: "center", gap: 6 }}>
-              💬 {role === "admin" ? "최근 댓글" : "내 글에 달린 댓글"}
-              <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 12, background: "#fef2f2", color: "#ef4444", fontWeight: 700 }}>{recentComments.length}</span>
-            </div>
-            <span style={{ fontSize: 12, color: "#9ca3af" }}>전체보기 →</span>
-          </div>
-          {loading ? (
-            <div style={{ padding: 20, textAlign: "center", color: "#9ca3af", fontSize: 13 }}>로딩 중...</div>
-          ) : recentComments.length === 0 ? (
-            <div style={{ padding: 20, textAlign: "center", color: "#9ca3af", fontSize: 13 }}>댓글이 없습니다.</div>
-          ) : (
-            recentComments.map((c, i) => (
-              <div key={c.id || i} onClick={() => router.push("/m/admin/comment")}
-                style={{ padding: "10px 0", borderTop: i > 0 ? "1px solid #f3f4f6" : "none", cursor: "pointer" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: c.type === "article" ? "#2563eb" : c.type === "vacancy" ? "#d97706" : "#7c3aed", background: c.type === "article" ? "#eff6ff" : c.type === "vacancy" ? "#fffbeb" : "#f5f3ff", padding: "2px 6px", borderRadius: 4 }}>
-                    {c.type === "article" ? "기사" : c.type === "vacancy" ? "공실" : "게시판"}
-                  </span>
-                  <span style={{ fontSize: 11, color: "#9ca3af" }}>{formatTimeAgo(c.created_at)}</span>
-                </div>
-                <div style={{ fontSize: 13, color: "#374151", lineHeight: 1.4, wordBreak: "break-all" }}>
-                  {c.is_secret ? "🔒 비밀 댓글입니다" : c.content.length > 60 ? c.content.slice(0, 60) + "..." : c.content}
-                </div>
-              </div>
-            ))
           )}
         </div>
 

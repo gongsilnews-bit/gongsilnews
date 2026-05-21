@@ -210,18 +210,15 @@ export default function GlobalDrawerMenu() {
 
     const realtor: any[] = [
       { icon: '👥', label: '고객관리', desc: '상담 고객 목록', href: '/m/admin/customer' },
-      { icon: '💬', label: '댓글', desc: '댓글 관리', href: '/m/admin/comment' },
-      // { icon: '🌐', label: '홈페이지', desc: '미니 홈페이지 관리', href: '/realty_admin?menu=homepage' },
       { icon: '⚙️', label: '정보설정', desc: '내 정보 및 업소 설정', href: '/m/admin/settings' },
     ];
     const admin: any[] = [
       { icon: '🖼️', label: '배너관리', desc: '광고 배너 관리', href: '/m/admin/banner' },
       { icon: '📋', label: '게시판관리', desc: '게시판 관리', href: '/m/admin/board' },
-      { icon: '💬', label: '댓글', desc: '댓글 관리', href: '/m/admin/comment' },
+      { icon: '✉️', label: '문의관리', desc: '고객 문의 관리', href: '/m/admin/inquiry' },
       { icon: '⚙️', label: '설정', desc: '내 정보 및 프로필', href: '/m/admin/settings' },
     ];
     const user: any[] = [
-      { icon: '💬', label: '댓글', desc: '댓글 관리', href: '/m/admin/comment' },
       { icon: '⚙️', label: '정보설정', desc: '내 프로필 정보 수정', href: '/m/admin/settings' },
     ];
 
