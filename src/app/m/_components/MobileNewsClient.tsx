@@ -983,17 +983,17 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
             <div style={{ display: "flex", alignItems: "center", background: "#fff", borderBottom: "1px solid #e5e7eb", padding: "8px 0", flexShrink: 0, width: "100%" }}>
               <div style={{ position: "relative", flex: 1, minWidth: 0, overflow: "hidden" }}>
                 <div className="news-filter-scroll" onTouchStart={(e) => e.stopPropagation()} onTouchEnd={(e) => e.stopPropagation()} style={{ overflowX: "auto", display: "flex", gap: "8px", padding: "0 12px", WebkitOverflowScrolling: "touch" as any, alignItems: "center" }}>
-                  <button onClick={() => setLocActivePanel(locActivePanel === "loc" ? null : "loc")} style={{ padding: "7px 14px", borderRadius: "20px", fontSize: "13px", fontWeight: 600, whiteSpace: "nowrap", flexShrink: 0, border: (locActivePanel === "loc" || locLabel !== "위치") ? "1.5px solid #ea580c" : "1px solid #d1d5db", background: (locActivePanel === "loc" || locLabel !== "위치") ? "#fff7ed" : "#fff", color: (locActivePanel === "loc" || locLabel !== "위치") ? "#ea580c" : "#374151", cursor: "pointer", transition: "all 0.15s", display: "flex", alignItems: "center", gap: "4px" }}>
+                  <button onClick={() => setLocActivePanel(locActivePanel === "loc" ? null : "loc")} style={{ padding: "7px 14px", borderRadius: "20px", fontSize: "13px", fontWeight: 600, whiteSpace: "nowrap", flexShrink: 0, border: (locActivePanel === "loc" || locLabel !== "위치") ? "1.5px solid #508bf5" : "1px solid #d1d5db", background: (locActivePanel === "loc" || locLabel !== "위치") ? "#f0f6ff" : "#fff", color: (locActivePanel === "loc" || locLabel !== "위치") ? "#508bf5" : "#374151", cursor: "pointer", transition: "all 0.15s", display: "flex", alignItems: "center", gap: "4px" }}>
                     📍 {locLabel} ▾
                   </button>
-                  <select value={section1Filter} onChange={(e) => { setSection1Filter(e.target.value); setSection2Filter(""); }} style={{ padding: "7px 10px", borderRadius: "20px", fontSize: "13px", fontWeight: 600, border: section1Filter ? "1.5px solid #ea580c" : "1px solid #d1d5db", background: section1Filter ? "#fff7ed" : "#fff", color: section1Filter ? "#ea580c" : "#374151", cursor: "pointer", outline: "none", flexShrink: 0, appearance: "none" as any, WebkitAppearance: "none" as any, paddingRight: "24px", backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23666' fill='none' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 10px center" }}>
+                  <select value={section1Filter} onChange={(e) => { setSection1Filter(e.target.value); setSection2Filter(""); }} style={{ padding: "7px 10px", borderRadius: "20px", fontSize: "13px", fontWeight: 600, border: section1Filter ? "1.5px solid #508bf5" : "1px solid #d1d5db", background: section1Filter ? "#f0f6ff" : "#fff", color: section1Filter ? "#508bf5" : "#374151", cursor: "pointer", outline: "none", flexShrink: 0, appearance: "none" as any, WebkitAppearance: "none" as any, paddingRight: "24px", backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23666' fill='none' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 10px center" }}>
                     <option value="">1차섹션 전체</option>
                     <option value="공실뉴스">공실뉴스</option>
                     <option value="부동산·경제">부동산·경제</option>
                     <option value="AI마케팅">AI마케팅</option>
                     <option value="라이프·오피니언">라이프·오피니언</option>
                   </select>
-                  <select value={section2Filter} onChange={(e) => setSection2Filter(e.target.value)} style={{ padding: "7px 10px", borderRadius: "20px", fontSize: "13px", fontWeight: 600, border: section2Filter ? "1.5px solid #ea580c" : "1px solid #d1d5db", background: section2Filter ? "#fff7ed" : "#fff", color: section2Filter ? "#ea580c" : "#374151", cursor: "pointer", outline: "none", flexShrink: 0, appearance: "none" as any, WebkitAppearance: "none" as any, paddingRight: "24px", backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23666' fill='none' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 10px center" }}>
+                  <select value={section2Filter} onChange={(e) => setSection2Filter(e.target.value)} style={{ padding: "7px 10px", borderRadius: "20px", fontSize: "13px", fontWeight: 600, border: section2Filter ? "1.5px solid #508bf5" : "1px solid #d1d5db", background: section2Filter ? "#f0f6ff" : "#fff", color: section2Filter ? "#508bf5" : "#374151", cursor: "pointer", outline: "none", flexShrink: 0, appearance: "none" as any, WebkitAppearance: "none" as any, paddingRight: "24px", backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23666' fill='none' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 10px center" }}>
                     <option value="">2차섹션 전체</option>
                     {section1Filter && SECTION2_MAP[section1Filter]?.map(s => (
                       <option key={s} value={s}>{s}</option>
@@ -1017,25 +1017,25 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                   <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px 24px", WebkitOverflowScrolling: "touch", overscrollBehaviorY: "contain" }}>
                     {/* 탭 */}
                     <div style={{ display: "flex", borderBottom: "2px solid #f3f4f6", marginBottom: "16px" }}>
-                      <button onClick={() => setLocTab("region")} style={{ flex: 1, padding: "10px", fontSize: "14px", fontWeight: locTab === "region" ? 700 : 500, color: locTab === "region" ? "#ea580c" : "#9ca3af", borderBottom: locTab === "region" ? "2px solid #ea580c" : "2px solid transparent", background: "none", border: "none", cursor: "pointer" }}>지역선택</button>
-                      <button onClick={() => setLocTab("keyword")} style={{ flex: 1, padding: "10px", fontSize: "14px", fontWeight: locTab === "keyword" ? 700 : 500, color: locTab === "keyword" ? "#ea580c" : "#9ca3af", borderBottom: locTab === "keyword" ? "2px solid #ea580c" : "2px solid transparent", background: "none", border: "none", cursor: "pointer" }}>키워드검색</button>
+                      <button onClick={() => setLocTab("region")} style={{ flex: 1, padding: "10px", fontSize: "14px", fontWeight: locTab === "region" ? 700 : 500, color: locTab === "region" ? "#508bf5" : "#9ca3af", borderBottom: locTab === "region" ? "2px solid #508bf5" : "2px solid transparent", background: "none", border: "none", cursor: "pointer" }}>지역선택</button>
+                      <button onClick={() => setLocTab("keyword")} style={{ flex: 1, padding: "10px", fontSize: "14px", fontWeight: locTab === "keyword" ? 700 : 500, color: locTab === "keyword" ? "#508bf5" : "#9ca3af", borderBottom: locTab === "keyword" ? "2px solid #508bf5" : "2px solid transparent", background: "none", border: "none", cursor: "pointer" }}>키워드검색</button>
                     </div>
 
                     {locTab === "region" ? (
                       <div>
                         <div style={{ display: "flex", gap: "6px", marginBottom: "14px" }}>
                           {(["sido","gugun","dong"] as const).map(t => (
-                            <button key={t} onClick={() => setRegTab(t)} style={{ flex: 1, padding: "8px 4px", fontSize: "13px", fontWeight: regTab === t ? 700 : 500, background: regTab === t ? "#ea580c" : "#f3f4f6", color: regTab === t ? "#fff" : "#6b7280", borderRadius: "6px", border: "none", cursor: "pointer" }}>
+                            <button key={t} onClick={() => setRegTab(t)} style={{ flex: 1, padding: "8px 4px", fontSize: "13px", fontWeight: regTab === t ? 700 : 500, background: regTab === t ? "#508bf5" : "#f3f4f6", color: regTab === t ? "#fff" : "#6b7280", borderRadius: "6px", border: "none", cursor: "pointer" }}>
                               {t === "sido" ? "시/도" : t === "gugun" ? "시/군/구" : "읍/면/동"}
                             </button>
                           ))}
                         </div>
                         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", maxHeight: "200px", overflowY: "auto" }}>
                           {regTab === "sido" && (sidoList.length > 0 ? sidoList.map((c: any) => (
-                            <button key={c.code} onClick={() => { setSelSidoCode(c.code); setSelSido(c.name); setSelGugun(""); setRegTab("gugun"); loadGugunData(c.code); moveToLocation(c.name, 8); setLocLabel(c.name); }} style={{ padding: "10px 4px", borderRadius: "8px", fontSize: "13px", fontWeight: selSido === c.name ? 700 : 500, textAlign: "center", border: selSido === c.name ? "1.5px solid #ea580c" : "1px solid #e5e7eb", background: selSido === c.name ? "#fff7ed" : "#fff", color: selSido === c.name ? "#ea580c" : "#374151", cursor: "pointer", transition: "all 0.15s" }}>{c.name}</button>
+                            <button key={c.code} onClick={() => { setSelSidoCode(c.code); setSelSido(c.name); setSelGugun(""); setRegTab("gugun"); loadGugunData(c.code); moveToLocation(c.name, 8); setLocLabel(c.name); }} style={{ padding: "10px 4px", borderRadius: "8px", fontSize: "13px", fontWeight: selSido === c.name ? 700 : 500, textAlign: "center", border: selSido === c.name ? "1.5px solid #508bf5" : "1px solid #e5e7eb", background: selSido === c.name ? "#f0f6ff" : "#fff", color: selSido === c.name ? "#508bf5" : "#374151", cursor: "pointer", transition: "all 0.15s" }}>{c.name}</button>
                           )) : <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "20px", color: "#9ca3af" }}>로딩중...</div>)}
                           {regTab === "gugun" && (!selSidoCode ? <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "20px", color: "#9ca3af" }}>시/도를 먼저 선택하세요</div> : gugunList.length > 0 ? gugunList.map((c: any) => (
-                            <button key={c.code} onClick={() => { setSelGugunCode(c.code); setSelGugun(c.name); setRegTab("dong"); loadDongData(c.code); moveToLocation(`${selSido} ${c.name}`, 6); setLocLabel(`${c.name}`); }} style={{ padding: "10px 4px", borderRadius: "8px", fontSize: "13px", fontWeight: selGugun === c.name ? 700 : 500, textAlign: "center", border: selGugun === c.name ? "1.5px solid #ea580c" : "1px solid #e5e7eb", background: selGugun === c.name ? "#fff7ed" : "#fff", color: selGugun === c.name ? "#ea580c" : "#374151", cursor: "pointer", transition: "all 0.15s" }}>{c.name}</button>
+                            <button key={c.code} onClick={() => { setSelGugunCode(c.code); setSelGugun(c.name); setRegTab("dong"); loadDongData(c.code); moveToLocation(`${selSido} ${c.name}`, 6); setLocLabel(`${c.name}`); }} style={{ padding: "10px 4px", borderRadius: "8px", fontSize: "13px", fontWeight: selGugun === c.name ? 700 : 500, textAlign: "center", border: selGugun === c.name ? "1.5px solid #508bf5" : "1px solid #e5e7eb", background: selGugun === c.name ? "#f0f6ff" : "#fff", color: selGugun === c.name ? "#508bf5" : "#374151", cursor: "pointer", transition: "all 0.15s" }}>{c.name}</button>
                           )) : <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "20px", color: "#9ca3af" }}>로딩중...</div>)}
                           {regTab === "dong" && (!selGugunCode ? <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "20px", color: "#9ca3af" }}>시/군/구를 먼저 선택하세요</div> : dongList.length > 0 ? dongList.map((c: any) => (
                             <button key={c.code} onClick={() => { moveToLocation(`${selSido} ${selGugun} ${c.name}`, 4); setLocLabel(`${selGugun} ${c.name}`); setLocActivePanel(null); }} style={{ padding: "10px 4px", borderRadius: "8px", fontSize: "13px", fontWeight: 500, textAlign: "center", border: "1px solid #e5e7eb", background: "#fff", color: "#374151", cursor: "pointer", transition: "all 0.15s" }}>{c.name}</button>
@@ -1046,7 +1046,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                       <div>
                         <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
                           <input type="text" placeholder="동, 읍, 면 또는 랜드마크 검색" value={locKeyword} onChange={e => setLocKeyword(e.target.value)} onKeyDown={e => e.key === "Enter" && doLocKeywordSearch()} style={{ flex: 1, padding: "10px 14px", border: "1px solid #d1d5db", borderRadius: "8px", fontSize: "14px", outline: "none" }} />
-                          <button onClick={doLocKeywordSearch} style={{ padding: "10px 16px", background: "#ea580c", color: "#fff", border: "none", borderRadius: "8px", fontWeight: 700, fontSize: "14px", cursor: "pointer" }}>이동</button>
+                          <button onClick={doLocKeywordSearch} style={{ padding: "10px 16px", background: "#508bf5", color: "#fff", border: "none", borderRadius: "8px", fontWeight: 700, fontSize: "14px", cursor: "pointer" }}>이동</button>
                         </div>
                         <div style={{ maxHeight: "180px", overflowY: "auto" }}>
                           {locResults.map((r: any, i: number) => (
@@ -1124,14 +1124,14 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                 top: "16px",
                 right: "16px",
                 zIndex: 20,
-                background: "#f97316",
+                background: "#508bf5",
                 color: "#fff",
                 border: "none",
                 borderRadius: "20px",
                 padding: "8px 14px",
                 fontSize: "13px",
                 fontWeight: 700,
-                boxShadow: "0 4px 12px rgba(249,115,22,0.4)",
+                boxShadow: "0 4px 12px rgba(80,139,245,0.4)",
                 cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
@@ -1159,8 +1159,8 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                   }
                 `}</style>
                 <div style={{ position: "relative", width: "60px", height: "60px", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "16px" }}>
-                  <div style={{ position: "absolute", width: "100%", height: "100%", borderRadius: "50%", background: "#ea580c", animation: "pulseRing 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite" }} />
-                  <div style={{ position: "relative", width: "32px", height: "32px", borderRadius: "50%", background: "#c2410c", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}>
+                  <div style={{ position: "absolute", width: "100%", height: "100%", borderRadius: "50%", background: "#508bf5", animation: "pulseRing 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite" }} />
+                  <div style={{ position: "relative", width: "32px", height: "32px", borderRadius: "50%", background: "#1d4ed8", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
                   </div>
                 </div>
@@ -1185,14 +1185,14 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                     }
                   }}
                   style={{
-                    background: "#ea580c",
+                    background: "#508bf5",
                     color: "#fff",
                     border: "none",
                     borderRadius: "30px",
                     padding: "12px 24px",
                     fontSize: "16px",
                     fontWeight: 800,
-                    boxShadow: "0 6px 16px rgba(234,88,12,0.4)",
+                    boxShadow: "0 6px 16px rgba(80,139,245,0.4)",
                     cursor: "pointer",
                     display: "flex",
                     alignItems: "center",
@@ -1240,7 +1240,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                       {formatDate(article.published_at || article.created_at)} · {article.author_name || "공실뉴스"}
                       {article.location_name && ` · 📍${article.location_name}`}
                     </span>
-                    <span style={{ color: "#f97316", fontWeight: 700 }}>기사상세보기 &gt;</span>
+                    <span style={{ color: "#508bf5", fontWeight: 700 }}>기사상세보기 &gt;</span>
                   </div>
                 </div>
               ))}
@@ -1267,7 +1267,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                   <span style={{ fontSize: "13px", fontWeight: 600, color: "#6b7280", letterSpacing: "-0.3px" }}>
                     <span style={{ fontWeight: 800, color: "#111", background: "linear-gradient(180deg, transparent 50%, rgba(254, 240, 138, 0.9) 50%)", padding: "2px 4px", borderRadius: "2px" }}>{displayName} 대표님</span>을 위한
                   </span>
-                  <h2 style={{ fontSize: "19px", fontWeight: 900, color: "#ea580c", margin: 0, letterSpacing: "-0.5px", lineHeight: 1.3 }}>
+                  <h2 style={{ fontSize: "19px", fontWeight: 900, color: "#508bf5", margin: 0, letterSpacing: "-0.5px", lineHeight: 1.3 }}>
                     {mentalText} <span style={{ color: "#111", fontWeight: "normal" }}>News</span>
                   </h2>
                 </div>
@@ -1306,12 +1306,12 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                         border: "none",
                         cursor: "pointer",
                         padding: "4px 0",
-                        color: isActive ? "#ea580c" : "#333",
+                        color: isActive ? "#508bf5" : "#333",
                         transition: "color 0.2s",
                       }}
                     >
                       {isActive ? SECTION2_ICONS_FILLED["전체"] : SECTION2_ICONS["전체"]}
-                      <span style={{ fontSize: "12px", fontWeight: isActive ? 700 : 400, color: isActive ? "#ea580c" : "#333", letterSpacing: "-0.5px", lineHeight: 1.2 }}>전체</span>
+                      <span style={{ fontSize: "12px", fontWeight: isActive ? 700 : 400, color: isActive ? "#508bf5" : "#333", letterSpacing: "-0.5px", lineHeight: 1.2 }}>전체</span>
                     </button>
                   );
                 })()}
@@ -1332,12 +1332,12 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                         border: "none",
                         cursor: "pointer",
                         padding: "4px 0",
-                        color: isActive ? "#ea580c" : "#333",
+                        color: isActive ? "#508bf5" : "#333",
                         transition: "color 0.2s",
                       }}
                     >
                       {isActive ? (SECTION2_ICONS_FILLED[sub] || SECTION2_ICONS_FILLED["전체"]) : (SECTION2_ICONS[sub] || SECTION2_ICONS["전체"])}
-                      <span style={{ fontSize: "12px", fontWeight: isActive ? 700 : 400, color: isActive ? "#ea580c" : "#333", letterSpacing: "-0.5px", textAlign: "center", wordBreak: "keep-all", lineHeight: 1.2 }}>
+                      <span style={{ fontSize: "12px", fontWeight: isActive ? 700 : 400, color: isActive ? "#508bf5" : "#333", letterSpacing: "-0.5px", textAlign: "center", wordBreak: "keep-all", lineHeight: 1.2 }}>
                         {sub}
                       </span>
                     </button>
@@ -1368,7 +1368,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                 <div 
                   onClick={() => setSearchTab('vacancy')}
                   style={{ flex: 1, textAlign: "center", padding: "12px 0", fontSize: "15px", fontWeight: searchTab === 'vacancy' ? 800 : 600, color: searchTab === 'vacancy' ? "#111" : "#888", borderBottom: searchTab === 'vacancy' ? "3px solid #111" : "3px solid transparent", cursor: "pointer" }}>
-                  관련공실 <span style={{ color: searchTab === 'vacancy' ? "#f97316" : "#888" }}>{vacancyCount}</span>
+                  관련공실 <span style={{ color: searchTab === 'vacancy' ? "#508bf5" : "#888" }}>{vacancyCount}</span>
                 </div>
               </div>
             </div>
@@ -1415,11 +1415,11 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                       {/* Badges & Date */}
                       <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px", flexWrap: "wrap" }}>
                         {showCommission && (v.realtor_commission || v.commission_type) && (
-                          <span style={{ fontSize: "12px", fontWeight: 700, color: "#ef4444", border: "1px solid #ef4444", padding: "1px 6px", borderRadius: "3px" }}>
+                          <span style={{ fontSize: "12px", fontWeight: 700, color: "#508bf5", border: "1px solid #508bf5", padding: "1px 6px", borderRadius: "3px" }}>
                             {v.realtor_commission || v.commission_type}
                           </span>
                         )}
-                        <span style={{ fontSize: "13px", fontWeight: 700, color: "#ef4444" }}>{v.vacancy_no || '-'}</span>
+                        <span style={{ fontSize: "13px", fontWeight: 700, color: "#508bf5" }}>{v.vacancy_no || '-'}</span>
                         <span style={{ fontSize: "12px", color: "#9ca3af" }}>{v.created_at ? new Date(v.created_at).toLocaleDateString("ko-KR").slice(0, -1) : ""}</span>
                         {cardMasked && <span onClick={(e) => { e.stopPropagation(); setIsAuthModalOpen(true); }} style={{ fontSize: "11px", color: "#3b82f6", fontWeight: 700, background: "#eef6ff", padding: "3px 8px", borderRadius: "4px", cursor: "pointer" }}>🔒 부동산회원 무료열람</span>}
                       </div>
@@ -1494,7 +1494,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                 {section2Tab === "" && popularArticles.length > 0 && (
                   <div style={{ padding: "20px 16px", borderBottom: "8px solid #f4f6f8", backgroundColor: "#fff" }}>
                     <div style={{ display: "flex", alignItems: "center", marginBottom: "16px", paddingBottom: "8px", borderBottom: "1px solid #f3f4f6" }}>
-                      <span style={{ fontSize: "16px", fontWeight: 800, color: "#ea580c" }}>{currentCatLabel}</span>
+                      <span style={{ fontSize: "16px", fontWeight: 800, color: "#508bf5" }}>{currentCatLabel}</span>
                       <span style={{ fontSize: "16px", fontWeight: 800, color: "#1f2937", marginLeft: "5px" }}>많이 본 뉴스</span>
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -1520,7 +1520,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                                 fontSize: "17px",
                                 fontWeight: 800,
                                 fontStyle: "italic",
-                                color: isTop3 ? "#ea580c" : "#71717a",
+                                color: isTop3 ? "#508bf5" : "#71717a",
                                 width: "18px",
                                 textAlign: "center",
                                 flexShrink: 0,
@@ -1556,7 +1556,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                 {importantArticles.length > 0 && (
                   <div style={{ padding: "20px 16px", borderBottom: "8px solid #f4f6f8" }}>
                     <div style={{ display: "flex", alignItems: "center", marginBottom: "16px", paddingBottom: "8px", borderBottom: "1px solid #f3f4f6" }}>
-                      <span style={{ fontSize: "16px", fontWeight: 800, color: "#ea580c" }}>{currentCatLabel}</span>
+                      <span style={{ fontSize: "16px", fontWeight: 800, color: "#508bf5" }}>{currentCatLabel}</span>
                       <span style={{ fontSize: "16px", fontWeight: 800, color: "#1f2937", marginLeft: "5px" }}>추천 뉴스</span>
                     </div>
                     <div style={{ display: 'flex', overflowX: 'auto', gap: '12px', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', scrollSnapType: 'x mandatory', overscrollBehaviorX: 'contain' }} className="no-scrollbar">
@@ -1634,7 +1634,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                   {/* 오른쪽 텍스트 컨텐츠 */}
                   <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, justifyContent: "center" }}>
                     <div style={{ fontSize: "13px", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "6px", marginBottom: "6px" }}>
-                      <span style={{ color: "#ff6b00", fontWeight: 700 }}>{a.section2 || "뉴스"}</span>
+                      <span style={{ color: "#508bf5", fontWeight: 700 }}>{a.section2 || "뉴스"}</span>
                       <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                         <span style={{ color: "#666", fontWeight: 500 }}>
                           {formatDate(a.published_at || a.created_at)} · {a.author_name || "공실뉴스"}
@@ -1698,7 +1698,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
               </div>
               <button
                 onClick={() => router.push(`/m/news/${articleDetail.article_no || articleDetail.id}`)}
-                style={{ fontSize: "12px", color: "#ff8e15", border: "1px solid #ff8e15", background: "#fff", borderRadius: "20px", padding: "4px 10px", cursor: "pointer" }}
+                style={{ fontSize: "12px", color: "#508bf5", border: "1px solid #508bf5", background: "#fff", borderRadius: "20px", padding: "4px 10px", cursor: "pointer" }}
               >
                 원본보기
               </button>
@@ -1790,11 +1790,11 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                   width: "52px",
                   height: "52px",
                   borderRadius: "50%",
-                  backgroundColor: "#ea580c",
+                  backgroundColor: "#508bf5",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  boxShadow: "0 4px 14px rgba(234, 88, 12, 0.4)",
+                  boxShadow: "0 4px 14px rgba(80, 139, 245, 0.4)",
                   zIndex: 9998,
                   cursor: "pointer",
                   border: "none",
@@ -1824,11 +1824,11 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                   width: "52px",
                   height: "52px",
                   borderRadius: "50%",
-                  backgroundColor: "#ea580c",
+                  backgroundColor: "#508bf5",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  boxShadow: "0 4px 14px rgba(234, 88, 12, 0.4)",
+                  boxShadow: "0 4px 14px rgba(80, 139, 245, 0.4)",
                   zIndex: 9998,
                   cursor: "pointer",
                   border: "none",
