@@ -21,6 +21,11 @@ export async function submitInquiry(data: {
   content: string;
   userId?: string;
   ipAddress?: string;
+  agencyId?: string;     // 해당 중개업소 식별용
+  sourceType?: string;   // 'vacancy', 'flyer', 'reporter', 'general' 등
+  sourceId?: string;     // 매물/전단지 ID
+  budget?: string;       // 보증금/월세 예산
+  area?: string;         // 희망 지역 및 매물 설명
 }) {
   try {
     const supabase = getAdminClient();
@@ -33,6 +38,7 @@ export async function submitInquiry(data: {
     // 본문 요약으로 제목 채우기 (제목이 비어있는 경우)
     const title = data.title || (data.content.length > 30 ? data.content.substring(0, 30) + "..." : data.content);
 
+    // 1. 공용 플랫폼 문의 테이블에 기록
     const { data: inserted, error } = await supabase
       .from("site_inquiries")
       .insert([
@@ -54,6 +60,64 @@ export async function submitInquiry(data: {
     if (error) {
       console.error("Error submitting inquiry to DB:", error);
       return { success: false, message: error.message };
+    }
+
+    // 2. 만약 소속 부동산 ID(agencyId)가 제공된 경우 B2B CRM(고객관리)에 자동 인서트 연동!
+    if (data.agencyId) {
+      // 카테고리에 맞는 고객 유형 매핑
+      let customerType = "임차(월세/전세)";
+      if (data.category.includes("매도") || data.category === "팔아요") {
+        customerType = "매도";
+      } else if (data.category.includes("매수") || data.category === "사요") {
+        customerType = "매수";
+      } else if (data.category.includes("임대") || data.category === "세놓아요") {
+        customerType = "임대(월세/전세)";
+      }
+
+      const sourceLabel = data.sourceType === "flyer" 
+        ? "AI 온라인 전단지" 
+        : data.sourceType === "vacancy" 
+        ? "공실뉴스 매물문의" 
+        : "온라인 문의";
+
+      // crm_customers 테이블에 자동으로 신규 고객 등록
+      const { data: customer, error: crmError } = await supabase
+        .from("crm_customers")
+        .insert([
+          {
+            agency_id: data.agencyId,
+            user_id: data.userId || null,
+            name: data.name,
+            phone: data.phone,
+            type: customerType,
+            status: "신규",
+            budget: data.budget || null,
+            area: data.area || null,
+            source: sourceLabel
+          }
+        ])
+        .select()
+        .single();
+
+      if (crmError) {
+        console.error("Error linking inquiry to B2B CRM:", crmError);
+      } else if (customer) {
+        // crm_logs 테이블에 최초 타임라인 문의 내역 기록
+        const logContent = `💬 [공실뉴스 온라인 문의 연동]\n\n카테고리: ${data.category}\n희망 지역/예산: ${data.area || "-"}/${data.budget || "-"}\n\n[문의 메세지]\n${data.content}`;
+        const { error: logError } = await supabase
+          .from("crm_logs")
+          .insert([
+            {
+              customer_id: customer.id,
+              type: "memo",
+              content: logContent
+            }
+          ]);
+        
+        if (logError) {
+          console.error("Error creating initial memo log from inquiry:", logError);
+        }
+      }
     }
 
     return { success: true, data: inserted };

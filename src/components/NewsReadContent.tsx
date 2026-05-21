@@ -560,17 +560,26 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
             <div style={{ padding: "0", marginBottom: "30px", position: "relative" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                  <div style={{ fontSize: "15px", color: "#111", display: "flex", alignItems: "center", gap: "6px" }}>
-                    <span style={{ fontWeight: "700" }}>{article.author_name || "공실뉴스"}</span>
-                    <span style={{ fontSize: "13px", color: "#666" }}>기자</span>
-                    {article.author_id && (
-                      <Link href={`/${isMobile ? "m/" : ""}reporter/${article.author_id}`} style={{ textDecoration: "none" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "4px", background: "#faf5ff", padding: "2px 8px", borderRadius: "12px", fontSize: "11px", fontWeight: 700, color: "#7e22ce", border: "1px solid #e9d5ff", cursor: "pointer", transition: "all 0.2s" }} onMouseEnter={(e) => { e.currentTarget.style.background = "#f3e8ff"; e.currentTarget.style.borderColor = "#d8b4fe"; }} onMouseLeave={(e) => { e.currentTarget.style.background = "#faf5ff"; e.currentTarget.style.borderColor = "#e9d5ff"; }}>
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-                          기자홈피
-                        </div>
+                  <div style={{ fontSize: "15px", color: "#111", display: "flex", alignItems: "center", gap: "4px" }}>
+                    {article.author_id ? (
+                      <Link 
+                        href={`/${isMobile ? "m/" : ""}reporter/${article.author_id}`} 
+                        style={{ 
+                          fontWeight: "800", 
+                          color: "#111", 
+                          textDecoration: "none", 
+                          cursor: "pointer",
+                          transition: "color 0.2s"
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.textDecoration = 'underline'; e.currentTarget.style.color = '#3b82f6'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.textDecoration = 'none'; e.currentTarget.style.color = '#111'; }}
+                      >
+                        {article.author_name || "공실뉴스"}
                       </Link>
+                    ) : (
+                      <span style={{ fontWeight: "700" }}>{article.author_name || "공실뉴스"}</span>
                     )}
+                    <span style={{ fontSize: "13px", color: "#666" }}>기자</span>
                   </div>
                   <div style={{ fontSize: "13px", color: "#888", display: "flex", alignItems: "center", gap: "8px" }}>
                     <span suppressHydrationWarning>입력 {formatDate(article.published_at || article.created_at)}</span>
@@ -761,10 +770,44 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
               <div style={{ display: "flex", flexDirection: "column", gap: "12px", width: "100%" }}>
                 <div>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-                    <span style={{ fontWeight: 800, color: "#111", fontSize: 16 }}>{article.author_name || "공실뉴스"}</span>
+                    {article.author_id ? (
+                      <Link 
+                        href={isMobile ? `/m/reporter/${article.author_id}` : `/reporter/${article.author_id}`}
+                        style={{ 
+                          fontWeight: 800, 
+                          color: "#111", 
+                          fontSize: 16,
+                          textDecoration: "none", 
+                          cursor: "pointer",
+                          transition: "color 0.2s"
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.textDecoration = 'underline'; e.currentTarget.style.color = '#3b82f6'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.textDecoration = 'none'; e.currentTarget.style.color = '#111'; }}
+                      >
+                        {article.author_name || "공실뉴스"}
+                      </Link>
+                    ) : (
+                      <span style={{ fontWeight: 800, color: "#111", fontSize: 16 }}>{article.author_name || "공실뉴스"}</span>
+                    )}
                     <span style={{ color: "#666", fontSize: 14 }}>{authorRole === "ADMIN" ? "기자" : "객원기자"}</span>
                     {article.author_id && (
-                      <Link href={isMobile ? `/m/reporter/${article.author_id}` : `/reporter/${article.author_id}`} style={{ background: "#7e22ce", color: "#fff", fontSize: 11, fontWeight: "bold", padding: "4px 8px", borderRadius: 4, textDecoration: "none" }}>다른기사 보기</Link>
+                      <>
+                        <span style={{ color: "#ddd", fontSize: "12px" }}>|</span>
+                        <Link 
+                          href={isMobile ? `/m/reporter/${article.author_id}` : `/reporter/${article.author_id}`} 
+                          style={{ 
+                            color: "#666", 
+                            fontSize: "13px", 
+                            fontWeight: "600", 
+                            textDecoration: "none",
+                            transition: "color 0.2s"
+                          }}
+                          onMouseEnter={(e) => { e.currentTarget.style.color = '#3b82f6'; e.currentTarget.style.textDecoration = 'underline'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.color = '#666'; e.currentTarget.style.textDecoration = 'none'; }}
+                        >
+                          다른기사 보기
+                        </Link>
+                      </>
                     )}
                   </div>
                   {authorEmail && <div style={{ color: "#888", fontSize: 13 }}>{authorEmail}</div>}
