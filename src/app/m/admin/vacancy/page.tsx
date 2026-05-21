@@ -19,6 +19,7 @@ function MobileVacancyAdmin() {
   const [searchKeyword, setSearchKeyword] = useState("");
   const [activeKeyword, setActiveKeyword] = useState("");
   const [previewId, setPreviewId] = useState<string | null>(null);
+  const [flyerPreviewId, setFlyerPreviewId] = useState<string | null>(null);
   const [flyerMap, setFlyerMap] = useState<Record<string, boolean>>({});
   const [userRole, setUserRole] = useState<string | null>(null);
 
@@ -47,10 +48,13 @@ function MobileVacancyAdmin() {
       if (previewId) {
         setPreviewId(null);
       }
+      if (flyerPreviewId) {
+        setFlyerPreviewId(null);
+      }
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [previewId]);
+  }, [previewId, flyerPreviewId]);
 
   const closePreview = () => {
     if (previewId) {
@@ -64,6 +68,20 @@ function MobileVacancyAdmin() {
   const openPreview = (id: string) => {
     window.history.pushState({ previewOpen: true }, "");
     setPreviewId(id);
+  };
+
+  const closeFlyerPreview = () => {
+    if (flyerPreviewId) {
+      setFlyerPreviewId(null);
+      if (window.history.state?.flyerPreviewOpen) {
+        window.history.back();
+      }
+    }
+  };
+
+  const openFlyerPreview = (id: string) => {
+    window.history.pushState({ flyerPreviewOpen: true }, "");
+    setFlyerPreviewId(id);
   };
 
   useEffect(() => {
@@ -336,41 +354,62 @@ function MobileVacancyAdmin() {
                   const hasFlyer = flyerMap[row.id];
                   if (hasFlyer) {
                     return (
-                      <button 
-                        onClick={() => {
-                          const shareUrl = `${window.location.origin}/m/gongsil?id=${row.id}`;
-                          if (navigator.share) {
-                            navigator.share({
-                              title: `[공실뉴스 온라인전단지] ${row.building_name || '매물 정보'}`,
-                              text: `선명하고 투명한 매물 상세 전단지입니다.`,
-                              url: shareUrl
-                            }).catch(() => {});
-                          } else {
-                            navigator.clipboard.writeText(shareUrl);
-                            alert("온라인전단지 링크 주소가 복사되었습니다.\n원하는 대화방에 붙여넣어 전송해보세요!");
-                          }
-                        }}
-                        style={{ 
-                          width: "100%", 
-                          height: 38, 
-                          background: "linear-gradient(135deg, #10b981, #059669)", 
-                          color: "#fff", 
-                          border: "none", 
-                          borderRadius: 8, 
-                          fontSize: 13, 
-                          fontWeight: 800, 
-                          cursor: "pointer",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          gap: 6,
-                          boxShadow: "0 2px 4px rgba(16, 185, 129, 0.15)",
-                          marginTop: 4
-                        }}
-                      >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg>
-                        📢 AI 전단지 공유하기
-                      </button>
+                      <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
+                        <button 
+                          onClick={() => openFlyerPreview(row.id)}
+                          style={{ 
+                            flex: 1, 
+                            height: 38, 
+                            background: "#f0fdf4", 
+                            color: "#16a34a", 
+                            border: "1px solid #bbf7d0", 
+                            borderRadius: 8, 
+                            fontSize: 12, 
+                            fontWeight: 700, 
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: 4
+                          }}
+                        >
+                          👁️ 전단지 미리보기
+                        </button>
+                        <button 
+                          onClick={() => {
+                            const shareUrl = `${window.location.origin}/flyer/${row.id}.html`;
+                            if (navigator.share) {
+                              navigator.share({
+                                title: `[공실뉴스 온라인전단지] ${row.building_name || '매물 정보'}`,
+                                text: `선명하고 투명한 매물 상세 전단지입니다.`,
+                                url: shareUrl
+                              }).catch(() => {});
+                            } else {
+                              navigator.clipboard.writeText(shareUrl);
+                              alert("온라인전단지 링크 주소가 복사되었습니다.\n원하는 대화방에 붙여넣어 전송해보세요!");
+                            }
+                          }}
+                          style={{ 
+                            flex: 1, 
+                            height: 38, 
+                            background: "linear-gradient(135deg, #10b981, #059669)", 
+                            color: "#fff", 
+                            border: "none", 
+                            borderRadius: 8, 
+                            fontSize: 12, 
+                            fontWeight: 700, 
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: 4,
+                            boxShadow: "0 2px 4px rgba(16, 185, 129, 0.15)"
+                          }}
+                        >
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg>
+                          📢 공유하기
+                        </button>
+                      </div>
                     );
                   } else {
                     return (
@@ -435,6 +474,24 @@ function MobileVacancyAdmin() {
           <path d="M14 17h6M17 14v6" stroke="#ffffff" strokeWidth="2.5" />
         </svg>
       </button>
+
+      {/* 전단지 미리보기 오버레이 (iframe) */}
+      {flyerPreviewId && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 99999, background: "rgba(0,0,0,0.6)" }}>
+          <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column" }}>
+            <div style={{ height: "40px", background: "rgba(0,0,0,0.8)", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 16px" }}>
+              <span style={{ color: "#fff", fontSize: 14, fontWeight: 700 }}>온라인 전단지 미리보기</span>
+              <button onClick={closeFlyerPreview} style={{ background: "none", border: "none", color: "#fff", fontSize: "24px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                &times;
+              </button>
+            </div>
+            <iframe 
+              src={`/flyer/${flyerPreviewId}.html`} 
+              style={{ width: "100%", flex: 1, border: "none", background: "#fff" }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* 미리보기 오버레이 (iframe) */}
       {previewId && (
