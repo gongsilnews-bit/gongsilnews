@@ -22,9 +22,9 @@ export default function MobileFooter() {
         }}
       >
         {[
-          { label: "회사소개", href: "#" },
+          { label: "회사소개", href: "/about" },
           { label: "광고안내", href: "/marketing" },
-          { label: "제휴문의", href: "#" },
+          { label: "제휴문의", href: "/partnership" },
           { label: "이용약관", href: "/terms" },
           { label: "개인정보 처리방침", href: "#", bold: true },
           { label: "청소년 보호정책", href: "/youth-policy" },

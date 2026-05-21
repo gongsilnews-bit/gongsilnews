@@ -231,9 +231,6 @@ export default function AboutPage() {
             <Link href="/" style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
               <img src="/logo.png" alt="부동산 정보채널 공실뉴스" style={{ height: 32, width: "auto" }} />
             </Link>
-            <div style={{ fontSize: 16, fontWeight: 700, color: '#1e293b', borderLeft: "1px solid #e2e8f0", paddingLeft: 16 }}>
-              회사소개
-            </div>
           </div>
           <div style={{ display: "flex", gap: "20px", fontSize: "14px", fontWeight: "600" }}>
             <Link href="/about" style={{ color: "#0f172a", textDecoration: "none" }}>회사소개</Link>
