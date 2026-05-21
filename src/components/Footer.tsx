@@ -107,12 +107,13 @@ export default function Footer() {
             <Link href="/news_etc" className="sitemap-link">자유 에세이</Link>
           </div>
           
-          {/* 5. 플랫폼 서비스 */}
+          {/* 5. 공실마케팅 */}
           <div className="sitemap-col">
-            <div className="sitemap-title" style={{ fontSize: 18 }}>플랫폼 서비스</div>
-            <Link href="/news_map" className="sitemap-link">우리동네뉴스 (공실열람)</Link>
+            <div className="sitemap-title" style={{ fontSize: 18 }}>공실마케팅</div>
+            <Link href="/gongsil" className="sitemap-link">공실열람</Link>
+            <Link href="/news_map" className="sitemap-link">우리동네뉴스</Link>
             <Link href="/#special-lecture" className="sitemap-link">부동산특강</Link>
-            <Link href="/board" className="sitemap-link">자료실 (드론/서식 등)</Link>
+            <Link href="/board" className="sitemap-link">자료실</Link>
             <Link href="/board?id=free" className="sitemap-link">커뮤니티</Link>
           </div>
         </div>
