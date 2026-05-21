@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react";
 import { AdminTheme } from "./types";
 import CustomerModal from "./customer/CustomerModal";
 import CustomerDetailPanel from "./customer/CustomerDetailPanel";
-import CustomerWritePage from "./customer/CustomerWritePage";
 import { getCustomers } from "@/app/actions/customer";
 
 interface CustomerSectionProps {
@@ -23,7 +22,6 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<any | null>(null);
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | string | null>(null);
-  const [writeCustomerId, setWriteCustomerId] = useState<string | null>(null);
 
   const [dbCustomers, setDbCustomers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -92,23 +90,6 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
     
     setSearchTypes(newTypes);
   };
-
-  if (writeCustomerId) {
-    const selectedCust = dbCustomers.find(c => c.id === writeCustomerId);
-    return (
-      <div style={{ flex: 1, overflowY: "auto", padding: "20px 28px", background: bg }}>
-        <CustomerWritePage
-          theme={theme}
-          customerId={writeCustomerId}
-          customer={selectedCust}
-          onBack={() => {
-            setWriteCustomerId(null);
-            fetchAllCustomers();
-          }}
-        />
-      </div>
-    );
-  }
 
   return (
     <div style={{ flex: 1, overflowY: "auto", padding: "20px 28px", background: bg }}>
@@ -429,21 +410,6 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
                             <button 
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setWriteCustomerId(row.id);
-                              }}
-                              style={{ 
-                                height: 30, padding: "0 10px", 
-                                background: "#3b82f6", color: "#fff", 
-                                border: "none", borderRadius: 6, fontSize: 12, fontWeight: 700, 
-                                cursor: "pointer", display: "flex", alignItems: "center", gap: 4,
-                                whiteSpace: "nowrap", marginRight: 4
-                              }}
-                            >
-                              🎯 상세매칭
-                            </button>
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
                                 setEditingCustomer(row);
                                 setIsModalOpen(true);
                               }}
@@ -510,10 +476,6 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
           customerId={selectedCustomerId as string} 
           customer={dbCustomers.find(c => c.id === selectedCustomerId)}
           onClose={() => { setSelectedCustomerId(null); fetchAllCustomers(); }} 
-          onOpenFullMatching={() => {
-            setWriteCustomerId(selectedCustomerId as string);
-            setSelectedCustomerId(null);
-          }}
         />
       )}
     </div>

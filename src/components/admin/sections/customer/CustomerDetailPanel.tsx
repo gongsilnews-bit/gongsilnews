@@ -10,10 +10,9 @@ interface CustomerDetailPanelProps {
   customerId: string;
   customer: any;
   onClose: () => void;
-  onOpenFullMatching?: () => void;
 }
 
-export default function CustomerDetailPanel({ theme, customerId, customer, onClose, onOpenFullMatching }: CustomerDetailPanelProps) {
+export default function CustomerDetailPanel({ theme, customerId, customer, onClose }: CustomerDetailPanelProps) {
   const { bg, cardBg, textPrimary, textSecondary, darkMode, border } = theme;
   
   // API로 연동할 데이터
@@ -134,7 +133,7 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
       
       {/* 우측 슬라이드 패널 */}
       <div style={{
-        width: 500, background: cardBg,
+        width: 720, background: cardBg,
         boxShadow: "-4px 0 15px rgba(0,0,0,0.1)",
         display: "flex", flexDirection: "column",
         animation: "slideInRight 0.3s ease-out"
@@ -175,21 +174,7 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
                 </div>
               )}
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              {onOpenFullMatching && (
-                <button 
-                  onClick={onOpenFullMatching}
-                  style={{
-                    height: 32, padding: "0 12px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 800, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4, transition: "background 0.2s", whiteSpace: "nowrap"
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.background = "#2563eb"}
-                  onMouseLeave={e => e.currentTarget.style.background = "#3b82f6"}
-                >
-                  🖥️ 상세매칭 전체화면
-                </button>
-              )}
-              <button onClick={onClose} style={{ background: "none", border: "none", fontSize: 24, color: textSecondary, cursor: "pointer" }}>&times;</button>
-            </div>
+            <button onClick={onClose} style={{ background: "none", border: "none", fontSize: 24, color: textSecondary, cursor: "pointer" }}>&times;</button>
           </div>
 
           {/* 상태 변경 셀렉트 */}
