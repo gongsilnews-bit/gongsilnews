@@ -131,11 +131,16 @@ export default function MobileBoardClient({ board, initialPosts, serverUser, ser
     router.push(`/m/board_write?board_id=${board.board_id}`);
   };
 
+  const RESOURCE_IDS = ["drone", "app", "prompt", "sound", "doc"];
+  const COMMUNITY_IDS = ["free", "qna", "notice", "inquiry"];
+  const currentBoardId = board?.board_id || "";
+  const backTab = RESOURCE_IDS.includes(currentBoardId) ? "board" : COMMUNITY_IDS.includes(currentBoardId) ? "community" : "board";
+
   return (
     <div style={{ width: '100%', backgroundColor: '#f8f9fa', minHeight: '100vh', paddingBottom: '40px' }}>
       {/* Header — board_read 스타일 */}
       <div style={{ position: 'sticky', top: 0, zIndex: 50, backgroundColor: '#fff', height: '54px', borderBottom: '1px solid #f3f4f6', display: 'flex', alignItems: 'center', padding: '0 16px', justifyContent: 'space-between' }}>
-        <button onClick={() => router.back()} style={{ background: 'none', border: 'none', padding: '8px', marginLeft: '-8px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+        <button onClick={() => router.push(`/m/study?tab=${backTab}`)} style={{ background: 'none', border: 'none', padding: '8px', marginLeft: '-8px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
         </button>
         <BoardDropdownHeader currentBoardName={board?.name || "게시판"} />
