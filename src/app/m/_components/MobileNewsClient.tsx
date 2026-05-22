@@ -193,6 +193,27 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedVacancyId, setSelectedVacancyId] = useState<string | null>(null);
   const [section2Tab, setSection2Tab] = useState<string>(searchParams.get("section2") || "");
+  const [recIndex, setRecIndex] = useState(0);
+
+  // Compute importantArticles at top level to maintain clean state
+  const filteredBySection2 = section2Tab
+    ? articles.filter(a => a.section2 === section2Tab)
+    : articles;
+  const importantArticles = filteredBySection2.filter(a => a.is_important);
+
+  // Reset active slide index when category/subcategory changes
+  React.useEffect(() => {
+    setRecIndex(0);
+  }, [activeTab, section2Tab]);
+
+  // Premium, super lightweight automatic 3-second rotation (with zero speed overhead)
+  React.useEffect(() => {
+    if (importantArticles.length <= 1) return;
+    const timer = setInterval(() => {
+      setRecIndex((prev) => (prev + 1) % importantArticles.length);
+    }, 3000);
+    return () => clearInterval(timer);
+  }, [importantArticles.length, activeTab, section2Tab]);
 
   // URL 파라미터가 변경되면 상태 동기화 (뒤로가기 시 복구용)
   useEffect(() => {
@@ -1504,10 +1525,6 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
 
           {/* 실 기사 리스트 */}
           {searchTab === 'article' && (() => {
-            const filteredBySection2 = section2Tab
-              ? articles.filter(a => a.section2 === section2Tab)
-              : articles;
-            const importantArticles = filteredBySection2.filter(a => a.is_important);
             const regularArticles = filteredBySection2.filter(a => !a.is_important);
             
             const currentCatLabel = CATEGORIES.find(c => c.key === activeTab)?.label || "공실뉴스";
@@ -1520,48 +1537,96 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                 {/* 중요 뉴스 슬라이딩 캐러셀 (추천) */}
                 {importantArticles.length > 0 && (
                   <div style={{ padding: "20px 16px", borderBottom: "8px solid #f4f6f8" }}>
-                    <div style={{ display: "flex", alignItems: "center", marginBottom: "16px", paddingBottom: "8px", borderBottom: "1px solid #f3f4f6" }}>
-                      <span style={{ fontSize: "16px", fontWeight: 800, color: "#508bf5" }}>{currentCatLabel}</span>
-                      <span style={{ fontSize: "16px", fontWeight: 800, color: "#1f2937", marginLeft: "5px" }}>추천 뉴스</span>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px", paddingBottom: "8px", borderBottom: "1px solid #f3f4f6" }}>
+                      <div style={{ display: "flex", alignItems: "center" }}>
+                        <span style={{ fontSize: "16px", fontWeight: 800, color: "#508bf5" }}>{currentCatLabel}</span>
+                        <span style={{ fontSize: "16px", fontWeight: 800, color: "#1f2937", marginLeft: "5px" }}>추천 뉴스</span>
+                      </div>
+                      
+                      {/* 프리미엄 좌우이동 네비게이션 컨트롤러 */}
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <span style={{ fontSize: "12px", color: "#6b7280", fontWeight: 700, fontFamily: "monospace" }}>
+                          {recIndex + 1} / {importantArticles.length}
+                        </span>
+                        <div style={{ display: "flex", gap: "4px" }}>
+                          <button 
+                            onClick={() => setRecIndex((prev) => (prev === 0 ? importantArticles.length - 1 : prev - 1))}
+                            style={{ 
+                              background: "#f3f4f6", 
+                              border: "none", 
+                              borderRadius: "4px", 
+                              width: "24px", 
+                              height: "24px", 
+                              display: "flex", 
+                              alignItems: "center", 
+                              justifyContent: "center", 
+                              cursor: "pointer",
+                              color: "#4b5563"
+                            }}
+                          >
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+                          </button>
+                          <button 
+                            onClick={() => setRecIndex((prev) => (prev === importantArticles.length - 1 ? 0 : prev + 1))}
+                            style={{ 
+                              background: "#f3f4f6", 
+                              border: "none", 
+                              borderRadius: "4px", 
+                              width: "24px", 
+                              height: "24px", 
+                              display: "flex", 
+                              alignItems: "center", 
+                              justifyContent: "center", 
+                              cursor: "pointer",
+                              color: "#4b5563"
+                            }}
+                          >
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                    <div style={{ display: 'flex', overflowX: 'auto', gap: '12px', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', scrollSnapType: 'x mandatory', overscrollBehaviorX: 'contain' }} className="no-scrollbar">
-                      {importantArticles.map((a: any) => (
+                    {(() => {
+                      const a = importantArticles[recIndex];
+                      if (!a) return null;
+                      return (
                         <Link
                           href={`/m/news/${a.article_no || a.id}`}
-                          key={a.id}
                           onClick={() => sessionStorage.setItem(`news_scroll_${activeTab}`, window.scrollY.toString())}
                           style={{
-                            flexShrink: 0,
-                            width: "calc(50% - 6px)", // Exactly 2 items visible
                             textDecoration: "none",
                             display: "flex",
                             flexDirection: "column",
-                            gap: "8px",
-                            scrollSnapAlign: "start",
-                            scrollSnapStop: "always"
+                            gap: "10px"
                           }}
                         >
-                          <div style={{ width: "100%", aspectRatio: "16/10", position: "relative", backgroundColor: "#f3f4f6", borderRadius: "8px", overflow: "hidden" }}>
+                          <div style={{ width: "100%", aspectRatio: "16/9", position: "relative", backgroundColor: "#f3f4f6", borderRadius: "12px", overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
                             {(a.thumbnail_url || extractYoutubeId(a.youtube_url, a.content)) ? (
                               <Image
                                 src={a.thumbnail_url || `https://img.youtube.com/vi/${extractYoutubeId(a.youtube_url, a.content)}/mqdefault.jpg`}
                                 alt={a.title}
                                 fill
                                 style={{ objectFit: "cover" }}
-                                sizes="(max-width: 768px) 50vw, 33vw"
+                                sizes="(max-width: 768px) 100vw, 50vw"
+                                priority
                               />
                             ) : (
                               <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#ccc", background: "#f8f9fa", border: "1px solid #eaeaea" }}>
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
                               </div>
                             )}
                           </div>
-                          <div style={{ fontSize: "14px", fontWeight: 700, color: "#111", lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", wordBreak: "keep-all" }}>
-                            {a.title}
+                          <div style={{ padding: "4px 4px 0" }}>
+                            <div style={{ fontSize: "16px", fontWeight: 800, color: "#111827", lineHeight: 1.4, marginBottom: "6px", wordBreak: "keep-all" }}>
+                              {a.title}
+                            </div>
+                            <div style={{ fontSize: "13px", color: "#6b7280", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: 1.5, wordBreak: "keep-all" }}>
+                              {a.content ? a.content.replace(/<[^>]*>/g, '').substring(0, 100) : ""}
+                            </div>
                           </div>
                         </Link>
-                      ))}
-                    </div>
+                      );
+                    })()}
                   </div>
                 )}
 
