@@ -258,7 +258,7 @@ function NewsListLayoutInner({ category, title, initialArticles, initialPopular,
                       border: "none",
                       fontSize: "16px",
                       fontWeight: selectedSubCategory === sub ? "800" : "500",
-                      color: selectedSubCategory === sub ? "#ea580c" : "#6b7280",
+                      color: selectedSubCategory === sub ? "#2563eb" : "#6b7280",
                       cursor: "pointer",
                       padding: 0,
                       display: "flex",
@@ -269,7 +269,7 @@ function NewsListLayoutInner({ category, title, initialArticles, initialPopular,
                   >
                     {icon && (
                       <span style={{
-                        color: selectedSubCategory === sub ? "#ea580c" : "#9ca3af",
+                        color: selectedSubCategory === sub ? "#2563eb" : "#9ca3af",
                         display: "flex",
                         alignItems: "center",
                         transition: "color 0.2s"
@@ -551,6 +551,14 @@ const CATEGORY_ICON_MAP: Record<string, React.ReactNode> = {
 
 // 카테고리별 맞춤 문구 맵 (모바일 규격과 완전 동일)
 const PERSONALIZED_MENTAL_MAP: Record<string, Record<string, string>> = {
+  "공실뉴스": {
+    "전체": "실시간 중개용 공실 소식",
+    "아파트/오피스텔": "공동중개 추천 아파트·오피스텔",
+    "빌라/주택": "계약 확률 높은 빌라·주택 매물",
+    "원룸/투룸(풀옵션)": "원룸·투룸 실무 트렌드",
+    "상가/사무실/공장/토지": "고수익 상가·사무실 실무 정보",
+    "신축/분양/경매": "단기 차익 신축·분양·경매 뉴스"
+  },
   "news_gongsil": {
     "전체": "실시간 중개용 공실 소식",
     "아파트/오피스텔": "공동중개 추천 아파트·오피스텔",
@@ -559,17 +567,36 @@ const PERSONALIZED_MENTAL_MAP: Record<string, Record<string, string>> = {
     "상가/사무실/공장/토지": "고수익 상가·사무실 실무 정보",
     "신축/분양/경매": "단기 차익 신축·분양·경매 뉴스"
   },
+  "부동산·경제": {
+    "전체": "고객 브리핑용 오늘의 시장 동향",
+    "부동산 정책/동향": "상담 필수 정책 분석 & 규제 동향",
+    "경제/재테크/주식": "거시경제·재테크 바이블",
+    "법률/세무 지식": "고객이 묻기 전에 대비하는 세무·법률 솔루션"
+  },
   "news_politics": {
     "전체": "고객 브리핑용 오늘의 시장 동향",
     "부동산 정책/동향": "상담 필수 정책 분석 & 규제 동향",
     "경제/재테크/주식": "거시경제·재테크 바이블",
     "법률/세무 지식": "고객이 묻기 전에 대비하는 세무·법률 솔루션"
   },
+  "AI마케팅": {
+    "전체": "매물 문의 폭발하는 마케팅 비법",
+    "AI/NEWS": "업무 시간을 절반으로 줄여줄 AI 활용법",
+    "부동산유튜브/블로그": "지역 1등 중개업소 블로그·유튜브 공략법",
+    "공실/임대관리": "효율적인 공실·임대관리 노하우"
+  },
   "news_marketing": {
     "전체": "매물 문의 폭발하는 마케팅 비법",
     "AI/NEWS": "업무 시간을 절반으로 줄여줄 AI 활용법",
     "부동산유튜브/블로그": "지역 1등 중개업소 블로그·유튜브 공략법",
     "공실/임대관리": "효율적인 공실·임대관리 노하우"
+  },
+  "라이프·오피니언": {
+    "전체": "일의 보람과 성공을 더해줄 스토리",
+    "인물/인터뷰": "억대 연봉 중개사들의 실전 성공 인터뷰",
+    "부동산/인테리어 꿀팁": "실전 공간/인테리어 노하우",
+    "맛집/여행/건강": "현장 활동이 많은 대표님 전용 건강 바이블",
+    "자유 에세이": "일상의 쉼표, 감성 에세이"
   },
   "news_etc": {
     "전체": "일의 보람과 성공을 더해줄 스토리",
