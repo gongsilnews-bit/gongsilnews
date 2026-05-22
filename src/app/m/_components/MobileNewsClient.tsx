@@ -1516,7 +1516,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
             const displayName = memberName || "부동산";
 
             return (
-              <div style={{ padding: "20px 20px 12px", backgroundColor: "#fff", borderBottom: "8px solid #f4f6f8" }}>
+              <div style={{ padding: "20px 16px 12px", backgroundColor: "#fff", borderBottom: "8px solid #f4f6f8" }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                   <span style={{ fontSize: "13px", fontWeight: 600, color: "#6b7280", letterSpacing: "-0.3px" }}>
                     <span style={{ fontWeight: 800, color: "#111", background: "linear-gradient(180deg, transparent 50%, rgba(254, 240, 138, 0.9) 50%)", padding: "2px 4px", borderRadius: "2px" }}>{displayName} 대표님</span>을 위한
