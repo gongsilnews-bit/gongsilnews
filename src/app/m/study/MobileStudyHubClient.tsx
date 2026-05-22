@@ -39,10 +39,22 @@ export default function MobileStudyHubClient({ lectures }: any) {
   const [activeTab, setActiveTab] = useState<StudyTab>(initialTab);
   const router = useRouter();
 
+  // 브라우저 뒤로가기/앞으로가기 등 URL 변경 시 탭 상태 완벽 동기화
+  React.useEffect(() => {
+    const currentTab: StudyTab = tabParam === "board" ? "board" : tabParam === "community" ? "community" : "lecture";
+    setActiveTab(currentTab);
+  }, [tabParam]);
+
+  // 탭 클릭 시 React 상태와 URL 쿼리 파라미터 동시 업데이트 (속도 저하 없는 replace)
+  const handleTabChange = (newTab: StudyTab) => {
+    setActiveTab(newTab);
+    router.replace(`/m/study?tab=${newTab}`, { scroll: false });
+  };
+
   return (
     <div style={{ width: '100%', backgroundColor: '#f8f9fa', minHeight: '100vh', paddingBottom: '40px', paddingTop: '56px' }}>
       <MobileTopBarHeader />
-      <StudySubMenuBar activeTab={activeTab} onTabChange={setActiveTab} />
+      <StudySubMenuBar activeTab={activeTab} onTabChange={handleTabChange} />
 
       {/* ── 특강 콘텐츠 ── */}
       {activeTab === "lecture" && (
