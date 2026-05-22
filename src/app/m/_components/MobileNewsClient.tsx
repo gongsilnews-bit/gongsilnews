@@ -1490,6 +1490,54 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
             
             return (
               <div>
+                {/* 중요 뉴스 슬라이딩 캐러셀 (추천) */}
+                {importantArticles.length > 0 && (
+                  <div style={{ padding: "20px 16px", borderBottom: "8px solid #f4f6f8" }}>
+                    <div style={{ display: "flex", alignItems: "center", marginBottom: "16px", paddingBottom: "8px", borderBottom: "1px solid #f3f4f6" }}>
+                      <span style={{ fontSize: "16px", fontWeight: 800, color: "#508bf5" }}>{currentCatLabel}</span>
+                      <span style={{ fontSize: "16px", fontWeight: 800, color: "#1f2937", marginLeft: "5px" }}>추천 뉴스</span>
+                    </div>
+                    <div style={{ display: 'flex', overflowX: 'auto', gap: '12px', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', scrollSnapType: 'x mandatory', overscrollBehaviorX: 'contain' }} className="no-scrollbar">
+                      {importantArticles.map((a: any) => (
+                        <Link
+                          href={`/m/news/${a.article_no || a.id}`}
+                          key={a.id}
+                          onClick={() => sessionStorage.setItem(`news_scroll_${activeTab}`, window.scrollY.toString())}
+                          style={{
+                            flexShrink: 0,
+                            width: "calc(50% - 6px)", // Exactly 2 items visible
+                            textDecoration: "none",
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "8px",
+                            scrollSnapAlign: "start",
+                            scrollSnapStop: "always"
+                          }}
+                        >
+                          <div style={{ width: "100%", aspectRatio: "16/10", position: "relative", backgroundColor: "#f3f4f6", borderRadius: "8px", overflow: "hidden" }}>
+                            {(a.thumbnail_url || extractYoutubeId(a.youtube_url, a.content)) ? (
+                              <Image
+                                src={a.thumbnail_url || `https://img.youtube.com/vi/${extractYoutubeId(a.youtube_url, a.content)}/mqdefault.jpg`}
+                                alt={a.title}
+                                fill
+                                style={{ objectFit: "cover" }}
+                                sizes="(max-width: 768px) 50vw, 33vw"
+                              />
+                            ) : (
+                              <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#ccc", background: "#f8f9fa", border: "1px solid #eaeaea" }}>
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                              </div>
+                            )}
+                          </div>
+                          <div style={{ fontSize: "14px", fontWeight: 700, color: "#111", lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", wordBreak: "keep-all" }}>
+                            {a.title}
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* 많이 본 뉴스 순위 리스트 (2차 카테고리가 전체일 때만 노출) */}
                 {section2Tab === "" && popularArticles.length > 0 && (
                   <div style={{ padding: "20px 16px", borderBottom: "8px solid #f4f6f8", backgroundColor: "#fff" }}>
@@ -1548,54 +1596,6 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                           </Link>
                         );
                       })}
-                    </div>
-                  </div>
-                )}
-
-                {/* 중요 뉴스 슬라이딩 캐러셀 (추천) */}
-                {importantArticles.length > 0 && (
-                  <div style={{ padding: "20px 16px", borderBottom: "8px solid #f4f6f8" }}>
-                    <div style={{ display: "flex", alignItems: "center", marginBottom: "16px", paddingBottom: "8px", borderBottom: "1px solid #f3f4f6" }}>
-                      <span style={{ fontSize: "16px", fontWeight: 800, color: "#508bf5" }}>{currentCatLabel}</span>
-                      <span style={{ fontSize: "16px", fontWeight: 800, color: "#1f2937", marginLeft: "5px" }}>추천 뉴스</span>
-                    </div>
-                    <div style={{ display: 'flex', overflowX: 'auto', gap: '12px', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', scrollSnapType: 'x mandatory', overscrollBehaviorX: 'contain' }} className="no-scrollbar">
-                      {importantArticles.map((a: any) => (
-                        <Link
-                          href={`/m/news/${a.article_no || a.id}`}
-                          key={a.id}
-                          onClick={() => sessionStorage.setItem(`news_scroll_${activeTab}`, window.scrollY.toString())}
-                          style={{
-                            flexShrink: 0,
-                            width: "calc(50% - 6px)", // Exactly 2 items visible
-                            textDecoration: "none",
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: "8px",
-                            scrollSnapAlign: "start",
-                            scrollSnapStop: "always"
-                          }}
-                        >
-                          <div style={{ width: "100%", aspectRatio: "16/10", position: "relative", backgroundColor: "#f3f4f6", borderRadius: "8px", overflow: "hidden" }}>
-                            {(a.thumbnail_url || extractYoutubeId(a.youtube_url, a.content)) ? (
-                              <Image
-                                src={a.thumbnail_url || `https://img.youtube.com/vi/${extractYoutubeId(a.youtube_url, a.content)}/mqdefault.jpg`}
-                                alt={a.title}
-                                fill
-                                style={{ objectFit: "cover" }}
-                                sizes="(max-width: 768px) 50vw, 33vw"
-                              />
-                            ) : (
-                              <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#ccc", background: "#f8f9fa", border: "1px solid #eaeaea" }}>
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
-                              </div>
-                            )}
-                          </div>
-                          <div style={{ fontSize: "14px", fontWeight: 700, color: "#111", lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", wordBreak: "keep-all" }}>
-                            {a.title}
-                          </div>
-                        </Link>
-                      ))}
                     </div>
                   </div>
                 )}
