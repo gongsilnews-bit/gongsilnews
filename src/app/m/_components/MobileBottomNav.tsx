@@ -188,7 +188,7 @@ function MobileBottomNavContent() {
           })();
 
           const activeColor = isActive
-            ? ((item.name === "홈" || item.name === "공실") ? '#1a73e8' : (item.name === "부동산특강" ? '#16a34a' : '#ea580c'))
+            ? ((item.name === "홈" || item.name === "공실") ? '#1a73e8' : (item.name === "부동산특강" ? '#1a2e50' : '#ea580c'))
             : '#333';
 
           return item.name === "마이" ? (
