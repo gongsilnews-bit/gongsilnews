@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import MobileTopBarHeader from "../_components/MobileTopBarHeader";
-import StudySubMenuBar from "../_components/StudySubMenuBar";
+import StudySubMenuBar, { type StudyTab } from "../_components/StudySubMenuBar";
 import { createClient } from "@/utils/supabase/client";
 import AuthModal from "@/components/AuthModal";
 
@@ -132,10 +132,21 @@ export default function MobileBoardClient({ board, initialPosts, serverUser, ser
     router.push(`/m/board_write?board_id=${board.board_id}`);
   };
 
+  const RESOURCE_IDS = ["drone", "app", "prompt", "sound", "doc"];
+  const COMMUNITY_IDS = ["free", "qna", "notice", "inquiry"];
+  const currentBoardId = board?.board_id || "";
+  const detectedTab: StudyTab = RESOURCE_IDS.includes(currentBoardId) ? "board" : COMMUNITY_IDS.includes(currentBoardId) ? "community" : "lecture";
+
+  const handleTabChange = (tab: StudyTab) => {
+    if (tab === "lecture") router.push("/m/study");
+    else if (tab === "board") router.push("/m/study?tab=board");
+    else if (tab === "community") router.push("/m/study?tab=community");
+  };
+
   return (
     <div style={{ width: '100%', backgroundColor: '#f8f9fa', minHeight: '100vh', paddingBottom: '40px', paddingTop: '56px' }}>
       <MobileTopBarHeader />
-      <StudySubMenuBar />
+      <StudySubMenuBar activeTab={detectedTab} onTabChange={handleTabChange} />
 
       <div style={{ padding: '20px 16px' }}>
         <h1 style={{ fontSize: '20px', fontWeight: 900, color: '#1a2e50', display: 'flex', alignItems: 'center' }}>
