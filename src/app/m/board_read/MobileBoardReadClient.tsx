@@ -15,6 +15,13 @@ function getYoutubeId(url: string) {
   return match ? match[1] : null;
 }
 
+function getYoutubeEmbedUrl(url: string): string | null {
+  if (!url) return null;
+  const regex = /(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+  const match = url.match(regex);
+  return match ? `https://www.youtube.com/embed/${match[1]}?vq=hd1080&rel=0` : null;
+}
+
 export default function MobileBoardReadClient({ 
   post, 
   board, 
@@ -132,8 +139,31 @@ export default function MobileBoardReadClient({
     }
   };
 
-  const ytId = getYoutubeId(post.youtube_url);
   const is1to1 = board?.board_type === "inquiry";
+
+  // 다중 외부 링크 파싱 보완
+  const externalLinks = (() => {
+    let links: any[] = [];
+    try {
+      if (post.external_url && post.external_url.startsWith("[")) {
+        links = JSON.parse(post.external_url);
+      }
+    } catch(e) {}
+    
+    // 이전 버전 호환 (단일 링크 지원 유지)
+    if (links.length === 0) {
+      if (post.youtube_url) links.push({ id: "legacy_yt", type: "YOUTUBE", label: "유튜브 영상", url: post.youtube_url });
+      if (post.drive_url) links.push({ id: "legacy_dr", type: "DRIVE", label: "구글 드라이브 다운로드", url: post.drive_url });
+      if (post.external_url && !post.external_url.startsWith("[")) links.push({ id: "legacy_ex", type: "LINK", label: "외부 링크", url: post.external_url });
+    }
+    return links;
+  })();
+
+  const driveEmbedUrl = (url: string) => {
+    if (!url) return null;
+    const m = url.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+    return m ? `https://drive.google.com/file/d/${m[1]}/preview` : null;
+  };
 
   return (
     <div style={{ backgroundColor: '#fff', minHeight: '100vh', paddingBottom: '80px' }}>
@@ -240,43 +270,118 @@ export default function MobileBoardReadClient({
 
         {/* Video / Content */}
         <div style={{ fontSize: '16px', lineHeight: 1.6, color: '#374151', wordBreak: 'break-word' }}>
-          {ytId && (
-            <div style={{ position: 'relative', width: '100%', paddingBottom: '56.25%', marginBottom: '24px', borderRadius: '12px', overflow: 'hidden' }}>
-              <iframe
-                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
-                src={`https://www.youtube.com/embed/${ytId}?rel=0`}
-                title="YouTube video player"
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              ></iframe>
-            </div>
-          )}
-
-          {post.thumbnail_url && !ytId && (
+          {post.thumbnail_url && (
             <div style={{ marginBottom: '24px', borderRadius: '12px', overflow: 'hidden' }}>
               <img src={post.thumbnail_url} alt="thumbnail" style={{ width: '100%', height: 'auto', display: 'block' }} />
             </div>
           )}
 
-          <div dangerouslySetInnerHTML={{ __html: post.content }} className="board-content-html" />
-        </div>
+          {/* 다중 외부 링크 매니저 */}
+          {externalLinks.map((link: any, idx: number) => {
+            let resolvedType = link.type;
+            if (link.url) {
+              if (link.url.includes("drive.google.com")) {
+                resolvedType = "DRIVE";
+              } else if (link.url.includes("youtube.com") || link.url.includes("youtu.be")) {
+                resolvedType = "YOUTUBE";
+              }
+            }
 
-        {/* Attachment Link */}
-        {post.drive_url && (
-          <div style={{ marginTop: '32px', padding: '16px', backgroundColor: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ width: '40px', height: '40px', backgroundColor: '#2563eb', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            if (resolvedType === "YOUTUBE") {
+              const embedUrl = getYoutubeEmbedUrl(link.url);
+              if (!embedUrl) return null;
+              return (
+                <div key={link.id || idx} style={{ marginBottom: '24px', position: 'relative', width: '100%', paddingBottom: '56.25%', borderRadius: '12px', overflow: 'hidden', background: '#000' }}>
+                  <iframe
+                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
+                    src={embedUrl}
+                    allowFullScreen
+                    title={link.label || "YouTube 영상"}
+                  />
+                </div>
+              );
+            } else if (resolvedType === "DRIVE") {
+              const embedUrl = driveEmbedUrl(link.url);
+              return (
+                <div key={link.id || idx} style={{ marginBottom: '24px' }}>
+                  {embedUrl && (
+                    <div style={{ marginBottom: '16px', position: 'relative', width: '100%', paddingBottom: '56.25%', borderRadius: '12px', overflow: 'hidden', background: '#000' }}>
+                      <iframe
+                        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
+                        src={embedUrl}
+                        allow="autoplay"
+                        allowFullScreen
+                        title="Google Drive 영상"
+                      />
+                    </div>
+                  )}
+                  <div style={{
+                    background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px',
+                    padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px'
+                  }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '15px', fontWeight: 800, color: '#1e293b', marginBottom: '4px' }}>{link.label || "구글 드라이브 자료 다운로드"}</div>
+                      <div style={{ fontSize: '13px', color: '#64748b' }}>이 게시물에 관련된 구글 드라이브 파일을 다운로드합니다.</div>
+                    </div>
+                    <a
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                        background: '#2563eb', color: '#fff', padding: '11px 22px',
+                        borderRadius: '6px', fontSize: '14px', fontWeight: 700,
+                        textDecoration: 'none', whiteSpace: 'nowrap'
+                      }}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="7 10 12 15 17 10"/>
+                        <line x1="12" y1="15" x2="12" y2="3"/>
+                      </svg>
+                      구글 드라이브 다운로드
+                    </a>
+                  </div>
+                </div>
+              );
+            } else if (resolvedType === "LINK") {
+              return (
+                <div key={link.id || idx} style={{ marginBottom: '24px' }}>
+                  <div style={{
+                    background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px',
+                    padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px'
+                  }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '15px', fontWeight: 800, color: '#1e293b', marginBottom: '4px' }}>{link.label || "외부 데이터 링크"}</div>
+                      <div style={{ fontSize: '13px', color: '#64748b' }}>게시된 외부 링크 자료로 연결합니다.</div>
+                    </div>
+                    <a
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                        background: '#f8fafc', border: '1px solid #e2e8f0', color: '#333',
+                        padding: '11px 22px', borderRadius: '6px', fontSize: '14px', fontWeight: 600,
+                        textDecoration: 'none', whiteSpace: 'nowrap'
+                      }}
+                    >
+                      🔗 외부 링크 방문
+                    </a>
+                  </div>
+                </div>
+              );
+            }
+            return null;
+          })}
+
+          {/* 에디터 본문 내용 줄바꿈 살려 렌더링 */}
+          {post.content && (
+            <div style={{ fontSize: '16px', lineHeight: 1.8, color: '#333', marginBottom: '28px', whiteSpace: 'pre-wrap' }}>
+              {post.content}
             </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: '14px', fontWeight: 700, color: '#1e293b', marginBottom: '2px' }}>첨부파일 다운로드</div>
-              <div style={{ fontSize: '12px', color: '#64748b', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>구글 드라이브 외부 링크</div>
-            </div>
-            <a href={post.drive_url} target="_blank" rel="noopener noreferrer" style={{ padding: '8px 16px', backgroundColor: '#fff', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', fontWeight: 600, color: '#334155', textDecoration: 'none', whiteSpace: 'nowrap' }}>
-              열기
-            </a>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Navigation */}
