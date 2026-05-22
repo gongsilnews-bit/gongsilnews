@@ -248,12 +248,17 @@ function NewsListLayoutInner({ category, title, initialArticles, initialPopular,
         
         {/* 전체 가로 폭을 차지하는 카테고리 헤더 (중앙일보 스타일) */}
         <div style={{ 
-          display: "flex", alignItems: "flex-end", gap: "60px", 
+          display: "flex", alignItems: "flex-end", gap: "40px", 
           paddingBottom: "12px", marginBottom: "24px" 
         }}>
           <div 
             onClick={() => handleSubCategoryClick(null)}
-            style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "32px", fontWeight: "900", color: "#111", letterSpacing: "-1px", lineHeight: "1", cursor: "pointer" }}
+            style={{ 
+              display: "flex", alignItems: "center", gap: "8px", 
+              fontSize: "32px", fontWeight: "900", color: "#111", 
+              letterSpacing: "-1px", lineHeight: "1", cursor: "pointer",
+              marginLeft: "20px"
+            }}
             title="전체 기사 보기"
           >
             {displayTitle}
