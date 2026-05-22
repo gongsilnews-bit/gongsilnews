@@ -3,8 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import MobileTopBarHeader from "../_components/MobileTopBarHeader";
-import StudySubMenuBar, { type StudyTab } from "../_components/StudySubMenuBar";
+import BoardDropdownHeader from "../_components/header/BoardDropdownHeader";
 import { createClient } from "@/utils/supabase/client";
 import AuthModal from "@/components/AuthModal";
 
@@ -132,28 +131,22 @@ export default function MobileBoardClient({ board, initialPosts, serverUser, ser
     router.push(`/m/board_write?board_id=${board.board_id}`);
   };
 
-  const RESOURCE_IDS = ["drone", "app", "prompt", "sound", "doc"];
-  const COMMUNITY_IDS = ["free", "qna", "notice", "inquiry"];
-  const currentBoardId = board?.board_id || "";
-  const detectedTab: StudyTab = RESOURCE_IDS.includes(currentBoardId) ? "board" : COMMUNITY_IDS.includes(currentBoardId) ? "community" : "lecture";
-
-  const handleTabChange = (tab: StudyTab) => {
-    if (tab === "lecture") router.push("/m/study");
-    else if (tab === "board") router.push("/m/study?tab=board");
-    else if (tab === "community") router.push("/m/study?tab=community");
-  };
-
   return (
-    <div style={{ width: '100%', backgroundColor: '#f8f9fa', minHeight: '100vh', paddingBottom: '40px', paddingTop: '56px' }}>
-      <MobileTopBarHeader />
-      <StudySubMenuBar activeTab={detectedTab} onTabChange={handleTabChange} showBack />
+    <div style={{ width: '100%', backgroundColor: '#f8f9fa', minHeight: '100vh', paddingBottom: '40px' }}>
+      {/* Header — board_read 스타일 */}
+      <div style={{ position: 'sticky', top: 0, zIndex: 50, backgroundColor: '#fff', height: '54px', borderBottom: '1px solid #f3f4f6', display: 'flex', alignItems: 'center', padding: '0 16px', justifyContent: 'space-between' }}>
+        <button onClick={() => router.back()} style={{ background: 'none', border: 'none', padding: '8px', marginLeft: '-8px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        </button>
+        <BoardDropdownHeader currentBoardName={board?.name || "게시판"} />
+        <button onClick={() => router.push('/m/search')} style={{ background: 'none', border: 'none', padding: '8px', marginRight: '-8px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        </button>
+      </div>
 
       <div style={{ padding: '16px 16px 0' }}>
-        <h1 style={{ fontSize: '18px', fontWeight: 800, color: '#1a2e50', margin: '0 0 4px' }}>
-          {board.name}
-        </h1>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
-          <p style={{ color: '#6b7280', fontSize: '14px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <p style={{ color: '#6b7280', fontSize: '14px', margin: 0 }}>
             {board.subtitle || "공실뉴스가 제공하는 자료실입니다."}
           </p>
           {currentUser && (
@@ -179,8 +172,8 @@ export default function MobileBoardClient({ board, initialPosts, serverUser, ser
               style={{
                 padding: '8px 16px',
                 borderRadius: '20px',
-                border: activeTab === tab ? '1px solid #2563eb' : '1px solid #e5e7eb',
-                backgroundColor: activeTab === tab ? '#2563eb' : '#fff',
+                border: activeTab === tab ? '1px solid #1a2e50' : '1px solid #e5e7eb',
+                backgroundColor: activeTab === tab ? '#1a2e50' : '#fff',
                 color: activeTab === tab ? '#fff' : '#4b5563',
                 fontSize: '14px',
                 fontWeight: activeTab === tab ? 700 : 500,
