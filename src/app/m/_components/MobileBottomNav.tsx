@@ -187,15 +187,19 @@ function MobileBottomNavContent() {
               (item.path !== "/m" && pathname.startsWith(item.path.split('?')[0]));
           })();
 
+          const activeColor = isActive
+            ? (item.name === "공실" ? '#1a73e8' : '#ea580c')
+            : '#333';
+
           return item.name === "마이" ? (
             <button
               key={item.name}
               onClick={() => window.dispatchEvent(new Event('open-drawer'))}
-              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', position: 'relative', background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: isActive ? '#ea580c' : '#333' }}
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', position: 'relative', background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: activeColor }}
             >
               <span style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '2px' }}>
                 {profileImg ? (
-                  <div style={{ width: 24, height: 24, borderRadius: '50%', overflow: 'hidden', border: isActive ? '2px solid #ea580c' : '1px solid #ccc' }}>
+                  <div style={{ width: 24, height: 24, borderRadius: '50%', overflow: 'hidden', border: isActive ? (item.name === "공실" ? '2px solid #1a73e8' : '2px solid #ea580c') : '1px solid #ccc' }}>
                     <img src={profileImg} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   </div>
                 ) : (
@@ -270,7 +274,7 @@ function MobileBottomNavContent() {
                   </span>
                 )}
               </span>
-              <span style={{ fontSize: '10px', fontWeight: isActive ? 700 : 500, color: isActive ? '#ea580c' : '#333' }}>
+              <span style={{ fontSize: '10px', fontWeight: isActive ? 700 : 500, color: activeColor }}>
                 {item.name}
               </span>
             </button>
@@ -278,12 +282,12 @@ function MobileBottomNavContent() {
             <Link
               key={item.name}
               href={item.path}
-              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', position: 'relative', textDecoration: 'none', color: isActive ? '#ea580c' : '#333' }}
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', position: 'relative', textDecoration: 'none', color: activeColor }}
             >
               <span style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '2px' }}>
                 {isActive ? item.iconFilled : item.icon}
               </span>
-              <span style={{ fontSize: '10px', fontWeight: isActive ? 700 : 500, color: isActive ? '#ea580c' : '#333' }}>
+              <span style={{ fontSize: '10px', fontWeight: isActive ? 700 : 500, color: activeColor }}>
                 {item.name}
               </span>
             </Link>
