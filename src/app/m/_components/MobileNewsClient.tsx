@@ -194,23 +194,39 @@ const RecommendedNewsCarousel = React.memo(({
   extractYoutubeId 
 }: RecommendedNewsCarouselProps) => {
   const [recIndex, setRecIndex] = useState(0);
+  const [isSwipingRec, setIsSwipingRec] = useState(false);
+  const recScrollRef = React.useRef<HTMLDivElement>(null);
 
   // Reset index when articles set changes
   React.useEffect(() => {
     setRecIndex(0);
+    if (recScrollRef.current) {
+      recScrollRef.current.scrollLeft = 0;
+    }
   }, [importantArticles]);
 
   // Premium lightweight auto-rotation
   React.useEffect(() => {
-    if (importantArticles.length <= 1) return;
+    if (importantArticles.length <= 1 || isSwipingRec) return;
     const timer = setInterval(() => {
       setRecIndex((prev) => (prev + 1) % importantArticles.length);
     }, 3000);
     return () => clearInterval(timer);
-  }, [importantArticles.length]);
+  }, [importantArticles.length, isSwipingRec]);
 
-  const a = importantArticles[recIndex];
-  if (!a) return null;
+  // Scroll container programmatically when recIndex changes
+  React.useEffect(() => {
+    if (!recScrollRef.current || isSwipingRec) return;
+    const width = recScrollRef.current.clientWidth;
+    if (width > 0) {
+      const targetScrollLeft = recIndex * width;
+      if (Math.abs(recScrollRef.current.scrollLeft - targetScrollLeft) > 5) {
+        recScrollRef.current.scrollTo({ left: targetScrollLeft, behavior: "smooth" });
+      }
+    }
+  }, [recIndex, isSwipingRec]);
+
+  if (importantArticles.length === 0) return null;
 
   return (
     <div style={{ padding: "20px 16px", borderBottom: "8px solid #f4f6f8" }}>
@@ -263,41 +279,73 @@ const RecommendedNewsCarousel = React.memo(({
         </div>
       </div>
 
-      <Link
-        href={`/m/news/${a.article_no || a.id}`}
-        onClick={() => sessionStorage.setItem(`news_scroll_${activeTab}`, window.scrollY.toString())}
+      <div
+        ref={recScrollRef}
+        className="no-scrollbar"
         style={{
-          textDecoration: "none",
           display: "flex",
-          flexDirection: "column",
-          gap: "10px"
+          width: "100%",
+          overflowX: "auto",
+          scrollSnapType: "x mandatory",
+          scrollBehavior: "smooth",
+          WebkitOverflowScrolling: "touch",
+        }}
+        onTouchStart={() => setIsSwipingRec(true)}
+        onTouchEnd={() => setIsSwipingRec(false)}
+        onScroll={(e) => {
+          const scrollLeft = e.currentTarget.scrollLeft;
+          const width = e.currentTarget.clientWidth;
+          if (width > 0) {
+            const newIdx = Math.round(scrollLeft / width);
+            if (newIdx !== recIndex && newIdx >= 0 && newIdx < importantArticles.length) {
+              setRecIndex(newIdx);
+            }
+          }
         }}
       >
-        <div style={{ width: "100%", aspectRatio: "16/9", position: "relative", backgroundColor: "#f3f4f6", borderRadius: "12px", overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
-          {(a.thumbnail_url || extractYoutubeId(a.youtube_url, a.content)) ? (
-            <Image
-              src={a.thumbnail_url || `https://img.youtube.com/vi/${extractYoutubeId(a.youtube_url, a.content)}/mqdefault.jpg`}
-              alt={a.title}
-              fill
-              style={{ objectFit: "cover" }}
-              sizes="(max-width: 768px) 100vw, 50vw"
-              priority
-            />
-          ) : (
-            <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#ccc", background: "#f8f9fa", border: "1px solid #eaeaea" }}>
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+        {importantArticles.map((art, idx) => (
+          <Link
+            key={art.id || idx}
+            href={`/m/news/${art.article_no || art.id}`}
+            onClick={() => sessionStorage.setItem(`news_scroll_${activeTab}`, window.scrollY.toString())}
+            style={{
+              textDecoration: "none",
+              display: "flex",
+              flexDirection: "column",
+              gap: "10px",
+              width: "100%",
+              flexShrink: 0,
+              scrollSnapAlign: "start",
+              scrollSnapStop: "always"
+            }}
+          >
+            <div style={{ width: "100%", aspectRatio: "16/9", position: "relative", backgroundColor: "#f3f4f6", borderRadius: "12px", overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
+              {(art.thumbnail_url || extractYoutubeId(art.youtube_url, art.content)) ? (
+                <Image
+                  src={art.thumbnail_url || `https://img.youtube.com/vi/${extractYoutubeId(art.youtube_url, art.content)}/mqdefault.jpg`}
+                  alt={art.title}
+                  fill
+                  style={{ objectFit: "cover" }}
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  priority={idx === 0}
+                />
+              ) : (
+                <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#ccc", background: "#f8f9fa", border: "1px solid #eaeaea" }}>
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                </div>
+              )}
             </div>
-          )}
-        </div>
-        <div style={{ padding: "4px 4px 0" }}>
-          <div style={{ fontSize: "16px", fontWeight: 800, color: "#111827", lineHeight: 1.4, marginBottom: "6px", wordBreak: "keep-all" }}>
-            {a.title}
-          </div>
-          <div style={{ fontSize: "13px", color: "#6b7280", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: 1.5, wordBreak: "keep-all" }}>
-            {a.content ? a.content.replace(/<[^>]*>/g, '').substring(0, 100) : ""}
-          </div>
-        </div>
-      </Link>
+            <div style={{ padding: "4px 4px 0" }}>
+              <div style={{ fontSize: "16px", fontWeight: 800, color: "#111827", lineHeight: 1.4, marginBottom: "6px", wordBreak: "keep-all" }}>
+                {art.title}
+              </div>
+              <div style={{ fontSize: "13px", color: "#6b7280", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: 1.5, wordBreak: "keep-all" }}>
+                {art.content ? art.content.replace(/<[^>]*>/g, '').substring(0, 100) : ""}
+              </div>
+            </div>
+          </Link>
+        ))}
+      </div>
     </div>
   );
 });
