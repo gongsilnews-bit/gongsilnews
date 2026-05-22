@@ -180,6 +180,182 @@ const extractYoutubeId = (url?: string, html?: string): string | null => {
   return null;
 };
 
+interface RecommendedNewsCarouselProps {
+  importantArticles: any[];
+  currentCatLabel: string;
+  activeTab: string;
+  extractYoutubeId: (url?: string, html?: string) => string | null;
+}
+
+const RecommendedNewsCarousel = React.memo(({ 
+  importantArticles, 
+  currentCatLabel, 
+  activeTab,
+  extractYoutubeId 
+}: RecommendedNewsCarouselProps) => {
+  const [recIndex, setRecIndex] = useState(0);
+
+  // Reset index when articles set changes
+  React.useEffect(() => {
+    setRecIndex(0);
+  }, [importantArticles]);
+
+  // Premium lightweight auto-rotation
+  React.useEffect(() => {
+    if (importantArticles.length <= 1) return;
+    const timer = setInterval(() => {
+      setRecIndex((prev) => (prev + 1) % importantArticles.length);
+    }, 3000);
+    return () => clearInterval(timer);
+  }, [importantArticles.length]);
+
+  const a = importantArticles[recIndex];
+  if (!a) return null;
+
+  return (
+    <div style={{ padding: "20px 16px", borderBottom: "8px solid #f4f6f8" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px", paddingBottom: "8px", borderBottom: "1px solid #f3f4f6" }}>
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <span style={{ fontSize: "16px", fontWeight: 800, color: "#508bf5" }}>{currentCatLabel}</span>
+          <span style={{ fontSize: "16px", fontWeight: 800, color: "#1f2937", marginLeft: "5px" }}>추천 뉴스</span>
+        </div>
+        
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <span style={{ fontSize: "12px", color: "#6b7280", fontWeight: 700, fontFamily: "monospace" }}>
+            {recIndex + 1} / {importantArticles.length}
+          </span>
+          <div style={{ display: "flex", gap: "4px" }}>
+            <button 
+              onClick={() => setRecIndex((prev) => (prev === 0 ? importantArticles.length - 1 : prev - 1))}
+              style={{ 
+                background: "#f3f4f6", 
+                border: "none", 
+                borderRadius: "4px", 
+                width: "24px", 
+                height: "24px", 
+                display: "flex", 
+                alignItems: "center", 
+                justifyContent: "center", 
+                cursor: "pointer",
+                color: "#4b5563"
+              }}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <button 
+              onClick={() => setRecIndex((prev) => (prev === importantArticles.length - 1 ? 0 : prev + 1))}
+              style={{ 
+                background: "#f3f4f6", 
+                border: "none", 
+                borderRadius: "4px", 
+                width: "24px", 
+                height: "24px", 
+                display: "flex", 
+                alignItems: "center", 
+                justifyContent: "center", 
+                cursor: "pointer",
+                color: "#4b5563"
+              }}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <Link
+        href={`/m/news/${a.article_no || a.id}`}
+        onClick={() => sessionStorage.setItem(`news_scroll_${activeTab}`, window.scrollY.toString())}
+        style={{
+          textDecoration: "none",
+          display: "flex",
+          flexDirection: "column",
+          gap: "10px"
+        }}
+      >
+        <div style={{ width: "100%", aspectRatio: "16/9", position: "relative", backgroundColor: "#f3f4f6", borderRadius: "12px", overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
+          {(a.thumbnail_url || extractYoutubeId(a.youtube_url, a.content)) ? (
+            <Image
+              src={a.thumbnail_url || `https://img.youtube.com/vi/${extractYoutubeId(a.youtube_url, a.content)}/mqdefault.jpg`}
+              alt={a.title}
+              fill
+              style={{ objectFit: "cover" }}
+              sizes="(max-width: 768px) 100vw, 50vw"
+              priority
+            />
+          ) : (
+            <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#ccc", background: "#f8f9fa", border: "1px solid #eaeaea" }}>
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+            </div>
+          )}
+        </div>
+        <div style={{ padding: "4px 4px 0" }}>
+          <div style={{ fontSize: "16px", fontWeight: 800, color: "#111827", lineHeight: 1.4, marginBottom: "6px", wordBreak: "keep-all" }}>
+            {a.title}
+          </div>
+          <div style={{ fontSize: "13px", color: "#6b7280", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: 1.5, wordBreak: "keep-all" }}>
+            {a.content ? a.content.replace(/<[^>]*>/g, '').substring(0, 100) : ""}
+          </div>
+        </div>
+      </Link>
+    </div>
+  );
+});
+RecommendedNewsCarousel.displayName = "RecommendedNewsCarousel";
+
+const ArticleRow = React.memo(({ a, activeTab, formatDate, stripHtml, extractYoutubeId }: any) => {
+  return (
+    <Link
+      href={`/m/news/${a.article_no || a.id}`}
+      className="article-row"
+      onClick={() => sessionStorage.setItem(`news_scroll_${activeTab}`, window.scrollY.toString())}
+      style={{
+        display: "flex",
+        gap: "14px",
+        padding: "16px",
+        borderBottom: "1px solid #f0f0f0",
+        cursor: "pointer",
+        background: "#fff",
+        transition: "background 0.15s ease",
+        WebkitTapHighlightColor: "transparent",
+      }}
+    >
+      {/* 왼쪽 썸네일 (존재할 경우) */}
+      {(a.thumbnail_url || extractYoutubeId(a.youtube_url, a.content)) && (
+        <div style={{ flexShrink: 0, width: "130px", height: "88px", borderRadius: "6px", overflow: "hidden", backgroundColor: "#f3f4f6", position: "relative" }}>
+          <Image
+            src={a.thumbnail_url || `https://img.youtube.com/vi/${extractYoutubeId(a.youtube_url, a.content)}/mqdefault.jpg`}
+            alt={a.title}
+            fill
+            style={{ objectFit: "cover" }}
+            sizes="130px"
+          />
+        </div>
+      )}
+
+      {/* 오른쪽 텍스트 컨텐츠 */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, justifyContent: "center" }}>
+        <div style={{ fontSize: "13px", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "6px", marginBottom: "6px" }}>
+          <span style={{ color: "#508bf5", fontWeight: 700 }}>{a.section2 || "뉴스"}</span>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <span style={{ color: "#666", fontWeight: 500 }}>
+              {formatDate(a.published_at || a.created_at)} · {a.author_name || "공실뉴스"}
+            </span>
+            {a.location_name && <span style={{ color: "#666", fontWeight: 500 }}>📍{a.location_name}</span>}
+          </div>
+        </div>
+        <div style={{ fontSize: "16px", fontWeight: 800, color: "#111", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", wordBreak: "keep-all", marginBottom: "4px", lineHeight: 1.4 }}>
+          {a.title}
+        </div>
+        <div style={{ fontSize: "14px", color: "#666", display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: 1.4 }}>
+          {a.subtitle || stripHtml(a.content || "").slice(0, 80)}
+        </div>
+      </div>
+    </Link>
+  );
+});
+ArticleRow.displayName = "ArticleRow";
+
 function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, initialKeyword, authorProfile }: { initialTab: string, initialArticles: any[], initialAuthorName?: string, initialKeyword?: string, authorProfile?: any }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -193,27 +369,16 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedVacancyId, setSelectedVacancyId] = useState<string | null>(null);
   const [section2Tab, setSection2Tab] = useState<string>(searchParams.get("section2") || "");
-  const [recIndex, setRecIndex] = useState(0);
-
   // Compute importantArticles at top level to maintain clean state
-  const filteredBySection2 = section2Tab
-    ? articles.filter(a => a.section2 === section2Tab)
-    : articles;
-  const importantArticles = filteredBySection2.filter(a => a.is_important);
+  const filteredBySection2 = useMemo(() => {
+    return section2Tab
+      ? articles.filter(a => a.section2 === section2Tab)
+      : articles;
+  }, [articles, section2Tab]);
 
-  // Reset active slide index when category/subcategory changes
-  React.useEffect(() => {
-    setRecIndex(0);
-  }, [activeTab, section2Tab]);
-
-  // Premium, super lightweight automatic 3-second rotation (with zero speed overhead)
-  React.useEffect(() => {
-    if (importantArticles.length <= 1) return;
-    const timer = setInterval(() => {
-      setRecIndex((prev) => (prev + 1) % importantArticles.length);
-    }, 3000);
-    return () => clearInterval(timer);
-  }, [importantArticles.length, activeTab, section2Tab]);
+  const importantArticles = useMemo(() => {
+    return filteredBySection2.filter(a => a.is_important);
+  }, [filteredBySection2]);
 
   // URL 파라미터가 변경되면 상태 동기화 (뒤로가기 시 복구용)
   useEffect(() => {
@@ -401,6 +566,20 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
         const latlng = new kakao.maps.LatLng(parseFloat(data[0].y), parseFloat(data[0].x));
         kakaoMapRef.current.panTo(latlng);
         kakaoMapRef.current.setLevel(zoom);
+      }
+    });
+  };
+
+  const doLocKeywordSearch = () => {
+    if (!locKeyword.trim()) return;
+    const kakao = (window as any).kakao;
+    if (!kakao?.maps?.services) return;
+    const ps = new kakao.maps.services.Places();
+    ps.keywordSearch(locKeyword, (data: any, status: any) => {
+      if (status === kakao.maps.services.Status.OK) {
+        setLocResults(data || []);
+      } else {
+        setLocResults([]);
       }
     });
   };
@@ -1536,98 +1715,12 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
               <div>
                 {/* 중요 뉴스 슬라이딩 캐러셀 (추천) */}
                 {importantArticles.length > 0 && (
-                  <div style={{ padding: "20px 16px", borderBottom: "8px solid #f4f6f8" }}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px", paddingBottom: "8px", borderBottom: "1px solid #f3f4f6" }}>
-                      <div style={{ display: "flex", alignItems: "center" }}>
-                        <span style={{ fontSize: "16px", fontWeight: 800, color: "#508bf5" }}>{currentCatLabel}</span>
-                        <span style={{ fontSize: "16px", fontWeight: 800, color: "#1f2937", marginLeft: "5px" }}>추천 뉴스</span>
-                      </div>
-                      
-                      {/* 프리미엄 좌우이동 네비게이션 컨트롤러 */}
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                        <span style={{ fontSize: "12px", color: "#6b7280", fontWeight: 700, fontFamily: "monospace" }}>
-                          {recIndex + 1} / {importantArticles.length}
-                        </span>
-                        <div style={{ display: "flex", gap: "4px" }}>
-                          <button 
-                            onClick={() => setRecIndex((prev) => (prev === 0 ? importantArticles.length - 1 : prev - 1))}
-                            style={{ 
-                              background: "#f3f4f6", 
-                              border: "none", 
-                              borderRadius: "4px", 
-                              width: "24px", 
-                              height: "24px", 
-                              display: "flex", 
-                              alignItems: "center", 
-                              justifyContent: "center", 
-                              cursor: "pointer",
-                              color: "#4b5563"
-                            }}
-                          >
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-                          </button>
-                          <button 
-                            onClick={() => setRecIndex((prev) => (prev === importantArticles.length - 1 ? 0 : prev + 1))}
-                            style={{ 
-                              background: "#f3f4f6", 
-                              border: "none", 
-                              borderRadius: "4px", 
-                              width: "24px", 
-                              height: "24px", 
-                              display: "flex", 
-                              alignItems: "center", 
-                              justifyContent: "center", 
-                              cursor: "pointer",
-                              color: "#4b5563"
-                            }}
-                          >
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                    {(() => {
-                      const a = importantArticles[recIndex];
-                      if (!a) return null;
-                      return (
-                        <Link
-                          href={`/m/news/${a.article_no || a.id}`}
-                          onClick={() => sessionStorage.setItem(`news_scroll_${activeTab}`, window.scrollY.toString())}
-                          style={{
-                            textDecoration: "none",
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: "10px"
-                          }}
-                        >
-                          <div style={{ width: "100%", aspectRatio: "16/9", position: "relative", backgroundColor: "#f3f4f6", borderRadius: "12px", overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
-                            {(a.thumbnail_url || extractYoutubeId(a.youtube_url, a.content)) ? (
-                              <Image
-                                src={a.thumbnail_url || `https://img.youtube.com/vi/${extractYoutubeId(a.youtube_url, a.content)}/mqdefault.jpg`}
-                                alt={a.title}
-                                fill
-                                style={{ objectFit: "cover" }}
-                                sizes="(max-width: 768px) 100vw, 50vw"
-                                priority
-                              />
-                            ) : (
-                              <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#ccc", background: "#f8f9fa", border: "1px solid #eaeaea" }}>
-                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
-                              </div>
-                            )}
-                          </div>
-                          <div style={{ padding: "4px 4px 0" }}>
-                            <div style={{ fontSize: "16px", fontWeight: 800, color: "#111827", lineHeight: 1.4, marginBottom: "6px", wordBreak: "keep-all" }}>
-                              {a.title}
-                            </div>
-                            <div style={{ fontSize: "13px", color: "#6b7280", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: 1.5, wordBreak: "keep-all" }}>
-                              {a.content ? a.content.replace(/<[^>]*>/g, '').substring(0, 100) : ""}
-                            </div>
-                          </div>
-                        </Link>
-                      );
-                    })()}
-                  </div>
+                  <RecommendedNewsCarousel 
+                    importantArticles={importantArticles}
+                    currentCatLabel={currentCatLabel}
+                    activeTab={activeTab}
+                    extractYoutubeId={extractYoutubeId}
+                  />
                 )}
 
                 {/* 많이 본 뉴스 순위 리스트 (2차 카테고리가 전체일 때만 노출) */}
@@ -1694,55 +1787,15 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                 
                 {/* 일반 뉴스 리스트 */}
                 {regularArticles.map((a: any) => (
-                <Link
-                  href={`/m/news/${a.article_no || a.id}`}
-                  key={a.id}
-                  className="article-row"
-                  onClick={() => sessionStorage.setItem(`news_scroll_${activeTab}`, window.scrollY.toString())}
-                  style={{
-                    display: "flex",
-                    gap: "14px",
-                    padding: "16px",
-                    borderBottom: "1px solid #f0f0f0",
-                    cursor: "pointer",
-                    background: "#fff",
-                    transition: "background 0.15s ease",
-                    WebkitTapHighlightColor: "transparent",
-                  }}
-                >
-                  {/* 왼쪽 썸네일 (존재할 경우) */}
-                  {(a.thumbnail_url || extractYoutubeId(a.youtube_url, a.content)) && (
-                    <div style={{ flexShrink: 0, width: "130px", height: "88px", borderRadius: "6px", overflow: "hidden", backgroundColor: "#f3f4f6", position: "relative" }}>
-                      <Image
-                        src={a.thumbnail_url || `https://img.youtube.com/vi/${extractYoutubeId(a.youtube_url, a.content)}/mqdefault.jpg`}
-                        alt={a.title}
-                        fill
-                        style={{ objectFit: "cover" }}
-                        sizes="130px"
-                      />
-                    </div>
-                  )}
-
-                  {/* 오른쪽 텍스트 컨텐츠 */}
-                  <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, justifyContent: "center" }}>
-                    <div style={{ fontSize: "13px", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "6px", marginBottom: "6px" }}>
-                      <span style={{ color: "#508bf5", fontWeight: 700 }}>{a.section2 || "뉴스"}</span>
-                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                        <span style={{ color: "#666", fontWeight: 500 }}>
-                          {formatDate(a.published_at || a.created_at)} · {a.author_name || "공실뉴스"}
-                        </span>
-                        {a.location_name && <span style={{ color: "#666", fontWeight: 500 }}>📍{a.location_name}</span>}
-                      </div>
-                    </div>
-                    <div style={{ fontSize: "16px", fontWeight: 800, color: "#111", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", wordBreak: "keep-all", marginBottom: "4px", lineHeight: 1.4 }}>
-                      {a.title}
-                    </div>
-                    <div style={{ fontSize: "14px", color: "#666", display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: 1.4 }}>
-                      {a.subtitle || stripHtml(a.content || "").slice(0, 80)}
-                    </div>
-                  </div>
-                </Link>
-              ))}
+                  <ArticleRow 
+                    key={a.id}
+                    a={a}
+                    activeTab={activeTab}
+                    formatDate={formatDate}
+                    stripHtml={stripHtml}
+                    extractYoutubeId={extractYoutubeId}
+                  />
+                ))}
               </div>
             );
           })()}
