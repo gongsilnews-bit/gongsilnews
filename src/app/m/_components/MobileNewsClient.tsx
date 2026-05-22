@@ -205,26 +205,38 @@ const RecommendedNewsCarousel = React.memo(({
     }
   }, [importantArticles]);
 
-  // Premium lightweight auto-rotation
+  // Premium lightweight auto-rotation (using direct scroll, exactly like homepage!)
   React.useEffect(() => {
     if (importantArticles.length <= 1 || isSwipingRec) return;
     const timer = setInterval(() => {
-      setRecIndex((prev) => (prev + 1) % importantArticles.length);
+      if (recScrollRef.current) {
+        const width = recScrollRef.current.clientWidth;
+        const maxScroll = recScrollRef.current.scrollWidth - width;
+        let nextScroll = recScrollRef.current.scrollLeft + width;
+        if (nextScroll > maxScroll + 10) nextScroll = 0;
+        recScrollRef.current.scrollTo({ left: nextScroll, behavior: "smooth" });
+      }
     }, 3000);
     return () => clearInterval(timer);
   }, [importantArticles.length, isSwipingRec]);
 
-  // Scroll container programmatically when recIndex changes
-  React.useEffect(() => {
-    if (!recScrollRef.current || isSwipingRec) return;
+  const handlePrev = () => {
+    if (!recScrollRef.current) return;
     const width = recScrollRef.current.clientWidth;
-    if (width > 0) {
-      const targetScrollLeft = recIndex * width;
-      if (Math.abs(recScrollRef.current.scrollLeft - targetScrollLeft) > 5) {
-        recScrollRef.current.scrollTo({ left: targetScrollLeft, behavior: "smooth" });
-      }
-    }
-  }, [recIndex, isSwipingRec]);
+    const maxScroll = recScrollRef.current.scrollWidth - width;
+    let nextScroll = recScrollRef.current.scrollLeft - width;
+    if (nextScroll < -10) nextScroll = maxScroll;
+    recScrollRef.current.scrollTo({ left: nextScroll, behavior: "smooth" });
+  };
+
+  const handleNext = () => {
+    if (!recScrollRef.current) return;
+    const width = recScrollRef.current.clientWidth;
+    const maxScroll = recScrollRef.current.scrollWidth - width;
+    let nextScroll = recScrollRef.current.scrollLeft + width;
+    if (nextScroll > maxScroll + 10) nextScroll = 0;
+    recScrollRef.current.scrollTo({ left: nextScroll, behavior: "smooth" });
+  };
 
   if (importantArticles.length === 0) return null;
 
@@ -242,7 +254,7 @@ const RecommendedNewsCarousel = React.memo(({
           </span>
           <div style={{ display: "flex", gap: "4px" }}>
             <button 
-              onClick={() => setRecIndex((prev) => (prev === 0 ? importantArticles.length - 1 : prev - 1))}
+              onClick={handlePrev}
               style={{ 
                 background: "#f3f4f6", 
                 border: "none", 
@@ -259,7 +271,7 @@ const RecommendedNewsCarousel = React.memo(({
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg>
             </button>
             <button 
-              onClick={() => setRecIndex((prev) => (prev === importantArticles.length - 1 ? 0 : prev + 1))}
+              onClick={handleNext}
               style={{ 
                 background: "#f3f4f6", 
                 border: "none", 
