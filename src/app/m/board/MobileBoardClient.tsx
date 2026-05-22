@@ -145,8 +145,8 @@ export default function MobileBoardClient({ board, initialPosts, serverUser, ser
 
   return (
     <div style={{ width: '100%', backgroundColor: '#f8f9fa', minHeight: '100vh', paddingBottom: '40px', paddingTop: '56px' }}>
-      <MobileTopBarHeader showBack />
-      <StudySubMenuBar activeTab={detectedTab} onTabChange={handleTabChange} />
+      <MobileTopBarHeader />
+      <StudySubMenuBar activeTab={detectedTab} onTabChange={handleTabChange} showBack />
 
       <div style={{ padding: '16px 16px 0' }}>
         <h1 style={{ fontSize: '18px', fontWeight: 800, color: '#1a2e50', margin: '0 0 4px' }}>

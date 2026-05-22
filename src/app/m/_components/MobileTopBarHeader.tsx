@@ -15,10 +15,9 @@ const CATEGORIES = [
 
 interface Props {
   activeTab?: string;
-  showBack?: boolean;
 }
 
-export default function MobileTopBarHeader({ activeTab, showBack }: Props) {
+export default function MobileTopBarHeader({ activeTab }: Props) {
   const router = useRouter();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
@@ -40,38 +39,21 @@ export default function MobileTopBarHeader({ activeTab, showBack }: Props) {
           height: "56px",
         }}
       >
-        {/* 좌측: 뒤로가기 or 로고 */}
-        {showBack ? (
-          <button
-            onClick={() => router.back()}
-            style={{
-              flexShrink: 0,
-              display: "flex",
-              alignItems: "center",
-              padding: "0 6px 0 10px",
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-            }}
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
-          </button>
-        ) : (
-          <button
-            onClick={() => router.push("/m")}
-            style={{
-              flexShrink: 0,
-              display: "flex",
-              alignItems: "flex-end",
-              padding: "0 8px 6px 12px",
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-            }}
-          >
-            <img src="/new_logo.png" alt="홈" style={{ width: "28px", height: "28px", objectFit: "contain" }} />
-          </button>
-        )}
+        {/* 좌측 로고 — 고정 */}
+        <button
+          onClick={() => router.push("/m")}
+          style={{
+            flexShrink: 0,
+            display: "flex",
+            alignItems: "flex-end",
+            padding: "0 8px 6px 12px",
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+          }}
+        >
+          <img src="/new_logo.png" alt="홈" style={{ width: "28px", height: "28px", objectFit: "contain" }} />
+        </button>
 
         {/* 중앙 스크롤 메뉴 */}
         <div
