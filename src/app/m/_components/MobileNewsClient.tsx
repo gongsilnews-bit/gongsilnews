@@ -1251,30 +1251,6 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
       ) : (
         /* 일반 뉴스 리스트 뷰 */
         <div className={slideAnim} style={{ flex: 1, paddingBottom: "20px", transform: `translateX(${swipeDeltaX}px)`, transition: touchStartX.current !== null ? "none" : "transform 0.3s cubic-bezier(0.25, 1, 0.5, 1)" }}>
-          {/* 2줄 프리미엄 개인화 헤더 카드 */}
-          {(() => {
-            const isKeywordSearch = !!(initialKeyword || searchParams.get("keyword"));
-            const isAuthorView = !!(authorProfile || initialAuthorName);
-            if (isKeywordSearch || isAuthorView) return null;
-
-            const activeSub = section2Tab || "전체";
-            const mentalText = PERSONALIZED_MENTAL_MAP[activeTab]?.[activeSub] || "추천 뉴스";
-            const displayName = memberName || "부동산";
-
-            return (
-              <div style={{ padding: "20px 20px 12px", backgroundColor: "#fff", borderBottom: "8px solid #f4f6f8" }}>
-                <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                  <span style={{ fontSize: "13px", fontWeight: 600, color: "#6b7280", letterSpacing: "-0.3px" }}>
-                    <span style={{ fontWeight: 800, color: "#111", background: "linear-gradient(180deg, transparent 50%, rgba(254, 240, 138, 0.9) 50%)", padding: "2px 4px", borderRadius: "2px" }}>{displayName} 대표님</span>을 위한
-                  </span>
-                  <h2 style={{ fontSize: "19px", fontWeight: 900, color: "#508bf5", margin: 0, letterSpacing: "-0.5px", lineHeight: 1.3 }}>
-                    {mentalText} <span style={{ color: "#111", fontWeight: "normal" }}>News</span>
-                  </h2>
-                </div>
-              </div>
-            );
-          })()}
-
           {/* 2차 카테고리 탭바 (PC와 동일) */}
           {(() => {
             const cat = CATEGORIES.find(c => c.key === activeTab);
@@ -1343,6 +1319,30 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                     </button>
                   );
                 })}
+              </div>
+            );
+          })()}
+
+          {/* 2줄 프리미엄 개인화 헤더 카드 */}
+          {(() => {
+            const isKeywordSearch = !!(initialKeyword || searchParams.get("keyword"));
+            const isAuthorView = !!(authorProfile || initialAuthorName);
+            if (isKeywordSearch || isAuthorView) return null;
+
+            const activeSub = section2Tab || "전체";
+            const mentalText = PERSONALIZED_MENTAL_MAP[activeTab]?.[activeSub] || "추천 뉴스";
+            const displayName = memberName || "부동산";
+
+            return (
+              <div style={{ padding: "20px 20px 12px", backgroundColor: "#fff", borderBottom: "8px solid #f4f6f8" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                  <span style={{ fontSize: "13px", fontWeight: 600, color: "#6b7280", letterSpacing: "-0.3px" }}>
+                    <span style={{ fontWeight: 800, color: "#111", background: "linear-gradient(180deg, transparent 50%, rgba(254, 240, 138, 0.9) 50%)", padding: "2px 4px", borderRadius: "2px" }}>{displayName} 대표님</span>을 위한
+                  </span>
+                  <h2 style={{ fontSize: "19px", fontWeight: 900, color: "#508bf5", margin: 0, letterSpacing: "-0.5px", lineHeight: 1.3 }}>
+                    {mentalText} <span style={{ color: "#111", fontWeight: "normal" }}>News</span>
+                  </h2>
+                </div>
               </div>
             );
           })()}
