@@ -1186,8 +1186,8 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                   }
                 `}</style>
                 <div style={{ position: "relative", width: "60px", height: "60px", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "16px" }}>
-                  <div style={{ position: "absolute", width: "100%", height: "100%", borderRadius: "50%", background: "#508bf5", animation: "pulseRing 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite" }} />
-                  <div style={{ position: "relative", width: "32px", height: "32px", borderRadius: "50%", background: "#1d4ed8", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}>
+                  <div style={{ position: "absolute", width: "100%", height: "100%", borderRadius: "50%", background: "#fed7aa", animation: "pulseRing 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite" }} />
+                  <div style={{ position: "relative", width: "32px", height: "32px", borderRadius: "50%", background: "#f97316", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
                   </div>
                 </div>
@@ -1200,7 +1200,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
 
             {/* 지도위 기사 목록 보기 버튼 */}
             {visibleArticles.length > 0 && mapLoaded && (
-              <div style={{ position: "absolute", bottom: "24px", left: "0", width: "100%", display: "flex", justifyContent: "center", zIndex: 20 }}>
+              <div style={{ position: "absolute", bottom: "80px", left: "0", width: "100%", display: "flex", justifyContent: "center", zIndex: 20 }}>
                 <button
                   onClick={() => {
                     setListPanelArticles(visibleArticles);
@@ -1837,43 +1837,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
             );
           })()}
 
-          {/* 지도 페이지일 때 -> 목록보기 버튼 */}
-          {activeTab === 'local' && (() => {
-            const targetTab = SECTION1_TO_KEY[section1Filter] || searchParams.get("from") || "news_gongsil";
-            const listUrl = `/m/${targetTab}${section2Filter ? `?section2=${encodeURIComponent(section2Filter)}` : ""}`;
-            return (
-              <Link
-                href={listUrl}
-                style={{
-                  position: "fixed",
-                  bottom: "80px",
-                  right: "16px",
-                  width: "52px",
-                  height: "52px",
-                  borderRadius: "50%",
-                  backgroundColor: "#508bf5",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  boxShadow: "0 4px 14px rgba(80, 139, 245, 0.4)",
-                  zIndex: 9998,
-                  cursor: "pointer",
-                  border: "none",
-                  outline: "none",
-                  color: "#fff"
-                }}
-              >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ userSelect: "none" }}>
-                  <line x1="8" y1="6" x2="21" y2="6" />
-                  <line x1="8" y1="12" x2="21" y2="12" />
-                  <line x1="8" y1="18" x2="21" y2="18" />
-                  <line x1="3" y1="6" x2="3.01" y2="6" />
-                  <line x1="3" y1="12" x2="3.01" y2="12" />
-                  <line x1="3" y1="18" x2="3.01" y2="18" />
-                </svg>
-              </Link>
-            );
-          })()}
+
         </>
       )}
 
