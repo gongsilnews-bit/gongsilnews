@@ -996,24 +996,6 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
     }
   }, [activeTab]);
 
-  // 스크롤 복원 효과: activeTab이나 기사 목록이 바뀔 때 세션스토리지에 저장된 위치로 복원
-  useEffect(() => {
-    const scrollKey = `news_scroll_${activeTab}`;
-    const savedScroll = sessionStorage.getItem(scrollKey);
-    if (savedScroll && articles.length > 0) {
-      // 렌더링 후 약간의 지연을 주어 정확한 스크롤 복구
-      setTimeout(() => {
-        window.scrollTo({ top: parseInt(savedScroll, 10), behavior: "instant" });
-        sessionStorage.removeItem(scrollKey); // 한 번 복원하면 삭제
-      }, 50);
-    }
-  }, [activeTab, articles]);
-
-  const handleArticleClick = () => {
-    // 기사 상세로 넘어가기 전에 현재 스크롤 위치 저장
-    sessionStorage.setItem(`news_scroll_${activeTab}`, window.scrollY.toString());
-  };
-
   return (
     <div
       style={{
