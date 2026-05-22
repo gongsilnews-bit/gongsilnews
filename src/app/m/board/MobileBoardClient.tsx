@@ -145,23 +145,13 @@ export default function MobileBoardClient({ board, initialPosts, serverUser, ser
 
   return (
     <div style={{ width: '100%', backgroundColor: '#f8f9fa', minHeight: '100vh', paddingBottom: '40px', paddingTop: '56px' }}>
-      <MobileTopBarHeader />
+      <MobileTopBarHeader showBack />
       <StudySubMenuBar activeTab={detectedTab} onTabChange={handleTabChange} />
 
-      {/* 뒤로가기 + 게시판 제목 */}
-      <div style={{ display: 'flex', alignItems: 'center', padding: '14px 12px 0', gap: '4px' }}>
-        <button
-          onClick={() => router.back()}
-          style={{ background: 'none', border: 'none', padding: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', flexShrink: 0 }}
-        >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
-        </button>
-        <h1 style={{ fontSize: '18px', fontWeight: 800, color: '#1a2e50', margin: 0 }}>
+      <div style={{ padding: '16px 16px 0' }}>
+        <h1 style={{ fontSize: '18px', fontWeight: 800, color: '#1a2e50', margin: '0 0 4px' }}>
           {board.name}
         </h1>
-      </div>
-
-      <div style={{ padding: '8px 16px 0' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
           <p style={{ color: '#6b7280', fontSize: '14px' }}>
             {board.subtitle || "공실뉴스가 제공하는 자료실입니다."}
