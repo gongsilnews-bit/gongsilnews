@@ -666,9 +666,9 @@ function MobileGongsilContent() {
           </div>
         )}
 
-        {/* 🏢 지도 위 공실 N개 대형 하단 중앙 액션 버튼 */}
+        {/* 🏢 하단 버튼 영역: 지도 위 공실 + 공실등록 나란히 */}
         {mapLoaded && (
-          <div style={{ position: "absolute", bottom: "24px", left: "50%", transform: "translateX(-50%)", zIndex: 20 }}>
+          <div style={{ position: "absolute", bottom: "24px", left: "50%", transform: "translateX(-50%)", zIndex: 20, display: "flex", gap: "10px", alignItems: "center" }}>
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -678,8 +678,8 @@ function MobileGongsilContent() {
               style={{
                 background: "linear-gradient(135deg, #1a73e8, #3b82f6)",
                 borderRadius: "28px",
-                padding: "14px 28px",
-                fontSize: "16px",
+                padding: "14px 24px",
+                fontSize: "15px",
                 fontWeight: 800,
                 color: "#ffffff",
                 boxShadow: "0 6px 20px rgba(26, 115, 232, 0.4)",
@@ -704,6 +704,31 @@ function MobileGongsilContent() {
                 <path d="M8 6h2v2H8V6zm6 0h2v2h-2V6zm-6 5h2v2H8v-2zm6 0h2v2h-2v-2z" />
               </svg>
               지도 위 공실 {visibleCount}개
+            </button>
+            <button
+              onClick={() => {
+                if (!currentUser) {
+                  alert("공실을 등록하려면 로그인이 필요합니다.");
+                  setIsAuthModalOpen(true);
+                } else {
+                  router.push("/m/admin/vacancy/write");
+                }
+              }}
+              style={{
+                borderRadius: "28px", background: "linear-gradient(135deg, #3b82f6, #1d4ed8)",
+                color: "#fff", border: "none", boxShadow: "0 6px 20px rgba(29, 78, 216, 0.4)",
+                cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+                padding: "14px 20px", gap: "4px",
+                whiteSpace: "nowrap",
+                transition: "transform 0.15s ease",
+              }}
+              onMouseDown={(e) => { e.currentTarget.style.transform = "scale(0.92)"; }}
+              onMouseUp={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
+              onTouchStart={(e) => { e.currentTarget.style.transform = "scale(0.92)"; }}
+              onTouchEnd={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
+            >
+              <span style={{ fontSize: "20px", fontWeight: 300, lineHeight: 1 }}>+</span>
+              <span style={{ fontSize: "15px", fontWeight: 800 }}>공실등록</span>
             </button>
           </div>
         )}
@@ -765,43 +790,6 @@ function MobileGongsilContent() {
             </p>
           </div>
         )}
-
-        <button
-          onClick={() => {
-            if (!currentUser) {
-              alert("공실을 등록하려면 로그인이 필요합니다.");
-              setIsAuthModalOpen(true);
-            } else {
-              router.push("/m/admin/vacancy/write");
-            }
-          }}
-          style={{
-            position: "absolute", bottom: "80px", right: "16px", height: "48px",
-            borderRadius: "24px", background: "linear-gradient(135deg, #3b82f6, #1d4ed8)",
-            color: "#fff", border: "none", boxShadow: "0 6px 20px rgba(29, 78, 216, 0.4)",
-            cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-            padding: "0 18px", gap: "6px",
-            zIndex: 20,
-            transition: "transform 0.15s ease",
-          }}
-          onMouseDown={(e) => { e.currentTarget.style.transform = "scale(0.92)"; }}
-          onMouseUp={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
-          onTouchStart={(e) => { e.currentTarget.style.transform = "scale(0.92)"; }}
-          onTouchEnd={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ pointerEvents: "none" }}>
-            <rect x="4" y="2" width="10" height="15" rx="1.5" ry="1.5" />
-            <line x1="7" y1="5" x2="8" y2="5" />
-            <line x1="7" y1="8" x2="8" y2="8" />
-            <line x1="7" y1="11" x2="8" y2="11" />
-            <line x1="11" y1="5" x2="12" y2="5" />
-            <line x1="11" y1="8" x2="12" y2="8" />
-            <line x1="11" y1="11" x2="12" y2="11" />
-            <path d="M9 17v-3h2v3" />
-            <path d="M14 17h6M17 14v6" stroke="#ffffff" strokeWidth="2.5" />
-          </svg>
-          <span style={{ fontSize: "14px", fontWeight: 800, color: "#fff", whiteSpace: "nowrap" }}>공실등록</span>
-        </button>
       </div>
 
       {/* 슬라이딩 패널: 클러스터/리스트 뷰 */}
