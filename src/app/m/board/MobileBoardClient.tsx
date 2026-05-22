@@ -81,6 +81,41 @@ export default function MobileBoardClient({ board, initialPosts, serverUser, ser
   const [isLevelChecking, setIsLevelChecking] = useState(!serverUser && serverUserLevel === undefined);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [showMyPosts, setShowMyPosts] = useState(false);
+  const [isSearching, setIsSearching] = useState(!!searchParams.get('search'));
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || "");
+  const [searchInputValue, setSearchInputValue] = useState(searchParams.get('search') || "");
+
+  React.useEffect(() => {
+    const searchVal = searchParams.get('search') || "";
+    setSearchQuery(searchVal);
+    setSearchInputValue(searchVal);
+    setIsSearching(!!searchVal);
+  }, [searchParams]);
+
+  const handleSearch = (keyword: string) => {
+    const trimmed = keyword.trim();
+    setSearchQuery(trimmed);
+    setSearchInputValue(trimmed);
+    
+    const params = new URLSearchParams(searchParams);
+    if (trimmed) {
+      params.set("search", trimmed);
+    } else {
+      params.delete("search");
+    }
+    params.set("id", board.board_id);
+    router.replace(`/m/board?${params.toString()}`);
+  };
+
+  const handleCloseSearch = () => {
+    setIsSearching(false);
+    setSearchQuery("");
+    setSearchInputValue("");
+    const params = new URLSearchParams(searchParams);
+    params.delete("search");
+    params.set("id", board.board_id);
+    router.replace(`/m/board?${params.toString()}`);
+  };
 
   React.useEffect(() => {
     if (serverUser || serverUserLevel !== undefined) return;
@@ -110,8 +145,20 @@ export default function MobileBoardClient({ board, initialPosts, serverUser, ser
 
   const filteredPosts = initialPosts.filter(p => {
     if (showMyPosts && p.author_id !== currentUser?.id) return false;
-    if (activeTab === "전체") return true;
-    return p.title.includes(`[${activeTab}]`);
+    
+    // 탭 필터링
+    const matchesTab = activeTab === "전체" || p.title.includes(`[${activeTab}]`);
+    if (!matchesTab) return false;
+
+    // 검색어 실시간 필터링
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      const titleMatch = p.title.toLowerCase().includes(q);
+      const contentMatch = (p.content || "").toLowerCase().includes(q);
+      return titleMatch || contentMatch;
+    }
+
+    return true;
   });
 
   const getReadUrl = (postId: string) => {
@@ -139,14 +186,68 @@ export default function MobileBoardClient({ board, initialPosts, serverUser, ser
   return (
     <div style={{ width: '100%', backgroundColor: '#f8f9fa', minHeight: '100vh', paddingBottom: '40px' }}>
       {/* Header — board_read 스타일 */}
-      <div style={{ position: 'sticky', top: 0, zIndex: 50, backgroundColor: '#fff', height: '54px', borderBottom: '1px solid #f3f4f6', display: 'flex', alignItems: 'center', padding: '0 16px', justifyContent: 'space-between' }}>
-        <button onClick={() => router.push(`/m/study?tab=${backTab}`)} style={{ background: 'none', border: 'none', padding: '8px', marginLeft: '-8px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
-        </button>
-        <BoardDropdownHeader currentBoardName={board?.name || "게시판"} />
-        <button onClick={() => router.push('/m/search')} style={{ background: 'none', border: 'none', padding: '8px', marginRight: '-8px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-        </button>
+      <div style={{ position: 'sticky', top: 0, zIndex: 50, backgroundColor: '#fff', height: '54px', borderBottom: '1px solid #f3f4f6', display: 'flex', alignItems: 'center', padding: '0 16px' }}>
+        {isSearching ? (
+          <div style={{ display: 'flex', alignItems: 'center', width: '100%', gap: '8px' }}>
+            <button 
+              onClick={handleCloseSearch} 
+              style={{ background: 'none', border: 'none', padding: '8px', marginLeft: '-8px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            </button>
+            <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <input 
+                type="text" 
+                placeholder={`"${board?.name || "게시판"}" 내 검색`} 
+                value={searchInputValue}
+                onChange={(e) => setSearchInputValue(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    handleSearch(searchInputValue);
+                  }
+                }}
+                autoFocus
+                style={{ 
+                  width: '100%', 
+                  height: '36px', 
+                  border: '1px solid #e5e7eb', 
+                  borderRadius: '20px', 
+                  padding: '0 36px 0 16px', 
+                  fontSize: '14px', 
+                  outline: 'none', 
+                  backgroundColor: '#f9fafb' 
+                }} 
+              />
+              {searchInputValue && (
+                <button 
+                  onClick={() => {
+                    setSearchInputValue("");
+                    setSearchQuery("");
+                  }} 
+                  style={{ position: 'absolute', right: '12px', background: 'none', border: 'none', padding: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', color: '#9ca3af' }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+              )}
+            </div>
+            <button 
+              onClick={() => handleSearch(searchInputValue)} 
+              style={{ background: 'none', border: 'none', padding: '4px 8px', fontSize: '15px', fontWeight: 700, color: '#1e56a0', cursor: 'pointer' }}
+            >
+              검색
+            </button>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', width: '100%', justifyContent: 'space-between' }}>
+            <button onClick={() => router.push(`/m/study?tab=${backTab}`)} style={{ background: 'none', border: 'none', padding: '8px', marginLeft: '-8px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            </button>
+            <BoardDropdownHeader currentBoardName={board?.name || "게시판"} />
+            <button onClick={() => setIsSearching(true)} style={{ background: 'none', border: 'none', padding: '8px', marginRight: '-8px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            </button>
+          </div>
+        )}
       </div>
 
       <div style={{ padding: '10px 16px 8px', textAlign: 'center' }}>

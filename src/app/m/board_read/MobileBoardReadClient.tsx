@@ -34,6 +34,17 @@ export default function MobileBoardReadClient({
   const [commentText, setCommentText] = useState("");
   const [guestName, setGuestName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchInputValue, setSearchInputValue] = useState("");
+
+  const handleSearch = (keyword: string) => {
+    const trimmed = keyword.trim();
+    if (trimmed) {
+      router.push(`/m/board?id=${board?.board_id || 'drone'}&search=${encodeURIComponent(trimmed)}`);
+    } else {
+      router.push(`/m/board?id=${board?.board_id || 'drone'}`);
+    }
+  };
 
   // 이전글/다음글 이동 등으로 comments가 변경되면 상태를 동기화
   useEffect(() => {
@@ -127,14 +138,68 @@ export default function MobileBoardReadClient({
   return (
     <div style={{ backgroundColor: '#fff', minHeight: '100vh', paddingBottom: '80px' }}>
       {/* Header */}
-      <div style={{ position: 'sticky', top: 0, zIndex: 50, backgroundColor: '#fff', height: '54px', borderBottom: '1px solid #f3f4f6', display: 'flex', alignItems: 'center', padding: '0 16px', justifyContent: 'space-between' }}>
-        <button onClick={() => router.back()} style={{ background: 'none', border: 'none', padding: '8px', marginLeft: '-8px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
-        </button>
-        <BoardDropdownHeader currentBoardName={board?.name || "자료실"} />
-        <button onClick={() => router.push('/m/search')} style={{ background: 'none', border: 'none', padding: '8px', marginRight: '-8px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-        </button>
+      <div style={{ position: 'sticky', top: 0, zIndex: 50, backgroundColor: '#fff', height: '54px', borderBottom: '1px solid #f3f4f6', display: 'flex', alignItems: 'center', padding: '0 16px' }}>
+        {isSearching ? (
+          <div style={{ display: 'flex', alignItems: 'center', width: '100%', gap: '8px' }}>
+            <button 
+              onClick={() => {
+                setIsSearching(false);
+                setSearchInputValue("");
+              }} 
+              style={{ background: 'none', border: 'none', padding: '8px', marginLeft: '-8px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            </button>
+            <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <input 
+                type="text" 
+                placeholder={`"${board?.name || "게시판"}" 내 검색`} 
+                value={searchInputValue}
+                onChange={(e) => setSearchInputValue(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    handleSearch(searchInputValue);
+                  }
+                }}
+                autoFocus
+                style={{ 
+                  width: '100%', 
+                  height: '36px', 
+                  border: '1px solid #e5e7eb', 
+                  borderRadius: '20px', 
+                  padding: '0 36px 0 16px', 
+                  fontSize: '14px', 
+                  outline: 'none', 
+                  backgroundColor: '#f9fafb' 
+                }} 
+              />
+              {searchInputValue && (
+                <button 
+                  onClick={() => setSearchInputValue("")} 
+                  style={{ position: 'absolute', right: '12px', background: 'none', border: 'none', padding: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', color: '#9ca3af' }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+              )}
+            </div>
+            <button 
+              onClick={() => handleSearch(searchInputValue)} 
+              style={{ background: 'none', border: 'none', padding: '4px 8px', fontSize: '15px', fontWeight: 700, color: '#1e56a0', cursor: 'pointer' }}
+            >
+              검색
+            </button>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', width: '100%', justifyContent: 'space-between' }}>
+            <button onClick={() => router.back()} style={{ background: 'none', border: 'none', padding: '8px', marginLeft: '-8px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            </button>
+            <BoardDropdownHeader currentBoardName={board?.name || "자료실"} />
+            <button onClick={() => setIsSearching(true)} style={{ background: 'none', border: 'none', padding: '8px', marginRight: '-8px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Content */}
