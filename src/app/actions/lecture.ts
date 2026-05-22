@@ -499,8 +499,20 @@ export async function getMyEnrollments(userId: string) {
     if (!enrollments || enrollments.length === 0) return { success: true, data: [] };
     const ids = enrollments.map(e => e.lecture_id);
     const { data: lectures } = await supabase.from("lectures")
-      .select("id, title, thumbnail_url, category, instructor_name, duration_months").in("id", ids);
-    const m = new Map((lectures || []).map(l => [l.id, l]));
-    return { success: true, data: enrollments.map(e => ({ ...e, lecture: m.get(e.lecture_id) || null })) };
+      .select("id, title, thumbnail_url, category, instructor_name, duration_months")
+      .in("id", ids)
+      .eq("is_deleted", false)
+      .eq("status", "ACTIVE");
+    
+    if (!lectures || lectures.length === 0) return { success: true, data: [] };
+    
+    const m = new Map(lectures.map(l => [l.id, l]));
+    
+    // 강좌 정보가 존재하는 (삭제되지 않고 활성화된) 수강 신청 내역만 필터링해서 반환
+    const activeEnrollments = enrollments
+      .filter(e => m.has(e.lecture_id))
+      .map(e => ({ ...e, lecture: m.get(e.lecture_id)! }));
+      
+    return { success: true, data: activeEnrollments };
   } catch { return { success: true, data: [] }; }
 }

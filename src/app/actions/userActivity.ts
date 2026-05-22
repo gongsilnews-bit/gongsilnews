@@ -22,20 +22,35 @@ function getAdminClient() {
 export async function getUserActivityCounts(userId: string) {
   const supabase = getAdminClient();
   try {
+    // 구독한 기자 목록 조회 후 탈퇴하지 않은 기자의 수 계산 (외래키 누락 대응)
+    const { data: subData } = await supabase
+      .from("reporter_subscriptions")
+      .select("reporter_id")
+      .eq("user_id", userId);
+
+    let activeSubscribedReporters = 0;
+    if (subData && subData.length > 0) {
+      const reporterIds = subData.map((s) => s.reporter_id);
+      const { count } = await supabase
+        .from("members")
+        .select("*", { count: "exact", head: true })
+        .in("id", reporterIds)
+        .eq("is_deleted", false);
+      activeSubscribedReporters = count || 0;
+    }
+
     const [
       { count: myArticles },
       { count: myVacancies },
       { count: bookmarkedArticles },
       { count: bookmarkedVacancies },
-      { count: subscribedReporters },
       { count: myLectures },
     ] = await Promise.all([
-      supabase.from("articles").select("*", { count: "exact", head: true }).eq("author_id", userId),
-      supabase.from("vacancies").select("*", { count: "exact", head: true }).eq("owner_id", userId),
-      supabase.from("article_bookmarks").select("*", { count: "exact", head: true }).eq("user_id", userId),
-      supabase.from("vacancy_wishlist").select("*", { count: "exact", head: true }).eq("user_id", userId),
-      supabase.from("reporter_subscriptions").select("*", { count: "exact", head: true }).eq("user_id", userId),
-      supabase.from("lecture_enrollments").select("*", { count: "exact", head: true }).eq("user_id", userId).eq("status", "ACTIVE"),
+      supabase.from("articles").select("*", { count: "exact", head: true }).eq("author_id", userId).eq("is_deleted", false),
+      supabase.from("vacancies").select("*", { count: "exact", head: true }).eq("owner_id", userId).neq("status", "DELETED"),
+      supabase.from("article_bookmarks").select("*, articles!inner(is_deleted)", { count: "exact", head: true }).eq("user_id", userId).eq("articles.is_deleted", false),
+      supabase.from("vacancy_wishlist").select("*, vacancies!inner(status)", { count: "exact", head: true }).eq("user_id", userId).neq("vacancies.status", "DELETED"),
+      supabase.from("lecture_enrollments").select("*, lectures!inner(is_deleted, status)", { count: "exact", head: true }).eq("user_id", userId).eq("status", "ACTIVE").eq("lectures.is_deleted", false).eq("lectures.status", "ACTIVE"),
     ]);
 
     return {
@@ -45,7 +60,7 @@ export async function getUserActivityCounts(userId: string) {
         myVacancies: myVacancies || 0,
         bookmarkedArticles: bookmarkedArticles || 0,
         bookmarkedVacancies: bookmarkedVacancies || 0,
-        subscribedReporters: subscribedReporters || 0,
+        subscribedReporters: activeSubscribedReporters,
         myLectures: myLectures || 0,
       },
     };

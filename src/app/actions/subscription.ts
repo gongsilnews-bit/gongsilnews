@@ -89,7 +89,8 @@ export async function getMySubscriptions(userId: string) {
     const { data: members } = await supabase
       .from("members")
       .select("id, name, profile_image_url")
-      .in("id", reporterIds);
+      .in("id", reporterIds)
+      .eq("is_deleted", false);
 
     return { success: true, reporters: members || [] };
   } catch (error: any) {

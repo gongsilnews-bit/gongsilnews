@@ -362,9 +362,9 @@ export async function adminHardDeleteMember(memberId: string) {
 export async function adminGetDashboardData() {
   const supabaseAdmin = getAdminClient();
   try {
-    const { count: vacanciesCount } = await supabaseAdmin.from('vacancies').select('*', { count: 'exact', head: true });
+    const { count: vacanciesCount } = await supabaseAdmin.from('vacancies').select('*', { count: 'exact', head: true }).neq('status', 'DELETED');
     const { count: membersCount } = await supabaseAdmin.from('members').select('*', { count: 'exact', head: true });
-    const { count: articlesCount } = await supabaseAdmin.from('articles').select('*', { count: 'exact', head: true });
+    const { count: articlesCount } = await supabaseAdmin.from('articles').select('*', { count: 'exact', head: true }).eq('is_deleted', false);
     
     const [{ count: ac }, { count: vc }, { count: bc }] = await Promise.all([
       supabaseAdmin.from('article_comments').select('*', { count: 'exact', head: true }),
@@ -375,6 +375,7 @@ export async function adminGetDashboardData() {
 
     const { data: recentVacancies } = await supabaseAdmin.from('vacancies')
       .select('id, trade_type, address, price, contact, created_at')
+      .neq('status', 'DELETED')
       .order('created_at', { ascending: false })
       .limit(5);
 
@@ -417,16 +418,18 @@ export async function memberGetDashboardData(memberId: string) {
     // 본인의 공실 수
     const { count: vacanciesCount } = await supabaseAdmin.from('vacancies')
       .select('*', { count: 'exact', head: true })
-      .eq('owner_id', memberId);
+      .eq('owner_id', memberId)
+      .neq('status', 'DELETED');
 
     // 본인의 기사 수
     const { count: articlesCount } = await supabaseAdmin.from('articles')
       .select('*', { count: 'exact', head: true })
-      .eq('author_id', memberId);
+      .eq('author_id', memberId)
+      .eq('is_deleted', false);
 
     // 본인 글(기사/공실)에 달린 댓글 수 합산
     // 1) 본인 기사 ID 조회 후 해당 기사에 달린 댓글
-    const { data: myArticles } = await supabaseAdmin.from('articles').select('id').eq('author_id', memberId);
+    const { data: myArticles } = await supabaseAdmin.from('articles').select('id').eq('author_id', memberId).eq('is_deleted', false);
     const myArticleIds = (myArticles || []).map(a => a.id);
     let articleCommentsCount = 0;
     if (myArticleIds.length > 0) {
@@ -449,6 +452,7 @@ export async function memberGetDashboardData(memberId: string) {
     const { data: recentVacancies } = await supabaseAdmin.from('vacancies')
       .select('id, trade_type, address, price, contact, created_at')
       .eq('owner_id', memberId)
+      .neq('status', 'DELETED')
       .order('created_at', { ascending: false })
       .limit(5);
 
@@ -456,6 +460,7 @@ export async function memberGetDashboardData(memberId: string) {
     const { data: recentArticles } = await supabaseAdmin.from('articles')
       .select('id, title, views, created_at')
       .eq('author_id', memberId)
+      .eq('is_deleted', false)
       .order('created_at', { ascending: false })
       .limit(5);
 
