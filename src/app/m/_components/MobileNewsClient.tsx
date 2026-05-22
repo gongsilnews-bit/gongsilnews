@@ -936,92 +936,8 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
     };
   }, [filteredLocalArticles, mapLoaded]);
 
-  // ── 스와이프(좌우 슬라이드) 탭 전환 ──
-  const touchStartX = useRef<number | null>(null);
-  const touchStartY = useRef<number | null>(null);
-  const touchStartTime = useRef<number>(0);
-  const [swipeDeltaX, setSwipeDeltaX] = useState<number>(0);
-  const [slideAnim, setSlideAnim] = useState<"" | "slide-out-left" | "slide-out-right" | "slide-in-left" | "slide-in-right">("");
+  // ── 스와이프(좌우 슬라이드) 기능이 제거되고 상단 탭 클릭 방식으로 단순화되었습니다 ──
   const tabBarRef = useRef<HTMLDivElement>(null);
-
-  const handleSwipeStart = (e: React.TouchEvent) => {
-    if ((e.target as HTMLElement).closest('.map-container')) {
-      touchStartX.current = null;
-      touchStartY.current = null;
-      return;
-    }
-    const target = e.target as HTMLElement;
-    const scrollParent = target.closest('.hide-scrollbar');
-    if (scrollParent && scrollParent.scrollWidth > scrollParent.clientWidth) {
-      touchStartX.current = null;
-      touchStartY.current = null;
-      return;
-    }
-    touchStartX.current = e.touches[0].clientX;
-    touchStartY.current = e.touches[0].clientY;
-    touchStartTime.current = Date.now();
-    setSwipeDeltaX(0);
-    setSlideAnim("");
-  };
-
-  const handleSwipeMove = (e: React.TouchEvent) => {
-    if (touchStartX.current === null || touchStartY.current === null) return;
-    const dx = e.touches[0].clientX - touchStartX.current;
-    const dy = e.touches[0].clientY - touchStartY.current;
-    
-    // 수직 스크롤이 더 크면 스와이프 취소
-    if (Math.abs(dy) > Math.abs(dx) && Math.abs(dx) < 20) {
-      touchStartX.current = null;
-      setSwipeDeltaX(0);
-      return;
-    }
-    
-    // 양끝단 저항 효과
-    const currentIdx = CATEGORIES.findIndex((c) => c.key === activeTab);
-    let transformDx = dx;
-    if ((currentIdx === 0 && dx > 0) || (currentIdx === CATEGORIES.length - 1 && dx < 0)) {
-      transformDx = dx * 0.2; 
-    }
-    setSwipeDeltaX(transformDx);
-  };
-
-  const handleSwipeEnd = (e: React.TouchEvent) => {
-    if (touchStartX.current === null) return;
-    const dx = e.changedTouches[0].clientX - touchStartX.current;
-    const timeElapsed = Date.now() - touchStartTime.current;
-    
-    touchStartX.current = null;
-    touchStartY.current = null;
-
-    if (Math.abs(dx) < 90 || timeElapsed > 500) {
-      setSwipeDeltaX(0);
-      return;
-    }
-
-    const currentIdx = CATEGORIES.findIndex((c) => c.key === activeTab);
-
-    if (dx < 0 && currentIdx < CATEGORIES.length - 1) {
-      // ← 왼쪽 스와이프 → 다음 탭
-      const next = CATEGORIES[currentIdx + 1];
-      setSlideAnim("slide-out-left");
-      setTimeout(() => {
-        router.push(next.path);
-      }, 150);
-    } else if (dx > 0) {
-      // → 오른쪽 스와이프 → 이전 탭
-      if (currentIdx === 0) {
-        setSlideAnim("slide-out-right");
-        setTimeout(() => router.push("/m"), 150);
-      } else if (currentIdx > 0) {
-        setSlideAnim("slide-out-right");
-        setTimeout(() => router.push(CATEGORIES[currentIdx - 1].path), 150);
-      } else {
-        setSwipeDeltaX(0);
-      }
-    } else {
-      setSwipeDeltaX(0);
-    }
-  };
 
   // 탭 변경 시 카테고리 바 자동 스크롤
   useEffect(() => {
@@ -1052,9 +968,6 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
 
   return (
     <div
-      onTouchStart={handleSwipeStart}
-      onTouchMove={handleSwipeMove}
-      onTouchEnd={handleSwipeEnd}
       style={{
         width: "100%",
         backgroundColor: "#fff",
@@ -1186,7 +1099,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
 
       {/* 우리동네뉴스: 카카오 지도 + 목록 스플릿 뷰 (키워드 검색이나 작가 검색이 아닐 때만 지도 뷰로 렌더링) */}
       {(activeTab === "local" && !searchParams.get("keyword") && !searchParams.get("author_name") && !initialKeyword && !initialAuthorName) ? (
-        <div className={slideAnim} style={{ position: "fixed", top: "56px", bottom: "60px", left: "50%", transform: `translateX(calc(-50% + ${swipeDeltaX}px))`, transition: touchStartX.current !== null ? "none" : "transform 0.3s cubic-bezier(0.25, 1, 0.5, 1)", width: "100%", maxWidth: "448px", display: "flex", flexDirection: "column", zIndex: 10, background: "#fff" }}>
+        <div style={{ position: "fixed", top: "56px", bottom: "60px", left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: "448px", display: "flex", flexDirection: "column", zIndex: 10, background: "#fff" }}>
           <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", paddingTop: "0px" }}>
             {/* ═══ 위치·카테고리 필터 바 ═══ */}
             <style>{`
@@ -1477,7 +1390,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
         </div>
       ) : (
         /* 일반 뉴스 리스트 뷰 */
-        <div className={slideAnim} style={{ flex: 1, paddingBottom: "20px", transform: `translateX(${swipeDeltaX}px)`, transition: touchStartX.current !== null ? "none" : "transform 0.3s cubic-bezier(0.25, 1, 0.5, 1)" }}>
+        <div style={{ flex: 1, paddingBottom: "20px" }}>
           {/* 2차 카테고리 탭바 (PC와 동일) */}
           {(() => {
             const cat = CATEGORIES.find(c => c.key === activeTab);
