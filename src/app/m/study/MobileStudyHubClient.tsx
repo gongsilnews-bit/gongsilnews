@@ -3,14 +3,16 @@
 import React from "react";
 import Link from "next/link";
 import MobileTopBarHeader from "../_components/MobileTopBarHeader";
+import StudySubMenuBar from "../_components/StudySubMenuBar";
 
 export default function MobileStudyHubClient({ lectures }: any) {
   return (
     <div style={{ width: '100%', backgroundColor: '#f8f9fa', minHeight: '100vh', paddingBottom: '40px', paddingTop: '56px' }}>
       <MobileTopBarHeader />
+      <StudySubMenuBar />
 
       {/* 콘텐츠 영역 */}
-      <div style={{ padding: '16px', paddingTop: '20px' }}>
+      <div style={{ padding: '16px', paddingTop: '10px' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {lectures.map((lecture: any) => (
             <Link key={lecture.id} href={`/m/study_read?id=${lecture.id}`} style={{ textDecoration: 'none' }}>
