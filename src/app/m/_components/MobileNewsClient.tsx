@@ -1355,7 +1355,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
 
             {/* 지도위 기사 목록 보기 버튼 */}
             {visibleArticles.length > 0 && mapLoaded && (
-              <div style={{ position: "absolute", bottom: "68px", left: "0", width: "100%", display: "flex", justifyContent: "center", zIndex: 20 }}>
+              <div style={{ position: "fixed", bottom: "76px", left: "50%", transform: "translateX(-50%)", zIndex: 20, display: "flex", justifyContent: "center" }}>
                 <button
                   onClick={() => {
                     setListPanelArticles(visibleArticles);

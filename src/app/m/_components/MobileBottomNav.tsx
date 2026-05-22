@@ -22,7 +22,7 @@ function MobileBottomNavContent() {
 
   // 지도 페이지 또는 우리동네뉴스 탭에서는 항상 하단바가 보이도록 리셋
   useEffect(() => {
-    const isMapPage = pathname.startsWith('/m/news_map') || (pathname === '/m' && tab === 'local');
+    const isMapPage = pathname.startsWith('/m/news_map') || (pathname === '/m' && tab === 'local') || pathname.startsWith('/m/gongsil');
     if (isMapPage) {
       setIsVisible(true);
     }
@@ -30,7 +30,7 @@ function MobileBottomNavContent() {
 
   useEffect(() => {
     const handleScroll = () => {
-      const isMapPage = pathname.startsWith('/m/news_map') || (pathname === '/m' && tab === 'local');
+      const isMapPage = pathname.startsWith('/m/news_map') || (pathname === '/m' && tab === 'local') || pathname.startsWith('/m/gongsil');
       if (isMapPage) {
         setIsVisible(true);
         return;
