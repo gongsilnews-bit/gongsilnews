@@ -668,7 +668,7 @@ function MobileGongsilContent() {
 
         {/* 🏢 하단 버튼 영역: 지도 위 공실 + 공실등록 나란히 */}
         {mapLoaded && (
-          <div style={{ position: "absolute", bottom: "24px", left: "50%", transform: "translateX(-50%)", zIndex: 20, display: "flex", gap: "10px", alignItems: "center" }}>
+          <div style={{ position: "absolute", bottom: "80px", left: "50%", transform: "translateX(-50%)", zIndex: 20, display: "flex", gap: "10px", alignItems: "center" }}>
             <button
               onClick={(e) => {
                 e.stopPropagation();
