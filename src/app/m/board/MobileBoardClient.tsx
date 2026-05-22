@@ -144,9 +144,9 @@ export default function MobileBoardClient({ board, initialPosts, serverUser, ser
         </button>
       </div>
 
-      <div style={{ padding: '10px 16px 8px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <p style={{ color: '#9ca3af', fontSize: '13px', margin: 0 }}>
+      <div style={{ padding: '10px 16px 8px', textAlign: 'center' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+          <p style={{ color: '#9ca3af', fontSize: '15px', margin: 0 }}>
             {board.subtitle || "공실뉴스가 제공하는 자료실입니다."}
           </p>
           {currentUser && (
