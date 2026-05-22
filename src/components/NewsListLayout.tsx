@@ -78,6 +78,27 @@ function NewsListLayoutInner({ category, title, initialArticles, initialPopular,
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null);
   const [user, setUser] = useState<any>(null);
+  const [memberName, setMemberName] = useState<string | null>(null);
+
+  // 유저 정보 및 프로필 이름 조회
+  useEffect(() => {
+    const fetchMemberProfile = async () => {
+      const supabase = createClient();
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (authUser) {
+        setUser(authUser);
+        const { data: member } = await supabase
+          .from("members")
+          .select("name")
+          .eq("id", authUser.id)
+          .single();
+        if (member && member.name) {
+          setMemberName(member.name);
+        }
+      }
+    };
+    fetchMemberProfile();
+  }, []);
 
   const ITEMS_PER_PAGE = 10;
 
@@ -248,9 +269,35 @@ function NewsListLayoutInner({ category, title, initialArticles, initialPopular,
         <div className="news-layout">
           {/* 좌측 뉴스 리스트 */}
           <div className="news-list-area">
-            {/* 중요 기사 (상단 이미지 영역, 자동 롤링) */}
+            {/* 중요 기사 (상단 이미지 영역 - 프리미엄 스플릿 슬라이더 + 리스트) */}
             {!isBookmarkMode && importantArticles.length > 0 && (
-              <ImportantNewsRotate articles={importantArticles} />
+              <div className="premium-recommend-section">
+                {/* 1. 개인화 헤더 배너 (대표님 맞춤형 인사말) */}
+                {(() => {
+                  const isKeywordSearch = !!searchQuery;
+                  if (isKeywordSearch) return null;
+
+                  const activeSub = selectedSubCategory || "전체";
+                  const mentalText = PERSONALIZED_MENTAL_MAP[category]?.[activeSub] || "추천 뉴스";
+                  const displayName = memberName || "부동산";
+
+                  return (
+                    <div className="premium-header-banner">
+                      <div className="premium-header-content">
+                        <span className="premium-user-tag">
+                          <span className="premium-user-name">{displayName} 대표님</span>을 위한
+                        </span>
+                        <h2 className="premium-banner-title">
+                          {mentalText} <span className="premium-banner-title-light">News</span>
+                        </h2>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* 2. 스플릿 매거진 레이아웃 */}
+                <PremiumSplitRecommend articles={importantArticles} />
+              </div>
             )}
 
             {/* Category Tabs for Bookmark Mode */}
@@ -447,5 +494,377 @@ function NewsListLayoutInner({ category, title, initialArticles, initialPopular,
         />
       )}
     </>
+  );
+}
+
+// 카테고리별 맞춤 문구 맵
+const PERSONALIZED_MENTAL_MAP: Record<string, Record<string, string>> = {
+  "news_local": {
+    "전체": "우리 동네에서 놓치면 안 될 핵심 동향",
+  },
+  "news_vacancy": {
+    "전체": "실시간 핵심 공실 동향 및 분석",
+  },
+  "news_economy": {
+    "전체": "부동산 시장을 지배할 자산 경제 브리핑",
+    "부동산 뉴스": "한눈에 보는 대한민국 실시간 부동산 흐름",
+    "정부 정책": "놓치면 손해보는 최신 세제·부동산 정책",
+    "재테크 정보": "고수들의 자산을 불려주는 실전 투자 안목",
+    "법률/세무 지식": "고객이 묻기 전에 대비하는 세무·법률 솔루션"
+  },
+  "news_marketing": {
+    "전체": "매물 문의 폭발하는 마케팅 비법",
+    "AI/NEWS": "업무 시간을 절반으로 줄여줄 AI 활용법",
+    "부동산유튜브/블로그": "지역 1등 중개업소 블로그·유튜브 공략법",
+    "공실/임대관리": "효율적인 공실·임대관리 노하우"
+  },
+  "news_etc": {
+    "전체": "일의 보람과 성공을 더해줄 스토리",
+    "인물/인터뷰": "억대 연봉 중개사들의 실전 성공 인터뷰",
+    "부동산/인테리어 꿀팁": "실전 공간/인테리어 노하우",
+    "맛집/여행/건강": "현장 활동이 많은 대표님 전용 건강 바이블",
+    "자유 에세이": "일상의 쉼표, 감성 에세이"
+  }
+};
+
+// 프리미엄 PC용 추천 스플릿 컴포넌트
+function PremiumSplitRecommend({ articles }: { articles: Article[] }) {
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  const extractYoutubeIdInfo = (url?: string | null) => {
+    if (!url) return null;
+    const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|shorts\/))([\w-]{11})/);
+    return match ? match[1] : null;
+  };
+
+  const getThumbnailSrc = (item: Article) => {
+    if (item.thumbnail_url) {
+      if (item.thumbnail_url.includes('maxresdefault.jpg')) {
+        return item.thumbnail_url.replace('maxresdefault.jpg', 'hqdefault.jpg');
+      }
+      return item.thumbnail_url;
+    }
+    let ytId = extractYoutubeIdInfo(item.youtube_url);
+    if (!ytId && item.content) {
+      ytId = extractYoutubeIdInfo(item.content);
+    }
+    if (ytId) return `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`;
+    return null;
+  };
+
+  const stripHtml = (html: string) => {
+    if (!html) return "";
+    let text = html.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim();
+    text = text.replace(/^(?:X|×|✕)(?=[가-힣\[\(])/i, "").trim();
+    return text;
+  };
+
+  const formatDate = (dateStr?: string) => {
+    if (!dateStr) return "";
+    const d = new Date(dateStr);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${yyyy}.${mm}.${dd}`;
+  };
+
+  const handlePrev = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setActiveIndex((prev) => (prev === 0 ? articles.length - 1 : prev - 1));
+  };
+
+  const handleNext = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setActiveIndex((prev) => (prev === articles.length - 1 ? 0 : prev + 1));
+  };
+
+  const activeArticle = articles[activeIndex];
+  const activeThumb = getThumbnailSrc(activeArticle);
+  const activeYtInfo = extractYoutubeIdInfo(activeArticle.youtube_url) || extractYoutubeIdInfo(activeArticle.content);
+
+  // 현재 활성화된 기사를 제외한 나머지 3개 큐레이션 기사
+  const curatedArticles = articles.filter((_, idx) => idx !== activeIndex).slice(0, 3);
+
+  return (
+    <div className="premium-split-container">
+      {/* 좌측 메인 히어로 슬라이더 */}
+      <Link
+        href={`/news/${activeArticle.article_no || activeArticle.id}`}
+        className="premium-hero-card"
+      >
+        <div className="premium-hero-img-wrapper">
+          {activeThumb && <img src={activeThumb} alt={activeArticle.title} />}
+          {activeYtInfo && (
+            <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 44, height: 44, background: "rgba(0,0,0,0.5)", borderRadius: "50%", border: "2.5px solid white", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 3 }}>
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="white" style={{ marginLeft: 3 }}><path d="M8 5v14l11-7z"/></svg>
+            </div>
+          )}
+
+          {articles.length > 1 && (
+            <>
+              {/* 슬라이더 좌우 조작 버튼 */}
+              <div className="premium-slider-controls">
+                <button className="premium-slider-btn" onClick={handlePrev} title="이전 추천뉴스">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                </button>
+                <button className="premium-slider-btn" onClick={handleNext} title="다음 추천뉴스">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </button>
+              </div>
+
+              {/* 페이지 카운터 */}
+              <div className="premium-slider-counter">
+                {activeIndex + 1} / {articles.length}
+              </div>
+            </>
+          )}
+        </div>
+
+        <h3 className="premium-hero-title">{activeArticle.title}</h3>
+        <p className="premium-hero-desc">
+          {activeArticle.subtitle || stripHtml(activeArticle.content || "").slice(0, 140)}
+        </p>
+        <div className="premium-hero-meta">
+          {formatDate(activeArticle.published_at || activeArticle.created_at)} · {activeArticle.author_name || "공실뉴스"}
+        </div>
+      </Link>
+
+      {/* 우측 큐레이션 리스트 */}
+      <div className="premium-curated-list">
+        {curatedArticles.map((article) => {
+          const thumb = getThumbnailSrc(article);
+          const ytInfo = extractYoutubeIdInfo(article.youtube_url) || extractYoutubeIdInfo(article.content);
+          
+          return (
+            <Link
+              key={article.id}
+              href={`/news/${article.article_no || article.id}`}
+              className="premium-curated-item"
+            >
+              {thumb && (
+                <div className="premium-curated-img" style={{ position: "relative" }}>
+                  <img src={thumb} alt={article.title} />
+                  {ytInfo && (
+                    <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 28, height: 28, background: "rgba(0,0,0,0.5)", borderRadius: "50%", border: "1.5px solid white", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 3 }}>
+                      <svg viewBox="0 0 24 24" width="12" height="12" fill="white" style={{ marginLeft: 2 }}><path d="M8 5v14l11-7z"/></svg>
+                    </div>
+                  )}
+                </div>
+              )}
+              <div className="premium-curated-body">
+                <h4 className="premium-curated-title">{article.title}</h4>
+                <div className="premium-curated-meta">
+                  {formatDate(article.published_at || article.created_at)} · {article.author_name || "공실뉴스"}
+                </div>
+              </div>
+            </Link>
+          );
+        })}
+      </div>
+
+      <style>{`
+        .premium-recommend-section {
+          margin-bottom: 32px;
+          background: #fff;
+          border: 1px solid #f0f0f0;
+          border-radius: 12px;
+          padding: 24px;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+        }
+        .premium-header-banner {
+          margin-bottom: 20px;
+          padding-bottom: 16px;
+          border-bottom: 1.5px solid #1a2e50;
+        }
+        .premium-user-tag {
+          font-size: 13px;
+          font-weight: 600;
+          color: #6b7280;
+          letter-spacing: -0.3px;
+        }
+        .premium-user-name {
+          font-weight: 800;
+          color: #111;
+          background: linear-gradient(180deg, transparent 50%, rgba(254, 240, 138, 0.9) 50%);
+          padding: 2px 4px;
+          border-radius: 2px;
+        }
+        .premium-banner-title {
+          font-size: 22px;
+          font-weight: 900;
+          color: #ea580c;
+          margin: 6px 0 0 0;
+          letter-spacing: -0.5px;
+          line-height: 1.3;
+        }
+        .premium-banner-title-light {
+          color: #111;
+          font-weight: normal;
+        }
+        .premium-split-container {
+          display: grid;
+          grid-template-columns: 1.4fr 1fr;
+          gap: 24px;
+        }
+        .premium-hero-card {
+          display: flex;
+          flex-direction: column;
+          position: relative;
+          text-decoration: none;
+          color: inherit;
+        }
+        .premium-hero-img-wrapper {
+          position: relative;
+          width: 100%;
+          height: 240px;
+          border-radius: 8px;
+          overflow: hidden;
+          background: #f3f4f6;
+          margin-bottom: 16px;
+        }
+        .premium-hero-img-wrapper img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          transition: transform 0.4s ease;
+        }
+        .premium-hero-card:hover .premium-hero-img-wrapper img {
+          transform: scale(1.03);
+        }
+        .premium-hero-title {
+          font-size: 18px;
+          font-weight: 800;
+          line-height: 1.4;
+          color: #111;
+          margin: 0 0 10px 0;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+          transition: color 0.2s;
+        }
+        .premium-hero-card:hover .premium-hero-title {
+          color: #ea580c;
+        }
+        .premium-hero-desc {
+          font-size: 14px;
+          color: #4b5563;
+          line-height: 1.5;
+          margin: 0 0 12px 0;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+        .premium-hero-meta {
+          font-size: 12px;
+          color: #9ca3af;
+          margin-top: auto;
+        }
+        .premium-slider-controls {
+          position: absolute;
+          top: 12px;
+          right: 12px;
+          display: flex;
+          gap: 6px;
+          z-index: 5;
+        }
+        .premium-slider-btn {
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          background: rgba(255, 255, 255, 0.9);
+          border: 1px solid rgba(0, 0, 0, 0.1);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+          color: #111;
+          transition: all 0.2s;
+          padding: 0;
+        }
+        .premium-slider-btn:hover {
+          background: #1a2e50;
+          color: #fff;
+          transform: scale(1.05);
+        }
+        .premium-slider-counter {
+          position: absolute;
+          bottom: 12px;
+          right: 12px;
+          background: rgba(0, 0, 0, 0.6);
+          color: #fff;
+          padding: 4px 10px;
+          border-radius: 20px;
+          font-size: 11px;
+          font-weight: 700;
+          z-index: 5;
+          backdrop-filter: blur(4px);
+        }
+        .premium-curated-list {
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+        }
+        .premium-curated-item {
+          display: flex;
+          gap: 14px;
+          text-decoration: none;
+          color: inherit;
+          padding-bottom: 16px;
+          border-bottom: 1px dashed #f0f0f0;
+          transition: all 0.2s;
+        }
+        .premium-curated-item:last-child {
+          border-bottom: none;
+          padding-bottom: 0;
+        }
+        .premium-curated-img {
+          width: 100px;
+          height: 72px;
+          border-radius: 6px;
+          overflow: hidden;
+          background: #f3f4f6;
+          flex-shrink: 0;
+        }
+        .premium-curated-img img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          transition: transform 0.3s ease;
+        }
+        .premium-curated-item:hover .premium-curated-img img {
+          transform: scale(1.05);
+        }
+        .premium-curated-body {
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          flex: 1;
+        }
+        .premium-curated-title {
+          font-size: 14px;
+          font-weight: 700;
+          line-height: 1.4;
+          color: #111;
+          margin: 0;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+          transition: color 0.2s;
+        }
+        .premium-curated-item:hover .premium-curated-title {
+          color: #ea580c;
+        }
+        .premium-curated-meta {
+          font-size: 12px;
+          color: #9ca3af;
+        }
+      `}</style>
+    </div>
   );
 }
