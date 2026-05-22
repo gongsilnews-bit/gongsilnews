@@ -249,7 +249,7 @@ function NewsListLayoutInner({ category, title, initialArticles, initialPopular,
         {/* 전체 가로 폭을 차지하는 카테고리 헤더 (중앙일보 스타일) */}
         <div style={{ 
           display: "flex", alignItems: "flex-end", gap: "40px", 
-          paddingBottom: "12px", marginBottom: "24px" 
+          paddingBottom: "12px", marginBottom: "0px" 
         }}>
           <div 
             onClick={() => handleSubCategoryClick(null)}
@@ -337,7 +337,7 @@ function NewsListLayoutInner({ category, title, initialArticles, initialPopular,
           )}
         </div>
 
-        <div className="news-layout">
+        <div className="news-layout" style={{ marginTop: "12px" }}>
           {/* 좌측 뉴스 리스트 */}
           <div className="news-list-area">
             {/* 중요 기사 (상단 이미지 영역 - 프리미엄 스플릿 슬라이더 + 리스트) */}
