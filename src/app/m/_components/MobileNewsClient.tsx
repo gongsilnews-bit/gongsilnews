@@ -384,15 +384,29 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
     });
   };
 
-  const doLocKeywordSearch = () => {
-    if (!locKeyword.trim()) return;
-    const kakao = (window as any).kakao;
-    if (!kakao?.maps?.services) return;
-    const ps = new kakao.maps.services.Places();
-    ps.keywordSearch(locKeyword, (data: any, status: any) => {
-      if (status === kakao.maps.services.Status.OK) setLocResults(data);
-      else setLocResults([]);
-    });
+  const resetFilters = () => {
+    setSection1Filter("");
+    setSection2Filter("");
+    setLocLabel("위치");
+    setSelSido("");
+    setSelGugun("");
+    setSelSidoCode("");
+    setSelGugunCode("");
+    setRegTab("sido");
+    setLocKeyword("");
+    setLocResults([]);
+    setLocTab("region");
+    
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("section1");
+    params.delete("section2");
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+
+    if (kakaoMapRef.current) {
+      const kakao = (window as any).kakao;
+      kakaoMapRef.current.panTo(new kakao.maps.LatLng(37.5665, 126.978));
+      kakaoMapRef.current.setLevel(6);
+    }
   };
 
   useEffect(() => { if (activeTab === 'local' && sidoList.length === 0) loadSidoData(); }, [activeTab]);
@@ -1095,6 +1109,19 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
               >
                 <div className="skeleton" style={{ width: "120px", height: "20px" }} />
                 <p style={{ fontSize: "14px", color: "#9ca3af" }}>지도를 불러오는 중...</p>
+              </div>
+            )}
+
+            {/* 초기화 버튼 (좌측 상단 컴팩트하게) */}
+            {mapLoaded && (
+              <div style={{ position: "absolute", top: "16px", left: "16px", zIndex: 20 }}>
+                <button 
+                  onClick={resetFilters}
+                  style={{ background: "rgba(255,255,255,0.9)", borderRadius: "20px", padding: "8px 14px", border: "1px solid #ddd", fontSize: "13px", fontWeight: 700, color: "#f97316", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}
+                >
+                  <span style={{ fontSize: "15px", lineHeight: 1 }}>↻</span>
+                  초기화
+                </button>
               </div>
             )}
 

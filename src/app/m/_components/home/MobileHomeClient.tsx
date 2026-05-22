@@ -351,10 +351,11 @@ export default function MobileHomeClient(props: Props) {
           }
         }}
         style={{
-          position: "fixed", bottom: "76px", right: "16px", width: "56px", height: "56px",
-          borderRadius: "50%", background: "linear-gradient(135deg, #3b82f6, #1d4ed8)",
+          position: "fixed", bottom: "80px", right: "16px", height: "48px",
+          borderRadius: "24px", background: "linear-gradient(135deg, #3b82f6, #1d4ed8)",
           color: "#fff", border: "none", boxShadow: "0 6px 20px rgba(29, 78, 216, 0.4)",
           cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+          padding: "0 18px", gap: "6px",
           zIndex: 40,
           transition: "transform 0.15s ease",
         }}
@@ -363,7 +364,7 @@ export default function MobileHomeClient(props: Props) {
         onTouchStart={(e) => { e.currentTarget.style.transform = "scale(0.92)"; }}
         onTouchEnd={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
       >
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ pointerEvents: "none" }}>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ pointerEvents: "none" }}>
           <rect x="4" y="2" width="10" height="15" rx="1.5" ry="1.5" />
           <line x1="7" y1="5" x2="8" y2="5" />
           <line x1="7" y1="8" x2="8" y2="8" />
@@ -374,6 +375,7 @@ export default function MobileHomeClient(props: Props) {
           <path d="M9 17v-3h2v3" />
           <path d="M14 17h6M17 14v6" stroke="#ffffff" strokeWidth="2.5" />
         </svg>
+        <span style={{ fontSize: "14px", fontWeight: 800, color: "#fff", whiteSpace: "nowrap" }}>공실등록</span>
       </button>
 
       {/* 로그인 모달 */}

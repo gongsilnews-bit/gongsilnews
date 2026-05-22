@@ -448,7 +448,7 @@ function MobileGongsilContent() {
         calculator: [10, 30, 50],
         texts: (count: number) => count.toString(),
         styles: [
-          { width: '44px', height: '44px', background: '#4b89ff', color: '#fff', textAlign: 'center', lineHeight: '40px', borderRadius: '50%', fontWeight: 'bold', fontSize: '15px', border: '2px solid #ffffff', boxShadow: '0 3px 8px rgba(0,0,0,0.2)' }
+          { width: '56px', height: '56px', background: '#1a73e8', color: '#fff', textAlign: 'center', lineHeight: '50px', borderRadius: '50%', fontWeight: 'bold', fontSize: '18px', border: '3px solid #ffffff', boxShadow: '0 4px 12px rgba(0,0,0,0.25)' }
         ]
       });
 
@@ -463,12 +463,12 @@ function MobileGongsilContent() {
 
     filteredVacancies.forEach((v) => {
       if (!v.lat || !v.lng) return;
-      const size = 36;
-      const color = "#4b89ff";
+      const size = 50;
+      const color = "#1a73e8";
 
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
-        <circle cx="${size/2}" cy="${size/2}" r="${size/2-2}" fill="${color}" stroke="white" stroke-width="2"/>
-        <text x="50%" y="50%" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="14" font-weight="bold" font-family="sans-serif">1</text>
+        <circle cx="${size/2}" cy="${size/2}" r="${size/2-3}" fill="${color}" stroke="white" stroke-width="3"/>
+        <text x="50%" y="50%" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="18" font-weight="bold" font-family="sans-serif">1</text>
       </svg>`;
 
       const img = new kakao.maps.MarkerImage(
@@ -660,18 +660,57 @@ function MobileGongsilContent() {
           </div>
         )}
 
-        {/* 공실광고 수 표시 및 초기화 버튼 */}
+        {/* 초기화 버튼 (좌측 상단 컴팩트하게) */}
         {mapLoaded && (
-          <div style={{ position: "absolute", top: "16px", left: "16px", zIndex: 20, display: "flex", gap: "8px", alignItems: "center" }}>
-            <div style={{ background: "rgba(255,255,255,0.95)", borderRadius: "20px", padding: "8px 14px", fontSize: "13px", fontWeight: 700, color: "#1a2e50", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}>
-              🏢 공실 {visibleCount}건
-            </div>
+          <div style={{ position: "absolute", top: "16px", left: "16px", zIndex: 20 }}>
             <button 
               onClick={resetFilters}
-              style={{ background: "none", border: "none", padding: "4px 8px", fontSize: "13px", fontWeight: 600, color: "#4b89ff", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px", textShadow: "0 1px 2px rgba(255,255,255,0.8)" }}
+              style={{ background: "rgba(255,255,255,0.9)", borderRadius: "20px", padding: "8px 14px", border: "1px solid #ddd", fontSize: "13px", fontWeight: 700, color: "#1a73e8", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}
             >
               <span style={{ fontSize: "15px", lineHeight: 1 }}>↻</span>
               초기화
+            </button>
+          </div>
+        )}
+
+        {/* 🏢 지도 위 공실 N개 대형 하단 중앙 액션 버튼 */}
+        {mapLoaded && (
+          <div style={{ position: "absolute", bottom: "24px", left: "50%", transform: "translateX(-50%)", zIndex: 20 }}>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                window.history.pushState({ panel: "list" }, "");
+                setShowListView(true);
+              }}
+              style={{
+                background: "linear-gradient(135deg, #1a73e8, #3b82f6)",
+                borderRadius: "28px",
+                padding: "14px 28px",
+                fontSize: "16px",
+                fontWeight: 800,
+                color: "#ffffff",
+                boxShadow: "0 6px 20px rgba(26, 115, 232, 0.4)",
+                border: "none",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                whiteSpace: "nowrap",
+                transition: "transform 0.1s ease"
+              }}
+              onMouseDown={(e) => { e.currentTarget.style.transform = "scale(0.95)"; }}
+              onMouseUp={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
+              onTouchStart={(e) => { e.currentTarget.style.transform = "scale(0.95)"; }}
+              onTouchEnd={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                <rect x="4" y="2" width="16" height="20" rx="2" ry="2" />
+                <line x1="9" y1="22" x2="9" y2="16" />
+                <line x1="15" y1="22" x2="15" y2="16" />
+                <line x1="9" y1="16" x2="15" y2="16" />
+                <path d="M8 6h2v2H8V6zm6 0h2v2h-2V6zm-6 5h2v2H8v-2zm6 0h2v2h-2v-2z" />
+              </svg>
+              지도 위 공실 {visibleCount}개
             </button>
           </div>
         )}
@@ -734,7 +773,6 @@ function MobileGongsilContent() {
           </div>
         )}
 
-        {/* FAB: 공실등록 */}
         <button
           onClick={() => {
             if (!currentUser) {
@@ -745,10 +783,11 @@ function MobileGongsilContent() {
             }
           }}
           style={{
-            position: "absolute", bottom: "76px", right: "16px", width: "56px", height: "56px",
-            borderRadius: "50%", background: "linear-gradient(135deg, #3b82f6, #1d4ed8)",
+            position: "absolute", bottom: "80px", right: "16px", height: "48px",
+            borderRadius: "24px", background: "linear-gradient(135deg, #3b82f6, #1d4ed8)",
             color: "#fff", border: "none", boxShadow: "0 6px 20px rgba(29, 78, 216, 0.4)",
             cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+            padding: "0 18px", gap: "6px",
             zIndex: 20,
             transition: "transform 0.15s ease",
           }}
@@ -757,7 +796,7 @@ function MobileGongsilContent() {
           onTouchStart={(e) => { e.currentTarget.style.transform = "scale(0.92)"; }}
           onTouchEnd={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
         >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ pointerEvents: "none" }}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ pointerEvents: "none" }}>
             <rect x="4" y="2" width="10" height="15" rx="1.5" ry="1.5" />
             <line x1="7" y1="5" x2="8" y2="5" />
             <line x1="7" y1="8" x2="8" y2="8" />
@@ -768,6 +807,7 @@ function MobileGongsilContent() {
             <path d="M9 17v-3h2v3" />
             <path d="M14 17h6M17 14v6" stroke="#ffffff" strokeWidth="2.5" />
           </svg>
+          <span style={{ fontSize: "14px", fontWeight: 800, color: "#fff", whiteSpace: "nowrap" }}>공실등록</span>
         </button>
       </div>
 
@@ -1368,46 +1408,6 @@ function MobileGongsilContent() {
         />
       )}
 
-      {/* 🛑 6월 1일 오픈 전 가림막 (오버레이) */}
-      {(!currentUser || (currentUser.role !== 'ADMIN' && (!selectedVacancy || selectedVacancy.owner_id !== currentUser.id))) && (
-      <div style={{
-        position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', 
-        backgroundColor: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(8px)',
-        zIndex: 99999999, display: 'flex', flexDirection: 'column', 
-        alignItems: 'center', justifyContent: 'center', textAlign: 'center',
-        padding: '0 20px', boxSizing: 'border-box'
-      }}>
-        <div style={{ background: '#fff', width: '100%', maxWidth: '400px', padding: '35px 25px', borderRadius: 16, boxShadow: '0 15px 40px rgba(0,0,0,0.12)', border: '1px solid #eee' }}>
-          <div style={{ fontSize: 40, marginBottom: 15 }}>📢</div>
-          <h2 style={{ fontSize: 20, fontWeight: 900, color: '#111', marginBottom: 15, letterSpacing: '-0.5px', wordBreak: 'keep-all' }}>
-            실시간 공실지도 서비스는<br/><span style={{ color: '#1a73e8' }}>6월 1일 정식 오픈</span>합니다!
-          </h2>
-          <p style={{ fontSize: 14, color: '#555', marginBottom: 25, lineHeight: 1.5, wordBreak: 'keep-all' }}>
-            현재는 부동산 중개사무소 사전 매물 등록 기간입니다.<br/>
-            중개사무소 회원이시라면 가입 후 무료로 매물을 등록해 보세요.
-          </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <Link href="/signup" style={{ textDecoration: 'none', width: '100%' }}>
-              <button 
-                style={{ width: '100%', background: '#1a73e8', color: '#fff', border: 'none', padding: '14px', borderRadius: 8, fontSize: 15, fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s' }}
-              >
-                🚀 중개사무소 회원가입
-              </button>
-            </Link>
-            <Link href="/realty_admin" style={{ textDecoration: 'none', width: '100%' }}>
-              <button 
-                style={{ width: '100%', background: '#fff', color: '#1a73e8', border: '1px solid #1a73e8', padding: '14px', borderRadius: 8, fontSize: 15, fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s' }}
-              >
-                💻 내 매물 등록하기
-              </button>
-            </Link>
-          </div>
-          <div style={{ marginTop: 25, fontSize: 13 }}>
-            <Link href="/" style={{ color: '#888', textDecoration: 'underline' }}>메인 뉴스홈으로 돌아가기</Link>
-          </div>
-        </div>
-      </div>
-      )}
     </div>
   );
 }
