@@ -1074,7 +1074,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                     padding: "0 14px 0",
                     fontSize: "17px",
                     fontWeight: activeTab === cat.key ? 700 : 500,
-                    color: activeTab === cat.key ? "#1a2e50" : "#222222",
+                    color: activeTab === cat.key ? "#508bf5" : "#222222",
                     background: "none",
                     border: "none",
                     cursor: "pointer",
@@ -1086,7 +1086,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                   <span style={{
                     display: "inline-block",
                     paddingBottom: "3px",
-                    borderBottom: activeTab === cat.key ? "3px solid #1a2e50" : "3px solid transparent",
+                    borderBottom: activeTab === cat.key ? "3px solid #508bf5" : "3px solid transparent",
                   }}>
                     {cat.label}
                   </span>
