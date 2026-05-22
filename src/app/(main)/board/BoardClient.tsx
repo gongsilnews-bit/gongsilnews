@@ -88,6 +88,8 @@ export default function BoardClient({ board, initialPosts, serverUser, serverUse
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [posts, setPosts] = useState(initialPosts);
   const [currentPage, setCurrentPage] = useState(initialPage);
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || "");
+  const [searchInputValue, setSearchInputValue] = useState(searchParams.get('search') || "");
   
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -129,7 +131,26 @@ export default function BoardClient({ board, initialPosts, serverUser, serverUse
   React.useEffect(() => {
     setActiveTab(searchParams.get('tab') || "전체");
     setCurrentPage(parseInt(searchParams.get('page') || "1", 10) || 1);
+    const searchVal = searchParams.get('search') || "";
+    setSearchQuery(searchVal);
+    setSearchInputValue(searchVal);
   }, [searchParams]);
+
+  const handleSearch = (keyword: string) => {
+    const trimmed = keyword.trim();
+    setSearchQuery(trimmed);
+    setSearchInputValue(trimmed);
+    setCurrentPage(1);
+    const params = new URLSearchParams(searchParams);
+    params.set("page", "1");
+    if (trimmed) {
+      params.set("search", trimmed);
+    } else {
+      params.delete("search");
+    }
+    params.set("id", board.board_id);
+    router.replace(`${pathname}?${params.toString()}`);
+  };
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
@@ -227,8 +248,20 @@ export default function BoardClient({ board, initialPosts, serverUser, serverUse
   // 탭 필터링 및 내가 등록한 글 보기 필터
   const filteredPosts = posts.filter(p => {
     if (myPostsOnly && currentUser && p.author_id !== currentUser.id) return false;
-    if (activeTab === "전체") return true;
-    return p.title.includes(`[${activeTab}]`); // 간단한 태그 기반 필터 구현
+    
+    // 탭 태그 필터링
+    const matchesTab = activeTab === "전체" || p.title.includes(`[${activeTab}]`);
+    if (!matchesTab) return false;
+
+    // 검색어 필터링 (제목 또는 내용 매칭)
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      const titleMatch = p.title.toLowerCase().includes(q);
+      const contentMatch = (p.content || "").toLowerCase().includes(q);
+      return titleMatch || contentMatch;
+    }
+
+    return true;
   });
 
   const totalItems = filteredPosts.length;
@@ -265,8 +298,20 @@ export default function BoardClient({ board, initialPosts, serverUser, serverUse
             </div>
             <div className="board-search-write">
               <div className="b-search">
-                <input type="text" placeholder="제목 검색" />
-                <button>검색</button>
+                <input 
+                  type="text" 
+                  placeholder="제목 검색" 
+                  value={searchInputValue}
+                  onChange={(e) => setSearchInputValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      handleSearch(searchInputValue);
+                    }
+                  }}
+                />
+                <button onClick={() => {
+                  handleSearch(searchInputValue);
+                }}>검색</button>
               </div>
             </div>
           </div>

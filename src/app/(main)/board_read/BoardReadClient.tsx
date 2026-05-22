@@ -50,6 +50,16 @@ export default function BoardReadClient({
   const [commentText, setCommentText] = useState("");
   const [guestName, setGuestName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [searchInputValue, setSearchInputValue] = useState("");
+
+  const handleSearch = (keyword: string) => {
+    const trimmed = keyword.trim();
+    if (trimmed) {
+      router.push(`/board?id=${boardId}&search=${encodeURIComponent(trimmed)}`);
+    } else {
+      router.push(`/board?id=${boardId}`);
+    }
+  };
 
   // 이전글/다음글 이동 등으로 initialComments가 변경되면 상태를 동기화
   useEffect(() => {
@@ -207,8 +217,22 @@ export default function BoardReadClient({
           {board?.subtitle && <span style={{ fontSize: 16, fontWeight: 500, color: "#666", marginLeft: 10 }}>({board.subtitle})</span>}
         </div>
         <div style={{ display: "flex", border: "1px solid #ccc", borderRadius: 4, overflow: "hidden" }}>
-          <input type="text" placeholder="제목 검색" style={{ border: "none", padding: "8px 12px", outline: "none", width: 200, fontSize: 14 }} />
-          <button style={{ background: "#f8f9fa", borderLeft: "1px solid #ccc", padding: "0 14px", fontWeight: "bold", color: "#555" }}>검색</button>
+          <input 
+            type="text" 
+            placeholder="제목 검색" 
+            value={searchInputValue}
+            onChange={(e) => setSearchInputValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                handleSearch(searchInputValue);
+              }
+            }}
+            style={{ border: "none", padding: "8px 12px", outline: "none", width: 200, fontSize: 14 }} 
+          />
+          <button 
+            onClick={() => handleSearch(searchInputValue)}
+            style={{ background: "#f8f9fa", borderLeft: "1px solid #ccc", padding: "0 14px", fontWeight: "bold", color: "#555", cursor: "pointer" }}
+          >검색</button>
         </div>
       </div>
 
