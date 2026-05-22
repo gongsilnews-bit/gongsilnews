@@ -261,6 +261,33 @@ function NewsListLayoutInner({ category, title, initialArticles, initialPopular,
           
           {!isBookmarkMode && subCategories && subCategories.length > 0 && (
             <div style={{ display: "flex", alignItems: "center", gap: "20px", marginBottom: "3px" }}>
+              <button
+                onClick={() => handleSubCategoryClick(null)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  fontSize: "16px",
+                  fontWeight: selectedSubCategory === null ? "800" : "500",
+                  color: selectedSubCategory === null ? "#2563eb" : "#6b7280",
+                  cursor: "pointer",
+                  padding: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  transition: "all 0.2s"
+                }}
+              >
+                <span style={{
+                  color: selectedSubCategory === null ? "#2563eb" : "#9ca3af",
+                  display: "flex",
+                  alignItems: "center",
+                  transition: "color 0.2s"
+                }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+                </span>
+                전체
+              </button>
+
               {subCategories.map(sub => {
                 const icon = CATEGORY_ICON_MAP[sub];
                 return (
@@ -546,6 +573,7 @@ function NewsListLayoutInner({ category, title, initialArticles, initialPopular,
 
 // 카테고리별 매칭 픽토그램 SVG 맵 (모바일 규격과 완전 동일)
 const CATEGORY_ICON_MAP: Record<string, React.ReactNode> = {
+  "전체": <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>,
   "아파트/오피스텔": <svg width="20" height="20" viewBox="0 0 24 24"><path d="M6 2h12a2 2 0 012 2v18H4V4a2 2 0 012-2z" fill="currentColor"/><rect x="10" y="18" width="4" height="4" rx=".5" fill="white"/><rect x="7" y="5" width="2.5" height="2" rx=".5" fill="white"/><rect x="14.5" y="5" width="2.5" height="2" rx=".5" fill="white"/><rect x="7" y="9" width="2.5" height="2" rx=".5" fill="white"/><rect x="14.5" y="9" width="2.5" height="2" rx=".5" fill="white"/><rect x="7" y="13" width="2.5" height="2" rx=".5" fill="white"/><rect x="14.5" y="13" width="2.5" height="2" rx=".5" fill="white"/></svg>,
   "빌라/주택": <svg width="20" height="20" viewBox="0 0 24 24"><path d="M12 2.5L2 10.5V22h20V10.5L12 2.5z" fill="currentColor"/><rect x="9" y="13" width="6" height="9" rx="1" fill="white"/></svg>,
   "원룸/투룸(풀옵션)": <svg width="20" height="20" viewBox="0 0 24 24"><rect x="1" y="3" width="3" height="18" rx="1.5" fill="currentColor"/><path d="M4 8h16a2 2 0 012 2v11H4V8z" fill="currentColor"/><rect x="4" y="16.5" width="18" height="1.5" fill="white"/></svg>,
