@@ -246,16 +246,41 @@ function NewsListLayoutInner({ category, title, initialArticles, initialPopular,
           </div>
           
           {!isBookmarkMode && subCategories && subCategories.length > 0 && (
-            <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "3px" }}>
-              {subCategories.map(sub => (
-                <button
-                  key={sub}
-                  onClick={() => handleSubCategoryClick(sub)}
-                  style={{ background: "none", border: "none", fontSize: "16px", fontWeight: selectedSubCategory === sub ? "800" : "500", color: selectedSubCategory === sub ? "#111" : "#6b7280", cursor: "pointer", padding: 0 }}
-                >
-                  {sub}
-                </button>
-              ))}
+            <div style={{ display: "flex", alignItems: "center", gap: "20px", marginBottom: "3px" }}>
+              {subCategories.map(sub => {
+                const icon = CATEGORY_ICON_MAP[sub];
+                return (
+                  <button
+                    key={sub}
+                    onClick={() => handleSubCategoryClick(sub)}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      fontSize: "16px",
+                      fontWeight: selectedSubCategory === sub ? "800" : "500",
+                      color: selectedSubCategory === sub ? "#ea580c" : "#6b7280",
+                      cursor: "pointer",
+                      padding: 0,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      transition: "all 0.2s"
+                    }}
+                  >
+                    {icon && (
+                      <span style={{
+                        color: selectedSubCategory === sub ? "#ea580c" : "#9ca3af",
+                        display: "flex",
+                        alignItems: "center",
+                        transition: "color 0.2s"
+                      }}>
+                        {icon}
+                      </span>
+                    )}
+                    {sub}
+                  </button>
+                );
+              })}
             </div>
           )}
 
@@ -280,6 +305,7 @@ function NewsListLayoutInner({ category, title, initialArticles, initialPopular,
                   const activeSub = selectedSubCategory || "전체";
                   const mentalText = PERSONALIZED_MENTAL_MAP[category]?.[activeSub] || "추천 뉴스";
                   const displayName = memberName || "부동산";
+                  const activeIcon = CATEGORY_ICON_MAP[activeSub];
 
                   return (
                     <div className="premium-header-banner">
@@ -287,8 +313,15 @@ function NewsListLayoutInner({ category, title, initialArticles, initialPopular,
                         <span className="premium-user-tag">
                           <span className="premium-user-name">{displayName} 대표님</span>을 위한
                         </span>
-                        <h2 className="premium-banner-title">
-                          {mentalText} <span className="premium-banner-title-light">News</span>
+                        <h2 className="premium-banner-title" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          {activeIcon && (
+                            <span style={{ color: "#ea580c", display: "inline-flex", alignItems: "center" }}>
+                              {React.cloneElement(activeIcon as React.ReactElement<any>, { width: 24, height: 24 })}
+                            </span>
+                          )}
+                          <span>
+                            {mentalText} <span className="premium-banner-title-light">News</span>
+                          </span>
                         </h2>
                       </div>
                     </div>
@@ -497,19 +530,39 @@ function NewsListLayoutInner({ category, title, initialArticles, initialPopular,
   );
 }
 
-// 카테고리별 맞춤 문구 맵
+// 카테고리별 매칭 픽토그램 SVG 맵 (모바일 규격과 완전 동일)
+const CATEGORY_ICON_MAP: Record<string, React.ReactNode> = {
+  "아파트/오피스텔": <svg width="20" height="20" viewBox="0 0 24 24"><path d="M6 2h12a2 2 0 012 2v18H4V4a2 2 0 012-2z" fill="currentColor"/><rect x="10" y="18" width="4" height="4" rx=".5" fill="white"/><rect x="7" y="5" width="2.5" height="2" rx=".5" fill="white"/><rect x="14.5" y="5" width="2.5" height="2" rx=".5" fill="white"/><rect x="7" y="9" width="2.5" height="2" rx=".5" fill="white"/><rect x="14.5" y="9" width="2.5" height="2" rx=".5" fill="white"/><rect x="7" y="13" width="2.5" height="2" rx=".5" fill="white"/><rect x="14.5" y="13" width="2.5" height="2" rx=".5" fill="white"/></svg>,
+  "빌라/주택": <svg width="20" height="20" viewBox="0 0 24 24"><path d="M12 2.5L2 10.5V22h20V10.5L12 2.5z" fill="currentColor"/><rect x="9" y="13" width="6" height="9" rx="1" fill="white"/></svg>,
+  "원룸/투룸(풀옵션)": <svg width="20" height="20" viewBox="0 0 24 24"><rect x="1" y="3" width="3" height="18" rx="1.5" fill="currentColor"/><path d="M4 8h16a2 2 0 012 2v11H4V8z" fill="currentColor"/><rect x="4" y="16.5" width="18" height="1.5" fill="white"/></svg>,
+  "상가/사무실/공장/토지": <svg width="20" height="20" viewBox="0 0 24 24"><path d="M2 7h20v14a2 2 0 01-2 2H4a2 2 0 01-2-2V7z" fill="currentColor"/><path d="M6 3.5c.5-.6 1.3-.8 2-.6L12 4l4-1.1c.7-.2 1.5 0 2 .6L22 7H2l4-3.5z" fill="currentColor"/><line x1="12" y1="7" x2="12" y2="23" stroke="white" strokeWidth="1.5"/><line x1="2" y1="11" x2="22" y2="11" stroke="white" strokeWidth="1.5"/></svg>,
+  "신축/분양/경매": <svg width="20" height="20" viewBox="0 0 24 24"><circle cx="16" cy="5" r="3" fill="currentColor"/><path d="M14 9L5 18a2 2 0 002.8 2.8l9-9L14 9z" fill="currentColor"/><path d="M15 4l-3 3M17 6l-3 3" stroke="white" strokeWidth="1.2"/></svg>,
+  "부동산 정책/동향": <svg width="20" height="20" viewBox="0 0 24 24"><path d="M14.5 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V7.5L14.5 2z" fill="currentColor"/><path d="M14 2v6h6" fill="white" opacity=".3"/><rect x="8" y="12" width="8" height="1.5" rx=".5" fill="white"/><rect x="8" y="16" width="6" height="1.5" rx=".5" fill="white"/></svg>,
+  "경제/재테크/주식": <svg width="20" height="20" viewBox="0 0 24 24"><path d="M3 3h2v16h16v2H3V3z" fill="currentColor"/><path d="M7 14l3-3 4 4 5-5v8H7v-4z" fill="currentColor" opacity=".3"/><path d="M7 14l3-3 4 4 5-5" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  "법률/세무 지식": <svg width="20" height="20" viewBox="0 0 24 24"><rect x="11" y="2" width="2" height="18" rx="1" fill="currentColor"/><rect x="7" y="20" width="10" height="2.5" rx="1" fill="currentColor"/><rect x="3" y="7" width="18" height="2" rx="1" fill="currentColor"/><path d="M4 14h6L7 9 4 14z" fill="currentColor"/><path d="M14 14h6l-3-5-3 5z" fill="currentColor"/></svg>,
+  "AI/NEWS": <svg width="20" height="20" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="3" fill="currentColor"/><circle cx="9" cy="10" r="1.5" fill="white"/><circle cx="15" cy="10" r="1.5" fill="white"/><rect x="8" y="14" width="8" height="2" rx="1" fill="white"/></svg>,
+  "부동산유튜브/블로그": <svg width="20" height="20" viewBox="0 0 24 24"><path d="M22.54 6.42a2.78 2.78 0 00-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 00-1.94 2A29 29 0 001 11.75a29 29 0 00.46 5.33A2.78 2.78 0 003.4 19.1c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 001.94-2 29 29 0 00.46-5.33 29 29 0 00-.46-5.33z" fill="currentColor"/><polygon points="9.75 15.02 15.5 11.75 9.75 8.48" fill="white"/></svg>,
+  "공실/임대관리": <svg width="20" height="20" viewBox="0 0 24 24"><path d="M2 18v3c0 .6.4 1 1 1h4v-3h3v-3h2l1.4-1.4a6.5 6.5 0 10-4-4L2 18z" fill="currentColor"/><circle cx="16.5" cy="7.5" r="1.5" fill="white"/></svg>,
+  "인물/인터뷰": <svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="8" r="5" fill="currentColor"/><path d="M4 21a8 8 0 0116 0H4z" fill="currentColor"/></svg>,
+  "부동산/인테리어 꿀팁": <svg width="20" height="20" viewBox="0 0 24 24"><path d="M12 2a6 6 0 00-6 6c0 1.23.23 2.23 1.5 3.5.76.76 1.23 1.52 1.41 2.5h6.18c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0018 8a6 6 0 00-6-6z" fill="currentColor"/><rect x="9" y="16" width="6" height="2" rx="1" fill="currentColor"/><rect x="10" y="20" width="4" height="2" rx="1" fill="currentColor"/></svg>,
+  "맛집/여행/건강": <svg width="20" height="20" viewBox="0 0 24 24"><path d="M3 2c0-.6.4-1 1-1s1 .4 1 1v7a2 2 0 01-2 2v10c0 .6.4 1 1 1h2c.6 0 1-.4 1-1V11a2 2 0 01-2-2V2c0-.6.4-1 1-1s1 .4 1 1v7c.6 0 1-.4 1-1V2c0-.6.4-1 1-1s1 .4 1 1v6c0 1.7-1.3 3-3 3v10c0 .6-.4 1-1 1H4c-.6 0-1-.4-1-1V11c-1.7 0-3-1.3-3-3V2c0-.6.4-1 1-1z" fill="currentColor" transform="translate(1,0)"/><path d="M20 2c0-.6.4-1 1-1s1 .4 1 1v13h1c1.1 0 2-.9 2-2V7a5 5 0 00-5-5v13h0v6c0 .6-.4 1-1 1s-1-.4-1-1V2z" fill="currentColor" transform="translate(-2,0)"/></svg>,
+  "자유 에세이": <svg width="20" height="20" viewBox="0 0 24 24"><path d="M12 19l7-7 3 3-7 7-3-3z" fill="currentColor"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" fill="currentColor"/><circle cx="11" cy="11" r="2" fill="white"/></svg>,
+};
+
+// 카테고리별 맞춤 문구 맵 (모바일 규격과 완전 동일)
 const PERSONALIZED_MENTAL_MAP: Record<string, Record<string, string>> = {
-  "news_local": {
-    "전체": "우리 동네에서 놓치면 안 될 핵심 동향",
+  "news_gongsil": {
+    "전체": "실시간 중개용 공실 소식",
+    "아파트/오피스텔": "공동중개 추천 아파트·오피스텔",
+    "빌라/주택": "계약 확률 높은 빌라·주택 매물",
+    "원룸/투룸(풀옵션)": "원룸·투룸 실무 트렌드",
+    "상가/사무실/공장/토지": "고수익 상가·사무실 실무 정보",
+    "신축/분양/경매": "단기 차익 신축·분양·경매 뉴스"
   },
-  "news_vacancy": {
-    "전체": "실시간 핵심 공실 동향 및 분석",
-  },
-  "news_economy": {
-    "전체": "부동산 시장을 지배할 자산 경제 브리핑",
-    "부동산 뉴스": "한눈에 보는 대한민국 실시간 부동산 흐름",
-    "정부 정책": "놓치면 손해보는 최신 세제·부동산 정책",
-    "재테크 정보": "고수들의 자산을 불려주는 실전 투자 안목",
+  "news_politics": {
+    "전체": "고객 브리핑용 오늘의 시장 동향",
+    "부동산 정책/동향": "상담 필수 정책 분석 & 규제 동향",
+    "경제/재테크/주식": "거시경제·재테크 바이블",
     "법률/세무 지식": "고객이 묻기 전에 대비하는 세무·법률 솔루션"
   },
   "news_marketing": {
