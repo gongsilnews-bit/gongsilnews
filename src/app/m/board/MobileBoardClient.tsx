@@ -145,22 +145,9 @@ export default function MobileBoardClient({ board, initialPosts, serverUser, ser
       </div>
 
       <div style={{ padding: '10px 16px 8px', textAlign: 'center' }}>
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-          <p style={{ color: '#9ca3af', fontSize: '15px', margin: 0 }}>
-            {board.subtitle || "공실뉴스가 제공하는 자료실입니다."}
-          </p>
-          {currentUser && (
-            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', color: '#4b5563', cursor: 'pointer', fontWeight: 600 }}>
-              <input 
-                type="checkbox" 
-                checked={showMyPosts} 
-                onChange={(e) => setShowMyPosts(e.target.checked)}
-                style={{ accentColor: '#1a2e50', width: '16px', height: '16px' }}
-              />
-              내가 쓴 글
-            </label>
-          )}
-        </div>
+        <p style={{ color: '#9ca3af', fontSize: '15px', margin: 0 }}>
+          {board.subtitle || "공실뉴스가 제공하는 자료실입니다."}
+        </p>
       </div>
 
       {tabs.length > 1 && (
