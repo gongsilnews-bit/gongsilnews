@@ -148,6 +148,20 @@ function NewsListLayoutInner({ category, title, initialArticles, initialPopular,
     displayArticles = displayArticles.filter(a => a.section2 === selectedSubCategory);
   }
 
+  // 중요 추천 기사 필터링 (세부 카테고리가 지정되었으면 해당 카테고리만 추천)
+  let displayImportantArticles = importantArticles;
+  if (selectedSubCategory && !isBookmarkMode) {
+    // 1. 해당 서브카테고리에 명시적으로 중요 표시된 기사 필터링
+    const subImportant = importantArticles.filter(a => a.section2 === selectedSubCategory);
+    if (subImportant.length > 0) {
+      displayImportantArticles = subImportant;
+    } else {
+      // 2. 중요 표시된 기사가 없다면, 해당 서브카테고리에 속한 전체 기사 중 최신 기사순으로 상위 5개를 추천 기사로 채워줌
+      const subAll = initialArticles.filter(a => a.section2 === selectedSubCategory);
+      displayImportantArticles = subAll.slice(0, 5);
+    }
+  }
+
   const displayTitle = isBookmarkMode ? "📌 관심기사" : title;
 
   // 페이지네이션 계산
@@ -295,7 +309,7 @@ function NewsListLayoutInner({ category, title, initialArticles, initialPopular,
           {/* 좌측 뉴스 리스트 */}
           <div className="news-list-area">
             {/* 중요 기사 (상단 이미지 영역 - 프리미엄 스플릿 슬라이더 + 리스트) */}
-            {!isBookmarkMode && importantArticles.length > 0 && (
+            {!isBookmarkMode && displayImportantArticles.length > 0 && (
               <div className="premium-recommend-section">
                 {/* 1. 개인화 헤더 배너 (대표님 맞춤형 인사말) */}
                 {(() => {
@@ -329,7 +343,7 @@ function NewsListLayoutInner({ category, title, initialArticles, initialPopular,
                 })()}
 
                 {/* 2. 스플릿 매거진 레이아웃 */}
-                <PremiumSplitRecommend articles={importantArticles} />
+                <PremiumSplitRecommend articles={displayImportantArticles} />
               </div>
             )}
 
@@ -610,6 +624,10 @@ const PERSONALIZED_MENTAL_MAP: Record<string, Record<string, string>> = {
 // 프리미엄 PC용 추천 스플릿 컴포넌트
 function PremiumSplitRecommend({ articles }: { articles: Article[] }) {
   const [activeIndex, setActiveIndex] = useState(0);
+
+  useEffect(() => {
+    setActiveIndex(0);
+  }, [articles]);
 
   const extractYoutubeIdInfo = (url?: string | null) => {
     if (!url) return null;
