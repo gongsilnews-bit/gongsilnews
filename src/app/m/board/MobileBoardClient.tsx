@@ -144,9 +144,9 @@ export default function MobileBoardClient({ board, initialPosts, serverUser, ser
         </button>
       </div>
 
-      <div style={{ padding: '16px 16px 0' }}>
+      <div style={{ padding: '10px 16px 8px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <p style={{ color: '#6b7280', fontSize: '14px', margin: 0 }}>
+          <p style={{ color: '#9ca3af', fontSize: '13px', margin: 0 }}>
             {board.subtitle || "공실뉴스가 제공하는 자료실입니다."}
           </p>
           {currentUser && (
@@ -155,7 +155,7 @@ export default function MobileBoardClient({ board, initialPosts, serverUser, ser
                 type="checkbox" 
                 checked={showMyPosts} 
                 onChange={(e) => setShowMyPosts(e.target.checked)}
-                style={{ accentColor: '#2563eb', width: '16px', height: '16px' }}
+                style={{ accentColor: '#1a2e50', width: '16px', height: '16px' }}
               />
               내가 쓴 글
             </label>
@@ -164,7 +164,7 @@ export default function MobileBoardClient({ board, initialPosts, serverUser, ser
       </div>
 
       {tabs.length > 1 && (
-        <div style={{ padding: '0 16px 16px', overflowX: 'auto', whiteSpace: 'nowrap', display: 'flex', gap: '8px', WebkitOverflowScrolling: 'touch' }} className="hide-scrollbar">
+        <div style={{ padding: '0 16px 12px', overflowX: 'auto', whiteSpace: 'nowrap', display: 'flex', gap: '8px', WebkitOverflowScrolling: 'touch' }} className="hide-scrollbar">
           {tabs.map(tab => (
             <button
               key={tab}
