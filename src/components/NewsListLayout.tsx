@@ -248,7 +248,7 @@ function NewsListLayoutInner({ category, title, initialArticles, initialPopular,
         
         {/* 전체 가로 폭을 차지하는 카테고리 헤더 (중앙일보 스타일) */}
         <div style={{ 
-          display: "flex", alignItems: "flex-end", gap: "24px", 
+          display: "flex", alignItems: "flex-end", gap: "40px", 
           paddingBottom: "12px", marginBottom: "24px" 
         }}>
           <div 
