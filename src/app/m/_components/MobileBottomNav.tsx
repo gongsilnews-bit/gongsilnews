@@ -20,8 +20,22 @@ function MobileBottomNavContent() {
   const [isVisible, setIsVisible] = useState(true);
   const lastScrollY = React.useRef(0);
 
+  // 지도 페이지 또는 우리동네뉴스 탭에서는 항상 하단바가 보이도록 리셋
+  useEffect(() => {
+    const isMapPage = pathname.startsWith('/m/news_map') || (pathname === '/m' && tab === 'local');
+    if (isMapPage) {
+      setIsVisible(true);
+    }
+  }, [pathname, tab]);
+
   useEffect(() => {
     const handleScroll = () => {
+      const isMapPage = pathname.startsWith('/m/news_map') || (pathname === '/m' && tab === 'local');
+      if (isMapPage) {
+        setIsVisible(true);
+        return;
+      }
+
       const currentScrollY = window.scrollY;
 
       // 스크롤을 내릴 때 (현재 스크롤이 이전보다 크고, 상단에서 50px 이상 내려왔을 때)
@@ -38,7 +52,7 @@ function MobileBottomNavContent() {
 
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [pathname, tab]);
 
   useEffect(() => {
     const supabase = createClient();
