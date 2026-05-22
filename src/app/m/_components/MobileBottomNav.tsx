@@ -188,7 +188,7 @@ function MobileBottomNavContent() {
           })();
 
           const activeColor = isActive
-            ? (item.name === "공실" ? '#1a73e8' : '#ea580c')
+            ? (item.name === "공실" ? '#1a73e8' : (item.name === "부동산특강" ? '#16a34a' : '#ea580c'))
             : '#333';
 
           return item.name === "마이" ? (
@@ -199,7 +199,7 @@ function MobileBottomNavContent() {
             >
               <span style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '2px' }}>
                 {profileImg ? (
-                  <div style={{ width: 24, height: 24, borderRadius: '50%', overflow: 'hidden', border: isActive ? (item.name === "공실" ? '2px solid #1a73e8' : '2px solid #ea580c') : '1px solid #ccc' }}>
+                  <div style={{ width: 24, height: 24, borderRadius: '50%', overflow: 'hidden', border: isActive ? `2px solid ${activeColor}` : '1px solid #ccc' }}>
                     <img src={profileImg} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   </div>
                 ) : (
