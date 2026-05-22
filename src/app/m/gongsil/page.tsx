@@ -11,7 +11,7 @@ import AuthModal from "@/components/AuthModal";
 import BookmarkCategoryModal from "@/components/BookmarkCategoryModal";
 import MobileFilterBar from "./MobileFilterBar";
 import { useVacancyFilters } from "./filters/useVacancyFilters";
-import HomeHeader from "../_components/HomeHeader";
+import MobileTopBarHeader from "../_components/MobileTopBarHeader";
 
 const KAKAO_APP_KEY = process.env.NEXT_PUBLIC_KAKAO_APP_KEY || "435d3602201a49ea712e5f5a36fe6efc";
 
@@ -584,14 +584,7 @@ function MobileGongsilContent() {
         />
       )}
       {!isEmbedded && (
-        <HomeHeader 
-          bgColor="#4b89ff" 
-          logoText="공실등록"
-          sloganPrefix="부동산이 무료 열람하는 "
-          sloganHighlight="공동중개네트워크"
-          highlightColor="#fcd34d"
-          homeUrl="/m/gongsil"
-        />
+        <MobileTopBarHeader />
       )}
       
       <style>{`
@@ -618,9 +611,9 @@ function MobileGongsilContent() {
         .v-card:active{background:#f9fafb;}
       `}</style>
       
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", paddingTop: isEmbedded ? "0" : "50px" }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", paddingTop: isEmbedded ? "0" : "56px" }}>
         {!isEmbedded && (
-          <div style={{ height: "9px", backgroundColor: "#F4F6F8", width: "100%", flexShrink: 0, borderBottom: "1px solid #e5e7eb" }} />
+          <div style={{ height: "0px", backgroundColor: "#F4F6F8", width: "100%", flexShrink: 0 }} />
         )}
 
         {/* 필터 바 */}
