@@ -404,7 +404,7 @@ const ArticleRow = React.memo(({ a, activeTab, formatDate, stripHtml, extractYou
             {a.location_name && <span style={{ color: "#666", fontWeight: 500 }}>📍{a.location_name}</span>}
           </div>
         </div>
-        <div style={{ fontSize: "16px", fontWeight: 800, color: "#111", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", wordBreak: "keep-all", marginBottom: "4px", lineHeight: 1.4 }}>
+        <div style={{ fontSize: "17px", fontWeight: 800, color: "#111", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", wordBreak: "keep-all", marginBottom: "4px", lineHeight: 1.4 }}>
           {a.title}
         </div>
         <div style={{ fontSize: "14px", color: "#666", display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: 1.4 }}>
