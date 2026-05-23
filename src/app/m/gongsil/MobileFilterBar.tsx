@@ -14,7 +14,7 @@ interface MobileFilterBarProps {
   filters: FilterState;
   onFilterChange: (filters: Partial<FilterState>) => void;
   onLocationMove: (lat: number, lng: number, zoom: number) => void;
-  onShowList?: () => void;
+  onShowList?: (mode?: "map" | "filter") => void;
   kakaoMapRef: React.MutableRefObject<any>;
 }
 
@@ -306,7 +306,7 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
             <button onClick={() => { 
               onFilterChange(tempFilters); 
               setFullFilterOpen(false); 
-              if (onShowList) onShowList(); 
+              if (onShowList) onShowList("filter"); 
             }} style={{ flex: 1, padding: "14px", background: "#4b89ff", border: "none", borderRadius: "10px", fontSize: "15px", fontWeight: 800, color: "#fff", cursor: "pointer" }}>{filteredCount}개 공실광고 보기</button>
           </div>
 
