@@ -1079,8 +1079,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
 
       const hoverImage = new kakao.maps.MarkerImage(
         `data:image/svg+xml,${hoverSvg}`,
-        new isAuctionMode ? kakao.maps.Size(width + 6, height + 4) : kakao.maps.Size(48, 48),
-        { offset: new isAuctionMode ? kakao.maps.Point((width + 6) / 2, (height + 4) / 2) : kakao.maps.Point(24, 24) }
+        isAuctionMode ? new kakao.maps.Size(width + 6, height + 4) : new kakao.maps.Size(48, 48),
+        { offset: isAuctionMode ? new kakao.maps.Point((width + 6) / 2, (height + 4) / 2) : new kakao.maps.Point(24, 24) }
       );
 
       const marker = new kakao.maps.Marker({ position, image: markerImage, title: strId });
