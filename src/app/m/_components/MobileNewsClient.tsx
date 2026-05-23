@@ -1661,7 +1661,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
           {searchTab === 'article' && (() => {
             const regularArticles = filteredBySection2.filter(a => !a.is_important);
             
-            const currentCatLabel = CATEGORIES.find(c => c.key === activeTab)?.label || "공실뉴스";
+            const currentCatLabel = section2Tab || (CATEGORIES.find(c => c.key === activeTab)?.label || "공실뉴스");
             const popularArticles = [...filteredBySection2]
               .sort((a, b) => (b.view_count || 0) - (a.view_count || 0))
               .slice(0, 5);
