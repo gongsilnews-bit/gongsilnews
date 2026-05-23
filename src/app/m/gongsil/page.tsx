@@ -91,6 +91,33 @@ function MobileGongsilContent() {
   const detailScrollRef = useRef<HTMLDivElement>(null);
   
   const [showGalleryFullscreen, setShowGalleryFullscreen] = useState(false);
+
+  // Gallery Fullscreen Modal History management for browser back button support
+  useEffect(() => {
+    const handlePopState = (e: PopStateEvent) => {
+      if (showGalleryFullscreen) {
+        setShowGalleryFullscreen(false);
+      }
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [showGalleryFullscreen]);
+
+  const openGalleryFullscreen = () => {
+    window.history.pushState({ modal: "gallery-m" }, "", "");
+    setShowGalleryFullscreen(true);
+  };
+
+  const closeGalleryFullscreen = () => {
+    if (window.history.state?.modal === "gallery-m") {
+      window.history.back();
+    } else {
+      setShowGalleryFullscreen(false);
+    }
+  };
+
   const [detailTab, setDetailTab] = useState<"info" | "realtor">("info");
   const [galleryIndex, setGalleryIndex] = useState(0);
   const [realtorFilter, setRealtorFilter] = useState("전체");
@@ -935,7 +962,7 @@ function MobileGongsilContent() {
                 <img 
                   src={selectedVacancy.images[galleryIndex] || selectedVacancy.images[0]} 
                   alt="" 
-                  onClick={() => setShowGalleryFullscreen(true)}
+                  onClick={() => openGalleryFullscreen()}
                   style={{ width: "100%", height: "100%", objectFit: "cover", cursor: "pointer" }} 
                 />
                 {selectedVacancy.images.length > 1 && (
@@ -1359,7 +1386,7 @@ function MobileGongsilContent() {
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "#000", zIndex: 10000, display: "flex", flexDirection: "column" }}>
           <div style={{ padding: "16px", display: "flex", justifyContent: "space-between", alignItems: "center", color: "#fff" }}>
             <div style={{ fontSize: "15px", fontWeight: 600 }}>{galleryIndex + 1} / {selectedVacancy.images.length}</div>
-            <button onClick={() => setShowGalleryFullscreen(false)} style={{ background: "none", border: "none", color: "#fff", fontSize: "24px", cursor: "pointer", padding: "4px" }}>✕</button>
+            <button onClick={() => closeGalleryFullscreen()} style={{ background: "none", border: "none", color: "#fff", fontSize: "24px", cursor: "pointer", padding: "4px" }}>✕</button>
           </div>
           <div 
             style={{ flex: 1, position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}
