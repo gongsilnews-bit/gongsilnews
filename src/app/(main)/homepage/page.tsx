@@ -456,9 +456,10 @@ export default function HomepagePage() {
     }
     return result || "0";
   };
-  const getPriceLabel = (v: any) => v.trade_type === "매매" ? "매매" : v.trade_type === "전세" ? "전세" : "월세";
-  const getPriceBg = (v: any) => v.trade_type === "매매" ? "#e53e3e" : v.trade_type === "전세" ? "#2b6cb0" : "#2f855a";
+  const getPriceLabel = (v: any) => v.trade_type === "매매" ? "매매" : v.trade_type === "전세" ? "전세" : v.trade_type === "경매" ? "경매" : "월세";
+  const getPriceBg = (v: any) => v.trade_type === "매매" ? "#e53e3e" : v.trade_type === "전세" ? "#2b6cb0" : v.trade_type === "경매" ? "#eab308" : "#2f855a";
   const getPriceText = (v: any) => {
+    if (v.trade_type === "경매") return formatAmount(v.deposit);
     if (v.trade_type === "매매" || v.trade_type === "전세") return formatAmount(v.deposit);
     return `${formatAmount(v.deposit)} / ${formatAmount(v.monthly_rent)}`;
   };

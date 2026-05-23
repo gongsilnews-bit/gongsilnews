@@ -160,7 +160,8 @@ export default function HeroMapSection({ initialVacancies }: { initialVacancies?
 
   const getPriceText = (row: any) => {
     if (!row) return "";
-    return row.trade_type === "매매" ? `매매 ${formatAmount(row.deposit)}`
+    return row.trade_type === "경매" ? `경매 ${formatAmount(row.deposit)}`
+      : row.trade_type === "매매" ? `매매 ${formatAmount(row.deposit)}`
       : row.trade_type === "전세" ? `전세 ${formatAmount(row.deposit)}`
       : `${formatAmount(row.deposit)}/${formatAmount(row.monthly_rent)}`;
   };

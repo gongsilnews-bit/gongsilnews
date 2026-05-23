@@ -27,6 +27,7 @@ function formatPrice(v: any): string {
   const rent = v.monthly_rent || 0;
   const trade = v.trade_type || "";
   const fmt = (n: number) => n >= 100000000 ? `${(n/100000000).toFixed(n%100000000===0?0:1)}억` : n >= 10000 ? `${Math.round(n/10000)}만` : `${n}`;
+  if (trade === "경매") return fmt(dep);
   if (trade === "월세" && rent > 0) return `${fmt(dep)}/${fmt(rent)}`;
   if (trade === "전세") return `전세 ${fmt(dep)}`;
   if (dep > 0) return fmt(dep);

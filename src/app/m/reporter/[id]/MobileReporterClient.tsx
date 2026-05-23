@@ -52,7 +52,8 @@ function formatPrice(v: any): string {
     return result;
   };
 
-  if (v.trade_type === '매매') return formatValue(v.sale_price || 0);
+  if (v.trade_type === '경매') return formatValue(v.deposit || 0);
+  if (v.trade_type === '매매') return formatValue(v.sale_price || v.deposit || 0);
   if (v.trade_type === '전세') return formatValue(v.deposit || 0);
   if (v.trade_type === '월세') {
     const depStr = formatValue(v.deposit || 0);

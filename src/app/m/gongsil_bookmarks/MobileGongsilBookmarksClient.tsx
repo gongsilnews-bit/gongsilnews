@@ -40,6 +40,9 @@ function formatPrice(v: any): string {
     return result || "";
   };
 
+  if (trade === "경매") {
+    return `${formatAmount(dep)}`;
+  }
   if (trade === "월세" && rent > 0) {
     const monthlyManwon = Math.round(rent / 10000);
     return `${formatAmount(dep)}/${monthlyManwon}만`;

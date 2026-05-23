@@ -106,6 +106,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   const [galleryIndex, setGalleryIndex] = useState(0);
   const [showShareDropdown, setShowShareDropdown] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [isAuctionMode, setIsAuctionMode] = useState(false);
   const shareDropdownRef = useRef<HTMLDivElement>(null);
 
   const [wishTab, setWishTab] = useState<"wish" | "recent">("wish");
@@ -235,17 +236,35 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     
     // Update Single Markers reactively
     if (markersRef.current && (window as any).kakao?.maps) {
-       const size = 42;
-       const normalSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="%234b89ff" stroke="white" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="16" font-weight="bold" font-family="sans-serif">1</text></svg>`;
-       const activeSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="white" stroke="%234b89ff" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="%234b89ff" font-size="16" font-weight="bold" font-family="sans-serif">1</text></svg>`;
-
        markersRef.current.forEach((marker: any) => {
           const idStr = markerIdMapRef.current.get(marker);
+          const prop = dbVacanciesRef.current.find((v: any) => String(v.id) === idStr);
+          if (!prop) return;
+
           const isSelected = selectedClusterIds && idStr && selectedClusterIds.includes(idStr);
+          
+          let normalSvg = "";
+          let activeSvg = "";
+          let width = 42;
+          let height = 42;
+
+          if (isAuctionMode) {
+            const amtText = formatPriceLabel(prop.deposit) || "경매";
+            width = 85;
+            height = 34;
+            normalSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><path d="M 5,2 L 80,2 A 5,5 0 0 1 85,7 L 85,23 A 5,5 0 0 1 80,28 L 47,28 L 42.5,33.5 L 38,28 L 5,28 A 5,5 0 0 1 0,23 L 0,7 A 5,5 0 0 1 5,2 Z" fill="%23eab308" stroke="white" stroke-width="1.5" filter="drop-shadow(0px 2px 4px rgba(0,0,0,0.2))"/><text x="50%25" y="19" text-anchor="middle" fill="white" font-size="11" font-weight="bold" font-family="'Pretendard',sans-serif">경매 ${amtText}</text></svg>`;
+            activeSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><path d="M 5,2 L 80,2 A 5,5 0 0 1 85,7 L 85,23 A 5,5 0 0 1 80,28 L 47,28 L 42.5,33.5 L 38,28 L 5,28 A 5,5 0 0 1 0,23 L 0,7 A 5,5 0 0 1 5,2 Z" fill="white" stroke="%23eab308" stroke-width="2.5" filter="drop-shadow(0px 2px 4px rgba(0,0,0,0.2))"/><text x="50%25" y="19" text-anchor="middle" fill="%23eab308" font-size="11" font-weight="bold" font-family="'Pretendard',sans-serif">경매 ${amtText}</text></svg>`;
+          } else {
+            width = 42;
+            height = 42;
+            normalSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><circle cx="${width/2}" cy="${height/2}" r="${width/2 - 2}" fill="%234b89ff" stroke="white" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="16" font-weight="bold" font-family="sans-serif">1</text></svg>`;
+            activeSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><circle cx="${width/2}" cy="${height/2}" r="${width/2 - 2}" fill="white" stroke="%234b89ff" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="%234b89ff" font-size="16" font-weight="bold" font-family="sans-serif">1</text></svg>`;
+          }
+
           marker.setImage(new (window as any).kakao.maps.MarkerImage(
              `data:image/svg+xml,${isSelected ? activeSvg : normalSvg}`,
-             new (window as any).kakao.maps.Size(size, size),
-             { offset: new (window as any).kakao.maps.Point(size / 2, size / 2) }
+             new (window as any).kakao.maps.Size(width, height),
+             { offset: new (window as any).kakao.maps.Point(width / 2, height / 2) }
           ));
           marker.setZIndex(isSelected ? 99 : 0);
        });
@@ -255,11 +274,18 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     if (clustererRef.current) {
        clustererRef.current.redraw();
     }
-  }, [selectedClusterIds]);
+  }, [selectedClusterIds, isAuctionMode]);
 
-  // ── 카테고리 + Pills + 드롭다운 필터를 모두 적용한 전체 목록 ──
   const filteredVacancies = React.useMemo(() => {
     let list = dbVacancies;
+
+    if (isAuctionMode) {
+      // Auction Mode: Only show auction listings
+      return list.filter(v => v.trade_type === "경매");
+    }
+
+    // Standard Mode: Completely exclude auction listings so they do not mix in!
+    list = list.filter(v => v.trade_type !== "경매");
 
     if (activeCategory === "wish") {
       if (wishTab === "recent") {
@@ -387,7 +413,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     }
 
     return list;
-  }, [dbVacancies, activeCategory, activePills, filterTradeTypes, filterPriceMin, filterPriceMax, filterAreaMin, filterAreaMax, filterMaintIdx, filterRoomCount, filterBathCount, filterDirection, filterYearMin, filterYearMax, filterUnitMin, filterUnitMax, filterOwnerRole, filterCommissionType, filterThemes, wishTab, recentViews]);
+  }, [dbVacancies, activeCategory, activePills, filterTradeTypes, filterPriceMin, filterPriceMax, filterAreaMin, filterAreaMax, filterMaintIdx, filterRoomCount, filterBathCount, filterDirection, filterYearMin, filterYearMax, filterUnitMin, filterUnitMax, filterOwnerRole, filterCommissionType, filterThemes, wishTab, recentViews, isAuctionMode]);
 
   // ── 지도 범위 / 클러스터 선택 적용 ──
   const displayVacancies = React.useMemo(() => {
@@ -931,8 +957,11 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   useEffect(() => {
     if (!kakaoMapRef.current) return;
 
-    // 기존 마커를 항상 먼저 제거 (빈 카테고리 전환 시에도 지도 정리)
-    if (clustererRef.current) clustererRef.current.clear();
+    // 기존 마커 및 클러스터러를 항상 제거하여 완벽하게 초기화
+    if (clustererRef.current) {
+      clustererRef.current.clear();
+      clustererRef.current = null;
+    }
     markersRef.current = [];
     markerIdMapRef.current.clear();
 
@@ -947,99 +976,111 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     const validProp = dbVacanciesRef.current.find((a: any) => a.lat && a.lng);
     if (validProp) { initialLat = validProp.lat; initialLng = validProp.lng; }
 
-    if (!clustererRef.current) {
-        clustererRef.current = new kakao.maps.MarkerClusterer({
-          map: map,
-          averageCenter: true,
-          minLevel: 4,
-          gridSize: 60,
-          disableClickZoom: true,
-          calculator: [10, 30, 50],
-          texts: (count: number) => count.toString(),
-          styles: [
-            { width: '42px', height: '42px', background: 'rgba(75, 137, 255, 1)', color: '#fff', textAlign: 'center', lineHeight: '38px', borderRadius: '50%', fontWeight: 'bold', fontSize: '15px', border: '2px solid #ffffff', boxShadow: '0 3px 8px rgba(0,0,0,0.2)' }
-          ]
-        });
+    clustererRef.current = new kakao.maps.MarkerClusterer({
+      map: map,
+      averageCenter: true,
+      minLevel: 4,
+      gridSize: 60,
+      disableClickZoom: true,
+      calculator: [10, 30, 50],
+      texts: (count: number) => count.toString(),
+      styles: [
+        isAuctionMode
+          ? { width: '46px', height: '46px', background: 'rgba(234, 179, 8, 1)', color: '#fff', textAlign: 'center', lineHeight: '42px', borderRadius: '50%', fontWeight: 'bold', fontSize: '15px', border: '2px solid #ffffff', boxShadow: '0 3px 8px rgba(0,0,0,0.2)' }
+          : { width: '42px', height: '42px', background: 'rgba(75, 137, 255, 1)', color: '#fff', textAlign: 'center', lineHeight: '38px', borderRadius: '50%', fontWeight: 'bold', fontSize: '15px', border: '2px solid #ffffff', boxShadow: '0 3px 8px rgba(0,0,0,0.2)' }
+      ]
+    });
 
-        // Add cluster events only once
-        kakao.maps.event.addListener(clustererRef.current, 'clusterover', (cluster: any) => {
-          const overlay = cluster.getClusterMarker().getContent();
-          if (overlay && overlay.style) {
-             overlay.style.transform = "scale(1.15)";
-             overlay.style.transition = "transform 0.2s";
-             overlay.style.zIndex = "100";
-          }
-        });
+    // Add cluster events only once
+    kakao.maps.event.addListener(clustererRef.current, 'clusterover', (cluster: any) => {
+      const overlay = cluster.getClusterMarker().getContent();
+      if (overlay && overlay.style) {
+         overlay.style.transform = "scale(1.15)";
+         overlay.style.transition = "transform 0.2s";
+         overlay.style.zIndex = "100";
+      }
+    });
 
-        kakao.maps.event.addListener(clustererRef.current, 'clusterout', (cluster: any) => {
-          const overlay = cluster.getClusterMarker().getContent();
-          if (overlay && overlay.style) {
-             overlay.style.transform = "scale(1)";
-             overlay.style.zIndex = "0";
-          }
-        });
+    kakao.maps.event.addListener(clustererRef.current, 'clusterout', (cluster: any) => {
+      const overlay = cluster.getClusterMarker().getContent();
+      if (overlay && overlay.style) {
+         overlay.style.transform = "scale(1)";
+         overlay.style.zIndex = "0";
+      }
+    });
 
-        kakao.maps.event.addListener(clustererRef.current, 'clusterclick', (cluster: any) => {
+    kakao.maps.event.addListener(clustererRef.current, 'clusterclick', (cluster: any) => {
+      const markers = cluster.getMarkers();
+      const ids = markers.flatMap((m: any) => {
+         const pos = m.getPosition();
+         return dbVacanciesRef.current.filter((v: any) => Math.abs(v.lat - pos.getLat()) < 0.00001 && Math.abs(v.lng - pos.getLng()) < 0.00001).map((v: any) => String(v.id));
+      });
+      setSelectedClusterIds(Array.from(new Set(ids)));
+      setShowDetail(false);
+    });
+
+    kakao.maps.event.addListener(clustererRef.current, 'clustered', (clusters: any[]) => {
+       if (!selectedClusterIdsRef.current || selectedClusterIdsRef.current.length === 0) return;
+       clusters.forEach(cluster => {
           const markers = cluster.getMarkers();
+          if (markers.length < 2) return;
           const ids = markers.flatMap((m: any) => {
              const pos = m.getPosition();
              return dbVacanciesRef.current.filter((v: any) => Math.abs(v.lat - pos.getLat()) < 0.00001 && Math.abs(v.lng - pos.getLng()) < 0.00001).map((v: any) => String(v.id));
           });
-          setSelectedClusterIds(Array.from(new Set(ids)));
-          setShowDetail(false);
-        });
-
-        kakao.maps.event.addListener(clustererRef.current, 'clustered', (clusters: any[]) => {
-           if (!selectedClusterIdsRef.current || selectedClusterIdsRef.current.length === 0) return;
-           clusters.forEach(cluster => {
-              const markers = cluster.getMarkers();
-              if (markers.length < 2) return;
-              const ids = markers.flatMap((m: any) => {
-                 const pos = m.getPosition();
-                 return dbVacanciesRef.current.filter((v: any) => Math.abs(v.lat - pos.getLat()) < 0.00001 && Math.abs(v.lng - pos.getLng()) < 0.00001).map((v: any) => String(v.id));
-              });
-              const isMatch = ids.some((id: any) => id && selectedClusterIdsRef.current?.includes(id));
-              if (isMatch) {
-                 const overlay = cluster.getClusterMarker().getContent();
-                 if (overlay && overlay.style) {
-                     overlay.style.background = '#ffffff';
-                     overlay.style.color = '#4b89ff';
-                     overlay.style.border = '2px solid #4b89ff';
-                     overlay.style.zIndex = '999';
-                 }
-              }
-           });
-        });
-    }
-
-
-
+          const isMatch = ids.some((id: any) => id && selectedClusterIdsRef.current?.includes(id));
+          if (isMatch) {
+             const overlay = cluster.getClusterMarker().getContent();
+             if (overlay && overlay.style) {
+                 overlay.style.background = '#ffffff';
+                 overlay.style.color = isAuctionMode ? '#eab308' : '#4b89ff';
+                 overlay.style.border = isAuctionMode ? '2px solid #eab308' : '2px solid #4b89ff';
+                 overlay.style.zIndex = '999';
+             }
+          }
+       });
+    });
 
     const newMarkers: any[] = [];
     filteredVacancies.forEach(prop => {
       if (!prop.lat || !prop.lng) return;
       const position = new kakao.maps.LatLng(prop.lat, prop.lng);
 
-      const size = 42;
       const strId = String(prop.id);
       const isSelected = selectedClusterIdsRef.current?.includes(strId) || String(activeProperty) === strId;
       
-      const normalSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="%234b89ff" stroke="white" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="16" font-weight="bold" font-family="sans-serif">1</text></svg>`;
-      const activeSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="white" stroke="%234b89ff" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="%234b89ff" font-size="16" font-weight="bold" font-family="sans-serif">1</text></svg>`;
-      const svgStr = isSelected ? activeSvg : normalSvg;
+      let normalSvg = "";
+      let activeSvg = "";
+      let hoverSvg = "";
+      let width = 42;
+      let height = 42;
+
+      if (isAuctionMode) {
+        const amtText = formatPriceLabel(prop.deposit) || "경매";
+        width = 85;
+        height = 34;
+        normalSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><path d="M 5,2 L 80,2 A 5,5 0 0 1 85,7 L 85,23 A 5,5 0 0 1 80,28 L 47,28 L 42.5,33.5 L 38,28 L 5,28 A 5,5 0 0 1 0,23 L 0,7 A 5,5 0 0 1 5,2 Z" fill="%23eab308" stroke="white" stroke-width="1.5" filter="drop-shadow(0px 2px 4px rgba(0,0,0,0.2))"/><text x="50%25" y="19" text-anchor="middle" fill="white" font-size="11" font-weight="bold" font-family="'Pretendard',sans-serif">경매 ${amtText}</text></svg>`;
+        activeSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><path d="M 5,2 L 80,2 A 5,5 0 0 1 85,7 L 85,23 A 5,5 0 0 1 80,28 L 47,28 L 42.5,33.5 L 38,28 L 5,28 A 5,5 0 0 1 0,23 L 0,7 A 5,5 0 0 1 5,2 Z" fill="white" stroke="%23eab308" stroke-width="2.5" filter="drop-shadow(0px 2px 4px rgba(0,0,0,0.2))"/><text x="50%25" y="19" text-anchor="middle" fill="%23eab308" font-size="11" font-weight="bold" font-family="'Pretendard',sans-serif">경매 ${amtText}</text></svg>`;
+        hoverSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width + 6}" height="${height + 4}"><path d="M 5,2 L 86,2 A 5,5 0 0 1 91,7 L 91,25 A 5,5 0 0 1 86,30 L 51,30 L 45.5,36.5 L 40,30 L 5,30 A 5,5 0 0 1 0,25 L 0,7 A 5,5 0 0 1 5,2 Z" fill="%23eab308" stroke="white" stroke-width="2" filter="drop-shadow(0px 3px 6px rgba(0,0,0,0.25))"/><text x="50%25" y="21" text-anchor="middle" fill="white" font-size="12" font-weight="bold" font-family="'Pretendard',sans-serif">경매 ${amtText}</text></svg>`;
+      } else {
+        width = 42;
+        height = 42;
+        normalSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><circle cx="${width/2}" cy="${height/2}" r="${width/2 - 2}" fill="%234b89ff" stroke="white" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="16" font-weight="bold" font-family="sans-serif">1</text></svg>`;
+        activeSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><circle cx="${width/2}" cy="${height/2}" r="${width/2 - 2}" fill="white" stroke="%234b89ff" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="%234b89ff" font-size="16" font-weight="bold" font-family="sans-serif">1</text></svg>`;
+        const hoverSize = 48;
+        hoverSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${hoverSize}" height="${hoverSize}"><circle cx="${hoverSize/2}" cy="${hoverSize/2}" r="${hoverSize/2 - 2}" fill="%234b89ff" stroke="white" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="17" font-weight="bold" font-family="sans-serif">1</text></svg>`;
+      }
       
       const markerImage = new kakao.maps.MarkerImage(
-        `data:image/svg+xml,${svgStr}`,
-        new kakao.maps.Size(size, size),
-        { offset: new kakao.maps.Point(size / 2, size / 2) }
+        `data:image/svg+xml,${isSelected ? activeSvg : normalSvg}`,
+        new kakao.maps.Size(width, height),
+        { offset: new kakao.maps.Point(width / 2, height / 2) }
       );
 
-      const hoverSize = 48;
-      const hoverSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${hoverSize}" height="${hoverSize}"><circle cx="${hoverSize/2}" cy="${hoverSize/2}" r="${hoverSize/2 - 2}" fill="%234b89ff" stroke="white" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="17" font-weight="bold" font-family="sans-serif">1</text></svg>`;
       const hoverImage = new kakao.maps.MarkerImage(
         `data:image/svg+xml,${hoverSvg}`,
-        new kakao.maps.Size(hoverSize, hoverSize),
-        { offset: new kakao.maps.Point(hoverSize / 2, hoverSize / 2) }
+        new isAuctionMode ? kakao.maps.Size(width + 6, height + 4) : kakao.maps.Size(48, 48),
+        { offset: new isAuctionMode ? kakao.maps.Point((width + 6) / 2, (height + 4) / 2) : kakao.maps.Point(24, 24) }
       );
 
       const marker = new kakao.maps.Marker({ position, image: markerImage, title: strId });
@@ -1051,8 +1092,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
       });
       kakao.maps.event.addListener(marker, 'mouseout', () => {
         const currentSelected = selectedClusterIdsRef.current?.includes(strId) || String(activeProperty) === strId;
-        const updatedNormal = currentSelected ? activeSvg : normalSvg;
-        marker.setImage(new kakao.maps.MarkerImage(`data:image/svg+xml,${updatedNormal}`, new kakao.maps.Size(size, size), { offset: new kakao.maps.Point(size/2, size/2) }));
+        const updatedSvg = currentSelected ? activeSvg : normalSvg;
+        marker.setImage(new kakao.maps.MarkerImage(`data:image/svg+xml,${updatedSvg}`, new kakao.maps.Size(width, height), { offset: new kakao.maps.Point(width/2, height/2) }));
         marker.setZIndex(currentSelected ? 99 : 0);
       });
 
@@ -1069,7 +1110,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
       clustererRef.current.addMarkers(newMarkers);
     }
 
-  }, [filteredVacancies, showArticleOnMap, activeProperty, mapLoaded]);
+  }, [filteredVacancies, showArticleOnMap, activeProperty, mapLoaded, isAuctionMode]);
 
   const formatAmount = (amt: number) => {
     if (!amt) return "";
@@ -2048,8 +2089,19 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
               </div>
             </>
           ) : (
-            <div style={{ padding: "15px 20px", fontWeight: 800, fontSize: 15, color: "#111", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #eee", flexShrink: 0 }}>
-              <span>{selectedClusterIds && selectedClusterIds.length > 0 ? "선택된 공실" : "지도위의 공실"} {displayVacancies.length}개</span>
+            <div style={{ 
+              padding: "15px 20px", 
+              fontWeight: 800, 
+              fontSize: 15, 
+              color: isAuctionMode ? "#eab308" : "#111", 
+              display: "flex", 
+              justifyContent: "space-between", 
+              alignItems: "center", 
+              borderBottom: isAuctionMode ? "2px solid #eab308" : "1px solid #eee", 
+              flexShrink: 0,
+              background: isAuctionMode ? "#fffbeb" : "#fff"
+            }}>
+              <span>{isAuctionMode ? "온비드 경공매 매물" : (selectedClusterIds && selectedClusterIds.length > 0 ? "선택된 공실" : "지도위의 공실")} {displayVacancies.length}개</span>
             </div>
           )}
 
@@ -2061,7 +2113,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
             ) : displayVacancies.map((prop) => {
                 const isActiveAndShowing = activeProperty === prop.id && showDetail;
                 const addrText = [prop.dong, prop.building_name].filter(Boolean).join(" ");
-                const priceText = getPriceText(prop);
+                const priceText = isAuctionMode ? `감정가 ${formatAmount(prop.deposit)}` : getPriceText(prop);
                 // 마스킹 판별: 부동산노출 전용 + 부동산회원 미만 (본인 등록 매물 제외)
                 const isMyProperty = currentUser && prop && prop.owner_id === currentUser.id;
                 const isMasked = prop.exposure_type === '부동산노출' && userLevel < 2 && !isMyProperty;
@@ -2090,13 +2142,18 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                       display: "flex", justifyContent: "space-between", alignItems: "flex-start",
                       padding: "16px 20px 16px 16px", cursor: "pointer", transition: "background 0.2s, border-color 0.2s",
                       borderBottom: "1px solid #eee",
-                      borderLeft: activeProperty === prop.id ? "4px solid #1a73e8" : "4px solid transparent",
-                      background: activeProperty === prop.id ? "#eaf4ff" : "#fff",
+                      borderLeft: activeProperty === prop.id ? (isAuctionMode ? "4px solid #eab308" : "4px solid #1a73e8") : "4px solid transparent",
+                      background: activeProperty === prop.id ? (isAuctionMode ? "#fffbeb" : "#eaf4ff") : "#fff",
                     }}>
                     <div style={{ flex: 1, paddingRight: prop.images?.[0] ? 15 : 0, minWidth: 0 }}>
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6, flexWrap: "wrap" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          {showCommission && (prop.realtor_commission || prop.commission_type) && (
+                          {isAuctionMode && (
+                            <span style={{ display: "inline-block", fontSize: 11, color: "#eab308", border: "1px solid #eab308", background: "#fffbeb", padding: "1px 5px", borderRadius: 4, fontWeight: "bold" }}>
+                              온비드 경매
+                            </span>
+                          )}
+                          {showCommission && !isAuctionMode && (prop.realtor_commission || prop.commission_type) && (
                             <span style={{ display: "inline-block", fontSize: 11, color: "#fa5252", border: "1px solid #fa5252", padding: "1px 5px", borderRadius: 4, fontWeight: "bold" }}>
                               {prop.realtor_commission || prop.commission_type}
                             </span>
@@ -2122,7 +2179,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                         {isMasked ? (addrText || "주소 없음").replace(/[^\s]/g, "X") : (addrText || "주소 없음")}
                       </div>
                       {/* 가격, 면적, 옵션: 항상 정상 표시 */}
-                      <div style={{ fontSize: 16, fontWeight: 800, color: "#1a73e8", marginBottom: 4 }}>{priceText}</div>
+                      <div style={{ fontSize: 16, fontWeight: 800, color: isAuctionMode ? "#eab308" : "#1a73e8", marginBottom: 4 }}>{priceText}</div>
                       <div style={{ fontSize: 13, color: "#555", marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                         {prop.property_type} <span style={{ color: "#ddd", margin: "0 4px" }}>|</span> {prop.direction || "방향없음"} <span style={{ color: "#ddd", margin: "0 4px" }}>|</span> {prop.exclusive_m2 ? `${prop.exclusive_m2}㎡` : "면적미상"}
                       </div>
@@ -2288,30 +2345,47 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
               {/* 공실광고정보 탭 */}
               {activeDetailTab === "info" && (
                 <>
-                <div style={{ display: "grid", gridTemplateColumns: "110px 1fr", borderBottom: "10px solid #f5f5f5" }}>
-                  <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>공실광고번호</div>
-                  <div style={{ fontSize: 14, color: "#222", fontWeight: "bold", padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.vacancy_no}</div>
-                  <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>소재지</div>
-                  <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{[prop.sido, prop.sigungu, prop.dong, prop.detail_addr].filter(Boolean).join(" ")}</div>
-                  <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>공실광고특성</div>
-                  <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.building_name || "-"}</div>
-                  <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>공급/전용면적</div>
-                  <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.supply_m2 ? `${prop.supply_m2}m²(${prop.supply_py || 0}평)` : "-"} / {prop.exclusive_m2 ? `${prop.exclusive_m2}m²(${prop.exclusive_py || 0}평)` : "-"}</div>
-                  <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>해당층/총층</div>
-                  <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.current_floor || "-"} / {prop.total_floor || "-"}</div>
-                  <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>방/욕실수</div>
-                  <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.room_count || 0}개 / {prop.bathroom_count || 0}개</div>
-                  <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>방향</div>
-                  <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.direction || "-"}</div>
-                  <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>주차가능 여부</div>
-                  <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.parking || "없음"}</div>
-                  <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>입주가능일</div>
-                  <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.move_in_date || "즉시입주(공실)"}</div>
-                  <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>관리비</div>
-                  <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.maintenance_fee ? `${prop.maintenance_fee / 10000}만원` : "없음"}</div>
-                  <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "flex-start", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>상세설명</div>
-                  <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all", whiteSpace: "pre-line" }}>{prop.description || "-"}</div>
-                </div>
+                {prop.trade_type === "경매" ? (
+                  <div style={{ display: "grid", gridTemplateColumns: "110px 1fr", borderBottom: "10px solid #f5f5f5" }}>
+                    <div style={{ fontSize: 13, color: "#444", background: "#fdf8e2", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>경매물건번호</div>
+                    <div style={{ fontSize: 14, color: "#222", fontWeight: "bold", padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.vacancy_no}</div>
+                    <div style={{ fontSize: 13, color: "#444", background: "#fdf8e2", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>소재지</div>
+                    <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{[prop.sido, prop.sigungu, prop.dong, prop.detail_addr].filter(Boolean).join(" ")}</div>
+                    <div style={{ fontSize: 13, color: "#444", background: "#fdf8e2", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>용도구분</div>
+                    <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.property_type || "-"}</div>
+                    <div style={{ fontSize: 13, color: "#444", background: "#fdf8e2", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>감정평가액</div>
+                    <div style={{ fontSize: 15, color: "#eab308", fontWeight: "800", padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{formatAmount(prop.deposit)}</div>
+                    <div style={{ fontSize: 13, color: "#444", background: "#fdf8e2", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>면적</div>
+                    <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.exclusive_m2 ? `${prop.exclusive_m2}m² (${Math.round(prop.exclusive_m2 / 3.3)}평)` : "-"}</div>
+                    <div style={{ fontSize: 13, color: "#444", background: "#fdf8e2", fontWeight: "bold", display: "flex", alignItems: "flex-start", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>입찰 및 설명</div>
+                    <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all", whiteSpace: "pre-line" }}>{prop.description || "-"}</div>
+                  </div>
+                ) : (
+                  <div style={{ display: "grid", gridTemplateColumns: "110px 1fr", borderBottom: "10px solid #f5f5f5" }}>
+                    <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>공실광고번호</div>
+                    <div style={{ fontSize: 14, color: "#222", fontWeight: "bold", padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.vacancy_no}</div>
+                    <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>소재지</div>
+                    <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{[prop.sido, prop.sigungu, prop.dong, prop.detail_addr].filter(Boolean).join(" ")}</div>
+                    <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>공실광고특성</div>
+                    <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.building_name || "-"}</div>
+                    <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>공급/전용면적</div>
+                    <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.supply_m2 ? `${prop.supply_m2}m²(${prop.supply_py || 0}평)` : "-"} / {prop.exclusive_m2 ? `${prop.exclusive_m2}m²(${prop.exclusive_py || 0}평)` : "-"}</div>
+                    <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>해당층/총층</div>
+                    <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.current_floor || "-"} / {prop.total_floor || "-"}</div>
+                    <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>방/욕실수</div>
+                    <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.room_count || 0}개 / {prop.bathroom_count || 0}개</div>
+                    <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>방향</div>
+                    <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.direction || "-"}</div>
+                    <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>주차가능 여부</div>
+                    <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.parking || "없음"}</div>
+                    <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>입주가능일</div>
+                    <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.move_in_date || "즉시입주(공실)"}</div>
+                    <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>관리비</div>
+                    <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.maintenance_fee ? `${prop.maintenance_fee / 10000}만원` : "없음"}</div>
+                    <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "flex-start", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>상세설명</div>
+                    <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all", whiteSpace: "pre-line" }}>{prop.description || "-"}</div>
+                  </div>
+                )}
 
                 {/* ──── 위치정보 ──── */}
                 <div style={{ padding: "30px 20px 0" }}>
@@ -2575,8 +2649,40 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
 
             {/* 하단 고정 바 */}
             <div style={{ width: "100%", height: 75, flexShrink: 0, background: "#fff", borderTop: "1px solid #e0e0e0", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 20px", boxSizing: "border-box", boxShadow: "0 -4px 12px rgba(0,0,0,0.05)", zIndex: 10 }}>
-              <span style={{ fontSize: 18, fontWeight: "bold", color: "#111" }}>{getPriceText(prop)}</span>
-              <button onClick={() => { setActiveDetailTab("realtor"); setTimeout(() => { const el = document.getElementById("detail-scroll-container"); if (el) el.scrollTo({ top: 0, behavior: "smooth" }); }, 100); }} style={{ background: "#1a73e8", color: "#fff", border: "none", padding: "10px 28px", borderRadius: 4, fontSize: 15, fontWeight: "bold", cursor: "pointer" }}>연락처 보기</button>
+              <span style={{ fontSize: 18, fontWeight: "bold", color: prop.trade_type === "경매" ? "#eab308" : "#111" }}>
+                {prop.trade_type === "경매" ? `감정가 ${formatAmount(prop.deposit)}` : getPriceText(prop)}
+              </span>
+              {prop.trade_type === "경매" ? (
+                (() => {
+                  const onbidUrlMatch = prop.description?.match(/https?:\/\/[^\s]+onbid\.co\.kr[^\s]*/i) 
+                                        || prop.description?.match(/https?:\/\/[^\s]+/i);
+                  const onbidUrl = onbidUrlMatch ? onbidUrlMatch[0] : "https://www.onbid.co.kr";
+                  return (
+                    <a 
+                      href={onbidUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      style={{ 
+                        background: "#eab308", 
+                        color: "#fff", 
+                        textDecoration: "none", 
+                        padding: "10px 20px", 
+                        borderRadius: 4, 
+                        fontSize: 14, 
+                        fontWeight: "bold", 
+                        cursor: "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 6
+                      }}
+                    >
+                      온비드 입찰 페이지 바로가기 ↗
+                    </a>
+                  );
+                })()
+              ) : (
+                <button onClick={() => { setActiveDetailTab("realtor"); setTimeout(() => { const el = document.getElementById("detail-scroll-container"); if (el) el.scrollTo({ top: 0, behavior: "smooth" }); }, 100); }} style={{ background: "#1a73e8", color: "#fff", border: "none", padding: "10px 28px", borderRadius: 4, fontSize: 15, fontWeight: "bold", cursor: "pointer" }}>연락처 보기</button>
+              )}
             </div>
             
 
@@ -2637,6 +2743,53 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
             }
           }}>내 위치에서 검색</button>
           
+          {/* 경공매 레이어 토글 버튼 (부동산플래닛 실거래가 스타일) */}
+          <button 
+            onClick={() => {
+              setIsAuctionMode(!isAuctionMode);
+              setShowDetail(false);
+              setSelectedClusterIds(null);
+            }} 
+            style={{ 
+              position: "absolute", 
+              right: 20, 
+              top: 80, 
+              zIndex: 1000, 
+              width: 52, 
+              height: 64, 
+              background: isAuctionMode ? "#eab308" : "#fff", 
+              border: "1px solid #ddd",
+              borderRadius: 8, 
+              boxShadow: "0 2px 8px rgba(0,0,0,0.15)", 
+              cursor: "pointer", 
+              display: "flex", 
+              flexDirection: "column", 
+              alignItems: "center", 
+              justifyContent: "center", 
+              gap: 4,
+              transition: "all 0.2s ease",
+              padding: "6px 0",
+              outline: "none"
+            }}
+            title="온비드 경공매 매물 모드 토글"
+          >
+            {/* 경공매용 프리미엄 법봉/해머 아이콘 */}
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={isAuctionMode ? "white" : "#eab308"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m15 5 4 4" />
+              <path d="M20.5 12.5 17 9l-8.5 8.5c-.7.7-1.7 1-2.5 1a2.5 2.5 0 0 1-2.5-2.5c0-.8.3-1.8 1-2.5z" />
+              <path d="m16 4 3 3" />
+              <path d="m14 2 6 6" />
+              <path d="M2 22h10" />
+            </svg>
+            <span style={{ 
+              fontSize: 10, 
+              fontWeight: 800, 
+              color: isAuctionMode ? "white" : "#333",
+              fontFamily: "'Pretendard', sans-serif",
+              letterSpacing: "-0.5px"
+            }}>경공매</span>
+          </button>
+
           {/* Custom Zoom Control (네비게이션 바) */}
           <div style={{ position: "absolute", right: 20, top: 160, zIndex: 10, display: "flex", flexDirection: "column", background: "#fff", borderRadius: 4, boxShadow: "0 2px 6px rgba(0,0,0,0.15)", overflow: "hidden" }}>
              <button onClick={() => { if(kakaoMapRef.current) kakaoMapRef.current.setLevel(kakaoMapRef.current.getLevel() - 1); }} style={{ width: 36, height: 36, border: "none", borderBottom: "1px solid #e0e0e0", background: "#fff", fontSize: 20, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#666" }}>＋</button>

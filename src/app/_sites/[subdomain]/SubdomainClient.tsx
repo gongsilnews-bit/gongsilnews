@@ -141,12 +141,15 @@ export default function SubdomainClient({ initialData }: SubdomainClientProps) {
   };
 
   const getPriceText = (v: any) => {
+    if (v.trade_type === "경매") return formatAmount(v.deposit);
     if (v.trade_type === "매매" || v.trade_type === "전세") return formatAmount(v.deposit);
     return `${formatAmount(v.deposit)} / ${formatAmount(v.monthly_rent)}`;
   };
 
   const getPriceBg = (tradeType: string) => {
     switch (tradeType) {
+      case "경매":
+        return "#eab308";
       case "매매":
         return "#ef4444";
       case "전세":

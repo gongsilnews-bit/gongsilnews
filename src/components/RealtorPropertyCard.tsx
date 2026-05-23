@@ -35,6 +35,9 @@ const formatPrice = (deposit: number, monthlyRent?: number, tradeType?: string) 
   };
 
   const depStr = formatValue(deposit);
+  if (tradeType === "경매") {
+    return depStr || "0";
+  }
   if (tradeType === "월세" && monthlyRent) {
     return `${depStr || '0'} / ${formatValue(monthlyRent)}`;
   }

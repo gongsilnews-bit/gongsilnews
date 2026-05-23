@@ -15,7 +15,7 @@ function getAdminClient() {
 async function getCoordinates(address: string): Promise<{ lat: number; lng: number } | null> {
   try {
     // 1. 카카오 로컬 API 시도
-    const kakaoRestKey = process.env.KAKAO_REST_KEY || process.env.NEXT_PUBLIC_KAKAO_APP_KEY;
+    const kakaoRestKey = process.env.KAKAO_REST_API_KEY || process.env.KAKAO_REST_KEY || process.env.NEXT_PUBLIC_KAKAO_APP_KEY;
     if (kakaoRestKey) {
       const res = await fetch(
         `https://dapi.kakao.com/v2/local/search/address.json?query=${encodeURIComponent(address)}`,
@@ -81,10 +81,18 @@ function mapPropertyType(onbidCategory: string): string {
   if (cat.includes("원룸") || cat.includes("투룸")) {
     return "원룸·투룸(풀옵션)";
   }
-  if (cat.includes("상가") || cat.includes("근린") || cat.includes("사무실") || cat.includes("공장") || cat.includes("토지")) {
-    return "상가·사무실·건물·공장·토지";
-  }
-  return "아파트·오피스텔"; // 기본 폴백값
+  return "상가·사무실·건물·공장·토지"; // 기본 폴백값
+}
+
+// 날짜 문자열 포맷 헬퍼 (예: 202606011000 -> 2026-06-01 10:00)
+function formatOnbidDate(dtStr: string): string {
+  if (!dtStr || dtStr.length < 8) return dtStr || "";
+  const y = dtStr.substring(0, 4);
+  const m = dtStr.substring(4, 6);
+  const d = dtStr.substring(6, 8);
+  const h = dtStr.substring(8, 10) || "00";
+  const min = dtStr.substring(10, 12) || "00";
+  return `${y}-${m}-${d} ${h}:${min}`;
 }
 
 /**
@@ -102,7 +110,8 @@ export async function syncOnbidProperties() {
 
   try {
     // 1. 공공데이터포털 온비드 차세대 부동산 API 호출 (기본 100건 요청, 필수검색조건 추가)
-    const url = `https://apis.data.go.kr/B010003/OnbidRlstListSrvc2/getRlstCltrList2?serviceKey=${serviceKey}&numOfRows=100&pageNo=1&resultType=json&prptDivCd=01&pvctTrgtYn=N`;
+    // prptDivCd=0007,0005: 압류재산(법원공매) + 수탁/일반재산 혼합 수집
+    const url = `https://apis.data.go.kr/B010003/OnbidRlstListSrvc2/getRlstCltrList2?serviceKey=${serviceKey}&numOfRows=100&pageNo=1&resultType=json&prptDivCd=0007,0005&pvctTrgtYn=N`;
     
     const res = await fetch(url, { next: { revalidate: 0 } });
     if (!res.ok) {
@@ -110,8 +119,8 @@ export async function syncOnbidProperties() {
     }
 
     const data = await res.json();
-    // 차세대 API의 표준 JSON 포맷에 맞추어 안전하게 item 배열 획득
-    const items = data.response?.body?.items?.item || data.response?.body?.items || [];
+    // 차세대 API의 표준 JSON 포맷에 맞추어 안전하게 item 배열 획득 (response 래퍼 제거됨)
+    const items = data.body?.items?.item || data.body?.items || [];
     if (items.length === 0) {
       return { success: true, message: "가져올 신규 온비드 물건이 없습니다." };
     }
@@ -119,11 +128,52 @@ export async function syncOnbidProperties() {
     let successCount = 0;
     let skipCount = 0;
 
+    // 1.5. DB에서 유효한 관리자(ADMIN) ID를 조회하는 중...
+    let ownerId = "00000000-0000-0000-0000-000000000000";
+    const { data: adminUser } = await supabase
+      .from("members")
+      .select("id")
+      .eq("email", "gongsilnews@gmail.com")
+      .maybeSingle();
+
+    if (adminUser) {
+      ownerId = adminUser.id;
+    } else {
+      const { data: anyAdmin } = await supabase
+        .from("members")
+        .select("id")
+        .eq("role", "SUPER_ADMIN")
+        .limit(1)
+        .maybeSingle();
+      
+      if (anyAdmin) {
+        ownerId = anyAdmin.id;
+      } else {
+        const { data: anyUser } = await supabase
+          .from("members")
+          .select("id")
+          .limit(1)
+          .maybeSingle();
+        
+        if (anyUser) {
+          ownerId = anyUser.id;
+        }
+      }
+    }
+
     // 2. 루프 돌며 DB 적재 자동화
     for (const item of items) {
-      const onbidId = String(item.cltrNo || ""); // 온비드 고유 물건번호
-      const propertyName = item.cltrNm || ""; // 물건명
-      const address = item.nmrdAdrs || item.ldnmAdrs || ""; // 도로명 또는 지번 주소
+      const onbidId = String(item.onbidCltrno || ""); // 온비드 고유 물건번호
+      const propertyName = item.onbidCltrNm || ""; // 물건명
+      
+      // 주소 추출 (onbidCltrNm에서 건물 종류 용어 앞부분만 파싱하여 안전하게 도로명/지번 주소 확보)
+      let address = `${item.lctnSdnm || ""} ${item.lctnSggnm || ""} ${item.lctnEmdNm || ""}`.trim();
+      if (propertyName) {
+        const addrMatch = propertyName.match(/^(.*?)(?:\s+(?:근린생활시설|아파트|오피스텔|상가|주택|대지|토지|건물|공장|빌딩|창고|사무실))?$/);
+        if (addrMatch && addrMatch[1]) {
+          address = addrMatch[1].trim();
+        }
+      }
       
       if (!address || !onbidId) {
         skipCount++;
@@ -152,19 +202,22 @@ export async function syncOnbidProperties() {
 
       // 4. 주소 분해 및 물건 타입 매핑
       const parsedAddr = parseAddress(address);
-      const propertyType = mapPropertyType(item.cltrGbnNm);
+      const propertyType = mapPropertyType(item.cltrUsgMclsCtgrNm || item.cltrUsgLclsCtgrNm);
       
-      // 가격 파싱 (원화 금액 확보)
-      const deposit = parseInt(item.minBidAmt || "0", 10); // 최저입찰가
-      const appraisalPrice = parseInt(item.apslAmt || "0", 10); // 감정평가액
+      // 가격 파싱 (공실뉴스 DB 규격인 만원 단위로 정밀 변환)
+      const deposit = Math.round(parseInt(item.lowstBidPrcIndctCont || "0", 10) / 10000); // 최저입찰가 (만원)
+      const appraisalPrice = Math.round(parseInt(item.apslEvlAmt || "0", 10) / 10000); // 감정평가액 (만원)
+
+      const bidStart = formatOnbidDate(item.cltrBidBgngDt);
+      const bidEnd = formatOnbidDate(item.cltrBidEndDt);
 
       // 설명란에 AI 스타일의 권리관계 설명 및 온비드 고유키 내장
       const description = `[📢 온비드 공매 추천 매물]
-* 공고번호: ${item.plnmNo || "정보 없음"}
+* 공고번호: ${item.cltrMngNo || "정보 없음"}
 * 물건번호 (온비드 고유 ID): ${onbidId}
-* 감정평가액: ${appraisalPrice.toLocaleString()}원
-* 최저입찰가격: ${deposit.toLocaleString()}원
-* 입찰 기간: ${item.pbctBegDtm || ""} ~ ${item.pbctEndDtm || ""}
+* 감정평가액: ${(appraisalPrice * 10000).toLocaleString()}원
+* 최저입찰가격: ${(deposit * 10000).toLocaleString()}원
+* 입찰 기간: ${bidStart} ~ ${bidEnd}
 
 본 매물은 한국자산관리공사(KAMCO)에서 진행하는 공식 공매 물건입니다. 
 인터넷 입찰은 온비드 사이트에서 입찰 기간 내에 직접 참여하실 수 있습니다. 
@@ -172,7 +225,7 @@ export async function syncOnbidProperties() {
 
       // 5. 공실 DB에 다이렉트 insert 처리
       const insertData = {
-        owner_id: "00000000-0000-0000-0000-000000000000", // 시스템 봇 또는 어드민 ID 연동 (필요시 교체 가능)
+        owner_id: ownerId, // 조회된 관리자 또는 회원 ID 연동
         owner_role: "ADMIN",
         property_type: propertyType,
         trade_type: "경매", // 사장님 지침에 따라 '경매' 카테고리로 연동
