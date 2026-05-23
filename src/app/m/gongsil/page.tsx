@@ -494,6 +494,33 @@ function MobileGongsilContent() {
     clustererRef.current.addMarkers(markersRef.current);
   }, [filteredVacancies, mapLoaded]);
 
+  // 필터링 결과가 변경되었을 때 지도가 해당 공실들을 모두 포함하도록 포커스 조정
+  useEffect(() => {
+    if (!kakaoMapRef.current || !mapLoaded || filteredVacancies.length === 0) return;
+    const kakao = (window as any).kakao;
+    const map = kakaoMapRef.current;
+
+    if (filteredVacancies.length === 1) {
+      const v = filteredVacancies[0];
+      if (v.lat && v.lng) {
+        map.panTo(new kakao.maps.LatLng(v.lat, v.lng));
+        map.setLevel(5);
+      }
+    } else {
+      const bounds = new kakao.maps.LatLngBounds();
+      let hasValid = false;
+      filteredVacancies.forEach((v) => {
+        if (v.lat && v.lng) {
+          bounds.extend(new kakao.maps.LatLng(v.lat, v.lng));
+          hasValid = true;
+        }
+      });
+      if (hasValid) {
+        map.setBounds(bounds);
+      }
+    }
+  }, [filteredVacancies, mapLoaded]);
+
   // 지도 범위 내 공실광고 개수 업데이트
   useEffect(() => {
     if (!kakaoMapRef.current || !mapLoaded) return;
