@@ -494,33 +494,6 @@ function MobileGongsilContent() {
     clustererRef.current.addMarkers(markersRef.current);
   }, [filteredVacancies, mapLoaded]);
 
-  // 필터링 결과가 변경되었을 때 지도가 해당 공실들을 모두 포함하도록 포커스 조정
-  useEffect(() => {
-    if (!kakaoMapRef.current || !mapLoaded || filteredVacancies.length === 0) return;
-    const kakao = (window as any).kakao;
-    const map = kakaoMapRef.current;
-
-    if (filteredVacancies.length === 1) {
-      const v = filteredVacancies[0];
-      if (v.lat && v.lng) {
-        map.panTo(new kakao.maps.LatLng(v.lat, v.lng));
-        map.setLevel(5);
-      }
-    } else {
-      const bounds = new kakao.maps.LatLngBounds();
-      let hasValid = false;
-      filteredVacancies.forEach((v) => {
-        if (v.lat && v.lng) {
-          bounds.extend(new kakao.maps.LatLng(v.lat, v.lng));
-          hasValid = true;
-        }
-      });
-      if (hasValid) {
-        map.setBounds(bounds);
-      }
-    }
-  }, [filteredVacancies, mapLoaded]);
-
   // 지도 범위 내 공실광고 개수 업데이트
   useEffect(() => {
     if (!kakaoMapRef.current || !mapLoaded) return;
@@ -729,7 +702,7 @@ function MobileGongsilContent() {
                 <line x1="9" y1="16" x2="15" y2="16" />
                 <path d="M8 6h2v2H8V6zm6 0h2v2h-2V6zm-6 5h2v2H8v-2zm6 0h2v2h-2v-2z" />
               </svg>
-              지도 위 공실 {visibleCount}개
+              검색된 공실 {filteredVacancies.length}개
             </button>
             <button
               onClick={() => {
@@ -826,12 +799,12 @@ function MobileGongsilContent() {
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
             </button>
             <h3 style={{ fontSize: "18px", fontWeight: 800, color: "#111827", margin: 0 }}>
-              공실광고 <span style={{ color: "#f97316" }}>{(selectedCluster || (showListView ? visibleVacancies : null))?.length || 0}</span>개
+              공실광고 <span style={{ color: "#f97316" }}>{(selectedCluster || (showListView ? filteredVacancies : null))?.length || 0}</span>개
             </h3>
           </div>
         </div>
         <div className="no-scrollbar" style={{ flex: 1, overflowY: "auto", padding: "8px 16px 20px" }}>
-          {(selectedCluster || (showListView ? visibleVacancies : []))?.map((v: any) => {
+          {(selectedCluster || (showListView ? filteredVacancies : []))?.map((v: any) => {
             const isMyProperty = currentUser && v && v.owner_id === currentUser.id;
             const cardMasked = v.exposure_type === '부동산노출' && userLevel < 2 && !isMyProperty;
             const cardAddr = v.building_name || [v.dong, v.sigungu].filter(Boolean).join(" ");
