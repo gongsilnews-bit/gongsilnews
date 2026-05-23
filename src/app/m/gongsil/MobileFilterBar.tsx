@@ -42,6 +42,12 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
   useEffect(() => { setTempFilters(filters); }, [filters]);
   useEffect(() => { if (searchOpen && searchInputRef.current) searchInputRef.current.focus(); }, [searchOpen]);
 
+  useEffect(() => {
+    if (!filters.sido && !filters.sigungu && !filters.dong) {
+      setLocLabel("위치");
+    }
+  }, [filters.sido, filters.sigungu, filters.dong]);
+
   const handleTempFilterChange = (partial: Partial<FilterState>) => {
     setTempFilters(prev => ({ ...prev, ...partial }));
   };

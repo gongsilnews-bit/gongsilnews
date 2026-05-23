@@ -38,10 +38,32 @@ export const initialFilterState: FilterState = {
   dong: null,
 };
 
+export const normalizeSido = (sido: string | null): string => {
+  if (!sido) return "";
+  const clean = sido.trim();
+  
+  // 특수 줄임말 예외 처리
+  if (clean === "충청북도" || clean === "충북") return "충북";
+  if (clean === "충청남도" || clean === "충남") return "충남";
+  if (clean === "전라북도" || clean === "전북" || clean === "전북특별자치도") return "전북";
+  if (clean === "전라남도" || clean === "전남") return "전남";
+  if (clean === "경상북도" || clean === "경북") return "경북";
+  if (clean === "경상남도" || clean === "경남") return "경남";
+  if (clean === "강원특별자치도" || clean === "강원도" || clean === "강원") return "강원";
+  if (clean === "제주특별자치도" || clean === "제주도" || clean === "제주") return "제주";
+  
+  // 일반 광역시 및 특별시는 앞 2글자 반환 (서울, 경기, 인천, 대구, 부산, 대전, 광주, 울산, 세종)
+  return clean.substring(0, 2);
+};
+
 export function useVacancyFilters(initialVacancies: any[]) {
   const [filters, setFilters] = useState<FilterState>(initialFilterState);
 
   const filteredVacancies = useMemo(() => {
+    const filterSidoNorm = normalizeSido(filters.sido);
+    const filterSigunguNorm = filters.sigungu?.trim() || "";
+    const filterDongNorm = filters.dong?.trim() || "";
+
     return initialVacancies.filter(v => {
       // 1. 공실광고 유형
       if (filters.propertyTypes.length > 0 && !filters.propertyTypes.includes(v.property_type)) return false;
@@ -132,9 +154,18 @@ export function useVacancyFilters(initialVacancies: any[]) {
       }
 
       // 11. 위치 필터 (시/구/동)
-      if (filters.sido && v.sido !== filters.sido) return false;
-      if (filters.sigungu && v.sigungu !== filters.sigungu) return false;
-      if (filters.dong && v.dong !== filters.dong) return false;
+      if (filterSidoNorm) {
+        const vSidoNorm = normalizeSido(v.sido);
+        if (vSidoNorm !== filterSidoNorm) return false;
+      }
+      if (filterSigunguNorm) {
+        const vSigungu = v.sigungu?.trim() || "";
+        if (vSigungu !== filterSigunguNorm) return false;
+      }
+      if (filterDongNorm) {
+        const vDong = v.dong?.trim() || "";
+        if (vDong !== filterDongNorm) return false;
+      }
 
       return true;
     });
