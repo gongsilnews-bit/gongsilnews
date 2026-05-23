@@ -414,8 +414,8 @@ function NewsSection({ title, href, articles }: { title: string; href: string; a
       {/* 나머지 기사 (번호 리스트) */}
       {rest.slice(0, 3).map((a: any, i: number) => (
         <Link key={a.id} href={`/m/news/${a.article_no || a.id}`} className="tap art-row" style={{ display: "flex" }}>
-          <span style={{ flexShrink: 0, width: 20, fontSize: 15, fontWeight: 800, color: i === 0 ? "#508bf5" : "#d1d5db", alignSelf: "center" }}>{i + 1}</span>
-          <p style={{ fontSize: 16, fontWeight: 600, color: "#333333", lineHeight: 1.5, flex: 1, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", wordBreak: "keep-all", margin: 0, letterSpacing: "-0.3px" }}>{a.title}</p>
+          <span style={{ flexShrink: 0, width: 24, fontSize: 17, fontWeight: 800, color: i === 0 ? "#508bf5" : "#d1d5db", alignSelf: "center" }}>{i + 1}</span>
+          <p style={{ fontSize: 18, fontWeight: 600, color: "#333333", lineHeight: 1.5, flex: 1, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", wordBreak: "keep-all", margin: 0, letterSpacing: "-0.3px" }}>{a.title}</p>
           {a.thumbnail_url && (
             <div style={{ width: 104, height: 80, borderRadius: 8, overflow: "hidden", flexShrink: 0, background: "#e5e7eb", position: "relative" }}>
               <Image src={a.thumbnail_url} alt="" fill style={{ objectFit: "cover" }} sizes="104px" />
