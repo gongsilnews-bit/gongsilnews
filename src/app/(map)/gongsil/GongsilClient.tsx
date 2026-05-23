@@ -412,6 +412,33 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
 
   const [mapError, setMapError] = useState<string | null>(null);
   const [showGalleryModal, setShowGalleryModal] = useState(false);
+
+  // Gallery Modal with History State management to handle browser back button
+  useEffect(() => {
+    const handlePopState = (e: PopStateEvent) => {
+      if (showGalleryModal) {
+        setShowGalleryModal(false);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [showGalleryModal]);
+
+  const openGalleryModal = () => {
+    window.history.pushState({ modal: 'gallery' }, '', '');
+    setShowGalleryModal(true);
+  };
+
+  const closeGalleryModal = () => {
+    if (window.history.state?.modal === 'gallery') {
+      window.history.back();
+    } else {
+      setShowGalleryModal(false);
+    }
+  };
+
   const [agencyInfo, setAgencyInfo] = useState<any>(null);
 
   // Lazy Loading Detail Map
@@ -2180,7 +2207,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
               {/* 갤러리 */}
               {prop.images && prop.images.length > 0 && prop.images[0] && (
                 <div style={{ position: "relative", width: "100%", height: 200, background: "#f0f0f0" }}>
-                  <img src={images[galleryIndex]} onClick={() => setShowGalleryModal(true)} style={{width:'100%', height:'100%', objectFit:'cover', cursor: 'pointer'}} />
+                  <img src={images[galleryIndex]} onClick={() => openGalleryModal()} style={{width:'100%', height:'100%', objectFit:'cover', cursor: 'pointer'}} />
                   {images.length > 1 && (
                     <>
                       <button onClick={() => setGalleryIndex(Math.max(0, galleryIndex - 1))} style={{ position: "absolute", top: "50%", left: 0, transform: "translateY(-50%)", background: "rgba(0,0,0,0.2)", color: "#fff", border: "none", fontSize: 18, padding: "10px 6px", cursor: "pointer", borderRadius: "0 4px 4px 0" }}>〈</button>
@@ -2624,8 +2651,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
         const images = prop?.images || [];
         if (images.length === 0) return null;
         return (
-          <div onClick={() => setShowGalleryModal(false)} style={{ position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh", background: "rgba(0,0,0,0.9)", zIndex: 99999, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <button onClick={() => setShowGalleryModal(false)} style={{ position: "absolute", top: 20, right: 30, background: "none", border: "none", color: "#fff", fontSize: 50, cursor: "pointer", zIndex: 100000, fontWeight: 300, lineHeight: 1 }}>×</button>
+          <div onClick={() => closeGalleryModal()} style={{ position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh", background: "rgba(0,0,0,0.9)", zIndex: 99999, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <button onClick={() => closeGalleryModal()} style={{ position: "absolute", top: 20, right: 30, background: "none", border: "none", color: "#fff", fontSize: 50, cursor: "pointer", zIndex: 100000, fontWeight: 300, lineHeight: 1 }}>×</button>
             
             <div onClick={(e) => e.stopPropagation()} style={{ position: "relative", width: "80%", maxWidth: 1000, height: "80%", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <img src={images[galleryIndex]} style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
