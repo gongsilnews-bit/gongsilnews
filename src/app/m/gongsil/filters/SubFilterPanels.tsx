@@ -39,16 +39,16 @@ const THEME_PRESETS = [
 ];
 
 const gridBtnStyle = (active: boolean): React.CSSProperties => ({
-  padding: "10px 4px", borderRadius: "8px", fontSize: "14px", fontWeight: active ? 700 : 500, textAlign: "center",
+  padding: "10px 4px", borderRadius: "8px", fontSize: "16px", fontWeight: active ? 700 : 500, textAlign: "center",
   border: active ? "1.5px solid #4b89ff" : "1px solid #e5e7eb",
-  background: active ? "#eef4ff" : "#fff", color: active ? "#4b89ff" : "#374151",
+  background: active ? "#eef4ff" : "#fff", color: active ? "#4b89ff" : "#000",
   cursor: "pointer", transition: "all 0.15s",
 });
 
 const themeBtnStyle = (active: boolean): React.CSSProperties => ({
-  padding: "7px 12px", borderRadius: "16px", fontSize: "13px", fontWeight: active ? 700 : 500,
+  padding: "7px 12px", borderRadius: "16px", fontSize: "15px", fontWeight: active ? 700 : 500,
   border: active ? "1.5px solid #10b981" : "1px solid #e5e7eb",
-  background: active ? "#d1fae5" : "#f9fafb", color: active ? "#065f46" : "#6b7280",
+  background: active ? "#d1fae5" : "#f9fafb", color: active ? "#065f46" : "#000",
   cursor: "pointer", transition: "all 0.15s", whiteSpace: "nowrap" as const,
 });
 

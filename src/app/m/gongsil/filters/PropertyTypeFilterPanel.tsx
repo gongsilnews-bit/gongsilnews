@@ -15,9 +15,9 @@ export default function PropertyTypeFilterPanel({ filters, onFilterChange, PROPE
   };
 
   const gridBtnStyle = (active: boolean): React.CSSProperties => ({
-    padding: "10px 4px", borderRadius: "8px", fontSize: "13px", fontWeight: active ? 700 : 500, textAlign: "center",
+    padding: "10px 4px", borderRadius: "8px", fontSize: "15px", fontWeight: active ? 700 : 500, textAlign: "center",
     border: active ? "1.5px solid #4b89ff" : "1px solid #e5e7eb",
-    background: active ? "#eef4ff" : "#fff", color: active ? "#4b89ff" : "#374151",
+    background: active ? "#eef4ff" : "#fff", color: active ? "#4b89ff" : "#000",
     cursor: "pointer", transition: "all 0.15s",
   });
 
