@@ -109,18 +109,28 @@ export async function syncOnbidProperties() {
   }
 
   try {
-    // 1. 공공데이터포털 온비드 차세대 부동산 API 호출 (기본 100건 요청, 필수검색조건 추가)
+    // 1. 공공데이터포털 온비드 차세대 부동산 API 호출 (5개 페이지를 루프 돌며 총 500건 수집하여 풍부한 데이터 적재)
     // prptDivCd=0007,0005: 압류재산(법원공매) + 수탁/일반재산 혼합 수집
-    const url = `https://apis.data.go.kr/B010003/OnbidRlstListSrvc2/getRlstCltrList2?serviceKey=${serviceKey}&numOfRows=100&pageNo=1&resultType=json&prptDivCd=0007,0005&pvctTrgtYn=N`;
-    
-    const res = await fetch(url, { next: { revalidate: 0 } });
-    if (!res.ok) {
-      throw new Error(`온비드 API 응답 오류: ${res.status}`);
+    const items: any[] = [];
+    for (let pageNo = 1; pageNo <= 5; pageNo++) {
+      const url = `https://apis.data.go.kr/B010003/OnbidRlstListSrvc2/getRlstCltrList2?serviceKey=${serviceKey}&numOfRows=100&pageNo=${pageNo}&resultType=json&prptDivCd=0007,0005&pvctTrgtYn=N`;
+      try {
+        const res = await fetch(url, { next: { revalidate: 0 } });
+        if (res.ok) {
+          const data = await res.json();
+          const pageItems = data.body?.items?.item || data.body?.items || [];
+          if (Array.isArray(pageItems)) {
+            items.push(...pageItems);
+          } else if (pageItems && typeof pageItems === 'object') {
+            // 단일 객체일 경우 배열에 삽입
+            items.push(pageItems);
+          }
+        }
+      } catch (err) {
+        console.error(`온비드 API pageNo=${pageNo} 호출 중 에러 발생:`, err);
+      }
     }
 
-    const data = await res.json();
-    // 차세대 API의 표준 JSON 포맷에 맞추어 안전하게 item 배열 획득 (response 래퍼 제거됨)
-    const items = data.body?.items?.item || data.body?.items || [];
     if (items.length === 0) {
       return { success: true, message: "가져올 신규 온비드 물건이 없습니다." };
     }
