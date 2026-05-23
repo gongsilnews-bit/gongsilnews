@@ -101,8 +101,8 @@ export async function syncOnbidProperties() {
   }
 
   try {
-    // 1. 공공데이터포털 온비드 부동산 API 호출 (기본 100건 요청)
-    const url = `http://apis.data.go.kr/1160132/KamcoOnbidCltrInfoSvc/getOnbidCltrInfoList?serviceKey=${serviceKey}&numOfRows=100&pageNo=1&resultType=json`;
+    // 1. 공공데이터포털 온비드 차세대 부동산 API 호출 (기본 100건 요청, 필수검색조건 추가)
+    const url = `https://apis.data.go.kr/B010003/OnbidRlstListSrvc2/getRlstCltrList2?serviceKey=${serviceKey}&numOfRows=100&pageNo=1&resultType=json&prptDivCd=01&pvctTrgtYn=N`;
     
     const res = await fetch(url, { next: { revalidate: 0 } });
     if (!res.ok) {
@@ -110,7 +110,8 @@ export async function syncOnbidProperties() {
     }
 
     const data = await res.json();
-    const items = data.response?.body?.items || [];
+    // 차세대 API의 표준 JSON 포맷에 맞추어 안전하게 item 배열 획득
+    const items = data.response?.body?.items?.item || data.response?.body?.items || [];
     if (items.length === 0) {
       return { success: true, message: "가져올 신규 온비드 물건이 없습니다." };
     }
