@@ -108,6 +108,7 @@ function MobileGongsilContent() {
 
   // 현재 지도 화면 내에 보이는 공실광고 개수 상태
   const [visibleCount, setVisibleCount] = useState(0);
+  const [visibleVacancies, setVisibleVacancies] = useState<any[]>([]);
 
   // 일반 리스트 뷰 상태
   const [showListView, setShowListView] = useState(false);
@@ -501,15 +502,13 @@ function MobileGongsilContent() {
 
     const updateVisibleCount = () => {
       const bounds = map.getBounds();
-      let count = 0;
-      filteredVacancies.forEach((v) => {
-        if (!v.lat || !v.lng) return;
+      const visible = filteredVacancies.filter((v) => {
+        if (!v.lat || !v.lng) return false;
         const pos = new kakao.maps.LatLng(v.lat, v.lng);
-        if (bounds.contain(pos)) {
-          count++;
-        }
+        return bounds.contain(pos);
       });
-      setVisibleCount(count);
+      setVisibleVacancies(visible);
+      setVisibleCount(visible.length);
     };
 
     // 초기 계산
@@ -800,12 +799,12 @@ function MobileGongsilContent() {
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
             </button>
             <h3 style={{ fontSize: "18px", fontWeight: 800, color: "#111827", margin: 0 }}>
-              공실광고 <span style={{ color: "#f97316" }}>{(selectedCluster || (showListView ? filteredVacancies : null))?.length || 0}</span>개
+              공실광고 <span style={{ color: "#f97316" }}>{(selectedCluster || (showListView ? visibleVacancies : null))?.length || 0}</span>개
             </h3>
           </div>
         </div>
         <div className="no-scrollbar" style={{ flex: 1, overflowY: "auto", padding: "8px 16px 20px" }}>
-          {(selectedCluster || (showListView ? filteredVacancies : []))?.map((v: any) => {
+          {(selectedCluster || (showListView ? visibleVacancies : []))?.map((v: any) => {
             const isMyProperty = currentUser && v && v.owner_id === currentUser.id;
             const cardMasked = v.exposure_type === '부동산노출' && userLevel < 2 && !isMyProperty;
             const cardAddr = v.building_name || [v.dong, v.sigungu].filter(Boolean).join(" ");
