@@ -1719,7 +1719,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                             </span>
                             <span
                               style={{
-                                fontSize: "16px",
+                                fontSize: "18px",
                                 fontWeight: 600,
                                 color: "#1f2937",
                                 lineHeight: "1.4",
