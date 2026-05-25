@@ -99,7 +99,7 @@ function formatOnbidDate(dtStr: string): string {
  * 🤖 온비드 공매 API 동기화 에이전트 핵심 함수
  * 매일 새벽 스케줄러에 의해 무인 자동 호출됩니다.
  */
-export async function syncOnbidProperties() {
+export async function syncOnbidProperties(targetSido: string = "서울특별시") {
   const supabase = getAdminClient();
   const serviceKey = process.env.ONBID_API_KEY;
 
@@ -109,31 +109,83 @@ export async function syncOnbidProperties() {
   }
 
   try {
-    // 1. 공공데이터포털 온비드 차세대 부동산 API 호출 (5개 페이지를 루프 돌며 총 500건 수집하여 풍부한 데이터 적재)
-    // prptDivCd=0007,0005: 압류재산(법원공매) + 수탁/일반재산 혼합 수집
+    // 1. 공공데이터포털 온비드 차세대 부동산 API 호출 (서울 또는 지정된 시도만 numOfRows=1000으로 전체 고속 수집)
     const items: any[] = [];
-    for (let pageNo = 1; pageNo <= 5; pageNo++) {
-      const url = `https://apis.data.go.kr/B010003/OnbidRlstListSrvc2/getRlstCltrList2?serviceKey=${serviceKey}&numOfRows=100&pageNo=${pageNo}&resultType=json&prptDivCd=0007,0005&pvctTrgtYn=N`;
+    let pageNo = 1;
+    let hasMore = true;
+
+    console.log(`🤖 온비드 API 호출 시작 (${targetSido} 대상)...`);
+
+    while (hasMore) {
+      const url = `https://apis.data.go.kr/B010003/OnbidRlstListSrvc2/getRlstCltrList2?serviceKey=${serviceKey}&numOfRows=1000&pageNo=${pageNo}&resultType=json&prptDivCd=0007,0005&pvctTrgtYn=N&lctnSdnm=${encodeURIComponent(targetSido)}`;
       try {
         const res = await fetch(url, { next: { revalidate: 0 } });
         if (res.ok) {
           const data = await res.json();
-          const pageItems = data.body?.items?.item || data.body?.items || [];
-          if (Array.isArray(pageItems)) {
+          const body = data.body || data.response?.body;
+          const pageItems = body?.items?.item || body?.items || [];
+          if (Array.isArray(pageItems) && pageItems.length > 0) {
             items.push(...pageItems);
-          } else if (pageItems && typeof pageItems === 'object') {
-            // 단일 객체일 경우 배열에 삽입
+            console.log(`Page ${pageNo}: ${pageItems.length} items loaded.`);
+            if (pageItems.length < 1000) {
+              hasMore = false;
+            } else {
+              pageNo++;
+            }
+          } else if (pageItems && typeof pageItems === 'object' && Object.keys(pageItems).length > 0) {
             items.push(pageItems);
+            hasMore = false;
+          } else {
+            hasMore = false;
           }
+        } else {
+          hasMore = false;
         }
       } catch (err) {
         console.error(`온비드 API pageNo=${pageNo} 호출 중 에러 발생:`, err);
+        hasMore = false;
       }
     }
 
     if (items.length === 0) {
-      return { success: true, message: "가져올 신규 온비드 물건이 없습니다." };
+      return { success: true, message: `가져올 신규 온비드 물건이 없습니다. (${targetSido})` };
     }
+
+    console.log(`📦 총 수집 완료: ${items.length}건. 고유 주소 및 좌표 캐시 생성 중...`);
+
+    // 2. 고유 주소 좌표 캐시(지오코딩 효율화) 구축
+    const uniqueAddresses = new Set<string>();
+    for (const item of items) {
+      let address = `${item.lctnSdnm || ""} ${item.lctnSggnm || ""} ${item.lctnEmdNm || ""}`.trim();
+      const propertyName = item.onbidCltrNm || "";
+      if (propertyName) {
+        const addrMatch = propertyName.match(/^(.*?)(?:\s+(?:근린생활시설|아파트|오피스텔|상가|주택|대지|토지|건물|공장|빌딩|창고|사무실))?$/);
+        if (addrMatch && addrMatch[1]) {
+          address = addrMatch[1].trim();
+        }
+      }
+      if (address) {
+        uniqueAddresses.add(address);
+      }
+    }
+
+    console.log(`🔍 온비드 고유 주소 개수: ${uniqueAddresses.size}개. 지오코딩 병렬 변환 시작...`);
+
+    const addressCoordsCache = new Map<string, { lat: number; lng: number }>();
+    const addressArray = Array.from(uniqueAddresses);
+    const concurrencyLimit = 10;
+    
+    for (let i = 0; i < addressArray.length; i += concurrencyLimit) {
+      const chunk = addressArray.slice(i, i + concurrencyLimit);
+      await Promise.all(chunk.map(async (addr) => {
+        const coords = await getCoordinates(addr);
+        if (coords) {
+          addressCoordsCache.set(addr, coords);
+        }
+      }));
+    }
+
+    console.log(`🎉 지오코딩 완료! 유효 좌표 확보 완료. DB 적재 루프 실행 중...`);
 
     let successCount = 0;
     let skipCount = 0;
@@ -202,8 +254,8 @@ export async function syncOnbidProperties() {
         continue;
       }
 
-      // 3. 지오코더를 이용해 실시간 좌표(lat, lng) 획득
-      const coords = await getCoordinates(address);
+      // 3. 지오코더 캐시에서 실시간 좌표(lat, lng) 획득
+      const coords = addressCoordsCache.get(address);
       if (!coords) {
         // 지도에 표출할 수 없는 주소는 노이즈 제거 차원에서 생략
         skipCount++;
@@ -256,15 +308,31 @@ export async function syncOnbidProperties() {
         consent: true
       };
 
-      const { error: insertErr } = await supabase
+      const { data: insertedVacancy, error: insertErr } = await supabase
         .from("vacancies")
-        .insert(insertData);
+        .insert(insertData)
+        .select("id")
+        .maybeSingle();
 
       if (insertErr) {
         console.error(`온비드 물건(${propertyName}) 저장 오류:`, insertErr.message);
         skipCount++;
       } else {
         successCount++;
+        // 5.5. 썸네일 이미지가 존재할 경우 vacancy_photos 테이블에 추가
+        if (insertedVacancy?.id && item.thnlImgUrlAdr) {
+          try {
+            await supabase
+              .from("vacancy_photos")
+              .insert({
+                vacancy_id: insertedVacancy.id,
+                url: item.thnlImgUrlAdr,
+                sort_order: 1
+              });
+          } catch (imgErr: any) {
+            console.error(`온비드 이미지(${propertyName}) 저장 실패:`, imgErr.message);
+          }
+        }
       }
     }
 
