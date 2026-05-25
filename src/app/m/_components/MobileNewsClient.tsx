@@ -334,14 +334,21 @@ const RecommendedNewsCarousel = React.memo(({
           >
             <div style={{ width: "100%", aspectRatio: "16/9", position: "relative", backgroundColor: "#f3f4f6", borderRadius: "12px", overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
               {(art.thumbnail_url || extractYoutubeId(art.youtube_url, art.content)) ? (
-                <Image
-                  src={art.thumbnail_url || `https://img.youtube.com/vi/${extractYoutubeId(art.youtube_url, art.content)}/mqdefault.jpg`}
-                  alt={art.title}
-                  fill
-                  style={{ objectFit: "cover" }}
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                  priority={idx === 0}
-                />
+                <>
+                  <Image
+                    src={art.thumbnail_url || `https://img.youtube.com/vi/${extractYoutubeId(art.youtube_url, art.content)}/mqdefault.jpg`}
+                    alt={art.title}
+                    fill
+                    style={{ objectFit: "cover" }}
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                    priority={idx === 0}
+                  />
+                  {!!extractYoutubeId(art.youtube_url, art.content) && (
+                    <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 44, height: 44, background: "rgba(0,0,0,0.5)", borderRadius: "50%", border: "2.5px solid white", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 3 }}>
+                      <svg viewBox="0 0 24 24" width="20" height="20" fill="white" style={{ marginLeft: "1.5px" }}><path d="M8 5v14l11-7z"/></svg>
+                    </div>
+                  )}
+                </>
               ) : (
                 <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#ccc", background: "#f8f9fa", border: "1px solid #eaeaea" }}>
                   <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
@@ -391,6 +398,11 @@ const ArticleRow = React.memo(({ a, activeTab, formatDate, stripHtml, extractYou
             style={{ objectFit: "cover" }}
             sizes="130px"
           />
+          {!!extractYoutubeId(a.youtube_url, a.content) && (
+            <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 32, height: 32, background: "rgba(0,0,0,0.4)", borderRadius: "50%", border: "2px solid white", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 5 }}>
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="white" style={{ marginLeft: "1.5px" }}><path d="M8 5v14l11-7z"/></svg>
+            </div>
+          )}
         </div>
       )}
 
