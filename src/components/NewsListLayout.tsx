@@ -468,7 +468,7 @@ function NewsListLayoutInner({ category, title, initialArticles, initialPopular,
                     >
                       {displayTitle}
                     </button>
-                    <span style={{ color: "#a1a1aa", fontWeight: 400 }}>></span>
+                    <span style={{ color: "#a1a1aa", fontWeight: 400 }}>&gt;</span>
                     <button
                       onClick={() => handleSubCategoryClick(selectedSubCategory)}
                       disabled={!selectedSubCategory}

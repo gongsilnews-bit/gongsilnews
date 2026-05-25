@@ -1768,7 +1768,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                       >
                         {KEY_TO_SECTION1[activeTab] || "공실뉴스"}
                       </button>
-                      <span style={{ color: "#a1a1aa", fontWeight: 400 }}>></span>
+                      <span style={{ color: "#a1a1aa", fontWeight: 400 }}>&gt;</span>
                       <button
                         onClick={() => handleSection2Click(section2Tab)}
                         disabled={!section2Tab}
