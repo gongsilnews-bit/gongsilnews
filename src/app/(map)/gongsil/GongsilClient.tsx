@@ -380,8 +380,6 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   }, [selectedClusterIds, isAuctionMode]);
 
   const filteredVacancies = React.useMemo(() => {
-    // Keep filteredVacanciesRef updated
-    setTimeout(() => { filteredVacanciesRef.current = filteredVacancies; }, 0);
     let list = dbVacancies;
 
     if (isAuctionMode) {
@@ -539,6 +537,11 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
 
     return list;
   }, [dbVacancies, activeCategory, activePills, filterTradeTypes, filterPriceMin, filterPriceMax, filterAreaMin, filterAreaMax, filterMaintIdx, filterRoomCount, filterBathCount, filterDirection, filterYearMin, filterYearMax, filterUnitMin, filterUnitMax, filterOwnerRole, filterCommissionType, filterThemes, wishTab, recentViews, isAuctionMode]);
+
+  // Keep filteredVacanciesRef updated safely and reactively
+  useEffect(() => {
+    filteredVacanciesRef.current = filteredVacancies;
+  }, [filteredVacancies]);
 
   // Reset pagination whenever filters, map bounds, or selected cluster changes to keep map responsive
   useEffect(() => {
@@ -1193,12 +1196,6 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
           }
           return true;
         });
-      } else if (mapBounds && (window as any).kakao?.maps) {
-        targetVacancies = targetVacancies.filter(v => {
-          if (!v.lat || !v.lng) return false;
-          const pos = new (window as any).kakao.maps.LatLng(v.lat, v.lng);
-          return mapBounds.contain(pos);
-        });
       }
     }
     const currentLevel = kakaoMapRef.current?.getLevel() || 6;
@@ -1392,7 +1389,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
       clustererRef.current.addMarkers(newMarkers);
     }
 
-  }, [filteredVacancies, mapBounds, selectedRegion, activeCategory, showArticleOnMap, activeProperty, mapLoaded, isAuctionMode]);
+  }, [filteredVacancies, selectedRegion, activeCategory, showArticleOnMap, activeProperty, mapLoaded, isAuctionMode]);
 
   const formatAmount = (amt: number) => {
     if (!amt) return "";
