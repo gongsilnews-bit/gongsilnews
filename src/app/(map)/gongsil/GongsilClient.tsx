@@ -234,8 +234,15 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   const [selectedClusterIds, setSelectedClusterIds] = useState<string[] | null>(null);
   const selectedClusterIdsRef = useRef<string[] | null>(null);
   const dbVacanciesRef = useRef<any[]>(initialVacancies);
+  const lastZoomWasInRef = useRef<boolean | null>(null);
   const [mapBounds, setMapBounds] = useState<any>(null);
   const [mapCenterRegion, setMapCenterRegion] = useState<{ sido: string; gugun: string; dong: string } | null>(null);
+  const [visibleCount, setVisibleCount] = useState(30);
+
+  // Reset pagination whenever filters, map bounds, or selected cluster changes to keep map responsive
+  useEffect(() => {
+    setVisibleCount(30);
+  }, [filteredVacancies, selectedClusterIds, mapBounds]);
 
   // Set initial data and ref
   useEffect(() => {
@@ -985,6 +992,12 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
       const isZoomedIn = currentLevel <= 3;
       const isAuction = isAuctionModeRef.current;
       
+      // Skip heavy loops if the threshold 3/4 boundary was not crossed (extremely high performance!)
+      if (lastZoomWasInRef.current !== null && lastZoomWasInRef.current === isZoomedIn) {
+        return;
+      }
+      lastZoomWasInRef.current = isZoomedIn;
+      
       // Update all markers instantly on zoom level change
       if (markersRef.current && markersRef.current.length > 0) {
         markersRef.current.forEach((marker: any) => {
@@ -1177,6 +1190,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     const newMarkers: any[] = [];
     const currentLevel = kakaoMapRef.current?.getLevel() || 6;
     const isZoomedIn = currentLevel <= 3;
+    lastZoomWasInRef.current = isZoomedIn;
 
     coordinateGroups.forEach((group, coordKey) => {
       if (group.length === 0) return;
@@ -2255,12 +2269,22 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
             </div>
           )}
 
-          <div style={{ flex: 1, overflowY: "auto", padding: 0, background: "#fff" }}>
+          <div 
+            onScroll={(e) => {
+              const target = e.currentTarget;
+              if (target.scrollHeight - target.scrollTop <= target.clientHeight + 150) {
+                if (displayVacancies.length > visibleCount) {
+                  setVisibleCount(prev => prev + 30);
+                }
+              }
+            }}
+            style={{ flex: 1, overflowY: "auto", padding: 0, background: "#fff" }}
+          >
             {displayVacancies.length === 0 ? (
                <div style={{ padding: "60px 40px", textAlign: "center", color: "#888", fontSize: 14 }}>
                  {activeCategory === "wish" ? (wishTab === "wish" ? "현재 등록된 관심 공실광고가 없습니다." : "최근 본 공실광고가 없습니다.") : "조건에 맞는 공실광고가 없습니다."}
                </div>
-            ) : displayVacancies.map((prop) => {
+            ) : displayVacancies.slice(0, visibleCount).map((prop) => {
                 const isActiveAndShowing = activeProperty === prop.id && showDetail;
                 const addrText = [prop.dong, prop.building_name].filter(Boolean).join(" ");
                 const meta = (prop as any).metadata || {};
@@ -2377,6 +2401,20 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                   </div>
                 );
               })}
+              {displayVacancies.length > visibleCount && (
+                <button 
+                  onClick={() => setVisibleCount(prev => prev + 30)}
+                  style={{
+                    width: "100%", padding: "16px", background: "#f8fafc", color: "#1a73e8",
+                    border: "none", borderTop: "1px solid #eee", fontSize: 13, fontWeight: 700,
+                    cursor: "pointer", transition: "background 0.2s"
+                  }}
+                  onMouseOver={(e) => e.currentTarget.style.background = "#eaf4ff"}
+                  onMouseOut={(e) => e.currentTarget.style.background = "#f8fafc"}
+                >
+                  더보기 ({displayVacancies.length - visibleCount}개 남음)
+                </button>
+              )}
             </div>
         </aside>
 
