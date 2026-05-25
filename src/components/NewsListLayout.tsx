@@ -63,20 +63,34 @@ function NewsListLayoutInner({ category, title, initialArticles, initialPopular,
     setSelectedSubCategory(searchParams.get("section2") || null);
   }, [searchParams]);
 
-  // Restore page, sort, and scroll position from sessionStorage on mount/category change
+  // Sync currentPage with URL searchParams and handle initial restoration
+  useEffect(() => {
+    const pageVal = searchParams.get("page");
+    if (pageVal) {
+      setCurrentPage(parseInt(pageVal, 10));
+    } else {
+      const savedPage = sessionStorage.getItem(`pc_news_page_${category}`);
+      if (savedPage && savedPage !== "1") {
+        setCurrentPage(parseInt(savedPage, 10));
+        const params = new URLSearchParams(searchParams.toString());
+        params.set("page", savedPage);
+        router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+      } else {
+        setCurrentPage(1);
+      }
+    }
+  }, [searchParams, category]);
+
+  // Restore sort and scroll position on mount/category change
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const savedPage = sessionStorage.getItem(`pc_news_page_${category}`);
-      if (savedPage) {
-        setCurrentPage(parseInt(savedPage, 10));
-      }
       const savedSort = sessionStorage.getItem(`pc_news_sort_${category}`);
       if (savedSort === 'popular' || savedSort === 'newest') {
         setSortBy(savedSort);
       }
       const savedScroll = sessionStorage.getItem(`pc_news_scroll_${category}`);
       if (savedScroll) {
-        // Wait slightly for DOM to render
+        // Wait slightly for DOM to render to ensure list is drawn
         setTimeout(() => {
           window.scrollTo(0, parseInt(savedScroll, 10));
           sessionStorage.removeItem(`pc_news_scroll_${category}`);
@@ -85,14 +99,14 @@ function NewsListLayoutInner({ category, title, initialArticles, initialPopular,
     }
   }, [category]);
 
-  // Save current page state on change
+  // Save current page state to sessionStorage on change
   useEffect(() => {
     if (typeof window !== "undefined" && category) {
       sessionStorage.setItem(`pc_news_page_${category}`, currentPage.toString());
     }
   }, [currentPage, category]);
 
-  // Save sort state on change
+  // Save sort state to sessionStorage on change
   useEffect(() => {
     if (typeof window !== "undefined" && category) {
       sessionStorage.setItem(`pc_news_sort_${category}`, sortBy);
@@ -105,6 +119,7 @@ function NewsListLayoutInner({ category, title, initialArticles, initialPopular,
     setSortBy('newest'); // 서브 카테고리 클릭 시 최신순으로 초기화
     if (typeof window !== "undefined") {
       sessionStorage.removeItem(`pc_news_scroll_${category}`);
+      sessionStorage.setItem(`pc_news_page_${category}`, "1");
     }
     const params = new URLSearchParams(searchParams.toString());
     if (sub) {
@@ -112,6 +127,7 @@ function NewsListLayoutInner({ category, title, initialArticles, initialPopular,
     } else {
       params.delete("section2");
     }
+    params.delete("page"); // 서브카테고리 클릭 시 1페이지로 리셋
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   };
   
@@ -223,7 +239,12 @@ function NewsListLayoutInner({ category, title, initialArticles, initialPopular,
   const handlePageChange = (delta: number) => {
     const newPage = currentPage + delta;
     if (newPage >= 1 && newPage <= totalPages) {
-      setCurrentPage(newPage);
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem(`pc_news_page_${category}`, newPage.toString());
+      }
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("page", newPage.toString());
+      router.push(`${pathname}?${params.toString()}`, { scroll: false });
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
@@ -489,7 +510,13 @@ function NewsListLayoutInner({ category, title, initialArticles, initialPopular,
                 </span>
                 <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                   <button 
-                    onClick={() => { setSortBy('newest'); setCurrentPage(1); }}
+                    onClick={() => { 
+                      setSortBy('newest'); 
+                      setCurrentPage(1);
+                      const params = new URLSearchParams(searchParams.toString());
+                      params.delete("page");
+                      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+                    }}
                     style={{
                       background: "none",
                       border: "none",
@@ -506,7 +533,13 @@ function NewsListLayoutInner({ category, title, initialArticles, initialPopular,
                   </button>
                   <span style={{ fontSize: "12px", color: "#e4e4e7" }}>|</span>
                   <button 
-                    onClick={() => { setSortBy('popular'); setCurrentPage(1); }}
+                    onClick={() => { 
+                      setSortBy('popular'); 
+                      setCurrentPage(1);
+                      const params = new URLSearchParams(searchParams.toString());
+                      params.delete("page");
+                      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+                    }}
                     style={{
                       background: "none",
                       border: "none",
