@@ -20,7 +20,8 @@ const CATEGORY_CONFIG: Record<string, { name: string; pills: string[]; basicFilt
   villa: { name: "빌라·주택", pills: ["빌라/연립", "단독/다가구", "전원주택", "상가주택"], basicFilters: ["거래방식", "가격대", "면적", "방/욕실수", "사용승인일", "방향", "등록자", "중개보수", "테마", "기타옵션"], detailFilters: [], showToggle: false },
   one: { name: "원룸·투룸", pills: ["원룸", "투룸", "오피스텔만 보기"], basicFilters: ["거래방식", "가격대", "관리비", "등록자", "중개보수", "테마", "기타옵션"], detailFilters: [], showToggle: false },
   biz: { name: "상가·사무실·공장·토지", pills: ["상가", "사무실", "공장/창고", "지식산업센터", "건물", "토지"], basicFilters: ["거래방식", "가격대", "면적", "층수", "관리비", "등록자", "중개보수", "테마", "기타옵션"], detailFilters: [], showToggle: false },
-  sale: { name: "분양", pills: ["아파트", "오피스텔", "빌라", "도시형생활주택", "생활숙박시설", "상가/업무"], basicFilters: ["분양단계", "분양형태", "분양가/보증금", "면적", "세대수", "등록자", "중개보수", "테마"], detailFilters: [], showToggle: false },
+  sale: { name: "신축/분양", pills: ["아파트", "오피스텔", "빌라", "도시형생활주택", "생활숙박시설", "상가/업무"], basicFilters: ["분양단계", "분양형태", "분양가/보증금", "면적", "세대수", "등록자", "중개보수", "테마"], detailFilters: [], showToggle: false },
+  auction: { name: "경매/공매", pills: [], basicFilters: ["가격대", "면적", "테마"], detailFilters: [], showToggle: false },
   wish: { name: "MY관심공실", pills: [], basicFilters: [], detailFilters: [], showToggle: false },
 };
 
@@ -106,8 +107,18 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   const [galleryIndex, setGalleryIndex] = useState(0);
   const [showShareDropdown, setShowShareDropdown] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [isAuctionMode, setIsAuctionMode] = useState(false);
-  const [activeMode, setActiveMode] = useState<"공실" | "분양" | "경매">("공실");
+  const [isAuctionMode, setIsAuctionMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('gongsil_category') === 'auction';
+    }
+    return false;
+  });
+  const [activeMode, setActiveMode] = useState<"공실" | "분양" | "경매">(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('gongsil_category') === 'auction' ? "경매" : "공실";
+    }
+    return "공실";
+  });
   const shareDropdownRef = useRef<HTMLDivElement>(null);
 
   const [wishTab, setWishTab] = useState<"wish" | "recent">("wish");
@@ -172,6 +183,10 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
       }
     }
   }, [activeProperty, currentUser]);
+
+  useEffect(() => {
+    document.title = isAuctionMode ? "온비드 경공매 | 공실뉴스" : "공실열람 | 공실뉴스";
+  }, [isAuctionMode]);
 
   const toggleWishlist = (id: any) => {
     if (!currentUser) {
@@ -250,11 +265,11 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
           let height = 42;
 
           if (isAuctionMode) {
-            const amtText = formatPriceLabel(prop.deposit) || "경매";
+            const amtText = formatPriceLabel(prop.trade_type === "경매" ? prop.deposit * 10000 : prop.deposit) || "경매";
             width = 85;
             height = 34;
-            normalSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><path d="M 5,2 L 80,2 A 5,5 0 0 1 85,7 L 85,23 A 5,5 0 0 1 80,28 L 47,28 L 42.5,33.5 L 38,28 L 5,28 A 5,5 0 0 1 0,23 L 0,7 A 5,5 0 0 1 5,2 Z" fill="%23eab308" stroke="white" stroke-width="1.5" filter="drop-shadow(0px 2px 4px rgba(0,0,0,0.2))"/><text x="50%25" y="19" text-anchor="middle" fill="white" font-size="11" font-weight="bold" font-family="'Pretendard',sans-serif">경매 ${amtText}</text></svg>`;
-            activeSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><path d="M 5,2 L 80,2 A 5,5 0 0 1 85,7 L 85,23 A 5,5 0 0 1 80,28 L 47,28 L 42.5,33.5 L 38,28 L 5,28 A 5,5 0 0 1 0,23 L 0,7 A 5,5 0 0 1 5,2 Z" fill="white" stroke="%23eab308" stroke-width="2.5" filter="drop-shadow(0px 2px 4px rgba(0,0,0,0.2))"/><text x="50%25" y="19" text-anchor="middle" fill="%23eab308" font-size="11" font-weight="bold" font-family="'Pretendard',sans-serif">경매 ${amtText}</text></svg>`;
+            normalSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><path d="M 5,2 L 80,2 A 5,5 0 0 1 85,7 L 85,23 A 5,5 0 0 1 80,28 L 47,28 L 42.5,33.5 L 38,28 L 5,28 A 5,5 0 0 1 0,23 L 0,7 A 5,5 0 0 1 5,2 Z" fill="%231a73e8" stroke="white" stroke-width="1.5" filter="drop-shadow(0px 2px 4px rgba(0,0,0,0.2))"/><text x="50%25" y="19" text-anchor="middle" fill="white" font-size="11" font-weight="bold" font-family="'Pretendard',sans-serif">경매 ${amtText}</text></svg>`;
+            activeSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><path d="M 5,2 L 80,2 A 5,5 0 0 1 85,7 L 85,23 A 5,5 0 0 1 80,28 L 47,28 L 42.5,33.5 L 38,28 L 5,28 A 5,5 0 0 1 0,23 L 0,7 A 5,5 0 0 1 5,2 Z" fill="white" stroke="%231a73e8" stroke-width="2.5" filter="drop-shadow(0px 2px 4px rgba(0,0,0,0.2))"/><text x="50%25" y="19" text-anchor="middle" fill="%231a73e8" font-size="11" font-weight="bold" font-family="'Pretendard',sans-serif">경매 ${amtText}</text></svg>`;
           } else {
             width = 42;
             height = 42;
@@ -923,9 +938,9 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
 
     const map = kakaoMapRef.current;
 
-    // 제한된 범위 지정 (3: 가장 확대된 상태, 7: 시/군/구 범위)
+    // 제한된 범위 지정 (3: 가장 확대된 상태, 14: 전국 범위)
     map.setMinLevel(3);
-    map.setMaxLevel(7);
+    map.setMaxLevel(14);
 
     kakao.maps.event.addListener(map, 'idle', () => {
       setMapBounds(map.getBounds());
@@ -987,7 +1002,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
       texts: (count: number) => count.toString(),
       styles: [
         isAuctionMode
-          ? { width: '46px', height: '46px', background: 'rgba(234, 179, 8, 1)', color: '#fff', textAlign: 'center', lineHeight: '42px', borderRadius: '50%', fontWeight: 'bold', fontSize: '15px', border: '2px solid #ffffff', boxShadow: '0 3px 8px rgba(0,0,0,0.2)' }
+          ? { width: '46px', height: '46px', background: 'rgba(75, 137, 255, 1)', color: '#fff', textAlign: 'center', lineHeight: '42px', borderRadius: '50%', fontWeight: 'bold', fontSize: '15px', border: '2px solid #ffffff', boxShadow: '0 3px 8px rgba(0,0,0,0.2)' }
           : { width: '42px', height: '42px', background: 'rgba(75, 137, 255, 1)', color: '#fff', textAlign: 'center', lineHeight: '38px', borderRadius: '50%', fontWeight: 'bold', fontSize: '15px', border: '2px solid #ffffff', boxShadow: '0 3px 8px rgba(0,0,0,0.2)' }
       ]
     });
@@ -1034,8 +1049,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
              const overlay = cluster.getClusterMarker().getContent();
              if (overlay && overlay.style) {
                  overlay.style.background = '#ffffff';
-                 overlay.style.color = isAuctionMode ? '#eab308' : '#4b89ff';
-                 overlay.style.border = isAuctionMode ? '2px solid #eab308' : '2px solid #4b89ff';
+                 overlay.style.color = isAuctionMode ? '#4b89ff' : '#4b89ff';
+                 overlay.style.border = isAuctionMode ? '2px solid #4b89ff' : '2px solid #4b89ff';
                  overlay.style.zIndex = '999';
              }
           }
@@ -1057,12 +1072,12 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
       let height = 42;
 
       if (isAuctionMode) {
-        const amtText = formatPriceLabel(prop.deposit) || "경매";
+        const amtText = formatPriceLabel(prop.trade_type === "경매" ? prop.deposit * 10000 : prop.deposit) || "경매";
         width = 85;
         height = 34;
-        normalSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><path d="M 5,2 L 80,2 A 5,5 0 0 1 85,7 L 85,23 A 5,5 0 0 1 80,28 L 47,28 L 42.5,33.5 L 38,28 L 5,28 A 5,5 0 0 1 0,23 L 0,7 A 5,5 0 0 1 5,2 Z" fill="%23eab308" stroke="white" stroke-width="1.5" filter="drop-shadow(0px 2px 4px rgba(0,0,0,0.2))"/><text x="50%25" y="19" text-anchor="middle" fill="white" font-size="11" font-weight="bold" font-family="'Pretendard',sans-serif">경매 ${amtText}</text></svg>`;
-        activeSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><path d="M 5,2 L 80,2 A 5,5 0 0 1 85,7 L 85,23 A 5,5 0 0 1 80,28 L 47,28 L 42.5,33.5 L 38,28 L 5,28 A 5,5 0 0 1 0,23 L 0,7 A 5,5 0 0 1 5,2 Z" fill="white" stroke="%23eab308" stroke-width="2.5" filter="drop-shadow(0px 2px 4px rgba(0,0,0,0.2))"/><text x="50%25" y="19" text-anchor="middle" fill="%23eab308" font-size="11" font-weight="bold" font-family="'Pretendard',sans-serif">경매 ${amtText}</text></svg>`;
-        hoverSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width + 6}" height="${height + 4}"><path d="M 5,2 L 86,2 A 5,5 0 0 1 91,7 L 91,25 A 5,5 0 0 1 86,30 L 51,30 L 45.5,36.5 L 40,30 L 5,30 A 5,5 0 0 1 0,25 L 0,7 A 5,5 0 0 1 5,2 Z" fill="%23eab308" stroke="white" stroke-width="2" filter="drop-shadow(0px 3px 6px rgba(0,0,0,0.25))"/><text x="50%25" y="21" text-anchor="middle" fill="white" font-size="12" font-weight="bold" font-family="'Pretendard',sans-serif">경매 ${amtText}</text></svg>`;
+        normalSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><path d="M 5,2 L 80,2 A 5,5 0 0 1 85,7 L 85,23 A 5,5 0 0 1 80,28 L 47,28 L 42.5,33.5 L 38,28 L 5,28 A 5,5 0 0 1 0,23 L 0,7 A 5,5 0 0 1 5,2 Z" fill="%231a73e8" stroke="white" stroke-width="1.5" filter="drop-shadow(0px 2px 4px rgba(0,0,0,0.2))"/><text x="50%25" y="19" text-anchor="middle" fill="white" font-size="11" font-weight="bold" font-family="'Pretendard',sans-serif">경매 ${amtText}</text></svg>`;
+        activeSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><path d="M 5,2 L 80,2 A 5,5 0 0 1 85,7 L 85,23 A 5,5 0 0 1 80,28 L 47,28 L 42.5,33.5 L 38,28 L 5,28 A 5,5 0 0 1 0,23 L 0,7 A 5,5 0 0 1 5,2 Z" fill="white" stroke="%231a73e8" stroke-width="2.5" filter="drop-shadow(0px 2px 4px rgba(0,0,0,0.2))"/><text x="50%25" y="19" text-anchor="middle" fill="%231a73e8" font-size="11" font-weight="bold" font-family="'Pretendard',sans-serif">경매 ${amtText}</text></svg>`;
+        hoverSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width + 6}" height="${height + 4}"><path d="M 5,2 L 86,2 A 5,5 0 0 1 91,7 L 91,25 A 5,5 0 0 1 86,30 L 51,30 L 45.5,36.5 L 40,30 L 5,30 A 5,5 0 0 1 0,25 L 0,7 A 5,5 0 0 1 5,2 Z" fill="%231a73e8" stroke="white" stroke-width="2" filter="drop-shadow(0px 3px 6px rgba(0,0,0,0.25))"/><text x="50%25" y="21" text-anchor="middle" fill="white" font-size="12" font-weight="bold" font-family="'Pretendard',sans-serif">경매 ${amtText}</text></svg>`;
       } else {
         width = 42;
         height = 42;
@@ -1354,6 +1369,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     // 같은 탭을 다시 누르면 전체로 복귀
     const newKey = activeCategory === key ? 'all' : key;
     setActiveCategory(newKey);
+    setIsAuctionMode(newKey === 'auction');
+    setActiveMode(newKey === 'auction' ? "경매" : "공실");
     if (newKey === 'all') {
       setActivePills([]);
       localStorage.setItem('gongsil_pills', '[]');
@@ -1426,9 +1443,11 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
           <Link href="/" style={{ marginRight: 15, display: "inline-flex", alignItems: "center", textDecoration: "none" }}>
             <img src="/logo.png" alt="공실뉴스" style={{ height: 34 }} onError={(e) => { (e.target as HTMLImageElement).src = "https://via.placeholder.com/100x34?text=LOGO"; }} />
           </Link>
-          <span style={{ fontSize: 26, fontWeight: 800, color: "#111", marginRight: 20, whiteSpace: "nowrap" }}>공실열람</span>
+          <span style={{ fontSize: 26, fontWeight: 800, color: "#111", marginRight: 20, whiteSpace: "nowrap", transition: "color 0.2s" }}>
+            공실열람
+          </span>
           {Object.entries(CATEGORY_CONFIG).map(([key, cfg]) => (
-            <button key={key} onClick={() => handleCategoryChange(key)} style={{ background: "none", border: "none", fontSize: 16, fontWeight: "bold", color: activeCategory === key ? "#1a73e8" : "#555", cursor: "pointer", padding: "16px 4px", position: "relative", whiteSpace: "nowrap", borderBottom: activeCategory === key ? "3px solid #1a73e8" : "3px solid transparent", fontFamily: "inherit" }}>
+            <button key={key} onClick={() => handleCategoryChange(key)} style={{ background: "none", border: "none", fontSize: 16, fontWeight: "bold", color: activeCategory === key ? (isAuctionMode ? "#1a73e8" : "#1a73e8") : "#555", cursor: "pointer", padding: "16px 4px", position: "relative", whiteSpace: "nowrap", borderBottom: activeCategory === key ? `3px solid ${isAuctionMode ? "#1a73e8" : "#1a73e8"}` : "3px solid transparent", fontFamily: "inherit", transition: "color 0.2s, border-color 0.2s" }}>
               {cfg.name}
             </button>
           ))}
@@ -1440,12 +1459,13 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
           <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 20px", borderBottom: "1px solid #e0e0e0", overflowX: "visible" }}>
             {config.pills.map((p) => (
               <button key={p} onClick={() => togglePill(p)} style={{
-                background: activePills.includes(p) ? (isOfficePill(p) ? "#111" : "#e8f0fe") : "#fff",
-                border: `1px solid ${activePills.includes(p) ? (isOfficePill(p) ? "#111" : "#1a73e8") : "#ccc"}`,
-                fontSize: 13, color: activePills.includes(p) ? (isOfficePill(p) ? "#fff" : "#1a73e8") : "#333",
+                background: activePills.includes(p) ? (isOfficePill(p) ? "#111" : (isAuctionMode ? "#e8f0fe" : "#e8f0fe")) : "#fff",
+                border: `1px solid ${activePills.includes(p) ? (isOfficePill(p) ? "#111" : (isAuctionMode ? "#1a73e8" : "#1a73e8")) : "#ccc"}`,
+                fontSize: 13, color: activePills.includes(p) ? (isOfficePill(p) ? "#fff" : (isAuctionMode ? "#1a73e8" : "#1a73e8")) : "#333",
                 cursor: "pointer", padding: "6px 14px",
                 borderRadius: isOfficePill(p) ? 4 : 20,
-                whiteSpace: "nowrap", fontWeight: activePills.includes(p) ? "bold" : "normal", fontFamily: "inherit", flexShrink: 0
+                whiteSpace: "nowrap", fontWeight: activePills.includes(p) ? "bold" : "normal", fontFamily: "inherit", flexShrink: 0,
+                transition: "all 0.15s"
               }}>
                 {activePills.includes(p) && !isOfficePill(p) ? `✓ ${p}` : p}
               </button>
@@ -1482,7 +1502,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
               <div key={f} style={{ position: "relative" }}>
                 <button 
                   onClick={() => setActiveFilterDropdown(activeFilterDropdown === f ? null : f)}
-                  style={{ background: isFilterActive ? "#fff" : "#fff", border: `1px solid ${isFilterActive ? "#1a73e8" : "#ccc"}`, fontSize: 13, color: isFilterActive ? "#1a73e8" : "#555", fontWeight: isFilterActive || activeFilterDropdown === f ? "bold" : "normal", cursor: "pointer", padding: "6px 14px", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", borderRadius: 4, flexShrink: 0, fontFamily: "inherit" }}>
+                  style={{ background: isFilterActive ? "#fff" : "#fff", border: `1px solid ${isFilterActive ? (isAuctionMode ? "#1a73e8" : "#1a73e8") : "#ccc"}`, fontSize: 13, color: isFilterActive ? (isAuctionMode ? "#1a73e8" : "#1a73e8") : "#555", fontWeight: isFilterActive || activeFilterDropdown === f ? "bold" : "normal", cursor: "pointer", padding: "6px 14px", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", borderRadius: 4, flexShrink: 0, fontFamily: "inherit", transition: "all 0.15s" }}>
                   {btnLabel} <span style={{ fontSize: 10, marginLeft: 2 }}>▼</span>
                 </button>
 
@@ -1496,7 +1516,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                       {["매매", "전세", "월세", "단기임대"].map(type => (
                         <label key={type} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontSize: 14, color: "#333" }}>
-                          <input type="checkbox" checked={filterTradeTypes.includes(type)} onChange={() => toggleTradeType(type)} style={{ width: 18, height: 18, accentColor: "#1a73e8", cursor: "pointer" }} />
+                          <input type="checkbox" checked={filterTradeTypes.includes(type)} onChange={() => toggleTradeType(type)} style={{ width: 18, height: 18, accentColor: isAuctionMode ? "#1a73e8" : "#1a73e8", cursor: "pointer" }} />
                           {type}
                         </label>
                       ))}
@@ -2094,13 +2114,13 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
               padding: "15px 20px", 
               fontWeight: 800, 
               fontSize: 15, 
-              color: isAuctionMode ? "#eab308" : "#111", 
+              color: isAuctionMode ? "#1a73e8" : "#111", 
               display: "flex", 
               justifyContent: "space-between", 
               alignItems: "center", 
-              borderBottom: isAuctionMode ? "2px solid #eab308" : "1px solid #eee", 
+              borderBottom: isAuctionMode ? "2px solid #1a73e8" : "1px solid #eee", 
               flexShrink: 0,
-              background: isAuctionMode ? "#fffbeb" : "#fff"
+              background: isAuctionMode ? "#eaf4ff" : "#fff"
             }}>
               <span>{isAuctionMode ? "온비드 경공매 매물" : (selectedClusterIds && selectedClusterIds.length > 0 ? "선택된 공실" : "지도위의 공실")} {displayVacancies.length}개</span>
             </div>
@@ -2114,7 +2134,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
             ) : displayVacancies.map((prop) => {
                 const isActiveAndShowing = activeProperty === prop.id && showDetail;
                 const addrText = [prop.dong, prop.building_name].filter(Boolean).join(" ");
-                const priceText = isAuctionMode ? `감정가 ${formatAmount(prop.deposit)}` : getPriceText(prop);
+                const priceText = isAuctionMode ? `감정가 ${formatAmount(prop.trade_type === "경매" ? prop.deposit * 10000 : prop.deposit)}` : getPriceText(prop);
                 // 마스킹 판별: 부동산노출 전용 + 부동산회원 미만 (본인 등록 매물 제외)
                 const isMyProperty = currentUser && prop && prop.owner_id === currentUser.id;
                 const isMasked = prop.exposure_type === '부동산노출' && userLevel < 2 && !isMyProperty;
@@ -2143,14 +2163,14 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                       display: "flex", justifyContent: "space-between", alignItems: "flex-start",
                       padding: "16px 20px 16px 16px", cursor: "pointer", transition: "background 0.2s, border-color 0.2s",
                       borderBottom: "1px solid #eee",
-                      borderLeft: activeProperty === prop.id ? (isAuctionMode ? "4px solid #eab308" : "4px solid #1a73e8") : "4px solid transparent",
-                      background: activeProperty === prop.id ? (isAuctionMode ? "#fffbeb" : "#eaf4ff") : "#fff",
+                      borderLeft: activeProperty === prop.id ? (isAuctionMode ? "4px solid #1a73e8" : "4px solid #1a73e8") : "4px solid transparent",
+                      background: activeProperty === prop.id ? (isAuctionMode ? "#eaf4ff" : "#eaf4ff") : "#fff",
                     }}>
                     <div style={{ flex: 1, paddingRight: prop.images?.[0] ? 15 : 0, minWidth: 0 }}>
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6, flexWrap: "wrap" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                           {isAuctionMode && (
-                            <span style={{ display: "inline-block", fontSize: 11, color: "#eab308", border: "1px solid #eab308", background: "#fffbeb", padding: "1px 5px", borderRadius: 4, fontWeight: "bold" }}>
+                            <span style={{ display: "inline-block", fontSize: 11, color: "#1a73e8", border: "1px solid #1a73e8", background: "#eaf4ff", padding: "1px 5px", borderRadius: 4, fontWeight: "bold" }}>
                               온비드 경매
                             </span>
                           )}
@@ -2180,7 +2200,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                         {isMasked ? (addrText || "주소 없음").replace(/[^\s]/g, "X") : (addrText || "주소 없음")}
                       </div>
                       {/* 가격, 면적, 옵션: 항상 정상 표시 */}
-                      <div style={{ fontSize: 16, fontWeight: 800, color: isAuctionMode ? "#eab308" : "#1a73e8", marginBottom: 4 }}>{priceText}</div>
+                      <div style={{ fontSize: 16, fontWeight: 800, color: isAuctionMode ? "#1a73e8" : "#1a73e8", marginBottom: 4 }}>{priceText}</div>
                       <div style={{ fontSize: 13, color: "#555", marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                         {prop.property_type} <span style={{ color: "#ddd", margin: "0 4px" }}>|</span> {prop.direction || "방향없음"} <span style={{ color: "#ddd", margin: "0 4px" }}>|</span> {prop.exclusive_m2 ? `${prop.exclusive_m2}㎡` : "면적미상"}
                       </div>
@@ -2348,17 +2368,17 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                 <>
                 {prop.trade_type === "경매" ? (
                   <div style={{ display: "grid", gridTemplateColumns: "110px 1fr", borderBottom: "10px solid #f5f5f5" }}>
-                    <div style={{ fontSize: 13, color: "#444", background: "#fdf8e2", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>경매물건번호</div>
+                    <div style={{ fontSize: 13, color: "#444", background: "#f4f6fa", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>경매물건번호</div>
                     <div style={{ fontSize: 14, color: "#222", fontWeight: "bold", padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.vacancy_no}</div>
-                    <div style={{ fontSize: 13, color: "#444", background: "#fdf8e2", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>소재지</div>
+                    <div style={{ fontSize: 13, color: "#444", background: "#f4f6fa", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>소재지</div>
                     <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{[prop.sido, prop.sigungu, prop.dong, prop.detail_addr].filter(Boolean).join(" ")}</div>
-                    <div style={{ fontSize: 13, color: "#444", background: "#fdf8e2", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>용도구분</div>
+                    <div style={{ fontSize: 13, color: "#444", background: "#f4f6fa", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>용도구분</div>
                     <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.property_type || "-"}</div>
-                    <div style={{ fontSize: 13, color: "#444", background: "#fdf8e2", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>감정평가액</div>
-                    <div style={{ fontSize: 15, color: "#eab308", fontWeight: "800", padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{formatAmount(prop.deposit)}</div>
-                    <div style={{ fontSize: 13, color: "#444", background: "#fdf8e2", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>면적</div>
+                    <div style={{ fontSize: 13, color: "#444", background: "#f4f6fa", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>감정평가액</div>
+                    <div style={{ fontSize: 15, color: "#1a73e8", fontWeight: "800", padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{formatAmount(prop.trade_type === "경매" ? prop.deposit * 10000 : prop.deposit)}</div>
+                    <div style={{ fontSize: 13, color: "#444", background: "#f4f6fa", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>면적</div>
                     <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.exclusive_m2 ? `${prop.exclusive_m2}m² (${Math.round(prop.exclusive_m2 / 3.3)}평)` : "-"}</div>
-                    <div style={{ fontSize: 13, color: "#444", background: "#fdf8e2", fontWeight: "bold", display: "flex", alignItems: "flex-start", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>입찰 및 설명</div>
+                    <div style={{ fontSize: 13, color: "#444", background: "#f4f6fa", fontWeight: "bold", display: "flex", alignItems: "flex-start", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>입찰 및 설명</div>
                     <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all", whiteSpace: "pre-line" }}>{prop.description || "-"}</div>
                   </div>
                 ) : (
@@ -2650,8 +2670,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
 
             {/* 하단 고정 바 */}
             <div style={{ width: "100%", height: 75, flexShrink: 0, background: "#fff", borderTop: "1px solid #e0e0e0", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 20px", boxSizing: "border-box", boxShadow: "0 -4px 12px rgba(0,0,0,0.05)", zIndex: 10 }}>
-              <span style={{ fontSize: 18, fontWeight: "bold", color: prop.trade_type === "경매" ? "#eab308" : "#111" }}>
-                {prop.trade_type === "경매" ? `감정가 ${formatAmount(prop.deposit)}` : getPriceText(prop)}
+              <span style={{ fontSize: 18, fontWeight: "bold", color: prop.trade_type === "경매" ? "#1a73e8" : "#111" }}>
+                {prop.trade_type === "경매" ? `감정가 ${formatAmount(prop.trade_type === "경매" ? prop.deposit * 10000 : prop.deposit)}` : getPriceText(prop)}
               </span>
               {prop.trade_type === "경매" ? (
                 (() => {
@@ -2664,7 +2684,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                       target="_blank" 
                       rel="noopener noreferrer" 
                       style={{ 
-                        background: "#eab308", 
+                        background: "#1a73e8", 
                         color: "#fff", 
                         textDecoration: "none", 
                         padding: "10px 20px", 
@@ -2744,149 +2764,12 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
             }
           }}>내 위치에서 검색</button>
 
-          {/* 3대 플로팅 모드 필터 컨트롤러 (대표님 천재적 기획안) */}
-          <div style={{
-            position: "absolute",
-            bottom: 25,
-            left: 20,
-            display: "flex",
-            flexDirection: "column",
-            gap: 8,
-            zIndex: 99999
-          }}>
-            {/* 🔵 실시간 공실 버튼 */}
-            <button
-              onClick={() => {
-                setActiveMode("공실");
-              }}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                padding: "10px 18px",
-                borderRadius: "30px",
-                background: activeMode === "공실" ? "#1a73e8" : "#ffffff",
-                color: activeMode === "공실" ? "#ffffff" : "#4b5563",
-                border: "none",
-                fontSize: "14px",
-                fontWeight: 800,
-                cursor: "pointer",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
-                transition: "all 0.15s ease-in-out",
-                minWidth: "135px",
-                justifyContent: "flex-start",
-                letterSpacing: "-0.5px"
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.opacity = "0.9";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.opacity = "1";
-              }}
-            >
-              <span style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                  <rect x="4" y="2" width="16" height="20" rx="2" ry="2" />
-                  <line x1="9" y1="22" x2="9" y2="16" />
-                  <line x1="15" y1="22" x2="15" y2="16" />
-                  <line x1="9" y1="16" x2="15" y2="16" />
-                  <path d="M8 6h2v2H8V6zm6 0h2v2h-2V6zm-6 5h2v2H8v-2zm6 0h2v2h-2v-2z" />
-                </svg>
-              </span>
-              <span>공실정보</span>
-            </button>
-
-            {/* 🟢 신축/분양 버튼 */}
-            <button
-              onClick={() => {
-                setActiveMode("분양");
-              }}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                padding: "10px 18px",
-                borderRadius: "30px",
-                background: activeMode === "분양" ? "#2ecc71" : "#ffffff",
-                color: activeMode === "분양" ? "#ffffff" : "#4b5563",
-                border: "none",
-                fontSize: "14px",
-                fontWeight: 800,
-                cursor: "pointer",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
-                transition: "all 0.15s ease-in-out",
-                minWidth: "135px",
-                justifyContent: "flex-start",
-                letterSpacing: "-0.5px"
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.opacity = "0.9";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.opacity = "1";
-              }}
-            >
-              <span style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                  <path d="M2 22h20" />
-                  <path d="M13 22V4a2 2 0 0 0-2-2h-3v20" />
-                  <path d="M18 22V9a2 2 0 0 0-2-2h-3" />
-                  <path d="M13 14h5" />
-                  <path d="M8 6h2V4H8v2zm0 6h2v-2H8v2zm0 6h2v-2H8v2z" />
-                </svg>
-              </span>
-              <span>신축/분양</span>
-            </button>
-
-            {/* 🟠 경/공매 버튼 */}
-            <button
-              onClick={() => {
-                setActiveMode("경매");
-              }}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                padding: "10px 18px",
-                borderRadius: "30px",
-                background: activeMode === "경매" ? "#ff8c00" : "#ffffff",
-                color: activeMode === "경매" ? "#ffffff" : "#4b5563",
-                border: "none",
-                fontSize: "14px",
-                fontWeight: 800,
-                cursor: "pointer",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
-                transition: "all 0.15s ease-in-out",
-                minWidth: "135px",
-                justifyContent: "flex-start",
-                letterSpacing: "-0.5px"
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.opacity = "0.9";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.opacity = "1";
-              }}
-            >
-              <span style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                  <path d="m14 13-5 5" />
-                  <path d="m15 4 5 5" />
-                  <path d="m11.5 7.5 5 5" />
-                  <path d="m16.5 2.5 5 5" />
-                  <path d="m8 10-5 5" />
-                  <path d="m6 12 2 2" />
-                  <path d="M2 22h10" />
-                </svg>
-              </span>
-              <span>경/공매</span>
-            </button>
-          </div>
-          
           {/* 경공매 레이어 토글 버튼 (부동산플래닛 실거래가 스타일) */}
           <button 
             onClick={() => {
-              setIsAuctionMode(!isAuctionMode);
+              const nextVal = !isAuctionMode;
+              setIsAuctionMode(nextVal);
+              setActiveMode(nextVal ? "경매" : "공실");
               setShowDetail(false);
               setSelectedClusterIds(null);
             }} 
@@ -2897,7 +2780,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
               zIndex: 1000, 
               width: 52, 
               height: 64, 
-              background: isAuctionMode ? "#eab308" : "#fff", 
+              background: isAuctionMode ? "#1a73e8" : "#fff", 
               border: "1px solid #ddd",
               borderRadius: 8, 
               boxShadow: "0 2px 8px rgba(0,0,0,0.15)", 
@@ -2914,7 +2797,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
             title="온비드 경공매 매물 모드 토글"
           >
             {/* 경공매용 프리미엄 법봉/해머 아이콘 */}
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={isAuctionMode ? "white" : "#eab308"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={isAuctionMode ? "white" : "#1a73e8"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="m15 5 4 4" />
               <path d="M20.5 12.5 17 9l-8.5 8.5c-.7.7-1.7 1-2.5 1a2.5 2.5 0 0 1-2.5-2.5c0-.8.3-1.8 1-2.5z" />
               <path d="m16 4 3 3" />

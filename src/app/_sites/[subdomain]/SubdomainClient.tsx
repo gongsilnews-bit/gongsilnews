@@ -149,7 +149,7 @@ export default function SubdomainClient({ initialData }: SubdomainClientProps) {
   const getPriceBg = (tradeType: string) => {
     switch (tradeType) {
       case "경매":
-        return "#eab308";
+        return "#ff8c00";
       case "매매":
         return "#ef4444";
       case "전세":
