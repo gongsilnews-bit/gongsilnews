@@ -180,8 +180,16 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   });
   const [activePills, setActivePills] = useState<string[]>(() => {
     if (typeof window !== 'undefined') {
+      const cat = localStorage.getItem('gongsil_category') || 'all';
       const saved = localStorage.getItem('gongsil_pills');
-      if (saved) try { return JSON.parse(saved); } catch {}
+      if (saved) {
+        try { return JSON.parse(saved); } catch {}
+      }
+      // If no saved selection in localStorage, default to ALL pills of the active category
+      const config = CATEGORY_CONFIG[cat];
+      if (config && config.pills) {
+        return config.pills;
+      }
     }
     return [];
   });
@@ -385,25 +393,26 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     if (isAuctionMode) {
       // Auction Mode: Only show auction listings
       let auctionList = list.filter(v => v.trade_type === "경매");
-      // 경매 전용 pill 필터 (온비드 중분류+소분류 기준)
-      if (activePills.length > 0) {
-        auctionList = auctionList.filter(v => {
-          const meta = (v as any).metadata || {};
-          const mcls = meta.cltrUsgMclsCtgrNm || "";
-          const scls = meta.cltrUsgSclsCtgrNm || "";
-          return activePills.some(pill => {
-            if (pill === "아파트") return scls === "아파트";
-            if (pill === "단독/다가구") return scls === "단독주택" || scls === "다가구주택";
-            if (pill === "빌라/주택") return mcls === "주거용건물" && scls !== "아파트" && scls !== "단독주택" && scls !== "다가구주택";
-            if (pill === "상가/점포") return mcls.includes("상업") || scls.includes("상가") || scls.includes("점포") || scls.includes("판매");
-            if (pill === "사무실/지산") return scls.includes("사무") || mcls.includes("업무") || scls.includes("오피스텔") || scls.includes("아파트형") || scls.includes("지식산업");
-            if (pill === "빌딩/근생") return mcls.includes("근린생활") || scls.includes("상가주택") || scls.includes("빌딩") || mcls.includes("숙박") || mcls.includes("의료");
-            if (pill === "공장/창고") return (scls.includes("공장") || scls.includes("창고") || scls.includes("제조") || mcls.includes("산업")) && !scls.includes("아파트형") && !scls.includes("지식산업");
-            if (pill === "토지") return mcls === "토지";
-            return false;
-          });
-        });
+      // [대표님 지침] 아무것도 선택하지 않으면 아무것도 노출하지 않습니다.
+      if (activePills.length === 0) {
+        return [];
       }
+      auctionList = auctionList.filter(v => {
+        const meta = (v as any).metadata || {};
+        const mcls = meta.cltrUsgMclsCtgrNm || "";
+        const scls = meta.cltrUsgSclsCtgrNm || "";
+        return activePills.some(pill => {
+          if (pill === "아파트") return scls === "아파트";
+          if (pill === "단독/다가구") return scls === "단독주택" || scls === "다가구주택";
+          if (pill === "빌라/주택") return mcls === "주거용건물" && scls !== "아파트" && scls !== "단독주택" && scls !== "다가구주택";
+          if (pill === "상가/점포") return mcls.includes("상업") || scls.includes("상가") || scls.includes("점포") || scls.includes("판매");
+          if (pill === "사무실/지산") return scls.includes("사무") || mcls.includes("업무") || scls.includes("오피스텔") || scls.includes("아파트형") || scls.includes("지식산업");
+          if (pill === "빌딩/근생") return mcls.includes("근린생활") || scls.includes("상가주택") || scls.includes("빌딩") || mcls.includes("숙박") || mcls.includes("의료");
+          if (pill === "공장/창고") return (scls.includes("공장") || scls.includes("창고") || scls.includes("제조") || mcls.includes("산업")) && !scls.includes("아파트형") && !scls.includes("지식산업");
+          if (pill === "토지") return mcls === "토지";
+          return false;
+        });
+      });
       return auctionList;
     }
 
@@ -435,8 +444,11 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
       list = list.filter(v => v.property_type === dbPropType);
     }
 
-    // 2) sub_category 필터 (Pills) - 'all'이면 무시
-    if (activeCategory !== 'all' && activePills.length > 0) {
+    // 2) sub_category 필터 (Pills) - 'all'이면 무시. [대표님 지침] 아무것도 선택하지 않으면 아무것도 노출하지 않습니다.
+    if (activeCategory !== 'all') {
+      if (activePills.length === 0) {
+        return [];
+      }
       list = list.filter(v => activePills.includes(v.sub_category));
     }
 
@@ -1647,7 +1659,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
       }
       if (pills.length === 0) {
         const c = CATEGORY_CONFIG[newKey];
-        pills = (newKey === 'wish' || newKey === 'auction') ? [] : [c.pills[0] || ''];
+        pills = c && c.pills ? c.pills : [];
       }
       setActivePills(pills);
       localStorage.setItem('gongsil_pills', JSON.stringify(pills));

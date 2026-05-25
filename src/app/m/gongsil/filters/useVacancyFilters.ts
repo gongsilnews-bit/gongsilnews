@@ -19,8 +19,14 @@ export interface FilterState {
   dong: string | null;             // 읍/면/동 필터
 }
 
+const ALL_PROPERTY_TYPES = [
+  "아파트", "빌라/연립", "오피스텔", "원룸", "투룸", "단독/다가구",
+  "전원주택", "상가주택", "재건축", "재개발",
+  "상가", "사무실", "토지", "건물", "공장/창고", "지식산업센터"
+];
+
 export const initialFilterState: FilterState = {
-  propertyTypes: [],
+  propertyTypes: ALL_PROPERTY_TYPES,
   tradeTypes: [],
   keyword: "",
   priceMin: null,
@@ -65,8 +71,9 @@ export function useVacancyFilters(initialVacancies: any[]) {
     const filterDongNorm = filters.dong?.trim() || "";
 
     return initialVacancies.filter(v => {
-      // 1. 공실광고 유형
-      if (filters.propertyTypes.length > 0 && !filters.propertyTypes.includes(v.property_type)) return false;
+      // 1. 공실광고 유형 - 아무것도 선택하지 않으면 아무것도 노출하지 않습니다. (대표님 지침)
+      if (filters.propertyTypes.length === 0) return false;
+      if (!filters.propertyTypes.includes(v.property_type)) return false;
       
       // 2. 거래 방식
       if (filters.tradeTypes.length > 0 && !filters.tradeTypes.includes(v.trade_type)) return false;

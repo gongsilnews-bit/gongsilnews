@@ -301,7 +301,8 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
           <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "#fff", borderTop: "1px solid #e5e7eb", padding: "12px 20px 24px", display: "flex", gap: "12px" }}>
             <button 
               onClick={() => {
-                const empty = { propertyTypes: [], tradeTypes: [], keyword: "", priceMin: null, priceMax: null, areaMin: null, areaMax: null, yearMin: null, yearMax: null, floor: null, ownerRole: null, commissionType: null, themes: [], sido: null, sigungu: null, dong: null };
+                const allPropTypes = PROPERTY_TYPES.flatMap(g => g.items);
+                const empty = { propertyTypes: allPropTypes, tradeTypes: [], keyword: "", priceMin: null, priceMax: null, areaMin: null, areaMax: null, yearMin: null, yearMax: null, floor: null, ownerRole: null, commissionType: null, themes: [], sido: null, sigungu: null, dong: null };
                 setTempFilters(empty);
                 setLocLabel("위치");
               }} 
