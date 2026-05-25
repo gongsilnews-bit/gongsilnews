@@ -448,6 +448,20 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
   useEffect(() => {
     setSortBy('newest');
   }, [activeTab]);
+
+  // Restore scroll position from sessionStorage on mount of MobileNewsClient
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedScroll = sessionStorage.getItem(`news_scroll_${activeTab}`);
+      if (savedScroll) {
+        // DOM 렌더링 후 위치 이동을 위해 약간의 딜레이 보정
+        setTimeout(() => {
+          window.scrollTo(0, parseInt(savedScroll, 10));
+          sessionStorage.removeItem(`news_scroll_${activeTab}`);
+        }, 150);
+      }
+    }
+  }, []);
   // Compute importantArticles at top level to maintain clean state
   const filteredBySection2 = useMemo(() => {
     return section2Tab

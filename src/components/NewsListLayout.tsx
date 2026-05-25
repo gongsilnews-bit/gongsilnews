@@ -63,14 +63,49 @@ function NewsListLayoutInner({ category, title, initialArticles, initialPopular,
     setSelectedSubCategory(searchParams.get("section2") || null);
   }, [searchParams]);
 
-  // 카테고리나 서브카테고리 전환 시 정렬 기준을 '최신순'으로 초기화
+  // Restore page, sort, and scroll position from sessionStorage on mount/category change
   useEffect(() => {
-    setSortBy('newest');
-  }, [category, selectedSubCategory]);
+    if (typeof window !== "undefined") {
+      const savedPage = sessionStorage.getItem(`pc_news_page_${category}`);
+      if (savedPage) {
+        setCurrentPage(parseInt(savedPage, 10));
+      }
+      const savedSort = sessionStorage.getItem(`pc_news_sort_${category}`);
+      if (savedSort === 'popular' || savedSort === 'newest') {
+        setSortBy(savedSort);
+      }
+      const savedScroll = sessionStorage.getItem(`pc_news_scroll_${category}`);
+      if (savedScroll) {
+        // Wait slightly for DOM to render
+        setTimeout(() => {
+          window.scrollTo(0, parseInt(savedScroll, 10));
+          sessionStorage.removeItem(`pc_news_scroll_${category}`);
+        }, 150);
+      }
+    }
+  }, [category]);
+
+  // Save current page state on change
+  useEffect(() => {
+    if (typeof window !== "undefined" && category) {
+      sessionStorage.setItem(`pc_news_page_${category}`, currentPage.toString());
+    }
+  }, [currentPage, category]);
+
+  // Save sort state on change
+  useEffect(() => {
+    if (typeof window !== "undefined" && category) {
+      sessionStorage.setItem(`pc_news_sort_${category}`, sortBy);
+    }
+  }, [sortBy, category]);
 
   const handleSubCategoryClick = (sub: string | null) => {
     setSelectedSubCategory(sub);
     setCurrentPage(1);
+    setSortBy('newest'); // 서브 카테고리 클릭 시 최신순으로 초기화
+    if (typeof window !== "undefined") {
+      sessionStorage.removeItem(`pc_news_scroll_${category}`);
+    }
     const params = new URLSearchParams(searchParams.toString());
     if (sub) {
       params.set("section2", sub);
@@ -504,7 +539,15 @@ function NewsListLayoutInner({ category, title, initialArticles, initialPopular,
                   </div>
                 )}
                 <div style={{ position: "relative" }}>
-                  <Link href={`/news/${article.article_no || article.id}`} style={{ textDecoration: "none", color: "inherit" }}>
+                  <Link 
+                    href={`/news/${article.article_no || article.id}`} 
+                    style={{ textDecoration: "none", color: "inherit" }}
+                    onClick={() => {
+                      if (typeof window !== "undefined") {
+                        sessionStorage.setItem(`pc_news_scroll_${category}`, window.scrollY.toString());
+                      }
+                    }}
+                  >
                     <div className="an-card">
                       {showImgArea && (
                         <div className="an-img" style={{ position: "relative", flexShrink: 0 }}>
@@ -595,7 +638,15 @@ function NewsListLayoutInner({ category, title, initialArticles, initialPopular,
                 <ul className="pop-list">
                   {initialPopular.length > 0 ? initialPopular.map((item, i) => (
                     <li key={item.id} className="pop-item">
-                      <Link href={`/news/${item.article_no || item.id}`} style={{ textDecoration: "none", color: "inherit", display: "flex", alignItems: "flex-start", gap: 8, width: "100%" }}>
+                      <Link 
+                        href={`/news/${item.article_no || item.id}`} 
+                        style={{ textDecoration: "none", color: "inherit", display: "flex", alignItems: "flex-start", gap: 8, width: "100%" }}
+                        onClick={() => {
+                          if (typeof window !== "undefined") {
+                            sessionStorage.setItem(`pc_news_scroll_${category}`, window.scrollY.toString());
+                          }
+                        }}
+                      >
                         <span className="pop-ranking">{i + 1}</span>
                         <span className="pop-title">{item.title}</span>
                       </Link>
