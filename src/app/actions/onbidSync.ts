@@ -431,14 +431,15 @@ export async function syncOnbidProperties(targetSido: string = "서울특별시"
         skipCount++;
       } else {
         successCount++;
-        // 5.5. 썸네일 이미지가 존재할 경우 vacancy_photos 테이블에 추가
+        // 5.5. 이미지가 존재할 경우 vacancy_photos 테이블에 추가 (ORIG_NM 고해상도 변환 주입)
         if (insertedVacancy?.id && item.thnlImgUrlAdr) {
           try {
+            const highResUrl = item.thnlImgUrlAdr.replace("downloadImageKind=THNL_NM", "downloadImageKind=ORIG_NM");
             await supabase
               .from("vacancy_photos")
               .insert({
                 vacancy_id: insertedVacancy.id,
-                url: item.thnlImgUrlAdr,
+                url: highResUrl,
                 sort_order: 1
               });
           } catch (imgErr: any) {
