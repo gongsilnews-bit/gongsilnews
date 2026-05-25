@@ -2360,7 +2360,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                           {isAuctionMode && (
                             <span style={{ display: "inline-block", fontSize: 11, color: "#fa5252", border: "1px solid #fa5252", padding: "1px 5px", borderRadius: 4, fontWeight: "bold" }}>
-                              {((prop as any).metadata?.cltrUsgSclsCtgrNm || "온비드")} 경매
+                              {((prop as any).metadata?.cltrUsgSclsCtgrNm || "온비드")} 공매
                             </span>
                           )}
                           {showCommission && !isAuctionMode && (prop.realtor_commission || prop.commission_type) && (
