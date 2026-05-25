@@ -80,6 +80,18 @@ export async function GET(req: Request) {
 
   const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
+  // ── 오늘 이미 작성된 기사 제목 목록 가져오기 (중복 방지) ──
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const { data: todayArticles } = await supabase
+    .from('articles')
+    .select('title, content')
+    .gte('created_at', todayStart.toISOString())
+    .order('created_at', { ascending: false });
+  
+  const todayTitles = (todayArticles || []).map(a => a.title).filter(Boolean);
+  const todayContents = (todayArticles || []).map(a => a.content || '').join(' ');
+
   for (const item of activeCategories) {
     try {
       const rssUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(item.keyword)}&hl=ko&gl=KR&ceid=KR:ko`;
@@ -95,9 +107,22 @@ export async function GET(req: Request) {
         return `[후보 ${index + 1}]\n제목: ${news.title}\n요약: ${news.contentSnippet || news.content || ''}\nURL: ${news.link || ''}\n`;
       }).join('\n');
 
+      // ── 원문 URL 기반 중복 체크 (이미 동일 출처로 작성한 기사가 있으면 스킵) ──
+      const candidateUrls = feed.items.slice(0, 10).map(n => n.link).filter(Boolean);
+      const allDuplicate = candidateUrls.every(url => todayContents.includes(url!));
+      if (allDuplicate && candidateUrls.length > 0) {
+        results.push({ category: item.section2, status: 'skipped (all URLs already used today)' });
+        continue;
+      }
+
+      // ── 오늘 작성된 기사 제목을 AI에게 전달하여 중복 주제 회피 ──
+      const existingTitlesContext = todayTitles.length > 0
+        ? `\n\n[⚠️ 오늘 이미 작성된 기사 제목 목록 - 아래 주제와 겹치는 뉴스는 절대 선택하지 마라]\n${todayTitles.map((t, i) => `${i + 1}. ${t}`).join('\n')}\n`
+        : '';
+
       // 에이전트(편집국장)에게 10개 던져주고 1개 골라서 쓰라고 요청
       const aiResult = await NewsArticleAgent.writeArticle({
-        sourceText: candidateNews,
+        sourceText: candidateNews + existingTitlesContext,
         category: item.section2
       });
 
