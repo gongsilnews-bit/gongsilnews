@@ -57,10 +57,16 @@ function NewsListLayoutInner({ category, title, initialArticles, initialPopular,
   const [categories, setCategories] = useState<any[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null | 'ALL'>('ALL');
   const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(searchParams.get("section2") || null);
+  const [sortBy, setSortBy] = useState<'newest' | 'popular'>('newest');
 
   useEffect(() => {
     setSelectedSubCategory(searchParams.get("section2") || null);
   }, [searchParams]);
+
+  // 카테고리나 서브카테고리 전환 시 정렬 기준을 '최신순'으로 초기화
+  useEffect(() => {
+    setSortBy('newest');
+  }, [category, selectedSubCategory]);
 
   const handleSubCategoryClick = (sub: string | null) => {
     setSelectedSubCategory(sub);
@@ -164,9 +170,17 @@ function NewsListLayoutInner({ category, title, initialArticles, initialPopular,
 
   const displayTitle = isBookmarkMode ? "📌 관심기사" : title;
 
+  // 정렬 필터 적용
+  const sortedArticles = React.useMemo(() => {
+    if (sortBy === 'popular') {
+      return [...displayArticles].sort((a, b) => (b.view_count || 0) - (a.view_count || 0));
+    }
+    return displayArticles;
+  }, [displayArticles, sortBy]);
+
   // 페이지네이션 계산
-  const totalPages = Math.max(1, Math.ceil(displayArticles.length / ITEMS_PER_PAGE));
-  const pagedArticles = displayArticles.slice(
+  const totalPages = Math.max(1, Math.ceil(sortedArticles.length / ITEMS_PER_PAGE));
+  const pagedArticles = sortedArticles.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
@@ -429,6 +443,50 @@ function NewsListLayoutInner({ category, title, initialArticles, initialPopular,
                 <div style={{ fontSize: 48, marginBottom: 16 }}>📌</div>
                 <div style={{ fontWeight: 700, marginBottom: 8 }}>저장한 관심기사가 없습니다</div>
                 <div style={{ fontSize: 13, color: "#aaa" }}>기사를 읽을 때 북마크(🔖) 버튼을 눌러 저장하세요</div>
+              </div>
+            )}
+
+            {/* 정렬 필터 바 (모노크롬 미니멀 스타일) */}
+            {displayArticles.length > 0 && (
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px 12px", backgroundColor: "#fff", borderBottom: "1px solid #f3f4f6", marginBottom: "20px" }}>
+                <span style={{ fontSize: "14px", fontWeight: 600, color: "#71717a", letterSpacing: "-0.3px" }}>
+                  전체 <span style={{ color: "#18181b", fontWeight: 700 }}>{displayArticles.length}</span>건
+                </span>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  <button 
+                    onClick={() => { setSortBy('newest'); setCurrentPage(1); }}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      fontSize: "14px",
+                      fontWeight: sortBy === 'newest' ? 700 : 500,
+                      color: sortBy === 'newest' ? "#18181b" : "#a1a1aa",
+                      cursor: "pointer",
+                      padding: "2px 0",
+                      transition: "all 0.15s",
+                      letterSpacing: "-0.3px"
+                    }}
+                  >
+                    최신순
+                  </button>
+                  <span style={{ fontSize: "12px", color: "#e4e4e7" }}>|</span>
+                  <button 
+                    onClick={() => { setSortBy('popular'); setCurrentPage(1); }}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      fontSize: "14px",
+                      fontWeight: sortBy === 'popular' ? 700 : 500,
+                      color: sortBy === 'popular' ? "#18181b" : "#a1a1aa",
+                      cursor: "pointer",
+                      padding: "2px 0",
+                      transition: "all 0.15s",
+                      letterSpacing: "-0.3px"
+                    }}
+                  >
+                    인기순
+                  </button>
+                </div>
               </div>
             )}
 

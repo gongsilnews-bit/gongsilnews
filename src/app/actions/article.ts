@@ -221,6 +221,7 @@ export async function getArticles(filters?: {
         .from("articles")
         .select("id, article_no, status, section1, section2, title, subtitle, content, author_name, author_id, published_at, created_at, updated_at, is_deleted, thumbnail_url, view_count, lat, lng, location_name, youtube_url, is_important, is_headline, reject_reason, edit_count, article_keywords(keyword)")
         .eq("is_deleted", false)
+        .order("published_at", { ascending: false, nullsFirst: false })
         .order("created_at", { ascending: false });
 
       if (filters?.status) query = query.eq("status", filters.status);
@@ -276,6 +277,7 @@ export async function searchArticles(query: string) {
       .eq("is_deleted", false)
       .eq("status", "APPROVED")
       .or(`title.ilike.${searchPattern},subtitle.ilike.${searchPattern},content.ilike.${searchPattern}`)
+      .order("published_at", { ascending: false, nullsFirst: false })
       .order("created_at", { ascending: false })
       .limit(100);
 
@@ -295,6 +297,7 @@ export async function getMyArticles(authorId: string) {
       .select("id, article_no, status, section1, section2, title, subtitle, content, author_name, author_id, published_at, created_at, updated_at, is_deleted, thumbnail_url, view_count, lat, lng, location_name, youtube_url, is_important, is_headline, reject_reason, edit_count, article_keywords(keyword)")
       .eq("is_deleted", false)
       .eq("author_id", authorId)
+      .order("published_at", { ascending: false, nullsFirst: false })
       .order("created_at", { ascending: false });
 
     if (error) return { success: false, error: error.message };
@@ -460,6 +463,10 @@ export async function adminUpdateArticleStatus(articleIds: string[], status: 'AP
     if (reject_reason) {
       updateData.reject_reason = reject_reason;
     }
+    // 승인(APPROVED) 처리할 때 발행일(published_at)을 승인 시점(현재시간)으로 동기화
+    if (status === 'APPROVED') {
+      updateData.published_at = new Date().toISOString();
+    }
 
     const { error } = await supabase
       .from("articles")
@@ -469,7 +476,9 @@ export async function adminUpdateArticleStatus(articleIds: string[], status: 'AP
     if (error) {
       if (error.message.includes("reject_reason")) {
         console.warn("❌ reject_reason column missing in DB. Ignoring reject_reason.");
-        const { error: fallbackError } = await supabase.from("articles").update({ status }).in("id", articleIds);
+        const fallbackUpdateData = { ...updateData };
+        delete fallbackUpdateData.reject_reason;
+        const { error: fallbackError } = await supabase.from("articles").update(fallbackUpdateData).in("id", articleIds);
         if (fallbackError) return { success: false, error: fallbackError.message };
         
         // @ts-ignore

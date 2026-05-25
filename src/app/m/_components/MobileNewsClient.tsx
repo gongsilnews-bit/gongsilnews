@@ -430,6 +430,12 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedVacancyId, setSelectedVacancyId] = useState<string | null>(null);
   const [section2Tab, setSection2Tab] = useState<string>(searchParams.get("section2") || "");
+  const [sortBy, setSortBy] = useState<'newest' | 'popular'>('newest');
+
+  // 탭 전환 시 정렬 기준을 '최신순'으로 초기화
+  useEffect(() => {
+    setSortBy('newest');
+  }, [activeTab]);
   // Compute importantArticles at top level to maintain clean state
   const filteredBySection2 = useMemo(() => {
     return section2Tab
@@ -1661,6 +1667,9 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
           {/* 실 기사 리스트 */}
           {searchTab === 'article' && (() => {
             const regularArticles = filteredBySection2.filter(a => !a.is_important);
+            const sortedRegularArticles = sortBy === 'popular'
+              ? [...regularArticles].sort((a, b) => (b.view_count || 0) - (a.view_count || 0))
+              : regularArticles;
             
             const currentCatLabel = section2Tab || (CATEGORIES.find(c => c.key === activeTab)?.label || "공실뉴스");
             const popularArticles = [...filteredBySection2]
@@ -1741,8 +1750,50 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                   </div>
                 )}
                 
+                {/* 일반 뉴스 리스트 정렬 필터 (모노크롬 미니멀 스타일) */}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px 10px", backgroundColor: "#fff", borderBottom: "1px solid #f3f4f6" }}>
+                  <span style={{ fontSize: "13px", fontWeight: 600, color: "#71717a", letterSpacing: "-0.3px" }}>
+                    전체 <span style={{ color: "#18181b", fontWeight: 700 }}>{sortedRegularArticles.length}</span>건
+                  </span>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <button 
+                      onClick={() => setSortBy('newest')}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        fontSize: "13px",
+                        fontWeight: sortBy === 'newest' ? 700 : 500,
+                        color: sortBy === 'newest' ? "#18181b" : "#a1a1aa",
+                        cursor: "pointer",
+                        padding: "2px 0",
+                        transition: "all 0.15s",
+                        letterSpacing: "-0.3px"
+                      }}
+                    >
+                      최신순
+                    </button>
+                    <span style={{ fontSize: "11px", color: "#e4e4e7" }}>|</span>
+                    <button 
+                      onClick={() => setSortBy('popular')}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        fontSize: "13px",
+                        fontWeight: sortBy === 'popular' ? 700 : 500,
+                        color: sortBy === 'popular' ? "#18181b" : "#a1a1aa",
+                        cursor: "pointer",
+                        padding: "2px 0",
+                        transition: "all 0.15s",
+                        letterSpacing: "-0.3px"
+                      }}
+                    >
+                      인기순
+                    </button>
+                  </div>
+                </div>
+
                 {/* 일반 뉴스 리스트 */}
-                {regularArticles.map((a: any) => (
+                {sortedRegularArticles.map((a: any) => (
                   <ArticleRow 
                     key={a.id}
                     a={a}
