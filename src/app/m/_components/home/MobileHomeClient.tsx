@@ -34,6 +34,19 @@ function formatPrice(v: any): string {
   return "-";
 }
 
+const extractYoutubeId = (url?: string, html?: string): string | null => {
+  const rx = /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([\w-]{11})/;
+  if (url) {
+    const m = url.match(rx);
+    if (m) return m[1];
+  }
+  if (html) {
+    const m = html.match(rx);
+    if (m) return m[1];
+  }
+  return null;
+};
+
 interface Props {
   vacancies: any[];
   headlineArticles: any[];
@@ -208,6 +221,11 @@ export default function MobileHomeClient(props: Props) {
                 {hero.thumbnail_url
                   ? <img src={hero.thumbnail_url} alt={hero.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   : <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg,#1a2e50,#2d4a7a)" }} />}
+                {!!extractYoutubeId(hero.youtube_url, hero.content) && (
+                  <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 48, height: 48, background: "rgba(0,0,0,0.5)", borderRadius: "50%", border: "2px solid white", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 3 }}>
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="white" style={{ marginLeft: "1.5px" }}><path d="M8 5v14l11-7z"/></svg>
+                  </div>
+                )}
                 <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top,rgba(0,0,0,0.85) 0%,rgba(0,0,0,0.2) 55%,transparent 100%)", pointerEvents: "none" }} />
                 <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "16px", zIndex: 2, pointerEvents: "none" }}>
                   <span style={{ background: "#dc2626", color: "#fff", fontSize: 12, fontWeight: 700, padding: "3px 8px", borderRadius: 3, display: "inline-block", marginBottom: 8, letterSpacing: "0.5px" }}>HEADLINE</span>
@@ -408,6 +426,11 @@ function NewsSection({ title, href, articles }: { title: string; href: string; a
           {main.thumbnail_url && (
             <div style={{ width: 104, height: 80, borderRadius: 8, overflow: "hidden", flexShrink: 0, background: "#e5e7eb", position: "relative" }}>
               <Image src={main.thumbnail_url} alt="" fill style={{ objectFit: "cover" }} sizes="104px" />
+              {!!extractYoutubeId(main.youtube_url, main.content) && (
+                <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 32, height: 32, background: "rgba(0,0,0,0.4)", borderRadius: "50%", border: "2px solid white", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 5 }}>
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="white" style={{ marginLeft: "1.5px" }}><path d="M8 5v14l11-7z"/></svg>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -420,6 +443,11 @@ function NewsSection({ title, href, articles }: { title: string; href: string; a
           {a.thumbnail_url && (
             <div style={{ width: 104, height: 80, borderRadius: 8, overflow: "hidden", flexShrink: 0, background: "#e5e7eb", position: "relative" }}>
               <Image src={a.thumbnail_url} alt="" fill style={{ objectFit: "cover" }} sizes="104px" />
+              {!!extractYoutubeId(a.youtube_url, a.content) && (
+                <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 32, height: 32, background: "rgba(0,0,0,0.4)", borderRadius: "50%", border: "2px solid white", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 5 }}>
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="white" style={{ marginLeft: "1.5px" }}><path d="M8 5v14l11-7z"/></svg>
+                </div>
+              )}
             </div>
           )}
         </Link>
