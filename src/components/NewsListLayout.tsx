@@ -449,14 +449,8 @@ function NewsListLayoutInner({ category, title, initialArticles, initialPopular,
             {/* 정렬 필터 바 (모노크롬 미니멀 스타일) */}
             {displayArticles.length > 0 && (
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px 12px", backgroundColor: "#fff", borderBottom: "1px solid #f3f4f6", marginBottom: "20px" }}>
-                <span style={{ fontSize: "14px", fontWeight: 600, color: "#71717a", letterSpacing: "-0.3px", display: "flex", alignItems: "center", gap: "8px" }}>
-                  <span style={{ color: "#18181b", fontWeight: 700 }}>
-                    {displayTitle} <span style={{ color: "#a1a1aa", fontWeight: 400, margin: "0 4px" }}>&gt;</span> {selectedSubCategory || "전체"}
-                  </span>
-                  <span style={{ color: "#e4e4e7" }}>|</span>
-                  <span>
-                    전체 <span style={{ color: "#18181b", fontWeight: 700 }}>{displayArticles.length}</span>건
-                  </span>
+                <span style={{ fontSize: "14px", fontWeight: 700, color: "#18181b", letterSpacing: "-0.3px" }}>
+                  {displayTitle} <span style={{ color: "#a1a1aa", fontWeight: 400, margin: "0 4px" }}>&gt;</span> {selectedSubCategory || "전체"}
                 </span>
                 <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                   <button 
