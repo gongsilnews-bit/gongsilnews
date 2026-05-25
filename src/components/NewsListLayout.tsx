@@ -51,13 +51,19 @@ function NewsListLayoutInner({ category, title, initialArticles, initialPopular,
   const searchParams = useSearchParams();
   const pathname = usePathname();
 
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(() => {
+    const pageVal = searchParams.get("page");
+    return pageVal ? parseInt(pageVal, 10) : 1;
+  });
   const [bookmarkIds, setBookmarkIds] = useState<string[]>([]);
   const [bookmarks, setBookmarks] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null | 'ALL'>('ALL');
   const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(searchParams.get("section2") || null);
-  const [sortBy, setSortBy] = useState<'newest' | 'popular'>('newest');
+  const [sortBy, setSortBy] = useState<'newest' | 'popular'>(() => {
+    const sortVal = searchParams.get("sort");
+    return (sortVal === 'popular' || sortVal === 'newest') ? sortVal : 'newest';
+  });
 
   useEffect(() => {
     setSelectedSubCategory(searchParams.get("section2") || null);

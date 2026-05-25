@@ -1,6 +1,8 @@
 import NewsListLayout from "@/components/NewsListLayout";
 import { getArticles } from "@/app/actions/article";
 
+export const dynamic = "force-dynamic";
+
 export default async function NewsMarketingPage() {
   // Fetch all articles for section1 = 'AI마케팅'
   const [articlesRes, popularRes, importantRes] = await Promise.all([

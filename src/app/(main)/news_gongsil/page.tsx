@@ -1,6 +1,8 @@
 import NewsListLayout from "@/components/NewsListLayout";
 import { getArticles } from "@/app/actions/article";
 
+export const dynamic = "force-dynamic";
+
 export default async function NewsLocalPage() {
   const [articlesRes, popularRes, importantRes] = await Promise.all([
     getArticles({ status: "APPROVED", section1: "공실뉴스" }),
