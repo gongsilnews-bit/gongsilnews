@@ -207,9 +207,13 @@ export async function getVacancies(options?: {
       const from = page * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
       
+      const selectFields = options?.all
+        ? 'id, vacancy_no, status, property_type, sub_category, trade_type, deposit, monthly_rent, maintenance_fee, commission_type, supply_m2, supply_py, exclusive_m2, exclusive_py, room_count, bath_count, direction, current_floor, total_floor, parking, move_in_date, sido, sigungu, dong, detail_addr, building_name, lat, lng, created_at, owner_id, owner_role, realtor_commission, owner_relation, approval_year, total_units, options, themes, metadata, members!vacancies_owner_id_fkey(name, email, role, phone, profile_image_url, agencies(name, leader_name, phone, address)), vacancy_photos(url, sort_order)'
+        : '*, members!vacancies_owner_id_fkey(name, email, role, phone, sns_links, profile_image_url, agencies(*)), vacancy_photos(url, sort_order)';
+
       let pageQuery = supabase
         .from('vacancies')
-        .select('*, members!vacancies_owner_id_fkey(name, email, role, phone, sns_links, profile_image_url, agencies(*)), vacancy_photos(url, sort_order)')
+        .select(selectFields)
         .order('created_at', { ascending: false })
         .range(from, to);
 
