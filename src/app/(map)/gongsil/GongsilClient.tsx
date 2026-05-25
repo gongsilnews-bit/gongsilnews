@@ -107,6 +107,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   const [showShareDropdown, setShowShareDropdown] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isAuctionMode, setIsAuctionMode] = useState(false);
+  const [activeMode, setActiveMode] = useState<"공실" | "분양" | "경매">("공실");
   const shareDropdownRef = useRef<HTMLDivElement>(null);
 
   const [wishTab, setWishTab] = useState<"wish" | "recent">("wish");
@@ -2742,6 +2743,125 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                handleLocationUnavailable();
             }
           }}>내 위치에서 검색</button>
+
+          {/* 3대 플로팅 모드 필터 컨트롤러 (대표님 천재적 기획안) */}
+          <div style={{
+            position: "absolute",
+            bottom: 25,
+            left: 20,
+            display: "flex",
+            flexDirection: "column",
+            gap: 8,
+            zIndex: 99999
+          }}>
+            {/* 🔵 실시간 공실 버튼 */}
+            <button
+              onClick={() => {
+                setActiveMode("공실");
+              }}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                padding: "10px 18px",
+                borderRadius: "30px",
+                background: activeMode === "공실" ? "linear-gradient(135deg, #1a73e8 0%, #1e3c72 100%)" : "rgba(255, 255, 255, 0.95)",
+                color: activeMode === "공실" ? "#fff" : "#1a73e8",
+                border: activeMode === "공실" ? "2px solid #fff" : "2px solid #1a73e8",
+                fontSize: "14px",
+                fontWeight: 800,
+                cursor: "pointer",
+                boxShadow: "0 4px 15px rgba(0,0,0,0.15)",
+                transition: "all 0.2s ease-in-out",
+                minWidth: "135px",
+                justifyContent: "flex-start",
+                letterSpacing: "-0.5px"
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-2px)";
+                e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.25)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "0 4px 15px rgba(0,0,0,0.15)";
+              }}
+            >
+              <span style={{ fontSize: "16px" }}>🏢</span>
+              <span>공실정보</span>
+            </button>
+
+            {/* 🟢 신축/분양 버튼 */}
+            <button
+              onClick={() => {
+                setActiveMode("분양");
+              }}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                padding: "10px 18px",
+                borderRadius: "30px",
+                background: activeMode === "분양" ? "linear-gradient(135deg, #2ecc71 0%, #27ae60 100%)" : "rgba(255, 255, 255, 0.95)",
+                color: activeMode === "분양" ? "#fff" : "#2ecc71",
+                border: activeMode === "분양" ? "2px solid #fff" : "2px solid #2ecc71",
+                fontSize: "14px",
+                fontWeight: 800,
+                cursor: "pointer",
+                boxShadow: "0 4px 15px rgba(0,0,0,0.15)",
+                transition: "all 0.2s ease-in-out",
+                minWidth: "135px",
+                justifyContent: "flex-start",
+                letterSpacing: "-0.5px"
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-2px)";
+                e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.25)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "0 4px 15px rgba(0,0,0,0.15)";
+              }}
+            >
+              <span style={{ fontSize: "16px" }}>🏗️</span>
+              <span>신축/분양</span>
+            </button>
+
+            {/* 🟠 경/공매 버튼 */}
+            <button
+              onClick={() => {
+                setActiveMode("경매");
+              }}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                padding: "10px 18px",
+                borderRadius: "30px",
+                background: activeMode === "경매" ? "linear-gradient(135deg, #ff8c00 0%, #e52d27 100%)" : "rgba(255, 255, 255, 0.95)",
+                color: activeMode === "경매" ? "#fff" : "#ff8c00",
+                border: activeMode === "경매" ? "2px solid #fff" : "2px solid #ff8c00",
+                fontSize: "14px",
+                fontWeight: 800,
+                cursor: "pointer",
+                boxShadow: "0 4px 15px rgba(0,0,0,0.15)",
+                transition: "all 0.2s ease-in-out",
+                minWidth: "135px",
+                justifyContent: "flex-start",
+                letterSpacing: "-0.5px"
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-2px)";
+                e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.25)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "0 4px 15px rgba(0,0,0,0.15)";
+              }}
+            >
+              <span style={{ fontSize: "16px" }}>🔨</span>
+              <span>경/공매</span>
+            </button>
+          </div>
           
           {/* 경공매 레이어 토글 버튼 (부동산플래닛 실거래가 스타일) */}
           <button 
