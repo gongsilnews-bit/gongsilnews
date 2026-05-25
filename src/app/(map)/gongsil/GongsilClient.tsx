@@ -239,11 +239,6 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   const [mapCenterRegion, setMapCenterRegion] = useState<{ sido: string; gugun: string; dong: string } | null>(null);
   const [visibleCount, setVisibleCount] = useState(30);
 
-  // Reset pagination whenever filters, map bounds, or selected cluster changes to keep map responsive
-  useEffect(() => {
-    setVisibleCount(30);
-  }, [filteredVacancies, selectedClusterIds, mapBounds]);
-
   // Set initial data and ref
   useEffect(() => {
     if (initialVacancies && initialVacancies.length > 0) {
@@ -447,6 +442,11 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
 
     return list;
   }, [dbVacancies, activeCategory, activePills, filterTradeTypes, filterPriceMin, filterPriceMax, filterAreaMin, filterAreaMax, filterMaintIdx, filterRoomCount, filterBathCount, filterDirection, filterYearMin, filterYearMax, filterUnitMin, filterUnitMax, filterOwnerRole, filterCommissionType, filterThemes, wishTab, recentViews, isAuctionMode]);
+
+  // Reset pagination whenever filters, map bounds, or selected cluster changes to keep map responsive
+  useEffect(() => {
+    setVisibleCount(30);
+  }, [filteredVacancies, selectedClusterIds, mapBounds]);
 
   // ── 지도 범위 / 클러스터 선택 적용 ──
   const displayVacancies = React.useMemo(() => {
