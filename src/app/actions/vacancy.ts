@@ -197,37 +197,64 @@ export async function getVacancies(options?: {
     // 임시 원복: 컬럼 오류 방지를 위해 전체 조회( * )로 되돌림
     const selectedColumns = 'id, vacancy_no, status, property_type, sub_category, trade_type, deposit, monthly_rent, maintenance_fee, commission_type, supply_m2, supply_py, exclusive_m2, exclusive_py, room_count, bath_count, direction, current_floor, total_floor, parking, move_in_date, sido, sigungu, dong, detail_addr, building_name, lat, lng, created_at, owner_id, owner_role, realtor_commission, owner_relation, client_name, client_phone, approval_year, total_units, options, members!vacancies_owner_id_fkey(name, email, role, phone, sns_links, agencies(*)), vacancy_photos(url, sort_order)';
 
-    let query = supabase
-      .from('vacancies')
-      .select('*, members!vacancies_owner_id_fkey(name, email, role, phone, sns_links, profile_image_url, agencies(*)), vacancy_photos(url, sort_order)')
-      .order('created_at', { ascending: false });
+    // Supabase max_rows=1000 서버 제한 우회: 1000건씩 페이지네이션하여 전체 데이터 조합
+    const PAGE_SIZE = 1000;
+    let allData: any[] = [];
+    let page = 0;
+    let hasMore = true;
 
-    // 역할별 필터
-    if (options?.ownerId && !options?.all) {
-      const { data: user } = await supabase.from('members').select('role').eq('id', options.ownerId).single();
-      if (user?.role !== 'SUPER_ADMIN' && user?.role !== 'ADMIN' && user?.role !== '최고관리자') {
-        query = query.eq('owner_id', options.ownerId);
+    while (hasMore) {
+      const from = page * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+      
+      let pageQuery = supabase
+        .from('vacancies')
+        .select('*, members!vacancies_owner_id_fkey(name, email, role, phone, sns_links, profile_image_url, agencies(*)), vacancy_photos(url, sort_order)')
+        .order('created_at', { ascending: false })
+        .range(from, to);
+
+      // 역할별 필터
+      if (options?.ownerId && !options?.all) {
+        const { data: user } = await supabase.from('members').select('role').eq('id', options.ownerId).single();
+        if (user?.role !== 'SUPER_ADMIN' && user?.role !== 'ADMIN' && user?.role !== '최고관리자') {
+          pageQuery = pageQuery.eq('owner_id', options.ownerId);
+        }
+      }
+
+      // 상태 필터 (삭제된 것 제외)
+      if (options?.status) {
+        pageQuery = pageQuery.eq('status', options.status);
+      } else {
+        pageQuery = pageQuery.neq('status', 'DELETED');
+      }
+
+      const { data, error } = await pageQuery;
+      if (error) {
+        console.error("DEBUG SUPABASE ERROR:", error);
+        return { success: false, error: error.message };
+      }
+
+      if (data && data.length > 0) {
+        allData = allData.concat(data);
+        hasMore = data.length === PAGE_SIZE;
+        page++;
+      } else {
+        hasMore = false;
       }
     }
 
-    // 상태 필터 (삭제된 것 제외)
-    if (options?.status) {
-      query = query.eq('status', options.status);
-    } else {
-      query = query.neq('status', 'DELETED');
-    }
-
-    const { data, error } = await query;
-    if (error) {
-      console.error("DEBUG SUPABASE ERROR:", error);
-      return { success: false, error: error.message };
-    }
+    console.log(`📊 getVacancies: 총 ${allData.length}건 로드 (${page}페이지)`);
     
-    // Lazy Loading 최적화: 브라우저 전송 시 병목을 막기 위해 무거운 데이터 제거
-    // (상세 내용은 getVacancyDetail 호출로 조회됩니다.)
-    const lightData = data?.map(v => {
-      const { infrastructure, description, ...rest } = v;
-      return rest;
+    const lightData = allData.map(v => {
+      const { infrastructure, description, metadata, ...rest } = v;
+      const lightMetadata = metadata ? {
+        cltrUsgLclsCtgrNm: metadata.cltrUsgLclsCtgrNm,
+        cltrUsgMclsCtgrNm: metadata.cltrUsgMclsCtgrNm,
+        cltrUsgSclsCtgrNm: metadata.cltrUsgSclsCtgrNm,
+        cltrMngNo: metadata.cltrMngNo,
+        bldSqms: metadata.bldSqms,
+      } : {};
+      return { ...rest, metadata: lightMetadata };
     });
 
     return { success: true, data: lightData || [] };
@@ -360,8 +387,15 @@ export async function getVacanciesForMap(options?: any) {
     if (error) return { success: false, error: error.message };
 
     const lightData = data?.map(v => {
-      const { infrastructure, description, ...rest } = v;
-      return rest;
+      const { infrastructure, description, metadata, ...rest } = v;
+      const lightMetadata = metadata ? {
+        cltrUsgLclsCtgrNm: metadata.cltrUsgLclsCtgrNm,
+        cltrUsgMclsCtgrNm: metadata.cltrUsgMclsCtgrNm,
+        cltrUsgSclsCtgrNm: metadata.cltrUsgSclsCtgrNm,
+        cltrMngNo: metadata.cltrMngNo,
+        bldSqms: metadata.bldSqms,
+      } : {};
+      return { ...rest, metadata: lightMetadata };
     });
 
     return { success: true, data: lightData || [] };

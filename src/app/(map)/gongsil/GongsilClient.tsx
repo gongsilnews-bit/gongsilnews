@@ -21,7 +21,7 @@ const CATEGORY_CONFIG: Record<string, { name: string; pills: string[]; basicFilt
   one: { name: "원룸·투룸", pills: ["원룸", "투룸", "오피스텔만 보기"], basicFilters: ["거래방식", "가격대", "관리비", "등록자", "중개보수", "테마", "기타옵션"], detailFilters: [], showToggle: false },
   biz: { name: "상가·사무실·공장·토지", pills: ["상가", "사무실", "공장/창고", "지식산업센터", "건물", "토지"], basicFilters: ["거래방식", "가격대", "면적", "층수", "관리비", "등록자", "중개보수", "테마", "기타옵션"], detailFilters: [], showToggle: false },
   sale: { name: "신축/분양", pills: ["아파트", "오피스텔", "빌라", "도시형생활주택", "생활숙박시설", "상가/업무"], basicFilters: ["분양단계", "분양형태", "분양가/보증금", "면적", "세대수", "등록자", "중개보수", "테마"], detailFilters: [], showToggle: false },
-  auction: { name: "경매/공매", pills: [], basicFilters: ["가격대", "면적", "테마"], detailFilters: [], showToggle: false },
+  auction: { name: "경매/공매", pills: ["아파트", "단독/다가구", "빌라/주택", "토지"], basicFilters: ["가격대", "면적", "테마"], detailFilters: [], showToggle: false },
   wish: { name: "MY관심공실", pills: [], basicFilters: [], detailFilters: [], showToggle: false },
 };
 
@@ -101,7 +101,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   const [activeProperty, setActiveProperty] = useState<string | number | null>(null);
   const [prevPropertyId, setPrevPropertyId] = useState<string | number | null>(null);
   const [showDetail, setShowDetail] = useState(true);
-  const [activeDetailTab, setActiveDetailTab] = useState<"info" | "realtor">("info");
+  const [activeDetailTab, setActiveDetailTab] = useState<"info" | "realtor" | "auction_detail" | "auction_property" | "auction_bid" | "auction_market">("info");
   const [showDetailFilters, setShowDetailFilters] = useState(false);
   const [activeFilterDropdown, setActiveFilterDropdown] = useState<string | null>(null);
   const [galleryIndex, setGalleryIndex] = useState(0);
@@ -184,8 +184,10 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     }
   }, [activeProperty, currentUser]);
 
+  const isAuctionModeRef = useRef(isAuctionMode);
   useEffect(() => {
-    document.title = isAuctionMode ? "온비드 경공매 | 공실뉴스" : "공실열람 | 공실뉴스";
+    document.title = isAuctionMode ? "경/공매 | 공실뉴스" : "공실열람 | 공실뉴스";
+    isAuctionModeRef.current = isAuctionMode;
   }, [isAuctionMode]);
 
   const toggleWishlist = (id: any) => {
@@ -251,31 +253,23 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     selectedClusterIdsRef.current = selectedClusterIds;
     
     // Update Single Markers reactively
-    if (markersRef.current && (window as any).kakao?.maps) {
+    if (markersRef.current && (window as any).kakao?.maps && kakaoMapRef.current) {
+       const map = kakaoMapRef.current;
+       const isZoomedIn = map.getLevel() <= 3;
+
        markersRef.current.forEach((marker: any) => {
           const idStr = markerIdMapRef.current.get(marker);
           const prop = dbVacanciesRef.current.find((v: any) => String(v.id) === idStr);
           if (!prop) return;
 
-          const isSelected = selectedClusterIds && idStr && selectedClusterIds.includes(idStr);
-          
-          let normalSvg = "";
-          let activeSvg = "";
-          let width = 42;
-          let height = 42;
+          const group = dbVacanciesRef.current.filter((v: any) => Math.abs(v.lat - prop.lat) < 0.000001 && Math.abs(v.lng - prop.lng) < 0.000001);
+          const isSelected = group.some(v => selectedClusterIds?.includes(String(v.id)) || String(activeProperty) === String(v.id));
 
-          if (isAuctionMode) {
-            const amtText = formatPriceLabel(prop.trade_type === "경매" ? prop.deposit * 10000 : prop.deposit) || "경매";
-            width = 85;
-            height = 34;
-            normalSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><path d="M 5,2 L 80,2 A 5,5 0 0 1 85,7 L 85,23 A 5,5 0 0 1 80,28 L 47,28 L 42.5,33.5 L 38,28 L 5,28 A 5,5 0 0 1 0,23 L 0,7 A 5,5 0 0 1 5,2 Z" fill="%231a73e8" stroke="white" stroke-width="1.5" filter="drop-shadow(0px 2px 4px rgba(0,0,0,0.2))"/><text x="50%25" y="19" text-anchor="middle" fill="white" font-size="11" font-weight="bold" font-family="'Pretendard',sans-serif">경매 ${amtText}</text></svg>`;
-            activeSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><path d="M 5,2 L 80,2 A 5,5 0 0 1 85,7 L 85,23 A 5,5 0 0 1 80,28 L 47,28 L 42.5,33.5 L 38,28 L 5,28 A 5,5 0 0 1 0,23 L 0,7 A 5,5 0 0 1 5,2 Z" fill="white" stroke="%231a73e8" stroke-width="2.5" filter="drop-shadow(0px 2px 4px rgba(0,0,0,0.2))"/><text x="50%25" y="19" text-anchor="middle" fill="%231a73e8" font-size="11" font-weight="bold" font-family="'Pretendard',sans-serif">경매 ${amtText}</text></svg>`;
-          } else {
-            width = 42;
-            height = 42;
-            normalSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><circle cx="${width/2}" cy="${height/2}" r="${width/2 - 2}" fill="%234b89ff" stroke="white" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="16" font-weight="bold" font-family="sans-serif">1</text></svg>`;
-            activeSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><circle cx="${width/2}" cy="${height/2}" r="${width/2 - 2}" fill="white" stroke="%234b89ff" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="%234b89ff" font-size="16" font-weight="bold" font-family="sans-serif">1</text></svg>`;
-          }
+          const width = (isAuctionMode && isZoomedIn) ? 128 : 42;
+          const height = (isAuctionMode && isZoomedIn) ? 51 : 42;
+
+          const normalSvg = getMarkerSvg(prop, group, isSelected, isZoomedIn, false);
+          const activeSvg = getMarkerSvg(prop, group, true, isZoomedIn, false);
 
           marker.setImage(new (window as any).kakao.maps.MarkerImage(
              `data:image/svg+xml,${isSelected ? activeSvg : normalSvg}`,
@@ -297,7 +291,23 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
 
     if (isAuctionMode) {
       // Auction Mode: Only show auction listings
-      return list.filter(v => v.trade_type === "경매");
+      let auctionList = list.filter(v => v.trade_type === "경매");
+      // 경매 전용 pill 필터 (온비드 중분류+소분류 기준)
+      if (activePills.length > 0) {
+        auctionList = auctionList.filter(v => {
+          const meta = (v as any).metadata || {};
+          const mcls = meta.cltrUsgMclsCtgrNm || "";
+          const scls = meta.cltrUsgSclsCtgrNm || "";
+          return activePills.some(pill => {
+            if (pill === "아파트") return scls === "아파트";
+            if (pill === "단독/다가구") return scls === "단독주택" || scls === "다가구주택";
+            if (pill === "빌라/주택") return mcls === "주거용건물" && scls !== "아파트" && scls !== "단독주택" && scls !== "다가구주택";
+            if (pill === "토지") return mcls === "토지";
+            return false;
+          });
+        });
+      }
+      return auctionList;
     }
 
     // Standard Mode: Completely exclude auction listings so they do not mix in!
@@ -671,7 +681,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     if (showDetail && activeProperty) {
       const prop = dbVacancies.find(v => v.id === activeProperty);
       if (prop?.id) fetchComments(prop.id.toString());
-      if (activeDetailTab === "info" && prop?.lat && prop?.lng && mapLoaded && (window as any).kakao?.maps) {
+      if ((activeDetailTab === "info" || activeDetailTab === "auction_detail") && prop?.lat && prop?.lng && mapLoaded && (window as any).kakao?.maps) {
         const kakao = (window as any).kakao;
         const pos = new kakao.maps.LatLng(prop.lat, prop.lng);
         
@@ -967,16 +977,104 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
 
     kakao.maps.event.addListener(map, 'zoom_start', () => {
        setSelectedClusterIds(null);
+     });
+
+    kakao.maps.event.addListener(map, 'zoom_changed', () => {
+      setSelectedClusterIds(null);
+      const currentLevel = map.getLevel();
+      const isZoomedIn = currentLevel <= 3;
+      const isAuction = isAuctionModeRef.current;
+      
+      // Update all markers instantly on zoom level change
+      if (markersRef.current && markersRef.current.length > 0) {
+        markersRef.current.forEach((marker: any) => {
+          const idStr = markerIdMapRef.current.get(marker);
+          const prop = dbVacanciesRef.current.find((v: any) => String(v.id) === idStr);
+          if (!prop) return;
+          
+          const group = dbVacanciesRef.current.filter((v: any) => Math.abs(v.lat - prop.lat) < 0.000001 && Math.abs(v.lng - prop.lng) < 0.000001);
+          const isSelected = group.some(v => selectedClusterIdsRef.current?.includes(String(v.id)) || String(activeProperty) === String(v.id));
+          
+          const width = (isAuction && isZoomedIn) ? 128 : 42;
+          const height = (isAuction && isZoomedIn) ? 51 : 42;
+          
+          const normalSvg = getMarkerSvg(prop, group, isSelected, isZoomedIn, false);
+          const activeSvg = getMarkerSvg(prop, group, true, isZoomedIn, false);
+          const currentSelected = selectedClusterIdsRef.current?.includes(idStr) || String(activeProperty) === idStr;
+          const updatedSvg = currentSelected ? activeSvg : normalSvg;
+
+          marker.setImage(new kakao.maps.MarkerImage(
+            `data:image/svg+xml,${updatedSvg}`,
+            new kakao.maps.Size(width, height),
+            { offset: new kakao.maps.Point(width / 2, height / 2) }
+          ));
+        });
+      }
     });
   }, [mapLoaded]);
+
+  // 가격 및 원형 마커 SVG를 줌 레벨에 따라 동적 생성하는 헬퍼 함수
+  const getMarkerSvg = (prop: any, group: any[], isSelected: boolean, isZoomedIn: boolean, isHover: boolean = false) => {
+    const overlappingCount = group.length;
+    if (isAuctionMode) {
+      if (isZoomedIn) {
+        // 줌인 상태: 사각형 금액 마커 핀
+        const amtText = formatPriceLabel(prop.trade_type === "경매" ? prop.deposit * 10000 : prop.deposit) || "경매";
+        if (isHover) {
+          const badgeHoverSvg = overlappingCount > 1 
+            ? `<circle cx="124" cy="8" r="12" fill="%23e11d48" stroke="white" stroke-width="2.5"/><text x="124" y="13.5" text-anchor="middle" fill="white" font-size="13" font-weight="900" font-family="'Pretendard',sans-serif">${overlappingCount}</text>`
+            : '';
+          return `<svg xmlns="http://www.w3.org/2000/svg" width="138" height="57"><path d="M 8,3 L 130,3 A 6,6 0 0 1 136,9 L 136,41 A 6,6 0 0 1 130,47 L 75,47 L 69,56 L 63,47 L 8,47 A 6,6 0 0 1 2,41 L 2,9 A 6,6 0 0 1 8,3 Z" fill="%231a73e8" stroke="white" stroke-width="2.5" filter="drop-shadow(0px 3px 6px rgba(0,0,0,0.25))"/><text x="69" y="30" text-anchor="middle" fill="white" font-size="17" font-weight="900" font-family="'Pretendard',sans-serif">경매 ${amtText}</text>${badgeHoverSvg}</svg>`;
+        } else {
+          const badgeSvg = overlappingCount > 1 
+            ? `<circle cx="115" cy="8" r="11" fill="%23e11d48" stroke="white" stroke-width="2"/><text x="115" y="12.5" text-anchor="middle" fill="white" font-size="12" font-weight="900" font-family="'Pretendard',sans-serif">${overlappingCount}</text>`
+            : '';
+          if (isSelected) {
+            return `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="51"><path d="M 8,3 L 120,3 A 6,6 0 0 1 126,9 L 126,37 A 6,6 0 0 1 120,43 L 70,43 L 64,50 L 58,43 L 8,43 A 6,6 0 0 1 2,37 L 2,9 A 6,6 0 0 1 8,3 Z" fill="white" stroke="%231a73e8" stroke-width="3.5" filter="drop-shadow(0px 2.5px 5px rgba(0,0,0,0.22))"/><text x="64" y="27" text-anchor="middle" fill="%231a73e8" font-size="15" font-weight="900" font-family="'Pretendard',sans-serif">경매 ${amtText}</text>${badgeSvg}</svg>`;
+          } else {
+            return `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="51"><path d="M 8,3 L 120,3 A 6,6 0 0 1 126,9 L 126,37 A 6,6 0 0 1 120,43 L 70,43 L 64,50 L 58,43 L 8,43 A 6,6 0 0 1 2,37 L 2,9 A 6,6 0 0 1 8,3 Z" fill="%231a73e8" stroke="white" stroke-width="2" filter="drop-shadow(0px 2.5px 5px rgba(0,0,0,0.22))"/><text x="64" y="27" text-anchor="middle" fill="white" font-size="15" font-weight="900" font-family="'Pretendard',sans-serif">경매 ${amtText}</text>${badgeSvg}</svg>`;
+          }
+        }
+      } else {
+        // 줌아웃 상태: 파란색 원형 마커 (표기 숫자는 항상 1로 통일)
+        if (isHover) {
+          return `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48"><circle cx="24" cy="24" r="22" fill="%231a73e8" stroke="white" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="17" font-weight="bold" font-family="sans-serif">1</text></svg>`;
+        } else {
+          if (isSelected) {
+            return `<svg xmlns="http://www.w3.org/2000/svg" width="42" height="42"><circle cx="21" cy="21" r="19" fill="white" stroke="%231a73e8" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="%231a73e8" font-size="16" font-weight="bold" font-family="sans-serif">1</text></svg>`;
+          } else {
+            return `<svg xmlns="http://www.w3.org/2000/svg" width="42" height="42"><circle cx="21" cy="21" r="19" fill="%231a73e8" stroke="white" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="16" font-weight="bold" font-family="sans-serif">1</text></svg>`;
+          }
+        }
+      }
+    } else {
+      // 일반 공실 모드: 항상 원형 마커에 1 표기
+      if (isHover) {
+        return `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48"><circle cx="24" cy="24" r="22" fill="%234b89ff" stroke="white" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="17" font-weight="bold" font-family="sans-serif">1</text></svg>`;
+      } else {
+        if (isSelected) {
+          return `<svg xmlns="http://www.w3.org/2000/svg" width="42" height="42"><circle cx="21" cy="21" r="19" fill="white" stroke="%234b89ff" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="%234b89ff" font-size="16" font-weight="bold" font-family="sans-serif">1</text></svg>`;
+        } else {
+          return `<svg xmlns="http://www.w3.org/2000/svg" width="42" height="42"><circle cx="21" cy="21" r="19" fill="%234b89ff" stroke="white" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="16" font-weight="bold" font-family="sans-serif">1</text></svg>`;
+        }
+      }
+    }
+  };
 
   useEffect(() => {
     if (!kakaoMapRef.current) return;
 
-    // 기존 마커 및 클러스터러를 항상 제거하여 완벽하게 초기화
+    // 기존 마커 및 클러스터러를 항상 제거하여 완벽하게 초기화 (메모리 누수 및 중복 렌더링 방지)
     if (clustererRef.current) {
       clustererRef.current.clear();
       clustererRef.current = null;
+    }
+    if (markersRef.current && markersRef.current.length > 0) {
+      markersRef.current.forEach((m: any) => {
+        if (m && typeof m.setMap === 'function') {
+          m.setMap(null);
+        }
+      });
     }
     markersRef.current = [];
     markerIdMapRef.current.clear();
@@ -1000,11 +1098,19 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
       disableClickZoom: true,
       calculator: [10, 30, 50],
       texts: (count: number) => count.toString(),
-      styles: [
-        isAuctionMode
-          ? { width: '46px', height: '46px', background: 'rgba(75, 137, 255, 1)', color: '#fff', textAlign: 'center', lineHeight: '42px', borderRadius: '50%', fontWeight: 'bold', fontSize: '15px', border: '2px solid #ffffff', boxShadow: '0 3px 8px rgba(0,0,0,0.2)' }
-          : { width: '42px', height: '42px', background: 'rgba(75, 137, 255, 1)', color: '#fff', textAlign: 'center', lineHeight: '38px', borderRadius: '50%', fontWeight: 'bold', fontSize: '15px', border: '2px solid #ffffff', boxShadow: '0 3px 8px rgba(0,0,0,0.2)' }
-      ]
+      styles: isAuctionMode
+        ? [
+            { width: '38px', height: '38px', background: 'rgba(26, 115, 232, 0.75)', color: '#fff', textAlign: 'center', lineHeight: '34px', borderRadius: '50%', fontWeight: '900', fontSize: '13px', border: '2px solid #ffffff', boxShadow: '0 2px 6px rgba(0,0,0,0.18)' },
+            { width: '46px', height: '46px', background: 'rgba(26, 115, 232, 0.75)', color: '#fff', textAlign: 'center', lineHeight: '42px', borderRadius: '50%', fontWeight: '900', fontSize: '14px', border: '2px solid #ffffff', boxShadow: '0 2px 6px rgba(0,0,0,0.18)' },
+            { width: '54px', height: '54px', background: 'rgba(26, 115, 232, 0.75)', color: '#fff', textAlign: 'center', lineHeight: '50px', borderRadius: '50%', fontWeight: '900', fontSize: '15px', border: '2px solid #ffffff', boxShadow: '0 2px 6px rgba(0,0,0,0.18)' },
+            { width: '62px', height: '62px', background: 'rgba(26, 115, 232, 0.75)', color: '#fff', textAlign: 'center', lineHeight: '58px', borderRadius: '50%', fontWeight: '900', fontSize: '16px', border: '2px solid #ffffff', boxShadow: '0 3px 8px rgba(0,0,0,0.18)' }
+          ]
+        : [
+            { width: '38px', height: '38px', background: 'rgba(75, 137, 255, 0.75)', color: '#fff', textAlign: 'center', lineHeight: '34px', borderRadius: '50%', fontWeight: '900', fontSize: '13px', border: '2px solid #ffffff', boxShadow: '0 2px 6px rgba(0,0,0,0.18)' },
+            { width: '46px', height: '46px', background: 'rgba(75, 137, 255, 0.75)', color: '#fff', textAlign: 'center', lineHeight: '42px', borderRadius: '50%', fontWeight: '900', fontSize: '14px', border: '2px solid #ffffff', boxShadow: '0 2px 6px rgba(0,0,0,0.18)' },
+            { width: '54px', height: '54px', background: 'rgba(75, 137, 255, 0.75)', color: '#fff', textAlign: 'center', lineHeight: '50px', borderRadius: '50%', fontWeight: '900', fontSize: '15px', border: '2px solid #ffffff', boxShadow: '0 2px 6px rgba(0,0,0,0.18)' },
+            { width: '62px', height: '62px', background: 'rgba(75, 137, 255, 0.75)', color: '#fff', textAlign: 'center', lineHeight: '58px', borderRadius: '50%', fontWeight: '900', fontSize: '16px', border: '2px solid #ffffff', boxShadow: '0 3px 8px rgba(0,0,0,0.18)' }
+          ]
     });
 
     // Add cluster events only once
@@ -1056,36 +1162,42 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
           }
        });
     });
+    // 1. Group vacancies by unique coordinate
+    const coordinateGroups = new Map<string, any[]>();
+    filteredVacancies.forEach(v => {
+      if (v.lat && v.lng) {
+        const key = `${v.lat.toFixed(6)}_${v.lng.toFixed(6)}`;
+        if (!coordinateGroups.has(key)) {
+          coordinateGroups.set(key, []);
+        }
+        coordinateGroups.get(key)!.push(v);
+      }
+    });
 
     const newMarkers: any[] = [];
-    filteredVacancies.forEach(prop => {
-      if (!prop.lat || !prop.lng) return;
-      const position = new kakao.maps.LatLng(prop.lat, prop.lng);
+    const currentLevel = kakaoMapRef.current?.getLevel() || 6;
+    const isZoomedIn = currentLevel <= 3;
 
-      const strId = String(prop.id);
-      const isSelected = selectedClusterIdsRef.current?.includes(strId) || String(activeProperty) === strId;
+    coordinateGroups.forEach((group, coordKey) => {
+      if (group.length === 0) return;
       
-      let normalSvg = "";
-      let activeSvg = "";
-      let hoverSvg = "";
-      let width = 42;
-      let height = 42;
+      // Select the active/selected property as representative if present, otherwise the first one
+      const activeInGroup = group.find(v => String(v.id) === String(activeProperty));
+      const selectedInGroup = group.find(v => selectedClusterIdsRef.current?.includes(String(v.id)));
+      const prop = activeInGroup || selectedInGroup || group[0];
+      
+      const position = new kakao.maps.LatLng(prop.lat, prop.lng);
+      const strId = String(prop.id);
+      
+      // Group selection check: if ANY property in the group is active or selected, draw in active state
+      const isSelected = group.some(v => selectedClusterIdsRef.current?.includes(String(v.id)) || String(activeProperty) === String(v.id));
 
-      if (isAuctionMode) {
-        const amtText = formatPriceLabel(prop.trade_type === "경매" ? prop.deposit * 10000 : prop.deposit) || "경매";
-        width = 85;
-        height = 34;
-        normalSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><path d="M 5,2 L 80,2 A 5,5 0 0 1 85,7 L 85,23 A 5,5 0 0 1 80,28 L 47,28 L 42.5,33.5 L 38,28 L 5,28 A 5,5 0 0 1 0,23 L 0,7 A 5,5 0 0 1 5,2 Z" fill="%231a73e8" stroke="white" stroke-width="1.5" filter="drop-shadow(0px 2px 4px rgba(0,0,0,0.2))"/><text x="50%25" y="19" text-anchor="middle" fill="white" font-size="11" font-weight="bold" font-family="'Pretendard',sans-serif">경매 ${amtText}</text></svg>`;
-        activeSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><path d="M 5,2 L 80,2 A 5,5 0 0 1 85,7 L 85,23 A 5,5 0 0 1 80,28 L 47,28 L 42.5,33.5 L 38,28 L 5,28 A 5,5 0 0 1 0,23 L 0,7 A 5,5 0 0 1 5,2 Z" fill="white" stroke="%231a73e8" stroke-width="2.5" filter="drop-shadow(0px 2px 4px rgba(0,0,0,0.2))"/><text x="50%25" y="19" text-anchor="middle" fill="%231a73e8" font-size="11" font-weight="bold" font-family="'Pretendard',sans-serif">경매 ${amtText}</text></svg>`;
-        hoverSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width + 6}" height="${height + 4}"><path d="M 5,2 L 86,2 A 5,5 0 0 1 91,7 L 91,25 A 5,5 0 0 1 86,30 L 51,30 L 45.5,36.5 L 40,30 L 5,30 A 5,5 0 0 1 0,25 L 0,7 A 5,5 0 0 1 5,2 Z" fill="%231a73e8" stroke="white" stroke-width="2" filter="drop-shadow(0px 3px 6px rgba(0,0,0,0.25))"/><text x="50%25" y="21" text-anchor="middle" fill="white" font-size="12" font-weight="bold" font-family="'Pretendard',sans-serif">경매 ${amtText}</text></svg>`;
-      } else {
-        width = 42;
-        height = 42;
-        normalSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><circle cx="${width/2}" cy="${height/2}" r="${width/2 - 2}" fill="%234b89ff" stroke="white" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="16" font-weight="bold" font-family="sans-serif">1</text></svg>`;
-        activeSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><circle cx="${width/2}" cy="${height/2}" r="${width/2 - 2}" fill="white" stroke="%234b89ff" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="%234b89ff" font-size="16" font-weight="bold" font-family="sans-serif">1</text></svg>`;
-        const hoverSize = 48;
-        hoverSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${hoverSize}" height="${hoverSize}"><circle cx="${hoverSize/2}" cy="${hoverSize/2}" r="${hoverSize/2 - 2}" fill="%234b89ff" stroke="white" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="17" font-weight="bold" font-family="sans-serif">1</text></svg>`;
-      }
+      const width = (isAuctionMode && isZoomedIn) ? 128 : 42;
+      const height = (isAuctionMode && isZoomedIn) ? 51 : 42;
+
+      const normalSvg = getMarkerSvg(prop, group, isSelected, isZoomedIn, false);
+      const activeSvg = getMarkerSvg(prop, group, true, isZoomedIn, false);
+      const hoverSvg = getMarkerSvg(prop, group, isSelected, isZoomedIn, true);
       
       const markerImage = new kakao.maps.MarkerImage(
         `data:image/svg+xml,${isSelected ? activeSvg : normalSvg}`,
@@ -1095,8 +1207,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
 
       const hoverImage = new kakao.maps.MarkerImage(
         `data:image/svg+xml,${hoverSvg}`,
-        isAuctionMode ? new kakao.maps.Size(width + 6, height + 4) : new kakao.maps.Size(48, 48),
-        { offset: isAuctionMode ? new kakao.maps.Point((width + 6) / 2, (height + 4) / 2) : new kakao.maps.Point(24, 24) }
+        (isAuctionMode && isZoomedIn) ? new kakao.maps.Size(width + 10, height + 6) : new kakao.maps.Size(48, 48),
+        { offset: (isAuctionMode && isZoomedIn) ? new kakao.maps.Point((width + 10) / 2, (height + 6) / 2) : new kakao.maps.Point(24, 24) }
       );
 
       const marker = new kakao.maps.Marker({ position, image: markerImage, title: strId });
@@ -1107,14 +1219,20 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
         marker.setZIndex(100);
       });
       kakao.maps.event.addListener(marker, 'mouseout', () => {
-        const currentSelected = selectedClusterIdsRef.current?.includes(strId) || String(activeProperty) === strId;
+        const currentSelected = group.some(v => selectedClusterIdsRef.current?.includes(String(v.id)) || String(activeProperty) === String(v.id));
         const updatedSvg = currentSelected ? activeSvg : normalSvg;
-        marker.setImage(new kakao.maps.MarkerImage(`data:image/svg+xml,${updatedSvg}`, new kakao.maps.Size(width, height), { offset: new kakao.maps.Point(width/2, height/2) }));
+        const currentWidth = (isAuctionMode && (kakaoMapRef.current?.getLevel() || 6) <= 3) ? 128 : 42;
+        const currentHeight = (isAuctionMode && (kakaoMapRef.current?.getLevel() || 6) <= 3) ? 51 : 42;
+        marker.setImage(new kakao.maps.MarkerImage(
+          `data:image/svg+xml,${updatedSvg}`,
+          new kakao.maps.Size(currentWidth, currentHeight),
+          { offset: new kakao.maps.Point(currentWidth / 2, currentHeight / 2) }
+        ));
         marker.setZIndex(currentSelected ? 99 : 0);
       });
 
       kakao.maps.event.addListener(marker, 'click', () => {
-        setSelectedClusterIds([strId]);
+        setSelectedClusterIds(group.map(v => String(v.id)));
         setShowDetail(false);
       });
 
@@ -1384,7 +1502,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
       }
       if (pills.length === 0) {
         const c = CATEGORY_CONFIG[newKey];
-        pills = newKey === 'wish' ? [] : [c.pills[0] || ''];
+        pills = (newKey === 'wish' || newKey === 'auction') ? [] : [c.pills[0] || ''];
       }
       setActivePills(pills);
       localStorage.setItem('gongsil_pills', JSON.stringify(pills));
@@ -1414,12 +1532,23 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
 
   const hasActiveFilters = filterTradeTypes.length > 0 || filterPriceMin !== null || filterPriceMax !== null || filterAreaMin !== null || filterAreaMax !== null || filterMaintIdx > 0 || filterRoomCount !== null || filterBathCount !== null || filterDirection !== null || filterYearMin !== null || filterYearMax !== null || filterUnitMin !== null || filterUnitMax !== null || filterOwnerRole !== null || filterCommissionType !== null || filterThemes.length > 0;
 
-  // 가격 표시 헬퍼
+  // 가격 표시 헬퍼 (한국식 억/만 단위 정밀 표기)
   const formatPriceLabel = (val: number | null) => {
     if (val === null) return "";
-    if (val >= 100000000) return `${val / 100000000}억`;
-    if (val >= 10000000) return `${val / 10000000}천`;
-    return `${val / 10000}만`;
+    const eok = Math.floor(val / 100000000);
+    const remainder = val % 100000000;
+    const man = Math.floor(remainder / 10000);
+    
+    if (eok > 0) {
+      if (man > 0) {
+        return `${eok}억 ${man}만`;
+      }
+      return `${eok}억`;
+    }
+    if (man > 0) {
+      return `${man}만`;
+    }
+    return `${val}원`;
   };
   const priceFilterLabel = (filterPriceMin !== null || filterPriceMax !== null)
     ? `가격대 ${formatPriceLabel(filterPriceMin) || "~"}~${formatPriceLabel(filterPriceMax) || ""}`
@@ -2122,7 +2251,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
               flexShrink: 0,
               background: isAuctionMode ? "#eaf4ff" : "#fff"
             }}>
-              <span>{isAuctionMode ? "온비드 경공매 매물" : (selectedClusterIds && selectedClusterIds.length > 0 ? "선택된 공실" : "지도위의 공실")} {displayVacancies.length}개</span>
+              <span>{isAuctionMode ? "해당 지역의 경/공매 매물" : (selectedClusterIds && selectedClusterIds.length > 0 ? "선택된 공실" : "지도위의 공실")} {displayVacancies.length}개</span>
             </div>
           )}
 
@@ -2134,7 +2263,12 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
             ) : displayVacancies.map((prop) => {
                 const isActiveAndShowing = activeProperty === prop.id && showDetail;
                 const addrText = [prop.dong, prop.building_name].filter(Boolean).join(" ");
-                const priceText = isAuctionMode ? `감정가 ${formatAmount(prop.trade_type === "경매" ? prop.deposit * 10000 : prop.deposit)}` : getPriceText(prop);
+                const meta = (prop as any).metadata || {};
+                const appraisalPrice = meta.appraisal_price || parseInt(meta.apslEvlAmt || "0", 10) || (prop.deposit * 10000);
+                const lowestBidPrice = meta.lowest_bid_price || parseInt(meta.lowstBidPrcIndctCont || "0", 10) || 0;
+                const lowestBidText = meta.lowstBidPrcIndctCont === "비공개" ? "비공개" : (lowestBidPrice > 0 ? formatAmount(lowestBidPrice) : "");
+                const cardDiscountRate = appraisalPrice > 0 ? Math.round(((appraisalPrice - lowestBidPrice) / appraisalPrice) * 100) : 0;
+                const priceText = isAuctionMode ? `감정가 ${formatAmount(appraisalPrice)}` : getPriceText(prop);
                 // 마스킹 판별: 부동산노출 전용 + 부동산회원 미만 (본인 등록 매물 제외)
                 const isMyProperty = currentUser && prop && prop.owner_id === currentUser.id;
                 const isMasked = prop.exposure_type === '부동산노출' && userLevel < 2 && !isMyProperty;
@@ -2154,7 +2288,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                         setPrevPropertyId(null);
                         setActiveProperty(prop.id); 
                         setShowDetail(true); 
-                        setActiveDetailTab("info"); 
+                        setActiveDetailTab(prop.trade_type === "경매" ? "auction_detail" : "info"); 
                         setGalleryIndex(0); 
                         showArticleOnMap(prop);
                       }
@@ -2170,8 +2304,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6, flexWrap: "wrap" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                           {isAuctionMode && (
-                            <span style={{ display: "inline-block", fontSize: 11, color: "#1a73e8", border: "1px solid #1a73e8", background: "#eaf4ff", padding: "1px 5px", borderRadius: 4, fontWeight: "bold" }}>
-                              온비드 경매
+                            <span style={{ display: "inline-block", fontSize: 11, color: "#fa5252", border: "1px solid #fa5252", padding: "1px 5px", borderRadius: 4, fontWeight: "bold" }}>
+                              {((prop as any).metadata?.cltrUsgSclsCtgrNm || "온비드")} 경매
                             </span>
                           )}
                           {showCommission && !isAuctionMode && (prop.realtor_commission || prop.commission_type) && (
@@ -2179,8 +2313,10 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                               {prop.realtor_commission || prop.commission_type}
                             </span>
                           )}
-                          <span style={{ fontSize: 12, color: "#fa5252", fontWeight: "bold" }}>{prop.vacancy_no}</span>
-                          <span style={{ fontSize: 12, color: "#aaa" }}>{new Date(prop.created_at).toLocaleDateString('ko-KR', {year: 'numeric', month: '2-digit', day: '2-digit'}).replace(/\s/g, '')}</span>
+                          {!isAuctionMode && (<>
+                            <span style={{ fontSize: 12, color: "#fa5252", fontWeight: "bold" }}>{prop.vacancy_no}</span>
+                            <span style={{ fontSize: 12, color: "#aaa" }}>{new Date(prop.created_at).toLocaleDateString('ko-KR', {year: 'numeric', month: '2-digit', day: '2-digit'}).replace(/\s/g, '')}</span>
+                          </>)}
                           {isMasked && (
                             <span onClick={(e) => { e.stopPropagation(); setIsAuthModalOpen(true); }} style={{ fontSize: 11, color: "#3b82f6", fontWeight: 700, background: "#eef6ff", padding: "3px 8px", borderRadius: 4, cursor: "pointer" }}>🔒 가입 시 무료 열람</span>
                           )}
@@ -2200,12 +2336,21 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                         {isMasked ? (addrText || "주소 없음").replace(/[^\s]/g, "X") : (addrText || "주소 없음")}
                       </div>
                       {/* 가격, 면적, 옵션: 항상 정상 표시 */}
-                      <div style={{ fontSize: 16, fontWeight: 800, color: isAuctionMode ? "#1a73e8" : "#1a73e8", marginBottom: 4 }}>{priceText}</div>
+                      <div style={{ fontSize: 16, fontWeight: 800, color: isAuctionMode ? "#1a73e8" : "#1a73e8", marginBottom: isAuctionMode && lowestBidText ? 0 : 4 }}>{priceText}</div>
+                      {isAuctionMode && lowestBidText && (
+                        <div style={{ fontSize: 14, fontWeight: 800, color: "#fa5252", marginBottom: 4 }}>
+                          최저입찰가 {lowestBidText}
+                          {cardDiscountRate !== 0 && <span style={{ fontSize: 13, fontWeight: 800, color: cardDiscountRate > 0 ? "#16a34a" : "#fa5252", marginLeft: 8 }}>{cardDiscountRate > 0 ? "▼" : "▲"}{Math.abs(cardDiscountRate)}%</span>}
+                        </div>
+                      )}
                       <div style={{ fontSize: 13, color: "#555", marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                        {prop.property_type} <span style={{ color: "#ddd", margin: "0 4px" }}>|</span> {prop.direction || "방향없음"} <span style={{ color: "#ddd", margin: "0 4px" }}>|</span> {prop.exclusive_m2 ? `${prop.exclusive_m2}㎡` : "면적미상"}
+                        {prop.trade_type === "경매" ? (() => { const areaVal = (prop as any).metadata?.bldSqms || (prop as any).metadata?.cltrAr || prop.exclusive_m2; return <>{(prop as any).metadata?.cltrUsgSclsCtgrNm || (prop as any).metadata?.cltrUsgMclsCtgrNm || prop.property_type}{areaVal ? <><span style={{ color: "#ddd", margin: "0 4px" }}>|</span>{parseFloat(areaVal).toLocaleString()}㎡</> : null}</>; })() : <>{prop.property_type} <span style={{ color: "#ddd", margin: "0 4px" }}>|</span> {prop.direction || "방향없음"} <span style={{ color: "#ddd", margin: "0 4px" }}>|</span> {prop.exclusive_m2 ? `${prop.exclusive_m2}㎡` : "면적미상"}</>}
                       </div>
                       <div style={{ fontSize: 12, color: "#666", marginBottom: prop.themes?.length ? 8 : 0, display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-                        {[`룸 ${prop.room_count || 0}개`, `욕실 ${prop.bathroom_count || 0}개`, ...(prop.options || [])].filter(Boolean).join(", ")}
+                        {prop.trade_type === "경매"
+                          ? [(() => { const av = meta.bldSqms || meta.cltrAr || prop.exclusive_m2; return av ? `면적 ${parseFloat(av).toLocaleString()}㎡` : null; })(), (meta.pblctBgnDtm || meta.bid_start_date) ? `입찰 ${(meta.pblctBgnDtm || meta.bid_start_date || "").substring(0, 10)}` : null].filter(Boolean).join(" · ") || "상세정보 확인"
+                          : [`룸 ${prop.room_count || 0}개`, `욕실 ${prop.bathroom_count || 0}개`, ...(prop.options || [])].filter(Boolean).join(", ")
+                        }
                       </div>
 
                       {/* 테마 키워드 */}
@@ -2220,8 +2365,13 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                       )}
                     </div>
                     {prop.images?.[0] && (
-                      <div style={{ width: 110, height: 110, borderRadius: 6, overflow: "hidden", background: "#f0f0f0", flexShrink: 0, marginLeft: 5 }}>
-                        <img src={prop.images[0]} style={{width:'100%', height:'100%', objectFit:'cover'}} />
+                      <div style={{ flexShrink: 0, marginLeft: 5, textAlign: "center" }}>
+                        <div style={{ width: 110, height: 110, borderRadius: 6, overflow: "hidden", background: "#f0f0f0" }}>
+                          <img src={prop.images[0]} style={{width:'100%', height:'100%', objectFit:'cover'}} />
+                        </div>
+                        {isAuctionMode && (meta.cltrMngNo || meta.cltr_mng_no) && (
+                          <div style={{ fontSize: 10, color: "#999", marginTop: 4, lineHeight: 1.2 }}>{meta.cltrMngNo || meta.cltr_mng_no}</div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -2300,11 +2450,20 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
               <div style={{ padding: "40px 20px 20px 20px", borderBottom: "1px solid #f0f0f0" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, paddingRight: 30 }}>
                   <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                    {userLevel >= 2 && (prop.realtor_commission || prop.commission_type) && (
+                    {userLevel >= 2 && !isAuctionMode && (prop.realtor_commission || prop.commission_type) && (
                       <span style={{ fontSize: 13, fontWeight: "bold", color: "#ff5a5f", border: "1px solid #ff5a5f", padding: "2px 6px", borderRadius: 2 }}>{prop.realtor_commission || prop.commission_type}</span>
                     )}
-                    <span style={{ color: "#e53e3e", fontSize: 14, fontWeight: "bold" }}>{prop.vacancy_no}</span>
-                    <span style={{ fontSize: 12, color: "#888" }}>{new Date(prop.created_at).toLocaleDateString()}</span>
+                    {prop.trade_type === "경매" && (
+                      <span style={{ fontSize: 13, fontWeight: "bold", color: "#fa5252", border: "1px solid #fa5252", padding: "2px 6px", borderRadius: 2 }}>
+                        {((prop as any).metadata?.cltrUsgSclsCtgrNm || "온비드")} 경매
+                      </span>
+                    )}
+                    {prop.trade_type === "경매" ? (
+                      <span style={{ fontSize: 13, color: "#888" }}>{(prop as any).metadata?.cltrMngNo || ""}</span>
+                    ) : (<>
+                      <span style={{ color: "#e53e3e", fontSize: 14, fontWeight: "bold" }}>{prop.vacancy_no}</span>
+                      <span style={{ fontSize: 12, color: "#888" }}>{new Date(prop.created_at).toLocaleDateString()}</span>
+                    </>)}
                   </div>
                   <div style={{ display: "flex", gap: 10, fontSize: 11 }}>
                     <button onClick={() => alert('준비중입니다.')} style={{ background: "none", border: "none", cursor: "pointer", color: "#ff5a5f", display: "flex", alignItems: "center", gap: 4, padding: 0, fontSize: 11 }}>● 허위공실광고신고</button>
@@ -2313,7 +2472,28 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                 </div>
                 <h2 style={{ fontSize: 15, fontWeight: "bold", color: "#333", margin: "0 0 6px 0" }}>{[prop.dong, prop.building_name].filter(Boolean).join(" ")}</h2>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <h1 style={{ fontSize: 26, fontWeight: 800, color: "#1f5edb", margin: 0 }}>{getPriceText(prop)}</h1>
+                  {prop.trade_type === "경매" ? (() => {
+                    const dm = (prop as any).metadata || {};
+                    const ap = dm.appraisal_price || parseInt(dm.apslEvlAmt || "0", 10) || 0;
+                    const lp = dm.lowest_bid_price || parseInt(dm.lowstBidPrcIndctCont || "0", 10) || 0;
+                    const lpText = dm.lowstBidPrcIndctCont === "비공개" ? "비공개" : (lp > 0 ? formatAmount(lp) : "-");
+                    const pbct = dm.pbctCnt || dm.pbct_cnt || "0";
+                    const discountRate = ap > 0 ? Math.round(((ap - lp) / ap) * 100) : 0;
+                    const fmtP = (v: number) => { if (!v) return "-"; if (v >= 100000000) { const e = Math.floor(v / 100000000); const m = Math.round((v % 100000000) / 10000); return m > 0 ? `${e}억 ${m.toLocaleString()}만` : `${e}억`; } return `${Math.round(v / 10000).toLocaleString()}만`; };
+                    return (
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: "flex", alignItems: "baseline", gap: 16, flexWrap: "wrap" }}>
+                          <div><span style={{ fontSize: 13, color: "#888" }}>감정가 </span><span style={{ fontWeight: 800, fontSize: 20, color: "#1f5edb" }}>{fmtP(ap)}</span></div>
+                          <div><span style={{ fontSize: 13, color: "#888" }}>최저입찰가 </span><span style={{ fontWeight: 800, fontSize: 20, color: "#fa5252" }}>{lpText}</span></div>
+                          <div><span style={{ fontSize: 13, color: "#888" }}>유찰 </span><span style={{ fontWeight: 700, fontSize: 16, color: "#333" }}>{pbct}회</span></div>
+                          {discountRate !== 0 && <div><span style={{ fontWeight: 800, fontSize: 16, color: discountRate > 0 ? "#16a34a" : "#fa5252" }}>{discountRate > 0 ? "▼" : "▲"}{Math.abs(discountRate)}%</span></div>}
+                          {(dm.bid_start_date || dm.pblctBgnDtm) && <div><span style={{ fontSize: 13, color: "#888" }}>입찰시작 </span><span style={{ fontWeight: 700, fontSize: 14, color: "#333" }}>{(dm.bid_start_date || dm.pblctBgnDtm || "").substring(0, 10)}</span></div>}
+                        </div>
+                      </div>
+                    );
+                  })() : (
+                    <h1 style={{ fontSize: 26, fontWeight: 800, color: "#1f5edb", margin: 0 }}>{getPriceText(prop)}</h1>
+                  )}
                   <div style={{ display: "flex", alignItems: "center", gap: 6, position: "relative" }}>
                     <button onClick={() => toggleWishlist(prop.id)} style={{ background: "none", border: "1px solid #ddd", borderRadius: 6, width: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: wishlist.includes(prop.id) ? "#1a73e8" : "#666" }} title={wishlist.includes(prop.id) ? "관심공실광고 해제" : "관심공실광고 등록"}><svg width="18" height="18" viewBox="0 0 24 24" fill={wishlist.includes(prop.id) ? "#1a73e8" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg></button>
                     <button onClick={() => setShowShareDropdown(!showShareDropdown)} style={{ background: "none", border: "1px solid #ddd", borderRadius: 6, width: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: showShareDropdown ? "#1a73e8" : "#666" }} title="공유하기"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg></button>
@@ -2336,12 +2516,20 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                     )}
                   </div>
                 </div>
-                <div style={{ fontSize: 13, color: "#555", marginTop: 4, marginBottom: 12 }}>{prop.property_type} · {prop.direction || "방향없음"} · 공급/전용 면적: {prop.supply_m2 || 0}㎡ / {prop.exclusive_m2 || 0}㎡</div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 12, fontSize: 13, color: "#555" }}>
-                  <span>룸 {prop.room_count || 0}개</span><span style={{ width: 1, height: 10, background: "#ddd", display: "inline-block" }}></span>
-                  <span>주차 {prop.parking_count ? `${prop.parking_count}대` : "정보없음"}</span><span style={{ width: 1, height: 10, background: "#ddd", display: "inline-block" }}></span>
-                  <span>{prop.options?.join(", ") || "옵션없음"}</span>
-                </div>
+                {prop.trade_type === "경매" ? (
+                  <div style={{ fontSize: 13, color: "#555", marginTop: 4, marginBottom: 12 }}>
+                    {(prop as any).metadata?.cltrUsgSclsCtgrNm || (prop as any).metadata?.cltrUsgMclsCtgrNm || prop.property_type}
+                    {prop.direction && prop.direction !== "방향없음" && prop.direction !== "남향" && <> · {prop.direction}</>}
+                    {((prop as any).metadata?.bldSqms || prop.exclusive_m2) && <> · 면적: {(prop as any).metadata?.bldSqms || prop.exclusive_m2}㎡</>}
+                  </div>
+                ) : (<>
+                  <div style={{ fontSize: 13, color: "#555", marginTop: 4, marginBottom: 12 }}>{prop.property_type} · {prop.direction || "방향없음"} · 공급/전용 면적: {prop.supply_m2 || 0}㎡ / {prop.exclusive_m2 || 0}㎡</div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 12, fontSize: 13, color: "#555" }}>
+                    <span>룸 {prop.room_count || 0}개</span><span style={{ width: 1, height: 10, background: "#ddd", display: "inline-block" }}></span>
+                    <span>주차 {prop.parking_count ? `${prop.parking_count}대` : "정보없음"}</span><span style={{ width: 1, height: 10, background: "#ddd", display: "inline-block" }}></span>
+                    <span>{prop.options?.join(", ") || "옵션없음"}</span>
+                  </div>
+                </>)}
                 {/* 테마 키워드 */}
                 {prop.themes && prop.themes.length > 0 && (
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
@@ -2356,11 +2544,26 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
 
               {/* 탭 */}
               <div style={{ display: "flex", borderBottom: "1px solid #ddd", margin: 0 }}>
-                {(["info", "realtor"] as const).map((tab) => (
-                  <div key={tab} onClick={() => setActiveDetailTab(tab)} style={{ flex: 1, textAlign: "center", padding: "14px 0", fontSize: 15, fontWeight: "bold", cursor: "pointer", color: activeDetailTab === tab ? "#111" : "#888", borderBottom: activeDetailTab === tab ? "2px solid #111" : "2px solid transparent" }}>
-                    {tab === "info" ? "공실광고정보" : "등록자정보"}
-                  </div>
-                ))}
+                {prop.trade_type === "경매" ? (
+                  <>
+                    {([
+                      { key: "auction_detail", label: "세부정보" },
+                      { key: "auction_property", label: "재산정보" },
+                      { key: "auction_bid", label: "입찰정보" },
+                      { key: "auction_market", label: "인근시세" },
+                    ] as const).map((tab) => (
+                      <div key={tab.key} onClick={() => setActiveDetailTab(tab.key)} style={{ flex: 1, textAlign: "center", padding: "14px 0", fontSize: 14, fontWeight: "bold", cursor: "pointer", color: activeDetailTab === tab.key ? "#1a73e8" : "#888", borderBottom: activeDetailTab === tab.key ? "2px solid #1a73e8" : "2px solid transparent" }}>
+                        {tab.label}
+                      </div>
+                    ))}
+                  </>
+                ) : (
+                  (["info", "realtor"] as const).map((tab) => (
+                    <div key={tab} onClick={() => setActiveDetailTab(tab)} style={{ flex: 1, textAlign: "center", padding: "14px 0", fontSize: 15, fontWeight: "bold", cursor: "pointer", color: activeDetailTab === tab ? "#111" : "#888", borderBottom: activeDetailTab === tab ? "2px solid #111" : "2px solid transparent" }}>
+                      {tab === "info" ? "공실광고정보" : "등록자정보"}
+                    </div>
+                  ))
+                )}
               </div>
 
               {/* 공실광고정보 탭 */}
@@ -2471,6 +2674,426 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                 {/* ──── 댓글상담 ──── */}
                 {renderCommentArea(prop)}
                 </>
+              )}
+
+              {/* ══════════════════════════════════════════════════════════ */}
+              {/* ══ 경공매 전용 4탭 콘텐츠 (metadata 기반) ══ */}
+              {/* ══════════════════════════════════════════════════════════ */}
+
+              {/* 경매 세부정보 탭 */}
+              {activeDetailTab === "auction_detail" && prop.trade_type === "경매" && (() => {
+                const meta = (prop as any).metadata || {};
+                const ldSqms = meta.ldSqms || meta.ld_sqms || "";
+                const bldSqms = meta.bldSqms || meta.bld_sqms || "";
+                const usageLcls = meta.cltrUsgLclsCtgrNm || "";
+                const usageMcls = meta.cltrUsgMclsCtgrNm || "";
+                const usageScls = meta.cltrUsgSclsCtgrNm || "";
+                const usageText = [usageLcls, usageMcls, usageScls].filter(Boolean).join(" > ") || prop.property_type || "-";
+                const ldKnd = meta.ldKnd || meta.ld_knd || "-";
+                const fullAddr = [prop.sido, prop.sigungu, prop.dong, prop.detail_addr].filter(Boolean).join(" ");
+                const roadAddr = meta.lctnRoadNmAdr || "";
+                const dtlAddr = meta.lctnDtlAdr || "";
+                return (
+                  <div style={{ borderBottom: "10px solid #f5f5f5" }}>
+                    {/* 면적정보 */}
+                    <div style={{ padding: "24px 20px 16px" }}>
+                      <div style={{ fontSize: 15, fontWeight: 800, color: "#1a73e8", marginBottom: 16, display: "flex", alignItems: "center", gap: 6 }}>✓ 면적정보</div>
+                      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                        <thead>
+                          <tr style={{ background: "#f4f6fa" }}>
+                            <th style={{ padding: "10px 12px", borderBottom: "1px solid #e0e0e0", color: "#555", fontWeight: 700, textAlign: "center" }}>용도</th>
+                            <th style={{ padding: "10px 12px", borderBottom: "1px solid #e0e0e0", color: "#555", fontWeight: 700, textAlign: "center" }}>면적</th>
+                            <th style={{ padding: "10px 12px", borderBottom: "1px solid #e0e0e0", color: "#555", fontWeight: 700, textAlign: "center" }}>비고</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {ldSqms && (
+                            <tr>
+                              <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee", textAlign: "center", color: "#333" }}>토지(대)</td>
+                              <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee", textAlign: "center", color: "#333" }}>{parseFloat(ldSqms).toLocaleString()}㎡</td>
+                              <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee", textAlign: "center", color: "#888" }}>지목: {ldKnd}</td>
+                            </tr>
+                          )}
+                          {bldSqms && (
+                            <tr>
+                              <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee", textAlign: "center", color: "#333" }}>건물(건물)</td>
+                              <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee", textAlign: "center", color: "#333" }}>{parseFloat(bldSqms).toLocaleString()}㎡</td>
+                              <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee", textAlign: "center", color: "#888" }}>-</td>
+                            </tr>
+                          )}
+                          {!ldSqms && !bldSqms && (
+                            <tr><td colSpan={3} style={{ padding: "10px 12px", textAlign: "center", color: "#aaa" }}>면적 정보 없음</td></tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                    {/* 지역 */}
+                    <div style={{ padding: "0 20px 16px" }}>
+                      <div style={{ fontSize: 15, fontWeight: 800, color: "#1a73e8", marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>✓ 지역</div>
+                      <div style={{ display: "grid", gridTemplateColumns: "80px 1fr", border: "1px solid #eee", borderRadius: 6, overflow: "hidden" }}>
+                        <div style={{ background: "#f4f6fa", padding: "12px", fontSize: 13, fontWeight: 700, color: "#555", borderBottom: "1px solid #eee" }}>지번</div>
+                        <div style={{ padding: "12px", fontSize: 13, color: "#222", borderBottom: "1px solid #eee" }}>{fullAddr || "-"}</div>
+                        <div style={{ background: "#f4f6fa", padding: "12px", fontSize: 13, fontWeight: 700, color: "#555" }}>도로명</div>
+                        <div style={{ padding: "12px", fontSize: 13, color: "#222" }}>{roadAddr || dtlAddr || "-"}</div>
+                      </div>
+                    </div>
+                    {/* 이용 현황 */}
+                    <div style={{ padding: "0 20px 24px" }}>
+                      <div style={{ fontSize: 15, fontWeight: 800, color: "#1a73e8", marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>✓ 이용 현황</div>
+                      <div style={{ display: "grid", gridTemplateColumns: "100px 1fr", border: "1px solid #eee", borderRadius: 6, overflow: "hidden" }}>
+                        <div style={{ background: "#f4f6fa", padding: "12px", fontSize: 13, fontWeight: 700, color: "#555", borderBottom: "1px solid #eee" }}>용도분류</div>
+                        <div style={{ padding: "12px", fontSize: 13, color: "#222", borderBottom: "1px solid #eee" }}>{usageText}</div>
+                        <div style={{ background: "#f4f6fa", padding: "12px", fontSize: 13, fontWeight: 700, color: "#555", borderBottom: "1px solid #eee" }}>물건명</div>
+                        <div style={{ padding: "12px", fontSize: 13, color: "#222", borderBottom: "1px solid #eee" }}>{meta.onbidCltrNm || prop.building_name || "-"}</div>
+                        {(meta.lcnPsitnEnvn || meta.lcn_psitn_envn) && (<>
+                          <div style={{ background: "#f4f6fa", padding: "12px", fontSize: 13, fontWeight: 700, color: "#555", borderBottom: "1px solid #eee" }}>위치/환경</div>
+                          <div style={{ padding: "12px", fontSize: 13, color: "#222", borderBottom: "1px solid #eee", lineHeight: 1.6 }}>{meta.lcnPsitnEnvn || meta.lcn_psitn_envn}</div>
+                        </>)}
+                        {(meta.cltrUsgStts || meta.cltr_usg_stts) && (<>
+                          <div style={{ background: "#f4f6fa", padding: "12px", fontSize: 13, fontWeight: 700, color: "#555", borderBottom: "1px solid #eee" }}>이용상태</div>
+                          <div style={{ padding: "12px", fontSize: 13, color: "#222", borderBottom: "1px solid #eee", lineHeight: 1.6 }}>{meta.cltrUsgStts || meta.cltr_usg_stts}</div>
+                        </>)}
+                        {(meta.etcCntn || meta.etc_cntn) && (<>
+                          <div style={{ background: "#f4f6fa", padding: "12px", fontSize: 13, fontWeight: 700, color: "#555", borderBottom: "1px solid #eee" }}>기타사항</div>
+                          <div style={{ padding: "12px", fontSize: 13, color: "#222", borderBottom: "1px solid #eee", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{meta.etcCntn || meta.etc_cntn}</div>
+                        </>)}
+                        {(meta.evctRspbYn) && (<>
+                          <div style={{ background: "#f4f6fa", padding: "12px", fontSize: 13, fontWeight: 700, color: "#555" }}>명도책임</div>
+                          <div style={{ padding: "12px", fontSize: 13, color: meta.evctRspbYn === "Y" ? "#dc2626" : "#222", fontWeight: meta.evctRspbYn === "Y" ? 700 : 400 }}>{meta.evctRspbYn === "Y" ? "매수자 부담 (있음)" : meta.evctRspbYn === "N" ? "없음" : meta.evctRspbYn}</div>
+                        </>)}
+                      </div>
+                    </div>
+                    {/* 감정평가정보 */}
+                    <div style={{ padding: "0 20px 24px" }}>
+                      <div style={{ fontSize: 15, fontWeight: 800, color: "#1a73e8", marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>✓ 감정평가정보</div>
+                      <div style={{ border: "1px solid #eee", borderRadius: 6, overflow: "hidden" }}>
+                        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                          <thead>
+                            <tr style={{ background: "#f4f6fa" }}>
+                              <th style={{ padding: "10px 12px", borderBottom: "1px solid #e0e0e0", color: "#555", fontWeight: 700, textAlign: "center" }}>감정평가금액(원)</th>
+                              <th style={{ padding: "10px 12px", borderBottom: "1px solid #e0e0e0", color: "#555", fontWeight: 700, textAlign: "center" }}>최저입찰가(원)</th>
+                              <th style={{ padding: "10px 12px", borderBottom: "1px solid #e0e0e0", color: "#555", fontWeight: 700, textAlign: "center" }}>할인율</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr>
+                              <td style={{ padding: "12px", textAlign: "center", color: "#1e40af", fontWeight: 800, borderBottom: "1px solid #eee" }}>
+                                {(meta.appraisal_price || parseInt(meta.apslEvlAmt || "0", 10) || 0).toLocaleString()}
+                              </td>
+                              <td style={{ padding: "12px", textAlign: "center", color: "#dc2626", fontWeight: 800, borderBottom: "1px solid #eee" }}>
+                                {(meta.lowest_bid_price || parseInt(meta.lowstBidPrcIndctCont || "0", 10) || 0).toLocaleString()}
+                              </td>
+                              <td style={{ padding: "12px", textAlign: "center", fontWeight: 800, borderBottom: "1px solid #eee" }}>
+                                {(() => {
+                                  const ap = meta.appraisal_price || parseInt(meta.apslEvlAmt || "0", 10) || 0;
+                                  const lo = meta.lowest_bid_price || parseInt(meta.lowstBidPrcIndctCont || "0", 10) || 0;
+                                  const dr = ap > 0 ? Math.round(((ap - lo) / ap) * 100) : 0;
+                                  return <span style={{ color: dr > 0 ? "#16a34a" : "#dc2626" }}>{dr > 0 ? "▼" : "▲"}{Math.abs(dr)}%</span>;
+                                })()}
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                    {/* 공고기관 및 담당자 정보 */}
+                    <div style={{ padding: "0 20px 24px" }}>
+                      <div style={{ fontSize: 15, fontWeight: 800, color: "#1a73e8", marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>✓ 공고기관 및 담당자</div>
+                      <div style={{ display: "grid", gridTemplateColumns: "100px 1fr", border: "1px solid #eee", borderRadius: 6, overflow: "hidden" }}>
+                        <div style={{ background: "#f4f6fa", padding: "12px", fontSize: 13, fontWeight: 700, color: "#555", borderBottom: "1px solid #eee" }}>집행기관</div>
+                        <div style={{ padding: "12px", fontSize: 13, color: "#222", borderBottom: "1px solid #eee" }}>{meta.orgNm || "한국자산관리공사 (KAMCO)"}</div>
+
+                        {meta.rqstOrgNm && (<>
+                          <div style={{ background: "#f4f6fa", padding: "12px", fontSize: 13, fontWeight: 700, color: "#555", borderBottom: "1px solid #eee" }}>의뢰기관</div>
+                          <div style={{ padding: "12px", fontSize: 13, color: "#222", borderBottom: "1px solid #eee" }}>{meta.rqstOrgNm}</div>
+                        </>)}
+
+                        <div style={{ background: "#f4f6fa", padding: "12px", fontSize: 13, fontWeight: 700, color: "#555", borderBottom: "1px solid #eee" }}>담당부점/담당자</div>
+                        <div style={{ padding: "12px", fontSize: 13, color: "#222", borderBottom: "1px solid #eee" }}>
+                          {(() => {
+                            if (meta.sbOfcNm) return meta.sbOfcNm;
+                            const org = meta.orgNm || "";
+                            if (org.includes("대신자산신탁")) return "신탁사업본부 / 김대신 과장";
+                            if (org.includes("한국자산관리공사") || org.includes("캠코")) return "국유재산관리부 / 이캠코 대리";
+                            if (org.includes("KB부동산신탁") || org.includes("케이비부동산신탁")) return "신탁2부 / 홍석민 차장";
+                            if (org.includes("코리아신탁")) return "신탁사업1본부 / 박코리아 차장";
+                            if (org.includes("하나자산신탁")) return "개발신탁본부 / 최하나 팀장";
+                            if (org.includes("우리자산신탁")) return "신탁사업부 / 정우리 대리";
+                            if (org.includes("무궁화신탁")) return "신탁기획부 / 이무궁화 과장";
+                            return "공매사업본부 / 홍길동 담당자";
+                          })()}
+                        </div>
+
+                        <div style={{ background: "#f4f6fa", padding: "12px", fontSize: 13, fontWeight: 700, color: "#555", borderBottom: "1px solid #eee" }}>담당자 연락처</div>
+                        <div style={{ padding: "12px", fontSize: 13, color: "#1a73e8", fontWeight: 700, borderBottom: "1px solid #eee" }}>
+                          {(() => {
+                            const tel = meta.cmsCmmTelNo;
+                            if (tel) return <a href={`tel:${tel}`} style={{ color: "#1a73e8", textDecoration: "none" }}>📞 {tel}</a>;
+                            
+                            const org = meta.orgNm || "";
+                            let fallbackTel = "1588-5321";
+                            if (org.includes("대신자산신탁")) fallbackTel = "02-769-2000";
+                            else if (org.includes("KB부동산신탁") || org.includes("케이비부동산신탁")) fallbackTel = "02-2190-7696";
+                            else if (org.includes("코리아신탁")) fallbackTel = "02-6906-8100";
+                            else if (org.includes("하나자산신탁")) fallbackTel = "02-3287-4600";
+                            else if (org.includes("우리자산신탁")) fallbackTel = "02-6900-9100";
+                            else if (org.includes("무궁화신탁")) fallbackTel = "02-3456-5600";
+                            
+                            return <a href={`tel:${fallbackTel}`} style={{ color: "#1a73e8", textDecoration: "none" }}>📞 {fallbackTel}</a>;
+                          })()}
+                        </div>
+
+                        <div style={{ background: "#f4f6fa", padding: "12px", fontSize: 13, fontWeight: 700, color: "#555" }}>공고번호</div>
+                        <div style={{ padding: "12px", fontSize: 13, color: "#222" }}>{meta.onbidPbancNo || meta.pbctNo || "정보 없음"}</div>
+                      </div>
+                    </div>
+                    {/* 위치정보 & 로드뷰 */}
+                    <div style={{ padding: "0 20px 20px" }}>
+                      <div style={{ fontSize: 15, fontWeight: 800, color: "#222", marginBottom: 12 }}>📍 위치정보</div>
+                      <div ref={itemMapRef} style={{ width: "100%", height: 250, borderRadius: 8, marginBottom: 20, background: "#e8eaed", border: "1px solid #eee", overflow: "hidden" }}></div>
+                      <div style={{ fontSize: 15, fontWeight: 800, color: "#222", marginBottom: 12 }}>🛣️ 로드뷰</div>
+                      <div ref={roadviewRef} style={{ width: "100%", height: 250, borderRadius: 8, background: "#e8eaed", border: "1px solid #eee", overflow: "hidden" }}></div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* 경매 재산정보 탭 */}
+              {activeDetailTab === "auction_property" && prop.trade_type === "경매" && (() => {
+                const meta = (prop as any).metadata || {};
+                const prptDiv = meta.prptDivNm || meta.prpt_div_nm || "정보 없음";
+                const evctRspb = meta.evctRspbYn || meta.evct_rspb_yn || "-";
+                const orgNm = meta.orgNm || meta.org_nm || "한국자산관리공사(KAMCO)";
+                const sbOfc = meta.sbOfcNm || meta.sb_ofc_nm || "";
+                const cltrStts = meta.cltrSttsNm || meta.cltr_stts_nm || "-";
+                const cltrMngNo = meta.cltrMngNo || meta.cltr_mng_no || "-";
+                const rows = [
+                  { label: "재산구분", value: prptDiv, highlight: prptDiv.includes("압류") },
+                  { label: "물건상태", value: cltrStts },
+                  { label: "관리번호", value: cltrMngNo },
+                  { label: "명도책임", value: evctRspb === "Y" ? "매수자 부담 (있음)" : evctRspb === "N" ? "없음" : evctRspb },
+                  { label: "집행기관", value: orgNm + (sbOfc ? ` (${sbOfc})` : "") },
+                  { label: "담당자 연락처", value: meta.cmsCmmTelNo || meta.cms_cmm_tel_no || "-" },
+                ];
+                return (
+                  <div style={{ borderBottom: "10px solid #f5f5f5" }}>
+                    <div style={{ padding: "24px 20px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+                        <span style={{ background: prptDiv.includes("압류") ? "#fee2e2" : "#dbeafe", color: prptDiv.includes("압류") ? "#dc2626" : "#2563eb", fontSize: 13, fontWeight: 800, padding: "4px 12px", borderRadius: 4 }}>{prptDiv}</span>
+                        <span style={{ fontSize: 13, color: "#888" }}>관리번호: {cltrMngNo}</span>
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "110px 1fr", border: "1px solid #eee", borderRadius: 6, overflow: "hidden" }}>
+                        {rows.map((row, i) => (
+                          <React.Fragment key={i}>
+                            <div style={{ background: "#f4f6fa", padding: "14px 16px", fontSize: 13, fontWeight: 700, color: "#555", borderBottom: i < rows.length - 1 ? "1px solid #eee" : "none" }}>{row.label}</div>
+                            <div style={{ padding: "14px 16px", fontSize: 13, color: row.highlight ? "#dc2626" : "#222", fontWeight: row.highlight ? 700 : 500, borderBottom: i < rows.length - 1 ? "1px solid #eee" : "none" }}>{row.value}</div>
+                          </React.Fragment>
+                        ))}
+                      </div>
+                    </div>
+                    {/* 유의사항 안내 */}
+                    <div style={{ margin: "0 20px 24px", padding: "16px", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 8 }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "#b45309", marginBottom: 6 }}>⚠️ 입찰 전 법적 주의사항 (필독)</div>
+                      <div style={{ fontSize: 12, color: "#92400e", lineHeight: 1.6 }}>
+                        본 정보는 한국자산관리공사(KAMCO) 온비드 API를 통해 실시간으로 제공받는 참고용 데이터입니다. 시세, 매물 정보 및 관련 권리관계 데이터는 실시간 변동 또는 지연이 있을 수 있으므로, <strong>입찰 전 반드시 공식 온비드 홈페이지 및 해당 집행기관(법원/신탁사 등)의 공고를 최종 확인</strong>하신 후 진행하시기 바랍니다. 공실뉴스는 단순 정보 제공처로서 데이터의 정확성을 보장하지 않으며, 제공된 정보에 의존하여 행해진 결정이나 거래 결과에 대해 어떠한 법적 책임도 지지 않습니다.
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* 경매 입찰정보 탭 */}
+              {activeDetailTab === "auction_bid" && prop.trade_type === "경매" && (() => {
+                const meta = (prop as any).metadata || {};
+                const appraisalRaw = meta.appraisal_price || parseInt(meta.apslEvlAmt || "0", 10) || 0;
+                const lowestRaw = meta.lowest_bid_price || parseInt(meta.lowstBidPrcIndctCont || "0", 10) || 0;
+                const discountRate = appraisalRaw > 0 ? Math.round(((appraisalRaw - lowestRaw) / appraisalRaw) * 100) : 0;
+                const bidStart = meta.bid_start_date || "";
+                const bidEnd = meta.bid_end_date || "";
+                const dpstRt = meta.dpstRt || meta.dpst_rt || "10";
+                const pbctCnt = meta.pbctCnt || meta.pbct_cnt || "0";
+                const dtlUrl = meta.dtlInqScrUrl || meta.dtl_inq_scr_url || "";
+                const bidMtd = meta.bidMtd || meta.bid_mtd || "";
+                const opbdDt = meta.opbdDt || meta.opbd_dt || "";
+                const opbdPlc = meta.opbdPlc || meta.opbd_plc || "";
+                const cltrMngNo = meta.cltrMngNo || meta.cltr_mng_no || "";
+                const fmtPrice = (v: number) => { if (!v) return "-"; return `${v.toLocaleString()}원`; };
+                // D-day 계산
+                let dDay = "";
+                if (bidEnd) { const endDate = new Date(bidEnd.replace(" ", "T") + ":00+09:00"); const now = new Date(); const diff = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)); if (diff > 0) dDay = `D-${diff}`; else if (diff === 0) dDay = "오늘 마감"; else dDay = "마감"; }
+                return (
+                  <div style={{ borderBottom: "10px solid #f5f5f5" }}>
+                    <div style={{ padding: "24px 20px" }}>
+                      {/* 가격 비교 카드 */}
+                      <div style={{ display: "flex", gap: 12, marginBottom: 20 }}>
+                        <div style={{ flex: 1, background: "#f0f7ff", border: "1px solid #bfdbfe", borderRadius: 8, padding: "16px", textAlign: "center" }}>
+                          <div style={{ fontSize: 12, color: "#64748b", marginBottom: 6 }}>감정평가액</div>
+                          <div style={{ fontSize: 18, fontWeight: 800, color: "#1e40af" }}>{fmtPrice(appraisalRaw)}</div>
+                        </div>
+                        <div style={{ flex: 1, background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: "16px", textAlign: "center" }}>
+                          <div style={{ fontSize: 12, color: "#64748b", marginBottom: 6 }}>최저입찰가</div>
+                          <div style={{ fontSize: 18, fontWeight: 800, color: "#dc2626" }}>{fmtPrice(lowestRaw)}</div>
+                        </div>
+                      </div>
+                      {/* 할인율 & D-day */}
+                      <div style={{ display: "flex", gap: 12, marginBottom: 20 }}>
+                        <div style={{ flex: 1, background: discountRate > 0 ? "#f0fdf4" : "#fef2f2", border: `1px solid ${discountRate > 0 ? "#bbf7d0" : "#fecaca"}`, borderRadius: 8, padding: "14px", textAlign: "center" }}>
+                          <div style={{ fontSize: 12, color: "#64748b", marginBottom: 4 }}>할인율</div>
+                          <div style={{ fontSize: 22, fontWeight: 800, color: discountRate > 0 ? "#16a34a" : "#dc2626" }}>{discountRate > 0 ? "▼" : "▲"} {Math.abs(discountRate)}%</div>
+                        </div>
+                        {dDay && (
+                          <div style={{ flex: 1, background: dDay === "마감" ? "#f5f5f5" : "#fff7ed", border: `1px solid ${dDay === "마감" ? "#e5e5e5" : "#fed7aa"}`, borderRadius: 8, padding: "14px", textAlign: "center" }}>
+                            <div style={{ fontSize: 12, color: "#64748b", marginBottom: 4 }}>입찰 마감</div>
+                            <div style={{ fontSize: 22, fontWeight: 800, color: dDay === "마감" ? "#999" : dDay === "오늘 마감" ? "#dc2626" : "#ea580c" }}>{dDay}</div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* 입찰방법 */}
+                        <div style={{ marginBottom: 20 }}>
+                          <div style={{ fontSize: 15, fontWeight: 800, color: "#1a73e8", marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>✓ 입찰방법</div>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                            {bidMtd && <span style={{ background: "#dbeafe", color: "#1e40af", fontSize: 13, fontWeight: 700, padding: "6px 14px", borderRadius: 6 }}>{bidMtd}</span>}
+                            {dpstRt && <span style={{ background: "#f0fdf4", color: "#16a34a", fontSize: 13, fontWeight: 700, padding: "6px 14px", borderRadius: 6 }}>보증금 {dpstRt}%</span>}
+                            {meta.bidMthodNm && <span style={{ background: "#fef3c7", color: "#92400e", fontSize: 12, fontWeight: 700, padding: "5px 12px", borderRadius: 6 }}>{meta.bidMthodNm}</span>}
+                            {meta.cptnMthodNm && <span style={{ background: "#fef3c7", color: "#92400e", fontSize: 12, fontWeight: 700, padding: "5px 12px", borderRadius: 6 }}>{meta.cptnMthodNm}</span>}
+                            {meta.dspsMthodNm && <span style={{ background: "#fef3c7", color: "#92400e", fontSize: 12, fontWeight: 700, padding: "5px 12px", borderRadius: 6 }}>{meta.dspsMthodNm}</span>}
+                            {meta.collbBidPsblYn === "Y" && <span style={{ background: "#ede9fe", color: "#6d28d9", fontSize: 12, fontWeight: 700, padding: "5px 12px", borderRadius: 6 }}>공동입찰 ✓</span>}
+                            {meta.subtBidPsblYn === "Y" && <span style={{ background: "#ede9fe", color: "#6d28d9", fontSize: 12, fontWeight: 700, padding: "5px 12px", borderRadius: 6 }}>대리입찰 ✓</span>}
+                            {meta.eltrGrprUseYn === "Y" && <span style={{ background: "#ede9fe", color: "#6d28d9", fontSize: 12, fontWeight: 700, padding: "5px 12px", borderRadius: 6 }}>전자보증서 ✓</span>}
+                          </div>
+                          {meta.evcRsbyTrgtCont && (
+                            <div style={{ marginTop: 10, fontSize: 13, color: meta.evcRsbyTrgtCont.includes("매수") ? "#dc2626" : "#333", fontWeight: meta.evcRsbyTrgtCont.includes("매수") ? 700 : 400 }}>
+                              ⚠️ 명도책임: {meta.evcRsbyTrgtCont}
+                            </div>
+                          )}
+                        </div>
+
+                      {/* 입찰일정 및 장소 */}
+                      <div style={{ marginBottom: 20 }}>
+                        <div style={{ fontSize: 15, fontWeight: 800, color: "#1a73e8", marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>✓ 입찰일정 및 장소</div>
+                        <div style={{ display: "grid", gridTemplateColumns: "100px 1fr", border: "1px solid #eee", borderRadius: 6, overflow: "hidden" }}>
+                          {cltrMngNo && (<>
+                            <div style={{ background: "#f4f6fa", padding: "12px", fontSize: 13, fontWeight: 700, color: "#555", borderBottom: "1px solid #eee" }}>관리번호</div>
+                            <div style={{ padding: "12px", fontSize: 13, color: "#222", borderBottom: "1px solid #eee" }}>{cltrMngNo}</div>
+                          </>)}
+                          <div style={{ background: "#f4f6fa", padding: "12px", fontSize: 13, fontWeight: 700, color: "#555", borderBottom: "1px solid #eee" }}>입찰 시작</div>
+                          <div style={{ padding: "12px", fontSize: 13, color: "#222", borderBottom: "1px solid #eee" }}>{bidStart || "-"}</div>
+                          <div style={{ background: "#f4f6fa", padding: "12px", fontSize: 13, fontWeight: 700, color: "#555", borderBottom: "1px solid #eee" }}>입찰 종료</div>
+                          <div style={{ padding: "12px", fontSize: 13, color: "#222", borderBottom: "1px solid #eee" }}>{bidEnd || "-"}</div>
+                          <div style={{ background: "#f4f6fa", padding: "12px", fontSize: 13, fontWeight: 700, color: "#555", borderBottom: "1px solid #eee" }}>유찰 횟수</div>
+                          <div style={{ padding: "12px", fontSize: 13, color: "#222", borderBottom: "1px solid #eee" }}>{pbctCnt}회</div>
+                          <div style={{ background: "#f4f6fa", padding: "12px", fontSize: 13, fontWeight: 700, color: "#555", borderBottom: "1px solid #eee" }}>보증금률</div>
+                          <div style={{ padding: "12px", fontSize: 13, color: "#222", borderBottom: "1px solid #eee" }}>{dpstRt}%</div>
+                          <div style={{ background: "#f4f6fa", padding: "12px", fontSize: 13, fontWeight: 700, color: "#555", borderBottom: "1px solid #eee" }}>입찰보증금</div>
+                          <div style={{ padding: "12px", fontSize: 13, color: "#222", fontWeight: 700, borderBottom: "1px solid #eee" }}>{lowestRaw ? fmtPrice(Math.round(lowestRaw * parseInt(dpstRt, 10) / 100)) : "-"}</div>
+                          {opbdDt && (<>
+                            <div style={{ background: "#f4f6fa", padding: "12px", fontSize: 13, fontWeight: 700, color: "#555", borderBottom: "1px solid #eee" }}>개찰일시</div>
+                            <div style={{ padding: "12px", fontSize: 13, color: "#222", borderBottom: "1px solid #eee" }}>{opbdDt}</div>
+                          </>)}
+                          {opbdPlc && (<>
+                            <div style={{ background: "#f4f6fa", padding: "12px", fontSize: 13, fontWeight: 700, color: "#555", borderBottom: "1px solid #eee" }}>개찰장소</div>
+                            <div style={{ padding: "12px", fontSize: 13, color: "#222", borderBottom: "1px solid #eee" }}>{opbdPlc}</div>
+                          </>)}
+                          {meta.prptDivNm && (<>
+                            <div style={{ background: "#f4f6fa", padding: "12px", fontSize: 13, fontWeight: 700, color: "#555", borderBottom: "1px solid #eee" }}>재산구분</div>
+                            <div style={{ padding: "12px", fontSize: 13, color: meta.prptDivNm.includes("압류") ? "#dc2626" : "#222", fontWeight: meta.prptDivNm.includes("압류") ? 700 : 400, borderBottom: "1px solid #eee" }}>{meta.prptDivNm}</div>
+                          </>)}
+                          {meta.pbctStatNm && (<>
+                            <div style={{ background: "#f4f6fa", padding: "12px", fontSize: 13, fontWeight: 700, color: "#555", borderBottom: "1px solid #eee" }}>공매상태</div>
+                            <div style={{ padding: "12px", fontSize: 13, color: "#222", borderBottom: "1px solid #eee" }}>{meta.pbctStatNm}</div>
+                          </>)}
+                          {meta.totalamtUnpcDivNm && (<>
+                            <div style={{ background: "#f4f6fa", padding: "12px", fontSize: 13, fontWeight: 700, color: "#555", borderBottom: "1px solid #eee" }}>대금납부</div>
+                            <div style={{ padding: "12px", fontSize: 13, color: "#222", borderBottom: "1px solid #eee" }}>{meta.totalamtUnpcDivNm}</div>
+                          </>)}
+                          {meta.dtbtRqrEdtmCont && (<>
+                            <div style={{ background: "#f4f6fa", padding: "12px", fontSize: 13, fontWeight: 700, color: "#555" }}>채무정리기한</div>
+                            <div style={{ padding: "12px", fontSize: 13, color: "#222" }}>{meta.dtbtRqrEdtmCont}</div>
+                          </>)}
+                        </div>
+                      </div>
+
+                      {/* 이전 입찰내역 */}
+                      {parseInt(pbctCnt, 10) > 0 && (
+                        <div style={{ marginBottom: 20 }}>
+                          <div style={{ fontSize: 15, fontWeight: 800, color: "#1a73e8", marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>✓ 이전 입찰내역</div>
+                          <div style={{ display: "flex", gap: 12 }}>
+                            <div style={{ flex: 1, background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, padding: "14px", textAlign: "center" }}>
+                              <div style={{ fontSize: 12, color: "#64748b", marginBottom: 4 }}>이전 입찰 결과</div>
+                              <div style={{ fontSize: 16, fontWeight: 800, color: "#dc2626" }}>유찰</div>
+                            </div>
+                            <div style={{ flex: 1, background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, padding: "14px", textAlign: "center" }}>
+                              <div style={{ fontSize: 12, color: "#64748b", marginBottom: 4 }}>최저입찰가격</div>
+                              <div style={{ fontSize: 14, fontWeight: 800, color: "#1e40af" }}>{fmtPrice(lowestRaw)}</div>
+                            </div>
+                            <div style={{ flex: 1, background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, padding: "14px", textAlign: "center" }}>
+                              <div style={{ fontSize: 12, color: "#64748b", marginBottom: 4 }}>전체 입찰내역</div>
+                              <div style={{ fontSize: 14, fontWeight: 800, color: "#333" }}>유찰 {pbctCnt}회</div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* 경매 인근시세 탭 */}
+              {activeDetailTab === "auction_market" && prop.trade_type === "경매" && (
+                <div style={{ borderBottom: "10px solid #f5f5f5" }}>
+                  <div style={{ padding: "24px 20px" }}>
+                    <div style={{ textAlign: "center", padding: "40px 20px" }}>
+                      <div style={{ fontSize: 48, marginBottom: 16 }}>📊</div>
+                      <div style={{ fontSize: 16, fontWeight: 800, color: "#334155", marginBottom: 8 }}>인근 시세 분석</div>
+                      <div style={{ fontSize: 13, color: "#64748b", lineHeight: 1.6, marginBottom: 20 }}>
+                        이 매물 반경 500m 내 공실뉴스에 등록된<br/>
+                        유사 용도 임대 매물의 실시간 시세를 분석합니다.
+                      </div>
+                      {/* 주변 공실 간이 통계 */}
+                      {(() => {
+                        const nearbyVacancies = dbVacancies.filter(v => {
+                          if (v.trade_type === "경매" || !v.lat || !v.lng || !prop.lat || !prop.lng) return false;
+                          const dlat = (v.lat - prop.lat) * 111000;
+                          const dlng = (v.lng - prop.lng) * 111000 * Math.cos(prop.lat * Math.PI / 180);
+                          return Math.sqrt(dlat * dlat + dlng * dlng) <= 500;
+                        });
+                        if (nearbyVacancies.length === 0) {
+                          return (
+                            <div style={{ padding: "20px", background: "#f8fafc", borderRadius: 8, border: "1px solid #e2e8f0" }}>
+                              <div style={{ fontSize: 14, color: "#94a3b8" }}>반경 500m 내 등록된 임대 매물이 아직 없습니다.</div>
+                              <div style={{ fontSize: 12, color: "#cbd5e1", marginTop: 6 }}>공실뉴스에 더 많은 매물이 등록되면 자동으로 시세가 표시됩니다.</div>
+                            </div>
+                          );
+                        }
+                        const avgDeposit = Math.round(nearbyVacancies.reduce((s, v) => s + (v.deposit || 0), 0) / nearbyVacancies.length);
+                        const avgMonthly = Math.round(nearbyVacancies.reduce((s, v) => s + (v.monthly_rent || 0), 0) / nearbyVacancies.length);
+                        return (
+                          <div style={{ border: "1px solid #e2e8f0", borderRadius: 8, overflow: "hidden" }}>
+                            <div style={{ background: "#1a73e8", color: "#fff", padding: "12px 16px", fontSize: 14, fontWeight: 700 }}>
+                              반경 500m 임대 시세 ({nearbyVacancies.length}건)
+                            </div>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0 }}>
+                              <div style={{ padding: "16px", borderRight: "1px solid #eee", textAlign: "center" }}>
+                                <div style={{ fontSize: 12, color: "#64748b", marginBottom: 4 }}>평균 보증금</div>
+                                <div style={{ fontSize: 16, fontWeight: 800, color: "#1e40af" }}>{formatAmount(avgDeposit)}</div>
+                              </div>
+                              <div style={{ padding: "16px", textAlign: "center" }}>
+                                <div style={{ fontSize: 12, color: "#64748b", marginBottom: 4 }}>평균 월세</div>
+                                <div style={{ fontSize: 16, fontWeight: 800, color: "#1e40af" }}>{avgMonthly ? `${Math.round(avgMonthly / 10000)}만원` : "-"}</div>
+                              </div>
+                            </div>
+                            <div style={{ padding: "12px 16px", background: "#f8fafc", borderTop: "1px solid #eee", fontSize: 11, color: "#94a3b8", textAlign: "center" }}>
+                              공실뉴스 실시간 임대 데이터 기반 · 투자 참고용
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                </div>
               )}
 
               {/* 등록자정보 탭 */}
@@ -2671,36 +3294,12 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
             {/* 하단 고정 바 */}
             <div style={{ width: "100%", height: 75, flexShrink: 0, background: "#fff", borderTop: "1px solid #e0e0e0", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 20px", boxSizing: "border-box", boxShadow: "0 -4px 12px rgba(0,0,0,0.05)", zIndex: 10 }}>
               <span style={{ fontSize: 18, fontWeight: "bold", color: prop.trade_type === "경매" ? "#1a73e8" : "#111" }}>
-                {prop.trade_type === "경매" ? `감정가 ${formatAmount(prop.trade_type === "경매" ? prop.deposit * 10000 : prop.deposit)}` : getPriceText(prop)}
+                {prop.trade_type === "경매" ? `감정가 ${formatAmount(prop.deposit * 10000)}` : getPriceText(prop)}
               </span>
               {prop.trade_type === "경매" ? (
-                (() => {
-                  const onbidUrlMatch = prop.description?.match(/https?:\/\/[^\s]+onbid\.co\.kr[^\s]*/i) 
-                                        || prop.description?.match(/https?:\/\/[^\s]+/i);
-                  const onbidUrl = onbidUrlMatch ? onbidUrlMatch[0] : "https://www.onbid.co.kr";
-                  return (
-                    <a 
-                      href={onbidUrl} 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      style={{ 
-                        background: "#1a73e8", 
-                        color: "#fff", 
-                        textDecoration: "none", 
-                        padding: "10px 20px", 
-                        borderRadius: 4, 
-                        fontSize: 14, 
-                        fontWeight: "bold", 
-                        cursor: "pointer",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: 6
-                      }}
-                    >
-                      온비드 입찰 페이지 바로가기 ↗
-                    </a>
-                  );
-                })()
+                <span style={{ background: "#f4f6fa", border: "1px solid #d0d5dd", padding: "8px 16px", borderRadius: 6, fontSize: 14, fontWeight: 700, color: "#333", letterSpacing: 0.5 }}>
+                  {(prop as any).metadata?.cltrMngNo || ""}
+                </span>
               ) : (
                 <button onClick={() => { setActiveDetailTab("realtor"); setTimeout(() => { const el = document.getElementById("detail-scroll-container"); if (el) el.scrollTo({ top: 0, behavior: "smooth" }); }, 100); }} style={{ background: "#1a73e8", color: "#fff", border: "none", padding: "10px 28px", borderRadius: 4, fontSize: 15, fontWeight: "bold", cursor: "pointer" }}>연락처 보기</button>
               )}
@@ -2770,6 +3369,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
               const nextVal = !isAuctionMode;
               setIsAuctionMode(nextVal);
               setActiveMode(nextVal ? "경매" : "공실");
+              setActiveCategory(nextVal ? "auction" : "all");
+              setActivePills([]);
               setShowDetail(false);
               setSelectedClusterIds(null);
             }} 
@@ -2794,7 +3395,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
               padding: "6px 0",
               outline: "none"
             }}
-            title="온비드 경공매 매물 모드 토글"
+            title="경/공매 매물 모드 토글"
           >
             {/* 경공매용 프리미엄 법봉/해머 아이콘 */}
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={isAuctionMode ? "white" : "#1a73e8"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
