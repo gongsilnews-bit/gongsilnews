@@ -21,7 +21,7 @@ const CATEGORY_CONFIG: Record<string, { name: string; pills: string[]; basicFilt
   one: { name: "원룸·투룸", pills: ["원룸", "투룸", "오피스텔만 보기"], basicFilters: ["거래방식", "가격대", "관리비", "등록자", "중개보수", "테마", "기타옵션"], detailFilters: [], showToggle: false },
   biz: { name: "상가·사무실·공장·토지", pills: ["상가", "사무실", "공장/창고", "지식산업센터", "건물", "토지"], basicFilters: ["거래방식", "가격대", "면적", "층수", "관리비", "등록자", "중개보수", "테마", "기타옵션"], detailFilters: [], showToggle: false },
   sale: { name: "신축/분양", pills: ["아파트", "오피스텔", "빌라", "도시형생활주택", "생활숙박시설", "상가/업무"], basicFilters: ["분양단계", "분양형태", "분양가/보증금", "면적", "세대수", "등록자", "중개보수", "테마"], detailFilters: [], showToggle: false },
-  auction: { name: "경매/공매", pills: ["아파트", "단독/다가구", "빌라/주택", "토지"], basicFilters: ["가격대", "면적", "테마"], detailFilters: [], showToggle: false },
+  auction: { name: "경매/공매", pills: ["아파트", "단독/다가구", "빌라/주택", "상가/점포", "사무실/지산", "빌딩/근생", "공장/창고", "토지"], basicFilters: ["가격대", "면적", "테마"], detailFilters: [], showToggle: false },
   wish: { name: "MY관심공실", pills: [], basicFilters: [], detailFilters: [], showToggle: false },
 };
 
@@ -304,6 +304,10 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
             if (pill === "아파트") return scls === "아파트";
             if (pill === "단독/다가구") return scls === "단독주택" || scls === "다가구주택";
             if (pill === "빌라/주택") return mcls === "주거용건물" && scls !== "아파트" && scls !== "단독주택" && scls !== "다가구주택";
+            if (pill === "상가/점포") return mcls.includes("상업") || scls.includes("상가") || scls.includes("점포") || scls.includes("판매");
+            if (pill === "사무실/지산") return scls.includes("사무") || mcls.includes("업무") || scls.includes("오피스텔") || scls.includes("아파트형") || scls.includes("지식산업");
+            if (pill === "빌딩/근생") return mcls.includes("근린생활") || scls.includes("상가주택") || scls.includes("빌딩") || mcls.includes("숙박") || mcls.includes("의료");
+            if (pill === "공장/창고") return (scls.includes("공장") || scls.includes("창고") || scls.includes("제조") || mcls.includes("산업")) && !scls.includes("아파트형") && !scls.includes("지식산업");
             if (pill === "토지") return mcls === "토지";
             return false;
           });
@@ -1600,19 +1604,46 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
         {/* Tier 2: 서브 필터(Pills + 드롭다운) */}
         {activeCategory !== "wish" && activeCategory !== "all" && (
           <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 20px", borderBottom: "1px solid #e0e0e0", overflowX: "visible" }}>
-            {config.pills.map((p) => (
-              <button key={p} onClick={() => togglePill(p)} style={{
-                background: activePills.includes(p) ? (isOfficePill(p) ? "#111" : (isAuctionMode ? "#e8f0fe" : "#e8f0fe")) : "#fff",
-                border: `1px solid ${activePills.includes(p) ? (isOfficePill(p) ? "#111" : (isAuctionMode ? "#1a73e8" : "#1a73e8")) : "#ccc"}`,
-                fontSize: 13, color: activePills.includes(p) ? (isOfficePill(p) ? "#fff" : (isAuctionMode ? "#1a73e8" : "#1a73e8")) : "#333",
-                cursor: "pointer", padding: "6px 14px",
-                borderRadius: isOfficePill(p) ? 4 : 20,
-                whiteSpace: "nowrap", fontWeight: activePills.includes(p) ? "bold" : "normal", fontFamily: "inherit", flexShrink: 0,
-                transition: "all 0.15s"
-              }}>
-                {activePills.includes(p) && !isOfficePill(p) ? `✓ ${p}` : p}
-              </button>
-            ))}
+            {config.pills.map((p, idx) => {
+              // Curated color themes for different groups in Auction Mode!
+              let activeBg = "#e8f0fe";
+              let activeBorder = "#1a73e8";
+              let activeColor = "#1a73e8";
+
+              if (isAuctionMode) {
+                if (["상가/점포", "사무실/지산", "빌딩/근생", "공장/창고"].includes(p)) {
+                  activeBg = "#f3f0ff"; // soft indigo
+                  activeBorder = "#7048e8";
+                  activeColor = "#7048e8";
+                } else if (p === "토지") {
+                  activeBg = "#ebfbee"; // soft green
+                  activeBorder = "#2b8a3e";
+                  activeColor = "#2b8a3e";
+                }
+              }
+
+              const isSelected = activePills.includes(p);
+
+              return (
+                <React.Fragment key={p}>
+                  <button onClick={() => togglePill(p)} style={{
+                    background: isSelected ? (isOfficePill(p) ? "#111" : activeBg) : "#fff",
+                    border: `1px solid ${isSelected ? (isOfficePill(p) ? "#111" : activeBorder) : "#ccc"}`,
+                    fontSize: 13, color: isSelected ? (isOfficePill(p) ? "#fff" : activeColor) : "#333",
+                    cursor: "pointer", padding: "6px 14px",
+                    borderRadius: isOfficePill(p) ? 4 : 20,
+                    whiteSpace: "nowrap", fontWeight: isSelected ? "bold" : "normal", fontFamily: "inherit", flexShrink: 0,
+                    transition: "all 0.15s"
+                  }}>
+                    {isSelected && !isOfficePill(p) ? `✓ ${p}` : p}
+                  </button>
+                  {/* Elegant Dividers between groups in Auction Mode */}
+                  {isAuctionMode && (p === "빌라/주택" || p === "공장/창고") && (
+                    <div style={{ width: 1, height: 16, background: "#ddd", margin: "0 6px", flexShrink: 0 }} />
+                  )}
+                </React.Fragment>
+              );
+            })}
             <div style={{ width: 1, height: 16, background: "#e0e0e0", margin: "0 8px", flexShrink: 0 }}></div>
             {config.basicFilters.map((f) => {
               const isFilterActive = (
