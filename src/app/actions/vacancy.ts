@@ -250,7 +250,7 @@ export async function getVacancies(options?: {
     console.log(`📊 getVacancies: 총 ${allData.length}건 로드 (${page}페이지)`);
     
     const lightData = allData.map(v => {
-      const { infrastructure, description, metadata, ...rest } = v;
+      const { infrastructure, description, metadata, members, vacancy_photos, ...rest } = v;
       const lightMetadata = metadata ? {
         cltrUsgLclsCtgrNm: metadata.cltrUsgLclsCtgrNm,
         cltrUsgMclsCtgrNm: metadata.cltrUsgMclsCtgrNm,
@@ -399,7 +399,7 @@ export async function getVacanciesForMap(options?: any) {
     if (error) return { success: false, error: error.message };
 
     const lightData = data?.map(v => {
-      const { infrastructure, description, metadata, ...rest } = v;
+      const { infrastructure, description, metadata, members, vacancy_photos, ...rest } = v;
       const lightMetadata = metadata ? {
         cltrUsgLclsCtgrNm: metadata.cltrUsgLclsCtgrNm,
         cltrUsgMclsCtgrNm: metadata.cltrUsgMclsCtgrNm,
