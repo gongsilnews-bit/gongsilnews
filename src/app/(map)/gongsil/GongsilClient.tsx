@@ -1211,8 +1211,11 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     }
     const currentLevel = kakaoMapRef.current?.getLevel() || 6;
 
-    // [대표님 지침] 지도가 멀리 줌아웃된 상태(레벨 >= 9)에서는 직방처럼 지도 위에 아무런 매물/클러스터 마커도 노출하지 않습니다.
+    // [대표님 지침] 지도가 멀리 줌아웃된 상태(레벨 >= 9)에서는 직방처럼 지도 위에 아무런 매물/클러스터 마커도 노출하지 않고 메모리/성능을 극대화합니다.
     if (currentLevel >= 9 && activeCategory !== "wish") {
+      if (clustererRef.current) {
+        clustererRef.current.clear();
+      }
       return;
     }
 
@@ -1407,7 +1410,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
       clustererRef.current.addMarkers(newMarkers);
     }
 
-  }, [filteredVacancies, selectedRegion, activeCategory, showArticleOnMap, activeProperty, mapLoaded, isAuctionMode]);
+  }, [filteredVacancies, selectedRegion, activeCategory, showArticleOnMap, activeProperty, mapLoaded, isAuctionMode, zoomLevel]);
 
   const formatAmount = (amt: number) => {
     if (!amt) return "";
@@ -2441,7 +2444,13 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
               flexShrink: 0,
               background: isAuctionMode ? "#eaf4ff" : "#fff"
             }}>
-              <span>{isAuctionMode ? "해당 지역의 경/공매 매물" : (selectedClusterIds && selectedClusterIds.length > 0 ? "선택된 공실" : "지도위의 공실")} {displayVacancies.length}개</span>
+              <span>
+                {zoomLevel >= 9 ? (
+                  "지도를 더 확대해 주세요"
+                ) : (
+                  <>{isAuctionMode ? "해당 지역의 경/공매 매물" : (selectedClusterIds && selectedClusterIds.length > 0 ? "선택된 공실" : "지도위의 공실")} {displayVacancies.length}개</>
+                )}
+              </span>
             </div>
           )}
 
