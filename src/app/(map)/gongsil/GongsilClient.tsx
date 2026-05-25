@@ -2524,7 +2524,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                     )}
                     {prop.trade_type === "경매" && (
                       <span style={{ fontSize: 13, fontWeight: "bold", color: "#fa5252", border: "1px solid #fa5252", padding: "2px 6px", borderRadius: 2 }}>
-                        {((prop as any).metadata?.cltrUsgSclsCtgrNm || "온비드")} 경매
+                        {((prop as any).metadata?.cltrUsgSclsCtgrNm || "온비드")} 공매
                       </span>
                     )}
                     {prop.trade_type === "경매" ? (
