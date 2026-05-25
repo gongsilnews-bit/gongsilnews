@@ -2765,25 +2765,23 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                 gap: 10,
                 padding: "10px 18px",
                 borderRadius: "30px",
-                background: activeMode === "공실" ? "linear-gradient(135deg, #1a73e8 0%, #1e3c72 100%)" : "rgba(255, 255, 255, 0.95)",
-                color: activeMode === "공실" ? "#fff" : "#1a73e8",
-                border: activeMode === "공실" ? "2px solid #000" : "2px solid #1a73e8",
+                background: activeMode === "공실" ? "#1a73e8" : "#ffffff",
+                color: activeMode === "공실" ? "#ffffff" : "#4b5563",
+                border: "none",
                 fontSize: "14px",
                 fontWeight: 800,
                 cursor: "pointer",
-                boxShadow: "0 4px 15px rgba(0,0,0,0.15)",
-                transition: "all 0.2s ease-in-out",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
+                transition: "all 0.15s ease-in-out",
                 minWidth: "135px",
                 justifyContent: "flex-start",
                 letterSpacing: "-0.5px"
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-2px)";
-                e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.25)";
+                e.currentTarget.style.opacity = "0.9";
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "0 4px 15px rgba(0,0,0,0.15)";
+                e.currentTarget.style.opacity = "1";
               }}
             >
               <span style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -2809,25 +2807,23 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                 gap: 10,
                 padding: "10px 18px",
                 borderRadius: "30px",
-                background: activeMode === "분양" ? "linear-gradient(135deg, #2ecc71 0%, #27ae60 100%)" : "rgba(255, 255, 255, 0.95)",
-                color: activeMode === "분양" ? "#fff" : "#2ecc71",
-                border: activeMode === "분양" ? "2px solid #000" : "2px solid #2ecc71",
+                background: activeMode === "분양" ? "#2ecc71" : "#ffffff",
+                color: activeMode === "분양" ? "#ffffff" : "#4b5563",
+                border: "none",
                 fontSize: "14px",
                 fontWeight: 800,
                 cursor: "pointer",
-                boxShadow: "0 4px 15px rgba(0,0,0,0.15)",
-                transition: "all 0.2s ease-in-out",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
+                transition: "all 0.15s ease-in-out",
                 minWidth: "135px",
                 justifyContent: "flex-start",
                 letterSpacing: "-0.5px"
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-2px)";
-                e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.25)";
+                e.currentTarget.style.opacity = "0.9";
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "0 4px 15px rgba(0,0,0,0.15)";
+                e.currentTarget.style.opacity = "1";
               }}
             >
               <span style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -2853,25 +2849,23 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                 gap: 10,
                 padding: "10px 18px",
                 borderRadius: "30px",
-                background: activeMode === "경매" ? "linear-gradient(135deg, #ff8c00 0%, #e52d27 100%)" : "rgba(255, 255, 255, 0.95)",
-                color: activeMode === "경매" ? "#fff" : "#ff8c00",
-                border: activeMode === "경매" ? "2px solid #000" : "2px solid #ff8c00",
+                background: activeMode === "경매" ? "#ff8c00" : "#ffffff",
+                color: activeMode === "경매" ? "#ffffff" : "#4b5563",
+                border: "none",
                 fontSize: "14px",
                 fontWeight: 800,
                 cursor: "pointer",
-                boxShadow: "0 4px 15px rgba(0,0,0,0.15)",
-                transition: "all 0.2s ease-in-out",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
+                transition: "all 0.15s ease-in-out",
                 minWidth: "135px",
                 justifyContent: "flex-start",
                 letterSpacing: "-0.5px"
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-2px)";
-                e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.25)";
+                e.currentTarget.style.opacity = "0.9";
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "0 4px 15px rgba(0,0,0,0.15)";
+                e.currentTarget.style.opacity = "1";
               }}
             >
               <span style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
