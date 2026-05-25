@@ -1,3 +1,6 @@
+"use client";
+
+import { useLayoutEffect } from "react";
 import Link from "next/link";
 import BannerSlot from "@/components/BannerSlot";
 
@@ -9,6 +12,26 @@ interface CategoryNewsGridProps {
 }
 
 export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [], issueRightBanners, middleIssueBanners }: CategoryNewsGridProps) {
+  // PC 홈 스크롤 복원: 기사 클릭 후 뒤로가기 시 보던 위치로 즉시 복원 (깜빡임 제거)
+  useLayoutEffect(() => {
+    const savedScroll = sessionStorage.getItem('pc_home_scroll');
+    if (savedScroll) {
+      const scrollY = parseInt(savedScroll, 10);
+      sessionStorage.removeItem('pc_home_scroll');
+      window.scrollTo(0, scrollY);
+      const origScrollTo = window.scrollTo;
+      (window as any).scrollTo = function(...args: any[]) {
+        let targetY: number | undefined;
+        if (typeof args[0] === 'number') targetY = args[1] as number;
+        else if (args[0] && typeof args[0] === 'object') targetY = (args[0] as ScrollToOptions).top;
+        if (targetY === 0) return;
+        return origScrollTo.apply(window, args as any);
+      };
+      setTimeout(() => { (window as any).scrollTo = origScrollTo; }, 300);
+    }
+  }, []);
+
+  const saveScroll = () => sessionStorage.setItem('pc_home_scroll', window.scrollY.toString());
   // JS에서 새 카테고리별 분류
   const marketingArts = allNewsArticles.filter(a => a.section1 === "AI마케팅").slice(0, 2);
   const economyArts = allNewsArticles.filter(a => a.section1 === "부동산·경제").slice(0, 2);
@@ -64,7 +87,7 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
       const ytInfo = extractYoutubeIdInfo(item);
       const thumbSrc = getThumbnailSrc(item, ytInfo);
       return (
-        <Link key={i} href={`/news/${item.article_no || item.id}`} style={{ textDecoration: "none", color: "inherit", display: "block", marginBottom: 24 }}>
+        <Link key={i} href={`/news/${item.article_no || item.id}`} onClick={saveScroll} style={{ textDecoration: "none", color: "inherit", display: "block", marginBottom: 24 }}>
           <div className="hi-item" style={{ alignItems: "flex-start", display: "flex", gap: "20px" }}>
             <div className="hi-img" style={{ position: "relative", width: "160px", height: "100px", flexShrink: 0 }}>
               <img src={thumbSrc !== "https://via.placeholder.com/300x200?text=No+Image" ? thumbSrc : "https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&q=80&w=600&h=337"} alt={item.title} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 4 }} />
@@ -127,7 +150,7 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
               const ytInfo = extractYoutubeIdInfo(item);
               const thumbSrc = getThumbnailSrc(item, ytInfo);
               return (
-                <Link key={i} href={`/news/${item.article_no || item.id}`} className="vid-item">
+                <Link key={i} href={`/news/${item.article_no || item.id}`} className="vid-item" onClick={saveScroll}>
                   <div className="vid-thumb">
                     <img src={thumbSrc !== "https://via.placeholder.com/300x200?text=No+Image" ? thumbSrc : "https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&q=80&w=600&h=337"} alt={item.title} />
                     <div className="vid-play"></div>

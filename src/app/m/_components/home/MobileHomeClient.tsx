@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useLayoutEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import dynamic from "next/dynamic";
@@ -95,6 +95,27 @@ export default function MobileHomeClient(props: Props) {
     }
     getSession();
   }, []);
+
+  // 홈 화면 스크롤 복원: 기사 클릭 후 뒤로가기 시 보던 위치로 즉시 복원 (깜빡임 제거)
+  useLayoutEffect(() => {
+    const savedScroll = sessionStorage.getItem('mobile_home_scroll');
+    if (savedScroll) {
+      const scrollY = parseInt(savedScroll, 10);
+      sessionStorage.removeItem('mobile_home_scroll');
+      window.scrollTo(0, scrollY);
+      const origScrollTo = window.scrollTo;
+      (window as any).scrollTo = function(...args: any[]) {
+        let targetY: number | undefined;
+        if (typeof args[0] === 'number') targetY = args[1] as number;
+        else if (args[0] && typeof args[0] === 'object') targetY = (args[0] as ScrollToOptions).top;
+        if (targetY === 0) return;
+        return origScrollTo.apply(window, args as any);
+      };
+      setTimeout(() => { (window as any).scrollTo = origScrollTo; }, 300);
+    }
+  }, []);
+
+  const saveHomeScroll = () => sessionStorage.setItem('mobile_home_scroll', window.scrollY.toString());
 
   // ── 헤드라인 자동 슬라이드 (3초마다) ──
   useEffect(() => {
@@ -217,7 +238,7 @@ export default function MobileHomeClient(props: Props) {
             }}
           >
             {headlineArticles.slice(0, 5).map((hero, i) => (
-              <Link key={i} href={`/m/news/${hero.article_no || hero.id}`} style={{ width: "100%", height: "100%", flexShrink: 0, scrollSnapAlign: "start", scrollSnapStop: "always", position: "relative", display: "block", textDecoration: "none" }}>
+              <Link key={i} href={`/m/news/${hero.article_no || hero.id}`} onClick={saveHomeScroll} style={{ width: "100%", height: "100%", flexShrink: 0, scrollSnapAlign: "start", scrollSnapStop: "always", position: "relative", display: "block", textDecoration: "none" }}>
                 {hero.thumbnail_url
                   ? <img src={hero.thumbnail_url} alt={hero.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   : <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg,#1a2e50,#2d4a7a)" }} />}
@@ -274,10 +295,10 @@ export default function MobileHomeClient(props: Props) {
 
 
       {/* ② 공실뉴스 */}
-      <NewsSection title="공실뉴스" href="/m/news_gongsil" articles={gongsilArticles} />
+      <NewsSection title="공실뉴스" href="/m/news_gongsil" articles={gongsilArticles} onArticleClick={saveHomeScroll} />
 
       {/* ③ 부동산·경제 */}
-      <NewsSection title="부동산·경제" href="/m/news_politics" articles={realestateArticles} />
+      <NewsSection title="부동산·경제" href="/m/news_politics" articles={realestateArticles} onArticleClick={saveHomeScroll} />
 
       {/* ④ 우리동네뉴스 (PC VideoGrid 대응) */}
       {mapArticles.length > 0 && (
@@ -288,7 +309,7 @@ export default function MobileHomeClient(props: Props) {
           </div>
           <div className="no-scrollbar" style={{ display: "flex", gap: 12, padding: "0 16px 16px", overflowX: "auto" }} onTouchStart={(e) => e.stopPropagation()} onTouchEnd={(e) => e.stopPropagation()}>
             {mapArticles.slice(0, 5).map((a: any) => (
-              <Link key={a.id} href={`/m/news/${a.article_no || a.id}`} className="tap"
+              <Link key={a.id} href={`/m/news/${a.article_no || a.id}`} className="tap" onClick={saveHomeScroll}
                 style={{ flexShrink: 0, width: "calc(50vw - 22px)", maxWidth: 200, borderRadius: 10, overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.07)", border: "1px solid #f3f4f6", background: "#fff", cursor: "pointer", textDecoration: "none", display: "block" }}>
                 <div style={{ width: "100%", aspectRatio: "16/9", overflow: "hidden", background: "#e5e7eb", position: "relative" }}>
                   {a.thumbnail_url
@@ -311,10 +332,10 @@ export default function MobileHomeClient(props: Props) {
       )}
 
       {/* ⑤ AI마케팅 */}
-      <NewsSection title="AI마케팅" href="/m/news_marketing" articles={marketingArticles} />
+      <NewsSection title="AI마케팅" href="/m/news_marketing" articles={marketingArticles} onArticleClick={saveHomeScroll} />
 
       {/* ⑥ 라이프·오피니언 */}
-      <NewsSection title="라이프·오피니언" href="/m/news_etc" articles={lifeArticles} />
+      <NewsSection title="라이프·오피니언" href="/m/news_etc" articles={lifeArticles} onArticleClick={saveHomeScroll} />
 
       {/* ⑨ 부동산특강 (PC SpecialLectureBanner 대응) */}
       {lectures.length > 0 && (
@@ -405,7 +426,7 @@ export default function MobileHomeClient(props: Props) {
   );
 }
 
-function NewsSection({ title, href, articles }: { title: string; href: string; articles: any[]; }) {
+function NewsSection({ title, href, articles, onArticleClick }: { title: string; href: string; articles: any[]; onArticleClick?: () => void; }) {
   if (articles.length === 0) return null;
   const [main, ...rest] = articles;
 
@@ -416,7 +437,7 @@ function NewsSection({ title, href, articles }: { title: string; href: string; a
         <Link href={href} style={{ fontSize: 15, color: "#999999", textDecoration: "none", letterSpacing: "-0.2px" }}>더보기 ›</Link>
       </div>
       {/* 메인 기사 (큰 썸네일) */}
-      <Link href={`/m/news/${main.article_no || main.id}`} className="tap art-row"
+      <Link href={`/m/news/${main.article_no || main.id}`} className="tap art-row" onClick={onArticleClick}
         style={{ padding: "14px 16px", cursor: "pointer", borderBottom: "1px solid #f0f0f0", display: "block" }}>
         <div style={{ display: "flex", gap: 12 }}>
           <div style={{ flex: 1 }}>
@@ -437,7 +458,7 @@ function NewsSection({ title, href, articles }: { title: string; href: string; a
       </Link>
       {/* 나머지 기사 (번호 리스트) */}
       {rest.slice(0, 3).map((a: any, i: number) => (
-        <Link key={a.id} href={`/m/news/${a.article_no || a.id}`} className="tap art-row" style={{ display: "flex" }}>
+        <Link key={a.id} href={`/m/news/${a.article_no || a.id}`} className="tap art-row" onClick={onArticleClick} style={{ display: "flex" }}>
           <span style={{ flexShrink: 0, width: 24, fontSize: 17, fontWeight: 800, color: i === 0 ? "#508bf5" : "#d1d5db", alignSelf: "center" }}>{i + 1}</span>
           <p style={{ fontSize: 18, fontWeight: 600, color: "#333333", lineHeight: 1.5, flex: 1, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", wordBreak: "keep-all", margin: 0, letterSpacing: "-0.3px" }}>{a.title}</p>
           {a.thumbnail_url && (
