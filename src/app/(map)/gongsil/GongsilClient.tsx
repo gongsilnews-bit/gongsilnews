@@ -3664,9 +3664,12 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
 
       {/* 갤러리 풀스크린 모달 (z-index 문제 해결을 위해 최상위로 이동) */}
       {showGalleryModal && activeProperty !== null && (() => {
-        const prop = dbVacancies.find(v => v.id === activeProperty);
-        const images = prop?.images || [];
-        if (images.length === 0) return null;
+        const baseProp = dbVacancies.find(v => v.id === activeProperty);
+        if (!baseProp) return null;
+        const fullProp = fullDetailsMap[activeProperty] || {};
+        const prop = { ...baseProp, ...fullProp };
+        const images = prop.images && prop.images.length > 0 ? prop.images : [];
+        if (images.length === 0 || (images.length === 1 && images[0] === "")) return null;
         return (
           <div onClick={() => closeGalleryModal()} style={{ position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh", background: "rgba(0,0,0,0.9)", zIndex: 99999, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <button onClick={() => closeGalleryModal()} style={{ position: "absolute", top: 20, right: 30, background: "none", border: "none", color: "#fff", fontSize: 50, cursor: "pointer", zIndex: 100000, fontWeight: 300, lineHeight: 1 }}>×</button>

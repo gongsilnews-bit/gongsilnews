@@ -208,7 +208,7 @@ export async function getVacancies(options?: {
       const to = from + PAGE_SIZE - 1;
       
       const selectFields = options?.all
-        ? '*'
+        ? '*, vacancy_photos(url, sort_order)'
         : '*, members!vacancies_owner_id_fkey(name, email, role, phone, sns_links, profile_image_url, agencies(*)), vacancy_photos(url, sort_order)';
 
       let pageQuery = supabase
@@ -266,7 +266,7 @@ export async function getVacancies(options?: {
         pblctBgnDtm: metadata.pblctBgnDtm,
         bid_start_date: metadata.bid_start_date,
       } : {};
-      return { ...rest, metadata: lightMetadata };
+      return { ...rest, metadata: lightMetadata, vacancy_photos };
     });
 
     return { success: true, data: lightData || [] };
@@ -415,7 +415,7 @@ export async function getVacanciesForMap(options?: any) {
         pblctBgnDtm: metadata.pblctBgnDtm,
         bid_start_date: metadata.bid_start_date,
       } : {};
-      return { ...rest, metadata: lightMetadata };
+      return { ...rest, metadata: lightMetadata, vacancy_photos };
     });
 
     return { success: true, data: lightData || [] };
