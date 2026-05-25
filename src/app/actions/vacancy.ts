@@ -252,7 +252,15 @@ export async function getVacancies(options?: {
         cltrUsgMclsCtgrNm: metadata.cltrUsgMclsCtgrNm,
         cltrUsgSclsCtgrNm: metadata.cltrUsgSclsCtgrNm,
         cltrMngNo: metadata.cltrMngNo,
+        cltr_mng_no: metadata.cltr_mng_no,
         bldSqms: metadata.bldSqms,
+        cltrAr: metadata.cltrAr,
+        apslEvlAmt: metadata.apslEvlAmt,
+        appraisal_price: metadata.appraisal_price,
+        lowstBidPrcIndctCont: metadata.lowstBidPrcIndctCont,
+        lowest_bid_price: metadata.lowest_bid_price,
+        pblctBgnDtm: metadata.pblctBgnDtm,
+        bid_start_date: metadata.bid_start_date,
       } : {};
       return { ...rest, metadata: lightMetadata };
     });
@@ -393,7 +401,15 @@ export async function getVacanciesForMap(options?: any) {
         cltrUsgMclsCtgrNm: metadata.cltrUsgMclsCtgrNm,
         cltrUsgSclsCtgrNm: metadata.cltrUsgSclsCtgrNm,
         cltrMngNo: metadata.cltrMngNo,
+        cltr_mng_no: metadata.cltr_mng_no,
         bldSqms: metadata.bldSqms,
+        cltrAr: metadata.cltrAr,
+        apslEvlAmt: metadata.apslEvlAmt,
+        appraisal_price: metadata.appraisal_price,
+        lowstBidPrcIndctCont: metadata.lowstBidPrcIndctCont,
+        lowest_bid_price: metadata.lowest_bid_price,
+        pblctBgnDtm: metadata.pblctBgnDtm,
+        bid_start_date: metadata.bid_start_date,
       } : {};
       return { ...rest, metadata: lightMetadata };
     });
