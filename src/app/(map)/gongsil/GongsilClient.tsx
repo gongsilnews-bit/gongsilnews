@@ -257,7 +257,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     // Update Single Markers reactively
     if (markersRef.current && (window as any).kakao?.maps && kakaoMapRef.current) {
        const map = kakaoMapRef.current;
-       const isZoomedIn = map.getLevel() <= 3;
+       const isZoomedIn = map.getLevel() <= 5;
 
        markersRef.current.forEach((marker: any) => {
           const idStr = markerIdMapRef.current.get(marker);
@@ -989,7 +989,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     kakao.maps.event.addListener(map, 'zoom_changed', () => {
       setSelectedClusterIds(null);
       const currentLevel = map.getLevel();
-      const isZoomedIn = currentLevel <= 3;
+      const isZoomedIn = currentLevel <= 5;
       const isAuction = isAuctionModeRef.current;
       
       // Skip heavy loops if the threshold 3/4 boundary was not crossed (extremely high performance!)
@@ -1189,7 +1189,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
 
     const newMarkers: any[] = [];
     const currentLevel = kakaoMapRef.current?.getLevel() || 6;
-    const isZoomedIn = currentLevel <= 3;
+    const isZoomedIn = currentLevel <= 5;
     lastZoomWasInRef.current = isZoomedIn;
 
     coordinateGroups.forEach((group, coordKey) => {
@@ -1235,8 +1235,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
       kakao.maps.event.addListener(marker, 'mouseout', () => {
         const currentSelected = group.some(v => selectedClusterIdsRef.current?.includes(String(v.id)) || String(activeProperty) === String(v.id));
         const updatedSvg = currentSelected ? activeSvg : normalSvg;
-        const currentWidth = (isAuctionMode && (kakaoMapRef.current?.getLevel() || 6) <= 3) ? 128 : 42;
-        const currentHeight = (isAuctionMode && (kakaoMapRef.current?.getLevel() || 6) <= 3) ? 51 : 42;
+        const currentWidth = (isAuctionMode && (kakaoMapRef.current?.getLevel() || 6) <= 5) ? 128 : 42;
+        const currentHeight = (isAuctionMode && (kakaoMapRef.current?.getLevel() || 6) <= 5) ? 51 : 42;
         marker.setImage(new kakao.maps.MarkerImage(
           `data:image/svg+xml,${updatedSvg}`,
           new kakao.maps.Size(currentWidth, currentHeight),
