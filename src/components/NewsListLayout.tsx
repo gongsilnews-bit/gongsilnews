@@ -450,40 +450,8 @@ function NewsListLayoutInner({ category, title, initialArticles, initialPopular,
             {displayArticles.length > 0 && (
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px 12px", backgroundColor: "#fff", borderBottom: "1px solid #f3f4f6", marginBottom: "20px" }}>
                 <span style={{ fontSize: "14px", fontWeight: 600, color: "#71717a", letterSpacing: "-0.3px", display: "flex", alignItems: "center", gap: "8px" }}>
-                  <span style={{ color: "#18181b", display: "flex", alignItems: "center", gap: "5px" }}>
-                    <button 
-                      onClick={() => handleSubCategoryClick(null)}
-                      style={{
-                        background: "none",
-                        border: "none",
-                        padding: 0,
-                        fontSize: "14px",
-                        fontWeight: 700,
-                        color: "#18181b",
-                        cursor: "pointer",
-                        textDecoration: "none"
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.textDecoration = "underline"}
-                      onMouseLeave={(e) => e.currentTarget.style.textDecoration = "none"}
-                    >
-                      {displayTitle}
-                    </button>
-                    <span style={{ color: "#a1a1aa", fontWeight: 400 }}>&gt;</span>
-                    <button
-                      onClick={() => handleSubCategoryClick(selectedSubCategory)}
-                      disabled={!selectedSubCategory}
-                      style={{
-                        background: "none",
-                        border: "none",
-                        padding: 0,
-                        fontSize: "14px",
-                        fontWeight: 700,
-                        color: "#18181b",
-                        cursor: selectedSubCategory ? "pointer" : "default"
-                      }}
-                    >
-                      {selectedSubCategory || "전체"}
-                    </button>
+                  <span style={{ color: "#18181b", fontWeight: 700 }}>
+                    {displayTitle} <span style={{ color: "#a1a1aa", fontWeight: 400, margin: "0 4px" }}>&gt;</span> {selectedSubCategory || "전체"}
                   </span>
                   <span style={{ color: "#e4e4e7" }}>|</span>
                   <span>

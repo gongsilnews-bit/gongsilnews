@@ -1765,37 +1765,8 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                 {/* 일반 뉴스 리스트 정렬 필터 (모노크롬 미니멀 스타일) */}
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px 10px", backgroundColor: "#fff", borderBottom: "1px solid #f3f4f6" }}>
                   <span style={{ fontSize: "13px", fontWeight: 600, color: "#71717a", letterSpacing: "-0.3px", display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
-                    <span style={{ color: "#18181b", display: "flex", alignItems: "center", gap: "4px" }}>
-                      <button 
-                        onClick={() => handleSection2Click("")}
-                        style={{
-                          background: "none",
-                          border: "none",
-                          padding: 0,
-                          fontSize: "13px",
-                          fontWeight: 700,
-                          color: "#18181b",
-                          cursor: "pointer"
-                        }}
-                      >
-                        {KEY_TO_SECTION1[activeTab] || "공실뉴스"}
-                      </button>
-                      <span style={{ color: "#a1a1aa", fontWeight: 400 }}>&gt;</span>
-                      <button
-                        onClick={() => handleSection2Click(section2Tab)}
-                        disabled={!section2Tab}
-                        style={{
-                          background: "none",
-                          border: "none",
-                          padding: 0,
-                          fontSize: "13px",
-                          fontWeight: 700,
-                          color: "#18181b",
-                          cursor: section2Tab ? "pointer" : "default"
-                        }}
-                      >
-                        {section2Tab || "전체"}
-                      </button>
+                    <span style={{ color: "#18181b", fontWeight: 700 }}>
+                      {KEY_TO_SECTION1[activeTab] || "공실뉴스"} <span style={{ color: "#a1a1aa", fontWeight: 400, margin: "0 2px" }}>&gt;</span> {section2Tab || "전체"}
                     </span>
                     <span style={{ color: "#e4e4e7" }}>|</span>
                     <span>
