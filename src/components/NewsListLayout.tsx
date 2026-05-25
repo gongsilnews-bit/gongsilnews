@@ -217,12 +217,12 @@ function NewsListLayoutInner({ category, title, initialArticles, initialPopular,
   const extractYoutubeIdInfo = (article: Article) => {
     // 1순위: 명시적 유튜브 URL
     if (article.youtube_url) {
-      const match = article.youtube_url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|shorts\/))([\\w-]{11})/);
+      const match = article.youtube_url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|shorts\/))([\w-]{11})/);
       if (match) return { id: match[1], hasVideo: true };
     }
     // 2순위: 본문(content) 내장 iframe 또는 링크
     if (article.content) {
-      const match = article.content.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|shorts\/))([\\w-]{11})/);
+      const match = article.content.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|shorts\/))([\w-]{11})/);
       if (match) return { id: match[1], hasVideo: true };
     }
     return { id: null, hasVideo: false };
@@ -515,7 +515,7 @@ function NewsListLayoutInner({ category, title, initialArticles, initialPopular,
                           />
                           {ytInfo.hasVideo && (
                             <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 44, height: 44, background: "rgba(0,0,0,0.4)", borderRadius: "50%", border: "2.5px solid white", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 5 }}>
-                              <svg viewBox="0 0 24 24" width="24" height="24" fill="white" style={{ marginLeft: 4 }}><path d="M8 5v14l11-7z"/></svg>
+                              <svg viewBox="0 0 24 24" width="24" height="24" fill="white" style={{ marginLeft: "2px" }}><path d="M8 5v14l11-7z"/></svg>
                             </div>
                           )}
                         </div>
@@ -787,7 +787,7 @@ function PremiumSplitRecommend({ articles }: { articles: Article[] }) {
           {activeThumb && <img src={activeThumb} alt={activeArticle.title} />}
           {activeYtInfo && (
             <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 44, height: 44, background: "rgba(0,0,0,0.5)", borderRadius: "50%", border: "2.5px solid white", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 3 }}>
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="white" style={{ marginLeft: 3 }}><path d="M8 5v14l11-7z"/></svg>
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="white" style={{ marginLeft: "1.5px" }}><path d="M8 5v14l11-7z"/></svg>
             </div>
           )}
 
@@ -837,7 +837,7 @@ function PremiumSplitRecommend({ articles }: { articles: Article[] }) {
                   <img src={thumb} alt={article.title} />
                   {ytInfo && (
                     <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 28, height: 28, background: "rgba(0,0,0,0.5)", borderRadius: "50%", border: "1.5px solid white", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 3 }}>
-                      <svg viewBox="0 0 24 24" width="12" height="12" fill="white" style={{ marginLeft: 2 }}><path d="M8 5v14l11-7z"/></svg>
+                      <svg viewBox="0 0 24 24" width="12" height="12" fill="white" style={{ marginLeft: "1px" }}><path d="M8 5v14l11-7z"/></svg>
                     </div>
                   )}
                 </div>
