@@ -1121,7 +1121,6 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
 
     kakao.maps.event.addListener(map, 'zoom_start', () => {
        setSelectedClusterIds(null);
-       setSelectedRegion(null);
      });
 
     kakao.maps.event.addListener(map, 'zoom_changed', () => {
@@ -1217,22 +1216,15 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
       return;
     }
 
-    // 2. 멀리 줌아웃된 상태에서 레벨별 동적 슬라이싱 및 그리드 최적화 (성능 60fps 극대화)
-    let sliceLimit = 9999;
+    // 2. 멀리 줌아웃된 상태에서 레벨별 그리드 최적화 (성능 60fps 극대화)
     let dynamicGridSize = 60;
 
     if (currentLevel >= 8) {
-      sliceLimit = 350;        // 전국/광역 단위: 대표 마커 350개로 제한하여 0ms 렌더링 실현
       dynamicGridSize = 100;   // 매우 강력한 클러스터링으로 싱글 마커 생성 억제
     } else if (currentLevel === 7) {
-      sliceLimit = 550;        // 도시 단위: 대표 마커 550개 제한
       dynamicGridSize = 80;    // 중간 수준 클러스터링
     } else if (currentLevel <= 5) {
       dynamicGridSize = 40;    // 상세 동네 단위: 정밀 클러스터링
-    }
-
-    if (targetVacancies.length > sliceLimit) {
-      targetVacancies = targetVacancies.slice(0, sliceLimit);
     }
 
     if (targetVacancies.length === 0) return;
@@ -1298,21 +1290,35 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     });
 
     kakao.maps.event.addListener(clustererRef.current, 'clustered', (clusters: any[]) => {
-       if (!selectedClusterIdsRef.current || selectedClusterIdsRef.current.length === 0) return;
        clusters.forEach(cluster => {
           const markers = cluster.getMarkers();
-          if (markers.length < 2) return;
-          const ids = markers.flatMap((m: any) => {
+          // Sum the counts of all coordinate groups inside this cluster
+          let totalCount = 0;
+          markers.forEach((m: any) => {
              const pos = m.getPosition();
-             return filteredVacanciesRef.current.filter((v: any) => Math.abs(v.lat - pos.getLat()) < 0.00001 && Math.abs(v.lng - pos.getLng()) < 0.00001).map((v: any) => String(v.id));
+             // Find the number of properties at this marker's coordinate
+             const count = filteredVacanciesRef.current.filter((v: any) => 
+               Math.abs(v.lat - pos.getLat()) < 0.00001 && Math.abs(v.lng - pos.getLng()) < 0.00001
+             ).length;
+             totalCount += count;
           });
-          const isMatch = ids.some((id: any) => id && selectedClusterIdsRef.current?.includes(id));
-          if (isMatch) {
-             const overlay = cluster.getClusterMarker().getContent();
-             if (overlay && overlay.style) {
+
+          const overlay = cluster.getClusterMarker().getContent();
+          if (overlay) {
+             overlay.innerText = totalCount.toString();
+          }
+
+          // Apply selected cluster styles if match
+          if (selectedClusterIdsRef.current && selectedClusterIdsRef.current.length > 0) {
+             const ids = markers.flatMap((m: any) => {
+                const pos = m.getPosition();
+                return filteredVacanciesRef.current.filter((v: any) => Math.abs(v.lat - pos.getLat()) < 0.00001 && Math.abs(v.lng - pos.getLng()) < 0.00001).map((v: any) => String(v.id));
+             });
+             const isMatch = ids.some((id: any) => id && selectedClusterIdsRef.current?.includes(id));
+             if (isMatch && overlay && overlay.style) {
                  overlay.style.background = '#ffffff';
-                 overlay.style.color = isAuctionMode ? '#4b89ff' : '#4b89ff';
-                 overlay.style.border = isAuctionMode ? '2px solid #4b89ff' : '2px solid #4b89ff';
+                 overlay.style.color = isAuctionMode ? '#1a73e8' : '#4b89ff';
+                 overlay.style.border = isAuctionMode ? '2px solid #1a73e8' : '2px solid #4b89ff';
                  overlay.style.zIndex = '999';
              }
           }
@@ -3568,9 +3574,9 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
             )}
           </div>
 
-          {/* 내 위치에서 검색 버튼 */}
           <button className="map-btn" style={{ zIndex: 1000 }} onClick={() => {
             setSelectedClusterIds(null);
+            setSelectedRegion(null);
             if (navigator.geolocation) {
               navigator.geolocation.getCurrentPosition((pos) => {
                 const lat = pos.coords.latitude;
