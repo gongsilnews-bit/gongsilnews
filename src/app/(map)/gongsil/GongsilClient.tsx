@@ -2786,7 +2786,15 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                 e.currentTarget.style.boxShadow = "0 4px 15px rgba(0,0,0,0.15)";
               }}
             >
-              <span style={{ fontSize: "16px" }}>🏢</span>
+              <span style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                  <rect x="4" y="2" width="16" height="20" rx="2" ry="2" />
+                  <line x1="9" y1="22" x2="9" y2="16" />
+                  <line x1="15" y1="22" x2="15" y2="16" />
+                  <line x1="9" y1="16" x2="15" y2="16" />
+                  <path d="M8 6h2v2H8V6zm6 0h2v2h-2V6zm-6 5h2v2H8v-2zm6 0h2v2h-2v-2z" />
+                </svg>
+              </span>
               <span>공실정보</span>
             </button>
 
@@ -2822,7 +2830,15 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                 e.currentTarget.style.boxShadow = "0 4px 15px rgba(0,0,0,0.15)";
               }}
             >
-              <span style={{ fontSize: "16px" }}>🏗️</span>
+              <span style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                  <path d="M2 22h20" />
+                  <path d="M13 22V4a2 2 0 0 0-2-2h-3v20" />
+                  <path d="M18 22V9a2 2 0 0 0-2-2h-3" />
+                  <path d="M13 14h5" />
+                  <path d="M8 6h2V4H8v2zm0 6h2v-2H8v2zm0 6h2v-2H8v2z" />
+                </svg>
+              </span>
               <span>신축/분양</span>
             </button>
 
@@ -2858,7 +2874,17 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                 e.currentTarget.style.boxShadow = "0 4px 15px rgba(0,0,0,0.15)";
               }}
             >
-              <span style={{ fontSize: "16px" }}>🔨</span>
+              <span style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                  <path d="m14 13-5 5" />
+                  <path d="m15 4 5 5" />
+                  <path d="m11.5 7.5 5 5" />
+                  <path d="m16.5 2.5 5 5" />
+                  <path d="m8 10-5 5" />
+                  <path d="m6 12 2 2" />
+                  <path d="M2 22h10" />
+                </svg>
+              </span>
               <span>경/공매</span>
             </button>
           </div>
