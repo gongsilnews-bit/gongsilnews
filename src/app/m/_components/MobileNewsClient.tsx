@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, Suspense, useMemo } from "react";
+import React, { useState, useEffect, useLayoutEffect, useRef, Suspense, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -450,16 +450,30 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
   }, [activeTab]);
 
   // Restore scroll position from sessionStorage on mount of MobileNewsClient
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const savedScroll = sessionStorage.getItem(`news_scroll_${activeTab}`);
-      if (savedScroll) {
-        // DOM 렌더링 후 위치 이동을 위해 약간의 딜레이 보정
-        setTimeout(() => {
-          window.scrollTo(0, parseInt(savedScroll, 10));
-          sessionStorage.removeItem(`news_scroll_${activeTab}`);
-        }, 150);
-      }
+  // scrollTo 가로채기: Next.js 라우터의 scrollTo(0) 호출을 일시 차단하여 깜빡임(flicker) 완전 제거
+  useLayoutEffect(() => {
+    const savedScroll = sessionStorage.getItem(`news_scroll_${activeTab}`);
+    if (savedScroll) {
+      const scrollY = parseInt(savedScroll, 10);
+      sessionStorage.removeItem(`news_scroll_${activeTab}`);
+
+      // 1. 저장된 위치로 즉시 스크롤
+      window.scrollTo(0, scrollY);
+
+      // 2. Next.js 라우터의 scrollTo(0) 호출을 일시 차단
+      const origScrollTo = window.scrollTo;
+      (window as any).scrollTo = function(...args: any[]) {
+        let targetY: number | undefined;
+        if (typeof args[0] === 'number') targetY = args[1] as number;
+        else if (args[0] && typeof args[0] === 'object') targetY = (args[0] as ScrollToOptions).top;
+        if (targetY === 0) return; // Next.js의 scroll-to-top 차단
+        return origScrollTo.apply(window, args as any);
+      };
+
+      // 3. Next.js 라우터 처리 완료 후 원본 scrollTo 복원 (300ms면 충분)
+      setTimeout(() => {
+        (window as any).scrollTo = origScrollTo;
+      }, 300);
     }
   }, []);
   // Compute importantArticles at top level to maintain clean state

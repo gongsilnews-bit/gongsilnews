@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useLayoutEffect } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import ImportantNewsRotate from "./ImportantNewsRotate";
@@ -87,21 +87,40 @@ function NewsListLayoutInner({ category, title, initialArticles, initialPopular,
     }
   }, [searchParams, category]);
 
-  // Restore sort and scroll position on mount/category change
+  // Restore sort on mount/category change
   useEffect(() => {
     if (typeof window !== "undefined") {
       const savedSort = sessionStorage.getItem(`pc_news_sort_${category}`);
       if (savedSort === 'popular' || savedSort === 'newest') {
         setSortBy(savedSort);
       }
-      const savedScroll = sessionStorage.getItem(`pc_news_scroll_${category}`);
-      if (savedScroll) {
-        // Wait slightly for DOM to render to ensure list is drawn
-        setTimeout(() => {
-          window.scrollTo(0, parseInt(savedScroll, 10));
-          sessionStorage.removeItem(`pc_news_scroll_${category}`);
-        }, 150);
-      }
+    }
+  }, [category]);
+
+  // scrollTo 가로채기: Next.js 라우터의 scrollTo(0) 호출을 일시 차단하여 깜빡임(flicker) 완전 제거
+  useLayoutEffect(() => {
+    const savedScroll = sessionStorage.getItem(`pc_news_scroll_${category}`);
+    if (savedScroll) {
+      const scrollY = parseInt(savedScroll, 10);
+      sessionStorage.removeItem(`pc_news_scroll_${category}`);
+
+      // 1. 저장된 위치로 즉시 스크롤
+      window.scrollTo(0, scrollY);
+
+      // 2. Next.js 라우터의 scrollTo(0) 호출을 일시 차단
+      const origScrollTo = window.scrollTo;
+      (window as any).scrollTo = function(...args: any[]) {
+        let targetY: number | undefined;
+        if (typeof args[0] === 'number') targetY = args[1] as number;
+        else if (args[0] && typeof args[0] === 'object') targetY = (args[0] as ScrollToOptions).top;
+        if (targetY === 0) return; // Next.js의 scroll-to-top 차단
+        return origScrollTo.apply(window, args as any);
+      };
+
+      // 3. Next.js 라우터 처리 완료 후 원본 scrollTo 복원 (300ms면 충분)
+      setTimeout(() => {
+        (window as any).scrollTo = origScrollTo;
+      }, 300);
     }
   }, [category]);
 
