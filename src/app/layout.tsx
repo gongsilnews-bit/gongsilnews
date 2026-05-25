@@ -25,6 +25,9 @@ export const metadata: Metadata = {
     // 네이버 서치어드바이저에서 받은 인증 코드를 여기에 입력
     // other: { "naver-site-verification": "여기에_인증코드_입력" },
   },
+  other: {
+    "google": "notranslate"
+  }
 };
 
 export default function RootLayout({
@@ -33,7 +36,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ko">
+    <html lang="ko" className="notranslate" translate="no">
       <body>
         <ScrollToTop />
         {children}

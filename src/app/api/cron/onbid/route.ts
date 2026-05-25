@@ -15,8 +15,15 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "인증되지 않은 요청입니다." }, { status: 401 });
   }
 
-  // 대상 지역 결정: sido 파라미터가 있으면 해당 지역, 없으면 서울특별시
-  const targetRegions = sidoParam ? sidoParam.split(",") : ["서울특별시"];
+  const sidos = [
+    "서울특별시", "경기도", "인천광역시", "부산광역시", "대구광역시", 
+    "대전광역시", "광주광역시", "울산광역시", "세종특별자치시", "강원특별자치도", 
+    "충청북도", "충청남도", "전북특별자치도", "전라남도", "경상북도", 
+    "경상남도", "제주특별자치도"
+  ];
+
+  // 대상 지역 결정: sido 파라미터가 있으면 해당 지역, 없으면 전국 17개 시도
+  const targetRegions = sidoParam ? sidoParam.split(",") : sidos;
 
   console.log(`🤖 온비드 공매 물건 동기화 시작 (대상: ${targetRegions.join(", ")})`);
 

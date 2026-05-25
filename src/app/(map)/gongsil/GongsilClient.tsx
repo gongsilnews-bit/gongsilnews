@@ -81,6 +81,93 @@ const MAINT_PRESETS = [
   { label: "30만 이상", min: 300000, max: Infinity },
 ];
 
+// 온비드 경공매 물건과 일반 매물의 주소/건물명 중복을 방지하여 깔끔한 타이틀을 반환하는 헬퍼 함수
+const getCleanAddrText = (prop: any) => {
+  if (!prop) return "";
+  const bldName = prop.building_name || "";
+  const dong = prop.dong || "";
+
+  if (prop.trade_type === "경매") {
+    // 온비드 공매 물건은 building_name 자체가 풀 주소 및 세부 용도를 이미 완벽히 포함하고 있어,
+    // 동 이름(dong)을 앞에 붙이면 "숭인동 서울종로구 숭인동 142..." 처럼 중복되어 개판이 됩니다.
+    // 따라서 중복을 방지하고 building_name 단독으로만 예쁘게 노출시킵니다.
+    return bldName;
+  }
+
+  // 일반 매물은 표준 방식(동 + 건물명) 적용
+  return [dong, bldName].filter(Boolean).join(" ");
+};
+
+// 온비드 경공매 물건의 세부 카테고리 정보 및 면적을 안전하게 분석하는 헬퍼 함수
+const getAuctionInfo = (prop: any) => {
+  if (!prop) return { category: "공매", badge: "공매", area: "" };
+
+  let meta = prop.metadata || {};
+  if (typeof meta === 'string') {
+    try {
+      meta = JSON.parse(meta);
+    } catch {
+      meta = {};
+    }
+  }
+
+  let scls = meta.cltrUsgSclsCtgrNm || "";
+  let mcls = meta.cltrUsgMclsCtgrNm || "";
+  let bldName = prop.building_name || "";
+  let propType = prop.property_type || "";
+
+  // 1. 구체적인 카테고리 명칭 결정
+  let category = "";
+  if (scls) {
+    category = scls;
+  } else if (mcls) {
+    category = mcls;
+  } else {
+    // 메타데이터가 없는 레코드는 건물명(building_name) 키워드 및 대분류 분석 기반 매핑
+    if (propType === "아파트·오피스텔") {
+      category = bldName.includes("오피스텔") ? "오피스텔" : "아파트";
+    } else if (propType === "빌라·주택") {
+      if (bldName.includes("단독") || bldName.includes("다가구")) category = "단독주택";
+      else if (bldName.includes("다세대") || bldName.includes("연립")) category = "다세대주택";
+      else category = "빌라/주택";
+    } else {
+      // 상가·사무실·건물·공장·토지
+      if (bldName.includes("토지") || bldName.includes("전") || bldName.includes("답") || bldName.includes("임야") || bldName.includes("대지") || bldName.includes("잡종지")) {
+        if (bldName.includes("임야")) category = "임야";
+        else if (bldName.includes("전")) category = "전";
+        else if (bldName.includes("답")) category = "답";
+        else if (bldName.includes("대지")) category = "대지";
+        else category = "토지";
+      } else if (bldName.includes("공장") || bldName.includes("창고") || bldName.includes("제조")) {
+        category = bldName.includes("창고") ? "창고" : "공장";
+      } else if (bldName.includes("사무") || bldName.includes("사무실") || bldName.includes("지산") || bldName.includes("오피스")) {
+        category = "사무실";
+      } else if (bldName.includes("빌딩") || bldName.includes("근생") || bldName.includes("근린") || bldName.includes("숙박") || bldName.includes("의료") || bldName.includes("콘도") || bldName.includes("리조트")) {
+        if (bldName.includes("근생") || bldName.includes("근린")) category = "근린생활시설";
+        else if (bldName.includes("콘도") || bldName.includes("리조트") || bldName.includes("호텔")) category = "숙박시설";
+        else category = "빌딩";
+      } else {
+        category = "상가/점포";
+      }
+    }
+  }
+
+  // 2. 대분류 문자열 찌꺼기 보정
+  if (category === "상가·사무실·건물·공장·토지") {
+    category = "상업용";
+  }
+
+  // 3. 면적 정보 추출
+  const areaVal = meta.bldSqms || meta.cltrAr || prop.exclusive_m2;
+  const areaText = areaVal ? `${parseFloat(areaVal).toLocaleString()}㎡` : "";
+
+  return {
+    category,
+    badge: `${category} 공매`,
+    area: areaText
+  };
+};
+
 export default function GongsilClient({ initialVacancies }: { initialVacancies: any[] }) {
   /* ── State & Refs ── */
   const searchParams = useSearchParams();
@@ -234,8 +321,11 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   const [selectedClusterIds, setSelectedClusterIds] = useState<string[] | null>(null);
   const selectedClusterIdsRef = useRef<string[] | null>(null);
   const dbVacanciesRef = useRef<any[]>(initialVacancies);
+  const filteredVacanciesRef = useRef<any[]>([]);
   const lastZoomWasInRef = useRef<boolean | null>(null);
   const [mapBounds, setMapBounds] = useState<any>(null);
+  const [zoomLevel, setZoomLevel] = useState<number>(6);
+  const [selectedRegion, setSelectedRegion] = useState<{ sido: string; gugun: string; dong: string } | null>(null);
   const [mapCenterRegion, setMapCenterRegion] = useState<{ sido: string; gugun: string; dong: string } | null>(null);
   const [visibleCount, setVisibleCount] = useState(30);
 
@@ -261,14 +351,15 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
 
        markersRef.current.forEach((marker: any) => {
           const idStr = markerIdMapRef.current.get(marker);
-          const prop = dbVacanciesRef.current.find((v: any) => String(v.id) === idStr);
+          const prop = filteredVacanciesRef.current.find((v: any) => String(v.id) === idStr);
           if (!prop) return;
 
-          const group = dbVacanciesRef.current.filter((v: any) => Math.abs(v.lat - prop.lat) < 0.000001 && Math.abs(v.lng - prop.lng) < 0.000001);
+          const group = filteredVacanciesRef.current.filter((v: any) => Math.abs(v.lat - prop.lat) < 0.000001 && Math.abs(v.lng - prop.lng) < 0.000001);
           const isSelected = group.some(v => selectedClusterIds?.includes(String(v.id)) || String(activeProperty) === String(v.id));
 
-          const width = (isAuctionMode && isZoomedIn) ? 128 : 42;
-          const height = (isAuctionMode && isZoomedIn) ? 51 : 42;
+          const { size } = getMarkerDimensions(group.length);
+          const width = size;
+          const height = size;
 
           const normalSvg = getMarkerSvg(prop, group, isSelected, isZoomedIn, false);
           const activeSvg = getMarkerSvg(prop, group, true, isZoomedIn, false);
@@ -289,6 +380,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   }, [selectedClusterIds, isAuctionMode]);
 
   const filteredVacancies = React.useMemo(() => {
+    // Keep filteredVacanciesRef updated
+    setTimeout(() => { filteredVacanciesRef.current = filteredVacancies; }, 0);
     let list = dbVacancies;
 
     if (isAuctionMode) {
@@ -461,7 +554,30 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
       return filtered;
     }
 
-    if (selectedClusterIds) {
+    if (selectedRegion) {
+      filtered = filtered.filter(v => {
+        // sido check
+        if (selectedRegion.sido && selectedRegion.sido !== "시/도 선택" && selectedRegion.sido !== "-") {
+          const vSido = v.sido || "";
+          const matchSido = vSido.includes(selectedRegion.sido) || selectedRegion.sido.includes(vSido) ||
+            (selectedRegion.sido.substring(0, 2) === vSido.substring(0, 2));
+          if (!matchSido) return false;
+        }
+        // gugun check
+        if (selectedRegion.gugun && selectedRegion.gugun !== "-") {
+          const vGugun = v.sigungu || "";
+          const matchGugun = vGugun.includes(selectedRegion.gugun) || selectedRegion.gugun.includes(vGugun);
+          if (!matchGugun) return false;
+        }
+        // dong check
+        if (selectedRegion.dong && selectedRegion.dong !== "-") {
+          const vDong = v.dong || "";
+          const matchDong = vDong.includes(selectedRegion.dong) || selectedRegion.dong.includes(vDong);
+          if (!matchDong) return false;
+        }
+        return true;
+      });
+    } else if (selectedClusterIds) {
       filtered = filtered.filter(v => selectedClusterIds.includes(String(v.id)));
     } else if (mapBounds && (window as any).kakao?.maps) {
       filtered = filtered.filter(v => {
@@ -471,7 +587,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
       });
     }
     return filtered;
-  }, [filteredVacancies, selectedClusterIds, mapBounds, activeCategory]);
+  }, [filteredVacancies, selectedClusterIds, mapBounds, activeCategory, selectedRegion]);
 
   const [mapError, setMapError] = useState<string | null>(null);
   const [showGalleryModal, setShowGalleryModal] = useState(false);
@@ -826,7 +942,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   const handlePrint = (prop: any) => {
     const images = prop.images && prop.images.length > 0 && prop.images[0] ? prop.images : [];
     const imageHtml = images.length > 0 ? images.map((src: string) => `<img src="${src}" style="max-width:100%;max-height:300px;object-fit:contain;border-radius:6px;margin-bottom:8px;" />`).join('') : '';
-    const addrText = [prop.dong, prop.building_name].filter(Boolean).join(" ");
+    const addrText = getCleanAddrText(prop);
     const fullAddr = [prop.sido, prop.sigungu, prop.dong, prop.detail_addr].filter(Boolean).join(" ");
     const priceText = getPriceText(prop);
     const printWindow = window.open('', '_blank', 'width=800,height=1000');
@@ -896,7 +1012,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
       alert('카카오 SDK가 로드되지 않았습니다. 잠시 후 다시 시도해 주세요.');
       return;
     }
-    const addrText = [prop.dong, prop.building_name].filter(Boolean).join(" ");
+    const addrText = getCleanAddrText(prop);
     const priceText = getPriceText(prop);
     // 무조건 운영 서버 도메인으로 하드코딩
     const shareUrl = `https://gongsilnews.com/gongsil?id=${prop.id}`;
@@ -958,6 +1074,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     });
 
     const map = kakaoMapRef.current;
+    setZoomLevel(map.getLevel());
 
     // 제한된 범위 지정 (3: 가장 확대된 상태, 14: 전국 범위)
     map.setMinLevel(3);
@@ -984,96 +1101,53 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
 
     kakao.maps.event.addListener(map, 'dragstart', () => {
        setSelectedClusterIds(null);
+       setSelectedRegion(null);
     });
 
     kakao.maps.event.addListener(map, 'zoom_start', () => {
        setSelectedClusterIds(null);
+       setSelectedRegion(null);
      });
 
     kakao.maps.event.addListener(map, 'zoom_changed', () => {
       setSelectedClusterIds(null);
       const currentLevel = map.getLevel();
-      const isZoomedIn = currentLevel <= 5;
-      const isAuction = isAuctionModeRef.current;
-      
-      // Skip heavy loops if the threshold 3/4 boundary was not crossed (extremely high performance!)
-      if (lastZoomWasInRef.current !== null && lastZoomWasInRef.current === isZoomedIn) {
-        return;
-      }
-      lastZoomWasInRef.current = isZoomedIn;
-      
-      // Update all markers instantly on zoom level change
-      if (markersRef.current && markersRef.current.length > 0) {
-        markersRef.current.forEach((marker: any) => {
-          const idStr = markerIdMapRef.current.get(marker);
-          const prop = dbVacanciesRef.current.find((v: any) => String(v.id) === idStr);
-          if (!prop) return;
-          
-          const group = dbVacanciesRef.current.filter((v: any) => Math.abs(v.lat - prop.lat) < 0.000001 && Math.abs(v.lng - prop.lng) < 0.000001);
-          const isSelected = group.some(v => selectedClusterIdsRef.current?.includes(String(v.id)) || String(activeProperty) === String(v.id));
-          
-          const width = (isAuction && isZoomedIn) ? 128 : 42;
-          const height = (isAuction && isZoomedIn) ? 51 : 42;
-          
-          const normalSvg = getMarkerSvg(prop, group, isSelected, isZoomedIn, false);
-          const activeSvg = getMarkerSvg(prop, group, true, isZoomedIn, false);
-          const currentSelected = selectedClusterIdsRef.current?.includes(idStr) || String(activeProperty) === idStr;
-          const updatedSvg = currentSelected ? activeSvg : normalSvg;
-
-          marker.setImage(new kakao.maps.MarkerImage(
-            `data:image/svg+xml,${updatedSvg}`,
-            new kakao.maps.Size(width, height),
-            { offset: new kakao.maps.Point(width / 2, height / 2) }
-          ));
-        });
-      }
+      setZoomLevel(currentLevel);
     });
   }, [mapLoaded]);
 
-  // 가격 및 원형 마커 SVG를 줌 레벨에 따라 동적 생성하는 헬퍼 함수
+  // 숫자 크기(매물 밀집도)에 따라 마커의 버블 크기와 폰트 크기를 다이내믹하게 결정하는 헬퍼 함수
+  const getMarkerDimensions = (count: number) => {
+    if (count === 1) {
+      return { size: 38, radius: 17, fontSize: 13 };
+    } else if (count < 10) {
+      return { size: 44, radius: 20, fontSize: 14 };
+    } else if (count < 100) {
+      return { size: 50, radius: 23, fontSize: 15 };
+    } else {
+      return { size: 58, radius: 27, fontSize: 17 };
+    }
+  };
+
+  // 가격 및 원형 마커 SVG를 줌 레벨과 밀집도에 따라 동적 생성하는 헬퍼 함수 (항상 가볍고 빠른 원형 동그라미 숫자로 노출)
   const getMarkerSvg = (prop: any, group: any[], isSelected: boolean, isZoomedIn: boolean, isHover: boolean = false) => {
     const overlappingCount = group.length;
-    if (isAuctionMode) {
-      if (isZoomedIn) {
-        // 줌인 상태: 사각형 금액 마커 핀
-        const amtText = formatPriceLabel(prop.trade_type === "경매" ? prop.deposit * 10000 : prop.deposit) || "경매";
-        if (isHover) {
-          const badgeHoverSvg = overlappingCount > 1 
-            ? `<circle cx="124" cy="8" r="12" fill="%23e11d48" stroke="white" stroke-width="2.5"/><text x="124" y="13.5" text-anchor="middle" fill="white" font-size="13" font-weight="900" font-family="'Pretendard',sans-serif">${overlappingCount}</text>`
-            : '';
-          return `<svg xmlns="http://www.w3.org/2000/svg" width="138" height="57"><path d="M 8,3 L 130,3 A 6,6 0 0 1 136,9 L 136,41 A 6,6 0 0 1 130,47 L 75,47 L 69,56 L 63,47 L 8,47 A 6,6 0 0 1 2,41 L 2,9 A 6,6 0 0 1 8,3 Z" fill="%231a73e8" stroke="white" stroke-width="2.5" filter="drop-shadow(0px 3px 6px rgba(0,0,0,0.25))"/><text x="69" y="30" text-anchor="middle" fill="white" font-size="17" font-weight="900" font-family="'Pretendard',sans-serif">경매 ${amtText}</text>${badgeHoverSvg}</svg>`;
-        } else {
-          const badgeSvg = overlappingCount > 1 
-            ? `<circle cx="115" cy="8" r="11" fill="%23e11d48" stroke="white" stroke-width="2"/><text x="115" y="12.5" text-anchor="middle" fill="white" font-size="12" font-weight="900" font-family="'Pretendard',sans-serif">${overlappingCount}</text>`
-            : '';
-          if (isSelected) {
-            return `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="51"><path d="M 8,3 L 120,3 A 6,6 0 0 1 126,9 L 126,37 A 6,6 0 0 1 120,43 L 70,43 L 64,50 L 58,43 L 8,43 A 6,6 0 0 1 2,37 L 2,9 A 6,6 0 0 1 8,3 Z" fill="white" stroke="%231a73e8" stroke-width="3.5" filter="drop-shadow(0px 2.5px 5px rgba(0,0,0,0.22))"/><text x="64" y="27" text-anchor="middle" fill="%231a73e8" font-size="15" font-weight="900" font-family="'Pretendard',sans-serif">경매 ${amtText}</text>${badgeSvg}</svg>`;
-          } else {
-            return `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="51"><path d="M 8,3 L 120,3 A 6,6 0 0 1 126,9 L 126,37 A 6,6 0 0 1 120,43 L 70,43 L 64,50 L 58,43 L 8,43 A 6,6 0 0 1 2,37 L 2,9 A 6,6 0 0 1 8,3 Z" fill="%231a73e8" stroke="white" stroke-width="2" filter="drop-shadow(0px 2.5px 5px rgba(0,0,0,0.22))"/><text x="64" y="27" text-anchor="middle" fill="white" font-size="15" font-weight="900" font-family="'Pretendard',sans-serif">경매 ${amtText}</text>${badgeSvg}</svg>`;
-          }
-        }
-      } else {
-        // 줌아웃 상태: 파란색 원형 마커 (표기 숫자는 항상 1로 통일)
-        if (isHover) {
-          return `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48"><circle cx="24" cy="24" r="22" fill="%231a73e8" stroke="white" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="17" font-weight="bold" font-family="sans-serif">1</text></svg>`;
-        } else {
-          if (isSelected) {
-            return `<svg xmlns="http://www.w3.org/2000/svg" width="42" height="42"><circle cx="21" cy="21" r="19" fill="white" stroke="%231a73e8" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="%231a73e8" font-size="16" font-weight="bold" font-family="sans-serif">1</text></svg>`;
-          } else {
-            return `<svg xmlns="http://www.w3.org/2000/svg" width="42" height="42"><circle cx="21" cy="21" r="19" fill="%231a73e8" stroke="white" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="16" font-weight="bold" font-family="sans-serif">1</text></svg>`;
-          }
-        }
-      }
+    const color = isAuctionMode ? "%231a73e8" : "%234b89ff";
+    const textVal = overlappingCount.toString();
+    const { size, radius, fontSize } = getMarkerDimensions(overlappingCount);
+
+    const svgSize = isHover ? size + 6 : size;
+    const center = svgSize / 2;
+    const finalRadius = isHover ? radius + 3 : radius;
+    const finalFontSize = isHover ? fontSize + 1 : fontSize;
+
+    if (isHover) {
+      return `<svg xmlns="http://www.w3.org/2000/svg" width="${svgSize}" height="${svgSize}"><circle cx="${center}" cy="${center}" r="${finalRadius}" fill="${color}" stroke="white" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="${finalFontSize}" font-weight="bold" font-family="sans-serif">${textVal}</text></svg>`;
     } else {
-      // 일반 공실 모드: 항상 원형 마커에 1 표기
-      if (isHover) {
-        return `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48"><circle cx="24" cy="24" r="22" fill="%234b89ff" stroke="white" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="17" font-weight="bold" font-family="sans-serif">1</text></svg>`;
+      if (isSelected) {
+        return `<svg xmlns="http://www.w3.org/2000/svg" width="${svgSize}" height="${svgSize}"><circle cx="${center}" cy="${center}" r="${finalRadius}" fill="white" stroke="${color}" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="${color}" font-size="${finalFontSize}" font-weight="bold" font-family="sans-serif">${textVal}</text></svg>`;
       } else {
-        if (isSelected) {
-          return `<svg xmlns="http://www.w3.org/2000/svg" width="42" height="42"><circle cx="21" cy="21" r="19" fill="white" stroke="%234b89ff" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="%234b89ff" font-size="16" font-weight="bold" font-family="sans-serif">1</text></svg>`;
-        } else {
-          return `<svg xmlns="http://www.w3.org/2000/svg" width="42" height="42"><circle cx="21" cy="21" r="19" fill="%234b89ff" stroke="white" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="16" font-weight="bold" font-family="sans-serif">1</text></svg>`;
-        }
+        return `<svg xmlns="http://www.w3.org/2000/svg" width="${svgSize}" height="${svgSize}"><circle cx="${center}" cy="${center}" r="${finalRadius}" fill="${color}" stroke="white" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="${finalFontSize}" font-weight="bold" font-family="sans-serif">${textVal}</text></svg>`;
       }
     }
   };
@@ -1096,7 +1170,63 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     markersRef.current = [];
     markerIdMapRef.current.clear();
 
-    if (filteredVacancies.length === 0) return;
+    // 1. 성능 최적화: 마커는 클러스터 선택에 영향받지 않고 전체 화면/선택지역 범위를 기준으로 노출하여 다른 마커 소멸 방지
+    let targetVacancies = filteredVacancies;
+    if (activeCategory !== "wish") {
+      if (selectedRegion) {
+        targetVacancies = targetVacancies.filter(v => {
+          if (selectedRegion.sido && selectedRegion.sido !== "시/도 선택" && selectedRegion.sido !== "-") {
+            const vSido = v.sido || "";
+            const matchSido = vSido.includes(selectedRegion.sido) || selectedRegion.sido.includes(vSido) ||
+              (selectedRegion.sido.substring(0, 2) === vSido.substring(0, 2));
+            if (!matchSido) return false;
+          }
+          if (selectedRegion.gugun && selectedRegion.gugun !== "-") {
+            const vGugun = v.sigungu || "";
+            const matchGugun = vGugun.includes(selectedRegion.gugun) || selectedRegion.gugun.includes(vGugun);
+            if (!matchGugun) return false;
+          }
+          if (selectedRegion.dong && selectedRegion.dong !== "-") {
+            const vDong = v.dong || "";
+            const matchDong = vDong.includes(selectedRegion.dong) || selectedRegion.dong.includes(vDong);
+            if (!matchDong) return false;
+          }
+          return true;
+        });
+      } else if (mapBounds && (window as any).kakao?.maps) {
+        targetVacancies = targetVacancies.filter(v => {
+          if (!v.lat || !v.lng) return false;
+          const pos = new (window as any).kakao.maps.LatLng(v.lat, v.lng);
+          return mapBounds.contain(pos);
+        });
+      }
+    }
+    const currentLevel = kakaoMapRef.current?.getLevel() || 6;
+
+    // [대표님 지침] 지도가 멀리 줌아웃된 상태(레벨 >= 9)에서는 직방처럼 지도 위에 아무런 매물/클러스터 마커도 노출하지 않습니다.
+    if (currentLevel >= 9 && activeCategory !== "wish") {
+      return;
+    }
+
+    // 2. 멀리 줌아웃된 상태에서 레벨별 동적 슬라이싱 및 그리드 최적화 (성능 60fps 극대화)
+    let sliceLimit = 9999;
+    let dynamicGridSize = 60;
+
+    if (currentLevel >= 8) {
+      sliceLimit = 350;        // 전국/광역 단위: 대표 마커 350개로 제한하여 0ms 렌더링 실현
+      dynamicGridSize = 100;   // 매우 강력한 클러스터링으로 싱글 마커 생성 억제
+    } else if (currentLevel === 7) {
+      sliceLimit = 550;        // 도시 단위: 대표 마커 550개 제한
+      dynamicGridSize = 80;    // 중간 수준 클러스터링
+    } else if (currentLevel <= 5) {
+      dynamicGridSize = 40;    // 상세 동네 단위: 정밀 클러스터링
+    }
+
+    if (targetVacancies.length > sliceLimit) {
+      targetVacancies = targetVacancies.slice(0, sliceLimit);
+    }
+
+    if (targetVacancies.length === 0) return;
 
     const kakao = (window as any).kakao;
     const map = kakaoMapRef.current;
@@ -1111,7 +1241,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
       map: map,
       averageCenter: true,
       minLevel: 4,
-      gridSize: 60,
+      gridSize: dynamicGridSize,
       disableClickZoom: true,
       calculator: [10, 30, 50],
       texts: (count: number) => count.toString(),
@@ -1152,7 +1282,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
       const markers = cluster.getMarkers();
       const ids = markers.flatMap((m: any) => {
          const pos = m.getPosition();
-         return dbVacanciesRef.current.filter((v: any) => Math.abs(v.lat - pos.getLat()) < 0.00001 && Math.abs(v.lng - pos.getLng()) < 0.00001).map((v: any) => String(v.id));
+         return filteredVacanciesRef.current.filter((v: any) => Math.abs(v.lat - pos.getLat()) < 0.00001 && Math.abs(v.lng - pos.getLng()) < 0.00001).map((v: any) => String(v.id));
       });
       setSelectedClusterIds(Array.from(new Set(ids)));
       setShowDetail(false);
@@ -1165,7 +1295,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
           if (markers.length < 2) return;
           const ids = markers.flatMap((m: any) => {
              const pos = m.getPosition();
-             return dbVacanciesRef.current.filter((v: any) => Math.abs(v.lat - pos.getLat()) < 0.00001 && Math.abs(v.lng - pos.getLng()) < 0.00001).map((v: any) => String(v.id));
+             return filteredVacanciesRef.current.filter((v: any) => Math.abs(v.lat - pos.getLat()) < 0.00001 && Math.abs(v.lng - pos.getLng()) < 0.00001).map((v: any) => String(v.id));
           });
           const isMatch = ids.some((id: any) => id && selectedClusterIdsRef.current?.includes(id));
           if (isMatch) {
@@ -1181,7 +1311,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     });
     // 1. Group vacancies by unique coordinate
     const coordinateGroups = new Map<string, any[]>();
-    filteredVacancies.forEach(v => {
+    targetVacancies.forEach(v => {
       if (v.lat && v.lng) {
         const key = `${v.lat.toFixed(6)}_${v.lng.toFixed(6)}`;
         if (!coordinateGroups.has(key)) {
@@ -1192,7 +1322,6 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     });
 
     const newMarkers: any[] = [];
-    const currentLevel = kakaoMapRef.current?.getLevel() || 6;
     const isZoomedIn = currentLevel <= 5;
     lastZoomWasInRef.current = isZoomedIn;
 
@@ -1210,8 +1339,9 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
       // Group selection check: if ANY property in the group is active or selected, draw in active state
       const isSelected = group.some(v => selectedClusterIdsRef.current?.includes(String(v.id)) || String(activeProperty) === String(v.id));
 
-      const width = (isAuctionMode && isZoomedIn) ? 128 : 42;
-      const height = (isAuctionMode && isZoomedIn) ? 51 : 42;
+      const { size } = getMarkerDimensions(group.length);
+      const width = size;
+      const height = size;
 
       const normalSvg = getMarkerSvg(prop, group, isSelected, isZoomedIn, false);
       const activeSvg = getMarkerSvg(prop, group, true, isZoomedIn, false);
@@ -1225,8 +1355,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
 
       const hoverImage = new kakao.maps.MarkerImage(
         `data:image/svg+xml,${hoverSvg}`,
-        (isAuctionMode && isZoomedIn) ? new kakao.maps.Size(width + 10, height + 6) : new kakao.maps.Size(48, 48),
-        { offset: (isAuctionMode && isZoomedIn) ? new kakao.maps.Point((width + 10) / 2, (height + 6) / 2) : new kakao.maps.Point(24, 24) }
+        new kakao.maps.Size(width + 6, height + 6),
+        { offset: new kakao.maps.Point((width + 6) / 2, (height + 6) / 2) }
       );
 
       const marker = new kakao.maps.Marker({ position, image: markerImage, title: strId });
@@ -1239,8 +1369,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
       kakao.maps.event.addListener(marker, 'mouseout', () => {
         const currentSelected = group.some(v => selectedClusterIdsRef.current?.includes(String(v.id)) || String(activeProperty) === String(v.id));
         const updatedSvg = currentSelected ? activeSvg : normalSvg;
-        const currentWidth = (isAuctionMode && (kakaoMapRef.current?.getLevel() || 6) <= 5) ? 128 : 42;
-        const currentHeight = (isAuctionMode && (kakaoMapRef.current?.getLevel() || 6) <= 5) ? 51 : 42;
+        const currentWidth = size;
+        const currentHeight = size;
         marker.setImage(new kakao.maps.MarkerImage(
           `data:image/svg+xml,${updatedSvg}`,
           new kakao.maps.Size(currentWidth, currentHeight),
@@ -1262,7 +1392,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
       clustererRef.current.addMarkers(newMarkers);
     }
 
-  }, [filteredVacancies, showArticleOnMap, activeProperty, mapLoaded, isAuctionMode]);
+  }, [filteredVacancies, mapBounds, selectedRegion, activeCategory, showArticleOnMap, activeProperty, mapLoaded, isAuctionMode]);
 
   const formatAmount = (amt: number) => {
     if (!amt) return "";
@@ -2311,13 +2441,21 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
             }}
             style={{ flex: 1, overflowY: "auto", padding: 0, background: "#fff" }}
           >
-            {displayVacancies.length === 0 ? (
+            {zoomLevel >= 9 && activeCategory !== "wish" ? (
+               <div style={{ padding: "80px 30px", textAlign: "center", color: "#64748b", background: "#f8fafc", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+                 <span style={{ fontSize: 40, marginBottom: 16 }}>🔍</span>
+                 <div style={{ fontSize: 15, fontWeight: 800, color: "#1e293b", marginBottom: 8 }}>지도를 조금만 더 확대해 주세요</div>
+                 <div style={{ fontSize: 13, color: "#64748b", lineHeight: 1.5 }}>
+                   지도를 조금만 더 확대하시면 해당 지역의<br />상세 매물 목록이 자동으로 표시됩니다.
+                 </div>
+               </div>
+            ) : displayVacancies.length === 0 ? (
                <div style={{ padding: "60px 40px", textAlign: "center", color: "#888", fontSize: 14 }}>
                  {activeCategory === "wish" ? (wishTab === "wish" ? "현재 등록된 관심 공실광고가 없습니다." : "최근 본 공실광고가 없습니다.") : "조건에 맞는 공실광고가 없습니다."}
                </div>
             ) : displayVacancies.slice(0, visibleCount).map((prop) => {
                 const isActiveAndShowing = activeProperty === prop.id && showDetail;
-                const addrText = [prop.dong, prop.building_name].filter(Boolean).join(" ");
+                const addrText = getCleanAddrText(prop);
                 const meta = (prop as any).metadata || {};
                 const appraisalPrice = meta.appraisal_price || parseInt(meta.apslEvlAmt || "0", 10) || (prop.deposit * 10000);
                 const lowestBidPrice = meta.lowest_bid_price || parseInt(meta.lowstBidPrcIndctCont || "0", 10) || 0;
@@ -2360,7 +2498,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                           {isAuctionMode && (
                             <span style={{ display: "inline-block", fontSize: 11, color: "#fa5252", border: "1px solid #fa5252", padding: "1px 5px", borderRadius: 4, fontWeight: "bold" }}>
-                              {((prop as any).metadata?.cltrUsgSclsCtgrNm || "온비드")} 공매
+                              {getAuctionInfo(prop).badge}
                             </span>
                           )}
                           {showCommission && !isAuctionMode && (prop.realtor_commission || prop.commission_type) && (
@@ -2399,7 +2537,10 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                         </div>
                       )}
                       <div style={{ fontSize: 13, color: "#555", marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                        {prop.trade_type === "경매" ? (() => { const areaVal = (prop as any).metadata?.bldSqms || (prop as any).metadata?.cltrAr || prop.exclusive_m2; return <>{(prop as any).metadata?.cltrUsgSclsCtgrNm || (prop as any).metadata?.cltrUsgMclsCtgrNm || prop.property_type}{areaVal ? <><span style={{ color: "#ddd", margin: "0 4px" }}>|</span>{parseFloat(areaVal).toLocaleString()}㎡</> : null}</>; })() : <>{prop.property_type} <span style={{ color: "#ddd", margin: "0 4px" }}>|</span> {prop.direction || "방향없음"} <span style={{ color: "#ddd", margin: "0 4px" }}>|</span> {prop.exclusive_m2 ? `${prop.exclusive_m2}㎡` : "면적미상"}</>}
+                        {prop.trade_type === "경매" ? (() => {
+                          const info = getAuctionInfo(prop);
+                          return <>{info.category}{info.area ? <><span style={{ color: "#ddd", margin: "0 4px" }}>|</span>{info.area}</> : null}</>;
+                        })() : <>{prop.property_type} <span style={{ color: "#ddd", margin: "0 4px" }}>|</span> {prop.direction || "방향없음"} <span style={{ color: "#ddd", margin: "0 4px" }}>|</span> {prop.exclusive_m2 ? `${prop.exclusive_m2}㎡` : "면적미상"}</>}
                       </div>
                       <div style={{ fontSize: 12, color: "#666", marginBottom: prop.themes?.length ? 8 : 0, display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
                         {prop.trade_type === "경매"
@@ -2524,7 +2665,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                     )}
                     {prop.trade_type === "경매" && (
                       <span style={{ fontSize: 13, fontWeight: "bold", color: "#fa5252", border: "1px solid #fa5252", padding: "2px 6px", borderRadius: 2 }}>
-                        {((prop as any).metadata?.cltrUsgSclsCtgrNm || "온비드")} 공매
+                        {getAuctionInfo(prop).badge}
                       </span>
                     )}
                     {prop.trade_type === "경매" ? (
@@ -2539,7 +2680,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                     <button onClick={() => handlePrint(prop)} style={{ background: "none", border: "none", cursor: "pointer", color: "#666", display: "flex", alignItems: "center", gap: 4, padding: 0, fontSize: 11 }}>🖨 인쇄</button>
                   </div>
                 </div>
-                <h2 style={{ fontSize: 15, fontWeight: "bold", color: "#333", margin: "0 0 6px 0" }}>{[prop.dong, prop.building_name].filter(Boolean).join(" ")}</h2>
+                <h2 style={{ fontSize: 15, fontWeight: "bold", color: "#333", margin: "0 0 6px 0" }}>{getCleanAddrText(prop)}</h2>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   {prop.trade_type === "경매" ? (() => {
                     const dm = (prop as any).metadata || {};
@@ -2585,13 +2726,16 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                     )}
                   </div>
                 </div>
-                {prop.trade_type === "경매" ? (
-                  <div style={{ fontSize: 13, color: "#555", marginTop: 4, marginBottom: 12 }}>
-                    {(prop as any).metadata?.cltrUsgSclsCtgrNm || (prop as any).metadata?.cltrUsgMclsCtgrNm || prop.property_type}
-                    {prop.direction && prop.direction !== "방향없음" && prop.direction !== "남향" && <> · {prop.direction}</>}
-                    {((prop as any).metadata?.bldSqms || prop.exclusive_m2) && <> · 면적: {(prop as any).metadata?.bldSqms || prop.exclusive_m2}㎡</>}
-                  </div>
-                ) : (<>
+                {prop.trade_type === "경매" ? (() => {
+                  const info = getAuctionInfo(prop);
+                  return (
+                    <div style={{ fontSize: 13, color: "#555", marginTop: 4, marginBottom: 12 }}>
+                      {info.category}
+                      {prop.direction && prop.direction !== "방향없음" && prop.direction !== "남향" && <> · {prop.direction}</>}
+                      {info.area && <> · 면적: {info.area}</>}
+                    </div>
+                  );
+                })() : (<>
                   <div style={{ fontSize: 13, color: "#555", marginTop: 4, marginBottom: 12 }}>{prop.property_type} · {prop.direction || "방향없음"} · 공급/전용 면적: {prop.supply_m2 || 0}㎡ / {prop.exclusive_m2 || 0}㎡</div>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 12, fontSize: 13, color: "#555" }}>
                     <span>룸 {prop.room_count || 0}개</span><span style={{ width: 1, height: 10, background: "#ddd", display: "inline-block" }}></span>
@@ -2757,7 +2901,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                 const usageLcls = meta.cltrUsgLclsCtgrNm || "";
                 const usageMcls = meta.cltrUsgMclsCtgrNm || "";
                 const usageScls = meta.cltrUsgSclsCtgrNm || "";
-                const usageText = [usageLcls, usageMcls, usageScls].filter(Boolean).join(" > ") || prop.property_type || "-";
+                const usageText = [usageLcls, usageMcls, usageScls].filter(Boolean).join(" > ") || getAuctionInfo(prop).category || "-";
                 const ldKnd = meta.ldKnd || meta.ld_knd || "-";
                 const fullAddr = [prop.sido, prop.sigungu, prop.dong, prop.detail_addr].filter(Boolean).join(" ");
                 const roadAddr = meta.lctnRoadNmAdr || "";
@@ -3397,6 +3541,9 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
               const kakao = (window as any).kakao;
               if (zoomLevel) kakaoMapRef.current.setLevel(zoomLevel);
               kakaoMapRef.current.panTo(new kakao.maps.LatLng(lat, lng));
+            }}
+            onRegionSelect={(sido, gugun, dong) => {
+              setSelectedRegion({ sido, gugun, dong });
             }}
             themeColor="#1a73e8"
             isPushedDown={activeFilterDropdown !== null}

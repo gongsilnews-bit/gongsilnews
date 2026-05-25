@@ -122,7 +122,7 @@ export async function cleanupExpiredOnbidProperties() {
     }
 
     const now = new Date();
-    let cleanedCount = 0;
+    const expiredIds: string[] = [];
 
     for (const auction of activeAuctions) {
       // metadata JSONB 필드 내에 저장된 bid_end_date 확인
@@ -135,18 +135,8 @@ export async function cleanupExpiredOnbidProperties() {
 
         // 현재 시각보다 마감일이 과거(이전)이면 만료 처리
         if (endDate < now) {
-          console.log(`🧹 만료 감지: [${auction.building_name}] 마감일(${bidEndDateStr}) 경과 ➡️ INACTIVE 처리`);
-          
-          const { error: updateErr } = await supabase
-            .from("vacancies")
-            .update({ status: "INACTIVE" })
-            .eq("id", auction.id);
-
-          if (updateErr) {
-            console.error(`❌ 매물 ID ${auction.id} 업데이트 오류:`, updateErr.message);
-          } else {
-            cleanedCount++;
-          }
+          console.log(`🧹 만료 감지: [${auction.building_name}] 마감일(${bidEndDateStr}) 경과 ➡️ 삭제 대상 추가`);
+          expiredIds.push(auction.id);
         }
       } else {
         // 하위 호환성 폴백: metadata가 아직 없거나 비어있는 경우 description에서 파싱 시도
@@ -155,19 +145,39 @@ export async function cleanupExpiredOnbidProperties() {
           const endDateStr = `${dateMatch[1]}T${dateMatch[2]}:00+09:00`;
           const endDate = new Date(endDateStr);
           if (endDate < now) {
-            console.log(`🧹 만료 감지 (설명 기반): [${auction.building_name}] 마감일(${endDateStr}) 경과 ➡️ INACTIVE 처리`);
-            await supabase
-              .from("vacancies")
-              .update({ status: "INACTIVE" })
-              .eq("id", auction.id);
-            cleanedCount++;
+            console.log(`🧹 만료 감지 (설명 기반): [${auction.building_name}] 마감일(${endDateStr}) 경과 ➡️ 삭제 대상 추가`);
+            expiredIds.push(auction.id);
           }
         }
       }
     }
 
-    console.log(`🧹 만료된 온비드 경공매 매물 정리 완료! [정리된 매물 수: ${cleanedCount}건]`);
-    return { success: true, count: cleanedCount };
+    if (expiredIds.length > 0) {
+      // 2. 외래키 무결성 유지를 위해 사진 먼저 삭제
+      console.log(`📸 만료 매물 관련 사진 ${expiredIds.length}건 삭제 중...`);
+      await supabase
+        .from("vacancy_photos")
+        .delete()
+        .in("vacancy_id", expiredIds);
+
+      // 3. 만료 매물 하드 삭제 처리
+      console.log(`🏠 만료 매물 ${expiredIds.length}건 데이터베이스 영구 삭제 중...`);
+      const { error: deleteErr } = await supabase
+        .from("vacancies")
+        .delete()
+        .in("id", expiredIds);
+
+      if (deleteErr) {
+        console.error("❌ 만료 매물 삭제 실패:", deleteErr.message);
+        return { success: false, error: deleteErr.message };
+      }
+      
+      console.log(`🧹 만료된 온비드 경공매 매물 삭제 정리 완료! [삭제된 매물 수: ${expiredIds.length}건]`);
+      return { success: true, count: expiredIds.length };
+    }
+
+    console.log(`🧹 만료된 온비드 경공매 매물 정리 완료! [정리된 매물 수: 0건]`);
+    return { success: true, count: 0 };
   } catch (err: any) {
     console.error("❌ 만료 매물 정리 프로세스 중 치명적 오류 발생:", err);
     return { success: false, error: err.message };
