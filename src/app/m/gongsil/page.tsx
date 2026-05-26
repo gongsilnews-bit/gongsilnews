@@ -12,8 +12,31 @@ import BookmarkCategoryModal from "@/components/BookmarkCategoryModal";
 import MobileFilterBar from "./MobileFilterBar";
 import { useVacancyFilters } from "./filters/useVacancyFilters";
 import MobileTopBarHeader from "../_components/MobileTopBarHeader";
+import { getAuctionInfo } from "@/app/(map)/gongsil/gongsilHelpers";
 
 const KAKAO_APP_KEY = process.env.NEXT_PUBLIC_KAKAO_APP_KEY || "435d3602201a49ea712e5f5a36fe6efc";
+
+// 🌟 글로벌 금액 포맷터 (경공매/일반 전체 재사용)
+export const formatAmount = (amt: number) => {
+  if (!amt) return "";
+  const m = Math.round(amt / 10000);
+  if (m === 0) return "";
+
+  const e = Math.floor(m / 10000);
+  const r = m % 10000;
+
+  let result = "";
+  if (e > 0) result += `${e}억`;
+  if (r > 0) {
+    const c = Math.floor(r / 1000);
+    const rem = r % 1000;
+    let rest = "";
+    if (c > 0) rest += `${c}천`;
+    if (rem > 0) rest += `${rem}`;
+    result += (result ? " " : "") + rest + "만";
+  }
+  return result || "";
+};
 
 // 옵션 아이콘 헬퍼
 const OptionIcon = ({ name }: { name: string }) => {
@@ -23,7 +46,7 @@ const OptionIcon = ({ name }: { name: string }) => {
     case "에어컨": return <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={str} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="6" width="18" height="8" rx="2"/><path d="M7 14v4"/><path d="M17 14v4"/><path d="M12 14v4"/></svg>;
     case "침대": return <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={str} strokeLinecap="round" strokeLinejoin="round"><path d="M2 4v16"/><path d="M2 8h18a2 2 0 0 1 2 2v10"/><path d="M2 17h20"/><path d="M6 8v9"/></svg>;
     case "도어락": case "전자도어락": return <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={str} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>;
-    case "전자렌지": case "전자레인지": return <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={str} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M17 10h.01"/><path d="M17 14h.01"/><path d="M7 12h5"/></svg>;
+    case "전자렌지": case "전자레인지": return <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={str} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="6" width="12" rx="2"/><path d="M17 10h.01"/><path d="M17 14h.01"/><path d="M7 12h5"/></svg>;
     case "비데": return <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={str} strokeLinecap="round" strokeLinejoin="round"><path d="M9 22H15C20 22 22 20 22 15V9C22 4 20 2 15 2H9C4 2 2 4 2 9V15C2 20 4 22 9 22Z"/><path d="M7 12.5L10 15.5L17 8.5"/></svg>;
     case "TV": return <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={str} strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"/><polyline points="17 2 12 7 7 2"/></svg>;
     case "옷장": return <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={str} strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M12 2v20"/><path d="M8 12h.01"/><path d="M16 12h.01"/></svg>;
@@ -38,27 +61,6 @@ function formatPrice(v: any): string {
   const dep = v.deposit || 0;
   const rent = v.monthly_rent || 0;
   const trade = v.trade_type || "";
-  
-  const formatAmount = (amt: number) => {
-    if (!amt) return "";
-    const m = Math.round(amt / 10000);
-    if (m === 0) return "";
-
-    const e = Math.floor(m / 10000);
-    const r = m % 10000;
-
-    let result = "";
-    if (e > 0) result += `${e}억`;
-    if (r > 0) {
-      const c = Math.floor(r / 1000);
-      const rem = r % 1000;
-      let rest = "";
-      if (c > 0) rest += `${c}천`;
-      if (rem > 0) rest += `${rem}`;
-      result += (result ? " " : "") + rest + "만";
-    }
-    return result || "";
-  };
 
   if (trade === "경매") {
     return `${formatAmount(dep)}`;
@@ -133,6 +135,7 @@ function MobileGongsilContent() {
   };
 
   const [detailTab, setDetailTab] = useState<"info" | "realtor">("info");
+  const [activeDetailTab, setActiveDetailTab] = useState<"auction_detail" | "auction_property" | "auction_bid" | "auction_market">("auction_detail");
   const [galleryIndex, setGalleryIndex] = useState(0);
   const [realtorFilter, setRealtorFilter] = useState("전체");
 
@@ -1267,97 +1270,443 @@ function MobileGongsilContent() {
 
             {/* 상단 핵심 정보 영역 */}
             <div style={{ padding: "20px 16px", background: "#fff" }}>
-              {/* Badges */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                  {showCommission && (selectedVacancy.realtor_commission || selectedVacancy.commission_type) && <span style={{ fontSize: "14px", fontWeight: 700, color: "#ef4444", border: "1px solid #ef4444", padding: "2px 8px", borderRadius: "3px" }}>{selectedVacancy.realtor_commission || selectedVacancy.commission_type}</span>}
-                  <span style={{ fontSize: "15px", fontWeight: 700, color: "#ef4444" }}>{selectedVacancy.vacancy_no || '-'}</span>
-                  <span style={{ fontSize: "14px", color: "#6b7280" }}>{selectedVacancy.created_at ? new Date(selectedVacancy.created_at).toLocaleDateString("ko-KR").slice(0, -1) : ""}</span>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "4px", color: "#ef4444", fontSize: "14px", fontWeight: 600 }}>
-                  <span onClick={() => alert('준비중입니다.')} style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#ef4444", cursor: "pointer" }}></span> <span onClick={() => alert('준비중입니다.')} style={{ cursor: "pointer" }}>허위공실광고신고</span>
-                </div>
-              </div>
-
-              {/* Title & Price */}
-              <h1 style={{ fontSize: "22px", fontWeight: 800, color: detailMasked ? "#bbb" : "#111827", marginBottom: "8px", lineHeight: 1.3, letterSpacing: detailMasked ? 1 : 0 }}>
-                {detailMasked ? (detailAddr || "주소 없음").replace(/[^\s]/g, "X") : detailAddr}
-              </h1>
-              {detailMasked && (
-                <div onClick={() => setIsAuthModalOpen(true)} style={{ background: "#eef6ff", border: "1px solid #bfdbfe", borderRadius: "8px", padding: "12px 16px", marginBottom: "12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}>
-                  <span style={{ fontSize: "20px" }}>🔒</span>
-                  <div>
-                    <div style={{ fontSize: "14px", fontWeight: 700, color: "#1e40af" }}>부동산회원 전용 공실광고입니다</div>
-                    <div style={{ fontSize: "12px", color: "#3b82f6", marginTop: "2px" }}>무료 가입 후 모든 정보를 열람하세요</div>
+              {selectedVacancy.trade_type === "경매" ? (
+                // 🔨 법원 경공매 모바일 명품 헤더 뷰 (1번째 스크린샷 완벽 재현)
+                <div style={{ borderBottom: "1px solid #f3f4f6" }}>
+                  {/* 뱃지 & 신고 */}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <span style={{ fontSize: "12px", fontWeight: 800, color: "#ef4444", border: "1px solid #ef4444", padding: "2px 8px", borderRadius: "4px" }}>
+                        {getAuctionInfo(selectedVacancy).category || "부동산"} 공매
+                      </span>
+                      {selectedVacancy.vacancy_no && (
+                        <span style={{ fontSize: "13px", color: "#9ca3af", fontWeight: 500 }}>
+                          {selectedVacancy.vacancy_no}
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                      <span style={{ fontSize: "12px", color: "#ef4444", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: "2px" }}>
+                        <span style={{ display: "inline-block", width: "5px", height: "5px", borderRadius: "50%", backgroundColor: "#ef4444" }}></span>
+                        허위공실광고신고
+                      </span>
+                    </div>
                   </div>
+
+                  {/* 굵은 주소 명칭 */}
+                  <h1 style={{ fontSize: "20px", fontWeight: 800, color: "#111827", marginBottom: "12px", lineHeight: 1.4, letterSpacing: "-0.5px" }}>
+                    {detailAddr}
+                  </h1>
+
+                  {/* 감정가 / 최저입찰가 / 유찰 정보 그리드 */}
+                  {(() => {
+                    const meta = selectedVacancy.metadata || {};
+                    const dps = selectedVacancy.deposit_price || 0;
+                    const trp = selectedVacancy.trade_price || 0;
+                    const pbctBegnDtm = meta.pbctBegnDtm ? meta.pbctBegnDtm.slice(0, 10) : "-";
+                    const ap = meta.appraisal_price || parseInt(meta.apslEvlAmt || "0", 10) || trp || 0;
+                    const lo = meta.lowest_bid_price || parseInt(meta.lowstBidPrcIndctCont || "0", 10) || dps || 0;
+                    const discountRate = ap > 0 ? Math.round(((ap - lo) / ap) * 100) : 0;
+                    const pbctCnt = meta.pbctCnt || meta.pbct_cnt || "0";
+
+                    return (
+                      <>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginBottom: "12px" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                            <span style={{ fontSize: "13px", color: "#64748b", fontWeight: 500, width: "65px" }}>감정가</span>
+                            <span style={{ fontSize: "18px", fontWeight: 800, color: "#1a73e8" }}>{formatAmount(trp)}</span>
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                            <span style={{ fontSize: "13px", color: "#64748b", fontWeight: 500, width: "65px" }}>최저입찰가</span>
+                            <span style={{ fontSize: "18px", fontWeight: 800, color: "#ef4444" }}>{formatAmount(dps)}</span>
+                            <span style={{ fontSize: "13px", color: "#64748b", fontWeight: 500, marginLeft: "12px" }}>유찰</span>
+                            <span style={{ fontSize: "15px", fontWeight: 800, color: "#111827" }}>{pbctCnt}회</span>
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "4px" }}>
+                            {discountRate !== 0 && (
+                              <span style={{ fontSize: "14px", fontWeight: 900, color: discountRate > 0 ? "#16a34a" : "#dc2626", marginRight: "8px" }}>
+                                {discountRate > 0 ? `▼${discountRate}%` : `▲${Math.abs(discountRate)}%`}
+                              </span>
+                            )}
+                            <span style={{ fontSize: "13px", color: "#64748b", fontWeight: 500 }}>입찰시작</span>
+                            <span style={{ fontSize: "14px", color: "#111827", fontWeight: 700 }}>{pbctBegnDtm}</span>
+                          </div>
+                        </div>
+
+                        {/* 아파트 · 면적: XX㎡ */}
+                        <div style={{ fontSize: "13px", color: "#64748b", fontWeight: 500 }}>
+                          {getAuctionInfo(selectedVacancy).category || "부동산"} · 면적: {selectedVacancy.exclusive_m2 ? `${selectedVacancy.exclusive_m2}㎡` : "-"}
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
-              )}
+              ) : (
+                // 🔨 일반 공실 상단 핵심 정보 뷰 (100% 무결 보존!)
+                <>
+                  {/* Badges */}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                    <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                      {showCommission && (selectedVacancy.realtor_commission || selectedVacancy.commission_type) && <span style={{ fontSize: "14px", fontWeight: 700, color: "#ef4444", border: "1px solid #ef4444", padding: "2px 8px", borderRadius: "3px" }}>{selectedVacancy.realtor_commission || selectedVacancy.commission_type}</span>}
+                      <span style={{ fontSize: "15px", fontWeight: 700, color: "#ef4444" }}>{selectedVacancy.vacancy_no || '-'}</span>
+                      <span style={{ fontSize: "14px", color: "#6b7280" }}>{selectedVacancy.created_at ? new Date(selectedVacancy.created_at).toLocaleDateString("ko-KR").slice(0, -1) : ""}</span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "4px", color: "#ef4444", fontSize: "14px", fontWeight: 600 }}>
+                      <span onClick={() => alert('준비중입니다.')} style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#ef4444", cursor: "pointer" }}></span> <span onClick={() => alert('준비중입니다.')} style={{ cursor: "pointer" }}>허위공실광고신고</span>
+                    </div>
+                  </div>
 
+                  {/* Title & Price */}
+                  <h1 style={{ fontSize: "22px", fontWeight: 800, color: detailMasked ? "#bbb" : "#111827", marginBottom: "8px", lineHeight: 1.3, letterSpacing: detailMasked ? 1 : 0 }}>
+                    {detailMasked ? (detailAddr || "주소 없음").replace(/[^\s]/g, "X") : detailAddr}
+                  </h1>
+                  {detailMasked && (
+                    <div onClick={() => setIsAuthModalOpen(true)} style={{ background: "#eef6ff", border: "1px solid #bfdbfe", borderRadius: "8px", padding: "12px 16px", marginBottom: "12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}>
+                      <span style={{ fontSize: "20px" }}>🔒</span>
+                      <div>
+                        <div style={{ fontSize: "14px", fontWeight: 700, color: "#1e40af" }}>부동산회원 전용 공실광고입니다</div>
+                        <div style={{ fontSize: "12px", color: "#3b82f6", marginTop: "2px" }}>무료 가입 후 모든 정보를 열람하세요</div>
+                      </div>
+                    </div>
+                  )}
 
-              
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-                <p style={{ fontSize: "30px", fontWeight: 900, color: "#1a73e8" }}>
-                  {selectedVacancy.trade_type} {formatPrice(selectedVacancy)}
-                </p>
-              </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                    <p style={{ fontSize: "30px", fontWeight: 900, color: "#1a73e8" }}>
+                      {selectedVacancy.trade_type} {formatPrice(selectedVacancy)}
+                    </p>
+                  </div>
 
-              {/* Sub Info */}
-              <div style={{ fontSize: "15px", color: "#4b5563", lineHeight: 1.6, marginBottom: "8px" }}>
-                {[selectedVacancy.property_type || "건물", selectedVacancy.direction, `공급/전용 면적: ${selectedVacancy.supply_m2 || "-"}㎡ / ${selectedVacancy.exclusive_m2 || "-"}㎡`].filter(Boolean).join(" · ")}
-              </div>
-              <div style={{ fontSize: "15px", color: "#4b5563", lineHeight: 1.6, marginBottom: "16px" }}>
-                {[
-                  selectedVacancy.room_count !== undefined ? `룸 ${selectedVacancy.room_count}개` : null,
-                  `주차 ${selectedVacancy.parking || "정보없음"}`,
-                  selectedVacancy.options?.length ? selectedVacancy.options.join(", ") : null
-                ].filter(Boolean).join(" | ")}
-              </div>
+                  {/* Sub Info */}
+                  <div style={{ fontSize: "15px", color: "#4b5563", lineHeight: 1.6, marginBottom: "8px" }}>
+                    {[selectedVacancy.property_type || "건물", selectedVacancy.direction, `공급/전용 면적: ${selectedVacancy.supply_m2 || "-"}㎡ / ${selectedVacancy.exclusive_m2 || "-"}㎡`].filter(Boolean).join(" · ")}
+                  </div>
+                  <div style={{ fontSize: "15px", color: "#4b5563", lineHeight: 1.6, marginBottom: "16px" }}>
+                    {[
+                      selectedVacancy.room_count !== undefined ? `룸 ${selectedVacancy.room_count}개` : null,
+                      `주차 ${selectedVacancy.parking || "정보없음"}`,
+                      selectedVacancy.options?.length ? selectedVacancy.options.join(", ") : null
+                    ].filter(Boolean).join(" | ")}
+                  </div>
 
-              {/* Themes */}
-              {selectedVacancy.themes && selectedVacancy.themes.length > 0 && (
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                  {selectedVacancy.themes.map((theme: string, idx: number) => (
-                    <span key={idx} style={{ background: "#f8fafc", color: "#3b82f6", fontSize: "13px", padding: "4px 10px", borderRadius: "16px", fontWeight: 700, border: "1px solid #bfdbfe" }}>
-                      {theme.startsWith('#') ? theme : `# ${theme}`}
-                    </span>
-                  ))}
-                </div>
+                  {/* Themes */}
+                  {selectedVacancy.themes && selectedVacancy.themes.length > 0 && (
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                      {selectedVacancy.themes.map((theme: string, idx: number) => (
+                        <span key={idx} style={{ background: "#f8fafc", color: "#3b82f6", fontSize: "13px", padding: "4px 10px", borderRadius: "16px", fontWeight: 700, border: "1px solid #bfdbfe" }}>
+                          {theme.startsWith('#') ? theme : `# ${theme}`}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </>
               )}
             </div>
 
             {/* 탭 네비게이션 */}
-            <div style={{ display: "flex", borderBottom: "1px solid #111827", marginTop: "10px" }}>
-              <button 
-                onClick={() => setDetailTab("info")} 
-                style={{ flex: 1, padding: "14px 0", fontSize: "17px", fontWeight: detailTab === "info" ? 800 : 600, color: detailTab === "info" ? "#111827" : "#6b7280", borderBottom: detailTab === "info" ? "3px solid #111827" : "3px solid transparent", background: "none" }}
-              >
-                공실광고정보
-              </button>
-              <button 
-                onClick={() => setDetailTab("realtor")} 
-                style={{ flex: 1, padding: "14px 0", fontSize: "17px", fontWeight: detailTab === "realtor" ? 800 : 600, color: detailTab === "realtor" ? "#111827" : "#6b7280", borderBottom: detailTab === "realtor" ? "3px solid #111827" : "3px solid transparent", background: "none" }}
-              >
-                등록자 공실
-              </button>
-            </div>
+            {selectedVacancy.trade_type === "경매" ? (
+              <div style={{ display: "flex", borderBottom: "1px solid #e2e8f0", marginTop: "10px", backgroundColor: "#fff" }}>
+                {[
+                  { id: "auction_detail", label: "세부정보" },
+                  { id: "auction_property", label: "재산정보" },
+                  { id: "auction_bid", label: "입찰정보" },
+                  { id: "auction_market", label: "인근시세" }
+                ].map((tab) => (
+                  <button 
+                    key={tab.id}
+                    onClick={() => setActiveDetailTab(tab.id as any)} 
+                    style={{ 
+                      flex: 1, 
+                      padding: "14px 0", 
+                      fontSize: "15px", 
+                      fontWeight: activeDetailTab === tab.id ? 800 : 600, 
+                      color: activeDetailTab === tab.id ? "#1a73e8" : "#64748b", 
+                      borderBottom: activeDetailTab === tab.id ? "3px solid #1a73e8" : "3px solid transparent", 
+                      background: "none",
+                      borderTop: "none",
+                      borderLeft: "none",
+                      borderRight: "none",
+                      cursor: "pointer",
+                      transition: "all 0.15s"
+                    }}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div style={{ display: "flex", borderBottom: "1px solid #111827", marginTop: "10px" }}>
+                <button 
+                  onClick={() => setDetailTab("info")} 
+                  style={{ flex: 1, padding: "14px 0", fontSize: "17px", fontWeight: detailTab === "info" ? 800 : 600, color: detailTab === "info" ? "#111827" : "#6b7280", borderBottom: detailTab === "info" ? "3px solid #111827" : "3px solid transparent", background: "none" }}
+                >
+                  공실광고정보
+                </button>
+                <button 
+                  onClick={() => setDetailTab("realtor")} 
+                  style={{ flex: 1, padding: "14px 0", fontSize: "17px", fontWeight: detailTab === "realtor" ? 800 : 600, color: detailTab === "realtor" ? "#111827" : "#6b7280", borderBottom: detailTab === "realtor" ? "3px solid #111827" : "3px solid transparent", background: "none" }}
+                >
+                  등록자 공실
+                </button>
+              </div>
+            )}
 
             {/* 탭 컨텐츠 */}
-            <div style={{ padding: "0 16px 20px" }}>
-              {detailTab === "info" ? (
-                <div>
-                  {[
-                    ["공실광고번호", selectedVacancy.vacancy_no || '-'],
-                    ["소재지", detailMasked ? [selectedVacancy.sido, selectedVacancy.sigungu, selectedVacancy.dong, selectedVacancy.building_name].filter(Boolean).join(" ").replace(/[^\s]/g, "X") : [selectedVacancy.sido, selectedVacancy.sigungu, selectedVacancy.dong, selectedVacancy.building_name].filter(Boolean).join(" ")],
-                    ["공실광고특성", detailMasked ? (selectedVacancy.building_name || "-").replace(/[^\s-]/g, "X") : (selectedVacancy.building_name || "-")],
-                    ["공급/전용면적", `${selectedVacancy.supply_m2 || "-"}㎡ / ${selectedVacancy.exclusive_m2 || "-"}㎡`],
-                    ["해당층/총층", `${selectedVacancy.current_floor || "-"}층 / ${selectedVacancy.total_floor || "-"}층`],
-                    ["방/욕실수", `${selectedVacancy.room_count || 0}개 / ${selectedVacancy.bath_count || 0}개`],
-                    ["방향", selectedVacancy.direction || "-"],
-                    ["주차가능 여부", selectedVacancy.parking || "-"],
-                    ["입주가능일", selectedVacancy.move_in_date || "즉시입주(공실)"]
-                  ].map(([label, val], i) => (
-                    <div key={i} style={{ display: "flex", padding: "16px 0", borderBottom: "1px solid #f3f4f6" }}>
-                      <div style={{ width: "100px", fontSize: "15px", fontWeight: 700, color: "#374151" }}>{label}</div>
+            {selectedVacancy.trade_type === "경매" ? (
+              // 🔨 법원 경공매 모바일 4대 탭 콘텐츠
+              <div style={{ padding: "0 16px 20px" }}>
+                {activeDetailTab === "auction_detail" && (
+                  (() => {
+                    const meta = selectedVacancy.metadata || {};
+                    const ldSqms = meta.ldSqms || meta.ld_sqms || "";
+                    const bldSqms = meta.bldSqms || meta.bld_sqms || "";
+                    const usageLcls = meta.cltrUsgLclsCtgrNm || "";
+                    const usageMcls = meta.cltrUsgMclsCtgrNm || "";
+                    const usageScls = meta.cltrUsgSclsCtgrNm || "";
+                    const usageText = [usageLcls, usageMcls, usageScls].filter(Boolean).join(" > ") || getAuctionInfo(selectedVacancy).category || "-";
+                    const ldKnd = meta.ldKnd || meta.ld_knd || "-";
+                    const roadAddr = meta.lctnRoadNmAdr || "";
+                    const dtlAddr = meta.lctnDtlAdr || "";
+                    const ap = meta.appraisal_price || parseInt(meta.apslEvlAmt || "0", 10) || selectedVacancy.trade_price || 0;
+                    const lo = meta.lowest_bid_price || parseInt(meta.lowstBidPrcIndctCont || "0", 10) || selectedVacancy.deposit_price || 0;
+                    const discountRate = ap > 0 ? Math.round(((ap - lo) / ap) * 100) : 0;
+                    
+                    return (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "24px", paddingTop: "16px" }}>
+                        {/* 면적정보 */}
+                        <div>
+                          <div style={{ fontSize: "15px", fontWeight: 800, color: "#1a73e8", marginBottom: "12px", display: "flex", alignItems: "center", gap: "6px" }}>✓ 면적정보</div>
+                          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
+                            <thead>
+                              <tr style={{ background: "#f4f6fa" }}>
+                                <th style={{ padding: "10px 8px", borderBottom: "1px solid #e0e0e0", color: "#555", fontWeight: 700, textAlign: "center" }}>용도</th>
+                                <th style={{ padding: "10px 8px", borderBottom: "1px solid #e0e0e0", color: "#555", fontWeight: 700, textAlign: "center" }}>면적</th>
+                                <th style={{ padding: "10px 8px", borderBottom: "1px solid #e0e0e0", color: "#555", fontWeight: 700, textAlign: "center" }}>비고</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {ldSqms && (
+                                <tr>
+                                  <td style={{ padding: "10px 8px", borderBottom: "1px solid #eee", textAlign: "center", color: "#333" }}>토지(대)</td>
+                                  <td style={{ padding: "10px 8px", borderBottom: "1px solid #eee", textAlign: "center", color: "#333" }}>{parseFloat(ldSqms).toLocaleString()}㎡</td>
+                                  <td style={{ padding: "10px 8px", borderBottom: "1px solid #eee", textAlign: "center", color: "#888" }}>지목: {ldKnd}</td>
+                                </tr>
+                              )}
+                              {bldSqms && (
+                                <tr>
+                                  <td style={{ padding: "10px 8px", borderBottom: "1px solid #eee", textAlign: "center", color: "#333" }}>건물(건물)</td>
+                                  <td style={{ padding: "10px 8px", borderBottom: "1px solid #eee", textAlign: "center", color: "#333" }}>{parseFloat(bldSqms).toLocaleString()}㎡</td>
+                                  <td style={{ padding: "10px 8px", borderBottom: "1px solid #eee", textAlign: "center", color: "#888" }}>-</td>
+                                </tr>
+                              )}
+                              {!ldSqms && !bldSqms && (
+                                <tr>
+                                  <td colSpan={3} style={{ padding: "10px 8px", textAlign: "center", color: "#aaa" }}>면적 정보 없음</td>
+                                </tr>
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        {/* 지역 */}
+                        <div>
+                          <div style={{ fontSize: "15px", fontWeight: 800, color: "#1a73e8", marginBottom: "12px", display: "flex", alignItems: "center", gap: "6px" }}>✓ 지역</div>
+                          <div style={{ display: "grid", gridTemplateColumns: "80px 1fr", border: "1px solid #eee", borderRadius: "6px", overflow: "hidden" }}>
+                            <div style={{ background: "#f4f6fa", padding: "12px", fontSize: "13px", fontWeight: 700, color: "#555", borderBottom: "1px solid #eee" }}>지번</div>
+                            <div style={{ padding: "12px", fontSize: "13px", color: "#222", borderBottom: "1px solid #eee", lineHeight: 1.4 }}>{detailAddr || "-"}</div>
+                            <div style={{ background: "#f4f6fa", padding: "12px", fontSize: "13px", fontWeight: 700, color: "#555" }}>도로명</div>
+                            <div style={{ padding: "12px", fontSize: "13px", color: "#222", lineHeight: 1.4 }}>{roadAddr || dtlAddr || "-"}</div>
+                          </div>
+                        </div>
+
+                        {/* 이용 현황 */}
+                        <div>
+                          <div style={{ fontSize: "15px", fontWeight: 800, color: "#1a73e8", marginBottom: "12px", display: "flex", alignItems: "center", gap: "6px" }}>✓ 이용 현황</div>
+                          <div style={{ display: "grid", gridTemplateColumns: "90px 1fr", border: "1px solid #eee", borderRadius: "6px", overflow: "hidden" }}>
+                            <div style={{ background: "#f4f6fa", padding: "12px", fontSize: "13px", fontWeight: 700, color: "#555", borderBottom: "1px solid #eee" }}>용도분류</div>
+                            <div style={{ padding: "12px", fontSize: "13px", color: "#222", borderBottom: "1px solid #eee", lineHeight: 1.4 }}>{usageText}</div>
+                            <div style={{ background: "#f4f6fa", padding: "12px", fontSize: "13px", fontWeight: 700, color: "#555" }}>물건명</div>
+                            <div style={{ padding: "12px", fontSize: "13px", color: "#222", lineHeight: 1.4 }}>{meta.onbidCltrNm || selectedVacancy.building_name || "-"}</div>
+                          </div>
+                        </div>
+
+                        {/* 감정평가정보 */}
+                        <div>
+                          <div style={{ fontSize: "15px", fontWeight: 800, color: "#1a73e8", marginBottom: "12px", display: "flex", alignItems: "center", gap: "6px" }}>✓ 감정평가정보</div>
+                          <div style={{ border: "1px solid #eee", borderRadius: "6px", overflow: "hidden" }}>
+                            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                              <thead>
+                                <tr style={{ background: "#f4f6fa" }}>
+                                  <th style={{ padding: "10px 6px", borderBottom: "1px solid #e0e0e0", color: "#555", fontWeight: 700, textAlign: "center" }}>감정가(원)</th>
+                                  <th style={{ padding: "10px 6px", borderBottom: "1px solid #e0e0e0", color: "#555", fontWeight: 700, textAlign: "center" }}>최저입찰가(원)</th>
+                                  <th style={{ padding: "10px 6px", borderBottom: "1px solid #e0e0e0", color: "#555", fontWeight: 700, textAlign: "center" }}>할인율</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                <tr>
+                                  <td style={{ padding: "10px 6px", textAlign: "center", color: "#1e40af", fontWeight: 800 }}>
+                                    {ap.toLocaleString()}
+                                  </td>
+                                  <td style={{ padding: "10px 6px", textAlign: "center", color: "#dc2626", fontWeight: 800 }}>
+                                    {lo.toLocaleString()}
+                                  </td>
+                                  <td style={{ padding: "10px 6px", textAlign: "center", fontWeight: 800, color: discountRate > 0 ? "#16a34a" : "#dc2626" }}>
+                                    {discountRate > 0 ? `▼${discountRate}%` : `▲${Math.abs(discountRate)}%`}
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+
+                        {/* 공고기관 및 담당자 */}
+                        <div>
+                          <div style={{ fontSize: "15px", fontWeight: 800, color: "#1a73e8", marginBottom: "12px", display: "flex", alignItems: "center", gap: "6px" }}>✓ 공고기관 및 담당자</div>
+                          <div style={{ display: "grid", gridTemplateColumns: "100px 1fr", border: "1px solid #eee", borderRadius: "6px", overflow: "hidden" }}>
+                            <div style={{ background: "#f4f6fa", padding: "12px", fontSize: "13px", fontWeight: 700, color: "#555", borderBottom: "1px solid #eee" }}>집행기관</div>
+                            <div style={{ padding: "12px", fontSize: "13px", color: "#222", borderBottom: "1px solid #eee", lineHeight: 1.4 }}>{meta.orgNm || "한국자산관리공사 (KAMCO)"}</div>
+                            <div style={{ background: "#f4f6fa", padding: "12px", fontSize: "13px", fontWeight: 700, color: "#555", borderBottom: "1px solid #eee" }}>담당자 연락처</div>
+                            <div style={{ padding: "12px", fontSize: "13px", color: "#1a73e8", fontWeight: 700, borderBottom: "1px solid #eee" }}>
+                              {meta.cmsCmmTelNo ? (
+                                <a href={`tel:${meta.cmsCmmTelNo}`} style={{ color: "#1a73e8", textDecoration: "none" }}>📞 {meta.cmsCmmTelNo}</a>
+                              ) : "1588-5321"}
+                            </div>
+                            <div style={{ background: "#f4f6fa", padding: "12px", fontSize: "13px", fontWeight: 700, color: "#555" }}>공고번호</div>
+                            <div style={{ padding: "12px", fontSize: "13px", color: "#222" }}>{meta.onbidPbancNo || meta.pbctNo || "정보 없음"}</div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()
+                )}
+
+                {activeDetailTab === "auction_property" && (
+                  (() => {
+                    const meta = selectedVacancy.metadata || {};
+                    const prptDiv = meta.prptDivNm || meta.prpt_div_nm || "정보 없음";
+                    const evctRspb = meta.evctRspbYn || meta.evct_rspb_yn || "-";
+                    const orgNm = meta.orgNm || meta.org_nm || "한국자산관리공사(KAMCO)";
+                    const sbOfc = meta.sbOfcNm || meta.sb_ofc_nm || "";
+                    const cltrStts = meta.cltrSttsNm || meta.cltr_stts_nm || "-";
+                    const cltrMngNo = meta.cltrMngNo || meta.cltr_mng_no || "-";
+                    
+                    const rows = [
+                      { label: "재산구분", value: prptDiv, highlight: prptDiv.includes("압류") },
+                      { label: "물건상태", value: cltrStts },
+                      { label: "관리번호", value: cltrMngNo },
+                      { label: "명도책임", value: evctRspb === "Y" ? "매수자 부담 (있음)" : evctRspb === "N" ? "없음" : evctRspb },
+                      { label: "집행기관", value: orgNm + (sbOfc ? ` (${sbOfc})` : "") },
+                    ];
+
+                    return (
+                      <div style={{ paddingTop: "16px", display: "flex", flexDirection: "column", gap: "20px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          <span style={{ background: prptDiv.includes("압류") ? "#fee2e2" : "#dbeafe", color: prptDiv.includes("압류") ? "#dc2626" : "#2563eb", fontSize: "12px", fontWeight: 800, padding: "4px 12px", borderRadius: "4px" }}>{prptDiv}</span>
+                          <span style={{ fontSize: "12px", color: "#888" }}>관리번호: {cltrMngNo}</span>
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "100px 1fr", border: "1px solid #eee", borderRadius: "6px", overflow: "hidden" }}>
+                          {rows.map((row, i) => (
+                            <React.Fragment key={i}>
+                              <div style={{ background: "#f4f6fa", padding: "12px", fontSize: "13px", fontWeight: 700, color: "#555", borderBottom: i < rows.length - 1 ? "1px solid #eee" : "none" }}>{row.label}</div>
+                              <div style={{ padding: "12px", fontSize: "13px", color: row.highlight ? "#dc2626" : "#222", fontWeight: row.highlight ? 700 : 500, borderBottom: i < rows.length - 1 ? "1px solid #eee" : "none", lineHeight: 1.4 }}>{row.value}</div>
+                            </React.Fragment>
+                          ))}
+                        </div>
+                        <div style={{ padding: "12px", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: "8px" }}>
+                          <div style={{ fontSize: "13px", fontWeight: 700, color: "#b45309", marginBottom: "4px" }}>⚠️ 입찰 전 법적 주의사항</div>
+                          <div style={{ fontSize: "11px", color: "#92400e", lineHeight: 1.5 }}>
+                            본 정보는 한국자산관리공사 온비드 API를 통해 제공받는 참고용 데이터입니다. 입찰 전 반드시 공식 온비드 홈페이지 및 해당 집행기관의 공고를 최종 확인하시기 바랍니다.
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()
+                )}
+
+                {activeDetailTab === "auction_bid" && (
+                  (() => {
+                    const meta = selectedVacancy.metadata || {};
+                    const ap = meta.appraisal_price || parseInt(meta.apslEvlAmt || "0", 10) || selectedVacancy.trade_price || 0;
+                    const lo = meta.lowest_bid_price || parseInt(meta.lowstBidPrcIndctCont || "0", 10) || selectedVacancy.deposit_price || 0;
+                    const bidStart = meta.bid_start_date || meta.pbctBegnDtm || "";
+                    const bidEnd = meta.bid_end_date || meta.pbctClsgDtm || "";
+                    const dpstRt = meta.dpstRt || meta.dpst_rt || "10";
+                    const pbctCnt = meta.pbctCnt || meta.pbct_cnt || "0";
+                    const bidMtd = meta.bidMtd || meta.bid_mtd || "";
+                    const cltrMngNo = meta.cltrMngNo || meta.cltr_mng_no || "";
+
+                    return (
+                      <div style={{ paddingTop: "16px", display: "flex", flexDirection: "column", gap: "20px" }}>
+                        {/* 감정가 & 최저가 카드 */}
+                        <div style={{ display: "flex", gap: "10px" }}>
+                          <div style={{ flex: 1, background: "#f0f7ff", border: "1px solid #bfdbfe", borderRadius: "8px", padding: "12px", textAlign: "center" }}>
+                            <div style={{ fontSize: "11px", color: "#64748b", marginBottom: "4px" }}>감정평가액</div>
+                            <div style={{ fontSize: "15px", fontWeight: 800, color: "#1e40af" }}>{ap.toLocaleString()}원</div>
+                          </div>
+                          <div style={{ flex: 1, background: "#fef2f2", border: "1px solid #fecaca", borderRadius: "8px", padding: "12px", textAlign: "center" }}>
+                            <div style={{ fontSize: "11px", color: "#64748b", marginBottom: "4px" }}>최저입찰가</div>
+                            <div style={{ fontSize: "15px", fontWeight: 800, color: "#dc2626" }}>{lo.toLocaleString()}원</div>
+                          </div>
+                        </div>
+
+                        {/* 입찰방법 */}
+                        <div>
+                          <div style={{ fontSize: "15px", fontWeight: 800, color: "#1a73e8", marginBottom: "8px", display: "flex", alignItems: "center", gap: "6px" }}>✓ 입찰방법</div>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                            {bidMtd && <span style={{ background: "#dbeafe", color: "#1e40af", fontSize: "12px", fontWeight: 700, padding: "4px 10px", borderRadius: "4px" }}>{bidMtd}</span>}
+                            <span style={{ background: "#f0fdf4", color: "#16a34a", fontSize: "12px", fontWeight: 700, padding: "4px 10px", borderRadius: "4px" }}>보증금 {dpstRt}%</span>
+                          </div>
+                        </div>
+
+                        {/* 입찰일정 및 장소 */}
+                        <div>
+                          <div style={{ fontSize: "15px", fontWeight: 800, color: "#1a73e8", marginBottom: "8px", display: "flex", alignItems: "center", gap: "6px" }}>✓ 입찰일정 및 장소</div>
+                          <div style={{ display: "grid", gridTemplateColumns: "90px 1fr", border: "1px solid #eee", borderRadius: "6px", overflow: "hidden" }}>
+                            <div style={{ background: "#f4f6fa", padding: "10px", fontSize: "13px", fontWeight: 700, color: "#555", borderBottom: "1px solid #eee" }}>관리번호</div>
+                            <div style={{ padding: "10px", fontSize: "13px", color: "#222", borderBottom: "1px solid #eee" }}>{cltrMngNo}</div>
+                            <div style={{ background: "#f4f6fa", padding: "10px", fontSize: "13px", fontWeight: 700, color: "#555", borderBottom: "1px solid #eee" }}>입찰 시작</div>
+                            <div style={{ padding: "10px", fontSize: "13px", color: "#222", borderBottom: "1px solid #eee", lineHeight: 1.3 }}>{bidStart}</div>
+                            <div style={{ background: "#f4f6fa", padding: "10px", fontSize: "13px", fontWeight: 700, color: "#555", borderBottom: "1px solid #eee" }}>입찰 종료</div>
+                            <div style={{ padding: "10px", fontSize: "13px", color: "#222", borderBottom: "1px solid #eee", lineHeight: 1.3 }}>{bidEnd}</div>
+                            <div style={{ background: "#f4f6fa", padding: "10px", fontSize: "13px", fontWeight: 700, color: "#555" }}>유찰 횟수</div>
+                            <div style={{ padding: "10px", fontSize: "13px", color: "#222" }}>{pbctCnt}회</div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()
+                )}
+
+                {activeDetailTab === "auction_market" && (
+                  <div style={{ paddingTop: "16px" }}>
+                    <div style={{ textAlign: "center", padding: "30px 10px" }}>
+                      <div style={{ fontSize: "40px", marginBottom: "12px" }}>📊</div>
+                      <div style={{ fontSize: "15px", fontWeight: 800, color: "#334155", marginBottom: "6px" }}>인근 시세 분석</div>
+                      <div style={{ fontSize: "12px", color: "#64748b", lineHeight: 1.6, marginBottom: "16px" }}>
+                        이 매물 주변 임대 매물의 시세를 분석합니다.
+                        <br />
+                        정확한 인근 시세는 지도 오버레이 및 법원 감정서의 인근 낙찰 통계를 확인하십시오.
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div style={{ padding: "0 16px 20px" }}>
+                {detailTab === "info" ? (
+                  <div>
+                    {[
+                      ["공실광고번호", selectedVacancy.vacancy_no || '-'],
+                      ["소재지", detailMasked ? [selectedVacancy.sido, selectedVacancy.sigungu, selectedVacancy.dong, selectedVacancy.building_name].filter(Boolean).join(" ").replace(/[^\s]/g, "X") : [selectedVacancy.sido, selectedVacancy.sigungu, selectedVacancy.dong, selectedVacancy.building_name].filter(Boolean).join(" ")],
+                      ["공실광고특성", detailMasked ? (selectedVacancy.building_name || "-").replace(/[^\s-]/g, "X") : (selectedVacancy.building_name || "-")],
+                      ["공급/전용면적", `${selectedVacancy.supply_m2 || "-"}㎡ / ${selectedVacancy.exclusive_m2 || "-"}㎡`],
+                      ["해당층/총층", `${selectedVacancy.current_floor || "-"}층 / ${selectedVacancy.total_floor || "-"}층`],
+                      ["방/욕실수", `${selectedVacancy.room_count || 0}개 / ${selectedVacancy.bath_count || 0}개`],
+                      ["방향", selectedVacancy.direction || "-"],
+                      ["주차가능 여부", selectedVacancy.parking || "-"],
+                      ["입주가능일", selectedVacancy.move_in_date || "즉시입주(공실)"]
+                    ].map(([label, val], i) => (
+                      <div key={i} style={{ display: "flex", padding: "16px 0", borderBottom: "1px solid #f3f4f6" }}>
+                        <div style={{ width: "100px", fontSize: "15px", fontWeight: 700, color: "#374151" }}>{label}</div>
                       <div style={{ flex: 1, fontSize: "16px", color: "#111827" }}>{val}</div>
                     </div>
                   ))}
@@ -1645,7 +1994,7 @@ function MobileGongsilContent() {
                   })()}
                 </div>
               )}
-            </div>
+            </div>)}
             </div>
 
             {/* 하단 CTA */}
