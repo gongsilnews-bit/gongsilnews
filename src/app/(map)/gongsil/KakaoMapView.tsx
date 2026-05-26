@@ -684,69 +684,7 @@ export default function KakaoMapView({
         내 위치에서 검색
       </button>
 
-      {/* 경공매 레이어 토글 버튼 (부동산플래닛 실거래가 스타일) */}
-      <button
-        onClick={() => {
-          const nextVal = !isAuctionMode;
-          setIsAuctionMode(nextVal);
-          setActiveMode(nextVal ? "경매" : "공실");
-          setActiveCategory(nextVal ? "auction" : "all");
-          setActivePills([]);
-          setShowDetail(false);
-          setSelectedClusterIds(null);
-        }}
-        style={{
-          position: "absolute",
-          right: 20,
-          top: 80,
-          zIndex: 1000,
-          width: 52,
-          height: 64,
-          background: isAuctionMode ? "#1a73e8" : "#fff",
-          border: "1px solid #ddd",
-          borderRadius: 8,
-          boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-          cursor: "pointer",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 4,
-          transition: "all 0.2s ease",
-          padding: "6px 0",
-          outline: "none",
-        }}
-        title="경/공매 매물 모드 토글"
-      >
-        {/* 경공매용 프리미엄 법봉/해머 아이콘 */}
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke={isAuctionMode ? "white" : "#1a73e8"}
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="m15 5 4 4" />
-          <path d="M20.5 12.5 17 9l-8.5 8.5c-.7.7-1.7 1-2.5 1a2.5 2.5 0 0 1-2.5-2.5c0-.8.3-1.8 1-2.5z" />
-          <path d="m16 4 3 3" />
-          <path d="m14 2 6 6" />
-          <path d="M2 22h10" />
-        </svg>
-        <span
-          style={{
-            fontSize: 10,
-            fontWeight: 800,
-            color: isAuctionMode ? "white" : "#333",
-            fontFamily: "'Pretendard', sans-serif",
-            letterSpacing: "-0.5px",
-          }}
-        >
-          경공매
-        </span>
-      </button>
+
 
       {/* Custom Zoom Control (네비게이션 바) */}
       <div
