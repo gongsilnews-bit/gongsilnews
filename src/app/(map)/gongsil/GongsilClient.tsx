@@ -1989,12 +1989,12 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
               zIndex: 10000,
               display: "flex",
               alignItems: "center",
-              gap: 12,
+              justifyContent: "center",
               background: "rgba(255, 255, 255, 0.85)",
               backdropFilter: "blur(12px)",
               WebkitBackdropFilter: "blur(12px)",
-              padding: "14px 24px",
-              borderRadius: 30,
+              padding: "12px",
+              borderRadius: "50%", // 동그란 미니 조약돌 모양
               boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12)",
               border: "1px solid rgba(255, 255, 255, 0.3)",
               pointerEvents: "none", // 지도 조작 방해 금지
@@ -2016,27 +2016,14 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
             {/* 🌀 스피너 서클 */}
             <div
               style={{
-                width: 18,
-                height: 18,
-                border: "3px solid rgba(26, 115, 232, 0.15)",
-                borderTop: "3px solid #1a73e8",
+                width: 22,
+                height: 22,
+                border: "3.5px solid rgba(26, 115, 232, 0.15)",
+                borderTop: "3.5px solid #1a73e8",
                 borderRadius: "50%",
                 animation: "spin 0.8s linear infinite",
               }}
             />
-
-            {/* 📝 로딩 텍스트 */}
-            <span
-              style={{
-                fontSize: 13,
-                fontWeight: 700,
-                color: "#2c3e50",
-                letterSpacing: "-0.3px",
-                fontFamily: "'Pretendard', sans-serif",
-              }}
-            >
-              공실 정보를 안전하게 불러오고 있습니다...
-            </span>
           </div>
         )}
       </main>
