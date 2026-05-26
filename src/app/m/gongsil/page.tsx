@@ -1011,40 +1011,42 @@ function MobileGongsilContent() {
               )}
               {activeMode === "경매" ? `검색된 물건 ${visibleCount}개` : `검색된 공실 ${visibleCount}개`}
             </button>
-            <button
-              onClick={() => {
-                if (!currentUser) {
-                  alert(activeMode === "경매" ? "물건을 등록하려면 로그인이 필요합니다." : "공실을 등록하려면 로그인이 필요합니다.");
-                  setIsAuthModalOpen(true);
-                } else {
-                  router.push("/m/admin/vacancy/write");
-                }
-              }}
-              style={{
-                borderRadius: "28px",
-                background: activeMode === "경매" ? "linear-gradient(135deg, #1a4282, #111827)" : "linear-gradient(135deg, #3b82f6, #1d4ed8)",
-                color: "#fff",
-                border: "none",
-                boxShadow: activeMode === "경매" ? "0 6px 20px rgba(26, 66, 130, 0.4)" : "0 6px 20px rgba(29, 78, 216, 0.4)",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                padding: "14px 20px",
-                gap: "4px",
-                whiteSpace: "nowrap",
-                transition: "all 0.25s cubic-bezier(0.25, 1, 0.5, 1), transform 0.15s ease",
-              }}
-              onMouseDown={(e) => { e.currentTarget.style.transform = "scale(0.92)"; }}
-              onMouseUp={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
-              onTouchStart={(e) => { e.currentTarget.style.transform = "scale(0.92)"; }}
-              onTouchEnd={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
-            >
-              <span style={{ fontSize: "20px", fontWeight: 300, lineHeight: 1 }}>+</span>
-              <span style={{ fontSize: "15px", fontWeight: 800 }}>
-                {activeMode === "경매" ? "물건등록" : "공실등록"}
-              </span>
-            </button>
+            {activeMode !== "경매" && (
+              <button
+                onClick={() => {
+                  if (!currentUser) {
+                    alert("공실을 등록하려면 로그인이 필요합니다.");
+                    setIsAuthModalOpen(true);
+                  } else {
+                    router.push("/m/admin/vacancy/write");
+                  }
+                }}
+                style={{
+                  borderRadius: "28px",
+                  background: "linear-gradient(135deg, #3b82f6, #1d4ed8)",
+                  color: "#fff",
+                  border: "none",
+                  boxShadow: "0 6px 20px rgba(29, 78, 216, 0.4)",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: "14px 20px",
+                  gap: "4px",
+                  whiteSpace: "nowrap",
+                  transition: "all 0.25s cubic-bezier(0.25, 1, 0.5, 1), transform 0.15s ease",
+                }}
+                onMouseDown={(e) => { e.currentTarget.style.transform = "scale(0.92)"; }}
+                onMouseUp={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
+                onTouchStart={(e) => { e.currentTarget.style.transform = "scale(0.92)"; }}
+                onTouchEnd={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
+              >
+                <span style={{ fontSize: "20px", fontWeight: 300, lineHeight: 1 }}>+</span>
+                <span style={{ fontSize: "15px", fontWeight: 800 }}>
+                  공실등록
+                </span>
+              </button>
+            )}
           </div>
         )}
 
