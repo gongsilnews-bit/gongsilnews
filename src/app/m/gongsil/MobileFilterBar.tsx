@@ -139,10 +139,18 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
           <div className="filter-scroll" style={{ overflowX: "auto", display: "flex", gap: "8px", padding: "0 12px 0 12px", WebkitOverflowScrolling: "touch" as any }}>
             <button onClick={() => setActivePanel(activePanel === "loc" ? null : "loc")} style={pillStyle(activePanel === "loc" || locLabel !== "위치")}>📍 {locLabel} ▾</button>
             <button onClick={() => setActivePanel(activePanel === "prop" ? null : "prop")} style={pillStyle(activePanel === "prop" || filters.propertyTypes.length > 0)}>
-              {filters.propertyTypes.length > 0 ? filters.propertyTypes.slice(0,2).join(", ") + (filters.propertyTypes.length > 2 ? ` +${filters.propertyTypes.length-2}` : "") : "공실광고유형"} ▾
+              {filters.propertyTypes.length === PROPERTY_TYPES.flatMap(g => g.items).length 
+                ? "전체유형" 
+                : filters.propertyTypes.length > 0 
+                ? filters.propertyTypes.slice(0,2).join(", ") + (filters.propertyTypes.length > 2 ? ` +${filters.propertyTypes.length-2}` : "") 
+                : "공실광고유형"} ▾
             </button>
-            <button onClick={() => setActivePanel(activePanel === "trade" ? null : "trade")} style={pillStyle(activePanel === "trade" || filters.tradeTypes.length > 0)}>
-              {filters.tradeTypes.length > 0 ? filters.tradeTypes.join(", ") : "거래방식"} ▾
+            <button onClick={() => setActivePanel(activePanel === "trade" ? null : "trade")} style={pillStyle(activePanel === "trade" || (filters.tradeTypes.length > 0 && filters.tradeTypes.length < TRADE_TYPES.length))}>
+              {filters.tradeTypes.length === TRADE_TYPES.length 
+                ? "전체거래" 
+                : filters.tradeTypes.length > 0 
+                ? filters.tradeTypes.join(", ") 
+                : "거래방식"} ▾
             </button>
             <button onClick={() => setActivePanel(activePanel === "price" ? null : "price")} style={pillStyle(activePanel === "price" || filters.priceMin !== null || filters.priceMax !== null)}>
               {priceLabel} ▾

@@ -8,10 +8,20 @@ interface Props {
 }
 
 export default function PropertyTypeFilterPanel({ filters, onFilterChange, PROPERTY_TYPES }: Props) {
+  const allItems = PROPERTY_TYPES.flatMap(g => g.items);
+
   const toggleProp = (item: string) => {
     const arr = filters.propertyTypes;
     const newArr = arr.includes(item) ? arr.filter(x => x !== item) : [...arr, item];
     onFilterChange({ propertyTypes: newArr });
+  };
+
+  const selectAll = () => {
+    onFilterChange({ propertyTypes: allItems });
+  };
+
+  const selectNone = () => {
+    onFilterChange({ propertyTypes: [] });
   };
 
   const gridBtnStyle = (active: boolean): React.CSSProperties => ({
@@ -23,6 +33,30 @@ export default function PropertyTypeFilterPanel({ filters, onFilterChange, PROPE
 
   return (
     <div>
+      {/* 🚀 [대표님 지침] 광고유형 최상단 세련된 원터치 퀵 토글 버튼 장착 */}
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginBottom: "14px" }}>
+        <button 
+          onClick={selectAll} 
+          style={{ 
+            background: "none", border: "none", fontSize: "13px", fontWeight: 800, color: "#1a73e8", 
+            cursor: "pointer", padding: "6px 10px", borderRadius: "6px", backgroundColor: "#f0f7ff",
+            transition: "background-color 0.15s"
+          }}
+        >
+          ✓ 전체 선택
+        </button>
+        <button 
+          onClick={selectNone} 
+          style={{ 
+            background: "none", border: "none", fontSize: "13px", fontWeight: 800, color: "#ef4444", 
+            cursor: "pointer", padding: "6px 10px", borderRadius: "6px", backgroundColor: "#fef2f2",
+            transition: "background-color 0.15s"
+          }}
+        >
+          ✕ 전체 해제
+        </button>
+      </div>
+
       {PROPERTY_TYPES.map(g => (
         <div key={g.group} style={{ marginBottom: "16px" }}>
           <div style={{ fontSize: "13px", fontWeight: 700, color: "#6b7280", marginBottom: "8px" }}>{g.group}</div>
@@ -35,12 +69,6 @@ export default function PropertyTypeFilterPanel({ filters, onFilterChange, PROPE
           </div>
         </div>
       ))}
-      <button 
-        onClick={() => onFilterChange({ propertyTypes: [] })} 
-        style={{ width: "100%", padding: "12px", background: "#f3f4f6", border: "none", borderRadius: "8px", fontSize: "14px", fontWeight: 600, color: "#6b7280", cursor: "pointer", marginTop: "8px" }}
-      >
-        초기화
-      </button>
     </div>
   );
 }
