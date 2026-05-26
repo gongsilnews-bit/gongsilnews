@@ -73,7 +73,17 @@ export function useVacancyFilters(initialVacancies: any[]) {
     return initialVacancies.filter(v => {
       // 1. 공실광고 유형 - 아무것도 선택하지 않으면 아무것도 노출하지 않습니다. (대표님 지침)
       if (filters.propertyTypes.length === 0) return false;
-      if (!filters.propertyTypes.includes(v.property_type)) return false;
+      
+      let isPropMatch = filters.propertyTypes.includes(v.property_type);
+      
+      // 🚀 [대표님 지침] 원룸/투룸 초강력 매칭 예외 보정 장치
+      if (!isPropMatch) {
+        if (v.property_type === "원룸·투룸(풀옵션)") {
+          isPropMatch = filters.propertyTypes.includes("원룸") || filters.propertyTypes.includes("투룸");
+        }
+      }
+      
+      if (!isPropMatch) return false;
       
       // 2. 거래 방식
       if (filters.tradeTypes.length > 0 && !filters.tradeTypes.includes(v.trade_type)) return false;
