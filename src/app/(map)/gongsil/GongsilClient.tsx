@@ -3207,51 +3207,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                             </div>
                           </div>
                           
-                          {/* Alert Save Row */}
-                          {(activeCategory === "apart" || activeCategory === "villa" || activeCategory === "auction") && (
-                            <div style={{
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "space-between",
-                              padding: "10px 12px",
-                              borderRadius: "6px",
-                              background: savedCategoryAlerts[activeCategory] ? "#f0f7ff" : "#f9fafb",
-                              border: "1px dashed " + (savedCategoryAlerts[activeCategory] ? "#1a4282" : "#e5e7eb"),
-                              marginBottom: "12px",
-                              marginTop: "8px",
-                              transition: "all 0.25s ease"
-                            }}>
-                              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                                <span style={{ fontSize: "15px" }}>{savedCategoryAlerts[activeCategory] ? "🔔" : "🔕"}</span>
-                                <div style={{ display: "flex", flexDirection: "column" }}>
-                                  <span style={{ fontSize: "11px", fontWeight: "bold", color: "#111827" }}>
-                                    {CATEGORY_CONFIG[activeCategory]?.name || activeCategory} 맞춤 매물 알림
-                                  </span>
-                                  <span style={{ fontSize: "9px", color: "#6b7280" }}>
-                                    {savedCategoryAlerts[activeCategory] 
-                                      ? "새 매물 등록 시 어플 푸시로 실시간 알림을 보냅니다."
-                                      : "새 매물이 등록되면 어플에서 알림을 드립니다."}
-                                  </span>
-                                </div>
-                              </div>
-                              <button
-                                onClick={() => handleToggleCategoryAlert(activeCategory)}
-                                style={{
-                                  padding: "6px 12px",
-                                  background: savedCategoryAlerts[activeCategory] ? "#1a4282" : "#fff",
-                                  border: "1px solid #1a4282",
-                                  borderRadius: "4px",
-                                  color: savedCategoryAlerts[activeCategory] ? "#fff" : "#1a4282",
-                                  fontSize: "11px",
-                                  fontWeight: "bold",
-                                  cursor: "pointer",
-                                  transition: "all 0.15s"
-                                }}
-                              >
-                                {savedCategoryAlerts[activeCategory] ? "알림 해제" : "알림 받기"}
-                              </button>
-                            </div>
-                          )}
+
 
                           {/* Bottom Action buttons */}
                           <div style={{ display: "flex", gap: "10px", borderTop: "1px solid #f3f4f6", paddingTop: "15px", background: "#ffffff" }}>
