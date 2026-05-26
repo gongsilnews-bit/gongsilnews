@@ -87,6 +87,58 @@ const RENT_SCALE = [
   5000000,  // 500만
 ];
 
+const AREA_SCALE = [
+  0,
+  10,
+  20,
+  30,
+  40,
+  50,
+  60,
+  70,
+  80,
+  100,
+  120,
+  150,
+  200,
+  300,
+  500,
+  1000,
+];
+
+const YEAR_SCALE = [
+  1960,
+  1970,
+  1980,
+  1990,
+  1995,
+  2000,
+  2005,
+  2010,
+  2015,
+  2020,
+  2022,
+  2024,
+  2026,
+];
+
+const UNIT_SCALE = [
+  0,
+  50,
+  100,
+  200,
+  300,
+  500,
+  700,
+  1000,
+  1500,
+  2000,
+  2500,
+  3000,
+  4000,
+  5000,
+];
+
 const getScaleIndex = (val: number | null, scale: number[], isMax: boolean) => {
   if (val === null) return isMax ? scale.length - 1 : 0;
   let closestIdx = 0;
@@ -2016,76 +2068,65 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                 transition: "all 0.2s ease-in-out",
                               }}
                             >
-                              <div style={{ fontSize: "14px", color: "#374151", marginBottom: "10px", fontWeight: "bold" }}>면적</div>
-                              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-                                <input
-                                  type="number"
-                                  placeholder="최소(평)"
-                                  value={filterAreaMin ? Math.round(filterAreaMin / 3.3) : ""}
-                                  onChange={(e) => {
-                                    const val = e.target.value ? parseFloat(e.target.value) * 3.3 : null;
-                                    setFilterAreaMin(val);
-                                  }}
-                                  style={{
-                                    flex: 1,
-                                    padding: "6px 8px",
-                                    border: "1px solid #ccc",
-                                    borderRadius: 4,
-                                    fontSize: 12,
-                                  }}
-                                />
-                                <span>~</span>
-                                <input
-                                  type="number"
-                                  placeholder="최대(평)"
-                                  value={filterAreaMax ? Math.round(filterAreaMax / 3.3) : ""}
-                                  onChange={(e) => {
-                                    const val = e.target.value ? parseFloat(e.target.value) * 3.3 : null;
-                                    setFilterAreaMax(val);
-                                  }}
-                                  style={{
-                                    flex: 1,
-                                    padding: "6px 8px",
-                                    border: "1px solid #ccc",
-                                    borderRadius: 4,
-                                    fontSize: 12,
-                                  }}
-                                />
-                              </div>
-                              <div
-                                style={{
-                                  display: "grid",
-                                  gridTemplateColumns: "repeat(3, 1fr)",
-                                  gap: 6,
-                                  maxHeight: 180,
-                                  overflowY: "auto",
-                                  paddingRight: 4,
-                                }}
-                              >
-                                {AREA_GRID.map((item) => (
-                                  <button
-                                    key={item.label}
-                                    onClick={() => {
-                                      if (item.m2 === -1) {
-                                        setFilterAreaMin(1650);
-                                        setFilterAreaMax(null);
-                                      } else {
-                                        setFilterAreaMax(item.m2);
-                                      }
-                                    }}
-                                    style={{
-                                      padding: "6px 0",
-                                      border: "1px solid #eee",
-                                      borderRadius: 4,
-                                      background: "#ffffff",
-                                      fontSize: 11,
-                                      cursor: "pointer",
-                                    }}
-                                  >
-                                    {item.label}
-                                  </button>
-                                ))}
-                              </div>
+                              {(() => {
+                                const pyeongMin = filterAreaMin ? Math.round(filterAreaMin / 3.3) : null;
+                                const pyeongMax = filterAreaMax ? Math.round(filterAreaMax / 3.3) : null;
+                                const minIdx = getScaleIndex(pyeongMin, AREA_SCALE, false);
+                                const maxIdx = getScaleIndex(pyeongMax, AREA_SCALE, true);
+                                return (
+                                  <div>
+                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                                      <span style={{ fontSize: "15px", fontWeight: "800", color: "#111827" }}>면적</span>
+                                      <span style={{ fontSize: "14px", color: "#1a4282", fontWeight: "800" }}>
+                                        {filterAreaMin === null && filterAreaMax === null 
+                                          ? "전체" 
+                                          : `${pyeongMin || "0"}평 ~ ${pyeongMax || "최대"}`}
+                                      </span>
+                                    </div>
+                                    
+                                    <div className="dual-slider-container" style={{ margin: "20px 0 28px 0" }}>
+                                      <div 
+                                        className="dual-slider-track" 
+                                        style={{ left: `${(minIdx / (AREA_SCALE.length - 1)) * 100}%`, right: `${100 - (maxIdx / (AREA_SCALE.length - 1)) * 100}%` }} 
+                                      />
+                                      <input 
+                                        type="range" 
+                                        min={0} 
+                                        max={AREA_SCALE.length - 1} 
+                                        value={minIdx} 
+                                        onChange={(e) => {
+                                          const val = parseInt(e.target.value, 10);
+                                          if (val <= maxIdx) {
+                                            setFilterAreaMin(val === 0 ? null : AREA_SCALE[val] * 3.3);
+                                          }
+                                        }} 
+                                        className="dual-slider-input" 
+                                      />
+                                      <input 
+                                        type="range" 
+                                        min={0} 
+                                        max={AREA_SCALE.length - 1} 
+                                        value={maxIdx} 
+                                        onChange={(e) => {
+                                          const val = parseInt(e.target.value, 10);
+                                          if (val >= minIdx) {
+                                            setFilterAreaMax(val === AREA_SCALE.length - 1 ? null : AREA_SCALE[val] * 3.3);
+                                          }
+                                        }} 
+                                        className="dual-slider-input" 
+                                      />
+                                    </div>
+                                    
+                                    <div style={{ display: "flex", justifyContent: "space-between", padding: "0 2px", marginTop: "-24px" }}>
+                                      <span style={{ fontSize: "11px", fontWeight: "bold", color: "#4b5563" }}>최소</span>
+                                      <span style={{ fontSize: "11px", fontWeight: "bold", color: "#4b5563" }}>10평</span>
+                                      <span style={{ fontSize: "11px", fontWeight: "bold", color: "#4b5563" }}>40평</span>
+                                      <span style={{ fontSize: "11px", fontWeight: "bold", color: "#4b5563" }}>150평</span>
+                                      <span style={{ fontSize: "11px", fontWeight: "bold", color: "#4b5563" }}>최대</span>
+                                    </div>
+                                  </div>
+                                );
+                              })()}
                             </div>
 
                             {/* Section 3: 사용승인일 */}
@@ -2099,71 +2140,63 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                 transition: "all 0.2s ease-in-out",
                               }}
                             >
-                              <div style={{ fontSize: "14px", color: "#374151", marginBottom: "10px", fontWeight: "bold" }}>사용승인일</div>
-                              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-                                <input
-                                  type="number"
-                                  placeholder="최소(년)"
-                                  value={filterYearMin || ""}
-                                  onChange={(e) => {
-                                    const val = e.target.value ? parseInt(e.target.value) : null;
-                                    setFilterYearMin(val);
-                                  }}
-                                  style={{
-                                    flex: 1,
-                                    padding: "6px 8px",
-                                    border: "1px solid #ccc",
-                                    borderRadius: 4,
-                                    fontSize: 12,
-                                  }}
-                                />
-                                <span>~</span>
-                                <input
-                                  type="number"
-                                  placeholder="최대(년)"
-                                  value={filterYearMax || ""}
-                                  onChange={(e) => {
-                                    const val = e.target.value ? parseInt(e.target.value) : null;
-                                    setFilterYearMax(val);
-                                  }}
-                                  style={{
-                                    flex: 1,
-                                    padding: "6px 8px",
-                                    border: "1px solid #ccc",
-                                    borderRadius: 4,
-                                    fontSize: 12,
-                                  }}
-                                />
-                              </div>
-                              <div
-                                style={{
-                                  display: "grid",
-                                  gridTemplateColumns: "repeat(3, 1fr)",
-                                  gap: 6,
-                                  maxHeight: 180,
-                                  overflowY: "auto",
-                                  paddingRight: 4,
-                                }}
-                              >
-                                {YEAR_GRID.map((item) => (
-                                  <button
-                                    key={item.label}
-                                    onClick={() => {
-                                      setFilterYearMax(item.val);
-                                    }}
-                                    style={{
-                                      padding: "6px 0",
-                                      border: "1px solid #eee",
-                                      borderRadius: 4,
-                                      background: "#ffffff",
-                                      fontSize: 11,
-                                      cursor: "pointer",
-                                    }}
-                                  >
-                                    {item.label}
-                                  </button>
-                                ))}
-                              </div>
+                              {(() => {
+                                const minIdx = getScaleIndex(filterYearMin, YEAR_SCALE, false);
+                                const maxIdx = getScaleIndex(filterYearMax, YEAR_SCALE, true);
+                                return (
+                                  <div>
+                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                                      <span style={{ fontSize: "15px", fontWeight: "800", color: "#111827" }}>사용승인일</span>
+                                      <span style={{ fontSize: "14px", color: "#1a4282", fontWeight: "800" }}>
+                                        {filterYearMin === null && filterYearMax === null 
+                                          ? "전체" 
+                                          : `${filterYearMin || "1960"}년 ~ ${filterYearMax || "최대"}`}
+                                      </span>
+                                    </div>
+                                    
+                                    <div className="dual-slider-container" style={{ margin: "20px 0 28px 0" }}>
+                                      <div 
+                                        className="dual-slider-track" 
+                                        style={{ left: `${(minIdx / (YEAR_SCALE.length - 1)) * 100}%`, right: `${100 - (maxIdx / (YEAR_SCALE.length - 1)) * 100}%` }} 
+                                      />
+                                      <input 
+                                        type="range" 
+                                        min={0} 
+                                        max={YEAR_SCALE.length - 1} 
+                                        value={minIdx} 
+                                        onChange={(e) => {
+                                          const val = parseInt(e.target.value, 10);
+                                          if (val <= maxIdx) {
+                                            setFilterYearMin(val === 0 ? null : YEAR_SCALE[val]);
+                                          }
+                                        }} 
+                                        className="dual-slider-input" 
+                                      />
+                                      <input 
+                                        type="range" 
+                                        min={0} 
+                                        max={YEAR_SCALE.length - 1} 
+                                        value={maxIdx} 
+                                        onChange={(e) => {
+                                          const val = parseInt(e.target.value, 10);
+                                          if (val >= minIdx) {
+                                            setFilterYearMax(val === YEAR_SCALE.length - 1 ? null : YEAR_SCALE[val]);
+                                          }
+                                        }} 
+                                        className="dual-slider-input" 
+                                      />
+                                    </div>
+                                    
+                                    <div style={{ display: "flex", justifyContent: "space-between", padding: "0 2px", marginTop: "-24px" }}>
+                                      <span style={{ fontSize: "11px", fontWeight: "bold", color: "#4b5563" }}>최소</span>
+                                      <span style={{ fontSize: "11px", fontWeight: "bold", color: "#4b5563" }}>1990년</span>
+                                      <span style={{ fontSize: "11px", fontWeight: "bold", color: "#4b5563" }}>2005년</span>
+                                      <span style={{ fontSize: "11px", fontWeight: "bold", color: "#4b5563" }}>2020년</span>
+                                      <span style={{ fontSize: "11px", fontWeight: "bold", color: "#4b5563" }}>최대</span>
+                                    </div>
+                                  </div>
+                                );
+                              })()}
                             </div>
 
                             {/* Section 4: 세대수 */}
@@ -2177,71 +2210,63 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                 transition: "all 0.2s ease-in-out",
                               }}
                             >
-                              <div style={{ fontSize: "16px", color: "#374151", marginBottom: "10px", fontWeight: "bold" }}>세대수</div>
-                              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-                                <input
-                                  type="number"
-                                  placeholder="최소(세대)"
-                                  value={filterUnitMin || ""}
-                                  onChange={(e) => {
-                                    const val = e.target.value ? parseInt(e.target.value) : null;
-                                    setFilterUnitMin(val);
-                                  }}
-                                  style={{
-                                    flex: 1,
-                                    padding: "6px 8px",
-                                    border: "1px solid #ccc",
-                                    borderRadius: 4,
-                                    fontSize: 14,
-                                  }}
-                                />
-                                <span style={{ fontSize: 14 }}>~</span>
-                                <input
-                                  type="number"
-                                  placeholder="최대(세대)"
-                                  value={filterUnitMax || ""}
-                                  onChange={(e) => {
-                                    const val = e.target.value ? parseInt(e.target.value) : null;
-                                    setFilterUnitMax(val);
-                                  }}
-                                  style={{
-                                    flex: 1,
-                                    padding: "6px 8px",
-                                    border: "1px solid #ccc",
-                                    borderRadius: 4,
-                                    fontSize: 14,
-                                  }}
-                                />
-                              </div>
-                              <div
-                                style={{
-                                  display: "grid",
-                                  gridTemplateColumns: "repeat(3, 1fr)",
-                                  gap: 6,
-                                  maxHeight: 180,
-                                  overflowY: "auto",
-                                  paddingRight: 4,
-                                }}
-                              >
-                                {UNIT_GRID.map((item) => (
-                                  <button
-                                    key={item.label}
-                                    onClick={() => {
-                                      setFilterUnitMax(item.val);
-                                    }}
-                                    style={{
-                                      padding: "6px 0",
-                                      border: "1px solid #eee",
-                                      borderRadius: 4,
-                                      background: "#ffffff",
-                                      fontSize: 13,
-                                      cursor: "pointer",
-                                    }}
-                                  >
-                                    {item.label}
-                                  </button>
-                                ))}
-                              </div>
+                              {(() => {
+                                const minIdx = getScaleIndex(filterUnitMin, UNIT_SCALE, false);
+                                const maxIdx = getScaleIndex(filterUnitMax, UNIT_SCALE, true);
+                                return (
+                                  <div>
+                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                                      <span style={{ fontSize: "15px", fontWeight: "800", color: "#111827" }}>세대수</span>
+                                      <span style={{ fontSize: "14px", color: "#1a4282", fontWeight: "800" }}>
+                                        {filterUnitMin === null && filterUnitMax === null 
+                                          ? "전체" 
+                                          : `${filterUnitMin || "0"}세대 ~ ${filterUnitMax || "최대"}`}
+                                      </span>
+                                    </div>
+                                    
+                                    <div className="dual-slider-container" style={{ margin: "20px 0 28px 0" }}>
+                                      <div 
+                                        className="dual-slider-track" 
+                                        style={{ left: `${(minIdx / (UNIT_SCALE.length - 1)) * 100}%`, right: `${100 - (maxIdx / (UNIT_SCALE.length - 1)) * 100}%` }} 
+                                      />
+                                      <input 
+                                        type="range" 
+                                        min={0} 
+                                        max={UNIT_SCALE.length - 1} 
+                                        value={minIdx} 
+                                        onChange={(e) => {
+                                          const val = parseInt(e.target.value, 10);
+                                          if (val <= maxIdx) {
+                                            setFilterUnitMin(val === 0 ? null : UNIT_SCALE[val]);
+                                          }
+                                        }} 
+                                        className="dual-slider-input" 
+                                      />
+                                      <input 
+                                        type="range" 
+                                        min={0} 
+                                        max={UNIT_SCALE.length - 1} 
+                                        value={maxIdx} 
+                                        onChange={(e) => {
+                                          const val = parseInt(e.target.value, 10);
+                                          if (val >= minIdx) {
+                                            setFilterUnitMax(val === UNIT_SCALE.length - 1 ? null : UNIT_SCALE[val]);
+                                          }
+                                        }} 
+                                        className="dual-slider-input" 
+                                      />
+                                    </div>
+                                    
+                                    <div style={{ display: "flex", justifyContent: "space-between", padding: "0 2px", marginTop: "-24px" }}>
+                                      <span style={{ fontSize: "11px", fontWeight: "bold", color: "#4b5563" }}>최소</span>
+                                      <span style={{ fontSize: "11px", fontWeight: "bold", color: "#4b5563" }}>100세대</span>
+                                      <span style={{ fontSize: "11px", fontWeight: "bold", color: "#4b5563" }}>500세대</span>
+                                      <span style={{ fontSize: "11px", fontWeight: "bold", color: "#4b5563" }}>2000세대</span>
+                                      <span style={{ fontSize: "11px", fontWeight: "bold", color: "#4b5563" }}>최대</span>
+                                    </div>
+                                  </div>
+                                );
+                              })()}
                             </div>
 
                             {/* Section 5: 방/욕실수 */}
