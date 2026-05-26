@@ -1309,7 +1309,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
       return ["신축급", "올수리", "한강뷰", "역세권", "풀옵션", "급매물", "대출가능"];
     }
     if (category === "villa") {
-      return ["테라스", "복층", "마당있음", "투자용", "올수리", "급매물", "대출가능"];
+      return getThemesForVilla(activePills);
     }
     if (category === "one") {
       return ["가성비", "단기임대", "주차편리", "대로변안전", "여성안심", "풀옵션", "급매물"];
@@ -1318,6 +1318,42 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
       return ["무권리", "코너자리", "유동인구많음", "주차대수많음", "인테리어잘됨", "층고높음", "대로변"];
     }
     return ["급매물", "역세권", "신축", "풀옵션", "주차편리", "보증보험가능", "대출가능", "반려동물가능"];
+  };
+
+  const getThemesForVilla = (pills: string[]): string[] => {
+    if (pills.length === 0) {
+      return ["테라스", "복층", "마당있음", "투자용", "올수리", "급매물", "대출가능"];
+    }
+    const themes = new Set<string>();
+    if (pills.includes("빌라/연립")) {
+      ["테라스", "올수리", "역세권", "신축급", "복층", "급매물", "대출가능"].forEach(t => themes.add(t));
+    }
+    if (pills.includes("단독/다가구")) {
+      ["마당있음", "복층", "올수리", "투자용", "급매물", "대출가능"].forEach(t => themes.add(t));
+    }
+    if (pills.includes("전원주택")) {
+      ["마당있음", "테라스", "복층", "투자용", "급매물", "경치좋은"].forEach(t => themes.add(t));
+    }
+    if (pills.includes("상가주택")) {
+      ["상가주택", "코너자리", "투자용", "올수리", "급매물", "대출가능"].forEach(t => themes.add(t));
+    }
+    if (themes.size === 0) {
+      return ["테라스", "복층", "마당있음", "투자용", "올수리", "급매물", "대출가능"];
+    }
+    return Array.from(themes);
+  };
+
+  const getWizardTabs = () => {
+    const baseTabs = ["거래유형", "면적", "사용승인일", "세대수", "방/욕실수", "방향", "등록자", "중개보수", "테마"];
+    if (activeCategory === "villa") {
+      const hasVillaOrCommercialHouse = activePills.includes("빌라/연립") || activePills.includes("상가주택");
+      const hasDetachedOrRural = activePills.includes("단독/다가구") || activePills.includes("전원주택");
+      
+      if (hasDetachedOrRural && !hasVillaOrCommercialHouse) {
+        return ["거래유형", "면적", "사용승인일", "방/욕실수", "방향", "등록자", "중개보수", "테마"];
+      }
+    }
+    return baseTabs;
   };
 
   const resetAllFilters = () => {
@@ -2093,7 +2129,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                 padding: "6px 0",
                               }}
                             >
-                              {["거래유형", "면적", "사용승인일", "세대수", "방/욕실수", "방향", "등록자", "중개보수", "테마"].map((tab) => {
+                              {getWizardTabs().map((tab) => {
                                 const isActive = activeSection === tab;
                                 const isSelected = (() => {
                                   if (tab === "거래유형") {
