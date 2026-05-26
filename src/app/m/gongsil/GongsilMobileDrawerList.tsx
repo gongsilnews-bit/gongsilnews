@@ -124,23 +124,14 @@ const GongsilMobileDrawerListImpl: React.FC<GongsilMobileDrawerListProps> = ({
                   )}
                 </div>
 
-                {/* 썸네일 & 물건번호 영역 */}
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", flexShrink: 0 }}>
-                  {v.images?.[0] ? (
-                    <div style={{ width: "95px", height: "76px", borderRadius: "10px", overflow: "hidden", backgroundColor: "#e5e7eb" }}>
+                {/* 썸네일 영역 */}
+                {v.images?.[0] && (
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0 }}>
+                    <div style={{ width: "120px", height: "96px", borderRadius: "10px", overflow: "hidden", backgroundColor: "#e5e7eb" }}>
                       <img src={v.images[0]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     </div>
-                  ) : (
-                    <div style={{ width: "95px", height: "76px", borderRadius: "10px", overflow: "hidden", backgroundColor: "#f3f4f6", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
-                    </div>
-                  )}
-                  {mngNo && (
-                    <span style={{ fontSize: "11px", fontWeight: 700, color: "#6b7280", marginTop: "2px" }}>
-                      {mngNo}
-                    </span>
-                  )}
-                </div>
+                  </div>
+                )}
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="2" style={{ flexShrink: 0, alignSelf: "center" }}><polyline points="9 18 15 12 9 6"/></svg>
               </div>
             );
