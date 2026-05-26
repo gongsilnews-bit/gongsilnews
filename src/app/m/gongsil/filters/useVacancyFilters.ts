@@ -170,7 +170,8 @@ export function useVacancyFilters(initialVacancies: any[]) {
         if (!match) return false;
       }
 
-      // 11. 위치 필터 (시/구/동)
+      // 11. 위치 필터 (시/구/동) - [대표님 최종 개혁 지침]: 행정동 텍스트 하드 매칭을 걷어내어 화면(Bbox) 안 매물은 다 보이게 공간 연산 일원화!
+      /*
       if (filterSidoNorm) {
         const vSidoNorm = normalizeSido(v.sido);
         if (vSidoNorm !== filterSidoNorm) return false;
@@ -183,6 +184,7 @@ export function useVacancyFilters(initialVacancies: any[]) {
         const vDong = v.dong?.trim() || "";
         if (vDong !== filterDongNorm) return false;
       }
+      */
 
       return true;
     });
