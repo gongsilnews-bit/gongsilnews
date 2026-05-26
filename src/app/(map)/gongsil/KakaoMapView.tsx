@@ -676,11 +676,11 @@ export default function KakaoMapView({
         )}
       </div>
 
-      {/* Left Map Controls: Zoom controls (+, -) and Location Pictogram (내 위치) below it */}
+      {/* Right Map Controls: Zoom controls (+, -) and Location Pictogram (내 위치) below it */}
       <div
         style={{
           position: "absolute",
-          left: 20,
+          right: 20,
           top: "50%",
           transform: "translateY(-50%)",
           zIndex: 1000,
@@ -791,10 +791,10 @@ export default function KakaoMapView({
             strokeWidth="2.5"
             strokeLinecap="round"
             strokeLinejoin="round"
-            style={{ width: 18, height: 18, color: "#444" }}
+            style={{ width: 18, height: 18, color: "#1a4282" }}
           >
             <circle cx="12" cy="12" r="10" />
-            <circle cx="12" cy="12" r="3" fill="#444" />
+            <circle cx="12" cy="12" r="3" fill="#1a4282" />
             <line x1="12" y1="1" x2="12" y2="4" />
             <line x1="12" y1="20" x2="12" y2="23" />
             <line x1="1" y1="12" x2="4" y2="12" />
