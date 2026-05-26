@@ -234,6 +234,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   const [tempDepositMax, setTempDepositMax] = useState<number | null>(null);
   const [tempRentMin, setTempRentMin] = useState<number | null>(null);
   const [tempRentMax, setTempRentMax] = useState<number | null>(null);
+  const [sliderInteractions, setSliderInteractions] = useState<Record<string, { min: boolean; max: boolean }>>({});
 
   const [appliedMaemaeMin, setAppliedMaemaeMin] = useState<number | null>(null);
   const [appliedMaemaeMax, setAppliedMaemaeMax] = useState<number | null>(null);
@@ -1232,6 +1233,26 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     }
   };
 
+  const handleSliderRelease = (sliderKey: string, type: "min" | "max", nextSectionId: string) => {
+    setSliderInteractions((prev) => {
+      const current = prev[sliderKey] || { min: false, max: false };
+      const updated = { ...current, [type]: true };
+      if (updated.min && updated.max) {
+        setTimeout(() => {
+          scrollToSection(nextSectionId);
+        }, 800);
+        return {
+          ...prev,
+          [sliderKey]: { min: false, max: false }
+        };
+      }
+      return {
+        ...prev,
+        [sliderKey]: updated
+      };
+    });
+  };
+
   const config = CATEGORY_CONFIG[activeCategory] || {
     name: "전체",
     pills: [],
@@ -2188,8 +2209,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                             setTempMaemaeMin(val === 0 ? null : MAEMAE_SCALE[val]);
                                           }
                                         }} 
-                                        onMouseUp={() => setTimeout(() => scrollToSection("면적"), 800)}
-                                        onTouchEnd={() => setTimeout(() => scrollToSection("면적"), 800)}
+                                        onMouseUp={() => handleSliderRelease("maemae", "min", "면적")}
+                                        onTouchEnd={() => handleSliderRelease("maemae", "min", "면적")}
                                         className="dual-slider-input" 
                                       />
                                       <input 
@@ -2203,8 +2224,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                             setTempMaemaeMax(val === MAEMAE_SCALE.length - 1 ? null : MAEMAE_SCALE[val]);
                                           }
                                         }} 
-                                        onMouseUp={() => setTimeout(() => scrollToSection("면적"), 800)}
-                                        onTouchEnd={() => setTimeout(() => scrollToSection("면적"), 800)}
+                                        onMouseUp={() => handleSliderRelease("maemae", "max", "면적")}
+                                        onTouchEnd={() => handleSliderRelease("maemae", "max", "면적")}
                                         className="dual-slider-input" 
                                       />
                                     </div>
@@ -2251,8 +2272,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                             setTempDepositMin(val === 0 ? null : DEPOSIT_SCALE[val]);
                                           }
                                         }} 
-                                        onMouseUp={() => setTimeout(() => scrollToSection("면적"), 800)}
-                                        onTouchEnd={() => setTimeout(() => scrollToSection("면적"), 800)}
+                                        onMouseUp={() => handleSliderRelease("deposit", "min", "면적")}
+                                        onTouchEnd={() => handleSliderRelease("deposit", "min", "면적")}
                                         className="dual-slider-input" 
                                       />
                                       <input 
@@ -2266,8 +2287,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                             setTempDepositMax(val === DEPOSIT_SCALE.length - 1 ? null : DEPOSIT_SCALE[val]);
                                           }
                                         }} 
-                                        onMouseUp={() => setTimeout(() => scrollToSection("면적"), 800)}
-                                        onTouchEnd={() => setTimeout(() => scrollToSection("면적"), 800)}
+                                        onMouseUp={() => handleSliderRelease("deposit", "max", "면적")}
+                                        onTouchEnd={() => handleSliderRelease("deposit", "max", "면적")}
                                         className="dual-slider-input" 
                                       />
                                     </div>
@@ -2314,8 +2335,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                             setTempRentMin(val === 0 ? null : RENT_SCALE[val]);
                                           }
                                         }} 
-                                        onMouseUp={() => setTimeout(() => scrollToSection("면적"), 800)}
-                                        onTouchEnd={() => setTimeout(() => scrollToSection("면적"), 800)}
+                                        onMouseUp={() => handleSliderRelease("rent", "min", "면적")}
+                                        onTouchEnd={() => handleSliderRelease("rent", "min", "면적")}
                                         className="dual-slider-input" 
                                       />
                                       <input 
@@ -2329,8 +2350,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                             setTempRentMax(val === RENT_SCALE.length - 1 ? null : RENT_SCALE[val]);
                                           }
                                         }} 
-                                        onMouseUp={() => setTimeout(() => scrollToSection("면적"), 800)}
-                                        onTouchEnd={() => setTimeout(() => scrollToSection("면적"), 800)}
+                                        onMouseUp={() => handleSliderRelease("rent", "max", "면적")}
+                                        onTouchEnd={() => handleSliderRelease("rent", "max", "면적")}
                                         className="dual-slider-input" 
                                       />
                                     </div>
@@ -2390,8 +2411,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                             setFilterAreaMin(val === 0 ? null : AREA_SCALE[val] * 3.3);
                                           }
                                         }} 
-                                        onMouseUp={() => setTimeout(() => scrollToSection("사용승인일"), 800)}
-                                        onTouchEnd={() => setTimeout(() => scrollToSection("사용승인일"), 800)}
+                                        onMouseUp={() => handleSliderRelease("area", "min", "사용승인일")}
+                                        onTouchEnd={() => handleSliderRelease("area", "min", "사용승인일")}
                                         className="dual-slider-input" 
                                       />
                                       <input 
@@ -2405,8 +2426,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                             setFilterAreaMax(val === AREA_SCALE.length - 1 ? null : AREA_SCALE[val] * 3.3);
                                           }
                                         }} 
-                                        onMouseUp={() => setTimeout(() => scrollToSection("사용승인일"), 800)}
-                                        onTouchEnd={() => setTimeout(() => scrollToSection("사용승인일"), 800)}
+                                        onMouseUp={() => handleSliderRelease("area", "max", "사용승인일")}
+                                        onTouchEnd={() => handleSliderRelease("area", "max", "사용승인일")}
                                         className="dual-slider-input" 
                                       />
                                     </div>
@@ -2464,8 +2485,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                             setFilterYearMin(val === 0 ? null : YEAR_SCALE[val]);
                                           }
                                         }} 
-                                        onMouseUp={() => setTimeout(() => scrollToSection("세대수"), 800)}
-                                        onTouchEnd={() => setTimeout(() => scrollToSection("세대수"), 800)}
+                                        onMouseUp={() => handleSliderRelease("year", "min", "세대수")}
+                                        onTouchEnd={() => handleSliderRelease("year", "min", "세대수")}
                                         className="dual-slider-input" 
                                       />
                                       <input 
@@ -2479,8 +2500,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                             setFilterYearMax(val === YEAR_SCALE.length - 1 ? null : YEAR_SCALE[val]);
                                           }
                                         }} 
-                                        onMouseUp={() => setTimeout(() => scrollToSection("세대수"), 800)}
-                                        onTouchEnd={() => setTimeout(() => scrollToSection("세대수"), 800)}
+                                        onMouseUp={() => handleSliderRelease("year", "max", "세대수")}
+                                        onTouchEnd={() => handleSliderRelease("year", "max", "세대수")}
                                         className="dual-slider-input" 
                                       />
                                     </div>
@@ -2538,8 +2559,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                             setFilterUnitMin(val === 0 ? null : UNIT_SCALE[val]);
                                           }
                                         }} 
-                                        onMouseUp={() => setTimeout(() => scrollToSection("방/욕실수"), 800)}
-                                        onTouchEnd={() => setTimeout(() => scrollToSection("방/욕실수"), 800)}
+                                        onMouseUp={() => handleSliderRelease("unit", "min", "방/욕실수")}
+                                        onTouchEnd={() => handleSliderRelease("unit", "min", "방/욕실수")}
                                         className="dual-slider-input" 
                                       />
                                       <input 
@@ -2553,8 +2574,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                             setFilterUnitMax(val === UNIT_SCALE.length - 1 ? null : UNIT_SCALE[val]);
                                           }
                                         }} 
-                                        onMouseUp={() => setTimeout(() => scrollToSection("방/욕실수"), 800)}
-                                        onTouchEnd={() => setTimeout(() => scrollToSection("방/욕실수"), 800)}
+                                        onMouseUp={() => handleSliderRelease("unit", "max", "방/욕실수")}
+                                        onTouchEnd={() => handleSliderRelease("unit", "max", "방/욕실수")}
                                         className="dual-slider-input" 
                                       />
                                     </div>
