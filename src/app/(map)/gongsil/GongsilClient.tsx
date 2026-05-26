@@ -687,15 +687,29 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     if (filterCommissionType) {
       list = list.filter((v) => {
         const vc = v.realtor_commission || v.commission_type || "";
-        if (filterCommissionType === "공동중개") return vc.includes("공동");
+        
+        // Calculate the commission percentage of the listing
         const percentMatch = vc.match(/(\d+)%/);
         const vcPercent = percentMatch
           ? parseInt(percentMatch[1], 10)
-          : vc === "" || vc === "법정수수료"
+          : (vc.includes("100") || vc === "법정수수료" || vc.includes("법정"))
           ? 100
+          : (vc.includes("50"))
+          ? 50
+          : (vc.includes("25"))
+          ? 25
           : 0;
+
+        if (filterCommissionType === "공동중개") {
+          // "공동중개 선택하면 수수료 100%까지"
+          return vc.includes("공동") || vcPercent >= 0;
+        }
+
         const minPercent = parseInt(filterCommissionType, 10);
-        if (!isNaN(minPercent)) return vcPercent >= minPercent;
+        if (!isNaN(minPercent)) {
+          // "25%하면 50 100%는 자동으로 되도록 해줘"
+          return vcPercent >= minPercent;
+        }
         return true;
       });
     }
@@ -1713,7 +1727,13 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
 
               // 8. 중개보수
               if (filterCommissionType !== null) {
-                tags.push({ label: `중개보수: ${filterCommissionType}` });
+                const labelMap: Record<string, string> = {
+                  "공동중개": "공동중개 가능",
+                  "25": "수수료 25%이상",
+                  "50": "수수료 50%이상",
+                  "100": "수수료 100%(법정가)",
+                };
+                tags.push({ label: `중개보수: ${labelMap[filterCommissionType] || filterCommissionType}` });
               }
 
               // 9. 테마
@@ -2868,6 +2888,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                 {[
                                   { label: "전체", val: null },
                                   { label: "공동중개 가능", val: "공동중개" },
+                                  { label: "수수료 25%이상", val: "25" },
                                   { label: "수수료 50%이상", val: "50" },
                                   { label: "수수료 100%(법정가)", val: "100" },
                                 ].map((item) => (
@@ -3511,6 +3532,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                           {[
                             { label: "전체", val: null },
                             { label: "공동중개 가능", val: "공동중개" },
+                            { label: "수수료 25%이상", val: "25" },
                             { label: "수수료 50%이상", val: "50" },
                             { label: "수수료 100%(법정가)", val: "100" },
                           ].map((item) => (
