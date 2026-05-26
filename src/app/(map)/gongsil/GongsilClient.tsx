@@ -1661,7 +1661,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                 </React.Fragment>
               );
             })}
-            <div style={{ width: 1, height: 16, background: "#e0e0e0", margin: "0 8px", flexShrink: 0 }}></div>
+
 
             {/* Active filter text badges for 'apart' and 'villa' categories */}
             {(activeCategory === "apart" || activeCategory === "villa") && (() => {
@@ -1794,40 +1794,40 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                 tags.push({ label: t, isTheme: true });
               });
 
+              if (tags.length === 0) return null;
+
               return (
-                <div 
-                  style={{ 
-                    display: "flex", 
-                    alignItems: "center", 
-                    gap: "8px", 
-                    fontSize: "13px", 
-                    color: "#475569", 
-                    fontWeight: "bold",
-                    fontFamily: "inherit",
-                    whiteSpace: "nowrap",
-                    overflowX: "auto"
-                  }} 
-                  className="no-scrollbar"
-                >
-                  {tags.map((tag, idx) => (
-                    <React.Fragment key={idx}>
-                      {idx > 0 && <span style={{ color: "#cbd5e1", margin: "0 2px" }}>·</span>}
-                      <span
-                        style={{
-                          color: tag.isTheme ? "#1a73e8" : "#334155",
-                          fontWeight: "bold",
-                        }}
-                      >
-                        {tag.isTheme ? `#${tag.label}` : tag.label}
-                      </span>
-                    </React.Fragment>
-                  ))}
-                  {tags.length === 0 && (
-                    <span style={{ fontSize: 13, color: "#94a3b8", fontWeight: "500", fontStyle: "italic" }}>
-                      전체 매물 조회 중
-                    </span>
-                  )}
-                </div>
+                <>
+                  <div style={{ width: 1, height: 16, background: "#e0e0e0", margin: "0 8px", flexShrink: 0 }}></div>
+                  <div 
+                    style={{ 
+                      display: "flex", 
+                      alignItems: "center", 
+                      gap: "8px", 
+                      fontSize: "13px", 
+                      color: "#475569", 
+                      fontWeight: "bold",
+                      fontFamily: "inherit",
+                      whiteSpace: "nowrap",
+                      overflowX: "auto"
+                    }} 
+                    className="no-scrollbar"
+                  >
+                    {tags.map((tag, idx) => (
+                      <React.Fragment key={idx}>
+                        {idx > 0 && <span style={{ color: "#cbd5e1", margin: "0 2px" }}>·</span>}
+                        <span
+                          style={{
+                            color: tag.isTheme ? "#1a73e8" : "#334155",
+                            fontWeight: "bold",
+                          }}
+                        >
+                          {tag.isTheme ? `#${tag.label}` : tag.label}
+                        </span>
+                      </React.Fragment>
+                    ))}
+                  </div>
+                </>
               );
             })()}
 
