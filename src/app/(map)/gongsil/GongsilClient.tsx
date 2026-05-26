@@ -189,6 +189,9 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   const [appliedDepositMax, setAppliedDepositMax] = useState<number | null>(null);
   const [appliedRentMin, setAppliedRentMin] = useState<number | null>(null);
   const [appliedRentMax, setAppliedRentMax] = useState<number | null>(null);
+  const [popoverSearchKeyword, setPopoverSearchKeyword] = useState<string>("");
+  const [filterSearchKeyword, setFilterSearchKeyword] = useState<string>("");
+  const [activeSection, setActiveSection] = useState<string>("거래유형");
 
   const [filterPriceMin, setFilterPriceMin] = useState<number | null>(null);
   const [filterPriceMax, setFilterPriceMax] = useState<number | null>(null);
@@ -241,6 +244,16 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
       setTempRentMax(appliedRentMax);
     }
   }, [activeFilterDropdown]);
+
+  const scrollToSection = (secName: string) => {
+    const container = document.getElementById("popover-scroll-container");
+    const target = document.getElementById(`section-${secName}`);
+    if (container && target) {
+      const topPos = target.offsetTop - container.offsetTop;
+      container.scrollTo({ top: topPos, behavior: "smooth" });
+      setActiveSection(secName);
+    }
+  };
 
   // Set initial data and ref
   useEffect(() => {
@@ -573,6 +586,25 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
       });
     }
 
+    // 15) 검색어 키워드 필터 (공실번호, 건물명, 지명 주소 등)
+    if (filterSearchKeyword) {
+      const kw = filterSearchKeyword.trim().toLowerCase();
+      list = list.filter((v) => {
+        const vacancyNo = String(v.vacancy_no || "").toLowerCase();
+        const bldName = String(v.building_name || "").toLowerCase();
+        const dongName = String(v.dong || "").toLowerCase();
+        const sigunguName = String(v.sigungu || "").toLowerCase();
+        const detailAddr = String(v.detail_addr || "").toLowerCase();
+        return (
+          vacancyNo.includes(kw) ||
+          bldName.includes(kw) ||
+          dongName.includes(kw) ||
+          sigunguName.includes(kw) ||
+          detailAddr.includes(kw)
+        );
+      });
+    }
+
     return list;
   }, [
     dbVacancies,
@@ -600,6 +632,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     filterOwnerRole,
     filterCommissionType,
     filterThemes,
+    filterSearchKeyword,
     wishTab,
     recentViews,
     isAuctionMode,
@@ -1084,6 +1117,18 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     setShowShareDropdown(false);
   };
 
+  const scrollToSection = (sectionId: string) => {
+    const container = document.getElementById("popover-scroll-container");
+    const section = document.getElementById(`section-${sectionId}`);
+    if (container && section) {
+      container.scrollTo({
+        top: section.offsetTop - container.offsetTop,
+        behavior: "smooth",
+      });
+      setActiveSection(sectionId);
+    }
+  };
+
   const config = CATEGORY_CONFIG[activeCategory] || {
     name: "전체",
     pills: [],
@@ -1123,6 +1168,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     setAppliedDepositMax(null);
     setAppliedRentMin(null);
     setAppliedRentMax(null);
+    setPopoverSearchKeyword("");
+    setFilterSearchKeyword("");
   };
 
   const handleCategoryChange = (key: string) => {
@@ -1436,7 +1483,20 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
               return (
                 <div key={f} style={{ position: "relative" }}>
                   <button
-                    onClick={() => setActiveFilterDropdown(activeFilterDropdown === f ? null : f)}
+                    onClick={() => {
+                      if (activeCategory === "apart") {
+                        if (activeFilterDropdown === "거래유형") {
+                          scrollToSection(f);
+                        } else {
+                          setActiveFilterDropdown("거래유형");
+                          setTimeout(() => {
+                            scrollToSection(f);
+                          }, 150);
+                        }
+                      } else {
+                        setActiveFilterDropdown(activeFilterDropdown === f ? null : f);
+                      }
+                    }}
                     style={{
                       background: isFilterActive ? "#e8f0fe" : "#fff",
                       border: `1px solid ${isFilterActive ? "#1a73e8" : "#ccc"}`,
@@ -1468,13 +1528,13 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                         boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
                         padding: f === "거래유형" ? 18 : 16,
                         zIndex: 300,
-                        minWidth: f === "거래유형" ? 356 : 200,
+                        minWidth: f === "거래유형" ? 436 : 200,
                         animation: "dropdownFadeIn 0.15s ease",
                       }}
                     >
                       {f === "거래유형" && (
-                        <div style={{ display: "flex", flexDirection: "column", width: "320px" }}>
-                          {/* style block to inject dual slider styles */}
+                        <div style={{ display: "flex", flexDirection: "column", width: "400px" }}>
+                          {/* style block to inject dual slider styles and custom scrollbar */}
                           <style>{`
                             .dual-slider-container {
                               position: relative;
@@ -1506,10 +1566,10 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                             .dual-slider-input::-webkit-slider-thumb {
                               height: 20px;
                               width: 20px;
-                              margin-top: -8px; /* Perfectly center 20px thumb on 4px track */
+                              margin-top: -8px;
                               border-radius: 50%;
                               background: #ffffff;
-                              border: 2px solid #1a4282; /* Thin Corporate Deep Navy thumb border */
+                              border: 2px solid #1a4282;
                               cursor: pointer;
                               pointer-events: auto;
                               -webkit-appearance: none;
@@ -1529,243 +1589,902 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                               pointer-events: auto;
                               box-shadow: 0 1px 3px rgba(0,0,0,0.15);
                             }
+                            
+                            /* Custom slim scrollbar */
+                            #popover-scroll-container::-webkit-scrollbar {
+                              width: 4px;
+                            }
+                            #popover-scroll-container::-webkit-scrollbar-track {
+                              background: transparent;
+                            }
+                            #popover-scroll-container::-webkit-scrollbar-thumb {
+                              background: #cbd5e1;
+                              border-radius: 2px;
+                            }
+                            #popover-scroll-container::-webkit-scrollbar-thumb:hover {
+                              background: #94a3b8;
+                            }
+                            
+                            .sub-gnb-scroll::-webkit-scrollbar {
+                              display: none;
+                            }
+                            .sub-gnb-scroll {
+                              -ms-overflow-style: none;
+                              scrollbar-width: none;
+                            }
                           `}</style>
                           
-                          {/* Scrollable area */}
-                          <div style={{ maxHeight: "480px", overflowY: "auto", paddingRight: "8px", paddingBottom: "10px" }}>
-                            {/* Header info */}
-                            <div style={{ fontSize: "14px", color: "#374151", marginBottom: "10px", fontWeight: "bold" }}>
-                              거래유형 중복선택 가능
-                            </div>
-                            
-                            {/* Pills container */}
-                            <div style={{ display: "flex", gap: "8px", marginBottom: "20px" }}>
-                              {/* 전체 pill */}
-                              <button
-                                onClick={() => setTempFilterTradeTypes([])}
-                                style={{
-                                  padding: "6px 14px",
-                                  borderRadius: 4,
-                                  fontSize: 13,
-                                  border: "1px solid " + (tempFilterTradeTypes.length === 0 ? "#111" : "#ccc"),
-                                  background: tempFilterTradeTypes.length === 0 ? "#111" : "#ffffff",
-                                  color: tempFilterTradeTypes.length === 0 ? "#ffffff" : "#333",
-                                  fontWeight: tempFilterTradeTypes.length === 0 ? "bold" : "normal",
-                                  cursor: "pointer",
-                                  transition: "all 0.15s"
-                                }}
+                          {/* Search Input on Top of Popover */}
+                          <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
+                            <input
+                              type="text"
+                              placeholder="공실번호, 학교, 지하철"
+                              value={popoverSearchKeyword}
+                              onChange={(e) => setPopoverSearchKeyword(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  setFilterSearchKeyword(popoverSearchKeyword);
+                                }
+                              }}
+                              style={{
+                                flex: 1,
+                                padding: "8px 12px",
+                                border: "1px solid #ccc",
+                                borderRadius: "4px",
+                                fontSize: "13px",
+                                outline: "none",
+                              }}
+                            />
+                            <button
+                              onClick={() => setFilterSearchKeyword(popoverSearchKeyword)}
+                              style={{
+                                padding: "8px 12px",
+                                background: "#1a4282", // Corporate Deep Navy matching search button in mockup
+                                color: "#fff",
+                                border: "none",
+                                borderRadius: "4px",
+                                cursor: "pointer",
+                                fontWeight: "bold",
+                                fontSize: "13px",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                              }}
+                            >
+                              <svg
+                                width="16"
+                                height="16"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2.5"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
                               >
-                                전체
-                              </button>
-                              
-                              {/* Other trade types */}
-                              {["매매", "전세", "월세", "단기"].map((type) => {
-                                const isSel = tempFilterTradeTypes.includes(type);
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                              </svg>
+                            </button>
+                          </div>
+
+                          {/* Gray Divider line */}
+                          <div style={{ height: "1px", background: "#e5e7eb", marginBottom: "12px" }} />
+
+                          {/* Horizontal Navigation with Left/Right Buttons */}
+                          <div style={{ display: "flex", alignItems: "center", gap: "4px", marginBottom: "12px", position: "relative" }}>
+                            <button
+                              onClick={() => {
+                                const nav = document.getElementById("sub-gnb-scroll");
+                                if (nav) nav.scrollBy({ left: -80, behavior: "smooth" });
+                              }}
+                              style={{
+                                border: "none",
+                                background: "none",
+                                fontSize: "14px",
+                                color: "#6b7280",
+                                cursor: "pointer",
+                                padding: "4px 8px",
+                                fontWeight: "bold",
+                              }}
+                            >
+                              &lt;
+                            </button>
+                            
+                            <div
+                              id="sub-gnb-scroll"
+                              className="sub-gnb-scroll"
+                              style={{
+                                display: "flex",
+                                gap: "8px",
+                                overflowX: "auto",
+                                flex: 1,
+                                whiteSpace: "nowrap",
+                                padding: "4px 0",
+                              }}
+                            >
+                              {["거래유형", "면적", "사용승인일", "세대수", "방/욕실수", "방향", "등록자", "중개보수", "테마"].map((tab) => {
+                                const isActive = activeSection === tab;
                                 return (
-                                  <button
-                                    key={type}
-                                    onClick={() => {
-                                      setTempFilterTradeTypes((prev) => 
-                                        prev.includes(type) ? prev.filter((x) => x !== type) : [...prev, type]
-                                      );
-                                    }}
+                                  <span
+                                    key={tab}
+                                    onClick={() => scrollToSection(tab)}
                                     style={{
-                                      padding: "6px 14px",
-                                      borderRadius: 4,
-                                      fontSize: 13,
-                                      border: "1px solid " + (isSel ? "#111" : "#ccc"),
-                                      background: isSel ? "#111" : "#ffffff",
-                                      color: isSel ? "#ffffff" : "#333",
-                                      fontWeight: isSel ? "bold" : "normal",
+                                      fontSize: "12px",
+                                      color: isActive ? "#1a4282" : "#4b5563",
+                                      fontWeight: isActive ? "bold" : "normal",
                                       cursor: "pointer",
-                                      transition: "all 0.15s"
+                                      padding: "4px 10px",
+                                      background: isActive ? "#e8f0fe" : "none",
+                                      borderRadius: "12px",
+                                      transition: "all 0.15s",
                                     }}
                                   >
-                                    {type}
-                                  </button>
+                                    {tab}
+                                  </span>
                                 );
                               })}
                             </div>
                             
-                            {/* Separator line */}
-                            <div style={{ height: "1px", background: "#f3f4f6", marginBottom: "20px" }} />
-                            
-                            {/* MAEMAE Price Range Slider */}
-                            {(() => {
-                              const minIdx = getScaleIndex(tempMaemaeMin, MAEMAE_SCALE, false);
-                              const maxIdx = getScaleIndex(tempMaemaeMax, MAEMAE_SCALE, true);
-                              return (
-                                <div style={{ marginBottom: "24px" }}>
-                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
-                                    <span style={{ fontSize: "17px", fontWeight: "800", color: "#111827" }}>매매가</span>
-                                    <span style={{ fontSize: "15px", color: "#1a4282", fontWeight: "800" }}>
-                                      {tempMaemaeMin === null && tempMaemaeMax === null 
-                                        ? "전체" 
-                                        : `${formatPriceLabel(tempMaemaeMin) || "0"} ~ ${formatPriceLabel(tempMaemaeMax) || "최대"}`}
-                                    </span>
+                            <button
+                              onClick={() => {
+                                const nav = document.getElementById("sub-gnb-scroll");
+                                if (nav) nav.scrollBy({ left: 80, behavior: "smooth" });
+                              }}
+                              style={{
+                                border: "none",
+                                background: "none",
+                                fontSize: "14px",
+                                color: "#6b7280",
+                                cursor: "pointer",
+                                padding: "4px 8px",
+                                fontWeight: "bold",
+                              }}
+                            >
+                              &gt;
+                            </button>
+                          </div>
+
+                           {/* Scrollable area */}
+                          <div
+                            id="popover-scroll-container"
+                            style={{ maxHeight: "420px", overflowY: "auto", paddingRight: "8px", paddingBottom: "10px" }}
+                            onScroll={(e) => {
+                              const container = e.currentTarget;
+                              const containerRect = container.getBoundingClientRect();
+                              const sections = ["거래유형", "면적", "사용승인일", "세대수", "방/욕실수", "방향", "등록자", "중개보수", "테마"];
+                              
+                              let closestSec = activeSection;
+                              let minDiff = Infinity;
+                              
+                              for (const sec of sections) {
+                                const el = document.getElementById(`section-${sec}`);
+                                if (el) {
+                                  const rect = el.getBoundingClientRect();
+                                  const diff = Math.abs(rect.top - containerRect.top);
+                                  if (diff < minDiff) {
+                                    minDiff = diff;
+                                    closestSec = sec;
+                                  }
+                                }
+                              }
+                              
+                              if (closestSec !== activeSection) {
+                                setActiveSection(closestSec);
+                              }
+                            }}
+                          >
+                            {/* Section 1: 거래유형 */}
+                            <div
+                              id="section-거래유형"
+                              style={{
+                                padding: "16px 12px",
+                                borderRadius: "8px",
+                                background: activeSection === "거래유형" ? "#f3f4f6" : "transparent",
+                                marginBottom: "16px",
+                                transition: "all 0.2s ease-in-out",
+                              }}
+                            >
+                              <div style={{ fontSize: "14px", color: "#374151", marginBottom: "10px", fontWeight: "bold" }}>
+                                거래유형 중복선택 가능
+                              </div>
+                              
+                              <div style={{ display: "flex", gap: "8px", marginBottom: "20px" }}>
+                                <button
+                                  onClick={() => setTempFilterTradeTypes([])}
+                                  style={{
+                                    padding: "6px 14px",
+                                    borderRadius: 4,
+                                    fontSize: 13,
+                                    border: "1px solid " + (tempFilterTradeTypes.length === 0 ? "#111" : "#ccc"),
+                                    background: tempFilterTradeTypes.length === 0 ? "#111" : "#ffffff",
+                                    color: tempFilterTradeTypes.length === 0 ? "#ffffff" : "#333",
+                                    fontWeight: tempFilterTradeTypes.length === 0 ? "bold" : "normal",
+                                    cursor: "pointer",
+                                    transition: "all 0.15s"
+                                  }}
+                                >
+                                  전체
+                                </button>
+                                
+                                {["매매", "전세", "월세", "단기"].map((type) => {
+                                  const isSel = tempFilterTradeTypes.includes(type);
+                                  return (
+                                    <button
+                                      key={type}
+                                      onClick={() => {
+                                        setTempFilterTradeTypes((prev) => 
+                                          prev.includes(type) ? prev.filter((x) => x !== type) : [...prev, type]
+                                        );
+                                      }}
+                                      style={{
+                                        padding: "6px 14px",
+                                        borderRadius: 4,
+                                        fontSize: 13,
+                                        border: "1px solid " + (isSel ? "#111" : "#ccc"),
+                                        background: isSel ? "#111" : "#ffffff",
+                                        color: isSel ? "#ffffff" : "#333",
+                                        fontWeight: isSel ? "bold" : "normal",
+                                        cursor: "pointer",
+                                        transition: "all 0.15s"
+                                      }}
+                                    >
+                                      {type}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                              
+                              <div style={{ height: "1px", background: "#e5e7eb", marginBottom: "20px" }} />
+                              
+                              {/* MAEMAE Price Range Slider */}
+                              {(() => {
+                                const minIdx = getScaleIndex(tempMaemaeMin, MAEMAE_SCALE, false);
+                                const maxIdx = getScaleIndex(tempMaemaeMax, MAEMAE_SCALE, true);
+                                return (
+                                  <div style={{ marginBottom: "24px" }}>
+                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                                      <span style={{ fontSize: "15px", fontWeight: "800", color: "#111827" }}>매매가</span>
+                                      <span style={{ fontSize: "14px", color: "#1a4282", fontWeight: "800" }}>
+                                        {tempMaemaeMin === null && tempMaemaeMax === null 
+                                          ? "전체" 
+                                          : `${formatPriceLabel(tempMaemaeMin) || "0"} ~ ${formatPriceLabel(tempMaemaeMax) || "최대"}`}
+                                      </span>
+                                    </div>
+                                    
+                                    <div className="dual-slider-container">
+                                      <div 
+                                        className="dual-slider-track" 
+                                        style={{ left: `${(minIdx / (MAEMAE_SCALE.length - 1)) * 100}%`, right: `${100 - (maxIdx / (MAEMAE_SCALE.length - 1)) * 100}%` }} 
+                                      />
+                                      <input 
+                                        type="range" 
+                                        min={0} 
+                                        max={MAEMAE_SCALE.length - 1} 
+                                        value={minIdx} 
+                                        onChange={(e) => {
+                                          const val = parseInt(e.target.value, 10);
+                                          if (val <= maxIdx) {
+                                            setTempMaemaeMin(val === 0 ? null : MAEMAE_SCALE[val]);
+                                          }
+                                        }} 
+                                        className="dual-slider-input" 
+                                      />
+                                      <input 
+                                        type="range" 
+                                        min={0} 
+                                        max={MAEMAE_SCALE.length - 1} 
+                                        value={maxIdx} 
+                                        onChange={(e) => {
+                                          const val = parseInt(e.target.value, 10);
+                                          if (val >= minIdx) {
+                                            setTempMaemaeMax(val === MAEMAE_SCALE.length - 1 ? null : MAEMAE_SCALE[val]);
+                                          }
+                                        }} 
+                                        className="dual-slider-input" 
+                                      />
+                                    </div>
+                                    
+                                    <div style={{ display: "flex", justifyContent: "space-between", padding: "0 2px", marginTop: "-24px" }}>
+                                      <span style={{ fontSize: "11px", fontWeight: "bold", color: "#4b5563" }}>최소</span>
+                                      <span style={{ fontSize: "11px", fontWeight: "bold", color: "#4b5563" }}>1억</span>
+                                      <span style={{ fontSize: "11px", fontWeight: "bold", color: "#4b5563" }}>5억</span>
+                                      <span style={{ fontSize: "11px", fontWeight: "bold", color: "#4b5563" }}>15억</span>
+                                      <span style={{ fontSize: "11px", fontWeight: "bold", color: "#4b5563" }}>최대</span>
+                                    </div>
                                   </div>
-                                  
-                                  <div className="dual-slider-container">
-                                    <div 
-                                      className="dual-slider-track" 
-                                      style={{ left: `${(minIdx / (MAEMAE_SCALE.length - 1)) * 100}%`, right: `${100 - (maxIdx / (MAEMAE_SCALE.length - 1)) * 100}%` }} 
-                                    />
-                                    <input 
-                                      type="range" 
-                                      min={0} 
-                                      max={MAEMAE_SCALE.length - 1} 
-                                      value={minIdx} 
-                                      onChange={(e) => {
-                                        const val = parseInt(e.target.value, 10);
-                                        if (val <= maxIdx) {
-                                          setTempMaemaeMin(val === 0 ? null : MAEMAE_SCALE[val]);
-                                        }
-                                      }} 
-                                      className="dual-slider-input" 
-                                    />
-                                    <input 
-                                      type="range" 
-                                      min={0} 
-                                      max={MAEMAE_SCALE.length - 1} 
-                                      value={maxIdx} 
-                                      onChange={(e) => {
-                                        const val = parseInt(e.target.value, 10);
-                                        if (val >= minIdx) {
-                                          setTempMaemaeMax(val === MAEMAE_SCALE.length - 1 ? null : MAEMAE_SCALE[val]);
-                                        }
-                                      }} 
-                                      className="dual-slider-input" 
-                                    />
+                                );
+                              })()}
+                              
+                              {/* DEPOSIT Price Range Slider */}
+                              {(() => {
+                                const minIdx = getScaleIndex(tempDepositMin, DEPOSIT_SCALE, false);
+                                const maxIdx = getScaleIndex(tempDepositMax, DEPOSIT_SCALE, true);
+                                return (
+                                  <div style={{ marginBottom: "24px" }}>
+                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                                      <span style={{ fontSize: "15px", fontWeight: "800", color: "#111827" }}>보증금</span>
+                                      <span style={{ fontSize: "14px", color: "#1a4282", fontWeight: "800" }}>
+                                        {tempDepositMin === null && tempDepositMax === null 
+                                          ? "전체" 
+                                          : `${formatPriceLabel(tempDepositMin) || "0"} ~ ${formatPriceLabel(tempDepositMax) || "최대"}`}
+                                      </span>
+                                    </div>
+                                    
+                                    <div className="dual-slider-container">
+                                      <div 
+                                        className="dual-slider-track" 
+                                        style={{ left: `${(minIdx / (DEPOSIT_SCALE.length - 1)) * 100}%`, right: `${100 - (maxIdx / (DEPOSIT_SCALE.length - 1)) * 100}%` }} 
+                                      />
+                                      <input 
+                                        type="range" 
+                                        min={0} 
+                                        max={DEPOSIT_SCALE.length - 1} 
+                                        value={minIdx} 
+                                        onChange={(e) => {
+                                          const val = parseInt(e.target.value, 10);
+                                          if (val <= maxIdx) {
+                                            setTempDepositMin(val === 0 ? null : DEPOSIT_SCALE[val]);
+                                          }
+                                        }} 
+                                        className="dual-slider-input" 
+                                      />
+                                      <input 
+                                        type="range" 
+                                        min={0} 
+                                        max={DEPOSIT_SCALE.length - 1} 
+                                        value={maxIdx} 
+                                        onChange={(e) => {
+                                          const val = parseInt(e.target.value, 10);
+                                          if (val >= minIdx) {
+                                            setTempDepositMax(val === DEPOSIT_SCALE.length - 1 ? null : DEPOSIT_SCALE[val]);
+                                          }
+                                        }} 
+                                        className="dual-slider-input" 
+                                      />
+                                    </div>
+                                    
+                                    <div style={{ display: "flex", justifyContent: "space-between", padding: "0 2px", marginTop: "-24px" }}>
+                                      <span style={{ fontSize: "11px", fontWeight: "bold", color: "#4b5563" }}>최소</span>
+                                      <span style={{ fontSize: "11px", fontWeight: "bold", color: "#4b5563" }}>5천만</span>
+                                      <span style={{ fontSize: "11px", fontWeight: "bold", color: "#4b5563" }}>2억</span>
+                                      <span style={{ fontSize: "11px", fontWeight: "bold", color: "#4b5563" }}>10억</span>
+                                      <span style={{ fontSize: "11px", fontWeight: "bold", color: "#4b5563" }}>최대</span>
+                                    </div>
                                   </div>
-                                  
-                                  <div style={{ display: "flex", justifyContent: "space-between", padding: "0 2px", marginTop: "-24px" }}>
-                                    <span style={{ fontSize: "12px", fontWeight: "bold", color: "#4b5563" }}>최소</span>
-                                    <span style={{ fontSize: "12px", fontWeight: "bold", color: "#4b5563" }}>1억</span>
-                                    <span style={{ fontSize: "12px", fontWeight: "bold", color: "#4b5563" }}>5억</span>
-                                    <span style={{ fontSize: "12px", fontWeight: "bold", color: "#4b5563" }}>15억</span>
-                                    <span style={{ fontSize: "12px", fontWeight: "bold", color: "#4b5563" }}>최대</span>
+                                );
+                              })()}
+                              
+                              {/* RENT Price Range Slider */}
+                              {(() => {
+                                const minIdx = getScaleIndex(tempRentMin, RENT_SCALE, false);
+                                const maxIdx = getScaleIndex(tempRentMax, RENT_SCALE, true);
+                                return (
+                                  <div style={{ marginBottom: "12px" }}>
+                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                                      <span style={{ fontSize: "15px", fontWeight: "800", color: "#111827" }}>월세</span>
+                                      <span style={{ fontSize: "14px", color: "#1a4282", fontWeight: "800" }}>
+                                        {tempRentMin === null && tempRentMax === null 
+                                          ? "전체" 
+                                          : `${formatPriceLabel(tempRentMin) || "0"} ~ ${formatPriceLabel(tempRentMax) || "최대"}`}
+                                      </span>
+                                    </div>
+                                    
+                                    <div className="dual-slider-container">
+                                      <div 
+                                        className="dual-slider-track" 
+                                        style={{ left: `${(minIdx / (RENT_SCALE.length - 1)) * 100}%`, right: `${100 - (maxIdx / (RENT_SCALE.length - 1)) * 100}%` }} 
+                                      />
+                                      <input 
+                                        type="range" 
+                                        min={0} 
+                                        max={RENT_SCALE.length - 1} 
+                                        value={minIdx} 
+                                        onChange={(e) => {
+                                          const val = parseInt(e.target.value, 10);
+                                          if (val <= maxIdx) {
+                                            setTempRentMin(val === 0 ? null : RENT_SCALE[val]);
+                                          }
+                                        }} 
+                                        className="dual-slider-input" 
+                                      />
+                                      <input 
+                                        type="range" 
+                                        min={0} 
+                                        max={RENT_SCALE.length - 1} 
+                                        value={maxIdx} 
+                                        onChange={(e) => {
+                                          const val = parseInt(e.target.value, 10);
+                                          if (val >= minIdx) {
+                                            setTempRentMax(val === RENT_SCALE.length - 1 ? null : RENT_SCALE[val]);
+                                          }
+                                        }} 
+                                        className="dual-slider-input" 
+                                      />
+                                    </div>
+                                    
+                                    <div style={{ display: "flex", justifyContent: "space-between", padding: "0 2px", marginTop: "-24px" }}>
+                                      <span style={{ fontSize: "11px", fontWeight: "bold", color: "#4b5563" }}>최소</span>
+                                      <span style={{ fontSize: "11px", fontWeight: "bold", color: "#4b5563" }}>20만</span>
+                                      <span style={{ fontSize: "11px", fontWeight: "bold", color: "#4b5563" }}>50만</span>
+                                      <span style={{ fontSize: "11px", fontWeight: "bold", color: "#4b5563" }}>150만</span>
+                                      <span style={{ fontSize: "11px", fontWeight: "bold", color: "#4b5563" }}>최대</span>
+                                    </div>
+                                  </div>
+                                );
+                              })()}
+                            </div>
+
+                            {/* Section 2: 면적 */}
+                            <div
+                              id="section-면적"
+                              style={{
+                                padding: "16px 12px",
+                                borderRadius: "8px",
+                                background: activeSection === "면적" ? "#f3f4f6" : "transparent",
+                                marginBottom: "16px",
+                                transition: "all 0.2s ease-in-out",
+                              }}
+                            >
+                              <div style={{ fontSize: "14px", color: "#374151", marginBottom: "10px", fontWeight: "bold" }}>면적</div>
+                              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                                <input
+                                  type="number"
+                                  placeholder="최소(평)"
+                                  value={filterAreaMin ? Math.round(filterAreaMin / 3.3) : ""}
+                                  onChange={(e) => {
+                                    const val = e.target.value ? parseFloat(e.target.value) * 3.3 : null;
+                                    setFilterAreaMin(val);
+                                  }}
+                                  style={{
+                                    flex: 1,
+                                    padding: "6px 8px",
+                                    border: "1px solid #ccc",
+                                    borderRadius: 4,
+                                    fontSize: 12,
+                                  }}
+                                />
+                                <span>~</span>
+                                <input
+                                  type="number"
+                                  placeholder="최대(평)"
+                                  value={filterAreaMax ? Math.round(filterAreaMax / 3.3) : ""}
+                                  onChange={(e) => {
+                                    const val = e.target.value ? parseFloat(e.target.value) * 3.3 : null;
+                                    setFilterAreaMax(val);
+                                  }}
+                                  style={{
+                                    flex: 1,
+                                    padding: "6px 8px",
+                                    border: "1px solid #ccc",
+                                    borderRadius: 4,
+                                    fontSize: 12,
+                                  }}
+                                />
+                              </div>
+                              <div
+                                style={{
+                                  display: "grid",
+                                  gridTemplateColumns: "repeat(3, 1fr)",
+                                  gap: 6,
+                                  maxHeight: 180,
+                                  overflowY: "auto",
+                                  paddingRight: 4,
+                                }}
+                              >
+                                {AREA_GRID.map((item) => (
+                                  <button
+                                    key={item.label}
+                                    onClick={() => {
+                                      if (item.m2 === -1) {
+                                        setFilterAreaMin(1650);
+                                        setFilterAreaMax(null);
+                                      } else {
+                                        setFilterAreaMax(item.m2);
+                                      }
+                                    }}
+                                    style={{
+                                      padding: "6px 0",
+                                      border: "1px solid #eee",
+                                      borderRadius: 4,
+                                      background: "#ffffff",
+                                      fontSize: 11,
+                                      cursor: "pointer",
+                                    }}
+                                  >
+                                    {item.label}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Section 3: 사용승인일 */}
+                            <div
+                              id="section-사용승인일"
+                              style={{
+                                padding: "16px 12px",
+                                borderRadius: "8px",
+                                background: activeSection === "사용승인일" ? "#f3f4f6" : "transparent",
+                                marginBottom: "16px",
+                                transition: "all 0.2s ease-in-out",
+                              }}
+                            >
+                              <div style={{ fontSize: "14px", color: "#374151", marginBottom: "10px", fontWeight: "bold" }}>사용승인일</div>
+                              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                                <input
+                                  type="number"
+                                  placeholder="최소(년)"
+                                  value={filterYearMin || ""}
+                                  onChange={(e) => {
+                                    const val = e.target.value ? parseInt(e.target.value) : null;
+                                    setFilterYearMin(val);
+                                  }}
+                                  style={{
+                                    flex: 1,
+                                    padding: "6px 8px",
+                                    border: "1px solid #ccc",
+                                    borderRadius: 4,
+                                    fontSize: 12,
+                                  }}
+                                />
+                                <span>~</span>
+                                <input
+                                  type="number"
+                                  placeholder="최대(년)"
+                                  value={filterYearMax || ""}
+                                  onChange={(e) => {
+                                    const val = e.target.value ? parseInt(e.target.value) : null;
+                                    setFilterYearMax(val);
+                                  }}
+                                  style={{
+                                    flex: 1,
+                                    padding: "6px 8px",
+                                    border: "1px solid #ccc",
+                                    borderRadius: 4,
+                                    fontSize: 12,
+                                  }}
+                                />
+                              </div>
+                              <div
+                                style={{
+                                  display: "grid",
+                                  gridTemplateColumns: "repeat(3, 1fr)",
+                                  gap: 6,
+                                  maxHeight: 180,
+                                  overflowY: "auto",
+                                  paddingRight: 4,
+                                }}
+                              >
+                                {YEAR_GRID.map((item) => (
+                                  <button
+                                    key={item.label}
+                                    onClick={() => {
+                                      setFilterYearMax(item.val);
+                                    }}
+                                    style={{
+                                      padding: "6px 0",
+                                      border: "1px solid #eee",
+                                      borderRadius: 4,
+                                      background: "#ffffff",
+                                      fontSize: 11,
+                                      cursor: "pointer",
+                                    }}
+                                  >
+                                    {item.label}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Section 4: 세대수 */}
+                            <div
+                              id="section-세대수"
+                              style={{
+                                padding: "16px 12px",
+                                borderRadius: "8px",
+                                background: activeSection === "세대수" ? "#f3f4f6" : "transparent",
+                                marginBottom: "16px",
+                                transition: "all 0.2s ease-in-out",
+                              }}
+                            >
+                              <div style={{ fontSize: "14px", color: "#374151", marginBottom: "10px", fontWeight: "bold" }}>세대수</div>
+                              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                                <input
+                                  type="number"
+                                  placeholder="최소(세대)"
+                                  value={filterUnitMin || ""}
+                                  onChange={(e) => {
+                                    const val = e.target.value ? parseInt(e.target.value) : null;
+                                    setFilterUnitMin(val);
+                                  }}
+                                  style={{
+                                    flex: 1,
+                                    padding: "6px 8px",
+                                    border: "1px solid #ccc",
+                                    borderRadius: 4,
+                                    fontSize: 12,
+                                  }}
+                                />
+                                <span>~</span>
+                                <input
+                                  type="number"
+                                  placeholder="최대(세대)"
+                                  value={filterUnitMax || ""}
+                                  onChange={(e) => {
+                                    const val = e.target.value ? parseInt(e.target.value) : null;
+                                    setFilterUnitMax(val);
+                                  }}
+                                  style={{
+                                    flex: 1,
+                                    padding: "6px 8px",
+                                    border: "1px solid #ccc",
+                                    borderRadius: 4,
+                                    fontSize: 12,
+                                  }}
+                                />
+                              </div>
+                              <div
+                                style={{
+                                  display: "grid",
+                                  gridTemplateColumns: "repeat(3, 1fr)",
+                                  gap: 6,
+                                  maxHeight: 180,
+                                  overflowY: "auto",
+                                  paddingRight: 4,
+                                }}
+                              >
+                                {UNIT_GRID.map((item) => (
+                                  <button
+                                    key={item.label}
+                                    onClick={() => {
+                                      setFilterUnitMax(item.val);
+                                    }}
+                                    style={{
+                                      padding: "6px 0",
+                                      border: "1px solid #eee",
+                                      borderRadius: 4,
+                                      background: "#ffffff",
+                                      fontSize: 11,
+                                      cursor: "pointer",
+                                    }}
+                                  >
+                                    {item.label}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Section 5: 방/욕실수 */}
+                            <div
+                              id="section-방/욕실수"
+                              style={{
+                                padding: "16px 12px",
+                                borderRadius: "8px",
+                                background: activeSection === "방/욕실수" ? "#f3f4f6" : "transparent",
+                                marginBottom: "16px",
+                                transition: "all 0.2s ease-in-out",
+                              }}
+                            >
+                              <div style={{ fontSize: "14px", color: "#374151", marginBottom: "10px", fontWeight: "bold" }}>방/욕실수</div>
+                              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                                <div>
+                                  <div style={{ fontSize: 11, color: "#888", marginBottom: 6 }}>방 개수</div>
+                                  <div style={{ display: "flex", gap: 4 }}>
+                                    {[1, 2, 3, 4].map((num) => (
+                                      <button
+                                        key={num}
+                                        onClick={() => setFilterRoomCount(filterRoomCount === num ? null : num)}
+                                        style={{
+                                          flex: 1,
+                                          padding: "6px 0",
+                                          border: "1px solid #eee",
+                                          borderRadius: 4,
+                                          background: filterRoomCount === num ? "#e8f0fe" : "#fff",
+                                          color: filterRoomCount === num ? "#1a4282" : "#333",
+                                          fontSize: 12,
+                                          fontWeight: filterRoomCount === num ? "bold" : "normal",
+                                          cursor: "pointer",
+                                        }}
+                                      >
+                                        {num}개+
+                                      </button>
+                                    ))}
                                   </div>
                                 </div>
-                              );
-                            })()}
-                            
-                            {/* DEPOSIT Price Range Slider */}
-                            {(() => {
-                              const minIdx = getScaleIndex(tempDepositMin, DEPOSIT_SCALE, false);
-                              const maxIdx = getScaleIndex(tempDepositMax, DEPOSIT_SCALE, true);
-                              return (
-                                <div style={{ marginBottom: "24px" }}>
-                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
-                                    <span style={{ fontSize: "17px", fontWeight: "800", color: "#111827" }}>보증금</span>
-                                    <span style={{ fontSize: "15px", color: "#1a4282", fontWeight: "800" }}>
-                                      {tempDepositMin === null && tempDepositMax === null 
-                                        ? "전체" 
-                                        : `${formatPriceLabel(tempDepositMin) || "0"} ~ ${formatPriceLabel(tempDepositMax) || "최대"}`}
-                                    </span>
-                                  </div>
-                                  
-                                  <div className="dual-slider-container">
-                                    <div 
-                                      className="dual-slider-track" 
-                                      style={{ left: `${(minIdx / (DEPOSIT_SCALE.length - 1)) * 100}%`, right: `${100 - (maxIdx / (DEPOSIT_SCALE.length - 1)) * 100}%` }} 
-                                    />
-                                    <input 
-                                      type="range" 
-                                      min={0} 
-                                      max={DEPOSIT_SCALE.length - 1} 
-                                      value={minIdx} 
-                                      onChange={(e) => {
-                                        const val = parseInt(e.target.value, 10);
-                                        if (val <= maxIdx) {
-                                          setTempDepositMin(val === 0 ? null : DEPOSIT_SCALE[val]);
-                                        }
-                                      }} 
-                                      className="dual-slider-input" 
-                                    />
-                                    <input 
-                                      type="range" 
-                                      min={0} 
-                                      max={DEPOSIT_SCALE.length - 1} 
-                                      value={maxIdx} 
-                                      onChange={(e) => {
-                                        const val = parseInt(e.target.value, 10);
-                                        if (val >= minIdx) {
-                                          setTempDepositMax(val === DEPOSIT_SCALE.length - 1 ? null : DEPOSIT_SCALE[val]);
-                                        }
-                                      }} 
-                                      className="dual-slider-input" 
-                                    />
-                                  </div>
-                                  
-                                  <div style={{ display: "flex", justifyContent: "space-between", padding: "0 2px", marginTop: "-24px" }}>
-                                    <span style={{ fontSize: "12px", fontWeight: "bold", color: "#4b5563" }}>최소</span>
-                                    <span style={{ fontSize: "12px", fontWeight: "bold", color: "#4b5563" }}>5천만</span>
-                                    <span style={{ fontSize: "12px", fontWeight: "bold", color: "#4b5563" }}>2억</span>
-                                    <span style={{ fontSize: "12px", fontWeight: "bold", color: "#4b5563" }}>10억</span>
-                                    <span style={{ fontSize: "12px", fontWeight: "bold", color: "#4b5563" }}>최대</span>
+                                <div>
+                                  <div style={{ fontSize: 11, color: "#888", marginBottom: 6 }}>욕실 개수</div>
+                                  <div style={{ display: "flex", gap: 4 }}>
+                                    {[1, 2, 3].map((num) => (
+                                      <button
+                                        key={num}
+                                        onClick={() => setFilterBathCount(filterBathCount === num ? null : num)}
+                                        style={{
+                                          flex: 1,
+                                          padding: "6px 0",
+                                          border: "1px solid #eee",
+                                          borderRadius: 4,
+                                          background: filterBathCount === num ? "#e8f0fe" : "#fff",
+                                          color: filterBathCount === num ? "#1a4282" : "#333",
+                                          fontSize: 12,
+                                          fontWeight: filterBathCount === num ? "bold" : "normal",
+                                          cursor: "pointer",
+                                        }}
+                                      >
+                                        {num}개+
+                                      </button>
+                                    ))}
                                   </div>
                                 </div>
-                              );
-                            })()}
-                            
-                            {/* RENT Price Range Slider */}
-                            {(() => {
-                              const minIdx = getScaleIndex(tempRentMin, RENT_SCALE, false);
-                              const maxIdx = getScaleIndex(tempRentMax, RENT_SCALE, true);
-                              return (
-                                <div style={{ marginBottom: "12px" }}>
-                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
-                                    <span style={{ fontSize: "17px", fontWeight: "800", color: "#111827" }}>월세</span>
-                                    <span style={{ fontSize: "15px", color: "#1a4282", fontWeight: "800" }}>
-                                      {tempRentMin === null && tempRentMax === null 
-                                        ? "전체" 
-                                        : `${formatPriceLabel(tempRentMin) || "0"} ~ ${formatPriceLabel(tempRentMax) || "최대"}`}
-                                    </span>
-                                  </div>
-                                  
-                                  <div className="dual-slider-container">
-                                    <div 
-                                      className="dual-slider-track" 
-                                      style={{ left: `${(minIdx / (RENT_SCALE.length - 1)) * 100}%`, right: `${100 - (maxIdx / (RENT_SCALE.length - 1)) * 100}%` }} 
-                                    />
-                                    <input 
-                                      type="range" 
-                                      min={0} 
-                                      max={RENT_SCALE.length - 1} 
-                                      value={minIdx} 
-                                      onChange={(e) => {
-                                        const val = parseInt(e.target.value, 10);
-                                        if (val <= maxIdx) {
-                                          setTempRentMin(val === 0 ? null : RENT_SCALE[val]);
-                                        }
-                                      }} 
-                                      className="dual-slider-input" 
-                                    />
-                                    <input 
-                                      type="range" 
-                                      min={0} 
-                                      max={RENT_SCALE.length - 1} 
-                                      value={maxIdx} 
-                                      onChange={(e) => {
-                                        const val = parseInt(e.target.value, 10);
-                                        if (val >= minIdx) {
-                                          setTempRentMax(val === RENT_SCALE.length - 1 ? null : RENT_SCALE[val]);
-                                        }
-                                      }} 
-                                      className="dual-slider-input" 
-                                    />
-                                  </div>
-                                  
-                                  <div style={{ display: "flex", justifyContent: "space-between", padding: "0 2px", marginTop: "-24px" }}>
-                                    <span style={{ fontSize: "12px", fontWeight: "bold", color: "#4b5563" }}>최소</span>
-                                    <span style={{ fontSize: "12px", fontWeight: "bold", color: "#4b5563" }}>20만</span>
-                                    <span style={{ fontSize: "12px", fontWeight: "bold", color: "#4b5563" }}>50만</span>
-                                    <span style={{ fontSize: "12px", fontWeight: "bold", color: "#4b5563" }}>150만</span>
-                                    <span style={{ fontSize: "12px", fontWeight: "bold", color: "#4b5563" }}>최대</span>
-                                  </div>
-                                </div>
-                              );
-                            })()}
+                              </div>
+                            </div>
+
+                            {/* Section 6: 방향 */}
+                            <div
+                              id="section-방향"
+                              style={{
+                                padding: "16px 12px",
+                                borderRadius: "8px",
+                                background: activeSection === "방향" ? "#f3f4f6" : "transparent",
+                                marginBottom: "16px",
+                                transition: "all 0.2s ease-in-out",
+                              }}
+                            >
+                              <div style={{ fontSize: "14px", color: "#374151", marginBottom: "10px", fontWeight: "bold" }}>방향</div>
+                              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 6 }}>
+                                {["동향", "서향", "남향", "북향", "남동향", "남서향", "북동향", "북서향"].map((dir) => (
+                                  <button
+                                    key={dir}
+                                    onClick={() => {
+                                      setFilterDirection(filterDirection === dir ? null : dir);
+                                    }}
+                                    style={{
+                                      padding: "6px 0",
+                                      border: "1px solid #eee",
+                                      borderRadius: 4,
+                                      background: filterDirection === dir ? "#e8f0fe" : "#fff",
+                                      color: filterDirection === dir ? "#1a4282" : "#333",
+                                      fontSize: 12,
+                                      fontWeight: filterDirection === dir ? "bold" : "normal",
+                                      cursor: "pointer",
+                                    }}
+                                  >
+                                    {dir}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Section 7: 등록자 */}
+                            <div
+                              id="section-등록자"
+                              style={{
+                                padding: "16px 12px",
+                                borderRadius: "8px",
+                                background: activeSection === "등록자" ? "#f3f4f6" : "transparent",
+                                marginBottom: "16px",
+                                transition: "all 0.2s ease-in-out",
+                              }}
+                            >
+                              <div style={{ fontSize: "14px", color: "#374151", marginBottom: "10px", fontWeight: "bold" }}>등록자</div>
+                              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                {[
+                                  { label: "전체", val: null },
+                                  { label: "중개사", val: "REALTOR" },
+                                  { label: "임대인", val: "OWNER" },
+                                ].map((item) => (
+                                  <button
+                                    key={item.label}
+                                    onClick={() => {
+                                      setFilterOwnerRole(item.val);
+                                    }}
+                                    style={{
+                                      padding: "8px 12px",
+                                      border: "1px solid #eee",
+                                      borderRadius: 4,
+                                      background: filterOwnerRole === item.val ? "#e8f0fe" : "#fff",
+                                      color: filterOwnerRole === item.val ? "#1a4282" : "#333",
+                                      fontSize: 12,
+                                      fontWeight: filterOwnerRole === item.val ? "bold" : "normal",
+                                      cursor: "pointer",
+                                      textAlign: "left",
+                                    }}
+                                  >
+                                    {item.label}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Section 8: 중개보수 */}
+                            <div
+                              id="section-중개보수"
+                              style={{
+                                padding: "16px 12px",
+                                borderRadius: "8px",
+                                background: activeSection === "중개보수" ? "#f3f4f6" : "transparent",
+                                marginBottom: "16px",
+                                transition: "all 0.2s ease-in-out",
+                              }}
+                            >
+                              <div style={{ fontSize: "14px", color: "#374151", marginBottom: "10px", fontWeight: "bold" }}>중개보수</div>
+                              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                {[
+                                  { label: "전체", val: null },
+                                  { label: "공동중개 가능", val: "공동중개" },
+                                  { label: "수수료 50%이상", val: "50" },
+                                  { label: "수수료 100%(법정가)", val: "100" },
+                                ].map((item) => (
+                                  <button
+                                    key={item.label}
+                                    onClick={() => {
+                                      setFilterCommissionType(item.val);
+                                    }}
+                                    style={{
+                                      padding: "8px 12px",
+                                      border: "1px solid #eee",
+                                      borderRadius: 4,
+                                      background: filterCommissionType === item.val ? "#e8f0fe" : "#fff",
+                                      color: filterCommissionType === item.val ? "#1a4282" : "#333",
+                                      fontSize: 12,
+                                      fontWeight: filterCommissionType === item.val ? "bold" : "normal",
+                                      cursor: "pointer",
+                                      textAlign: "left",
+                                    }}
+                                  >
+                                    {item.label}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Section 9: 테마 */}
+                            <div
+                              id="section-테마"
+                              style={{
+                                padding: "16px 12px",
+                                borderRadius: "8px",
+                                background: activeSection === "테마" ? "#f3f4f6" : "transparent",
+                                marginBottom: "16px",
+                                transition: "all 0.2s ease-in-out",
+                              }}
+                            >
+                              <div style={{ fontSize: "14px", color: "#374151", marginBottom: "10px", fontWeight: "bold" }}>테마</div>
+                              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8 }}>
+                                {[
+                                  "급매물",
+                                  "역세권",
+                                  "신축",
+                                  "풀옵션",
+                                  "주차편리",
+                                  "보증보험가능",
+                                  "대출가능",
+                                  "반려동물가능",
+                                ].map((t) => {
+                                  const isThemeSelected = filterThemes.includes(t);
+                                  return (
+                                    <button
+                                      key={t}
+                                      onClick={() => {
+                                        setFilterThemes((prev) =>
+                                          isThemeSelected ? prev.filter((x) => x !== t) : [...prev, t]
+                                        );
+                                      }}
+                                      style={{
+                                        padding: "8px 0",
+                                        border: `1px solid ${isThemeSelected ? "#1a4282" : "#eee"}`,
+                                        borderRadius: 4,
+                                        background: isThemeSelected ? "#e8f0fe" : "#fff",
+                                        color: isThemeSelected ? "#1a4282" : "#333",
+                                        fontSize: 12,
+                                        fontWeight: isThemeSelected ? "bold" : "normal",
+                                        cursor: "pointer",
+                                      }}
+                                    >
+                                      {t}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
                           </div>
                           
                           {/* Bottom Action buttons */}
@@ -1779,6 +2498,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                 setTempDepositMax(null);
                                 setTempRentMin(null);
                                 setTempRentMax(null);
+                                setPopoverSearchKeyword("");
+                                setFilterSearchKeyword("");
                               }}
                               style={{
                                 flex: 1,
