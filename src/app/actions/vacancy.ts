@@ -391,10 +391,34 @@ export async function getAgencyInfo(ownerId: string) {
 }
 
 
-export async function getVacanciesForMap(options?: any) {
+export async function getVacanciesForMap(options?: {
+  bbox?: {
+    swLat: number;
+    swLng: number;
+    neLat: number;
+    neLng: number;
+  };
+}) {
   const supabase = getAdminClient();
   try {
-    let query = supabase.from('vacancies').select('*, members!vacancies_owner_id_fkey(name, email, role, phone, sns_links, profile_image_url, agencies(*)), vacancy_photos(url, sort_order)').eq('status', 'ACTIVE').not('lat', 'is', null).not('lng', 'is', null).order('created_at', { ascending: false });
+    let query = supabase
+      .from('vacancies')
+      .select('*, members!vacancies_owner_id_fkey(name, email, role, phone, sns_links, profile_image_url, agencies(*)), vacancy_photos(url, sort_order)')
+      .eq('status', 'ACTIVE')
+      .not('lat', 'is', null)
+      .not('lng', 'is', null);
+
+    // 💡 Bbox(지도의 경계면) 범위 조건 적용 (남서/북동 좌표 조건 추가)
+    if (options?.bbox) {
+      query = query
+        .gte('lat', options.bbox.swLat)
+        .lte('lat', options.bbox.neLat)
+        .gte('lng', options.bbox.swLng)
+        .lte('lng', options.bbox.neLng);
+    }
+
+    query = query.order('created_at', { ascending: false });
+
     const { data, error } = await query;
     if (error) return { success: false, error: error.message };
 

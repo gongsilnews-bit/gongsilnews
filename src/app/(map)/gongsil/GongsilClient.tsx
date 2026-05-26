@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { getVacancies, getAgencyInfo, getVacancyDetail } from "@/app/actions/vacancy";
+import { getVacancies, getAgencyInfo, getVacancyDetail, getVacanciesForMap } from "@/app/actions/vacancy";
 import { getVacancyComments, createVacancyComment } from "@/app/actions/vacancyComments";
 import { getVacancyUserData, toggleWishlistToDB, addRecentViewToDB } from "@/app/actions/vacancyUserData";
 import { getPermissionLevel } from "@/utils/permissionCheck";
@@ -158,6 +158,42 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
       setDbVacancies(withImages);
     }
   }, [initialVacancies]);
+
+  // 💡 Bbox(지도의 경계면) 변화 시 Supabase 실시간 Bbox 데이터 패치 적용 (성능 60fps 극대화)
+  useEffect(() => {
+    if (!mapBounds) return;
+
+    const fetchBboxVacancies = async () => {
+      try {
+        const sw = mapBounds.getSouthWest();
+        const ne = mapBounds.getNorthEast();
+
+        const swLat = sw.getLat();
+        const swLng = sw.getLng();
+        const neLat = ne.getLat();
+        const neLng = ne.getLng();
+
+        // Server Action 호출하여 범위 내 매물만 초고속 fetch
+        const res = await getVacanciesForMap({
+          bbox: { swLat, swLng, neLat, neLng }
+        });
+
+        if (res.success && res.data) {
+          const withImages = res.data.map((v: any) => ({
+            ...v,
+            images: v.vacancy_photos
+              ? [...v.vacancy_photos].sort((a: any, b: any) => a.sort_order - b.sort_order).map((p: any) => p.url)
+              : [],
+          }));
+          setDbVacancies(withImages);
+        }
+      } catch (err) {
+        console.error("Failed to fetch bbox vacancies:", err);
+      }
+    };
+
+    fetchBboxVacancies();
+  }, [mapBounds]);
 
   useEffect(() => {
     let localRecent: any[] = [];
