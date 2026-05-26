@@ -676,92 +676,130 @@ export default function KakaoMapView({
         )}
       </div>
 
-      <button
-        className="map-btn"
-        style={{ zIndex: 1000 }}
-        onClick={() => {
-          setSelectedClusterIds(null);
-          setSelectedRegion(null);
-          if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-              (pos) => {
-                const lat = pos.coords.latitude;
-                const lng = pos.coords.longitude;
-                if (kakaoMapRef.current) {
-                  const kakao = (window as any).kakao;
-                  kakaoMapRef.current.panTo(new kakao.maps.LatLng(lat, lng));
-                }
-              },
-              (err) => {
-                console.error("Geolocation error:", err);
-                handleLocationPermissionDenied();
-              },
-              { enableHighAccuracy: true }
-            );
-          } else {
-            handleLocationUnavailable();
-          }
-        }}
-      >
-        내 위치에서 검색
-      </button>
-
-
-
-      {/* Custom Zoom Control (네비게이션 바) */}
+      {/* Left Map Controls: Zoom controls (+, -) and Location Pictogram (내 위치) below it */}
       <div
         style={{
           position: "absolute",
-          right: 20,
-          top: 160,
-          zIndex: 10,
+          left: 20,
+          top: "50%",
+          transform: "translateY(-50%)",
+          zIndex: 1000,
           display: "flex",
           flexDirection: "column",
-          background: "#fff",
-          borderRadius: 4,
-          boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
-          overflow: "hidden",
+          alignItems: "center",
+          gap: 8,
         }}
       >
+        {/* Zoom In / Out Container */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            background: "#fff",
+            borderRadius: 4,
+            boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
+            overflow: "hidden",
+          }}
+        >
+          <button
+            onClick={() => {
+              if (kakaoMapRef.current) kakaoMapRef.current.setLevel(kakaoMapRef.current.getLevel() - 1);
+            }}
+            style={{
+              width: 36,
+              height: 36,
+              border: "none",
+              borderBottom: "1px solid #e0e0e0",
+              background: "#fff",
+              fontSize: 20,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#666",
+            }}
+          >
+            ＋
+          </button>
+          <button
+            onClick={() => {
+              if (kakaoMapRef.current) kakaoMapRef.current.setLevel(kakaoMapRef.current.getLevel() + 1);
+            }}
+            style={{
+              width: 36,
+              height: 36,
+              border: "none",
+              background: "#fff",
+              fontSize: 24,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              lineHeight: 1,
+              color: "#666",
+            }}
+          >
+            －
+          </button>
+        </div>
+
+        {/* Location Pictogram Button */}
         <button
           onClick={() => {
-            if (kakaoMapRef.current) kakaoMapRef.current.setLevel(kakaoMapRef.current.getLevel() - 1);
+            setSelectedClusterIds(null);
+            setSelectedRegion(null);
+            if (navigator.geolocation) {
+              navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                  const lat = pos.coords.latitude;
+                  const lng = pos.coords.longitude;
+                  if (kakaoMapRef.current) {
+                    const kakao = (window as any).kakao;
+                    kakaoMapRef.current.panTo(new kakao.maps.LatLng(lat, lng));
+                  }
+                },
+                (err) => {
+                  console.error("Geolocation error:", err);
+                  handleLocationPermissionDenied();
+                },
+                { enableHighAccuracy: true }
+              );
+            } else {
+              handleLocationUnavailable();
+            }
           }}
           style={{
             width: 36,
             height: 36,
             border: "none",
-            borderBottom: "1px solid #e0e0e0",
+            borderRadius: 4,
             background: "#fff",
-            fontSize: 20,
+            boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
             cursor: "pointer",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            color: "#666",
+            transition: "all 0.15s",
           }}
+          title="내 위치로 이동"
         >
-          ＋
-        </button>
-        <button
-          onClick={() => {
-            if (kakaoMapRef.current) kakaoMapRef.current.setLevel(kakaoMapRef.current.getLevel() + 1);
-          }}
-          style={{
-            width: 36,
-            height: 36,
-            border: "none",
-            background: "#fff",
-            fontSize: 24,
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            lineHeight: 1,
-            color: "#666",
-          }}
-        >
-          －
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            style={{ width: 18, height: 18, color: "#444" }}
+          >
+            <circle cx="12" cy="12" r="10" />
+            <circle cx="12" cy="12" r="3" fill="#444" />
+            <line x1="12" y1="1" x2="12" y2="4" />
+            <line x1="12" y1="20" x2="12" y2="23" />
+            <line x1="1" y1="12" x2="4" y2="12" />
+            <line x1="20" y1="12" x2="23" y2="12" />
+          </svg>
         </button>
       </div>
     </div>
