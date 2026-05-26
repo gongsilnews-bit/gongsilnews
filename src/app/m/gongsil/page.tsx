@@ -534,7 +534,7 @@ function MobileGongsilContent() {
     if (clustererRef.current) {
       clustererRef.current.clear();
       clustererRef.current.setStyles([
-        { width: '56px', height: '56px', background: activeMode === "경매" ? "#ff7a00" : '#1a73e8', color: '#fff', textAlign: 'center', lineHeight: '50px', borderRadius: '50%', fontWeight: 'bold', fontSize: '18px', border: '3px solid #ffffff', boxShadow: activeMode === "경매" ? '0 4px 12px rgba(255,122,0,0.35)' : '0 4px 12px rgba(0,0,0,0.25)' }
+        { width: '56px', height: '56px', background: activeMode === "경매" ? "#1a4282" : '#1a73e8', color: '#fff', textAlign: 'center', lineHeight: '50px', borderRadius: '50%', fontWeight: 'bold', fontSize: '18px', border: '3px solid #ffffff', boxShadow: activeMode === "경매" ? '0 4px 12px rgba(26,66,130,0.35)' : '0 4px 12px rgba(0,0,0,0.25)' }
       ]);
     }
     markersRef.current.forEach((m: any) => m.setMap(null));
@@ -554,7 +554,7 @@ function MobileGongsilContent() {
         calculator: [10, 30, 50],
         texts: (count: number) => count.toString(),
         styles: [
-          { width: '56px', height: '56px', background: activeMode === "경매" ? "#ff7a00" : '#1a73e8', color: '#fff', textAlign: 'center', lineHeight: '50px', borderRadius: '50%', fontWeight: 'bold', fontSize: '18px', border: '3px solid #ffffff', boxShadow: activeMode === "경매" ? '0 4px 12px rgba(255,122,0,0.35)' : '0 4px 12px rgba(0,0,0,0.25)' }
+          { width: '56px', height: '56px', background: activeMode === "경매" ? "#1a4282" : '#1a73e8', color: '#fff', textAlign: 'center', lineHeight: '50px', borderRadius: '50%', fontWeight: 'bold', fontSize: '18px', border: '3px solid #ffffff', boxShadow: activeMode === "경매" ? '0 4px 12px rgba(26,66,130,0.35)' : '0 4px 12px rgba(0,0,0,0.25)' }
         ]
       });
 
@@ -570,7 +570,7 @@ function MobileGongsilContent() {
     filteredVacancies.forEach((v) => {
       if (!v.lat || !v.lng) return;
       const size = 50;
-      const color = activeMode === "경매" ? "#ff7a00" : "#1a73e8";
+      const color = activeMode === "경매" ? "#1a4282" : "#1a73e8";
 
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
         <circle cx="${size/2}" cy="${size/2}" r="${size/2-3}" fill="${color}" stroke="white" stroke-width="3"/>
@@ -791,9 +791,9 @@ function MobileGongsilContent() {
                   fontWeight: 800,
                   cursor: "pointer",
                   transition: "all 0.2s ease",
-                  backgroundColor: activeMode === "경매" ? "#ff7a00" : "transparent",
+                  backgroundColor: activeMode === "경매" ? "#1a4282" : "transparent",
                   color: activeMode === "경매" ? "#ffffff" : "#64748b",
-                  boxShadow: activeMode === "경매" ? "0 4px 12px rgba(255,122,0,0.25)" : "none"
+                  boxShadow: activeMode === "경매" ? "0 4px 12px rgba(26,66,130,0.25)" : "none"
                 }}
               >
                 🔨 법원 경·공매
@@ -935,13 +935,13 @@ function MobileGongsilContent() {
                 setShowListView(true);
               }}
               style={{
-                background: activeMode === "경매" ? "linear-gradient(135deg, #ff7a00, #ea580c)" : "linear-gradient(135deg, #1a73e8, #3b82f6)",
+                background: activeMode === "경매" ? "linear-gradient(135deg, #1a4282, #0f172a)" : "linear-gradient(135deg, #1a73e8, #3b82f6)",
                 borderRadius: "28px",
                 padding: "14px 24px",
                 fontSize: "15px",
                 fontWeight: 800,
                 color: "#ffffff",
-                boxShadow: activeMode === "경매" ? "0 6px 20px rgba(255, 122, 0, 0.4)" : "0 6px 20px rgba(26, 115, 232, 0.4)",
+                boxShadow: activeMode === "경매" ? "0 6px 20px rgba(26, 66, 130, 0.4)" : "0 6px 20px rgba(26, 115, 232, 0.4)",
                 border: "none",
                 cursor: "pointer",
                 display: "flex",
@@ -983,10 +983,10 @@ function MobileGongsilContent() {
               }}
               style={{
                 borderRadius: "28px",
-                background: activeMode === "경매" ? "linear-gradient(135deg, #ea580c, #c2410c)" : "linear-gradient(135deg, #3b82f6, #1d4ed8)",
+                background: activeMode === "경매" ? "linear-gradient(135deg, #1a4282, #111827)" : "linear-gradient(135deg, #3b82f6, #1d4ed8)",
                 color: "#fff",
                 border: "none",
-                boxShadow: activeMode === "경매" ? "0 6px 20px rgba(234, 88, 12, 0.4)" : "0 6px 20px rgba(29, 78, 216, 0.4)",
+                boxShadow: activeMode === "경매" ? "0 6px 20px rgba(26, 66, 130, 0.4)" : "0 6px 20px rgba(29, 78, 216, 0.4)",
                 cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
