@@ -1573,52 +1573,45 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                   ? getTradeTypeFilterLabel()
                   : f;
 
+              const isApartTradeType = activeCategory === "apart" && f === "거래유형";
+
               return (
-                <div key={f} style={{ position: "relative" }}>
-                  <button
-                    onClick={() => {
-                      if (activeCategory === "apart") {
-                        if (activeFilterDropdown === "거래유형") {
-                          if (isFilterCollapsed) {
-                            setIsFilterCollapsed(false);
-                            setTimeout(() => {
-                              scrollToSection(f);
-                            }, 50);
-                          } else if (activeSection === f) {
-                            setIsFilterCollapsed(true);
-                          } else {
-                            scrollToSection(f);
-                          }
-                        } else {
-                          setActiveFilterDropdown("거래유형");
-                          setIsFilterCollapsed(false);
-                          setTimeout(() => {
-                            scrollToSection(f);
-                          }, 150);
-                        }
-                      } else {
+                <div 
+                  key={f} 
+                  style={isApartTradeType ? {
+                    position: "fixed",
+                    top: 130,
+                    left: 400,
+                    zIndex: 300,
+                  } : {
+                    position: "relative"
+                  }}
+                >
+                  {!isApartTradeType && (
+                    <button
+                      onClick={() => {
                         setActiveFilterDropdown(activeFilterDropdown === f ? null : f);
-                      }
-                    }}
-                    style={{
-                      background: isFilterActive ? "#e8f0fe" : "#fff",
-                      border: `1px solid ${isFilterActive ? "#1a73e8" : "#ccc"}`,
-                      fontSize: 13,
-                      color: isFilterActive ? "#1a73e8" : "#333",
-                      cursor: "pointer",
-                      padding: "6px 14px",
-                      borderRadius: 4,
-                      whiteSpace: "nowrap",
-                      fontWeight: isFilterActive ? "bold" : "normal",
-                      fontFamily: "inherit",
-                      transition: "all 0.15s",
-                    }}
-                  >
-                    {btnLabel} ▾
-                  </button>
+                      }}
+                      style={{
+                        background: isFilterActive ? "#e8f0fe" : "#fff",
+                        border: `1px solid ${isFilterActive ? "#1a73e8" : "#ccc"}`,
+                        fontSize: 13,
+                        color: isFilterActive ? "#1a73e8" : "#333",
+                        cursor: "pointer",
+                        padding: "6px 14px",
+                        borderRadius: 4,
+                        whiteSpace: "nowrap",
+                        fontWeight: isFilterActive ? "bold" : "normal",
+                        fontFamily: "inherit",
+                        transition: "all 0.15s",
+                      }}
+                    >
+                      {btnLabel} ▾
+                    </button>
+                  )}
 
                   {/* 드롭다운 필터 내용 */}
-                  {activeFilterDropdown === f && (
+                  {(activeFilterDropdown === f || isApartTradeType) && (
                     <div
                       onMouseDown={f === "거래유형" ? handleDragStart : undefined}
                       style={{
