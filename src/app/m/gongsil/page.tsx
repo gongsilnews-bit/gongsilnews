@@ -924,7 +924,7 @@ function MobileGongsilContent() {
           </div>
         )}
 
-        {/* 🏢 하단 버튼 영역: 지도 위 공실 + 공실등록 나란히 */}
+        {/* 🏢 하단 버튼 영역: 지도 위 공실 + 공실등록 나란히 (activeMode 연동 오렌지/블루 동적 테마 스위칭) */}
         {mapLoaded && (
           <div style={{ position: "fixed", bottom: "calc(76px + env(safe-area-inset-bottom))", left: "50%", transform: "translateX(-50%)", zIndex: 20, display: "flex", gap: "10px", alignItems: "center" }}>
             <button
@@ -935,51 +935,66 @@ function MobileGongsilContent() {
                 setShowListView(true);
               }}
               style={{
-                background: "linear-gradient(135deg, #1a73e8, #3b82f6)",
+                background: activeMode === "경매" ? "linear-gradient(135deg, #ff7a00, #ea580c)" : "linear-gradient(135deg, #1a73e8, #3b82f6)",
                 borderRadius: "28px",
                 padding: "14px 24px",
                 fontSize: "15px",
                 fontWeight: 800,
                 color: "#ffffff",
-                boxShadow: "0 6px 20px rgba(26, 115, 232, 0.4)",
+                boxShadow: activeMode === "경매" ? "0 6px 20px rgba(255, 122, 0, 0.4)" : "0 6px 20px rgba(26, 115, 232, 0.4)",
                 border: "none",
                 cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
                 gap: "8px",
                 whiteSpace: "nowrap",
-                transition: "transform 0.1s ease"
+                transition: "all 0.25s cubic-bezier(0.25, 1, 0.5, 1), transform 0.1s ease"
               }}
               onMouseDown={(e) => { e.currentTarget.style.transform = "scale(0.95)"; }}
               onMouseUp={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
               onTouchStart={(e) => { e.currentTarget.style.transform = "scale(0.95)"; }}
               onTouchEnd={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                <rect x="4" y="2" width="16" height="20" rx="2" ry="2" />
-                <line x1="9" y1="22" x2="9" y2="16" />
-                <line x1="15" y1="22" x2="15" y2="16" />
-                <line x1="9" y1="16" x2="15" y2="16" />
-                <path d="M8 6h2v2H8V6zm6 0h2v2h-2V6zm-6 5h2v2H8v-2zm6 0h2v2h-2v-2z" />
-              </svg>
-              검색된 공실 {visibleCount}개
+              {activeMode === "경매" ? (
+                // 🔨 경공매 전용 법률 낙찰 망치 SVG 아이콘
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                  <path d="m14 13-5 5m6-6-2.5 2.5m6.5-6.5a2.5 2.5 0 0 0-3.5-3.5L8.5 8 5.7 5.2a1 1 0 0 0-1.4 0L2.8 6.6a1 1 0 0 0 0 1.4L5.6 10.8l-4.2 4.2a1 1 0 0 0 0 1.4l1.4 1.4a1 1 0 0 0 1.4 0l4.2-4.2 2.8 2.8a1 1 0 0 0 1.4 0l1.4-1.4a1 1 0 0 0 0-1.4L11.2 12l6.8-6.8a2.5 2.5 0 0 0 3.5 3.5Z" />
+                </svg>
+              ) : (
+                // 🏢 일반 공실 빌딩 SVG 아이콘
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                  <rect x="4" y="2" width="16" height="20" rx="2" ry="2" />
+                  <line x1="9" y1="22" x2="9" y2="16" />
+                  <line x1="15" y1="22" x2="15" y2="16" />
+                  <line x1="9" y1="16" x2="15" y2="16" />
+                  <path d="M8 6h2v2H8V6zm6 0h2v2h-2V6zm-6 5h2v2H8v-2zm6 0h2v2h-2v-2z" />
+                </svg>
+              )}
+              {activeMode === "경매" ? `검색된 물건 ${visibleCount}개` : `검색된 공실 ${visibleCount}개`}
             </button>
             <button
               onClick={() => {
                 if (!currentUser) {
-                  alert("공실을 등록하려면 로그인이 필요합니다.");
+                  alert(activeMode === "경매" ? "물건을 등록하려면 로그인이 필요합니다." : "공실을 등록하려면 로그인이 필요합니다.");
                   setIsAuthModalOpen(true);
                 } else {
                   router.push("/m/admin/vacancy/write");
                 }
               }}
               style={{
-                borderRadius: "28px", background: "linear-gradient(135deg, #3b82f6, #1d4ed8)",
-                color: "#fff", border: "none", boxShadow: "0 6px 20px rgba(29, 78, 216, 0.4)",
-                cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-                padding: "14px 20px", gap: "4px",
+                borderRadius: "28px",
+                background: activeMode === "경매" ? "linear-gradient(135deg, #ea580c, #c2410c)" : "linear-gradient(135deg, #3b82f6, #1d4ed8)",
+                color: "#fff",
+                border: "none",
+                boxShadow: activeMode === "경매" ? "0 6px 20px rgba(234, 88, 12, 0.4)" : "0 6px 20px rgba(29, 78, 216, 0.4)",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "14px 20px",
+                gap: "4px",
                 whiteSpace: "nowrap",
-                transition: "transform 0.15s ease",
+                transition: "all 0.25s cubic-bezier(0.25, 1, 0.5, 1), transform 0.15s ease",
               }}
               onMouseDown={(e) => { e.currentTarget.style.transform = "scale(0.92)"; }}
               onMouseUp={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
@@ -987,7 +1002,9 @@ function MobileGongsilContent() {
               onTouchEnd={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
             >
               <span style={{ fontSize: "20px", fontWeight: 300, lineHeight: 1 }}>+</span>
-              <span style={{ fontSize: "15px", fontWeight: 800 }}>공실등록</span>
+              <span style={{ fontSize: "15px", fontWeight: 800 }}>
+                {activeMode === "경매" ? "물건등록" : "공실등록"}
+              </span>
             </button>
           </div>
         )}
