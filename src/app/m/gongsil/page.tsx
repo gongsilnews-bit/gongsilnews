@@ -1012,7 +1012,7 @@ function MobileGongsilContent() {
                   <path d="M8 6h2v2H8V6zm6 0h2v2h-2V6zm-6 5h2v2H8v-2zm6 0h2v2h-2v-2z" />
                 </svg>
               )}
-              {activeMode === "경매" ? `검색된 물건 ${visibleCount}개` : `검색된 공실 ${visibleCount}개`}
+              {activeMode === "경매" ? `경공매 물건 ${visibleCount}건` : `검색된 공실 ${visibleCount}개`}
             </button>
             {activeMode !== "경매" && (
               <button
@@ -1120,7 +1120,10 @@ function MobileGongsilContent() {
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
             </button>
             <h3 style={{ fontSize: "18px", fontWeight: 800, color: "#111827", margin: 0 }}>
-              공실광고 <span style={{ color: "#f97316" }}>{(selectedCluster || (showListView ? (listViewMode === 'map' ? visibleVacancies : filteredVacancies) : null))?.length || 0}</span>개
+              {activeMode === "경매" ? "경공매" : "공실광고"}{" "}
+              <span style={{ color: activeMode === "경매" ? "#1a73e8" : "#f97316" }}>
+                {(selectedCluster || (showListView ? (listViewMode === 'map' ? visibleVacancies : filteredVacancies) : null))?.length || 0}
+              </span>개
             </h3>
           </div>
         </div>
@@ -1129,6 +1132,96 @@ function MobileGongsilContent() {
             const isMyProperty = currentUser && v && v.owner_id === currentUser.id;
             const cardMasked = v.exposure_type === '부동산노출' && userLevel < 2 && !isMyProperty;
             const cardAddr = v.building_name || [v.dong, v.sigungu].filter(Boolean).join(" ");
+
+            // 경공매 데이터 파싱
+            const meta = v.metadata || {};
+            const appraisalPrice = meta.appraisal_price || parseInt(meta.apslEvlAmt || "0", 10) || v.deposit * 10000;
+            const lowestBidPrice = meta.lowest_bid_price || parseInt(meta.lowstBidPrcIndctCont || "0", 10) || 0;
+            const lowestBidText = meta.lowstBidPrcIndctCont === "비공개" ? "비공개" : lowestBidPrice > 0 ? formatAmount(lowestBidPrice) : "";
+            const cardDiscountRate = appraisalPrice > 0 ? Math.round(((appraisalPrice - lowestBidPrice) / appraisalPrice) * 100) : 0;
+            const mngNo = meta.cltrMngNo || meta.cltrMngNoIndctCont || v.vacancy_no || "";
+            const bidStartDate = meta.pbctBegnDtm || meta.bid_start_date || v.created_at;
+            const bidStartText = bidStartDate ? new Date(bidStartDate).toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" }).replace(/\s/g, "").slice(0, -1) : "";
+            const info = getAuctionInfo(v);
+
+            // 🔨 1. 법원 경공매 전용 고밀도 프리미엄 카드 레이아웃
+            if (v.trade_type === "경매") {
+              return (
+                <div
+                  key={v.id}
+                  className="v-card"
+                  onClick={() => { if (cardMasked) { setIsAuthModalOpen(true); return; } handleVacancyClick(v); }}
+                  style={{ display: "flex", gap: "12px", padding: "16px 0", borderBottom: "1px solid #f3f4f6", cursor: "pointer", transition: "background 0.15s" }}
+                >
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    {/* 배지 & 상태 영역 */}
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px", flexWrap: "wrap" }}>
+                      <span style={{ display: "inline-block", fontSize: "11px", color: "#fa5252", border: "1px solid #fa5252", padding: "1px 6px", borderRadius: "4px", fontWeight: "bold", background: "#fff5f5" }}>
+                        {info.badge}
+                      </span>
+                      {cardMasked && <span onClick={(e) => { e.stopPropagation(); setIsAuthModalOpen(true); }} style={{ fontSize: "11px", color: "#3b82f6", fontWeight: 700, background: "#eef6ff", padding: "3px 8px", borderRadius: "4px", cursor: "pointer" }}>🔒 부동산회원 무료열람</span>}
+                    </div>
+
+                    {/* 주소 (타이틀) */}
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+                      <p style={{ fontSize: "16px", fontWeight: 800, color: cardMasked ? "#bbb" : "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", letterSpacing: cardMasked ? 1 : 0, margin: 0 }}>
+                        {cardMasked ? (cardAddr || "주소 없음").replace(/[^\s]/g, "X") : cardAddr}
+                      </p>
+                    </div>
+
+                    {/* 감정가 */}
+                    <p style={{ fontSize: "15px", fontWeight: 700, color: "#475569", marginBottom: "2px", margin: 0 }}>
+                      감정가 <span style={{ fontWeight: 800, color: "#1e293b" }}>{formatAmount(appraisalPrice)}</span>
+                    </p>
+
+                    {/* 최저입찰가 */}
+                    {lowestBidText && (
+                      <p style={{ fontSize: "16px", fontWeight: 800, color: "#ef4444", marginBottom: "4px", margin: 0 }}>
+                        최저입찰가 <span style={{ fontSize: "17px" }}>{lowestBidText}</span>
+                        {cardDiscountRate !== 0 && (
+                          <span style={{ fontSize: "13px", fontWeight: 800, color: cardDiscountRate > 0 ? "#16a34a" : "#ef4444", marginLeft: "6px" }}>
+                            {cardDiscountRate > 0 ? "▼" : "▲"}{Math.abs(cardDiscountRate)}%
+                          </span>
+                        )}
+                      </p>
+                    )}
+
+                    {/* 용도 및 정보 */}
+                    <p style={{ fontSize: "13px", color: "#6b7280", marginBottom: "4px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", margin: 0 }}>
+                      {info.category} {info.area ? `| ${info.area}` : ""}
+                    </p>
+
+                    {/* 입찰 시작일 */}
+                    {bidStartText && (
+                      <p style={{ fontSize: "13px", fontWeight: 700, color: "#4b5563", margin: 0 }}>
+                        입찰 {bidStartText}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* 썸네일 & 물건번호 영역 */}
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", flexShrink: 0 }}>
+                    {v.images?.[0] ? (
+                      <div style={{ width: "95px", height: "76px", borderRadius: "10px", overflow: "hidden", backgroundColor: "#e5e7eb" }}>
+                        <img src={v.images[0]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      </div>
+                    ) : (
+                      <div style={{ width: "95px", height: "76px", borderRadius: "10px", overflow: "hidden", backgroundColor: "#f3f4f6", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                      </div>
+                    )}
+                    {mngNo && (
+                      <span style={{ fontSize: "11px", fontWeight: 700, color: "#6b7280", marginTop: "2px" }}>
+                        {mngNo}
+                      </span>
+                    )}
+                  </div>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="2" style={{ flexShrink: 0, alignSelf: "center" }}><polyline points="9 18 15 12 9 6"/></svg>
+                </div>
+              );
+            }
+
+            // 🔨 2. 일반 공실 광고 전용 카드 레이아웃
             return (
             <div
               key={v.id}
