@@ -1325,29 +1325,30 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   };
 
   const handleCategoryChange = (key: string) => {
-    const newKey = activeCategory === key ? "all" : key;
+    if (activeCategory === key) {
+      // 2차 카테고리가 사라지지 않도록 더블 클릭 시 변경 방지
+      return;
+    }
+    const newKey = key;
     setActiveCategory(newKey);
     setIsAuctionMode(newKey === "auction");
     setActiveMode(newKey === "auction" ? "경매" : "공실");
-    if (newKey === "all") {
-      setActivePills([]);
-      localStorage.setItem("gongsil_pills", "[]");
-    } else {
-      const savedPillsKey = `gongsil_pills_${newKey}`;
-      const savedPills = localStorage.getItem(savedPillsKey);
-      let pills: string[] = [];
-      if (savedPills) {
-        try {
-          pills = JSON.parse(savedPills);
-        } catch {}
-      }
-      if (pills.length === 0) {
-        const c = CATEGORY_CONFIG[newKey];
-        pills = c && c.pills ? c.pills : [];
-      }
-      setActivePills(pills);
-      localStorage.setItem("gongsil_pills", JSON.stringify(pills));
+    
+    const savedPillsKey = `gongsil_pills_${newKey}`;
+    const savedPills = localStorage.getItem(savedPillsKey);
+    let pills: string[] = [];
+    if (savedPills) {
+      try {
+        pills = JSON.parse(savedPills);
+      } catch {}
     }
+    if (pills.length === 0) {
+      const c = CATEGORY_CONFIG[newKey];
+      pills = c && c.pills ? c.pills : [];
+    }
+    setActivePills(pills);
+    localStorage.setItem("gongsil_pills", JSON.stringify(pills));
+
     setShowDetail(false);
     setShowDetailFilters(false);
     setSelectedClusterIds(null);
