@@ -424,7 +424,7 @@ function MobileGongsilContent() {
   useEffect(() => {
     const handlePopState = (e: any) => {
       // 갤러리 풀스크린 모달이 닫히는 popstate인 경우, 상세패널 닫기 동작을 방지
-      if (e?.state?.modal === "gallery-m" || window.history.state?.modal === "gallery-m") {
+      if (e?.state?.modal === "gallery-m" || window.history.state?.modal === "gallery-m" || showGalleryFullscreen) {
         return;
       }
       if (vacancyStackRef.current.length > 0) {
@@ -456,7 +456,7 @@ function MobileGongsilContent() {
     };
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
-  }, [selectedVacancy, selectedCluster, isEmbedded, showListView]);
+  }, [selectedVacancy, selectedCluster, isEmbedded, showListView, showGalleryFullscreen]);
 
   // 💡 [대표님 지침] Bbox(지도의 화면 영역) 변화에 따라 Supabase에서 실시간으로 범위 내 매물만 초고속 패치!
   useEffect(() => {
