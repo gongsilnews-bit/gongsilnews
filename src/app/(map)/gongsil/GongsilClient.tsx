@@ -2891,31 +2891,50 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                   { label: "수수료 25%이상", val: "25" },
                                   { label: "수수료 50%이상", val: "50" },
                                   { label: "수수료 100%(법정가)", val: "100" },
-                                ].map((item) => (
-                                  <button
-                                    key={item.label}
-                                    onClick={() => {
-                                      setFilterCommissionType(item.val);
-                                      setTimeout(() => {
-                                        scrollToSection("테마");
-                                      }, 350);
-                                    }}
-                                    style={{
-                                      padding: "8px 12px",
-                                      border: "1px solid " + (filterCommissionType === item.val ? "#111" : "#eee"),
-                                      borderRadius: 4,
-                                      background: filterCommissionType === item.val ? "#111" : "#fff",
-                                      color: filterCommissionType === item.val ? "#fff" : "#333",
-                                      fontSize: 12,
-                                      fontWeight: "bold",
-                                      cursor: "pointer",
-                                      textAlign: "left",
-                                      transition: "all 0.15s"
-                                    }}
-                                  >
-                                    {item.label}
-                                  </button>
-                                ))}
+                                ].map((item) => {
+                                  const isSelected = (() => {
+                                    if (filterCommissionType === null) return item.val === null;
+                                    if (item.val === null) return false;
+                                    if (filterCommissionType === "공동중개") {
+                                      return item.val === "공동중개" || item.val === "25" || item.val === "50" || item.val === "100";
+                                    }
+                                    if (filterCommissionType === "25") {
+                                      return item.val === "25" || item.val === "50" || item.val === "100";
+                                    }
+                                    if (filterCommissionType === "50") {
+                                      return item.val === "50" || item.val === "100";
+                                    }
+                                    if (filterCommissionType === "100") {
+                                      return item.val === "100";
+                                    }
+                                    return filterCommissionType === item.val;
+                                  })();
+                                  return (
+                                    <button
+                                      key={item.label}
+                                      onClick={() => {
+                                        setFilterCommissionType(item.val);
+                                        setTimeout(() => {
+                                          scrollToSection("테마");
+                                        }, 350);
+                                      }}
+                                      style={{
+                                        padding: "8px 12px",
+                                        border: "1px solid " + (isSelected ? "#111" : "#eee"),
+                                        borderRadius: 4,
+                                        background: isSelected ? "#111" : "#fff",
+                                        color: isSelected ? "#fff" : "#333",
+                                        fontSize: 12,
+                                        fontWeight: "bold",
+                                        cursor: "pointer",
+                                        textAlign: "left",
+                                        transition: "all 0.15s"
+                                      }}
+                                    >
+                                      {item.label}
+                                    </button>
+                                  );
+                                })}
                               </div>
                             </div>
 
@@ -3535,27 +3554,46 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                             { label: "수수료 25%이상", val: "25" },
                             { label: "수수료 50%이상", val: "50" },
                             { label: "수수료 100%(법정가)", val: "100" },
-                          ].map((item) => (
-                            <button
-                              key={item.label}
-                              onClick={() => {
-                                setFilterCommissionType(item.val);
-                                setActiveFilterDropdown(null);
-                              }}
-                              style={{
-                                padding: "8px 12px",
-                                border: "1px solid #eee",
-                                borderRadius: 4,
-                                background: filterCommissionType === item.val ? "#e8f0fe" : "#fff",
-                                color: filterCommissionType === item.val ? "#1a73e8" : "#333",
-                                fontSize: 12,
-                                cursor: "pointer",
-                                textAlign: "left",
-                              }}
-                            >
-                              {item.label}
-                            </button>
-                          ))}
+                          ].map((item) => {
+                            const isSelected = (() => {
+                              if (filterCommissionType === null) return item.val === null;
+                              if (item.val === null) return false;
+                              if (filterCommissionType === "공동중개") {
+                                return item.val === "공동중개" || item.val === "25" || item.val === "50" || item.val === "100";
+                              }
+                              if (filterCommissionType === "25") {
+                                return item.val === "25" || item.val === "50" || item.val === "100";
+                              }
+                              if (filterCommissionType === "50") {
+                                return item.val === "50" || item.val === "100";
+                              }
+                              if (filterCommissionType === "100") {
+                                return item.val === "100";
+                              }
+                              return filterCommissionType === item.val;
+                            })();
+                            return (
+                              <button
+                                key={item.label}
+                                onClick={() => {
+                                  setFilterCommissionType(item.val);
+                                  setActiveFilterDropdown(null);
+                                }}
+                                style={{
+                                  padding: "8px 12px",
+                                  border: `1px solid ${isSelected ? "#1a73e8" : "#eee"}`,
+                                  borderRadius: 4,
+                                  background: isSelected ? "#e8f0fe" : "#fff",
+                                  color: isSelected ? "#1a73e8" : "#333",
+                                  fontSize: 12,
+                                  cursor: "pointer",
+                                  textAlign: "left",
+                                }}
+                              >
+                                {item.label}
+                              </button>
+                            );
+                          })}
                         </div>
                       )}
 
