@@ -930,21 +930,59 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
         )}
       </div>
 
-      {/* 하단 CTA */}
+      {/* 하단 CTA 또는 경공매 메타정보 */}
       <div style={{ background: "#fff", borderTop: "1px solid #e5e7eb", padding: "14px 16px 24px" }}>
-        <button
-          onClick={() => {
-            const agencyInfo = Array.isArray(selectedVacancy?.members?.agencies) ? selectedVacancy.members.agencies[0] : selectedVacancy?.members?.agencies;
-            const targetPhone = agencyInfo?.cell || agencyInfo?.phone || selectedVacancy?.members?.phone || selectedVacancy?.client_phone;
-            if (targetPhone) {
-              const firstPhone = targetPhone.split(',')[0].trim();
-              window.location.href = `tel:${firstPhone}`;
-            }
-          }}
-          style={{ width: "100%", height: "52px", borderRadius: "6px", background: selectedVacancy.trade_type === "경매" ? "#1a4282" : "#1a73e8", color: "#fff", fontSize: "18px", fontWeight: 800, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
-        >
-          연락하기
-        </button>
+        {selectedVacancy.trade_type === "경매" ? (
+          (() => {
+            const meta = selectedVacancy?.metadata || {};
+            const ap = meta.appraisal_price || parseInt(meta.apslEvlAmt || "0", 10) || 0;
+            const cltrMngNo = meta.cltrMngNo || meta.cltrMngNoIndctCont || selectedVacancy?.vacancy_no || "";
+            const formatAppraisal = (v: number) => {
+              if (!v) return "-";
+              if (v >= 100000000) {
+                const e = Math.floor(v / 100000000);
+                const m = Math.round((v % 100000000) / 10000);
+                return m > 0 ? `${e}억 ${m.toLocaleString()}만` : `${e}억`;
+              }
+              return `${Math.round(v / 10000).toLocaleString()}만`;
+            };
+
+            return (
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", height: "52px" }}>
+                <span style={{ fontSize: "17px", fontWeight: 800, color: "#111827" }}>
+                  감정가 <span style={{ color: "#1a4282" }}>{formatAppraisal(ap)}</span>
+                </span>
+                {cltrMngNo && (
+                  <div style={{
+                    fontSize: "14px",
+                    fontWeight: 700,
+                    color: "#475569",
+                    background: "#f1f5f9",
+                    border: "1px solid #e2e8f0",
+                    padding: "8px 16px",
+                    borderRadius: "8px"
+                  }}>
+                    {cltrMngNo}
+                  </div>
+                )}
+              </div>
+            );
+          })()
+        ) : (
+          <button
+            onClick={() => {
+              const agencyInfo = Array.isArray(selectedVacancy?.members?.agencies) ? selectedVacancy.members.agencies[0] : selectedVacancy?.members?.agencies;
+              const targetPhone = agencyInfo?.cell || agencyInfo?.phone || selectedVacancy?.members?.phone || selectedVacancy?.client_phone;
+              if (targetPhone) {
+                const firstPhone = targetPhone.split(',')[0].trim();
+                window.location.href = `tel:${firstPhone}`;
+              }
+            }}
+            style={{ width: "100%", height: "52px", borderRadius: "6px", background: "#1a73e8", color: "#fff", fontSize: "18px", fontWeight: 800, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+          >
+            연락하기
+          </button>
+        )}
       </div>
     </>
   );
