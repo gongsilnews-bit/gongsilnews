@@ -1,0 +1,808 @@
+import React, { useEffect, useRef } from "react";
+import MapSearchBar from "@/components/MapSearchBar";
+
+interface KakaoMapViewProps {
+  kakaoMapRef: React.MutableRefObject<any>;
+  mapLoaded: boolean;
+  mapError: string | null;
+  initialVacancies: any[];
+  filteredVacancies: any[];
+  activeCategory: string;
+  activeProperty: string | number | null;
+  isAuctionMode: boolean;
+  setIsAuctionMode: React.Dispatch<React.SetStateAction<boolean>>;
+  setActiveMode: React.Dispatch<React.SetStateAction<"공실" | "분양" | "경매">>;
+  setActiveCategory: React.Dispatch<React.SetStateAction<string>>;
+  setActivePills: React.Dispatch<React.SetStateAction<any[]>>;
+  showDetail: boolean;
+  setShowDetail: React.Dispatch<React.SetStateAction<boolean>>;
+  selectedClusterIds: string[] | null;
+  setSelectedClusterIds: React.Dispatch<React.SetStateAction<string[] | null>>;
+  selectedRegion: any;
+  setSelectedRegion: React.Dispatch<React.SetStateAction<any>>;
+  zoomLevel: number;
+  setZoomLevel: React.Dispatch<React.SetStateAction<number>>;
+  mapCenterRegion: any;
+  setMapCenterRegion: React.Dispatch<React.SetStateAction<any>>;
+  setMapBounds: React.Dispatch<React.SetStateAction<any>>;
+  handleLocationPermissionDenied: () => void;
+  handleLocationUnavailable: () => void;
+  activeFilterDropdown: string | null;
+  dbVacancies: any[];
+}
+
+export default function KakaoMapView({
+  kakaoMapRef,
+  mapLoaded,
+  mapError,
+  initialVacancies,
+  filteredVacancies,
+  activeCategory,
+  activeProperty,
+  isAuctionMode,
+  setIsAuctionMode,
+  setActiveMode,
+  setActiveCategory,
+  setActivePills,
+  showDetail,
+  setShowDetail,
+  selectedClusterIds,
+  setSelectedClusterIds,
+  selectedRegion,
+  setSelectedRegion,
+  zoomLevel,
+  setZoomLevel,
+  mapCenterRegion,
+  setMapCenterRegion,
+  setMapBounds,
+  handleLocationPermissionDenied,
+  handleLocationUnavailable,
+  activeFilterDropdown,
+  dbVacancies,
+}: KakaoMapViewProps) {
+  const mapRef = useRef<HTMLDivElement>(null);
+
+  // Refs for high-performance map marker layer management
+  const markersRef = useRef<any[]>([]);
+  const clustererRef = useRef<any>(null);
+  const markerIdMapRef = useRef<Map<any, string>>(new Map());
+  const filteredVacanciesRef = useRef<any[]>([]);
+  const selectedClusterIdsRef = useRef<string[] | null>(null);
+  const dbVacanciesRef = useRef<any[]>(initialVacancies);
+  const lastZoomWasInRef = useRef<boolean>(false);
+
+  // Sync state to refs for standard non-stale callback references inside Kakao Map events
+  useEffect(() => {
+    filteredVacanciesRef.current = filteredVacancies;
+  }, [filteredVacancies]);
+
+  useEffect(() => {
+    selectedClusterIdsRef.current = selectedClusterIds;
+  }, [selectedClusterIds]);
+
+  useEffect(() => {
+    dbVacanciesRef.current = dbVacancies;
+  }, [dbVacancies]);
+
+  // 1. Initialize Kakao Map immediately without waiting for data
+  useEffect(() => {
+    if (!mapLoaded) return;
+    const kakao = (window as any).kakao;
+    if (!mapRef.current || kakaoMapRef.current) return;
+
+    let initialLat = 37.498095;
+    let initialLng = 127.027610;
+    if (initialVacancies && initialVacancies.length > 0) {
+      const firstValid = initialVacancies.find((v: any) => v.lat && v.lng);
+      if (firstValid) {
+        initialLat = firstValid.lat;
+        initialLng = firstValid.lng;
+      }
+    }
+
+    kakaoMapRef.current = new kakao.maps.Map(mapRef.current, {
+      center: new kakao.maps.LatLng(initialLat, initialLng),
+      level: 6,
+    });
+
+    const map = kakaoMapRef.current;
+    setZoomLevel(map.getLevel());
+
+    // 제한된 범위 지정 (3: 가장 확대된 상태, 14: 전국 범위)
+    map.setMinLevel(3);
+    map.setMaxLevel(14);
+
+    kakao.maps.event.addListener(map, "idle", () => {
+      setMapBounds(map.getBounds());
+      // Reverse Geocoder for the center
+      const center = map.getCenter();
+      const geocoder = new kakao.maps.services.Geocoder();
+      geocoder.coord2RegionCode(center.getLng(), center.getLat(), (result: any, status: any) => {
+        if (status === kakao.maps.services.Status.OK) {
+          const bCode = result.find((res: any) => res.region_type === "B");
+          if (bCode) {
+            setMapCenterRegion({
+              sido: bCode.region_1depth_name,
+              gugun: bCode.region_2depth_name,
+              dong: bCode.region_3depth_name,
+            });
+          }
+        }
+      });
+    });
+
+    kakao.maps.event.addListener(map, "dragstart", () => {
+      setSelectedClusterIds(null);
+      setSelectedRegion(null);
+    });
+
+    kakao.maps.event.addListener(map, "zoom_start", () => {
+      setSelectedClusterIds(null);
+    });
+
+    kakao.maps.event.addListener(map, "zoom_changed", () => {
+      setSelectedClusterIds(null);
+      const currentLevel = map.getLevel();
+      setZoomLevel(currentLevel);
+    });
+  }, [mapLoaded]);
+
+  // 숫자 크기(매물 밀집도)에 따라 마커의 버블 크기와 폰트 크기를 다이내믹하게 결정하는 헬퍼 함수
+  const getMarkerDimensions = (count: number) => {
+    if (count === 1) {
+      return { size: 38, radius: 17, fontSize: 13 };
+    } else if (count < 10) {
+      return { size: 44, radius: 20, fontSize: 14 };
+    } else if (count < 100) {
+      return { size: 50, radius: 23, fontSize: 15 };
+    } else {
+      return { size: 58, radius: 27, fontSize: 17 };
+    }
+  };
+
+  // 가격 및 원형 마커 SVG를 줌 레벨과 밀집도에 따라 동적 생성하는 헬퍼 함수
+  const getMarkerSvg = (
+    prop: any,
+    group: any[],
+    isSelected: boolean,
+    isZoomedIn: boolean,
+    isHover: boolean = false
+  ) => {
+    const overlappingCount = group.length;
+    const color = isAuctionMode ? "%231a73e8" : "%234b89ff";
+    const textVal = overlappingCount.toString();
+    const { size, radius, fontSize } = getMarkerDimensions(overlappingCount);
+
+    const svgSize = isHover ? size + 6 : size;
+    const center = svgSize / 2;
+    const finalRadius = isHover ? radius + 3 : radius;
+    const finalFontSize = isHover ? fontSize + 1 : fontSize;
+
+    if (isHover) {
+      return `<svg xmlns="http://www.w3.org/2000/svg" width="${svgSize}" height="${svgSize}"><circle cx="${center}" cy="${center}" r="${finalRadius}" fill="${color}" stroke="white" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="${finalFontSize}" font-weight="bold" font-family="sans-serif">${textVal}</text></svg>`;
+    } else {
+      if (isSelected) {
+        return `<svg xmlns="http://www.w3.org/2000/svg" width="${svgSize}" height="${svgSize}"><circle cx="${center}" cy="${center}" r="${finalRadius}" fill="white" stroke="${color}" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="${color}" font-size="${finalFontSize}" font-weight="bold" font-family="sans-serif">${textVal}</text></svg>`;
+      } else {
+        return `<svg xmlns="http://www.w3.org/2000/svg" width="${svgSize}" height="${svgSize}"><circle cx="${center}" cy="${center}" r="${finalRadius}" fill="${color}" stroke="white" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="${finalFontSize}" font-weight="bold" font-family="sans-serif">${textVal}</text></svg>`;
+      }
+    }
+  };
+
+  // Reactive Update of selection markers state for smooth transitions
+  useEffect(() => {
+    if (markersRef.current && (window as any).kakao?.maps && kakaoMapRef.current) {
+      const map = kakaoMapRef.current;
+      const isZoomedIn = map.getLevel() <= 5;
+
+      markersRef.current.forEach((marker: any) => {
+        const idStr = markerIdMapRef.current.get(marker);
+        const prop = filteredVacanciesRef.current.find((v: any) => String(v.id) === idStr);
+        if (!prop) return;
+
+        const group = filteredVacanciesRef.current.filter(
+          (v: any) => Math.abs(v.lat - prop.lat) < 0.000001 && Math.abs(v.lng - prop.lng) < 0.000001
+        );
+        const isSelected = group.some(
+          (v) => selectedClusterIds?.includes(String(v.id)) || String(activeProperty) === String(v.id)
+        );
+
+        const { size } = getMarkerDimensions(group.length);
+        const width = size;
+        const height = size;
+
+        const normalSvg = getMarkerSvg(prop, group, isSelected, isZoomedIn, false);
+        const activeSvg = getMarkerSvg(prop, group, true, isZoomedIn, false);
+
+        marker.setImage(
+          new (window as any).kakao.maps.MarkerImage(
+            `data:image/svg+xml,${isSelected ? activeSvg : normalSvg}`,
+            new (window as any).kakao.maps.Size(width, height),
+            { offset: new (window as any).kakao.maps.Point(width / 2, height / 2) }
+          )
+        );
+        marker.setZIndex(isSelected ? 99 : 0);
+      });
+    }
+  }, [activeProperty, selectedClusterIds]);
+
+  // Main effect to cluster and render vacancies markers
+  useEffect(() => {
+    if (!kakaoMapRef.current) return;
+
+    // 기존 마커 및 클러스터러를 항상 제거하여 완벽하게 초기화 (메모리 누수 및 중복 렌더링 방지)
+    if (clustererRef.current) {
+      clustererRef.current.clear();
+      clustererRef.current = null;
+    }
+    if (markersRef.current && markersRef.current.length > 0) {
+      markersRef.current.forEach((m: any) => {
+        if (m && typeof m.setMap === "function") {
+          m.setMap(null);
+        }
+      });
+    }
+    markersRef.current = [];
+    markerIdMapRef.current.clear();
+
+    // 1. 성능 최적화: 마커는 클러스터 선택에 영향받지 않고 전체 화면/선택지역 범위를 기준으로 노출하여 다른 마커 소멸 방지
+    let targetVacancies = filteredVacancies;
+    if (activeCategory !== "wish") {
+      if (selectedRegion) {
+        targetVacancies = targetVacancies.filter((v) => {
+          if (selectedRegion.sido && selectedRegion.sido !== "시/도 선택" && selectedRegion.sido !== "-") {
+            const vSido = v.sido || "";
+            const matchSido =
+              vSido.includes(selectedRegion.sido) ||
+              selectedRegion.sido.includes(vSido) ||
+              selectedRegion.sido.substring(0, 2) === vSido.substring(0, 2);
+            if (!matchSido) return false;
+          }
+          if (selectedRegion.gugun && selectedRegion.gugun !== "-") {
+            const vGugun = v.sigungu || "";
+            const matchGugun = vGugun.includes(selectedRegion.gugun) || selectedRegion.gugun.includes(vGugun);
+            if (!matchGugun) return false;
+          }
+          if (selectedRegion.dong && selectedRegion.dong !== "-") {
+            const vDong = v.dong || "";
+            const matchDong = vDong.includes(selectedRegion.dong) || selectedRegion.dong.includes(vDong);
+            if (!matchDong) return false;
+          }
+          return true;
+        });
+      }
+    }
+    const currentLevel = kakaoMapRef.current?.getLevel() || 6;
+
+    // [대표님 지침] 지도가 멀리 줌아웃된 상태(레벨 >= 9)에서는 직방처럼 지도 위에 아무런 매물/클러스터 마커도 노출하지 않고 메모리/성능을 극대화합니다.
+    if (currentLevel >= 9 && activeCategory !== "wish") {
+      if (clustererRef.current) {
+        clustererRef.current.clear();
+      }
+      return;
+    }
+
+    // 2. 멀리 줌아웃된 상태에서 레벨별 그리드 최적화 (성능 60fps 극대화)
+    let dynamicGridSize = 60;
+
+    if (currentLevel >= 8) {
+      dynamicGridSize = 100; // 매우 강력한 클러스터링으로 싱글 마커 생성 억제
+    } else if (currentLevel === 7) {
+      dynamicGridSize = 80; // 중간 수준 클러스터링
+    } else if (currentLevel <= 5) {
+      dynamicGridSize = 40; // 상세 동네 단위: 정밀 클러스터링
+    }
+
+    if (targetVacancies.length === 0) return;
+
+    const kakao = (window as any).kakao;
+    const map = kakaoMapRef.current;
+
+    clustererRef.current = new kakao.maps.MarkerClusterer({
+      map: map,
+      averageCenter: true,
+      minLevel: 4,
+      gridSize: dynamicGridSize,
+      disableClickZoom: true,
+      calculator: [10, 30, 50],
+      texts: (count: number) => count.toString(),
+      styles: isAuctionMode
+        ? [
+            {
+              width: "38px",
+              height: "38px",
+              background: "rgba(26, 115, 232, 0.75)",
+              color: "#fff",
+              textAlign: "center",
+              lineHeight: "34px",
+              borderRadius: "50%",
+              fontWeight: "900",
+              fontSize: "13px",
+              border: "2px solid #ffffff",
+              boxShadow: "0 2px 6px rgba(0,0,0,0.18)",
+            },
+            {
+              width: "46px",
+              height: "46px",
+              background: "rgba(26, 115, 232, 0.75)",
+              color: "#fff",
+              textAlign: "center",
+              lineHeight: "42px",
+              borderRadius: "50%",
+              fontWeight: "900",
+              fontSize: "14px",
+              border: "2px solid #ffffff",
+              boxShadow: "0 2px 6px rgba(0,0,0,0.18)",
+            },
+            {
+              width: "54px",
+              height: "54px",
+              background: "rgba(26, 115, 232, 0.75)",
+              color: "#fff",
+              textAlign: "center",
+              lineHeight: "50px",
+              borderRadius: "50%",
+              fontWeight: "900",
+              fontSize: "15px",
+              border: "2px solid #ffffff",
+              boxShadow: "0 2px 6px rgba(0,0,0,0.18)",
+            },
+            {
+              width: "62px",
+              height: "62px",
+              background: "rgba(26, 115, 232, 0.75)",
+              color: "#fff",
+              textAlign: "center",
+              lineHeight: "58px",
+              borderRadius: "50%",
+              fontWeight: "900",
+              fontSize: "16px",
+              border: "2px solid #ffffff",
+              boxShadow: "0 3px 8px rgba(0,0,0,0.18)",
+            },
+          ]
+        : [
+            {
+              width: "38px",
+              height: "38px",
+              background: "rgba(75, 137, 255, 0.75)",
+              color: "#fff",
+              textAlign: "center",
+              lineHeight: "34px",
+              borderRadius: "50%",
+              fontWeight: "900",
+              fontSize: "13px",
+              border: "2px solid #ffffff",
+              boxShadow: "0 2px 6px rgba(0,0,0,0.18)",
+            },
+            {
+              width: "46px",
+              height: "46px",
+              background: "rgba(75, 137, 255, 0.75)",
+              color: "#fff",
+              textAlign: "center",
+              lineHeight: "42px",
+              borderRadius: "50%",
+              fontWeight: "900",
+              fontSize: "14px",
+              border: "2px solid #ffffff",
+              boxShadow: "0 2px 6px rgba(0,0,0,0.18)",
+            },
+            {
+              width: "54px",
+              height: "54px",
+              background: "rgba(75, 137, 255, 0.75)",
+              color: "#fff",
+              textAlign: "center",
+              lineHeight: "50px",
+              borderRadius: "50%",
+              fontWeight: "900",
+              fontSize: "15px",
+              border: "2px solid #ffffff",
+              boxShadow: "0 2px 6px rgba(0,0,0,0.18)",
+            },
+            {
+              width: "62px",
+              height: "62px",
+              background: "rgba(75, 137, 255, 0.75)",
+              color: "#fff",
+              textAlign: "center",
+              lineHeight: "58px",
+              borderRadius: "50%",
+              fontWeight: "900",
+              fontSize: "16px",
+              border: "2px solid #ffffff",
+              boxShadow: "0 3px 8px rgba(0,0,0,0.18)",
+            },
+          ],
+    });
+
+    // Add cluster events only once
+    kakao.maps.event.addListener(clustererRef.current, "clusterover", (cluster: any) => {
+      const overlay = cluster.getClusterMarker().getContent();
+      if (overlay && overlay.style) {
+        overlay.style.transform = "scale(1.15)";
+        overlay.style.transition = "transform 0.2s";
+        overlay.style.zIndex = "100";
+      }
+    });
+
+    kakao.maps.event.addListener(clustererRef.current, "clusterout", (cluster: any) => {
+      const overlay = cluster.getClusterMarker().getContent();
+      if (overlay && overlay.style) {
+        overlay.style.transform = "scale(1)";
+        overlay.style.zIndex = "0";
+      }
+    });
+
+    kakao.maps.event.addListener(clustererRef.current, "clusterclick", (cluster: any) => {
+      const markers = cluster.getMarkers();
+      const ids = markers.flatMap((m: any) => {
+        const pos = m.getPosition();
+        return filteredVacanciesRef.current
+          .filter((v: any) => Math.abs(v.lat - pos.getLat()) < 0.00001 && Math.abs(v.lng - pos.getLng()) < 0.00001)
+          .map((v: any) => String(v.id));
+      });
+      setSelectedClusterIds(Array.from(new Set(ids)));
+      setShowDetail(false);
+    });
+
+    kakao.maps.event.addListener(clustererRef.current, "clustered", (clusters: any[]) => {
+      clusters.forEach((cluster) => {
+        const markers = cluster.getMarkers();
+        // Sum the counts of all coordinate groups inside this cluster
+        let totalCount = 0;
+        markers.forEach((m: any) => {
+          const pos = m.getPosition();
+          // Find the number of properties at this marker's coordinate
+          const count = filteredVacanciesRef.current.filter(
+            (v: any) => Math.abs(v.lat - pos.getLat()) < 0.00001 && Math.abs(v.lng - pos.getLng()) < 0.00001
+          ).length;
+          totalCount += count;
+        });
+
+        const overlay = cluster.getClusterMarker().getContent();
+        if (overlay) {
+          overlay.innerText = totalCount.toString();
+        }
+
+        // Apply selected cluster styles if match
+        if (selectedClusterIdsRef.current && selectedClusterIdsRef.current.length > 0) {
+          const ids = markers.flatMap((m: any) => {
+            const pos = m.getPosition();
+            return filteredVacanciesRef.current
+              .filter((v: any) => Math.abs(v.lat - pos.getLat()) < 0.00001 && Math.abs(v.lng - pos.getLng()) < 0.00001)
+              .map((v: any) => String(v.id));
+          });
+          const isMatch = ids.some((id: any) => id && selectedClusterIdsRef.current?.includes(id));
+          if (isMatch && overlay && overlay.style) {
+            overlay.style.background = "#ffffff";
+            overlay.style.color = isAuctionMode ? "#1a73e8" : "#4b89ff";
+            overlay.style.border = isAuctionMode ? "2px solid #1a73e8" : "2px solid #4b89ff";
+            overlay.style.zIndex = "999";
+          }
+        }
+      });
+    });
+
+    // 1. Group vacancies by unique coordinate
+    const coordinateGroups = new Map<string, any[]>();
+    targetVacancies.forEach((v) => {
+      if (v.lat && v.lng) {
+        const key = `${v.lat.toFixed(6)}_${v.lng.toFixed(6)}`;
+        if (!coordinateGroups.has(key)) {
+          coordinateGroups.set(key, []);
+        }
+        coordinateGroups.get(key)!.push(v);
+      }
+    });
+
+    const newMarkers: any[] = [];
+    const isZoomedIn = currentLevel <= 5;
+    lastZoomWasInRef.current = isZoomedIn;
+
+    coordinateGroups.forEach((group, coordKey) => {
+      if (group.length === 0) return;
+
+      // Select the active/selected property as representative if present, otherwise the first one
+      const activeInGroup = group.find((v) => String(v.id) === String(activeProperty));
+      const selectedInGroup = group.find((v) => selectedClusterIdsRef.current?.includes(String(v.id)));
+      const prop = activeInGroup || selectedInGroup || group[0];
+
+      const position = new kakao.maps.LatLng(prop.lat, prop.lng);
+      const strId = String(prop.id);
+
+      // Group selection check: if ANY property in the group is active or selected, draw in active state
+      const isSelected = group.some(
+        (v) => selectedClusterIdsRef.current?.includes(String(v.id)) || String(activeProperty) === String(v.id)
+      );
+
+      const { size } = getMarkerDimensions(group.length);
+      const width = size;
+      const height = size;
+
+      const normalSvg = getMarkerSvg(prop, group, isSelected, isZoomedIn, false);
+      const activeSvg = getMarkerSvg(prop, group, true, isZoomedIn, false);
+      const hoverSvg = getMarkerSvg(prop, group, isSelected, isZoomedIn, true);
+
+      const markerImage = new kakao.maps.MarkerImage(
+        `data:image/svg+xml,${isSelected ? activeSvg : normalSvg}`,
+        new kakao.maps.Size(width, height),
+        { offset: new kakao.maps.Point(width / 2, height / 2) }
+      );
+
+      const hoverImage = new kakao.maps.MarkerImage(
+        `data:image/svg+xml,${hoverSvg}`,
+        new kakao.maps.Size(width + 6, height + 6),
+        { offset: new kakao.maps.Point((width + 6) / 2, (height + 6) / 2) }
+      );
+
+      const marker = new kakao.maps.Marker({ position, image: markerImage, title: strId });
+      markerIdMapRef.current.set(marker, strId);
+
+      kakao.maps.event.addListener(marker, "mouseover", () => {
+        marker.setImage(hoverImage);
+        marker.setZIndex(100);
+      });
+      kakao.maps.event.addListener(marker, "mouseout", () => {
+        const currentSelected = group.some(
+          (v) => selectedClusterIdsRef.current?.includes(String(v.id)) || String(activeProperty) === String(v.id)
+        );
+        const updatedSvg = currentSelected ? activeSvg : normalSvg;
+        const currentWidth = size;
+        const currentHeight = size;
+        marker.setImage(
+          new kakao.maps.MarkerImage(
+            `data:image/svg+xml,${updatedSvg}`,
+            new kakao.maps.Size(currentWidth, currentHeight),
+            { offset: new kakao.maps.Point(currentWidth / 2, currentHeight / 2) }
+          )
+        );
+        marker.setZIndex(currentSelected ? 99 : 0);
+      });
+
+      kakao.maps.event.addListener(marker, "click", () => {
+        setSelectedClusterIds(group.map((v) => String(v.id)));
+        setShowDetail(false);
+      });
+
+      newMarkers.push(marker);
+      markersRef.current.push(marker);
+    });
+
+    if (clustererRef.current && newMarkers.length > 0) {
+      clustererRef.current.addMarkers(newMarkers);
+    }
+  }, [
+    filteredVacancies,
+    selectedRegion,
+    activeCategory,
+    activeProperty,
+    mapLoaded,
+    isAuctionMode,
+    zoomLevel,
+  ]);
+
+  return (
+    <div style={{ flex: 1, height: "100%", position: "relative", minWidth: 0, background: "#eee" }}>
+      {/* 서울블럭지도 / 지도검색 Floating Header at Top Right */}
+      <div
+        style={{
+          position: "absolute",
+          top: 16,
+          right: 16,
+          zIndex: 10,
+          display: "flex",
+          alignItems: "baseline",
+          gap: 10,
+          background: "rgba(255,255,255,0.95)",
+          padding: "8px 14px",
+          borderRadius: 6,
+          boxShadow: "0 2px 10px rgba(0,0,0,0.15)",
+          border: "1px solid #e5e7eb",
+        }}
+      >
+        <span
+          onClick={() => alert("서울 블럭지도 준비중입니다")}
+          style={{ fontSize: 13, fontWeight: 600, color: "#6b7280", cursor: "pointer" }}
+        >
+          서울블럭지도
+        </span>
+        <span style={{ color: "#d1d5db", fontSize: 14 }}>|</span>
+        <h2 style={{ fontSize: 16, fontWeight: 800, color: "#2845B3", margin: 0 }}>지도검색</h2>
+      </div>
+
+      <MapSearchBar
+        mapCenterRegion={mapCenterRegion}
+        onSearchCoord={(lat: any, lng: any, zoomLevel: any) => {
+          if (!kakaoMapRef.current) return;
+          const kakao = (window as any).kakao;
+          if (zoomLevel) kakaoMapRef.current.setLevel(zoomLevel);
+          kakaoMapRef.current.panTo(new kakao.maps.LatLng(lat, lng));
+        }}
+        onRegionSelect={(sido: any, gugun: any, dong: any) => {
+          setSelectedRegion({ sido, gugun, dong });
+        }}
+        themeColor="#1a73e8"
+        isPushedDown={activeFilterDropdown !== null}
+      />
+
+      <div ref={mapRef} style={{ width: "100%", height: "100%", background: "#e8eaed" }}>
+        {mapError && (
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+              background: "#ffefef",
+              color: "#d32f2f",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+              zIndex: 10,
+            }}
+          >
+            <span style={{ fontSize: 40 }}>⚠️</span>
+            <span style={{ fontSize: 16, fontWeight: "bold" }}>지도 로드 오류</span>
+            <span style={{ fontSize: 14 }}>{mapError}</span>
+          </div>
+        )}
+      </div>
+
+      <button
+        className="map-btn"
+        style={{ zIndex: 1000 }}
+        onClick={() => {
+          setSelectedClusterIds(null);
+          setSelectedRegion(null);
+          if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+              (pos) => {
+                const lat = pos.coords.latitude;
+                const lng = pos.coords.longitude;
+                if (kakaoMapRef.current) {
+                  const kakao = (window as any).kakao;
+                  kakaoMapRef.current.panTo(new kakao.maps.LatLng(lat, lng));
+                }
+              },
+              (err) => {
+                console.error("Geolocation error:", err);
+                handleLocationPermissionDenied();
+              },
+              { enableHighAccuracy: true }
+            );
+          } else {
+            handleLocationUnavailable();
+          }
+        }}
+      >
+        내 위치에서 검색
+      </button>
+
+      {/* 경공매 레이어 토글 버튼 (부동산플래닛 실거래가 스타일) */}
+      <button
+        onClick={() => {
+          const nextVal = !isAuctionMode;
+          setIsAuctionMode(nextVal);
+          setActiveMode(nextVal ? "경매" : "공실");
+          setActiveCategory(nextVal ? "auction" : "all");
+          setActivePills([]);
+          setShowDetail(false);
+          setSelectedClusterIds(null);
+        }}
+        style={{
+          position: "absolute",
+          right: 20,
+          top: 80,
+          zIndex: 1000,
+          width: 52,
+          height: 64,
+          background: isAuctionMode ? "#1a73e8" : "#fff",
+          border: "1px solid #ddd",
+          borderRadius: 8,
+          boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+          cursor: "pointer",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 4,
+          transition: "all 0.2s ease",
+          padding: "6px 0",
+          outline: "none",
+        }}
+        title="경/공매 매물 모드 토글"
+      >
+        {/* 경공매용 프리미엄 법봉/해머 아이콘 */}
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke={isAuctionMode ? "white" : "#1a73e8"}
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="m15 5 4 4" />
+          <path d="M20.5 12.5 17 9l-8.5 8.5c-.7.7-1.7 1-2.5 1a2.5 2.5 0 0 1-2.5-2.5c0-.8.3-1.8 1-2.5z" />
+          <path d="m16 4 3 3" />
+          <path d="m14 2 6 6" />
+          <path d="M2 22h10" />
+        </svg>
+        <span
+          style={{
+            fontSize: 10,
+            fontWeight: 800,
+            color: isAuctionMode ? "white" : "#333",
+            fontFamily: "'Pretendard', sans-serif",
+            letterSpacing: "-0.5px",
+          }}
+        >
+          경공매
+        </span>
+      </button>
+
+      {/* Custom Zoom Control (네비게이션 바) */}
+      <div
+        style={{
+          position: "absolute",
+          right: 20,
+          top: 160,
+          zIndex: 10,
+          display: "flex",
+          flexDirection: "column",
+          background: "#fff",
+          borderRadius: 4,
+          boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
+          overflow: "hidden",
+        }}
+      >
+        <button
+          onClick={() => {
+            if (kakaoMapRef.current) kakaoMapRef.current.setLevel(kakaoMapRef.current.getLevel() - 1);
+          }}
+          style={{
+            width: 36,
+            height: 36,
+            border: "none",
+            borderBottom: "1px solid #e0e0e0",
+            background: "#fff",
+            fontSize: 20,
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "#666",
+          }}
+        >
+          ＋
+        </button>
+        <button
+          onClick={() => {
+            if (kakaoMapRef.current) kakaoMapRef.current.setLevel(kakaoMapRef.current.getLevel() + 1);
+          }}
+          style={{
+            width: 36,
+            height: 36,
+            border: "none",
+            background: "#fff",
+            fontSize: 24,
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            lineHeight: 1,
+            color: "#666",
+          }}
+        >
+          －
+        </button>
+      </div>
+    </div>
+  );
+}
