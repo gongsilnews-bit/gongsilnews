@@ -1544,13 +1544,13 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                               <button
                                 onClick={() => setTempFilterTradeTypes([])}
                                 style={{
-                                  padding: "8px 16px",
-                                  borderRadius: "26px",
-                                  fontSize: "15px",
-                                  border: "1px solid " + (tempFilterTradeTypes.length === 0 ? "#111827" : "#e5e7eb"),
-                                  background: tempFilterTradeTypes.length === 0 ? "#111827" : "#ffffff",
-                                  color: tempFilterTradeTypes.length === 0 ? "#ffffff" : "#4b5563",
-                                  fontWeight: "bold",
+                                  padding: "6px 14px",
+                                  borderRadius: 4,
+                                  fontSize: 13,
+                                  border: "1px solid " + (tempFilterTradeTypes.length === 0 ? "#111" : "#ccc"),
+                                  background: tempFilterTradeTypes.length === 0 ? "#111" : "#ffffff",
+                                  color: tempFilterTradeTypes.length === 0 ? "#ffffff" : "#333",
+                                  fontWeight: tempFilterTradeTypes.length === 0 ? "bold" : "normal",
                                   cursor: "pointer",
                                   transition: "all 0.15s"
                                 }}
@@ -1570,13 +1570,13 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                       );
                                     }}
                                     style={{
-                                      padding: "8px 16px",
-                                      borderRadius: "26px",
-                                      fontSize: "15px",
-                                      border: "1px solid " + (isSel ? "#1a4282" : "#e5e7eb"),
-                                      background: isSel ? "#e8f0fe" : "#ffffff",
-                                      color: isSel ? "#1a4282" : "#4b5563",
-                                      fontWeight: "bold",
+                                      padding: "6px 14px",
+                                      borderRadius: 4,
+                                      fontSize: 13,
+                                      border: "1px solid " + (isSel ? "#111" : "#ccc"),
+                                      background: isSel ? "#111" : "#ffffff",
+                                      color: isSel ? "#ffffff" : "#333",
+                                      fontWeight: isSel ? "bold" : "normal",
                                       cursor: "pointer",
                                       transition: "all 0.15s"
                                     }}
@@ -1782,14 +1782,14 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                               }}
                               style={{
                                 flex: 1,
-                                padding: "13px 0",
-                                border: "1px solid #e5e7eb",
-                                borderRadius: "6px",
-                                fontSize: "15px",
+                                padding: "9px 0",
+                                border: "1px solid #ccc",
+                                borderRadius: "4px",
+                                fontSize: "13px",
                                 color: "#4b5563",
                                 background: "#ffffff",
                                 cursor: "pointer",
-                                fontWeight: "800",
+                                fontWeight: "bold",
                                 transition: "all 0.15s"
                               }}
                             >
@@ -1808,14 +1808,14 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                               }}
                               style={{
                                 flex: 2,
-                                padding: "13px 0",
+                                padding: "9px 0",
                                 border: "none",
-                                borderRadius: "6px",
-                                fontSize: "15px",
+                                borderRadius: "4px",
+                                fontSize: "13px",
                                 color: "#ffffff",
                                 background: "#1a4282", /* Premium Corporate Deep Navy */
                                 cursor: "pointer",
-                                fontWeight: "800",
+                                fontWeight: "bold",
                                 transition: "all 0.15s"
                               }}
                             >
