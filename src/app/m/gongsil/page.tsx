@@ -148,7 +148,84 @@ function MobileGongsilContent() {
   const showCommission = userLevel >= 2;
 
   // 필터 State 및 필터링 로직 (Hook으로 분리)
-  const { filters, filteredVacancies, updateFilter, activeFilterCount, resetFilters } = useVacancyFilters(vacancies);
+  const { filters, filteredVacancies, updateFilter, activeFilterCount, resetFilters, setFilters } = useVacancyFilters(vacancies);
+
+  // 마지막 검색 조건 및 지도 상태 저장 헬퍼
+  const saveLastSearchState = (currFilters: any, currMode: string, user: any) => {
+    if (!user || !user.id) return;
+    const storageKey = `last_gongsil_filters_${user.id}`;
+    
+    let centerLat = null;
+    let centerLng = null;
+    let mapZoom = null;
+    
+    if (kakaoMapRef.current) {
+      const center = kakaoMapRef.current.getCenter();
+      centerLat = center.getLat();
+      centerLng = center.getLng();
+      mapZoom = kakaoMapRef.current.getLevel();
+    }
+    
+    const stateToSave = {
+      filters: currFilters,
+      activeMode: currMode,
+      centerLat,
+      centerLng,
+      mapZoom
+    };
+    
+    localStorage.setItem(storageKey, JSON.stringify(stateToSave));
+  };
+
+  // 필터 및 모드 변경 시 실시간 상태 저장
+  useEffect(() => {
+    if (currentUser && currentUser.id) {
+      saveLastSearchState(filters, activeMode, currentUser);
+    }
+  }, [filters, activeMode, currentUser]);
+
+  // 마지막 검색 조건 및 모드 복구
+  useEffect(() => {
+    if (currentUser && currentUser.id) {
+      const storageKey = `last_gongsil_filters_${currentUser.id}`;
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed.filters) {
+            setFilters(parsed.filters);
+          }
+          if (parsed.activeMode) {
+            setActiveMode(parsed.activeMode);
+          }
+        } catch (e) {
+          console.error("Failed to restore search filters:", e);
+        }
+      }
+    }
+  }, [currentUser]);
+
+  // 지도 객체 로드 완료 시 마지막 위치 복구
+  useEffect(() => {
+    if (mapLoaded && kakaoMapRef.current && currentUser && currentUser.id) {
+      const storageKey = `last_gongsil_filters_${currentUser.id}`;
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          const kakao = (window as any).kakao;
+          if (kakao && parsed.centerLat && parsed.centerLng) {
+            kakaoMapRef.current.setCenter(new kakao.maps.LatLng(parsed.centerLat, parsed.centerLng));
+            if (parsed.mapZoom) {
+              kakaoMapRef.current.setLevel(parsed.mapZoom);
+            }
+          }
+        } catch (e) {
+          console.error("Failed to restore map location:", e);
+        }
+      }
+    }
+  }, [mapLoaded, currentUser]);
 
   // 현재 지도 화면 내에 보이는 공실광고 개수 상태
   const [visibleCount, setVisibleCount] = useState(0);
@@ -659,9 +736,23 @@ function MobileGongsilContent() {
                 sigungu: sigungu || null,
                 dong: dong || null
               });
+
+              if (currentUser && currentUser.id) {
+                const nextFilters = {
+                  ...filters,
+                  sido: sido || null,
+                  sigungu: sigungu || null,
+                  dong: dong || null
+                };
+                saveLastSearchState(nextFilters, activeMode, currentUser);
+              }
             }
           }
         });
+      }
+
+      if (currentUser && currentUser.id) {
+        saveLastSearchState(filters, activeMode, currentUser);
       }
     };
 
