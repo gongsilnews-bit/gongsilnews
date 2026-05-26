@@ -236,6 +236,33 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   const [tempRentMax, setTempRentMax] = useState<number | null>(null);
   const [sliderInteractions, setSliderInteractions] = useState<Record<string, { min: boolean; max: boolean }>>({});
   const [roomBathInteractions, setRoomBathInteractions] = useState({ room: false, bath: false });
+  const [savedCategoryAlerts, setSavedCategoryAlerts] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    const saved = localStorage.getItem("gongsil_saved_category_alerts");
+    if (saved) {
+      try {
+        setSavedCategoryAlerts(JSON.parse(saved));
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  }, []);
+
+  const handleToggleCategoryAlert = (cat: string) => {
+    setSavedCategoryAlerts((prev) => {
+      const isCurrentlySaved = prev[cat];
+      const updated = { ...prev, [cat]: !isCurrentlySaved };
+      localStorage.setItem("gongsil_saved_category_alerts", JSON.stringify(updated));
+      
+      if (!isCurrentlySaved) {
+        setToastMessage(`${CATEGORY_CONFIG[cat]?.name || "해당"} 카테고리의 맞춤 필터 조건이 알림으로 등록되었습니다.`);
+      } else {
+        setToastMessage(`${CATEGORY_CONFIG[cat]?.name || "해당"} 카테고리의 알림 등록이 해제되었습니다.`);
+      }
+      return updated;
+    });
+  };
 
   const [appliedMaemaeMin, setAppliedMaemaeMin] = useState<number | null>(null);
   const [appliedMaemaeMax, setAppliedMaemaeMax] = useState<number | null>(null);
@@ -2891,6 +2918,52 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                             </div>
                           </div>
                           
+                          {/* Alert Save Row */}
+                          {(activeCategory === "apart" || activeCategory === "villa" || activeCategory === "auction") && (
+                            <div style={{
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              padding: "10px 12px",
+                              borderRadius: "6px",
+                              background: savedCategoryAlerts[activeCategory] ? "#f0f7ff" : "#f9fafb",
+                              border: "1px dashed " + (savedCategoryAlerts[activeCategory] ? "#1a4282" : "#e5e7eb"),
+                              marginBottom: "12px",
+                              marginTop: "8px",
+                              transition: "all 0.25s ease"
+                            }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                                <span style={{ fontSize: "15px" }}>{savedCategoryAlerts[activeCategory] ? "🔔" : "🔕"}</span>
+                                <div style={{ display: "flex", flexDirection: "column" }}>
+                                  <span style={{ fontSize: "11px", fontWeight: "bold", color: "#111827" }}>
+                                    {CATEGORY_CONFIG[activeCategory]?.name || activeCategory} 맞춤 매물 알림
+                                  </span>
+                                  <span style={{ fontSize: "9px", color: "#6b7280" }}>
+                                    {savedCategoryAlerts[activeCategory] 
+                                      ? "새 매물 등록 시 카카오톡으로 실시간 알림을 보냅니다."
+                                      : "새 매물이 등록되면 카카오톡 알림을 드립니다."}
+                                  </span>
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => handleToggleCategoryAlert(activeCategory)}
+                                style={{
+                                  padding: "6px 12px",
+                                  background: savedCategoryAlerts[activeCategory] ? "#1a4282" : "#fff",
+                                  border: "1px solid #1a4282",
+                                  borderRadius: "4px",
+                                  color: savedCategoryAlerts[activeCategory] ? "#fff" : "#1a4282",
+                                  fontSize: "11px",
+                                  fontWeight: "bold",
+                                  cursor: "pointer",
+                                  transition: "all 0.15s"
+                                }}
+                              >
+                                {savedCategoryAlerts[activeCategory] ? "알림 해제" : "알림 받기"}
+                              </button>
+                            </div>
+                          )}
+
                           {/* Bottom Action buttons */}
                           <div style={{ display: "flex", gap: "10px", borderTop: "1px solid #f3f4f6", paddingTop: "15px", background: "#ffffff" }}>
                             <button
@@ -3488,6 +3561,32 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                 }}
               >
                 🔄 필터 초기화
+              </button>
+            )}
+
+            {/* GNB Compact Alert Toggle Button */}
+            {(activeCategory === "apart" || activeCategory === "villa" || activeCategory === "auction") && (
+              <button
+                onClick={() => handleToggleCategoryAlert(activeCategory)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
+                  padding: "6px 12px",
+                  background: savedCategoryAlerts[activeCategory] ? "#e8f0fe" : "#fff",
+                  border: `1px solid ${savedCategoryAlerts[activeCategory] ? "#1a73e8" : "#ccc"}`,
+                  borderRadius: "20px",
+                  color: savedCategoryAlerts[activeCategory] ? "#1a73e8" : "#555",
+                  fontSize: "12px",
+                  fontWeight: "bold",
+                  cursor: "pointer",
+                  marginLeft: "auto",
+                  flexShrink: 0,
+                  transition: "all 0.15s"
+                }}
+                title={`${CATEGORY_CONFIG[activeCategory]?.name || activeCategory} 맞춤 매물 알림 설정`}
+              >
+                <span>{savedCategoryAlerts[activeCategory] ? "🔔 알림 설정됨" : "🔔 알림 받기"}</span>
               </button>
             )}
           </div>
