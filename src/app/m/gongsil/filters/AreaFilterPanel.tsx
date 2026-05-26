@@ -16,72 +16,91 @@ const PRESETS = [
 ];
 
 export default function AreaFilterPanel({ filters, onFilterChange }: Props) {
-  const [minInput, setMinInput] = useState<string>('');
-  const [maxInput, setMaxInput] = useState<string>('');
+  const minVal = filters.areaMin ?? 0;
+  const maxVal = filters.areaMax ?? 100;
 
-  useEffect(() => {
-    setMinInput(filters.areaMin !== null ? filters.areaMin.toString() : '');
-    setMaxInput(filters.areaMax !== null ? filters.areaMax.toString() : '');
-  }, [filters.areaMin, filters.areaMax]);
-
-  const handlePresetClick = (val: number) => {
-    if (filters.areaMin === null) {
-      onFilterChange({ areaMin: val, areaMax: null });
-    } else if (filters.areaMax === null) {
-      if (val > filters.areaMin) {
-        onFilterChange({ areaMax: val });
-      } else {
-        onFilterChange({ areaMin: val, areaMax: null });
-      }
-    } else {
-      onFilterChange({ areaMin: val, areaMax: null });
-    }
+  const handleMinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = Math.min(Number(e.target.value), maxVal - 5);
+    onFilterChange({ areaMin: value === 0 ? null : value });
   };
 
-  const applyInputs = () => {
-    const min = minInput !== '' ? parseInt(minInput, 10) : null;
-    const max = maxInput !== '' ? parseInt(maxInput, 10) : null;
-    onFilterChange({ 
-      areaMin: min !== null && !isNaN(min) ? min : null, 
-      areaMax: max !== null && !isNaN(max) ? max : null 
-    });
+  const handleMaxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = Math.max(Number(e.target.value), minVal + 5);
+    onFilterChange({ areaMax: value >= 100 ? null : value });
   };
 
-  const gridBtnStyle = (active: boolean): React.CSSProperties => ({
-    padding: "10px 4px", borderRadius: "4px", fontSize: "16px", fontWeight: active ? 700 : 500, textAlign: "center",
-    border: active ? "1.5px solid #4b89ff" : "1px solid #e5e7eb",
-    background: active ? "#eef4ff" : "#fff", color: active ? "#4b89ff" : "#000",
-    cursor: "pointer", transition: "all 0.15s",
-  });
-
-  const isPresetActive = (val: number) => filters.areaMin === val || filters.areaMax === val;
+  const minPercent = (minVal / 100) * 100;
+  const maxPercent = (maxVal / 100) * 100;
 
   return (
-    <div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", marginBottom: "20px" }}>
-        {PRESETS.map(p => (
-          <button key={p.label} onClick={() => handlePresetClick(p.val)} style={gridBtnStyle(isPresetActive(p.val))}>
-            {p.label}
-          </button>
-        ))}
-      </div>
-
-      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
-        <div style={{ flex: 1, display: "flex", border: "1px solid #d1d5db", borderRadius: "6px", overflow: "hidden" }}>
-          <button type="button" style={{ padding: "10px", background: "#f9fafb", border: "none", borderRight: "1px solid #d1d5db", color: "#6b7280", cursor: "pointer" }} onClick={() => { const val = Math.max(0, parseInt(minInput || "0") - 5); setMinInput(val.toString()); onFilterChange({ areaMin: val }); }}>-</button>
-          <input type="number" placeholder="최소(평)" value={minInput} onChange={(e) => setMinInput(e.target.value)} onBlur={applyInputs} onKeyDown={(e) => e.key === 'Enter' && applyInputs()} style={{ flex: 1, width: "100%", border: "none", textAlign: "center", fontSize: "14px", outline: "none" }} />
-          <button type="button" style={{ padding: "10px", background: "#f9fafb", border: "none", borderLeft: "1px solid #d1d5db", color: "#6b7280", cursor: "pointer" }} onClick={() => { const val = parseInt(minInput || "0") + 5; setMinInput(val.toString()); onFilterChange({ areaMin: val }); }}>+</button>
-        </div>
-        <span style={{ color: "#9ca3af" }}>~</span>
-        <div style={{ flex: 1, display: "flex", border: "1px solid #d1d5db", borderRadius: "6px", overflow: "hidden" }}>
-          <button type="button" style={{ padding: "10px", background: "#f9fafb", border: "none", borderRight: "1px solid #d1d5db", color: "#6b7280", cursor: "pointer" }} onClick={() => { const val = Math.max(0, parseInt(maxInput || "0") - 5); setMaxInput(val.toString()); onFilterChange({ areaMax: val }); }}>-</button>
-          <input type="number" placeholder="최대(평)" value={maxInput} onChange={(e) => setMaxInput(e.target.value)} onBlur={applyInputs} onKeyDown={(e) => e.key === 'Enter' && applyInputs()} style={{ flex: 1, width: "100%", border: "none", textAlign: "center", fontSize: "14px", outline: "none" }} />
-          <button type="button" style={{ padding: "10px", background: "#f9fafb", border: "none", borderLeft: "1px solid #d1d5db", color: "#6b7280", cursor: "pointer" }} onClick={() => { const val = parseInt(maxInput || "0") + 5; setMaxInput(val.toString()); onFilterChange({ areaMax: val }); }}>+</button>
+    <div style={{ padding: "10px 0" }}>
+      {/* 실시간 말풍선 라벨 */}
+      <div style={{ display: "flex", justifyContent: "center", marginBottom: "16px" }}>
+        <div style={{
+          backgroundColor: "#f0f7ff", border: "1.5px solid #1a73e8", color: "#1a73e8",
+          padding: "6px 16px", borderRadius: "20px", fontSize: "14px", fontWeight: 800,
+          boxShadow: "0 2px 8px rgba(26, 115, 232, 0.15)"
+        }}>
+          {minVal === 0 && maxVal >= 100 ? "전체" : `${minVal}평 ~ ${maxVal >= 100 ? "100평+" : `${maxVal}평`}`}
         </div>
       </div>
 
-      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "16px" }}>
-        <button onClick={() => onFilterChange({ areaMin: null, areaMax: null })} style={{ background: "none", border: "none", color: "#6b7280", fontSize: "14px", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}>
+      {/* 이중 슬라이더 레인지 컨테이너 */}
+      <div style={{ position: "relative", width: "100%", height: "40px", display: "flex", alignItems: "center" }}>
+        {/* 기본 회색 트랙 */}
+        <div style={{ position: "absolute", left: 0, right: 0, height: "6px", backgroundColor: "#e5e7eb", borderRadius: "3px" }} />
+        
+        {/* 활성화 블루 트랙 */}
+        <div style={{
+          position: "absolute",
+          left: `${minPercent}%`,
+          width: `${maxPercent - minPercent}%`,
+          height: "6px",
+          backgroundColor: "#1a73e8",
+          borderRadius: "3px"
+        }} />
+
+        {/* 투명 레인지 인풋 2개 (겹침 배치) */}
+        <input 
+          type="range"
+          min="0"
+          max="100"
+          step="5"
+          value={minVal}
+          onChange={handleMinChange}
+          style={{
+            position: "absolute", width: "100%", pointerEvents: "none", WebkitAppearance: "none", appearance: "none",
+            background: "none", outline: "none", margin: 0, zIndex: 3
+          }}
+          className="dual-slider-thumb-left"
+        />
+        <input 
+          type="range"
+          min="0"
+          max="100"
+          step="5"
+          value={maxVal}
+          onChange={handleMaxChange}
+          style={{
+            position: "absolute", width: "100%", pointerEvents: "none", WebkitAppearance: "none", appearance: "none",
+            background: "none", outline: "none", margin: 0, zIndex: 4
+          }}
+          className="dual-slider-thumb-right"
+        />
+      </div>
+
+      {/* 최소/최대 축 힌트 */}
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", color: "#9ca3af", marginTop: "4px" }}>
+        <span>최소(0평)</span>
+        <span>25평</span>
+        <span>50평</span>
+        <span>75평</span>
+        <span>최대(100평+)</span>
+      </div>
+
+      {/* 조건삭제 */}
+      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "24px" }}>
+        <button onClick={() => onFilterChange({ areaMin: null, areaMax: null })} style={{ background: "none", border: "none", color: "#9ca3af", fontSize: "13px", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}>
           ↻ 조건삭제
         </button>
       </div>

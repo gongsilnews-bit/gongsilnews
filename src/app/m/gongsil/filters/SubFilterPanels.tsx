@@ -104,18 +104,99 @@ export function FloorFilterPanel({ filters, onFilterChange }: Props) {
 }
 
 export function YearFilterPanel({ filters, onFilterChange }: Props) {
-  const isYearActive = (min: number | null, max: number | null) => filters.yearMin === min && filters.yearMax === max;
+  const minVal = filters.yearMin ?? 1990;
+  const maxVal = filters.yearMax ?? 2026;
+
+  const handleMinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = Math.min(Number(e.target.value), maxVal - 1);
+    onFilterChange({ yearMin: value === 1990 ? null : value });
+  };
+
+  const handleMaxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = Math.max(Number(e.target.value), minVal + 1);
+    onFilterChange({ yearMax: value >= 2026 ? null : value });
+  };
+
+  const minPercent = ((minVal - 1990) / (2026 - 1990)) * 100;
+  const maxPercent = ((maxVal - 1990) / (2026 - 1990)) * 100;
+
   return (
-    <div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", marginBottom: "20px" }}>
-        {YEAR_PRESETS.map(p => (
-          <button type="button" key={p.label} onClick={() => onFilterChange({ yearMin: isYearActive(p.min, p.max) ? null : p.min, yearMax: isYearActive(p.min, p.max) ? null : p.max })} style={gridBtnStyle(isYearActive(p.min, p.max))}>
-            {p.label}
-          </button>
-        ))}
+    <div style={{ padding: "10px 0" }}>
+      {/* 실시간 말풍선 라벨 */}
+      <div style={{ display: "flex", justifyContent: "center", marginBottom: "16px" }}>
+        <div style={{
+          backgroundColor: "#f0f7ff", border: "1.5px solid #1a73e8", color: "#1a73e8",
+          padding: "6px 16px", borderRadius: "20px", fontSize: "14px", fontWeight: 800,
+          boxShadow: "0 2px 8px rgba(26, 115, 232, 0.15)"
+        }}>
+          {minVal === 1990 && maxVal === 2026 
+            ? "전체" 
+            : minVal > 1990 && maxVal === 2026 
+            ? `${minVal}년 이후` 
+            : minVal === 1990 && maxVal < 2026 
+            ? `${maxVal}년 이전` 
+            : `${minVal}년 ~ ${maxVal}년`}
+        </div>
       </div>
-      <div style={{ display: "flex", justifyContent: "flex-end" }}>
-        <button type="button" onClick={() => onFilterChange({ yearMin: null, yearMax: null })} style={{ background: "none", border: "none", color: "#6b7280", fontSize: "14px", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}>↻ 조건삭제</button>
+
+      {/* 이중 슬라이더 레인지 컨테이너 */}
+      <div style={{ position: "relative", width: "100%", height: "40px", display: "flex", alignItems: "center" }}>
+        {/* 기본 회색 트랙 */}
+        <div style={{ position: "absolute", left: 0, right: 0, height: "6px", backgroundColor: "#e5e7eb", borderRadius: "3px" }} />
+        
+        {/* 활성화 블루 트랙 */}
+        <div style={{
+          position: "absolute",
+          left: `${minPercent}%`,
+          width: `${maxPercent - minPercent}%`,
+          height: "6px",
+          backgroundColor: "#1a73e8",
+          borderRadius: "3px"
+        }} />
+
+        {/* 투명 레인지 인풋 2개 (겹침 배치) */}
+        <input 
+          type="range"
+          min="1990"
+          max="2026"
+          step="1"
+          value={minVal}
+          onChange={handleMinChange}
+          style={{
+            position: "absolute", width: "100%", pointerEvents: "none", WebkitAppearance: "none", appearance: "none",
+            background: "none", outline: "none", margin: 0, zIndex: 3
+          }}
+          className="dual-slider-thumb-left"
+        />
+        <input 
+          type="range"
+          min="1990"
+          max="2026"
+          step="1"
+          value={maxVal}
+          onChange={handleMaxChange}
+          style={{
+            position: "absolute", width: "100%", pointerEvents: "none", WebkitAppearance: "none", appearance: "none",
+            background: "none", outline: "none", margin: 0, zIndex: 4
+          }}
+          className="dual-slider-thumb-right"
+        />
+      </div>
+
+      {/* 최소/최대 축 힌트 */}
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", color: "#9ca3af", marginTop: "4px" }}>
+        <span>1990년 이전</span>
+        <span>2000년</span>
+        <span>2010년</span>
+        <span>2020년</span>
+        <span>현재(2026년)</span>
+      </div>
+
+      {/* 조건삭제 */}
+      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "24px" }}>
+        <button type="button" onClick={() => onFilterChange({ yearMin: null, yearMax: null })} style={{ background: "none", border: "none", color: "#9ca3af", fontSize: "13px", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}>
+          ↻ 조건삭제
+        </button>
       </div>
     </div>
   );
