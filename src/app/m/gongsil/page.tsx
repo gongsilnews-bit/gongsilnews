@@ -967,7 +967,7 @@ function MobileGongsilContent() {
         )}
 
         {/* 🏢 하단 버튼 영역: 지도 위 공실 + 공실등록 나란히 (activeMode 연동 오렌지/블루 동적 테마 스위칭) */}
-        {mapLoaded && (
+        {mapLoaded && zoomLevel < 9 && (
           <div style={{ position: "fixed", bottom: "calc(76px + env(safe-area-inset-bottom))", left: "50%", transform: "translateX(-50%)", zIndex: 20, display: "flex", gap: "10px", alignItems: "center" }}>
             <button
               onClick={(e) => {
