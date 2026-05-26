@@ -587,7 +587,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     }
 
     // 3) 거래방식 및 통합 가격 필터 적용
-    if (activeCategory === "apart") {
+    if (activeCategory === "apart" || activeCategory === "villa") {
       if (filterTradeTypes.length > 0) {
         list = list.filter((v) => filterTradeTypes.includes(v.trade_type));
       }
@@ -1596,8 +1596,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
             })}
             <div style={{ width: 1, height: 16, background: "#e0e0e0", margin: "0 8px", flexShrink: 0 }}></div>
 
-            {/* Active filter text badges for 'apart' category */}
-            {activeCategory === "apart" && (() => {
+            {/* Active filter text badges for 'apart' and 'villa' categories */}
+            {(activeCategory === "apart" || activeCategory === "villa") && (() => {
               const tags: { label: string; isTheme?: boolean }[] = [];
 
               const formatPriceRange = (min: number | null, max: number | null) => {
@@ -1796,7 +1796,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                   ? getTradeTypeFilterLabel()
                   : f;
 
-              const isApartTradeType = activeCategory === "apart" && f === "거래유형";
+              const isApartTradeType = (activeCategory === "apart" || activeCategory === "villa") && f === "거래유형";
 
               return (
                 <div 
