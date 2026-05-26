@@ -107,6 +107,7 @@ export default function KakaoMapView({
 
     const map = kakaoMapRef.current;
     setZoomLevel(map.getLevel());
+    setMapBounds(map.getBounds()); // 🚀 최초 맵 로드 시 Bounds를 즉각 주입하여 첫 화면 freeze 해결!
 
     // 제한된 범위 지정 (3: 가장 확대된 상태, 14: 전국 범위)
     map.setMinLevel(3);
