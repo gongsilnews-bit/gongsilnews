@@ -1723,7 +1723,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                               style={{
                                 border: "none",
                                 background: "none",
-                                fontSize: "14px",
+                                fontSize: "16px",
                                 color: "#6b7280",
                                 cursor: "pointer",
                                 padding: "4px 8px",
@@ -1742,7 +1742,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                 overflowX: "auto",
                                 flex: 1,
                                 whiteSpace: "nowrap",
-                                padding: "4px 0",
+                                padding: "6px 0",
                               }}
                             >
                               {["거래유형", "면적", "사용승인일", "세대수", "방/욕실수", "방향", "등록자", "중개보수", "테마"].map((tab) => {
@@ -1752,13 +1752,13 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                     key={tab}
                                     onClick={() => scrollToSection(tab)}
                                     style={{
-                                      fontSize: "12px",
+                                      fontSize: "14px",
                                       color: isActive ? "#1a4282" : "#4b5563",
                                       fontWeight: isActive ? "bold" : "normal",
                                       cursor: "pointer",
-                                      padding: "4px 10px",
+                                      padding: "6px 12px",
                                       background: isActive ? "#e8f0fe" : "none",
-                                      borderRadius: "12px",
+                                      borderRadius: "14px",
                                       transition: "all 0.15s",
                                     }}
                                   >
@@ -1776,7 +1776,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                               style={{
                                 border: "none",
                                 background: "none",
-                                fontSize: "14px",
+                                fontSize: "16px",
                                 color: "#6b7280",
                                 cursor: "pointer",
                                 padding: "4px 8px",
@@ -2491,11 +2491,11 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                         background: isThemeSelected ? "#e8f0fe" : "#fff",
                                         color: isThemeSelected ? "#1a4282" : "#333",
                                         fontSize: 12,
-                                        fontWeight: isThemeSelected ? "bold" : "normal",
+                                        fontWeight: "bold",
                                         cursor: "pointer",
                                       }}
                                     >
-                                      {t}
+                                      #{t}
                                     </button>
                                   );
                                 })}
@@ -3066,11 +3066,11 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                   background: isThemeSelected ? "#e8f0fe" : "#fff",
                                   color: isThemeSelected ? "#1a73e8" : "#333",
                                   fontSize: 12,
-                                  fontWeight: isThemeSelected ? "bold" : "normal",
+                                  fontWeight: "bold",
                                   cursor: "pointer",
                                 }}
                               >
-                                {t}
+                                #{t}
                               </button>
                             );
                           })}
