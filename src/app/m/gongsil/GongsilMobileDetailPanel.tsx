@@ -190,21 +190,63 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
                       {detailAddr}
                     </h1>
 
-                    {/* 가격 정보 패널 */}
-                    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                        <span style={{ fontSize: "15px", color: "#64748b", fontWeight: 600 }}>감정평가액</span>
-                        <span style={{ fontSize: "18px", color: "#1a4282", fontWeight: 800 }}>{fmtP(ap)}</span>
-                      </div>
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                        <span style={{ fontSize: "15px", color: "#ef4444", fontWeight: 700 }}>최저입찰가</span>
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                          {discountRate !== 0 && (
-                            <span style={{ fontSize: "13px", fontWeight: 800, color: discountRate > 0 ? "#16a34a" : "#ef4444", background: discountRate > 0 ? "#f0fdf4" : "#fef2f2", padding: "2px 8px", borderRadius: "4px" }}>
-                              {discountRate > 0 ? "▼" : "▲"}{Math.abs(discountRate)}%
+                    {/* 🔨 대표님 기획 지침: 프리미엄 감정가/최저가/일정/종류/유찰횟수 고밀도 대시보드 */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "12px", background: "#f8fafc", padding: "14px 16px", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
+                      {/* Row 1: 감정평가액 & 최저입찰가 */}
+                      <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
+                        <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
+                          <span style={{ fontSize: "13px", color: "#64748b", fontWeight: 600 }}>감정평가액</span>
+                          <span style={{ fontSize: "17px", color: "#1a4282", fontWeight: 800 }}>{fmtP(ap)}</span>
+                        </div>
+                        <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
+                          <span style={{ fontSize: "13px", color: "#64748b", fontWeight: 600 }}>최저입찰가</span>
+                          <span style={{ fontSize: "17px", color: "#ef4444", fontWeight: 800 }}>{lowestBidText}</span>
+                        </div>
+                        {(() => {
+                          const isUp = lo > ap;
+                          const diffRate = ap > 0 ? Math.round((Math.abs(lo - ap) / ap) * 100) : 0;
+                          if (diffRate === 0) return null;
+                          return (
+                            <span style={{ 
+                              fontSize: "12px", 
+                              fontWeight: 800, 
+                              color: isUp ? "#ef4444" : "#16a34a", 
+                              background: isUp ? "#fef2f2" : "#f0fdf4", 
+                              padding: "2px 6px", 
+                              borderRadius: "4px",
+                              border: `1px solid ${isUp ? "#fecaca" : "#bbf7d0"}`
+                            }}>
+                              {isUp ? "▲" : "▼"}{diffRate}%
                             </span>
-                          )}
-                          <span style={{ fontSize: "20px", color: "#ef4444", fontWeight: 800 }}>{lowestBidText}</span>
+                          );
+                        })()}
+                      </div>
+
+                      {/* Divider */}
+                      <div style={{ height: "1px", background: "#e2e8f0" }}></div>
+
+                      {/* Row 2: 입찰일정, 종류, 유찰횟수 */}
+                      <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "14px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                          <span style={{ fontSize: "13px", color: "#64748b", fontWeight: 600 }}>입찰시작</span>
+                          <span style={{ fontSize: "14px", color: "#1e293b", fontWeight: 800 }}>{bidStartText}</span>
+                        </div>
+                        {getAuctionInfo(selectedVacancy).category && (
+                          <span style={{ 
+                            fontSize: "11px", 
+                            color: "#fa5252", 
+                            border: "1px solid #fa5252", 
+                            padding: "1px 6px", 
+                            borderRadius: "4px", 
+                            fontWeight: "bold", 
+                            background: "#fff5f5" 
+                          }}>
+                            {getAuctionInfo(selectedVacancy).category}
+                          </span>
+                        )}
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                          <span style={{ fontSize: "13px", color: "#64748b", fontWeight: 600 }}>유찰</span>
+                          <span style={{ fontSize: "14px", color: "#1e293b", fontWeight: 800 }}>{pbctCnt}회</span>
                         </div>
                       </div>
                     </div>
