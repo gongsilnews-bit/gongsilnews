@@ -91,6 +91,8 @@ function MobileGongsilContent() {
   const [mapBounds, setMapBounds] = useState<any>(null);
   const [isFetchingVacancies, setIsFetchingVacancies] = useState(false);
   const [zoomLevel, setZoomLevel] = useState<number>(7);
+  const [activeMode, setActiveMode] = useState<"공실" | "경매">("공실");
+  const [isAuctionMode, setIsAuctionMode] = useState(false);
   
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
@@ -387,7 +389,8 @@ function MobileGongsilContent() {
 
         // getVacanciesForMap Server Action을 활용한 0.1초 미만 초고속 지도 영역 쿼리 실행
         const res = await getVacanciesForMap({
-          bbox: { swLat, swLng, neLat, neLng }
+          bbox: { swLat, swLng, neLat, neLng },
+          is_auction: activeMode === "경매" // 🚀 경공매 모드일 때 경공매 매물만 초고속 쿼리!
         });
 
         if (res.success && res.data) {
@@ -421,7 +424,7 @@ function MobileGongsilContent() {
     };
 
     fetchBboxVacancies();
-  }, [mapBounds]);
+  }, [mapBounds, activeMode]);
 
   // 💡 최초 진입 시, 만약 URL에 id 파라미터가 있어서 다이렉트 뷰 모드인 경우 1회 강제 단일 상세 로드
   useEffect(() => {
@@ -527,7 +530,13 @@ function MobileGongsilContent() {
     const map = kakaoMapRef.current;
     const currentLevel = map.getLevel();
 
-    if (clustererRef.current) clustererRef.current.clear();
+    // 🚀 모드 전환 시 기존 클러스터러 스타일 동적 갱신
+    if (clustererRef.current) {
+      clustererRef.current.clear();
+      clustererRef.current.setStyles([
+        { width: '56px', height: '56px', background: activeMode === "경매" ? "#ff7a00" : '#1a73e8', color: '#fff', textAlign: 'center', lineHeight: '50px', borderRadius: '50%', fontWeight: 'bold', fontSize: '18px', border: '3px solid #ffffff', boxShadow: activeMode === "경매" ? '0 4px 12px rgba(255,122,0,0.35)' : '0 4px 12px rgba(0,0,0,0.25)' }
+      ]);
+    }
     markersRef.current.forEach((m: any) => m.setMap(null));
     markersRef.current = [];
 
@@ -545,7 +554,7 @@ function MobileGongsilContent() {
         calculator: [10, 30, 50],
         texts: (count: number) => count.toString(),
         styles: [
-          { width: '56px', height: '56px', background: '#1a73e8', color: '#fff', textAlign: 'center', lineHeight: '50px', borderRadius: '50%', fontWeight: 'bold', fontSize: '18px', border: '3px solid #ffffff', boxShadow: '0 4px 12px rgba(0,0,0,0.25)' }
+          { width: '56px', height: '56px', background: activeMode === "경매" ? "#ff7a00" : '#1a73e8', color: '#fff', textAlign: 'center', lineHeight: '50px', borderRadius: '50%', fontWeight: 'bold', fontSize: '18px', border: '3px solid #ffffff', boxShadow: activeMode === "경매" ? '0 4px 12px rgba(255,122,0,0.35)' : '0 4px 12px rgba(0,0,0,0.25)' }
         ]
       });
 
@@ -561,7 +570,7 @@ function MobileGongsilContent() {
     filteredVacancies.forEach((v) => {
       if (!v.lat || !v.lng) return;
       const size = 50;
-      const color = "#1a73e8";
+      const color = activeMode === "경매" ? "#ff7a00" : "#1a73e8";
 
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
         <circle cx="${size/2}" cy="${size/2}" r="${size/2-3}" fill="${color}" stroke="white" stroke-width="3"/>
@@ -588,7 +597,7 @@ function MobileGongsilContent() {
     });
 
     clustererRef.current.addMarkers(markersRef.current);
-  }, [filteredVacancies, mapLoaded, zoomLevel]);
+  }, [filteredVacancies, mapLoaded, zoomLevel, activeMode]);
 
   // 지도 범위 내 공실광고 개수 업데이트 및 지도 변화(이벤트) 연동
   useEffect(() => {
@@ -735,6 +744,62 @@ function MobileGongsilContent() {
       <div style={{ flex: 1, display: "flex", flexDirection: "column", paddingTop: isEmbedded ? "0" : "56px" }}>
         {!isEmbedded && (
           <div style={{ height: "0px", backgroundColor: "#F4F6F8", width: "100%", flexShrink: 0 }} />
+        )}
+
+        {/* 🚀 [대표님 승인안] 실시간 공실 vs 법원 경공매 듀얼 알약 세그먼트 스위치 */}
+        {!isEmbedded && !isDirectView && (
+          <div style={{ padding: "8px 16px", backgroundColor: "#fff", display: "flex", justifyContent: "center", borderBottom: "1px solid #f3f4f6" }}>
+            <div style={{ display: "flex", width: "100%", background: "#f1f5f9", borderRadius: "12px", padding: "4px" }}>
+              <button
+                onClick={() => {
+                  setActiveMode("공실");
+                  setIsAuctionMode(false);
+                  setVacancies([]);
+                  setSelectedVacancy(null);
+                  setSelectedCluster(null);
+                }}
+                style={{
+                  flex: 1,
+                  padding: "10px 0",
+                  borderRadius: "8px",
+                  border: "none",
+                  fontSize: "14px",
+                  fontWeight: 800,
+                  cursor: "pointer",
+                  transition: "all 0.2s ease",
+                  backgroundColor: activeMode === "공실" ? "#1a73e8" : "transparent",
+                  color: activeMode === "공실" ? "#ffffff" : "#64748b",
+                  boxShadow: activeMode === "공실" ? "0 4px 12px rgba(26,115,232,0.25)" : "none"
+                }}
+              >
+                ● 실시간 공실
+              </button>
+              <button
+                onClick={() => {
+                  setActiveMode("경매");
+                  setIsAuctionMode(true);
+                  setVacancies([]);
+                  setSelectedVacancy(null);
+                  setSelectedCluster(null);
+                }}
+                style={{
+                  flex: 1,
+                  padding: "10px 0",
+                  borderRadius: "8px",
+                  border: "none",
+                  fontSize: "14px",
+                  fontWeight: 800,
+                  cursor: "pointer",
+                  transition: "all 0.2s ease",
+                  backgroundColor: activeMode === "경매" ? "#ff7a00" : "transparent",
+                  color: activeMode === "경매" ? "#ffffff" : "#64748b",
+                  boxShadow: activeMode === "경매" ? "0 4px 12px rgba(255,122,0,0.25)" : "none"
+                }}
+              >
+                🔨 법원 경·공매
+              </button>
+            </div>
+          </div>
         )}
 
         {/* 필터 바 */}

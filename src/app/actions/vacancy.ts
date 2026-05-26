@@ -398,6 +398,7 @@ export async function getVacanciesForMap(options?: {
     neLat: number;
     neLng: number;
   };
+  is_auction?: boolean; // 🚀 경공매 모드 스위치 지원을 위한 옵션 정의
 }) {
   const supabase = getAdminClient();
   try {
@@ -407,6 +408,15 @@ export async function getVacanciesForMap(options?: {
       .eq('status', 'ACTIVE')
       .not('lat', 'is', null)
       .not('lng', 'is', null);
+
+    // 🚀 경공매 필터 조건 적용
+    if (options?.is_auction !== undefined) {
+      if (options.is_auction) {
+        query = query.eq('trade_type', '경매');
+      } else {
+        query = query.neq('trade_type', '경매');
+      }
+    }
 
     // 💡 Bbox(지도의 경계면) 범위 조건 적용 (남서/북동 좌표 조건 추가)
     if (options?.bbox) {
