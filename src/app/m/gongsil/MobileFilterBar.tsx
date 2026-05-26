@@ -152,26 +152,17 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
                 ? filters.tradeTypes.join(", ") 
                 : "거래방식"} ▾
             </button>
-            <button onClick={() => setActivePanel(activePanel === "price" ? null : "price")} style={pillStyle(activePanel === "price" || filters.priceMin !== null || filters.priceMax !== null)}>
-              {priceLabel} ▾
-            </button>
-            <button onClick={() => setActivePanel(activePanel === "area" ? null : "area")} style={pillStyle(activePanel === "area" || filters.areaMin !== null || filters.areaMax !== null)}>
-              {areaLabel} ▾
-            </button>
-            <button onClick={() => setActivePanel(activePanel === "floor" ? null : "floor")} style={pillStyle(activePanel === "floor" || filters.floor !== null)}>
-              {filters.floor || "층수"} ▾
-            </button>
-            <button onClick={() => setActivePanel(activePanel === "year" ? null : "year")} style={pillStyle(activePanel === "year" || filters.yearMin !== null || filters.yearMax !== null)}>
-              {yearLabel} ▾
-            </button>
-            <button onClick={() => setActivePanel(activePanel === "owner" ? null : "owner")} style={pillStyle(activePanel === "owner" || filters.ownerRole !== null)}>
-              {ownerLabel} ▾
-            </button>
-            <button onClick={() => setActivePanel(activePanel === "commission" ? null : "commission")} style={pillStyle(activePanel === "commission" || filters.commissionType !== null)}>
-              {commissionLabel} ▾
-            </button>
-            <button onClick={() => setActivePanel(activePanel === "theme" ? null : "theme")} style={pillStyle(activePanel === "theme" || filters.themes.length > 0)}>
-              {themeLabel} ▾
+            <button 
+              onClick={() => setFullFilterOpen(true)} 
+              style={{
+                ...pillStyle(fullFilterOpen || hasActiveFilters),
+                backgroundColor: hasActiveFilters ? "#eef4ff" : "#fff",
+                borderColor: hasActiveFilters ? "#4b89ff" : "#d1d5db",
+                color: hasActiveFilters ? "#4b89ff" : "#374151",
+              }}
+            >
+              🎛️ 가격·조건필터 ▾
+              {hasActiveFilters && <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#ef4444", marginLeft: "2px" }} />}
             </button>
             {/* 오른쪽 패딩 확보 */}
             <div style={{ flexShrink: 0, width: "8px" }} />
