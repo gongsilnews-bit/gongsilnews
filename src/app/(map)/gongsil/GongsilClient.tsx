@@ -244,6 +244,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   const [popoverSearchKeyword, setPopoverSearchKeyword] = useState<string>("");
   const [filterSearchKeyword, setFilterSearchKeyword] = useState<string>("");
   const [activeSection, setActiveSection] = useState<string>("거래유형");
+  const [isFilterCollapsed, setIsFilterCollapsed] = useState<boolean>(false);
 
   const [filterPriceMin, setFilterPriceMin] = useState<number | null>(null);
   const [filterPriceMax, setFilterPriceMax] = useState<number | null>(null);
@@ -1528,9 +1529,19 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                     onClick={() => {
                       if (activeCategory === "apart") {
                         if (activeFilterDropdown === "거래유형") {
-                          scrollToSection(f);
+                          if (isFilterCollapsed) {
+                            setIsFilterCollapsed(false);
+                            setTimeout(() => {
+                              scrollToSection(f);
+                            }, 50);
+                          } else if (activeSection === f) {
+                            setIsFilterCollapsed(true);
+                          } else {
+                            scrollToSection(f);
+                          }
                         } else {
                           setActiveFilterDropdown("거래유형");
+                          setIsFilterCollapsed(false);
                           setTimeout(() => {
                             scrollToSection(f);
                           }, 150);
@@ -1568,7 +1579,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                         border: "1px solid #ccc",
                         borderRadius: f === "거래유형" ? 10 : 4,
                         boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
-                        padding: f === "거래유형" ? 18 : 16,
+                        padding: f === "거래유형" ? (isFilterCollapsed ? "12px 14px 8px 14px" : 18) : 16,
                         zIndex: 300,
                         minWidth: f === "거래유형" ? 436 : 200,
                         animation: "dropdownFadeIn 0.15s ease",
@@ -1714,7 +1725,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                           <div style={{ height: "1px", background: "#e5e7eb", marginBottom: "12px" }} />
 
                           {/* Horizontal Navigation with Left/Right Buttons */}
-                          <div style={{ display: "flex", alignItems: "center", gap: "4px", marginBottom: "12px", position: "relative" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "4px", marginBottom: isFilterCollapsed ? "0px" : "12px", position: "relative" }}>
                             <button
                               onClick={() => {
                                 const nav = document.getElementById("sub-gnb-scroll");
@@ -1750,7 +1761,16 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                 return (
                                   <span
                                     key={tab}
-                                    onClick={() => scrollToSection(tab)}
+                                    onClick={() => {
+                                      if (isActive && !isFilterCollapsed) {
+                                        setIsFilterCollapsed(true);
+                                      } else {
+                                        setIsFilterCollapsed(false);
+                                        setTimeout(() => {
+                                          scrollToSection(tab);
+                                        }, 50);
+                                      }
+                                    }}
                                     style={{
                                       fontSize: "14px",
                                       color: isActive ? "#1a4282" : "#4b5563",
@@ -1787,8 +1807,10 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                             </button>
                           </div>
 
-                           {/* Scrollable area */}
-                          <div
+                          {!isFilterCollapsed && (
+                            <>
+                              {/* Scrollable area */}
+                              <div
                             id="popover-scroll-container"
                             style={{ maxHeight: "420px", overflowY: "auto", paddingRight: "8px", paddingBottom: "10px" }}
                             onScroll={(e) => {
@@ -2559,8 +2581,10 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                               적용하기
                             </button>
                           </div>
-                        </div>
+                        </>
                       )}
+                    </div>
+                  )}
 
                       {f === "거래방식" && (
                         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
