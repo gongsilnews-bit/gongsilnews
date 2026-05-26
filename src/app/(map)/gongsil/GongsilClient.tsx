@@ -1535,6 +1535,96 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
               );
             })}
             <div style={{ width: 1, height: 16, background: "#e0e0e0", margin: "0 8px", flexShrink: 0 }}></div>
+
+            {/* Active filter text badges for 'apart' category */}
+            {activeCategory === "apart" && (() => {
+              const tags: { label: string; isTheme?: boolean }[] = [];
+
+              // 1. 거래유형 & 가격
+              const tradeLabel = getTradeTypeFilterLabel();
+              if (tradeLabel !== "거래유형") {
+                tags.push({ label: tradeLabel });
+              }
+
+              // 2. 면적
+              if (filterAreaMin !== null || filterAreaMax !== null) {
+                tags.push({ label: areaFilterLabel });
+              }
+
+              // 3. 사용승인일
+              if (filterYearMin !== null || filterYearMax !== null) {
+                tags.push({ label: yearFilterLabel });
+              }
+
+              // 4. 세대수
+              if (filterUnitMin !== null || filterUnitMax !== null) {
+                tags.push({ label: unitFilterLabel });
+              }
+
+              // 5. 방/욕실수
+              if (filterRoomCount !== null || filterBathCount !== null) {
+                const roomStr = filterRoomCount ? `${filterRoomCount}룸` : "";
+                const bathStr = filterBathCount ? `${filterBathCount}욕실` : "";
+                tags.push({ label: `방/욕실수: ${[roomStr, bathStr].filter(Boolean).join(", ")}` });
+              }
+
+              // 6. 방향
+              if (filterDirection !== null) {
+                tags.push({ label: `방향: ${filterDirection}` });
+              }
+
+              // 7. 등록자
+              if (filterOwnerRole !== null) {
+                tags.push({ label: `등록자: ${filterOwnerRole}` });
+              }
+
+              // 8. 중개보수
+              if (filterCommissionType !== null) {
+                tags.push({ label: `중개보수: ${filterCommissionType}` });
+              }
+
+              // 9. 테마
+              filterThemes.forEach((t) => {
+                tags.push({ label: t, isTheme: true });
+              });
+
+              return (
+                <div 
+                  style={{ 
+                    display: "flex", 
+                    alignItems: "center", 
+                    gap: "8px", 
+                    fontSize: "13px", 
+                    color: "#475569", 
+                    fontWeight: "bold",
+                    fontFamily: "inherit",
+                    whiteSpace: "nowrap",
+                    overflowX: "auto"
+                  }} 
+                  className="no-scrollbar"
+                >
+                  {tags.map((tag, idx) => (
+                    <React.Fragment key={idx}>
+                      {idx > 0 && <span style={{ color: "#cbd5e1", margin: "0 2px" }}>·</span>}
+                      <span
+                        style={{
+                          color: tag.isTheme ? "#1a73e8" : "#334155",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        {tag.isTheme ? `#${tag.label}` : tag.label}
+                      </span>
+                    </React.Fragment>
+                  ))}
+                  {tags.length === 0 && (
+                    <span style={{ fontSize: 13, color: "#94a3b8", fontWeight: "500", fontStyle: "italic" }}>
+                      전체 매물 조회 중
+                    </span>
+                  )}
+                </div>
+              );
+            })()}
+
             {config.basicFilters.map((f) => {
               const isFilterActive =
                 (f === "거래방식" && filterTradeTypes.length > 0) ||
