@@ -1582,14 +1582,15 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                             
                             /* Custom slim scrollbar */
                             #popover-scroll-container::-webkit-scrollbar {
-                              width: 4px;
+                              width: 10px;
                             }
                             #popover-scroll-container::-webkit-scrollbar-track {
-                              background: transparent;
+                              background: #f1f5f9;
+                              border-radius: 5px;
                             }
                             #popover-scroll-container::-webkit-scrollbar-thumb {
                               background: #cbd5e1;
-                              border-radius: 2px;
+                              border-radius: 5px;
                             }
                             #popover-scroll-container::-webkit-scrollbar-thumb:hover {
                               background: #94a3b8;
@@ -2176,7 +2177,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                 transition: "all 0.2s ease-in-out",
                               }}
                             >
-                              <div style={{ fontSize: "14px", color: "#374151", marginBottom: "10px", fontWeight: "bold" }}>세대수</div>
+                              <div style={{ fontSize: "16px", color: "#374151", marginBottom: "10px", fontWeight: "bold" }}>세대수</div>
                               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
                                 <input
                                   type="number"
@@ -2191,10 +2192,10 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                     padding: "6px 8px",
                                     border: "1px solid #ccc",
                                     borderRadius: 4,
-                                    fontSize: 12,
+                                    fontSize: 14,
                                   }}
                                 />
-                                <span>~</span>
+                                <span style={{ fontSize: 14 }}>~</span>
                                 <input
                                   type="number"
                                   placeholder="최대(세대)"
@@ -2208,7 +2209,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                     padding: "6px 8px",
                                     border: "1px solid #ccc",
                                     borderRadius: 4,
-                                    fontSize: 12,
+                                    fontSize: 14,
                                   }}
                                 />
                               </div>
@@ -2233,7 +2234,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                       border: "1px solid #eee",
                                       borderRadius: 4,
                                       background: "#ffffff",
-                                      fontSize: 11,
+                                      fontSize: 13,
                                       cursor: "pointer",
                                     }}
                                   >
