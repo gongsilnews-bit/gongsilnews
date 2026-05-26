@@ -133,6 +133,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   const [selectedRegion, setSelectedRegion] = useState<{ sido: string; gugun: string; dong: string } | null>(null);
   const [mapCenterRegion, setMapCenterRegion] = useState<{ sido: string; gugun: string; dong: string } | null>(null);
   const [visibleCount, setVisibleCount] = useState(30);
+  const [isFetchingVacancies, setIsFetchingVacancies] = useState(false);
 
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
@@ -164,6 +165,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     if (!mapBounds) return;
 
     const fetchBboxVacancies = async () => {
+      setIsFetchingVacancies(true);
       try {
         const sw = mapBounds.getSouthWest();
         const ne = mapBounds.getNorthEast();
@@ -189,6 +191,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
         }
       } catch (err) {
         console.error("Failed to fetch bbox vacancies:", err);
+      } finally {
+        setIsFetchingVacancies(false);
       }
     };
 
@@ -1927,6 +1931,68 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
           activeFilterDropdown={activeFilterDropdown}
           dbVacancies={dbVacancies}
         />
+
+        {/* 💡 실시간 공실 데이터 로딩 인디케이터 (Glassmorphism Indicator) */}
+        {isFetchingVacancies && (
+          <div
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              zIndex: 10000,
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              background: "rgba(255, 255, 255, 0.85)",
+              backdropFilter: "blur(12px)",
+              WebkitBackdropFilter: "blur(12px)",
+              padding: "14px 24px",
+              borderRadius: 30,
+              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12)",
+              border: "1px solid rgba(255, 255, 255, 0.3)",
+              pointerEvents: "none", // 지도 조작 방해 금지
+              animation: "fadeIn 0.2s ease-out",
+            }}
+          >
+            {/* 🌀 애니메이션 스타일 주입 */}
+            <style>{`
+              @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+              }
+              @keyframes fadeIn {
+                from { opacity: 0; transform: translate(-50%, -45%); }
+                to { opacity: 1; transform: translate(-50%, -50%); }
+              }
+            `}</style>
+
+            {/* 🌀 스피너 서클 */}
+            <div
+              style={{
+                width: 18,
+                height: 18,
+                border: "3px solid rgba(26, 115, 232, 0.15)",
+                borderTop: "3px solid #1a73e8",
+                borderRadius: "50%",
+                animation: "spin 0.8s linear infinite",
+              }}
+            />
+
+            {/* 📝 로딩 텍스트 */}
+            <span
+              style={{
+                fontSize: 13,
+                fontWeight: 700,
+                color: "#2c3e50",
+                letterSpacing: "-0.3px",
+                fontFamily: "'Pretendard', sans-serif",
+              }}
+            >
+              공실 정보를 안전하게 불러오고 있습니다...
+            </span>
+          </div>
+        )}
       </main>
 
       {/* 갤러리 풀스크린 모달 */}
