@@ -74,12 +74,55 @@ export function useVacancyFilters(initialVacancies: any[]) {
       // 1. 공실광고 유형 - 아무것도 선택하지 않으면 아무것도 노출하지 않습니다. (대표님 지침)
       if (filters.propertyTypes.length === 0) return false;
       
-      let isPropMatch = filters.propertyTypes.includes(v.property_type);
-      
-      // 🚀 [대표님 지침] 원룸/투룸 초강력 매칭 예외 보정 장치
-      if (!isPropMatch) {
-        if (v.property_type === "원룸·투룸(풀옵션)") {
-          isPropMatch = filters.propertyTypes.includes("원룸") || filters.propertyTypes.includes("투룸");
+      let isPropMatch = false;
+
+      if (v.trade_type === "경매") {
+        // 🚀 [대표님 지침] 법원 경공매 모드 전용 8대 카테고리 고성능 해석 엔진!
+        const meta = v.metadata || {};
+        const mcls = meta.cltrUsgMclsCtgrNm || "";
+        const scls = meta.cltrUsgSclsCtgrNm || "";
+        
+        isPropMatch = filters.propertyTypes.some((pill) => {
+          if (pill === "아파트") return scls === "아파트";
+          if (pill === "단독/다가구") return scls === "단독주택" || scls === "다가구주택";
+          if (pill === "빌라/주택")
+            return mcls === "주거용건물" && scls !== "아파트" && scls !== "단독주택" && scls !== "다가구주택";
+          if (pill === "상가/점포")
+            return mcls.includes("상업") || scls.includes("상가") || scls.includes("점포") || scls.includes("판매");
+          if (pill === "사무실/지산")
+            return (
+              scls.includes("사무") ||
+              mcls.includes("업무") ||
+              scls.includes("오피스텔") ||
+              scls.includes("아파트형") ||
+              scls.includes("지식산업")
+            );
+          if (pill === "빌딩/근생")
+            return (
+              mcls.includes("근린생활") ||
+              scls.includes("상가주택") ||
+              scls.includes("빌딩") ||
+              mcls.includes("숙박") ||
+              mcls.includes("의료")
+            );
+          if (pill === "공장/창고")
+            return (
+              (scls.includes("공장") || scls.includes("창고") || scls.includes("제조") || mcls.includes("산업")) &&
+              !scls.includes("아파트형") &&
+              !scls.includes("지식산업")
+            );
+          if (pill === "토지") return mcls === "토지";
+          return false;
+        });
+      } else {
+        // 일반 공실 매물 필터링
+        isPropMatch = filters.propertyTypes.includes(v.property_type);
+        
+        // 🚀 [대표님 지침] 원룸/투룸 초강력 매칭 예외 보정 장치
+        if (!isPropMatch) {
+          if (v.property_type === "원룸·투룸(풀옵션)") {
+            isPropMatch = filters.propertyTypes.includes("원룸") || filters.propertyTypes.includes("투룸");
+          }
         }
       }
       

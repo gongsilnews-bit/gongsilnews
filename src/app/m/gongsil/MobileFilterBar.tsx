@@ -18,17 +18,24 @@ interface MobileFilterBarProps {
   kakaoMapRef: React.MutableRefObject<any>;
   locLabel: string;
   setLocLabel: React.Dispatch<React.SetStateAction<string>>;
+  activeMode?: "공실" | "경매";
 }
 
-const PROPERTY_TYPES = [
-  { group: "주거", items: ["아파트", "빌라/연립", "오피스텔", "원룸", "투룸", "단독/다가구", "전원주택", "상가주택", "재건축", "재개발"] },
-  { group: "상가·업무·토지", items: ["상가", "사무실", "토지", "건물", "공장/창고", "지식산업센터"] },
-];
 const TRADE_TYPES = ["매매", "전세", "월세", "단기"];
 
-export default function MobileFilterBar({ vacancies, filteredCount, filters, onFilterChange, onLocationMove, onShowList, kakaoMapRef, locLabel, setLocLabel }: MobileFilterBarProps) {
+export default function MobileFilterBar({ vacancies, filteredCount, filters, onFilterChange, onLocationMove, onShowList, kakaoMapRef, locLabel, setLocLabel, activeMode }: MobileFilterBarProps) {
   const [activePanel, setActivePanel] = useState<string | null>(null);
   const [fullFilterOpen, setFullFilterOpen] = useState(false);
+
+  // 🚀 [대표님 지침] 법원 경공매 모드 진입 시 PC와 똑같은 8대 카테고리 구성으로 지능형 전격 치환!
+  const PROPERTY_TYPES = activeMode === "경매" ? [
+    { group: "주거", items: ["아파트", "단독/다가구", "빌라/주택"] },
+    { group: "상업·업무", items: ["상가/점포", "사무실/지산", "빌딩/근생", "공장/창고"] },
+    { group: "토지", items: ["토지"] }
+  ] : [
+    { group: "주거", items: ["아파트", "빌라/연립", "오피스텔", "원룸", "투룸", "단독/다가구", "전원주택", "상가주택", "재건축", "재개발"] },
+    { group: "상가·업무·토지", items: ["상가", "사무실", "토지", "건물", "공장/창고", "지식산업센터"] },
+  ];
 
   // Text search
   const [searchOpen, setSearchOpen] = useState(false);
@@ -153,13 +160,15 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
                 ? "전체유형" 
                 : filters.propertyTypes.length > 0 
                 ? filters.propertyTypes.slice(0,2).join(", ") + (filters.propertyTypes.length > 2 ? ` +${filters.propertyTypes.length-2}` : "") 
-                : "공실광고유형"} ▾
+                : activeMode === "경매" ? "경공매유형" : "공실광고유형"} ▾
             </button>
-            <button onClick={() => setActivePanel(activePanel === "trade" ? null : "trade")} style={pillStyle(activePanel === "trade" || filters.tradeTypes.length > 0)}>
-              {filters.tradeTypes.length === TRADE_TYPES.length || filters.tradeTypes.length === 0
-                ? "전체거래" 
-                : filters.tradeTypes.join(", ")} ▾
-            </button>
+            {activeMode !== "경매" && (
+              <button onClick={() => setActivePanel(activePanel === "trade" ? null : "trade")} style={pillStyle(activePanel === "trade" || filters.tradeTypes.length > 0)}>
+                {filters.tradeTypes.length === TRADE_TYPES.length || filters.tradeTypes.length === 0
+                  ? "전체거래" 
+                  : filters.tradeTypes.join(", ")} ▾
+              </button>
+            )}
             <button 
               onClick={() => setFullFilterOpen(true)} 
               style={{

@@ -789,6 +789,8 @@ function MobileGongsilContent() {
                   setVacancies([]);
                   setSelectedVacancy(null);
                   setSelectedCluster(null);
+                  // 🚀 [대표님 지침] 공실 전환 시 필터 리셋
+                  updateFilter({ propertyTypes: [] });
                 }}
                 style={{
                   flex: 1,
@@ -813,6 +815,8 @@ function MobileGongsilContent() {
                   setVacancies([]);
                   setSelectedVacancy(null);
                   setSelectedCluster(null);
+                  // 🚀 [대표님 지침] 경매 전환 시 필터 리셋
+                  updateFilter({ propertyTypes: [] });
                 }}
                 style={{
                   flex: 1,
@@ -856,6 +860,7 @@ function MobileGongsilContent() {
             kakaoMapRef={kakaoMapRef}
             locLabel={locLabel}
             setLocLabel={setLocLabel}
+            activeMode={activeMode}
           />
         )}
 
