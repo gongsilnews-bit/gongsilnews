@@ -178,18 +178,37 @@ export default function MapSearchBar({ onSearchCoord, onRegionSelect, mapCenterR
   };
 
   const [position, setPosition] = useState({ x: 20, y: 15 });
+  const [hasBeenDragged, setHasBeenDragged] = useState(false);
   const isDragging = useRef(false);
   const dragStartOffset = useRef({ x: 0, y: 0 });
   const [isDragActive, setIsDragActive] = useState(false);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if ((e.target as Element).closest('.wish-select') || (e.target as Element).closest('.region-close-btn')) return;
-    isDragging.current = true;
-    setIsDragActive(true);
-    dragStartOffset.current = {
-      x: e.clientX - position.x,
-      y: e.clientY - position.y
-    };
+    
+    const el = e.currentTarget.parentElement;
+    if (el && !hasBeenDragged) {
+      const rect = el.getBoundingClientRect();
+      const parentRect = el.parentElement?.getBoundingClientRect();
+      const currentX = parentRect ? (rect.left - parentRect.left) : rect.left;
+      const currentY = parentRect ? (rect.top - parentRect.top) : rect.top;
+      setPosition({ x: currentX, y: currentY });
+      setHasBeenDragged(true);
+      
+      isDragging.current = true;
+      setIsDragActive(true);
+      dragStartOffset.current = {
+        x: e.clientX - currentX,
+        y: e.clientY - currentY
+      };
+    } else {
+      isDragging.current = true;
+      setIsDragActive(true);
+      dragStartOffset.current = {
+        x: e.clientX - position.x,
+        y: e.clientY - position.y
+      };
+    }
     document.body.style.userSelect = 'none';
   };
 
@@ -212,10 +231,19 @@ export default function MapSearchBar({ onSearchCoord, onRegionSelect, mapCenterR
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
     };
-  }, []);
+  }, [hasBeenDragged, position]);
 
   return (
-    <div style={{ position: "absolute", top: position.y, left: position.x, zIndex: 9, display: "flex", alignItems: "center", gap: 8 }}>
+    <div style={{
+      position: "absolute",
+      top: hasBeenDragged ? position.y : 15,
+      left: hasBeenDragged ? position.x : "50%",
+      transform: hasBeenDragged ? "none" : "translateX(-50%)",
+      zIndex: 9,
+      display: "flex",
+      alignItems: "center",
+      gap: 8
+    }}>
       <style>{`
         #wishFloatingFilter { display: flex; background: #fff; padding: 4px 10px; border-radius: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border: 1px solid #ddd; align-items: center; gap: 6px; font-size: 12px; color: #333; transition: box-shadow 0.2s; cursor: ${isDragActive ? 'grabbing' : 'grab'}; }
         #wishFloatingFilter:hover { box-shadow: 0 6px 15px rgba(0,0,0,0.15); }
