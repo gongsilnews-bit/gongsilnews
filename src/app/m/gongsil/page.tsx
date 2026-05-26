@@ -1365,56 +1365,69 @@ function MobileGongsilContent() {
             <div style={{ padding: "20px 16px", background: "#fff" }}>
               {selectedVacancy.trade_type === "경매" ? (
                 // 🔨 법원 경공매 모바일 명품 헤더 뷰 (1번째 스크린샷 완벽 재현)
-                <div style={{ borderBottom: "1px solid #f3f4f6" }}>
-                  {/* 뱃지 & 신고 */}
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                      <span style={{ fontSize: "12px", fontWeight: 800, color: "#ef4444", border: "1px solid #ef4444", padding: "2px 8px", borderRadius: "4px" }}>
-                        {getAuctionInfo(selectedVacancy).category || "부동산"} 공매
-                      </span>
-                      {selectedVacancy.vacancy_no && (
-                        <span style={{ fontSize: "13px", color: "#9ca3af", fontWeight: 500 }}>
-                          {selectedVacancy.vacancy_no}
-                        </span>
-                      )}
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                      <span style={{ fontSize: "12px", color: "#ef4444", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: "2px" }}>
-                        <span style={{ display: "inline-block", width: "5px", height: "5px", borderRadius: "50%", backgroundColor: "#ef4444" }}></span>
-                        허위공실광고신고
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* 굵은 주소 명칭 */}
-                  <h1 style={{ fontSize: "20px", fontWeight: 800, color: "#111827", marginBottom: "12px", lineHeight: 1.4, letterSpacing: "-0.5px" }}>
-                    {detailAddr}
-                  </h1>
-
-                  {/* 감정가 / 최저입찰가 / 유찰 정보 그리드 */}
+                <div style={{ borderBottom: "1px solid #f3f4f6", paddingBottom: "16px" }}>
                   {(() => {
                     const meta = selectedVacancy.metadata || {};
-                    const dps = selectedVacancy.deposit_price || 0;
-                    const trp = selectedVacancy.trade_price || 0;
-                    const pbctBegnDtm = meta.pbctBegnDtm ? meta.pbctBegnDtm.slice(0, 10) : "-";
-                    const ap = meta.appraisal_price || parseInt(meta.apslEvlAmt || "0", 10) || trp || 0;
-                    const lo = meta.lowest_bid_price || parseInt(meta.lowstBidPrcIndctCont || "0", 10) || dps || 0;
-                    const discountRate = ap > 0 ? Math.round(((ap - lo) / ap) * 100) : 0;
+                    const cltrMngNo = meta.cltrMngNo || meta.cltrMngNoIndctCont || selectedVacancy.vacancy_no || "";
+                    const ap = meta.appraisal_price || parseInt(meta.apslEvlAmt || "0", 10) || 0;
+                    const lo = meta.lowest_bid_price || parseInt(meta.lowstBidPrcIndctCont || "0", 10) || 0;
                     const pbctCnt = meta.pbctCnt || meta.pbct_cnt || "0";
+                    const discountRate = ap > 0 ? Math.round(((ap - lo) / ap) * 100) : 0;
+                    const bidStartDate = meta.bid_start_date || meta.pblctBgnDtm || meta.pbctBegnDtm || "";
+                    const bidStartText = bidStartDate ? bidStartDate.slice(0, 10) : "-";
+
+                    const fmtP = (v: number) => {
+                      if (!v) return "-";
+                      if (v >= 100000000) {
+                        const e = Math.floor(v / 100000000);
+                        const m = Math.round((v % 100000000) / 10000);
+                        return m > 0 ? `${e}억 ${m.toLocaleString()}만` : `${e}억`;
+                      }
+                      return `${Math.round(v / 10000).toLocaleString()}만`;
+                    };
+
+                    const lowestBidText = meta.lowstBidPrcIndctCont === "비공개" ? "비공개" : lo > 0 ? fmtP(lo) : "-";
 
                     return (
                       <>
-                        <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginBottom: "12px" }}>
+                        {/* 뱃지 & 신고 */}
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
                           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                            <span style={{ fontSize: "13px", color: "#64748b", fontWeight: 500, width: "65px" }}>감정가</span>
-                            <span style={{ fontSize: "18px", fontWeight: 800, color: "#1a73e8" }}>{formatAmount(trp)}</span>
+                            <span style={{ fontSize: "12px", fontWeight: 800, color: "#ef4444", border: "1px solid #ef4444", padding: "2px 8px", borderRadius: "4px", background: "#fff5f5" }}>
+                              {getAuctionInfo(selectedVacancy).category || "부동산"} 공매
+                            </span>
+                            {cltrMngNo && (
+                              <span style={{ fontSize: "13px", color: "#9ca3af", fontWeight: 500 }}>
+                                {cltrMngNo}
+                              </span>
+                            )}
                           </div>
-                          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                            <span style={{ fontSize: "13px", color: "#64748b", fontWeight: 500, width: "65px" }}>최저입찰가</span>
-                            <span style={{ fontSize: "18px", fontWeight: 800, color: "#ef4444" }}>{formatAmount(dps)}</span>
+                          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                            <span style={{ fontSize: "12px", color: "#ef4444", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: "2px" }}>
+                              <span style={{ display: "inline-block", width: "5px", height: "5px", borderRadius: "50%", backgroundColor: "#ef4444" }}></span>
+                              허위공실광고신고
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* 굵은 주소 명칭 */}
+                        <h1 style={{ fontSize: "20px", fontWeight: 800, color: "#111827", marginBottom: "12px", lineHeight: 1.4, letterSpacing: "-0.5px" }}>
+                          {detailAddr}
+                        </h1>
+
+                        {/* 감정가 / 최저입찰가 / 유찰 정보 그리드 */}
+                        <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginBottom: "12px" }}>
+                          <div style={{ display: "flex", alignItems: "baseline", gap: "8px", flexWrap: "wrap" }}>
+                            <span style={{ fontSize: "13px", color: "#64748b", fontWeight: 500, width: "65px" }}>감정가</span>
+                            <span style={{ fontSize: "18px", fontWeight: 800, color: "#1a73e8" }}>{fmtP(ap)}</span>
+                            
+                            <span style={{ fontSize: "13px", color: "#64748b", fontWeight: 500, width: "65px", marginLeft: "12px" }}>최저입찰가</span>
+                            <span style={{ fontSize: "18px", fontWeight: 800, color: "#ef4444" }}>{lowestBidText}</span>
+
                             <span style={{ fontSize: "13px", color: "#64748b", fontWeight: 500, marginLeft: "12px" }}>유찰</span>
                             <span style={{ fontSize: "15px", fontWeight: 800, color: "#111827" }}>{pbctCnt}회</span>
                           </div>
+
                           <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "4px" }}>
                             {discountRate !== 0 && (
                               <span style={{ fontSize: "14px", fontWeight: 900, color: discountRate > 0 ? "#16a34a" : "#dc2626", marginRight: "8px" }}>
@@ -1422,13 +1435,13 @@ function MobileGongsilContent() {
                               </span>
                             )}
                             <span style={{ fontSize: "13px", color: "#64748b", fontWeight: 500 }}>입찰시작</span>
-                            <span style={{ fontSize: "14px", color: "#111827", fontWeight: 700 }}>{pbctBegnDtm}</span>
+                            <span style={{ fontSize: "14px", color: "#111827", fontWeight: 700 }}>{bidStartText}</span>
                           </div>
                         </div>
 
                         {/* 아파트 · 면적: XX㎡ */}
                         <div style={{ fontSize: "13px", color: "#64748b", fontWeight: 500 }}>
-                          {getAuctionInfo(selectedVacancy).category || "부동산"} · 면적: {selectedVacancy.exclusive_m2 ? `${selectedVacancy.exclusive_m2}㎡` : "-"}
+                          {getAuctionInfo(selectedVacancy).category || "부동산"} · 면적: {getAuctionInfo(selectedVacancy).area || (selectedVacancy.exclusive_m2 ? `${selectedVacancy.exclusive_m2}㎡` : "-")}
                         </div>
                       </>
                     );
