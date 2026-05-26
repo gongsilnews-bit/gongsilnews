@@ -145,11 +145,15 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
       {/* ═══ 필터 바 ═══ */}
       <div style={{ display: "flex", alignItems: "center", background: "#fff", borderBottom: "1px solid #e5e7eb", padding: "8px 0 8px 0", flexShrink: 0, width: "100%" }}>
         {/* ≡ 통합필터 버튼 */}
-        <button onClick={() => setFullFilterOpen(true)} style={{ flexShrink: 0, width: "40px", display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", cursor: "pointer", position: "relative" }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#374151" strokeWidth="2.2" strokeLinecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="8" cy="6" r="2" fill="#374151" stroke="#fff" strokeWidth="1.5"/><circle cx="16" cy="12" r="2" fill="#374151" stroke="#fff" strokeWidth="1.5"/><circle cx="10" cy="18" r="2" fill="#374151" stroke="#fff" strokeWidth="1.5"/></svg>
-          {hasActiveFilters && <div style={{ position: "absolute", top: 6, right: 6, width: 7, height: 7, borderRadius: "50%", background: "#ef4444" }} />}
-        </button>
-        <div style={{ width: 1, height: 20, background: "#e5e7eb", flexShrink: 0 }} />
+        {activeMode !== "경매" && (
+          <>
+            <button onClick={() => setFullFilterOpen(true)} style={{ flexShrink: 0, width: "40px", display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", cursor: "pointer", position: "relative" }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#374151" strokeWidth="2.2" strokeLinecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="8" cy="6" r="2" fill="#374151" stroke="#fff" strokeWidth="1.5"/><circle cx="16" cy="12" r="2" fill="#374151" stroke="#fff" strokeWidth="1.5"/><circle cx="10" cy="18" r="2" fill="#374151" stroke="#fff" strokeWidth="1.5"/></svg>
+              {hasActiveFilters && <div style={{ position: "absolute", top: 6, right: 6, width: 7, height: 7, borderRadius: "50%", background: "#ef4444" }} />}
+            </button>
+            <div style={{ width: 1, height: 20, background: "#e5e7eb", flexShrink: 0 }} />
+          </>
+        )}
 
         {/* 수평 스크롤 필 버튼들 */}
         <div style={{ position: "relative", flex: 1, minWidth: 0, overflow: "hidden" }}>
@@ -169,18 +173,20 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
                   : filters.tradeTypes.join(", ")} ▾
               </button>
             )}
-            <button 
-              onClick={() => setFullFilterOpen(true)} 
-              style={{
-                ...pillStyle(fullFilterOpen || hasActiveFilters),
-                backgroundColor: hasActiveFilters ? "#eef4ff" : "#fff",
-                borderColor: hasActiveFilters ? "#4b89ff" : "#d1d5db",
-                color: hasActiveFilters ? "#4b89ff" : "#374151",
-              }}
-            >
-              🎛️ 가격·조건필터 ▾
-              {hasActiveFilters && <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#ef4444", marginLeft: "2px" }} />}
-            </button>
+            {activeMode !== "경매" && (
+              <button 
+                onClick={() => setFullFilterOpen(true)} 
+                style={{
+                  ...pillStyle(fullFilterOpen || hasActiveFilters),
+                  backgroundColor: hasActiveFilters ? "#eef4ff" : "#fff",
+                  borderColor: hasActiveFilters ? "#4b89ff" : "#d1d5db",
+                  color: hasActiveFilters ? "#4b89ff" : "#374151",
+                }}
+              >
+                🎛️ 가격·조건필터 ▾
+                {hasActiveFilters && <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#ef4444", marginLeft: "2px" }} />}
+              </button>
+            )}
             {/* 오른쪽 패딩 확보 */}
             <div style={{ flexShrink: 0, width: "8px" }} />
           </div>
