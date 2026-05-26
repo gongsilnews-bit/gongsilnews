@@ -237,8 +237,15 @@ export default function GongsilSidebar({
               justifyContent: "center",
             }}
           >
-            <span style={{ fontSize: 40, marginBottom: 16 }}>🔍</span>
-            <div style={{ fontSize: 15, fontWeight: 800, color: "#1e293b", marginBottom: 8 }}>지도를 조금만 더 확대해 주세요</div>
+            <div style={{ marginBottom: 20 }}>
+              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                <line x1="11" y1="8" x2="11" y2="14"></line>
+                <line x1="8" y1="11" x2="14" y2="11"></line>
+              </svg>
+            </div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: "#1e293b", marginBottom: 8 }}>지도를 조금만 더 확대해 주세요</div>
             <div style={{ fontSize: 13, color: "#64748b", lineHeight: 1.5 }}>
               지도를 조금만 더 확대하시면 해당 지역의
               <br />

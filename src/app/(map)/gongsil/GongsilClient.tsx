@@ -1932,6 +1932,52 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
           dbVacancies={dbVacancies}
         />
 
+        {/* 💡 지도가 너무 줌아웃되었을 때 뜨는 "줌인/확대안내" 오버레이 바 */}
+        {zoomLevel >= 9 && activeCategory !== "wish" && (
+          <div
+            style={{
+              position: "absolute",
+              bottom: "40px",
+              left: "50%",
+              transform: "translateX(-50%)",
+              zIndex: 1000,
+              background: "rgba(30, 41, 59, 0.85)", // 세련된 다크 블루그레이 반투명
+              backdropFilter: "blur(8px)",
+              WebkitBackdropFilter: "blur(8px)",
+              padding: "12px 32px",
+              borderRadius: "30px",
+              boxShadow: "0 10px 25px rgba(0, 0, 0, 0.2)",
+              border: "1px solid rgba(255, 255, 255, 0.1)",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              pointerEvents: "none", // 지도 조작 방해 금지
+              animation: "pulseGlow 2s infinite ease-in-out",
+            }}
+          >
+            <style>{`
+              @keyframes pulseGlow {
+                0% { opacity: 0.9; transform: translateX(-50%) scale(1); }
+                50% { opacity: 1; transform: translateX(-50%) scale(1.02); }
+                100% { opacity: 0.9; transform: translateX(-50%) scale(1); }
+              }
+            `}</style>
+            
+            <span style={{ fontSize: 16 }}>🔍</span>
+            <span
+              style={{
+                fontSize: 14,
+                fontWeight: 700,
+                color: "#ffffff",
+                letterSpacing: "-0.5px",
+                fontFamily: "'Pretendard', sans-serif",
+              }}
+            >
+              상세 매물 확인을 위해 지도를 확대해 주세요
+            </span>
+          </div>
+        )}
+
         {/* 💡 실시간 공실 데이터 로딩 인디케이터 (Glassmorphism Indicator) */}
         {isFetchingVacancies && (
           <div
