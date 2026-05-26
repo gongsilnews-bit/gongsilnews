@@ -683,7 +683,7 @@ export default function GongsilDetailPanel({
                     <div style={{ display: "flex", alignItems: "baseline", gap: 16, flexWrap: "wrap" }}>
                       <div>
                         <span style={{ fontSize: 13, color: "#888" }}>감정가 </span>
-                        <span style={{ fontWeight: 800, fontSize: 20, color: "#1f5edb" }}>{fmtP(ap)}</span>
+                        <span style={{ fontWeight: 800, fontSize: 20, color: isAuctionMode ? "#1a4282" : "#1f5edb" }}>{fmtP(ap)}</span>
                       </div>
                       <div>
                         <span style={{ fontSize: 13, color: "#888" }}>최저입찰가 </span>
@@ -720,7 +720,7 @@ export default function GongsilDetailPanel({
                 );
               })()
             ) : (
-              <h1 style={{ fontSize: 26, fontWeight: 800, color: "#1f5edb", margin: 0 }}>{getPriceText(prop)}</h1>
+              <h1 style={{ fontSize: 26, fontWeight: 800, color: isAuctionMode ? "#1a4282" : "#1f5edb", margin: 0 }}>{getPriceText(prop)}</h1>
             )}
             <div style={{ display: "flex", alignItems: "center", gap: 6, position: "relative" }}>
               <button
@@ -952,8 +952,8 @@ export default function GongsilDetailPanel({
                     fontSize: 14,
                     fontWeight: "bold",
                     cursor: "pointer",
-                    color: activeDetailTab === tab.key ? "#1a73e8" : "#888",
-                    borderBottom: activeDetailTab === tab.key ? "2px solid #1a73e8" : "2px solid transparent",
+                    color: activeDetailTab === tab.key ? (isAuctionMode ? "#1a4282" : "#1a73e8") : "#888",
+                    borderBottom: activeDetailTab === tab.key ? (isAuctionMode ? "2px solid #1a4282" : "2px solid #1a73e8") : "2px solid transparent",
                   }}
                 >
                   {tab.label}
@@ -994,7 +994,7 @@ export default function GongsilDetailPanel({
                 <div style={{ fontSize: 13, color: "#444", background: "#f4f6fa", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>용도구분</div>
                 <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.property_type || "-"}</div>
                 <div style={{ fontSize: 13, color: "#444", background: "#f4f6fa", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>감정평가액</div>
-                <div style={{ fontSize: 15, color: "#1a73e8", fontWeight: "800", padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{formatAmount(prop.trade_type === "경매" ? prop.deposit * 10000 : prop.deposit)}</div>
+                <div style={{ fontSize: 15, color: isAuctionMode ? "#1a4282" : "#1a73e8", fontWeight: "800", padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{formatAmount(prop.trade_type === "경매" ? prop.deposit * 10000 : prop.deposit)}</div>
                 <div style={{ fontSize: 13, color: "#444", background: "#f4f6fa", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>면적</div>
                 <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.exclusive_m2 ? `${prop.exclusive_m2}m² (${Math.round(prop.exclusive_m2 / 3.3)}평)` : "-"}</div>
                 <div style={{ fontSize: 13, color: "#444", background: "#f4f6fa", fontWeight: "bold", display: "flex", alignItems: "flex-start", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>입찰 및 설명</div>
@@ -2131,7 +2131,7 @@ export default function GongsilDetailPanel({
           zIndex: 10,
         }}
       >
-        <span style={{ fontSize: 18, fontWeight: "bold", color: prop.trade_type === "경매" ? "#1a73e8" : "#111" }}>
+        <span style={{ fontSize: 18, fontWeight: "bold", color: prop.trade_type === "경매" ? (isAuctionMode ? "#1a4282" : "#1a73e8") : "#111" }}>
           {prop.trade_type === "경매" ? `감정가 ${formatAmount(prop.deposit * 10000)}` : getPriceText(prop)}
         </span>
         {prop.trade_type === "경매" ? (

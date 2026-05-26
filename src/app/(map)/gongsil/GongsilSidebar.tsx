@@ -190,13 +190,13 @@ export default function GongsilSidebar({
             padding: "15px 20px",
             fontWeight: 800,
             fontSize: 15,
-            color: isAuctionMode ? "#1a73e8" : "#111",
+            color: isAuctionMode ? "#1a4282" : "#111",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            borderBottom: isAuctionMode ? "2px solid #1a73e8" : "1px solid #eee",
+            borderBottom: isAuctionMode ? "2px solid #1a4282" : "1px solid #eee",
             flexShrink: 0,
-            background: isAuctionMode ? "#eaf4ff" : "#fff",
+            background: isAuctionMode ? "#e3ecf5" : "#fff",
           }}
         >
           <span>
@@ -304,8 +304,8 @@ export default function GongsilSidebar({
                   cursor: "pointer",
                   transition: "background 0.2s, border-color 0.2s",
                   borderBottom: "1px solid #eee",
-                  borderLeft: activeProperty === prop.id ? "4px solid #1a73e8" : "4px solid transparent",
-                  background: activeProperty === prop.id ? "#eaf4ff" : "#fff",
+                  borderLeft: activeProperty === prop.id ? (isAuctionMode ? "4px solid #1a4282" : "4px solid #1a73e8") : "4px solid transparent",
+                  background: activeProperty === prop.id ? (isAuctionMode ? "#e3ecf5" : "#eaf4ff") : "#fff",
                 }}
               >
                 <div style={{ flex: 1, paddingRight: prop.images?.[0] ? 15 : 0, minWidth: 0 }}>
@@ -422,11 +422,18 @@ export default function GongsilSidebar({
                     style={{
                       fontSize: 16,
                       fontWeight: 800,
-                      color: "#1a73e8",
+                      color: isAuctionMode ? "#1a4282" : "#1a73e8",
                       marginBottom: isAuctionMode && lowestBidText ? 0 : 4,
                     }}
                   >
-                    {priceText}
+                    {isAuctionMode ? (
+                      <>
+                        <span style={{ fontSize: 13, color: "#888", fontWeight: "normal", marginRight: 4 }}>감정가</span>
+                        <span style={{ fontWeight: 800 }}>{formatAmount(appraisalPrice)}</span>
+                      </>
+                    ) : (
+                      priceText
+                    )}
                   </div>
                   {isAuctionMode && lowestBidText && (
                     <div style={{ fontSize: 14, fontWeight: 800, color: "#fa5252", marginBottom: 4 }}>
@@ -550,8 +557,7 @@ export default function GongsilSidebar({
             style={{
               width: "100%",
               padding: "16px",
-              background: "#f8fafc",
-              color: "#1a73e8",
+              color: isAuctionMode ? "#1a4282" : "#1a73e8",
               border: "none",
               borderTop: "1px solid #eee",
               fontSize: 13,
@@ -559,7 +565,7 @@ export default function GongsilSidebar({
               cursor: "pointer",
               transition: "background 0.2s",
             }}
-            onMouseOver={(e) => (e.currentTarget.style.background = "#eaf4ff")}
+            onMouseOver={(e) => (e.currentTarget.style.background = isAuctionMode ? "#e3ecf5" : "#eaf4ff")}
             onMouseOut={(e) => (e.currentTarget.style.background = "#f8fafc")}
           >
             더보기 ({displayVacancies.length - visibleCount}개 남음)

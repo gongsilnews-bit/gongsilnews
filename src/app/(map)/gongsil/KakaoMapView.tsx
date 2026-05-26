@@ -170,7 +170,7 @@ export default function KakaoMapView({
     isHover: boolean = false
   ) => {
     const overlappingCount = group.length;
-    const color = isAuctionMode ? "%231a73e8" : "%234b89ff";
+    const color = isAuctionMode ? "%231a4282" : "%234b89ff";
     const textVal = overlappingCount.toString();
     const { size, radius, fontSize } = getMarkerDimensions(overlappingCount);
 
@@ -312,7 +312,7 @@ export default function KakaoMapView({
             {
               width: "38px",
               height: "38px",
-              background: "rgba(26, 115, 232, 0.75)",
+              background: "rgba(26, 66, 130, 0.85)",
               color: "#fff",
               textAlign: "center",
               lineHeight: "34px",
@@ -325,7 +325,7 @@ export default function KakaoMapView({
             {
               width: "46px",
               height: "46px",
-              background: "rgba(26, 115, 232, 0.75)",
+              background: "rgba(26, 66, 130, 0.85)",
               color: "#fff",
               textAlign: "center",
               lineHeight: "42px",
@@ -338,7 +338,7 @@ export default function KakaoMapView({
             {
               width: "54px",
               height: "54px",
-              background: "rgba(26, 115, 232, 0.75)",
+              background: "rgba(26, 66, 130, 0.85)",
               color: "#fff",
               textAlign: "center",
               lineHeight: "50px",
@@ -351,7 +351,7 @@ export default function KakaoMapView({
             {
               width: "62px",
               height: "62px",
-              background: "rgba(26, 115, 232, 0.75)",
+              background: "rgba(26, 66, 130, 0.85)",
               color: "#fff",
               textAlign: "center",
               lineHeight: "58px",
@@ -465,6 +465,28 @@ export default function KakaoMapView({
         const overlay = cluster.getClusterMarker().getContent();
         if (overlay) {
           overlay.innerText = totalCount.toString();
+
+          // Dynamically adjust cluster marker size proportional to the total property count
+          let size = "38px";
+          let lh = "34px";
+          let fs = "13px";
+          if (totalCount >= 100) {
+            size = "62px";
+            lh = "58px";
+            fs = "16px";
+          } else if (totalCount >= 30) {
+            size = "54px";
+            lh = "50px";
+            fs = "15px";
+          } else if (totalCount >= 10) {
+            size = "46px";
+            lh = "42px";
+            fs = "14px";
+          }
+          overlay.style.width = size;
+          overlay.style.height = size;
+          overlay.style.lineHeight = lh;
+          overlay.style.fontSize = fs;
         }
 
         // Apply selected cluster styles if match
@@ -478,8 +500,8 @@ export default function KakaoMapView({
           const isMatch = ids.some((id: any) => id && selectedClusterIdsRef.current?.includes(id));
           if (isMatch && overlay && overlay.style) {
             overlay.style.background = "#ffffff";
-            overlay.style.color = isAuctionMode ? "#1a73e8" : "#4b89ff";
-            overlay.style.border = isAuctionMode ? "2px solid #1a73e8" : "2px solid #4b89ff";
+            overlay.style.color = isAuctionMode ? "#1a4282" : "#4b89ff";
+            overlay.style.border = isAuctionMode ? "2px solid #1a4282" : "2px solid #4b89ff";
             overlay.style.zIndex = "999";
           }
         }

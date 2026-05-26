@@ -1122,9 +1122,9 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
             <img
               src="/logo.png"
               alt="공실뉴스"
-              style={{ height: 34 }}
+              style={{ height: 48 }}
               onError={(e) => {
-                (e.target as HTMLImageElement).src = "https://via.placeholder.com/100x34?text=LOGO";
+                (e.target as HTMLImageElement).src = "https://via.placeholder.com/150x48?text=LOGO";
               }}
             />
           </Link>
