@@ -1212,6 +1212,16 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
 
   const scrollToSection = (sectionId: string) => {
     const container = document.getElementById("popover-scroll-container");
+    if (sectionId === "적용하기") {
+      if (container) {
+        container.scrollTo({
+          top: container.scrollHeight,
+          behavior: "smooth",
+        });
+        setActiveSection("테마");
+      }
+      return;
+    }
     const section = document.getElementById(`section-${sectionId}`);
     if (container && section) {
       container.scrollTo({
@@ -2126,9 +2136,6 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                         setTempFilterTradeTypes((prev) => {
                                           return prev.includes(type) ? prev.filter((x) => x !== type) : [...prev, type];
                                         });
-                                        setTimeout(() => {
-                                          scrollToSection("면적");
-                                        }, 350);
                                       }}
                                       style={{
                                         padding: "6px 14px",
@@ -2181,6 +2188,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                             setTempMaemaeMin(val === 0 ? null : MAEMAE_SCALE[val]);
                                           }
                                         }} 
+                                        onMouseUp={() => setTimeout(() => scrollToSection("면적"), 800)}
+                                        onTouchEnd={() => setTimeout(() => scrollToSection("면적"), 800)}
                                         className="dual-slider-input" 
                                       />
                                       <input 
@@ -2194,6 +2203,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                             setTempMaemaeMax(val === MAEMAE_SCALE.length - 1 ? null : MAEMAE_SCALE[val]);
                                           }
                                         }} 
+                                        onMouseUp={() => setTimeout(() => scrollToSection("면적"), 800)}
+                                        onTouchEnd={() => setTimeout(() => scrollToSection("면적"), 800)}
                                         className="dual-slider-input" 
                                       />
                                     </div>
@@ -2240,6 +2251,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                             setTempDepositMin(val === 0 ? null : DEPOSIT_SCALE[val]);
                                           }
                                         }} 
+                                        onMouseUp={() => setTimeout(() => scrollToSection("면적"), 800)}
+                                        onTouchEnd={() => setTimeout(() => scrollToSection("면적"), 800)}
                                         className="dual-slider-input" 
                                       />
                                       <input 
@@ -2253,6 +2266,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                             setTempDepositMax(val === DEPOSIT_SCALE.length - 1 ? null : DEPOSIT_SCALE[val]);
                                           }
                                         }} 
+                                        onMouseUp={() => setTimeout(() => scrollToSection("면적"), 800)}
+                                        onTouchEnd={() => setTimeout(() => scrollToSection("면적"), 800)}
                                         className="dual-slider-input" 
                                       />
                                     </div>
@@ -2299,6 +2314,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                             setTempRentMin(val === 0 ? null : RENT_SCALE[val]);
                                           }
                                         }} 
+                                        onMouseUp={() => setTimeout(() => scrollToSection("면적"), 800)}
+                                        onTouchEnd={() => setTimeout(() => scrollToSection("면적"), 800)}
                                         className="dual-slider-input" 
                                       />
                                       <input 
@@ -2312,6 +2329,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                             setTempRentMax(val === RENT_SCALE.length - 1 ? null : RENT_SCALE[val]);
                                           }
                                         }} 
+                                        onMouseUp={() => setTimeout(() => scrollToSection("면적"), 800)}
+                                        onTouchEnd={() => setTimeout(() => scrollToSection("면적"), 800)}
                                         className="dual-slider-input" 
                                       />
                                     </div>
@@ -2371,6 +2390,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                             setFilterAreaMin(val === 0 ? null : AREA_SCALE[val] * 3.3);
                                           }
                                         }} 
+                                        onMouseUp={() => setTimeout(() => scrollToSection("사용승인일"), 800)}
+                                        onTouchEnd={() => setTimeout(() => scrollToSection("사용승인일"), 800)}
                                         className="dual-slider-input" 
                                       />
                                       <input 
@@ -2384,6 +2405,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                             setFilterAreaMax(val === AREA_SCALE.length - 1 ? null : AREA_SCALE[val] * 3.3);
                                           }
                                         }} 
+                                        onMouseUp={() => setTimeout(() => scrollToSection("사용승인일"), 800)}
+                                        onTouchEnd={() => setTimeout(() => scrollToSection("사용승인일"), 800)}
                                         className="dual-slider-input" 
                                       />
                                     </div>
@@ -2441,6 +2464,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                             setFilterYearMin(val === 0 ? null : YEAR_SCALE[val]);
                                           }
                                         }} 
+                                        onMouseUp={() => setTimeout(() => scrollToSection("세대수"), 800)}
+                                        onTouchEnd={() => setTimeout(() => scrollToSection("세대수"), 800)}
                                         className="dual-slider-input" 
                                       />
                                       <input 
@@ -2454,6 +2479,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                             setFilterYearMax(val === YEAR_SCALE.length - 1 ? null : YEAR_SCALE[val]);
                                           }
                                         }} 
+                                        onMouseUp={() => setTimeout(() => scrollToSection("세대수"), 800)}
+                                        onTouchEnd={() => setTimeout(() => scrollToSection("세대수"), 800)}
                                         className="dual-slider-input" 
                                       />
                                     </div>
@@ -2511,6 +2538,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                             setFilterUnitMin(val === 0 ? null : UNIT_SCALE[val]);
                                           }
                                         }} 
+                                        onMouseUp={() => setTimeout(() => scrollToSection("방/욕실수"), 800)}
+                                        onTouchEnd={() => setTimeout(() => scrollToSection("방/욕실수"), 800)}
                                         className="dual-slider-input" 
                                       />
                                       <input 
@@ -2524,6 +2553,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                             setFilterUnitMax(val === UNIT_SCALE.length - 1 ? null : UNIT_SCALE[val]);
                                           }
                                         }} 
+                                        onMouseUp={() => setTimeout(() => scrollToSection("방/욕실수"), 800)}
+                                        onTouchEnd={() => setTimeout(() => scrollToSection("방/욕실수"), 800)}
                                         className="dual-slider-input" 
                                       />
                                     </div>
@@ -2559,17 +2590,23 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                     {[1, 2, 3, 4].map((num) => (
                                       <button
                                         key={num}
-                                        onClick={() => setFilterRoomCount(filterRoomCount === num ? null : num)}
+                                        onClick={() => {
+                                          setFilterRoomCount(filterRoomCount === num ? null : num);
+                                          setTimeout(() => {
+                                            scrollToSection("방향");
+                                          }, 500);
+                                        }}
                                         style={{
                                           flex: 1,
                                           padding: "6px 0",
-                                          border: "1px solid #eee",
+                                          border: "1px solid " + (filterRoomCount === num ? "#111" : "#eee"),
                                           borderRadius: 4,
-                                          background: filterRoomCount === num ? "#e8f0fe" : "#fff",
-                                          color: filterRoomCount === num ? "#1a4282" : "#333",
+                                          background: filterRoomCount === num ? "#111" : "#fff",
+                                          color: filterRoomCount === num ? "#fff" : "#333",
                                           fontSize: 12,
-                                          fontWeight: filterRoomCount === num ? "bold" : "normal",
+                                          fontWeight: "bold",
                                           cursor: "pointer",
+                                          transition: "all 0.15s"
                                         }}
                                       >
                                         {num}개+
@@ -2583,17 +2620,23 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                     {[1, 2, 3].map((num) => (
                                       <button
                                         key={num}
-                                        onClick={() => setFilterBathCount(filterBathCount === num ? null : num)}
+                                        onClick={() => {
+                                          setFilterBathCount(filterBathCount === num ? null : num);
+                                          setTimeout(() => {
+                                            scrollToSection("방향");
+                                          }, 500);
+                                        }}
                                         style={{
                                           flex: 1,
                                           padding: "6px 0",
-                                          border: "1px solid #eee",
+                                          border: "1px solid " + (filterBathCount === num ? "#111" : "#eee"),
                                           borderRadius: 4,
-                                          background: filterBathCount === num ? "#e8f0fe" : "#fff",
-                                          color: filterBathCount === num ? "#1a4282" : "#333",
+                                          background: filterBathCount === num ? "#111" : "#fff",
+                                          color: filterBathCount === num ? "#fff" : "#333",
                                           fontSize: 12,
-                                          fontWeight: filterBathCount === num ? "bold" : "normal",
+                                          fontWeight: "bold",
                                           cursor: "pointer",
+                                          transition: "all 0.15s"
                                         }}
                                       >
                                         {num}개+
@@ -2788,16 +2831,20 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                         setFilterThemes((prev) =>
                                           isThemeSelected ? prev.filter((x) => x !== t) : [...prev, t]
                                         );
+                                        setTimeout(() => {
+                                          scrollToSection("적용하기");
+                                        }, 500);
                                       }}
                                       style={{
                                         padding: "8px 0",
-                                        border: `1px solid ${isThemeSelected ? "#1a4282" : "#eee"}`,
+                                        border: "1px solid " + (isThemeSelected ? "#111" : "#eee"),
                                         borderRadius: 4,
-                                        background: isThemeSelected ? "#e8f0fe" : "#fff",
-                                        color: isThemeSelected ? "#1a4282" : "#333",
+                                        background: isThemeSelected ? "#111" : "#fff",
+                                        color: isThemeSelected ? "#fff" : "#333",
                                         fontSize: 12,
                                         fontWeight: "bold",
                                         cursor: "pointer",
+                                        transition: "all 0.15s"
                                       }}
                                     >
                                       #{t}
