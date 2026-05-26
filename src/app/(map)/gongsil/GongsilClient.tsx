@@ -1304,6 +1304,22 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   };
   const isOfficePill = (p: string) => p.includes("오피스텔");
 
+  const getThemesByCategory = (category: string): string[] => {
+    if (category === "apart") {
+      return ["신축급", "올수리", "한강뷰", "역세권", "풀옵션", "급매물", "대출가능"];
+    }
+    if (category === "villa") {
+      return ["테라스", "복층", "마당있음", "투자용", "올수리", "급매물", "대출가능"];
+    }
+    if (category === "one") {
+      return ["가성비", "단기임대", "주차편리", "대로변안전", "여성안심", "풀옵션", "급매물"];
+    }
+    if (category === "biz") {
+      return ["무권리", "코너자리", "유동인구많음", "주차대수많음", "인테리어잘됨", "층고높음", "대로변"];
+    }
+    return ["급매물", "역세권", "신축", "풀옵션", "주차편리", "보증보험가능", "대출가능", "반려동물가능"];
+  };
+
   const resetAllFilters = () => {
     setFilterTradeTypes([]);
     setFilterPriceMin(null);
@@ -2951,16 +2967,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                             >
                               <div style={{ fontSize: "14px", color: "#374151", marginBottom: "10px", fontWeight: "bold" }}>테마</div>
                               <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8 }}>
-                                {[
-                                  "급매물",
-                                  "역세권",
-                                  "신축",
-                                  "풀옵션",
-                                  "주차편리",
-                                  "보증보험가능",
-                                  "대출가능",
-                                  "반려동물가능",
-                                ].map((t) => {
+                                {getThemesByCategory(activeCategory).map((t) => {
                                   const isThemeSelected = filterThemes.includes(t);
                                   return (
                                     <button
@@ -3599,16 +3606,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
 
                       {f === "테마" && (
                         <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8, width: 240 }}>
-                          {[
-                            "급매물",
-                            "역세권",
-                            "신축",
-                            "풀옵션",
-                            "주차편리",
-                            "보증보험가능",
-                            "대출가능",
-                            "반려동물가능",
-                          ].map((t) => {
+                          {getThemesByCategory(activeCategory).map((t) => {
                             const isThemeSelected = filterThemes.includes(t);
                             return (
                               <button
