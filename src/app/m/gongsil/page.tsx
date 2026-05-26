@@ -885,8 +885,14 @@ function MobileGongsilContent() {
                   setVacancies([]);
                   setSelectedVacancy(null);
                   setSelectedCluster(null);
-                  // 🚀 [대표님 지침] 공실 전환 시 필터 리셋
-                  updateFilter({ propertyTypes: [] });
+                  // 🚀 [대표님 지침] 공실 전환 시 필터 리셋 및 전체유형 기본 선택
+                  updateFilter({
+                    propertyTypes: [
+                      "아파트", "빌라/연립", "오피스텔", "원룸", "투룸", "단독/다가구",
+                      "전원주택", "상가주택", "재건축", "재개발",
+                      "상가", "사무실", "토지", "건물", "공장/창고", "지식산업센터"
+                    ]
+                  });
                 }}
                 style={{
                   flex: 1,
@@ -911,8 +917,12 @@ function MobileGongsilContent() {
                   setVacancies([]);
                   setSelectedVacancy(null);
                   setSelectedCluster(null);
-                  // 🚀 [대표님 지침] 경매 전환 시 필터 리셋
-                  updateFilter({ propertyTypes: [] });
+                  // 🚀 [대표님 지침] 경매 전환 시 필터 리셋 및 전체유형 기본 선택
+                  updateFilter({
+                    propertyTypes: [
+                      "아파트", "단독/다가구", "빌라/주택", "상가/점포", "사무실/지산", "빌딩/근생", "공장/창고", "토지"
+                    ]
+                  });
                 }}
                 style={{
                   flex: 1,
