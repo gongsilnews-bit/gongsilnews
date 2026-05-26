@@ -3003,6 +3003,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                 setAppliedRentMin(tempRentMin);
                                 setAppliedRentMax(tempRentMax);
                                 setActiveFilterDropdown(null);
+                                setIsFilterCollapsed(true);
                               }}
                               style={{
                                 flex: 2,
