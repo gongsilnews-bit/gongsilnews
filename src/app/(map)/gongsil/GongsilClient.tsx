@@ -235,6 +235,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   const [tempRentMin, setTempRentMin] = useState<number | null>(null);
   const [tempRentMax, setTempRentMax] = useState<number | null>(null);
   const [sliderInteractions, setSliderInteractions] = useState<Record<string, { min: boolean; max: boolean }>>({});
+  const [roomBathInteractions, setRoomBathInteractions] = useState({ room: false, bath: false });
 
   const [appliedMaemaeMin, setAppliedMaemaeMin] = useState<number | null>(null);
   const [appliedMaemaeMax, setAppliedMaemaeMax] = useState<number | null>(null);
@@ -2613,9 +2614,16 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                         key={num}
                                         onClick={() => {
                                           setFilterRoomCount(filterRoomCount === num ? null : num);
-                                          setTimeout(() => {
-                                            scrollToSection("방향");
-                                          }, 500);
+                                          setRoomBathInteractions((prev) => {
+                                            const updated = { ...prev, room: true };
+                                            if (updated.room && updated.bath) {
+                                              setTimeout(() => {
+                                                scrollToSection("방향");
+                                              }, 500);
+                                              return { room: false, bath: false };
+                                            }
+                                            return updated;
+                                          });
                                         }}
                                         style={{
                                           flex: 1,
@@ -2643,9 +2651,16 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                         key={num}
                                         onClick={() => {
                                           setFilterBathCount(filterBathCount === num ? null : num);
-                                          setTimeout(() => {
-                                            scrollToSection("방향");
-                                          }, 500);
+                                          setRoomBathInteractions((prev) => {
+                                            const updated = { ...prev, bath: true };
+                                            if (updated.room && updated.bath) {
+                                              setTimeout(() => {
+                                                scrollToSection("방향");
+                                              }, 500);
+                                              return { room: false, bath: false };
+                                            }
+                                            return updated;
+                                          });
                                         }}
                                         style={{
                                           flex: 1,
