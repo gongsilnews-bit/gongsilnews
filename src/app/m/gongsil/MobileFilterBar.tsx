@@ -155,12 +155,10 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
                 ? filters.propertyTypes.slice(0,2).join(", ") + (filters.propertyTypes.length > 2 ? ` +${filters.propertyTypes.length-2}` : "") 
                 : "공실광고유형"} ▾
             </button>
-            <button onClick={() => setActivePanel(activePanel === "trade" ? null : "trade")} style={pillStyle(activePanel === "trade" || (filters.tradeTypes.length > 0 && filters.tradeTypes.length < TRADE_TYPES.length))}>
-              {filters.tradeTypes.length === TRADE_TYPES.length 
+            <button onClick={() => setActivePanel(activePanel === "trade" ? null : "trade")} style={pillStyle(activePanel === "trade" || filters.tradeTypes.length > 0)}>
+              {filters.tradeTypes.length === TRADE_TYPES.length || filters.tradeTypes.length === 0
                 ? "전체거래" 
-                : filters.tradeTypes.length > 0 
-                ? filters.tradeTypes.join(", ") 
-                : "거래방식"} ▾
+                : filters.tradeTypes.join(", ")} ▾
             </button>
             <button 
               onClick={() => setFullFilterOpen(true)} 
