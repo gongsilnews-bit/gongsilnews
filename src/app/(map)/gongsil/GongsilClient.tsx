@@ -1464,36 +1464,36 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                         marginTop: 4,
                         background: "#fff",
                         border: "1px solid #ccc",
-                        borderRadius: f === "거래유형" ? 8 : 4,
+                        borderRadius: f === "거래유형" ? 10 : 4,
                         boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
-                        padding: f === "거래유형" ? 20 : 16,
+                        padding: f === "거래유형" ? 26 : 16,
                         zIndex: 300,
-                        minWidth: f === "거래유형" ? 360 : 200,
+                        minWidth: f === "거래유형" ? 468 : 200,
                         animation: "dropdownFadeIn 0.15s ease",
                       }}
                     >
                       {f === "거래유형" && (
-                        <div style={{ display: "flex", flexDirection: "column", width: "320px" }}>
+                        <div style={{ display: "flex", flexDirection: "column", width: "416px" }}>
                           {/* style block to inject dual slider styles */}
                           <style>{`
                             .dual-slider-container {
                               position: relative;
                               width: 100%;
-                              height: 6px;
+                              height: 4px;
                               background: #e5e7eb;
-                              border-radius: 3px;
-                              margin: 16px 0 28px 0;
+                              border-radius: 2px;
+                              margin: 20px 0 28px 0;
                             }
                             .dual-slider-track {
                               position: absolute;
                               height: 100%;
-                              background: #ff6f00; /* Premium Orange track */
-                              border-radius: 3px;
+                              background: #1a4282; /* Corporate Deep Navy track */
+                              border-radius: 2px;
                             }
                             .dual-slider-input {
                               position: absolute;
                               width: 100%;
-                              height: 6px;
+                              height: 4px;
                               top: 0;
                               left: 0;
                               background: none;
@@ -1504,52 +1504,53 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                               margin: 0;
                             }
                             .dual-slider-input::-webkit-slider-thumb {
-                              height: 18px;
-                              width: 18px;
+                              height: 20px;
+                              width: 20px;
+                              margin-top: -8px; /* Perfectly center 20px thumb on 4px track */
                               border-radius: 50%;
                               background: #ffffff;
-                              border: 2px solid #ff6f00; /* Premium Orange thumb */
+                              border: 2px solid #1a4282; /* Thin Corporate Deep Navy thumb border */
                               cursor: pointer;
                               pointer-events: auto;
                               -webkit-appearance: none;
-                              box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+                              box-shadow: 0 1px 3px rgba(0,0,0,0.15);
                               transition: transform 0.1s;
                             }
                             .dual-slider-input::-webkit-slider-thumb:hover {
                               transform: scale(1.1);
                             }
                             .dual-slider-input::-moz-range-thumb {
-                              height: 18px;
-                              width: 18px;
+                              height: 20px;
+                              width: 20px;
                               border-radius: 50%;
                               background: #ffffff;
-                              border: 2px solid #ff6f00;
+                              border: 2px solid #1a4282;
                               cursor: pointer;
                               pointer-events: auto;
-                              box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+                              box-shadow: 0 1px 3px rgba(0,0,0,0.15);
                             }
                           `}</style>
                           
                           {/* Scrollable area */}
-                          <div style={{ maxHeight: "360px", overflowY: "auto", paddingRight: "8px", paddingBottom: "10px" }}>
+                          <div style={{ maxHeight: "440px", overflowY: "auto", paddingRight: "8px", paddingBottom: "10px" }}>
                             {/* Header info */}
-                            <div style={{ fontSize: "11px", color: "#6b7280", marginBottom: "8px", fontWeight: 500 }}>
+                            <div style={{ fontSize: "14px", color: "#374151", marginBottom: "10px", fontWeight: "bold" }}>
                               거래유형 중복선택 가능
                             </div>
                             
                             {/* Pills container */}
-                            <div style={{ display: "flex", gap: "6px", marginBottom: "20px" }}>
+                            <div style={{ display: "flex", gap: "8px", marginBottom: "20px" }}>
                               {/* 전체 pill */}
                               <button
                                 onClick={() => setTempFilterTradeTypes([])}
                                 style={{
-                                  padding: "6px 12px",
-                                  borderRadius: "20px",
-                                  fontSize: "12px",
+                                  padding: "8px 16px",
+                                  borderRadius: "26px",
+                                  fontSize: "15px",
                                   border: "1px solid " + (tempFilterTradeTypes.length === 0 ? "#111827" : "#e5e7eb"),
                                   background: tempFilterTradeTypes.length === 0 ? "#111827" : "#ffffff",
                                   color: tempFilterTradeTypes.length === 0 ? "#ffffff" : "#4b5563",
-                                  fontWeight: tempFilterTradeTypes.length === 0 ? "bold" : "normal",
+                                  fontWeight: "bold",
                                   cursor: "pointer",
                                   transition: "all 0.15s"
                                 }}
@@ -1569,13 +1570,13 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                       );
                                     }}
                                     style={{
-                                      padding: "6px 12px",
-                                      borderRadius: "20px",
-                                      fontSize: "12px",
-                                      border: "1px solid " + (isSel ? "#ff6f00" : "#e5e7eb"),
-                                      background: isSel ? "#fff3e0" : "#ffffff",
-                                      color: isSel ? "#ff6f00" : "#4b5563",
-                                      fontWeight: isSel ? "bold" : "normal",
+                                      padding: "8px 16px",
+                                      borderRadius: "26px",
+                                      fontSize: "15px",
+                                      border: "1px solid " + (isSel ? "#1a4282" : "#e5e7eb"),
+                                      background: isSel ? "#e8f0fe" : "#ffffff",
+                                      color: isSel ? "#1a4282" : "#4b5563",
+                                      fontWeight: "bold",
                                       cursor: "pointer",
                                       transition: "all 0.15s"
                                     }}
@@ -1587,17 +1588,17 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                             </div>
                             
                             {/* Separator line */}
-                            <div style={{ height: "1px", background: "#f3f4f6", marginBottom: "16px" }} />
+                            <div style={{ height: "1px", background: "#f3f4f6", marginBottom: "20px" }} />
                             
                             {/* MAEMAE Price Range Slider */}
                             {(() => {
                               const minIdx = getScaleIndex(tempMaemaeMin, MAEMAE_SCALE, false);
                               const maxIdx = getScaleIndex(tempMaemaeMax, MAEMAE_SCALE, true);
                               return (
-                                <div style={{ marginBottom: "20px" }}>
+                                <div style={{ marginBottom: "24px" }}>
                                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
-                                    <span style={{ fontSize: "13px", fontWeight: "bold", color: "#111827" }}>매매가</span>
-                                    <span style={{ fontSize: "12px", color: "#ff6f00", fontWeight: "bold" }}>
+                                    <span style={{ fontSize: "17px", fontWeight: "800", color: "#111827" }}>매매가</span>
+                                    <span style={{ fontSize: "15px", color: "#1a4282", fontWeight: "800" }}>
                                       {tempMaemaeMin === null && tempMaemaeMax === null 
                                         ? "전체" 
                                         : `${formatPriceLabel(tempMaemaeMin) || "0"} ~ ${formatPriceLabel(tempMaemaeMax) || "최대"}`}
@@ -1637,12 +1638,12 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                     />
                                   </div>
                                   
-                                  <div style={{ display: "flex", justifyContent: "space-between", padding: "0 2px", marginTop: "-18px" }}>
-                                    <span style={{ fontSize: "10px", color: "#9ca3af" }}>최소</span>
-                                    <span style={{ fontSize: "10px", color: "#9ca3af" }}>1억</span>
-                                    <span style={{ fontSize: "10px", color: "#9ca3af" }}>5억</span>
-                                    <span style={{ fontSize: "10px", color: "#9ca3af" }}>15억</span>
-                                    <span style={{ fontSize: "10px", color: "#9ca3af" }}>최대</span>
+                                  <div style={{ display: "flex", justifyContent: "space-between", padding: "0 2px", marginTop: "-24px" }}>
+                                    <span style={{ fontSize: "12px", fontWeight: "bold", color: "#4b5563" }}>최소</span>
+                                    <span style={{ fontSize: "12px", fontWeight: "bold", color: "#4b5563" }}>1억</span>
+                                    <span style={{ fontSize: "12px", fontWeight: "bold", color: "#4b5563" }}>5억</span>
+                                    <span style={{ fontSize: "12px", fontWeight: "bold", color: "#4b5563" }}>15억</span>
+                                    <span style={{ fontSize: "12px", fontWeight: "bold", color: "#4b5563" }}>최대</span>
                                   </div>
                                 </div>
                               );
@@ -1653,10 +1654,10 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                               const minIdx = getScaleIndex(tempDepositMin, DEPOSIT_SCALE, false);
                               const maxIdx = getScaleIndex(tempDepositMax, DEPOSIT_SCALE, true);
                               return (
-                                <div style={{ marginBottom: "20px" }}>
+                                <div style={{ marginBottom: "24px" }}>
                                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
-                                    <span style={{ fontSize: "13px", fontWeight: "bold", color: "#111827" }}>보증금</span>
-                                    <span style={{ fontSize: "12px", color: "#ff6f00", fontWeight: "bold" }}>
+                                    <span style={{ fontSize: "17px", fontWeight: "800", color: "#111827" }}>보증금</span>
+                                    <span style={{ fontSize: "15px", color: "#1a4282", fontWeight: "800" }}>
                                       {tempDepositMin === null && tempDepositMax === null 
                                         ? "전체" 
                                         : `${formatPriceLabel(tempDepositMin) || "0"} ~ ${formatPriceLabel(tempDepositMax) || "최대"}`}
@@ -1696,12 +1697,12 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                     />
                                   </div>
                                   
-                                  <div style={{ display: "flex", justifyContent: "space-between", padding: "0 2px", marginTop: "-18px" }}>
-                                    <span style={{ fontSize: "10px", color: "#9ca3af" }}>최소</span>
-                                    <span style={{ fontSize: "10px", color: "#9ca3af" }}>5천만</span>
-                                    <span style={{ fontSize: "10px", color: "#9ca3af" }}>2억</span>
-                                    <span style={{ fontSize: "10px", color: "#9ca3af" }}>10억</span>
-                                    <span style={{ fontSize: "10px", color: "#9ca3af" }}>최대</span>
+                                  <div style={{ display: "flex", justifyContent: "space-between", padding: "0 2px", marginTop: "-24px" }}>
+                                    <span style={{ fontSize: "12px", fontWeight: "bold", color: "#4b5563" }}>최소</span>
+                                    <span style={{ fontSize: "12px", fontWeight: "bold", color: "#4b5563" }}>5천만</span>
+                                    <span style={{ fontSize: "12px", fontWeight: "bold", color: "#4b5563" }}>2억</span>
+                                    <span style={{ fontSize: "12px", fontWeight: "bold", color: "#4b5563" }}>10억</span>
+                                    <span style={{ fontSize: "12px", fontWeight: "bold", color: "#4b5563" }}>최대</span>
                                   </div>
                                 </div>
                               );
@@ -1712,10 +1713,10 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                               const minIdx = getScaleIndex(tempRentMin, RENT_SCALE, false);
                               const maxIdx = getScaleIndex(tempRentMax, RENT_SCALE, true);
                               return (
-                                <div style={{ marginBottom: "10px" }}>
+                                <div style={{ marginBottom: "12px" }}>
                                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
-                                    <span style={{ fontSize: "13px", fontWeight: "bold", color: "#111827" }}>월세</span>
-                                    <span style={{ fontSize: "12px", color: "#ff6f00", fontWeight: "bold" }}>
+                                    <span style={{ fontSize: "17px", fontWeight: "800", color: "#111827" }}>월세</span>
+                                    <span style={{ fontSize: "15px", color: "#1a4282", fontWeight: "800" }}>
                                       {tempRentMin === null && tempRentMax === null 
                                         ? "전체" 
                                         : `${formatPriceLabel(tempRentMin) || "0"} ~ ${formatPriceLabel(tempRentMax) || "최대"}`}
@@ -1755,12 +1756,12 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                     />
                                   </div>
                                   
-                                  <div style={{ display: "flex", justifyContent: "space-between", padding: "0 2px", marginTop: "-18px" }}>
-                                    <span style={{ fontSize: "10px", color: "#9ca3af" }}>최소</span>
-                                    <span style={{ fontSize: "10px", color: "#9ca3af" }}>20만</span>
-                                    <span style={{ fontSize: "10px", color: "#9ca3af" }}>50만</span>
-                                    <span style={{ fontSize: "10px", color: "#9ca3af" }}>150만</span>
-                                    <span style={{ fontSize: "10px", color: "#9ca3af" }}>최대</span>
+                                  <div style={{ display: "flex", justifyContent: "space-between", padding: "0 2px", marginTop: "-24px" }}>
+                                    <span style={{ fontSize: "12px", fontWeight: "bold", color: "#4b5563" }}>최소</span>
+                                    <span style={{ fontSize: "12px", fontWeight: "bold", color: "#4b5563" }}>20만</span>
+                                    <span style={{ fontSize: "12px", fontWeight: "bold", color: "#4b5563" }}>50만</span>
+                                    <span style={{ fontSize: "12px", fontWeight: "bold", color: "#4b5563" }}>150만</span>
+                                    <span style={{ fontSize: "12px", fontWeight: "bold", color: "#4b5563" }}>최대</span>
                                   </div>
                                 </div>
                               );
@@ -1768,7 +1769,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                           </div>
                           
                           {/* Bottom Action buttons */}
-                          <div style={{ display: "flex", gap: "8px", borderTop: "1px solid #f3f4f6", paddingTop: "12px", background: "#ffffff" }}>
+                          <div style={{ display: "flex", gap: "10px", borderTop: "1px solid #f3f4f6", paddingTop: "15px", background: "#ffffff" }}>
                             <button
                               onClick={() => {
                                 setTempFilterTradeTypes([]);
@@ -1781,14 +1782,14 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                               }}
                               style={{
                                 flex: 1,
-                                padding: "10px 0",
+                                padding: "13px 0",
                                 border: "1px solid #e5e7eb",
-                                borderRadius: "4px",
-                                fontSize: "13px",
+                                borderRadius: "6px",
+                                fontSize: "15px",
                                 color: "#4b5563",
                                 background: "#ffffff",
                                 cursor: "pointer",
-                                fontWeight: "600",
+                                fontWeight: "800",
                                 transition: "all 0.15s"
                               }}
                             >
@@ -1807,14 +1808,14 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                               }}
                               style={{
                                 flex: 2,
-                                padding: "10px 0",
+                                padding: "13px 0",
                                 border: "none",
-                                borderRadius: "4px",
-                                fontSize: "13px",
+                                borderRadius: "6px",
+                                fontSize: "15px",
                                 color: "#ffffff",
-                                background: "#ff6f00", /* Premium Orange */
+                                background: "#1a4282", /* Premium Corporate Deep Navy */
                                 cursor: "pointer",
-                                fontWeight: "bold",
+                                fontWeight: "800",
                                 transition: "all 0.15s"
                               }}
                             >
