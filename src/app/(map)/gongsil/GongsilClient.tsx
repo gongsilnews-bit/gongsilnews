@@ -245,16 +245,6 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     }
   }, [activeFilterDropdown]);
 
-  const scrollToSection = (secName: string) => {
-    const container = document.getElementById("popover-scroll-container");
-    const target = document.getElementById(`section-${secName}`);
-    if (container && target) {
-      const topPos = target.offsetTop - container.offsetTop;
-      container.scrollTo({ top: topPos, behavior: "smooth" });
-      setActiveSection(secName);
-    }
-  };
-
   // Set initial data and ref
   useEffect(() => {
     if (initialVacancies && initialVacancies.length > 0) {
