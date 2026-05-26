@@ -2579,7 +2579,53 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                               })()}
                             </div>
 
+                            {/* Section: 층수 */}
+                            {getWizardTabs().includes("층수") && (
+                              <div
+                                id="section-층수"
+                                style={{
+                                  padding: "16px 12px",
+                                  borderRadius: "8px",
+                                  background: activeSection === "층수" ? "#f3f4f6" : "transparent",
+                                  marginBottom: "16px",
+                                  transition: "all 0.2s ease-in-out",
+                                }}
+                              >
+                                <div style={{ fontSize: "14px", color: "#374151", marginBottom: "10px", fontWeight: "bold" }}>층수</div>
+                                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                                  {["전체", "지하", "1층", "2층", "3~5층", "6층이상"].map((fl) => {
+                                    const isSel = filterFloor === fl || (!filterFloor && fl === "전체");
+                                    return (
+                                      <button
+                                        key={fl}
+                                        onClick={() => {
+                                          setFilterFloor(fl === "전체" ? null : fl);
+                                          setTimeout(() => {
+                                            scrollToSection("관리비");
+                                          }, 350);
+                                        }}
+                                        style={{
+                                          padding: "8px 12px",
+                                          border: "1px solid " + (isSel ? "#111" : "#eee"),
+                                          borderRadius: 4,
+                                          background: isSel ? "#111" : "#fff",
+                                          color: isSel ? "#fff" : "#333",
+                                          fontSize: 12,
+                                          fontWeight: "bold",
+                                          cursor: "pointer",
+                                          transition: "all 0.15s"
+                                        }}
+                                      >
+                                        {fl}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+
                             {/* Section 3: 사용승인일 */}
+                            {getWizardTabs().includes("사용승인일") && (
                             <div
                               id="section-사용승인일"
                               style={{
@@ -2652,8 +2698,10 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                 );
                               })()}
                             </div>
+                            )}
 
                             {/* Section 4: 세대수 */}
+                            {getWizardTabs().includes("세대수") && (
                             <div
                               id="section-세대수"
                               style={{
@@ -2726,8 +2774,10 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                 );
                               })()}
                             </div>
+                            )}
 
                             {/* Section 5: 방/욕실수 */}
+                            {getWizardTabs().includes("방/욕실수") && (
                             <div
                               id="section-방/욕실수"
                               style={{
@@ -2816,8 +2866,10 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                 </div>
                               </div>
                             </div>
+                            )}
 
                             {/* Section 6: 방향 */}
+                            {getWizardTabs().includes("방향") && (
                             <div
                               id="section-방향"
                               style={{
@@ -2878,6 +2930,99 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                 ))}
                               </div>
                             </div>
+                            )}
+
+                            {/* Section: 관리비 */}
+                            {getWizardTabs().includes("관리비") && (
+                              <div
+                                id="section-관리비"
+                                style={{
+                                  padding: "16px 12px",
+                                  borderRadius: "8px",
+                                  background: activeSection === "관리비" ? "#f3f4f6" : "transparent",
+                                  marginBottom: "16px",
+                                  transition: "all 0.2s ease-in-out",
+                                }}
+                              >
+                                <div style={{ fontSize: "14px", color: "#374151", marginBottom: "10px", fontWeight: "bold" }}>관리비</div>
+                                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                                  {MAINT_PRESETS.map((m, idx) => {
+                                    const isSel = filterMaintIdx === idx;
+                                    return (
+                                      <button
+                                        key={m.label}
+                                        onClick={() => {
+                                          setFilterMaintIdx(idx);
+                                          setTimeout(() => {
+                                            scrollToSection("기타옵션");
+                                          }, 350);
+                                        }}
+                                        style={{
+                                          padding: "8px 12px",
+                                          border: "1px solid " + (isSel ? "#111" : "#eee"),
+                                          borderRadius: 4,
+                                          background: isSel ? "#111" : "#fff",
+                                          color: isSel ? "#fff" : "#333",
+                                          fontSize: 12,
+                                          fontWeight: "bold",
+                                          cursor: "pointer",
+                                          transition: "all 0.15s"
+                                        }}
+                                      >
+                                        {m.label}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Section: 기타옵션 */}
+                            {getWizardTabs().includes("기타옵션") && (
+                              <div
+                                id="section-기타옵션"
+                                style={{
+                                  padding: "16px 12px",
+                                  borderRadius: "8px",
+                                  background: activeSection === "기타옵션" ? "#f3f4f6" : "transparent",
+                                  marginBottom: "16px",
+                                  transition: "all 0.2s ease-in-out",
+                                }}
+                              >
+                                <div style={{ fontSize: "14px", color: "#374151", marginBottom: "10px", fontWeight: "bold" }}>기타옵션</div>
+                                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8 }}>
+                                  {(activeCategory === "one" 
+                                    ? ["에어컨", "세탁기", "냉장고", "가스렌지", "전자렌지", "침대", "옷장", "TV", "신발장"] 
+                                    : ["냉난방기", "수도설비", "가스설비", "화물용승강기", "보안시스템", "엘리베이터", "주차"]
+                                  ).map((opt) => {
+                                    const isSel = filterOptions.includes(opt);
+                                    return (
+                                      <button
+                                        key={opt}
+                                        onClick={() => {
+                                          setFilterOptions((prev) =>
+                                            isSel ? prev.filter((x) => x !== opt) : [...prev, opt]
+                                          );
+                                        }}
+                                        style={{
+                                          padding: "8px 12px",
+                                          border: "1px solid " + (isSel ? "#111" : "#eee"),
+                                          borderRadius: 4,
+                                          background: isSel ? "#111" : "#fff",
+                                          color: isSel ? "#fff" : "#333",
+                                          fontSize: 12,
+                                          fontWeight: "bold",
+                                          cursor: "pointer",
+                                          transition: "all 0.15s"
+                                        }}
+                                      >
+                                        {opt}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
 
                             {/* Section 7: 등록자 */}
                             <div
