@@ -111,15 +111,15 @@ const GongsilMobileDrawerListImpl: React.FC<GongsilMobileDrawerListProps> = ({
                     </p>
                   )}
 
-                  {/* 용도, 정보 및 입찰 시작일 (동일 라인 배치) */}
+                  {/* 입찰 시작일, 용도 및 정보 (동일 라인 배치 - 입찰일 전면 배치) */}
                   <p style={{ fontSize: "13px", color: "#6b7280", marginBottom: "4px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", margin: 0, display: "flex", alignItems: "center", gap: "6px" }}>
-                    <span>{info.category} {info.area ? `| ${info.area}` : ""}</span>
                     {bidStartText && (
                       <>
-                        <span style={{ color: "#d1d5db" }}>|</span>
                         <span style={{ fontWeight: 700, color: "#4b5563" }}>입찰 {bidStartText}</span>
+                        <span style={{ color: "#d1d5db" }}>|</span>
                       </>
                     )}
+                    <span>{info.category} {info.area ? `| ${info.area}` : ""}</span>
                   </p>
                 </div>
 
