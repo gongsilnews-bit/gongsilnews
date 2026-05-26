@@ -3640,51 +3640,6 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                 </div>
               );
             })}
-
-            {hasActiveFilters && (
-              <button
-                onClick={resetAllFilters}
-                style={{
-                  background: "none",
-                  border: "none",
-                  fontSize: 13,
-                  color: "#666",
-                  cursor: "pointer",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 4,
-                  fontWeight: "bold",
-                }}
-              >
-                🔄 필터 초기화
-              </button>
-            )}
-
-            {/* GNB Compact Alert Toggle Button */}
-            {(activeCategory === "apart" || activeCategory === "villa" || activeCategory === "auction") && (
-              <button
-                onClick={() => handleToggleCategoryAlert(activeCategory)}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "4px",
-                  padding: "6px 12px",
-                  background: savedCategoryAlerts[activeCategory] ? "#e8f0fe" : "#fff",
-                  border: `1px solid ${savedCategoryAlerts[activeCategory] ? "#1a73e8" : "#ccc"}`,
-                  borderRadius: "20px",
-                  color: savedCategoryAlerts[activeCategory] ? "#1a73e8" : "#555",
-                  fontSize: "12px",
-                  fontWeight: "bold",
-                  cursor: "pointer",
-                  marginLeft: "auto",
-                  flexShrink: 0,
-                  transition: "all 0.15s"
-                }}
-                title={`${CATEGORY_CONFIG[activeCategory]?.name || activeCategory} 맞춤 매물 알림 설정`}
-              >
-                <span>{savedCategoryAlerts[activeCategory] ? "🔔 알림 설정됨" : "🔔 알림 받기"}</span>
-              </button>
-            )}
           </div>
         )}
       </div>
