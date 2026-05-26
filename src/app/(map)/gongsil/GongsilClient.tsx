@@ -1937,36 +1937,36 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
           <div
             style={{
               position: "absolute",
-              bottom: "40px",
+              top: "50%",
               left: "50%",
-              transform: "translateX(-50%)",
+              transform: "translate(-50%, -50%)",
               zIndex: 1000,
-              background: "rgba(30, 41, 59, 0.85)", // 세련된 다크 블루그레이 반투명
-              backdropFilter: "blur(8px)",
-              WebkitBackdropFilter: "blur(8px)",
-              padding: "12px 32px",
+              background: "rgba(30, 41, 59, 0.9)", // 시인성을 높이기 위해 Slate 900 불투명도 약간 상승
+              backdropFilter: "blur(12px)",
+              WebkitBackdropFilter: "blur(12px)",
+              padding: "16px 36px", // 조금 더 시원하고 묵직하게 패딩 확장
               borderRadius: "30px",
-              boxShadow: "0 10px 25px rgba(0, 0, 0, 0.2)",
-              border: "1px solid rgba(255, 255, 255, 0.1)",
+              boxShadow: "0 12px 30px rgba(0, 0, 0, 0.25)",
+              border: "1px solid rgba(255, 255, 255, 0.15)",
               display: "flex",
               alignItems: "center",
-              gap: 8,
+              gap: 10,
               pointerEvents: "none", // 지도 조작 방해 금지
               animation: "pulseGlow 2s infinite ease-in-out",
             }}
           >
             <style>{`
               @keyframes pulseGlow {
-                0% { opacity: 0.9; transform: translateX(-50%) scale(1); }
-                50% { opacity: 1; transform: translateX(-50%) scale(1.02); }
-                100% { opacity: 0.9; transform: translateX(-50%) scale(1); }
+                0% { opacity: 0.95; transform: translate(-50%, -50%) scale(1); }
+                50% { opacity: 1; transform: translate(-50%, -50%) scale(1.03); }
+                100% { opacity: 0.95; transform: translate(-50%, -50%) scale(1); }
               }
             `}</style>
             
-            <span style={{ fontSize: 16 }}>🔍</span>
+            <span style={{ fontSize: 18 }}>🔍</span>
             <span
               style={{
-                fontSize: 14,
+                fontSize: 15,
                 fontWeight: 700,
                 color: "#ffffff",
                 letterSpacing: "-0.5px",
