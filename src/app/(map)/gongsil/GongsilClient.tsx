@@ -1540,9 +1540,82 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
             {activeCategory === "apart" && (() => {
               const tags: { label: string; isTheme?: boolean }[] = [];
 
-              // 1. 거래유형 & 가격
-              const tradeLabel = getTradeTypeFilterLabel();
-              if (tradeLabel !== "거래유형") {
+              const formatPriceRange = (min: number | null, max: number | null) => {
+                if (min === null && max === null) return "";
+                if (min === null || min === 0) {
+                  return `~${formatPriceLabel(max)}`;
+                }
+                if (max === null) {
+                  return `${formatPriceLabel(min)}~`;
+                }
+                return `${formatPriceLabel(min)}~${formatPriceLabel(max)}`;
+              };
+
+              // 1. 거래유형 & 가격 (Live Interactive States!)
+              const getLiveTradeTypeFilterLabel = () => {
+                if (tempFilterTradeTypes.length === 0) return "";
+                
+                const typesStr = tempFilterTradeTypes.join(",");
+                const hasPriceFilter =
+                  tempMaemaeMin !== null ||
+                  tempMaemaeMax !== null ||
+                  tempDepositMin !== null ||
+                  tempDepositMax !== null ||
+                  tempRentMin !== null ||
+                  tempRentMax !== null;
+                  
+                if (!hasPriceFilter) return typesStr;
+                
+                if (tempFilterTradeTypes.length === 1) {
+                  const t = tempFilterTradeTypes[0];
+                  if (t === "매매") {
+                    if (tempMaemaeMin === null && tempMaemaeMax === null) return "매매";
+                    return `매매 ${formatPriceRange(tempMaemaeMin, tempMaemaeMax)}`;
+                  } else if (t === "전세") {
+                    if (tempDepositMin === null && tempDepositMax === null) return "전세";
+                    return `전세 ${formatPriceRange(tempDepositMin, tempDepositMax)}`;
+                  } else if (t === "월세") {
+                    const depStr = tempDepositMin !== null || tempDepositMax !== null 
+                      ? `보증금 ${formatPriceRange(tempDepositMin, tempDepositMax)}`
+                      : "";
+                    const rentStr = tempRentMin !== null || tempRentMax !== null
+                      ? `월세 ${formatPriceRange(tempRentMin, tempRentMax)}`
+                      : "";
+                    return `월세 ${[depStr, rentStr].filter(Boolean).join(" / ")}`;
+                  } else if (t === "단기") {
+                    const depStr = tempDepositMin !== null || tempDepositMax !== null 
+                      ? `보증금 ${formatPriceRange(tempDepositMin, tempDepositMax)}`
+                      : "";
+                    const rentStr = tempRentMin !== null || tempRentMax !== null
+                      ? `월세 ${formatPriceRange(tempRentMin, tempRentMax)}`
+                      : "";
+                    return `단기 ${[depStr, rentStr].filter(Boolean).join(" / ")}`;
+                  }
+                }
+                
+                // Multiple trade types with live prices
+                const parts: string[] = [];
+                if (tempFilterTradeTypes.includes("매매")) {
+                  parts.push(`매매 ${formatPriceRange(tempMaemaeMin, tempMaemaeMax)}`);
+                }
+                if (tempFilterTradeTypes.includes("전세")) {
+                  parts.push(`전세 ${formatPriceRange(tempDepositMin, tempDepositMax)}`);
+                }
+                if (tempFilterTradeTypes.includes("월세")) {
+                  const dep = tempDepositMin !== null || tempDepositMax !== null ? `보증금 ${formatPriceRange(tempDepositMin, tempDepositMax)}` : "";
+                  const rnt = tempRentMin !== null || tempRentMax !== null ? `월세 ${formatPriceRange(tempRentMin, tempRentMax)}` : "";
+                  parts.push(`월세 ${[dep, rnt].filter(Boolean).join("/")}`);
+                }
+                if (tempFilterTradeTypes.includes("단기")) {
+                  const dep = tempDepositMin !== null || tempDepositMax !== null ? `보증금 ${formatPriceRange(tempDepositMin, tempDepositMax)}` : "";
+                  const rnt = tempRentMin !== null || tempRentMax !== null ? `월세 ${formatPriceRange(tempRentMin, tempRentMax)}` : "";
+                  parts.push(`단기 ${[dep, rnt].filter(Boolean).join("/")}`);
+                }
+                return parts.filter(Boolean).join(", ");
+              };
+
+              const tradeLabel = getLiveTradeTypeFilterLabel();
+              if (tradeLabel) {
                 tags.push({ label: tradeLabel });
               }
 
@@ -1764,31 +1837,51 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                               appearance: none;
                               margin: 0;
                             }
-                            .dual-slider-input::-webkit-slider-thumb {
+                             .dual-slider-input::-webkit-slider-thumb {
                               height: 20px;
                               width: 20px;
                               margin-top: -8px;
                               border-radius: 50%;
                               background: #ffffff;
-                              border: 2px solid #1a4282;
+                              border: 2.5px solid #1a4282;
                               cursor: pointer;
                               pointer-events: auto;
                               -webkit-appearance: none;
-                              box-shadow: 0 1px 3px rgba(0,0,0,0.15);
-                              transition: transform 0.1s;
+                              box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+                              transition: transform 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94), background-color 0.12s, border-color 0.12s, box-shadow 0.12s;
                             }
                             .dual-slider-input::-webkit-slider-thumb:hover {
-                              transform: scale(1.1);
+                              transform: scale(1.35);
+                              background: #f8fafc;
+                              border-color: #0f172a;
+                              box-shadow: 0 4px 10px rgba(0,0,0,0.22);
+                            }
+                            .dual-slider-input::-webkit-slider-thumb:active {
+                              transform: scale(1.45);
+                              background: #1a4282;
+                              border-color: #1a4282;
                             }
                             .dual-slider-input::-moz-range-thumb {
                               height: 20px;
                               width: 20px;
                               border-radius: 50%;
                               background: #ffffff;
-                              border: 2px solid #1a4282;
+                              border: 2.5px solid #1a4282;
                               cursor: pointer;
                               pointer-events: auto;
-                              box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+                              box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+                              transition: transform 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94), background-color 0.12s, border-color 0.12s, box-shadow 0.12s;
+                            }
+                            .dual-slider-input::-moz-range-thumb:hover {
+                              transform: scale(1.35);
+                              background: #f8fafc;
+                              border-color: #0f172a;
+                              box-shadow: 0 4px 10px rgba(0,0,0,0.22);
+                            }
+                            .dual-slider-input::-moz-range-thumb:active {
+                              transform: scale(1.45);
+                              background: #1a4282;
+                              border-color: #1a4282;
                             }
                             
                             /* Custom slim scrollbar */
@@ -2003,7 +2096,12 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                               
                               <div style={{ display: "flex", gap: "8px", marginBottom: "20px" }}>
                                 <button
-                                  onClick={() => setTempFilterTradeTypes([])}
+                                  onClick={() => {
+                                    setTempFilterTradeTypes([]);
+                                    setTimeout(() => {
+                                      scrollToSection("면적");
+                                    }, 350);
+                                  }}
                                   style={{
                                     padding: "6px 14px",
                                     borderRadius: 4,
@@ -2025,9 +2123,12 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                     <button
                                       key={type}
                                       onClick={() => {
-                                        setTempFilterTradeTypes((prev) => 
-                                          prev.includes(type) ? prev.filter((x) => x !== type) : [...prev, type]
-                                        );
+                                        setTempFilterTradeTypes((prev) => {
+                                          return prev.includes(type) ? prev.filter((x) => x !== type) : [...prev, type];
+                                        });
+                                        setTimeout(() => {
+                                          scrollToSection("면적");
+                                        }, 350);
                                       }}
                                       style={{
                                         padding: "6px 14px",
@@ -2050,7 +2151,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                               <div style={{ height: "1px", background: "#e5e7eb", marginBottom: "20px" }} />
                               
                               {/* MAEMAE Price Range Slider */}
-                              {(() => {
+                              {(tempFilterTradeTypes.length === 0 || tempFilterTradeTypes.includes("매매")) && (() => {
                                 const minIdx = getScaleIndex(tempMaemaeMin, MAEMAE_SCALE, false);
                                 const maxIdx = getScaleIndex(tempMaemaeMax, MAEMAE_SCALE, true);
                                 return (
@@ -2109,7 +2210,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                               })()}
                               
                               {/* DEPOSIT Price Range Slider */}
-                              {(() => {
+                              {(tempFilterTradeTypes.length === 0 || tempFilterTradeTypes.includes("전세") || tempFilterTradeTypes.includes("월세") || tempFilterTradeTypes.includes("단기")) && (() => {
                                 const minIdx = getScaleIndex(tempDepositMin, DEPOSIT_SCALE, false);
                                 const maxIdx = getScaleIndex(tempDepositMax, DEPOSIT_SCALE, true);
                                 return (
@@ -2168,7 +2269,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                               })()}
                               
                               {/* RENT Price Range Slider */}
-                              {(() => {
+                              {(tempFilterTradeTypes.length === 0 || tempFilterTradeTypes.includes("월세") || tempFilterTradeTypes.includes("단기")) && (() => {
                                 const minIdx = getScaleIndex(tempRentMin, RENT_SCALE, false);
                                 const maxIdx = getScaleIndex(tempRentMax, RENT_SCALE, true);
                                 return (
@@ -2516,21 +2617,47 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                             >
                               <div style={{ fontSize: "14px", color: "#374151", marginBottom: "10px", fontWeight: "bold" }}>방향</div>
                               <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 6 }}>
+                                <button
+                                  onClick={() => {
+                                    setFilterDirection(null);
+                                    setTimeout(() => {
+                                      scrollToSection("등록자");
+                                    }, 350);
+                                  }}
+                                  style={{
+                                    gridColumn: "span 2",
+                                    padding: "6px 0",
+                                    border: "1px solid " + (filterDirection === null ? "#111" : "#eee"),
+                                    borderRadius: 4,
+                                    background: filterDirection === null ? "#111" : "#fff",
+                                    color: filterDirection === null ? "#fff" : "#333",
+                                    fontSize: 12,
+                                    fontWeight: "bold",
+                                    cursor: "pointer",
+                                    transition: "all 0.15s"
+                                  }}
+                                >
+                                  전체
+                                </button>
                                 {["동향", "서향", "남향", "북향", "남동향", "남서향", "북동향", "북서향"].map((dir) => (
                                   <button
                                     key={dir}
                                     onClick={() => {
                                       setFilterDirection(filterDirection === dir ? null : dir);
+                                      setTimeout(() => {
+                                        scrollToSection("등록자");
+                                      }, 350);
                                     }}
                                     style={{
                                       padding: "6px 0",
-                                      border: "1px solid #eee",
+                                      border: "1px solid " + (filterDirection === dir ? "#111" : "#eee"),
                                       borderRadius: 4,
                                       background: filterDirection === dir ? "#e8f0fe" : "#fff",
                                       color: filterDirection === dir ? "#1a4282" : "#333",
                                       fontSize: 12,
                                       fontWeight: filterDirection === dir ? "bold" : "normal",
                                       cursor: "pointer",
+                                      transition: "all 0.15s"
                                     }}
                                   >
                                     {dir}
@@ -2561,17 +2688,21 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                     key={item.label}
                                     onClick={() => {
                                       setFilterOwnerRole(item.val);
+                                      setTimeout(() => {
+                                        scrollToSection("중개보수");
+                                      }, 350);
                                     }}
                                     style={{
                                       padding: "8px 12px",
-                                      border: "1px solid #eee",
+                                      border: "1px solid " + (filterOwnerRole === item.val ? "#111" : "#eee"),
                                       borderRadius: 4,
-                                      background: filterOwnerRole === item.val ? "#e8f0fe" : "#fff",
-                                      color: filterOwnerRole === item.val ? "#1a4282" : "#333",
+                                      background: filterOwnerRole === item.val ? "#111" : "#fff",
+                                      color: filterOwnerRole === item.val ? "#fff" : "#333",
                                       fontSize: 12,
-                                      fontWeight: filterOwnerRole === item.val ? "bold" : "normal",
+                                      fontWeight: "bold",
                                       cursor: "pointer",
                                       textAlign: "left",
+                                      transition: "all 0.15s"
                                     }}
                                   >
                                     {item.label}
@@ -2603,17 +2734,21 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                     key={item.label}
                                     onClick={() => {
                                       setFilterCommissionType(item.val);
+                                      setTimeout(() => {
+                                        scrollToSection("테마");
+                                      }, 350);
                                     }}
                                     style={{
                                       padding: "8px 12px",
-                                      border: "1px solid #eee",
+                                      border: "1px solid " + (filterCommissionType === item.val ? "#111" : "#eee"),
                                       borderRadius: 4,
-                                      background: filterCommissionType === item.val ? "#e8f0fe" : "#fff",
-                                      color: filterCommissionType === item.val ? "#1a4282" : "#333",
+                                      background: filterCommissionType === item.val ? "#111" : "#fff",
+                                      color: filterCommissionType === item.val ? "#fff" : "#333",
                                       fontSize: 12,
-                                      fontWeight: filterCommissionType === item.val ? "bold" : "normal",
+                                      fontWeight: "bold",
                                       cursor: "pointer",
                                       textAlign: "left",
+                                      transition: "all 0.15s"
                                     }}
                                   >
                                     {item.label}
