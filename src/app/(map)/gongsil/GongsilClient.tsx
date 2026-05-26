@@ -4058,9 +4058,13 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
         />
       )}
 
-      <style>{`
+       <style>{`
         @keyframes toastFadeIn { from { opacity: 0; transform: translateX(-50%) translateY(-10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
         @keyframes dropdownFadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .no-scrollbar::-webkit-scrollbar { display: none !important; }
+        .no-scrollbar { -ms-overflow-style: none !important; scrollbar-width: none !important; }
+        .sub-gnb-scroll::-webkit-scrollbar { display: none !important; }
+        .sub-gnb-scroll { -ms-overflow-style: none !important; scrollbar-width: none !important; }
       `}</style>
     </div>
   );
