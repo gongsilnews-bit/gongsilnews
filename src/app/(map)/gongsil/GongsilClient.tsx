@@ -274,6 +274,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   const [filterSearchKeyword, setFilterSearchKeyword] = useState<string>("");
   const [activeSection, setActiveSection] = useState<string>("거래유형");
   const [isFilterCollapsed, setIsFilterCollapsed] = useState<boolean>(false);
+  const [isWizardOpen, setIsWizardOpen] = useState<boolean>(true);
   const [filterOffset, setFilterOffset] = useState({ x: 0, y: 0 });
   const [isDraggingFilter, setIsDraggingFilter] = useState(false);
   const dragStartRef = useRef({ x: 0, y: 0 });
@@ -1868,62 +1869,72 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                   ? getTradeTypeFilterLabel()
                   : f;
 
-              const isApartTradeType = (activeCategory === "apart" || activeCategory === "villa") && f === "거래유형";
+              const isPremiumWizard = (activeCategory === "apart" || activeCategory === "villa" || activeCategory === "one" || activeCategory === "biz") && f === "거래유형";
 
               return (
                 <div 
                   key={f} 
-                  style={isApartTradeType ? {
-                    position: "fixed",
-                    top: 130,
-                    left: 400,
-                    zIndex: 300,
-                  } : {
+                  style={{
                     position: "relative"
                   }}
                 >
-                  {!isApartTradeType && (
-                    <button
-                      onClick={() => {
+                  <button
+                    onClick={() => {
+                      if (isPremiumWizard) {
+                        setIsWizardOpen(!isWizardOpen);
+                      } else {
                         setActiveFilterDropdown(activeFilterDropdown === f ? null : f);
-                      }}
-                      style={{
-                        background: isFilterActive ? "#e8f0fe" : "#fff",
-                        border: `1px solid ${isFilterActive ? "#1a73e8" : "#ccc"}`,
-                        fontSize: 13,
-                        color: isFilterActive ? "#1a73e8" : "#333",
-                        cursor: "pointer",
-                        padding: "6px 14px",
-                        borderRadius: 4,
-                        whiteSpace: "nowrap",
-                        fontWeight: isFilterActive ? "bold" : "normal",
-                        fontFamily: "inherit",
-                        transition: "all 0.15s",
-                      }}
-                    >
-                      {btnLabel} ▾
-                    </button>
-                  )}
+                      }
+                    }}
+                    style={{
+                      background: isFilterActive ? "#e8f0fe" : "#fff",
+                      border: `1px solid ${isFilterActive ? "#1a73e8" : "#ccc"}`,
+                      fontSize: 13,
+                      color: isFilterActive ? "#1a73e8" : "#333",
+                      cursor: "pointer",
+                      padding: "6px 14px",
+                      borderRadius: 4,
+                      whiteSpace: "nowrap",
+                      fontWeight: isFilterActive ? "bold" : "normal",
+                      fontFamily: "inherit",
+                      transition: "all 0.15s",
+                    }}
+                  >
+                    {btnLabel} {isPremiumWizard ? (isWizardOpen ? "▴" : "▾") : "▾"}
+                  </button>
 
                   {/* 드롭다운 필터 내용 */}
-                  {(activeFilterDropdown === f || isApartTradeType) && (
+                  {((!isPremiumWizard && activeFilterDropdown === f) || (isPremiumWizard && isWizardOpen)) && (
                     <div
                       onMouseDown={f === "거래유형" ? handleDragStart : undefined}
-                      style={{
+                      style={isPremiumWizard ? {
+                        position: "fixed",
+                        top: 130,
+                        left: 400,
+                        marginTop: 4,
+                        background: "#fff",
+                        border: "1px solid #ccc",
+                        borderRadius: 10,
+                        boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
+                        padding: isFilterCollapsed ? "12px 14px 8px 14px" : 18,
+                        zIndex: 300,
+                        minWidth: 436,
+                        animation: "dropdownFadeIn 0.15s ease",
+                        transform: `translate(${filterOffset.x}px, ${filterOffset.y}px)`,
+                        cursor: isDraggingFilter ? "grabbing" : "grab",
+                      } : {
                         position: "absolute",
                         top: "100%",
                         left: 0,
                         marginTop: 4,
                         background: "#fff",
                         border: "1px solid #ccc",
-                        borderRadius: f === "거래유형" ? 10 : 4,
+                        borderRadius: 4,
                         boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
-                        padding: f === "거래유형" ? (isFilterCollapsed ? "12px 14px 8px 14px" : 18) : 16,
+                        padding: 16,
                         zIndex: 300,
-                        minWidth: f === "거래유형" ? 436 : 200,
+                        minWidth: 200,
                         animation: "dropdownFadeIn 0.15s ease",
-                        transform: f === "거래유형" ? `translate(${filterOffset.x}px, ${filterOffset.y}px)` : undefined,
-                        cursor: f === "거래유형" ? (isDraggingFilter ? "grabbing" : "grab") : "default",
                       }}
                     >
                       {f === "거래유형" && (
