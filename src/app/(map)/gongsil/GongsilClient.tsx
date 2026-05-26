@@ -245,6 +245,56 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   const [filterSearchKeyword, setFilterSearchKeyword] = useState<string>("");
   const [activeSection, setActiveSection] = useState<string>("거래유형");
   const [isFilterCollapsed, setIsFilterCollapsed] = useState<boolean>(false);
+  const [filterOffset, setFilterOffset] = useState({ x: 0, y: 0 });
+  const [isDraggingFilter, setIsDraggingFilter] = useState(false);
+  const dragStartRef = useRef({ x: 0, y: 0 });
+  const offsetStartRef = useRef({ x: 0, y: 0 });
+
+  const handleDragStart = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.button !== 0) return;
+    const target = e.target as HTMLElement;
+    if (
+      target.tagName === "INPUT" ||
+      target.tagName === "BUTTON" ||
+      target.tagName === "SPAN" ||
+      target.tagName === "A" ||
+      target.closest(".dual-slider-container")
+    ) {
+      return;
+    }
+    setIsDraggingFilter(true);
+    dragStartRef.current = { x: e.clientX, y: e.clientY };
+    offsetStartRef.current = { ...filterOffset };
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDraggingFilter) return;
+      const dx = e.clientX - dragStartRef.current.x;
+      const dy = e.clientY - dragStartRef.current.y;
+      setFilterOffset({
+        x: offsetStartRef.current.x + dx,
+        y: offsetStartRef.current.y + dy,
+      });
+    };
+    const handleMouseUp = () => {
+      if (isDraggingFilter) {
+        setIsDraggingFilter(false);
+      }
+    };
+    if (isDraggingFilter) {
+      window.addEventListener("mousemove", handleMouseMove);
+      window.addEventListener("mouseup", handleMouseUp);
+    }
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isDraggingFilter]);
+
+  useEffect(() => {
+    setFilterOffset({ x: 0, y: 0 });
+  }, [activeFilterDropdown]);
 
   const [filterPriceMin, setFilterPriceMin] = useState<number | null>(null);
   const [filterPriceMax, setFilterPriceMax] = useState<number | null>(null);
@@ -1570,6 +1620,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                   {/* 드롭다운 필터 내용 */}
                   {activeFilterDropdown === f && (
                     <div
+                      onMouseDown={f === "거래유형" ? handleDragStart : undefined}
                       style={{
                         position: "absolute",
                         top: "100%",
@@ -1583,10 +1634,24 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                         zIndex: 300,
                         minWidth: f === "거래유형" ? 436 : 200,
                         animation: "dropdownFadeIn 0.15s ease",
+                        transform: f === "거래유형" ? `translate(${filterOffset.x}px, ${filterOffset.y}px)` : undefined,
+                        cursor: f === "거래유형" ? (isDraggingFilter ? "grabbing" : "grab") : "default",
                       }}
                     >
                       {f === "거래유형" && (
                         <div style={{ display: "flex", flexDirection: "column", width: "400px" }}>
+                          {/* Dedicated elegant grab bar at the very top */}
+                          <div
+                            style={{
+                              width: "36px",
+                              height: "4px",
+                              borderRadius: "2px",
+                              background: "#cbd5e1",
+                              margin: "0 auto 10px auto",
+                              cursor: isDraggingFilter ? "grabbing" : "grab",
+                            }}
+                            title="드래그하여 이동할 수 있습니다"
+                          />
                           {/* style block to inject dual slider styles and custom scrollbar */}
                           <style>{`
                             .dual-slider-container {
