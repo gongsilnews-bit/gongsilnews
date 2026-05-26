@@ -2940,8 +2940,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                   </span>
                                   <span style={{ fontSize: "9px", color: "#6b7280" }}>
                                     {savedCategoryAlerts[activeCategory] 
-                                      ? "새 매물 등록 시 카카오톡으로 실시간 알림을 보냅니다."
-                                      : "새 매물이 등록되면 카카오톡 알림을 드립니다."}
+                                      ? "새 매물 등록 시 어플 푸시로 실시간 알림을 보냅니다."
+                                      : "새 매물이 등록되면 어플에서 알림을 드립니다."}
                                   </span>
                                 </div>
                               </div>
