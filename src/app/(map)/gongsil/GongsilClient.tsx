@@ -1466,14 +1466,14 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                         border: "1px solid #ccc",
                         borderRadius: f === "거래유형" ? 10 : 4,
                         boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
-                        padding: f === "거래유형" ? 26 : 16,
+                        padding: f === "거래유형" ? 18 : 16,
                         zIndex: 300,
-                        minWidth: f === "거래유형" ? 468 : 200,
+                        minWidth: f === "거래유형" ? 356 : 200,
                         animation: "dropdownFadeIn 0.15s ease",
                       }}
                     >
                       {f === "거래유형" && (
-                        <div style={{ display: "flex", flexDirection: "column", width: "416px" }}>
+                        <div style={{ display: "flex", flexDirection: "column", width: "320px" }}>
                           {/* style block to inject dual slider styles */}
                           <style>{`
                             .dual-slider-container {
@@ -1532,7 +1532,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                           `}</style>
                           
                           {/* Scrollable area */}
-                          <div style={{ maxHeight: "440px", overflowY: "auto", paddingRight: "8px", paddingBottom: "10px" }}>
+                          <div style={{ maxHeight: "480px", overflowY: "auto", paddingRight: "8px", paddingBottom: "10px" }}>
                             {/* Header info */}
                             <div style={{ fontSize: "14px", color: "#374151", marginBottom: "10px", fontWeight: "bold" }}>
                               거래유형 중복선택 가능
