@@ -16,6 +16,8 @@ interface MobileFilterBarProps {
   onLocationMove: (lat: number, lng: number, zoom: number) => void;
   onShowList?: (mode?: "map" | "filter") => void;
   kakaoMapRef: React.MutableRefObject<any>;
+  locLabel: string;
+  setLocLabel: React.Dispatch<React.SetStateAction<string>>;
 }
 
 const PROPERTY_TYPES = [
@@ -24,12 +26,9 @@ const PROPERTY_TYPES = [
 ];
 const TRADE_TYPES = ["매매", "전세", "월세", "단기"];
 
-export default function MobileFilterBar({ vacancies, filteredCount, filters, onFilterChange, onLocationMove, onShowList, kakaoMapRef }: MobileFilterBarProps) {
+export default function MobileFilterBar({ vacancies, filteredCount, filters, onFilterChange, onLocationMove, onShowList, kakaoMapRef, locLabel, setLocLabel }: MobileFilterBarProps) {
   const [activePanel, setActivePanel] = useState<string | null>(null);
   const [fullFilterOpen, setFullFilterOpen] = useState(false);
-
-  // Location search state
-  const [locLabel, setLocLabel] = useState("위치");
 
   // Text search
   const [searchOpen, setSearchOpen] = useState(false);
@@ -86,10 +85,21 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
   const areaLabel = (filters.areaMin !== null || filters.areaMax !== null) ? `${filters.areaMin !== null ? filters.areaMin : ""}~${filters.areaMax !== null ? filters.areaMax : ""}평` : "면적";
 
   const pillStyle = (active: boolean): React.CSSProperties => ({
-    padding: "7px 14px", borderRadius: "20px", fontSize: "13px", fontWeight: 600, whiteSpace: "nowrap", flexShrink: 0,
-    border: active ? "1.5px solid #4b89ff" : "1px solid #d1d5db",
-    background: active ? "#eef4ff" : "#fff", color: active ? "#4b89ff" : "#374151",
-    cursor: "pointer", transition: "all 0.15s", display: "flex", alignItems: "center", gap: "4px",
+    padding: "8px 16px",
+    borderRadius: "20px",
+    fontSize: "13px",
+    fontWeight: active ? 800 : 500, // 활성화 시 800으로 찐하게!
+    whiteSpace: "nowrap",
+    flexShrink: 0,
+    border: active ? "2px solid #1a73e8" : "1px solid #d1d5db", // 활성화 시 2px solid #1a73e8 로 더 굵고 진하게!
+    background: active ? "#f0f7ff" : "#fff",
+    color: active ? "#1a73e8" : "#4b5563", // 활성화 시 고대비 파란색!
+    cursor: "pointer",
+    transition: "all 0.15s ease",
+    display: "flex",
+    alignItems: "center",
+    gap: "4px",
+    boxShadow: active ? "0 2px 8px rgba(26, 115, 232, 0.15)" : "none"
   });
 
   // Bottom sheet renderer

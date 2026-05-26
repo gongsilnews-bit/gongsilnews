@@ -87,6 +87,10 @@ function MobileGongsilContent() {
   const [mapLoaded, setMapLoaded] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
   
+  // 🚀 위치 역지오코딩 & 상단 라벨 실시간 갱신용 React State
+  const [locLabel, setLocLabel] = useState("위치");
+  const geocoderRef = useRef<any>(null);
+  
   // 🚀 초고속 Bbox 데이터 실시간 갱신용 React State
   const [mapBounds, setMapBounds] = useState<any>(null);
   const [isFetchingVacancies, setIsFetchingVacancies] = useState(false);
@@ -484,6 +488,9 @@ function MobileGongsilContent() {
       setZoomLevel(map.getLevel());
       setMapBounds(map.getBounds());
 
+      // 🚀 위치 역지오코딩용 Geocoder 인스턴스 생성
+      geocoderRef.current = new kakao.maps.services.Geocoder();
+
       kakaoMapRef.current = map;
       setMapLoaded(true);
     };
@@ -625,9 +632,34 @@ function MobileGongsilContent() {
 
     // 🚀 지도의 bounds 및 zoomLevel 변화 시 부모 상태로 동기화
     const handleMapIdle = () => {
+      const center = map.getCenter();
       setMapBounds(map.getBounds());
       setZoomLevel(map.getLevel());
       updateVisibleCount();
+
+      // 🚀 [대표님 기획 지침] 지도 드래그 이동 시 중심점 주소를 획득하여 상단 📍 위치 탭 및 필터 행정구역 자동 동기화
+      if (geocoderRef.current) {
+        geocoderRef.current.coord2RegionCode(center.getLng(), center.getLat(), (result: any, status: any) => {
+          if (status === (window as any).kakao.maps.services.Status.OK) {
+            const region = result.find((r: any) => r.region_type === 'B') || result[0];
+            if (region) {
+              const sido = region.region_1depth_name; // 예: "서울특별시"
+              const sigungu = region.region_2depth_name; // 예: "강남구"
+              const dong = region.region_3depth_name; // 예: "논현동"
+              
+              const label = [sigungu, dong].filter(Boolean).join(" ");
+              setLocLabel(label || "위치");
+
+              // 지도 위치 이동에 맞춰 필터 상태의 행정구역도 완벽 동기화!
+              updateFilter({
+                sido: sido || null,
+                sigungu: sigungu || null,
+                dong: dong || null
+              });
+            }
+          }
+        });
+      }
     };
 
     // 초기 계산
@@ -822,6 +854,8 @@ function MobileGongsilContent() {
               setShowListView(true);
             }}
             kakaoMapRef={kakaoMapRef}
+            locLabel={locLabel}
+            setLocLabel={setLocLabel}
           />
         )}
 
