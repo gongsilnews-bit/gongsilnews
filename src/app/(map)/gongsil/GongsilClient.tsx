@@ -33,6 +33,74 @@ import {
   isApartmentType,
 } from "./gongsilHelpers";
 
+const MAEMAE_SCALE = [
+  0,
+  10000000,   // 1천만
+  30000000,   // 3천만
+  50000000,   // 5천만
+  100000000,  // 1억
+  200000000,  // 2억
+  300000000,  // 3억
+  500000000,  // 5억
+  700000000,  // 7억
+  1000000000, // 10억
+  1500000000, // 15억
+  2000000000, // 20억
+  3000000000, // 30억
+  4000000000, // 40억
+  5000000000, // 50억
+];
+
+const DEPOSIT_SCALE = [
+  0,
+  5000000,    // 500만
+  10000000,   // 1천만
+  20000000,   // 2천만
+  30000000,   // 3천만
+  50000000,   // 5천만
+  100000000,  // 1억
+  150000000,  // 1.5억
+  200000000,  // 2억
+  300000000,  // 3억
+  500000000,  // 5억
+  700000000,  // 7억
+  1000000000, // 10억
+  1500000000, // 15억
+  2000000000, // 20억
+];
+
+const RENT_SCALE = [
+  0,
+  100000,   // 10만
+  200000,   // 20만
+  300000,   // 30만
+  400000,   // 40만
+  500000,   // 50만
+  600000,   // 60만
+  800000,   // 80만
+  1000000,  // 100만
+  1200000,  // 120만
+  1500000,  // 150만
+  2000000,  // 200만
+  3000000,  // 300만
+  4000000,  // 400만
+  5000000,  // 500만
+];
+
+const getScaleIndex = (val: number | null, scale: number[], isMax: boolean) => {
+  if (val === null) return isMax ? scale.length - 1 : 0;
+  let closestIdx = 0;
+  let minDiff = Infinity;
+  for (let i = 0; i < scale.length; i++) {
+    const diff = Math.abs(scale[i] - val);
+    if (diff < minDiff) {
+      minDiff = diff;
+      closestIdx = i;
+    }
+  }
+  return closestIdx;
+};
+
 export default function GongsilClient({ initialVacancies }: { initialVacancies: any[] }) {
   /* ── State & Refs ── */
   const searchParams = useSearchParams();
@@ -107,6 +175,21 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
 
   // ── 실제 필터 상태 (네이버 부동산 스타일) ──
   const [filterTradeTypes, setFilterTradeTypes] = useState<string[]>([]);
+  const [tempFilterTradeTypes, setTempFilterTradeTypes] = useState<string[]>([]);
+  const [tempMaemaeMin, setTempMaemaeMin] = useState<number | null>(null);
+  const [tempMaemaeMax, setTempMaemaeMax] = useState<number | null>(null);
+  const [tempDepositMin, setTempDepositMin] = useState<number | null>(null);
+  const [tempDepositMax, setTempDepositMax] = useState<number | null>(null);
+  const [tempRentMin, setTempRentMin] = useState<number | null>(null);
+  const [tempRentMax, setTempRentMax] = useState<number | null>(null);
+
+  const [appliedMaemaeMin, setAppliedMaemaeMin] = useState<number | null>(null);
+  const [appliedMaemaeMax, setAppliedMaemaeMax] = useState<number | null>(null);
+  const [appliedDepositMin, setAppliedDepositMin] = useState<number | null>(null);
+  const [appliedDepositMax, setAppliedDepositMax] = useState<number | null>(null);
+  const [appliedRentMin, setAppliedRentMin] = useState<number | null>(null);
+  const [appliedRentMax, setAppliedRentMax] = useState<number | null>(null);
+
   const [filterPriceMin, setFilterPriceMin] = useState<number | null>(null);
   const [filterPriceMax, setFilterPriceMax] = useState<number | null>(null);
   const [filterAreaMin, setFilterAreaMin] = useState<number | null>(null); // ㎡ 단위
@@ -146,6 +229,18 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   const itemMapRef = useRef<HTMLDivElement>(null);
   const roadviewRef = useRef<HTMLDivElement>(null);
   const kakaoMapRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (activeFilterDropdown === "거래유형" || activeFilterDropdown === "거래방식") {
+      setTempFilterTradeTypes(filterTradeTypes);
+      setTempMaemaeMin(appliedMaemaeMin);
+      setTempMaemaeMax(appliedMaemaeMax);
+      setTempDepositMin(appliedDepositMin);
+      setTempDepositMax(appliedDepositMax);
+      setTempRentMin(appliedRentMin);
+      setTempRentMax(appliedRentMax);
+    }
+  }, [activeFilterDropdown]);
 
   // Set initial data and ref
   useEffect(() => {
@@ -356,19 +451,39 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
       list = list.filter((v) => activePills.includes(v.sub_category));
     }
 
-    // 3) 거래방식 필터
-    if (filterTradeTypes.length > 0) {
-      list = list.filter((v) => filterTradeTypes.includes(v.trade_type));
-    }
-
-    // 4) 가격대 필터 (deposit 기준, min/max)
-    if (filterPriceMin !== null || filterPriceMax !== null) {
+    // 3) 거래방식 및 통합 가격 필터 적용
+    if (activeCategory === "apart") {
+      if (filterTradeTypes.length > 0) {
+        list = list.filter((v) => filterTradeTypes.includes(v.trade_type));
+      }
+      
       list = list.filter((v) => {
-        const dep = v.deposit || 0;
-        if (filterPriceMin !== null && dep < filterPriceMin) return false;
-        if (filterPriceMax !== null && dep > filterPriceMax) return false;
+        if (v.trade_type === "매매") {
+          if (appliedMaemaeMin !== null && v.deposit < appliedMaemaeMin) return false;
+          if (appliedMaemaeMax !== null && v.deposit > appliedMaemaeMax) return false;
+        } else if (v.trade_type === "전세") {
+          if (appliedDepositMin !== null && v.deposit < appliedDepositMin) return false;
+          if (appliedDepositMax !== null && v.deposit > appliedDepositMax) return false;
+        } else if (v.trade_type === "월세" || v.trade_type === "단기") {
+          if (appliedDepositMin !== null && v.deposit < appliedDepositMin) return false;
+          if (appliedDepositMax !== null && v.deposit > appliedDepositMax) return false;
+          if (appliedRentMin !== null && (v.monthly_rent || 0) < appliedRentMin) return false;
+          if (appliedRentMax !== null && (v.monthly_rent || 0) > appliedRentMax) return false;
+        }
         return true;
       });
+    } else {
+      if (filterTradeTypes.length > 0) {
+        list = list.filter((v) => filterTradeTypes.includes(v.trade_type));
+      }
+      if (filterPriceMin !== null || filterPriceMax !== null) {
+        list = list.filter((v) => {
+          const dep = v.deposit || 0;
+          if (filterPriceMin !== null && dep < filterPriceMin) return false;
+          if (filterPriceMax !== null && dep > filterPriceMax) return false;
+          return true;
+        });
+      }
     }
 
     // 5) 면적 필터 (전용면적 기준, ㎡ min/max)
@@ -464,6 +579,12 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     activeCategory,
     activePills,
     filterTradeTypes,
+    appliedMaemaeMin,
+    appliedMaemaeMax,
+    appliedDepositMin,
+    appliedDepositMax,
+    appliedRentMin,
+    appliedRentMax,
     filterPriceMin,
     filterPriceMax,
     filterAreaMin,
@@ -994,6 +1115,14 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     setFilterCommissionType(null);
     setFilterThemes([]);
     setActiveFilterDropdown(null);
+
+    // Also reset unified filters
+    setAppliedMaemaeMin(null);
+    setAppliedMaemaeMax(null);
+    setAppliedDepositMin(null);
+    setAppliedDepositMax(null);
+    setAppliedRentMin(null);
+    setAppliedRentMax(null);
   };
 
   const handleCategoryChange = (key: string) => {
@@ -1042,6 +1171,12 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
 
   const hasActiveFilters =
     filterTradeTypes.length > 0 ||
+    appliedMaemaeMin !== null ||
+    appliedMaemaeMax !== null ||
+    appliedDepositMin !== null ||
+    appliedDepositMax !== null ||
+    appliedRentMin !== null ||
+    appliedRentMax !== null ||
     filterPriceMin !== null ||
     filterPriceMax !== null ||
     filterAreaMin !== null ||
@@ -1074,6 +1209,42 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
       return `${man}만`;
     }
     return `${val}원`;
+  };
+
+  const getTradeTypeFilterLabel = () => {
+    if (filterTradeTypes.length === 0) return "거래유형";
+    
+    const typesStr = filterTradeTypes.join(",");
+    const hasPriceFilter =
+      appliedMaemaeMin !== null ||
+      appliedMaemaeMax !== null ||
+      appliedDepositMin !== null ||
+      appliedDepositMax !== null ||
+      appliedRentMin !== null ||
+      appliedRentMax !== null;
+      
+    if (!hasPriceFilter) return typesStr;
+    
+    if (filterTradeTypes.length === 1) {
+      const t = filterTradeTypes[0];
+      if (t === "매매") {
+        if (appliedMaemaeMin === null && appliedMaemaeMax === null) return "매매";
+        return `매매 ${formatPriceLabel(appliedMaemaeMin) || "~"}~${formatPriceLabel(appliedMaemaeMax) || ""}`;
+      } else if (t === "전세") {
+        if (appliedDepositMin === null && appliedDepositMax === null) return "전세";
+        return `전세 ${formatPriceLabel(appliedDepositMin) || "~"}~${formatPriceLabel(appliedDepositMax) || ""}`;
+      } else if (t === "월세") {
+        const depStr = appliedDepositMin !== null || appliedDepositMax !== null 
+          ? `보증금 ${formatPriceLabel(appliedDepositMin) || "~"}~${formatPriceLabel(appliedDepositMax) || ""}`
+          : "";
+        const rentStr = appliedRentMin !== null || appliedRentMax !== null
+          ? `월세 ${formatPriceLabel(appliedRentMin) || "~"}~${formatPriceLabel(appliedRentMax) || ""}`
+          : "";
+        return `월세 ${[depStr, rentStr].filter(Boolean).join(" / ")}`;
+      }
+    }
+    
+    return `${typesStr} (필터됨)`;
   };
   const priceFilterLabel =
     filterPriceMin !== null || filterPriceMax !== null
@@ -1227,6 +1398,15 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
             {config.basicFilters.map((f) => {
               const isFilterActive =
                 (f === "거래방식" && filterTradeTypes.length > 0) ||
+                (f === "거래유형" && (
+                  filterTradeTypes.length > 0 ||
+                  appliedMaemaeMin !== null ||
+                  appliedMaemaeMax !== null ||
+                  appliedDepositMin !== null ||
+                  appliedDepositMax !== null ||
+                  appliedRentMin !== null ||
+                  appliedRentMax !== null
+                )) ||
                 ((f === "가격대" || f === "분양가/보증금") && (filterPriceMin !== null || filterPriceMax !== null)) ||
                 (f === "면적" && (filterAreaMin !== null || filterAreaMax !== null)) ||
                 (f === "사용승인일" && (filterYearMin !== null || filterYearMax !== null)) ||
@@ -1249,6 +1429,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                   ? unitFilterLabel
                   : f === "관리비" && filterMaintIdx > 0
                   ? `관리비: ${MAINT_PRESETS[filterMaintIdx].label}`
+                  : f === "거래유형"
+                  ? getTradeTypeFilterLabel()
                   : f;
 
               return (
@@ -1282,14 +1464,366 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                         marginTop: 4,
                         background: "#fff",
                         border: "1px solid #ccc",
-                        borderRadius: 4,
-                        boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-                        padding: 16,
+                        borderRadius: f === "거래유형" ? 8 : 4,
+                        boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
+                        padding: f === "거래유형" ? 20 : 16,
                         zIndex: 300,
-                        minWidth: 200,
+                        minWidth: f === "거래유형" ? 360 : 200,
                         animation: "dropdownFadeIn 0.15s ease",
                       }}
                     >
+                      {f === "거래유형" && (
+                        <div style={{ display: "flex", flexDirection: "column", width: "320px" }}>
+                          {/* style block to inject dual slider styles */}
+                          <style>{`
+                            .dual-slider-container {
+                              position: relative;
+                              width: 100%;
+                              height: 6px;
+                              background: #e5e7eb;
+                              border-radius: 3px;
+                              margin: 16px 0 28px 0;
+                            }
+                            .dual-slider-track {
+                              position: absolute;
+                              height: 100%;
+                              background: #ff6f00; /* Premium Orange track */
+                              border-radius: 3px;
+                            }
+                            .dual-slider-input {
+                              position: absolute;
+                              width: 100%;
+                              height: 6px;
+                              top: 0;
+                              left: 0;
+                              background: none;
+                              pointer-events: none;
+                              -webkit-appearance: none;
+                              -moz-appearance: none;
+                              appearance: none;
+                              margin: 0;
+                            }
+                            .dual-slider-input::-webkit-slider-thumb {
+                              height: 18px;
+                              width: 18px;
+                              border-radius: 50%;
+                              background: #ffffff;
+                              border: 2px solid #ff6f00; /* Premium Orange thumb */
+                              cursor: pointer;
+                              pointer-events: auto;
+                              -webkit-appearance: none;
+                              box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+                              transition: transform 0.1s;
+                            }
+                            .dual-slider-input::-webkit-slider-thumb:hover {
+                              transform: scale(1.1);
+                            }
+                            .dual-slider-input::-moz-range-thumb {
+                              height: 18px;
+                              width: 18px;
+                              border-radius: 50%;
+                              background: #ffffff;
+                              border: 2px solid #ff6f00;
+                              cursor: pointer;
+                              pointer-events: auto;
+                              box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+                            }
+                          `}</style>
+                          
+                          {/* Scrollable area */}
+                          <div style={{ maxHeight: "360px", overflowY: "auto", paddingRight: "8px", paddingBottom: "10px" }}>
+                            {/* Header info */}
+                            <div style={{ fontSize: "11px", color: "#6b7280", marginBottom: "8px", fontWeight: 500 }}>
+                              거래유형 중복선택 가능
+                            </div>
+                            
+                            {/* Pills container */}
+                            <div style={{ display: "flex", gap: "6px", marginBottom: "20px" }}>
+                              {/* 전체 pill */}
+                              <button
+                                onClick={() => setTempFilterTradeTypes([])}
+                                style={{
+                                  padding: "6px 12px",
+                                  borderRadius: "20px",
+                                  fontSize: "12px",
+                                  border: "1px solid " + (tempFilterTradeTypes.length === 0 ? "#111827" : "#e5e7eb"),
+                                  background: tempFilterTradeTypes.length === 0 ? "#111827" : "#ffffff",
+                                  color: tempFilterTradeTypes.length === 0 ? "#ffffff" : "#4b5563",
+                                  fontWeight: tempFilterTradeTypes.length === 0 ? "bold" : "normal",
+                                  cursor: "pointer",
+                                  transition: "all 0.15s"
+                                }}
+                              >
+                                전체
+                              </button>
+                              
+                              {/* Other trade types */}
+                              {["매매", "전세", "월세", "단기"].map((type) => {
+                                const isSel = tempFilterTradeTypes.includes(type);
+                                return (
+                                  <button
+                                    key={type}
+                                    onClick={() => {
+                                      setTempFilterTradeTypes((prev) => 
+                                        prev.includes(type) ? prev.filter((x) => x !== type) : [...prev, type]
+                                      );
+                                    }}
+                                    style={{
+                                      padding: "6px 12px",
+                                      borderRadius: "20px",
+                                      fontSize: "12px",
+                                      border: "1px solid " + (isSel ? "#ff6f00" : "#e5e7eb"),
+                                      background: isSel ? "#fff3e0" : "#ffffff",
+                                      color: isSel ? "#ff6f00" : "#4b5563",
+                                      fontWeight: isSel ? "bold" : "normal",
+                                      cursor: "pointer",
+                                      transition: "all 0.15s"
+                                    }}
+                                  >
+                                    {type}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                            
+                            {/* Separator line */}
+                            <div style={{ height: "1px", background: "#f3f4f6", marginBottom: "16px" }} />
+                            
+                            {/* MAEMAE Price Range Slider */}
+                            {(() => {
+                              const minIdx = getScaleIndex(tempMaemaeMin, MAEMAE_SCALE, false);
+                              const maxIdx = getScaleIndex(tempMaemaeMax, MAEMAE_SCALE, true);
+                              return (
+                                <div style={{ marginBottom: "20px" }}>
+                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                                    <span style={{ fontSize: "13px", fontWeight: "bold", color: "#111827" }}>매매가</span>
+                                    <span style={{ fontSize: "12px", color: "#ff6f00", fontWeight: "bold" }}>
+                                      {tempMaemaeMin === null && tempMaemaeMax === null 
+                                        ? "전체" 
+                                        : `${formatPriceLabel(tempMaemaeMin) || "0"} ~ ${formatPriceLabel(tempMaemaeMax) || "최대"}`}
+                                    </span>
+                                  </div>
+                                  
+                                  <div className="dual-slider-container">
+                                    <div 
+                                      className="dual-slider-track" 
+                                      style={{ left: `${(minIdx / (MAEMAE_SCALE.length - 1)) * 100}%`, right: `${100 - (maxIdx / (MAEMAE_SCALE.length - 1)) * 100}%` }} 
+                                    />
+                                    <input 
+                                      type="range" 
+                                      min={0} 
+                                      max={MAEMAE_SCALE.length - 1} 
+                                      value={minIdx} 
+                                      onChange={(e) => {
+                                        const val = parseInt(e.target.value, 10);
+                                        if (val <= maxIdx) {
+                                          setTempMaemaeMin(val === 0 ? null : MAEMAE_SCALE[val]);
+                                        }
+                                      }} 
+                                      className="dual-slider-input" 
+                                    />
+                                    <input 
+                                      type="range" 
+                                      min={0} 
+                                      max={MAEMAE_SCALE.length - 1} 
+                                      value={maxIdx} 
+                                      onChange={(e) => {
+                                        const val = parseInt(e.target.value, 10);
+                                        if (val >= minIdx) {
+                                          setTempMaemaeMax(val === MAEMAE_SCALE.length - 1 ? null : MAEMAE_SCALE[val]);
+                                        }
+                                      }} 
+                                      className="dual-slider-input" 
+                                    />
+                                  </div>
+                                  
+                                  <div style={{ display: "flex", justifyContent: "space-between", padding: "0 2px", marginTop: "-18px" }}>
+                                    <span style={{ fontSize: "10px", color: "#9ca3af" }}>최소</span>
+                                    <span style={{ fontSize: "10px", color: "#9ca3af" }}>1억</span>
+                                    <span style={{ fontSize: "10px", color: "#9ca3af" }}>5억</span>
+                                    <span style={{ fontSize: "10px", color: "#9ca3af" }}>15억</span>
+                                    <span style={{ fontSize: "10px", color: "#9ca3af" }}>최대</span>
+                                  </div>
+                                </div>
+                              );
+                            })()}
+                            
+                            {/* DEPOSIT Price Range Slider */}
+                            {(() => {
+                              const minIdx = getScaleIndex(tempDepositMin, DEPOSIT_SCALE, false);
+                              const maxIdx = getScaleIndex(tempDepositMax, DEPOSIT_SCALE, true);
+                              return (
+                                <div style={{ marginBottom: "20px" }}>
+                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                                    <span style={{ fontSize: "13px", fontWeight: "bold", color: "#111827" }}>보증금</span>
+                                    <span style={{ fontSize: "12px", color: "#ff6f00", fontWeight: "bold" }}>
+                                      {tempDepositMin === null && tempDepositMax === null 
+                                        ? "전체" 
+                                        : `${formatPriceLabel(tempDepositMin) || "0"} ~ ${formatPriceLabel(tempDepositMax) || "최대"}`}
+                                    </span>
+                                  </div>
+                                  
+                                  <div className="dual-slider-container">
+                                    <div 
+                                      className="dual-slider-track" 
+                                      style={{ left: `${(minIdx / (DEPOSIT_SCALE.length - 1)) * 100}%`, right: `${100 - (maxIdx / (DEPOSIT_SCALE.length - 1)) * 100}%` }} 
+                                    />
+                                    <input 
+                                      type="range" 
+                                      min={0} 
+                                      max={DEPOSIT_SCALE.length - 1} 
+                                      value={minIdx} 
+                                      onChange={(e) => {
+                                        const val = parseInt(e.target.value, 10);
+                                        if (val <= maxIdx) {
+                                          setTempDepositMin(val === 0 ? null : DEPOSIT_SCALE[val]);
+                                        }
+                                      }} 
+                                      className="dual-slider-input" 
+                                    />
+                                    <input 
+                                      type="range" 
+                                      min={0} 
+                                      max={DEPOSIT_SCALE.length - 1} 
+                                      value={maxIdx} 
+                                      onChange={(e) => {
+                                        const val = parseInt(e.target.value, 10);
+                                        if (val >= minIdx) {
+                                          setTempDepositMax(val === DEPOSIT_SCALE.length - 1 ? null : DEPOSIT_SCALE[val]);
+                                        }
+                                      }} 
+                                      className="dual-slider-input" 
+                                    />
+                                  </div>
+                                  
+                                  <div style={{ display: "flex", justifyContent: "space-between", padding: "0 2px", marginTop: "-18px" }}>
+                                    <span style={{ fontSize: "10px", color: "#9ca3af" }}>최소</span>
+                                    <span style={{ fontSize: "10px", color: "#9ca3af" }}>5천만</span>
+                                    <span style={{ fontSize: "10px", color: "#9ca3af" }}>2억</span>
+                                    <span style={{ fontSize: "10px", color: "#9ca3af" }}>10억</span>
+                                    <span style={{ fontSize: "10px", color: "#9ca3af" }}>최대</span>
+                                  </div>
+                                </div>
+                              );
+                            })()}
+                            
+                            {/* RENT Price Range Slider */}
+                            {(() => {
+                              const minIdx = getScaleIndex(tempRentMin, RENT_SCALE, false);
+                              const maxIdx = getScaleIndex(tempRentMax, RENT_SCALE, true);
+                              return (
+                                <div style={{ marginBottom: "10px" }}>
+                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                                    <span style={{ fontSize: "13px", fontWeight: "bold", color: "#111827" }}>월세</span>
+                                    <span style={{ fontSize: "12px", color: "#ff6f00", fontWeight: "bold" }}>
+                                      {tempRentMin === null && tempRentMax === null 
+                                        ? "전체" 
+                                        : `${formatPriceLabel(tempRentMin) || "0"} ~ ${formatPriceLabel(tempRentMax) || "최대"}`}
+                                    </span>
+                                  </div>
+                                  
+                                  <div className="dual-slider-container">
+                                    <div 
+                                      className="dual-slider-track" 
+                                      style={{ left: `${(minIdx / (RENT_SCALE.length - 1)) * 100}%`, right: `${100 - (maxIdx / (RENT_SCALE.length - 1)) * 100}%` }} 
+                                    />
+                                    <input 
+                                      type="range" 
+                                      min={0} 
+                                      max={RENT_SCALE.length - 1} 
+                                      value={minIdx} 
+                                      onChange={(e) => {
+                                        const val = parseInt(e.target.value, 10);
+                                        if (val <= maxIdx) {
+                                          setTempRentMin(val === 0 ? null : RENT_SCALE[val]);
+                                        }
+                                      }} 
+                                      className="dual-slider-input" 
+                                    />
+                                    <input 
+                                      type="range" 
+                                      min={0} 
+                                      max={RENT_SCALE.length - 1} 
+                                      value={maxIdx} 
+                                      onChange={(e) => {
+                                        const val = parseInt(e.target.value, 10);
+                                        if (val >= minIdx) {
+                                          setTempRentMax(val === RENT_SCALE.length - 1 ? null : RENT_SCALE[val]);
+                                        }
+                                      }} 
+                                      className="dual-slider-input" 
+                                    />
+                                  </div>
+                                  
+                                  <div style={{ display: "flex", justifyContent: "space-between", padding: "0 2px", marginTop: "-18px" }}>
+                                    <span style={{ fontSize: "10px", color: "#9ca3af" }}>최소</span>
+                                    <span style={{ fontSize: "10px", color: "#9ca3af" }}>20만</span>
+                                    <span style={{ fontSize: "10px", color: "#9ca3af" }}>50만</span>
+                                    <span style={{ fontSize: "10px", color: "#9ca3af" }}>150만</span>
+                                    <span style={{ fontSize: "10px", color: "#9ca3af" }}>최대</span>
+                                  </div>
+                                </div>
+                              );
+                            })()}
+                          </div>
+                          
+                          {/* Bottom Action buttons */}
+                          <div style={{ display: "flex", gap: "8px", borderTop: "1px solid #f3f4f6", paddingTop: "12px", background: "#ffffff" }}>
+                            <button
+                              onClick={() => {
+                                setTempFilterTradeTypes([]);
+                                setTempMaemaeMin(null);
+                                setTempMaemaeMax(null);
+                                setTempDepositMin(null);
+                                setTempDepositMax(null);
+                                setTempRentMin(null);
+                                setTempRentMax(null);
+                              }}
+                              style={{
+                                flex: 1,
+                                padding: "10px 0",
+                                border: "1px solid #e5e7eb",
+                                borderRadius: "4px",
+                                fontSize: "13px",
+                                color: "#4b5563",
+                                background: "#ffffff",
+                                cursor: "pointer",
+                                fontWeight: "600",
+                                transition: "all 0.15s"
+                              }}
+                            >
+                              초기화
+                            </button>
+                            <button
+                              onClick={() => {
+                                setFilterTradeTypes(tempFilterTradeTypes);
+                                setAppliedMaemaeMin(tempMaemaeMin);
+                                setAppliedMaemaeMax(tempMaemaeMax);
+                                setAppliedDepositMin(tempDepositMin);
+                                setAppliedDepositMax(tempDepositMax);
+                                setAppliedRentMin(tempRentMin);
+                                setAppliedRentMax(tempRentMax);
+                                setActiveFilterDropdown(null);
+                              }}
+                              style={{
+                                flex: 2,
+                                padding: "10px 0",
+                                border: "none",
+                                borderRadius: "4px",
+                                fontSize: "13px",
+                                color: "#ffffff",
+                                background: "#ff6f00", /* Premium Orange */
+                                cursor: "pointer",
+                                fontWeight: "bold",
+                                transition: "all 0.15s"
+                              }}
+                            >
+                              적용하기
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
                       {f === "거래방식" && (
                         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                           {["매매", "전세", "월세"].map((type) => (
