@@ -8,18 +8,20 @@ interface Props {
 }
 
 export default function TradeTypeFilterPanel({ filters, onFilterChange, TRADE_TYPES }: Props) {
+  const isAllSelected = filters.tradeTypes.length === TRADE_TYPES.length;
+
   const toggleTrade = (item: string) => {
     const arr = filters.tradeTypes;
     const newArr = arr.includes(item) ? arr.filter(x => x !== item) : [...arr, item];
     onFilterChange({ tradeTypes: newArr });
   };
 
-  const selectAll = () => {
-    onFilterChange({ tradeTypes: TRADE_TYPES });
-  };
-
-  const selectNone = () => {
-    onFilterChange({ tradeTypes: [] });
+  const handleToggleAll = () => {
+    if (isAllSelected) {
+      onFilterChange({ tradeTypes: [] });
+    } else {
+      onFilterChange({ tradeTypes: TRADE_TYPES });
+    }
   };
 
   const gridBtnStyle = (active: boolean): React.CSSProperties => ({
@@ -31,27 +33,19 @@ export default function TradeTypeFilterPanel({ filters, onFilterChange, TRADE_TY
 
   return (
     <div>
-      {/* 🚀 [대표님 지침] 거래방식 최상단 세련된 원터치 퀵 토글 버튼 장착 */}
-      <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginBottom: "14px" }}>
+      {/* 🚀 [대표님 지침] 거래방식 최상단 단일 전체선택 토글 버튼 장착 */}
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "14px" }}>
         <button 
-          onClick={selectAll} 
+          onClick={handleToggleAll} 
           style={{ 
-            background: "none", border: "none", fontSize: "13px", fontWeight: 800, color: "#1a73e8", 
-            cursor: "pointer", padding: "6px 10px", borderRadius: "6px", backgroundColor: "#f0f7ff",
-            transition: "background-color 0.15s"
+            background: "none", border: "none", fontSize: "13px", fontWeight: 800, 
+            cursor: "pointer", padding: "6px 12px", borderRadius: "6px",
+            backgroundColor: isAllSelected ? "#f0f7ff" : "#f3f4f6",
+            color: isAllSelected ? "#1a73e8" : "#4b5563",
+            transition: "all 0.15s ease"
           }}
         >
-          ✓ 전체 선택
-        </button>
-        <button 
-          onClick={selectNone} 
-          style={{ 
-            background: "none", border: "none", fontSize: "13px", fontWeight: 800, color: "#ef4444", 
-            cursor: "pointer", padding: "6px 10px", borderRadius: "6px", backgroundColor: "#fef2f2",
-            transition: "background-color 0.15s"
-          }}
-        >
-          ✕ 전체 해제
+          {isAllSelected ? "✓ 전체선택" : "전체선택"}
         </button>
       </div>
 
