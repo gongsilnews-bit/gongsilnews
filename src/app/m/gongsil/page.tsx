@@ -329,7 +329,11 @@ function MobileGongsilContent() {
 
   // 뒤로 가기(안드로이드 하드웨어 백버튼 등) 처리
   useEffect(() => {
-    const handlePopState = () => {
+    const handlePopState = (e: any) => {
+      // 갤러리 풀스크린 모달이 닫히는 popstate인 경우, 상세패널 닫기 동작을 방지
+      if (e?.state?.modal === "gallery-m" || window.history.state?.modal === "gallery-m") {
+        return;
+      }
       if (vacancyStackRef.current.length > 0) {
         const prev = vacancyStackRef.current.pop();
         if (prev && prev.vacancy) {

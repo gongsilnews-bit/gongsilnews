@@ -1054,30 +1054,12 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
       ? `세대수 ${filterUnitMin || "~"}~${filterUnitMax || ""}`
       : "세대수";
 
-  // Gallery Modal Control with History State management to handle browser back button
-  useEffect(() => {
-    const handlePopState = (e: PopStateEvent) => {
-      if (showGalleryModal) {
-        setShowGalleryModal(false);
-      }
-    };
-    window.addEventListener("popstate", handlePopState);
-    return () => {
-      window.removeEventListener("popstate", handlePopState);
-    };
-  }, [showGalleryModal]);
-
   const openGalleryModal = () => {
-    window.history.pushState({ modal: "gallery" }, "", "");
     setShowGalleryModal(true);
   };
 
   const closeGalleryModal = () => {
-    if (window.history.state?.modal === "gallery") {
-      window.history.back();
-    } else {
-      setShowGalleryModal(false);
-    }
+    setShowGalleryModal(false);
   };
 
   return (
