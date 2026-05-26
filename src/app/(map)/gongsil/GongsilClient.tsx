@@ -3213,6 +3213,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                           <div style={{ display: "flex", gap: "10px", borderTop: "1px solid #f3f4f6", paddingTop: "15px", background: "#ffffff" }}>
                             <button
                               onClick={() => {
+                                // Reset all temporary wizard states
                                 setTempFilterTradeTypes([]);
                                 setTempMaemaeMin(null);
                                 setTempMaemaeMax(null);
@@ -3222,6 +3223,35 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                 setTempRentMax(null);
                                 setPopoverSearchKeyword("");
                                 setFilterSearchKeyword("");
+                                setActiveSection("거래유형");
+
+                                // Reset all permanent filter states
+                                setFilterTradeTypes([]);
+                                setFilterPriceMin(null);
+                                setFilterPriceMax(null);
+                                setFilterAreaMin(null);
+                                setFilterAreaMax(null);
+                                setFilterMaintIdx(0);
+                                setFilterRoomCount(null);
+                                setFilterBathCount(null);
+                                setFilterDirection(null);
+                                setFilterYearMin(null);
+                                setFilterYearMax(null);
+                                setFilterUnitMin(null);
+                                setFilterUnitMax(null);
+                                setFilterFloor(null);
+                                setFilterSaleStage([]);
+                                setFilterSaleType([]);
+                                setFilterOptions([]);
+                                setFilterOwnerRole(null);
+                                setFilterCommissionType(null);
+                                setFilterThemes([]);
+                                setAppliedMaemaeMin(null);
+                                setAppliedMaemaeMax(null);
+                                setAppliedDepositMin(null);
+                                setAppliedDepositMax(null);
+                                setAppliedRentMin(null);
+                                setAppliedRentMax(null);
                               }}
                               style={{
                                 flex: 1,
