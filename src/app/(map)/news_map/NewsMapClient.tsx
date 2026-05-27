@@ -444,7 +444,7 @@ export default function NewsMapClient({ initialArticles, initialPopularArticles 
       {/* ===== 슬림 헤더 ===== */}
       <header style={{ display: "flex", alignItems: "center", padding: "10px 20px", borderBottom: "2px solid #ff8e15", background: "linear-gradient(135deg, #fff5eb 0%, #fff 50%)", zIndex: 100, flexShrink: 0, gap: 12 }}>
         <Link href="/" style={{ marginRight: 8, display: "flex", alignItems: "center", textDecoration: "none" }}>
-          <img src="/logo.png" alt="공실뉴스" style={{ height: 32 }} onError={(e) => { (e.target as HTMLImageElement).src = "https://via.placeholder.com/100x32?text=LOGO"; }} />
+          <img src="/logo.png" alt="공실뉴스" style={{ height: 48 }} onError={(e) => { (e.target as HTMLImageElement).src = "https://via.placeholder.com/100x32?text=LOGO"; }} />
         </Link>
         <h1 style={{ fontSize: 22, fontWeight: 900, margin: 0, color: "#111", letterSpacing: -0.5 }}>우리동네뉴스</h1>
         <MapTopAuthButtons themeColor="#ff8e15" />
@@ -586,8 +586,8 @@ export default function NewsMapClient({ initialArticles, initialPopularArticles 
                   <div className="article-body">
                     {youtubeId ? (
                       <div className="article-img-wrap">
-                        <div style={{ position: "relative", width: "100%", paddingBottom: articleDetail.is_shorts ? "177.78%" : "56.25%", maxWidth: articleDetail.is_shorts ? 315 : "100%", margin: "0 auto", height: 0, overflow: "hidden", borderRadius: 8 }}>
-                          <iframe src={`https://www.youtube.com/embed/${youtubeId}`} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none", borderRadius: 8 }} allowFullScreen />
+                        <div style={{ position: "relative", width: "100%", maxWidth: articleDetail.is_shorts ? 315 : "100%", aspectRatio: articleDetail.is_shorts ? "9 / 16" : "16 / 9", margin: "0 auto", overflow: "hidden", borderRadius: 8 }}>
+                          <iframe src={`https://www.youtube.com/embed/${youtubeId}`} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none", borderRadius: 8 }} allowFullScreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" />
                         </div>
                       </div>
                     ) : !youtubeId && articleDetail.thumbnail_url && !(articleDetail.content && articleDetail.content.includes(articleDetail.thumbnail_url)) ? (
