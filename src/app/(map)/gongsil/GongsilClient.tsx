@@ -1615,6 +1615,60 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
               {cfg.name}
             </button>
           ))}
+          {/* 우측 상단 통합 검색창 */}
+          <div style={{ display: "flex", gap: "6px", alignItems: "center", marginLeft: "auto" }}>
+            <input
+              type="text"
+              placeholder="공실번호, 학교, 지하철"
+              value={popoverSearchKeyword}
+              onChange={(e) => setPopoverSearchKeyword(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  setFilterSearchKeyword(popoverSearchKeyword);
+                }
+              }}
+              style={{
+                width: "240px",
+                padding: "8px 12px",
+                border: "1px solid #ccc",
+                borderRadius: "4px",
+                fontSize: "13px",
+                outline: "none",
+                height: "36px",
+              }}
+            />
+            <button
+              onClick={() => setFilterSearchKeyword(popoverSearchKeyword)}
+              style={{
+                height: "36px",
+                padding: "0 14px",
+                background: "#1a4282", // Corporate Deep Navy matching search button in mockup
+                color: "#fff",
+                border: "none",
+                borderRadius: "4px",
+                cursor: "pointer",
+                fontWeight: "bold",
+                fontSize: "13px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+            </button>
+          </div>
           <MapTopAuthButtons />
         </div>
 
