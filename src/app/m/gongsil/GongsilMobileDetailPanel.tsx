@@ -256,29 +256,94 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
               })()}
             </div>
           ) : (
-            // 일반 공실 매물 전용 헤더 뷰 (기존 폼 절대 유지)
+            // 일반 공실 매물 전용 헤더 뷰 (두 번째 스크린샷 완벽 대응)
             <div style={{ borderBottom: "1px solid #f3f4f6", paddingBottom: "16px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                <span style={{ fontSize: "13px", fontWeight: 700, color: "#ef4444" }}>NO.{selectedVacancy.vacancy_no || '-'}</span>
-                <span style={{ fontSize: "12px", color: "#ef4444", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: "2px" }}>
-                  <span style={{ display: "inline-block", width: "5px", height: "5px", borderRadius: "50%", backgroundColor: "#ef4444" }}></span>
-                  허위공실광고신고
-                </span>
+              {/* Row 1: NO, Date, Report, List */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <span style={{ fontSize: "14px", fontWeight: "bold", color: "#111" }}>
+                    NO.{selectedVacancy.vacancy_no || '-'}
+                  </span>
+                  <span style={{ width: 1, height: 12, background: "#ddd" }}></span>
+                  <span style={{ fontSize: "13px", color: "#888" }}>
+                    {selectedVacancy.created_at ? new Date(selectedVacancy.created_at).toLocaleDateString("ko-KR").slice(0, -1) : ""}
+                  </span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+                  <span style={{ fontSize: "12px", color: "#ef4444", fontWeight: "bold", display: "inline-flex", alignItems: "center", gap: "3px", cursor: "pointer" }}>
+                    <span style={{ display: "inline-block", width: 5, height: 5, borderRadius: "50%", background: "#ef4444" }}></span>
+                    허위공실광고신고
+                  </span>
+                  <span onClick={goBack} style={{ fontSize: "12px", color: "#666", display: "inline-flex", alignItems: "center", gap: "3px", cursor: "pointer", fontWeight: "bold" }}>
+                    목록
+                  </span>
+                </div>
               </div>
+
+              {/* Row 2: Title */}
               <h1 style={{ fontSize: "20px", fontWeight: 800, color: detailMasked ? "#bbb" : "#111827", lineHeight: 1.4, letterSpacing: detailMasked ? 1.5 : 0, margin: "0 0 8px" }}>
                 {detailMasked ? (detailAddr || "주소 없음").replace(/[^\s]/g, "X") : detailAddr}
               </h1>
-              <p style={{ fontSize: "26px", fontWeight: 800, color: "#1a73e8", margin: 0 }}>
-                {selectedVacancy.trade_type} {formatPrice(selectedVacancy)}
-              </p>
-            </div>
-          )}
 
-          {/* 중개보수 혜택 공실 전용 배너 */}
-          {selectedVacancy.trade_type !== "경매" && showCommission && (selectedVacancy.realtor_commission || selectedVacancy.commission_type) && (
-            <div style={{ marginTop: "16px", background: "#fef2f2", border: "1px solid #fee2e2", borderRadius: "8px", padding: "12px 14px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={{ fontSize: "14px", color: "#b91c1c", fontWeight: 800 }}>부동산 중개 회원 특별 혜택</span>
-              <span style={{ fontSize: "15px", color: "#ef4444", fontWeight: 800, background: "#fff", padding: "2px 8px", borderRadius: "4px", border: "1px solid #fecaca" }}>{selectedVacancy.realtor_commission || selectedVacancy.commission_type}</span>
+              {/* Row 3: Price & Bookmark/Share */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                <p style={{ fontSize: "24px", fontWeight: 900, color: "#1a73e8", margin: 0 }}>
+                  {selectedVacancy.trade_type} {formatPrice(selectedVacancy)}
+                </p>
+                <div style={{ display: "flex", gap: "14px", alignItems: "center" }}>
+                  {/* Bookmark Button */}
+                  <button onClick={toggleBookmark} style={{ background: "none", border: "none", cursor: "pointer", padding: "4px" }}>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill={isBookmarked ? "#1a73e8" : "none"} stroke={isBookmarked ? "#1a73e8" : "#666"} strokeWidth="2">
+                      <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                    </svg>
+                  </button>
+                  {/* Share Button */}
+                  <div style={{ position: "relative" }}>
+                    <button onClick={(e) => { e.stopPropagation(); setShowShareDropdown(!showShareDropdown); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "4px" }}>
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="2">
+                        <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+                        <polyline points="16 6 12 2 8 6"/>
+                        <line x1="12" y1="2" x2="12" y2="15"/>
+                      </svg>
+                    </button>
+                    {/* Share Dropdown */}
+                    {showShareDropdown && (
+                      <div ref={shareDropdownRef} style={{ position: "absolute", top: "35px", right: 0, background: "#fff", border: "1px solid #ddd", borderRadius: "8px", boxShadow: "0 4px 12px rgba(0,0,0,0.1)", zIndex: 100, width: "120px", overflow: "hidden" }}>
+                        <button onClick={() => { handleKakaoShare(); setShowShareDropdown(false); }} style={{ width: "100%", padding: "10px 12px", background: "none", border: "none", textAlign: "left", fontSize: "13px", cursor: "pointer", borderBottom: "1px solid #eee", color: "#333" }}>카카오톡 공유</button>
+                        <button onClick={() => { handleCopyUrl(); setShowShareDropdown(false); }} style={{ width: "100%", padding: "10px 12px", background: "none", border: "none", textAlign: "left", fontSize: "13px", cursor: "pointer", color: "#333" }}>URL 복사</button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Row 4: Specs Line 1 */}
+              <div style={{ fontSize: "13px", color: "#666", marginBottom: "6px" }}>
+                {[
+                  selectedVacancy.property_type || "건물",
+                  selectedVacancy.direction,
+                  (selectedVacancy.supply_m2 || selectedVacancy.exclusive_m2) && `공급/전용 면적: ${selectedVacancy.supply_m2 ? `${selectedVacancy.supply_m2}m²` : "-"} / ${selectedVacancy.exclusive_m2 ? `${selectedVacancy.exclusive_m2}m²` : "-"}`
+                ].filter(Boolean).join(" | ")}
+              </div>
+
+              {/* Row 5: Specs Line 2 */}
+              <div style={{ fontSize: "13px", color: "#666", marginBottom: "8px" }}>
+                {[
+                  selectedVacancy.room_count !== undefined && `방 ${selectedVacancy.room_count}개`,
+                  selectedVacancy.parking && (selectedVacancy.parking.includes("주차") ? selectedVacancy.parking : `주차 ${selectedVacancy.parking}포함`),
+                  selectedVacancy.options && selectedVacancy.options.length > 0 && selectedVacancy.options.slice(0, 3).join(", ")
+                ].filter(Boolean).join(" | ")}
+              </div>
+
+              {/* Row 6: 공동중개 Pill */}
+              {showCommission && (selectedVacancy.realtor_commission || selectedVacancy.commission_type) && (
+                <div style={{ marginTop: "10px", display: "flex", gap: "6px" }}>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", background: "#e8f0fe", color: "#1a73e8", fontSize: "12px", fontWeight: "bold", padding: "4px 8px", borderRadius: "4px", border: "1px solid #d2e3fc" }}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    {selectedVacancy.realtor_commission || selectedVacancy.commission_type || "공동중개"}
+                  </span>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -779,6 +844,59 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
             <div style={{ padding: "0 16px 20px", background: "#fff", borderBottom: "8px solid #f3f4f6" }}>
               <div style={{ fontSize: 16, fontWeight: 800, color: "#111827", marginBottom: 12 }}>로드뷰</div>
               <div ref={roadviewRef} style={{ width: "100%", height: 200, borderRadius: 8, background: "#e8eaed", display: "flex", alignItems: "center", justifyContent: "center", color: "#999", fontSize: 14, border: "1px solid #eee", overflow: "hidden" }}></div>
+            </div>
+
+            {/* ──── 주변환경 (인프라) ──── */}
+            {selectedVacancy.infrastructure && Object.keys(selectedVacancy.infrastructure).filter((k) => !k.startsWith("_")).length > 0 && (
+              <div style={{ padding: "20px 16px", background: "#fff", borderBottom: "8px solid #f3f4f6" }}>
+                <div style={{ fontSize: 16, fontWeight: 800, color: "#111827", marginBottom: 16 }}>주변환경</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  {Object.entries(selectedVacancy.infrastructure)
+                    .filter(([catName]) => !catName.startsWith("_"))
+                    .map(([catName, places]: [string, any]) => {
+                      const placeList = Array.isArray(places) ? places : [];
+                      if (placeList.length === 0) return null;
+                      return (
+                        <div key={catName} style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                          <span style={{ fontSize: 13, fontWeight: "bold", color: "#666", width: 65, flexShrink: 0, marginTop: 4 }}>
+                            {catName}
+                          </span>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, flex: 1 }}>
+                            {placeList.map((place: string, idx: number) => (
+                              <div key={idx} style={{ fontSize: 12, color: "#4b5563", background: "#f3f4f6", padding: "4px 8px", borderRadius: 4, fontWeight: 500 }}>
+                                {place}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              </div>
+            )}
+
+            {/* ──── 댓글상담 ──── */}
+            <div style={{ padding: "20px 16px", background: "#fff" }}>
+              <div style={{ fontSize: 16, fontWeight: 800, color: "#111827", marginBottom: 16 }}>0개의 댓글상담</div>
+              <div style={{ border: "1px solid #e5e7eb", borderRadius: 8, padding: 12, background: "#fff", marginBottom: 12 }}>
+                <textarea 
+                  placeholder="로그인 후 이용하실 수 있습니다." 
+                  disabled 
+                  style={{ width: "100%", height: 70, border: "none", resize: "none", outline: "none", fontSize: 13, color: "#9ca3af", background: "#fff", padding: 0 }}
+                />
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #f3f4f6", paddingTop: 8, marginTop: 8 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <input type="checkbox" id="secret-mock" disabled style={{ width: 14, height: 14 }} />
+                    <label htmlFor="secret-mock" style={{ fontSize: 12, color: "#9ca3af", cursor: "default" }}>비밀댓글</label>
+                  </div>
+                  <button disabled style={{ background: "#e5e7eb", color: "#9ca3af", border: "none", borderRadius: 4, padding: "5px 12px", fontSize: 12, fontWeight: 700 }}>
+                    등록
+                  </button>
+                </div>
+              </div>
+              <div style={{ textAlign: "center", padding: "30px 0", color: "#9ca3af", fontSize: 13 }}>
+                아직 등록된 댓글이 없습니다.
+              </div>
             </div>
           </div>
         ) : (
