@@ -110,10 +110,10 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
     }
 
     if (role === "admin" && excludeOnbid) {
-      queryAll = queryAll.or("source_type.is.null,source_type.neq.ONBID");
-      queryActive = queryActive.or("source_type.is.null,source_type.neq.ONBID");
-      queryStopped = queryStopped.or("source_type.is.null,source_type.neq.ONBID");
-      queryDraft = queryDraft.or("source_type.is.null,source_type.neq.ONBID");
+      queryAll = queryAll.or("metadata->>source_type.is.null,metadata->>source_type.neq.ONBID");
+      queryActive = queryActive.or("metadata->>source_type.is.null,metadata->>source_type.neq.ONBID");
+      queryStopped = queryStopped.or("metadata->>source_type.is.null,metadata->>source_type.neq.ONBID");
+      queryDraft = queryDraft.or("metadata->>source_type.is.null,metadata->>source_type.neq.ONBID");
     }
 
     const [resAll, resActive, resStopped, resDraft] = await Promise.all([

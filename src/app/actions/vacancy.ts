@@ -240,7 +240,7 @@ export async function getVacancies(options?: {
         pageQuery = pageQuery.or(`sido.ilike.${p},sigungu.ilike.${p},dong.ilike.${p},building_name.ilike.${p},client_name.ilike.${p},client_phone.ilike.${p}`);
       }
       if (options?.excludeOnbid) {
-        pageQuery = pageQuery.or("source_type.is.null,source_type.neq.ONBID");
+        pageQuery = pageQuery.or("metadata->>source_type.is.null,metadata->>source_type.neq.ONBID");
       }
 
       const { data, error, count } = await pageQuery;
@@ -304,7 +304,7 @@ export async function getVacancies(options?: {
       }
 
       if (options?.excludeOnbid) {
-        pageQuery = pageQuery.or("source_type.is.null,source_type.neq.ONBID");
+        pageQuery = pageQuery.or("metadata->>source_type.is.null,metadata->>source_type.neq.ONBID");
       }
 
       const { data, error } = await pageQuery;
