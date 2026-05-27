@@ -518,23 +518,24 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
         const mcls = meta.cltrUsgMclsCtgrNm || "";
         const scls = meta.cltrUsgSclsCtgrNm || "";
         return activePills.some((pill) => {
-          if (pill === "아파트") return scls === "아파트";
-          if (pill === "단독/다가구") return scls === "단독주택" || scls === "다가구주택";
+          if (pill === "아파트") return scls.includes("아파트") || scls.includes("오피스텔") || scls.includes("공동주택");
+          if (pill === "단독/다가구") return scls.includes("단독") || scls.includes("다가구") || scls.includes("주택");
           if (pill === "빌라/주택")
-            return mcls === "주거용건물" && scls !== "아파트" && scls !== "단독주택" && scls !== "다가구주택";
+            return (mcls.includes("주거") || scls.includes("주택") || scls.includes("빌라") || scls.includes("다세대") || scls.includes("연립")) && !scls.includes("아파트");
           if (pill === "빌딩/사무실")
             return (
               mcls.includes("상업") || scls.includes("상가") || scls.includes("점포") || scls.includes("판매") ||
               scls.includes("사무") || mcls.includes("업무") || scls.includes("오피스텔") || scls.includes("아파트형") || scls.includes("지식산업") ||
-              mcls.includes("근린생활") || scls.includes("상가주택") || scls.includes("빌딩") || mcls.includes("숙박") || mcls.includes("의료")
+              mcls.includes("근린생활") || scls.includes("상가주택") || scls.includes("빌딩") || mcls.includes("숙박") || mcls.includes("의료") ||
+              scls.includes("업무시설") || mcls.includes("업무시설")
             );
           if (pill === "공장/창고")
             return (
-              (scls.includes("공장") || scls.includes("창고") || scls.includes("제조") || mcls.includes("산업")) &&
+              (scls.includes("공장") || scls.includes("창고") || scls.includes("제조") || mcls.includes("산업") || mcls.includes("공장")) &&
               !scls.includes("아파트형") &&
               !scls.includes("지식산업")
             );
-          if (pill === "토지") return mcls === "토지";
+          if (pill === "토지") return mcls.includes("토지") || scls.includes("토지") || mcls.includes("대지") || scls.includes("대지") || mcls.includes("임야") || mcls.includes("전") || mcls.includes("답") || mcls.includes("잡종지") || mcls.includes("과수원");
           return false;
         });
       });
