@@ -3185,11 +3185,11 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                                     {[
                                       { label: "전체", val: "all" },
-                                      { label: "오늘 시작", val: "today" },
-                                      { label: "이번주 시작", val: "this_week" },
-                                      { label: "다음주 시작", val: "next_week" },
-                                      { label: "진행중", val: "ongoing" },
-                                      { label: "마감임박 (3일 이내)", val: "imminent" },
+                                      { label: "1주이내", val: "1w" },
+                                      { label: "2주이내", val: "2w" },
+                                      { label: "1달이내", val: "1m" },
+                                      { label: "1~3개월", val: "1_3m" },
+                                      { label: "3개월이후", val: "over_3m" },
                                     ].map((item) => {
                                       const isSelected = filterAuctionStartDate === item.val;
                                       return (
