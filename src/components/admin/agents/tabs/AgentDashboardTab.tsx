@@ -495,9 +495,9 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
                     <span style={{ fontSize: 11, background: "#2563eb", color: "#fff", padding: "2px 6px", borderRadius: 4, fontWeight: 700 }}>ON</span>
                   </div>
                   <div style={{ fontSize: 12, color: theme.darkMode ? "#94a3b8" : "#1e3a8a", marginBottom: 10, lineHeight: 1.4 }}>
-                    • <b>동기화 방식:</b> 공공데이터포털 실시간 연동 API<br/>
-                    • <b>동기화 주기:</b> 매일 새벽 1회 자동 수집 및 만료 목록 파기<br/>
-                    • <b>타겟 필터:</b> 서울/경기/인천 등 전국 17개 시도별 용도별 매물
+                    • <b>동기화 방식:</b> 공공데이터포털 실시간 연동 API (온비드 v2)<br/>
+                    • <b>동기화 주기:</b> 매일 오전 1시 정각 자동 구동 (서울 ➡️ 전국 17개 시도 순차 진행)<br/>
+                    • <b>주요 기능:</b> 공고관리번호 기준 UPSERT 및 만료 매물 자동 일괄 삭제
                   </div>
                   <div style={{ display: "flex", gap: "8px" }}>
                     <select id="manual-sido-select" style={{ padding: "8px", borderRadius: "6px", border: "1px solid #2563eb", fontSize: "12px", outline: "none", color: "#1e3a8a", fontWeight: "bold", background: "#f8fafc" }}>
