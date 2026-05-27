@@ -30,7 +30,7 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
   // 🚀 [대표님 지침] 법원 경공매 모드 진입 시 PC와 똑같은 8대 카테고리 구성으로 지능형 전격 치환!
   const PROPERTY_TYPES = activeMode === "경매" ? [
     { group: "주거", items: ["아파트", "단독/다가구", "빌라/주택"] },
-    { group: "상업·업무", items: ["상가/점포", "사무실/지산", "빌딩/근생", "공장/창고"] },
+    { group: "상업·업무", items: ["빌딩/사무실", "공장/창고"] },
     { group: "토지", items: ["토지"] }
   ] : [
     { group: "주거", items: ["아파트", "빌라/연립", "오피스텔", "원룸", "투룸", "단독/다가구", "전원주택", "상가주택", "재건축", "재개발"] },

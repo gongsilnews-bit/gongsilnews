@@ -7,7 +7,7 @@ export const CATEGORY_CONFIG: Record<string, { name: string; pills: string[]; ba
   one: { name: "원룸·투룸", pills: ["원룸", "투룸", "오피스텔만 보기"], basicFilters: ["거래유형"], detailFilters: [], showToggle: false },
   biz: { name: "상가·사무실·공장·토지", pills: ["상가", "사무실", "공장/창고", "지식산업센터", "건물", "토지"], basicFilters: ["거래유형"], detailFilters: [], showToggle: false },
   sale: { name: "신축/분양", pills: ["아파트", "오피스텔", "빌라", "도시형생활주택", "생활숙박시설", "상가/업무"], basicFilters: ["거래유형"], detailFilters: [], showToggle: false },
-  auction: { name: "경매/공매", pills: ["아파트", "단독/다가구", "빌라/주택", "상가/점포", "사무실/지산", "빌딩/근생", "공장/창고", "토지"], basicFilters: ["거래유형"], detailFilters: [], showToggle: false },
+  auction: { name: "경매/공매", pills: ["아파트", "단독/다가구", "빌라/주택", "빌딩/사무실", "공장/창고", "토지"], basicFilters: ["거래유형"], detailFilters: [], showToggle: false },
   wish: { name: "MY관심공실", pills: [], basicFilters: [], detailFilters: [], showToggle: false },
 };
 
@@ -132,6 +132,10 @@ export const getAuctionInfo = (prop: any) => {
 
   if (category === "상가·사무실·건물·공장·토지") {
     category = "상업용";
+  }
+
+  if (["상가/점포", "사무실/지산", "빌딩/근생", "근린생활시설", "숙박시설", "빌딩", "사무실"].includes(category)) {
+    category = "빌딩/사무실";
   }
 
   const areaVal = meta.bldSqms || meta.cltrAr || prop.exclusive_m2;

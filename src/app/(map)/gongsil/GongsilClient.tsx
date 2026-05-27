@@ -517,23 +517,11 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
           if (pill === "단독/다가구") return scls === "단독주택" || scls === "다가구주택";
           if (pill === "빌라/주택")
             return mcls === "주거용건물" && scls !== "아파트" && scls !== "단독주택" && scls !== "다가구주택";
-          if (pill === "상가/점포")
-            return mcls.includes("상업") || scls.includes("상가") || scls.includes("점포") || scls.includes("판매");
-          if (pill === "사무실/지산")
+          if (pill === "빌딩/사무실")
             return (
-              scls.includes("사무") ||
-              mcls.includes("업무") ||
-              scls.includes("오피스텔") ||
-              scls.includes("아파트형") ||
-              scls.includes("지식산업")
-            );
-          if (pill === "빌딩/근생")
-            return (
-              mcls.includes("근린생활") ||
-              scls.includes("상가주택") ||
-              scls.includes("빌딩") ||
-              mcls.includes("숙박") ||
-              mcls.includes("의료")
+              mcls.includes("상업") || scls.includes("상가") || scls.includes("점포") || scls.includes("판매") ||
+              scls.includes("사무") || mcls.includes("업무") || scls.includes("오피스텔") || scls.includes("아파트형") || scls.includes("지식산업") ||
+              mcls.includes("근린생활") || scls.includes("상가주택") || scls.includes("빌딩") || mcls.includes("숙박") || mcls.includes("의료")
             );
           if (pill === "공장/창고")
             return (
@@ -1693,7 +1681,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
               let activeColor = "#1a73e8";
 
               if (isAuctionMode) {
-                if (["상가/점포", "사무실/지산", "빌딩/근생", "공장/창고"].includes(p)) {
+                if (["빌딩/사무실", "공장/창고"].includes(p)) {
                   activeBg = "#f3f0ff";
                   activeBorder = "#7048e8";
                   activeColor = "#7048e8";
