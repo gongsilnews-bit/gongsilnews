@@ -1899,44 +1899,10 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
             })()}
 
             {config.basicFilters.map((f) => {
-              const isFilterActive =
-                (f === "거래방식" && filterTradeTypes.length > 0) ||
-                (f === "거래유형" && (
-                  filterTradeTypes.length > 0 ||
-                  appliedMaemaeMin !== null ||
-                  appliedMaemaeMax !== null ||
-                  appliedDepositMin !== null ||
-                  appliedDepositMax !== null ||
-                  appliedRentMin !== null ||
-                  appliedRentMax !== null
-                )) ||
-                ((f === "가격대" || f === "분양가/보증금") && (filterPriceMin !== null || filterPriceMax !== null)) ||
-                (f === "면적" && (filterAreaMin !== null || filterAreaMax !== null)) ||
-                (f === "사용승인일" && (filterYearMin !== null || filterYearMax !== null)) ||
-                (f === "세대수" && (filterUnitMin !== null || filterUnitMax !== null)) ||
-                (f === "관리비" && filterMaintIdx > 0) ||
-                (f === "방/욕실수" && (filterRoomCount !== null || filterBathCount !== null)) ||
-                (f === "방향" && filterDirection !== null) ||
-                (f === "등록자" && filterOwnerRole !== null) ||
-                (f === "중개보수" && filterCommissionType !== null) ||
-                (f === "테마" && filterThemes.length > 0);
+              // 대표님 지시: 나머지 알약 버튼 다 없애고, "검색열기" 버튼 딱 하나만 렌더링!
+              if (f !== "거래유형") return null;
 
-              const btnLabel =
-                f === "가격대" || f === "분양가/보증금"
-                  ? priceFilterLabel
-                  : f === "면적"
-                  ? areaFilterLabel
-                  : f === "사용승인일"
-                  ? yearFilterLabel
-                  : f === "세대수"
-                  ? unitFilterLabel
-                  : f === "관리비" && filterMaintIdx > 0
-                  ? `관리비: ${MAINT_PRESETS[filterMaintIdx].label}`
-                  : f === "거래유형"
-                  ? getTradeTypeFilterLabel()
-                  : f;
-
-              const isPremiumWizard = getWizardTabs().includes(f);
+              const isPremiumWizard = true;
 
               return (
                 <div 
@@ -1947,36 +1913,34 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                 >
                   <button
                     onClick={() => {
-                      if (isPremiumWizard) {
-                        if (isWizardOpen && activeSection === f) {
-                          setIsWizardOpen(false);
-                        } else {
-                          setActiveSection(f);
-                          setIsWizardOpen(true);
-                        }
+                      if (isWizardOpen) {
+                        setIsWizardOpen(false);
                       } else {
-                        setActiveFilterDropdown(activeFilterDropdown === f ? null : f);
+                        setActiveSection("거래유형");
+                        setIsWizardOpen(true);
                       }
                     }}
                     style={{
-                      background: isFilterActive ? "#e8f0fe" : "#fff",
-                      border: `1px solid ${isFilterActive ? "#1a73e8" : "#ccc"}`,
-                      fontSize: 13,
-                      color: isFilterActive ? "#1a73e8" : "#333",
+                      background: "transparent",
+                      border: "none",
+                      fontSize: 14,
+                      color: "#1a73e8", // 파란색으로 요청
                       cursor: "pointer",
                       padding: "6px 14px",
-                      borderRadius: 4,
                       whiteSpace: "nowrap",
-                      fontWeight: isFilterActive ? "bold" : "normal",
+                      fontWeight: "bold",
                       fontFamily: "inherit",
                       transition: "all 0.15s",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "4px"
                     }}
                   >
-                    {btnLabel} {isPremiumWizard ? (isWizardOpen ? "▴" : "▾") : "▾"}
+                    {isWizardOpen ? "검색닫기 ▲" : "검색열기 ▼"}
                   </button>
 
                   {/* 드롭다운 필터 내용 */}
-                  {((!isPremiumWizard && activeFilterDropdown === f) || (isPremiumWizard && isWizardOpen)) && (
+                  {isWizardOpen && (
                     <div
                       onMouseDown={f === "거래유형" ? handleDragStart : undefined}
                       style={isPremiumWizard ? {
