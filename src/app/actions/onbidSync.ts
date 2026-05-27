@@ -251,47 +251,12 @@ export async function syncOnbidProperties(targetSido: string = "서울특별시"
       return { success: true, message: `가져올 신규 온비드 물건이 없습니다. (${targetSido})` };
     }
 
-    console.log(`📦 총 수집 완료: ${items.length}건. 고유 주소 및 좌표 캐시 생성 중...`);
-
-    // 2. 고유 주소 좌표 캐시(지오코딩 효율화) 구축
-    const uniqueAddresses = new Set<string>();
-    for (const item of items) {
-      let address = `${item.lctnSdnm || ""} ${item.lctnSggnm || ""} ${item.lctnEmdNm || ""}`.trim();
-      const propertyName = item.onbidCltrNm || "";
-      if (propertyName) {
-        const addrMatch = propertyName.match(/^(.*?)(?:\s+(?:근린생활시설|아파트|오피스텔|상가|주택|대지|토지|건물|공장|빌딩|창고|사무실))?$/);
-        if (addrMatch && addrMatch[1]) {
-          address = addrMatch[1].trim();
-        }
-      }
-      if (address) {
-        uniqueAddresses.add(address);
-      }
-    }
-
-    console.log(`🔍 온비드 고유 주소 개수: ${uniqueAddresses.size}개. 지오코딩 병렬 변환 시작...`);
-
-    const addressCoordsCache = new Map<string, { lat: number; lng: number }>();
-    const addressArray = Array.from(uniqueAddresses);
-    const concurrencyLimit = 20; // 성능 최적화: 동시 20개 지오코딩
-    
-    for (let i = 0; i < addressArray.length; i += concurrencyLimit) {
-      const chunk = addressArray.slice(i, i + concurrencyLimit);
-      await Promise.all(chunk.map(async (addr) => {
-        const coords = await getCoordinates(addr);
-        if (coords) {
-          addressCoordsCache.set(addr, coords);
-        }
-      }));
-    }
-
-    console.log(`🎉 지오코딩 완료! 유효 좌표 확보 완료. 중복 체크 벌크 프리페치 중...`);
+    console.log(`📦 총 수집 완료: ${items.length}건. 중복 필터링 중...`);
 
     let successCount = 0;
     let skipCount = 0;
 
-    // ⚡ 성능 최적화: 기존 온비드 물건 ID를 벌크로 한 번에 가져와서 메모리 캐시 생성
-    // (기존 방식: 매 건마다 DB 쿼리 → 수천 건일 때 수천 회 네트워크 요청 → 극심한 지연)
+    // ⚡ 1단계: 기존 온비드 물건 ID를 벌크로 한 번에 가져와서 메모리 캐시 생성 (DB 호출 1회!)
     const existingOnbidIds = new Set<string>();
     const existingAddresses = new Set<string>();
     try {
@@ -303,18 +268,65 @@ export async function syncOnbidProperties(targetSido: string = "서울특별시"
       
       if (existingRows) {
         for (const row of existingRows) {
-          // description에서 온비드 물건번호 추출
           const idMatch = row.description?.match(/물건번호.*?:\s*(\d+)/);
           if (idMatch) existingOnbidIds.add(idMatch[1]);
           if (row.detail_addr) existingAddresses.add(row.detail_addr);
         }
       }
-      console.log(`📋 기존 매물 캐시 구축 완료: 온비드ID ${existingOnbidIds.size}개, 주소 ${existingAddresses.size}개`);
+      console.log(`📋 기존 매물 캐시: 온비드ID ${existingOnbidIds.size}개, 주소 ${existingAddresses.size}개`);
     } catch (cacheErr) {
-      console.warn("⚠️ 기존 매물 캐시 구축 실패, 개별 체크로 폴백합니다:", cacheErr);
+      console.warn("⚠️ 기존 매물 캐시 구축 실패:", cacheErr);
     }
 
-    // 1.5. DB에서 유효한 관리자(ADMIN) ID를 조회하는 중...
+    // ⚡ 2단계: 중복 제거 → 신규 매물만 필터링 (지오코딩 전에 먼저!)
+    const newItems: any[] = [];
+    const newAddresses = new Set<string>();
+
+    for (const item of items) {
+      const onbidId = String(item.onbidCltrno || "");
+      const propertyName = item.onbidCltrNm || "";
+      
+      let address = `${item.lctnSdnm || ""} ${item.lctnSggnm || ""} ${item.lctnEmdNm || ""}`.trim();
+      if (propertyName) {
+        const addrMatch = propertyName.match(/^(.*?)(?:\s+(?:근린생활시설|아파트|오피스텔|상가|주택|대지|토지|건물|공장|빌딩|창고|사무실))?$/);
+        if (addrMatch && addrMatch[1]) {
+          address = addrMatch[1].trim();
+        }
+      }
+
+      if (!address || !onbidId) { skipCount++; continue; }
+      if (existingOnbidIds.has(onbidId) || existingAddresses.has(address)) { skipCount++; continue; }
+
+      // 신규 매물만 통과!
+      newItems.push({ ...item, _parsedAddress: address });
+      newAddresses.add(address);
+    }
+
+    console.log(`🔍 중복 제거 완료: ${items.length}건 중 신규 ${newItems.length}건만 지오코딩 필요 (${skipCount}건 중복 스킵)`);
+
+    if (newItems.length === 0) {
+      console.log(`✅ ${targetSido}: 신규 매물 없음 (전체 ${items.length}건 모두 기존 등록)`);
+      return { success: true, registered: 0, skipped: skipCount, expired: expiredCount };
+    }
+
+    // ⚡ 3단계: 신규 매물 주소만 지오코딩 (기존: 전체 주소 → 지금: 신규만!)
+    const addressCoordsCache = new Map<string, { lat: number; lng: number }>();
+    const addressArray = Array.from(newAddresses);
+    const concurrencyLimit = 20;
+    
+    console.log(`🔍 신규 주소 ${addressArray.length}개 지오코딩 시작...`);
+    for (let i = 0; i < addressArray.length; i += concurrencyLimit) {
+      const chunk = addressArray.slice(i, i + concurrencyLimit);
+      await Promise.all(chunk.map(async (addr) => {
+        const coords = await getCoordinates(addr);
+        if (coords) {
+          addressCoordsCache.set(addr, coords);
+        }
+      }));
+    }
+    console.log(`🎉 지오코딩 완료! ${addressCoordsCache.size}/${addressArray.length}개 좌표 확보`);
+
+    // 4단계: 관리자 ID 조회
     let ownerId = "00000000-0000-0000-0000-000000000000";
     const { data: adminUser } = await supabase
       .from("members")
@@ -347,32 +359,13 @@ export async function syncOnbidProperties(targetSido: string = "서울특별시"
       }
     }
 
-    console.log(`🚀 DB 적재 시작! (대상: ${items.length}건)`);
+    console.log(`🚀 DB 적재 시작! (신규: ${newItems.length}건)`);
 
-    // 2. 루프 돌며 DB 적재 자동화
-    for (const item of items) {
-      const onbidId = String(item.onbidCltrno || ""); // 온비드 고유 물건번호
-      const propertyName = item.onbidCltrNm || ""; // 물건명
-      
-      // 주소 추출 (onbidCltrNm에서 건물 종류 용어 앞부분만 파싱하여 안전하게 도로명/지번 주소 확보)
-      let address = `${item.lctnSdnm || ""} ${item.lctnSggnm || ""} ${item.lctnEmdNm || ""}`.trim();
-      if (propertyName) {
-        const addrMatch = propertyName.match(/^(.*?)(?:\s+(?:근린생활시설|아파트|오피스텔|상가|주택|대지|토지|건물|공장|빌딩|창고|사무실))?$/);
-        if (addrMatch && addrMatch[1]) {
-          address = addrMatch[1].trim();
-        }
-      }
-      
-      if (!address || !onbidId) {
-        skipCount++;
-        continue;
-      }
-
-      // ⚡ 중복 체크: 메모리 캐시에서 O(1) 조회 (DB 호출 0건!)
-      if (existingOnbidIds.has(onbidId) || existingAddresses.has(address)) {
-        skipCount++;
-        continue;
-      }
+    // 5단계: 신규 매물만 DB 적재
+    for (const item of newItems) {
+      const onbidId = String(item.onbidCltrno || "");
+      const propertyName = item.onbidCltrNm || "";
+      const address = item._parsedAddress;
 
       // 3. 지오코더 캐시에서 실시간 좌표(lat, lng) 획득
       const coords = addressCoordsCache.get(address);
