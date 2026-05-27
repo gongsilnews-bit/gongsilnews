@@ -234,6 +234,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   const [tempDepositMax, setTempDepositMax] = useState<number | null>(null);
   const [tempRentMin, setTempRentMin] = useState<number | null>(null);
   const [tempRentMax, setTempRentMax] = useState<number | null>(null);
+  const [filterAuctionDiscount, setFilterAuctionDiscount] = useState<number>(0);
   const [sliderInteractions, setSliderInteractions] = useState<Record<string, { min: boolean; max: boolean }>>({});
   const [roomBathInteractions, setRoomBathInteractions] = useState({ room: false, bath: false });
   const [savedCategoryAlerts, setSavedCategoryAlerts] = useState<Record<string, boolean>>({});
@@ -1389,8 +1390,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     setAppliedMaemaeMax(null);
     setAppliedDepositMin(null);
     setAppliedDepositMax(null);
-    setAppliedRentMin(null);
     setAppliedRentMax(null);
+    setFilterAuctionDiscount(0);
     setPopoverSearchKeyword("");
     setFilterSearchKeyword("");
   };
@@ -1703,14 +1704,10 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
               let activeColor = "#1a73e8";
 
               if (isAuctionMode) {
-                if (["빌딩/사무실", "공장/창고"].includes(p)) {
+                if (["빌딩/사무실", "공장/창고", "토지"].includes(p)) {
                   activeBg = "#f3f0ff";
                   activeBorder = "#7048e8";
                   activeColor = "#7048e8";
-                } else if (p === "토지") {
-                  activeBg = "#ebfbee";
-                  activeBorder = "#2b8a3e";
-                  activeColor = "#2b8a3e";
                 }
               }
 
@@ -1737,7 +1734,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                   >
                     {isSelected && !isOfficePill(p) ? `✓ ${p}` : p}
                   </button>
-                  {isAuctionMode && (p === "빌라/주택" || p === "공장/창고") && (
+                  {isAuctionMode && (p === "빌라/주택" || p === "토지") && (
                     <div style={{ width: 1, height: 16, background: "#ddd", margin: "0 6px", flexShrink: 0 }} />
                   )}
                 </React.Fragment>
@@ -2188,12 +2185,11 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                       { label: "30% 이상 하락", val: 30 },
                                       { label: "반값 경매(50%)", val: 50 }
                                     ].map((discount) => {
-                                      // TODO: 실제 할인율 전역 상태와 연동 (임시로 '전체'만 활성)
-                                      const isSel = discount.val === 0;
+                                      const isSel = discount.val === filterAuctionDiscount;
                                       return (
                                         <button
                                           key={discount.label}
-                                          onClick={() => {}}
+                                          onClick={() => setFilterAuctionDiscount(discount.val)}
                                           style={{
                                             padding: "6px 14px",
                                             borderRadius: 4,
