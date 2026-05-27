@@ -55,6 +55,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
   const [searchType, setSearchType] = useState("전체");
   const [searchKeyword, setSearchKeyword] = useState("");
   const [activeFilters, setActiveFilters] = useState({ vacancyNo: "", type: "전체", keyword: "" });
+  const [excludeOnbid, setExcludeOnbid] = useState(role === "admin");
 
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
@@ -69,6 +70,10 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
 
     if (role !== "admin" && ownerId) {
       params.ownerId = ownerId;
+    }
+
+    if (role === "admin" && excludeOnbid) {
+      params.excludeOnbid = true;
     }
 
     // Map status filter
@@ -95,6 +100,9 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
       if (user?.role !== 'SUPER_ADMIN' && user?.role !== 'ADMIN' && user?.role !== '최고관리자') {
         query = query.eq('owner_id', ownerId);
       }
+    }
+    if (role === "admin" && excludeOnbid) {
+      query = query.or("source_type.is.null,source_type.neq.ONBID");
     }
     const { data: countData } = await query;
     if (countData) {
@@ -129,7 +137,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
 
   useEffect(() => {
     fetchAllVacancies();
-  }, [currentPage, activeTab, activeFilters, showRegisterForm]);
+  }, [currentPage, activeTab, activeFilters, showRegisterForm, excludeOnbid]);
 
   useEffect(() => {
     const fetchEditData = async () => {
@@ -196,6 +204,14 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
           </select>
         </div>
         <input type="text" value={searchKeyword} onChange={e => setSearchKeyword(e.target.value)} onKeyDown={e => { if(e.key === 'Enter') { setActiveFilters({ vacancyNo: searchVacancyNo, type: searchType, keyword: searchKeyword }); if (searchVacancyNo || searchKeyword || searchType !== "전체") setActiveTab("전체"); setCurrentPage(1); } }} placeholder="주소, 등록자 또는 연락처 검색" style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", flex: 1, minWidth: 180 }} />
+        {role === "admin" && (
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 700, color: "#2563eb", cursor: "pointer", background: darkMode ? "#1e293b" : "#eff6ff", padding: "8px 12px", borderRadius: 8, border: `1px solid ${darkMode ? "#334155" : "#bfdbfe"}`, height: 36, boxSizing: "border-box", whiteSpace: "nowrap" }}>
+              <input type="checkbox" checked={excludeOnbid} onChange={e => { setExcludeOnbid(e.target.checked); setCurrentPage(1); }} style={{ accentColor: "#2563eb", cursor: "pointer", margin: 0 }} />
+              🤖 온비드 매물 제외
+            </label>
+          </div>
+        )}
         <button onClick={() => { setActiveFilters({ vacancyNo: searchVacancyNo, type: searchType, keyword: searchKeyword }); if (searchVacancyNo || searchKeyword || searchType !== "전체") setActiveTab("전체"); setCurrentPage(1); }} style={{ height: 36, padding: "0 18px", background: darkMode ? "#2c2d31" : "#374151", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>검색</button>
         <button onClick={() => { setSearchVacancyNo(""); setSearchType("전체"); setSearchKeyword(""); setActiveFilters({ vacancyNo: "", type: "전체", keyword: "" }); setActiveTab("전체"); setCurrentPage(1); }} style={{ height: 36, padding: "0 14px", background: darkMode ? "#2c2d31" : "#fff", color: textSecondary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>초기화</button>
       </div>
