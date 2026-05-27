@@ -479,7 +479,7 @@ export async function getVacanciesForMap(options?: {
   try {
     let query = supabase
       .from('vacancies')
-      .select('*, members!vacancies_owner_id_fkey(name, email, role, phone, sns_links, profile_image_url, agencies(*)), vacancy_photos(url, sort_order)')
+      .select('*, vacancy_photos(url, sort_order)')
       .eq('status', 'ACTIVE')
       .not('lat', 'is', null)
       .not('lng', 'is', null);
