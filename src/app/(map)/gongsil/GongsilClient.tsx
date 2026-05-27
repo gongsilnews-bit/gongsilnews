@@ -1987,7 +1987,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                         border: "1px solid #ccc",
                         borderRadius: 10,
                         boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
-                        padding: isFilterCollapsed ? "12px 14px 8px 14px" : 18,
+                        padding: 18,
                         zIndex: 300,
                         minWidth: 436,
                         animation: "dropdownFadeIn 0.15s ease",
@@ -2008,6 +2008,54 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                         animation: "dropdownFadeIn 0.15s ease",
                       }}
                     >
+                      {/* Close button at the top right of the popover */}
+                      <button
+                        onClick={() => {
+                          if (isPremiumWizard) {
+                            setIsWizardOpen(false);
+                          } else {
+                            setActiveFilterDropdown(null);
+                          }
+                        }}
+                        style={{
+                          position: "absolute",
+                          top: "12px",
+                          right: "12px",
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          color: "#6b7280",
+                          padding: "6px",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          borderRadius: "50%",
+                          transition: "background 0.15s, color 0.15s",
+                          zIndex: 310,
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = "#f3f4f6";
+                          e.currentTarget.style.color = "#111827";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = "none";
+                          e.currentTarget.style.color = "#6b7280";
+                        }}
+                      >
+                        <svg
+                          width="18"
+                          height="18"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <line x1="18" y1="6" x2="6" y2="18"></line>
+                          <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                      </button>
                       {f === "거래유형" && (
                         <div style={{ display: "flex", flexDirection: "column", width: "400px" }}>
                           {/* Dedicated elegant grab bar at the very top */}
@@ -2125,153 +2173,10 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                           
 
 
-                          {/* Horizontal Navigation with Left/Right Buttons */}
-                          <div style={{ display: "flex", alignItems: "center", gap: "4px", marginBottom: isFilterCollapsed ? "0px" : "12px", position: "relative" }}>
-                            <button
-                              onClick={() => {
-                                const nav = document.getElementById("sub-gnb-scroll");
-                                if (nav) nav.scrollBy({ left: -80, behavior: "smooth" });
-                              }}
-                              style={{
-                                border: "none",
-                                background: "none",
-                                fontSize: "16px",
-                                color: "#6b7280",
-                                cursor: "pointer",
-                                padding: "4px 8px",
-                                fontWeight: "bold",
-                              }}
-                            >
-                              &lt;
-                            </button>
-                            
-                            <div
-                              id="sub-gnb-scroll"
-                              className="sub-gnb-scroll"
-                              style={{
-                                display: "flex",
-                                gap: "8px",
-                                overflowX: "auto",
-                                flex: 1,
-                                whiteSpace: "nowrap",
-                                padding: "6px 0",
-                              }}
-                            >
-                              {getWizardTabs().map((tab) => {
-                                const isActive = activeSection === tab;
-                                const isSelected = (() => {
-                                  if (tab === "거래유형") {
-                                    return tempFilterTradeTypes.length > 0 || 
-                                           tempMaemaeMin !== null || tempMaemaeMax !== null ||
-                                           tempDepositMin !== null || tempDepositMax !== null ||
-                                           tempRentMin !== null || tempRentMax !== null;
-                                  }
-                                  if (tab === "면적") {
-                                    return filterAreaMin !== null || filterAreaMax !== null;
-                                  }
-                                  if (tab === "사용승인일") {
-                                    return filterYearMin !== null || filterYearMax !== null;
-                                  }
-                                  if (tab === "세대수") {
-                                    return filterUnitMin !== null || filterUnitMax !== null;
-                                  }
-                                  if (tab === "방/욕실수") {
-                                    return filterRoomCount !== null || filterBathCount !== null;
-                                  }
-                                  if (tab === "방향") {
-                                    return filterDirection !== null;
-                                  }
-                                  if (tab === "등록자") {
-                                    return filterOwnerRole !== null;
-                                  }
-                                  if (tab === "중개보수") {
-                                    return filterCommissionType !== null;
-                                  }
-                                  if (tab === "테마") {
-                                    return filterThemes.length > 0;
-                                  }
-                                  return false;
-                                })();
-                                return (
-                                  <span
-                                    key={tab}
-                                    onClick={() => {
-                                      if (isActive && !isFilterCollapsed) {
-                                        setIsFilterCollapsed(true);
-                                      } else {
-                                        setIsFilterCollapsed(false);
-                                        setTimeout(() => {
-                                          scrollToSection(tab);
-                                        }, 50);
-                                      }
-                                    }}
-                                    style={{
-                                      fontSize: "14px",
-                                      color: isActive ? "#1a4282" : (isSelected ? "#1a73e8" : "#4b5563"),
-                                      fontWeight: (isActive || isSelected) ? "bold" : "normal",
-                                      cursor: "pointer",
-                                      padding: "6px 12px",
-                                      background: isActive ? "#e8f0fe" : (isSelected ? "#f0f7ff" : "none"),
-                                      border: isSelected && !isActive ? "1px solid #c2dbff" : "1px solid transparent",
-                                      borderRadius: "14px",
-                                      transition: "all 0.15s",
-                                    }}
-                                  >
-                                    {tab}
-                                  </span>
-                                );
-                              })}
-                            </div>
-                            
-                            <button
-                              onClick={() => {
-                                const nav = document.getElementById("sub-gnb-scroll");
-                                if (nav) nav.scrollBy({ left: 80, behavior: "smooth" });
-                              }}
-                              style={{
-                                border: "none",
-                                background: "none",
-                                fontSize: "16px",
-                                color: "#6b7280",
-                                cursor: "pointer",
-                                padding: "4px 8px",
-                                fontWeight: "bold",
-                              }}
-                            >
-                              &gt;
-                            </button>
-                          </div>
-
-                          {!isFilterCollapsed && (
-                            <>
-                              {/* Scrollable area */}
-                              <div
+                          {/* Scrollable area */}
+                          <div
                             id="popover-scroll-container"
                             style={{ maxHeight: "420px", overflowY: "auto", paddingRight: "8px", paddingBottom: "10px" }}
-                            onScroll={(e) => {
-                              const container = e.currentTarget;
-                              const containerRect = container.getBoundingClientRect();
-                              const sections = ["거래유형", "면적", "사용승인일", "세대수", "방/욕실수", "방향", "등록자", "중개보수", "테마"];
-                              
-                              let closestSec = activeSection;
-                              let minDiff = Infinity;
-                              
-                              for (const sec of sections) {
-                                const el = document.getElementById(`section-${sec}`);
-                                if (el) {
-                                  const rect = el.getBoundingClientRect();
-                                  const diff = Math.abs(rect.top - containerRect.top);
-                                  if (diff < minDiff) {
-                                    minDiff = diff;
-                                    closestSec = sec;
-                                  }
-                                }
-                              }
-                              
-                              if (closestSec !== activeSection) {
-                                setActiveSection(closestSec);
-                              }
-                            }}
                           >
                             {/* Section 1: 거래유형 */}
                             <div
@@ -3298,8 +3203,6 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                               적용하기
                             </button>
                           </div>
-                        </>
-                      )}
                     </div>
                   )}
 

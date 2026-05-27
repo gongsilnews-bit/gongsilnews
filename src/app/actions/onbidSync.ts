@@ -198,8 +198,12 @@ export async function syncOnbidProperties(targetSido: string = "서울특별시"
   }
 
   // 🧹 동기화 작업 시작 전 만료 매물 선제 자동 정리 실행 (안정성 극대화)
+  let expiredCount = 0;
   try {
-    await cleanupExpiredOnbidProperties();
+    const cleanRes = await cleanupExpiredOnbidProperties();
+    if (cleanRes.success) {
+      expiredCount = cleanRes.count || 0;
+    }
   } catch (cleanErr) {
     console.error("❌ 동기화 전 만료 매물 정리 중 에러 발생:", cleanErr);
   }
@@ -449,8 +453,8 @@ export async function syncOnbidProperties(targetSido: string = "서울특별시"
       }
     }
 
-    console.log(`🤖 온비드 동기화 완료! [성공: ${successCount}건, 생략/중복: ${skipCount}건]`);
-    return { success: true, registered: successCount, skipped: skipCount };
+    console.log(`🤖 온비드 동기화 완료! [성공: ${successCount}건, 생략/중복: ${skipCount}건, 만료/삭제: ${expiredCount}건]`);
+    return { success: true, registered: successCount, skipped: skipCount, expired: expiredCount };
   } catch (error: any) {
     console.error("❌ 온비드 연동 실행 에러:", error);
     return { success: false, error: error.message };
