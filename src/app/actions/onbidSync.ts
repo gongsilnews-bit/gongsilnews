@@ -404,17 +404,32 @@ export async function deduplicateOnbidProperties() {
   const supabase = getAdminClient();
   console.log("🧹 기존 온비드 중복 매물 정리 시작...");
 
-  // 모든 경매 매물 조회
-  const { data: allAuctions, error } = await supabase
-    .from("vacancies")
-    .select("id, description, metadata, created_at")
-    .eq("trade_type", "경매")
-    .eq("status", "ACTIVE")
-    .order("created_at", { ascending: false });
+  // 모든 경매 매물 조회 (페이징 적용하여 1,000건 제한 우회)
+  const allAuctions: any[] = [];
+  let page = 0;
+  let hasMore = true;
 
-  if (error || !allAuctions) {
-    console.error("조회 실패:", error?.message);
-    return { success: false, error: error?.message };
+  while (hasMore) {
+    const { data, error } = await supabase
+      .from("vacancies")
+      .select("id, description, metadata, created_at")
+      .eq("trade_type", "경매")
+      .eq("status", "ACTIVE")
+      .order("created_at", { ascending: false })
+      .range(page * 1000, (page + 1) * 1000 - 1);
+
+    if (error) {
+      console.error("조회 실패:", error.message);
+      return { success: false, error: error.message };
+    }
+
+    if (data && data.length > 0) {
+      allAuctions.push(...data);
+      page++;
+      hasMore = data.length === 1000;
+    } else {
+      hasMore = false;
+    }
   }
 
   // 공고번호별로 그룹핑
