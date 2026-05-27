@@ -1483,11 +1483,6 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   };
 
   const getTradeTypeFilterLabel = () => {
-    if (isAuctionMode) {
-      if (filterPriceMin === null && filterPriceMax === null) return "거래유형";
-      return `경매 ${formatPriceLabel(filterPriceMin) || "~"}~${formatPriceLabel(filterPriceMax) || ""}`;
-    }
-
     const activeMaemaeMin = tempMaemaeMin !== null ? tempMaemaeMin : appliedMaemaeMin;
     const activeMaemaeMax = tempMaemaeMax !== null ? tempMaemaeMax : appliedMaemaeMax;
     const activeDepositMin = tempDepositMin !== null ? tempDepositMin : appliedDepositMin;
