@@ -525,26 +525,40 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
                         const btn = e.currentTarget;
                         const originalText = btn.innerText;
                         const sido = (document.getElementById('manual-sido-select') as HTMLSelectElement)?.value || 'ALL';
+                        const timeEstimate = sido === 'ALL' ? '1~3분' : '5~15초';
                         const msg = sido === 'ALL' 
-                          ? "전국 17개 시도의 신규 경공매 매물을 실시간 수집하고 만료 물건을 자동 정리합니다.\nAPI 응답 시간에 따라 약 5초~10초 정도 소요될 수 있습니다.\n진행하시겠습니까?" 
-                          : `[${sido}] 지역의 신규 경공매 매물을 수집하고 만료 물건을 자동 정리합니다.\n진행하시겠습니까?`;
+                          ? `전국 17개 시도의 신규 경공매 매물을 실시간 수집하고 만료 물건을 자동 정리합니다.\n예상 소요 시간: 약 ${timeEstimate}\n\n진행하시겠습니까?` 
+                          : `[${sido}] 지역의 신규 경공매 매물을 수집하고 만료 물건을 자동 정리합니다.\n예상 소요 시간: 약 ${timeEstimate}\n\n진행하시겠습니까?`;
                         
                         if (!confirm(msg)) return;
                         
                         btn.disabled = true;
-                        btn.innerText = "⏳ 수집 중...";
                         btn.style.background = "#9ca3af";
+                        const startTime = Date.now();
+                        
+                        // 진행률 타이머 (1초마다 경과 시간 표시)
+                        const timer = setInterval(() => {
+                          const elapsed = Math.round((Date.now() - startTime) / 1000);
+                          btn.innerText = `⏳ 수집 중... (${elapsed}초)`;
+                        }, 1000);
+                        btn.innerText = "⏳ 수집 중... (0초)";
+                        
+                        // 4분 안전 타임아웃 (서버 5분 제한 대응)
+                        const controller = new AbortController();
+                        const timeout = setTimeout(() => controller.abort(), 240000);
                         
                         try {
                           const url = sido === 'ALL' 
                             ? "/api/cron/onbid?manual=true" 
                             : `/api/cron/onbid?manual=true&sido=${encodeURIComponent(sido)}`;
-                          const res = await fetch(url);
+                          const res = await fetch(url, { signal: controller.signal });
+                          clearTimeout(timeout);
                           const data = await res.json();
+                          const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
                           
                           if (data.success) {
                             const aggregated = (data.results || []).reduce((acc: any, r: any) => {
-                              if (r.type !== "metadata_refresh") {
+                              if (!r.skipped_reason) {
                                 acc.registered += r.registered || 0;
                                 acc.skipped += r.skipped || 0;
                                 acc.expired += r.expired || 0;
@@ -552,7 +566,7 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
                               return acc;
                             }, { registered: 0, skipped: 0, expired: 0 });
 
-                            alert(`✅ 온비드 동기화 완료!\n\n• 등록된 매물: ${aggregated.registered || 0}건\n• 건너뛴 매물 (중복): ${aggregated.skipped || 0}건\n• 삭제된 만료 매물: ${aggregated.expired || 0}건`);
+                            alert(`✅ 온비드 동기화 완료! (${elapsed}초)\n\n• 신규 등록: ${aggregated.registered}건\n• 중복 스킵: ${aggregated.skipped}건\n• 만료 삭제: ${aggregated.expired}건`);
                             const count = await getOnbidCount();
                             setOnbidCount(count);
                             const historyRes = await getOnbidHistoryStats();
@@ -560,11 +574,18 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
                               setOnbidHistory(historyRes);
                             }
                           } else {
-                            alert(`❌ 동기화 실패: ${data.error || "알 수 없는 오류가 발생했습니다."}`);
+                            alert(`❌ 동기화 실패 (${elapsed}초): ${data.error || "알 수 없는 오류가 발생했습니다."}`);
                           }
-                        } catch (err) {
-                          alert("❌ 동기화 도중 오류가 발생했습니다.");
+                        } catch (err: any) {
+                          clearTimeout(timeout);
+                          const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+                          if (err.name === 'AbortError') {
+                            alert(`⏰ 동기화 시간 초과 (${elapsed}초)\n\n서버에서 처리가 계속 진행 중일 수 있습니다.\n잠시 후 통계를 새로고침 해주세요.`);
+                          } else {
+                            alert(`❌ 동기화 도중 오류가 발생했습니다. (${elapsed}초)`);
+                          }
                         } finally {
+                          clearInterval(timer);
                           btn.disabled = false;
                           btn.innerText = originalText;
                           btn.style.background = "#2563eb";

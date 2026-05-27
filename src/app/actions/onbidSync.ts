@@ -273,7 +273,7 @@ export async function syncOnbidProperties(targetSido: string = "서울특별시"
 
     const addressCoordsCache = new Map<string, { lat: number; lng: number }>();
     const addressArray = Array.from(uniqueAddresses);
-    const concurrencyLimit = 10;
+    const concurrencyLimit = 20; // 성능 최적화: 동시 20개 지오코딩
     
     for (let i = 0; i < addressArray.length; i += concurrencyLimit) {
       const chunk = addressArray.slice(i, i + concurrencyLimit);
@@ -285,10 +285,34 @@ export async function syncOnbidProperties(targetSido: string = "서울특별시"
       }));
     }
 
-    console.log(`🎉 지오코딩 완료! 유효 좌표 확보 완료. DB 적재 루프 실행 중...`);
+    console.log(`🎉 지오코딩 완료! 유효 좌표 확보 완료. 중복 체크 벌크 프리페치 중...`);
 
     let successCount = 0;
     let skipCount = 0;
+
+    // ⚡ 성능 최적화: 기존 온비드 물건 ID를 벌크로 한 번에 가져와서 메모리 캐시 생성
+    // (기존 방식: 매 건마다 DB 쿼리 → 수천 건일 때 수천 회 네트워크 요청 → 극심한 지연)
+    const existingOnbidIds = new Set<string>();
+    const existingAddresses = new Set<string>();
+    try {
+      const { data: existingRows } = await supabase
+        .from("vacancies")
+        .select("description, detail_addr")
+        .eq("trade_type", "경매")
+        .neq("status", "DELETED");
+      
+      if (existingRows) {
+        for (const row of existingRows) {
+          // description에서 온비드 물건번호 추출
+          const idMatch = row.description?.match(/물건번호.*?:\s*(\d+)/);
+          if (idMatch) existingOnbidIds.add(idMatch[1]);
+          if (row.detail_addr) existingAddresses.add(row.detail_addr);
+        }
+      }
+      console.log(`📋 기존 매물 캐시 구축 완료: 온비드ID ${existingOnbidIds.size}개, 주소 ${existingAddresses.size}개`);
+    } catch (cacheErr) {
+      console.warn("⚠️ 기존 매물 캐시 구축 실패, 개별 체크로 폴백합니다:", cacheErr);
+    }
 
     // 1.5. DB에서 유효한 관리자(ADMIN) ID를 조회하는 중...
     let ownerId = "00000000-0000-0000-0000-000000000000";
@@ -323,6 +347,8 @@ export async function syncOnbidProperties(targetSido: string = "서울특별시"
       }
     }
 
+    console.log(`🚀 DB 적재 시작! (대상: ${items.length}건)`);
+
     // 2. 루프 돌며 DB 적재 자동화
     for (const item of items) {
       const onbidId = String(item.onbidCltrno || ""); // 온비드 고유 물건번호
@@ -342,14 +368,8 @@ export async function syncOnbidProperties(targetSido: string = "서울특별시"
         continue;
       }
 
-      // 중복 체크: 이미 동일한 온비드 ID가 description에 포함되어 있거나 주소/이름이 같은 경우 건너뜀
-      const { data: existing } = await supabase
-        .from("vacancies")
-        .select("id")
-        .or(`description.like.%${onbidId}%,detail_addr.eq.${address}`)
-        .limit(1);
-
-      if (existing && existing.length > 0) {
+      // ⚡ 중복 체크: 메모리 캐시에서 O(1) 조회 (DB 호출 0건!)
+      if (existingOnbidIds.has(onbidId) || existingAddresses.has(address)) {
         skipCount++;
         continue;
       }

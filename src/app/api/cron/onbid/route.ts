@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { syncOnbidProperties, refreshOnbidMetadata } from "@/app/actions/onbidSync";
+import { syncOnbidProperties } from "@/app/actions/onbidSync";
 
 export const maxDuration = 300; // Vercel 최대 실행 시간 5분 설정
 
@@ -24,26 +24,36 @@ export async function GET(req: Request) {
 
   // 대상 지역 결정: sido 파라미터가 있으면 해당 지역, 없으면 전국 17개 시도
   const targetRegions = sidoParam ? sidoParam.split(",") : sidos;
+  const startTime = Date.now();
 
   console.log(`🤖 온비드 공매 물건 동기화 시작 (대상: ${targetRegions.join(", ")})`);
 
   const results: any[] = [];
   for (const sido of targetRegions) {
-    console.log(`📍 ${sido} 동기화 중...`);
-    const syncResult = await syncOnbidProperties(sido.trim());
-    results.push({ sido: sido.trim(), ...syncResult });
+    // 안전 타임아웃: 4분(240초) 경과 시 나머지 시도 스킵 (Vercel 5분 리밋 안전 마진)
+    const elapsed = (Date.now() - startTime) / 1000;
+    if (elapsed > 240) {
+      console.warn(`⏰ ${elapsed.toFixed(0)}초 경과 → 안전 타임아웃! 나머지 시도 스킵합니다.`);
+      results.push({ sido: sido.trim(), skipped_reason: "timeout_safety", elapsed: `${elapsed.toFixed(0)}s` });
+      continue;
+    }
 
-    // 동기화 후 즉시 metadata 보강
-    if (syncResult.success && (syncResult.registered || 0) > 0) {
-      const refreshResult = await refreshOnbidMetadata(sido.trim());
-      results.push({ sido: sido.trim(), type: "metadata_refresh", ...refreshResult });
+    console.log(`📍 ${sido} 동기화 중... (경과: ${elapsed.toFixed(0)}초)`);
+    try {
+      const syncResult = await syncOnbidProperties(sido.trim());
+      results.push({ sido: sido.trim(), ...syncResult });
+    } catch (err: any) {
+      console.error(`❌ ${sido} 동기화 중 오류:`, err.message);
+      results.push({ sido: sido.trim(), success: false, error: err.message });
     }
   }
+
+  const totalElapsed = ((Date.now() - startTime) / 1000).toFixed(1);
 
   // ── 수집 로그 DB(agent_chats)에 기록 ──
   try {
     const aggregated = results.reduce((acc, r) => {
-      if (r.type !== "metadata_refresh") {
+      if (!r.skipped_reason) {
         acc.registered += r.registered || 0;
         acc.skipped += r.skipped || 0;
         acc.expired += r.expired || 0;
@@ -66,7 +76,8 @@ export async function GET(req: Request) {
         registered: aggregated.registered,
         skipped: aggregated.skipped,
         expired: aggregated.expired,
-        isManual: isManualRun
+        isManual: isManualRun,
+        elapsed: totalElapsed
       })
     });
   } catch (logErr) {
@@ -75,7 +86,8 @@ export async function GET(req: Request) {
 
   return NextResponse.json({
     success: true,
-    message: "온비드 동기화 완료",
+    message: `온비드 동기화 완료 (${totalElapsed}초)`,
+    elapsed: totalElapsed,
     results
   });
 }
