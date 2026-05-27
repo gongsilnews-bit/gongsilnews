@@ -39,13 +39,14 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
   const [activeFilters, setActiveFilters] = useState({ articleNo: "", section: "전체", section2: "전체", keyword: "" });
 
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(30);
   const [totalCount, setTotalCount] = useState(0);
   const [counts, setCounts] = useState({ 전체: 0, 승인대기: 0, 발행됨: 0, 작성중: 0, 반려: 0 });
 
   const loadData = async () => {
     const params: any = {
       page: currentPage,
-      limit: 30,
+      limit: pageSize,
     };
 
     if (articleFilter === "승인대기") params.status = "PENDING";
@@ -92,7 +93,7 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
 
   useEffect(() => {
     loadData();
-  }, [currentPage, articleFilter, activeFilters]);
+  }, [currentPage, articleFilter, activeFilters, pageSize]);
 
   // 최고관리자 기사관리: AI 에이전트 초안 포함 모든 기사 표시
   const baseArticles = dbArticles;
@@ -144,6 +145,16 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
           </select>
         </div>
         <input type="text" value={searchKeyword} onChange={e => setSearchKeyword(e.target.value)} onKeyDown={e => { if(e.key === 'Enter') { setActiveFilters({ articleNo: searchArticleNo, section: searchSection, section2: searchSection2, keyword: searchKeyword }); if (searchArticleNo || searchKeyword || searchSection !== "전체" || searchSection2 !== "전체") setArticleFilter("전체"); setCurrentPage(1); } }} placeholder="기사 제목 또는 기자명 검색" style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", flex: 1, minWidth: 180 }} />
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <label style={{ fontSize: 13, fontWeight: 600, color: textSecondary, whiteSpace: "nowrap" }}>보기</label>
+          <select value={pageSize} onChange={e => { setPageSize(Number(e.target.value)); setCurrentPage(1); }} style={{ height: 36, padding: "0 10px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", minWidth: 90 }}>
+            <option value={10}>10개씩</option>
+            <option value={20}>20개씩</option>
+            <option value={30}>30개씩</option>
+            <option value={50}>50개씩</option>
+            <option value={100}>100개씩</option>
+          </select>
+        </div>
         <button onClick={() => { setActiveFilters({ articleNo: searchArticleNo, section: searchSection, section2: searchSection2, keyword: searchKeyword }); if (searchArticleNo || searchKeyword || searchSection !== "전체" || searchSection2 !== "전체") setArticleFilter("전체"); setCurrentPage(1); }} style={{ height: 36, padding: "0 18px", background: darkMode ? "#2c2d31" : "#374151", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>검색</button>
         <button onClick={() => { setSearchArticleNo(""); setSearchSection("전체"); setSearchSection2("전체"); setSearchKeyword(""); setActiveFilters({ articleNo: "", section: "전체", section2: "전체", keyword: "" }); setArticleFilter("전체"); setCurrentPage(1); }} style={{ height: 36, padding: "0 14px", background: darkMode ? "#2c2d31" : "#fff", color: textSecondary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>초기화</button>
       </div>
@@ -318,7 +329,7 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
         </div>
         
         {/* 페이징 컴포넌트 */}
-        {totalCount > 30 && (
+        {totalCount > pageSize && (
           <div style={{ padding: "16px 24px", display: "flex", justifyContent: "center", gap: 4, borderTop: `1px solid ${border}` }}>
             <button 
               disabled={currentPage === 1}
@@ -327,7 +338,7 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
             >
               이전
             </button>
-            {Array.from({ length: Math.ceil(totalCount / 30) }).map((_, i) => {
+            {Array.from({ length: Math.ceil(totalCount / pageSize) }).map((_, i) => {
               const pageNum = i + 1;
               const isCurrent = pageNum === currentPage;
               return (
@@ -355,9 +366,9 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
               );
             })}
             <button 
-              disabled={currentPage === Math.ceil(totalCount / 30)}
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(totalCount / 30)))}
-              style={{ padding: "6px 12px", border: `1px solid ${border}`, borderRadius: 6, background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, fontSize: 13, fontWeight: 600, cursor: currentPage === Math.ceil(totalCount / 30) ? "not-allowed" : "pointer", opacity: currentPage === Math.ceil(totalCount / 30) ? 0.5 : 1 }}
+              disabled={currentPage === Math.ceil(totalCount / pageSize)}
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(totalCount / pageSize)))}
+              style={{ padding: "6px 12px", border: `1px solid ${border}`, borderRadius: 6, background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, fontSize: 13, fontWeight: 600, cursor: currentPage === Math.ceil(totalCount / pageSize) ? "not-allowed" : "pointer", opacity: currentPage === Math.ceil(totalCount / pageSize) ? 0.5 : 1 }}
             >
               다음
             </button>

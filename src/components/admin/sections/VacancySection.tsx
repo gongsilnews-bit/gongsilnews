@@ -58,13 +58,14 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
   const [excludeOnbid, setExcludeOnbid] = useState(role === "admin");
 
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(30);
   const [totalCount, setTotalCount] = useState(0);
   const [counts, setCounts] = useState({ 전체: 0, 광고중: 0, 광고종료: 0, 임시저장: 0 });
 
   const fetchAllVacancies = async () => {
     const params: any = {
       page: currentPage,
-      limit: 30,
+      limit: pageSize,
       all: role === "admin"
     };
 
@@ -152,7 +153,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
 
   useEffect(() => {
     fetchAllVacancies();
-  }, [currentPage, activeTab, activeFilters, showRegisterForm, excludeOnbid]);
+  }, [currentPage, activeTab, activeFilters, showRegisterForm, excludeOnbid, pageSize]);
 
   useEffect(() => {
     const fetchEditData = async () => {
@@ -227,6 +228,16 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
             </label>
           </div>
         )}
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <label style={{ fontSize: 13, fontWeight: 600, color: textSecondary, whiteSpace: "nowrap" }}>보기</label>
+          <select value={pageSize} onChange={e => { setPageSize(Number(e.target.value)); setCurrentPage(1); }} style={{ height: 36, padding: "0 10px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", minWidth: 90 }}>
+            <option value={10}>10개씩</option>
+            <option value={20}>20개씩</option>
+            <option value={30}>30개씩</option>
+            <option value={50}>50개씩</option>
+            <option value={100}>100개씩</option>
+          </select>
+        </div>
         <button onClick={() => { setActiveFilters({ vacancyNo: searchVacancyNo, type: searchType, keyword: searchKeyword }); if (searchVacancyNo || searchKeyword || searchType !== "전체") setActiveTab("전체"); setCurrentPage(1); }} style={{ height: 36, padding: "0 18px", background: darkMode ? "#2c2d31" : "#374151", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>검색</button>
         <button onClick={() => { setSearchVacancyNo(""); setSearchType("전체"); setSearchKeyword(""); setActiveFilters({ vacancyNo: "", type: "전체", keyword: "" }); setActiveTab("전체"); setCurrentPage(1); }} style={{ height: 36, padding: "0 14px", background: darkMode ? "#2c2d31" : "#fff", color: textSecondary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>초기화</button>
       </div>
@@ -505,7 +516,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
         </div>
 
         {/* 페이징 */}
-        {totalCount > 30 && (
+        {totalCount > pageSize && (
           <div style={{ padding: "16px 24px", display: "flex", justifyContent: "center", gap: 4, borderTop: `1px solid ${border}` }}>
             <button 
               disabled={currentPage === 1}
@@ -514,7 +525,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
             >
               이전
             </button>
-            {Array.from({ length: Math.ceil(totalCount / 30) }).map((_, i) => {
+            {Array.from({ length: Math.ceil(totalCount / pageSize) }).map((_, i) => {
               const pageNum = i + 1;
               const isCurrent = pageNum === currentPage;
               return (
@@ -542,9 +553,9 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
               );
             })}
             <button 
-              disabled={currentPage === Math.ceil(totalCount / 30)}
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(totalCount / 30)))}
-              style={{ padding: "6px 12px", border: `1px solid ${border}`, borderRadius: 6, background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, fontSize: 13, fontWeight: 600, cursor: currentPage === Math.ceil(totalCount / 30) ? "not-allowed" : "pointer", opacity: currentPage === Math.ceil(totalCount / 30) ? 0.5 : 1 }}
+              disabled={currentPage === Math.ceil(totalCount / pageSize)}
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(totalCount / pageSize)))}
+              style={{ padding: "6px 12px", border: `1px solid ${border}`, borderRadius: 6, background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, fontSize: 13, fontWeight: 600, cursor: currentPage === Math.ceil(totalCount / pageSize) ? "not-allowed" : "pointer", opacity: currentPage === Math.ceil(totalCount / pageSize) ? 0.5 : 1 }}
             >
               다음
             </button>
