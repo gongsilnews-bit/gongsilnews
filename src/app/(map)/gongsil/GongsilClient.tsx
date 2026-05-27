@@ -1483,33 +1483,45 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   };
 
   const getTradeTypeFilterLabel = () => {
+    if (isAuctionMode) {
+      if (filterPriceMin === null && filterPriceMax === null) return "거래유형";
+      return `경매 ${formatPriceLabel(filterPriceMin) || "~"}~${formatPriceLabel(filterPriceMax) || ""}`;
+    }
+
+    const activeMaemaeMin = tempMaemaeMin !== null ? tempMaemaeMin : appliedMaemaeMin;
+    const activeMaemaeMax = tempMaemaeMax !== null ? tempMaemaeMax : appliedMaemaeMax;
+    const activeDepositMin = tempDepositMin !== null ? tempDepositMin : appliedDepositMin;
+    const activeDepositMax = tempDepositMax !== null ? tempDepositMax : appliedDepositMax;
+    const activeRentMin = tempRentMin !== null ? tempRentMin : appliedRentMin;
+    const activeRentMax = tempRentMax !== null ? tempRentMax : appliedRentMax;
+
     if (filterTradeTypes.length === 0) return "거래유형";
     
     const typesStr = filterTradeTypes.join(",");
     const hasPriceFilter =
-      appliedMaemaeMin !== null ||
-      appliedMaemaeMax !== null ||
-      appliedDepositMin !== null ||
-      appliedDepositMax !== null ||
-      appliedRentMin !== null ||
-      appliedRentMax !== null;
+      activeMaemaeMin !== null ||
+      activeMaemaeMax !== null ||
+      activeDepositMin !== null ||
+      activeDepositMax !== null ||
+      activeRentMin !== null ||
+      activeRentMax !== null;
       
     if (!hasPriceFilter) return typesStr;
     
     if (filterTradeTypes.length === 1) {
       const t = filterTradeTypes[0];
       if (t === "매매") {
-        if (appliedMaemaeMin === null && appliedMaemaeMax === null) return "매매";
-        return `매매 ${formatPriceLabel(appliedMaemaeMin) || "~"}~${formatPriceLabel(appliedMaemaeMax) || ""}`;
+        if (activeMaemaeMin === null && activeMaemaeMax === null) return "매매";
+        return `매매 ${formatPriceLabel(activeMaemaeMin) || "~"}~${formatPriceLabel(activeMaemaeMax) || ""}`;
       } else if (t === "전세") {
-        if (appliedDepositMin === null && appliedDepositMax === null) return "전세";
-        return `전세 ${formatPriceLabel(appliedDepositMin) || "~"}~${formatPriceLabel(appliedDepositMax) || ""}`;
+        if (activeDepositMin === null && activeDepositMax === null) return "전세";
+        return `전세 ${formatPriceLabel(activeDepositMin) || "~"}~${formatPriceLabel(activeDepositMax) || ""}`;
       } else if (t === "월세") {
-        const depStr = appliedDepositMin !== null || appliedDepositMax !== null 
-          ? `보증금 ${formatPriceLabel(appliedDepositMin) || "~"}~${formatPriceLabel(appliedDepositMax) || ""}`
+        const depStr = activeDepositMin !== null || activeDepositMax !== null 
+          ? `보증금 ${formatPriceLabel(activeDepositMin) || "~"}~${formatPriceLabel(activeDepositMax) || ""}`
           : "";
-        const rentStr = appliedRentMin !== null || appliedRentMax !== null
-          ? `월세 ${formatPriceLabel(appliedRentMin) || "~"}~${formatPriceLabel(appliedRentMax) || ""}`
+        const rentStr = activeRentMin !== null || activeRentMax !== null
+          ? `월세 ${formatPriceLabel(activeRentMin) || "~"}~${formatPriceLabel(activeRentMax) || ""}`
           : "";
         return `월세 ${[depStr, rentStr].filter(Boolean).join(" / ")}`;
       }
