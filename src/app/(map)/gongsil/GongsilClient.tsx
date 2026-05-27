@@ -1494,7 +1494,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   };
 
   const getTradeTypeFilterLabel = () => {
-    if (filterTradeTypes.length === 0) return "거래유형";
+    if (filterTradeTypes.length === 0) return "검색조건";
     
     const typesStr = filterTradeTypes.join(",");
     const hasPriceFilter =
