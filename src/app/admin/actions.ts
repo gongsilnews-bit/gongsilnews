@@ -362,7 +362,8 @@ export async function adminHardDeleteMember(memberId: string) {
 export async function adminGetDashboardData() {
   const supabaseAdmin = getAdminClient();
   try {
-    const { count: vacanciesCount } = await supabaseAdmin.from('vacancies').select('*', { count: 'exact', head: true }).neq('status', 'DELETED');
+    const { count: vacanciesCount } = await supabaseAdmin.from('vacancies').select('*', { count: 'exact', head: true }).neq('status', 'DELETED').neq('trade_type', '경매');
+    const { count: onbidCount } = await supabaseAdmin.from('vacancies').select('*', { count: 'exact', head: true }).neq('status', 'DELETED').eq('trade_type', '경매');
     const { count: membersCount } = await supabaseAdmin.from('members').select('*', { count: 'exact', head: true });
     const { count: articlesCount } = await supabaseAdmin.from('articles').select('*', { count: 'exact', head: true }).eq('is_deleted', false);
     
@@ -376,6 +377,14 @@ export async function adminGetDashboardData() {
     const { data: recentVacancies } = await supabaseAdmin.from('vacancies')
       .select('id, trade_type, address, price, contact, created_at')
       .neq('status', 'DELETED')
+      .neq('trade_type', '경매')
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    const { data: recentOnbid } = await supabaseAdmin.from('vacancies')
+      .select('id, trade_type, address, price, contact, created_at, building_name')
+      .neq('status', 'DELETED')
+      .eq('trade_type', '경매')
       .order('created_at', { ascending: false })
       .limit(5);
 
@@ -401,8 +410,9 @@ export async function adminGetDashboardData() {
 
     return { 
       success: true, 
-      stats: { vacanciesCount, membersCount, articlesCount, commentsCount },
+      stats: { vacanciesCount, onbidCount, membersCount, articlesCount, commentsCount },
       recentVacancies: recentVacancies || [],
+      recentOnbid: recentOnbid || [],
       recentMembers: recentMembers || [],
       recentComments
     };

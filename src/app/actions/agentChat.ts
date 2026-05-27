@@ -381,6 +381,12 @@ export async function generateDailyReport() {
     supabase.from("articles").select("id", { count: "exact", head: true }).eq("status", "DRAFT").eq("is_deleted", false),
   ]);
 
+  // ── 오늘 온비드 관련 데이터 수집 ──
+  const [totalOnbid, todayOnbidCount] = await Promise.all([
+    supabase.from("vacancies").select("id", { count: "exact", head: true }).eq("trade_type", "경매").neq("status", "DELETED"),
+    supabase.from("vacancies").select("id", { count: "exact", head: true }).eq("trade_type", "경매").neq("status", "DELETED").gte("created_at", todayISO),
+  ]);
+
   // ── API 비용 데이터 ──
   const { data: costData } = await supabase
     .from("agent_chats")
@@ -417,6 +423,10 @@ export async function generateDailyReport() {
 - 현재 승인 대기: ${articlePending.count || 0}건
 - 현재 작성 중: ${articleDraft.count || 0}건
 
+[온비드 경공매 수집 현황]
+- 전체 수집 매물: ${totalOnbid.count || 0}건
+- 오늘 신규 등록: ${todayOnbidCount.count || 0}건
+
 [AI API 사용량 (오늘)]
 ${Object.entries(todayCostByAgent).map(([k, v]) => `- ${k}: ${v.count}건 대화, ${v.tokens}토큰, ₩${v.cost.toFixed(1)}`).join("\n") || "- 오늘 사용 내역 없음"}
 
@@ -431,10 +441,13 @@ ${Object.entries(todayCostByAgent).map(([k, v]) => `- ${k}: ${v.count}건 대화
    - 오늘 기사 심사 현황 요약
    - 특이사항
 
-3. 💸 비용 현황
+3. 🤖 온비드 동기화 에이전트 보고
+   - 오늘 온비드 경공매 매물 수집 현황 및 만료 매물 자동 정리 사항 브리핑
+
+4. 💸 비용 현황
    - 오늘 API 사용량 요약
 
-4. 📌 총괄 코멘트
+5. 📌 총괄 코멘트
    - 전반적인 운영 상태 평가 (1~2문장)
 `;
 
@@ -594,4 +607,10 @@ export async function saveArticleCronConfig(config: ArticleCronConfig) {
     return false;
   }
   return true;
+}
+
+export async function getOnbidCount() {
+  const supabase = getAdminClient();
+  const { count } = await supabase.from("vacancies").select("id", { count: "exact", head: true }).eq("trade_type", "경매").neq("status", "DELETED");
+  return count || 0;
 }

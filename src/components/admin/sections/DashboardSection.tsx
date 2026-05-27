@@ -41,8 +41,10 @@ export default function DashboardSection({ theme, role, agencyStatus, rejectionR
   const navigate = (menu: string) => { if (onMenuChange) onMenuChange(menu); };
 
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({ vacanciesCount: 0, membersCount: 0, articlesCount: 0, commentsCount: 0 });
+  const [stats, setStats] = useState({ vacanciesCount: 0, onbidCount: 0, membersCount: 0, articlesCount: 0, commentsCount: 0 });
   const [recentVacancies, setRecentVacancies] = useState<any[]>([]);
+  const [recentOnbid, setRecentOnbid] = useState<any[]>([]);
+  const [activeVacancyTab, setActiveVacancyTab] = useState<"general" | "onbid">("general");
   const [recentMembers, setRecentMembers] = useState<any[]>([]);
   const [recentArticles, setRecentArticles] = useState<any[]>([]);
   const [recentComments, setRecentComments] = useState<any[]>([]);
@@ -56,11 +58,13 @@ export default function DashboardSection({ theme, role, agencyStatus, rejectionR
         if (res.success) {
           setStats({
             vacanciesCount: res.stats?.vacanciesCount || 0,
+            onbidCount: res.stats?.onbidCount || 0,
             membersCount: res.stats?.membersCount || 0,
             articlesCount: res.stats?.articlesCount || 0,
             commentsCount: res.stats?.commentsCount || 0,
           });
           setRecentVacancies(res.recentVacancies || []);
+          setRecentOnbid(res.recentOnbid || []);
           setRecentMembers(res.recentMembers || []);
           setRecentComments(res.recentComments || []);
         }
@@ -69,11 +73,13 @@ export default function DashboardSection({ theme, role, agencyStatus, rejectionR
         if (res.success) {
           setStats({
             vacanciesCount: res.stats?.vacanciesCount || 0,
+            onbidCount: 0,
             membersCount: 0,
             articlesCount: res.stats?.articlesCount || 0,
             commentsCount: res.stats?.commentsCount || 0,
           });
           setRecentVacancies(res.recentVacancies || []);
+          setRecentOnbid([]);
           setRecentArticles(res.recentArticles || []);
           setRecentComments(res.recentComments || []);
         }
@@ -90,7 +96,8 @@ export default function DashboardSection({ theme, role, agencyStatus, rejectionR
 
   /* ── KPI 카드 구성 (역할에 따라 다르게) ── */
   const kpiCards = role === "admin" ? [
-    { icon: "🏢", label: "공실 등록 물건", value: stats.vacanciesCount.toLocaleString(), sub: "전체 등록 공실", color: "#3b82f6", menu: "gongsil" },
+    { icon: "🏢", label: "공실 등록 물건", value: stats.vacanciesCount.toLocaleString(), sub: "중개사 등록 공실", color: "#3b82f6", menu: "gongsil" },
+    { icon: "⚖️", label: "온비드 경공매", value: stats.onbidCount.toLocaleString(), sub: "전국 온비드 매물", color: "#2563eb", menu: "gongsil" },
     { icon: "👤", label: "전체 회원", value: stats.membersCount.toLocaleString(), sub: "전체 가입 회원", color: "#10b981", menu: "members" },
     { icon: "📰", label: "등록 기사", value: stats.articlesCount.toLocaleString(), sub: "전체 등록 기사", color: "#f59e0b", menu: "article" },
     { icon: "✉️", label: "접수된 문의", value: stats.commentsCount.toLocaleString(), sub: "전체 접수된 문의", color: "#ef4444", menu: "inquiry" },
@@ -179,37 +186,100 @@ export default function DashboardSection({ theme, role, agencyStatus, rejectionR
 
       {/* 중단: 최근 물건 + 최근 회원/기사 */}
       <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 16, marginBottom: 24 }}>
-        {/* 최근 등록 공실 물건 */}
+        {/* 최근 등록 공실 물건 / 온비드 경공매 */}
         <div style={{ background: cardBg, borderRadius: 14, padding: 22, boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
-          <div onClick={() => navigate("gongsil")} style={{ fontSize: 14, fontWeight: 700, color: darkMode ? "#e1e4e8" : "#374151", margin: "0 0 16px", display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-            🏠 {role === "admin" ? "최근 등록 공실 물건" : "내 최근 공실 물건"}
-            <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 20, background: darkMode ? "#1e3a5f" : "#eff6ff", color: "#3b82f6", fontWeight: 600 }}>{recentVacancies.length}</span>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+            <div onClick={() => navigate("gongsil")} style={{ fontSize: 14, fontWeight: 700, color: darkMode ? "#e1e4e8" : "#374151", display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+              🏠 {role === "admin" ? "최근 등록 매물 현황" : "내 최근 공실 물건"}
+            </div>
+            {role === "admin" && (
+              <div style={{ display: "flex", background: darkMode ? "#1a1b1e" : "#f1f5f9", borderRadius: 8, padding: 3 }}>
+                <button
+                  onClick={() => setActiveVacancyTab("general")}
+                  style={{
+                    padding: "4px 10px", fontSize: 11, fontWeight: 700,
+                    background: activeVacancyTab === "general" ? (darkMode ? "#2c2d31" : "#fff") : "transparent",
+                    color: activeVacancyTab === "general" ? "#2563eb" : textSecondary,
+                    border: "none", borderRadius: 6, cursor: "pointer", fontFamily: "inherit",
+                    boxShadow: activeVacancyTab === "general" ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
+                  }}
+                >
+                  일반 공실 ({recentVacancies.length})
+                </button>
+                <button
+                  onClick={() => setActiveVacancyTab("onbid")}
+                  style={{
+                    padding: "4px 10px", fontSize: 11, fontWeight: 700,
+                    background: activeVacancyTab === "onbid" ? (darkMode ? "#2c2d31" : "#fff") : "transparent",
+                    color: activeVacancyTab === "onbid" ? "#2563eb" : textSecondary,
+                    border: "none", borderRadius: 6, cursor: "pointer", fontFamily: "inherit",
+                    boxShadow: activeVacancyTab === "onbid" ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
+                  }}
+                >
+                  온비드 경공매 ({recentOnbid.length})
+                </button>
+              </div>
+            )}
           </div>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-            <thead>
-              <tr>
-                {["매매종류", "주소", "금액", "등록일"].map(th => (
-                  <th key={th} style={{ textAlign: "left" as const, padding: "8px 10px", fontSize: 11, fontWeight: 700, color: "#9ca3af", borderBottom: `1px solid ${darkMode ? "#333" : "#f3f4f6"}`, textTransform: "uppercase" as const, letterSpacing: "0.3px" }}>{th}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr><td colSpan={4} style={{ color: "#9ca3af", fontSize: 13, textAlign: "center", padding: 20 }}>로딩 중...</td></tr>
-              ) : recentVacancies.length === 0 ? (
-                <tr><td colSpan={4} style={{ color: "#9ca3af", fontSize: 13, textAlign: "center", padding: 20 }}>등록된 공실이 없습니다.</td></tr>
-              ) : (
-                recentVacancies.map(v => (
-                  <tr key={v.id} onClick={() => navigate("gongsil")} style={{ borderBottom: `1px solid ${darkMode ? "#333" : "#f3f4f6"}`, cursor: "pointer", transition: "background 0.15s" }} onMouseEnter={e => e.currentTarget.style.background = darkMode ? "#2c2d31" : "#f8fafc"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                    <td style={{ padding: "10px", fontWeight: 600, color: textPrimary }}>{v.trade_type}</td>
-                    <td style={{ padding: "10px", color: textSecondary }}>{v.address ? v.address.split(' ').slice(0, 2).join(' ') : '-'}</td>
-                    <td style={{ padding: "10px", color: "#3b82f6", fontWeight: 700 }}>{formatPrice(v.trade_type, v.price)}</td>
-                    <td style={{ padding: "10px", color: "#9ca3af", fontSize: 12 }}>{formatTimeAgo(v.created_at)}</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+
+          {activeVacancyTab === "general" || role !== "admin" ? (
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+              <thead>
+                <tr>
+                  {["매매종류", "주소", "금액", "등록일"].map(th => (
+                    <th key={th} style={{ textAlign: "left" as const, padding: "8px 10px", fontSize: 11, fontWeight: 700, color: "#9ca3af", borderBottom: `1px solid ${darkMode ? "#333" : "#f3f4f6"}`, textTransform: "uppercase" as const, letterSpacing: "0.3px" }}>{th}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr><td colSpan={4} style={{ color: "#9ca3af", fontSize: 13, textAlign: "center", padding: 20 }}>로딩 중...</td></tr>
+                ) : recentVacancies.length === 0 ? (
+                  <tr><td colSpan={4} style={{ color: "#9ca3af", fontSize: 13, textAlign: "center", padding: 20 }}>등록된 공실이 없습니다.</td></tr>
+                ) : (
+                  recentVacancies.map(v => (
+                    <tr key={v.id} onClick={() => navigate("gongsil")} style={{ borderBottom: `1px solid ${darkMode ? "#333" : "#f3f4f6"}`, cursor: "pointer", transition: "background 0.15s" }} onMouseEnter={e => e.currentTarget.style.background = darkMode ? "#2c2d31" : "#f8fafc"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                      <td style={{ padding: "10px", fontWeight: 600, color: textPrimary }}>{v.trade_type}</td>
+                      <td style={{ padding: "10px", color: textSecondary }}>{v.address ? v.address.split(' ').slice(0, 2).join(' ') : '-'}</td>
+                      <td style={{ padding: "10px", color: "#3b82f6", fontWeight: 700 }}>{formatPrice(v.trade_type, v.price)}</td>
+                      <td style={{ padding: "10px", color: "#9ca3af", fontSize: 12 }}>{formatTimeAgo(v.created_at)}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          ) : (
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+              <thead>
+                <tr>
+                  {["구분", "물건명/주소", "최저입찰가", "수집일"].map(th => (
+                    <th key={th} style={{ textAlign: "left" as const, padding: "8px 10px", fontSize: 11, fontWeight: 700, color: "#9ca3af", borderBottom: `1px solid ${darkMode ? "#333" : "#f3f4f6"}`, textTransform: "uppercase" as const, letterSpacing: "0.3px" }}>{th}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr><td colSpan={4} style={{ color: "#9ca3af", fontSize: 13, textAlign: "center", padding: 20 }}>로딩 중...</td></tr>
+                ) : recentOnbid.length === 0 ? (
+                  <tr><td colSpan={4} style={{ color: "#9ca3af", fontSize: 13, textAlign: "center", padding: 20 }}>수집된 온비드 경공매 매물이 없습니다.</td></tr>
+                ) : (
+                  recentOnbid.map(v => (
+                    <tr key={v.id} onClick={() => navigate("gongsil")} style={{ borderBottom: `1px solid ${darkMode ? "#333" : "#f3f4f6"}`, cursor: "pointer", transition: "background 0.15s" }} onMouseEnter={e => e.currentTarget.style.background = darkMode ? "#2c2d31" : "#f8fafc"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                      <td style={{ padding: "10px", fontWeight: 600, color: textPrimary }}>
+                        <span style={{ fontSize: 11, padding: "2px 6px", borderRadius: 4, background: "#2563eb1a", color: "#2563eb", fontWeight: 700 }}>공매</span>
+                      </td>
+                      <td style={{ padding: "10px", color: textSecondary, maxWidth: "220px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={v.building_name || v.address}>
+                        <span style={{ fontWeight: 600, color: textPrimary, display: "block" }}>{v.building_name || "공매 물건"}</span>
+                        <span style={{ fontSize: 11, color: "#9ca3af" }}>{v.address ? v.address.split(' ').slice(0, 3).join(' ') : '-'}</span>
+                      </td>
+                      <td style={{ padding: "10px", color: "#e11d48", fontWeight: 700 }}>{formatPrice("최저", v.price)}</td>
+                      <td style={{ padding: "10px", color: "#9ca3af", fontSize: 12 }}>{formatTimeAgo(v.created_at)}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          )}
         </div>
 
         {/* 최근 가입 회원 (admin) or 최근 기사 (realtor/user) */}
