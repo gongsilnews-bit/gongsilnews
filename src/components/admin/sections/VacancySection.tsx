@@ -56,11 +56,56 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
   const [searchKeyword, setSearchKeyword] = useState("");
   const [activeFilters, setActiveFilters] = useState({ vacancyNo: "", type: "전체", keyword: "" });
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [counts, setCounts] = useState({ 전체: 0, 광고중: 0, 광고종료: 0, 임시저장: 0 });
+
   const fetchAllVacancies = async () => {
-    const res = role === "admin"
-      ? await getVacancies({ all: true })
-      : await getVacancies({ ownerId });
-    if (res.success) setDbVacancies(res.data || []);
+    const params: any = {
+      page: currentPage,
+      limit: 30,
+      all: role === "admin"
+    };
+
+    if (role !== "admin" && ownerId) {
+      params.ownerId = ownerId;
+    }
+
+    // Map status filter
+    if (activeTab === "광고중") params.status = "ACTIVE";
+    else if (activeTab === "광고종료") params.status = "STOPPED";
+    else if (activeTab === "임시저장") params.status = "DRAFT";
+
+    // Map search filters
+    if (activeFilters.vacancyNo) params.vacancyNo = activeFilters.vacancyNo;
+    if (activeFilters.type !== "전체") params.tradeType = activeFilters.type;
+    if (activeFilters.keyword) params.searchKeyword = activeFilters.keyword;
+
+    const res = await getVacancies(params);
+    if (res.success) {
+      setDbVacancies(res.data || []);
+      setTotalCount(res.count || 0);
+    }
+
+    // Compute total and status counts
+    const supabase = createClient();
+    let query = supabase.from("vacancies").select("status");
+    if (role !== "admin" && ownerId) {
+      const { data: user } = await supabase.from('members').select('role').eq('id', ownerId).single();
+      if (user?.role !== 'SUPER_ADMIN' && user?.role !== 'ADMIN' && user?.role !== '최고관리자') {
+        query = query.eq('owner_id', ownerId);
+      }
+    }
+    const { data: countData } = await query;
+    if (countData) {
+      const c = { 전체: countData.length, 광고중: 0, 광고종료: 0, 임시저장: 0 };
+      countData.forEach((v: any) => {
+        if (v.status === "ACTIVE") c.광고중++;
+        else if (v.status === "STOPPED") c.광고종료++;
+        else if (v.status === "DRAFT") c.임시저장++;
+      });
+      setCounts(c);
+    }
   };
 
   const handleRequestApproval = async () => {
@@ -83,8 +128,8 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
   };
 
   useEffect(() => {
-    if (!initialData) fetchAllVacancies();
-  }, [showRegisterForm]);
+    fetchAllVacancies();
+  }, [currentPage, activeTab, activeFilters, showRegisterForm]);
 
   useEffect(() => {
     const fetchEditData = async () => {
@@ -128,39 +173,21 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
       />
     );
   }
-  let filteredVacancies = dbVacancies.filter(v => {
-    // tab filter
-    if (activeTab === "광고중" && v.status !== "ACTIVE") return false;
-    if (activeTab === "광고종료" && v.status !== "STOPPED") return false;
-    if (activeTab === "임시저장" && v.status !== "DRAFT") return false;
-    
-    // search filters
-    if (activeFilters.vacancyNo && !String(v.vacancy_no || "").includes(activeFilters.vacancyNo)) return false;
-    if (activeFilters.type !== "전체" && v.trade_type !== activeFilters.type) return false;
-    if (activeFilters.keyword) {
-      const k = activeFilters.keyword.toLowerCase();
-      const addr = [v.sido, v.sigungu, v.dong, v.building_name].filter(Boolean).join(" ").toLowerCase();
-      const agencyData = Array.isArray(v.members?.agencies) ? v.members?.agencies[0] : v.members?.agencies;
-      const agencyName = agencyData?.name || "";
-      const ownerOptions = [v.client_name, v.client_phone, v.members?.name, agencyName].filter(Boolean).map(String).map(s => s.toLowerCase());
-      if (!addr.includes(k) && !ownerOptions.some(o => o.includes(k))) return false;
-    }
-    return true;
-  });
+  let filteredVacancies = dbVacancies;
 
   return (
     <div style={{ flex: 1, overflowY: "auto", padding: "20px 28px", background: bg }}>
       {/* 타이틀 */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
         <h1 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: 0 }}>공실관리</h1>
-        <span style={{ fontSize: 13, color: "#111", fontWeight: 600 }}>(광고 {dbVacancies.filter(v => v.status === 'ACTIVE').length}건 / 전체 {dbVacancies.length}건)</span>
+        <span style={{ fontSize: 13, color: "#111", fontWeight: 600 }}>(광고 {counts.광고중}건 / 전체 {counts.전체}건)</span>
       </div>
 
       {/* 필터 검색 바 (독립 컨테이너로 위로 분리) */}
       <div style={{ padding: "16px 24px", background: cardBg, borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", marginBottom: 20, display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <label style={{ fontSize: 13, fontWeight: 600, color: textSecondary, whiteSpace: "nowrap" }}>공실광고 번호</label>
-          <input type="text" value={searchVacancyNo} onChange={e => setSearchVacancyNo(e.target.value)} onKeyDown={e => { if(e.key === 'Enter') { setActiveFilters({ vacancyNo: searchVacancyNo, type: searchType, keyword: searchKeyword }); if (searchVacancyNo || searchKeyword || searchType !== "전체") setActiveTab("전체"); } }} placeholder="번호 검색" style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", width: 130 }} />
+          <input type="text" value={searchVacancyNo} onChange={e => setSearchVacancyNo(e.target.value)} onKeyDown={e => { if(e.key === 'Enter') { setActiveFilters({ vacancyNo: searchVacancyNo, type: searchType, keyword: searchKeyword }); if (searchVacancyNo || searchKeyword || searchType !== "전체") setActiveTab("전체"); setCurrentPage(1); } }} placeholder="번호 검색" style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", width: 130 }} />
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <label style={{ fontSize: 13, fontWeight: 600, color: textSecondary, whiteSpace: "nowrap" }}>거래구분</label>
@@ -168,26 +195,23 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
             <option value="전체">전체</option><option value="매매">매매</option><option value="전세">전세</option><option value="월세">월세</option>
           </select>
         </div>
-        <input type="text" value={searchKeyword} onChange={e => setSearchKeyword(e.target.value)} onKeyDown={e => { if(e.key === 'Enter') { setActiveFilters({ vacancyNo: searchVacancyNo, type: searchType, keyword: searchKeyword }); if (searchVacancyNo || searchKeyword || searchType !== "전체") setActiveTab("전체"); } }} placeholder="주소, 등록자 또는 연락처 검색" style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", flex: 1, minWidth: 180 }} />
-        <button onClick={() => { setActiveFilters({ vacancyNo: searchVacancyNo, type: searchType, keyword: searchKeyword }); if (searchVacancyNo || searchKeyword || searchType !== "전체") setActiveTab("전체"); }} style={{ height: 36, padding: "0 18px", background: darkMode ? "#2c2d31" : "#374151", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>검색</button>
-        <button onClick={() => { setSearchVacancyNo(""); setSearchType("전체"); setSearchKeyword(""); setActiveFilters({ vacancyNo: "", type: "전체", keyword: "" }); setActiveTab("전체"); }} style={{ height: 36, padding: "0 14px", background: darkMode ? "#2c2d31" : "#fff", color: textSecondary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>초기화</button>
+        <input type="text" value={searchKeyword} onChange={e => setSearchKeyword(e.target.value)} onKeyDown={e => { if(e.key === 'Enter') { setActiveFilters({ vacancyNo: searchVacancyNo, type: searchType, keyword: searchKeyword }); if (searchVacancyNo || searchKeyword || searchType !== "전체") setActiveTab("전체"); setCurrentPage(1); } }} placeholder="주소, 등록자 또는 연락처 검색" style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", flex: 1, minWidth: 180 }} />
+        <button onClick={() => { setActiveFilters({ vacancyNo: searchVacancyNo, type: searchType, keyword: searchKeyword }); if (searchVacancyNo || searchKeyword || searchType !== "전체") setActiveTab("전체"); setCurrentPage(1); }} style={{ height: 36, padding: "0 18px", background: darkMode ? "#2c2d31" : "#374151", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>검색</button>
+        <button onClick={() => { setSearchVacancyNo(""); setSearchType("전체"); setSearchKeyword(""); setActiveFilters({ vacancyNo: "", type: "전체", keyword: "" }); setActiveTab("전체"); setCurrentPage(1); }} style={{ height: 36, padding: "0 14px", background: darkMode ? "#2c2d31" : "#fff", color: textSecondary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>초기화</button>
       </div>
 
       <div style={{ background: cardBg, borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", overflow: "hidden" }}>
         {/* 필터 탭 */}
         <div style={{ display: "flex", borderBottom: `1px solid ${border}`, background: darkMode ? "#2c2d31" : "#fafafa", padding: "0 16px" }}>
           {["전체", "광고중", "광고종료", "임시저장"].map(tab => {
-            let count = 0;
-            if (tab === "전체") count = dbVacancies.length;
-            else if (tab === "광고중") count = dbVacancies.filter(v => v.status === "ACTIVE").length;
-            else if (tab === "광고종료") count = dbVacancies.filter(v => v.status === "STOPPED").length;
-            else if (tab === "임시저장") count = dbVacancies.filter(v => v.status === "DRAFT").length;
+            let count = counts[tab as keyof typeof counts] || 0;
 
             return (
               <button key={tab} onClick={() => {
                 setActiveTab(tab);
                 setActiveFilters({ vacancyNo: "", type: "전체", keyword: "" });
                 setSearchVacancyNo(""); setSearchType("전체"); setSearchKeyword("");
+                setCurrentPage(1);
               }}
                 style={{ border: "none", background: "none", padding: "16px 20px", fontSize: 14, fontWeight: activeTab === tab ? 800 : 600, color: activeTab === tab ? "#3b82f6" : textSecondary, borderBottom: activeTab === tab ? "3px solid #3b82f6" : "3px solid transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
                 {tab}
@@ -450,9 +474,51 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
         </div>
 
         {/* 페이징 */}
-        <div style={{ padding: "16px 24px", display: "flex", justifyContent: "center", gap: 4, borderTop: `1px solid ${border}` }}>
-          <button style={{ width: 32, height: 32, border: "none", borderRadius: 4, background: "#3b82f6", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>1</button>
-        </div>
+        {totalCount > 30 && (
+          <div style={{ padding: "16px 24px", display: "flex", justifyContent: "center", gap: 4, borderTop: `1px solid ${border}` }}>
+            <button 
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              style={{ padding: "6px 12px", border: `1px solid ${border}`, borderRadius: 6, background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, fontSize: 13, fontWeight: 600, cursor: currentPage === 1 ? "not-allowed" : "pointer", opacity: currentPage === 1 ? 0.5 : 1 }}
+            >
+              이전
+            </button>
+            {Array.from({ length: Math.ceil(totalCount / 30) }).map((_, i) => {
+              const pageNum = i + 1;
+              const isCurrent = pageNum === currentPage;
+              return (
+                <button
+                  key={pageNum}
+                  onClick={() => setCurrentPage(pageNum)}
+                  style={{
+                    width: 32,
+                    height: 32,
+                    border: isCurrent ? "none" : `1px solid ${border}`,
+                    borderRadius: 6,
+                    background: isCurrent ? "#3b82f6" : (darkMode ? "#2c2d31" : "#fff"),
+                    color: isCurrent ? "#fff" : textPrimary,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    transition: "all 0.15s"
+                  }}
+                >
+                  {pageNum}
+                </button>
+              );
+            })}
+            <button 
+              disabled={currentPage === Math.ceil(totalCount / 30)}
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(totalCount / 30)))}
+              style={{ padding: "6px 12px", border: `1px solid ${border}`, borderRadius: 6, background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, fontSize: 13, fontWeight: 600, cursor: currentPage === Math.ceil(totalCount / 30) ? "not-allowed" : "pointer", opacity: currentPage === Math.ceil(totalCount / 30) ? 0.5 : 1 }}
+            >
+              다음
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -208,9 +208,12 @@ export async function getArticles(filters?: {
   is_important?: boolean;
   is_headline?: boolean;
   limit?: number;
+  page?: number;
   keyword?: string;
   author_name?: string;
   author_id?: string;
+  articleNo?: string;
+  searchKeyword?: string;
 }) {
   const cacheKey = JSON.stringify(filters || {});
   
@@ -219,7 +222,7 @@ export async function getArticles(filters?: {
       const supabase = getAdminClient();
       let query = supabase
         .from("articles")
-        .select("id, article_no, status, section1, section2, title, subtitle, content, author_name, author_id, published_at, created_at, updated_at, is_deleted, thumbnail_url, view_count, lat, lng, location_name, youtube_url, is_important, is_headline, reject_reason, edit_count, article_keywords(keyword)")
+        .select("id, article_no, status, section1, section2, title, subtitle, content, author_name, author_id, published_at, created_at, updated_at, is_deleted, thumbnail_url, view_count, lat, lng, location_name, youtube_url, is_important, is_headline, reject_reason, edit_count, article_keywords(keyword)", { count: "exact" })
         .eq("is_deleted", false)
         .order("published_at", { ascending: false, nullsFirst: false })
         .order("created_at", { ascending: false });
@@ -238,6 +241,14 @@ export async function getArticles(filters?: {
       if (filters?.author_name) query = query.eq("author_name", filters.author_name);
       if (filters?.author_id) query = query.eq("author_id", filters.author_id);
       
+      if (filters?.articleNo) {
+        query = query.eq("article_no", parseInt(filters.articleNo, 10));
+      }
+      if (filters?.searchKeyword) {
+        const p = `%${filters.searchKeyword}%`;
+        query = query.or(`title.ilike.${p},author_name.ilike.${p}`);
+      }
+
       if (filters?.keyword) {
         // 키워드로 검색된 article_id 목록 추출
         const { data: kwData, error: kwError } = await supabase
@@ -249,15 +260,21 @@ export async function getArticles(filters?: {
           query = query.in("id", kwData.map((k: any) => k.article_id));
         } else {
           // 일치하는 키워드가 없는 경우 빈 배열 즉시 리턴
-          return { success: true, data: [] };
+          return { success: true, data: [], count: 0 };
         }
       }
 
-      if (filters?.limit) query = query.limit(filters.limit);
+      if (filters?.page && filters?.limit) {
+        const from = (filters.page - 1) * filters.limit;
+        const to = from + filters.limit - 1;
+        query = query.range(from, to);
+      } else if (filters?.limit) {
+        query = query.limit(filters.limit);
+      }
 
-      const { data, error } = await query;
+      const { data, error, count } = await query;
       if (error) return { success: false, error: error.message };
-      return { success: true, data };
+      return { success: true, data, count: count || 0 };
     },
     ["articles-list", cacheKey],
     { tags: ["articles"], revalidate: 300 } // 5분 캐시

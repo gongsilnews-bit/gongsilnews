@@ -189,13 +189,84 @@ export async function getVacancies(options?: {
   ownerId?: string;
   status?: string;
   all?: boolean;
+  page?: number;
+  limit?: number;
+  vacancyNo?: string;
+  tradeType?: string;
+  searchKeyword?: string;
 }) {
   const supabase = getAdminClient();
   try {
-    // 리스트와 마커에 필요한 필수 컬럼만 가져옵니다. 
-    // infrastructure, description 같이 무거운 JSON/TEXT 컬럼 제외.
-    // 임시 원복: 컬럼 오류 방지를 위해 전체 조회( * )로 되돌림
-    const selectedColumns = 'id, vacancy_no, status, property_type, sub_category, trade_type, deposit, monthly_rent, maintenance_fee, commission_type, supply_m2, supply_py, exclusive_m2, exclusive_py, room_count, bath_count, direction, current_floor, total_floor, parking, move_in_date, sido, sigungu, dong, detail_addr, building_name, lat, lng, created_at, owner_id, owner_role, realtor_commission, owner_relation, client_name, client_phone, approval_year, total_units, options, members!vacancies_owner_id_fkey(name, email, role, phone, sns_links, agencies(*)), vacancy_photos(url, sort_order)';
+    const selectFields = options?.all
+      ? '*, vacancy_photos(url, sort_order)'
+      : '*, members!vacancies_owner_id_fkey(name, email, role, phone, sns_links, profile_image_url, agencies(*)), vacancy_photos(url, sort_order)';
+
+    // 만약 페이지네이션이 명시된 경우, 단일 쿼리로 최적화해서 수행
+    if (options?.page && options?.limit) {
+      const from = (options.page - 1) * options.limit;
+      const to = from + options.limit - 1;
+
+      let pageQuery = supabase
+        .from('vacancies')
+        .select(selectFields, { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .range(from, to);
+
+      // 역할별 필터
+      if (options?.ownerId && !options?.all) {
+        const { data: user } = await supabase.from('members').select('role').eq('id', options.ownerId).single();
+        if (user?.role !== 'SUPER_ADMIN' && user?.role !== 'ADMIN' && user?.role !== '최고관리자') {
+          pageQuery = pageQuery.eq('owner_id', options.ownerId);
+        }
+      }
+
+      // 상태 필터 (삭제된 것 제외)
+      if (options?.status) {
+        pageQuery = pageQuery.eq('status', options.status);
+      } else {
+        pageQuery = pageQuery.neq('status', 'DELETED');
+      }
+
+      // 추가적인 검색 필터
+      if (options?.vacancyNo) {
+        pageQuery = pageQuery.eq('vacancy_no', parseInt(options.vacancyNo, 10));
+      }
+      if (options?.tradeType && options.tradeType !== "전체") {
+        pageQuery = pageQuery.eq('trade_type', options.tradeType);
+      }
+      if (options?.searchKeyword) {
+        const p = `%${options.searchKeyword}%`;
+        pageQuery = pageQuery.or(`sido.ilike.${p},sigungu.ilike.${p},dong.ilike.${p},building_name.ilike.${p},client_name.ilike.${p},client_phone.ilike.${p}`);
+      }
+
+      const { data, error, count } = await pageQuery;
+      if (error) {
+        console.error("DEBUG SUPABASE ERROR:", error);
+        return { success: false, error: error.message };
+      }
+
+      const lightData = (data || []).map(v => {
+        const { infrastructure, description, metadata, members, vacancy_photos, ...rest } = v;
+        const lightMetadata = metadata ? {
+          cltrUsgLclsCtgrNm: metadata.cltrUsgLclsCtgrNm,
+          cltrUsgMclsCtgrNm: metadata.cltrUsgMclsCtgrNm,
+          cltrUsgSclsCtgrNm: metadata.cltrUsgSclsCtgrNm,
+          cltrMngNo: metadata.cltrMngNo,
+          cltr_mng_no: metadata.cltr_mng_no,
+          bldSqms: metadata.bldSqms,
+          cltrAr: metadata.cltrAr,
+          apslEvlAmt: metadata.apslEvlAmt,
+          appraisal_price: metadata.appraisal_price,
+          lowstBidPrcIndctCont: metadata.lowstBidPrcIndctCont,
+          lowest_bid_price: metadata.lowest_bid_price,
+          pblctBgnDtm: metadata.pblctBgnDtm,
+          bid_start_date: metadata.bid_start_date,
+        } : {};
+        return { ...rest, metadata: lightMetadata, vacancy_photos };
+      });
+
+      return { success: true, data: lightData, count: count || 0 };
+    }
 
     // Supabase max_rows=1000 서버 제한 우회: 1000건씩 페이지네이션하여 전체 데이터 조합
     const PAGE_SIZE = 1000;
@@ -206,10 +277,6 @@ export async function getVacancies(options?: {
     while (hasMore) {
       const from = page * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
-      
-      const selectFields = options?.all
-        ? '*, vacancy_photos(url, sort_order)'
-        : '*, members!vacancies_owner_id_fkey(name, email, role, phone, sns_links, profile_image_url, agencies(*)), vacancy_photos(url, sort_order)';
 
       let pageQuery = supabase
         .from('vacancies')

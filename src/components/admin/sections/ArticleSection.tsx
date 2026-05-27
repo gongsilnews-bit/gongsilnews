@@ -38,34 +38,65 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
   const [searchKeyword, setSearchKeyword] = useState("");
   const [activeFilters, setActiveFilters] = useState({ articleNo: "", section: "전체", section2: "전체", keyword: "" });
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [counts, setCounts] = useState({ 전체: 0, 승인대기: 0, 발행됨: 0, 작성중: 0, 반려: 0 });
+
+  const loadData = async () => {
+    const params: any = {
+      page: currentPage,
+      limit: 30,
+    };
+
+    if (articleFilter === "승인대기") params.status = "PENDING";
+    else if (articleFilter === "발행됨") params.status = "APPROVED";
+    else if (articleFilter === "작성중") params.status = "DRAFT";
+    else if (articleFilter === "반려") params.status = "REJECTED";
+
+    if (activeFilters.articleNo) params.articleNo = activeFilters.articleNo;
+    if (activeFilters.section !== "전체") params.section1 = activeFilters.section;
+    if (activeFilters.section2 !== "전체") params.section2 = activeFilters.section2;
+    if (activeFilters.keyword) params.searchKeyword = activeFilters.keyword;
+
+    const res = await getArticles(params);
+    if (res.success) {
+      setDbArticles(res.data || []);
+      setTotalCount(res.count || 0);
+    }
+
+    // Fetch tab counts from supabase
+    const supabase = createClient();
+    const { data: countData } = await supabase
+      .from("articles")
+      .select("status")
+      .eq("is_deleted", false);
+
+    if (countData) {
+      const c = { 전체: countData.length, 승인대기: 0, 발행됨: 0, 작성중: 0, 반려: 0 };
+      countData.forEach((a: any) => {
+        if (a.status === "PENDING") c.승인대기++;
+        else if (a.status === "APPROVED") c.발행됨++;
+        else if (a.status === "DRAFT") c.작성중++;
+        else if (a.status === "REJECTED") c.반려++;
+      });
+      setCounts(c);
+    }
+  };
+
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data }) => {
       if (data?.user) setCurrentUserId(data.user.id);
     });
-    if (!initialData) getArticles().then(res => { if (res.success) setDbArticles(res.data || []); });
   }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [currentPage, articleFilter, activeFilters]);
 
   // 최고관리자 기사관리: AI 에이전트 초안 포함 모든 기사 표시
   const baseArticles = dbArticles;
-
-  const filtered = baseArticles.filter(a => {
-    if (articleFilter === "승인대기" && a.status !== 'PENDING') return false;
-    if (articleFilter === "발행됨" && a.status !== 'APPROVED') return false;
-    if (articleFilter === "작성중" && a.status !== 'DRAFT') return false;
-    if (articleFilter === "반려" && a.status !== 'REJECTED') return false;
-
-    // search filters
-    if (activeFilters.articleNo && String(a.article_no) !== activeFilters.articleNo) return false;
-    if (activeFilters.section !== "전체" && a.section1 !== activeFilters.section) return false;
-    if (activeFilters.section2 !== "전체" && a.section2 !== activeFilters.section2) return false;
-    if (activeFilters.keyword) {
-      const k = activeFilters.keyword.toLowerCase();
-      if (!(a.title && a.title.toLowerCase().includes(k)) && 
-          !(a.author_name && a.author_name.toLowerCase().includes(k))) return false;
-    }
-    return true;
-  });
+  const filtered = dbArticles;
 
   if (action === "detail" && editId) {
     return <ArticleDetailPanel articleId={editId} onBack={() => router.push('?menu=article')} onEdit={() => router.push(`?menu=article&action=write&id=${editId}`)} />;
@@ -80,7 +111,7 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
       <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 20 }}>
         <h1 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: 0 }}>기사관리</h1>
         <span style={{ fontSize: 13, fontWeight: 600, color: textSecondary }}>
-          ( 승인대기 {baseArticles.filter(a => a.status === 'PENDING').length}건 / 전체 {baseArticles.length}건 )
+          ( 승인대기 {counts.승인대기}건 / 전체 {counts.전체}건 )
         </span>
       </div>
 
@@ -88,7 +119,7 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
       <div style={{ padding: "16px 24px", background: cardBg, borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", marginBottom: 20, display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <label style={{ fontSize: 13, fontWeight: 600, color: textSecondary, whiteSpace: "nowrap" }}>기사번호</label>
-          <input type="text" value={searchArticleNo} onChange={e => setSearchArticleNo(e.target.value)} onKeyDown={e => { if(e.key === 'Enter') { setActiveFilters({ articleNo: searchArticleNo, section: searchSection, section2: searchSection2, keyword: searchKeyword }); if (searchArticleNo || searchKeyword || searchSection !== "전체" || searchSection2 !== "전체") setArticleFilter("전체"); } }} placeholder="번호 검색" style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", width: 130 }} />
+          <input type="text" value={searchArticleNo} onChange={e => setSearchArticleNo(e.target.value)} onKeyDown={e => { if(e.key === 'Enter') { setActiveFilters({ articleNo: searchArticleNo, section: searchSection, section2: searchSection2, keyword: searchKeyword }); if (searchArticleNo || searchKeyword || searchSection !== "전체" || searchSection2 !== "전체") setArticleFilter("전체"); setCurrentPage(1); } }} placeholder="번호 검색" style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", width: 130 }} />
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <label style={{ fontSize: 13, fontWeight: 600, color: textSecondary, whiteSpace: "nowrap" }}>1차섹션</label>
@@ -112,21 +143,16 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
             {searchSection === "우리동네부동산" && (<><option value="아파트/오피스텔">아파트/오피스텔</option><option value="빌라/주택">빌라/주택</option><option value="원룸/투룸(풀옵션)">원룸/투룸(풀옵션)</option><option value="상가/사무실/공장/토지">상가/사무실/공장/토지</option><option value="신축/분양/경매">신축/분양/경매</option></>)}
           </select>
         </div>
-        <input type="text" value={searchKeyword} onChange={e => setSearchKeyword(e.target.value)} onKeyDown={e => { if(e.key === 'Enter') { setActiveFilters({ articleNo: searchArticleNo, section: searchSection, section2: searchSection2, keyword: searchKeyword }); if (searchArticleNo || searchKeyword || searchSection !== "전체" || searchSection2 !== "전체") setArticleFilter("전체"); } }} placeholder="기사 제목 또는 기자명 검색" style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", flex: 1, minWidth: 180 }} />
-        <button onClick={() => { setActiveFilters({ articleNo: searchArticleNo, section: searchSection, section2: searchSection2, keyword: searchKeyword }); if (searchArticleNo || searchKeyword || searchSection !== "전체" || searchSection2 !== "전체") setArticleFilter("전체"); }} style={{ height: 36, padding: "0 18px", background: darkMode ? "#2c2d31" : "#374151", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>검색</button>
-        <button onClick={() => { setSearchArticleNo(""); setSearchSection("전체"); setSearchSection2("전체"); setSearchKeyword(""); setActiveFilters({ articleNo: "", section: "전체", section2: "전체", keyword: "" }); setArticleFilter("전체"); }} style={{ height: 36, padding: "0 14px", background: darkMode ? "#2c2d31" : "#fff", color: textSecondary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>초기화</button>
+        <input type="text" value={searchKeyword} onChange={e => setSearchKeyword(e.target.value)} onKeyDown={e => { if(e.key === 'Enter') { setActiveFilters({ articleNo: searchArticleNo, section: searchSection, section2: searchSection2, keyword: searchKeyword }); if (searchArticleNo || searchKeyword || searchSection !== "전체" || searchSection2 !== "전체") setArticleFilter("전체"); setCurrentPage(1); } }} placeholder="기사 제목 또는 기자명 검색" style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", flex: 1, minWidth: 180 }} />
+        <button onClick={() => { setActiveFilters({ articleNo: searchArticleNo, section: searchSection, section2: searchSection2, keyword: searchKeyword }); if (searchArticleNo || searchKeyword || searchSection !== "전체" || searchSection2 !== "전체") setArticleFilter("전체"); setCurrentPage(1); }} style={{ height: 36, padding: "0 18px", background: darkMode ? "#2c2d31" : "#374151", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>검색</button>
+        <button onClick={() => { setSearchArticleNo(""); setSearchSection("전체"); setSearchSection2("전체"); setSearchKeyword(""); setActiveFilters({ articleNo: "", section: "전체", section2: "전체", keyword: "" }); setArticleFilter("전체"); setCurrentPage(1); }} style={{ height: 36, padding: "0 14px", background: darkMode ? "#2c2d31" : "#fff", color: textSecondary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>초기화</button>
       </div>
 
       <div style={{ background: cardBg, borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", overflow: "hidden" }}>
         {/* 필터 탭 */}
         <div style={{ display: "flex", borderBottom: `1px solid ${border}`, background: darkMode ? "#2c2d31" : "#fafafa", padding: "0 16px" }}>
           {["전체", "승인대기", "발행됨", "작성중", "반려"].map(tab => {
-            let count = 0;
-            if (tab === "전체") count = baseArticles.length;
-            else if (tab === "승인대기") count = baseArticles.filter(a => a.status === 'PENDING').length;
-            else if (tab === "발행됨") count = baseArticles.filter(a => a.status === 'APPROVED').length;
-            else if (tab === "작성중") count = baseArticles.filter(a => a.status === 'DRAFT').length;
-            else if (tab === "반려") count = baseArticles.filter(a => a.status === 'REJECTED').length;
+            let count = counts[tab as keyof typeof counts] || 0;
 
             return (
               <button key={tab} onClick={() => {
@@ -134,6 +160,7 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
                 setCheckedArticleIds([]);
                 setActiveFilters({ articleNo: "", section: "전체", section2: "전체", keyword: "" });
                 setSearchArticleNo(""); setSearchSection("전체"); setSearchSection2("전체"); setSearchKeyword("");
+                setCurrentPage(1);
               }}
                 style={{ border: "none", background: "none", padding: "16px 20px", fontSize: 14, fontWeight: articleFilter === tab ? 800 : 600, color: articleFilter === tab ? "#3b82f6" : textSecondary, borderBottom: articleFilter === tab ? "3px solid #3b82f6" : "3px solid transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
                 {tab}
@@ -289,6 +316,53 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
             </tbody>
           </table>
         </div>
+        
+        {/* 페이징 컴포넌트 */}
+        {totalCount > 30 && (
+          <div style={{ padding: "16px 24px", display: "flex", justifyContent: "center", gap: 4, borderTop: `1px solid ${border}` }}>
+            <button 
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              style={{ padding: "6px 12px", border: `1px solid ${border}`, borderRadius: 6, background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, fontSize: 13, fontWeight: 600, cursor: currentPage === 1 ? "not-allowed" : "pointer", opacity: currentPage === 1 ? 0.5 : 1 }}
+            >
+              이전
+            </button>
+            {Array.from({ length: Math.ceil(totalCount / 30) }).map((_, i) => {
+              const pageNum = i + 1;
+              const isCurrent = pageNum === currentPage;
+              return (
+                <button
+                  key={pageNum}
+                  onClick={() => setCurrentPage(pageNum)}
+                  style={{
+                    width: 32,
+                    height: 32,
+                    border: isCurrent ? "none" : `1px solid ${border}`,
+                    borderRadius: 6,
+                    background: isCurrent ? "#3b82f6" : (darkMode ? "#2c2d31" : "#fff"),
+                    color: isCurrent ? "#fff" : textPrimary,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    transition: "all 0.15s"
+                  }}
+                >
+                  {pageNum}
+                </button>
+              );
+            })}
+            <button 
+              disabled={currentPage === Math.ceil(totalCount / 30)}
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(totalCount / 30)))}
+              style={{ padding: "6px 12px", border: `1px solid ${border}`, borderRadius: 6, background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, fontSize: 13, fontWeight: 600, cursor: currentPage === Math.ceil(totalCount / 30) ? "not-allowed" : "pointer", opacity: currentPage === Math.ceil(totalCount / 30) ? 0.5 : 1 }}
+            >
+              다음
+            </button>
+          </div>
+        )}
       </div>
 
       {/* 반려 사유 모달 */}
