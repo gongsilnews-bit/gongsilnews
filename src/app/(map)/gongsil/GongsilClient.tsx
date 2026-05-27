@@ -2123,61 +2123,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                             }
                           `}</style>
                           
-                          {/* Search Input on Top of Popover */}
-                          <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
-                            <input
-                              type="text"
-                              placeholder="공실번호, 학교, 지하철"
-                              value={popoverSearchKeyword}
-                              onChange={(e) => setPopoverSearchKeyword(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") {
-                                  setFilterSearchKeyword(popoverSearchKeyword);
-                                }
-                              }}
-                              style={{
-                                flex: 1,
-                                padding: "8px 12px",
-                                border: "1px solid #ccc",
-                                borderRadius: "4px",
-                                fontSize: "13px",
-                                outline: "none",
-                              }}
-                            />
-                            <button
-                              onClick={() => setFilterSearchKeyword(popoverSearchKeyword)}
-                              style={{
-                                padding: "8px 12px",
-                                background: "#1a4282", // Corporate Deep Navy matching search button in mockup
-                                color: "#fff",
-                                border: "none",
-                                borderRadius: "4px",
-                                cursor: "pointer",
-                                fontWeight: "bold",
-                                fontSize: "13px",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                              }}
-                            >
-                              <svg
-                                width="16"
-                                height="16"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2.5"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              >
-                                <circle cx="11" cy="11" r="8"></circle>
-                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                              </svg>
-                            </button>
-                          </div>
 
-                          {/* Gray Divider line */}
-                          <div style={{ height: "1px", background: "#e5e7eb", marginBottom: "12px" }} />
 
                           {/* Horizontal Navigation with Left/Right Buttons */}
                           <div style={{ display: "flex", alignItems: "center", gap: "4px", marginBottom: isFilterCollapsed ? "0px" : "12px", position: "relative" }}>
