@@ -1936,7 +1936,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                   ? getTradeTypeFilterLabel()
                   : f;
 
-              const isPremiumWizard = (activeCategory === "apart" || activeCategory === "villa" || activeCategory === "one" || activeCategory === "biz") && f === "거래유형";
+              const isPremiumWizard = getWizardTabs().includes(f);
 
               return (
                 <div 
@@ -1948,7 +1948,12 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                   <button
                     onClick={() => {
                       if (isPremiumWizard) {
-                        setIsWizardOpen(!isWizardOpen);
+                        if (isWizardOpen && activeSection === f) {
+                          setIsWizardOpen(false);
+                        } else {
+                          setActiveSection(f);
+                          setIsWizardOpen(true);
+                        }
                       } else {
                         setActiveFilterDropdown(activeFilterDropdown === f ? null : f);
                       }
