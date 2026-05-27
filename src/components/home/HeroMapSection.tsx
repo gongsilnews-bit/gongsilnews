@@ -75,17 +75,16 @@ export default function HeroMapSection({ initialVacancies }: { initialVacancies?
       setVacancies(filtered);
     };
 
-    if (initialVacancies && initialVacancies.length > 0) {
-      processData(initialVacancies);
-    } else {
-      const fetchData = async () => {
-        const res = await getVacanciesForMap();
-        if (res.success && res.data) {
-          processData(res.data);
-        }
-      };
-      fetchData();
-    }
+    const fetchData = async () => {
+      const res = await getVacanciesForMap();
+      if (res.success && res.data) {
+        processData(res.data);
+      }
+    };
+
+    // [캐시 무력화 안전장치] SSR/Next.js 빌드 캐시로 인해 불완전한 극소수 데이터가 바인딩되는 현상을
+    // 철저하게 원천 차단하기 위해 브라우저 마운트 시 항상 실시간 최신 Supabase 데이터를 가져옵니다.
+    fetchData();
   }, [initialVacancies]);
 
   // 유저 인증 상태 + 권한 레벨 감지
@@ -289,6 +288,9 @@ export default function HeroMapSection({ initialVacancies }: { initialVacancies?
     });
 
     // 지도가 마커에 맞춰 강제 이동/축소되는 현상을 방지하고, 기본 설정된 강남역 중심을 무조건 고수합니다.
+    if (map) {
+      setMapBounds(map.getBounds());
+    }
   }, [filteredVacancies, mapLoaded]);
 
   const handleVacancyClick = (id: string | number) => {

@@ -17,30 +17,31 @@ function getAdminClient() {
 export async function GET() {
   try {
     const supabase = getAdminClient();
+    
+    // 서울 강남 근방 경위도 바운딩 박스
+    // swLat = 37.45, neLat = 37.55
+    // swLng = 126.98, neLng = 127.08
     const [
       totalCount,
-      activeCount,
-      coordsCount,
-      auctionCount,
       activeAuctionCount,
-      activeAuctionCoordsCount
+      gangnamAuctionCount
     ] = await Promise.all([
       supabase.from('vacancies').select('*', { count: 'exact', head: true }),
-      supabase.from('vacancies').select('*', { count: 'exact', head: true }).eq('status', 'ACTIVE'),
-      supabase.from('vacancies').select('*', { count: 'exact', head: true }).eq('status', 'ACTIVE').not('lat', 'is', null).not('lng', 'is', null),
-      supabase.from('vacancies').select('*', { count: 'exact', head: true }).eq('trade_type', '경매'),
       supabase.from('vacancies').select('*', { count: 'exact', head: true }).eq('trade_type', '경매').eq('status', 'ACTIVE'),
-      supabase.from('vacancies').select('*', { count: 'exact', head: true }).eq('trade_type', '경매').eq('status', 'ACTIVE').not('lat', 'is', null).not('lng', 'is', null),
+      supabase.from('vacancies').select('*', { count: 'exact', head: true })
+        .eq('trade_type', '경매')
+        .eq('status', 'ACTIVE')
+        .gte('lat', 37.45)
+        .lte('lat', 37.55)
+        .gte('lng', 126.98)
+        .lte('lng', 127.08)
     ]);
 
     return NextResponse.json({
       totalCount: totalCount.count,
-      activeCount: activeCount.count,
-      coordsCount: coordsCount.count,
-      auctionCount: auctionCount.count,
       activeAuctionCount: activeAuctionCount.count,
-      activeAuctionCoordsCount: activeAuctionCoordsCount.count,
-      error: totalCount.error || activeCount.error || coordsCount.error || auctionCount.error
+      gangnamAuctionCount: gangnamAuctionCount.count,
+      error: totalCount.error || activeAuctionCount.error || gangnamAuctionCount.error
     });
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err.message });
