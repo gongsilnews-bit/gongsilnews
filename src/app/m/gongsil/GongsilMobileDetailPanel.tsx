@@ -379,10 +379,10 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
             </>
           ) : (
             <>
-              <button onClick={() => setDetailTab("info")} style={{ flex: 1, padding: "14px", fontSize: "15px", fontWeight: detailTab === "info" ? 800 : 500, color: detailTab === "info" ? "#1a73e8" : "#6b7280", borderBottom: detailTab === "info" ? "3px solid #1a73e8" : "3px solid transparent", background: "none", border: "none", cursor: "pointer" }}>
+              <button onClick={() => setDetailTab("info")} style={{ flex: 1, padding: "14px", fontSize: "15px", fontWeight: detailTab === "info" ? 800 : 500, color: detailTab === "info" ? "#111827" : "#6b7280", borderBottom: detailTab === "info" ? "3px solid #111827" : "3px solid transparent", background: "none", border: "none", cursor: "pointer" }}>
                 공실광고정보
               </button>
-              <button onClick={() => setDetailTab("realtor")} style={{ flex: 1, padding: "14px", fontSize: "15px", fontWeight: detailTab === "realtor" ? 800 : 500, color: detailTab === "realtor" ? "#1a73e8" : "#6b7280", borderBottom: detailTab === "realtor" ? "3px solid #1a73e8" : "3px solid transparent", background: "none", border: "none", cursor: "pointer" }}>
+              <button onClick={() => setDetailTab("realtor")} style={{ flex: 1, padding: "14px", fontSize: "15px", fontWeight: detailTab === "realtor" ? 800 : 500, color: detailTab === "realtor" ? "#111827" : "#6b7280", borderBottom: detailTab === "realtor" ? "3px solid #111827" : "3px solid transparent", background: "none", border: "none", cursor: "pointer" }}>
                 등록자정보
               </button>
             </>
