@@ -2,394 +2,287 @@
 
 import { createClient } from "@supabase/supabase-js";
 
-// Supabase 어드민 클라이언트 생성 헬퍼
+// ─── 헬퍼 함수들 ───────────────────────────────────────────────
+
 function getAdminClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-  return createClient(supabaseUrl, serviceKey, {
-    auth: { autoRefreshToken: false, persistSession: false }
-  });
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  );
 }
 
-// 주소 ➡️ 경위도 좌표 변환 (카카오 로컬 API 기반 개발, 브이월드 폴백 포함)
+// 주소 → 좌표 변환 (카카오 → 브이월드 폴백)
 async function getCoordinates(address: string): Promise<{ lat: number; lng: number } | null> {
   try {
-    // 1. 카카오 로컬 API 시도
     const kakaoRestKey = process.env.KAKAO_REST_API_KEY || process.env.KAKAO_REST_KEY || process.env.NEXT_PUBLIC_KAKAO_APP_KEY;
     if (kakaoRestKey) {
       const res = await fetch(
         `https://dapi.kakao.com/v2/local/search/address.json?query=${encodeURIComponent(address)}`,
-        {
-          headers: { Authorization: `KakaoAK ${kakaoRestKey}` }
-        }
+        { headers: { Authorization: `KakaoAK ${kakaoRestKey}` } }
       );
       if (res.ok) {
         const data = await res.json();
-        if (data.documents && data.documents.length > 0) {
-          const doc = data.documents[0];
-          return {
-            lat: parseFloat(doc.y),
-            lng: parseFloat(doc.x)
-          };
+        if (data.documents?.length > 0) {
+          return { lat: parseFloat(data.documents[0].y), lng: parseFloat(data.documents[0].x) };
         }
       }
     }
-
-    // 2. 브이월드(정부 공공 무료 API) 폴백 시도
-    const vworldKey = process.env.VWORLD_API_KEY || "7CD204D5-0BDC-360B-8833-D66D5DF31CD9"; // 공용 테스트 키 또는 사용자 등록 키
+    const vworldKey = process.env.VWORLD_API_KEY || "7CD204D5-0BDC-360B-8833-D66D5DF31CD9";
     const vworldRes = await fetch(
-      `https://api.vworld.kr/req/address?service=address&request=getcoord&key=${vworldKey}&address=${encodeURIComponent(
-        address
-      )}&type=ROAD`
+      `https://api.vworld.kr/req/address?service=address&request=getcoord&key=${vworldKey}&address=${encodeURIComponent(address)}&type=ROAD`
     );
     if (vworldRes.ok) {
       const vdata = await vworldRes.json();
       if (vdata.response?.status === "OK" && vdata.response?.result?.point) {
-        const pt = vdata.response.result.point;
-        return {
-          lat: parseFloat(pt.y),
-          lng: parseFloat(pt.x)
-        };
+        return { lat: parseFloat(vdata.response.result.point.y), lng: parseFloat(vdata.response.result.point.x) };
       }
     }
   } catch (error) {
-    console.error("좌표 변환 중 에러 발생:", error);
+    console.error("좌표 변환 에러:", error);
   }
   return null;
 }
 
-// 주소 해체 헬퍼 (시도, 시군구, 동 단위 자동 추출)
 function parseAddress(fullAddress: string) {
   const parts = fullAddress.split(/\s+/);
-  return {
-    sido: parts[0] || "",
-    sigungu: parts[1] || "",
-    dong: parts[2] || "",
-    detail_addr: parts.slice(3).join(" ") || ""
-  };
+  return { sido: parts[0] || "", sigungu: parts[1] || "", dong: parts[2] || "", detail_addr: parts.slice(3).join(" ") || "" };
 }
 
-// 온비드 물건 용도를 공실뉴스 카테고리로 안전 매핑
 function mapPropertyType(onbidCategory: string, propertyName?: string): string {
-  // 용도분류 + 물건명을 합쳐서 키워드 매칭 (물건명에 "삼호아파트" 같은 정보가 있으므로)
   const cat = `${onbidCategory || ""} ${propertyName || ""}`;
-  if (cat.includes("아파트") || cat.includes("오피스텔") || cat.includes("주상복합") || cat.includes("공동주택")) {
-    return "아파트·오피스텔";
-  }
-  if (cat.includes("주택") || cat.includes("빌라") || cat.includes("다세대") || cat.includes("다가구") || cat.includes("연립") || cat.includes("단독") || cat.includes("주거용")) {
-    return "빌라·주택";
-  }
-  if (cat.includes("원룸") || cat.includes("투룸") || cat.includes("고시원")) {
-    return "원룸·투룸(풀옵션)";
-  }
-  return "상가·사무실·건물·공장·토지"; // 기본 폴백값
+  if (cat.includes("아파트") || cat.includes("오피스텔") || cat.includes("주상복합") || cat.includes("공동주택")) return "아파트·오피스텔";
+  if (cat.includes("주택") || cat.includes("빌라") || cat.includes("다세대") || cat.includes("다가구") || cat.includes("연립") || cat.includes("단독") || cat.includes("주거용")) return "빌라·주택";
+  if (cat.includes("원룸") || cat.includes("투룸") || cat.includes("고시원")) return "원룸·투룸(풀옵션)";
+  return "상가·사무실·건물·공장·토지";
 }
 
-// 날짜 문자열 포맷 헬퍼 (예: 202606011000 -> 2026-06-01 10:00)
 function formatOnbidDate(dtStr: string): string {
   if (!dtStr || dtStr.length < 8) return dtStr || "";
-  const y = dtStr.substring(0, 4);
-  const m = dtStr.substring(4, 6);
-  const d = dtStr.substring(6, 8);
-  const h = dtStr.substring(8, 10) || "00";
-  const min = dtStr.substring(10, 12) || "00";
-  return `${y}-${m}-${d} ${h}:${min}`;
+  return `${dtStr.substring(0, 4)}-${dtStr.substring(4, 6)}-${dtStr.substring(6, 8)} ${dtStr.substring(8, 10) || "00"}:${dtStr.substring(10, 12) || "00"}`;
 }
 
-/**
- * 🧹 입찰 기간이 지난 만료된 온비드 경공매 매물들을 자동으로 정리하는 함수
- */
-export async function cleanupExpiredOnbidProperties() {
-  const supabase = getAdminClient();
-  console.log("🧹 만료된 온비드 경공매 매물 정리 작업 시작...");
+// ─── 온비드 API 호출 ─────────────────────────────────────────
 
-  try {
-    // 1. 현재 활성화되어 있는 모든 경공매 매물 조회
-    const { data: activeAuctions, error: fetchErr } = await supabase
-      .from("vacancies")
-      .select("id, building_name, description, metadata")
-      .eq("trade_type", "경매")
-      .eq("status", "ACTIVE");
+async function fetchOnbidItems(serviceKey: string, targetSido: string): Promise<any[]> {
+  const items: any[] = [];
+  let pageNo = 1;
+  let hasMore = true;
 
-    if (fetchErr) {
-      console.error("❌ 만료 매물 조회 중 오류 발생:", fetchErr.message);
-      return { success: false, error: fetchErr.message };
-    }
-
-    if (!activeAuctions || activeAuctions.length === 0) {
-      console.log("🧹 만료 매물 정리: 정리할 활성 경공매 매물이 없습니다.");
-      return { success: true, count: 0 };
-    }
-
-    const now = new Date();
-    const expiredIds: string[] = [];
-
-    for (const auction of activeAuctions) {
-      // metadata JSONB 필드 내에 저장된 bid_end_date 확인
-      const bidEndDateStr = (auction.metadata as any)?.bid_end_date;
-      
-      if (bidEndDateStr) {
-        // 날짜 포맷 변환 후 한국 표준시(KST)로 정밀 변환
-        const endDateStr = bidEndDateStr.replace(" ", "T") + ":00+09:00";
-        const endDate = new Date(endDateStr);
-
-        // 현재 시각보다 마감일이 과거(이전)이면 만료 처리
-        if (endDate < now) {
-          console.log(`🧹 만료 감지: [${auction.building_name}] 마감일(${bidEndDateStr}) 경과 ➡️ 삭제 대상 추가`);
-          expiredIds.push(auction.id);
+  while (hasMore) {
+    const url = `https://apis.data.go.kr/B010003/OnbidRlstListSrvc2/getRlstCltrList2?serviceKey=${serviceKey}&numOfRows=1000&pageNo=${pageNo}&resultType=json&prptDivCd=0007,0005&pvctTrgtYn=N&lctnSdnm=${encodeURIComponent(targetSido)}`;
+    try {
+      const res = await fetch(url, { next: { revalidate: 0 } });
+      if (res.ok) {
+        const data = await res.json();
+        const body = data.body || data.response?.body;
+        const pageItems = body?.items?.item || body?.items || [];
+        if (Array.isArray(pageItems) && pageItems.length > 0) {
+          items.push(...pageItems);
+          hasMore = pageItems.length >= 1000;
+          pageNo++;
+        } else if (pageItems && typeof pageItems === 'object' && Object.keys(pageItems).length > 0) {
+          items.push(pageItems);
+          hasMore = false;
+        } else {
+          hasMore = false;
         }
-      } else {
-        // 하위 호환성 폴백: metadata가 아직 없거나 비어있는 경우 description에서 파싱 시도
-        const dateMatch = auction.description?.match(/~\s*(\d{4}-\d{2}-\d{2})\s*(\d{2}:\d{2})/);
-        if (dateMatch) {
-          const endDateStr = `${dateMatch[1]}T${dateMatch[2]}:00+09:00`;
-          const endDate = new Date(endDateStr);
-          if (endDate < now) {
-            console.log(`🧹 만료 감지 (설명 기반): [${auction.building_name}] 마감일(${endDateStr}) 경과 ➡️ 삭제 대상 추가`);
-            expiredIds.push(auction.id);
-          }
-        }
-      }
+      } else { hasMore = false; }
+    } catch (err) {
+      console.error(`API pageNo=${pageNo} 에러:`, err);
+      hasMore = false;
     }
-
-    if (expiredIds.length > 0) {
-      // 2. 외래키 무결성 유지를 위해 사진 먼저 삭제
-      console.log(`📸 만료 매물 관련 사진 ${expiredIds.length}건 삭제 중...`);
-      await supabase
-        .from("vacancy_photos")
-        .delete()
-        .in("vacancy_id", expiredIds);
-
-      // 3. 만료 매물 하드 삭제 처리
-      console.log(`🏠 만료 매물 ${expiredIds.length}건 데이터베이스 영구 삭제 중...`);
-      const { error: deleteErr } = await supabase
-        .from("vacancies")
-        .delete()
-        .in("id", expiredIds);
-
-      if (deleteErr) {
-        console.error("❌ 만료 매물 삭제 실패:", deleteErr.message);
-        return { success: false, error: deleteErr.message };
-      }
-      
-      console.log(`🧹 만료된 온비드 경공매 매물 삭제 정리 완료! [삭제된 매물 수: ${expiredIds.length}건]`);
-      return { success: true, count: expiredIds.length };
-    }
-
-    console.log(`🧹 만료된 온비드 경공매 매물 정리 완료! [정리된 매물 수: 0건]`);
-    return { success: true, count: 0 };
-  } catch (err: any) {
-    console.error("❌ 만료 매물 정리 프로세스 중 치명적 오류 발생:", err);
-    return { success: false, error: err.message };
   }
+  return items;
 }
 
+// ─── 관리자 ID 조회 ──────────────────────────────────────────
+
+async function getAdminOwnerId(supabase: any): Promise<string> {
+  const { data: admin } = await supabase.from("members").select("id").eq("email", "gongsilnews@gmail.com").maybeSingle();
+  if (admin) return admin.id;
+  const { data: superAdmin } = await supabase.from("members").select("id").eq("role", "SUPER_ADMIN").limit(1).maybeSingle();
+  if (superAdmin) return superAdmin.id;
+  const { data: anyUser } = await supabase.from("members").select("id").limit(1).maybeSingle();
+  return anyUser?.id || "00000000-0000-0000-0000-000000000000";
+}
+
+// ─── 메인: UPSERT 기반 동기화 엔진 (v2) ────────────────────────
+
 /**
- * 🤖 온비드 공매 API 동기화 에이전트 핵심 함수
- * 매일 새벽 스케줄러에 의해 무인 자동 호출됩니다.
+ * 🤖 온비드 공매 UPSERT 동기화 엔진 v2
+ * 
+ * 핵심 원칙: "온비드 API = 유일한 진실" (Single Source of Truth)
+ * - API에 있으면 → DB에 추가 또는 업데이트
+ * - API에 없으면 → DB에서 삭제
+ * - 같은 공고번호(cltrMngNo)의 물건은 1건만 유지
  */
 export async function syncOnbidProperties(targetSido: string = "서울특별시") {
   const supabase = getAdminClient();
   const serviceKey = process.env.ONBID_API_KEY;
 
   if (!serviceKey) {
-    console.error("❌ ONBID_API_KEY 환경변수가 설정되지 않아 온비드 연동을 건너뜁니다.");
+    console.error("❌ ONBID_API_KEY 환경변수 누락");
     return { success: false, error: "API Key missing" };
   }
 
-  // 🧹 동기화 작업 시작 전 만료 매물 선제 자동 정리 실행 (안정성 극대화)
-  let expiredCount = 0;
+  const startTime = Date.now();
+  console.log(`🤖 [v2] 온비드 UPSERT 동기화 시작 (${targetSido})`);
+
   try {
-    const cleanRes = await cleanupExpiredOnbidProperties();
-    if (cleanRes.success) {
-      expiredCount = cleanRes.count || 0;
+    // ═══ 1단계: 온비드 API에서 현재 유효 물건 전체 수집 ═══
+    const apiItems = await fetchOnbidItems(serviceKey, targetSido);
+    
+    if (apiItems.length === 0) {
+      console.log(`📦 ${targetSido}: API에서 가져올 물건이 없습니다.`);
+      return { success: true, inserted: 0, updated: 0, deleted: 0, skipped: 0 };
     }
-  } catch (cleanErr) {
-    console.error("❌ 동기화 전 만료 매물 정리 중 에러 발생:", cleanErr);
-  }
+    console.log(`📦 API 수집: ${apiItems.length}건`);
 
-  try {
-    // 1. 공공데이터포털 온비드 차세대 부동산 API 호출 (서울 또는 지정된 시도만 numOfRows=1000으로 전체 고속 수집)
-    const items: any[] = [];
-    let pageNo = 1;
-    let hasMore = true;
-
-    console.log(`🤖 온비드 API 호출 시작 (${targetSido} 대상)...`);
-
-    while (hasMore) {
-      const url = `https://apis.data.go.kr/B010003/OnbidRlstListSrvc2/getRlstCltrList2?serviceKey=${serviceKey}&numOfRows=1000&pageNo=${pageNo}&resultType=json&prptDivCd=0007,0005&pvctTrgtYn=N&lctnSdnm=${encodeURIComponent(targetSido)}`;
-      try {
-        const res = await fetch(url, { next: { revalidate: 0 } });
-        if (res.ok) {
-          const data = await res.json();
-          const body = data.body || data.response?.body;
-          const pageItems = body?.items?.item || body?.items || [];
-          if (Array.isArray(pageItems) && pageItems.length > 0) {
-            items.push(...pageItems);
-            console.log(`Page ${pageNo}: ${pageItems.length} items loaded.`);
-            if (pageItems.length < 1000) {
-              hasMore = false;
-            } else {
-              pageNo++;
-            }
-          } else if (pageItems && typeof pageItems === 'object' && Object.keys(pageItems).length > 0) {
-            items.push(pageItems);
-            hasMore = false;
-          } else {
-            hasMore = false;
-          }
-        } else {
-          hasMore = false;
+    // ═══ 2단계: API 물건을 공고번호(cltrMngNo) 기준으로 중복 제거 ═══
+    // 같은 공고번호에 여러 입찰 회차가 있으면 → 가장 최근 입찰일 것만 유지
+    const apiMap = new Map<string, any>();
+    for (const item of apiItems) {
+      const mngNo = String(item.cltrMngNo || "").trim();
+      if (!mngNo) continue;
+      
+      const existing = apiMap.get(mngNo);
+      if (!existing) {
+        apiMap.set(mngNo, item);
+      } else {
+        // 입찰 종료일이 더 최근인 것을 유지
+        const existEnd = existing.cltrBidEndDt || "";
+        const newEnd = item.cltrBidEndDt || "";
+        if (newEnd > existEnd) {
+          apiMap.set(mngNo, item);
         }
-      } catch (err) {
-        console.error(`온비드 API pageNo=${pageNo} 호출 중 에러 발생:`, err);
-        hasMore = false;
       }
     }
+    console.log(`📋 공고번호 기준 고유 물건: ${apiMap.size}건 (API ${apiItems.length}건 → 중복 제거)`);
 
-    if (items.length === 0) {
-      return { success: true, message: `가져올 신규 온비드 물건이 없습니다. (${targetSido})` };
+    // ═══ 3단계: DB에서 해당 시도의 기존 경매 매물 전체 조회 ═══
+    const { data: dbRows } = await supabase
+      .from("vacancies")
+      .select("id, metadata, lat, lng, building_name, detail_addr")
+      .eq("trade_type", "경매")
+      .eq("sido", targetSido.replace(/특별시|광역시|특별자치시|특별자치도/, "").trim() || targetSido)
+      .eq("status", "ACTIVE");
+
+    // DB의 공고번호 → vacancy ID 맵 구축
+    const dbMap = new Map<string, { id: string; lat: number; lng: number }>();
+    const dbMngNos = new Set<string>();
+    
+    if (dbRows) {
+      for (const row of dbRows) {
+        const mngNo = (row.metadata as any)?.cltrMngNo;
+        if (mngNo) {
+          dbMap.set(String(mngNo), { id: row.id, lat: row.lat, lng: row.lng });
+          dbMngNos.add(String(mngNo));
+        }
+      }
     }
+    console.log(`📋 DB 기존 매물: ${dbMap.size}건 (공고번호 보유)`);
 
-    console.log(`📦 총 수집 완료: ${items.length}건. 중복 필터링 중...`);
-
-    let successCount = 0;
-    let skipCount = 0;
-
-    // ⚡ 1단계: 기존 온비드 물건 ID를 벌크로 한 번에 가져와서 메모리 캐시 생성 (DB 호출 1회!)
-    const existingOnbidIds = new Set<string>();
-    const existingAddresses = new Set<string>();
-    try {
-      const { data: existingRows } = await supabase
+    // sido 필터 보정 (DB에서 sido 컬럼이 "서울" vs "서울특별시" 등 차이 대응)
+    // 공고번호가 없는 레거시 매물도 조회
+    if (dbMap.size === 0 && dbRows && dbRows.length === 0) {
+      // sido 컬럼이 다를 수 있으므로 trade_type=경매 전체에서 metadata.cltrMngNo로 재조회
+      const { data: allAuctions } = await supabase
         .from("vacancies")
-        .select("description, detail_addr")
+        .select("id, metadata, lat, lng, sido")
         .eq("trade_type", "경매")
-        .neq("status", "DELETED");
+        .eq("status", "ACTIVE");
       
-      if (existingRows) {
-        for (const row of existingRows) {
-          const idMatch = row.description?.match(/물건번호.*?:\s*(\d+)/);
-          if (idMatch) existingOnbidIds.add(idMatch[1]);
-          if (row.detail_addr) existingAddresses.add(row.detail_addr);
+      if (allAuctions) {
+        for (const row of allAuctions) {
+          const mngNo = (row.metadata as any)?.cltrMngNo;
+          if (mngNo) {
+            dbMap.set(String(mngNo), { id: row.id, lat: row.lat, lng: row.lng });
+            dbMngNos.add(String(mngNo));
+          }
         }
+        console.log(`📋 (폴백) 전체 경매 매물에서 공고번호 ${dbMap.size}건 확보`);
       }
-      console.log(`📋 기존 매물 캐시: 온비드ID ${existingOnbidIds.size}개, 주소 ${existingAddresses.size}개`);
-    } catch (cacheErr) {
-      console.warn("⚠️ 기존 매물 캐시 구축 실패:", cacheErr);
     }
 
-    // ⚡ 2단계: 중복 제거 → 신규 매물만 필터링 (지오코딩 전에 먼저!)
-    const newItems: any[] = [];
-    const newAddresses = new Set<string>();
+    // ═══ 4단계: INSERT / UPDATE 분류 ═══
+    const toInsert: any[] = [];  // 신규 (DB에 없는 공고번호)
+    const toUpdate: any[] = [];  // 기존 (DB에 있는 공고번호 → 가격/일자 업데이트)
+    
+    for (const [mngNo, item] of apiMap.entries()) {
+      if (dbMap.has(mngNo)) {
+        toUpdate.push({ mngNo, item, dbRecord: dbMap.get(mngNo)! });
+      } else {
+        toInsert.push({ mngNo, item });
+      }
+    }
 
-    for (const item of items) {
-      const onbidId = String(item.onbidCltrno || "");
+    // API에 없는데 DB에 있는 것 → 삭제 대상
+    const apiMngNos = new Set(apiMap.keys());
+    const toDelete: string[] = [];
+    for (const mngNo of dbMngNos) {
+      if (!apiMngNos.has(mngNo)) {
+        const dbRecord = dbMap.get(mngNo);
+        if (dbRecord) toDelete.push(dbRecord.id);
+      }
+    }
+
+    console.log(`🔍 분류 완료: 신규 ${toInsert.length}건, 업데이트 ${toUpdate.length}건, 삭제 ${toDelete.length}건`);
+
+    // ═══ 5단계: 신규 매물 지오코딩 (신규만!) ═══
+    const newAddresses = new Map<string, string>(); // address → mngNo
+    for (const { item } of toInsert) {
+      let address = `${item.lctnSdnm || ""} ${item.lctnSggnm || ""} ${item.lctnEmdNm || ""}`.trim();
       const propertyName = item.onbidCltrNm || "";
-      
+      if (propertyName) {
+        const addrMatch = propertyName.match(/^(.*?)(?:\s+(?:근린생활시설|아파트|오피스텔|상가|주택|대지|토지|건물|공장|빌딩|창고|사무실))?$/);
+        if (addrMatch?.[1]) address = addrMatch[1].trim();
+      }
+      if (address) newAddresses.set(address, address);
+    }
+
+    const coordsCache = new Map<string, { lat: number; lng: number }>();
+    if (newAddresses.size > 0) {
+      console.log(`📍 신규 ${newAddresses.size}개 주소 지오코딩 시작...`);
+      const addrArray = Array.from(newAddresses.keys());
+      for (let i = 0; i < addrArray.length; i += 20) {
+        const chunk = addrArray.slice(i, i + 20);
+        await Promise.all(chunk.map(async (addr) => {
+          const coords = await getCoordinates(addr);
+          if (coords) coordsCache.set(addr, coords);
+        }));
+      }
+      console.log(`📍 지오코딩 완료: ${coordsCache.size}/${addrArray.length}개 좌표 확보`);
+    }
+
+    // ═══ 6단계: 관리자 ID 확보 ═══
+    const ownerId = await getAdminOwnerId(supabase);
+
+    // ═══ 7단계: INSERT (신규 매물 등록) ═══
+    let insertedCount = 0;
+    let skippedCount = 0;
+
+    for (const { mngNo, item } of toInsert) {
+      const propertyName = item.onbidCltrNm || "";
       let address = `${item.lctnSdnm || ""} ${item.lctnSggnm || ""} ${item.lctnEmdNm || ""}`.trim();
       if (propertyName) {
         const addrMatch = propertyName.match(/^(.*?)(?:\s+(?:근린생활시설|아파트|오피스텔|상가|주택|대지|토지|건물|공장|빌딩|창고|사무실))?$/);
-        if (addrMatch && addrMatch[1]) {
-          address = addrMatch[1].trim();
-        }
+        if (addrMatch?.[1]) address = addrMatch[1].trim();
       }
 
-      if (!address || !onbidId) { skipCount++; continue; }
-      if (existingOnbidIds.has(onbidId) || existingAddresses.has(address)) { skipCount++; continue; }
+      const coords = coordsCache.get(address);
+      if (!coords) { skippedCount++; continue; }
 
-      // 신규 매물만 통과!
-      newItems.push({ ...item, _parsedAddress: address });
-      newAddresses.add(address);
-    }
-
-    console.log(`🔍 중복 제거 완료: ${items.length}건 중 신규 ${newItems.length}건만 지오코딩 필요 (${skipCount}건 중복 스킵)`);
-
-    if (newItems.length === 0) {
-      console.log(`✅ ${targetSido}: 신규 매물 없음 (전체 ${items.length}건 모두 기존 등록)`);
-      return { success: true, registered: 0, skipped: skipCount, expired: expiredCount };
-    }
-
-    // ⚡ 3단계: 신규 매물 주소만 지오코딩 (기존: 전체 주소 → 지금: 신규만!)
-    const addressCoordsCache = new Map<string, { lat: number; lng: number }>();
-    const addressArray = Array.from(newAddresses);
-    const concurrencyLimit = 20;
-    
-    console.log(`🔍 신규 주소 ${addressArray.length}개 지오코딩 시작...`);
-    for (let i = 0; i < addressArray.length; i += concurrencyLimit) {
-      const chunk = addressArray.slice(i, i + concurrencyLimit);
-      await Promise.all(chunk.map(async (addr) => {
-        const coords = await getCoordinates(addr);
-        if (coords) {
-          addressCoordsCache.set(addr, coords);
-        }
-      }));
-    }
-    console.log(`🎉 지오코딩 완료! ${addressCoordsCache.size}/${addressArray.length}개 좌표 확보`);
-
-    // 4단계: 관리자 ID 조회
-    let ownerId = "00000000-0000-0000-0000-000000000000";
-    const { data: adminUser } = await supabase
-      .from("members")
-      .select("id")
-      .eq("email", "gongsilnews@gmail.com")
-      .maybeSingle();
-
-    if (adminUser) {
-      ownerId = adminUser.id;
-    } else {
-      const { data: anyAdmin } = await supabase
-        .from("members")
-        .select("id")
-        .eq("role", "SUPER_ADMIN")
-        .limit(1)
-        .maybeSingle();
-      
-      if (anyAdmin) {
-        ownerId = anyAdmin.id;
-      } else {
-        const { data: anyUser } = await supabase
-          .from("members")
-          .select("id")
-          .limit(1)
-          .maybeSingle();
-        
-        if (anyUser) {
-          ownerId = anyUser.id;
-        }
-      }
-    }
-
-    console.log(`🚀 DB 적재 시작! (신규: ${newItems.length}건)`);
-
-    // 5단계: 신규 매물만 DB 적재
-    for (const item of newItems) {
-      const onbidId = String(item.onbidCltrno || "");
-      const propertyName = item.onbidCltrNm || "";
-      const address = item._parsedAddress;
-
-      // 3. 지오코더 캐시에서 실시간 좌표(lat, lng) 획득
-      const coords = addressCoordsCache.get(address);
-      if (!coords) {
-        // 지도에 표출할 수 없는 주소는 노이즈 제거 차원에서 생략
-        skipCount++;
-        continue;
-      }
-
-      // 4. 주소 분해 및 물건 타입 매핑
       const parsedAddr = parseAddress(address);
-      const propertyType = mapPropertyType(item.cltrUsgMclsCtgrNm || item.cltrUsgLclsCtgrNm, item.onbidCltrNm);
-      
-      // 가격 파싱 (공실뉴스 DB 규격인 만원 단위로 정밀 변환)
-      const deposit = Math.round(parseInt(item.lowstBidPrcIndctCont || "0", 10) / 10000); // 최저입찰가 (만원)
-      const appraisalPrice = Math.round(parseInt(item.apslEvlAmt || "0", 10) / 10000); // 감정평가액 (만원)
-
+      const propertyType = mapPropertyType(item.cltrUsgMclsCtgrNm || item.cltrUsgLclsCtgrNm, propertyName);
+      const deposit = Math.round(parseInt(item.lowstBidPrcIndctCont || "0", 10) / 10000);
+      const appraisalPrice = Math.round(parseInt(item.apslEvlAmt || "0", 10) / 10000);
       const bidStart = formatOnbidDate(item.cltrBidBgngDt);
       const bidEnd = formatOnbidDate(item.cltrBidEndDt);
 
-      // 설명란에 AI 스타일의 권리관계 설명 및 온비드 고유키 내장
       const description = `[📢 온비드 공매 추천 매물]
-* 공고번호: ${item.cltrMngNo || "정보 없음"}
-* 물건번호 (온비드 고유 ID): ${onbidId}
+* 공고번호: ${mngNo}
+* 물건번호 (온비드 고유 ID): ${item.onbidCltrno || ""}
 * 감정평가액: ${(appraisalPrice * 10000).toLocaleString()}원
 * 최저입찰가격: ${(deposit * 10000).toLocaleString()}원
 * 입찰 기간: ${bidStart} ~ ${bidEnd}
@@ -398,202 +291,179 @@ export async function syncOnbidProperties(targetSido: string = "서울특별시"
 인터넷 입찰은 온비드 사이트에서 입찰 기간 내에 직접 참여하실 수 있습니다. 
 주변 시세 대비 압도적으로 합리적인 최저가로 내 집 마련 또는 투자 기회를 선점하세요!`;
 
-      // 5. 모든 API 원본 필드를 메타데이터에 납작하게(Flat) 100% 매핑
       const metadata: Record<string, any> = {
         source_type: "ONBID",
+        cltrMngNo: mngNo, // ⭐ UPSERT 고유 키
         bid_start_date: bidStart,
         bid_end_date: bidEnd,
         appraisal_price: appraisalPrice * 10000,
         lowest_bid_price: deposit * 10000,
         discount_rate: appraisalPrice > 0 ? Math.round(((appraisalPrice - deposit) / appraisalPrice) * 100) : 0,
       };
+      for (const [key, val] of Object.entries(item)) { metadata[key] = val; }
 
-      // API가 리턴해준 모든 필드를 메타데이터에 동적으로 바인딩
-      for (const [key, val] of Object.entries(item)) {
-        metadata[key] = val;
-      }
-
-      // 6. 공실 DB에 다이렉트 insert 처리
-      const insertData = {
-        owner_id: ownerId, // 조회된 관리자 또는 회원 ID 연동
-        owner_role: "ADMIN",
-        property_type: propertyType,
-        trade_type: "경매", // 사장님 지침에 따라 '경매' 카테고리로 연동
-        deposit: deposit,
-        monthly_rent: 0,
-        maintenance_fee: 0,
-        sido: parsedAddr.sido,
-        sigungu: parsedAddr.sigungu,
-        dong: parsedAddr.dong,
-        detail_addr: parsedAddr.detail_addr,
-        building_name: propertyName,
-        lat: coords.lat,
-        lng: coords.lng,
-        description: description,
-        status: "ACTIVE", // 100% 무인 자동 노출
-        address_exposure: "지번공개",
-        move_in_date: "즉시입주",
-        consent: true,
-        metadata: metadata // 50여 개 온비드 원본 전 필드 주입
-      };
-
-      const { data: insertedVacancy, error: insertErr } = await supabase
-        .from("vacancies")
-        .insert(insertData)
-        .select("id")
-        .maybeSingle();
+      const { data: inserted, error: insertErr } = await supabase.from("vacancies").insert({
+        owner_id: ownerId, owner_role: "ADMIN", property_type: propertyType, trade_type: "경매",
+        deposit, monthly_rent: 0, maintenance_fee: 0,
+        sido: parsedAddr.sido, sigungu: parsedAddr.sigungu, dong: parsedAddr.dong, detail_addr: parsedAddr.detail_addr,
+        building_name: propertyName, lat: coords.lat, lng: coords.lng,
+        description, status: "ACTIVE", address_exposure: "지번공개", move_in_date: "즉시입주", consent: true,
+        metadata
+      }).select("id").maybeSingle();
 
       if (insertErr) {
-        console.error(`온비드 물건(${propertyName}) 저장 오류:`, insertErr.message);
-        skipCount++;
+        console.error(`INSERT 실패(${propertyName}):`, insertErr.message);
+        skippedCount++;
       } else {
-        successCount++;
-        // 5.5. 이미지가 존재할 경우 vacancy_photos 테이블에 추가 (ORIG_NM 고해상도 변환 주입)
-        if (insertedVacancy?.id && item.thnlImgUrlAdr) {
+        insertedCount++;
+        // 이미지 등록
+        if (inserted?.id && item.thnlImgUrlAdr) {
           try {
             const highResUrl = item.thnlImgUrlAdr.replace("downloadImageKind=THNL_NM", "downloadImageKind=ORIG_NM");
-            await supabase
-              .from("vacancy_photos")
-              .insert({
-                vacancy_id: insertedVacancy.id,
-                url: highResUrl,
-                sort_order: 1
-              });
-          } catch (imgErr: any) {
-            console.error(`온비드 이미지(${propertyName}) 저장 실패:`, imgErr.message);
-          }
+            await supabase.from("vacancy_photos").insert({ vacancy_id: inserted.id, url: highResUrl, sort_order: 1 });
+          } catch {}
         }
       }
     }
 
-    console.log(`🤖 온비드 동기화 완료! [성공: ${successCount}건, 생략/중복: ${skipCount}건, 만료/삭제: ${expiredCount}건]`);
-    return { success: true, registered: successCount, skipped: skipCount, expired: expiredCount };
+    // ═══ 8단계: UPDATE (기존 매물 가격/입찰일 갱신) ═══
+    let updatedCount = 0;
+
+    for (const { mngNo, item, dbRecord } of toUpdate) {
+      const deposit = Math.round(parseInt(item.lowstBidPrcIndctCont || "0", 10) / 10000);
+      const appraisalPrice = Math.round(parseInt(item.apslEvlAmt || "0", 10) / 10000);
+      const bidStart = formatOnbidDate(item.cltrBidBgngDt);
+      const bidEnd = formatOnbidDate(item.cltrBidEndDt);
+      const propertyType = mapPropertyType(item.cltrUsgMclsCtgrNm || item.cltrUsgLclsCtgrNm, item.onbidCltrNm);
+
+      const metadata: Record<string, any> = {
+        source_type: "ONBID",
+        cltrMngNo: mngNo,
+        bid_start_date: bidStart,
+        bid_end_date: bidEnd,
+        appraisal_price: appraisalPrice * 10000,
+        lowest_bid_price: deposit * 10000,
+        discount_rate: appraisalPrice > 0 ? Math.round(((appraisalPrice - deposit) / appraisalPrice) * 100) : 0,
+      };
+      for (const [key, val] of Object.entries(item)) { metadata[key] = val; }
+
+      const description = `[📢 온비드 공매 추천 매물]
+* 공고번호: ${mngNo}
+* 물건번호 (온비드 고유 ID): ${item.onbidCltrno || ""}
+* 감정평가액: ${(appraisalPrice * 10000).toLocaleString()}원
+* 최저입찰가격: ${(deposit * 10000).toLocaleString()}원
+* 입찰 기간: ${bidStart} ~ ${bidEnd}
+
+본 매물은 한국자산관리공사(KAMCO)에서 진행하는 공식 공매 물건입니다. 
+인터넷 입찰은 온비드 사이트에서 입찰 기간 내에 직접 참여하실 수 있습니다. 
+주변 시세 대비 압도적으로 합리적인 최저가로 내 집 마련 또는 투자 기회를 선점하세요!`;
+
+      const { error } = await supabase.from("vacancies")
+        .update({ deposit, metadata, description, property_type: propertyType })
+        .eq("id", dbRecord.id);
+
+      if (!error) updatedCount++;
+    }
+
+    // ═══ 9단계: DELETE (API에 없는 매물 삭제) ═══
+    let deletedCount = 0;
+
+    if (toDelete.length > 0) {
+      // 사진 먼저 삭제
+      await supabase.from("vacancy_photos").delete().in("vacancy_id", toDelete);
+      const { error: delErr } = await supabase.from("vacancies").delete().in("id", toDelete);
+      if (!delErr) {
+        deletedCount = toDelete.length;
+      } else {
+        console.error("삭제 오류:", delErr.message);
+      }
+    }
+
+    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+    console.log(`🤖 [v2] ${targetSido} 동기화 완료! (${elapsed}초) [신규: ${insertedCount}, 업데이트: ${updatedCount}, 삭제: ${deletedCount}, 스킵: ${skippedCount}]`);
+
+    return {
+      success: true,
+      inserted: insertedCount,
+      updated: updatedCount,
+      deleted: deletedCount,
+      skipped: skippedCount,
+      elapsed
+    };
   } catch (error: any) {
-    console.error("❌ 온비드 연동 실행 에러:", error);
+    console.error("❌ 온비드 v2 동기화 에러:", error);
     return { success: false, error: error.message };
   }
 }
 
 /**
- * 🔄 기존 경매 매물의 metadata를 온비드 API 원본 데이터로 일괄 업데이트
- * backfill된 매물에 API 원본 50+ 필드를 보강합니다.
+ * 🧹 기존 중복 매물 일괄 정리 (1회성 마이그레이션)
+ * 같은 공고번호(cltrMngNo)의 중복 레코드 중 최신 1건만 남기고 삭제
  */
-export async function refreshOnbidMetadata(targetSido: string = "서울특별시") {
+export async function deduplicateOnbidProperties() {
   const supabase = getAdminClient();
-  const serviceKey = process.env.ONBID_API_KEY;
+  console.log("🧹 기존 온비드 중복 매물 정리 시작...");
 
-  if (!serviceKey) {
-    return { success: false, error: "API Key missing" };
+  // 모든 경매 매물 조회
+  const { data: allAuctions, error } = await supabase
+    .from("vacancies")
+    .select("id, description, metadata, created_at")
+    .eq("trade_type", "경매")
+    .eq("status", "ACTIVE")
+    .order("created_at", { ascending: false });
+
+  if (error || !allAuctions) {
+    console.error("조회 실패:", error?.message);
+    return { success: false, error: error?.message };
   }
 
-  try {
-    // 1. 온비드 API에서 전체 데이터 수집
-    const items: any[] = [];
-    let pageNo = 1;
-    let hasMore = true;
+  // 공고번호별로 그룹핑
+  const groups = new Map<string, string[]>(); // mngNo → [id, id, ...]
+  let noMngNoCount = 0;
 
-    console.log(`🔄 [Metadata 보강] 온비드 API 호출 시작 (${targetSido})...`);
-
-    while (hasMore) {
-      const url = `https://apis.data.go.kr/B010003/OnbidRlstListSrvc2/getRlstCltrList2?serviceKey=${serviceKey}&numOfRows=1000&pageNo=${pageNo}&resultType=json&prptDivCd=0007,0005&pvctTrgtYn=N&lctnSdnm=${encodeURIComponent(targetSido)}`;
-      try {
-        const res = await fetch(url, { next: { revalidate: 0 } });
-        if (res.ok) {
-          const data = await res.json();
-          const body = data.body || data.response?.body;
-          const pageItems = body?.items?.item || body?.items || [];
-          if (Array.isArray(pageItems) && pageItems.length > 0) {
-            items.push(...pageItems);
-            console.log(`Page ${pageNo}: ${pageItems.length} items loaded.`);
-            if (pageItems.length < 1000) { hasMore = false; } else { pageNo++; }
-          } else if (pageItems && typeof pageItems === 'object' && Object.keys(pageItems).length > 0) {
-            items.push(pageItems);
-            hasMore = false;
-          } else {
-            hasMore = false;
-          }
-        } else { hasMore = false; }
-      } catch (err) {
-        console.error(`API pageNo=${pageNo} 에러:`, err);
-        hasMore = false;
-      }
+  for (const row of allAuctions) {
+    // metadata에서 cltrMngNo 추출
+    let mngNo = (row.metadata as any)?.cltrMngNo;
+    
+    // 없으면 description에서 추출
+    if (!mngNo) {
+      const match = row.description?.match(/공고번호:\s*(\S+)/);
+      mngNo = match?.[1];
     }
 
-    console.log(`📦 API 수집: ${items.length}건. 기존 매물 metadata 업데이트 시작...`);
-
-    // 2. 기존 경매 매물 조회
-    const { data: existingAuctions } = await supabase
-      .from("vacancies")
-      .select("id, description, building_name, detail_addr")
-      .eq("trade_type", "경매")
-      .eq("status", "ACTIVE");
-
-    if (!existingAuctions || existingAuctions.length === 0) {
-      return { success: true, message: "업데이트할 경매 매물이 없습니다." };
+    if (!mngNo || mngNo === "정보 없음") {
+      noMngNoCount++;
+      continue;
     }
 
-    // 3. 온비드 ID → API 아이템 맵 생성
-    const apiMap = new Map<string, any>();
-    for (const item of items) {
-      const onbidId = String(item.onbidCltrno || "");
-      if (onbidId) apiMap.set(onbidId, item);
-    }
-
-    // 4. 기존 매물 매칭 후 metadata 업데이트
-    let updatedCount = 0;
-    let notFoundCount = 0;
-
-    for (const auction of existingAuctions) {
-      // description에서 온비드 ID 추출
-      const idMatch = auction.description?.match(/물건번호.*?:\s*(\d+)/);
-      const onbidId = idMatch ? idMatch[1] : null;
-
-      const apiItem = onbidId ? apiMap.get(onbidId) : null;
-
-      if (!apiItem) {
-        notFoundCount++;
-        continue;
-      }
-
-      // metadata 구성 (API 원본 전 필드)
-      const bidStart = formatOnbidDate(apiItem.cltrBidBgngDt);
-      const bidEnd = formatOnbidDate(apiItem.cltrBidEndDt);
-      const appraisalPrice = Math.round(parseInt(apiItem.apslEvlAmt || "0", 10));
-      const lowestBidPrice = Math.round(parseInt(apiItem.lowstBidPrcIndctCont || "0", 10));
-
-      const metadata: Record<string, any> = {
-        source_type: "ONBID",
-        bid_start_date: bidStart,
-        bid_end_date: bidEnd,
-        appraisal_price: appraisalPrice,
-        lowest_bid_price: lowestBidPrice,
-        discount_rate: appraisalPrice > 0 ? Math.round(((appraisalPrice - lowestBidPrice) / appraisalPrice) * 100) : 0,
-      };
-
-      // API 원본 전 필드 동적 바인딩
-      for (const [key, val] of Object.entries(apiItem)) {
-        metadata[key] = val;
-      }
-
-      // property_type도 정확하게 재매핑
-      const propertyType = mapPropertyType(apiItem.cltrUsgMclsCtgrNm || apiItem.cltrUsgLclsCtgrNm, apiItem.onbidCltrNm);
-
-      const { error } = await supabase
-        .from("vacancies")
-        .update({ metadata, property_type: propertyType })
-        .eq("id", auction.id);
-
-      if (!error) {
-        updatedCount++;
-      } else {
-        console.error(`❌ ID ${auction.id} 업데이트 실패:`, error.message);
-      }
-    }
-
-    console.log(`🔄 Metadata 보강 완료! [업데이트: ${updatedCount}건, 미매칭: ${notFoundCount}건]`);
-    return { success: true, updated: updatedCount, notFound: notFoundCount };
-  } catch (error: any) {
-    console.error("❌ Metadata 보강 에러:", error);
-    return { success: false, error: error.message };
+    const list = groups.get(mngNo) || [];
+    list.push(row.id);
+    groups.set(mngNo, list);
   }
+
+  // 중복된 그룹에서 첫 번째(최신)만 남기고 나머지 삭제
+  const idsToDelete: string[] = [];
+  let duplicateGroups = 0;
+
+  for (const [mngNo, ids] of groups.entries()) {
+    if (ids.length > 1) {
+      duplicateGroups++;
+      // ids[0] = 최신 (order by created_at desc), 나머지 삭제
+      idsToDelete.push(...ids.slice(1));
+    }
+  }
+
+  console.log(`📋 분석 결과: ${groups.size}개 공고번호, ${duplicateGroups}개 중복 그룹, ${idsToDelete.length}건 삭제 대상, ${noMngNoCount}건 공고번호 없음`);
+
+  if (idsToDelete.length > 0) {
+    // 배치 삭제 (100건씩)
+    for (let i = 0; i < idsToDelete.length; i += 100) {
+      const batch = idsToDelete.slice(i, i + 100);
+      await supabase.from("vacancy_photos").delete().in("vacancy_id", batch);
+      await supabase.from("vacancies").delete().in("id", batch);
+    }
+    console.log(`🧹 중복 매물 ${idsToDelete.length}건 삭제 완료!`);
+  }
+
+  return { success: true, totalGroups: groups.size, duplicateGroups, deleted: idsToDelete.length, noMngNo: noMngNoCount };
 }

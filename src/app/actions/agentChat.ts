@@ -653,24 +653,29 @@ export async function getOnbidHistoryStats() {
         const parsed = JSON.parse(log.content);
         const logDate = new Date(log.created_at);
         
+        // v2 호환: inserted || registered, deleted || expired
+        const registered = parsed.inserted || parsed.registered || 0;
+        const expired = parsed.deleted || parsed.expired || 0;
+
         // 오늘 분산 집계
         if (logDate >= today) {
-          todayRegistered += parsed.registered || 0;
-          todayExpired += parsed.expired || 0;
+          todayRegistered += registered;
+          todayExpired += expired;
         } 
         // 어제 분산 집계
         else if (logDate >= yesterdayStart && logDate <= yesterdayEnd) {
-          yesterdayRegistered += parsed.registered || 0;
-          yesterdayExpired += parsed.expired || 0;
+          yesterdayRegistered += registered;
+          yesterdayExpired += expired;
         }
 
         historyList.push({
           date: logDate.toLocaleDateString("ko-KR", { month: "short", day: "numeric" }),
           time: logDate.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }),
           target: parsed.target || "전국",
-          registered: parsed.registered || 0,
+          registered,
+          updated: parsed.updated || 0,
           skipped: parsed.skipped || 0,
-          expired: parsed.expired || 0,
+          expired,
           isManual: parsed.isManual || false,
           rawDate: log.created_at
         });

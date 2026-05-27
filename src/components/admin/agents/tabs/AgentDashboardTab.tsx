@@ -559,14 +559,15 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
                           if (data.success) {
                             const aggregated = (data.results || []).reduce((acc: any, r: any) => {
                               if (!r.skipped_reason) {
-                                acc.registered += r.registered || 0;
+                                acc.inserted += r.inserted || 0;
+                                acc.updated += r.updated || 0;
+                                acc.deleted += r.deleted || 0;
                                 acc.skipped += r.skipped || 0;
-                                acc.expired += r.expired || 0;
                               }
                               return acc;
-                            }, { registered: 0, skipped: 0, expired: 0 });
+                            }, { inserted: 0, updated: 0, deleted: 0, skipped: 0 });
 
-                            alert(`✅ 온비드 동기화 완료! (${elapsed}초)\n\n• 신규 등록: ${aggregated.registered}건\n• 중복 스킵: ${aggregated.skipped}건\n• 만료 삭제: ${aggregated.expired}건`);
+                            alert(`✅ 온비드 v2 동기화 완료! (${elapsed}초)\n\n• 신규 등록: ${aggregated.inserted}건\n• 가격/일자 업데이트: ${aggregated.updated}건\n• 만료 삭제: ${aggregated.deleted}건\n• 스킵 (좌표 없음): ${aggregated.skipped}건`);
                             const count = await getOnbidCount();
                             setOnbidCount(count);
                             const historyRes = await getOnbidHistoryStats();

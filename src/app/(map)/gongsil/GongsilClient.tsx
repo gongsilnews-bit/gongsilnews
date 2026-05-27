@@ -274,11 +274,12 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   const [filterSearchKeyword, setFilterSearchKeyword] = useState<string>("");
   const [activeSection, setActiveSection] = useState<string>("거래유형");
   const [isFilterCollapsed, setIsFilterCollapsed] = useState<boolean>(false);
-  const [isWizardOpen, setIsWizardOpen] = useState<boolean>(true);
+  const [isWizardOpen, setIsWizardOpen] = useState<boolean>(false);
   const [filterOffset, setFilterOffset] = useState({ x: 0, y: 0 });
   const [isDraggingFilter, setIsDraggingFilter] = useState(false);
   const dragStartRef = useRef({ x: 0, y: 0 });
   const offsetStartRef = useRef({ x: 0, y: 0 });
+  const scrollDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleDragStart = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.button !== 0) return;
@@ -1494,7 +1495,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   };
 
   const getTradeTypeFilterLabel = () => {
-    if (filterTradeTypes.length === 0) return "검색조건";
+    if (filterTradeTypes.length === 0) return "거래유형";
     
     const typesStr = filterTradeTypes.join(",");
     const hasPriceFilter =
@@ -1734,8 +1735,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
             })}
 
 
-            {/* Active filter text badges for 'apart' and 'villa' categories */}
-            {(activeCategory === "apart" || activeCategory === "villa") && (() => {
+            {/* Active filter text badges for wizard categories */}
+            {["apart", "villa", "one", "biz", "sale", "auction"].includes(activeCategory) && (() => {
               const tags: { label: string; isTheme?: boolean }[] = [];
 
               const formatPriceRange = (min: number | null, max: number | null) => {
@@ -1749,70 +1750,70 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                 return `${formatPriceLabel(min)}~${formatPriceLabel(max)}`;
               };
 
-              // 1. 거래유형 & 가격 (Live Interactive States!)
-              const getLiveTradeTypeFilterLabel = () => {
-                if (tempFilterTradeTypes.length === 0) return "";
+              // 1. 거래유형 & 가격 (Applied States - 적용하기 후에만 반영)
+              const getAppliedTradeTypeFilterLabel = () => {
+                if (filterTradeTypes.length === 0) return "";
                 
-                const typesStr = tempFilterTradeTypes.join(",");
+                const typesStr = filterTradeTypes.join(",");
                 const hasPriceFilter =
-                  tempMaemaeMin !== null ||
-                  tempMaemaeMax !== null ||
-                  tempDepositMin !== null ||
-                  tempDepositMax !== null ||
-                  tempRentMin !== null ||
-                  tempRentMax !== null;
+                  appliedMaemaeMin !== null ||
+                  appliedMaemaeMax !== null ||
+                  appliedDepositMin !== null ||
+                  appliedDepositMax !== null ||
+                  appliedRentMin !== null ||
+                  appliedRentMax !== null;
                   
                 if (!hasPriceFilter) return typesStr;
                 
-                if (tempFilterTradeTypes.length === 1) {
-                  const t = tempFilterTradeTypes[0];
+                if (filterTradeTypes.length === 1) {
+                  const t = filterTradeTypes[0];
                   if (t === "매매") {
-                    if (tempMaemaeMin === null && tempMaemaeMax === null) return "매매";
-                    return `매매 ${formatPriceRange(tempMaemaeMin, tempMaemaeMax)}`;
+                    if (appliedMaemaeMin === null && appliedMaemaeMax === null) return "매매";
+                    return `매매 ${formatPriceRange(appliedMaemaeMin, appliedMaemaeMax)}`;
                   } else if (t === "전세") {
-                    if (tempDepositMin === null && tempDepositMax === null) return "전세";
-                    return `전세 ${formatPriceRange(tempDepositMin, tempDepositMax)}`;
+                    if (appliedDepositMin === null && appliedDepositMax === null) return "전세";
+                    return `전세 ${formatPriceRange(appliedDepositMin, appliedDepositMax)}`;
                   } else if (t === "월세") {
-                    const depStr = tempDepositMin !== null || tempDepositMax !== null 
-                      ? `보증금 ${formatPriceRange(tempDepositMin, tempDepositMax)}`
+                    const depStr = appliedDepositMin !== null || appliedDepositMax !== null 
+                      ? `보증금 ${formatPriceRange(appliedDepositMin, appliedDepositMax)}`
                       : "";
-                    const rentStr = tempRentMin !== null || tempRentMax !== null
-                      ? `월세 ${formatPriceRange(tempRentMin, tempRentMax)}`
+                    const rentStr = appliedRentMin !== null || appliedRentMax !== null
+                      ? `월세 ${formatPriceRange(appliedRentMin, appliedRentMax)}`
                       : "";
                     return `월세 ${[depStr, rentStr].filter(Boolean).join(" / ")}`;
                   } else if (t === "단기") {
-                    const depStr = tempDepositMin !== null || tempDepositMax !== null 
-                      ? `보증금 ${formatPriceRange(tempDepositMin, tempDepositMax)}`
+                    const depStr = appliedDepositMin !== null || appliedDepositMax !== null 
+                      ? `보증금 ${formatPriceRange(appliedDepositMin, appliedDepositMax)}`
                       : "";
-                    const rentStr = tempRentMin !== null || tempRentMax !== null
-                      ? `월세 ${formatPriceRange(tempRentMin, tempRentMax)}`
+                    const rentStr = appliedRentMin !== null || appliedRentMax !== null
+                      ? `월세 ${formatPriceRange(appliedRentMin, appliedRentMax)}`
                       : "";
                     return `단기 ${[depStr, rentStr].filter(Boolean).join(" / ")}`;
                   }
                 }
                 
-                // Multiple trade types with live prices
+                // Multiple trade types with applied prices
                 const parts: string[] = [];
-                if (tempFilterTradeTypes.includes("매매")) {
-                  parts.push(`매매 ${formatPriceRange(tempMaemaeMin, tempMaemaeMax)}`);
+                if (filterTradeTypes.includes("매매")) {
+                  parts.push(`매매 ${formatPriceRange(appliedMaemaeMin, appliedMaemaeMax)}`);
                 }
-                if (tempFilterTradeTypes.includes("전세")) {
-                  parts.push(`전세 ${formatPriceRange(tempDepositMin, tempDepositMax)}`);
+                if (filterTradeTypes.includes("전세")) {
+                  parts.push(`전세 ${formatPriceRange(appliedDepositMin, appliedDepositMax)}`);
                 }
-                if (tempFilterTradeTypes.includes("월세")) {
-                  const dep = tempDepositMin !== null || tempDepositMax !== null ? `보증금 ${formatPriceRange(tempDepositMin, tempDepositMax)}` : "";
-                  const rnt = tempRentMin !== null || tempRentMax !== null ? `월세 ${formatPriceRange(tempRentMin, tempRentMax)}` : "";
+                if (filterTradeTypes.includes("월세")) {
+                  const dep = appliedDepositMin !== null || appliedDepositMax !== null ? `보증금 ${formatPriceRange(appliedDepositMin, appliedDepositMax)}` : "";
+                  const rnt = appliedRentMin !== null || appliedRentMax !== null ? `월세 ${formatPriceRange(appliedRentMin, appliedRentMax)}` : "";
                   parts.push(`월세 ${[dep, rnt].filter(Boolean).join("/")}`);
                 }
-                if (tempFilterTradeTypes.includes("단기")) {
-                  const dep = tempDepositMin !== null || tempDepositMax !== null ? `보증금 ${formatPriceRange(tempDepositMin, tempDepositMax)}` : "";
-                  const rnt = tempRentMin !== null || tempRentMax !== null ? `월세 ${formatPriceRange(tempRentMin, tempRentMax)}` : "";
+                if (filterTradeTypes.includes("단기")) {
+                  const dep = appliedDepositMin !== null || appliedDepositMax !== null ? `보증금 ${formatPriceRange(appliedDepositMin, appliedDepositMax)}` : "";
+                  const rnt = appliedRentMin !== null || appliedRentMax !== null ? `월세 ${formatPriceRange(appliedRentMin, appliedRentMax)}` : "";
                   parts.push(`단기 ${[dep, rnt].filter(Boolean).join("/")}`);
                 }
                 return parts.filter(Boolean).join(", ");
               };
 
-              const tradeLabel = getLiveTradeTypeFilterLabel();
+              const tradeLabel = getAppliedTradeTypeFilterLabel();
               if (tradeLabel) {
                 tags.push({ label: tradeLabel });
               }
@@ -2248,12 +2249,12 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                     }}
                                     style={{
                                       fontSize: "14px",
-                                      color: isActive ? "#1a4282" : (isSelected ? "#1a73e8" : "#4b5563"),
-                                      fontWeight: (isActive || isSelected) ? "bold" : "normal",
+                                      color: isActive ? "#1a4282" : "#4b5563",
+                                      fontWeight: isActive ? "bold" : "normal",
                                       cursor: "pointer",
                                       padding: "6px 12px",
-                                      background: isActive ? "#e8f0fe" : (isSelected ? "#f0f7ff" : "none"),
-                                      border: isSelected && !isActive ? "1px solid #c2dbff" : "1px solid transparent",
+                                      background: isActive ? "#e8f0fe" : "none",
+                                      border: "1px solid transparent",
                                       borderRadius: "14px",
                                       transition: "all 0.15s",
                                     }}
@@ -2289,27 +2290,28 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                             style={{ maxHeight: "420px", overflowY: "auto", paddingRight: "8px", paddingBottom: "10px" }}
                             onScroll={(e) => {
                               const container = e.currentTarget;
-                              const containerRect = container.getBoundingClientRect();
-                              const sections = ["거래유형", "면적", "사용승인일", "세대수", "방/욕실수", "방향", "등록자", "중개보수", "테마"];
-                              
-                              let closestSec = activeSection;
-                              let minDiff = Infinity;
-                              
-                              for (const sec of sections) {
-                                const el = document.getElementById(`section-${sec}`);
-                                if (el) {
-                                  const rect = el.getBoundingClientRect();
-                                  const diff = Math.abs(rect.top - containerRect.top);
-                                  if (diff < minDiff) {
-                                    minDiff = diff;
-                                    closestSec = sec;
+                              if (scrollDebounceRef.current) clearTimeout(scrollDebounceRef.current);
+                              scrollDebounceRef.current = setTimeout(() => {
+                                const containerRect = container.getBoundingClientRect();
+                                const sections = getWizardTabs();
+                                
+                                let closestSec = sections[0];
+                                let minDiff = Infinity;
+                                
+                                for (const sec of sections) {
+                                  const el = document.getElementById(`section-${sec}`);
+                                  if (el) {
+                                    const rect = el.getBoundingClientRect();
+                                    const diff = Math.abs(rect.top - containerRect.top);
+                                    if (diff < minDiff) {
+                                      minDiff = diff;
+                                      closestSec = sec;
+                                    }
                                   }
                                 }
-                              }
-                              
-                              if (closestSec !== activeSection) {
+                                
                                 setActiveSection(closestSec);
-                              }
+                              }, 100);
                             }}
                           >
                             {/* Section 1: 거래유형 */}
@@ -3320,6 +3322,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                 setAppliedRentMax(tempRentMax);
                                 setActiveFilterDropdown(null);
                                 setIsFilterCollapsed(true);
+                                setIsWizardOpen(false);
                               }}
                               style={{
                                 flex: 2,

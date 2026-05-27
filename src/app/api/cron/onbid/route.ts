@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { syncOnbidProperties } from "@/app/actions/onbidSync";
+import { syncOnbidProperties, deduplicateOnbidProperties } from "@/app/actions/onbidSync";
 import { createClient } from "@supabase/supabase-js";
 
-export const maxDuration = 300; // Vercel 최대 실행 시간 5분 설정
+export const maxDuration = 300;
 
 function getLogClient() {
   return createClient(
@@ -18,60 +18,65 @@ export async function GET(req: Request) {
   const urlObj = new URL(req.url);
   const isManualRun = urlObj.searchParams.get("manual") === "true";
   const sidoParam = urlObj.searchParams.get("sido");
+  const dedup = urlObj.searchParams.get("dedup") === "true";
 
-  // 보안 인증 검증 (Vercel Cron Secret 검증 또는 수동 실행 매개변수 확인)
   if (!isVercelCron && process.env.CRON_SECRET && !isManualRun) {
     return NextResponse.json({ error: "인증되지 않은 요청입니다." }, { status: 401 });
   }
 
+  // 중복 정리 모드
+  if (dedup) {
+    const result = await deduplicateOnbidProperties();
+    return NextResponse.json({ success: true, message: "중복 정리 완료", ...result });
+  }
+
   const sidos = [
-    "서울특별시", "경기도", "인천광역시", "부산광역시", "대구광역시", 
-    "대전광역시", "광주광역시", "울산광역시", "세종특별자치시", "강원특별자치도", 
-    "충청북도", "충청남도", "전북특별자치도", "전라남도", "경상북도", 
+    "서울특별시", "경기도", "인천광역시", "부산광역시", "대구광역시",
+    "대전광역시", "광주광역시", "울산광역시", "세종특별자치시", "강원특별자치도",
+    "충청북도", "충청남도", "전북특별자치도", "전라남도", "경상북도",
     "경상남도", "제주특별자치도"
   ];
 
-  // 대상 지역 결정: sido 파라미터가 있으면 해당 지역, 없으면 전국 17개 시도
   const targetRegions = sidoParam ? sidoParam.split(",") : sidos;
   const startTime = Date.now();
   const supabase = getLogClient();
 
-  console.log(`🤖 온비드 공매 물건 동기화 시작 (대상: ${targetRegions.join(", ")})`);
+  console.log(`🤖 [v2] 온비드 UPSERT 동기화 시작 (${targetRegions.join(", ")})`);
 
   const results: any[] = [];
   for (const sido of targetRegions) {
-    // 안전 타임아웃: 4분(240초) 경과 시 나머지 시도 스킵 (Vercel 5분 리밋 안전 마진)
     const elapsed = (Date.now() - startTime) / 1000;
     if (elapsed > 240) {
-      console.warn(`⏰ ${elapsed.toFixed(0)}초 경과 → 안전 타임아웃! 나머지 시도 스킵합니다.`);
-      results.push({ sido: sido.trim(), skipped_reason: "timeout_safety", elapsed: `${elapsed.toFixed(0)}s` });
+      console.warn(`⏰ ${elapsed.toFixed(0)}초 → 타임아웃! 나머지 스킵`);
+      results.push({ sido: sido.trim(), skipped_reason: "timeout_safety" });
       continue;
     }
 
-    console.log(`📍 ${sido} 동기화 중... (경과: ${elapsed.toFixed(0)}초)`);
+    console.log(`📍 ${sido} 동기화 중... (${elapsed.toFixed(0)}초)`);
     try {
       const syncResult = await syncOnbidProperties(sido.trim());
       results.push({ sido: sido.trim(), ...syncResult });
 
-      // ⚡ 핵심 수정: 각 시도 완료 직후 즉시 로그 기록 (타임아웃되어도 이미 기록됨!)
+      // 즉시 로그 기록
       try {
         await supabase.from("agent_chats").insert({
           channel_id: "onbid_sync_log",
           role: "agent",
           content: JSON.stringify({
             target: sido.trim(),
-            registered: syncResult.registered || 0,
+            registered: syncResult.inserted || 0,
+            updated: syncResult.updated || 0,
+            expired: syncResult.deleted || 0,
             skipped: syncResult.skipped || 0,
-            expired: syncResult.expired || 0,
             isManual: isManualRun,
-            elapsed: ((Date.now() - startTime) / 1000).toFixed(1)
+            elapsed: syncResult.elapsed || "0"
           })
         });
       } catch (logErr) {
-        console.error(`❌ ${sido} 로그 기록 실패:`, logErr);
+        console.error(`로그 기록 실패:`, logErr);
       }
     } catch (err: any) {
-      console.error(`❌ ${sido} 동기화 중 오류:`, err.message);
+      console.error(`❌ ${sido} 에러:`, err.message);
       results.push({ sido: sido.trim(), success: false, error: err.message });
     }
   }
@@ -80,7 +85,7 @@ export async function GET(req: Request) {
 
   return NextResponse.json({
     success: true,
-    message: `온비드 동기화 완료 (${totalElapsed}초)`,
+    message: `온비드 v2 동기화 완료 (${totalElapsed}초)`,
     elapsed: totalElapsed,
     results
   });
