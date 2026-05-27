@@ -288,12 +288,7 @@ export default function HeroMapSection({ initialVacancies }: { initialVacancies?
         });
     });
 
-    // Fit bounds
-    if (newMarkers.length > 0) {
-      const bounds = new kakao.maps.LatLngBounds();
-      newMarkers.forEach(m => bounds.extend(m.getPosition()));
-      map.setBounds(bounds);
-    }
+    // 지도가 마커에 맞춰 강제 이동/축소되는 현상을 방지하고, 기본 설정된 강남역 중심을 무조건 고수합니다.
   }, [filteredVacancies, mapLoaded]);
 
   const handleVacancyClick = (id: string | number) => {
