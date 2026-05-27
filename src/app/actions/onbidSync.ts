@@ -44,6 +44,20 @@ async function getCoordinates(address: string): Promise<{ lat: number; lng: numb
   return null;
 }
 
+function normalizeSido(sido: string | null): string {
+  if (!sido) return "";
+  const clean = sido.trim();
+  if (clean === "충청북도" || clean === "충북") return "충북";
+  if (clean === "충청남도" || clean === "충남") return "충남";
+  if (clean === "전라북도" || clean === "전북" || clean === "전북특별자치도") return "전북";
+  if (clean === "전라남도" || clean === "전남") return "전남";
+  if (clean === "경상북도" || clean === "경북") return "경북";
+  if (clean === "경상남도" || clean === "경남") return "경남";
+  if (clean === "강원특별자치도" || clean === "강원도" || clean === "강원") return "강원";
+  if (clean === "제주특별자치도" || clean === "제주도" || clean === "제주") return "제주";
+  return clean.substring(0, 2);
+}
+
 function parseAddress(fullAddress: string) {
   const parts = fullAddress.split(/\s+/);
   return { sido: parts[0] || "", sigungu: parts[1] || "", dong: parts[2] || "", detail_addr: parts.slice(3).join(" ") || "" };
@@ -160,12 +174,11 @@ export async function syncOnbidProperties(targetSido: string = "서울특별시"
     }
     console.log(`📋 공고번호 기준 고유 물건: ${apiMap.size}건 (API ${apiItems.length}건 → 중복 제거)`);
 
-    // ═══ 3단계: DB에서 해당 시도의 기존 경매 매물 전체 조회 ═══
     const { data: dbRows } = await supabase
       .from("vacancies")
       .select("id, metadata, lat, lng, building_name, detail_addr")
       .eq("trade_type", "경매")
-      .eq("sido", targetSido.replace(/특별시|광역시|특별자치시|특별자치도/, "").trim() || targetSido)
+      .eq("sido", normalizeSido(targetSido))
       .eq("status", "ACTIVE");
 
     // DB의 공고번호 → vacancy ID 맵 구축
@@ -381,6 +394,13 @@ export async function syncOnbidProperties(targetSido: string = "서울특별시"
 
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
     console.log(`🤖 [v2] ${targetSido} 동기화 완료! (${elapsed}초) [신규: ${insertedCount}, 업데이트: ${updatedCount}, 삭제: ${deletedCount}, 스킵: ${skippedCount}]`);
+
+    // 💡 [대표님 긴급 지침] 동기화 성공 직후 즉시 중복 매물을 전량 검사하여 최신 1건만 보존하고 박멸!
+    try {
+      await deduplicateOnbidProperties();
+    } catch (dedupErr) {
+      console.error("중복 제거 실행 중 에러:", dedupErr);
+    }
 
     return {
       success: true,
