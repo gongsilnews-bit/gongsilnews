@@ -1904,11 +1904,21 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
 
               const isPremiumWizard = true;
 
+              const tradeLabel = getTradeTypeFilterLabel();
+              const areaLabel = areaFilterLabel;
+              
+              const summaryTexts = [];
+              if (tradeLabel !== "거래유형") summaryTexts.push(tradeLabel);
+              if (areaLabel !== "면적") summaryTexts.push(areaLabel);
+              const summaryString = summaryTexts.join(" · ");
+
               return (
                 <div 
                   key={f} 
                   style={{
-                    position: "relative"
+                    position: "relative",
+                    display: "flex",
+                    alignItems: "center"
                   }}
                 >
                   <button
@@ -1926,7 +1936,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                       fontSize: 14,
                       color: "#1a73e8", // 파란색으로 요청
                       cursor: "pointer",
-                      padding: "6px 14px",
+                      padding: "6px 14px 6px 0",
                       whiteSpace: "nowrap",
                       fontWeight: "bold",
                       fontFamily: "inherit",
@@ -1938,6 +1948,12 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                   >
                     {isWizardOpen ? "검색닫기 ▲" : "검색열기 ▼"}
                   </button>
+                  
+                  {summaryString && (
+                    <span style={{ fontSize: 14, color: "#111", fontWeight: 600, marginLeft: 4 }}>
+                      {summaryString}
+                    </span>
+                  )}
 
                   {/* 드롭다운 필터 내용 */}
                   {isWizardOpen && (
