@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef } from "react";
+import Link from "next/link";
 import { formatAmount } from "./page";
 import { getAuctionInfo } from "@/app/(map)/gongsil/gongsilHelpers";
 
@@ -725,207 +726,299 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
           </div>
         ) : detailTab === "info" ? (
           <div>
-            {/* 용도 / 기본 스펙 */}
-            <div style={{ padding: "20px 16px", background: "#fff", marginBottom: "8px", borderBottom: "1px solid #f3f4f6" }}>
-              <h3 style={{ fontSize: "16px", fontWeight: 800, color: "#111827", margin: "0 0 14px" }}>기본 정보</h3>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                <div>
-                  <span style={{ fontSize: "13px", color: "#6b7280", display: "block" }}>물건용도</span>
-                  <span style={{ fontSize: "15px", color: "#1f2937", fontWeight: 700 }}>{selectedVacancy.property_type || "미선언"}</span>
-                </div>
-                <div>
-                  <span style={{ fontSize: "13px", color: "#6b7280", display: "block" }}>방향</span>
-                  <span style={{ fontSize: "15px", color: "#1f2937", fontWeight: 700 }}>{selectedVacancy.direction || "남향"}</span>
-                </div>
-                <div>
-                  <span style={{ fontSize: "13px", color: "#6b7280", display: "block" }}>전용면적</span>
-                  <span style={{ fontSize: "15px", color: "#1f2937", fontWeight: 700 }}>
-                    {selectedVacancy.exclusive_m2 ? `${selectedVacancy.exclusive_m2}㎡` : selectedVacancy.exclusive_area ? `${selectedVacancy.exclusive_area}㎡` : "-"}
-                    {(selectedVacancy.exclusive_m2 || selectedVacancy.exclusive_area) && (
-                      <span style={{ fontSize: "12px", color: "#6b7280", fontWeight: "normal", marginLeft: "4px" }}>
-                        ({Math.round((selectedVacancy.exclusive_m2 || selectedVacancy.exclusive_area || 0) / 3.3058)}평)
-                      </span>
-                    )}
-                  </span>
-                </div>
-                <div>
-                  <span style={{ fontSize: "13px", color: "#6b7280", display: "block" }}>해당층 / 전체층</span>
-                  <span style={{ fontSize: "15px", color: "#1f2937", fontWeight: 700 }}>{selectedVacancy.floor || "1"}층 / {selectedVacancy.total_floors || "-"}층</span>
-                </div>
-              </div>
+            {/* 용도 / 기본 스펙 테이블 디자인 (PC 버전 100% 대응) */}
+            <div style={{ display: "grid", gridTemplateColumns: "110px 1fr", borderBottom: "10px solid #f5f5f5" }}>
+              <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>공실광고번호</div>
+              <div style={{ fontSize: 14, color: "#222", fontWeight: "bold", padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{selectedVacancy.vacancy_no}</div>
+              <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>소재지</div>
+              <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{[selectedVacancy.sido, selectedVacancy.sigungu, selectedVacancy.dong, selectedVacancy.detail_addr].filter(Boolean).join(" ")}</div>
+              <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>공실광고특성</div>
+              <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{selectedVacancy.building_name || "-"}</div>
+              <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>공급/전용면적</div>
+              <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{selectedVacancy.supply_m2 ? `${selectedVacancy.supply_m2}m²` : "-"} / {selectedVacancy.exclusive_m2 ? `${selectedVacancy.exclusive_m2}m²` : "-"}</div>
+              <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>해당층/총층</div>
+              <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{selectedVacancy.current_floor || selectedVacancy.floor || "-"} / {selectedVacancy.total_floor || selectedVacancy.total_floors || "-"}</div>
+              <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>방/욕실수</div>
+              <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{selectedVacancy.room_count || 0}개 / {selectedVacancy.bath_count || selectedVacancy.bathroom_count || 0}개</div>
+              <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>방향</div>
+              <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{selectedVacancy.direction || "-"}</div>
+              <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>주차가능 여부</div>
+              <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{selectedVacancy.parking || "없음"}</div>
+              <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>입주가능일</div>
+              <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{selectedVacancy.move_in_date || "즉시입주(공실)"}</div>
+              <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>관리비</div>
+              <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{selectedVacancy.maintenance_fee ? `${selectedVacancy.maintenance_fee / 10000}만원` : "없음"}</div>
+              <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "flex-start", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>상세설명</div>
+              <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all", whiteSpace: "pre-line" }}>{selectedVacancy.description || "-"}</div>
             </div>
 
-            {/* 옵션 항목들 (공실 전용) */}
+            {/* ──── 옵션 ──── */}
             {selectedVacancy.options && selectedVacancy.options.length > 0 && (
-              <div style={{ padding: "20px 16px", background: "#fff", marginBottom: "8px" }}>
-                <h3 style={{ fontSize: "16px", fontWeight: 800, color: "#111827", margin: "0 0 14px" }}>옵션 및 시설</h3>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "12px" }}>
-                  {selectedVacancy.options.map((opt: string, i: number) => (
-                    <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "10px", background: "#f8fafc", borderRadius: "8px" }}>
-                      <OptionIcon name={opt} />
-                      <span style={{ fontSize: "12px", color: "#475569", fontWeight: 700, marginTop: "6px" }}>{opt}</span>
+              <div style={{ padding: "20px 16px", background: "#fff", borderBottom: "8px solid #f3f4f6" }}>
+                <div style={{ fontSize: 16, fontWeight: 800, color: "#111827", marginBottom: 20 }}>옵션</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 20 }}>
+                  {selectedVacancy.options.map((optName: string, idx: number) => (
+                    <div key={idx} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, minWidth: 55 }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 40, height: 40, background: "#f8fafc", borderRadius: "50%", border: "1px solid #e2e8f0" }}>
+                        <OptionIcon name={optName} />
+                      </div>
+                      <span style={{ fontSize: 12, color: "#333", fontWeight: "bold", textAlign: "center", whiteSpace: "nowrap" }}>{optName}</span>
                     </div>
                   ))}
                 </div>
               </div>
             )}
 
-            {/* 지도 및 위치 정보 */}
-            <div style={{ padding: "20px 16px", background: "#fff", marginBottom: "8px" }}>
-              <h3 style={{ fontSize: "16px", fontWeight: 800, color: "#111827", margin: "0 0 14px" }}>위치 및 주변 정보</h3>
-              <div ref={itemMapRef} style={{ width: "100%", height: "180px", borderRadius: "10px", overflow: "hidden", backgroundColor: "#e5e7eb", marginBottom: "12px" }}></div>
-              <div ref={roadviewRef} style={{ width: "100%", height: "180px", borderRadius: "10px", overflow: "hidden", backgroundColor: "#e5e7eb" }}></div>
+            {/* ──── 위치정보 ──── */}
+            <div style={{ padding: "20px 16px 0", background: "#fff" }}>
+              <div style={{ fontSize: 16, fontWeight: 800, color: "#111827", marginBottom: 12 }}>위치정보</div>
+              <div ref={itemMapRef} style={{ width: "100%", height: 200, borderRadius: 8, marginBottom: 20, background: "#e8eaed", display: "flex", alignItems: "center", justifyContent: "center", color: "#999", fontSize: 14, border: "1px solid #eee", overflow: "hidden" }}></div>
             </div>
 
-            {/* 상세 설명 */}
-            <div style={{ padding: "20px 16px", background: "#fff" }}>
-              <h3 style={{ fontSize: "16px", fontWeight: 800, color: "#111827", margin: "0 0 10px" }}>상세 설명</h3>
-              <p style={{ fontSize: "14.5px", color: "#374151", lineHeight: 1.6, whiteSpace: "pre-wrap", margin: 0 }}>
-                {selectedVacancy.description || "상세 정보가 등록되지 않은 매물입니다."}
-              </p>
+            {/* ──── 로드뷰 ──── */}
+            <div style={{ padding: "0 16px 20px", background: "#fff", borderBottom: "8px solid #f3f4f6" }}>
+              <div style={{ fontSize: 16, fontWeight: 800, color: "#111827", marginBottom: 12 }}>로드뷰</div>
+              <div ref={roadviewRef} style={{ width: "100%", height: 200, borderRadius: 8, background: "#e8eaed", display: "flex", alignItems: "center", justifyContent: "center", color: "#999", fontSize: 14, border: "1px solid #eee", overflow: "hidden" }}></div>
             </div>
           </div>
         ) : (
           /* 탭 2: 등록자 정보 (공실) */
-          <div style={{ padding: "20px 16px", background: "#fff" }}>
-            {/* 일반 공실 매물 전용 등록자 뷰 (기존 폼 완벽 유지) */}
-            <div>
-              <h3 style={{ fontSize: "16px", fontWeight: 800, color: "#111827", margin: "0 0 16px" }}>등록자(중개업소) 정보</h3>
-              {(() => {
-                const m = selectedVacancy.members || {};
-                const agencyInfo = Array.isArray(m.agencies) ? m.agencies[0] : m.agencies;
-                
-                return (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                    {agencyInfo ? (
-                      <>
-                        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                          {agencyInfo.profile_photo_url ? (
-                            <div style={{ width: "60px", height: "60px", borderRadius: "50%", overflow: "hidden" }}>
-                              <img src={agencyInfo.profile_photo_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                            </div>
+          <div style={{ background: "#fff" }}>
+            {(() => {
+              const m = selectedVacancy.members || {};
+              const agencyInfo = Array.isArray(m.agencies) ? m.agencies[0] : m.agencies;
+              
+              return (
+                <>
+                  <div style={{ padding: "20px 16px", borderBottom: "8px solid #f3f4f6" }}>
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: "16px", marginBottom: "20px" }}>
+                      {/* 프로필 사진 */}
+                      {selectedVacancy.members?.profile_image_url || selectedVacancy.members?.profile_photo_url || agencyInfo?.profile_photo_url ? (
+                        <img 
+                          src={selectedVacancy.members?.profile_image_url || selectedVacancy.members?.profile_photo_url || agencyInfo?.profile_photo_url} 
+                          alt="프로필" 
+                          style={{ width: 64, height: 64, borderRadius: "50%", objectFit: "cover", flexShrink: 0, border: "2px solid #e5e7eb", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }} 
+                        />
+                      ) : (
+                        <div style={{ width: 64, height: 64, borderRadius: "50%", background: "#e8f0fe", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, fontWeight: 700, color: "#508bf5", flexShrink: 0, border: "2px solid #e5e7eb" }}>
+                          {(agencyInfo?.agency_name || selectedVacancy.members?.name || selectedVacancy.client_name || "?")[0]}
+                        </div>
+                      )}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 17, fontWeight: 800, color: "#111827", marginBottom: "8px", display: "flex", alignItems: "center", gap: 8 }}>
+                          {selectedVacancy.owner_id ? (
+                            <Link 
+                              href={`/reporter/${selectedVacancy.owner_id}`} 
+                              style={{ 
+                                color: "#111827", 
+                                textDecoration: "none", 
+                                cursor: "pointer",
+                              }}
+                            >
+                              {agencyInfo ? (agencyInfo.agency_name || agencyInfo.name) : (selectedVacancy.members?.name || selectedVacancy.client_name)}
+                            </Link>
                           ) : (
-                            <div style={{ width: "60px", height: "60px", borderRadius: "50%", backgroundColor: "#f3f4f6", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                            </div>
+                            <span>{agencyInfo ? (agencyInfo.agency_name || agencyInfo.name) : (selectedVacancy.members?.name || selectedVacancy.client_name)}</span>
                           )}
-                          <div>
-                            <p style={{ fontSize: "17px", fontWeight: 800, color: "#111827", margin: 0 }}>{agencyInfo.agency_name || "중개업소"}</p>
-                            <p style={{ fontSize: "13px", color: "#6b7280", margin: "2px 0 0" }}>대표자: {agencyInfo.ceo_name || "-"}</p>
-                          </div>
                         </div>
-                        <div style={{ background: "#f9fafb", borderRadius: "8px", padding: "14px 16px", display: "flex", flexDirection: "column", gap: "8px", fontSize: "14px", color: "#4b5563" }}>
-                          <p style={{ margin: 0 }}><b>등록번호:</b> {agencyInfo.registration_no || "-"}</p>
-                          <p style={{ margin: 0 }}><b>소재지:</b> {agencyInfo.address || "-"}</p>
-                          <p style={{ margin: 0 }}><b>연락처:</b> {agencyInfo.phone || m.phone || "-"}</p>
-                        </div>
-                      </>
-                    ) : (
-                      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                        <div style={{ width: "50px", height: "50px", borderRadius: "50%", backgroundColor: "#f3f4f6", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                        </div>
-                        <div>
-                          <p style={{ fontSize: "16px", fontWeight: 800, color: "#111827", margin: 0 }}>개인 등록 매물 (소유주 직접)</p>
-                          <p style={{ fontSize: "13px", color: "#6b7280", margin: "2px 0 0" }}>공실뉴스 플랫폼을 통해 소유주가 직접 업로드한 안전한 공실 매물입니다.</p>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                          {agencyInfo ? (
+                            <>
+                              <span style={{ fontSize: 13, color: "#4b5563" }}>
+                                대표 {agencyInfo.ceo_name || "-"} <span style={{ color: "#e5e7eb", margin: "0 4px" }}>|</span> 등록번호 {agencyInfo.registration_no || agencyInfo.reg_num || "-"}
+                              </span>
+                              <span style={{ fontSize: 13, color: "#4b5563", wordBreak: "break-all" }}>
+                                {agencyInfo.address || "-"}
+                              </span>
+                            </>
+                          ) : (
+                            <span style={{ fontSize: 13, color: "#4b5563" }}>
+                              일반회원 <span style={{ color: "#e5e7eb", margin: "0 4px" }}>|</span> {selectedVacancy.members?.name || selectedVacancy.client_name || "-"}
+                            </span>
+                          )}
+                          <span style={{ fontSize: 13, fontWeight: "bold", color: "#1a73e8", marginTop: 2, display: "flex", alignItems: "center", gap: 4 }}>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                            </svg>
+                            전화 {agencyInfo?.phone ? `${agencyInfo.phone}${agencyInfo?.cell && agencyInfo.cell !== agencyInfo.phone ? `, ${agencyInfo.cell}` : ""}` : (selectedVacancy.client_phone || selectedVacancy.members?.phone || "미등록")}
+                          </span>
                         </div>
                       </div>
+                    </div>
+
+                    {/* SNS Links + 오시는길 */}
+                    {((selectedVacancy.members?.sns_links && Object.keys(selectedVacancy.members.sns_links).filter(k => k !== "api_info" && k !== "api_list" && selectedVacancy.members.sns_links[k]?.url).length > 0) || agencyInfo?.address) && (
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12, paddingTop: 12, borderTop: "1px solid #f3f4f6" }}>
+                        {selectedVacancy.members?.sns_links && Object.keys(selectedVacancy.members.sns_links).filter(k => k !== "api_info" && k !== "api_list" && selectedVacancy.members.sns_links[k]?.url).map(key => {
+                          const link = selectedVacancy.members.sns_links[key].url;
+                          const validUrl = link.startsWith('http') ? link : `https://${link}`;
+                          
+                          let iconHtml;
+                          switch(key) {
+                            case 'contact': iconHtml = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>; break;
+                            case 'youtube': iconHtml = <svg viewBox="0 0 24 24" fill="currentColor"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.99C18.88 4 12 4 12 4s-6.88 0-8.59.43A2.78 2.78 0 0 0 1.46 6.42C1 8.16 1 12 1 12s0 3.84.46 5.58a2.78 2.78 0 0 0 1.95 1.99C5.12 20 12 20 12 20s6.88 0 8.59-.43a2.78 2.78 0 0 0 1.95-1.99C23 15.84 23 12 23 12s0-3.84-.46-5.58zM9.54 15.55V8.45L15.82 12l-6.28 3.55z"></path></svg>; break;
+                            case 'instagram': iconHtml = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>; break;
+                            case 'facebook': iconHtml = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>; break;
+                            case 'twitter': iconHtml = <svg viewBox="0 0 24 24" fill="currentColor"><path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"></path></svg>; break;
+                            case 'blog': iconHtml = <span style={{ fontSize: 11, fontWeight: "bold" }}>BLOG</span>; break;
+                            case 'cafe': iconHtml = <span style={{ fontSize: 11, fontWeight: "bold" }}>CAFE</span>; break;
+                            case 'kakao': iconHtml = <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3c-5.5 0-10 3.5-10 7.8 0 2.8 1.8 5.2 4.4 6.5l-1 3.7c-.1.3.3.6.5.4l4.3-2.9c.6.1 1.2.1 1.8.1 5.5 0 10-3.5 10-7.8S17.5 3 12 3z"></path></svg>; break;
+                            case 'homepage': iconHtml = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>; break;
+                            case 'shopping_mall': iconHtml = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>; break;
+                            default: iconHtml = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>;
+                          }
+                          
+                          const titleNames: Record<string,string> = { homepage: "홈페이지", contact: "문의하기", shopping_mall: "쇼핑몰", blog: "블로그", cafe: "카페", youtube: "유튜브", facebook: "페이스북", twitter: "트위터", instagram: "인스타그램", kakao: "카카오", threads: "쓰레드" };
+                          const titleName = titleNames[key] || key;
+
+                          return (
+                            <a 
+                              key={key} 
+                              href={validUrl} 
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              title={titleName}
+                              style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 36, height: 36, borderRadius: "50%", background: "#f8f9fa", border: "1px solid #e0e0e0", color: "#444", textDecoration: "none" }}
+                            >
+                              <div style={{ width: 18, height: 18, display: "flex", alignItems: "center", justifyContent: "center" }}>{iconHtml}</div>
+                            </a>
+                          );
+                        })}
+                        {agencyInfo?.address && (
+                          <a 
+                            href={agencyInfo.lat && agencyInfo.lng ? `https://map.kakao.com/link/roadview/${agencyInfo.lat},${agencyInfo.lng}` : `https://map.kakao.com/link/search/${encodeURIComponent(agencyInfo.address)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title="오시는길"
+                            style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 36, height: 36, borderRadius: "50%", background: "#f8f9fa", border: "1px solid #e0e0e0", color: "#444", textDecoration: "none" }}
+                          >
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                              <circle cx="12" cy="10" r="3"></circle>
+                            </svg>
+                          </a>
+                        )}
+                      </div>
                     )}
-                    
-                    {/* 공실등록현황 및 리스트 */}
-                    {(() => {
-                      const ownerVacancies = vacancies.filter(v => v.owner_id === selectedVacancy.owner_id);
-                      const totalCnt = ownerVacancies.length;
-                      const saleCnt = ownerVacancies.filter(v => v.trade_type === "매매").length;
-                      const jeonseCnt = ownerVacancies.filter(v => v.trade_type === "전세").length;
-                      const wolseCnt = ownerVacancies.filter(v => v.trade_type === "월세").length;
-                      const shortCnt = ownerVacancies.filter(v => v.trade_type === "단기").length;
 
-                      return (
-                        <>
-                          <div style={{ background: "#f9fafb", borderRadius: "8px", padding: "16px", display: "flex", alignItems: "center", marginBottom: "16px" }}>
-                            <div style={{ fontSize: "16px", fontWeight: 800, color: "#111827", marginRight: "20px" }}>공실등록현황</div>
-                            <div style={{ display: "flex", flex: 1, justifyContent: "space-between", fontSize: "14px", color: "#6b7280" }}>
-                              <span onClick={() => setRealtorFilter("전체")} style={{ cursor: "pointer", color: realtorFilter === "전체" ? "#1a73e8" : "inherit", fontWeight: realtorFilter === "전체" ? 700 : "normal" }}>전체 <b style={{ color: realtorFilter === "전체" ? "#1a73e8" : "#111827" }}>{totalCnt}</b></span>
-                              <span onClick={() => setRealtorFilter("매매")} style={{ cursor: "pointer", color: realtorFilter === "매매" ? "#1a73e8" : "inherit", fontWeight: realtorFilter === "매매" ? 700 : "normal" }}>매매 <b style={{ color: realtorFilter === "매매" ? "#1a73e8" : "#111827" }}>{saleCnt}</b></span>
-                              <span onClick={() => setRealtorFilter("전세")} style={{ cursor: "pointer", color: realtorFilter === "전세" ? "#1a73e8" : "inherit", fontWeight: realtorFilter === "전세" ? 700 : "normal" }}>전세 <b style={{ color: realtorFilter === "전세" ? "#1a73e8" : "#111827" }}>{jeonseCnt}</b></span>
-                              <span onClick={() => setRealtorFilter("월세")} style={{ cursor: "pointer", color: realtorFilter === "월세" ? "#1a73e8" : "inherit", fontWeight: realtorFilter === "월세" ? 700 : "normal" }}>월세 <b style={{ color: realtorFilter === "월세" ? "#1a73e8" : "#111827" }}>{wolseCnt}</b></span>
-                              <span onClick={() => setRealtorFilter("단기")} style={{ cursor: "pointer", color: realtorFilter === "단기" ? "#1a73e8" : "inherit", fontWeight: realtorFilter === "단기" ? 700 : "normal" }}>단기 <b style={{ color: realtorFilter === "단기" ? "#1a73e8" : "#111827" }}>{shortCnt}</b></span>
-                            </div>
-                          </div>
+                    {/* 부동산 소개란 */}
+                    {agencyInfo?.intro && (
+                      <div style={{ marginTop: 12, padding: "10px 12px", background: "#f8f9fa", borderRadius: 6, fontSize: 13, color: "#444", border: "1px solid #eee", lineHeight: 1.5 }}>
+                        <div style={{ fontWeight: "bold", fontSize: 11, color: "#888", marginBottom: 4 }}>부동산 소개</div>
+                        {agencyInfo.intro}
+                      </div>
+                    )}
+                  </div>
 
-                          <div style={{ display: "flex", flexDirection: "column" }}>
-                            {(realtorFilter === "전체" ? ownerVacancies : ownerVacancies.filter(v => v.trade_type === realtorFilter)).map((v: any) => (
-                              <div
-                                key={v.id}
-                                className="v-card"
-                                onClick={() => {
-                                  vacancyStackRef.current.push({
-                                    vacancy: selectedVacancy,
-                                    scrollY: detailScrollRef.current?.scrollTop || 0
-                                  });
-                                  setDetailTab("info");
-                                  handleVacancyClick(v);
-                                }}
-                                style={{ display: "flex", gap: "12px", padding: "16px 0", borderBottom: "1px solid #f3f4f6", cursor: "pointer", transition: "background 0.15s" }}
-                              >
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                  {/* Badges & Date */}
-                                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
-                                    {showCommission && (v.realtor_commission || v.commission_type) && <span style={{ fontSize: "12px", fontWeight: 700, color: "#ef4444", border: "1px solid #ef4444", padding: "1px 6px", borderRadius: "3px" }}>{v.realtor_commission || v.commission_type}</span>}
-                                    <span style={{ fontSize: "13px", fontWeight: 700, color: "#ef4444" }}>{v.vacancy_no || '-'}</span>
-                                    <span style={{ fontSize: "12px", color: "#9ca3af" }}>{v.created_at ? new Date(v.created_at).toLocaleDateString("ko-KR").slice(0, -1) : ""}</span>
-                                  </div>
+                  {/* 공실등록현황 및 리스트 */}
+                  {(() => {
+                    const ownerVacancies = vacancies.filter(v => v.owner_id === selectedVacancy.owner_id);
+                    const totalCnt = ownerVacancies.length;
+                    const saleCnt = ownerVacancies.filter(v => v.trade_type === "매매").length;
+                    const jeonseCnt = ownerVacancies.filter(v => v.trade_type === "전세").length;
+                    const wolseCnt = ownerVacancies.filter(v => v.trade_type === "월세").length;
+                    const shortCnt = ownerVacancies.filter(v => v.trade_type === "단기").length;
 
-                                  {/* Title */}
-                                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
-                                    <p style={{ fontSize: "16px", fontWeight: 800, color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                      {v.building_name || [v.dong, v.sigungu].filter(Boolean).join(" ")}
-                                    </p>
-                                  </div>
-                                  
-                                  {/* Price */}
-                                  <p style={{ fontSize: "18px", fontWeight: 800, color: "#1a73e8", marginBottom: "6px" }}>
-                                    {v.trade_type} {formatPrice(v)}
-                                  </p>
-                                  
-                                  {/* Specs */}
-                                  <p style={{ fontSize: "14px", color: "#6b7280", marginBottom: "2px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                                    {[v.property_type || "건물", v.direction, v.exclusive_m2 && `${v.exclusive_m2}㎡`].filter(Boolean).join(" | ")}
-                                  </p>
-                                  
-                                  {/* Options */}
-                                  <p style={{ fontSize: "14px", color: "#6b7280", marginBottom: "8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                                    {[v.room_count !== undefined ? `룸 ${v.room_count}개` : null, v.bath_count !== undefined ? `욕실 ${v.bath_count}개` : null, ...(v.options || [])].filter(Boolean).join(", ")}
-                                  </p>
-
-                                  {/* Themes */}
-                                  {v.themes && v.themes.length > 0 && (
-                                    <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginTop: "4px" }}>
-                                      {v.themes.map((theme: string, idx: number) => (
-                                        <span key={idx} style={{ background: "#f8fafc", color: "#3b82f6", fontSize: "12px", padding: "2px 8px", borderRadius: "12px", fontWeight: 700, border: "1px solid #bfdbfe" }}>
-                                          {theme.startsWith('#') ? theme : `# ${theme}`}
-                                        </span>
-                                      ))}
-                                    </div>
-                                  )}
-                                </div>
-                                {v.images?.[0] && (
-                                  <div style={{ width: "90px", height: "72px", borderRadius: "10px", overflow: "hidden", flexShrink: 0, backgroundColor: "#e5e7eb", alignSelf: "center" }}>
-                                    <img src={v.images[0]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                                  </div>
-                                )}
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="2" style={{ flexShrink: 0, alignSelf: "center" }}><polyline points="9 18 15 12 9 6"/></svg>
-                              </div>
+                    return (
+                      <div style={{ padding: "20px 16px" }}>
+                        <div style={{ display: "flex", background: "#f9f9f9", borderRadius: 8, overflow: "hidden", border: "1px solid #eee", marginBottom: "16px" }}>
+                          <div style={{ flex: 1, padding: "12px 14px", fontSize: 14, fontWeight: "bold", color: "#111", borderRight: "1px solid #eee", display: "flex", alignItems: "center", justifyContent: "center" }}>공실등록현황</div>
+                          <div style={{ display: "flex", alignItems: "center", padding: "0 14px", gap: 10, fontSize: 13, color: "#666" }}>
+                            {[
+                              { label: '전체', count: totalCnt },
+                              { label: '매매', count: saleCnt },
+                              { label: '전세', count: jeonseCnt },
+                              { label: '월세', count: wolseCnt },
+                              { label: '단기', count: shortCnt }
+                            ].map((stat, i, arr) => (
+                              <React.Fragment key={stat.label}>
+                                <span 
+                                  onClick={() => setRealtorFilter(stat.label)}
+                                  style={{ 
+                                    cursor: "pointer", 
+                                    color: realtorFilter === stat.label ? "#1a73e8" : "#666", 
+                                    fontWeight: realtorFilter === stat.label ? "bold" : "normal",
+                                    whiteSpace: "nowrap"
+                                  }}
+                                >
+                                  {stat.label} <strong style={{color: realtorFilter === stat.label ? "#1a73e8" : "#111"}}>{stat.count}</strong>
+                                </span>
+                                {i < arr.length - 1 && <span style={{width:1,height:12,background:"#ddd"}}></span>}
+                              </React.Fragment>
                             ))}
                           </div>
-                        </>
-                      );
-                    })()}
-                  </div>
-                );
-              })()}
-            </div>
+                        </div>
+
+                        <div style={{ display: "flex", flexDirection: "column" }}>
+                          {(realtorFilter === "전체" ? ownerVacancies : ownerVacancies.filter(v => v.trade_type === realtorFilter)).map((v: any) => (
+                            <div
+                              key={v.id}
+                              onClick={() => {
+                                vacancyStackRef.current.push({
+                                  vacancy: selectedVacancy,
+                                  scrollY: detailScrollRef.current?.scrollTop || 0
+                                });
+                                setDetailTab("info");
+                                handleVacancyClick(v);
+                              }}
+                              style={{ display: "flex", gap: "12px", padding: "16px 0", borderBottom: "1px solid #f3f4f6", cursor: "pointer", transition: "background 0.15s" }}
+                            >
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                {/* Badges & Date */}
+                                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
+                                  {showCommission && (v.realtor_commission || v.commission_type) && <span style={{ fontSize: "12px", fontWeight: 700, color: "#ef4444", border: "1px solid #ef4444", padding: "1px 6px", borderRadius: "3px" }}>{v.realtor_commission || v.commission_type}</span>}
+                                  <span style={{ fontSize: "13px", fontWeight: 700, color: "#ef4444" }}>NO.{v.vacancy_no || '-'}</span>
+                                  <span style={{ fontSize: "12px", color: "#9ca3af" }}>{v.created_at ? new Date(v.created_at).toLocaleDateString("ko-KR").slice(0, -1) : ""}</span>
+                                </div>
+
+                                {/* Title */}
+                                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+                                  <p style={{ fontSize: "16px", fontWeight: 800, color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0 }}>
+                                    {v.building_name || [v.dong, v.sigungu].filter(Boolean).join(" ")}
+                                  </p>
+                                </div>
+                                
+                                {/* Price */}
+                                <p style={{ fontSize: "18px", fontWeight: 800, color: "#1a73e8", marginBottom: "6px", margin: 0 }}>
+                                  {v.trade_type} {formatPrice(v)}
+                                </p>
+                                
+                                {/* Specs */}
+                                <p style={{ fontSize: "14px", color: "#6b7280", marginBottom: "2px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", margin: 0 }}>
+                                  {[v.property_type || "건물", v.direction, v.exclusive_m2 && `${v.exclusive_m2}㎡`].filter(Boolean).join(" | ")}
+                                </p>
+                                
+                                {/* Options */}
+                                <p style={{ fontSize: "14px", color: "#6b7280", marginBottom: "8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", margin: 0 }}>
+                                  {[v.room_count !== undefined ? `룸 ${v.room_count}개` : null, v.bath_count !== undefined ? `욕실 ${v.bath_count}개` : null, ...(v.options || [])].filter(Boolean).join(", ")}
+                                </p>
+
+                                {/* Themes */}
+                                {v.themes && v.themes.length > 0 && (
+                                  <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginTop: "4px" }}>
+                                    {v.themes.map((theme: string, idx: number) => (
+                                      <span key={idx} style={{ background: "#f8fafc", color: "#3b82f6", fontSize: "12px", padding: "2px 8px", borderRadius: "12px", fontWeight: 700, border: "1px solid #bfdbfe" }}>
+                                        {theme.startsWith('#') ? theme : `# ${theme}`}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                              {v.images?.[0] && (
+                                <div style={{ width: "90px", height: "72px", borderRadius: "10px", overflow: "hidden", flexShrink: 0, backgroundColor: "#e5e7eb", alignSelf: "center" }}>
+                                  <img src={v.images[0]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                </div>
+                              )}
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="2" style={{ flexShrink: 0, alignSelf: "center" }}><polyline points="9 18 15 12 9 6"/></svg>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </>
+              );
+            })()}
           </div>
         )}
       </div>
