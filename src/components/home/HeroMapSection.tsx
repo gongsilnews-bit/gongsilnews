@@ -13,6 +13,7 @@ const CATEGORY_OPTIONS = [
   { label: "원룸·투룸", value: "원룸·투룸(풀옵션)" },
   { label: "상가·사무실", value: "상가·사무실·건물·공장·토지" },
   { label: "분양", value: "분양" },
+  { label: "경공매", value: "경매" },
 ];
 
 export default function HeroMapSection({ initialVacancies }: { initialVacancies?: any[] }) {
@@ -136,6 +137,9 @@ export default function HeroMapSection({ initialVacancies }: { initialVacancies?
 
   const filteredVacancies = useMemo(() => {
     if (!category) return vacancies;
+    if (category === "경매") {
+      return vacancies.filter(v => v.trade_type === "경매" || v.is_auction === true);
+    }
     return vacancies.filter(v => v.property_type === category);
   }, [vacancies, category]);
 
@@ -364,7 +368,7 @@ export default function HeroMapSection({ initialVacancies }: { initialVacancies?
               );
             }
 
-            return displayVacancies.slice(0, 20).map((item) => {
+            return displayVacancies.map((item) => {
               const photoUrl = item.photos?.[0] || null;
               const addrText = [item.dong, item.building_name, item.hosu].filter(Boolean).join(" ") || item.address || item.title || "공실광고";
               const optionsStr = [`룸 ${item.room_count || 0}개`, `욕실 ${item.bath_count || 0}개`, ...(item.options || [])].filter(Boolean).join(", ");
