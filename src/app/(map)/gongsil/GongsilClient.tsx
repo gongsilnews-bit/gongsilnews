@@ -1490,9 +1490,6 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     const activeRentMin = tempRentMin !== null ? tempRentMin : appliedRentMin;
     const activeRentMax = tempRentMax !== null ? tempRentMax : appliedRentMax;
 
-    if (filterTradeTypes.length === 0) return "거래유형";
-    
-    const typesStr = filterTradeTypes.join(",");
     const hasPriceFilter =
       activeMaemaeMin !== null ||
       activeMaemaeMax !== null ||
@@ -1500,7 +1497,25 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
       activeDepositMax !== null ||
       activeRentMin !== null ||
       activeRentMax !== null;
-      
+
+    if (filterTradeTypes.length === 0 && !hasPriceFilter) return "거래유형";
+    
+    // 사용자가 '매매/전세' 버튼은 안 누르고 슬라이더만 만졌을 때도 금액 표시
+    if (filterTradeTypes.length === 0 && hasPriceFilter) {
+      const parts: string[] = [];
+      if (activeMaemaeMin !== null || activeMaemaeMax !== null) {
+        parts.push(`매매 ${formatPriceLabel(activeMaemaeMin) || "~"}~${formatPriceLabel(activeMaemaeMax) || ""}`);
+      }
+      if (activeDepositMin !== null || activeDepositMax !== null) {
+        parts.push(`보증금 ${formatPriceLabel(activeDepositMin) || "~"}~${formatPriceLabel(activeDepositMax) || ""}`);
+      }
+      if (activeRentMin !== null || activeRentMax !== null) {
+        parts.push(`월세 ${formatPriceLabel(activeRentMin) || "~"}~${formatPriceLabel(activeRentMax) || ""}`);
+      }
+      return parts.join(" / ");
+    }
+    
+    const typesStr = filterTradeTypes.join(",");
     if (!hasPriceFilter) return typesStr;
     
     if (filterTradeTypes.length === 1) {
