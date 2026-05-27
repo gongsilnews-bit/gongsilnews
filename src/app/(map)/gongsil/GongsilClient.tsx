@@ -2185,11 +2185,29 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                       { label: "30% 이상 하락", val: 30 },
                                       { label: "반값 경매(50%)", val: 50 }
                                     ].map((discount) => {
-                                      const isSel = discount.val === filterAuctionDiscount;
+                                      const isSel = (() => {
+                                        if (filterAuctionDiscount === 0) return discount.val === 0;
+                                        if (discount.val === 0) return false;
+                                        if (filterAuctionDiscount === 1) {
+                                          return discount.val === 1 || discount.val === 20 || discount.val === 30 || discount.val === 50;
+                                        }
+                                        if (filterAuctionDiscount === 20) {
+                                          return discount.val === 20 || discount.val === 30 || discount.val === 50;
+                                        }
+                                        if (filterAuctionDiscount === 30) {
+                                          return discount.val === 30 || discount.val === 50;
+                                        }
+                                        if (filterAuctionDiscount === 50) {
+                                          return discount.val === 50;
+                                        }
+                                        return filterAuctionDiscount === discount.val;
+                                      })();
                                       return (
                                         <button
                                           key={discount.label}
-                                          onClick={() => setFilterAuctionDiscount(discount.val)}
+                                          onClick={() => {
+                                            setFilterAuctionDiscount(discount.val);
+                                          }}
                                           style={{
                                             padding: "6px 14px",
                                             borderRadius: 4,
