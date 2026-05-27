@@ -57,7 +57,7 @@ export async function GET(req: Request) {
       try {
         await supabase.from("agent_chats").insert({
           channel_id: "onbid_sync_log",
-          role: "system",
+          role: "agent",
           content: JSON.stringify({
             target: sido.trim(),
             registered: syncResult.registered || 0,
