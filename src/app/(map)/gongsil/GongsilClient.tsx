@@ -1744,6 +1744,26 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
               const summaryTexts = [];
               if (tradeLabel !== "거래유형") summaryTexts.push(tradeLabel);
               if (areaLabel !== "면적") summaryTexts.push(areaLabel);
+              if (yearFilterLabel !== "사용승인일") summaryTexts.push(yearFilterLabel);
+              if (unitFilterLabel !== "세대수") summaryTexts.push(unitFilterLabel);
+              if (filterRoomCount !== null || filterBathCount !== null) {
+                const roomStr = filterRoomCount ? `${filterRoomCount}룸` : "";
+                const bathStr = filterBathCount ? `${filterBathCount}욕실` : "";
+                summaryTexts.push(`방/욕실수: ${[roomStr, bathStr].filter(Boolean).join(", ")}`);
+              }
+              if (filterDirection !== null) summaryTexts.push(`방향: ${filterDirection}`);
+              if (filterOwnerRole !== null) summaryTexts.push(`등록자: ${filterOwnerRole}`);
+              if (filterCommissionType !== null) {
+                const labelMap: Record<string, string> = {
+                  "공동중개": "공동중개 가능",
+                  "25": "수수료 25%이상",
+                  "50": "수수료 50%이상",
+                  "100": "수수료 100%(법정가)",
+                };
+                summaryTexts.push(`중개보수: ${labelMap[filterCommissionType] || filterCommissionType}`);
+              }
+              filterThemes.forEach((t) => summaryTexts.push(`#${t}`));
+              
               const summaryString = summaryTexts.join(" · ");
 
               return (
