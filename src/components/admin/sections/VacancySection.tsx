@@ -92,28 +92,43 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
       setTotalCount(res.count || 0);
     }
 
-    // Compute total and status counts
+    // Compute total and status counts (using high-performance aggregates to bypass 1,000 max row limit)
     const supabase = createClient();
-    let query = supabase.from("vacancies").select("status");
+    let queryAll = supabase.from("vacancies").select("*", { count: "exact", head: true }).neq("status", "DELETED");
+    let queryActive = supabase.from("vacancies").select("*", { count: "exact", head: true }).eq("status", "ACTIVE");
+    let queryStopped = supabase.from("vacancies").select("*", { count: "exact", head: true }).eq("status", "STOPPED");
+    let queryDraft = supabase.from("vacancies").select("*", { count: "exact", head: true }).eq("status", "DRAFT");
+
     if (role !== "admin" && ownerId) {
       const { data: user } = await supabase.from('members').select('role').eq('id', ownerId).single();
       if (user?.role !== 'SUPER_ADMIN' && user?.role !== 'ADMIN' && user?.role !== '최고관리자') {
-        query = query.eq('owner_id', ownerId);
+        queryAll = queryAll.eq('owner_id', ownerId);
+        queryActive = queryActive.eq('owner_id', ownerId);
+        queryStopped = queryStopped.eq('owner_id', ownerId);
+        queryDraft = queryDraft.eq('owner_id', ownerId);
       }
     }
+
     if (role === "admin" && excludeOnbid) {
-      query = query.or("source_type.is.null,source_type.neq.ONBID");
+      queryAll = queryAll.or("source_type.is.null,source_type.neq.ONBID");
+      queryActive = queryActive.or("source_type.is.null,source_type.neq.ONBID");
+      queryStopped = queryStopped.or("source_type.is.null,source_type.neq.ONBID");
+      queryDraft = queryDraft.or("source_type.is.null,source_type.neq.ONBID");
     }
-    const { data: countData } = await query;
-    if (countData) {
-      const c = { 전체: countData.length, 광고중: 0, 광고종료: 0, 임시저장: 0 };
-      countData.forEach((v: any) => {
-        if (v.status === "ACTIVE") c.광고중++;
-        else if (v.status === "STOPPED") c.광고종료++;
-        else if (v.status === "DRAFT") c.임시저장++;
-      });
-      setCounts(c);
-    }
+
+    const [resAll, resActive, resStopped, resDraft] = await Promise.all([
+      queryAll,
+      queryActive,
+      queryStopped,
+      queryDraft
+    ]);
+
+    setCounts({
+      전체: resAll.count || 0,
+      광고중: resActive.count || 0,
+      광고종료: resStopped.count || 0,
+      임시저장: resDraft.count || 0
+    });
   };
 
   const handleRequestApproval = async () => {

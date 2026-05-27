@@ -92,7 +92,7 @@ function AdminContent() {
     try {
       let data: any[] = [];
       if (key === "gongsil") {
-        const res = await getVacancies({ all: true });
+        const res = await getVacancies({ all: true, page: 1, limit: 30, excludeOnbid: true });
         if (res.success) data = res.data || [];
       } else if (key === "members") {
         const res = await adminGetMembers();
