@@ -235,6 +235,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   const [tempRentMin, setTempRentMin] = useState<number | null>(null);
   const [tempRentMax, setTempRentMax] = useState<number | null>(null);
   const [filterAuctionDiscount, setFilterAuctionDiscount] = useState<number>(0);
+  const [filterAuctionBidCount, setFilterAuctionBidCount] = useState<number>(0);
+  const [filterAuctionStartDate, setFilterAuctionStartDate] = useState<string>("all");
   const [sliderInteractions, setSliderInteractions] = useState<Record<string, { min: boolean; max: boolean }>>({});
   const [roomBathInteractions, setRoomBathInteractions] = useState({ room: false, bath: false });
   const [savedCategoryAlerts, setSavedCategoryAlerts] = useState<Record<string, boolean>>({});
@@ -1392,6 +1394,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     setAppliedDepositMax(null);
     setAppliedRentMax(null);
     setFilterAuctionDiscount(0);
+    setFilterAuctionBidCount(0);
+    setFilterAuctionStartDate("all");
     setPopoverSearchKeyword("");
     setFilterSearchKeyword("");
   };
@@ -1800,7 +1804,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                       background: "transparent",
                       border: "none",
                       fontSize: 14,
-                      color: "#1a73e8", // 파란색으로 요청
+                      color: "#111", // 검정색으로 변경
                       cursor: "pointer",
                       padding: "6px 14px 6px 0",
                       whiteSpace: "nowrap",
@@ -3063,7 +3067,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                               </div>
                             )}
 
-                            {/* Section 7: 등록자 */}
+                            {/* Section 7: 등록자 (경공매 모드에서는 유찰 횟수로 대체) */}
                             <div
                               id="section-등록자"
                               style={{
@@ -3074,41 +3078,97 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                 transition: "all 0.2s ease-in-out",
                               }}
                             >
-                              <div style={{ fontSize: "14px", color: "#374151", marginBottom: "10px", fontWeight: "bold" }}>등록자</div>
-                              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                                {[
-                                  { label: "전체", val: null },
-                                  { label: "중개사", val: "REALTOR" },
-                                  { label: "임대인", val: "OWNER" },
-                                ].map((item) => (
-                                  <button
-                                    key={item.label}
-                                    onClick={() => {
-                                      setFilterOwnerRole(item.val);
-                                      setTimeout(() => {
-                                        scrollToSection("중개보수");
-                                      }, 350);
-                                    }}
-                                    style={{
-                                      padding: "8px 12px",
-                                      border: "1px solid " + (filterOwnerRole === item.val ? "#111" : "#eee"),
-                                      borderRadius: 4,
-                                      background: filterOwnerRole === item.val ? "#111" : "#fff",
-                                      color: filterOwnerRole === item.val ? "#fff" : "#333",
-                                      fontSize: 12,
-                                      fontWeight: "bold",
-                                      cursor: "pointer",
-                                      textAlign: "left",
-                                      transition: "all 0.15s"
-                                    }}
-                                  >
-                                    {item.label}
-                                  </button>
-                                ))}
-                              </div>
+                              {isAuctionMode ? (
+                                <>
+                                  <div style={{ fontSize: "14px", color: "#374151", marginBottom: "10px", fontWeight: "bold" }}>유찰 횟수</div>
+                                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                    {[
+                                      { label: "전체", val: 0 },
+                                      { label: "1회 이상 유찰", val: 1 },
+                                      { label: "2회 이상 유찰", val: 2 },
+                                      { label: "3회 이상 유찰", val: 3 },
+                                    ].map((item) => {
+                                      const isSelected = (() => {
+                                        if (filterAuctionBidCount === 0) return item.val === 0;
+                                        if (item.val === 0) return false;
+                                        if (filterAuctionBidCount === 1) {
+                                          return item.val === 1 || item.val === 2 || item.val === 3;
+                                        }
+                                        if (filterAuctionBidCount === 2) {
+                                          return item.val === 2 || item.val === 3;
+                                        }
+                                        if (filterAuctionBidCount === 3) {
+                                          return item.val === 3;
+                                        }
+                                        return filterAuctionBidCount === item.val;
+                                      })();
+                                      return (
+                                        <button
+                                          key={item.label}
+                                          onClick={() => {
+                                            setFilterAuctionBidCount(item.val);
+                                            setTimeout(() => {
+                                              scrollToSection("중개보수");
+                                            }, 350);
+                                          }}
+                                          style={{
+                                            padding: "8px 12px",
+                                            border: "1px solid " + (isSelected ? "#111" : "#eee"),
+                                            borderRadius: 4,
+                                            background: isSelected ? "#111" : "#fff",
+                                            color: isSelected ? "#fff" : "#333",
+                                            fontSize: 12,
+                                            fontWeight: "bold",
+                                            cursor: "pointer",
+                                            textAlign: "left",
+                                            transition: "all 0.15s"
+                                          }}
+                                        >
+                                          {item.label}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </>
+                              ) : (
+                                <>
+                                  <div style={{ fontSize: "14px", color: "#374151", marginBottom: "10px", fontWeight: "bold" }}>등록자</div>
+                                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                    {[
+                                      { label: "전체", val: null },
+                                      { label: "중개사", val: "REALTOR" },
+                                      { label: "임대인", val: "OWNER" },
+                                    ].map((item) => (
+                                      <button
+                                        key={item.label}
+                                        onClick={() => {
+                                          setFilterOwnerRole(item.val);
+                                          setTimeout(() => {
+                                            scrollToSection("중개보수");
+                                          }, 350);
+                                        }}
+                                        style={{
+                                          padding: "8px 12px",
+                                          border: "1px solid " + (filterOwnerRole === item.val ? "#111" : "#eee"),
+                                          borderRadius: 4,
+                                          background: filterOwnerRole === item.val ? "#111" : "#fff",
+                                          color: filterOwnerRole === item.val ? "#fff" : "#333",
+                                          fontSize: 12,
+                                          fontWeight: "bold",
+                                          cursor: "pointer",
+                                          textAlign: "left",
+                                          transition: "all 0.15s"
+                                        }}
+                                      >
+                                        {item.label}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </>
+                              )}
                             </div>
 
-                            {/* Section 8: 중개보수 */}
+                            {/* Section 8: 중개보수 (경공매 모드에서는 입찰시작일로 대체) */}
                             <div
                               id="section-중개보수"
                               style={{
@@ -3119,59 +3179,104 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                 transition: "all 0.2s ease-in-out",
                               }}
                             >
-                              <div style={{ fontSize: "14px", color: "#374151", marginBottom: "10px", fontWeight: "bold" }}>중개보수</div>
-                              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                                {[
-                                  { label: "전체", val: null },
-                                  { label: "공동중개 가능", val: "공동중개" },
-                                  { label: "수수료 25%이상", val: "25" },
-                                  { label: "수수료 50%이상", val: "50" },
-                                  { label: "수수료 100%(법정가)", val: "100" },
-                                ].map((item) => {
-                                  const isSelected = (() => {
-                                    if (filterCommissionType === null) return item.val === null;
-                                    if (item.val === null) return false;
-                                    if (filterCommissionType === "공동중개") {
-                                      return item.val === "공동중개" || item.val === "25" || item.val === "50" || item.val === "100";
-                                    }
-                                    if (filterCommissionType === "25") {
-                                      return item.val === "25" || item.val === "50" || item.val === "100";
-                                    }
-                                    if (filterCommissionType === "50") {
-                                      return item.val === "50" || item.val === "100";
-                                    }
-                                    if (filterCommissionType === "100") {
-                                      return item.val === "100";
-                                    }
-                                    return filterCommissionType === item.val;
-                                  })();
-                                  return (
-                                    <button
-                                      key={item.label}
-                                      onClick={() => {
-                                        setFilterCommissionType(item.val);
-                                        setTimeout(() => {
-                                          scrollToSection("테마");
-                                        }, 350);
-                                      }}
-                                      style={{
-                                        padding: "8px 12px",
-                                        border: "1px solid " + (isSelected ? "#111" : "#eee"),
-                                        borderRadius: 4,
-                                        background: isSelected ? "#111" : "#fff",
-                                        color: isSelected ? "#fff" : "#333",
-                                        fontSize: 12,
-                                        fontWeight: "bold",
-                                        cursor: "pointer",
-                                        textAlign: "left",
-                                        transition: "all 0.15s"
-                                      }}
-                                    >
-                                      {item.label}
-                                    </button>
-                                  );
-                                })}
-                              </div>
+                              {isAuctionMode ? (
+                                <>
+                                  <div style={{ fontSize: "14px", color: "#374151", marginBottom: "10px", fontWeight: "bold" }}>입찰시작일</div>
+                                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                    {[
+                                      { label: "전체", val: "all" },
+                                      { label: "오늘 시작", val: "today" },
+                                      { label: "이번주 시작", val: "this_week" },
+                                      { label: "다음주 시작", val: "next_week" },
+                                      { label: "진행중", val: "ongoing" },
+                                      { label: "마감임박 (3일 이내)", val: "imminent" },
+                                    ].map((item) => {
+                                      const isSelected = filterAuctionStartDate === item.val;
+                                      return (
+                                        <button
+                                          key={item.label}
+                                          onClick={() => {
+                                            setFilterAuctionStartDate(item.val);
+                                            setTimeout(() => {
+                                              scrollToSection("테마");
+                                            }, 350);
+                                          }}
+                                          style={{
+                                            padding: "8px 12px",
+                                            border: "1px solid " + (isSelected ? "#111" : "#eee"),
+                                            borderRadius: 4,
+                                            background: isSelected ? "#111" : "#fff",
+                                            color: isSelected ? "#fff" : "#333",
+                                            fontSize: 12,
+                                            fontWeight: "bold",
+                                            cursor: "pointer",
+                                            textAlign: "left",
+                                            transition: "all 0.15s"
+                                          }}
+                                        >
+                                          {item.label}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </>
+                              ) : (
+                                <>
+                                  <div style={{ fontSize: "14px", color: "#374151", marginBottom: "10px", fontWeight: "bold" }}>중개보수</div>
+                                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                    {[
+                                      { label: "전체", val: null },
+                                      { label: "공동중개 가능", val: "공동중개" },
+                                      { label: "수수료 25%이상", val: "25" },
+                                      { label: "수수료 50%이상", val: "50" },
+                                      { label: "수수료 100%(법정가)", val: "100" },
+                                    ].map((item) => {
+                                      const isSelected = (() => {
+                                        if (filterCommissionType === null) return item.val === null;
+                                        if (item.val === null) return false;
+                                        if (filterCommissionType === "공동중개") {
+                                          return item.val === "공동중개" || item.val === "25" || item.val === "50" || item.val === "100";
+                                        }
+                                        if (filterCommissionType === "25") {
+                                          return item.val === "25" || item.val === "50" || item.val === "100";
+                                        }
+                                        if (filterCommissionType === "50") {
+                                          return item.val === "50" || item.val === "100";
+                                        }
+                                        if (filterCommissionType === "100") {
+                                          return item.val === "100";
+                                        }
+                                        return filterCommissionType === item.val;
+                                      })();
+                                      return (
+                                        <button
+                                          key={item.label}
+                                          onClick={() => {
+                                            setFilterCommissionType(item.val);
+                                            setTimeout(() => {
+                                              scrollToSection("테마");
+                                            }, 350);
+                                          }}
+                                          style={{
+                                            padding: "8px 12px",
+                                            border: "1px solid " + (isSelected ? "#111" : "#eee"),
+                                            borderRadius: 4,
+                                            background: isSelected ? "#111" : "#fff",
+                                            color: isSelected ? "#fff" : "#333",
+                                            fontSize: 12,
+                                            fontWeight: "bold",
+                                            cursor: "pointer",
+                                            textAlign: "left",
+                                            transition: "all 0.15s"
+                                          }}
+                                        >
+                                          {item.label}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </>
+                              )}
                             </div>
 
                             {/* Section 9: 테마 */}
