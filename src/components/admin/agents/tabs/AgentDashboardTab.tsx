@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import type { AdminTheme } from "@/components/admin/sections/types";
-import { getAgentCostSummary, getAgentWorkStats, generateDailyReport, loadDailyReports, getOnbidCount } from "@/app/actions/agentChat";
+import { getAgentCostSummary, getAgentWorkStats, generateDailyReport, loadDailyReports, getOnbidCount, getOnbidHistoryStats } from "@/app/actions/agentChat";
 
 /* ── 에이전트 정의 ── */
 const DEFAULT_AGENTS = [
@@ -86,6 +86,19 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
   const [agentStats, setAgentStats] = useState<Record<string, { totalTokens: number; costKrw: number; messageCount: number }>>({});
   const [workStats, setWorkStats] = useState<any>(null);
   const [onbidCount, setOnbidCount] = useState<number>(0);
+  const [onbidHistory, setOnbidHistory] = useState<{
+    todayRegistered: number;
+    todayExpired: number;
+    yesterdayRegistered: number;
+    yesterdayExpired: number;
+    historyList: any[];
+  }>({
+    todayRegistered: 0,
+    todayExpired: 0,
+    yesterdayRegistered: 0,
+    yesterdayExpired: 0,
+    historyList: []
+  });
 
   // Previous stats
   const [prevAgentStats, setPrevAgentStats] = useState<Record<string, { totalTokens: number; costKrw: number; messageCount: number }>>({});
@@ -103,14 +116,18 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
       setLoadingStats(true);
       const dates = getPeriodDates(period);
       
-      const [costRes, workRes, onbidRes] = await Promise.all([
+      const [costRes, workRes, onbidRes, historyRes] = await Promise.all([
         getAgentCostSummary(dates.start || undefined, dates.end || undefined),
         getAgentWorkStats(dates.start || undefined, dates.end || undefined),
         getOnbidCount(),
+        getOnbidHistoryStats(),
       ]);
       setAgentStats(costRes.perAgent || {});
       setWorkStats(workRes);
       setOnbidCount(onbidRes);
+      if (historyRes.success) {
+        setOnbidHistory(historyRes);
+      }
 
       if (dates.prevStart) {
         const [pCostRes, pWorkRes] = await Promise.all([
@@ -344,11 +361,11 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
               {agent.id === "onbid" && (
                 <>
                   <div style={{ fontSize: 13, fontWeight: 700, color: theme.textSecondary, marginBottom: 8 }}>📋 업무 처리 현황</div>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 16 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 12 }}>
                     {[
                       { label: "전국 온비드 매물", value: onbidCount.toLocaleString() + "건", color: "#2563eb", icon: "⚖️" },
-                      { label: "수집 채널", value: "공공 API", color: "#10b981", icon: "🌐" },
-                      { label: "좌표 변환율", value: "99.8%", color: "#f59e0b", icon: "📍" },
+                      { label: "오늘 신규 수집", value: onbidHistory.todayRegistered + "건", color: "#10b981", icon: "✨" },
+                      { label: "어제 만료 삭제", value: onbidHistory.yesterdayExpired + "건", color: "#ef4444", icon: "🧹" },
                     ].map((stat, i) => (
                       <div key={i} style={{
                         textAlign: "center", padding: "10px 6px",
@@ -357,11 +374,33 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
                       }}>
                         <div style={{ fontSize: 11, color: theme.textSecondary, marginBottom: 2 }}>{stat.icon} {stat.label}</div>
                         <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                          <span style={{ fontSize: 18, fontWeight: 800, color: stat.color }}>{stat.value}</span>
+                          <span style={{ fontSize: 16, fontWeight: 800, color: stat.color }}>{stat.value}</span>
                         </div>
                       </div>
                     ))}
                   </div>
+
+                  {/* 최근 수집 이력 목록 */}
+                  {onbidHistory.historyList && onbidHistory.historyList.length > 0 && (
+                    <div style={{ marginTop: 8, borderTop: `1px solid ${theme.border}`, paddingTop: 8 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: theme.textSecondary, marginBottom: 6 }}>📜 최근 7일 동기화 이력</div>
+                      <div style={{ maxHeight: 100, overflowY: "auto", display: "flex", flexDirection: "column", gap: 4 }}>
+                        {onbidHistory.historyList.slice(0, 5).map((h, i) => (
+                          <div key={i} style={{
+                            display: "flex", justifyContent: "space-between", alignItems: "center",
+                            fontSize: 11, padding: "4px 8px", background: theme.darkMode ? "#1e293b" : "#f1f5f9",
+                            borderRadius: 6, color: theme.textPrimary
+                          }}>
+                            <span>📅 <b>{h.date} {h.time}</b> ({h.target})</span>
+                            <span style={{ fontWeight: 700 }}>
+                              <span style={{ color: "#10b981" }}>+{h.registered}</span> / <span style={{ color: "#ef4444" }}>-{h.expired}</span>
+                              {h.isManual && <span style={{ marginLeft: 6, padding: "1px 4px", fontSize: 9, background: "#3b82f6", color: "#fff", borderRadius: 4 }}>수동</span>}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </>
               )}
 
@@ -516,6 +555,10 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
                             alert(`✅ 온비드 동기화 완료!\n\n• 등록된 매물: ${aggregated.registered || 0}건\n• 건너뛴 매물 (중복): ${aggregated.skipped || 0}건\n• 삭제된 만료 매물: ${aggregated.expired || 0}건`);
                             const count = await getOnbidCount();
                             setOnbidCount(count);
+                            const historyRes = await getOnbidHistoryStats();
+                            if (historyRes.success) {
+                              setOnbidHistory(historyRes);
+                            }
                           } else {
                             alert(`❌ 동기화 실패: ${data.error || "알 수 없는 오류가 발생했습니다."}`);
                           }

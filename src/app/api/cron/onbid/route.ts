@@ -40,6 +40,39 @@ export async function GET(req: Request) {
     }
   }
 
+  // ── 수집 로그 DB(agent_chats)에 기록 ──
+  try {
+    const aggregated = results.reduce((acc, r) => {
+      if (r.type !== "metadata_refresh") {
+        acc.registered += r.registered || 0;
+        acc.skipped += r.skipped || 0;
+        acc.expired += r.expired || 0;
+      }
+      return acc;
+    }, { registered: 0, skipped: 0, expired: 0 });
+
+    const { createClient } = await import("@supabase/supabase-js");
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    );
+
+    await supabase.from("agent_chats").insert({
+      channel_id: "onbid_sync_log",
+      role: "system",
+      content: JSON.stringify({
+        target: sidoParam || "전국",
+        registered: aggregated.registered,
+        skipped: aggregated.skipped,
+        expired: aggregated.expired,
+        isManual: isManualRun
+      })
+    });
+  } catch (logErr) {
+    console.error("❌ 온비드 동기화 로그 기록 실패:", logErr);
+  }
+
   return NextResponse.json({
     success: true,
     message: "온비드 동기화 완료",

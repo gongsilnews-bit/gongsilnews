@@ -614,3 +614,76 @@ export async function getOnbidCount() {
   const { count } = await supabase.from("vacancies").select("id", { count: "exact", head: true }).eq("trade_type", "경매").neq("status", "DELETED");
   return count || 0;
 }
+
+export async function getOnbidHistoryStats() {
+  const supabase = getAdminClient();
+  const today = new Date();
+  today.setHours(0,0,0,0);
+
+  const yesterdayStart = new Date();
+  yesterdayStart.setDate(yesterdayStart.getDate() - 1);
+  yesterdayStart.setHours(0,0,0,0);
+
+  const yesterdayEnd = new Date();
+  yesterdayEnd.setDate(yesterdayEnd.getDate() - 1);
+  yesterdayEnd.setHours(23,59,59,999);
+
+  // 1. 최근 7일 로그 가져오기
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  sevenDaysAgo.setHours(0,0,0,0);
+
+  const { data: logs } = await supabase
+    .from("agent_chats")
+    .select("content, created_at")
+    .eq("channel_id", "onbid_sync_log")
+    .gte("created_at", sevenDaysAgo.toISOString())
+    .order("created_at", { ascending: false });
+
+  let todayRegistered = 0;
+  let todayExpired = 0;
+  let yesterdayRegistered = 0;
+  let yesterdayExpired = 0;
+  
+  const historyList: any[] = [];
+
+  if (logs) {
+    for (const log of logs) {
+      try {
+        const parsed = JSON.parse(log.content);
+        const logDate = new Date(log.created_at);
+        
+        // 오늘 분산 집계
+        if (logDate >= today) {
+          todayRegistered += parsed.registered || 0;
+          todayExpired += parsed.expired || 0;
+        } 
+        // 어제 분산 집계
+        else if (logDate >= yesterdayStart && logDate <= yesterdayEnd) {
+          yesterdayRegistered += parsed.registered || 0;
+          yesterdayExpired += parsed.expired || 0;
+        }
+
+        historyList.push({
+          date: logDate.toLocaleDateString("ko-KR", { month: "short", day: "numeric" }),
+          time: logDate.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }),
+          target: parsed.target || "전국",
+          registered: parsed.registered || 0,
+          skipped: parsed.skipped || 0,
+          expired: parsed.expired || 0,
+          isManual: parsed.isManual || false,
+          rawDate: log.created_at
+        });
+      } catch {}
+    }
+  }
+
+  return {
+    success: true,
+    todayRegistered,
+    todayExpired,
+    yesterdayRegistered,
+    yesterdayExpired,
+    historyList
+  };
+}
