@@ -242,12 +242,14 @@ export default function MapSearchBar({ onSearchCoord, onRegionSelect, mapCenterR
       zIndex: 9,
       display: "flex",
       alignItems: "center",
-      gap: 8
+      gap: 8,
+      flexWrap: "nowrap",
+      whiteSpace: "nowrap"
     }}>
       <style>{`
-        #wishFloatingFilter { display: flex; background: #fff; padding: 4px 10px; border-radius: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border: 1px solid #ddd; align-items: center; gap: 6px; font-size: 12px; color: #333; transition: box-shadow 0.2s; cursor: ${isDragActive ? 'grabbing' : 'grab'}; }
+        #wishFloatingFilter { display: flex; flex-wrap: nowrap; white-space: nowrap; background: #fff; padding: 4px 10px; border-radius: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border: 1px solid #ddd; align-items: center; gap: 6px; font-size: 12px; color: #333; transition: box-shadow 0.2s; cursor: ${isDragActive ? 'grabbing' : 'grab'}; }
         #wishFloatingFilter:hover { box-shadow: 0 6px 15px rgba(0,0,0,0.15); }
-        .wish-select { background: none; border: none; cursor: pointer; font-weight: bold; padding: 3px 6px; }
+        .wish-select { background: none; border: none; cursor: pointer; font-weight: bold; padding: 3px 6px; white-space: nowrap; }
         .wish-select::after { content: ' ▼'; font-size: 8px; color: #999; }
         .region-tab { flex:1; padding:12px; background:transparent; border:none; cursor:pointer; font-weight:bold; font-size:14px; color:#666; transition:all 0.2s; border-bottom:2px solid transparent; }
         .region-tab.active { color:${themeColor}; border-bottom:2px solid ${themeColor}; background:#fff; }

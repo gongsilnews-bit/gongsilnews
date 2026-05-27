@@ -677,7 +677,7 @@ export default function NewsMapClient({ initialArticles, initialPopularArticles 
           {/* 🔍 지도 통합 플로팅 바: 위치검색 + 섹션필터 + 내 위치 검색 (나란히 배열) */}
           <MapSearchBar onSearchCoord={panMapTo} mapCenterRegion={mapCenterRegion}>
             {/* 섹션 필터 (별도 pill) */}
-            <div style={{ display: "flex", gap: 6, background: "#fff", padding: "5px 12px", borderRadius: 30, boxShadow: "0 4px 10px rgba(0,0,0,0.1)", border: "1px solid #ddd", alignItems: "center" }}>
+            <div style={{ display: "flex", flexWrap: "nowrap", whiteSpace: "nowrap", gap: 6, background: "#fff", padding: "5px 12px", borderRadius: 30, boxShadow: "0 4px 10px rgba(0,0,0,0.1)", border: "1px solid #ddd", alignItems: "center" }}>
               <select value={section1} onChange={(e) => { e.stopPropagation(); setSection1(e.target.value); setSection2(""); }}
                 style={{ padding: "5px 8px", border: "none", outline: "none", fontSize: 13, fontWeight: 700, cursor: "pointer", background: "transparent", color: "#333" }}>
                 <option value="">1차섹션 전체</option>
