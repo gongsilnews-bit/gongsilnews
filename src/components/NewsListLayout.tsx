@@ -418,32 +418,25 @@ function NewsListLayoutInner({ category, title, initialArticles, initialPopular,
             {!isBookmarkMode && displayImportantArticles.length > 0 && (
               <div className="premium-recommend-section">
                 {/* 1. 개인화 헤더 배너 (대표님 맞춤형 인사말) */}
+                {/* 스플릿 매거진 레이아웃 및 헤더 통합 */}
                 {(() => {
                   const isKeywordSearch = !!searchQuery;
-                  if (isKeywordSearch) return null;
+                  if (isKeywordSearch) {
+                    return <PremiumSplitRecommend articles={displayImportantArticles} />;
+                  }
 
                   const activeSub = selectedSubCategory || "전체";
                   const mentalText = PERSONALIZED_MENTAL_MAP[category]?.[activeSub] || "추천 뉴스";
                   const displayName = memberName || "부동산";
 
                   return (
-                    <div className="premium-header-banner">
-                      <div className="premium-header-content">
-                        <span className="premium-user-tag">
-                          <span className="premium-user-name">{displayName} 대표님</span>을 위한
-                        </span>
-                        <h2 className="premium-banner-title" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                          <span style={{ color: "#1a4282", display: "inline-flex", alignItems: "center" }}>
-                            {mentalText} <span className="premium-banner-title-light" style={{ color: "#111", marginLeft: "6px" }}>News</span>
-                          </span>
-                        </h2>
-                      </div>
-                    </div>
+                    <PremiumSplitRecommend 
+                      articles={displayImportantArticles} 
+                      memberName={displayName} 
+                      mentalText={mentalText} 
+                    />
                   );
                 })()}
-
-                {/* 2. 스플릿 매거진 레이아웃 */}
-                <PremiumSplitRecommend articles={displayImportantArticles} />
               </div>
             )}
 
@@ -777,7 +770,7 @@ const PERSONALIZED_MENTAL_MAP: Record<string, Record<string, string>> = {
 };
 
 // 프리미엄 PC용 추천 스플릿 컴포넌트
-function PremiumSplitRecommend({ articles }: { articles: Article[] }) {
+function PremiumSplitRecommend({ articles, memberName, mentalText }: { articles: Article[], memberName?: string, mentalText?: string }) {
   const [activeIndex, setActiveIndex] = useState(0);
 
   useEffect(() => {
@@ -850,6 +843,17 @@ function PremiumSplitRecommend({ articles }: { articles: Article[] }) {
         <div className="premium-hero-img-wrapper">
           {activeThumb && <img src={activeThumb} alt={activeArticle.title} />}
           <div className="premium-hero-gradient" />
+          
+          {mentalText && (
+            <div style={{ position: "absolute", top: 24, left: 30, zIndex: 10, display: "flex", flexDirection: "column", gap: "8px" }}>
+              <span style={{ fontSize: "14px", fontWeight: 700, color: "#fff", background: "rgba(0,0,0,0.4)", display: "inline-block", padding: "4px 10px", borderRadius: "20px", width: "fit-content", border: "1px solid rgba(255,255,255,0.2)", backdropFilter: "blur(4px)" }}>
+                <span style={{ color: "#fef08a" }}>{memberName || "부동산"} 대표님</span>을 위한
+              </span>
+              <h2 style={{ fontSize: "22px", fontWeight: 800, color: "#fff", margin: 0, textShadow: "0 2px 8px rgba(0,0,0,0.6)" }}>
+                {mentalText} <span style={{ fontWeight: 400 }}>News</span>
+              </h2>
+            </div>
+          )}
           {activeYtInfo && (
             <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 44, height: 44, background: "rgba(0,0,0,0.5)", borderRadius: "50%", border: "2.5px solid white", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 3 }}>
               <svg viewBox="0 0 24 24" width="20" height="20" fill="white" style={{ marginLeft: "1.5px" }}><path d="M8 5v14l11-7z"/></svg>
@@ -995,7 +999,7 @@ function PremiumSplitRecommend({ articles }: { articles: Article[] }) {
           left: 0;
           width: 100%;
           height: 70%;
-          background: linear-gradient(to top, rgba(26, 66, 130, 0.95), rgba(26, 66, 130, 0.6) 50%, transparent);
+          background: linear-gradient(to top, rgba(0, 0, 0, 0.95), rgba(0, 0, 0, 0.6) 50%, transparent);
           z-index: 2;
         }
         .premium-hero-text-content {
