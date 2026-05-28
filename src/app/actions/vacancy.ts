@@ -477,99 +477,53 @@ export async function getVacanciesForMap(options?: {
 }) {
   const supabase = getAdminClient();
   try {
-    // If no bbox is supplied, fetch in parallel pages to get all rows (bypassing Supabase 1000 row API limit)
-    if (!options?.bbox) {
-      const batchSize = 1000;
-      const pages = 10; // Supports up to 10,000 rows
-      const promises = [];
-      
-      for (let i = 0; i < pages; i++) {
-        let pageQuery = supabase
-          .from('vacancies')
-          .select('*, vacancy_photos(url, sort_order)')
-          .eq('status', 'ACTIVE')
-          .not('lat', 'is', null)
-          .not('lng', 'is', null);
+    const batchSize = 1000;
+    const pages = 10; // Supports up to 10,000 rows in parallel batches
+    const promises = [];
+    
+    for (let i = 0; i < pages; i++) {
+      let pageQuery = supabase
+        .from('vacancies')
+        .select('*, vacancy_photos(url, sort_order)')
+        .eq('status', 'ACTIVE')
+        .not('lat', 'is', null)
+        .not('lng', 'is', null);
 
-        if (options?.is_auction !== undefined) {
-          if (options.is_auction) {
-            pageQuery = pageQuery.eq('trade_type', '경매');
-          } else {
-            pageQuery = pageQuery.neq('trade_type', '경매');
-          }
+      if (options?.is_auction !== undefined) {
+        if (options.is_auction) {
+          pageQuery = pageQuery.eq('trade_type', '경매');
+        } else {
+          pageQuery = pageQuery.neq('trade_type', '경매');
         }
+      }
 
+      if (options?.bbox) {
         pageQuery = pageQuery
-          .order('created_at', { ascending: false })
-          .range(i * batchSize, (i + 1) * batchSize - 1);
-        
-        promises.push(pageQuery);
+          .gte('lat', options.bbox.swLat)
+          .lte('lat', options.bbox.neLat)
+          .gte('lng', options.bbox.swLng)
+          .lte('lng', options.bbox.neLng);
       }
 
-      const results = await Promise.all(promises);
-      let combinedData: any[] = [];
-      for (const res of results) {
-        if (res.error) return { success: false, error: res.error.message };
-        if (res.data) {
-          combinedData = combinedData.concat(res.data);
-          // If a page returns fewer than 1000 rows, we reached the end of the records
-          if (res.data.length < batchSize) break;
-        }
-      }
-
-      const lightData = combinedData.map(v => {
-        const { infrastructure, description, metadata, members, vacancy_photos, ...rest } = v;
-        const lightMetadata = metadata ? {
-          cltrUsgLclsCtgrNm: metadata.cltrUsgLclsCtgrNm,
-          cltrUsgMclsCtgrNm: metadata.cltrUsgMclsCtgrNm,
-          cltrUsgSclsCtgrNm: metadata.cltrUsgSclsCtgrNm,
-          cltrMngNo: metadata.cltrMngNo,
-          cltr_mng_no: metadata.cltr_mng_no,
-          bldSqms: metadata.bldSqms,
-          cltrAr: metadata.cltrAr,
-          apslEvlAmt: metadata.apslEvlAmt,
-          appraisal_price: metadata.appraisal_price,
-          lowstBidPrcIndctCont: metadata.lowstBidPrcIndctCont,
-          lowest_bid_price: metadata.lowest_bid_price,
-          pblctBgnDtm: metadata.pblctBgnDtm,
-          bid_start_date: metadata.bid_start_date,
-        } : {};
-        return { ...rest, metadata: lightMetadata, vacancy_photos };
-      });
-
-      return { success: true, data: lightData };
+      pageQuery = pageQuery
+        .order('created_at', { ascending: false })
+        .range(i * batchSize, (i + 1) * batchSize - 1);
+      
+      promises.push(pageQuery);
     }
 
-    // Otherwise, query within bbox (typically far fewer than 1000 items)
-    let query = supabase
-      .from('vacancies')
-      .select('*, vacancy_photos(url, sort_order)')
-      .eq('status', 'ACTIVE')
-      .not('lat', 'is', null)
-      .not('lng', 'is', null);
-
-    if (options?.is_auction !== undefined) {
-      if (options.is_auction) {
-        query = query.eq('trade_type', '경매');
-      } else {
-        query = query.neq('trade_type', '경매');
+    const results = await Promise.all(promises);
+    let combinedData: any[] = [];
+    for (const res of results) {
+      if (res.error) return { success: false, error: res.error.message };
+      if (res.data) {
+        combinedData = combinedData.concat(res.data);
+        // If a page returns fewer than 1000 rows, we reached the end of the records
+        if (res.data.length < batchSize) break;
       }
     }
 
-    if (options?.bbox) {
-      query = query
-        .gte('lat', options.bbox.swLat)
-        .lte('lat', options.bbox.neLat)
-        .gte('lng', options.bbox.swLng)
-        .lte('lng', options.bbox.neLng);
-    }
-
-    query = query.order('created_at', { ascending: false });
-
-    const { data, error } = await query;
-    if (error) return { success: false, error: error.message };
-
-    const lightData = data?.map(v => {
+    const lightData = combinedData.map(v => {
       const { infrastructure, description, metadata, members, vacancy_photos, ...rest } = v;
       const lightMetadata = metadata ? {
         cltrUsgLclsCtgrNm: metadata.cltrUsgLclsCtgrNm,
@@ -589,7 +543,7 @@ export async function getVacanciesForMap(options?: {
       return { ...rest, metadata: lightMetadata, vacancy_photos };
     });
 
-    return { success: true, data: lightData || [] };
+    return { success: true, data: lightData };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
