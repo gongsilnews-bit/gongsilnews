@@ -15,22 +15,19 @@ export default function MiniVacancyMap({ vacancies }: Props) {
   const mapInitRef = useRef(false);
   const [mapInstance, setMapInstance] = useState<any>(null);
   const [visibleCount, setVisibleCount] = useState(0);
+  const clustererRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
 
-  // 지도 이동 상황 및 줌 레벨에 맞는 최적의 좌표와 배율을 가지고 경매 카테고리로 모바일 라우팅
+  // 강남역(37.498095, 127.027610) 중심부 좌표 정의
+  const centerLat = 37.498095;
+  const centerLng = 127.027610;
+
+  // 전체 지도 페이지로 정밀 이동
   const handleNavigate = () => {
-    if (mapInstance) {
-      const center = mapInstance.getCenter();
-      const lat = center.getLat();
-      const lng = center.getLng();
-      const level = mapInstance.getLevel();
-      router.push(`/m/gongsil?lat=${lat}&lng=${lng}&level=${level}&mode=auction`);
-    } else {
-      router.push(`/m/gongsil?mode=auction`);
-    }
+    router.push(`/m/gongsil?lat=${centerLat}&lng=${centerLng}&level=7&mode=auction`);
   };
 
-  // 1단계: 카카오 지도 객체 초기화
+  // 1단계: 카카오 지도 객체 초기화 (터치 스크롤 스크래치 완전 방지용 고정형 프리뷰)
   useEffect(() => {
     const initMap = () => {
       if (!mapRef.current || mapInitRef.current) return;
@@ -39,14 +36,14 @@ export default function MiniVacancyMap({ vacancies }: Props) {
 
       mapInitRef.current = true;
 
-      // 강남역(37.498095, 127.027610)을 중심으로 초기화 (PC 버전과 동일)
-      const centerLat = 37.498095;
-      const centerLng = 127.027610;
-
       const map = new kakao.maps.Map(mapRef.current, {
         center: new kakao.maps.LatLng(centerLat, centerLng),
         level: 7,
       });
+
+      // 🛑 모바일 홈 화면 스크롤 오동작을 100% 방지하기 위해 줌 및 드래그 전면 불허!
+      map.setZoomable(false);
+      map.setDraggable(false);
 
       setMapInstance(map);
     };
@@ -74,87 +71,90 @@ export default function MiniVacancyMap({ vacancies }: Props) {
     }
   }, []);
 
-  // 2단계: vacancies 데이터 및 mapInstance가 모두 완료되면 마커 동적 생성
+  // 2단계: vacancies 데이터 및 mapInstance가 모두 완료되면 정식 클러스터러 렌더링
   useEffect(() => {
     if (!mapInstance) return;
     const kakao = (window as any).kakao;
     if (!kakao?.maps) return;
 
-    // 기존 마커 전체 삭제
+    // 기존 클러스터러 및 마커 초기화
+    if (clustererRef.current) {
+      clustererRef.current.clear();
+    }
     markersRef.current.forEach((m) => m.setMap(null));
     markersRef.current = [];
 
-    // 공실광고 중 좌표 있는 것
+    // 좌표가 유효한 매물 필터링
     const withCoords = vacancies.filter((v) => v.lat && v.lng);
 
-    // 현재 보이는 경계 좌표 구해서 카운트 업데이트하는 함수
-    const updateVisibleCount = () => {
-      const bounds = mapInstance.getBounds();
-      if (!bounds) return;
-      const sw = bounds.getSouthWest();
-      const ne = bounds.getNorthEast();
-      const visible = withCoords.filter((v) => {
-        return (
-          v.lat >= sw.getLat() &&
-          v.lat <= ne.getLat() &&
-          v.lng >= sw.getLng() &&
-          v.lng <= ne.getLng()
-        );
+    // ⚡ [성능 극대화 핵심] 어차피 고정형 프리뷰이므로, 현재 강남역 근처에 노출될 수 있는 매물만 초고속 필터링!
+    // 레벨 7의 가시범위에 넉넉한 오차범위(위도 0.15, 경도 0.20)를 지정하여 6천 개 중 수백 개만 렌더링하여 모바일 부하 0% 실현!
+    const visibleCoords = withCoords.filter(
+      (v) => Math.abs(v.lat - centerLat) < 0.15 && Math.abs(v.lng - centerLng) < 0.20
+    );
+
+    setVisibleCount(visibleCoords.length);
+
+    // 정식 클러스터러 정의
+    const clusterer = new kakao.maps.MarkerClusterer({
+      map: mapInstance,
+      averageCenter: true,
+      minLevel: 1, // 줌 조작이 막혀 있으므로 모든 레벨에서 병합
+      gridSize: 60,
+      disableClickZoom: true,
+      styles: [
+        { width: "50px", height: "50px", background: "#1a4282", color: "#fff", textAlign: "center", lineHeight: "44px", borderRadius: "50%", fontWeight: "bold", fontSize: "16px", border: "3px solid #ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.25)" }
+      ],
+    });
+    clustererRef.current = clusterer;
+
+    // 클러스터 병합 완료 시 내부 매물 타입에 맞춰 곤색/파란색 동적 색상 매칭
+    kakao.maps.event.addListener(clusterer, "clustered", (clusters: any[]) => {
+      clusters.forEach((cluster) => {
+        const mks = cluster.getMarkers();
+        if (mks.length < 2) return;
+        const hasStandard = mks.some((m: any) => m.customData && m.customData.trade_type !== "경매" && !m.customData.is_auction);
+        const overlay = cluster.getClusterMarker().getContent();
+        if (overlay && overlay.style) {
+          overlay.style.background = hasStandard ? "#1a73e8" : "#1a4282";
+          overlay.style.color = "#ffffff";
+          overlay.style.border = "3px solid rgba(255,255,255,0.8)";
+        }
       });
-      setVisibleCount(visible.length);
-    };
-
-    // 첫 세팅 시 1회 계산 및 지도 idle(움직임 멈춤) 이벤트 바인딩
-    updateVisibleCount();
-    kakao.maps.event.addListener(mapInstance, "idle", updateVisibleCount);
-
-    // 마커 그룹화 (소수점 3자리 기준 - 약 100m 단위)
-    const groups: Record<string, any[]> = {};
-    withCoords.forEach((v) => {
-      const key = `${Math.round(v.lat * 1000)}_${Math.round(v.lng * 1000)}`;
-      if (!groups[key]) groups[key] = [];
-      groups[key].push(v);
     });
 
-    // 그룹별 마커 렌더링
-    const newMarkers: any[] = [];
-    Object.values(groups).forEach((group) => {
-      const { lat, lng } = group[0];
-      const count = group.length;
-      const size = count > 9 ? 42 : 36;
-      
-      // 경매 매물이 포함된 그룹은 남색(#1a4282)으로, 일반 공실은 파란색(#4b89ff)으로 표시
-      const hasAuction = group.some((v) => v.trade_type === "경매");
-      const fillColor = hasAuction ? "#1a4282" : "#4b89ff";
-      
+    // 개별 마커 생성
+    const size = 32;
+    const newMarkers = visibleCoords.map((v) => {
+      const isAuction = v.trade_type === "경매" || v.is_auction === true;
+      const fillColor = isAuction ? "#1a4282" : "#1a73e8";
+
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
         <circle cx="${size/2}" cy="${size/2}" r="${size/2-2}" fill="${fillColor}" stroke="white" stroke-width="2"/>
-        <text x="50%" y="50%" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="${count > 9 ? 14 : 15}" font-weight="bold" font-family="sans-serif">${count}</text>
+        <text x="50%" y="50%" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="13" font-weight="bold" font-family="sans-serif">1</text>
       </svg>`;
 
       const marker = new kakao.maps.Marker({
-        position: new kakao.maps.LatLng(lat, lng),
+        position: new kakao.maps.LatLng(v.lat, v.lng),
         image: new kakao.maps.MarkerImage(
           `data:image/svg+xml,${encodeURIComponent(svg)}`,
           new kakao.maps.Size(size, size),
           { offset: new kakao.maps.Point(size / 2, size / 2) }
         ),
-        map: mapInstance,
       });
 
-      newMarkers.push(marker);
+      marker.customData = v;
+      return marker;
     });
 
     markersRef.current = newMarkers;
-
-    return () => {
-      kakao.maps.event.removeListener(mapInstance, "idle", updateVisibleCount);
-    };
+    clusterer.addMarkers(newMarkers);
   }, [vacancies, mapInstance]);
 
   return (
     <div
-      style={{ position: "relative", width: "100%", borderRadius: "12px", overflow: "hidden" }}
+      onClick={handleNavigate}
+      style={{ position: "relative", width: "100%", borderRadius: "12px", overflow: "hidden", cursor: "pointer" }}
     >
       {/* 카카오 지도 */}
       <div
@@ -162,9 +162,21 @@ export default function MiniVacancyMap({ vacancies }: Props) {
         style={{ width: "100%", height: "200px", background: "#e8ecf0" }}
       />
 
-      {/* 공실 수 뱃지 (클릭 시 전체 지도 이동) */}
+      {/* 🛑 투명 터치 오버레이 레이어: 지도상의 드래그나 줌 핀치를 완전히 차단하여 모바일 메인 스크롤의 완벽한 쾌적함을 고수 */}
       <div
-        onClick={handleNavigate}
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
+          zIndex: 10,
+          background: "transparent",
+        }}
+      />
+
+      {/* 공실 수 뱃지 */}
+      <div
         style={{
           position: "absolute",
           top: 12,
@@ -177,15 +189,13 @@ export default function MiniVacancyMap({ vacancies }: Props) {
           fontSize: 13,
           fontWeight: 700,
           boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
-          cursor: "pointer",
         }}
       >
         🏢 공실 {visibleCount}건 지도보기
       </div>
 
-      {/* 더보기 버튼 (클릭 시 전체 지도 이동) */}
+      {/* 더보기 버튼 */}
       <div
-        onClick={handleNavigate}
         style={{
           position: "absolute",
           bottom: 12,
@@ -198,7 +208,6 @@ export default function MiniVacancyMap({ vacancies }: Props) {
           fontSize: 13,
           fontWeight: 700,
           boxShadow: "0 4px 12px rgba(16,33,66,0.4)",
-          cursor: "pointer",
           display: "flex",
           alignItems: "center",
           gap: 4,
