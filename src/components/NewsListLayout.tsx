@@ -864,9 +864,6 @@ function PremiumSplitRecommend({ articles, memberName, mentalText }: { articles:
 
         <div className="premium-hero-text-content">
           <h3 className="premium-hero-title">{activeArticle.title}</h3>
-          <p className="premium-hero-desc">
-            {activeArticle.subtitle || stripHtml(activeArticle.content || "").slice(0, 140)}
-          </p>
           <div className="premium-hero-meta-row">
             <div className="premium-hero-meta">
               {formatDate(activeArticle.published_at || activeArticle.created_at)} · {activeArticle.author_name || "공실뉴스"}
