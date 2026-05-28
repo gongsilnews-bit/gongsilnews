@@ -95,6 +95,22 @@ export async function generatePropertyDescription(data: any) {
           continue;
         }
 
+        // 비용 로깅
+        try {
+          const um = json.usageMetadata;
+          if (um) {
+            const inT = um.promptTokenCount || 0;
+            const outT = um.candidatesTokenCount || 0;
+            const costKrw = (inT * 0.075 / 1000000 * 1400) + (outT * 0.3 / 1000000 * 1400);
+            await supabaseAdmin.from("agent_chats").insert({
+              channel_id: "propertyDescription",
+              role: "agent",
+              content: `[매물 설명 생성] ${data.propertyType || ''} ${data.tradeType || ''} - ${model}`,
+              input_tokens: inT, output_tokens: outT, total_tokens: um.totalTokenCount || 0, cost_krw: costKrw,
+            });
+          }
+        } catch (logErr) { console.log("비용 로깅 실패:", logErr); }
+
         console.log(`Success with Gemini model: ${model}!`);
         return { success: true, text: generatedText.trim() };
       } catch (err: any) {
@@ -390,6 +406,21 @@ JSON 구조는 다음과 같아야 한다:
         const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
         if (text) {
           generatedRawText = text;
+          // 비용 로깅
+          try {
+            const um = json.usageMetadata;
+            if (um) {
+              const inT = um.promptTokenCount || 0;
+              const outT = um.candidatesTokenCount || 0;
+              const costKrw = (inT * 0.075 / 1000000 * 1400) + (outT * 0.3 / 1000000 * 1400);
+              await supabaseAdmin.from("agent_chats").insert({
+                channel_id: "marketingDraft",
+                role: "agent",
+                content: `[마케팅 초안 생성] ${tone} / ${audience} - ${model}`,
+                input_tokens: inT, output_tokens: outT, total_tokens: um.totalTokenCount || 0, cost_krw: costKrw,
+              });
+            }
+          } catch (logErr) { console.log("비용 로깅 실패:", logErr); }
           break;
         }
       } catch (err: any) {

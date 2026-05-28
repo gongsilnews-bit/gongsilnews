@@ -118,6 +118,23 @@ JSON 구조:
         if (jsonMatch) {
           parsedData = JSON.parse(jsonMatch[0]);
           console.log(`Success with Gemini model: ${model}!`);
+
+          // 비용 로깅
+          try {
+            const um = json.usageMetadata;
+            if (um) {
+              const inT = um.promptTokenCount || 0;
+              const outT = um.candidatesTokenCount || 0;
+              const costKrw = (inT * 0.075 / 1000000 * 1400) + (outT * 0.3 / 1000000 * 1400);
+              await supabase.from("agent_chats").insert({
+                channel_id: "imageExtract",
+                role: "agent",
+                content: `[이미지 매물 추출] ${parsedData.property_type || ''} ${parsedData.building_name || ''} - ${model}`,
+                input_tokens: inT, output_tokens: outT, total_tokens: um.totalTokenCount || 0, cost_krw: costKrw,
+              });
+            }
+          } catch (logErr) { console.log("비용 로깅 실패:", logErr); }
+
           break;
         } else {
           errors.push(`[${model}] AI가 유효한 JSON을 반환하지 않았습니다.`);
