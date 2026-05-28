@@ -36,7 +36,8 @@ body {
 }
 ul, li { list-style: none; }
 a { text-decoration: none; color: inherit; }
-a:visited { color: inherit; }
+a:visited { color: inherit !important; }
+a:active { color: inherit !important; }
 button { border: none; background: none; cursor: pointer; font-family: inherit; }
 
 /* Container */
