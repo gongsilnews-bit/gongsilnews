@@ -850,8 +850,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     kakaoMapRef.current.panTo(position);
   }, []);
 
-  // 보류된 지도 이동 좌표 (지도 로딩 전 핸들러 실행 시 사용)
-  const pendingPanRef = useRef<{ lat: number; lng: number } | null>(null);
+  // 보류된 지도 이동 좌표 (비동기 핸들러 → 지도 로딩 후 실행용, useState로 re-render 트리거)
+  const [pendingPan, setPendingPan] = useState<{ lat: number; lng: number } | null>(null);
 
   // Handle ?id=X from main page navigation
   const idParamHandledRef = useRef<string | null>(null);
@@ -926,7 +926,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                 kakaoMapRef.current.setLevel(5);
               }
             } else {
-              pendingPanRef.current = { lat: target.lat, lng: target.lng };
+              setPendingPan({ lat: target.lat, lng: target.lng });
             }
           }
           setSelectedClusterIds([String(target.id)]);
@@ -991,7 +991,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
             kakaoMapRef.current.setLevel(5);
           }
         } else {
-          pendingPanRef.current = { lat: target.lat, lng: target.lng };
+          setPendingPan({ lat: target.lat, lng: target.lng });
         }
       }
       setSelectedClusterIds([String(target.id)]);
@@ -1000,18 +1000,17 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     loadByMngNo();
   }, [searchParams, dbVacancies, mapLoaded]);
 
-  // 보류된 지도 이동 실행 (지도가 준비된 후)
+  // 보류된 지도 이동 실행 (지도가 준비된 후 + pendingPan 변경 시)
   useEffect(() => {
-    if (mapLoaded && kakaoMapRef.current && pendingPanRef.current) {
+    if (mapLoaded && kakaoMapRef.current && pendingPan) {
       const kakao = (window as any).kakao;
       if (kakao?.maps) {
-        const { lat, lng } = pendingPanRef.current;
-        kakaoMapRef.current.panTo(new kakao.maps.LatLng(lat, lng));
+        kakaoMapRef.current.panTo(new kakao.maps.LatLng(pendingPan.lat, pendingPan.lng));
         kakaoMapRef.current.setLevel(5);
-        pendingPanRef.current = null;
+        setPendingPan(null);
       }
     }
-  }, [mapLoaded]);
+  }, [mapLoaded, pendingPan]);
 
   // On activeProperty change, reset detail scroll position
   useEffect(() => {
