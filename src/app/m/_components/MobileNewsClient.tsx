@@ -205,8 +205,8 @@ const RecommendedNewsCarousel = React.memo(({
   if (importantArticles.length === 0) return null;
 
   return (
-    <div style={{ padding: "20px 16px", borderBottom: "8px solid #f4f6f8" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px", paddingBottom: "8px", borderBottom: "1px solid #f3f4f6" }}>
+    <div style={{ padding: "20px 0", borderBottom: "8px solid #f4f6f8" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px", padding: "0 16px 8px 16px", borderBottom: "1px solid #f3f4f6" }}>
         <div style={{ display: "flex", alignItems: "center" }}>
           <span style={{ fontSize: "16px", fontWeight: 800, color: "#1a4282" }}>{currentCatLabel}</span>
           <span style={{ fontSize: "16px", fontWeight: 800, color: "#1f2937", marginLeft: "5px" }}>추천 뉴스</span>
@@ -288,43 +288,48 @@ const RecommendedNewsCarousel = React.memo(({
               textDecoration: "none",
               display: "flex",
               flexDirection: "column",
-              gap: "10px",
               width: "100%",
               flexShrink: 0,
               scrollSnapAlign: "start",
-              scrollSnapStop: "always"
+              scrollSnapStop: "always",
+              padding: "0 16px" // Keep the slider items padded since we removed it from the parent
             }}
           >
-            <div style={{ width: "100%", aspectRatio: "16/9", position: "relative", backgroundColor: "#f3f4f6", borderRadius: "12px", overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
+            <div style={{ width: "100%", aspectRatio: "4/3", position: "relative", backgroundColor: "#111", borderRadius: "16px", overflow: "hidden", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}>
               {(art.thumbnail_url || extractYoutubeId(art.youtube_url, art.content)) ? (
-                <>
-                  <Image
-                    src={art.thumbnail_url || `https://img.youtube.com/vi/${extractYoutubeId(art.youtube_url, art.content)}/mqdefault.jpg`}
-                    alt={art.title}
-                    fill
-                    style={{ objectFit: "cover" }}
-                    sizes="(max-width: 768px) 100vw, 50vw"
-                    priority={idx === 0}
-                  />
-                  {!!extractYoutubeId(art.youtube_url, art.content) && (
-                    <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 44, height: 44, background: "rgba(0,0,0,0.5)", borderRadius: "50%", border: "2.5px solid white", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 3 }}>
-                      <svg viewBox="0 0 24 24" width="20" height="20" fill="white" style={{ marginLeft: "1.5px" }}><path d="M8 5v14l11-7z"/></svg>
-                    </div>
-                  )}
-                </>
+                <Image
+                  src={art.thumbnail_url || `https://img.youtube.com/vi/${extractYoutubeId(art.youtube_url, art.content)}/mqdefault.jpg`}
+                  alt={art.title}
+                  fill
+                  style={{ objectFit: "cover", zIndex: 1 }}
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  priority={idx === 0}
+                />
               ) : (
-                <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#ccc", background: "#f8f9fa", border: "1px solid #eaeaea" }}>
+                <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#666", background: "#333", zIndex: 1, position: "absolute", top: 0, left: 0 }}>
                   <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
                 </div>
               )}
-            </div>
-            <div style={{ padding: "4px 4px 0" }}>
-              <div style={{ fontSize: "16px", fontWeight: 800, color: "#111827", lineHeight: 1.4, marginBottom: "6px", wordBreak: "keep-all" }}>
-                {art.title}
+              
+              <div style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "40%", background: "linear-gradient(to bottom, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.1) 80%, transparent)", zIndex: 2 }} />
+              <div style={{ position: "absolute", bottom: 0, left: 0, width: "100%", height: "70%", background: "linear-gradient(to top, rgba(0, 0, 0, 0.95), rgba(0, 0, 0, 0.5) 60%, transparent)", zIndex: 2 }} />
+              
+              <div style={{ position: "absolute", bottom: 0, left: 0, width: "100%", padding: "20px 16px", zIndex: 3, display: "flex", flexDirection: "column", gap: "8px" }}>
+                <h3 style={{ fontSize: "20px", fontWeight: 800, color: "#fff", margin: 0, lineHeight: 1.35, wordBreak: "keep-all", textShadow: "0 2px 8px rgba(0,0,0,0.6)", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                  {art.title}
+                </h3>
+                <div style={{ fontSize: "12px", color: "#ddd", display: "flex", alignItems: "center", gap: "8px" }}>
+                  <span>{art.published_at ? art.published_at.substring(0, 10).replace(/-/g, '.') : art.created_at ? art.created_at.substring(0, 10).replace(/-/g, '.') : ""}</span>
+                  <span>·</span>
+                  <span>{art.author_name || "공실뉴스"}</span>
+                </div>
               </div>
-              <div style={{ fontSize: "13px", color: "#6b7280", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: 1.5, wordBreak: "keep-all" }}>
-                {art.content ? art.content.replace(/<[^>]*>/g, '').substring(0, 100) : ""}
-              </div>
+
+              {!!extractYoutubeId(art.youtube_url, art.content) && (
+                <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 44, height: 44, background: "rgba(0,0,0,0.5)", borderRadius: "50%", border: "2.5px solid white", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 4 }}>
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="white" style={{ marginLeft: "1.5px" }}><path d="M8 5v14l11-7z"/></svg>
+                </div>
+              )}
             </div>
           </Link>
         ))}
