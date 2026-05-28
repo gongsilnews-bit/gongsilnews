@@ -1122,19 +1122,19 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
               {/* 검색 버튼에 가려지지 않도록 끝부분 여백 추가 */}
               <div style={{ flexShrink: 0, width: "40px" }} />
             </div>
-            {/* 우측 검색 버튼 — 고정 */}
+            {/* 우측 검색 버튼 — 고정 (텍스트 가리기 위해 배경색 지정) */}
             <button
               onClick={() => setIsSearchOpen(true)}
               style={{
                 position: "absolute",
                 right: "0",
-                top: "4px",
-                width: "40px",
-                height: "40px",
+                top: "0",
+                height: "100%",
+                width: "48px",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                background: "transparent", // 배경 투명하게
+                background: "#1a4282", // 텍스트가 비치지 않도록 곤색 배경
                 border: "none",
                 cursor: "pointer",
               }}
