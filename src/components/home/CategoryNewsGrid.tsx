@@ -35,7 +35,7 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
   // JS에서 새 카테고리별 분류
   const marketingArts = allNewsArticles.filter(a => a.section1 === "AI마케팅").slice(0, 2);
   const economyArts = allNewsArticles.filter(a => a.section1 === "부동산·경제").slice(0, 2);
-  const lawArts = allNewsArticles.filter(a => a.section1 === "부동산·경제" && a.section2 === "법률/세무 지식").slice(0, 2);
+  const gongsilListArts = allNewsArticles.filter(a => a.section1 === "공실뉴스").slice(3, 5);
   const lifeArts = allNewsArticles.filter(a => a.section1 === "라이프·오피니언").slice(0, 2);
   const gongsilArts = allNewsArticles.filter(a => a.section1 === "공실뉴스").slice(0, 3);
 
@@ -167,7 +167,7 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
         </div>
       </div>
 
-      {/* 7. 부동산·경제 (정책/동향 + 법률/세무) */}
+      {/* 7. 부동산·경제 + 공실뉴스 */}
       <div className="mt-50 mb-50">
         <div className="hot-issue-wrap" style={{ gap: 40 }}>
           <div className="hi-left" style={{ flex: 1, minWidth: 0, width: "calc(50% - 20px)" }}>
@@ -180,10 +180,10 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
           </div>
           <div className="hi-left" style={{ flex: 1, minWidth: 0, width: "calc(50% - 20px)" }}>
             <div className="sec-title-wrap">
-              <Link href="/news_politics" style={{ textDecoration: "none" }}><h2 className="sec-title">법률/세무 지식 &gt;</h2></Link>
+              <Link href="/news_gongsil" style={{ textDecoration: "none" }}><h2 className="sec-title">공실뉴스 &gt;</h2></Link>
             </div>
             <div className="hi-list">
-              {renderArticleList(lawArts)}
+              {renderArticleList(gongsilListArts)}
             </div>
           </div>
         </div>
