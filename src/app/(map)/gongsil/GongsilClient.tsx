@@ -1395,7 +1395,22 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     setAppliedMaemaeMax(null);
     setAppliedDepositMin(null);
     setAppliedDepositMax(null);
+    setAppliedRentMin(null);
     setAppliedRentMax(null);
+
+    // temp 필터 상태도 함께 초기화 (getTradeTypeFilterLabel이 temp 우선 참조하므로 필수)
+    setTempFilterTradeTypes([]);
+    setTempMaemaeMin(null);
+    setTempMaemaeMax(null);
+    setTempDepositMin(null);
+    setTempDepositMax(null);
+    setTempRentMin(null);
+    setTempRentMax(null);
+
+    // 슬라이더/인터랙션 상태 초기화
+    setSliderInteractions({});
+    setRoomBathInteractions({ room: false, bath: false });
+
     setFilterAuctionDiscount(0);
     setFilterAuctionBidCount(0);
     setFilterAuctionStartDate("all");
@@ -1431,6 +1446,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     setShowDetail(false);
     setShowDetailFilters(false);
     setSelectedClusterIds(null);
+    setIsWizardOpen(false);
     resetAllFilters();
     localStorage.setItem("gongsil_category", newKey);
   };
