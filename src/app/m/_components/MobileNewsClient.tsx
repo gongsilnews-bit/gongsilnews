@@ -208,7 +208,7 @@ const RecommendedNewsCarousel = React.memo(({
     <div style={{ padding: "20px 16px", borderBottom: "8px solid #f4f6f8" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px", paddingBottom: "8px", borderBottom: "1px solid #f3f4f6" }}>
         <div style={{ display: "flex", alignItems: "center" }}>
-          <span style={{ fontSize: "16px", fontWeight: 800, color: "#508bf5" }}>{currentCatLabel}</span>
+          <span style={{ fontSize: "16px", fontWeight: 800, color: "#1a4282" }}>{currentCatLabel}</span>
           <span style={{ fontSize: "16px", fontWeight: 800, color: "#1f2937", marginLeft: "5px" }}>추천 뉴스</span>
         </div>
         
