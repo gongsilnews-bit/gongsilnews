@@ -842,23 +842,35 @@ function PremiumSplitRecommend({ articles }: { articles: Article[] }) {
 
   return (
     <div className="premium-split-container">
-      {/* 좌측 메인 히어로 슬라이더 */}
+      {/* 좌측 메인 히어로 슬라이더 (매거진 스타일) */}
       <Link
         href={`/news/${activeArticle.article_no || activeArticle.id}`}
         className="premium-hero-card"
       >
         <div className="premium-hero-img-wrapper">
           {activeThumb && <img src={activeThumb} alt={activeArticle.title} />}
+          <div className="premium-hero-gradient" />
           {activeYtInfo && (
             <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 44, height: 44, background: "rgba(0,0,0,0.5)", borderRadius: "50%", border: "2.5px solid white", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 3 }}>
               <svg viewBox="0 0 24 24" width="20" height="20" fill="white" style={{ marginLeft: "1.5px" }}><path d="M8 5v14l11-7z"/></svg>
             </div>
           )}
+        </div>
 
-          {articles.length > 1 && (
-            <>
-              {/* 슬라이더 좌우 조작 버튼 */}
-              <div className="premium-slider-controls">
+        <div className="premium-hero-text-content">
+          <h3 className="premium-hero-title">{activeArticle.title}</h3>
+          <p className="premium-hero-desc">
+            {activeArticle.subtitle || stripHtml(activeArticle.content || "").slice(0, 140)}
+          </p>
+          <div className="premium-hero-meta-row">
+            <div className="premium-hero-meta">
+              {formatDate(activeArticle.published_at || activeArticle.created_at)} · {activeArticle.author_name || "공실뉴스"}
+            </div>
+            {articles.length > 1 && (
+              <div className="premium-slider-controls" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+                <span className="premium-slider-counter">
+                  {activeIndex + 1} / {articles.length}
+                </span>
                 <button className="premium-slider-btn" onClick={handlePrev} title="이전 추천뉴스">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
                 </button>
@@ -866,21 +878,8 @@ function PremiumSplitRecommend({ articles }: { articles: Article[] }) {
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
                 </button>
               </div>
-
-              {/* 페이지 카운터 */}
-              <div className="premium-slider-counter">
-                {activeIndex + 1} / {articles.length}
-              </div>
-            </>
-          )}
-        </div>
-
-        <h3 className="premium-hero-title">{activeArticle.title}</h3>
-        <p className="premium-hero-desc">
-          {activeArticle.subtitle || stripHtml(activeArticle.content || "").slice(0, 140)}
-        </p>
-        <div className="premium-hero-meta">
-          {formatDate(activeArticle.published_at || activeArticle.created_at)} · {activeArticle.author_name || "공실뉴스"}
+            )}
+          </div>
         </div>
       </Link>
 
@@ -958,8 +957,8 @@ function PremiumSplitRecommend({ articles }: { articles: Article[] }) {
         }
         .premium-split-container {
           display: grid;
-          grid-template-columns: 1.4fr 1fr;
-          gap: 24px;
+          grid-template-columns: 1.5fr 1fr;
+          gap: 30px;
         }
         .premium-hero-card {
           display: flex;
@@ -967,95 +966,113 @@ function PremiumSplitRecommend({ articles }: { articles: Article[] }) {
           position: relative;
           text-decoration: none;
           color: inherit;
+          height: 420px;
+          border-radius: 12px;
+          overflow: hidden;
+          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
         }
         .premium-hero-img-wrapper {
-          position: relative;
+          position: absolute;
+          top: 0;
+          left: 0;
           width: 100%;
-          height: 240px;
-          border-radius: 8px;
-          overflow: hidden;
-          background: #f3f4f6;
-          margin-bottom: 16px;
+          height: 100%;
+          z-index: 1;
+          background: #222;
         }
         .premium-hero-img-wrapper img {
           width: 100%;
           height: 100%;
           object-fit: cover;
-          transition: transform 0.4s ease;
+          transition: transform 0.6s ease;
         }
         .premium-hero-card:hover .premium-hero-img-wrapper img {
-          transform: scale(1.03);
+          transform: scale(1.05);
+        }
+        .premium-hero-gradient {
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          width: 100%;
+          height: 70%;
+          background: linear-gradient(to top, rgba(26, 66, 130, 0.95), rgba(26, 66, 130, 0.6) 50%, transparent);
+          z-index: 2;
+        }
+        .premium-hero-text-content {
+          position: relative;
+          z-index: 3;
+          margin-top: auto;
+          padding: 30px 40px;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
         }
         .premium-hero-title {
-          font-size: 18px;
+          font-size: 28px;
           font-weight: 800;
-          line-height: 1.4;
-          color: #111;
-          margin: 0 0 10px 0;
+          line-height: 1.35;
+          color: #ffffff;
+          margin: 0;
           display: -webkit-box;
           -webkit-line-clamp: 2;
           -webkit-box-orient: vertical;
           overflow: hidden;
-          transition: color 0.2s;
-        }
-        .premium-hero-card:hover .premium-hero-title {
-          color: #ea580c;
+          text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+          word-break: keep-all;
         }
         .premium-hero-desc {
-          font-size: 14px;
-          color: #4b5563;
+          font-size: 15px;
+          color: rgba(255, 255, 255, 0.85);
           line-height: 1.5;
-          margin: 0 0 12px 0;
+          margin: 0;
           display: -webkit-box;
           -webkit-line-clamp: 2;
           -webkit-box-orient: vertical;
           overflow: hidden;
         }
+        .premium-hero-meta-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-top: 15px;
+          padding-top: 15px;
+          border-top: 1px solid rgba(255, 255, 255, 0.15);
+        }
         .premium-hero-meta {
-          font-size: 12px;
-          color: #9ca3af;
-          margin-top: auto;
+          font-size: 13px;
+          color: rgba(255, 255, 255, 0.7);
+          font-weight: 500;
         }
         .premium-slider-controls {
-          position: absolute;
-          top: 12px;
-          right: 12px;
           display: flex;
-          gap: 6px;
-          z-index: 5;
+          align-items: center;
+          gap: 8px;
+        }
+        .premium-slider-counter {
+          font-size: 13px;
+          color: rgba(255, 255, 255, 0.8);
+          font-weight: 700;
+          margin-right: 12px;
+          letter-spacing: 1px;
         }
         .premium-slider-btn {
           width: 32px;
           height: 32px;
           border-radius: 50%;
-          background: rgba(255, 255, 255, 0.9);
-          border: 1px solid rgba(0, 0, 0, 0.1);
+          background: rgba(255, 255, 255, 0.2);
+          backdrop-filter: blur(4px);
+          border: 1px solid rgba(255, 255, 255, 0.3);
           display: flex;
           align-items: center;
           justify-content: center;
           cursor: pointer;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-          color: #111;
+          color: #fff;
           transition: all 0.2s;
-          padding: 0;
         }
         .premium-slider-btn:hover {
-          background: #1a2e50;
-          color: #fff;
+          background: #fff;
+          color: #1a4282;
           transform: scale(1.05);
-        }
-        .premium-slider-counter {
-          position: absolute;
-          bottom: 12px;
-          right: 12px;
-          background: rgba(0, 0, 0, 0.6);
-          color: #fff;
-          padding: 4px 10px;
-          border-radius: 20px;
-          font-size: 11px;
-          font-weight: 700;
-          z-index: 5;
-          backdrop-filter: blur(4px);
         }
         .premium-curated-list {
           display: flex;
