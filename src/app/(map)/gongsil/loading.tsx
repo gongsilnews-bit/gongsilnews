@@ -14,7 +14,20 @@ export default function Loading() {
       <div style={{ position: "relative", width: "60px", height: "60px", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "20px" }}>
         <div style={{ position: "absolute", width: "100%", height: "100%", borderRadius: "50%", background: "#4b89ff", animation: "pulseRingHero 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite" }} />
         <div style={{ position: "relative", width: "36px", height: "36px", borderRadius: "50%", background: "#1a4282", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.15)" }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h.01"/><path d="M8.5 16.5a5 5 0 0 1 7 0"/><path d="M5 13a10 10 0 0 1 14 0"/><path d="M1.5 9.5a15 15 0 0 1 21 0"/></svg>
+          <style>{`
+            @keyframes spinCircle {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+          `}</style>
+          <div style={{
+            width: 20,
+            height: 20,
+            border: "2.5px solid rgba(255, 255, 255, 0.2)",
+            borderTop: "2.5px solid #ffffff",
+            borderRadius: "50%",
+            animation: "spinCircle 0.8s linear infinite"
+          }} />
         </div>
       </div>
 

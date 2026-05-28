@@ -202,7 +202,20 @@ export default function MiniVacancyMap({ vacancies, isLoading }: Props) {
           <div style={{ position: "relative", width: "48px", height: "48px", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "8px" }}>
             <div style={{ position: "absolute", width: "100%", height: "100%", borderRadius: "50%", background: "#4b89ff", animation: "pulseRingMini 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite" }} />
             <div style={{ position: "relative", width: "24px", height: "24px", borderRadius: "50%", background: "#1a4282", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h.01"/><path d="M8.5 16.5a5 5 0 0 1 7 0"/><path d="M5 13a10 10 0 0 1 14 0"/><path d="M1.5 9.5a15 15 0 0 1 21 0"/></svg>
+              <style>{`
+                @keyframes spinCircleMini {
+                  0% { transform: rotate(0deg); }
+                  100% { transform: rotate(360deg); }
+                }
+              `}</style>
+              <div style={{
+                width: 14,
+                height: 14,
+                border: "2px solid rgba(255, 255, 255, 0.2)",
+                borderTop: "2px solid #ffffff",
+                borderRadius: "50%",
+                animation: "spinCircleMini 0.8s linear infinite"
+              }} />
             </div>
           </div>
           <h3 style={{ fontSize: "14px", fontWeight: 800, color: "#1a2e50", margin: "0 0 4px 0" }}>네트워크 로딩 중입니다</h3>
