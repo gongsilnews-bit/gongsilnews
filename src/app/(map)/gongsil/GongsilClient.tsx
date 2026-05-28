@@ -935,7 +935,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
 
       loadDirectVacancy();
     }
-  }, [searchParams, dbVacancies, mapLoaded]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, mapLoaded]);
 
   // Handle ?mng=물건관리번호 from main page hero (경매 물건 — UUID 대신 안정적 식별자 사용)
   const mngParamHandledRef = useRef<string | null>(null);
@@ -998,7 +999,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     };
 
     loadByMngNo();
-  }, [searchParams, dbVacancies, mapLoaded]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, mapLoaded]);
 
   // 보류된 지도 이동 실행 (지도가 준비된 후 + pendingPan 변경 시)
   useEffect(() => {
