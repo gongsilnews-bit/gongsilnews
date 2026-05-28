@@ -842,6 +842,7 @@ function PremiumSplitRecommend({ articles, memberName, mentalText }: { articles:
       >
         <div className="premium-hero-img-wrapper">
           {activeThumb && <img src={activeThumb} alt={activeArticle.title} />}
+          <div className="premium-hero-gradient-top" />
           <div className="premium-hero-gradient" />
           
           {mentalText && (
@@ -967,6 +968,15 @@ function PremiumSplitRecommend({ articles, memberName, mentalText }: { articles:
           width: 100%;
           height: 70%;
           background: linear-gradient(to top, rgba(0, 0, 0, 0.95), rgba(0, 0, 0, 0.6) 50%, transparent);
+          z-index: 2;
+        }
+        .premium-hero-gradient-top {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 40%;
+          background: linear-gradient(to bottom, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.1) 80%, transparent);
           z-index: 2;
         }
         .premium-hero-text-content {
