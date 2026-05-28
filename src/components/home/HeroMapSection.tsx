@@ -65,10 +65,10 @@ export default function HeroMapSection() {
     }
   }, [selectedClusterIds]);
 
-  // Fetch all vacancies from DB via server action on mount (bypassing row limits in actions layer)
+  // Fetch all vacancies from DB via server action on mount + tab focus refresh
   useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
+    const fetchData = async (showLoading = true) => {
+      if (showLoading) setIsLoading(true);
       const res = await getVacanciesForMap();
       if (res.success && res.data) {
         const withImages = res.data.map((v: any) => ({
@@ -78,10 +78,19 @@ export default function HeroMapSection() {
         const filtered = withImages.filter((v: any) => v.status === 'ACTIVE' && v.lat && v.lng);
         setVacancies(filtered);
       }
-      setIsLoading(false);
+      if (showLoading) setIsLoading(false);
     };
 
-    fetchData();
+    fetchData(); // 초기 로딩
+
+    // 사용자가 다른 탭에 갔다가 돌아올 때 최신 데이터 갱신 (삭제된 매물 제거)
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        fetchData(false); // 로딩 스피너 없이 조용히 갱신
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
   }, []);
 
   // 유저 인증 상태 + 권한 레벨 감지
