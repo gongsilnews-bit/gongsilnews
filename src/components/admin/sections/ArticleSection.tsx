@@ -65,23 +65,21 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
       setTotalCount(res.count || 0);
     }
 
-    // Fetch tab counts from supabase
-    const supabase = createClient();
-    const { data: countData } = await supabase
-      .from("articles")
-      .select("status")
-      .eq("is_deleted", false);
-
-    if (countData) {
-      const c = { 전체: countData.length, 승인대기: 0, 발행됨: 0, 작성중: 0, 반려: 0 };
-      countData.forEach((a: any) => {
-        if (a.status === "PENDING") c.승인대기++;
-        else if (a.status === "APPROVED") c.발행됨++;
-        else if (a.status === "DRAFT") c.작성중++;
-        else if (a.status === "REJECTED") c.반려++;
-      });
-      setCounts(c);
-    }
+    // Fetch tab counts via server action (admin client, bypasses RLS)
+    const [allRes, pendingRes, approvedRes, draftRes, rejectedRes] = await Promise.all([
+      getArticles({ limit: 1 }),
+      getArticles({ status: "PENDING", limit: 1 }),
+      getArticles({ status: "APPROVED", limit: 1 }),
+      getArticles({ status: "DRAFT", limit: 1 }),
+      getArticles({ status: "REJECTED", limit: 1 }),
+    ]);
+    setCounts({
+      전체: allRes.count || 0,
+      승인대기: pendingRes.count || 0,
+      발행됨: approvedRes.count || 0,
+      작성중: draftRes.count || 0,
+      반려: rejectedRes.count || 0,
+    });
   };
 
   useEffect(() => {
