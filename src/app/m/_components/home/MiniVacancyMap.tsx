@@ -201,7 +201,7 @@ export default function MiniVacancyMap({ vacancies, isLoading }: Props) {
           `}</style>
           <div style={{ position: "relative", width: "48px", height: "48px", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "8px" }}>
             <div style={{ position: "absolute", width: "100%", height: "100%", borderRadius: "50%", background: "#4b89ff", animation: "pulseRingMini 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite" }} />
-            <div style={{ position: "relative", width: "24px", height: "24px", borderRadius: "50%", background: "#1a4282", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}>
+            <div style={{ position: "relative", width: "24px", height: "24px", borderRadius: "50%", background: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 6px rgba(0,0,0,0.12)", border: "1px solid rgba(0,0,0,0.06)" }}>
               <style>{`
                 @keyframes spinCircleMini {
                   0% { transform: rotate(0deg); }
@@ -211,8 +211,8 @@ export default function MiniVacancyMap({ vacancies, isLoading }: Props) {
               <div style={{
                 width: 14,
                 height: 14,
-                border: "2px solid rgba(255, 255, 255, 0.2)",
-                borderTop: "2px solid #ffffff",
+                border: "2px solid rgba(26, 115, 232, 0.15)",
+                borderTop: "2px solid #1a73e8",
                 borderRadius: "50%",
                 animation: "spinCircleMini 0.8s linear infinite"
               }} />

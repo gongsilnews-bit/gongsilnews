@@ -344,7 +344,7 @@ export default function HeroMapSection() {
           `}</style>
           <div style={{ position: "relative", width: "60px", height: "60px", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "16px" }}>
             <div style={{ position: "absolute", width: "100%", height: "100%", borderRadius: "50%", background: "#4b89ff", animation: "pulseRingHero 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite" }} />
-            <div style={{ position: "relative", width: "32px", height: "32px", borderRadius: "50%", background: "#1a4282", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ position: "relative", width: "32px", height: "32px", borderRadius: "50%", background: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.12)", border: "1px solid rgba(0,0,0,0.06)" }}>
               <style>{`
                 @keyframes spinCircle {
                   0% { transform: rotate(0deg); }
@@ -354,8 +354,8 @@ export default function HeroMapSection() {
               <div style={{
                 width: 18,
                 height: 18,
-                border: "2.5px solid rgba(255, 255, 255, 0.2)",
-                borderTop: "2.5px solid #ffffff",
+                border: "2.5px solid rgba(26, 115, 232, 0.15)",
+                borderTop: "2.5px solid #1a73e8",
                 borderRadius: "50%",
                 animation: "spinCircle 0.8s linear infinite"
               }} />
