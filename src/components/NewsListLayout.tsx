@@ -651,7 +651,7 @@ function NewsListLayoutInner({ category, title, initialArticles, initialPopular,
           {/* 우측 사이드바 */}
           <div className="news-sidebar">
             {/* 배너 영역 */}
-            <div style={{ marginBottom: 20 }}>
+            <div className="sidebar-banner-wrapper">
               <BannerSlot placement="LIST_SIDEBAR" category={category} />
             </div>
 
@@ -1106,6 +1106,9 @@ function PremiumSplitRecommend({ articles, memberName, mentalText }: { articles:
         .premium-curated-meta {
           font-size: 12px;
           color: #9ca3af;
+        }
+        .sidebar-banner-wrapper:not(:empty) {
+          margin-bottom: 20px;
         }
       `}</style>
     </div>
