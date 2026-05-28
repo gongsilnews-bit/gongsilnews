@@ -139,10 +139,9 @@ export default function MiniVacancyMap({ vacancies, isLoading }: Props) {
       clusters.forEach((cluster) => {
         const mks = cluster.getMarkers();
         if (mks.length < 2) return;
-        const hasStandard = mks.some((m: any) => m.customData && m.customData.trade_type !== "경매" && !m.customData.is_auction);
         const overlay = cluster.getClusterMarker().getContent();
         if (overlay && overlay.style) {
-          overlay.style.background = hasStandard ? "#1a73e8" : "#1a4282";
+          overlay.style.background = "#1a4282";
           overlay.style.color = "#ffffff";
           overlay.style.border = "3px solid rgba(255,255,255,0.8)";
         }
@@ -152,8 +151,7 @@ export default function MiniVacancyMap({ vacancies, isLoading }: Props) {
     // 개별 마커 생성
     const size = 32;
     const newMarkers = withCoords.map((v) => {
-      const isAuction = v.trade_type === "경매" || v.is_auction === true;
-      const fillColor = isAuction ? "#1a4282" : "#1a73e8";
+      const fillColor = "#1a4282";
 
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
         <circle cx="${size/2}" cy="${size/2}" r="${size/2-2}" fill="${fillColor}" stroke="white" stroke-width="2"/>
