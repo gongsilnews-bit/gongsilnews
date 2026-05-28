@@ -1113,7 +1113,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                   <span style={{
                     display: "inline-block",
                     paddingBottom: "3px",
-                    borderBottom: activeTab === cat.key ? "3px solid #ff6b00" : "3px solid transparent", // 활성화 탭 오렌지색 바
+                    borderBottom: activeTab === cat.key ? "3px solid #1a4282" : "3px solid transparent", // 2차 메뉴 배경색으로 맞춤
                   }}>
                     {cat.label}
                   </span>
