@@ -887,39 +887,6 @@ function PremiumSplitRecommend({ articles, memberName, mentalText }: { articles:
         </div>
       </Link>
 
-      {/* 우측 큐레이션 리스트 */}
-      <div className="premium-curated-list">
-        {curatedArticles.map((article) => {
-          const thumb = getThumbnailSrc(article);
-          const ytInfo = extractYoutubeIdInfo(article.youtube_url) || extractYoutubeIdInfo(article.content);
-          
-          return (
-            <Link
-              key={article.id}
-              href={`/news/${article.article_no || article.id}`}
-              className="premium-curated-item"
-            >
-              {thumb && (
-                <div className="premium-curated-img" style={{ position: "relative" }}>
-                  <img src={thumb} alt={article.title} />
-                  {ytInfo && (
-                    <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 28, height: 28, background: "rgba(0,0,0,0.5)", borderRadius: "50%", border: "1.5px solid white", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 3 }}>
-                      <svg viewBox="0 0 24 24" width="12" height="12" fill="white" style={{ marginLeft: "1px" }}><path d="M8 5v14l11-7z"/></svg>
-                    </div>
-                  )}
-                </div>
-              )}
-              <div className="premium-curated-body">
-                <h4 className="premium-curated-title">{article.title}</h4>
-                <div className="premium-curated-meta">
-                  {formatDate(article.published_at || article.created_at)} · {article.author_name || "공실뉴스"}
-                </div>
-              </div>
-            </Link>
-          );
-        })}
-      </div>
-
       <style>{`
         .premium-recommend-section {
           margin-bottom: 32px;
@@ -960,9 +927,9 @@ function PremiumSplitRecommend({ articles, memberName, mentalText }: { articles:
           font-weight: normal;
         }
         .premium-split-container {
-          display: grid;
-          grid-template-columns: 1.5fr 1fr;
-          gap: 30px;
+          display: block;
+          width: 100%;
+          margin-bottom: 30px;
         }
         .premium-hero-card {
           display: flex;
@@ -970,10 +937,10 @@ function PremiumSplitRecommend({ articles, memberName, mentalText }: { articles:
           position: relative;
           text-decoration: none;
           color: inherit;
-          height: 420px;
-          border-radius: 12px;
+          height: 480px;
+          border-radius: 16px;
           overflow: hidden;
-          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
         }
         .premium-hero-img-wrapper {
           position: absolute;
@@ -982,16 +949,16 @@ function PremiumSplitRecommend({ articles, memberName, mentalText }: { articles:
           width: 100%;
           height: 100%;
           z-index: 1;
-          background: #222;
+          background: #111;
         }
         .premium-hero-img-wrapper img {
           width: 100%;
           height: 100%;
           object-fit: cover;
-          transition: transform 0.6s ease;
+          transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
         .premium-hero-card:hover .premium-hero-img-wrapper img {
-          transform: scale(1.05);
+          transform: scale(1.03);
         }
         .premium-hero-gradient {
           position: absolute;
@@ -1012,7 +979,7 @@ function PremiumSplitRecommend({ articles, memberName, mentalText }: { articles:
           gap: 12px;
         }
         .premium-hero-title {
-          font-size: 28px;
+          font-size: 36px;
           font-weight: 800;
           line-height: 1.35;
           color: #ffffff;
