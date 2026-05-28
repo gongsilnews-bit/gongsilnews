@@ -32,6 +32,20 @@ export default function MiniVacancyMap({ vacancies }: Props) {
     }
   }, [vacancies]);
 
+  // 지도 이동 상황 및 줌 레벨에 맞는 최적의 좌표와 배율을 가지고 경매 카테고리로 모바일 라우팅
+  const handleNavigate = () => {
+    if (mapInstanceRef.current) {
+      const map = mapInstanceRef.current;
+      const center = map.getCenter();
+      const lat = center.getLat();
+      const lng = center.getLng();
+      const level = map.getLevel();
+      router.push(`/m/gongsil?lat=${lat}&lng=${lng}&level=${level}&mode=auction`);
+    } else {
+      router.push(`/m/gongsil?mode=auction`);
+    }
+  };
+
   useEffect(() => {
     const initMap = () => {
       if (!mapRef.current || mapInitRef.current) return;
@@ -148,7 +162,7 @@ export default function MiniVacancyMap({ vacancies }: Props) {
 
       {/* 공실 수 뱃지 (클릭 시 전체 지도 이동) */}
       <div
-        onClick={() => router.push("/m/gongsil")}
+        onClick={handleNavigate}
         style={{
           position: "absolute",
           top: 12,
@@ -169,7 +183,7 @@ export default function MiniVacancyMap({ vacancies }: Props) {
 
       {/* 더보기 버튼 (클릭 시 전체 지도 이동) */}
       <div
-        onClick={() => router.push("/m/gongsil")}
+        onClick={handleNavigate}
         style={{
           position: "absolute",
           bottom: 12,

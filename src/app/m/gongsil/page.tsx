@@ -99,8 +99,20 @@ function MobileGongsilContent() {
   const [mapBounds, setMapBounds] = useState<any>(null);
   const [isFetchingVacancies, setIsFetchingVacancies] = useState(false);
   const [zoomLevel, setZoomLevel] = useState<number>(7);
-  const [activeMode, setActiveMode] = useState<"공실" | "경매">("공실");
-  const [isAuctionMode, setIsAuctionMode] = useState(false);
+  const [activeMode, setActiveMode] = useState<"공실" | "경매">(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("mode") === "auction") return "경매";
+    }
+    return "공실";
+  });
+  const [isAuctionMode, setIsAuctionMode] = useState(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      return params.get("mode") === "auction";
+    }
+    return false;
+  });
   
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
@@ -188,6 +200,14 @@ function MobileGongsilContent() {
 
   // 마지막 검색 조건 및 모드 복구
   useEffect(() => {
+    // URL에 mode가 명시된 경우 로컬스토리지를 통한 복구를 우회하고 강제로 적용
+    const modeParam = searchParams.get("mode");
+    if (modeParam === "auction") {
+      setActiveMode("경매");
+      setIsAuctionMode(true);
+      return;
+    }
+
     if (currentUser && currentUser.id) {
       const storageKey = `last_gongsil_filters_${currentUser.id}`;
       const saved = localStorage.getItem(storageKey);
@@ -199,17 +219,40 @@ function MobileGongsilContent() {
           }
           if (parsed.activeMode) {
             setActiveMode(parsed.activeMode);
+            setIsAuctionMode(parsed.activeMode === "경매");
           }
         } catch (e) {
           console.error("Failed to restore search filters:", e);
         }
       }
     }
-  }, [currentUser]);
+  }, [currentUser, searchParams]);
 
   // 지도 객체 로드 완료 시 마지막 위치 복구
   useEffect(() => {
-    if (mapLoaded && kakaoMapRef.current && currentUser && currentUser.id) {
+    if (!mapLoaded || !kakaoMapRef.current) return;
+
+    // URL에 좌표가 명시된 경우 로컬스토리지 복구를 우회하고 해당 좌표를 최우선 적용
+    const urlLat = searchParams.get("lat");
+    const urlLng = searchParams.get("lng");
+    const urlLevel = searchParams.get("level");
+
+    if (urlLat && urlLng) {
+      const kakao = (window as any).kakao;
+      if (kakao) {
+        const latVal = parseFloat(urlLat);
+        const lngVal = parseFloat(urlLng);
+        kakaoMapRef.current.setCenter(new kakao.maps.LatLng(latVal, lngVal));
+        if (urlLevel) {
+          kakaoMapRef.current.setLevel(parseInt(urlLevel, 10));
+        }
+        setMapBounds(kakaoMapRef.current.getBounds());
+        setZoomLevel(kakaoMapRef.current.getLevel());
+      }
+      return;
+    }
+
+    if (currentUser && currentUser.id) {
       const storageKey = `last_gongsil_filters_${currentUser.id}`;
       const saved = localStorage.getItem(storageKey);
       if (saved) {
@@ -227,7 +270,7 @@ function MobileGongsilContent() {
         }
       }
     }
-  }, [mapLoaded, currentUser]);
+  }, [mapLoaded, currentUser, searchParams]);
 
   // 현재 지도 화면 내에 보이는 공실광고 개수 상태
   const [visibleCount, setVisibleCount] = useState(0);
@@ -547,7 +590,19 @@ function MobileGongsilContent() {
 
       let initialLat = 37.5665;
       let initialLng = 126.978;
-      if (vacancies && vacancies.length > 0) {
+      let initialLevel = 7;
+
+      const urlLat = searchParams.get("lat");
+      const urlLng = searchParams.get("lng");
+      const urlLevel = searchParams.get("level");
+
+      if (urlLat && urlLng) {
+        initialLat = parseFloat(urlLat);
+        initialLng = parseFloat(urlLng);
+        if (urlLevel) {
+          initialLevel = parseInt(urlLevel, 10);
+        }
+      } else if (vacancies && vacancies.length > 0) {
         const firstValid = vacancies.find((v: any) => v.lat && v.lng);
         if (firstValid) {
           initialLat = firstValid.lat;
@@ -557,7 +612,7 @@ function MobileGongsilContent() {
 
       const map = new kakao.maps.Map(mapRef.current, {
         center: new kakao.maps.LatLng(initialLat, initialLng),
-        level: 7,
+        level: initialLevel,
       });
 
       kakao.maps.event.addListener(map, "click", () => {
