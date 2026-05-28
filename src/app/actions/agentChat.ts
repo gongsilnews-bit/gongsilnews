@@ -617,21 +617,21 @@ export async function getOnbidCount() {
 
 export async function getOnbidHistoryStats() {
   const supabase = getAdminClient();
-  const today = new Date();
-  today.setHours(0,0,0,0);
 
-  const yesterdayStart = new Date();
-  yesterdayStart.setDate(yesterdayStart.getDate() - 1);
-  yesterdayStart.setHours(0,0,0,0);
+  // KST(UTC+9) 기준으로 오늘/어제를 계산 (Vercel UTC 서버와 로컬 KST 서버 모두 동일 결과)
+  const nowUtc = Date.now();
+  const KST_OFFSET = 9 * 60 * 60 * 1000;
 
-  const yesterdayEnd = new Date();
-  yesterdayEnd.setDate(yesterdayEnd.getDate() - 1);
-  yesterdayEnd.setHours(23,59,59,999);
+  // KST 기준 오늘 00:00:00 → UTC timestamp
+  const kstNow = new Date(nowUtc + KST_OFFSET);
+  const kstTodayStr = `${kstNow.getUTCFullYear()}-${String(kstNow.getUTCMonth() + 1).padStart(2, '0')}-${String(kstNow.getUTCDate()).padStart(2, '0')}`;
+  const today = new Date(`${kstTodayStr}T00:00:00+09:00`);
+
+  const yesterdayStart = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+  const yesterdayEnd = new Date(today.getTime() - 1);
 
   // 1. 최근 7일 로그 가져오기
-  const sevenDaysAgo = new Date();
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-  sevenDaysAgo.setHours(0,0,0,0);
+  const sevenDaysAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
 
   const { data: logs } = await supabase
     .from("agent_chats")

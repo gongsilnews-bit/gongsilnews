@@ -84,6 +84,11 @@ const GongsilMobileDrawerListImpl: React.FC<GongsilMobileDrawerListProps> = ({
                     <span style={{ display: "inline-block", fontSize: "11px", color: "#fa5252", border: "1px solid #fa5252", padding: "1px 6px", borderRadius: "4px", fontWeight: "bold", background: "#fff5f5" }}>
                       {info.badge}
                     </span>
+                    {v.created_at && (Date.now() - new Date(v.created_at).getTime()) < 3 * 24 * 60 * 60 * 1000 && (
+                      <span style={{ display: "inline-block", fontSize: "10px", color: "#fff", background: "#f97316", padding: "1px 6px", borderRadius: "4px", fontWeight: 800, letterSpacing: 0.5 }}>
+                        New
+                      </span>
+                    )}
                     {cardMasked && <span onClick={(e) => { e.stopPropagation(); setIsAuthModalOpen(true); }} style={{ fontSize: "11px", color: "#3b82f6", fontWeight: 700, background: "#eef6ff", padding: "3px 8px", borderRadius: "4px", cursor: "pointer" }}>🔒 부동산회원 무료열람</span>}
                   </div>
 

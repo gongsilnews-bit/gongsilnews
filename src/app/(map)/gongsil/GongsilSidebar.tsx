@@ -320,19 +320,37 @@ export default function GongsilSidebar({
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       {isAuctionMode && (
-                        <span
-                          style={{
-                            display: "inline-block",
-                            fontSize: 11,
-                            color: "#fa5252",
-                            border: "1px solid #fa5252",
-                            padding: "1px 5px",
-                            borderRadius: 4,
-                            fontWeight: "bold",
-                          }}
-                        >
-                          {getAuctionInfo(prop).badge}
-                        </span>
+                        <>
+                          <span
+                            style={{
+                              display: "inline-block",
+                              fontSize: 11,
+                              color: "#fa5252",
+                              border: "1px solid #fa5252",
+                              padding: "1px 5px",
+                              borderRadius: 4,
+                              fontWeight: "bold",
+                            }}
+                          >
+                            {getAuctionInfo(prop).badge}
+                          </span>
+                          {prop.created_at && (Date.now() - new Date(prop.created_at).getTime()) < 3 * 24 * 60 * 60 * 1000 && (
+                            <span
+                              style={{
+                                display: "inline-block",
+                                fontSize: 10,
+                                color: "#fff",
+                                background: "#f97316",
+                                padding: "1px 6px",
+                                borderRadius: 4,
+                                fontWeight: 800,
+                                letterSpacing: 0.5,
+                              }}
+                            >
+                              New
+                            </span>
+                          )}
+                        </>
                       )}
                       {showCommission && !isAuctionMode && (prop.realtor_commission || prop.commission_type) && (
                         <span
