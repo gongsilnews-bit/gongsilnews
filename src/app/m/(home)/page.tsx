@@ -9,7 +9,6 @@ export const revalidate = 300;
 
 export default async function MobileHomePage() {
   const [
-    vacancyRes,
     headlineRes,
     gongsilRes,
     realestateRes,
@@ -18,7 +17,6 @@ export default async function MobileHomePage() {
     mapNewsRes,
     lecturesRes,
   ] = await Promise.all([
-    getVacanciesForMap(),
     getArticles({ status: "APPROVED", is_headline: true, limit: 8 }),
     getArticles({ status: "APPROVED", section1: "공실뉴스", limit: 6 }),
     getArticles({ status: "APPROVED", section1: "부동산·경제", limit: 6 }),
@@ -28,7 +26,6 @@ export default async function MobileHomePage() {
     getLectures({ status: "ACTIVE" }),
   ]);
 
-  const vacancies = vacancyRes.data || [];
   const headlineArticles = headlineRes.success ? (headlineRes.data || []) : [];
   const gongsilArticles = gongsilRes.success ? (gongsilRes.data || []) : [];
   const realestateArticles = realestateRes.success ? (realestateRes.data || []) : [];
@@ -40,7 +37,7 @@ export default async function MobileHomePage() {
   return (
     <>
       <MobileHomeClient
-        vacancies={vacancies}
+        vacancies={[]}
         headlineArticles={headlineArticles}
         gongsilArticles={gongsilArticles}
         realestateArticles={realestateArticles}

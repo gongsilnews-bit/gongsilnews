@@ -67,8 +67,9 @@ const CATEGORIES = [
 ];
 
 export default function MobileHomeClient(props: Props) {
-  const { vacancies, headlineArticles, gongsilArticles, realestateArticles, marketingArticles, lifeArticles, mapArticles, lectures } = props;
+  const { headlineArticles, gongsilArticles, realestateArticles, marketingArticles, lifeArticles, mapArticles, lectures } = props;
   const router = useRouter();
+  const [vacancies, setVacancies] = useState<any[]>([]);
   const [heroIdx, setHeroIdx] = useState(0);
   const [swipeOffset, setSwipeOffset] = useState(0);
   const [isSwipingHero, setIsSwipingHero] = useState(false);
@@ -77,6 +78,17 @@ export default function MobileHomeClient(props: Props) {
 
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
+  useEffect(() => {
+    async function loadVacancies() {
+      const { getVacanciesForMap } = await import("@/app/actions/vacancy");
+      const res = await getVacanciesForMap();
+      if (res.success && res.data) {
+        setVacancies(res.data);
+      }
+    }
+    loadVacancies();
+  }, []);
 
   useEffect(() => {
     async function getSession() {
