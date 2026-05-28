@@ -539,6 +539,31 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
           return false;
         });
       });
+
+      // 경매 모드 검색어 필터 (물건관리번호, 건물명, 주소, 용도분류)
+      if (filterSearchKeyword) {
+        const kw = filterSearchKeyword.trim().toLowerCase();
+        auctionList = auctionList.filter((v) => {
+          const meta = (v as any).metadata || {};
+          const cltrNo = String(meta.cltrMngNo || meta.cltr_mng_no || "").toLowerCase();
+          const bldName = String(v.building_name || "").toLowerCase();
+          const dongName = String(v.dong || "").toLowerCase();
+          const sigungu = String(v.sigungu || "").toLowerCase();
+          const addr = String(v.detail_addr || "").toLowerCase();
+          const scls = String(meta.cltrUsgSclsCtgrNm || "").toLowerCase();
+          const mcls = String(meta.cltrUsgMclsCtgrNm || "").toLowerCase();
+          return (
+            cltrNo.includes(kw) ||
+            bldName.includes(kw) ||
+            dongName.includes(kw) ||
+            sigungu.includes(kw) ||
+            addr.includes(kw) ||
+            scls.includes(kw) ||
+            mcls.includes(kw)
+          );
+        });
+      }
+
       return auctionList;
     }
 
