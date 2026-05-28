@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 
 const KAKAO_APP_KEY = process.env.NEXT_PUBLIC_KAKAO_APP_KEY || "435d3602201a49ea712e5f5a36fe6efc";
@@ -13,6 +13,24 @@ export default function MiniVacancyMap({ vacancies }: Props) {
   const router = useRouter();
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInitRef = useRef(false);
+  const mapInstanceRef = useRef<any>(null);
+  const [visibleCount, setVisibleCount] = useState(0);
+
+  // vacancies가 로드되거나 바뀔 때 현재 지도의 Bounds 범위 내 개수를 다시 계산하는 동기화 훅
+  useEffect(() => {
+    if (!mapInstanceRef.current) return;
+    const map = mapInstanceRef.current;
+    const withCoords = vacancies.filter((v) => v.lat && v.lng);
+    const bounds = map.getBounds();
+    if (bounds) {
+      const sw = bounds.getSouthWest();
+      const ne = bounds.getNorthEast();
+      const visible = withCoords.filter((v) => {
+        return v.lat >= sw.getLat() && v.lat <= ne.getLat() && v.lng >= sw.getLng() && v.lng <= ne.getLng();
+      });
+      setVisibleCount(visible.length);
+    }
+  }, [vacancies]);
 
   useEffect(() => {
     const initMap = () => {
@@ -32,13 +50,32 @@ export default function MiniVacancyMap({ vacancies }: Props) {
       const map = new kakao.maps.Map(mapRef.current, {
         center: new kakao.maps.LatLng(centerLat, centerLng),
         level: 7,
-        draggable: false,    // 미리보기이므로 드래그 비활성화
-        scrollwheel: false,
-        disableDoubleClickZoom: true,
       });
 
-      // 줌 컨트롤 숨김 (미리보기)
-      map.setZoomable(false);
+      mapInstanceRef.current = map;
+
+      // 현재 보이는 경계 좌표 구해서 카운트 업데이트
+      const updateVisibleCount = () => {
+        const bounds = map.getBounds();
+        if (!bounds) return;
+        const sw = bounds.getSouthWest();
+        const ne = bounds.getNorthEast();
+        const visible = withCoords.filter((v) => {
+          return (
+            v.lat >= sw.getLat() &&
+            v.lat <= ne.getLat() &&
+            v.lng >= sw.getLng() &&
+            v.lng <= ne.getLng()
+          );
+        });
+        setVisibleCount(visible.length);
+      };
+
+      // 지도 초기 로드 직후 1회 계산
+      updateVisibleCount();
+
+      // 지도가 움직이거나 드래그/줌아웃될 때마다 실시간 계산
+      kakao.maps.event.addListener(map, "idle", updateVisibleCount);
 
       // 마커 그룹화 (좌표 기준)
       const groups: Record<string, any[]> = {};
@@ -101,8 +138,7 @@ export default function MiniVacancyMap({ vacancies }: Props) {
 
   return (
     <div
-      onClick={() => router.push("/m/gongsil")}
-      style={{ position: "relative", width: "100%", cursor: "pointer", borderRadius: "12px", overflow: "hidden" }}
+      style={{ position: "relative", width: "100%", borderRadius: "12px", overflow: "hidden" }}
     >
       {/* 카카오 지도 */}
       <div
@@ -110,18 +146,9 @@ export default function MiniVacancyMap({ vacancies }: Props) {
         style={{ width: "100%", height: "200px", background: "#e8ecf0" }}
       />
 
-      {/* 오버레이: 클릭 유도 (지도 인터랙션 방지용) */}
+      {/* 공실 수 뱃지 (클릭 시 전체 지도 이동) */}
       <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          zIndex: 10,
-          // 투명 오버레이로 지도 드래그 방지 + 클릭 이벤트만 통과
-        }}
-      />
-
-      {/* 공실 수 뱃지 */}
-      <div
+        onClick={() => router.push("/m/gongsil")}
         style={{
           position: "absolute",
           top: 12,
@@ -134,14 +161,15 @@ export default function MiniVacancyMap({ vacancies }: Props) {
           fontSize: 13,
           fontWeight: 700,
           boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
-          pointerEvents: "none",
+          cursor: "pointer",
         }}
       >
-        🏢 공실 {vacancies.filter((v) => v.lat && v.lng).length}건 지도보기
+        🏢 공실 {visibleCount}건 지도보기
       </div>
 
-      {/* 더보기 버튼 */}
+      {/* 더보기 버튼 (클릭 시 전체 지도 이동) */}
       <div
+        onClick={() => router.push("/m/gongsil")}
         style={{
           position: "absolute",
           bottom: 12,
@@ -154,7 +182,7 @@ export default function MiniVacancyMap({ vacancies }: Props) {
           fontSize: 13,
           fontWeight: 700,
           boxShadow: "0 4px 12px rgba(16,33,66,0.4)",
-          pointerEvents: "none",
+          cursor: "pointer",
           display: "flex",
           alignItems: "center",
           gap: 4,
