@@ -297,7 +297,7 @@ button { border: none; background: none; cursor: pointer; font-family: inherit; 
 }
 .ticker-label {
     background: #1a4282;
-    color: #fff;
+    color: #fff !important;
     padding: 20px 30px;
     font-size: 16px;
     font-weight: 700;
@@ -307,8 +307,13 @@ button { border: none; background: none; cursor: pointer; font-family: inherit; 
     align-items: center;
     z-index: 10;
 }
+.ticker-label:visited,
+.ticker-label:active {
+    color: #fff !important;
+}
 .ticker-label:hover {
     background: #000;
+    color: #fff !important;
 }
 .ticker-wrap {
     flex: 1;

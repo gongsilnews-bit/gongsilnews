@@ -468,7 +468,11 @@ export default function HeroMapSection() {
                     </div>
                     
                     <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: "bold" }}>
-                      {showCommission && (item.realtor_commission || item.commission_type) && (
+                      {item.trade_type === "경매" ? (
+                        <span style={{ color: "#e74c3c", border: "1px solid #e74c3c", padding: "1px 4px", borderRadius: 2, fontSize: 10, whiteSpace: "nowrap", letterSpacing: "-0.5px" }}>
+                          경매/공매
+                        </span>
+                      ) : showCommission && (item.realtor_commission || item.commission_type) && (
                         <span style={{ color: "#e74c3c", border: "1px solid #e74c3c", padding: "1px 4px", borderRadius: 2, fontSize: 10, whiteSpace: "nowrap", letterSpacing: "-0.5px" }}>
                           {item.realtor_commission || item.commission_type}
                         </span>
