@@ -64,11 +64,10 @@ export default function HeroMapSection({ initialVacancies }: { initialVacancies?
     }
   }, [selectedClusterIds]);
 
-  // Fetch vacancies from DB via server action, dynamically filtering by category to avoid Supabase row limits flooding
+  // Fetch all vacancies from DB via server action on mount (bypassing row limits in actions layer)
   useEffect(() => {
     const fetchData = async () => {
-      const isAuction = category === "경매";
-      const res = await getVacanciesForMap({ is_auction: isAuction });
+      const res = await getVacanciesForMap();
       if (res.success && res.data) {
         const withImages = res.data.map((v: any) => ({
           ...v,
@@ -80,7 +79,7 @@ export default function HeroMapSection({ initialVacancies }: { initialVacancies?
     };
 
     fetchData();
-  }, [category, initialVacancies]);
+  }, [initialVacancies]);
 
   // 유저 인증 상태 + 권한 레벨 감지
   useEffect(() => {
