@@ -883,13 +883,18 @@ function PremiumSplitRecommend({ articles, memberName, mentalText }: { articles:
             </div>
           )}
 
+          {/* 우측 상단 일자/기자명 */}
+          <div style={{ position: "absolute", top: 24, right: 30, zIndex: 10, textAlign: "right" }}>
+            <span style={{ fontSize: "14px", color: "rgba(255,255,255,0.9)", fontWeight: 500, letterSpacing: "0.5px", textShadow: "0 1px 4px rgba(0,0,0,0.5)" }}>
+              {formatDate(activeArticle.published_at || activeArticle.created_at)} · {activeArticle.author_name || "공실뉴스"}
+            </span>
+          </div>
+
         <div className="premium-hero-text-content">
           <h3 className="premium-hero-title">{activeArticle.title}</h3>
-          <div className="premium-hero-meta-row">
-            <div className="premium-hero-meta">
-              {formatDate(activeArticle.published_at || activeArticle.created_at)} · {activeArticle.author_name || "공실뉴스"}
-            </div>
-            {articles.length > 1 && (
+          
+          {articles.length > 1 && (
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "16px" }}>
               <div className="premium-slider-controls" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
                 <span className="premium-slider-counter">
                   {activeIndex + 1} / {articles.length}
@@ -901,8 +906,8 @@ function PremiumSplitRecommend({ articles, memberName, mentalText }: { articles:
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
                 </button>
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </Link>
 
@@ -996,10 +1001,10 @@ function PremiumSplitRecommend({ articles, memberName, mentalText }: { articles:
           position: relative;
           z-index: 3;
           margin-top: auto;
-          padding: 30px 40px;
+          padding: 0 40px 24px;
           display: flex;
           flex-direction: column;
-          gap: 12px;
+          gap: 0;
         }
         .premium-hero-title {
           font-size: 36px;
