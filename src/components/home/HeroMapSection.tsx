@@ -433,37 +433,7 @@ export default function HeroMapSection({ initialVacancies }: { initialVacancies?
         </button>
       )}
 
-      {/* 🛑 6월 1일 오픈 안내 배너 (우측 하단 크게) */}
-      <div style={{
-        position: 'absolute', bottom: 40, right: 40,
-        zIndex: 100, maxWidth: 450, width: '90%',
-      }}>
-        <div style={{ background: '#fff', padding: '36px 40px', borderRadius: 16, boxShadow: '0 8px 30px rgba(0,0,0,0.2)', border: '1px solid #e0e0e0' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
-            <span style={{ fontSize: 36 }}>📢</span>
-            <h3 style={{ fontSize: 22, fontWeight: 900, color: '#111', margin: 0, letterSpacing: '-0.5px', lineHeight: 1.4 }}>
-              공실열람 지도는<br/><span style={{ color: '#1a73e8' }}>6월 1일 정식 오픈</span>합니다!
-            </h3>
-          </div>
-          <p style={{ fontSize: 16, color: '#666', margin: '0 0 24px 0', lineHeight: 1.6 }}>
-            현재는 사전 매물 등록 기간입니다.<br/>중개사무소 회원 가입 후 무료로 등록해 보세요.
-          </p>
-          <div style={{ display: 'flex', gap: 12 }}>
-            <button 
-              onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push('/signup'); }}
-              style={{ flex: 1, background: '#1a73e8', color: '#fff', border: 'none', padding: '16px 0', borderRadius: 8, fontSize: 16, fontWeight: 'bold', cursor: 'pointer' }}
-            >
-              🚀 회원가입
-            </button>
-            <button 
-              onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push('/realty_admin'); }}
-              style={{ flex: 1, background: '#fff', color: '#1a73e8', border: '1px solid #1a73e8', padding: '16px 0', borderRadius: 8, fontSize: 16, fontWeight: 'bold', cursor: 'pointer' }}
-            >
-              💻 매물 등록
-            </button>
-          </div>
-        </div>
-      </div>
+
 
       {isAuthModalOpen && <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />}
     </div>
