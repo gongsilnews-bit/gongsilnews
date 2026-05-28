@@ -171,7 +171,12 @@ button { border: none; background: none; cursor: pointer; font-family: inherit; 
     color: #222;
     align-items: center;
 }
-.gnb-new a { transition: all 0.2s; padding-bottom: 4px; }
+.gnb-new a { transition: all 0.2s; }
+.gnb-new > a,
+.gnb-dropdown-parent > a {
+    display: inline-block;
+    padding: 10px 0;
+}
 .gnb-new a:hover { color: #1a4282 !important; }
 .gnb-new a.active { color: #1a4282 !important; font-weight: 800 !important; }
 .gnb-new .divider {

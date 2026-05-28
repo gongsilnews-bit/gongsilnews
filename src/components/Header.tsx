@@ -350,7 +350,7 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
                   </div>
                   <Link href="/#special-lecture">부동산특강</Link>
                   <div className="gnb-dropdown-parent" style={{ position: "relative", display: "inline-block" }}>
-                    <Link href="/board" style={{ padding: "10px 0", transition: "color 0.2s" }}>자료실</Link>
+                    <Link href="/board">자료실</Link>
                     <div className="gnb-dropdown">
                       <ul>
                         <li><a href="/board?id=drone">드론영상</a></li>
@@ -362,7 +362,7 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
                     </div>
                   </div>
                   <div className="gnb-dropdown-parent" style={{ position: "relative", display: "inline-block" }}>
-                    <Link href="/board?id=free" style={{ padding: "10px 0", transition: "color 0.2s" }}>커뮤니티</Link>
+                    <Link href="/board?id=free">커뮤니티</Link>
                     <div className="gnb-dropdown">
                       <ul>
                         <li><a href="/board?id=free">자유게시판</a></li>
