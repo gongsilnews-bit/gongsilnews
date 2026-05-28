@@ -89,6 +89,15 @@ async function fetchOnbidItems(serviceKey: string, targetSido: string): Promise<
       const res = await fetch(url, { next: { revalidate: 0 } });
       if (res.ok) {
         const data = await res.json();
+        
+        // 온비드 API 실시간 차단/한도 초과/에러 감지
+        const header = data.header || data.response?.header;
+        const resultCode = header?.resultCode;
+        const resultMsg = header?.resultMsg;
+        if (resultCode && resultCode !== "00" && resultCode !== "NORMAL_CODE") {
+          throw new Error(`온비드 API 오류 [${resultCode}]: ${resultMsg}`);
+        }
+
         const body = data.body || data.response?.body;
         const pageItems = body?.items?.item || body?.items || [];
         if (Array.isArray(pageItems) && pageItems.length > 0) {
@@ -101,10 +110,13 @@ async function fetchOnbidItems(serviceKey: string, targetSido: string): Promise<
         } else {
           hasMore = false;
         }
-      } else { hasMore = false; }
-    } catch (err) {
+      } else {
+        hasMore = false;
+      }
+    } catch (err: any) {
       console.error(`API pageNo=${pageNo} 에러:`, err);
       hasMore = false;
+      throw err; // 에러를 상위로 전파하여 침묵하지 않도록 함
     }
   }
   return items;
@@ -178,7 +190,7 @@ export async function syncOnbidProperties(targetSido: string = "서울특별시"
       .from("vacancies")
       .select("id, metadata, lat, lng, building_name, detail_addr")
       .eq("trade_type", "경매")
-      .eq("sido", normalizeSido(targetSido))
+      .in("sido", [targetSido, normalizeSido(targetSido)])
       .eq("status", "ACTIVE");
 
     // DB의 공고번호 → vacancy ID 맵 구축

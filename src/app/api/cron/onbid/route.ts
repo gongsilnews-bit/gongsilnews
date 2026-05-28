@@ -27,7 +27,7 @@ export async function GET(req: Request) {
   // 중복 정리 모드
   if (dedup) {
     const result = await deduplicateOnbidProperties();
-    return NextResponse.json({ success: true, message: "중복 정리 완료", ...result });
+    return NextResponse.json({ message: "중복 정리 완료", ...result });
   }
 
   const sidos = [
@@ -55,6 +55,9 @@ export async function GET(req: Request) {
     console.log(`📍 ${sido} 동기화 중... (${elapsed.toFixed(0)}초)`);
     try {
       const syncResult = await syncOnbidProperties(sido.trim());
+      if (!syncResult.success) {
+        throw new Error(syncResult.error || "동기화 실패");
+      }
       results.push({ sido: sido.trim(), ...syncResult });
 
       // 즉시 로그 기록
@@ -69,7 +72,8 @@ export async function GET(req: Request) {
             expired: syncResult.deleted || 0,
             skipped: syncResult.skipped || 0,
             isManual: isManualRun,
-            elapsed: syncResult.elapsed || "0"
+            elapsed: syncResult.elapsed || "0",
+            success: true
           })
         });
       } catch (logErr) {
@@ -78,6 +82,27 @@ export async function GET(req: Request) {
     } catch (err: any) {
       console.error(`❌ ${sido} 에러:`, err.message);
       results.push({ sido: sido.trim(), success: false, error: err.message });
+
+      // 즉시 에러 로그 기록
+      try {
+        await supabase.from("agent_chats").insert({
+          channel_id: "onbid_sync_log",
+          role: "agent",
+          content: JSON.stringify({
+            target: sido.trim(),
+            registered: 0,
+            updated: 0,
+            expired: 0,
+            skipped: 0,
+            isManual: isManualRun,
+            elapsed: "0",
+            success: false,
+            error: err.message
+          })
+        });
+      } catch (logErr) {
+        console.error(`에러 로그 기록 실패:`, logErr);
+      }
     }
   }
 
