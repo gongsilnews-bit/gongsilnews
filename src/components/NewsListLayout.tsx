@@ -882,7 +882,6 @@ function PremiumSplitRecommend({ articles, memberName, mentalText }: { articles:
               <svg viewBox="0 0 24 24" width="20" height="20" fill="white" style={{ marginLeft: "1.5px" }}><path d="M8 5v14l11-7z"/></svg>
             </div>
           )}
-        </div>
 
         <div className="premium-hero-text-content">
           <h3 className="premium-hero-title">{activeArticle.title}</h3>
