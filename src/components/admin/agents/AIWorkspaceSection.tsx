@@ -12,6 +12,9 @@ const DEFAULT_NAMES: Record<string, string> = {
   articleReview: "기사심사 에이전트",
   article: "기사작성 에이전트",
   pressRelease: "보도자료 에이전트",
+  propertyDescription: "매물설명 생성",
+  marketingDraft: "마케팅 초안 마법사",
+  imageExtract: "이미지 매물 추출",
   onbid: "온비드 동기화 에이전트",
 };
 

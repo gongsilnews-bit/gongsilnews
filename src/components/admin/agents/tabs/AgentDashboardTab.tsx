@@ -10,6 +10,9 @@ const DEFAULT_AGENTS = [
   { id: "articleReview", emoji: "🔍", defaultName: "기사심사 에이전트", description: "기사 품질·홍보성 문구를 자동 검토합니다.", status: "running" as const },
   { id: "article", emoji: "📰", defaultName: "기사작성 에이전트", description: "부동산 뉴스 기사 초안을 작성합니다.", status: "running" as const },
   { id: "pressRelease", emoji: "🏛️", defaultName: "보도자료 에이전트", description: "국토부 보도자료를 분석해 기사로 작성합니다.", status: "running" as const },
+  { id: "propertyDescription", emoji: "🏠", defaultName: "매물설명 생성", description: "공실 등록 시 AI 설명글을 자동 생성합니다.", status: "running" as const },
+  { id: "marketingDraft", emoji: "✍️", defaultName: "마케팅 초안 마법사", description: "블로그/SNS/쇼츠 콘텐츠를 일괄 생성합니다.", status: "running" as const },
+  { id: "imageExtract", emoji: "🖼️", defaultName: "이미지 매물 추출", description: "사진에서 매물 정보를 AI로 자동 추출합니다.", status: "running" as const },
   { id: "onbid", emoji: "🤖", defaultName: "온비드 동기화 에이전트", description: "매일 온비드 경공매 물건을 연동하고 만료 건을 삭제합니다.", status: "running" as const },
 ];
 
