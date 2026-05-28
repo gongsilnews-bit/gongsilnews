@@ -882,6 +882,16 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
             setActiveMode("경매");
             setActiveDetailTab("auction_detail");
             localStorage.setItem("gongsil_category", "auction");
+            // pills 설정 (저장된 것 또는 기본값) — pills가 비어있으면 filteredVacancies가 []을 반환
+            const savedPills = localStorage.getItem("gongsil_pills_auction");
+            let pills: string[] = [];
+            if (savedPills) { try { pills = JSON.parse(savedPills); } catch {} }
+            if (pills.length === 0) {
+              const c = CATEGORY_CONFIG["auction"];
+              pills = c?.pills || [];
+            }
+            setActivePills(pills);
+            localStorage.setItem("gongsil_pills", JSON.stringify(pills));
           } else {
             setActiveDetailTab("info");
             const catEntry = Object.entries(CATEGORY_TO_PROPERTY_TYPE).find(
@@ -891,7 +901,15 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
               setActiveCategory(catEntry[0]);
               setIsAuctionMode(false);
               setActiveMode("공실");
-              setActivePills(target.sub_category ? [target.sub_category] : []);
+              // pills 설정 (저장된 것 또는 기본값)
+              const savedPills = localStorage.getItem(`gongsil_pills_${catEntry[0]}`);
+              let pills: string[] = [];
+              if (savedPills) { try { pills = JSON.parse(savedPills); } catch {} }
+              if (pills.length === 0) {
+                pills = target.sub_category ? [target.sub_category] : (CATEGORY_CONFIG[catEntry[0]]?.pills || []);
+              }
+              setActivePills(pills);
+              localStorage.setItem("gongsil_pills", JSON.stringify(pills));
               localStorage.setItem("gongsil_category", catEntry[0]);
             }
           }
