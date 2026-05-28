@@ -45,8 +45,8 @@ export default function HeroMapSection() {
     
     if (markersRef.current && (window as any).kakao?.maps) {
        const size = 36;
-       const normalSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="%234b89ff" stroke="white" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="14" font-weight="bold" font-family="sans-serif">1</text></svg>`;
-       const activeSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="white" stroke="%234b89ff" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="%234b89ff" font-size="14" font-weight="bold" font-family="sans-serif">1</text></svg>`;
+       const normalSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="%231a4282" stroke="white" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="14" font-weight="bold" font-family="sans-serif">1</text></svg>`;
+       const activeSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="white" stroke="%231a4282" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="%231a4282" font-size="14" font-weight="bold" font-family="sans-serif">1</text></svg>`;
 
        markersRef.current.forEach((marker: any) => {
           const idStr = markerIdMapRef.current.get(marker);
@@ -232,7 +232,7 @@ export default function HeroMapSection() {
       const isSelected = selectedClusterIdsRef.current?.includes(strId);
 
       const isAuction = prop.trade_type === "경매" || prop.is_auction === true;
-      const color = isAuction ? "%231a4282" : "%231a73e8";
+      const color = "%231a4282";
 
       const normalSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="${color}" stroke="white" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="14" font-weight="bold" font-family="sans-serif">1</text></svg>`;
       const activeSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="white" stroke="${color}" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="${color}" font-size="14" font-weight="bold" font-family="sans-serif">1</text></svg>`;
@@ -299,11 +299,11 @@ export default function HeroMapSection() {
           if (overlay && overlay.style) {
               if (isMatch) {
                   overlay.style.background = '#ffffff';
-                  overlay.style.color = hasStandard ? '#1a73e8' : '#1a4282';
-                  overlay.style.border = hasStandard ? '3px solid #1a73e8' : '3px solid #1a4282';
+                  overlay.style.color = '#1a4282';
+                  overlay.style.border = '3px solid #1a4282';
                   overlay.style.zIndex = '999';
               } else {
-                  overlay.style.background = hasStandard ? '#1a73e8' : '#1a4282';
+                  overlay.style.background = '#1a4282';
                   overlay.style.color = '#ffffff';
                   overlay.style.border = '3px solid rgba(255,255,255,0.8)';
                   overlay.style.zIndex = '';
@@ -382,7 +382,7 @@ export default function HeroMapSection() {
           <div style={{ padding: "12px 15px", borderBottom: "1px solid #eee", display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, background: "#fff", zIndex: 999999, borderRadius: "10px 10px 0 0" }}>
             <h3 style={{ margin: 0, fontSize: 16, color: "#111", display: "flex", alignItems: "center", fontWeight: 800, cursor: "pointer", letterSpacing: "-0.5px" }} onClick={() => router.push("/gongsil")}>
               실시간 공실
-              <svg style={{ marginLeft: 4, color: "#1a73e8" }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              <svg style={{ marginLeft: 4, color: "#1a4282" }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
             </h3>
             <div style={{ display: "flex", gap: 8 }}>
               <select
@@ -444,7 +444,7 @@ export default function HeroMapSection() {
                     <h4 style={{ margin: "0 0 4px 0", fontSize: 14, color: isMasked ? "#bbb" : "#111", fontWeight: 800, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", letterSpacing: isMasked ? 1 : -0.5 }}>
                       {isMasked ? addrText.replace(/[^\s]/g, "X") : addrText}
                     </h4>
-                    <div style={{ color: "#1a73e8", fontWeight: 800, fontSize: 15, marginBottom: 4, letterSpacing: "-0.5px" }}>
+                    <div style={{ color: "#1a4282", fontWeight: 800, fontSize: 15, marginBottom: 4, letterSpacing: "-0.5px" }}>
                       {getPriceText(item)}
                     </div>
                     <div style={{ color: "#666", fontSize: 11.5, marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", letterSpacing: "-0.3px" }}>
