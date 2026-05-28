@@ -197,7 +197,7 @@ export default function HeroMapSection() {
     });
     
     // 확대(줌인) / 축소(줌아웃) 범위 제한
-    map.setMinLevel(3); // 스크린샷 참고: 너무 가깝게 확대되지 않도록 제한
+    map.setMinLevel(6); // 스크린샷 참고: 너무 가깝게 확대되지 않도록 제한 (골목길 노출 차단)
     map.setMaxLevel(7); // 스크린샷 참고: 너무 멀게 축소되지 않도록 제한
     
     kakaoMapRef.current = map;
