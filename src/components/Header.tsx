@@ -414,7 +414,9 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
                     setAuthTab('login');
                     setIsAuthModalOpen(true);
                   } else {
-                    router.push('/realty_admin?menu=gongsil&action=write');
+                    if (userRole === 'ADMIN') router.push('/admin?menu=gongsil&action=write');
+                    else if (userRole === 'REALTOR') router.push('/realty_admin?menu=gongsil&action=write');
+                    else router.push('/user_admin?menu=gongsil&action=write');
                   }
                 }}
                   style={{
