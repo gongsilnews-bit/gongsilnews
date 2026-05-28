@@ -850,6 +850,9 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     kakaoMapRef.current.panTo(position);
   }, []);
 
+  // 보류된 지도 이동 좌표 (지도 로딩 전 핸들러 실행 시 사용)
+  const pendingPanRef = useRef<{ lat: number; lng: number } | null>(null);
+
   // Handle ?id=X from main page navigation
   const idParamHandledRef = useRef<string | null>(null);
   const idParamMapPannedRef = useRef<string | null>(null);
@@ -914,12 +917,16 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
             }
           }
 
-          if (target.lat && target.lng && kakaoMapRef.current && idParamMapPannedRef.current !== idParam) {
-            const kakao = (window as any).kakao;
-            if (kakao?.maps) {
-              idParamMapPannedRef.current = idParam;
-              kakaoMapRef.current.panTo(new kakao.maps.LatLng(target.lat, target.lng));
-              kakaoMapRef.current.setLevel(5);
+          if (target.lat && target.lng && idParamMapPannedRef.current !== idParam) {
+            idParamMapPannedRef.current = idParam;
+            if (kakaoMapRef.current) {
+              const kakao = (window as any).kakao;
+              if (kakao?.maps) {
+                kakaoMapRef.current.panTo(new kakao.maps.LatLng(target.lat, target.lng));
+                kakaoMapRef.current.setLevel(5);
+              }
+            } else {
+              pendingPanRef.current = { lat: target.lat, lng: target.lng };
             }
           }
           setSelectedClusterIds([String(target.id)]);
@@ -975,12 +982,16 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
       setActivePills(pills);
       localStorage.setItem("gongsil_pills", JSON.stringify(pills));
 
-      // 지도를 해당 물건 위치로 이동
-      if (target.lat && target.lng && kakaoMapRef.current) {
-        const kakao = (window as any).kakao;
-        if (kakao?.maps) {
-          kakaoMapRef.current.panTo(new kakao.maps.LatLng(target.lat, target.lng));
-          kakaoMapRef.current.setLevel(5);
+      // 지도를 해당 물건 위치로 이동 (지도 준비 전이면 보류)
+      if (target.lat && target.lng) {
+        if (kakaoMapRef.current) {
+          const kakao = (window as any).kakao;
+          if (kakao?.maps) {
+            kakaoMapRef.current.panTo(new kakao.maps.LatLng(target.lat, target.lng));
+            kakaoMapRef.current.setLevel(5);
+          }
+        } else {
+          pendingPanRef.current = { lat: target.lat, lng: target.lng };
         }
       }
       setSelectedClusterIds([String(target.id)]);
@@ -988,6 +999,19 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
 
     loadByMngNo();
   }, [searchParams, dbVacancies, mapLoaded]);
+
+  // 보류된 지도 이동 실행 (지도가 준비된 후)
+  useEffect(() => {
+    if (mapLoaded && kakaoMapRef.current && pendingPanRef.current) {
+      const kakao = (window as any).kakao;
+      if (kakao?.maps) {
+        const { lat, lng } = pendingPanRef.current;
+        kakaoMapRef.current.panTo(new kakao.maps.LatLng(lat, lng));
+        kakaoMapRef.current.setLevel(5);
+        pendingPanRef.current = null;
+      }
+    }
+  }, [mapLoaded]);
 
   // On activeProperty change, reset detail scroll position
   useEffect(() => {
