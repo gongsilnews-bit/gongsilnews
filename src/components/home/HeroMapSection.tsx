@@ -165,8 +165,14 @@ export default function HeroMapSection({ initialVacancies }: { initialVacancies?
 
   const getPriceText = (row: any) => {
     if (!row) return "";
-    return row.trade_type === "경매" ? `경매 ${formatAmount(row.deposit)}`
-      : row.trade_type === "매매" ? `매매 ${formatAmount(row.deposit)}`
+    if (row.trade_type === "경매") {
+      const meta = row.metadata || {};
+      const appraisalPrice = meta.appraisal_price || parseInt(meta.apslEvlAmt || "0", 10) || (row.deposit && row.deposit > 100000 ? row.deposit : (row.deposit || 0) * 10000);
+      const lowestBidPrice = meta.lowest_bid_price || parseInt(meta.lowstBidPrcIndctCont || "0", 10) || 0;
+      const displayPrice = lowestBidPrice > 0 ? lowestBidPrice : appraisalPrice;
+      return `경매 ${formatAmount(displayPrice)}`;
+    }
+    return row.trade_type === "매매" ? `매매 ${formatAmount(row.deposit)}`
       : row.trade_type === "전세" ? `전세 ${formatAmount(row.deposit)}`
       : `${formatAmount(row.deposit)}/${formatAmount(row.monthly_rent)}`;
   };

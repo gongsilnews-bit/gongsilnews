@@ -65,7 +65,11 @@ function formatPrice(v: any): string {
   const trade = v.trade_type || "";
 
   if (trade === "경매") {
-    return `${formatAmount(dep)}`;
+    const meta = v.metadata || {};
+    const appraisalPrice = meta.appraisal_price || parseInt(meta.apslEvlAmt || "0", 10) || (dep && dep > 100000 ? dep : dep * 10000);
+    const lowestBidPrice = meta.lowest_bid_price || parseInt(meta.lowstBidPrcIndctCont || "0", 10) || 0;
+    const displayPrice = lowestBidPrice > 0 ? lowestBidPrice : appraisalPrice;
+    return `${formatAmount(displayPrice)}`;
   }
   if (trade === "월세" && rent > 0) {
     const monthlyManwon = Math.round(rent / 10000);
