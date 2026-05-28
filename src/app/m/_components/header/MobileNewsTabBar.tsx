@@ -83,7 +83,7 @@ export default function MobileNewsTabBar({ activeTab }: MobileNewsTabBarProps) {
                 padding: "0 14px 0",
                 fontSize: "17px",
                 fontWeight: activeTab === cat.key ? 700 : 500,
-                color: activeTab === cat.key ? "#508bf5" : "#222222",
+                color: activeTab === cat.key ? "#1a4282" : "#222222",
                 background: "none",
                 border: "none",
                 cursor: "pointer",
@@ -95,7 +95,7 @@ export default function MobileNewsTabBar({ activeTab }: MobileNewsTabBarProps) {
               <span style={{
                 display: "inline-block",
                 paddingBottom: "3px",
-                borderBottom: activeTab === cat.key ? "3px solid #508bf5" : "3px solid transparent",
+                borderBottom: activeTab === cat.key ? "3px solid #1a4282" : "3px solid transparent",
               }}>
                 {cat.label}
               </span>
