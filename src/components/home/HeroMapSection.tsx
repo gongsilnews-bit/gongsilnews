@@ -64,28 +64,23 @@ export default function HeroMapSection({ initialVacancies }: { initialVacancies?
     }
   }, [selectedClusterIds]);
 
-  // Fetch vacancies from DB via server action if not provided via props
+  // Fetch vacancies from DB via server action, dynamically filtering by category to avoid Supabase row limits flooding
   useEffect(() => {
-    const processData = (data: any[]) => {
-      const withImages = data.map((v: any) => ({
-        ...v,
-        photos: v.vacancy_photos ? [...v.vacancy_photos].sort((a: any, b: any) => a.sort_order - b.sort_order).map((p: any) => p.url) : [],
-      }));
-      const filtered = withImages.filter((v: any) => v.status === 'ACTIVE' && v.lat && v.lng);
-      setVacancies(filtered);
-    };
-
     const fetchData = async () => {
-      const res = await getVacanciesForMap();
+      const isAuction = category === "경매";
+      const res = await getVacanciesForMap({ is_auction: isAuction });
       if (res.success && res.data) {
-        processData(res.data);
+        const withImages = res.data.map((v: any) => ({
+          ...v,
+          photos: v.vacancy_photos ? [...v.vacancy_photos].sort((a: any, b: any) => a.sort_order - b.sort_order).map((p: any) => p.url) : [],
+        }));
+        const filtered = withImages.filter((v: any) => v.status === 'ACTIVE' && v.lat && v.lng);
+        setVacancies(filtered);
       }
     };
 
-    // [캐시 무력화 안전장치] SSR/Next.js 빌드 캐시로 인해 불완전한 극소수 데이터가 바인딩되는 현상을
-    // 철저하게 원천 차단하기 위해 브라우저 마운트 시 항상 실시간 최신 Supabase 데이터를 가져옵니다.
     fetchData();
-  }, [initialVacancies]);
+  }, [category, initialVacancies]);
 
   // 유저 인증 상태 + 권한 레벨 감지
   useEffect(() => {
@@ -203,17 +198,19 @@ export default function HeroMapSection({ initialVacancies }: { initialVacancies?
     });
   }, [mapLoaded]);
 
-  // 2. Add markers and clusterer when map is ready AND data is loaded
+  // 2. Add markers and clusterer when map is ready
   useEffect(() => {
-    if (!kakaoMapRef.current || filteredVacancies.length === 0) return;
-
-    const kakao = (window as any).kakao;
-    const map = kakaoMapRef.current;
+    if (!kakaoMapRef.current) return;
 
     // Clear old markers
     if (clustererRef.current) clustererRef.current.clear();
     markersRef.current = [];
     markerIdMapRef.current.clear();
+
+    if (filteredVacancies.length === 0) return;
+
+    const kakao = (window as any).kakao;
+    const map = kakaoMapRef.current;
 
     const newMarkers: any[] = [];
     filteredVacancies.forEach(prop => {
