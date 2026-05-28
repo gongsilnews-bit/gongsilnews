@@ -930,6 +930,46 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     }
   }, [searchParams, dbVacancies, mapLoaded]);
 
+  // Handle ?mng=물건관리번호 from main page hero (경매 물건 — UUID 대신 안정적 식별자 사용)
+  const mngParamHandledRef = useRef<string | null>(null);
+  useEffect(() => {
+    const mngParam = searchParams.get("mng");
+    if (!mngParam || mngParamHandledRef.current === mngParam) return;
+
+    // 먼저 현재 dbVacancies에서 cltrMngNo로 검색
+    let target = dbVacancies.find((v) => {
+      const m = v.metadata?.cltrMngNo || v.metadata?.cltr_mng_no;
+      return m === mngParam;
+    });
+
+    if (target) {
+      mngParamHandledRef.current = mngParam;
+      setActiveProperty(target.id);
+      setShowDetail(true);
+      setActiveCategory("auction");
+      setIsAuctionMode(true);
+      setActiveMode("경매");
+      setActiveDetailTab("auction_detail");
+      localStorage.setItem("gongsil_category", "auction");
+
+      const savedPills = localStorage.getItem("gongsil_pills_auction");
+      let pills: string[] = [];
+      if (savedPills) { try { pills = JSON.parse(savedPills); } catch {} }
+      if (pills.length === 0) { pills = CATEGORY_CONFIG["auction"]?.pills || []; }
+      setActivePills(pills);
+      localStorage.setItem("gongsil_pills", JSON.stringify(pills));
+
+      if (target.lat && target.lng && kakaoMapRef.current) {
+        const kakao = (window as any).kakao;
+        if (kakao?.maps) {
+          kakaoMapRef.current.panTo(new kakao.maps.LatLng(target.lat, target.lng));
+          kakaoMapRef.current.setLevel(5);
+        }
+      }
+      setSelectedClusterIds([String(target.id)]);
+    }
+  }, [searchParams, dbVacancies, mapLoaded]);
+
   // On activeProperty change, reset detail scroll position
   useEffect(() => {
     const el = document.getElementById("detail-scroll-container");

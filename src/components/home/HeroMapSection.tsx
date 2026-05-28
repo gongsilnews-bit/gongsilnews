@@ -318,8 +318,14 @@ export default function HeroMapSection() {
     }
   }, [filteredVacancies, mapLoaded]);
 
-  const handleVacancyClick = (id: string | number) => {
-    router.push(`/gongsil?id=${id}`);
+  const handleVacancyClick = (item: any) => {
+    // 경매 물건: 물건관리번호(cltrMngNo)로 전달 — UUID는 동기화 시 변경될 수 있음
+    const mngNo = item.metadata?.cltrMngNo || item.metadata?.cltr_mng_no;
+    if (item.trade_type === "경매" && mngNo) {
+      router.push(`/gongsil?mng=${encodeURIComponent(mngNo)}`);
+    } else {
+      router.push(`/gongsil?id=${item.id}`);
+    }
   };
 
   return (
@@ -428,7 +434,7 @@ export default function HeroMapSection() {
                       setIsAuthModalOpen(true);
                       return;
                     }
-                    handleVacancyClick(item.id);
+                    handleVacancyClick(item);
                   }}
                   style={{ padding: "16px", borderBottom: "1px solid #f2f2f2", cursor: "pointer", display: "flex", alignItems: "flex-start", justifyContent: "space-between", transition: "background 0.2s" }}
                   onMouseEnter={(e) => (e.currentTarget.style.background = "#f9f9f9")}
