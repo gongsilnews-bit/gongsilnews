@@ -1070,10 +1070,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                 cursor: "pointer",
               }}
             >
-              {/* 로고가 곤색 배경에서 잘 보이도록 백그라운드 추가 가능하나 우선 원본 유지 */}
-              <div style={{ background: "#fff", padding: "2px 6px", borderRadius: "6px", display: "flex", alignItems: "center", marginBottom: "2px" }}>
-                <img src="/new_logo.png" alt="홈" style={{ width: "24px", height: "24px", objectFit: "contain" }} />
-              </div>
+              <img src="/new_logo.png" alt="홈" style={{ width: "28px", height: "28px", objectFit: "contain" }} />
             </button>
 
             {/* 중앙 스크롤 메뉴 */}
