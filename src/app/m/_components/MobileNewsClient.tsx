@@ -1050,7 +1050,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
               width: "100%",
               maxWidth: "448px",
               zIndex: 40,
-              backgroundColor: "#1a4282", // 변경된 헤더 배경색
+              backgroundColor: "#102142", // 홈 헤더 테마색으로 통일
               borderBottom: "9px solid #F4F6F8",
               display: "flex",
               alignItems: "stretch",
@@ -1134,7 +1134,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                background: "#1a4282", // 텍스트가 비치지 않도록 곤색 배경
+                background: "#102142", // 테마색 곤색 배경
                 border: "none",
                 cursor: "pointer",
               }}
