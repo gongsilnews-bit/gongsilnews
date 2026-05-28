@@ -891,11 +891,6 @@ function PremiumSplitRecommend({ articles, memberName, mentalText }: { articles:
       <style>{`
         .premium-recommend-section {
           margin-bottom: 32px;
-          background: #fff;
-          border: 1px solid #f0f0f0;
-          border-radius: 12px;
-          padding: 24px;
-          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
         }
         .premium-header-banner {
           margin-bottom: 20px;
