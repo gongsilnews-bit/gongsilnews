@@ -892,23 +892,23 @@ function PremiumSplitRecommend({ articles, memberName, mentalText }: { articles:
 
         <div className="premium-hero-text-content">
           <h3 className="premium-hero-title">{activeArticle.title}</h3>
-          
-          {articles.length > 1 && (
-            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "16px" }}>
-              <div className="premium-slider-controls" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
-                <span className="premium-slider-counter">
-                  {activeIndex + 1} / {articles.length}
-                </span>
-                <button className="premium-slider-btn" onClick={handlePrev} title="이전 추천뉴스">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
-                </button>
-                <button className="premium-slider-btn" onClick={handleNext} title="다음 추천뉴스">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                </button>
-              </div>
-            </div>
-          )}
         </div>
+        
+        {articles.length > 1 && (
+          <div style={{ position: "absolute", bottom: 24, right: 30, zIndex: 10 }}>
+            <div className="premium-slider-controls" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+              <span className="premium-slider-counter">
+                {activeIndex + 1} / {articles.length}
+              </span>
+              <button className="premium-slider-btn" onClick={handlePrev} title="이전 추천뉴스">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+              </button>
+              <button className="premium-slider-btn" onClick={handleNext} title="다음 추천뉴스">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </button>
+            </div>
+          </div>
+        )}
       </Link>
 
       <style>{`
@@ -1001,7 +1001,7 @@ function PremiumSplitRecommend({ articles, memberName, mentalText }: { articles:
           position: relative;
           z-index: 3;
           margin-top: auto;
-          padding: 0 40px 24px;
+          padding: 0 160px 24px 40px;
           display: flex;
           flex-direction: column;
           gap: 0;
