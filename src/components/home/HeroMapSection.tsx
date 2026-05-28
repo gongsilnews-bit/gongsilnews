@@ -19,6 +19,7 @@ const CATEGORY_OPTIONS = [
 export default function HeroMapSection() {
   const router = useRouter();
   const [vacancies, setVacancies] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [category, setCategory] = useState("");
   const [userLevel, setUserLevel] = useState<number>(0);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -67,6 +68,7 @@ export default function HeroMapSection() {
   // Fetch all vacancies from DB via server action on mount (bypassing row limits in actions layer)
   useEffect(() => {
     const fetchData = async () => {
+      setIsLoading(true);
       const res = await getVacanciesForMap();
       if (res.success && res.data) {
         const withImages = res.data.map((v: any) => ({
@@ -76,6 +78,7 @@ export default function HeroMapSection() {
         const filtered = withImages.filter((v: any) => v.status === 'ACTIVE' && v.lat && v.lng);
         setVacancies(filtered);
       }
+      setIsLoading(false);
     };
 
     fetchData();
@@ -314,6 +317,28 @@ export default function HeroMapSection() {
     <div className="hero-left" style={{ display: "flex", marginTop: 0, flex: 2.8, position: "relative", minHeight: 480, padding: 0 }}>
       {/* Real Kakao Map */}
       <div ref={mapRef} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", background: "#e8e8e8" }}></div>
+
+      {/* 네트워크 로딩 오버레이 */}
+      {isLoading && (
+        <div style={{ position: "absolute", inset: 0, background: "rgba(255,255,255,0.85)", backdropFilter: "blur(4px)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", zIndex: 999999 }}>
+          <style>{`
+            @keyframes pulseRingHero {
+              0% { transform: scale(0.8); opacity: 0.5; }
+              100% { transform: scale(1.5); opacity: 0; }
+            }
+          `}</style>
+          <div style={{ position: "relative", width: "60px", height: "60px", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "16px" }}>
+            <div style={{ position: "absolute", width: "100%", height: "100%", borderRadius: "50%", background: "#4b89ff", animation: "pulseRingHero 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite" }} />
+            <div style={{ position: "relative", width: "32px", height: "32px", borderRadius: "50%", background: "#1a4282", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+            </div>
+          </div>
+          <h3 style={{ fontSize: "18px", fontWeight: 800, color: "#1a2e50", marginBottom: "8px" }}>네트워크 로딩 중입니다</h3>
+          <p style={{ fontSize: "14px", color: "#6b7280", textAlign: "center", lineHeight: 1.5, margin: 0 }}>
+            데이터를 실시간으로 안전하게 불러오고 있습니다.<br/>잠시만 기다려 주세요.
+          </p>
+        </div>
+      )}
 
       <button className="map-btn" onClick={() => {
         setSelectedClusterIds(null);
