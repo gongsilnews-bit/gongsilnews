@@ -16,7 +16,7 @@ const CATEGORY_OPTIONS = [
   { label: "경공매", value: "경매" },
 ];
 
-export default function HeroMapSection({ initialVacancies }: { initialVacancies?: any[] }) {
+export default function HeroMapSection() {
   const router = useRouter();
   const [vacancies, setVacancies] = useState<any[]>([]);
   const [category, setCategory] = useState("");
@@ -79,7 +79,7 @@ export default function HeroMapSection({ initialVacancies }: { initialVacancies?
     };
 
     fetchData();
-  }, [initialVacancies]);
+  }, []);
 
   // 유저 인증 상태 + 권한 레벨 감지
   useEffect(() => {

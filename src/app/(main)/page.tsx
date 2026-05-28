@@ -17,7 +17,6 @@ import BannerSlot from "@/components/BannerSlot";
 export default async function Home() {
   // ✅ 모든 데이터를 한 번에 병렬 요청 (layout→page→component 직렬 제거)
   const [
-    { data: initialVacancies },
     { data: mainTopBanners },
     { data: mainBottomBanners },
     { data: issueRightBanners },
@@ -26,7 +25,6 @@ export default async function Home() {
     allNewsRes,
     mapNewsRes,
   ] = await Promise.all([
-    getVacanciesForMap(),
     getBannersByPlacement("MAIN_TOP"),
     getBannersByPlacement("MAIN_BOTTOM_FULL"),
     getBannersByPlacement("MAIN_ISSUE_RIGHT"),
@@ -53,7 +51,7 @@ export default async function Home() {
 
         {/* ========== 3. Hero Section (Map & HOT News) ========== */}
         <div className="hero-section" style={{ padding: "0 25px 0 0", border: "0.5px solid #dcdcdc", borderTop: "none", marginBottom: 0, background: "#fff" }}>
-          <HeroMapSection initialVacancies={initialVacancies} />
+          <HeroMapSection />
           <HeroSideContent />
         </div>
 
