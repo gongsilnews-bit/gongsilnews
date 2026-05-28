@@ -424,7 +424,15 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
               ? [...v.vacancy_photos].sort((a: any, b: any) => a.sort_order - b.sort_order).map((p: any) => p.url)
               : [],
           }));
-          setDbVacancies(withImages);
+          // 현재 상세보기 중인 물건이 새 데이터에 없으면 보존 (URL 파라미터 진입 시 깜빡임 방지)
+          setDbVacancies((prev) => {
+            const activeId = activeProperty ? String(activeProperty) : null;
+            const activeItem = activeId ? prev.find(v => String(v.id) === activeId) : null;
+            if (activeItem && !withImages.some((v: any) => String(v.id) === activeId)) {
+              return [...withImages, activeItem];
+            }
+            return withImages;
+          });
         }
       } catch (err) {
         console.error("Failed to fetch bbox vacancies:", err);
