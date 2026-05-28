@@ -3,7 +3,7 @@
 import React, { useEffect, useRef } from "react";
 import Link from "next/link";
 import { formatAmount } from "./page";
-import { getAuctionInfo } from "@/app/(map)/gongsil/gongsilHelpers";
+import { getAuctionInfo, getMaskedAddress } from "@/app/(map)/gongsil/gongsilHelpers";
 
 interface GongsilMobileDetailPanelProps {
   selectedVacancy: any;
@@ -796,9 +796,18 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
               <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>공실광고번호</div>
               <div style={{ fontSize: 14, color: "#222", fontWeight: "bold", padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{selectedVacancy.vacancy_no}</div>
               <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>소재지</div>
-              <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{[selectedVacancy.sido, selectedVacancy.sigungu, selectedVacancy.dong, selectedVacancy.detail_addr].filter(Boolean).join(" ")}</div>
+              <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{getMaskedAddress(selectedVacancy)}</div>
               <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>공실광고특성</div>
-              <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{selectedVacancy.building_name || "-"}</div>
+              <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{(() => {
+                const propType = selectedVacancy.property_type || "";
+                const subCategory = selectedVacancy.sub_category || "";
+                const isApt = ["아파트", "오피스텔", "도시형생활주택"].some(t => propType.includes(t) || subCategory.includes(t));
+                const exp = selectedVacancy.address_exposure;
+                if (!isApt && exp && exp !== "번지공개" && exp !== "지번공개" && exp !== "동/호수공개") {
+                  return "-";
+                }
+                return selectedVacancy.building_name || "-";
+              })()}</div>
               <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>공급/전용면적</div>
               <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{selectedVacancy.supply_m2 ? `${selectedVacancy.supply_m2}m²` : "-"} / {selectedVacancy.exclusive_m2 ? `${selectedVacancy.exclusive_m2}m²` : "-"}</div>
               <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>해당층/총층</div>

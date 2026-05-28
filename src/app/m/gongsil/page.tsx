@@ -12,7 +12,7 @@ import BookmarkCategoryModal from "@/components/BookmarkCategoryModal";
 import MobileFilterBar from "./MobileFilterBar";
 import { useVacancyFilters } from "./filters/useVacancyFilters";
 import MobileTopBarHeader from "../_components/MobileTopBarHeader";
-import { getAuctionInfo } from "@/app/(map)/gongsil/gongsilHelpers";
+import { getAuctionInfo, getJitteredCoords, getMaskedAddress } from "@/app/(map)/gongsil/gongsilHelpers";
 import { GongsilMobileDetailPanel } from "./GongsilMobileDetailPanel";
 import { GongsilMobileDrawerList } from "./GongsilMobileDrawerList";
 
@@ -344,11 +344,14 @@ function MobileGongsilContent() {
       const kakao = (window as any).kakao;
       if (!kakao || !kakao.maps) return;
 
-      const pos = new kakao.maps.LatLng(selectedVacancy.lat, selectedVacancy.lng);
+      const coords = getJitteredCoords(selectedVacancy, true);
+      const pos = new kakao.maps.LatLng(coords.lat, coords.lng);
       
-      const isAptType = (type: string) => ["아파트", "오피스텔", "도시형생활주택"].includes(type || "");
-      const isPrivateAddr = selectedVacancy.address_exposure && selectedVacancy.address_exposure !== '번지공개';
-      const isApt = isAptType(selectedVacancy.property_type) || isAptType(selectedVacancy.sub_category);
+      const exp = selectedVacancy.address_exposure;
+      const propType = selectedVacancy.property_type || "";
+      const subCategory = selectedVacancy.sub_category || "";
+      const isApt = ["아파트", "오피스텔", "도시형생활주택"].some(t => propType.includes(t) || subCategory.includes(t));
+      const isPrivateAddr = exp && exp !== "번지공개" && exp !== "지번공개" && exp !== "동/호수공개";
       const useCircle = isPrivateAddr && !isApt;
       
       setTimeout(() => {
@@ -359,7 +362,7 @@ function MobileGongsilContent() {
             map.setMinLevel(5);
             map.setMaxLevel(8);
             new kakao.maps.Circle({
-              center: pos, radius: 300, strokeWeight: 2, strokeColor: '#3b82f6', strokeOpacity: 0.6,
+              center: pos, radius: 500, strokeWeight: 2, strokeColor: '#3b82f6', strokeOpacity: 0.6,
               strokeStyle: 'solid', fillColor: '#3b82f6', fillOpacity: 0.15, map: map
             });
           } else {
@@ -371,20 +374,11 @@ function MobileGongsilContent() {
           roadviewRef.current.innerHTML = "";
           const rv = new kakao.maps.Roadview(roadviewRef.current);
           const rvClient = new kakao.maps.RoadviewClient();
-          const agencyInfo = Array.isArray(selectedVacancy.members?.agencies) ? selectedVacancy.members.agencies[0] : selectedVacancy.members?.agencies;
 
-          if (useCircle && agencyInfo?.lat && agencyInfo?.lng) {
-            const agencyPos = new kakao.maps.LatLng(agencyInfo.lat, agencyInfo.lng);
-            rvClient.getNearestPanoId(agencyPos, 50, (panoId: any) => {
-              if (panoId) { rv.setPanoId(panoId, agencyPos); }
-              else if (roadviewRef.current) { roadviewRef.current.innerHTML = '<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#999; font-size:13px;">중개업소 위치의 로드뷰를 제공할 수 없습니다.</div>'; }
-            });
-          } else {
-            rvClient.getNearestPanoId(pos, 50, (panoId: any) => {
-              if (panoId) { rv.setPanoId(panoId, pos); }
-              else if (roadviewRef.current) { roadviewRef.current.innerHTML = '<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#999; font-size:13px;">해당 위치의 로드뷰를 제공할 수 없습니다.</div>'; }
-            });
-          }
+          rvClient.getNearestPanoId(pos, 50, (panoId: any) => {
+            if (panoId) { rv.setPanoId(panoId, pos); }
+            else if (roadviewRef.current) { roadviewRef.current.innerHTML = '<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#999; font-size:13px;">해당 위치 근처의 로드뷰를 제공할 수 없습니다.</div>'; }
+          });
         }
       }, 100);
     }
@@ -716,7 +710,9 @@ function MobileGongsilContent() {
     }
 
     filteredVacancies.forEach((v) => {
-      if (!v.lat || !v.lng) return;
+      const isZoomedIn = zoomLevel <= 5;
+      const coords = getJitteredCoords(v, isZoomedIn);
+      if (!coords.lat || !coords.lng) return;
       const size = 50;
       const color = activeMode === "경매" ? "#1a4282" : "#1a73e8";
 
@@ -731,15 +727,15 @@ function MobileGongsilContent() {
         { offset: new kakao.maps.Point(size / 2, size / 2) }
       );
       const marker = new kakao.maps.Marker({
-        position: new kakao.maps.LatLng(v.lat, v.lng),
+        position: new kakao.maps.LatLng(coords.lat, coords.lng),
         image: img,
       });
-      marker.customData = v;
+      marker.customData = { ...v, lat: coords.lat, lng: coords.lng };
 
       kakao.maps.event.addListener(marker, "click", () => {
         window.history.pushState({ panel: "cluster" }, "");
         setSelectedVacancy(null);
-        setSelectedCluster([v]);
+        setSelectedCluster([{ ...v, lat: coords.lat, lng: coords.lng }]);
       });
       markersRef.current.push(marker);
     });
@@ -763,9 +759,11 @@ function MobileGongsilContent() {
       const neLng = ne.getLng();
 
       // [대표님 지침] 카카오 LatLng 인스턴스 5,000개 동적 난사 렉을 완전히 박멸하고 단순 대소 비교 연산으로 60 FPS 달성!
+      const isZoomedIn = zoomLevel <= 5;
       const visible = filteredVacancies.filter((v) => {
-        if (!v.lat || !v.lng) return false;
-        return v.lat >= swLat && v.lat <= neLat && v.lng >= swLng && v.lng <= neLng;
+        const coords = getJitteredCoords(v, isZoomedIn);
+        if (!coords.lat || !coords.lng) return false;
+        return coords.lat >= swLat && coords.lat <= neLat && coords.lng >= swLng && coords.lng <= neLng;
       });
       setVisibleVacancies(visible);
       setVisibleCount(visible.length);

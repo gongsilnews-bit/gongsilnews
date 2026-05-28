@@ -76,6 +76,17 @@ export const getCleanAddrText = (prop: any) => {
     return bldName;
   }
 
+  const exp = prop.address_exposure;
+  const propType = prop.property_type || "";
+  const subCategory = prop.sub_category || "";
+  const isApt = ["아파트", "오피스텔", "도시형생활주택"].some(t => propType.includes(t) || subCategory.includes(t));
+
+  if (exp && exp !== "번지공개" && exp !== "지번공개" && exp !== "동/호수공개") {
+    if (!isApt) {
+      return dong ? `${dong} 공실 매물` : "공실 매물";
+    }
+  }
+
   return [dong, bldName].filter(Boolean).join(" ");
 };
 
@@ -282,4 +293,218 @@ export const getOptionSvg = (name: string) => {
     React.createElement("path", { d: "M22 11.08V12a10 10 0 1 1-5.93-9.14" }),
     React.createElement("polyline", { points: "22 4 12 14.01 9 11.01" })
   );
+};
+
+export const getMaskedAddress = (prop: any) => {
+  if (!prop) return "";
+  const sido = prop.sido || "";
+  const sigungu = prop.sigungu || "";
+  const dong = prop.dong || "";
+  const detailAddr = prop.detail_addr || "";
+
+  if (prop.trade_type === "경매") {
+    return [sido, sigungu, dong, detailAddr].filter(Boolean).join(" ");
+  }
+
+  const exp = prop.address_exposure;
+  const propType = prop.property_type || "";
+  const subCategory = prop.sub_category || "";
+  const isApt = ["아파트", "오피스텔", "도시형생활주택"].some(t => propType.includes(t) || subCategory.includes(t));
+
+  if (!exp || exp === "번지공개" || exp === "지번공개" || exp === "동/호수공개") {
+    return [sido, sigungu, dong, detailAddr].filter(Boolean).join(" ");
+  }
+
+  if (exp === "비공개") {
+    if (isApt) {
+      const bldName = prop.building_name || "";
+      return [sido, sigungu, dong, bldName].filter(Boolean).join(" ");
+    } else {
+      return `${[sido, sigungu, dong].filter(Boolean).join(" ")} (상세주소 비공개)`;
+    }
+  }
+
+  if (exp === "기본주소만공개") {
+    return [sido, sigungu, dong].filter(Boolean).join(" ");
+  }
+
+  if (exp === "본번지만공개") {
+    let baseAddr = [sido, sigungu, dong].filter(Boolean).join(" ");
+    if (detailAddr) {
+      const match = detailAddr.match(/^([0-9\-\s가-힣]+)/);
+      if (match) {
+        const numPart = match[1].trim();
+        const mainNum = numPart.split("-")[0].trim();
+        if (mainNum) {
+          return `${baseAddr} ${mainNum} 일대`;
+        }
+      }
+    }
+    return `${baseAddr} 일대`;
+  }
+
+  if (exp === "동수공개") {
+    let baseAddr = [sido, sigungu, dong].filter(Boolean).join(" ");
+    const bldName = prop.building_name || "";
+    let aptPart = bldName;
+
+    if (detailAddr) {
+      const match = detailAddr.match(/(\d+동)/);
+      if (match) {
+        aptPart = [bldName, match[1]].filter(Boolean).join(" ");
+      }
+    }
+    return [baseAddr, aptPart].filter(Boolean).join(" ");
+  }
+
+  return [sido, sigungu, dong, detailAddr].filter(Boolean).join(" ");
+};
+
+interface SubwayStation {
+  name: string;
+  lat: number;
+  lng: number;
+}
+
+const SUBWAY_STATIONS: SubwayStation[] = [
+  // 강남구
+  { name: "강남역", lat: 37.497942, lng: 127.027621 },
+  { name: "역삼역", lat: 37.500622, lng: 127.036461 },
+  { name: "선릉역", lat: 37.504503, lng: 127.049008 },
+  { name: "삼성역", lat: 37.508844, lng: 127.06316 },
+  { name: "논현역", lat: 37.511093, lng: 127.021415 },
+  { name: "신논현역", lat: 37.504598, lng: 127.02525 },
+  { name: "학동역", lat: 37.514229, lng: 127.031656 },
+  { name: "언주역", lat: 37.507278, lng: 127.033878 },
+  { name: "선정릉역", lat: 37.510297, lng: 127.043958 },
+  { name: "삼성중앙역", lat: 37.513011, lng: 127.053282 },
+  { name: "봉은사역", lat: 37.514219, lng: 127.060232 },
+  { name: "신사역", lat: 37.516334, lng: 127.020114 },
+  { name: "압구정역", lat: 37.527072, lng: 127.028461 },
+  { name: "압구정로데오역", lat: 37.527381, lng: 127.040546 },
+  { name: "청담역", lat: 37.519097, lng: 127.051897 },
+  { name: "강남구청역", lat: 37.517179, lng: 127.041243 },
+  { name: "학여울역", lat: 37.496587, lng: 127.072899 },
+  { name: "대청역", lat: 37.493968, lng: 127.079529 },
+  { name: "일원역", lat: 37.483679, lng: 127.08439 },
+  { name: "수서역", lat: 37.487258, lng: 127.101168 },
+  { name: "매봉역", lat: 37.486899, lng: 127.046779 },
+  { name: "도곡역", lat: 37.490847, lng: 127.055377 },
+  { name: "대치역", lat: 37.494612, lng: 127.063642 },
+  { name: "한티역", lat: 37.496237, lng: 127.052873 },
+  { name: "구룡역", lat: 37.486835, lng: 127.059434 },
+  { name: "개포동역", lat: 37.489116, lng: 127.06614 },
+  { name: "대모산입구역", lat: 37.491373, lng: 127.072725 },
+
+  // 서초구
+  { name: "양재역", lat: 37.484147, lng: 127.034631 },
+  { name: "양재시민의숲역", lat: 37.470023, lng: 127.038483 },
+  { name: "방배역", lat: 37.481426, lng: 126.997596 },
+  { name: "서초역", lat: 37.491897, lng: 127.007917 },
+  { name: "교대역", lat: 37.493415, lng: 127.014227 },
+  { name: "고속터미널역", lat: 37.50481, lng: 127.004944 },
+  { name: "신반포역", lat: 37.503415, lng: 126.995924 },
+  { name: "구반포역", lat: 37.501365, lng: 126.987332 },
+  { name: "사평역", lat: 37.504245, lng: 127.015252 },
+  { name: "잠원역", lat: 37.512759, lng: 127.01122 },
+  { name: "반포역", lat: 37.508178, lng: 127.01173 },
+  { name: "내방역", lat: 37.487618, lng: 126.993077 },
+  { name: "이수역", lat: 37.486263, lng: 126.981977 },
+  { name: "남태령역", lat: 37.463863, lng: 126.989182 },
+
+  // 송파구
+  { name: "잠실역", lat: 37.513262, lng: 127.100159 },
+  { name: "잠실나루역", lat: 37.520684, lng: 127.103788 },
+  { name: "신천역", lat: 37.511612, lng: 127.083434 },
+  { name: "종합운동장역", lat: 37.510986, lng: 127.073617 },
+  { name: "석촌역", lat: 37.505431, lng: 127.109873 },
+  { name: "송파역", lat: 37.499709, lng: 127.112187 },
+  { name: "가락시장역", lat: 37.492264, lng: 127.118335 },
+  { name: "문정역", lat: 37.485854, lng: 127.122228 },
+  { name: "장지역", lat: 37.478225, lng: 127.126394 },
+  { name: "거여역", lat: 37.493105, lng: 127.143926 },
+  { name: "마천역", lat: 37.49499, lng: 127.152781 },
+  { name: "오금역", lat: 37.502162, lng: 127.128111 },
+  { name: "방이역", lat: 37.508548, lng: 127.126435 },
+  { name: "올림픽공원역", lat: 37.516078, lng: 127.130838 },
+  { name: "한성백제역", lat: 37.516812, lng: 127.116772 },
+  { name: "송파나루역", lat: 37.509831, lng: 127.112444 },
+  { name: "석촌고분역", lat: 37.502444, lng: 127.096772 },
+  { name: "삼전역", lat: 37.505312, lng: 127.087431 },
+
+  // 성동구 / 광진구
+  { name: "성수역", lat: 37.544581, lng: 127.055961 },
+  { name: "뚝섬역", lat: 37.547184, lng: 127.047367 },
+  { name: "한양대역", lat: 37.555273, lng: 127.043655 },
+  { name: "왕십리역", lat: 37.561533, lng: 127.037554 },
+  { name: "건대입구역", lat: 37.540693, lng: 127.07023 },
+  { name: "구의역", lat: 37.537077, lng: 127.085916 },
+  { name: "강변역", lat: 37.535095, lng: 127.094678 },
+
+  // 마포구 / 용산구
+  { name: "홍대입구역", lat: 37.557527, lng: 126.924466 },
+  { name: "합정역", lat: 37.549463, lng: 126.913753 },
+  { name: "망원역", lat: 37.555979, lng: 126.910129 },
+  { name: "신촌역", lat: 37.555184, lng: 126.936893 },
+  { name: "이대역", lat: 37.556733, lng: 126.946007 },
+  { name: "아현역", lat: 37.557402, lng: 126.956115 },
+  { name: "공덕역", lat: 37.54322, lng: 126.951564 },
+  { name: "마포역", lat: 37.539316, lng: 126.945892 },
+  { name: "삼각지역", lat: 37.534571, lng: 126.973121 },
+  { name: "신용산역", lat: 37.529141, lng: 126.967888 },
+  { name: "용산역", lat: 37.529849, lng: 126.964821 },
+  { name: "이태원역", lat: 37.534446, lng: 126.994301 },
+  { name: "녹사평역", lat: 37.534678, lng: 126.986681 },
+  { name: "한강진역", lat: 37.539611, lng: 127.001712 },
+  { name: "한남역", lat: 37.529444, lng: 127.009122 },
+
+  // 영등포구 / 여의도
+  { name: "여의도역", lat: 37.521742, lng: 126.924294 },
+  { name: "여의나루역", lat: 37.527123, lng: 126.932901 },
+  { name: "국회의사당역", lat: 37.528114, lng: 126.917882 },
+  { name: "샛강역", lat: 37.517228, lng: 126.928424 },
+  { name: "당산역", lat: 37.534957, lng: 126.902237 },
+  { name: "영등포구청역", lat: 37.52497, lng: 126.89595 },
+  { name: "영등포역", lat: 37.515779, lng: 126.9073 },
+  { name: "신풍역", lat: 37.500057, lng: 126.909895 },
+];
+
+export const getNearestSubwayStation = (lat: number, lng: number) => {
+  let minDistance = Infinity;
+  let nearest = SUBWAY_STATIONS[0];
+
+  for (const station of SUBWAY_STATIONS) {
+    const dy = station.lat - lat;
+    const dx = station.lng - lng;
+    const dist = dy * dy + dx * dx;
+    if (dist < minDistance) {
+      minDistance = dist;
+      nearest = station;
+    }
+  }
+
+  if (minDistance > 0.001) {
+    const seed = Math.sin(lat) * Math.cos(lng);
+    const offsetLat = (seed * 1000 % 1) * 0.003;
+    const offsetLng = (seed * 2000 % 1) * 0.003;
+    return { lat: lat + offsetLat, lng: lng + offsetLng };
+  }
+
+  return { lat: nearest.lat, lng: nearest.lng };
+};
+
+export const getJitteredCoords = (prop: any, isZoomedIn: boolean = true) => {
+  if (!prop || !prop.lat || !prop.lng) return { lat: 0, lng: 0 };
+
+  const exp = prop.address_exposure;
+  const propType = prop.property_type || "";
+  const subCategory = prop.sub_category || "";
+  const isApt = ["아파트", "오피스텔", "도시형생활주택"].some(t => propType.includes(t) || subCategory.includes(t));
+  const isPrivateAddr = exp && exp !== "번지공개" && exp !== "지번공개" && exp !== "동/호수공개";
+
+  if (isPrivateAddr && !isApt && isZoomedIn) {
+    return getNearestSubwayStation(prop.lat, prop.lng);
+  }
+
+  return { lat: prop.lat, lng: prop.lng };
 };

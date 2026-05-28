@@ -7,9 +7,10 @@ const KAKAO_APP_KEY = process.env.NEXT_PUBLIC_KAKAO_APP_KEY || "435d3602201a49ea
 
 interface Props {
   vacancies: any[];
+  isLoading?: boolean;
 }
 
-export default function MiniVacancyMap({ vacancies }: Props) {
+export default function MiniVacancyMap({ vacancies, isLoading }: Props) {
   const router = useRouter();
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInitRef = useRef(false);
@@ -188,6 +189,28 @@ export default function MiniVacancyMap({ vacancies }: Props) {
         ref={mapRef}
         style={{ width: "100%", height: "200px", background: "#e8ecf0" }}
       />
+
+      {/* 네트워크 로딩 오버레이 */}
+      {isLoading && (
+        <div style={{ position: "absolute", inset: 0, background: "rgba(255,255,255,0.85)", backdropFilter: "blur(4px)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", zIndex: 99999 }}>
+          <style>{`
+            @keyframes pulseRingMini {
+              0% { transform: scale(0.8); opacity: 0.5; }
+              100% { transform: scale(1.5); opacity: 0; }
+            }
+          `}</style>
+          <div style={{ position: "relative", width: "48px", height: "48px", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "8px" }}>
+            <div style={{ position: "absolute", width: "100%", height: "100%", borderRadius: "50%", background: "#4b89ff", animation: "pulseRingMini 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite" }} />
+            <div style={{ position: "relative", width: "24px", height: "24px", borderRadius: "50%", background: "#1a4282", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+            </div>
+          </div>
+          <h3 style={{ fontSize: "14px", fontWeight: 800, color: "#1a2e50", margin: "0 0 4px 0" }}>네트워크 로딩 중입니다</h3>
+          <p style={{ fontSize: "11px", color: "#6b7280", textAlign: "center", lineHeight: 1.4, margin: 0 }}>
+            실시간 공실 정보를 안전하게 불러오고 있습니다.
+          </p>
+        </div>
+      )}
 
       {/* 공실 수 뱃지 (클릭 시 현재 위치 기반으로 이동) */}
       <div

@@ -31,6 +31,7 @@ import {
   getPriceText,
   formatAmount,
   isApartmentType,
+  getJitteredCoords,
 } from "./gongsilHelpers";
 
 const MAEMAE_SCALE = [
@@ -852,9 +853,11 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   }, [filteredVacancies, selectedClusterIds, mapBounds, activeCategory, selectedRegion]);
 
   const showArticleOnMap = useCallback((prop: any) => {
-    if (!kakaoMapRef.current || !prop.lat || !prop.lng) return;
+    if (!kakaoMapRef.current) return;
+    const coords = getJitteredCoords(prop, true);
+    if (!coords.lat || !coords.lng) return;
     const kakao = (window as any).kakao;
-    const position = new kakao.maps.LatLng(prop.lat, prop.lng);
+    const position = new kakao.maps.LatLng(coords.lat, coords.lng);
     kakaoMapRef.current.panTo(position);
   }, []);
 
@@ -1141,10 +1144,14 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
         (window as any).kakao?.maps
       ) {
         const kakao = (window as any).kakao;
-        const pos = new kakao.maps.LatLng(prop.lat, prop.lng);
+        const coords = getJitteredCoords(prop, true);
+        const pos = new kakao.maps.LatLng(coords.lat, coords.lng);
 
-        const isPrivateAddr = prop.address_exposure && prop.address_exposure !== "번지공개";
-        const isApt = isApartmentType(prop.property_type) || isApartmentType(prop.sub_category);
+        const exp = prop.address_exposure;
+        const propType = prop.property_type || "";
+        const subCategory = prop.sub_category || "";
+        const isApt = ["아파트", "오피스텔", "도시형생활주택"].some(t => propType.includes(t) || subCategory.includes(t));
+        const isPrivateAddr = exp && exp !== "번지공개" && exp !== "지번공개" && exp !== "동/호수공개";
         const useCircle = isPrivateAddr && !isApt;
 
         if (itemMapRef.current) {
@@ -1154,7 +1161,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
             map.setMaxLevel(8);
             new kakao.maps.Circle({
               center: pos,
-              radius: 300,
+              radius: 500,
               strokeWeight: 2,
               strokeColor: "#3b82f6",
               strokeOpacity: 0.6,
@@ -1172,28 +1179,15 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
           const rv = new kakao.maps.Roadview(roadviewRef.current);
           const rvClient = new kakao.maps.RoadviewClient();
 
-          if (useCircle && agencyInfo?.lat && agencyInfo?.lng) {
-            const agencyPos = new kakao.maps.LatLng(agencyInfo.lat, agencyInfo.lng);
-            rvClient.getNearestPanoId(agencyPos, 50, (panoId: any) => {
-              if (panoId) {
-                rv.setPanoId(panoId, agencyPos);
-              } else {
-                if (roadviewRef.current)
-                  roadviewRef.current.innerHTML =
-                    '<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#999; font-size:13px;">중개업소 위치의 로드뷰가 제공되지 않습니다.</div>';
-              }
-            });
-          } else {
-            rvClient.getNearestPanoId(pos, 50, (panoId: any) => {
-              if (panoId) {
-                rv.setPanoId(panoId, pos);
-              } else {
-                if (roadviewRef.current)
-                  roadviewRef.current.innerHTML =
-                    '<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#999; font-size:13px;">해당 위치의 로드뷰가 제공되지 않습니다.</div>';
-              }
-            });
-          }
+          rvClient.getNearestPanoId(pos, 50, (panoId: any) => {
+            if (panoId) {
+              rv.setPanoId(panoId, pos);
+            } else {
+              if (roadviewRef.current)
+                roadviewRef.current.innerHTML =
+                  '<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#999; font-size:13px;">해당 위치 근처의 로드뷰가 제공되지 않습니다.</div>';
+            }
+          });
         }
       }
     }

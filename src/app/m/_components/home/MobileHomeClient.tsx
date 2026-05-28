@@ -70,6 +70,7 @@ export default function MobileHomeClient(props: Props) {
   const { headlineArticles, gongsilArticles, realestateArticles, marketingArticles, lifeArticles, mapArticles, lectures } = props;
   const router = useRouter();
   const [vacancies, setVacancies] = useState<any[]>([]);
+  const [isMapLoading, setIsMapLoading] = useState(true);
   const [heroIdx, setHeroIdx] = useState(0);
   const [swipeOffset, setSwipeOffset] = useState(0);
   const [isSwipingHero, setIsSwipingHero] = useState(false);
@@ -81,11 +82,13 @@ export default function MobileHomeClient(props: Props) {
 
   useEffect(() => {
     async function loadVacancies() {
+      setIsMapLoading(true);
       const { getVacanciesForMap } = await import("@/app/actions/vacancy");
       const res = await getVacanciesForMap();
       if (res.success && res.data) {
         setVacancies(res.data);
       }
+      setIsMapLoading(false);
     }
     loadVacancies();
   }, []);
@@ -266,7 +269,7 @@ export default function MobileHomeClient(props: Props) {
           <span style={{ fontSize: 15, color: "#6b7280", textDecoration: "none", cursor: "default" }}>더보기 ›</span>
         </div>
         <div style={{ padding: "0 16px 16px", position: "relative" }}>
-          <MiniVacancyMap vacancies={vacancies} />
+          <MiniVacancyMap vacancies={vacancies} isLoading={isMapLoading} />
         </div>
       </div>
 

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import MapSearchBar from "@/components/MapSearchBar";
+import { getJitteredCoords } from "./gongsilHelpers";
 
 interface KakaoMapViewProps {
   kakaoMapRef: React.MutableRefObject<any>;
@@ -201,9 +202,11 @@ export default function KakaoMapView({
         const prop = filteredVacanciesRef.current.find((v: any) => String(v.id) === idStr);
         if (!prop) return;
 
-        const group = filteredVacanciesRef.current.filter(
-          (v: any) => Math.abs(v.lat - prop.lat) < 0.000001 && Math.abs(v.lng - prop.lng) < 0.000001
-        );
+        const coordsProp = getJitteredCoords(prop, isZoomedIn);
+        const group = filteredVacanciesRef.current.filter((v: any) => {
+          const coordsV = getJitteredCoords(v, isZoomedIn);
+          return Math.abs(coordsV.lat - coordsProp.lat) < 0.000001 && Math.abs(coordsV.lng - coordsProp.lng) < 0.000001;
+        });
         const isSelected = group.some(
           (v) => selectedClusterIds?.includes(String(v.id)) || String(activeProperty) === String(v.id)
         );
@@ -440,8 +443,12 @@ export default function KakaoMapView({
       const markers = cluster.getMarkers();
       const ids = markers.flatMap((m: any) => {
         const pos = m.getPosition();
+        const isZoom = kakaoMapRef.current ? kakaoMapRef.current.getLevel() <= 5 : true;
         return filteredVacanciesRef.current
-          .filter((v: any) => Math.abs(v.lat - pos.getLat()) < 0.00001 && Math.abs(v.lng - pos.getLng()) < 0.00001)
+          .filter((v: any) => {
+            const coords = getJitteredCoords(v, isZoom);
+            return Math.abs(coords.lat - pos.getLat()) < 0.00001 && Math.abs(coords.lng - pos.getLng()) < 0.00001;
+          })
           .map((v: any) => String(v.id));
       });
       setSelectedClusterIds(Array.from(new Set(ids)));
@@ -456,9 +463,11 @@ export default function KakaoMapView({
         markers.forEach((m: any) => {
           const pos = m.getPosition();
           // Find the number of properties at this marker's coordinate
-          const count = filteredVacanciesRef.current.filter(
-            (v: any) => Math.abs(v.lat - pos.getLat()) < 0.00001 && Math.abs(v.lng - pos.getLng()) < 0.00001
-          ).length;
+          const isZoom = kakaoMapRef.current ? kakaoMapRef.current.getLevel() <= 5 : true;
+          const count = filteredVacanciesRef.current.filter((v: any) => {
+            const coords = getJitteredCoords(v, isZoom);
+            return Math.abs(coords.lat - pos.getLat()) < 0.00001 && Math.abs(coords.lng - pos.getLng()) < 0.00001;
+          }).length;
           totalCount += count;
         });
 
@@ -493,8 +502,12 @@ export default function KakaoMapView({
         if (selectedClusterIdsRef.current && selectedClusterIdsRef.current.length > 0) {
           const ids = markers.flatMap((m: any) => {
             const pos = m.getPosition();
+            const isZoom = kakaoMapRef.current ? kakaoMapRef.current.getLevel() <= 5 : true;
             return filteredVacanciesRef.current
-              .filter((v: any) => Math.abs(v.lat - pos.getLat()) < 0.00001 && Math.abs(v.lng - pos.getLng()) < 0.00001)
+              .filter((v: any) => {
+                const coords = getJitteredCoords(v, isZoom);
+                return Math.abs(coords.lat - pos.getLat()) < 0.00001 && Math.abs(coords.lng - pos.getLng()) < 0.00001;
+              })
               .map((v: any) => String(v.id));
           });
           const isMatch = ids.some((id: any) => id && selectedClusterIdsRef.current?.includes(id));
@@ -508,21 +521,23 @@ export default function KakaoMapView({
       });
     });
 
-    // 1. Group vacancies by unique coordinate
+    const isZoomedIn = currentLevel <= 5;
+    lastZoomWasInRef.current = isZoomedIn;
+
+    // 1. Group vacancies by unique coordinate (with dynamic snap-to-landmark for private listings)
     const coordinateGroups = new Map<string, any[]>();
     targetVacancies.forEach((v) => {
-      if (v.lat && v.lng) {
-        const key = `${v.lat.toFixed(6)}_${v.lng.toFixed(6)}`;
+      const coords = getJitteredCoords(v, isZoomedIn);
+      if (coords.lat && coords.lng) {
+        const key = `${coords.lat.toFixed(6)}_${coords.lng.toFixed(6)}`;
         if (!coordinateGroups.has(key)) {
           coordinateGroups.set(key, []);
         }
-        coordinateGroups.get(key)!.push(v);
+        coordinateGroups.get(key)!.push({ ...v, lat: coords.lat, lng: coords.lng });
       }
     });
 
     const newMarkers: any[] = [];
-    const isZoomedIn = currentLevel <= 5;
-    lastZoomWasInRef.current = isZoomedIn;
 
     coordinateGroups.forEach((group, coordKey) => {
       if (group.length === 0) return;
