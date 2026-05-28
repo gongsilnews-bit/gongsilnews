@@ -69,7 +69,7 @@ export default function HeroMapSection() {
   useEffect(() => {
     const fetchData = async (showLoading = true) => {
       if (showLoading) setIsLoading(true);
-      const res = await getVacanciesForMap();
+      const res = await getVacanciesForMap({ limit: 1000 });
       if (res.success && res.data) {
         const withImages = res.data.map((v: any) => ({
           ...v,

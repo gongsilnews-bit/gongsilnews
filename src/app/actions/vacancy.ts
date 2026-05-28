@@ -497,11 +497,14 @@ export async function getVacanciesForMap(options?: {
     neLng: number;
   };
   is_auction?: boolean; // 🚀 경공매 모드 스위치 지원을 위한 옵션 정의
+  limit?: number; // ⚡️ 로딩 성능 비약적 향상을 위한 limit 파라미터 추가
 }) {
   const supabase = getAdminClient();
   try {
     const batchSize = 1000;
-    const pages = 10; // Supports up to 10,000 rows in parallel batches
+    const maxLimit = options?.limit ?? 10000;
+    // 필요한 만큼만 병렬 쿼리 호출 (limit이 1000이면 1페이지만 조회하여 10배 속도 향상!)
+    const pages = Math.max(1, Math.min(10, Math.ceil(maxLimit / batchSize)));
     const promises = [];
     
     for (let i = 0; i < pages; i++) {

@@ -84,7 +84,7 @@ export default function MobileHomeClient(props: Props) {
     async function loadVacancies() {
       setIsMapLoading(true);
       const { getVacanciesForMap } = await import("@/app/actions/vacancy");
-      const res = await getVacanciesForMap();
+      const res = await getVacanciesForMap({ limit: 1000 });
       if (res.success && res.data) {
         setVacancies(res.data);
       }
