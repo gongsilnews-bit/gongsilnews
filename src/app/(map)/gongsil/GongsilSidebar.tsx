@@ -535,9 +535,9 @@ export default function GongsilSidebar({
                     </div>
                   )}
                 </div>
-                {prop.images?.[0] && (
-                  <div style={{ flexShrink: 0, marginLeft: 5, textAlign: "center" }}>
-                    <div style={{ width: 110, height: 110, borderRadius: 6, overflow: "hidden", background: "#f0f0f0" }}>
+                 {prop.images?.[0] && (
+                  <div style={{ flexShrink: 0, marginLeft: 5, textAlign: "center", alignSelf: isAuctionMode ? "center" : "flex-start" }}>
+                    <div style={{ width: isAuctionMode ? 130 : 110, height: isAuctionMode ? 100 : 110, borderRadius: 6, overflow: "hidden", background: "#f0f0f0" }}>
                       <img src={prop.images[0]} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     </div>
                     {isAuctionMode && (meta.cltrMngNo || meta.cltr_mng_no) && (
