@@ -369,7 +369,6 @@ button { border: none; background: none; cursor: pointer; font-family: inherit; 
 /* 7. Premium Section (Dark Blue) */
 .premium-bg { background-color: var(--brand-navy); color: #fff; padding: 60px 0; }
 .premium-bg .sec-title { color: #fff; }
-.premium-bg .sec-title-wrap::before { background-color: #508bf5; }
 .prem-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
