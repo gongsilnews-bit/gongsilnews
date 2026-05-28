@@ -847,7 +847,7 @@ function PremiumSplitRecommend({ articles, memberName, mentalText }: { articles:
           
           {mentalText && (
             <div style={{ position: "absolute", top: 24, left: 30, zIndex: 10, display: "flex", flexDirection: "column", gap: "8px" }}>
-              <span style={{ fontSize: "14px", fontWeight: 700, color: "#fff", background: "rgba(0,0,0,0.4)", display: "inline-block", padding: "4px 10px", borderRadius: "20px", width: "fit-content", border: "1px solid rgba(255,255,255,0.2)", backdropFilter: "blur(4px)" }}>
+              <span style={{ fontSize: "14px", fontWeight: 700, color: "#fff", display: "inline-block", width: "fit-content" }}>
                 <span style={{ color: "#fef08a" }}>{memberName || "부동산"} 대표님</span>을 위한
               </span>
               <h2 style={{ fontSize: "22px", fontWeight: 800, color: "#fff", margin: 0, textShadow: "0 2px 8px rgba(0,0,0,0.6)" }}>
