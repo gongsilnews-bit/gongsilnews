@@ -125,13 +125,12 @@ const GongsilMobileDrawerListImpl: React.FC<GongsilMobileDrawerListProps> = ({
 
                 {/* 썸네일 영역 */}
                 {v.images?.[0] && (
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0 }}>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0, alignSelf: "center" }}>
                     <div style={{ width: "120px", height: "96px", borderRadius: "10px", overflow: "hidden", backgroundColor: "#e5e7eb" }}>
                       <img src={v.images[0]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     </div>
                   </div>
                 )}
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="2" style={{ flexShrink: 0, alignSelf: "center" }}><polyline points="9 18 15 12 9 6"/></svg>
               </div>
             );
           }
@@ -191,7 +190,6 @@ const GongsilMobileDrawerListImpl: React.FC<GongsilMobileDrawerListProps> = ({
                   <img src={v.images[0]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 </div>
               )}
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="2" style={{ flexShrink: 0, alignSelf: "center" }}><polyline points="9 18 15 12 9 6"/></svg>
             </div>
           );
         })}
