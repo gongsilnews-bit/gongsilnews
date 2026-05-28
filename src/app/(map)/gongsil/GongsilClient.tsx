@@ -1771,7 +1771,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     >
       {/* ===== 상단 필터 바 ===== */}
       <div
-        style={{ background: "#fff", width: "100%", zIndex: 200, position: "relative", borderBottom: "1px solid #ccc", flexShrink: 0 }}
+        style={{ background: "#fff", width: "100%", zIndex: 2000, position: "relative", borderBottom: "1px solid #ccc", flexShrink: 0 }}
       >
         {/* Tier 1: 메인 탭 */}
         <div style={{ display: "flex", gap: 24, padding: "0 20px", borderBottom: "1px solid #ddd", alignItems: "center", overflowX: "auto" }}>
