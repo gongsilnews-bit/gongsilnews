@@ -1113,7 +1113,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                   <span style={{
                     display: "inline-block",
                     paddingBottom: "3px",
-                    borderBottom: activeTab === cat.key ? "3px solid #ffffff" : "3px solid transparent", // 변경된 탭 보더
+                    borderBottom: activeTab === cat.key ? "3px solid #ff6b00" : "3px solid transparent", // 활성화 탭 오렌지색 바
                   }}>
                     {cat.label}
                   </span>
