@@ -1050,7 +1050,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
               width: "100%",
               maxWidth: "448px",
               zIndex: 40,
-              backgroundColor: "#ffffff",
+              backgroundColor: "#1a4282", // 변경된 헤더 배경색
               borderBottom: "9px solid #F4F6F8",
               display: "flex",
               alignItems: "stretch",
@@ -1070,7 +1070,10 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                 cursor: "pointer",
               }}
             >
-              <img src="/new_logo.png" alt="홈" style={{ width: "28px", height: "28px", objectFit: "contain" }} />
+              {/* 로고가 곤색 배경에서 잘 보이도록 백그라운드 추가 가능하나 우선 원본 유지 */}
+              <div style={{ background: "#fff", padding: "2px 6px", borderRadius: "6px", display: "flex", alignItems: "center", marginBottom: "2px" }}>
+                <img src="/new_logo.png" alt="홈" style={{ width: "24px", height: "24px", objectFit: "contain" }} />
+              </div>
             </button>
 
             {/* 중앙 스크롤 메뉴 */}
@@ -1101,7 +1104,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                     padding: "0 14px 0",
                     fontSize: "17px",
                     fontWeight: activeTab === cat.key ? 700 : 500,
-                    color: activeTab === cat.key ? "#1a4282" : "#222222",
+                    color: activeTab === cat.key ? "#ffffff" : "rgba(255, 255, 255, 0.6)", // 변경된 텍스트 색상
                     background: "none",
                     border: "none",
                     cursor: "pointer",
@@ -1113,7 +1116,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                   <span style={{
                     display: "inline-block",
                     paddingBottom: "3px",
-                    borderBottom: activeTab === cat.key ? "3px solid #1a4282" : "3px solid transparent",
+                    borderBottom: activeTab === cat.key ? "3px solid #ffffff" : "3px solid transparent", // 변경된 탭 보더
                   }}>
                     {cat.label}
                   </span>
@@ -1134,12 +1137,12 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                background: "#fff",
+                background: "transparent", // 배경 투명하게
                 border: "none",
                 cursor: "pointer",
               }}
             >
-              <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#1a2e50" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="11" cy="11" r="8"></circle>
                 <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
               </svg>
