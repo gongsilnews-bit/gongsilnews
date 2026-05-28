@@ -1344,9 +1344,9 @@ export default function GongsilDetailPanel({
                 </div>
                 {/* 위치정보 & 로드뷰 */}
                 <div style={{ padding: "0 20px 20px" }}>
-                  <div style={{ fontSize: 15, fontWeight: 800, color: "#222", marginBottom: 12 }}>📍 위치정보</div>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: "#222", marginBottom: 12 }}>위치정보</div>
                   <div ref={itemMapRef} style={{ width: "100%", height: 250, borderRadius: 8, marginBottom: 20, background: "#e8eaed", border: "1px solid #eee", overflow: "hidden" }}></div>
-                  <div style={{ fontSize: 15, fontWeight: 800, color: "#222", marginBottom: 12 }}>🛣️ 로드뷰</div>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: "#222", marginBottom: 12 }}>로드뷰</div>
                   <div ref={roadviewRef} style={{ width: "100%", height: 250, borderRadius: 8, background: "#e8eaed", border: "1px solid #eee", overflow: "hidden" }}></div>
                 </div>
               </div>
