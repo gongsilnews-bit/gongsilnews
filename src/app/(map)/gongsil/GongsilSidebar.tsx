@@ -1,5 +1,7 @@
-import React from "react";
+import React, { useState, useMemo } from "react";
 import { getCleanAddrText, getPriceText, getAuctionInfo, formatAmount } from "./gongsilHelpers";
+
+type AuctionSortKey = "latest" | "appraisal" | "bid" | "bidDate";
 
 interface GongsilSidebarProps {
   activeCategory: string;
@@ -56,6 +58,39 @@ export default function GongsilSidebar({
   setSelectedVacancyId,
   setShowCategoryModal,
 }: GongsilSidebarProps) {
+  const [auctionSort, setAuctionSort] = useState<AuctionSortKey>("latest");
+
+  const sortedVacancies = useMemo(() => {
+    if (!isAuctionMode) return displayVacancies;
+    const arr = [...displayVacancies];
+    switch (auctionSort) {
+      case "latest":
+        return arr.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+      case "appraisal": {
+        const getAppr = (v: any) => {
+          const m = v.metadata || {};
+          return m.appraisal_price || parseInt(m.apslEvlAmt || "0", 10) || v.deposit * 10000 || 0;
+        };
+        return arr.sort((a, b) => getAppr(a) - getAppr(b));
+      }
+      case "bid": {
+        const getBid = (v: any) => {
+          const m = v.metadata || {};
+          return m.lowest_bid_price || parseInt(m.lowstBidPrcIndctCont || "0", 10) || 0;
+        };
+        return arr.sort((a, b) => getBid(a) - getBid(b));
+      }
+      case "bidDate": {
+        const getBidDate = (v: any) => {
+          const m = v.metadata || {};
+          return m.pbctBegnDtm || m.pblctBgnDtm || m.bid_start_date || "";
+        };
+        return arr.sort((a, b) => getBidDate(b).localeCompare(getBidDate(a)));
+      }
+      default:
+        return arr;
+    }
+  }, [displayVacancies, auctionSort, isAuctionMode]);
   return (
     <aside
       style={{
@@ -187,7 +222,7 @@ export default function GongsilSidebar({
       ) : (
         <div
           style={{
-            padding: "15px 20px",
+            padding: "12px 16px",
             fontWeight: 800,
             fontSize: 15,
             color: isAuctionMode ? "#1a4282" : "#111",
@@ -209,6 +244,28 @@ export default function GongsilSidebar({
               </>
             )}
           </span>
+          {isAuctionMode && zoomLevel < 9 && (
+            <select
+              value={auctionSort}
+              onChange={(e) => setAuctionSort(e.target.value as AuctionSortKey)}
+              style={{
+                padding: "4px 8px",
+                fontSize: 12,
+                fontWeight: 700,
+                color: "#1a4282",
+                background: "#fff",
+                border: "1px solid #1a4282",
+                borderRadius: 6,
+                cursor: "pointer",
+                outline: "none",
+              }}
+            >
+              <option value="latest">최신등록순</option>
+              <option value="appraisal">감정가 낮은순</option>
+              <option value="bid">입찰가 낮은순</option>
+              <option value="bidDate">입찰 최근순</option>
+            </select>
+          )}
         </div>
       )}
 
@@ -216,7 +273,7 @@ export default function GongsilSidebar({
         onScroll={(e) => {
           const target = e.currentTarget;
           if (target.scrollHeight - target.scrollTop <= target.clientHeight + 150) {
-            if (displayVacancies.length > visibleCount) {
+            if (sortedVacancies.length > visibleCount) {
               setVisibleCount((prev) => prev + 30);
             }
           }
@@ -261,7 +318,7 @@ export default function GongsilSidebar({
               : "조건에 맞는 공실광고가 없습니다."}
           </div>
         ) : (
-          displayVacancies.slice(0, visibleCount).map((prop) => {
+          sortedVacancies.slice(0, visibleCount).map((prop) => {
             const isActiveAndShowing = activeProperty === prop.id && showDetail;
             const addrText = getCleanAddrText(prop);
             const meta = (prop as any).metadata || {};
@@ -569,7 +626,7 @@ export default function GongsilSidebar({
             );
           })
         )}
-        {displayVacancies.length > visibleCount && (
+        {sortedVacancies.length > visibleCount && (
           <button
             onClick={() => setVisibleCount((prev) => prev + 30)}
             style={{
@@ -586,7 +643,7 @@ export default function GongsilSidebar({
             onMouseOver={(e) => (e.currentTarget.style.background = isAuctionMode ? "#e3ecf5" : "#eaf4ff")}
             onMouseOut={(e) => (e.currentTarget.style.background = "#f8fafc")}
           >
-            더보기 ({displayVacancies.length - visibleCount}개 남음)
+            더보기 ({sortedVacancies.length - visibleCount}개 남음)
           </button>
         )}
       </div>

@@ -1,8 +1,10 @@
 "use client";
 
-import React from "react";
+import React, { useState, useMemo } from "react";
 import { formatAmount } from "./page";
 import { getAuctionInfo } from "@/app/(map)/gongsil/gongsilHelpers";
+
+type AuctionSortKey = "latest" | "appraisal" | "bid" | "bidDate";
 
 interface GongsilMobileDrawerListProps {
   selectedCluster: any[] | null;
@@ -36,6 +38,41 @@ const GongsilMobileDrawerListImpl: React.FC<GongsilMobileDrawerListProps> = ({
   formatPrice,
 }) => {
   const currentList = selectedCluster || (showListView ? (listViewMode === 'map' ? visibleVacancies : filteredVacancies) : []);
+  const [auctionSort, setAuctionSort] = useState<AuctionSortKey>("latest");
+
+  const sortedList = useMemo(() => {
+    if (!currentList || activeMode !== "경매") return currentList;
+    const arr = [...currentList];
+    switch (auctionSort) {
+      case "latest":
+        return arr.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+      case "appraisal": {
+        const getAppr = (v: any) => {
+          const m = v.metadata || {};
+          return m.appraisal_price || parseInt(m.apslEvlAmt || "0", 10) || v.deposit * 10000 || 0;
+        };
+        return arr.sort((a, b) => getAppr(a) - getAppr(b));
+      }
+      case "bid": {
+        const getBid = (v: any) => {
+          const m = v.metadata || {};
+          return m.lowest_bid_price || parseInt(m.lowstBidPrcIndctCont || "0", 10) || 0;
+        };
+        return arr.sort((a, b) => getBid(a) - getBid(b));
+      }
+      case "bidDate": {
+        const getBidDate = (v: any) => {
+          const m = v.metadata || {};
+          return m.pbctBegnDtm || m.pblctBgnDtm || m.bid_start_date || "";
+        };
+        return arr.sort((a, b) => getBidDate(b).localeCompare(getBidDate(a)));
+      }
+      default:
+        return arr;
+    }
+  }, [currentList, auctionSort, activeMode]);
+
+  const renderList = activeMode === "경매" ? sortedList : currentList;
 
   return (
     <div className={`list-panel ${(selectedCluster || showListView) ? "open" : ""}`} onClick={(e) => e.stopPropagation()}>
@@ -51,9 +88,31 @@ const GongsilMobileDrawerListImpl: React.FC<GongsilMobileDrawerListProps> = ({
             </span>개
           </h3>
         </div>
+        {activeMode === "경매" && (
+          <select
+            value={auctionSort}
+            onChange={(e) => setAuctionSort(e.target.value as AuctionSortKey)}
+            style={{
+              padding: "4px 8px",
+              fontSize: 12,
+              fontWeight: 700,
+              color: "#1a4282",
+              background: "#fff",
+              border: "1px solid #1a4282",
+              borderRadius: 6,
+              cursor: "pointer",
+              outline: "none",
+            }}
+          >
+            <option value="latest">최신등록순</option>
+            <option value="appraisal">감정가 낮은순</option>
+            <option value="bid">입찰가 낮은순</option>
+            <option value="bidDate">입찰 최근순</option>
+          </select>
+        )}
       </div>
       <div className="no-scrollbar" style={{ flex: 1, overflowY: "auto", padding: "8px 16px 20px" }}>
-        {currentList?.map((v: any) => {
+        {renderList?.map((v: any) => {
           const isMyProperty = currentUser && v && v.owner_id === currentUser.id;
           const cardMasked = v.exposure_type === '부동산노출' && userLevel < 2 && !isMyProperty;
           const cardAddr = v.building_name || [v.dong, v.sigungu].filter(Boolean).join(" ");
