@@ -354,7 +354,7 @@ function MobileVacancyWrite() {
     if (propertyType === "아파트·오피스텔") {
       return Array.from(new Set(["신축급", "올수리", "한강뷰", "역세권", "풀옵션", ...selectedThemes]));
     } else if (propertyType === "원룸·투룸(풀옵션)") {
-      return Array.from(new Set(["가성비", "단기임대", "주차편리", "대로변안전", "여성안심", ...selectedThemes]));
+      return Array.from(new Set(["가성비", "단기임대", "주차편리", "대로변안전", "여성안심", "오피스텔", "애완견가능", ...selectedThemes]));
     } else if (propertyType === "상가·사무실·건물·공장·토지") {
       return Array.from(new Set(["무권리", "코너자리", "유동인구많음", "주차대수많음", "인테리어잘됨", "층고높음", "대로변", ...selectedThemes]));
     } else if (propertyType === "빌라·주택") {

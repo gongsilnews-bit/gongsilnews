@@ -1471,7 +1471,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
       return getThemesForVilla(activePills);
     }
     if (category === "one") {
-      return ["가성비", "단기임대", "주차편리", "대로변안전", "여성안심", "풀옵션", "급매물"];
+      return ["가성비", "단기임대", "주차편리", "대로변안전", "여성안심", "오피스텔", "애완견가능", "풀옵션", "급매물"];
     }
     if (category === "biz") {
       return ["무권리", "코너자리", "유동인구많음", "주차대수많음", "인테리어잘됨", "층고높음", "대로변"];
