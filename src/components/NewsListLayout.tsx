@@ -593,7 +593,7 @@ function NewsListLayoutInner({ category, title, initialArticles, initialPopular,
                           {article.subtitle || stripHtml(article.content || "").slice(0, 160)}
                         </div>
                         <div className="an-meta">
-                          <span style={{ color: "#508bf5", fontWeight: "bold", marginRight: 8 }}>
+                          <span style={{ color: "#1a4282", fontWeight: "bold", marginRight: 8 }}>
                             [{article.section1 || "뉴스"} &gt; {article.section2 || "전체"}]
                           </span>
                           {formatDate(article.published_at || article.created_at || "")} {article.updated_at ? `(수정: ${formatDate(article.updated_at)})` : ""} · {article.author_name || "공실뉴스"}
