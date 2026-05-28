@@ -25,13 +25,9 @@ export default function MiniVacancyMap({ vacancies }: Props) {
       // 공실광고 중 좌표 있는 것
       const withCoords = vacancies.filter((v) => v.lat && v.lng);
 
-      // 중심점 계산 (평균)
-      let centerLat = 37.5665;
-      let centerLng = 126.978;
-      if (withCoords.length > 0) {
-        centerLat = withCoords.reduce((s, v) => s + v.lat, 0) / withCoords.length;
-        centerLng = withCoords.reduce((s, v) => s + v.lng, 0) / withCoords.length;
-      }
+      // 강남역(37.498095, 127.027610)을 중심으로 초기화 (PC 버전과 동일)
+      const centerLat = 37.498095;
+      const centerLng = 127.027610;
 
       const map = new kakao.maps.Map(mapRef.current, {
         center: new kakao.maps.LatLng(centerLat, centerLng),
@@ -59,8 +55,12 @@ export default function MiniVacancyMap({ vacancies }: Props) {
         const count = group.length;
         const size = count > 9 ? 42 : 36;
         
+        // 경매 매물이 포함된 그룹은 남색(#1a4282)으로, 일반 공실은 파란색(#4b89ff)으로 표시
+        const hasAuction = group.some((v) => v.trade_type === "경매");
+        const fillColor = hasAuction ? "#1a4282" : "#4b89ff";
+        
         const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
-          <circle cx="${size/2}" cy="${size/2}" r="${size/2-2}" fill="#4b89ff" stroke="white" stroke-width="2"/>
+          <circle cx="${size/2}" cy="${size/2}" r="${size/2-2}" fill="${fillColor}" stroke="white" stroke-width="2"/>
           <text x="50%" y="50%" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="${count > 9 ? 14 : 15}" font-weight="bold" font-family="sans-serif">${count}</text>
         </svg>`;
 

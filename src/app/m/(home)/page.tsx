@@ -40,7 +40,7 @@ export default async function MobileHomePage() {
   return (
     <>
       <MobileHomeClient
-        vacancies={vacancies.slice(0, 5)}
+        vacancies={vacancies}
         headlineArticles={headlineArticles}
         gongsilArticles={gongsilArticles}
         realestateArticles={realestateArticles}

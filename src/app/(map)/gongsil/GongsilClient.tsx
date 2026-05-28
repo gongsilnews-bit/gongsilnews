@@ -826,32 +826,66 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   }, []);
 
   // Handle ?id=X from main page navigation
+  const idParamHandledRef = useRef<string | null>(null);
+  const idParamMapPannedRef = useRef<string | null>(null);
   useEffect(() => {
     const idParam = searchParams.get("id");
-    if (idParam && dbVacancies.length > 0) {
-      const target = dbVacancies.find((v) => String(v.id) === String(idParam));
-      if (target) {
-        setActiveProperty(target.id);
-        setShowDetail(true);
-        setActiveDetailTab("info");
-        const catEntry = Object.entries(CATEGORY_TO_PROPERTY_TYPE).find(
-          ([, pType]) => pType === target.property_type
-        );
-        if (catEntry) {
-          setActiveCategory(catEntry[0]);
-          setActivePills(target.sub_category ? [target.sub_category] : []);
-        }
-        if (target.lat && target.lng && kakaoMapRef.current) {
-          const kakao = (window as any).kakao;
-          if (kakao?.maps) {
-            kakaoMapRef.current.panTo(new kakao.maps.LatLng(target.lat, target.lng));
-            kakaoMapRef.current.setLevel(5);
+    if (idParam && idParamHandledRef.current !== idParam) {
+      const loadDirectVacancy = async () => {
+        // First check if it's already in dbVacancies
+        let target = dbVacancies.find((v) => String(v.id) === String(idParam));
+        if (!target) {
+          const res = await getVacancyDetail(idParam);
+          if (res.success && res.data) {
+            target = res.data;
+            setDbVacancies((prev) => {
+              if (prev.some((v) => String(v.id) === String(idParam))) return prev;
+              return [...prev, target];
+            });
           }
         }
-        setSelectedClusterIds([String(target.id)]);
-      }
+
+        if (target) {
+          idParamHandledRef.current = idParam; // 동일 id에 대해 반복 실행 방지
+          setActiveProperty(target.id);
+          setShowDetail(true);
+
+          // 경매 물건은 auction 카테고리로 정확히 라우팅
+          if (target.trade_type === "경매") {
+            setActiveCategory("auction");
+            setIsAuctionMode(true);
+            setActiveMode("경매");
+            setActiveDetailTab("auction_detail");
+            localStorage.setItem("gongsil_category", "auction");
+          } else {
+            setActiveDetailTab("info");
+            const catEntry = Object.entries(CATEGORY_TO_PROPERTY_TYPE).find(
+              ([, pType]) => pType === target.property_type
+            );
+            if (catEntry) {
+              setActiveCategory(catEntry[0]);
+              setIsAuctionMode(false);
+              setActiveMode("공실");
+              setActivePills(target.sub_category ? [target.sub_category] : []);
+              localStorage.setItem("gongsil_category", catEntry[0]);
+            }
+          }
+
+          if (target.lat && target.lng && kakaoMapRef.current && idParamMapPannedRef.current !== idParam) {
+            const kakao = (window as any).kakao;
+            if (kakao?.maps) {
+              idParamMapPannedRef.current = idParam;
+              kakaoMapRef.current.panTo(new kakao.maps.LatLng(target.lat, target.lng));
+              kakaoMapRef.current.setLevel(5);
+            }
+          }
+          setSelectedClusterIds([String(target.id)]);
+        }
+      };
+
+      loadDirectVacancy();
     }
-  }, [searchParams, dbVacancies]);
+  }, [searchParams, dbVacancies, mapLoaded]);
 
   // On activeProperty change, reset detail scroll position
   useEffect(() => {
