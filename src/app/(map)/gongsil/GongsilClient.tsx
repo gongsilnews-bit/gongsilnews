@@ -4292,21 +4292,21 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
               alignItems: "center",
               justifyContent: "center",
               background: "rgba(255, 255, 255, 0.9)",
-              backdropFilter: "blur(8px)",
-              WebkitBackdropFilter: "blur(8px)",
-              padding: "10px",
-              borderRadius: "50%",
-              boxShadow: "0 4px 16px rgba(0, 0, 0, 0.15)",
-              border: "1px solid rgba(255, 255, 255, 0.5)",
+              backdropFilter: "blur(12px)",
+              WebkitBackdropFilter: "blur(12px)",
+              padding: "12px",
+              borderRadius: "50%", // 동그란 미니 조약돌 모양
+              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12)",
+              border: "1px solid rgba(255, 255, 255, 0.3)",
               pointerEvents: "none", // 지도 조작 방해 금지
               animation: "fadeIn 0.2s ease-out",
             }}
           >
             {/* 🌀 애니메이션 스타일 주입 */}
             <style>{`
-              @keyframes pulseRingMini {
-                0% { transform: scale(0.85); opacity: 0.6; }
-                100% { transform: scale(1.4); opacity: 0; }
+              @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
               }
               @keyframes fadeIn {
                 from { opacity: 0; transform: translate(-50%, -45%); }
@@ -4314,13 +4314,17 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
               }
             `}</style>
 
-            {/* 펄싱 링 */}
-            <div style={{ position: "absolute", width: "100%", height: "100%", borderRadius: "50%", background: "#4b89ff", animation: "pulseRingMini 1.2s ease-out infinite" }} />
-            
-            {/* 중앙 네트워크 아이콘 원형 */}
-            <div style={{ position: "relative", width: "24px", height: "24px", borderRadius: "50%", background: "#1a4282", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", boxShadow: "0 1px 4px rgba(0,0,0,0.15)" }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h.01"/><path d="M8.5 16.5a5 5 0 0 1 7 0"/><path d="M5 13a10 10 0 0 1 14 0"/><path d="M1.5 9.5a15 15 0 0 1 21 0"/></svg>
-            </div>
+            {/* 🌀 스피너 서클 */}
+            <div
+              style={{
+                width: 24,
+                height: 24,
+                border: "3.5px solid rgba(26, 115, 232, 0.1)",
+                borderTop: "3.5px solid #1a73e8",
+                borderRadius: "50%",
+                animation: "spin 0.8s linear infinite",
+              }}
+            />
           </div>
         )}
       </main>
