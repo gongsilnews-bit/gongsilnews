@@ -247,19 +247,7 @@ export default function MobileHomeClient(props: Props) {
 
       {/* ② 실시간 공실 공실광고 - 카카오 지도 미리보기 */}
       <div style={{ background: "#fff", marginBottom: 12, borderBottom: "1px solid #f0f0f0", position: "relative" }}>
-        {/* 🛑 6월 1일 오픈 전 가림막 (오버레이) */}
-        <div style={{ 
-          position: "absolute", top: 0, left: 0, width: "100%", height: "100%", 
-          background: "rgba(255,255,255,0.75)", backdropFilter: "blur(6px)", zIndex: 10, 
-          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center" 
-        }}>
-          <h3 style={{ margin: "0 0 8px 0", fontSize: 18, color: "#111", fontWeight: 800, letterSpacing: "-0.5px" }}>6월 1일 정식 오픈!</h3>
-          <p style={{ margin: "0 0 16px 0", fontSize: 13, color: "#555", lineHeight: 1.4 }}>현재는 중개사무소 회원<br/>사전 매물 등록 기간입니다.</p>
-          <div style={{ display: "flex", gap: 8 }}>
-            <Link href="/signup" style={{ background: "#1a73e8", color: "#fff", padding: "8px 14px", borderRadius: 6, fontSize: 13, fontWeight: "bold", textDecoration: "none" }}>중개사무소 가입</Link>
-            <Link href="/realty_admin" style={{ background: "#fff", color: "#1a73e8", border: "1px solid #1a73e8", padding: "8px 14px", borderRadius: 6, fontSize: 13, fontWeight: "bold", textDecoration: "none" }}>매물 등록</Link>
-          </div>
-        </div>
+
 
         <div className="sec-hd">
           <h2>실시간 공실 공실광고</h2>
