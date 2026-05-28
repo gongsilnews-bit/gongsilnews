@@ -185,14 +185,6 @@ button { border: none; background: none; cursor: pointer; font-family: inherit; 
     margin-bottom: 20px;
     position: relative;
 }
-.sec-title-wrap::before {
-    content: '';
-    display: inline-block;
-    width: 4px;
-    height: 18px;
-    background-color: #1a4282;
-    margin-right: 10px;
-}
 .sec-title {
     font-size: 20px;
     font-weight: 800;
