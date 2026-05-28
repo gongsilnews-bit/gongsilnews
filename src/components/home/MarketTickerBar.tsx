@@ -14,7 +14,7 @@ export default function MarketTickerBar() {
 
   return (
     <div className="ticker-bar">
-      <Link href="/market_dashboard" className="ticker-label">
+      <Link href="/market_dashboard" className="ticker-label" style={{ color: "#fff" }}>
         실시간 부동산 지수 <span style={{ fontSize: 12, marginLeft: 8 }}>&gt;</span>
       </Link>
       <div className="ticker-wrap">

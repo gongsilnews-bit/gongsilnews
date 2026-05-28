@@ -65,7 +65,14 @@ const GongsilMobileDrawerListImpl: React.FC<GongsilMobileDrawerListProps> = ({
           const m = v.metadata || {};
           return m.pbctBegnDtm || m.pblctBgnDtm || m.bid_start_date || "";
         };
-        return arr.sort((a, b) => getBidDate(b).localeCompare(getBidDate(a)));
+        return arr.sort((a, b) => {
+          const da = getBidDate(a);
+          const db = getBidDate(b);
+          if (!da && !db) return 0;
+          if (!da) return 1;
+          if (!db) return -1;
+          return db.localeCompare(da);
+        });
       }
       default:
         return arr;
