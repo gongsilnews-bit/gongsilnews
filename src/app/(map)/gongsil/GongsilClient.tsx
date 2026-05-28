@@ -193,15 +193,15 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isAuctionMode, setIsAuctionMode] = useState(() => {
     if (typeof window !== "undefined") {
-      // 일반 공실을 명시적으로 눌러 gongsil_category가 'gongsil'인 경우를 제외하면,
-      // 처음 접속하거나 새로고침했을 때 무조건 기본값으로 '경매' 모드를 활성화시킵니다.
-      return localStorage.getItem("gongsil_category") !== "gongsil";
+      const cat = localStorage.getItem("gongsil_category") || "auction";
+      return cat === "auction";
     }
     return true; // SSR 기본값: 경매 활성화
   });
   const [activeMode, setActiveMode] = useState<"공실" | "분양" | "경매">(() => {
     if (typeof window !== "undefined") {
-      return localStorage.getItem("gongsil_category") === "gongsil" ? "공실" : "경매";
+      const cat = localStorage.getItem("gongsil_category") || "auction";
+      return cat === "auction" ? "경매" : "공실";
     }
     return "경매"; // 기본값: 경매 모드
   });
