@@ -772,10 +772,22 @@ const PERSONALIZED_MENTAL_MAP: Record<string, Record<string, string>> = {
 // 프리미엄 PC용 추천 스플릿 컴포넌트
 function PremiumSplitRecommend({ articles, memberName, mentalText }: { articles: Article[], memberName?: string, mentalText?: string }) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
 
   useEffect(() => {
     setActiveIndex(0);
   }, [articles]);
+
+  useEffect(() => {
+    if (articles.length <= 1) return;
+    if (isHovered) return;
+    
+    const timer = setInterval(() => {
+      setActiveIndex((prev) => (prev === articles.length - 1 ? 0 : prev + 1));
+    }, 4000);
+    
+    return () => clearInterval(timer);
+  }, [articles.length, isHovered]);
 
   const extractYoutubeIdInfo = (url?: string | null) => {
     if (!url) return null;
@@ -839,6 +851,8 @@ function PremiumSplitRecommend({ articles, memberName, mentalText }: { articles:
       <Link
         href={`/news/${activeArticle.article_no || activeArticle.id}`}
         className="premium-hero-card"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
       >
         <div className="premium-hero-img-wrapper">
           {activeThumb && <img src={activeThumb} alt={activeArticle.title} />}
