@@ -1006,7 +1006,25 @@ export default function GongsilDetailPanel({
                 <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>공실광고번호</div>
                 <div style={{ fontSize: 14, color: "#222", fontWeight: "bold", padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.vacancy_no}</div>
                 <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>소재지</div>
-                <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{getMaskedAddress(prop)}</div>
+                <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>
+                  {getMaskedAddress(prop)}
+                  {(() => {
+                    const exp = prop.address_exposure;
+                    const propType = prop.property_type || "";
+                    const subCategory = prop.sub_category || "";
+                    const isApt = ["아파트", "오피스텔", "도시형생활주택"].some(t => propType.includes(t) || subCategory.includes(t));
+                    const isPrivateAddr = exp && exp !== "번지공개" && exp !== "지번공개" && exp !== "동/호수공개";
+                    if (isPrivateAddr && !isApt) {
+                      return (
+                        <div style={{ marginTop: 8, padding: "10px 12px", background: "#fcf8e3", border: "1px solid #faebcc", borderRadius: 4, color: "#8a6d3b", fontSize: "12px", lineHeight: 1.5, fontWeight: "normal" }}>
+                          <span style={{ fontWeight: "bold", display: "inline-flex", alignItems: "center", gap: 4, marginBottom: 2 }}><span style={{ fontSize: 14 }}>💡</span> 위치 정보 안내</span><br/>
+                          본 매물은 중개사의 요청으로 주소 및 상세 위치가 비공개 설정되어, 지도상에는 가까운 지하철역 또는 사거리 부근에 표시됩니다. 실제 건물 위치와 차이가 있으니 상세 위치 및 자세한 내역은 담당 중개사에게 직접 문의해 주세요.
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
+                </div>
                 <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>공실광고특성</div>
                 <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{(() => {
                   const propType = prop.property_type || "";

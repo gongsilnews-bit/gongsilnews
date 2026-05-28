@@ -10,7 +10,7 @@ const CATEGORY_OPTIONS = [
   { label: "전체", value: "" },
   { label: "아파트·오피스텔", value: "아파트·오피스텔" },
   { label: "빌라·주택", value: "빌라·주택" },
-  { label: "원룸·투룸", value: "원룸·투룸(풀옵션)" },
+  { label: "원룸·투룸(풀옵션)", value: "원룸·투룸(풀옵션)" },
   { label: "상가·사무실", value: "상가·사무실·건물·공장·토지" },
   { label: "분양", value: "분양" },
   { label: "경공매", value: "경매" },
