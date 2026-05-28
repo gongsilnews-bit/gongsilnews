@@ -1085,20 +1085,30 @@ function MobileGongsilContent() {
               pointerEvents: "none"
             }}>
               <div style={{
-                background: "rgba(255, 255, 255, 0.85)",
+                background: "rgba(255, 255, 255, 0.9)",
                 backdropFilter: "blur(8px)",
-                borderRadius: "20px",
-                padding: "8px 12px",
-                boxShadow: "0 4px 15px rgba(0,0,0,0.1)",
+                borderRadius: "50%",
+                padding: "8px",
+                boxShadow: "0 4px 15px rgba(0,0,0,0.15)",
                 border: "1px solid rgba(255, 255, 255, 0.5)",
                 display: "flex",
                 alignItems: "center",
-                justifyContent: "center"
+                justifyContent: "center",
+                position: "relative"
               }}>
-                <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1a73e8" strokeWidth="3" strokeLinecap="round">
-                  <circle cx="12" cy="12" r="10" stroke="rgba(26,115,232,0.15)" strokeWidth="3" />
-                  <path d="M12 2a10 10 0 0 1 10 10" />
-                </svg>
+                <style>{`
+                  @keyframes pulseRingMiniMobile {
+                    0% { transform: scale(0.85); opacity: 0.6; }
+                    100% { transform: scale(1.4); opacity: 0; }
+                  }
+                `}</style>
+                {/* 펄싱 링 */}
+                <div style={{ position: "absolute", width: "100%", height: "100%", borderRadius: "50%", background: "#4b89ff", animation: "pulseRingMiniMobile 1.2s ease-out infinite" }} />
+                
+                {/* 중앙 네트워크 아이콘 원형 */}
+                <div style={{ position: "relative", width: "20px", height: "20px", borderRadius: "50%", background: "#1a4282", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h.01"/><path d="M8.5 16.5a5 5 0 0 1 7 0"/><path d="M5 13a10 10 0 0 1 14 0"/><path d="M1.5 9.5a15 15 0 0 1 21 0"/></svg>
+                </div>
               </div>
             </div>
           )}
