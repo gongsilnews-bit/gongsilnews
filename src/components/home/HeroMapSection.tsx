@@ -44,8 +44,8 @@ export default function HeroMapSection({ initialVacancies }: { initialVacancies?
     
     if (markersRef.current && (window as any).kakao?.maps) {
        const size = 36;
-       const normalSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="%234b89ff" stroke="white" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="14" font-weight="bold" font-family="sans-serif">1</text></svg>`;
-       const activeSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="white" stroke="%234b89ff" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="%234b89ff" font-size="14" font-weight="bold" font-family="sans-serif">1</text></svg>`;
+       const normalSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="%23102142" stroke="white" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="14" font-weight="bold" font-family="sans-serif">1</text></svg>`;
+       const activeSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="white" stroke="%23102142" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="%23102142" font-size="14" font-weight="bold" font-family="sans-serif">1</text></svg>`;
 
        markersRef.current.forEach((marker: any) => {
           const idStr = markerIdMapRef.current.get(marker);
@@ -217,8 +217,8 @@ export default function HeroMapSection({ initialVacancies }: { initialVacancies?
       const strId = String(prop.id);
       const isSelected = selectedClusterIdsRef.current?.includes(strId);
 
-      const normalSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="%234b89ff" stroke="white" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="14" font-weight="bold" font-family="sans-serif">1</text></svg>`;
-      const activeSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="white" stroke="%234b89ff" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="%234b89ff" font-size="14" font-weight="bold" font-family="sans-serif">1</text></svg>`;
+      const normalSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="%23102142" stroke="white" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="14" font-weight="bold" font-family="sans-serif">1</text></svg>`;
+      const activeSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="white" stroke="%23102142" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="%23102142" font-size="14" font-weight="bold" font-family="sans-serif">1</text></svg>`;
       const svgStr = isSelected ? activeSvg : normalSvg;
 
       const marker = new kakao.maps.Marker({
@@ -247,9 +247,9 @@ export default function HeroMapSection({ initialVacancies }: { initialVacancies?
       disableClickZoom: true,
       calculator: [10, 30, 50],
       styles: [
-        { width: "44px", height: "44px", background: "#4b89ff", borderRadius: "50%", color: "#fff", textAlign: "center", lineHeight: "38px", fontSize: "15px", fontWeight: "bold", border: "3px solid rgba(255,255,255,0.8)", boxShadow: "0 2px 8px rgba(0,0,0,0.3)" },
-        { width: "54px", height: "54px", background: "#3a6fe0", borderRadius: "50%", color: "#fff", textAlign: "center", lineHeight: "48px", fontSize: "17px", fontWeight: "bold", border: "3px solid rgba(255,255,255,0.8)", boxShadow: "0 2px 8px rgba(0,0,0,0.3)" },
-        { width: "64px", height: "64px", background: "#2856b8", borderRadius: "50%", color: "#fff", textAlign: "center", lineHeight: "58px", fontSize: "19px", fontWeight: "bold", border: "3px solid rgba(255,255,255,0.8)", boxShadow: "0 2px 8px rgba(0,0,0,0.3)" },
+        { width: "44px", height: "44px", background: "#203d75", borderRadius: "50%", color: "#fff", textAlign: "center", lineHeight: "38px", fontSize: "15px", fontWeight: "bold", border: "3px solid rgba(255,255,255,0.8)", boxShadow: "0 2px 8px rgba(0,0,0,0.3)" },
+        { width: "54px", height: "54px", background: "#182f5c", borderRadius: "50%", color: "#fff", textAlign: "center", lineHeight: "48px", fontSize: "17px", fontWeight: "bold", border: "3px solid rgba(255,255,255,0.8)", boxShadow: "0 2px 8px rgba(0,0,0,0.3)" },
+        { width: "64px", height: "64px", background: "#102142", borderRadius: "50%", color: "#fff", textAlign: "center", lineHeight: "58px", fontSize: "19px", fontWeight: "bold", border: "3px solid rgba(255,255,255,0.8)", boxShadow: "0 2px 8px rgba(0,0,0,0.3)" },
       ],
     });
     clustererRef.current = clusterer;
@@ -280,8 +280,8 @@ export default function HeroMapSection({ initialVacancies }: { initialVacancies?
               const overlay = cluster.getClusterMarker().getContent();
               if (overlay && overlay.style) {
                   overlay.style.background = '#ffffff';
-                  overlay.style.color = '#4b89ff';
-                  overlay.style.border = '2px solid #4b89ff';
+                  overlay.style.color = '#102142';
+                  overlay.style.border = '2px solid #102142';
                   overlay.style.zIndex = '999';
               }
           }
