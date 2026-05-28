@@ -54,8 +54,9 @@ export default function MiniVacancyMap({ vacancies, isLoading }: Props) {
       map.setZoomable(true);
       map.setDraggable(true);
 
-      // ⚡ [성능 최적화] 성능 부하를 일으키는 전국 단위(레벨 9 이상) 줌아웃은 과감히 제한! (최대 레벨 8 구/시 단위 한계 설정)
-      map.setMaxLevel(8);
+      // ⚡ [성능 최적화] 확대(줌인) / 축소(줌아웃) 범위를 일부로만 제한하여 골목길 노출 차단 및 최적의 레이아웃 유지!
+      map.setMinLevel(6);
+      map.setMaxLevel(7);
 
       setMapInstance(map);
     };
