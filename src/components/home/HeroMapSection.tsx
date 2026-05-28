@@ -139,7 +139,8 @@ export default function HeroMapSection({ initialVacancies }: { initialVacancies?
     if (category === "경매") {
       return vacancies.filter(v => v.trade_type === "경매" || v.is_auction === true);
     }
-    return vacancies.filter(v => v.property_type === category);
+    // 일반 공실 카테고리(상가-사무실, 원룸 등)를 클릭한 경우 경매 매물은 철저히 필터링 차단
+    return vacancies.filter(v => v.property_type === category && v.trade_type !== "경매" && !v.is_auction);
   }, [vacancies, category]);
 
   // Format price
