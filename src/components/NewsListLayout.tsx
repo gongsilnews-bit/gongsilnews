@@ -854,10 +854,18 @@ function PremiumSplitRecommend({ articles, memberName, mentalText }: { articles:
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        <div className="premium-hero-img-wrapper">
-          {activeThumb && <img src={activeThumb} alt={activeArticle.title} />}
-          <div className="premium-hero-gradient-top" />
-          <div className="premium-hero-gradient" />
+        <div className="premium-hero-slider-track" style={{ display: "flex", width: "100%", height: "100%", transition: "transform 0.5s ease-in-out", transform: `translateX(-${activeIndex * 100}%)`, position: "absolute", top: 0, left: 0, zIndex: 1 }}>
+          {articles.map((art, idx) => {
+            const thumb = getThumbnailSrc(art);
+            return (
+              <div key={idx} style={{ width: "100%", height: "100%", flexShrink: 0, background: "#111", position: "relative", overflow: "hidden" }} className="premium-hero-img-wrapper">
+                {thumb && <img src={thumb} alt={art.title} className="premium-hero-img" />}
+              </div>
+            );
+          })}
+        </div>
+        <div className="premium-hero-gradient-top" />
+        <div className="premium-hero-gradient" />
           
           {mentalText && (
             <div style={{ position: "absolute", top: 24, left: 30, zIndex: 10, display: "flex", flexDirection: "column", gap: "8px" }}>
