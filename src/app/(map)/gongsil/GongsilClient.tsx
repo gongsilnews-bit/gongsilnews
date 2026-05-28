@@ -936,13 +936,29 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     const mngParam = searchParams.get("mng");
     if (!mngParam || mngParamHandledRef.current === mngParam) return;
 
-    // 먼저 현재 dbVacancies에서 cltrMngNo로 검색
-    let target = dbVacancies.find((v) => {
-      const m = v.metadata?.cltrMngNo || v.metadata?.cltr_mng_no;
-      return m === mngParam;
-    });
+    const loadByMngNo = async () => {
+      // 1) 현재 dbVacancies에서 cltrMngNo로 검색
+      let target = dbVacancies.find((v) => {
+        const m = v.metadata?.cltrMngNo || v.metadata?.cltr_mng_no;
+        return m === mngParam;
+      });
 
-    if (target) {
+      // 2) 없으면 서버에서 직접 검색
+      if (!target) {
+        const { getVacancyByMngNo } = await import("@/app/actions/vacancy");
+        const res = await getVacancyByMngNo(mngParam);
+        if (res.success && res.data) {
+          target = res.data;
+          // dbVacancies에 추가
+          setDbVacancies((prev) => {
+            if (prev.some((v) => String(v.id) === String(target!.id))) return prev;
+            return [...prev, target!];
+          });
+        }
+      }
+
+      if (!target) return; // 서버에서도 못 찾으면 포기
+
       mngParamHandledRef.current = mngParam;
       setActiveProperty(target.id);
       setShowDetail(true);
@@ -959,6 +975,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
       setActivePills(pills);
       localStorage.setItem("gongsil_pills", JSON.stringify(pills));
 
+      // 지도를 해당 물건 위치로 이동
       if (target.lat && target.lng && kakaoMapRef.current) {
         const kakao = (window as any).kakao;
         if (kakao?.maps) {
@@ -967,7 +984,9 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
         }
       }
       setSelectedClusterIds([String(target.id)]);
-    }
+    };
+
+    loadByMngNo();
   }, [searchParams, dbVacancies, mapLoaded]);
 
   // On activeProperty change, reset detail scroll position

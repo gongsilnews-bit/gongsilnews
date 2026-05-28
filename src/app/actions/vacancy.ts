@@ -405,6 +405,29 @@ export async function getVacancyDetail(vacancyId: string) {
   }
 }
 
+// ── 물건관리번호(cltrMngNo)로 경매 매물 조회 ──
+export async function getVacancyByMngNo(mngNo: string) {
+  const supabase = getAdminClient();
+  try {
+    const { data, error } = await supabase
+      .from('vacancies')
+      .select('*, members!vacancies_owner_id_fkey(name, email, role, phone, sns_links, profile_image_url, agencies(*)), vacancy_photos(url, sort_order)')
+      .eq('trade_type', '경매')
+      .eq('status', 'ACTIVE')
+      .or(`metadata->>cltrMngNo.eq.${mngNo},metadata->>cltr_mng_no.eq.${mngNo}`)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) return { success: false, error: error.message };
+    if (!data) return { success: false, error: '해당 물건관리번호의 매물을 찾을 수 없습니다.' };
+
+    return { success: true, data };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
 // ── 공실 상태 변경 (광고중 ↔ 광고종료, 승인 등) ──
 export async function updateVacancyStatus(vacancyId: string, newStatus: string) {
   const supabase = getAdminClient();
