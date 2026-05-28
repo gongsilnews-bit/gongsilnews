@@ -2018,7 +2018,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                         borderRadius: 10,
                         boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
                         padding: 18,
-                        zIndex: 300,
+                        zIndex: 1200,
                         minWidth: 436,
                         animation: "dropdownFadeIn 0.15s ease",
                         transform: `translate(${filterOffset.x}px, ${filterOffset.y}px)`,
@@ -2033,7 +2033,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                         borderRadius: 4,
                         boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
                         padding: 16,
-                        zIndex: 300,
+                        zIndex: 1200,
                         minWidth: 200,
                         animation: "dropdownFadeIn 0.15s ease",
                       }}
