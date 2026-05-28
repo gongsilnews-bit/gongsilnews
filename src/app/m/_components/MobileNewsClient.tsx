@@ -1050,7 +1050,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
               width: "100%",
               maxWidth: "448px",
               zIndex: 40,
-              backgroundColor: "#102142", // 홈 헤더 테마색으로 통일
+              backgroundColor: "#ffffff",
               borderBottom: "9px solid #F4F6F8",
               display: "flex",
               alignItems: "stretch",
@@ -1101,7 +1101,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                     padding: "0 14px 0",
                     fontSize: "17px",
                     fontWeight: activeTab === cat.key ? 700 : 500,
-                    color: activeTab === cat.key ? "#ffffff" : "rgba(255, 255, 255, 0.6)", // 변경된 텍스트 색상
+                    color: activeTab === cat.key ? "#1a4282" : "#222222",
                     background: "none",
                     border: "none",
                     cursor: "pointer",
@@ -1134,12 +1134,12 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                background: "#102142", // 테마색 곤색 배경
+                background: "#ffffff", // 배경을 흰색으로 지정해 투명도 문제 해결
                 border: "none",
                 cursor: "pointer",
               }}
             >
-              <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#1a2e50" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="11" cy="11" r="8"></circle>
                 <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
               </svg>
