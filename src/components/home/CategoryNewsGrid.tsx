@@ -139,29 +139,31 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
 
 
 
-      {/* 6. Video News: 공실뉴스 */}
-      <div className="video-wrap mb-50">
-        <div className="sec-title-wrap">
-          <Link href="/news_gongsil" style={{ textDecoration: "none" }}><h2 className="sec-title">공실뉴스 &gt;</h2></Link>
-        </div>
-        <div className="video-grid">
-          {gongsilArts.length > 0 ? (
-            gongsilArts.map((item, i) => {
-              const ytInfo = extractYoutubeIdInfo(item);
-              const thumbSrc = getThumbnailSrc(item, ytInfo);
-              return (
-                <Link key={i} href={`/news/${item.article_no || item.id}`} className="vid-item" onClick={saveScroll}>
-                  <div className="vid-thumb">
-                    <img src={thumbSrc !== "https://via.placeholder.com/300x200?text=No+Image" ? thumbSrc : "https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&q=80&w=600&h=337"} alt={item.title} />
-                    <div className="vid-play"></div>
-                  </div>
-                  <div className="vid-title">{item.title}</div>
-                </Link>
-              );
-            })
-          ) : (
-            <div style={{ color: "#999", padding: "40px 0", width: "100%", textAlign: "center" }}>등록된 공실뉴스 기사가 없습니다.</div>
-          )}
+      {/* 6. Video News: 공실뉴스 — 블랙 배경 */}
+      <div style={{ background: "#111", margin: "0 -9999px", padding: "40px 9999px 48px", position: "relative" }}>
+        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+          <div className="sec-title-wrap">
+            <Link href="/news_gongsil" style={{ textDecoration: "none" }}><h2 className="sec-title" style={{ color: "#fff" }}>공실뉴스 &gt;</h2></Link>
+          </div>
+          <div className="video-grid">
+            {gongsilArts.length > 0 ? (
+              gongsilArts.map((item, i) => {
+                const ytInfo = extractYoutubeIdInfo(item);
+                const thumbSrc = getThumbnailSrc(item, ytInfo);
+                return (
+                  <Link key={i} href={`/news/${item.article_no || item.id}`} className="vid-item" onClick={saveScroll}>
+                    <div className="vid-thumb">
+                      <img src={thumbSrc !== "https://via.placeholder.com/300x200?text=No+Image" ? thumbSrc : "https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&q=80&w=600&h=337"} alt={item.title} />
+                      <div className="vid-play"></div>
+                    </div>
+                    <div className="vid-title" style={{ color: "#fff" }}>{item.title}</div>
+                  </Link>
+                );
+              })
+            ) : (
+              <div style={{ color: "#666", padding: "40px 0", width: "100%", textAlign: "center" }}>등록된 공실뉴스 기사가 없습니다.</div>
+            )}
+          </div>
         </div>
       </div>
 
