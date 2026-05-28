@@ -35,9 +35,8 @@ body {
     scrollbar-width: none; /* Firefox */
 }
 ul, li { list-style: none; }
-a { text-decoration: none; color: inherit; }
-a:visited { color: inherit !important; }
-a:active { color: inherit !important; }
+a { text-decoration: none; color: #222; }
+a:visited, a:active { color: #222; }
 button { border: none; background: none; cursor: pointer; font-family: inherit; }
 
 /* Container */
@@ -60,6 +59,8 @@ button { border: none; background: none; cursor: pointer; font-family: inherit; 
     padding: 0 50px;
     width: 100%;
 }
+.top-bar a, .top-bar a:visited, .top-bar a:active { color: #fff; }
+.premium-bg a, .premium-bg a:visited { color: #fff; }
 .top-bar-left { 
     display: flex; 
     align-items: center; 
