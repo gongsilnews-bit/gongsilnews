@@ -13,39 +13,24 @@ export default function MiniVacancyMap({ vacancies }: Props) {
   const router = useRouter();
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInitRef = useRef(false);
-  const mapInstanceRef = useRef<any>(null);
+  const [mapInstance, setMapInstance] = useState<any>(null);
   const [visibleCount, setVisibleCount] = useState(0);
-
-  // vacancies가 로드되거나 바뀔 때 현재 지도의 Bounds 범위 내 개수를 다시 계산하는 동기화 훅
-  useEffect(() => {
-    if (!mapInstanceRef.current) return;
-    const map = mapInstanceRef.current;
-    const withCoords = vacancies.filter((v) => v.lat && v.lng);
-    const bounds = map.getBounds();
-    if (bounds) {
-      const sw = bounds.getSouthWest();
-      const ne = bounds.getNorthEast();
-      const visible = withCoords.filter((v) => {
-        return v.lat >= sw.getLat() && v.lat <= ne.getLat() && v.lng >= sw.getLng() && v.lng <= ne.getLng();
-      });
-      setVisibleCount(visible.length);
-    }
-  }, [vacancies]);
+  const markersRef = useRef<any[]>([]);
 
   // 지도 이동 상황 및 줌 레벨에 맞는 최적의 좌표와 배율을 가지고 경매 카테고리로 모바일 라우팅
   const handleNavigate = () => {
-    if (mapInstanceRef.current) {
-      const map = mapInstanceRef.current;
-      const center = map.getCenter();
+    if (mapInstance) {
+      const center = mapInstance.getCenter();
       const lat = center.getLat();
       const lng = center.getLng();
-      const level = map.getLevel();
+      const level = mapInstance.getLevel();
       router.push(`/m/gongsil?lat=${lat}&lng=${lng}&level=${level}&mode=auction`);
     } else {
       router.push(`/m/gongsil?mode=auction`);
     }
   };
 
+  // 1단계: 카카오 지도 객체 초기화
   useEffect(() => {
     const initMap = () => {
       if (!mapRef.current || mapInitRef.current) return;
@@ -53,9 +38,6 @@ export default function MiniVacancyMap({ vacancies }: Props) {
       if (!kakao?.maps) return;
 
       mapInitRef.current = true;
-
-      // 공실광고 중 좌표 있는 것
-      const withCoords = vacancies.filter((v) => v.lat && v.lng);
 
       // 강남역(37.498095, 127.027610)을 중심으로 초기화 (PC 버전과 동일)
       const centerLat = 37.498095;
@@ -66,65 +48,7 @@ export default function MiniVacancyMap({ vacancies }: Props) {
         level: 7,
       });
 
-      mapInstanceRef.current = map;
-
-      // 현재 보이는 경계 좌표 구해서 카운트 업데이트
-      const updateVisibleCount = () => {
-        const bounds = map.getBounds();
-        if (!bounds) return;
-        const sw = bounds.getSouthWest();
-        const ne = bounds.getNorthEast();
-        const visible = withCoords.filter((v) => {
-          return (
-            v.lat >= sw.getLat() &&
-            v.lat <= ne.getLat() &&
-            v.lng >= sw.getLng() &&
-            v.lng <= ne.getLng()
-          );
-        });
-        setVisibleCount(visible.length);
-      };
-
-      // 지도 초기 로드 직후 1회 계산
-      updateVisibleCount();
-
-      // 지도가 움직이거나 드래그/줌아웃될 때마다 실시간 계산
-      kakao.maps.event.addListener(map, "idle", updateVisibleCount);
-
-      // 마커 그룹화 (좌표 기준)
-      const groups: Record<string, any[]> = {};
-      withCoords.forEach((v) => {
-        // 소수점 3자리(약 100m) 단위로 그룹화
-        const key = `${Math.round(v.lat * 1000)}_${Math.round(v.lng * 1000)}`;
-        if (!groups[key]) groups[key] = [];
-        groups[key].push(v);
-      });
-
-      // 그룹별 마커 그리기
-      Object.values(groups).forEach((group) => {
-        const { lat, lng } = group[0];
-        const count = group.length;
-        const size = count > 9 ? 42 : 36;
-        
-        // 경매 매물이 포함된 그룹은 남색(#1a4282)으로, 일반 공실은 파란색(#4b89ff)으로 표시
-        const hasAuction = group.some((v) => v.trade_type === "경매");
-        const fillColor = hasAuction ? "#1a4282" : "#4b89ff";
-        
-        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
-          <circle cx="${size/2}" cy="${size/2}" r="${size/2-2}" fill="${fillColor}" stroke="white" stroke-width="2"/>
-          <text x="50%" y="50%" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="${count > 9 ? 14 : 15}" font-weight="bold" font-family="sans-serif">${count}</text>
-        </svg>`;
-
-        new kakao.maps.Marker({
-          position: new kakao.maps.LatLng(lat, lng),
-          image: new kakao.maps.MarkerImage(
-            `data:image/svg+xml,${encodeURIComponent(svg)}`,
-            new kakao.maps.Size(size, size),
-            { offset: new kakao.maps.Point(size / 2, size / 2) }
-          ),
-          map,
-        });
-      });
+      setMapInstance(map);
     };
 
     // Kakao SDK 로드
@@ -148,7 +72,85 @@ export default function MiniVacancyMap({ vacancies }: Props) {
         return () => clearInterval(timer);
       }
     }
-  }, [vacancies]);
+  }, []);
+
+  // 2단계: vacancies 데이터 및 mapInstance가 모두 완료되면 마커 동적 생성
+  useEffect(() => {
+    if (!mapInstance) return;
+    const kakao = (window as any).kakao;
+    if (!kakao?.maps) return;
+
+    // 기존 마커 전체 삭제
+    markersRef.current.forEach((m) => m.setMap(null));
+    markersRef.current = [];
+
+    // 공실광고 중 좌표 있는 것
+    const withCoords = vacancies.filter((v) => v.lat && v.lng);
+
+    // 현재 보이는 경계 좌표 구해서 카운트 업데이트하는 함수
+    const updateVisibleCount = () => {
+      const bounds = mapInstance.getBounds();
+      if (!bounds) return;
+      const sw = bounds.getSouthWest();
+      const ne = bounds.getNorthEast();
+      const visible = withCoords.filter((v) => {
+        return (
+          v.lat >= sw.getLat() &&
+          v.lat <= ne.getLat() &&
+          v.lng >= sw.getLng() &&
+          v.lng <= ne.getLng()
+        );
+      });
+      setVisibleCount(visible.length);
+    };
+
+    // 첫 세팅 시 1회 계산 및 지도 idle(움직임 멈춤) 이벤트 바인딩
+    updateVisibleCount();
+    kakao.maps.event.addListener(mapInstance, "idle", updateVisibleCount);
+
+    // 마커 그룹화 (소수점 3자리 기준 - 약 100m 단위)
+    const groups: Record<string, any[]> = {};
+    withCoords.forEach((v) => {
+      const key = `${Math.round(v.lat * 1000)}_${Math.round(v.lng * 1000)}`;
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(v);
+    });
+
+    // 그룹별 마커 렌더링
+    const newMarkers: any[] = [];
+    Object.values(groups).forEach((group) => {
+      const { lat, lng } = group[0];
+      const count = group.length;
+      const size = count > 9 ? 42 : 36;
+      
+      // 경매 매물이 포함된 그룹은 남색(#1a4282)으로, 일반 공실은 파란색(#4b89ff)으로 표시
+      const hasAuction = group.some((v) => v.trade_type === "경매");
+      const fillColor = hasAuction ? "#1a4282" : "#4b89ff";
+      
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
+        <circle cx="${size/2}" cy="${size/2}" r="${size/2-2}" fill="${fillColor}" stroke="white" stroke-width="2"/>
+        <text x="50%" y="50%" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="${count > 9 ? 14 : 15}" font-weight="bold" font-family="sans-serif">${count}</text>
+      </svg>`;
+
+      const marker = new kakao.maps.Marker({
+        position: new kakao.maps.LatLng(lat, lng),
+        image: new kakao.maps.MarkerImage(
+          `data:image/svg+xml,${encodeURIComponent(svg)}`,
+          new kakao.maps.Size(size, size),
+          { offset: new kakao.maps.Point(size / 2, size / 2) }
+        ),
+        map: mapInstance,
+      });
+
+      newMarkers.push(marker);
+    });
+
+    markersRef.current = newMarkers;
+
+    return () => {
+      kakao.maps.event.removeListener(mapInstance, "idle", updateVisibleCount);
+    };
+  }, [vacancies, mapInstance]);
 
   return (
     <div
@@ -168,7 +170,7 @@ export default function MiniVacancyMap({ vacancies }: Props) {
           top: 12,
           left: 12,
           zIndex: 20,
-          background: "rgba(16,33,66,0.92)", // #102142 with opacity
+          background: "rgba(16,33,66,0.92)",
           color: "#fff",
           borderRadius: 20,
           padding: "6px 14px",
@@ -189,7 +191,7 @@ export default function MiniVacancyMap({ vacancies }: Props) {
           bottom: 12,
           right: 12,
           zIndex: 20,
-          background: "#102142", // Match header dark blue
+          background: "#102142",
           color: "#fff",
           borderRadius: 20,
           padding: "7px 16px",
