@@ -105,6 +105,14 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
   const [hosu, setHosu] = useState("");
   const [addressExposure, setAddressExposure] = useState("기본주소만공개");
 
+  // 건축물대장용 코드 저장
+  const [bjdongCd, setBjdongCd] = useState("");
+  const [sigunguCd, setSigunguCd] = useState("");
+  const [bun, setBun] = useState("");
+  const [ji, setJi] = useState("");
+  const [platGbCd, setPlatGbCd] = useState("0");
+  const [fetchingLedger, setFetchingLedger] = useState(false);
+
   // 인프라 기능
   const [infraRadius, setInfraRadius] = useState("2000");
   const [infrastructure, setInfrastructure] = useState<Record<string, string[]>>({});
@@ -157,6 +165,65 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
   // 의뢰인
   const [clientName, setClientName] = useState(initialClientName);
   const [clientPhone, setClientPhone] = useState(initialClientPhone);
+
+  const fetchBuildingLedger = async () => {
+    if (!sigunguCd || !bjdongCd || !bun) {
+      alert("먼저 [주소 검색]을 통해 정확한 주소를 입력해주세요.");
+      return;
+    }
+    setFetchingLedger(true);
+    try {
+      const url = `/api/building-ledger?sigunguCd=${sigunguCd}&bjdongCd=${bjdongCd}&bun=${bun}&ji=${ji}&platGbCd=${platGbCd}`;
+      const res = await fetch(url);
+      const json = await res.json();
+      if (!res.ok) {
+        alert(json.error || json.message || "건축물대장 조회에 실패했습니다.");
+        return;
+      }
+      const ledger = json.data;
+      if (ledger) {
+        if (ledger.totPkngCnt !== undefined) setParking(ledger.totPkngCnt.toString());
+        if (ledger.useAprDay) {
+          const rawDate = ledger.useAprDay;
+          if (rawDate.length === 8) {
+            // YYYYMMDD -> YYYY-MM-DD (보통 입주일 대신 메모나 특징에 활용할 수도 있음)
+            setMoveInDate(`${rawDate.substring(0,4)}년 ${rawDate.substring(4,6)}월 승인`);
+          }
+        }
+        if (ledger.grndFlrCnt) setTotalFloor(ledger.grndFlrCnt.toString());
+        if (ledger.totArea) {
+           setSupplyM2(ledger.totArea.toString());
+           setSupplyPy((Number(ledger.totArea) * 0.3025).toFixed(1));
+        }
+        
+        let p = ledger.mainPurpsCdNm || "";
+        if (p.includes("단독주택") || p.includes("다가구") || p.includes("다세대")) {
+           setPropertyType("빌라·주택");
+           setSubCategory("빌라/연립");
+        } else if (p.includes("근린생활") || p.includes("상업") || p.includes("업무")) {
+           setPropertyType("상가·사무실·건물·공장·토지");
+           setSubCategory(p.includes("업무") ? "사무실" : "상가");
+        }
+
+        const addInfo = [];
+        if (p) addInfo.push(`주용도: ${p}`);
+        if (ledger.strctCdNm) addInfo.push(`구조: ${ledger.strctCdNm}`);
+        if (ledger.rideUseElvtCnt || ledger.emgenUseElvtCnt) {
+          addInfo.push(`승강기: 승용 ${ledger.rideUseElvtCnt || 0}대 / 비상용 ${ledger.emgenUseElvtCnt || 0}대`);
+        }
+        if (addInfo.length > 0) {
+          setDescription(prev => (prev ? prev + "\n" : "") + "■ 건축물대장 정보 ■\n" + addInfo.join("\n"));
+        }
+        
+        alert("건축물대장 정보를 성공적으로 불러와 빈칸을 채웠습니다!");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("건축물대장 연동 중 오류가 발생했습니다.");
+    } finally {
+      setFetchingLedger(false);
+    }
+  };
 
   // AI 연동
   const aiFileRef = React.useRef<HTMLInputElement>(null);
@@ -1068,6 +1135,17 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                         setDetailAddr(remainingAddr);
                         setBuildingName(data.buildingName || "");
 
+                        // 건축물대장용 파라미터 추출
+                        setSigunguCd(data.sigunguCode || "");
+                        setBjdongCd(data.bcode ? data.bcode.substring(5) : "");
+                        const targetJibun = data.jibunAddress || data.autoJibunAddress || "";
+                        const match = targetJibun.match(/(\d+)(?:-(\d+))?/);
+                        if (match) {
+                          setBun(match[1]);
+                          setJi(match[2] || "0");
+                        }
+                        setPlatGbCd(targetJibun.includes("산 ") ? "1" : "0");
+
                         // 카카오 Geocoder REST API로 좌표 자동 추출
                         setGeocoding(true);
                         try {
@@ -1101,6 +1179,16 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                 }
               }} style={{ height: 36, padding: "0 16px", background: "#10b981", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
                 🔍 주소 검색
+              </button>
+              <button 
+                type="button" 
+                onClick={fetchBuildingLedger}
+                disabled={fetchingLedger}
+                style={{ 
+                  height: 36, padding: "0 16px", background: fetchingLedger ? "#e5e7eb" : (darkMode ? "#3b2f1e" : "#fef3c7"), 
+                  color: fetchingLedger ? "#9ca3af" : "#d97706", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: fetchingLedger ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 6 
+                }}>
+                {fetchingLedger ? "⏳ 연동 중..." : "📋 건축물대장 연동"}
               </button>
             </div>
 

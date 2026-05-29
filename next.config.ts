@@ -35,6 +35,14 @@ const nextConfig: NextConfig = {
           source: '/marketing/ai-detail/:path*',
           destination: 'http://localhost:3005/marketing/ai-detail/:path*',
         },
+        {
+          source: '/marketing/report',
+          destination: 'http://localhost:3006/marketing/report/',
+        },
+        {
+          source: '/marketing/report/:path*',
+          destination: 'http://localhost:3006/marketing/report/:path*',
+        },
       ];
     }
     return [
@@ -45,6 +53,14 @@ const nextConfig: NextConfig = {
       {
         source: '/marketing/ai-detail/',
         destination: '/marketing/ai-detail/index.html',
+      },
+      {
+        source: '/marketing/report',
+        destination: '/marketing/report/index.html',
+      },
+      {
+        source: '/marketing/report/',
+        destination: '/marketing/report/index.html',
       },
     ];
   },

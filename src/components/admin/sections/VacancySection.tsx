@@ -441,6 +441,81 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                             <div style={{ display: "flex", gap: 6, justifyContent: "center", width: "100%" }}>
                               {(role === "admin" || role === "realtor") && (() => {
                                 const hasFlyer = flyerMap[row.id];
+                                const isCommercialSale = row.trade_type === "매매";
+
+                                if (isCommercialSale) {
+                                  return (
+                                    <div style={{ display: 'flex', gap: '4px' }}>
+                                      <button 
+                                        onClick={() => window.open(`/marketing/report?vacancy_id=${row.id}`, '_blank')}
+                                        style={{ 
+                                          height: 30, 
+                                          padding: "0 10px", 
+                                          background: darkMode ? "#1e3a8a" : "#eff6ff", 
+                                          color: darkMode ? "#93c5fd" : "#1d4ed8", 
+                                          border: `1px solid ${darkMode ? "#1e40af" : "#bfdbfe"}`, 
+                                          borderRadius: 4, 
+                                          fontSize: 12, 
+                                          fontWeight: 700, 
+                                          cursor: "pointer", 
+                                          display: "flex", 
+                                          alignItems: "center", 
+                                          gap: 4, 
+                                          whiteSpace: "nowrap", 
+                                          flexShrink: 0,
+                                          transition: "all 0.15s"
+                                        }}
+                                        onMouseEnter={(e) => { e.currentTarget.style.background = darkMode ? "#1e40af" : "#dbeafe"; }}
+                                        onMouseLeave={(e) => { e.currentTarget.style.background = darkMode ? "#1e3a8a" : "#eff6ff"; }}
+                                        title="프리미엄 매매보고서(IM) 생성기"
+                                      >
+                                        💎 매매보고서(IM)
+                                      </button>
+                                      
+                                      <button 
+                                        onClick={() => window.open(`/marketing/ai-detail?vacancy_id=${row.id}`, '_blank')}
+                                        style={{ 
+                                          height: 30, 
+                                          padding: "0 10px", 
+                                          background: hasFlyer 
+                                            ? (darkMode ? "#059669" : "#10b981") 
+                                            : (darkMode ? "#2a2d35" : "#f3f4f6"), 
+                                          color: hasFlyer 
+                                            ? "#fff" 
+                                            : (darkMode ? "#7c8ba1" : "#8a94a6"), 
+                                          border: hasFlyer 
+                                            ? "none" 
+                                            : `1px solid ${darkMode ? "#444" : "#e5e7eb"}`, 
+                                          borderRadius: 4, 
+                                          fontSize: 12, 
+                                          fontWeight: 700, 
+                                          cursor: "pointer", 
+                                          display: "flex", 
+                                          alignItems: "center", 
+                                          gap: 4, 
+                                          whiteSpace: "nowrap", 
+                                          flexShrink: 0,
+                                          transition: "all 0.15s"
+                                        }}
+                                        onMouseEnter={(e) => { 
+                                          e.currentTarget.style.background = hasFlyer 
+                                            ? (darkMode ? "#047857" : "#059669") 
+                                            : (darkMode ? "#343842" : "#e5e7eb"); 
+                                        }}
+                                        onMouseLeave={(e) => { 
+                                          e.currentTarget.style.background = hasFlyer 
+                                            ? (darkMode ? "#059669" : "#10b981") 
+                                            : (darkMode ? "#2a2d35" : "#f3f4f6"); 
+                                        }}
+                                        title={hasFlyer ? "AI 온라인전단지 완성됨 (클릭하여 편집/수정)" : "AI 온라인전단지 미작성 (클릭하여 제작)"}
+                                      >
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                                        {hasFlyer ? "전단지" : "전단지"}
+                                      </button>
+                                    </div>
+                                  );
+                                }
+
                                 return (
                                   <button 
                                     onClick={() => window.open(`/marketing/ai-detail?vacancy_id=${row.id}`, '_blank')}
