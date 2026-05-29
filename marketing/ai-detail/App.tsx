@@ -478,9 +478,32 @@ function App() {
           sections: newSections
         };
 
-        // AI 문구 자동 생성 작동
-        setIsGenerating(true);
-        const aiCopy = await generateFlyerCopy(mappedInfo);
+        // AI 문구 자동 생성 (제미나이 호출 제거 및 규칙 기반 매핑 적용 - 로딩 0초)
+        // setIsGenerating(true);
+        // const aiCopy = await generateFlyerCopy(mappedInfo);
+        const aiCopy = {
+            promotionText: mappedInfo.promotionText,
+            summary: mappedInfo.subTitle, // 서브타이틀을 요약문구로 활용
+            gridInfo: {
+                title: "주요 특징",
+                intro: "HIGHLIGHTS",
+                features: [
+                  mappedInfo.direction === "방향 없음" ? "우수한 채광" : `채광 좋은 ${mappedInfo.direction}`,
+                  "탁 트인 개방감",
+                  mappedInfo.parking !== "없음" ? "편리한 주차" : "역세권 인프라",
+                  "다양한 옵션"
+                ]
+            },
+            listInfo: {
+                title: "공간 상세",
+                intro: "DETAILS",
+                description: "섬세한 디테일과 세련된 마감이 돋보이는 공간입니다.",
+                items: [
+                    { title: "MAIN ZONE", description: "아늑하고 편안한 분위기의 메인 공간입니다." },
+                    { title: "SUB ZONE", description: "효율적인 동선으로 설계된 서브 공간입니다." }
+                ]
+            }
+        };
         
         const finalSections = [...mappedInfo.sections];
         
