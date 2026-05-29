@@ -667,9 +667,32 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
           
           {/* ── Top Search Filter Panel ── */}
           <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8, padding: "24px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
-            <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 20 }}>
-              <span style={{ fontSize: 20, fontWeight: 800, color: "#111" }}>매물 상세검색</span>
-              <span style={{ fontSize: 13, color: "#777" }}>다양한 조건으로 원하시는 매물을 빠르게 찾아보세요.</span>
+            <div style={{ display: "flex", alignItems: "center", marginBottom: 20, justifyContent: "space-between" }}>
+              <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                <span style={{ fontSize: 20, fontWeight: 800, color: "#111" }}>매물 상세검색</span>
+                <span style={{ fontSize: 13, color: "#777" }}>다양한 조건으로 원하시는 매물을 빠르게 찾아보세요.</span>
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "baseline",
+                  gap: 10,
+                  background: "rgba(255,255,255,0.95)",
+                  padding: "8px 14px",
+                  borderRadius: 6,
+                  boxShadow: "0 2px 10px rgba(0,0,0,0.05)",
+                  border: "1px solid #e5e7eb",
+                }}
+              >
+                <h2 style={{ fontSize: 16, fontWeight: 800, color: "#2845B3", margin: 0 }}>리스트검색</h2>
+                <span style={{ color: "#d1d5db", fontSize: 14 }}>|</span>
+                <span
+                  onClick={() => window.location.href = '/gongsil'}
+                  style={{ fontSize: 13, fontWeight: 600, color: "#6b7280", cursor: "pointer" }}
+                >
+                  지도검색
+                </span>
+              </div>
             </div>
             
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>

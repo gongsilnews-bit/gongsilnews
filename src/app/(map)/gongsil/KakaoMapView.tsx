@@ -627,7 +627,7 @@ export default function KakaoMapView({
       <div
         style={{
           position: "absolute",
-          top: 16,
+          top: 8,
           right: 16,
           zIndex: 10,
           display: "flex",
@@ -644,7 +644,7 @@ export default function KakaoMapView({
           onClick={() => window.location.href = '/homepage'}
           style={{ fontSize: 13, fontWeight: 600, color: "#6b7280", cursor: "pointer" }}
         >
-          서울블럭지도
+          리스트검색
         </span>
         <span style={{ color: "#d1d5db", fontSize: 14 }}>|</span>
         <h2 style={{ fontSize: 16, fontWeight: 800, color: "#2845B3", margin: 0 }}>지도검색</h2>
