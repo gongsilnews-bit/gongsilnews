@@ -82,12 +82,6 @@ export default function HomepageViewPage() {
           photos: docRes.photos ? docRes.photos.sort((a: any, b: any) => a.sort_order - b.sort_order).map((p: any) => p.url) : []
         };
         setVacancy(found);
-
-        const res = await getVacancies({ all: true });
-        if (res.success && res.data) {
-          const others = res.data.filter((v: any) => v.status === "ACTIVE" && String(v.id) !== id && v.sido === found.sido).slice(0, 5);
-          setOtherListings(others);
-        }
       } else {
         setVacancy(null);
       }

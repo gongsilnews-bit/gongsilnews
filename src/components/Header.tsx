@@ -275,7 +275,7 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
       )}      {/* 2. Main Header Placeholder & Header */}
       <div ref={placeholderRef} style={{ width: "100%", height: 0 }} />
       <header className="header" ref={headerRef}>
-        <div className="container px-20">
+        <div className="container">
           {/* Scroll state (1-line sticky) vs Top state (1-line large) */}
           <div className="header-main" style={{ 
             display: "flex", 

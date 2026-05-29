@@ -16,18 +16,24 @@
 
 /* Reset & Base */
 * { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+    overflow-x: clip;
+}
 body {
     font-family: 'Pretendard', sans-serif;
     background-color: var(--bg-body);
     color: var(--text-dark);
-    min-width: 320px;
+    min-width: 1200px; /* Ensure body matches the min-width of the layout to avoid weird overlapping */
+    overflow-x: hidden;
 }
 
 /* 스크롤바 숨기기 (기능은 유지) */
-.hide-scrollbar::-webkit-scrollbar {
+.hide-scrollbar::-webkit-scrollbar,
+body::-webkit-scrollbar,
+html::-webkit-scrollbar {
     display: none;
 }
-.hide-scrollbar {
+.hide-scrollbar, body, html {
     -ms-overflow-style: none; /* IE and Edge */
     scrollbar-width: none; /* Firefox */
 }

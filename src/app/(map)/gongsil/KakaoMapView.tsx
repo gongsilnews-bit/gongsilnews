@@ -641,7 +641,7 @@ export default function KakaoMapView({
         }}
       >
         <span
-          onClick={() => alert("서울 블럭지도 준비중입니다")}
+          onClick={() => window.location.href = '/homepage'}
           style={{ fontSize: 13, fontWeight: 600, color: "#6b7280", cursor: "pointer" }}
         >
           서울블럭지도

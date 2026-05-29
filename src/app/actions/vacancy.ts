@@ -185,6 +185,11 @@ export async function syncVacancyPhotos(vacancyId: string, urls: string[]) {
 }
 
 // ── 공실 목록 조회 ──
+// --- Node.js Server-side Global Cache ---
+let _serverVacanciesCache: string | null = null;
+let _serverVacanciesCacheTime: number = 0;
+const SERVER_CACHE_TTL = 3 * 60 * 1000; // 3분 캐시
+
 export async function getVacancies(options?: {
   ownerId?: string;
   status?: string;
@@ -195,11 +200,19 @@ export async function getVacancies(options?: {
   tradeType?: string;
   searchKeyword?: string;
   excludeOnbid?: boolean;
+  stringify?: boolean;
 }) {
+  // 1. 서버 캐시 확인 (전체 조회 & stringify 옵션 시에만 적용)
+  if (options?.all && options?.stringify) {
+    if (_serverVacanciesCache && (Date.now() - _serverVacanciesCacheTime < SERVER_CACHE_TTL)) {
+      return { success: true, data: _serverVacanciesCache };
+    }
+  }
+
   const supabase = getAdminClient();
   try {
     const selectFields = options?.all
-      ? '*, vacancy_photos(url, sort_order)'
+      ? 'id, owner_id, status, trade_type, property_type, deposit, monthly_rent, maintenance_fee, sido, sigungu, dong, building_name, lat, lng, created_at, exposure_type, realtor_commission, room_count, bath_count, exclusive_m2, supply_m2, parking, total_floor, current_floor, direction, move_in_date, client_name, client_phone, themes, options, vacancy_photos(url, sort_order)'
       : '*, members!vacancies_owner_id_fkey(name, email, role, phone, sns_links, profile_image_url, agencies(*)), vacancy_photos(url, sort_order)';
 
     // 만약 페이지네이션이 명시된 경우, 단일 쿼리로 최적화해서 수행
@@ -272,14 +285,22 @@ export async function getVacancies(options?: {
       return { success: true, data: lightData, count: count || 0 };
     }
 
-    // Supabase max_rows=1000 서버 제한 우회: 1000건씩 페이지네이션하여 전체 데이터 조합
+    // 순차 while 루프 대신 병렬 Promise.all로 최대 10,000건을 한 번에 병렬 조회하여 속도 비약적 향상
     const PAGE_SIZE = 1000;
-    let allData: any[] = [];
-    let page = 0;
-    let hasMore = true;
+    const MAX_PAGES = 10; // 최대 10,000건
+    
+    // Check role before loop
+    let isFilteredRole = false;
+    if (options?.ownerId && !options?.all) {
+      const { data: user } = await supabase.from('members').select('role').eq('id', options.ownerId).single();
+      if (user?.role !== 'SUPER_ADMIN' && user?.role !== 'ADMIN' && user?.role !== '최고관리자') {
+        isFilteredRole = true;
+      }
+    }
 
-    while (hasMore) {
-      const from = page * PAGE_SIZE;
+    const promises = [];
+    for (let i = 0; i < MAX_PAGES; i++) {
+      const from = i * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
 
       let pageQuery = supabase
@@ -289,11 +310,8 @@ export async function getVacancies(options?: {
         .range(from, to);
 
       // 역할별 필터
-      if (options?.ownerId && !options?.all) {
-        const { data: user } = await supabase.from('members').select('role').eq('id', options.ownerId).single();
-        if (user?.role !== 'SUPER_ADMIN' && user?.role !== 'ADMIN' && user?.role !== '최고관리자') {
-          pageQuery = pageQuery.eq('owner_id', options.ownerId);
-        }
+      if (isFilteredRole) {
+        pageQuery = pageQuery.eq('owner_id', options!.ownerId);
       }
 
       // 상태 필터 (삭제된 것 제외)
@@ -307,18 +325,24 @@ export async function getVacancies(options?: {
         pageQuery = pageQuery.or("metadata->>source_type.is.null,metadata->>source_type.neq.ONBID");
       }
 
-      const { data, error } = await pageQuery;
-      if (error) {
-        console.error("DEBUG SUPABASE ERROR:", error);
-        return { success: false, error: error.message };
-      }
+      promises.push(pageQuery);
+    }
 
-      if (data && data.length > 0) {
-        allData = allData.concat(data);
-        hasMore = data.length === PAGE_SIZE;
+    const results = await Promise.all(promises);
+    let allData: any[] = [];
+    let page = 0;
+
+    for (const res of results) {
+      if (res.error) {
+        console.error("DEBUG SUPABASE ERROR:", res.error);
+        return { success: false, error: res.error.message };
+      }
+      if (res.data && res.data.length > 0) {
+        allData = allData.concat(res.data);
         page++;
+        if (res.data.length < PAGE_SIZE) break; // 더 이상 데이터가 없으면 중단
       } else {
-        hasMore = false;
+        break;
       }
     }
 
@@ -344,7 +368,16 @@ export async function getVacancies(options?: {
       return { ...rest, metadata: lightMetadata, vacancy_photos };
     });
 
-    return { success: true, data: lightData || [] };
+    const finalData = lightData || [];
+    const resultString = options?.stringify ? JSON.stringify(finalData) : finalData;
+
+    // 캐시에 저장
+    if (options?.all && options?.stringify) {
+      _serverVacanciesCache = resultString as string;
+      _serverVacanciesCacheTime = Date.now();
+    }
+
+    return { success: true, data: resultString };
   } catch (error: any) {
     console.error("DEBUG TRY/CATCH ERROR:", error);
     return { success: false, error: error.message };

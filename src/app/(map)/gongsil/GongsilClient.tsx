@@ -691,7 +691,25 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
       if (activePills.length === 0) {
         return [];
       }
-      list = list.filter((v) => activePills.includes(v.sub_category));
+      list = list.filter((v) => {
+        if (activeCategory === "apart" && activePills.includes("기타")) {
+          if (["아파트분양권", "재건축", "오피스텔분양권", "재개발"].includes(v.sub_category)) return true;
+        }
+        if (activeCategory === "one" && activePills.includes("오피스텔만 보기")) {
+          if (v.themes && Array.isArray(v.themes) && v.themes.includes("오피스텔")) return true;
+          return false;
+        }
+        if (activeCategory === "biz" && activePills.includes("사무실")) {
+          if (v.sub_category === "지식산업센터") return true;
+        }
+        if (activeCategory === "biz" && activePills.includes("건물/빌딩")) {
+          if (v.sub_category === "건물" || v.sub_category === "빌딩/건물" || v.sub_category === "건물/빌딩") return true;
+        }
+        if (activeCategory === "villa" && activePills.includes("단독/다가구")) {
+          if (v.sub_category === "상가주택") return true;
+        }
+        return activePills.includes(v.sub_category);
+      });
     }
 
     // 3) 거래방식 및 통합 가격 필터 적용
@@ -1705,7 +1723,13 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
 
   const togglePill = (p: string) => {
     setActivePills((prev) => {
-      const next = prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p];
+      let next;
+      if (p === "오피스텔만 보기") {
+        next = prev.includes(p) ? [] : [p];
+      } else {
+        const withoutOfficetel = prev.filter(x => x !== "오피스텔만 보기");
+        next = withoutOfficetel.includes(p) ? withoutOfficetel.filter((x) => x !== p) : [...withoutOfficetel, p];
+      }
       localStorage.setItem("gongsil_pills", JSON.stringify(next));
       localStorage.setItem(`gongsil_pills_${activeCategory}`, JSON.stringify(next));
       return next;
@@ -1973,6 +1997,35 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
               overflowX: "visible",
             }}
           >
+            {config.pills.length > 0 && (
+              <button
+                onClick={() => {
+                  const selectablePills = config.pills.filter(p => p !== "오피스텔만 보기");
+                  const allSelected = selectablePills.length > 0 && selectablePills.every(p => activePills.includes(p));
+                  if (allSelected) {
+                    setActivePills([]);
+                  } else {
+                    setActivePills([...selectablePills]);
+                  }
+                }}
+                style={{
+                  background: (config.pills.filter(p => p !== "오피스텔만 보기").length > 0 && config.pills.filter(p => p !== "오피스텔만 보기").every(p => activePills.includes(p))) ? (isAuctionMode ? "#f3f0ff" : "#e8f0fe") : "#fff",
+                  border: `1px solid ${(config.pills.filter(p => p !== "오피스텔만 보기").length > 0 && config.pills.filter(p => p !== "오피스텔만 보기").every(p => activePills.includes(p))) ? (isAuctionMode ? "#7048e8" : "#1a73e8") : "#ccc"}`,
+                  fontSize: 13,
+                  color: (config.pills.filter(p => p !== "오피스텔만 보기").length > 0 && config.pills.filter(p => p !== "오피스텔만 보기").every(p => activePills.includes(p))) ? (isAuctionMode ? "#7048e8" : "#1a73e8") : "#333",
+                  cursor: "pointer",
+                  padding: "6px 14px",
+                  borderRadius: 20,
+                  whiteSpace: "nowrap",
+                  fontWeight: (config.pills.filter(p => p !== "오피스텔만 보기").length > 0 && config.pills.filter(p => p !== "오피스텔만 보기").every(p => activePills.includes(p))) ? "bold" : "normal",
+                  fontFamily: "inherit",
+                  flexShrink: 0,
+                  transition: "all 0.15s",
+                }}
+              >
+                {(config.pills.filter(p => p !== "오피스텔만 보기").length > 0 && config.pills.filter(p => p !== "오피스텔만 보기").every(p => activePills.includes(p))) ? "✓ 전체선택" : "전체선택"}
+              </button>
+            )}
             {config.pills.map((p, idx) => {
               let activeBg = "#e8f0fe";
               let activeBorder = "#1a73e8";
@@ -1993,13 +2046,13 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                   <button
                     onClick={() => togglePill(p)}
                     style={{
-                      background: isSelected ? (isOfficePill(p) ? "#111" : activeBg) : "#fff",
-                      border: `1px solid ${isSelected ? (isOfficePill(p) ? "#111" : activeBorder) : "#ccc"}`,
+                      background: isSelected ? activeBg : "#fff",
+                      border: `1px solid ${isSelected ? activeBorder : "#ccc"}`,
                       fontSize: 13,
-                      color: isSelected ? (isOfficePill(p) ? "#fff" : activeColor) : "#333",
+                      color: isSelected ? activeColor : "#333",
                       cursor: "pointer",
                       padding: "6px 14px",
-                      borderRadius: isOfficePill(p) ? 4 : 20,
+                      borderRadius: 20,
                       whiteSpace: "nowrap",
                       fontWeight: isSelected ? "bold" : "normal",
                       fontFamily: "inherit",
@@ -2007,7 +2060,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                       transition: "all 0.15s",
                     }}
                   >
-                    {isSelected && !isOfficePill(p) ? `✓ ${p}` : p}
+                    {isSelected ? `✓ ${p}` : p}
                   </button>
                   {isAuctionMode && (p === "빌라/주택" || p === "토지") && (
                     <div style={{ width: 1, height: 16, background: "#ddd", margin: "0 6px", flexShrink: 0 }} />
