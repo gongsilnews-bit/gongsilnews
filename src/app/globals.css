@@ -23,8 +23,13 @@ body {
     font-family: 'Pretendard', sans-serif;
     background-color: var(--bg-body);
     color: var(--text-dark);
-    min-width: 1200px; /* Ensure body matches the min-width of the layout to avoid weird overlapping */
     overflow-x: hidden;
+}
+/* 데스크탑 전용: 모바일(/m)에서는 min-width 적용하지 않음 */
+@media (min-width: 769px) {
+    body {
+        min-width: 1200px;
+    }
 }
 
 /* 스크롤바 숨기기 (기능은 유지) */

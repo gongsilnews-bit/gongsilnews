@@ -36,6 +36,8 @@ export default function MobileLayout({ children }: { children: React.ReactNode }
         WebkitFontSmoothing: 'antialiased',
       }}
     >
+      {/* 모바일 경로에서 데스크탑 전용 body min-width 강제 해제 */}
+      <style>{`body { min-width: auto !important; }`}</style>
       {/* 각 페이지의 layout.tsx 또는 page.tsx 에서 헤더를 담당합니다 */}
       <main
         style={{
