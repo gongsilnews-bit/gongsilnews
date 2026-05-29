@@ -21,12 +21,12 @@ export default async function MainLayout({
   // }
 
   return (
-    <>
+    <div style={{ minWidth: "1200px" }}>
       <Header topFullBanners={topFullBanners} headerTextBanners={headerTextBanners} />
       {/* 하위의 모든 page.tsx 파일 내용물이 이 자리에 렌더링 됩니다 */}
       {children}
       <RealEstateInfoBanner />
       <Footer />
-    </>
+    </div>
   );
 }

@@ -15,9 +15,6 @@
 }
 
 /* Reset & Base */
-html, body {
-    overflow-x: clip;
-}
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
     font-family: 'Pretendard', sans-serif;

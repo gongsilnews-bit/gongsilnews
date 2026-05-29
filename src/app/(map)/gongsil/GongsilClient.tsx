@@ -240,6 +240,10 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   const [filterAuctionDiscount, setFilterAuctionDiscount] = useState<number>(0);
   const [filterAuctionBidCount, setFilterAuctionBidCount] = useState<number>(0);
   const [filterAuctionStartDate, setFilterAuctionStartDate] = useState<string>("all");
+  const [filterAuctionAppraisalMin, setFilterAuctionAppraisalMin] = useState<number | null>(null);
+  const [filterAuctionAppraisalMax, setFilterAuctionAppraisalMax] = useState<number | null>(null);
+  const [filterAuctionBidPriceMin, setFilterAuctionBidPriceMin] = useState<number | null>(null);
+  const [filterAuctionBidPriceMax, setFilterAuctionBidPriceMax] = useState<number | null>(null);
   const [sliderInteractions, setSliderInteractions] = useState<Record<string, { min: boolean; max: boolean }>>({});
   const [roomBathInteractions, setRoomBathInteractions] = useState({ room: false, bath: false });
   const [savedCategoryAlerts, setSavedCategoryAlerts] = useState<Record<string, boolean>>({});
@@ -573,6 +577,80 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
         });
       }
 
+      // 경매 감정가 필터
+      if (filterAuctionAppraisalMin !== null || filterAuctionAppraisalMax !== null) {
+        auctionList = auctionList.filter((v) => {
+          const meta = (v as any).metadata || {};
+          const appraisal = meta.appraisal_price || parseInt(meta.apslEvlAmt || "0", 10) || 0;
+          if (filterAuctionAppraisalMin !== null && appraisal < filterAuctionAppraisalMin) return false;
+          if (filterAuctionAppraisalMax !== null && appraisal > filterAuctionAppraisalMax) return false;
+          return true;
+        });
+      }
+
+      // 경매 최저입찰가 필터
+      if (filterAuctionBidPriceMin !== null || filterAuctionBidPriceMax !== null) {
+        auctionList = auctionList.filter((v) => {
+          const meta = (v as any).metadata || {};
+          const bidPrice = meta.lowest_bid_price || parseInt(meta.lowstBidPrcIndctCont || "0", 10) || 0;
+          if (filterAuctionBidPriceMin !== null && bidPrice < filterAuctionBidPriceMin) return false;
+          if (filterAuctionBidPriceMax !== null && bidPrice > filterAuctionBidPriceMax) return false;
+          return true;
+        });
+      }
+
+      // 경매 할인율 필터
+      if (filterAuctionDiscount > 0) {
+        auctionList = auctionList.filter((v) => {
+          const meta = (v as any).metadata || {};
+          const appraisal = meta.appraisal_price || parseInt(meta.apslEvlAmt || "0", 10) || 0;
+          const bidPrice = meta.lowest_bid_price || parseInt(meta.lowstBidPrcIndctCont || "0", 10) || 0;
+          if (!appraisal || !bidPrice) return false;
+          const discountRate = ((appraisal - bidPrice) / appraisal) * 100;
+          return discountRate >= filterAuctionDiscount;
+        });
+      }
+
+      // 경매 유찰 횟수 필터
+      if (filterAuctionBidCount > 0) {
+        auctionList = auctionList.filter((v) => {
+          const meta = (v as any).metadata || {};
+          const bidCount = meta.bid_count || meta.pbctCnt || 0;
+          return bidCount >= filterAuctionBidCount;
+        });
+      }
+
+      // 경매 입찰시작일 필터
+      if (filterAuctionStartDate !== "all") {
+        const now = new Date();
+        auctionList = auctionList.filter((v) => {
+          const meta = (v as any).metadata || {};
+          const dateStr = meta.pbctBegnDtm || meta.pblctBgnDtm || meta.bid_start_date || "";
+          if (!dateStr) return false;
+          const bidDate = new Date(dateStr);
+          const diffDays = (bidDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+          switch (filterAuctionStartDate) {
+            case "1w": return diffDays >= -7 && diffDays <= 7;
+            case "2w": return diffDays >= -14 && diffDays <= 14;
+            case "1m": return diffDays >= -30 && diffDays <= 30;
+            case "1_3m": return diffDays >= 30 && diffDays <= 90;
+            case "over_3m": return diffDays > 90;
+            default: return true;
+          }
+        });
+      }
+
+      // 경매 면적 필터 (기존 filterAreaMin/Max 재활용)
+      if (filterAreaMin !== null || filterAreaMax !== null) {
+        auctionList = auctionList.filter((v) => {
+          const meta = (v as any).metadata || {};
+          const area = parseFloat(meta.bldSqms || meta.cltrAr || v.exclusive_m2 || "0") || 0;
+          if (filterAreaMin !== null && area < filterAreaMin) return false;
+          if (filterAreaMax !== null && area > filterAreaMax) return false;
+          return true;
+        });
+      }
+
       return auctionList;
     }
 
@@ -802,6 +880,13 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     wishTab,
     recentViews,
     isAuctionMode,
+    filterAuctionAppraisalMin,
+    filterAuctionAppraisalMax,
+    filterAuctionBidPriceMin,
+    filterAuctionBidPriceMax,
+    filterAuctionDiscount,
+    filterAuctionBidCount,
+    filterAuctionStartDate,
   ]);
 
   // Reset pagination whenever filters, map bounds, or selected cluster changes to keep map responsive
@@ -1525,7 +1610,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
       return ["거래유형", "면적", "세대수", "등록자", "중개보수", "테마"];
     }
     if (activeCategory === "auction") {
-      return ["거래유형", "면적", "테마"];
+      return ["감정가", "최저입찰가", "할인율", "유찰횟수", "입찰일"];
     }
     return ["거래유형", "면적", "사용승인일", "세대수", "방/욕실수", "방향", "등록자", "중개보수", "테마"];
   };
@@ -1577,6 +1662,10 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     setFilterAuctionDiscount(0);
     setFilterAuctionBidCount(0);
     setFilterAuctionStartDate("all");
+    setFilterAuctionAppraisalMin(null);
+    setFilterAuctionAppraisalMax(null);
+    setFilterAuctionBidPriceMin(null);
+    setFilterAuctionBidPriceMax(null);
     setPopoverSearchKeyword("");
     setFilterSearchKeyword("");
   };
@@ -2355,129 +2444,10 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                 background: activeSection === "거래유형" ? "#f3f4f6" : "transparent",
                                 marginBottom: "16px",
                                 transition: "all 0.2s ease-in-out",
+                                display: isAuctionMode ? "none" : "block",
                               }}
                             >
-                              {isAuctionMode ? (
-                                <>
-                                  <div style={{ fontSize: "14px", color: "#374151", marginBottom: "10px", fontWeight: "bold" }}>
-                                    할인율 조건 (감정가 대비)
-                                  </div>
-                                  
-                                  <div style={{ display: "flex", gap: "8px", marginBottom: "20px", flexWrap: "wrap" }}>
-                                    {[
-                                      { label: "전체", val: 0 },
-                                      { label: "신건(0%)", val: 1 },
-                                      { label: "20% 이상 하락", val: 20 },
-                                      { label: "30% 이상 하락", val: 30 },
-                                      { label: "반값 경매(50%)", val: 50 }
-                                    ].map((discount) => {
-                                      const isSel = (() => {
-                                        if (filterAuctionDiscount === 0) return discount.val === 0;
-                                        if (discount.val === 0) return false;
-                                        if (filterAuctionDiscount === 1) {
-                                          return discount.val === 1 || discount.val === 20 || discount.val === 30 || discount.val === 50;
-                                        }
-                                        if (filterAuctionDiscount === 20) {
-                                          return discount.val === 20 || discount.val === 30 || discount.val === 50;
-                                        }
-                                        if (filterAuctionDiscount === 30) {
-                                          return discount.val === 30 || discount.val === 50;
-                                        }
-                                        if (filterAuctionDiscount === 50) {
-                                          return discount.val === 50;
-                                        }
-                                        return filterAuctionDiscount === discount.val;
-                                      })();
-                                      return (
-                                        <button
-                                          key={discount.label}
-                                          onClick={() => {
-                                            setFilterAuctionDiscount(discount.val);
-                                          }}
-                                          style={{
-                                            padding: "6px 14px",
-                                            borderRadius: 4,
-                                            fontSize: 13,
-                                            border: "1px solid " + (isSel ? "#111" : "#ccc"),
-                                            background: isSel ? "#111" : "#ffffff",
-                                            color: isSel ? "#ffffff" : "#333",
-                                            fontWeight: isSel ? "bold" : "normal",
-                                            cursor: "pointer",
-                                            transition: "all 0.15s"
-                                          }}
-                                        >
-                                          {discount.label}
-                                        </button>
-                                      );
-                                    })}
-                                  </div>
-                                  
-                                  <div style={{ height: "1px", background: "#e5e7eb", marginBottom: "20px" }} />
-                                  
-                                  {/* AUCTION Price Range Slider (Reusing Maemae state/scale for 최저입찰가) */}
-                                  {(() => {
-                                    const minIdx = getScaleIndex(tempMaemaeMin, MAEMAE_SCALE, false);
-                                    const maxIdx = getScaleIndex(tempMaemaeMax, MAEMAE_SCALE, true);
-                                    return (
-                                      <div style={{ marginBottom: "24px" }}>
-                                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
-                                          <span style={{ fontSize: "15px", fontWeight: "800", color: "#111827" }}>최저입찰가</span>
-                                          <span style={{ fontSize: "14px", color: "#1a4282", fontWeight: "800" }}>
-                                            {tempMaemaeMin === null && tempMaemaeMax === null 
-                                              ? "전체" 
-                                              : `${formatPriceLabel(tempMaemaeMin) || "0"} ~ ${formatPriceLabel(tempMaemaeMax) || "최대"}`}
-                                          </span>
-                                        </div>
-                                        
-                                        <div className="dual-slider-container">
-                                          <div 
-                                            className="dual-slider-track" 
-                                            style={{ left: `${(minIdx / (MAEMAE_SCALE.length - 1)) * 100}%`, right: `${100 - (maxIdx / (MAEMAE_SCALE.length - 1)) * 100}%` }} 
-                                          />
-                                          <input 
-                                            type="range" 
-                                            min={0} 
-                                            max={MAEMAE_SCALE.length - 1} 
-                                            value={minIdx} 
-                                            onChange={(e) => {
-                                              const val = parseInt(e.target.value, 10);
-                                              if (val <= maxIdx) {
-                                                setTempMaemaeMin(val === 0 ? null : MAEMAE_SCALE[val]);
-                                              }
-                                            }} 
-                                            onMouseUp={() => handleSliderRelease("maemae", "min", "면적")}
-                                            onTouchEnd={() => handleSliderRelease("maemae", "min", "면적")}
-                                            className="dual-slider-input" 
-                                          />
-                                          <input 
-                                            type="range" 
-                                            min={0} 
-                                            max={MAEMAE_SCALE.length - 1} 
-                                            value={maxIdx} 
-                                            onChange={(e) => {
-                                              const val = parseInt(e.target.value, 10);
-                                              if (val >= minIdx) {
-                                                setTempMaemaeMax(val === MAEMAE_SCALE.length - 1 ? null : MAEMAE_SCALE[val]);
-                                              }
-                                            }} 
-                                            onMouseUp={() => handleSliderRelease("maemae", "max", "면적")}
-                                            onTouchEnd={() => handleSliderRelease("maemae", "max", "면적")}
-                                            className="dual-slider-input" 
-                                          />
-                                        </div>
-                                        
-                                        <div style={{ display: "flex", justifyContent: "space-between", padding: "0 2px", marginTop: "-24px" }}>
-                                          <span style={{ fontSize: "11px", fontWeight: "bold", color: "#4b5563" }}>최소</span>
-                                          <span style={{ fontSize: "11px", fontWeight: "bold", color: "#4b5563" }}>1억</span>
-                                          <span style={{ fontSize: "11px", fontWeight: "bold", color: "#4b5563" }}>5억</span>
-                                          <span style={{ fontSize: "11px", fontWeight: "bold", color: "#4b5563" }}>15억</span>
-                                          <span style={{ fontSize: "11px", fontWeight: "bold", color: "#4b5563" }}>최대</span>
-                                        </div>
-                                      </div>
-                                    );
-                                  })()}
-                                </>
-                              ) : (
+                              {isAuctionMode ? null : (
                                 <>
                                   <div style={{ fontSize: "14px", color: "#374151", marginBottom: "10px", fontWeight: "bold" }}>
                                     거래유형 중복선택 가능
@@ -2737,6 +2707,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                 background: activeSection === "면적" ? "#f3f4f6" : "transparent",
                                 marginBottom: "16px",
                                 transition: "all 0.2s ease-in-out",
+                                display: isAuctionMode ? "none" : "block",
                               }}
                             >
                               {(() => {
@@ -3249,7 +3220,292 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                               </div>
                             )}
 
-                            {/* Section 7: 등록자 (경공매 모드에서는 유찰 횟수로 대체) */}
+                            {/* ═══ 경매 전용 필터 섹션들 ═══ */}
+                            {isAuctionMode && (
+                              <>
+                                {/* 감정가 범위 */}
+                                <div
+                                  id="section-감정가"
+                                  style={{
+                                    padding: "16px 12px",
+                                    borderRadius: "8px",
+                                    background: activeSection === "감정가" ? "#f3f4f6" : "transparent",
+                                    marginBottom: "16px",
+                                    transition: "all 0.2s ease-in-out",
+                                  }}
+                                >
+                                  {(() => {
+                                    const minIdx = getScaleIndex(filterAuctionAppraisalMin, MAEMAE_SCALE, false);
+                                    const maxIdx = getScaleIndex(filterAuctionAppraisalMax, MAEMAE_SCALE, true);
+                                    return (
+                                      <div>
+                                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                                          <span style={{ fontSize: "15px", fontWeight: "800", color: "#111827" }}>감정가</span>
+                                          <span style={{ fontSize: "14px", color: "#1a4282", fontWeight: "800" }}>
+                                            {filterAuctionAppraisalMin === null && filterAuctionAppraisalMax === null 
+                                              ? "전체" 
+                                              : `${formatPriceLabel(filterAuctionAppraisalMin) || "0"} ~ ${formatPriceLabel(filterAuctionAppraisalMax) || "최대"}`}
+                                          </span>
+                                        </div>
+                                        
+                                        <div className="dual-slider-container" style={{ margin: "20px 0 28px 0" }}>
+                                          <div 
+                                            className="dual-slider-track" 
+                                            style={{ left: `${(minIdx / (MAEMAE_SCALE.length - 1)) * 100}%`, right: `${100 - (maxIdx / (MAEMAE_SCALE.length - 1)) * 100}%` }} 
+                                          />
+                                          <input 
+                                            type="range" 
+                                            min={0} 
+                                            max={MAEMAE_SCALE.length - 1} 
+                                            value={minIdx} 
+                                            onChange={(e) => {
+                                              const val = parseInt(e.target.value, 10);
+                                              if (val <= maxIdx) {
+                                                setFilterAuctionAppraisalMin(val === 0 ? null : MAEMAE_SCALE[val]);
+                                              }
+                                            }} 
+                                            onMouseUp={() => handleSliderRelease("appraisal", "min", "최저입찰가")}
+                                            onTouchEnd={() => handleSliderRelease("appraisal", "min", "최저입찰가")}
+                                            className="dual-slider-input" 
+                                          />
+                                          <input 
+                                            type="range" 
+                                            min={0} 
+                                            max={MAEMAE_SCALE.length - 1} 
+                                            value={maxIdx} 
+                                            onChange={(e) => {
+                                              const val = parseInt(e.target.value, 10);
+                                              if (val >= minIdx) {
+                                                setFilterAuctionAppraisalMax(val === MAEMAE_SCALE.length - 1 ? null : MAEMAE_SCALE[val]);
+                                              }
+                                            }} 
+                                            onMouseUp={() => handleSliderRelease("appraisal", "max", "최저입찰가")}
+                                            onTouchEnd={() => handleSliderRelease("appraisal", "max", "최저입찰가")}
+                                            className="dual-slider-input" 
+                                          />
+                                        </div>
+                                        
+                                        <div style={{ display: "flex", justifyContent: "space-between", padding: "0 2px", marginTop: "-24px" }}>
+                                          <span style={{ fontSize: "11px", fontWeight: "bold", color: "#4b5563" }}>최소</span>
+                                          <span style={{ fontSize: "11px", fontWeight: "bold", color: "#4b5563" }}>1억</span>
+                                          <span style={{ fontSize: "11px", fontWeight: "bold", color: "#4b5563" }}>5억</span>
+                                          <span style={{ fontSize: "11px", fontWeight: "bold", color: "#4b5563" }}>15억</span>
+                                          <span style={{ fontSize: "11px", fontWeight: "bold", color: "#4b5563" }}>최대</span>
+                                        </div>
+                                      </div>
+                                    );
+                                  })()}
+                                </div>
+
+                                {/* 최저입찰가 범위 */}
+                                <div
+                                  id="section-최저입찰가"
+                                  style={{
+                                    padding: "16px 12px",
+                                    borderRadius: "8px",
+                                    background: activeSection === "최저입찰가" ? "#f3f4f6" : "transparent",
+                                    marginBottom: "16px",
+                                    transition: "all 0.2s ease-in-out",
+                                  }}
+                                >
+                                  {(() => {
+                                    const minIdx = getScaleIndex(filterAuctionBidPriceMin, MAEMAE_SCALE, false);
+                                    const maxIdx = getScaleIndex(filterAuctionBidPriceMax, MAEMAE_SCALE, true);
+                                    return (
+                                      <div>
+                                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                                          <span style={{ fontSize: "15px", fontWeight: "800", color: "#111827" }}>최저입찰가</span>
+                                          <span style={{ fontSize: "14px", color: "#1a4282", fontWeight: "800" }}>
+                                            {filterAuctionBidPriceMin === null && filterAuctionBidPriceMax === null 
+                                              ? "전체" 
+                                              : `${formatPriceLabel(filterAuctionBidPriceMin) || "0"} ~ ${formatPriceLabel(filterAuctionBidPriceMax) || "최대"}`}
+                                          </span>
+                                        </div>
+                                        
+                                        <div className="dual-slider-container" style={{ margin: "20px 0 28px 0" }}>
+                                          <div 
+                                            className="dual-slider-track" 
+                                            style={{ left: `${(minIdx / (MAEMAE_SCALE.length - 1)) * 100}%`, right: `${100 - (maxIdx / (MAEMAE_SCALE.length - 1)) * 100}%` }} 
+                                          />
+                                          <input 
+                                            type="range" 
+                                            min={0} 
+                                            max={MAEMAE_SCALE.length - 1} 
+                                            value={minIdx} 
+                                            onChange={(e) => {
+                                              const val = parseInt(e.target.value, 10);
+                                              if (val <= maxIdx) {
+                                                setFilterAuctionBidPriceMin(val === 0 ? null : MAEMAE_SCALE[val]);
+                                              }
+                                            }} 
+                                            onMouseUp={() => handleSliderRelease("bidprice", "min", "할인율")}
+                                            onTouchEnd={() => handleSliderRelease("bidprice", "min", "할인율")}
+                                            className="dual-slider-input" 
+                                          />
+                                          <input 
+                                            type="range" 
+                                            min={0} 
+                                            max={MAEMAE_SCALE.length - 1} 
+                                            value={maxIdx} 
+                                            onChange={(e) => {
+                                              const val = parseInt(e.target.value, 10);
+                                              if (val >= minIdx) {
+                                                setFilterAuctionBidPriceMax(val === MAEMAE_SCALE.length - 1 ? null : MAEMAE_SCALE[val]);
+                                              }
+                                            }} 
+                                            onMouseUp={() => handleSliderRelease("bidprice", "max", "할인율")}
+                                            onTouchEnd={() => handleSliderRelease("bidprice", "max", "할인율")}
+                                            className="dual-slider-input" 
+                                          />
+                                        </div>
+                                        
+                                        <div style={{ display: "flex", justifyContent: "space-between", padding: "0 2px", marginTop: "-24px" }}>
+                                          <span style={{ fontSize: "11px", fontWeight: "bold", color: "#4b5563" }}>최소</span>
+                                          <span style={{ fontSize: "11px", fontWeight: "bold", color: "#4b5563" }}>1억</span>
+                                          <span style={{ fontSize: "11px", fontWeight: "bold", color: "#4b5563" }}>5억</span>
+                                          <span style={{ fontSize: "11px", fontWeight: "bold", color: "#4b5563" }}>15억</span>
+                                          <span style={{ fontSize: "11px", fontWeight: "bold", color: "#4b5563" }}>최대</span>
+                                        </div>
+                                      </div>
+                                    );
+                                  })()}
+                                </div>
+
+                                {/* 할인율 */}
+                                <div
+                                  id="section-할인율"
+                                  style={{
+                                    padding: "16px 12px",
+                                    borderRadius: "8px",
+                                    background: activeSection === "할인율" ? "#f3f4f6" : "transparent",
+                                    marginBottom: "16px",
+                                    transition: "all 0.2s ease-in-out",
+                                  }}
+                                >
+                                  <div style={{ fontSize: "14px", color: "#374151", marginBottom: "10px", fontWeight: "bold" }}>할인율 (감정가 대비)</div>
+                                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                                    {[
+                                      { label: "전체", val: 0 },
+                                      { label: "▼10%↑", val: 10 },
+                                      { label: "▼20%↑", val: 20 },
+                                      { label: "▼30%↑", val: 30 },
+                                      { label: "▼50%↑", val: 50 },
+                                    ].map((item) => {
+                                      const isSelected = filterAuctionDiscount === item.val;
+                                      return (
+                                        <button
+                                          key={item.label}
+                                          onClick={() => setFilterAuctionDiscount(item.val)}
+                                          style={{
+                                            padding: "6px 12px",
+                                            border: "1px solid " + (isSelected ? "#e74c3c" : "#eee"),
+                                            borderRadius: 20,
+                                            background: isSelected ? "#e74c3c" : "#fff",
+                                            color: isSelected ? "#fff" : "#333",
+                                            fontSize: 12,
+                                            fontWeight: "bold",
+                                            cursor: "pointer",
+                                            transition: "all 0.15s"
+                                          }}
+                                        >
+                                          {item.label}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+
+                                {/* 유찰 횟수 */}
+                                <div
+                                  id="section-유찰횟수"
+                                  style={{
+                                    padding: "16px 12px",
+                                    borderRadius: "8px",
+                                    background: activeSection === "유찰횟수" ? "#f3f4f6" : "transparent",
+                                    marginBottom: "16px",
+                                    transition: "all 0.2s ease-in-out",
+                                  }}
+                                >
+                                  <div style={{ fontSize: "14px", color: "#374151", marginBottom: "10px", fontWeight: "bold" }}>유찰 횟수</div>
+                                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                                    {[
+                                      { label: "전체", val: 0 },
+                                      { label: "1회↑", val: 1 },
+                                      { label: "2회↑", val: 2 },
+                                      { label: "3회↑", val: 3 },
+                                    ].map((item) => {
+                                      const isSelected = filterAuctionBidCount === item.val;
+                                      return (
+                                        <button
+                                          key={item.label}
+                                          onClick={() => setFilterAuctionBidCount(item.val)}
+                                          style={{
+                                            padding: "6px 12px",
+                                            border: "1px solid " + (isSelected ? "#111" : "#eee"),
+                                            borderRadius: 20,
+                                            background: isSelected ? "#111" : "#fff",
+                                            color: isSelected ? "#fff" : "#333",
+                                            fontSize: 12,
+                                            fontWeight: "bold",
+                                            cursor: "pointer",
+                                            transition: "all 0.15s"
+                                          }}
+                                        >
+                                          {item.label}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+
+                                {/* 입찰일 */}
+                                <div
+                                  id="section-입찰일"
+                                  style={{
+                                    padding: "16px 12px",
+                                    borderRadius: "8px",
+                                    background: activeSection === "입찰일" ? "#f3f4f6" : "transparent",
+                                    marginBottom: "16px",
+                                    transition: "all 0.2s ease-in-out",
+                                  }}
+                                >
+                                  <div style={{ fontSize: "14px", color: "#374151", marginBottom: "10px", fontWeight: "bold" }}>입찰 시작일</div>
+                                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                                    {[
+                                      { label: "전체", val: "all" },
+                                      { label: "1주 이내", val: "1w" },
+                                      { label: "2주 이내", val: "2w" },
+                                      { label: "1달 이내", val: "1m" },
+                                      { label: "1~3개월", val: "1_3m" },
+                                      { label: "3개월 이후", val: "over_3m" },
+                                    ].map((item) => {
+                                      const isSelected = filterAuctionStartDate === item.val;
+                                      return (
+                                        <button
+                                          key={item.label}
+                                          onClick={() => setFilterAuctionStartDate(item.val)}
+                                          style={{
+                                            padding: "6px 12px",
+                                            border: "1px solid " + (isSelected ? "#111" : "#eee"),
+                                            borderRadius: 20,
+                                            background: isSelected ? "#111" : "#fff",
+                                            color: isSelected ? "#fff" : "#333",
+                                            fontSize: 12,
+                                            fontWeight: "bold",
+                                            cursor: "pointer",
+                                            transition: "all 0.15s"
+                                          }}
+                                        >
+                                          {item.label}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              </>
+                            )}
+
+                            {/* Section 7: 등록자 (경공매 모드에서는 숨김 - 위에 전용 필터 사용) */}
                             <div
                               id="section-등록자"
                               style={{
@@ -3258,6 +3514,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                 background: activeSection === "등록자" ? "#f3f4f6" : "transparent",
                                 marginBottom: "16px",
                                 transition: "all 0.2s ease-in-out",
+                                display: isAuctionMode ? "none" : "block",
                               }}
                             >
                               {isAuctionMode ? (
@@ -3359,6 +3616,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                 background: activeSection === "중개보수" ? "#f3f4f6" : "transparent",
                                 marginBottom: "16px",
                                 transition: "all 0.2s ease-in-out",
+                                display: isAuctionMode ? "none" : "block",
                               }}
                             >
                               {isAuctionMode ? (
@@ -3578,7 +3836,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                 setAppliedRentMin(tempRentMin);
                                 setAppliedRentMax(tempRentMax);
                                 setActiveFilterDropdown(null);
-                                 setIsFilterCollapsed(true);
+                                setIsFilterCollapsed(true);
+                                setIsWizardOpen(false); // Add this line to close the wizard
                               }}
                               style={{
                                 flex: 2,
