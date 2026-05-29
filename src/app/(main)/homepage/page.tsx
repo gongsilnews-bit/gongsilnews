@@ -7,6 +7,7 @@ import { getMapBlocks } from "@/app/actions/map_blocks";
 import MapSearchBar from "@/components/MapSearchBar";
 import { getPermissionLevel } from "@/utils/permissionCheck";
 import AuthModal from "@/components/AuthModal";
+import { getAuctionInfo } from "@/app/(map)/gongsil/gongsilHelpers";
 
 const DETAILED_CATEGORIES = [
   { name: "아파트", types: ["매", "전", "월", "단"] },
@@ -618,7 +619,7 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
   return (
     <div style={{ background: "#f8fafc", minHeight: "100vh" }}>
-      <div style={{ maxWidth: 1300, margin: "20px auto 0", padding: "0 20px", display: "flex", gap: 24, alignItems: "flex-start" }}>
+      <div style={{ maxWidth: 1200, margin: "20px auto 0", padding: "0", display: "flex", gap: 24, alignItems: "flex-start" }}>
         
         {/* ── Left Sidebar (LNB) ── */}
         <div style={{ width: 220, flexShrink: 0, display: "flex", flexDirection: "column", gap: 16 }}>
@@ -853,47 +854,121 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
                       
                       {/* 3. Main Info */}
                       <div style={{ flex: 1, minWidth: 0, paddingLeft: 20 }}>
-                        <div style={{ display: "flex", gap: 6, marginBottom: 4, alignItems: "center" }}>
-                          {showCommission && (v.realtor_commission || v.commission_type) && (
-                            <span style={{ display: "inline-block", background: "#fff", color: "#fa5252", border: "1px solid #fa5252", fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 4 }}>
-                              {v.realtor_commission || v.commission_type}
-                            </span>
-                          )}
-                          <span style={{ display: "inline-block", fontSize: 11, color: "#fa5252", border: "1px solid #fa5252", padding: "2px 6px", fontWeight: "bold", borderRadius: 4, background: "#fff" }}>
-                            {v.owner_role === 'REALTOR' || v.members?.role === 'REALTOR' ? '부동산' : '일반'}
-                          </span>
-                          {isMasked && (
-                            <span onClick={(e) => { e.stopPropagation(); setIsAuthModalOpen(true); }} style={{ fontSize: 11, color: "#3b82f6", fontWeight: 700, background: "#eef6ff", padding: "3px 8px", borderRadius: 4, cursor: "pointer" }}>🔒 부동산회원 가입 시 무료 열람</span>
-                          )}
-                        </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-                          <span style={{ fontSize: 17, fontWeight: 800, color: isMasked ? "#bbb" : "#111", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", letterSpacing: isMasked ? 1 : 0 }}>
-                            {isMasked ? addrText.replace(/[^s]/g, "X") : addrText} {v.property_type && `(${v.property_type})`}
-                          </span>
-                          <span style={{ background: "#fbbf24", color: "#fff", fontSize: 10, fontWeight: "bold", padding: "1px 4px", borderRadius: 2 }}>N</span>
-                        </div>
-                        <div style={{ fontSize: 14, color: "#444", lineHeight: 1.5, fontWeight: 500 }}>
-                          공급 {v.area_m2 ? Math.round(v.area_m2 * 1.2) : 0}m²({v.area_m2 ? Math.round(v.area_m2 * 1.2 / 3.3) : 0}P) / 
-                          전용 {v.area_m2 || 0}m²({v.area_m2 ? Math.round(v.area_m2 / 3.3) : 0}P) 
-                          <span style={{ color: "#1a365d", marginLeft: 4, fontWeight: 700 }}>{v.property_type}{v.sub_category ? `/${v.sub_category}` : ""}</span> 공실
-                        </div>
-                        <div style={{ fontSize: 13, color: "#777", marginTop: 4 }}>
-                          {v.floor || "해당층"}/{v.total_floors || "전체층"}, 
-                          {v.parking_spots ? ` 주차${v.parking_spots}` : " 주차불가"}, 
-                          {v.completion_year ? ` ${v.completion_year}년` : " 연식미상"}
-                          {(v.realtor_commission || v.commission_type) && `, ${v.realtor_commission || v.commission_type}`}
-                        </div>
+                        {(v.trade_type === "경매" || v.trade_type === "공매") ? (() => {
+                          const meta = typeof v.metadata === "string" ? JSON.parse(v.metadata) : (v.metadata || {});
+                          const auctionBadge = getAuctionInfo(v).badge || `${v.property_type || "물건"} ${v.trade_type}`;
+                          const bidDate = meta.pbctBegnDtm || meta.pblctBgnDtm || meta.bid_start_date || meta.bid_date || "미정";
+                          const isNew = v.created_at && (Date.now() - new Date(v.created_at).getTime()) < 3 * 24 * 60 * 60 * 1000;
+                          return (
+                            <>
+                              <div style={{ display: "flex", gap: 6, marginBottom: 4, alignItems: "center" }}>
+                                <span style={{ display: "inline-block", background: "#fff", color: "#ef4444", border: "1px solid #ef4444", fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 4 }}>
+                                  {auctionBadge}
+                                </span>
+                                {isNew && <span style={{ background: "#f59e0b", color: "#fff", fontSize: 11, fontWeight: "bold", padding: "2px 6px", borderRadius: 4 }}>New</span>}
+                              </div>
+                              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                                <span style={{ fontSize: 17, fontWeight: 800, color: "#111", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                  {addrText}
+                                </span>
+                              </div>
+                              <div style={{ fontSize: 14, color: "#444", lineHeight: 1.5, fontWeight: 500 }}>
+                                {getAuctionInfo(v).category || v.property_type} {v.area_m2 ? `| 면적 ${v.area_m2}m²` : ""}
+                              </div>
+                              <div style={{ fontSize: 13, color: "#777", marginTop: 4 }}>
+                                입찰일: {bidDate.substring(0, 10)}
+                                {meta.bid_count > 0 && ` | 유찰 ${meta.bid_count}회`}
+                              </div>
+                            </>
+                          );
+                        })() : (
+                          <>
+                            <div style={{ display: "flex", gap: 6, marginBottom: 4, alignItems: "center" }}>
+                              {showCommission && (v.realtor_commission || v.commission_type) && (
+                                <span style={{ display: "inline-block", background: "#fff", color: "#fa5252", border: "1px solid #fa5252", fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 4 }}>
+                                  {v.realtor_commission || v.commission_type}
+                                </span>
+                              )}
+                              <span style={{ display: "inline-block", fontSize: 11, color: "#fa5252", border: "1px solid #fa5252", padding: "2px 6px", fontWeight: "bold", borderRadius: 4, background: "#fff" }}>
+                                {v.owner_role === 'REALTOR' || v.members?.role === 'REALTOR' ? '부동산' : '일반'}
+                              </span>
+                              {isMasked && (
+                                <span onClick={(e) => { e.stopPropagation(); setIsAuthModalOpen(true); }} style={{ fontSize: 11, color: "#3b82f6", fontWeight: 700, background: "#eef6ff", padding: "3px 8px", borderRadius: 4, cursor: "pointer" }}>🔒 부동산회원 가입 시 무료 열람</span>
+                              )}
+                            </div>
+                            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                              <span style={{ fontSize: 17, fontWeight: 800, color: isMasked ? "#bbb" : "#111", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", letterSpacing: isMasked ? 1 : 0 }}>
+                                {isMasked ? addrText.replace(/[^s]/g, "X") : addrText} {v.property_type && `(${v.property_type})`}
+                              </span>
+                              <span style={{ background: "#fbbf24", color: "#fff", fontSize: 10, fontWeight: "bold", padding: "1px 4px", borderRadius: 2 }}>N</span>
+                            </div>
+                            <div style={{ fontSize: 14, color: "#444", lineHeight: 1.5, fontWeight: 500 }}>
+                              공급 {v.area_m2 ? Math.round(v.area_m2 * 1.2) : 0}m²({v.area_m2 ? Math.round(v.area_m2 * 1.2 / 3.3) : 0}P) / 
+                              전용 {v.area_m2 || 0}m²({v.area_m2 ? Math.round(v.area_m2 / 3.3) : 0}P) 
+                              <span style={{ color: "#1a365d", marginLeft: 4, fontWeight: 700 }}>{v.property_type}{v.sub_category ? `/${v.sub_category}` : ""}</span> 공실
+                            </div>
+                            <div style={{ fontSize: 13, color: "#777", marginTop: 4 }}>
+                              {v.floor || "해당층"}/{v.total_floors || "전체층"}, 
+                              {v.parking_spots ? ` 주차${v.parking_spots}` : " 주차불가"}, 
+                              {v.completion_year ? ` ${v.completion_year}년` : " 연식미상"}
+                              {(v.realtor_commission || v.commission_type) && `, ${v.realtor_commission || v.commission_type}`}
+                            </div>
+                          </>
+                        )}
                       </div>
 
                       {/* 4. Price */}
-                      <div style={{ width: 160, flexShrink: 0, textAlign: "center", borderLeft: "1px solid #f1f5f9", borderRight: "1px solid #f1f5f9", padding: "0 10px" }}>
-                        <div style={{ fontSize: 18, fontWeight: 800, color: "#111", marginBottom: 6 }}>
-                          {getPriceLabel(v)} {getPriceText(v).replace('만', '').replace('억', '')}
+                      {(v.trade_type === "경매" || v.trade_type === "공매") ? (() => {
+                        const meta = typeof v.metadata === "string" ? JSON.parse(v.metadata) : (v.metadata || {});
+                        const appraisalPrice = meta.appraisal_price || parseInt(meta.apslEvlAmt || "0", 10) || (v.deposit && v.deposit > 100000 ? v.deposit : (v.deposit || 0) * 10000);
+                        const lowestBidPrice = meta.lowest_bid_price || parseInt(meta.lowstBidPrcIndctCont || "0", 10) || 0;
+                        const cardDiscountRate = appraisalPrice > 0 && lowestBidPrice > 0 ? Math.round(((appraisalPrice - lowestBidPrice) / appraisalPrice) * 100) : (meta.discount_rate || 0);
+
+                        const formatPrice = (val: number) => {
+                          if (!val || isNaN(val)) return "0원";
+                          const m = Math.round(val / 10000);
+                          if (m === 0) return "0원";
+                          const e = Math.floor(m / 10000);
+                          const r = m % 10000;
+                          let result = "";
+                          if (e > 0) result += `${e}억`;
+                          if (r > 0) {
+                            const c = Math.floor(r / 1000);
+                            const rem = r % 1000;
+                            let rest = "";
+                            if (c > 0) rest += `${c}천`;
+                            if (rem > 0) rest += `${rem}`;
+                            result += (result ? " " : "") + rest + "만";
+                          }
+                          return result || "0원";
+                        };
+                        return (
+                          <div style={{ width: 190, flexShrink: 0, borderLeft: "1px solid #f1f5f9", borderRight: "1px solid #f1f5f9", padding: "0 14px", display: "flex", flexDirection: "column", justifyContent: "center", gap: 6 }}>
+                            <div style={{ fontSize: 13, color: "#555", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                              <span>감정가</span>
+                              <strong style={{ color: "#111", fontSize: 15 }}>{formatPrice(appraisalPrice)}</strong>
+                            </div>
+                            <div style={{ fontSize: 13, color: "#ef4444", fontWeight: 700, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                              <span>최저입찰가</span>
+                              <strong style={{ fontSize: 16 }}>{formatPrice(lowestBidPrice)}</strong>
+                            </div>
+                            {cardDiscountRate > 0 && (
+                              <div style={{ fontSize: 13, color: "#059669", fontWeight: "bold", textAlign: "right" }}>
+                                ▼{cardDiscountRate}%
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })() : (
+                        <div style={{ width: 160, flexShrink: 0, textAlign: "center", borderLeft: "1px solid #f1f5f9", borderRight: "1px solid #f1f5f9", padding: "0 10px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                          <div style={{ fontSize: 18, fontWeight: 800, color: "#111", marginBottom: 6 }}>
+                            {getPriceLabel(v)} {getPriceText(v).replace('만', '').replace('억', '')}
+                          </div>
+                          <div style={{ fontSize: 12, color: "#888" }}>
+                            관리비 {Math.floor((v.maintenance_fee || 0)/10000)}만
+                          </div>
                         </div>
-                        <div style={{ fontSize: 12, color: "#888" }}>
-                          관리비 {Math.floor((v.maintenance_fee || 0)/10000)}만
-                        </div>
-                      </div>
+                      )}
 
                       {/* 5. Actions */}
                       <div style={{ width: 140, flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, paddingRight: 10 }}>
