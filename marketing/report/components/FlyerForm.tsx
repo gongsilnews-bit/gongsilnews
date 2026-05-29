@@ -34,6 +34,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
   const [agentImagePreview, setAgentImagePreview] = useState<string | null>(null);
   const [agentFile, setAgentFile] = useState<File | null>(null);
   const [complexFiles, setComplexFiles] = useState<Record<string, File>>({});
+  const [isFetchingLedger, setIsFetchingLedger] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -139,6 +140,71 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
   const clearPreviews = () => {
     setPreviewUrls([]);
     setAnalysisFiles([]);
+  };
+
+  const handleFetchBuildingLedger = async () => {
+      const params = new URLSearchParams(window.location.search);
+      const vacancyId = params.get("vacancy_id");
+      if (!vacancyId) {
+          alert("매물 정보가 없어 건축물대장을 연동할 수 없습니다.");
+          return;
+      }
+
+      setIsFetchingLedger(true);
+      try {
+          const detailRes = await fetch(`/api/vacancy/detail?id=${vacancyId}`);
+          const detailJson = await detailRes.json();
+          if (!detailJson.success || !detailJson.data) throw new Error("매물 상세 정보를 불러올 수 없습니다.");
+          
+          const v = detailJson.data;
+          
+          const bcode = v.bcode || "";
+          const sigunguCd = bcode.substring(0, 5);
+          const bjdongCd = bcode.substring(5, 10);
+          
+          let bun = v.bun || "";
+          let ji = v.ji || "";
+          if (!bun && v.jibun_address) {
+             const match = v.jibun_address.match(/ (\d+)(?:-(\d+))?$/);
+             if (match) {
+                 bun = match[1];
+                 ji = match[2] || "0";
+             }
+          }
+
+          if (!sigunguCd || !bjdongCd || !bun) {
+              alert("법정동 코드 또는 지번 정보가 부족하여 대장을 조회할 수 없습니다.");
+              setIsFetchingLedger(false);
+              return;
+          }
+
+          const ledgerUrl = `/api/building-ledger?sigunguCd=${sigunguCd}&bjdongCd=${bjdongCd}&bun=${bun}&ji=${ji}&platGbCd=0`;
+          const ledgerRes = await fetch(ledgerUrl);
+          const ledgerJson = await ledgerRes.json();
+          
+          if (ledgerJson.success && ledgerJson.data) {
+              const ld = ledgerJson.data;
+              const formattedDate = ld.useAprDay ? `${ld.useAprDay.substring(0,4)}년 ${ld.useAprDay.substring(4,6)}월` : "";
+              const elevators = (ld.rideUseElvtCnt || 0) + (ld.emgenUseElvtCnt || 0);
+
+              setInfo({
+                  ...info,
+                  area: `${ld.totArea}㎡`,
+                  floor: `지하 ${ld.ugrndFlrCnt}층 / 지상 ${ld.grndFlrCnt}층`,
+                  parking: `총 ${ld.totPkngCnt}대`,
+                  options: `주용도: ${ld.mainPurpsCdNm} ${ld.etcPurps ? `(${ld.etcPurps})` : ''} | 승강기: ${elevators}대 | 준공연도: ${formattedDate}`
+              });
+              alert("건축물대장 정보가 성공적으로 연동되었습니다.");
+          } else {
+              alert("해당 지번의 건축물대장 정보가 없습니다.");
+          }
+
+      } catch (e: any) {
+          console.error(e);
+          alert("건축물대장 연동 중 오류가 발생했습니다.");
+      } finally {
+          setIsFetchingLedger(false);
+      }
   };
 
   // Section Management functions...
@@ -399,10 +465,27 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
         
         {/* Basic Info */}
         <div className="space-y-4">
-            <h3 className="font-bold text-gray-700 flex items-center gap-2 text-sm uppercase tracking-wider">
-                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: primaryColor }}></span>
-                기본 정보
-            </h3>
+            <div className="flex justify-between items-center mb-2">
+                <h3 className="font-bold text-gray-700 flex items-center gap-2 text-sm uppercase tracking-wider">
+                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: primaryColor }}></span>
+                    기본 정보
+                </h3>
+                <button
+                    onClick={handleFetchBuildingLedger}
+                    disabled={isFetchingLedger}
+                    type="button"
+                    className="px-3 py-1.5 bg-[#00788c] text-white text-xs font-bold rounded shadow-sm hover:bg-[#006070] transition-colors flex items-center gap-1 disabled:opacity-50"
+                >
+                    {isFetchingLedger ? (
+                        <>
+                            <svg className="animate-spin h-3 w-3 text-white" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                            불러오는 중...
+                        </>
+                    ) : (
+                        "건축물대장 DB 연동"
+                    )}
+                </button>
+            </div>
             {/* ... Inputs ... */}
             <div>
                 <label className="block text-xs font-semibold text-gray-500 mb-1">매물 명칭 (타이틀)</label>
