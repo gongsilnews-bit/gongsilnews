@@ -254,6 +254,40 @@ const uploadImageToServer = async (file: File | Blob, vacancyId: string): Promis
   }
 };
 
+const mergeStateWithDefaults = (loaded: any): FlyerState => {
+  return {
+    ...loaded,
+    info: {
+      ...INITIAL_INFO,
+      ...(loaded?.info || {}),
+      overviewTable: {
+        ...INITIAL_INFO.overviewTable,
+        ...(loaded?.info?.overviewTable || {})
+      },
+      floorStatus: loaded?.info?.floorStatus || INITIAL_INFO.floorStatus,
+      highlights: loaded?.info?.highlights || INITIAL_INFO.highlights,
+      investmentSummary: {
+        ...INITIAL_INFO.investmentSummary,
+        ...(loaded?.info?.investmentSummary || {})
+      },
+      photoCaptions: {
+        ...INITIAL_INFO.photoCaptions,
+        ...(loaded?.info?.photoCaptions || {})
+      },
+      roadmap: {
+        ...INITIAL_INFO.roadmap,
+        ...(loaded?.info?.roadmap || {})
+      }
+    },
+    generated: {
+      ...INITIAL_GENERATED,
+      ...(loaded?.generated || {})
+    },
+    colorTheme: loaded?.colorTheme || COLORS[0],
+    layoutTheme: loaded?.layoutTheme || LAYOUTS[0]
+  };
+};
+
 function App() {
   const [state, setState] = useState<FlyerState>({
     info: INITIAL_INFO,
@@ -300,7 +334,7 @@ function App() {
         // 1. Supabase 클라우드 동기화 데이터 우선 로드
         const supabaseFlyerSettings = json.flyer?.flyer_state || v.infrastructure?._flyer_settings;
         if (supabaseFlyerSettings) {
-          setState(supabaseFlyerSettings);
+          setState(mergeStateWithDefaults(supabaseFlyerSettings));
           setIsLoadedFromStorage(true);
           setIsInitialized(true);
           setLoadingData(false);
@@ -312,7 +346,7 @@ function App() {
         if (savedStr) {
           try {
             const savedState = JSON.parse(savedStr);
-            setState(savedState);
+            setState(mergeStateWithDefaults(savedState));
             setIsLoadedFromStorage(true);
             setIsInitialized(true);
             setLoadingData(false);
@@ -417,6 +451,7 @@ function App() {
         });
 
         const mappedInfo: PropertyInfo = {
+          ...INITIAL_INFO,
           promotionText: priceText,
           address: v.building_name || [v.sido, v.sigungu, v.dong].filter(Boolean).join(" ") || "공실 매물 정보",
           subTitle: `${v.property_type || "프리미엄"} | ${v.direction || "방향 없음"} | ${areaDisplay}`,
