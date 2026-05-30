@@ -202,7 +202,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data }, ref)
                                         <td className={row.floor === 'B1' || row.floor.includes('지하') ? 'font-bold' : ''}>{row.purpose}</td>
                                         {i === 0 && info.floorStatus[0].lease === '보증금 / 차임 내역 별도문의' ? (
                                              <>
-                                                <td rowSpan={6} className="text-[#cc5a27] font-bold text-xs writing-vertical-lr tracking-widest border-x border-dashed border-[#cc5a27]/30 bg-[#fff9f0]">{row.lease}</td>
+                                                <td rowSpan={info.floorStatus.length} className="text-[#cc5a27] font-bold text-xs writing-vertical-lr tracking-widest border-x border-dashed border-[#cc5a27]/30 bg-[#fff9f0]">{row.lease}</td>
                                                 <td className="font-bold">{row.status}</td>
                                                 <td className="text-gray-500">{row.note}</td>
                                              </>
@@ -212,14 +212,14 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data }, ref)
                                                      <td className={row.status.includes('현재 공실') ? 'text-[#cc5a27] font-bold' : 'font-bold'}>{row.status}</td>
                                                      <td className={row.note.includes('즉시 활용') ? 'font-bold text-gray-800' : 'text-gray-500'}>{row.note}</td>
                                                  </>
-                                             ) : (
+                                              ) : (
                                                  <>
                                                      <td className={row.lease.includes('공실') ? 'text-[#cc5a27] font-bold' : 'font-bold'}>{row.lease}</td>
                                                      <td className={row.status.includes('공실') ? 'text-[#cc5a27] font-bold' : 'font-bold'}>{row.status}</td>
                                                      <td className={row.note.includes('즉시') ? 'font-bold text-gray-800' : 'text-gray-500'}>{row.note}</td>
                                                  </>
-                                             )
-                                        )}
+                                              )
+                                         )}
                                     </tr>
                                 ))}
                             </tbody>

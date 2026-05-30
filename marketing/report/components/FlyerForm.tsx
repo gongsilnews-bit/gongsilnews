@@ -38,9 +38,33 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
     setInfo({ ...info, floorStatus: newFloorStatus });
   };
 
+  const addFloorStatus = () => {
+    const newFloorStatus = [...(info.floorStatus || [])];
+    newFloorStatus.push({ floor: '', purpose: '', lease: '', status: '', note: '' });
+    setInfo({ ...info, floorStatus: newFloorStatus });
+  };
+
+  const removeFloorStatus = (index: number) => {
+    const newFloorStatus = [...(info.floorStatus || [])];
+    newFloorStatus.splice(index, 1);
+    setInfo({ ...info, floorStatus: newFloorStatus });
+  };
+
   const handleHighlightsChange = (index: number, value: string) => {
     const newHighlights = [...info.highlights];
     newHighlights[index] = value;
+    setInfo({ ...info, highlights: newHighlights });
+  };
+
+  const addHighlight = () => {
+    const newHighlights = [...(info.highlights || [])];
+    newHighlights.push('');
+    setInfo({ ...info, highlights: newHighlights });
+  };
+
+  const removeHighlight = (index: number) => {
+    const newHighlights = [...(info.highlights || [])];
+    newHighlights.splice(index, 1);
     setInfo({ ...info, highlights: newHighlights });
   };
 
@@ -188,14 +212,30 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                       <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">층별 점유 및 임대 현황</h4>
                       <div className="space-y-3">
                           {info.floorStatus.map((row, i) => (
-                              <div key={i} className="flex gap-2 items-center bg-gray-50 p-2 rounded">
-                                  <input value={row.floor} onChange={(e)=>handleFloorStatusChange(i, 'floor', e.target.value)} placeholder="층수" className="w-12 border rounded p-1.5 text-xs text-center" />
+                              <div key={i} className="flex gap-1.5 items-center bg-gray-50 p-2 rounded relative group">
+                                  <input value={row.floor} onChange={(e)=>handleFloorStatusChange(i, 'floor', e.target.value)} placeholder="층" className="w-12 border rounded p-1.5 text-xs text-center" />
                                   <input value={row.purpose} onChange={(e)=>handleFloorStatusChange(i, 'purpose', e.target.value)} placeholder="용도" className="w-16 border rounded p-1.5 text-xs text-center" />
                                   <input value={row.lease} onChange={(e)=>handleFloorStatusChange(i, 'lease', e.target.value)} placeholder="임대차" className="flex-1 border rounded p-1.5 text-xs text-center" />
-                                  <input value={row.status} onChange={(e)=>handleFloorStatusChange(i, 'status', e.target.value)} placeholder="상태" className="w-20 border rounded p-1.5 text-xs text-center" />
+                                  <input value={row.status} onChange={(e)=>handleFloorStatusChange(i, 'status', e.target.value)} placeholder="점유상태" className="w-20 border rounded p-1.5 text-xs text-center" />
+                                  <input value={row.note} onChange={(e)=>handleFloorStatusChange(i, 'note', e.target.value)} placeholder="비고" className="w-24 border rounded p-1.5 text-xs text-center" />
+                                  <button 
+                                      type="button" 
+                                      onClick={() => removeFloorStatus(i)}
+                                      className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1 rounded transition-colors text-xs font-bold shrink-0"
+                                      title="삭제"
+                                  >
+                                      ✕
+                                  </button>
                               </div>
                           ))}
-                          <div>
+                          <button
+                              type="button"
+                              onClick={addFloorStatus}
+                              className="w-full mt-2 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-1 border border-dashed border-blue-200"
+                          >
+                              + 층 임대현황 행 추가
+                          </button>
+                          <div className="mt-4">
                               <label className="text-xs text-gray-500">현황 하단 안내문</label>
                               <input name="floorStatusNotice" value={info.floorStatusNotice} onChange={handleChange} className="w-full border rounded p-2 text-xs mt-1" />
                           </div>
@@ -206,8 +246,25 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                       <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">매각 핵심 하이라이트</h4>
                       <div className="space-y-2">
                           {info.highlights.map((hl, i) => (
-                              <input key={i} value={hl} onChange={(e)=>handleHighlightsChange(i, e.target.value)} className="w-full border rounded p-2 text-xs" />
+                              <div key={i} className="flex gap-2 items-center">
+                                  <input value={hl} onChange={(e)=>handleHighlightsChange(i, e.target.value)} className="flex-1 border rounded p-2 text-xs" placeholder={`메리트 ${i+1}`} />
+                                  <button
+                                      type="button"
+                                      onClick={() => removeHighlight(i)}
+                                      className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded transition-colors text-xs font-bold shrink-0"
+                                      title="삭제"
+                                  >
+                                      ✕
+                                  </button>
+                              </div>
                           ))}
+                          <button
+                              type="button"
+                              onClick={addHighlight}
+                              className="w-full mt-2 py-2 bg-yellow-50 hover:bg-yellow-100 text-yellow-700 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-1 border border-dashed border-yellow-200"
+                          >
+                              + 하이라이트 행 추가
+                          </button>
                       </div>
                   </div>
 
