@@ -145,10 +145,14 @@ async function getAdminOwnerId(supabase: any): Promise<string> {
  */
 export async function syncOnbidProperties(targetSido: string = "서울특별시") {
   const supabase = getAdminClient();
-  const serviceKey = process.env.ONBID_API_KEY;
+  let serviceKey = process.env.ONBID_API_KEY || process.env.DATA_GO_KR_API_KEY || process.env.NEXT_PUBLIC_BROKERAGE_API_KEY;
+  
+  if (serviceKey) {
+    serviceKey = serviceKey.replace(/['"]/g, "").trim();
+  }
 
   if (!serviceKey) {
-    console.error("❌ ONBID_API_KEY 환경변수 누락");
+    console.error("❌ ONBID_API_KEY 환경변수 누락 (DATA_GO_KR_API_KEY, NEXT_PUBLIC_BROKERAGE_API_KEY 포함)");
     return { success: false, error: "API Key missing" };
   }
 
