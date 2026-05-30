@@ -138,14 +138,16 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data }, ref)
                         </div>
                     </div>
 
-                    <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-lg p-5 mt-4">
+                    <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-lg p-5 mt-4 flex flex-col justify-center">
                         <div className="flex items-center gap-2 mb-3">
-                            <div className="w-6 h-6 rounded-full bg-[#cc5a27] text-white flex items-center justify-center font-bold text-xs">L</div>
-                            <span className="font-bold text-gray-800">Location Index</span>
+                            <div className="w-6 h-6 rounded-full bg-[#cc5a27] text-white flex items-center justify-center font-bold text-xs">📞</div>
+                            <span className="font-bold text-gray-800">문의 안내</span>
                         </div>
-                        <p className="text-gray-600 text-sm leading-relaxed">
-                            {info.noticeContent || "3호선 남부터미널역 도보 4분 초역세권 입지로, 예술의전당 및 국제전자센터 인근의 핵심 업무/문화 인프라를 직접 누리는 최상의 요지입니다."}
-                        </p>
+                        <div className="text-gray-800 text-sm leading-relaxed space-y-1">
+                            <div className="font-extrabold text-[#cc5a27] text-base mb-2">문의 : {info.agentMobile || info.agentPhone || "010-5554-4444"}</div>
+                            <div className="font-bold">{info.agentRepresentative || "김민혁과장"}</div>
+                            <div className="text-gray-600">{info.agentName || "미래에셋공인 중개사 사무소"}</div>
+                        </div>
                     </div>
                 </div>
 
