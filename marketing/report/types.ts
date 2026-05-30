@@ -20,49 +20,80 @@ export interface FlyerSection {
 }
 
 export interface PropertyInfo {
-  // Hero Section
-  promotionText: string;    // e.g. "햇살 가득한 남향, 올수리 완료"
-  address: string;          // e.g. "반포 자이 30평형" (Main Title)
-  subTitle: string;         // e.g. "특올수리 | 입주협의 | 로얄동" (Sub Title beneath Main Title)
-  
-  // Real Estate Specifics
-  transactionType: TransactionType; // 매매, 전세, 월세, 단기
-  priceMain: string;        // 매매가 or 보증금 (e.g. "10억 5천" or "5,000")
-  priceSub: string;         // 월세 (e.g. "120") - Optional
-  managementFee: string;    // 관리비 (e.g. "20만원 (인터넷 포함)")
-  
-  // Specs
-  area: string;             // 전용/공급 면적 e.g. "84㎡ / 59㎡"
-  floor: string;            // 층수 info e.g. "15층 / 총 20층"
-  direction: string;        // 방향 e.g. "남향 (거실 기준)"
-  roomCount: string;        // 방/욕실 e.g. "3개 / 2개"
-  parking: string;          // 주차 e.g. "세대당 1.2대"
-  moveInDate: string;       // 입주가능일 e.g. "즉시 입주 가능"
-  options: string;          // 옵션 정보 e.g. "에어컨, 세탁기, 냉장고 풀옵션"
+  // Page 1: Overview
+  address: string;
+  subTitle: string;
+  priceMain: string;
+  overviewTable: {
+    location: string;
+    zoning: string;
+    landArea: string;
+    totalArea: string;
+    buildingScale: string;
+    mainPurpose: string;
+    parking: string;
+    elevator: string;
+    completionYear: string;
+  };
+  agentName: string;
+  agentRepresentative: string;
+  agentPhone: string;
+  agentMobile: string;
+  investmentSummary: {
+    box1Title: string; box1Text: string;
+    box2Title: string; box2Text: string;
+    box3Title: string; box3Text: string;
+  };
 
-  // Dynamic Sections (Photos & Highlights)
-  sections: FlyerSection[];
+  // Page 2: Status & Valuation
+  floorStatus: {
+    floor: string; purpose: string; lease: string; status: string; note: string;
+  }[];
+  floorStatusNotice: string;
+  highlights: string[];
+  valuationText: string;
 
-  // Agent / Notice Section
-  agentName: string;        // 공인중개사 이름/사무소명
-  agentRepresentative: string; // 대표자 성명 e.g. "대표 공인중개사 홍길동"
-  agentPhone: string;       // 연락처 (일반전화)
-  agentMobile?: string;     // 휴대전화 (스마트폰)
-  agentMapUrl?: string;     // 네이버 지도 링크
-  consultationUrl?: string; // 문의하기 버튼 링크
-  agentAdditionalInfo?: string[]; // 추가 정보 (주소, 등록번호 등)
-  
-  // Social Media
-  socialYoutube?: string;
-  socialBlog?: string;
-  socialInstagram?: string;
-  socialFacebook?: string;
-  socialKakao?: string;
-  socialThreads?: string;
-  
-  // Footer Notice (Textarea)
-  noticeTitle: string;      // e.g. "중개사 코멘트" or "위치적 특징"
-  noticeContent: string;    // Multiline
+  // Page 3: Photos (Images are in FlyerState, just add captions if needed)
+  photoCaptions: {
+    main: string;
+    sub1: string;
+    sub2: string;
+    feat1: string;
+    feat2: string;
+  };
+
+  // Page 4: Area Analysis
+  areaTargetName: string;
+  areaTargetDesc: string;
+  areaBox1Title: string; areaBox1Text: string;
+  areaBox2Title: string; areaBox2Text: string;
+  areaBox3Title: string; areaBox3Text: string;
+
+  // Page 5: Roadmap
+  roadmap: {
+    box1Title: string; box1Text: string;
+    box2Title: string; box2Text: string;
+    box3Title: string; box3Text: string;
+    box4Title: string; box4Text: string;
+  };
+
+  // Backward compatibility fields
+  promotionText?: string;
+  transactionType?: TransactionType;
+  priceSub?: string;
+  managementFee?: string;
+  area?: string;
+  floor?: string;
+  direction?: string;
+  roomCount?: string;
+  parking?: string;
+  moveInDate?: string;
+  options?: string;
+  sections?: FlyerSection[];
+  consultationUrl?: string;
+  agentAdditionalInfo?: string[];
+  noticeTitle?: string;
+  noticeContent?: string;
 }
 
 export interface GeneratedContent {

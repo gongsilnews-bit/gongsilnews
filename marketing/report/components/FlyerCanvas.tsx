@@ -105,7 +105,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data }, ref)
         <ReportPage 
             pageNumber={1} 
             title={targetTitle} 
-            subtitle="Asset Sales Briefing" 
+            subtitle={info.subTitle} 
             targetName={targetSub}
         >
             <div className="flex gap-8 h-full">
@@ -115,15 +115,15 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data }, ref)
                         <SectionTitle title="PROPERTY OVERVIEW" subtitle="물건개요" />
                         <div className="border-t-[3px] border-gray-800 flex flex-col text-sm border-b border-gray-200">
                             {[
-                                { k: '소재지', v: info.address || '서울 서초구 서초동 1444-9' },
-                                { k: '용도지역', v: '제3종 일반주거지역 / 도로 6m 접' },
-                                { k: '대지면적', v: '317.9㎡ (96.16평)' },
-                                { k: '연면적', v: info.area || '905.13㎡ (273.8평)' },
-                                { k: '건물규모', v: info.floor || '지하 1층 / 지상 5층' },
-                                { k: '주용도', v: '근린생활시설 및 주택 (상가주택)' },
-                                { k: '주차대수', v: info.parking || '자주식 7대' },
-                                { k: '승강기', v: '1대 완비' },
-                                { k: '준공연도', v: '2002년 (최근 층별 리모델링 완료)' },
+                                { k: '소재지', v: info.overviewTable?.location },
+                                { k: '용도지역', v: info.overviewTable?.zoning },
+                                { k: '대지면적', v: info.overviewTable?.landArea },
+                                { k: '연면적', v: info.overviewTable?.totalArea },
+                                { k: '건물규모', v: info.overviewTable?.buildingScale },
+                                { k: '주용도', v: info.overviewTable?.mainPurpose },
+                                { k: '주차대수', v: info.overviewTable?.parking },
+                                { k: '승강기', v: info.overviewTable?.elevator },
+                                { k: '준공연도', v: info.overviewTable?.completionYear },
                             ].map((row, i) => (
                                 <div key={i} className="flex border-b border-gray-100 last:border-0">
                                     <div className="w-1/3 bg-white text-gray-500 font-bold py-3 pl-4 flex items-center">{row.k}</div>
@@ -144,9 +144,9 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data }, ref)
                             <span className="font-bold text-gray-800">문의 안내</span>
                         </div>
                         <div className="text-gray-800 text-sm leading-relaxed space-y-1">
-                            <div className="font-extrabold text-[#cc5a27] text-base mb-2">문의 : {info.agentMobile || info.agentPhone || "010-5554-4444"}</div>
-                            <div className="font-bold">{info.agentRepresentative || "김민혁과장"}</div>
-                            <div className="text-gray-600">{info.agentName || "미래에셋공인 중개사 사무소"}</div>
+                            <div className="font-extrabold text-[#cc5a27] text-base mb-2">문의 : {info.agentMobile || info.agentPhone}</div>
+                            <div className="font-bold">{info.agentRepresentative}</div>
+                            <div className="text-gray-600">{info.agentName}</div>
                         </div>
                     </div>
                 </div>
@@ -160,18 +160,12 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data }, ref)
                     <div>
                         <SectionTitle title="INVESTMENT SUMMARY" subtitle="투자요약" />
                         <div className="flex gap-4 border-l-4 border-[#cc5a27] pl-4">
-                            <div className="flex-1 bg-white border border-gray-100 rounded-lg p-4 text-center shadow-sm">
-                                <div className="text-xs text-gray-400 font-bold tracking-widest mb-2 uppercase">CONNECTIVITY</div>
-                                <div className="font-extrabold text-gray-800 text-lg leading-tight">전철역<br/>도보 4분</div>
-                            </div>
-                            <div className="flex-1 bg-white border border-gray-100 rounded-lg p-4 text-center shadow-sm">
-                                <div className="text-xs text-gray-400 font-bold tracking-widest mb-2 uppercase">ASSET QUALITY</div>
-                                <div className="font-extrabold text-gray-800 text-lg leading-tight">내외관<br/>리모델링</div>
-                            </div>
-                            <div className="flex-1 bg-white border border-gray-100 rounded-lg p-4 text-center shadow-sm">
-                                <div className="text-xs text-gray-400 font-bold tracking-widest mb-2 uppercase">SUITABILITY</div>
-                                <div className="font-extrabold text-gray-800 text-lg leading-tight">사옥 및<br/>수익형 최적</div>
-                            </div>
+                            {[1,2,3].map(i => (
+                                <div key={i} className="flex-1 bg-white border border-gray-100 rounded-lg p-4 text-center shadow-sm">
+                                    <div className="text-xs text-gray-400 font-bold tracking-widest mb-2 uppercase">{(info.investmentSummary as any)?.[`box${i}Title`]}</div>
+                                    <div className="font-extrabold text-gray-800 text-lg leading-tight whitespace-pre-wrap">{(info.investmentSummary as any)?.[`box${i}Text`]}</div>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 </div>
@@ -202,16 +196,36 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data }, ref)
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 bg-white">
-                                <tr><td className="py-4">5F</td><td>주택</td><td rowSpan={6} className="text-[#cc5a27] font-bold text-xs writing-vertical-lr tracking-widest border-x border-dashed border-[#cc5a27]/30 bg-[#fff9f0]">보증금 / 차임 내역 별도문의</td><td className="font-bold">임대 중</td><td className="text-gray-500">명도 용이</td></tr>
-                                <tr><td className="py-4">4F</td><td>주택</td><td className="font-bold">가족 거주</td><td className="text-gray-500">명도 용이</td></tr>
-                                <tr><td className="py-4">3F</td><td>근생</td><td className="font-bold">임대 중</td><td className="text-gray-500">명도 협의</td></tr>
-                                <tr><td className="py-4">2F</td><td>근생</td><td className="font-bold">임대 중</td><td className="text-gray-500">명도 용이</td></tr>
-                                <tr><td className="py-4">1F</td><td>근생</td><td className="font-bold">가족 사용</td><td className="text-gray-500">명도 용이</td></tr>
-                                <tr><td className="py-4 font-bold">B1</td><td className="font-bold">근생</td><td className="text-[#cc5a27] font-bold">현재 공실</td><td className="font-bold text-gray-800">즉시 활용</td></tr>
+                                {info.floorStatus?.map((row, i) => (
+                                    <tr key={i}>
+                                        <td className={`py-4 ${row.floor === 'B1' || row.floor.includes('지하') ? 'font-bold' : ''}`}>{row.floor}</td>
+                                        <td className={row.floor === 'B1' || row.floor.includes('지하') ? 'font-bold' : ''}>{row.purpose}</td>
+                                        {i === 0 && info.floorStatus[0].lease === '보증금 / 차임 내역 별도문의' ? (
+                                             <>
+                                                <td rowSpan={6} className="text-[#cc5a27] font-bold text-xs writing-vertical-lr tracking-widest border-x border-dashed border-[#cc5a27]/30 bg-[#fff9f0]">{row.lease}</td>
+                                                <td className="font-bold">{row.status}</td>
+                                                <td className="text-gray-500">{row.note}</td>
+                                             </>
+                                        ) : (
+                                             info.floorStatus[0].lease === '보증금 / 차임 내역 별도문의' ? (
+                                                 <>
+                                                     <td className={row.status.includes('현재 공실') ? 'text-[#cc5a27] font-bold' : 'font-bold'}>{row.status}</td>
+                                                     <td className={row.note.includes('즉시 활용') ? 'font-bold text-gray-800' : 'text-gray-500'}>{row.note}</td>
+                                                 </>
+                                             ) : (
+                                                 <>
+                                                     <td className={row.lease.includes('공실') ? 'text-[#cc5a27] font-bold' : 'font-bold'}>{row.lease}</td>
+                                                     <td className={row.status.includes('공실') ? 'text-[#cc5a27] font-bold' : 'font-bold'}>{row.status}</td>
+                                                     <td className={row.note.includes('즉시') ? 'font-bold text-gray-800' : 'text-gray-500'}>{row.note}</td>
+                                                 </>
+                                             )
+                                        )}
+                                    </tr>
+                                ))}
                             </tbody>
                         </table>
                         <div className="p-4 mt-auto border-t border-gray-100 text-xs text-gray-500 leading-relaxed bg-[#f8fafc]">
-                            ※ 전체 6개 층 중 3개 층(B1, 1F, 4F)이 소유주 직접 관리 하에 있어, 신속한 인도 및 명도 협의가 가능합니다.
+                            {info.floorStatusNotice}
                         </div>
                     </div>
                 </div>
@@ -222,10 +236,9 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data }, ref)
                     <div className="flex-1 border border-yellow-200 rounded-lg p-6 bg-white shadow-sm flex flex-col">
                         <h3 className="text-xl font-extrabold text-gray-900 mb-4 border-b-2 border-gray-800 pb-2 inline-block">매각 핵심 하이라이트</h3>
                         <ul className="space-y-3 mb-8">
-                            <li className="flex gap-2 text-sm"><span className="text-[#cc5a27] font-bold">•</span><span><strong>가격 경쟁력:</strong> 감정가 대비 매우 낮은 파격적인 금매가</span></li>
-                            <li className="flex gap-2 text-sm"><span className="text-[#cc5a27] font-bold">•</span><span><strong>입지 강점:</strong> 역세권 초인접, 오피스 밀집지로 배후수요 풍부</span></li>
-                            <li className="flex gap-2 text-sm"><span className="text-[#cc5a27] font-bold">•</span><span><strong>명도 완료:</strong> 지하 공실 및 소유주 가족 점유로 즉시 인도 협의 가능</span></li>
-                            <li className="flex gap-2 text-sm"><span className="text-[#cc5a27] font-bold">•</span><span><strong>행정 지원:</strong> 책임명도 및 근생 용도변경 등 전폭적 지원</span></li>
+                            {info.highlights?.map((hl, i) => (
+                                <li key={i} className="flex gap-2 text-sm"><span className="text-[#cc5a27] font-bold">•</span><span><strong>{hl.split(':')[0]}{hl.includes(':')?':':''}</strong> {hl.split(':')[1] || hl}</span></li>
+                            ))}
                         </ul>
                         
                         {/* Fake Chart */}
@@ -245,7 +258,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data }, ref)
 
                             <div className="mt-6">
                                 <div className="text-xs font-bold tracking-widest text-[#cc5a27] uppercase mb-1">STRATEGIC ADVISORY</div>
-                                <p className="text-sm text-gray-600 leading-relaxed">본 자산은 역세권 {price} 희소 급매물로, 매입 즉시 감정가 대비 강력한 시세 차익 확보가 가능하며 사업 가치 증대에 최적화된 조건입니다.</p>
+                                <p className="text-sm text-gray-600 leading-relaxed">{info.valuationText}</p>
                             </div>
                         </div>
                     </div>
@@ -266,16 +279,16 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data }, ref)
                 <div className="w-1/2 relative rounded-xl overflow-hidden shadow-md">
                     <img src={mainImage || placeholder} alt="Exterior" className="w-full h-full object-cover" />
                     <div className="absolute bottom-0 left-0 w-full p-4 bg-gradient-to-t from-black/80 to-transparent">
-                        <span className="text-white font-bold">EXTERIOR VIEW - 건물 정면 외관</span>
+                        <span className="text-white font-bold">{info.photoCaptions?.main}</span>
                     </div>
                 </div>
                 {/* 4 Grid Photos */}
                 <div className="w-1/2 grid grid-cols-2 grid-rows-2 gap-4">
                     {[
-                        { img: subImage1, label: "Side View" },
-                        { img: subImage2, label: "Entrance" },
-                        { img: featureImage1, label: "1F Interior" },
-                        { img: featureImage2, label: "Rooftop" },
+                        { img: subImage1, label: info.photoCaptions?.sub1 },
+                        { img: subImage2, label: info.photoCaptions?.sub2 },
+                        { img: featureImage1, label: info.photoCaptions?.feat1 },
+                        { img: featureImage2, label: info.photoCaptions?.feat2 },
                     ].map((p, i) => (
                         <div key={i} className="relative rounded-xl overflow-hidden shadow-md bg-gray-200">
                             <img src={p.img || placeholder} alt={p.label} className="w-full h-full object-cover" />
@@ -303,7 +316,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data }, ref)
                         <img src="https://placehold.co/800x400/e2e8f0/1e293b?text=Map+View" alt="Map" className="w-full h-full object-cover" />
                         <div className="absolute top-4 right-4 bg-[#0d1424] text-white p-3 rounded-lg shadow-lg border border-gray-700">
                             <div className="text-[#e29d45] text-[10px] font-bold tracking-widest uppercase mb-1">TARGET LOCATION</div>
-                            <div className="font-bold text-sm">남부터미널역(3호선)<br/>도보 4분 초역세권</div>
+                            <div className="font-bold text-sm whitespace-pre-wrap">{info.areaTargetName}</div>
                         </div>
                     </div>
                     {/* Info Box */}
@@ -311,30 +324,24 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data }, ref)
                         <div className="w-12 h-12 bg-white/10 rounded-lg flex items-center justify-center mb-6">
                             <svg className="w-6 h-6 text-[#e29d45]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
                         </div>
-                        <h3 className="text-[#e29d45] text-2xl font-bold mb-4 leading-snug">서초동 문화/비즈니스<br/>클러스터</h3>
-                        <p className="text-gray-300 text-sm leading-relaxed mb-auto">
-                            대한민국 최고의 문화 인프라와 남부터미널 업무 지구의 풍부한 배후 수요가 공존합니다.
+                        <h3 className="text-[#e29d45] text-2xl font-bold mb-4 leading-snug whitespace-pre-wrap">{info.areaTargetName?.split('\n')[0]}<br/>클러스터</h3>
+                        <p className="text-gray-300 text-sm leading-relaxed mb-auto whitespace-pre-wrap">
+                            {info.areaTargetDesc?.split('\n')[0]}
                         </p>
-                        <p className="text-gray-400 text-sm leading-relaxed mt-6 border-t border-white/10 pt-6">
-                            희소성 높은 초역세권 대지로서 사옥 신축 및 수익형 밸류업 시 최고의 자산 가치를 보장합니다.
+                        <p className="text-gray-400 text-sm leading-relaxed mt-6 border-t border-white/10 pt-6 whitespace-pre-wrap">
+                            {info.areaTargetDesc?.split('\n').slice(1).join('\n')}
                         </p>
                     </div>
                 </div>
 
                 {/* Bottom 3 Boxes */}
                 <div className="flex gap-4 h-1/4">
-                    <div className="flex-1 border border-gray-200 rounded-xl p-5 bg-white shadow-sm flex flex-col justify-center">
-                        <div className="text-[#cc5a27] font-bold text-xs uppercase tracking-widest mb-2">STATION AREA</div>
-                        <div className="text-gray-800 font-bold text-sm">지하철 3호선 남부터미널역과 도보 약 250m 거리로 최상의 대중교통 접근성 확보</div>
-                    </div>
-                    <div className="flex-1 border border-gray-200 rounded-xl p-5 bg-white shadow-sm flex flex-col justify-center">
-                        <div className="text-gray-400 font-bold text-xs uppercase tracking-widest mb-2">CULTURAL DIST.</div>
-                        <div className="text-gray-800 font-bold text-sm">대한민국 대표 문화거점인 예술의전당, 국립국악원 및 관련 클러스터 인접</div>
-                    </div>
-                    <div className="flex-1 border border-gray-200 rounded-xl p-5 bg-[#f8fafc] shadow-sm flex flex-col justify-center">
-                        <div className="text-gray-400 font-bold text-xs uppercase tracking-widest mb-2">CONNECTIVITY</div>
-                        <div className="text-gray-800 font-bold text-sm">남부순환로, 서초중앙로 진입이 용이하여 강남권 전역 및 고속도로 접근성 탁월</div>
-                    </div>
+                    {[1,2,3].map(i => (
+                        <div key={i} className={`flex-1 border border-gray-200 rounded-xl p-5 shadow-sm flex flex-col justify-center ${i===3 ? 'bg-[#f8fafc]' : 'bg-white'}`}>
+                            <div className={`font-bold text-xs uppercase tracking-widest mb-2 ${i===1 ? 'text-[#cc5a27]' : 'text-gray-400'}`}>{(info as any)[`areaBox${i}Title`]}</div>
+                            <div className="text-gray-800 font-bold text-sm">{(info as any)[`areaBox${i}Text`]}</div>
+                        </div>
+                    ))}
                 </div>
             </div>
         </ReportPage>
@@ -348,52 +355,31 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data }, ref)
             badgeText="INVESTMENT ROADMAP"
         >
             <div className="grid grid-cols-2 grid-rows-2 gap-8 h-[480px]">
-                <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-8 flex items-start gap-6 hover:shadow-md transition-shadow">
-                    <div className="w-20 h-20 shrink-0 bg-blue-50 rounded-xl border border-blue-100 flex items-center justify-center">
-                         <span className="text-4xl">🏢</span>
-                    </div>
-                    <div>
-                        <h3 className="text-xl font-extrabold text-gray-900 mb-3">단독 사옥 활용 시나리오</h3>
-                        <p className="text-gray-500 text-sm leading-relaxed">전층 명도 협의 후 기업의 아이덴티티를 투영한 단독 사옥으로 활용합니다. 서초동 초역세권 입지의 상징성을 동시에 확보할 수 있는 최상의 환경을 제공합니다.</p>
-                    </div>
-                </div>
-                
-                <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-8 flex items-start gap-6 hover:shadow-md transition-shadow">
-                    <div className="w-20 h-20 shrink-0 bg-green-50 rounded-xl border border-green-100 flex items-center justify-center">
-                         <span className="text-4xl">🏡</span>
-                    </div>
-                    <div>
-                        <h3 className="text-xl font-extrabold text-gray-900 mb-3">주거 및 근생 수익 모델</h3>
-                        <p className="text-gray-500 text-sm leading-relaxed">상층부(4~5층) 실거주를 통해 최고의 직주근접 환경을 실현합니다. 하층부(B1~3층)는 오피스 및 갤러리 임대를 통해 안정적인 월세 수익을 확보할 수 있습니다.</p>
-                    </div>
-                </div>
-
-                <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-8 flex items-start gap-6 hover:shadow-md transition-shadow">
-                    <div className="w-20 h-20 shrink-0 bg-red-50 rounded-xl border border-red-100 flex items-center justify-center">
-                         <span className="text-4xl">📈</span>
-                    </div>
-                    <div>
-                        <h3 className="text-xl font-extrabold text-gray-900 mb-3">수익형 자산 밸류업 전략</h3>
-                        <p className="text-gray-500 text-sm leading-relaxed">주택 부분의 근생 용도변경 및 전면 리모델링을 통해 우량 법인 임차를 유치합니다. 자산 가치 극대화 후 시세 차익 실현에 집중하는 투자 안입니다.</p>
-                    </div>
-                </div>
-
-                <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-8 flex items-start gap-6 hover:shadow-md transition-shadow">
-                    <div className="w-20 h-20 shrink-0 bg-yellow-50 rounded-xl border border-yellow-100 flex items-center justify-center">
-                         <span className="text-4xl">🏗️</span>
-                    </div>
-                    <div>
-                        <h3 className="text-xl font-extrabold text-gray-900 mb-3">역세권 오피스 개발안</h3>
-                        <p className="text-gray-500 text-sm leading-relaxed">제3종일반주거지역의 높은 용적률을 활용한 고품격 오피스 빌딩 신축 개발입니다. 서초동 초역세권 입지의 희소성을 활용하여 개발 이익을 극대화할 수 있습니다.</p>
-                    </div>
-                </div>
+                {[
+                    { bg: 'bg-blue-50', border: 'border-blue-100', icon: '🏢' },
+                    { bg: 'bg-green-50', border: 'border-green-100', icon: '🏡' },
+                    { bg: 'bg-red-50', border: 'border-red-100', icon: '📈' },
+                    { bg: 'bg-yellow-50', border: 'border-yellow-100', icon: '🏗️' },
+                ].map((style, i) => {
+                    const idx = i + 1;
+                    return (
+                        <div key={idx} className="bg-white border border-gray-200 rounded-2xl shadow-sm p-8 flex items-start gap-6 hover:shadow-md transition-shadow">
+                            <div className={`w-20 h-20 shrink-0 ${style.bg} rounded-xl border ${style.border} flex items-center justify-center`}>
+                                 <span className="text-4xl">{style.icon}</span>
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-extrabold text-gray-900 mb-3">{(info.roadmap as any)?.[`box${idx}Title`]}</h3>
+                                <p className="text-gray-500 text-sm leading-relaxed whitespace-pre-wrap">{(info.roadmap as any)?.[`box${idx}Text`]}</p>
+                            </div>
+                        </div>
+                    )
+                })}
             </div>
             
             <div className="mt-8 text-right pr-4">
                 <p className="text-gray-500 italic font-serif-kr text-lg">"최고의 입지에 미래 가치를 더합니다."</p>
             </div>
         </ReportPage>
-
     </div>
   );
 });

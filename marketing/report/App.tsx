@@ -23,114 +23,81 @@ export const LAYOUTS: FlyerLayout[] = [
 ];
 
 const INITIAL_INFO: PropertyInfo = {
-  promotionText: "월세 2억/520 만원",
-  address: "래미안 퍼스티지",
-  subTitle: "트리플 역세권의 편리함 | 대한민국 최상위 명문 학군 | 한강 생활권의 여유",
-  
-  transactionType: "월세",
-  priceMain: "2억",
-  priceSub: "520만",
-  managementFee: "50만원 (커뮤니티 포함)",
-  
-  area: "전용 116㎡ / 공급 152㎡",
-  floor: "25층 / 총 35층",
-  direction: "남향 (거실 기준)",
-  roomCount: "4개 / 2개",
-  parking: "세대당 2.5대",
-  moveInDate: "즉시 입주 가능",
-  options: "독일 주방가구, 시스템 에어컨, 고급 원목마루, 빌트인 가전 풀옵션",
+  // Page 1: Overview
+  address: "서울 강남구 논현동",
+  subTitle: "Asset Sales Briefing",
+  priceMain: "500억",
+  overviewTable: {
+    location: "서울 강남구 논현동",
+    zoning: "제3종 일반주거지역 / 도로 6m 접",
+    landArea: "317.9㎡ (96.16평)",
+    totalArea: "905.13㎡ (273.8평)",
+    buildingScale: "지하 1층 / 지상 5층",
+    mainPurpose: "근린생활시설 및 주택 (상가주택)",
+    parking: "자주식 7대",
+    elevator: "1대 완비",
+    completionYear: "2002년 (최근 층별 리모델링 완료)",
+  },
+  agentName: "미래에셋공인 중개사 사무소",
+  agentRepresentative: "김민혁과장",
+  agentPhone: "02-1234-5678",
+  agentMobile: "010-5554-4444",
+  investmentSummary: {
+    box1Title: "CONNECTIVITY", box1Text: "전철역\n도보 4분",
+    box2Title: "ASSET QUALITY", box2Text: "내외관\n리모델링",
+    box3Title: "SUITABILITY", box3Text: "사옥 및\n수익형 최적",
+  },
 
-  agentName: "단지내바른공인중개사사무소",
-  agentRepresentative: "대표 공인중개사 박미양",
-  agentPhone: "02-595-0071",
-  agentMobile: "010-1234-5678",
-  agentMapUrl: "https://map.naver.com",
-  consultationUrl: "https://open.kakao.com",
-  agentAdditionalInfo: [
-    "등록번호: 11650-2018-00170",
-    "소재지: 서울특별시 서초구 반포대로 287,1층 134호 (반포동 18-3,래미안퍼스티지 중심상가)",
+  // Page 2: Status & Valuation
+  floorStatus: [
+    { floor: "5F", purpose: "주택", lease: "보증금 / 차임 내역 별도문의", status: "임대 중", note: "명도 용이" },
+    { floor: "4F", purpose: "주택", lease: "가족 거주", status: "가족 거주", note: "명도 용이" },
+    { floor: "3F", purpose: "근생", lease: "임대 중", status: "임대 중", note: "명도 협의" },
+    { floor: "2F", purpose: "근생", lease: "임대 중", status: "임대 중", note: "명도 용이" },
+    { floor: "1F", purpose: "근생", lease: "가족 사용", status: "가족 사용", note: "명도 용이" },
+    { floor: "B1", purpose: "근생", lease: "현재 공실", status: "즉시 활용", note: "즉시 활용" },
   ],
+  floorStatusNotice: "※ 전체 6개 층 중 3개 층(B1, 1F, 4F)이 소유주 직접 관리 하에 있어, 신속한 인도 및 명도 협의가 가능합니다.",
+  highlights: [
+    "가격 경쟁력: 감정가 대비 매우 낮은 파격적인 금매가",
+    "입지 강점: 역세권 초인접, 오피스 밀집지로 배후수요 풍부",
+    "명도 완료: 지하 공실 및 소유주 가족 점유로 즉시 인도 협의 가능",
+    "행정 지원: 책임명도 및 근생 용도변경 등 전폭적 지원"
+  ],
+  valuationText: "본 자산은 역세권 500억 희소 급매물로, 매입 즉시 감정가 대비 강력한 시세 차익 확보가 가능하며 사업 가치 증대에 최적화된 조건입니다.",
+
+  // Page 3: Photos Captions
+  photoCaptions: {
+    main: "EXTERIOR VIEW - 건물 정면 외관",
+    sub1: "Side View",
+    sub2: "Entrance",
+    feat1: "1F Interior",
+    feat2: "Rooftop"
+  },
+
+  // Page 4: Area Analysis
+  areaTargetName: "남부터미널역(3호선)\n도보 4분 초역세권",
+  areaTargetDesc: "대한민국 최고의 문화 인프라와 남부터미널 업무 지구의 풍부한 배후 수요가 공존합니다.\n희소성 높은 초역세권 대지로서 사옥 신축 및 수익형 밸류업 시 최고의 자산 가치를 보장합니다.",
+  areaBox1Title: "STATION AREA", areaBox1Text: "지하철 3호선 남부터미널역과 도보 약 250m 거리로 최상의 대중교통 접근성 확보",
+  areaBox2Title: "CULTURAL DIST.", areaBox2Text: "대한민국 대표 문화거점인 예술의전당, 국립국악원 및 관련 클러스터 인접",
+  areaBox3Title: "CONNECTIVITY", areaBox3Text: "남부순환로, 서초중앙로 진입이 용이하여 강남권 전역 및 고속도로 접근성 탁월",
+
+  // Page 5: Roadmap
+  roadmap: {
+    box1Title: "단독 사옥 활용 시나리오", box1Text: "전층 명도 협의 후 기업의 아이덴티티를 투영한 단독 사옥으로 활용합니다. 서초동 초역세권 입지의 상징성을 동시에 확보할 수 있는 최상의 환경을 제공합니다.",
+    box2Title: "주거 및 근생 수익 모델", box2Text: "상층부(4~5층) 실거주를 통해 최고의 직주근접 환경을 실현합니다. 하층부(B1~3층)는 오피스 및 갤러리 임대를 통해 안정적인 월세 수익을 확보할 수 있습니다.",
+    box3Title: "수익형 자산 밸류업 전략", box3Text: "주택 부분의 근생 용도변경 및 전면 리모델링을 통해 우량 법인 임차를 유치합니다. 자산 가치 극대화 후 시세 차익 실현에 집중하는 투자 안입니다.",
+    box4Title: "역세권 오피스 개발안", box4Text: "제3종일반주거지역의 높은 용적률을 활용한 고품격 오피스 빌딩 신축 개발입니다. 서초동 초역세권 입지의 희소성을 활용하여 개발 이익을 극대화할 수 있습니다."
+  },
   
-  socialYoutube: "",
-  socialBlog: "",
-  socialInstagram: "",
-  socialFacebook: "",
-  socialKakao: "",
-  socialThreads: "",
-
-  noticeTitle: "RAEMIAN PRIDE",
-  noticeContent: "◼︎ 세계적인 설계사들이 참여한 랜드마크 디자인\n◼︎ 스카이 브릿지, 수영장, 사우나 등 호텔급 커뮤니티\n◼︎ 신세계백화점, 성모병원, 고속터미널 등 최상의 인프라\n◼︎ 한강공원과 바로 연결되는 쾌적한 주거 환경\n◼︎ 명문 학군과 우수한 교통망을 갖춘 최고의 입지",
-
-  sections: [
-    {
-      id: 'section-features',
-      type: 'grid',
-      intro: "Experience of PRIDE",
-      title: "래미안이 선사하는 가치",
-      items: [
-        { id: 'feat-1', text: '파노라마 한강 뷰', imageKey: 'featureImage1' },
-        { id: 'feat-2', text: '호텔식 조식 서비스', imageKey: 'featureImage2' },
-        { id: 'feat-3', text: '프라이빗 스카이 라운지', imageKey: 'featureImage3' },
-        { id: 'feat-4', text: '최첨단 IoT 시스템', imageKey: 'featureImage4' },
-      ]
-    },
-    {
-      id: 'section-zones',
-      type: 'list',
-      intro: "THE COLLECTION",
-      title: "품격 있는 공간 미학",
-      description: "머무는 것만으로도 자부심이 되는 공간.\n섬세한 디테일과 고급스러운 마감재로 완성된 래미안의 인테리어를 만나보세요.",
-      items: [
-        { 
-          id: 'zone-1', 
-          title: 'LIVING & DINING', 
-          text: '탁 트인 개방감과 우아한 아트월이 조화를 이루는 거실은 가족의 품격을 대변합니다. 다이닝 공간은 갤러리 같은 분위기를 연출합니다.', 
-          imageKey: 'subImage1' 
-        },
-        { 
-          id: 'zone-2', 
-          title: 'MASTER ZONE', 
-          text: '휴식 그 이상의 가치를 선사하는 마스터룸. 넓은 드레스룸과 호텔식 파우더룸은 일상을 특별하게 만들어줍니다.', 
-          imageKey: 'subImage2' 
-        }
-      ]
-    },
-    {
-      id: 'section-complex',
-      type: 'table',
-      intro: "COMPLEX INFO",
-      title: "단지 정보",
-      items: [
-        { id: 'info-1', title: '세대수', text: '2444세대(장기전세 266세대 포함, 총28개동)', imageKey: '' },
-        { id: 'info-2', title: '저/최고층', text: '23층/32층', imageKey: '' },
-        { id: 'info-3', title: '사용승인일', text: '2009년 07월 14일', imageKey: '' },
-        { id: 'info-4', title: '총주차대수', text: '4368대(세대당 1.78대)', imageKey: '' },
-        { id: 'info-5', title: '용적률', text: '269%', imageKey: '' },
-        { id: 'info-6', title: '건폐율', text: '12%', imageKey: '' },
-        { id: 'info-7', title: '건설사', text: '삼성물산(주)', imageKey: '' },
-        { id: 'info-8', title: '난방', text: '지역난방, 열병합', imageKey: '' },
-        { id: 'info-9', title: '관리사무소', text: '02-599-9960', imageKey: '' },
-        { id: 'info-10', title: '주소', text: '서울시 서초구 반포동 18-1', imageKey: '' },
-        { id: 'info-11', title: '면적', text: '86T2㎡, 87P㎡, 113L1㎡, 113T2㎡, 113T1㎡ 외', imageKey: '' },
-      ]
-    }
-  ]
+  // Backward compat
+  promotionText: "",
+  sections: []
 };
 
 const INITIAL_GENERATED: GeneratedContent = {
-  promotionText: INITIAL_INFO.promotionText,
+  promotionText: "",
   summary: "",
-  gridInfo: {
-    title: INITIAL_INFO.sections[0].title,
-    intro: INITIAL_INFO.sections[0].intro || "",
-    features: INITIAL_INFO.sections[0].items.map(i => i.text)
-  },
-  listInfo: {
-    title: INITIAL_INFO.sections[1].title,
-    intro: INITIAL_INFO.sections[1].intro || "",
-    description: INITIAL_INFO.sections[1].description || "",
-    items: INITIAL_INFO.sections[1].items.map(i => ({ title: i.title || "", description: i.text }))
-  }
 };
 
 interface ExportModalProps {
