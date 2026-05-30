@@ -168,17 +168,78 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
 
                   <div>
                       <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">물건 개요 (표)</h4>
-                      <div className="grid grid-cols-2 gap-3">
-                          <div><label className="text-xs text-gray-500">소재지</label><input value={info.overviewTable.location} onChange={(e)=>handleNestedChange('overviewTable', 'location', e.target.value)} className="w-full border rounded p-2 text-xs" /></div>
-                          <div><label className="text-xs text-gray-500">용도지역</label><input value={info.overviewTable.zoning} onChange={(e)=>handleNestedChange('overviewTable', 'zoning', e.target.value)} className="w-full border rounded p-2 text-xs" /></div>
-                          <div><label className="text-xs text-gray-500">대지면적</label><input value={info.overviewTable.landArea} onChange={(e)=>handleNestedChange('overviewTable', 'landArea', e.target.value)} className="w-full border rounded p-2 text-xs" /></div>
-                          <div><label className="text-xs text-gray-500">연면적</label><input value={info.overviewTable.totalArea} onChange={(e)=>handleNestedChange('overviewTable', 'totalArea', e.target.value)} className="w-full border rounded p-2 text-xs" /></div>
-                          <div><label className="text-xs text-gray-500">건물규모</label><input value={info.overviewTable.buildingScale} onChange={(e)=>handleNestedChange('overviewTable', 'buildingScale', e.target.value)} className="w-full border rounded p-2 text-xs" /></div>
-                          <div><label className="text-xs text-gray-500">주용도</label><input value={info.overviewTable.mainPurpose} onChange={(e)=>handleNestedChange('overviewTable', 'mainPurpose', e.target.value)} className="w-full border rounded p-2 text-xs" /></div>
-                          <div><label className="text-xs text-gray-500">주차대수</label><input value={info.overviewTable.parking} onChange={(e)=>handleNestedChange('overviewTable', 'parking', e.target.value)} className="w-full border rounded p-2 text-xs" /></div>
-                          <div><label className="text-xs text-gray-500">승강기</label><input value={info.overviewTable.elevator} onChange={(e)=>handleNestedChange('overviewTable', 'elevator', e.target.value)} className="w-full border rounded p-2 text-xs" /></div>
-                          <div className="col-span-2"><label className="text-xs text-gray-500">준공연도</label><input value={info.overviewTable.completionYear} onChange={(e)=>handleNestedChange('overviewTable', 'completionYear', e.target.value)} className="w-full border rounded p-2 text-xs" /></div>
-                          <div className="col-span-2"><label className="text-xs font-bold text-[#cc5a27]">매매가</label><input name="priceMain" value={info.priceMain} onChange={handleChange} className="w-full border-2 border-orange-200 rounded p-2 text-sm font-bold text-gray-800" /></div>
+                      <div className="space-y-3">
+                          {(() => {
+                              const tbl = Array.isArray(info.overviewTable) 
+                                  ? info.overviewTable 
+                                  : [
+                                      { label: "소재지", value: (info.overviewTable as any)?.location || "" },
+                                      { label: "용도지역", value: (info.overviewTable as any)?.zoning || "" },
+                                      { label: "대지면적", value: (info.overviewTable as any)?.landArea || "" },
+                                      { label: "연면적", value: (info.overviewTable as any)?.totalArea || "" },
+                                      { label: "건물규모", value: (info.overviewTable as any)?.buildingScale || "" },
+                                      { label: "주용도", value: (info.overviewTable as any)?.mainPurpose || "" },
+                                      { label: "주차대수", value: (info.overviewTable as any)?.parking || "" },
+                                      { label: "승강기", value: (info.overviewTable as any)?.elevator || "" },
+                                      { label: "준공연도", value: (info.overviewTable as any)?.completionYear || "" },
+                                  ];
+                              
+                              return (
+                                  <>
+                                      {tbl.map((row, i) => (
+                                          <div key={i} className="flex gap-1.5 items-center bg-gray-50 p-2 rounded">
+                                              <input 
+                                                  value={row.label} 
+                                                  onChange={(e) => {
+                                                      const newTable = [...tbl];
+                                                      newTable[i] = { ...newTable[i], label: e.target.value };
+                                                      setInfo({ ...info, overviewTable: newTable });
+                                                  }} 
+                                                  placeholder="항목명" 
+                                                  className="w-1/3 border rounded p-1.5 text-xs text-center font-bold text-gray-600 bg-white" 
+                                              />
+                                              <input 
+                                                  value={row.value} 
+                                                  onChange={(e) => {
+                                                      const newTable = [...tbl];
+                                                      newTable[i] = { ...newTable[i], value: e.target.value };
+                                                      setInfo({ ...info, overviewTable: newTable });
+                                                  }} 
+                                                  placeholder="내용" 
+                                                  className="flex-1 border rounded p-1.5 text-xs bg-white text-gray-800 font-bold" 
+                                              />
+                                              <button
+                                                  type="button"
+                                                  onClick={() => {
+                                                      const newTable = [...tbl];
+                                                      newTable.splice(i, 1);
+                                                      setInfo({ ...info, overviewTable: newTable });
+                                                  }}
+                                                  className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 rounded transition-colors text-xs font-bold"
+                                                  title="삭제"
+                                              >
+                                                  ✕
+                                              </button>
+                                          </div>
+                                      ))}
+                                      <button
+                                          type="button"
+                                          onClick={() => {
+                                              const newTable = [...tbl];
+                                              newTable.push({ label: '', value: '' });
+                                              setInfo({ ...info, overviewTable: newTable });
+                                          }}
+                                          className="w-full mt-2 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-1 border border-dashed border-blue-200"
+                                      >
+                                          + 개요 항목(행) 추가
+                                      </button>
+                                  </>
+                              );
+                          })()}
+                          <div className="mt-4">
+                              <label className="text-xs font-bold text-[#cc5a27]">매매가</label>
+                              <input name="priceMain" value={info.priceMain} onChange={handleChange} className="w-full border-2 border-orange-200 rounded p-2 text-sm font-bold text-gray-800 mt-1" />
+                          </div>
                       </div>
                   </div>
 

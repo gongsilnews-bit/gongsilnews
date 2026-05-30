@@ -27,17 +27,17 @@ const INITIAL_INFO: PropertyInfo = {
   address: "서울 강남구 논현동",
   subTitle: "Asset Sales Briefing",
   priceMain: "500억",
-  overviewTable: {
-    location: "서울 강남구 논현동",
-    zoning: "제3종 일반주거지역 / 도로 6m 접",
-    landArea: "317.9㎡ (96.16평)",
-    totalArea: "905.13㎡ (273.8평)",
-    buildingScale: "지하 1층 / 지상 5층",
-    mainPurpose: "근린생활시설 및 주택 (상가주택)",
-    parking: "자주식 7대",
-    elevator: "1대 완비",
-    completionYear: "2002년 (최근 층별 리모델링 완료)",
-  },
+  overviewTable: [
+    { label: "소재지", value: "서울 강남구 논현동" },
+    { label: "용도지역", value: "제3종 일반주거지역 / 도로 6m 접" },
+    { label: "대지면적", value: "317.9㎡ (96.16평)" },
+    { label: "연면적", value: "905.13㎡ (273.8평)" },
+    { label: "건물규모", value: "지하 1층 / 지상 5층" },
+    { label: "주용도", value: "근린생활시설 및 주택 (상가주택)" },
+    { label: "주차대수", value: "자주식 7대" },
+    { label: "승강기", value: "1대 완비" },
+    { label: "준공연도", value: "2002년 (최근 층별 리모델링 완료)" },
+  ],
   agentName: "미래에셋공인 중개사 사무소",
   agentRepresentative: "김민혁과장",
   agentPhone: "02-1234-5678",
@@ -254,16 +254,41 @@ const uploadImageToServer = async (file: File | Blob, vacancyId: string): Promis
   }
 };
 
+const convertOverviewTableToArray = (tbl: any): { label: string; value: string }[] => {
+  if (Array.isArray(tbl)) return tbl;
+  if (tbl && typeof tbl === 'object') {
+    return [
+      { label: "소재지", value: tbl.location || "" },
+      { label: "용도지역", value: tbl.zoning || "" },
+      { label: "대지면적", value: tbl.landArea || "" },
+      { label: "연면적", value: tbl.totalArea || "" },
+      { label: "건물규모", value: tbl.buildingScale || "" },
+      { label: "주용도", value: tbl.mainPurpose || "" },
+      { label: "주차대수", value: tbl.parking || "" },
+      { label: "승강기", value: tbl.elevator || "" },
+      { label: "준공연도", value: tbl.completionYear || "" },
+    ].filter(row => row.value !== undefined && row.value !== null);
+  }
+  return [
+    { label: "소재지", value: "" },
+    { label: "용도지역", value: "" },
+    { label: "대지면적", value: "" },
+    { label: "연면적", value: "" },
+    { label: "건물규모", value: "" },
+    { label: "주용도", value: "" },
+    { label: "주차대수", value: "" },
+    { label: "승강기", value: "" },
+    { label: "준공연도", value: "" },
+  ];
+};
+
 const mergeStateWithDefaults = (loaded: any): FlyerState => {
   return {
     ...loaded,
     info: {
       ...INITIAL_INFO,
       ...(loaded?.info || {}),
-      overviewTable: {
-        ...INITIAL_INFO.overviewTable,
-        ...(loaded?.info?.overviewTable || {})
-      },
+      overviewTable: convertOverviewTableToArray(loaded?.info?.overviewTable || loaded?.info?.overviewTableObj),
       floorStatus: loaded?.info?.floorStatus || INITIAL_INFO.floorStatus,
       highlights: loaded?.info?.highlights || INITIAL_INFO.highlights,
       investmentSummary: {

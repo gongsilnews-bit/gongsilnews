@@ -25,16 +25,20 @@ export interface PropertyInfo {
   subTitle: string;
   priceMain: string;
   overviewTable: {
-    location: string;
-    zoning: string;
-    landArea: string;
-    totalArea: string;
-    buildingScale: string;
-    mainPurpose: string;
-    parking: string;
-    elevator: string;
-    completionYear: string;
-  };
+    location?: string;
+    zoning?: string;
+    landArea?: string;
+    totalArea?: string;
+    buildingScale?: string;
+    mainPurpose?: string;
+    parking?: string;
+    elevator?: string;
+    completionYear?: string;
+    [key: string]: any;
+  } | {
+    label: string;
+    value: string;
+  }[];
   agentName: string;
   agentRepresentative: string;
   agentPhone: string;

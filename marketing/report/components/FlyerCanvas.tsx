@@ -114,22 +114,27 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data }, ref)
                     <div>
                         <SectionTitle title="PROPERTY OVERVIEW" subtitle="물건개요" />
                         <div className="border-t-[3px] border-gray-800 flex flex-col text-sm border-b border-gray-200">
-                            {[
-                                { k: '소재지', v: info.overviewTable?.location },
-                                { k: '용도지역', v: info.overviewTable?.zoning },
-                                { k: '대지면적', v: info.overviewTable?.landArea },
-                                { k: '연면적', v: info.overviewTable?.totalArea },
-                                { k: '건물규모', v: info.overviewTable?.buildingScale },
-                                { k: '주용도', v: info.overviewTable?.mainPurpose },
-                                { k: '주차대수', v: info.overviewTable?.parking },
-                                { k: '승강기', v: info.overviewTable?.elevator },
-                                { k: '준공연도', v: info.overviewTable?.completionYear },
-                            ].filter(row => row.v && row.v.trim() !== '').map((row, i) => (
-                                <div key={i} className="flex border-b border-gray-100 last:border-0">
-                                    <div className="w-1/3 bg-white text-gray-500 font-bold py-3 pl-4 flex items-center">{row.k}</div>
-                                    <div className="w-2/3 bg-white text-gray-800 font-bold py-3 pl-4 flex items-center">{row.v}</div>
-                                </div>
-                            ))}
+                            {(() => {
+                                const rows = Array.isArray(info.overviewTable) 
+                                    ? info.overviewTable.map(r => ({ k: r.label, v: r.value }))
+                                    : [
+                                        { k: '소재지', v: info.overviewTable?.location },
+                                        { k: '용도지역', v: info.overviewTable?.zoning },
+                                        { k: '대지면적', v: info.overviewTable?.landArea },
+                                        { k: '연면적', v: info.overviewTable?.totalArea },
+                                        { k: '건물규모', v: info.overviewTable?.buildingScale },
+                                        { k: '주용도', v: info.overviewTable?.mainPurpose },
+                                        { k: '주차대수', v: info.overviewTable?.parking },
+                                        { k: '승강기', v: info.overviewTable?.elevator },
+                                        { k: '준공연도', v: info.overviewTable?.completionYear },
+                                    ];
+                                return rows.filter(row => row.v && row.v.trim() !== '').map((row, i) => (
+                                    <div key={i} className="flex border-b border-gray-100 last:border-0">
+                                        <div className="w-1/3 bg-white text-gray-500 font-bold py-3 pl-4 flex items-center">{row.k}</div>
+                                        <div className="w-2/3 bg-white text-gray-800 font-bold py-3 pl-4 flex items-center">{row.v}</div>
+                                    </div>
+                                ));
+                            })()}
                             {/* Price Row */}
                             <div className="flex bg-[#fff9f0] border-t border-gray-200">
                                 <div className="w-1/3 text-gray-600 font-bold py-3 pl-4 flex items-center">매매가</div>
