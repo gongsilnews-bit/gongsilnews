@@ -25,9 +25,7 @@ const ReportPage = ({
             {/* Header */}
             <div className="h-[120px] bg-[#0d1424] text-white px-10 py-6 flex justify-between items-end shrink-0">
                 <div>
-                    <div className="bg-[#cc5a27] text-white text-xs font-bold px-2 py-1 inline-block mb-3 tracking-widest rounded-sm">
-                        {badgeText || 'PROPERTY INFORMATION'}
-                    </div>
+
                     <h1 className="text-3xl font-extrabold mb-1 tracking-tight">{title}</h1>
                     <div className="flex items-center gap-4">
                         <span className="text-gray-400 text-sm">{subtitle}</span>
