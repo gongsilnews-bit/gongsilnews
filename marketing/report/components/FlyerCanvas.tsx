@@ -124,7 +124,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data }, ref)
                                 { k: '주차대수', v: info.overviewTable?.parking },
                                 { k: '승강기', v: info.overviewTable?.elevator },
                                 { k: '준공연도', v: info.overviewTable?.completionYear },
-                            ].map((row, i) => (
+                            ].filter(row => row.v && row.v.trim() !== '').map((row, i) => (
                                 <div key={i} className="flex border-b border-gray-100 last:border-0">
                                     <div className="w-1/3 bg-white text-gray-500 font-bold py-3 pl-4 flex items-center">{row.k}</div>
                                     <div className="w-2/3 bg-white text-gray-800 font-bold py-3 pl-4 flex items-center">{row.v}</div>
