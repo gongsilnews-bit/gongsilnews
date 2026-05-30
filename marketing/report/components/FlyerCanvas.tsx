@@ -138,22 +138,23 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data }, ref)
                         </div>
                     </div>
 
-                    <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-lg p-5 mt-4 flex flex-col justify-center">
-                        <div className="flex items-center gap-2 mb-3">
-                            <div className="w-6 h-6 rounded-full bg-[#cc5a27] text-white flex items-center justify-center font-bold text-xs">📞</div>
-                            <span className="font-bold text-gray-800">문의 안내</span>
-                        </div>
-                        <div className="text-gray-800 text-sm leading-relaxed space-y-1">
-                            <div className="font-extrabold text-[#cc5a27] text-base mb-2">문의 : {info.agentMobile || info.agentPhone}</div>
-                            <div className="font-bold">{info.agentRepresentative}</div>
-                            <div className="text-gray-600">{info.agentName}</div>
+                    <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-xl p-4 mt-4 flex flex-col justify-center shadow-sm">
+                        <div className="grid grid-cols-[80px_1fr] gap-x-2 gap-y-1.5 text-sm">
+                            <span className="text-gray-500 font-bold">부동산명</span>
+                            <span className="text-gray-800 font-extrabold">{info.agentName}</span>
+
+                            <span className="text-gray-500 font-bold">담당자</span>
+                            <span className="text-gray-800 font-extrabold">{info.agentRepresentative}</span>
+
+                            <span className="text-gray-500 font-bold">연락처</span>
+                            <span className="text-[#cc5a27] font-black text-base">{info.agentMobile || info.agentPhone}</span>
                         </div>
                     </div>
                 </div>
 
                 {/* Right Col: Image & Summary */}
-                <div className="w-7/12 flex flex-col h-full">
-                    <div className="relative flex-1 rounded-2xl overflow-hidden mb-6 shadow-md border border-gray-100">
+                <div className="w-7/12 flex flex-col justify-between h-full">
+                    <div className="relative h-[340px] rounded-2xl overflow-hidden shadow-md border border-gray-100">
                         <img src={mainImage || placeholder} alt="Main" className="w-full h-full object-cover" />
                         <div className="absolute top-4 right-4 text-xs font-black tracking-widest uppercase text-gray-800 mix-blend-overlay">ASSET PREVIEW</div>
                     </div>
