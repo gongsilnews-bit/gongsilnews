@@ -155,7 +155,7 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
       if (res.success && res.data.length > 0) {
         setReportHistory(res.data);
         setDailyReport(res.data[0].content);
-        setReportDate(new Date(res.data[0].created_at).toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" }));
+        setReportDate(new Date(res.data[0].created_at).toLocaleDateString("ko-KR", { timeZone: "Asia/Seoul", year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" }));
         setSelectedReportIdx(0);
       }
     };
@@ -661,7 +661,7 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
                   onClick={() => {
                     setSelectedReportIdx(i);
                     setDailyReport(r.content);
-                    setReportDate(d.toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" }));
+                    setReportDate(d.toLocaleDateString("ko-KR", { timeZone: "Asia/Seoul", year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" }));
                   }}
                   style={{
                     padding: "5px 12px", fontSize: 12, fontWeight: selectedReportIdx === i ? 700 : 500,

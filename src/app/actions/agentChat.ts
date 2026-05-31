@@ -3,6 +3,7 @@
 import { generateWithGemini } from "@/lib/agents/core";
 import { ArticleReviewAgent } from "@/lib/agents/ArticleReviewAgent";
 import { createClient } from "@supabase/supabase-js";
+import { kstTodayStart, kstDaysAgoStart, kstYesterdayStart, kstYesterdayEnd, formatKSTFullDate, formatKSTDate, formatKSTTime } from "@/utils/kst";
 
 function getAdminClient() {
   return createClient(
@@ -356,10 +357,8 @@ export async function reviewArticleByAI(params: {
  */
 export async function generateDailyReport() {
   const supabase = getAdminClient();
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const todayISO = today.toISOString();
-  const dateStr = today.toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" });
+  const todayISO = kstTodayStart();
+  const dateStr = formatKSTFullDate(new Date());
 
   // ── 오늘 회원 관련 데이터 수집 ──
   const [totalMembers, todayApproved, todayRejected, todayPending, todaySupplement, totalApproved, totalRejected] = await Promise.all([
@@ -618,26 +617,18 @@ export async function getOnbidCount() {
 export async function getOnbidHistoryStats() {
   const supabase = getAdminClient();
 
-  // KST(UTC+9) 기준으로 오늘/어제를 계산 (Vercel UTC 서버와 로컬 KST 서버 모두 동일 결과)
-  const nowUtc = Date.now();
-  const KST_OFFSET = 9 * 60 * 60 * 1000;
-
-  // KST 기준 오늘 00:00:00 → UTC timestamp
-  const kstNow = new Date(nowUtc + KST_OFFSET);
-  const kstTodayStr = `${kstNow.getUTCFullYear()}-${String(kstNow.getUTCMonth() + 1).padStart(2, '0')}-${String(kstNow.getUTCDate()).padStart(2, '0')}`;
-  const today = new Date(`${kstTodayStr}T00:00:00+09:00`);
-
-  const yesterdayStart = new Date(today.getTime() - 24 * 60 * 60 * 1000);
-  const yesterdayEnd = new Date(today.getTime() - 1);
-
-  // 1. 최근 7일 로그 가져오기
-  const sevenDaysAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+  // KST 중앙 유틸리티 사용 (Vercel UTC 서버와 로컬 KST 서버 모두 동일 결과)
+  const todayISO = kstTodayStart();
+  const today = new Date(todayISO);
+  const yesterdayStartISO = kstYesterdayStart();
+  const yesterdayEndISO = kstYesterdayEnd();
+  const sevenDaysAgoISO = kstDaysAgoStart(7);
 
   const { data: logs } = await supabase
     .from("agent_chats")
     .select("content, created_at")
     .eq("channel_id", "onbid_sync_log")
-    .gte("created_at", sevenDaysAgo.toISOString())
+    .gte("created_at", sevenDaysAgoISO)
     .order("created_at", { ascending: false });
 
   let todayRegistered = 0;
@@ -663,14 +654,14 @@ export async function getOnbidHistoryStats() {
           todayExpired += expired;
         } 
         // 어제 분산 집계
-        else if (logDate >= yesterdayStart && logDate <= yesterdayEnd) {
+        else if (logDate >= new Date(yesterdayStartISO) && logDate <= new Date(yesterdayEndISO)) {
           yesterdayRegistered += registered;
           yesterdayExpired += expired;
         }
 
         historyList.push({
-          date: logDate.toLocaleDateString("ko-KR", { month: "short", day: "numeric" }),
-          time: logDate.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }),
+          date: formatKSTDate(logDate),
+          time: formatKSTTime(logDate),
           target: parsed.target || "전국",
           registered,
           updated: parsed.updated || 0,

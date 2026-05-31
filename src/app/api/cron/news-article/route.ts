@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import Parser from 'rss-parser';
 import { NewsArticleAgent } from '@/lib/agents/NewsArticleAgent';
 import { createClient } from '@supabase/supabase-js';
+import { kstHour, kstTodayStart } from '@/utils/kst';
 
 export const maxDuration = 300; // Vercel 최대 실행 시간 5분 (7개 카테고리 × 8초 딜레이 대비)
 
@@ -59,8 +60,7 @@ export async function GET(req: Request) {
     }
     
     // 현재 한국 시간 기준 '시(Hour)' 구하기
-    const kstDate = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Seoul" }));
-    const currentHour = kstDate.getHours();
+    const currentHour = kstHour();
     
     // 설정된 시간에 포함되지 않으면 스킵
     if (!config.hours.includes(currentHour)) {
@@ -81,12 +81,11 @@ export async function GET(req: Request) {
   const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
   // ── 오늘 이미 작성된 기사 제목 목록 가져오기 (중복 방지) ──
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
+  const todayStartISO = kstTodayStart();
   const { data: todayArticles } = await supabase
     .from('articles')
     .select('title, content')
-    .gte('created_at', todayStart.toISOString())
+    .gte('created_at', todayStartISO)
     .order('created_at', { ascending: false });
   
   const todayTitles = (todayArticles || []).map(a => a.title).filter(Boolean);
