@@ -218,14 +218,35 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
               );
             })}
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, paddingRight: 8 }}>
-            <span style={{ fontSize: 12, fontWeight: 700, color: textSecondary }}>노출필터:</span>
-            <select value={exposureFilter} onChange={e => { setExposureFilter(e.target.value); setCurrentPage(1); }} style={{ height: 30, padding: "0 8px", border: `1px solid ${border}`, borderRadius: 4, fontSize: 12, color: textPrimary, background: darkMode ? "#1e293b" : "#fff", outline: "none", fontWeight: 600, cursor: "pointer" }}>
-              <option value="전체">전체보기</option>
-              <option value="일반">일반기사</option>
-              <option value="중요">⭐ 중요기사 [중]</option>
-              <option value="헤드라인">📌 헤드라인 [해]</option>
-            </select>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, paddingRight: 16 }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: textSecondary, marginRight: 2 }}>노출필터:</span>
+            <div style={{ display: "flex", background: darkMode ? "#1e293b" : "#f1f5f9", padding: "3px", borderRadius: "6px", gap: "2px" }}>
+              {[
+                { value: "전체", label: "전체보기" },
+                { value: "일반", label: "일반" },
+                { value: "헤드라인", label: "📌 헤드라인" },
+                { value: "중요", label: "⭐ 중요" },
+              ].map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => { setExposureFilter(opt.value); setCurrentPage(1); }}
+                  style={{
+                    border: "none",
+                    background: exposureFilter === opt.value ? (darkMode ? "#3b82f6" : "#fff") : "transparent",
+                    color: exposureFilter === opt.value ? (darkMode ? "#fff" : "#111") : (darkMode ? "#9ca3af" : "#64748b"),
+                    padding: "4px 10px",
+                    fontSize: 12,
+                    fontWeight: exposureFilter === opt.value ? 800 : 600,
+                    borderRadius: "4px",
+                    cursor: "pointer",
+                    boxShadow: exposureFilter === opt.value && !darkMode ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
+                    transition: "all 0.2s"
+                  }}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
