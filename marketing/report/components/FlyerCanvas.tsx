@@ -353,8 +353,56 @@ const GeditorWrapper = ({
 }) => {
   const Component = tag;
   return (
-    <Component className={className}>
+    <Component className={`relative group/geditor ${className}`}>
       {children}
+      
+      {/* Floating Canvas Controls on Hover */}
+      {(onMoveUp || onMoveDown || onDelete || onDuplicate) && (
+        <div className="absolute -left-8 top-1/2 transform -translate-y-1/2 bg-[#0d1424] text-white text-[10px] rounded-md shadow-md border border-gray-700 p-1 flex flex-col items-center gap-1 opacity-0 group-hover/geditor:opacity-100 transition-opacity duration-200 print:hidden z-30">
+          {onMoveUp && (
+            <button
+              type="button"
+              disabled={isFirst}
+              onClick={onMoveUp}
+              className="text-slate-300 hover:text-white disabled:opacity-30 cursor-pointer border-none bg-transparent font-bold p-0.5"
+              title="위로 이동"
+            >
+              ▲
+            </button>
+          )}
+          {onMoveDown && (
+            <button
+              type="button"
+              disabled={isLast}
+              onClick={onMoveDown}
+              className="text-slate-300 hover:text-white disabled:opacity-30 cursor-pointer border-none bg-transparent font-bold p-0.5"
+              title="아래로 이동"
+            >
+              ▼
+            </button>
+          )}
+          {onDuplicate && (
+            <button
+              type="button"
+              onClick={onDuplicate}
+              className="text-green-400 hover:text-green-300 cursor-pointer border-none bg-transparent font-bold p-0.5"
+              title="복제"
+            >
+              ＋
+            </button>
+          )}
+          {onDelete && (
+            <button
+              type="button"
+              onClick={onDelete}
+              className="text-red-400 hover:text-red-300 cursor-pointer border-none bg-transparent font-bold p-0.5"
+              title="삭제"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+      )}
     </Component>
   );
 };
