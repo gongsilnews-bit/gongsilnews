@@ -316,77 +316,8 @@ const GeditorWrapper = ({
 }) => {
   const Component = tag;
   return (
-    <Component className={`group relative hover:ring-2 hover:ring-blue-500/80 rounded-lg transition-all duration-150 ${className}`}>
+    <Component className={className}>
       {children}
-      
-      {/* Geditor Floating Toolbar (print:hidden) */}
-      <div className="absolute -right-20 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 scale-95 group-hover:scale-100 transition-all duration-200 flex flex-col items-center bg-[#1e293b] text-white rounded-xl shadow-xl border border-gray-700 p-1.5 z-[100] print:hidden gap-1 hover:scale-105 cursor-default">
-        {/* Blue Edit Status Indicator */}
-        <div className="w-6 h-6 bg-blue-600 rounded-lg flex items-center justify-center text-[10px] font-bold cursor-default" title="편집 가능 상태">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
-            <path d="M5.433 13.917l1.262-3.155A4 4 0 017.58 9.42l6.92-6.918a2.121 2.121 0 013 3l-6.92 6.918c-.313.313-.689.544-1.107.676l-3.158 1.263a.75.75 0 01-.947-.947z" />
-            <path d="M16.5 16.25a.75.75 0 01.75-.75h1.5a.75.75 0 010 1.5h-1.5a.75.75 0 01-.75-.75zM12 16.25a.75.75 0 01.75-.75h1.5a.75.75 0 010 1.5h-1.5a.75.75 0 01-.75-.75zM8.25 15.5a.75.75 0 000 1.5h1.5a.75.75 0 000-1.5h-1.5zM3 16.25a.75.75 0 01.75-.75H5a.75.75 0 010 1.5H3.75a.75.75 0 01-.75-.75z" />
-          </svg>
-        </div>
-        
-        {/* Add/Duplicate Button */}
-        {onDuplicate && (
-          <button 
-            type="button"
-            onClick={(e) => { e.stopPropagation(); onDuplicate(); }}
-            className="w-6 h-6 hover:bg-slate-700 text-gray-300 hover:text-white rounded-lg flex items-center justify-center transition-colors"
-            title="항목 복제/추가"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-            </svg>
-          </button>
-        )}
-        
-        {/* Move Up */}
-        {onMoveUp && (
-          <button 
-            type="button"
-            onClick={(e) => { e.stopPropagation(); onMoveUp(); }}
-            disabled={isFirst}
-            className="w-6 h-6 hover:bg-slate-700 text-gray-300 hover:text-white disabled:opacity-20 disabled:hover:bg-transparent rounded-lg flex items-center justify-center transition-colors"
-            title="위로 이동"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5" />
-            </svg>
-          </button>
-        )}
-        
-        {/* Move Down */}
-        {onMoveDown && (
-          <button 
-            type="button"
-            onClick={(e) => { e.stopPropagation(); onMoveDown(); }}
-            disabled={isLast}
-            className="w-6 h-6 hover:bg-slate-700 text-gray-300 hover:text-white disabled:opacity-20 disabled:hover:bg-transparent rounded-lg flex items-center justify-center transition-colors"
-            title="아래로 이동"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-            </svg>
-          </button>
-        )}
-        
-        {/* Delete */}
-        {onDelete && (
-          <button 
-            type="button"
-            onClick={(e) => { e.stopPropagation(); onDelete(); }}
-            className="w-6 h-6 hover:bg-rose-600/90 text-rose-400 hover:text-white rounded-lg flex items-center justify-center transition-colors border-t border-slate-700 pt-1"
-            title="삭제"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-            </svg>
-          </button>
-        )}
-      </div>
     </Component>
   );
 };
