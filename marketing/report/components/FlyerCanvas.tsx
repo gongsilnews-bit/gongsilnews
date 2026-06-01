@@ -186,7 +186,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
             pageNumber={2} 
             title="현황 및 가치" 
             subtitle="Status & Valuation" 
-            targetName={targetSub}
+            propertyNumber={info.propertyNumber}
             badgeText="EVIDENCE & DATA"
             exportId="page-2"
         >
@@ -283,7 +283,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
             pageNumber={3} 
             title="현장 사진" 
             subtitle="Actual Field Photos" 
-            targetName={targetSub}
+            propertyNumber={info.propertyNumber}
             badgeText="PROPERTY VISUALS"
             exportId="page-3"
         >
@@ -321,7 +321,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
             pageNumber={4} 
             title="입지 및 위치도" 
             subtitle="Strategic Connectivity" 
-            targetName={targetSub}
+            propertyNumber={info.propertyNumber}
             badgeText="AREA ANALYSIS"
             exportId="page-4"
         >
@@ -369,7 +369,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
             pageNumber={5} 
             title="가치 및 로드맵" 
             subtitle="Value & Roadmap" 
-            targetName={targetSub}
+            propertyNumber={info.propertyNumber}
             badgeText="INVESTMENT ROADMAP"
             exportId="page-5"
         >

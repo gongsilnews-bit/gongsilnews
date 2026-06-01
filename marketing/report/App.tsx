@@ -1,5 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
+import { jsPDF } from 'jspdf';
 import FlyerForm from './components/FlyerForm';
 import FlyerCanvas from './components/FlyerCanvas';
 import { generateFlyerCopy, fileToGenerativePart, extractPropertyInfoFromImages, extractAgentInfoFromImage, extractComplexInfoFromImage } from './services/geminiService';
@@ -479,6 +480,7 @@ function App() {
         const mappedInfo: PropertyInfo = {
           ...INITIAL_INFO,
           promotionText: priceText,
+          propertyNumber: `No. ${v.property_no || v.id || v.vacancy_id || "0000"}`,
           address: v.building_name || [v.sido, v.sigungu, v.dong].filter(Boolean).join(" ") || "공실 매물 정보",
           subTitle: `${v.property_type || "프리미엄"} | ${v.direction || "방향 없음"} | ${areaDisplay}`,
           transactionType: v.trade_type || "월세",
@@ -1206,6 +1208,61 @@ ${clone.outerHTML}
     }
   };
 
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+
+  const downloadPdf = async () => {
+    if (!flyerRef.current) return;
+    try {
+      setIsGeneratingPdf(true);
+      const element = flyerRef.current;
+      
+      const clone = element.cloneNode(true) as HTMLElement;
+      clone.style.position = 'absolute';
+      clone.style.left = '0px';
+      clone.style.top = '-99999px';
+      clone.style.minHeight = '0px'; 
+      clone.style.height = 'auto';
+
+      document.body.appendChild(clone);
+
+      const sections = Array.from(clone.querySelectorAll('[data-export-id]')) as HTMLElement[];
+      sections.forEach(p => { p.style.display = 'flex'; });
+
+      const pdf = new jsPDF('l', 'px', [1122, 794]);
+
+      for (let i = 0; i < sections.length; i++) {
+        const sec = sections[i];
+        
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const canvas = await (window as any).html2canvas(sec, {
+          scale: 2, 
+          useCORS: true,
+          backgroundColor: '#ffffff',
+          width: 1122,
+          height: 794,
+          windowWidth: 1400,
+          scrollX: 0,
+          scrollY: 0
+        });
+
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+        if (i > 0) pdf.addPage([1122, 794], 'l');
+        pdf.addImage(imgData, 'JPEG', 0, 0, 1122, 794);
+      }
+
+      document.body.removeChild(clone);
+      
+      // Save PDF
+      pdf.save(`${state.info.address || '보고서'}.pdf`);
+      
+    } catch (err) {
+      console.error(err);
+      alert("PDF 생성 중 오류가 발생했습니다.");
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  };
+
   // Generate selectable sections list
   const getExportableSections = () => {
       return [
@@ -1364,18 +1421,23 @@ ${clone.outerHTML}
           <span>이미지 내보내기</span>
         </button>
 
-        {/* Print Button */}
+        {/* Print (PDF) Button */}
         <button 
-          onClick={() => {
-              setActiveTab('all');
-              setTimeout(() => { window.print(); }, 100);
-          }}
-          className="py-3 px-5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 active:scale-95 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all duration-150 shadow-sm"
+          onClick={downloadPdf}
+          disabled={isGeneratingPdf}
+          className="py-3 px-5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 active:scale-95 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all duration-150 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4 text-gray-500">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0l.229 2.523a1.125 1.125 0 01-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0021 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 00-1.913-.247M6.34 18H5.25A2.25 2.25 0 013 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 011.913-.247m10.5 0a48.536 48.536 0 00-10.5 0v2.796c0 1.161.94 2.1 2.1 2.1h6.3c1.16 0 2.1-.939 2.1-2.1V7.03z" />
-          </svg>
-          <span>인쇄하기</span>
+          {isGeneratingPdf ? (
+            <svg className="animate-spin h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            </svg>
+          ) : (
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4 text-gray-500">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0l.229 2.523a1.125 1.125 0 01-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0021 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 00-1.913-.247M6.34 18H5.25A2.25 2.25 0 013 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 011.913-.247m10.5 0a48.536 48.536 0 00-10.5 0v2.796c0 1.161.94 2.1 2.1 2.1h6.3c1.16 0 2.1-.939 2.1-2.1V7.03z" />
+            </svg>
+          )}
+          <span>{isGeneratingPdf ? "생성 중..." : "PDF 인쇄(다운로드)"}</span>
         </button>
 
 

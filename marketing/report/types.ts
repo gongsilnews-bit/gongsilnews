@@ -23,6 +23,7 @@ export interface PropertyInfo {
   // Page 1: Overview
   address: string;
   subTitle: string;
+  propertyNumber?: string;
   priceMain: string;
   overviewTable: {
     location?: string;
