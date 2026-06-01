@@ -16,13 +16,15 @@ interface FlyerFormProps {
   isUploadingImage?: Record<string, boolean>;
   activeTab: number | 'all';
   setActiveTab: (tab: number | 'all') => void;
+  onOpenTableEditor: () => void;
 }
 
 const FlyerForm: React.FC<FlyerFormProps> = ({ 
     info, setInfo, onImageUpload,
     colors, layouts, currentColor, currentLayout, onColorSelect, onLayoutSelect,
     uploadedImages, isUploadingImage,
-    activeTab, setActiveTab
+    activeTab, setActiveTab,
+    onOpenTableEditor
 }) => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -303,63 +305,34 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
               <div className="space-y-6 animate-fadeIn">
                   <div>
                       <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">층별 점유 및 임대 현황</h4>
-                      <div className="space-y-3">
-                          {info.floorStatus.map((row, i) => (
-                              <div key={i} className="flex gap-1.5 items-center bg-gray-50 p-2 rounded relative group border border-transparent hover:border-gray-200 transition-colors">
-                                  <div className="flex flex-col gap-0.5 shrink-0">
-                                      <button
-                                          type="button"
-                                          disabled={i === 0}
-                                          onClick={() => {
-                                              const newList = [...info.floorStatus];
-                                              const temp = newList[i];
-                                              newList[i] = newList[i - 1];
-                                              newList[i - 1] = temp;
-                                              setInfo({ ...info, floorStatus: newList });
-                                          }}
-                                          className="text-gray-400 hover:text-gray-700 disabled:opacity-30 hover:bg-gray-200 rounded p-0.5 transition-colors"
-                                      >
-                                          <ArrowUpIcon className="w-3.5 h-3.5" />
-                                      </button>
-                                      <button
-                                          type="button"
-                                          disabled={i === info.floorStatus.length - 1}
-                                          onClick={() => {
-                                              const newList = [...info.floorStatus];
-                                              const temp = newList[i];
-                                              newList[i] = newList[i + 1];
-                                              newList[i + 1] = temp;
-                                              setInfo({ ...info, floorStatus: newList });
-                                          }}
-                                          className="text-gray-400 hover:text-gray-700 disabled:opacity-30 hover:bg-gray-200 rounded p-0.5 transition-colors"
-                                      >
-                                          <ArrowDownIcon className="w-3.5 h-3.5" />
-                                      </button>
-                                  </div>
-                                  <input value={row.floor} onChange={(e)=>handleFloorStatusChange(i, 'floor', e.target.value)} placeholder="층" className="w-12 border rounded p-1.5 text-xs text-center" />
-                                  <input value={row.purpose} onChange={(e)=>handleFloorStatusChange(i, 'purpose', e.target.value)} placeholder="용도" className="w-16 border rounded p-1.5 text-xs text-center" />
-                                  <input value={row.lease} onChange={(e)=>handleFloorStatusChange(i, 'lease', e.target.value)} placeholder="임대차" className="flex-1 border rounded p-1.5 text-xs text-center min-w-0" />
-                                  <input value={row.status} onChange={(e)=>handleFloorStatusChange(i, 'status', e.target.value)} placeholder="점유상태" className="w-20 border rounded p-1.5 text-xs text-center" />
-                                  <input value={row.note} onChange={(e)=>handleFloorStatusChange(i, 'note', e.target.value)} placeholder="비고" className="w-20 border rounded p-1.5 text-xs text-center" />
-                                  <button 
-                                      type="button" 
-                                      onClick={() => removeFloorStatus(i)}
-                                      className="text-red-400 hover:text-red-600 hover:bg-red-50 p-1.5 rounded transition-colors shrink-0"
-                                      title="삭제"
-                                  >
-                                      <TrashIcon className="w-4 h-4" />
-                                  </button>
-                              </div>
-                          ))}
+                      <div className="space-y-4">
                           <button
                               type="button"
-                              onClick={addFloorStatus}
-                              className="w-full mt-2 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-1 border border-dashed border-blue-200"
+                              onClick={onOpenTableEditor}
+                              className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.99] hover:shadow-lg active:shadow-sm"
                           >
-                              + 층 임대현황 행 추가
+                              🖥️ 층별현황 표 넓게 편집하기 (스마트 빌더)
                           </button>
+                          
+                          {/* 현재 입력된 요약 요소를 예쁘게 보여줌 */}
+                          <div className="border border-slate-100 bg-slate-50/50 rounded-xl p-4 text-xs space-y-2">
+                              <div className="flex justify-between font-semibold text-slate-500 pb-1.5 border-b border-dashed border-slate-200">
+                                  <span>현재 등록된 층</span>
+                                  <span>{info.floorStatus?.length || 0}개 층</span>
+                              </div>
+                              <div className="max-h-36 overflow-y-auto space-y-1.5 custom-scrollbar pr-1">
+                                  {info.floorStatus?.map((row, idx) => (
+                                      <div key={idx} className="flex justify-between items-center text-slate-700 bg-white border border-slate-100 rounded px-2.5 py-1">
+                                          <span className="font-bold text-slate-800">{row.floor || '-'}</span>
+                                          <span className="text-slate-500 truncate max-w-[80px]">{row.purpose || '-'}</span>
+                                          <span className="font-semibold text-orange-600 truncate max-w-[100px]">{row.lease === '보증금 / 차임 내역 별도문의' ? '세로병합' : row.lease || '-'}</span>
+                                      </div>
+                                  ))}
+                              </div>
+                          </div>
+
                           <div className="mt-4">
-                              <label className="text-xs text-gray-500">현황 하단 안내문</label>
+                              <label className="text-xs text-gray-500 font-semibold">현황 하단 안내문</label>
                               <input name="floorStatusNotice" value={info.floorStatusNotice} onChange={handleChange} className="w-full border rounded p-2 text-xs mt-1" />
                           </div>
                       </div>
@@ -418,6 +391,124 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                           >
                               + 하이라이트 행 추가
                           </button>
+                      </div>
+                  </div>
+
+                  {/* 시세 분석 그래프 설정 */}
+                  <div>
+                      <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">시세 분석 그래프 설정</h4>
+                      <div className="space-y-4 bg-slate-50 p-4 rounded-xl border border-slate-200/60 text-xs mb-4">
+                          <div className="flex items-center justify-between">
+                              <span className="font-bold text-slate-700">📈 그래프 화면 표시</span>
+                              <label className="relative inline-flex items-center cursor-pointer">
+                                  <input 
+                                      type="checkbox" 
+                                      checked={info.showChart !== false} 
+                                      onChange={(e) => setInfo({ ...info, showChart: e.target.checked })}
+                                      className="sr-only peer"
+                                  />
+                                  <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-orange-500"></div>
+                              </label>
+                          </div>
+
+                          {info.showChart !== false && (
+                              <div className="space-y-2.5 pt-2.5 border-t border-slate-200 animate-fadeIn">
+                                  <div className="flex justify-between items-center mb-1 font-semibold text-slate-500">
+                                      <span>막대 데이터 직접 입력</span>
+                                      <span>(최대 6개)</span>
+                                  </div>
+                                  {(info.chartBars || [
+                                      { label: "탁상감정가", value: "80", isHighlight: false },
+                                      { label: "기존 희망가", value: "75", isHighlight: false },
+                                      { label: "인근 시세", value: "85", isHighlight: false },
+                                      { label: "현재 급매가", value: "65", isHighlight: true }
+                                  ]).map((bar: any, idx: number) => {
+                                      const chartBars = info.chartBars || [
+                                          { label: "탁상감정가", value: "80", isHighlight: false },
+                                          { label: "기존 희망가", value: "75", isHighlight: false },
+                                          { label: "인근 시세", value: "85", isHighlight: false },
+                                          { label: "현재 급매가", value: "65", isHighlight: true }
+                                      ];
+                                      return (
+                                          <div key={idx} className="flex gap-1.5 items-center">
+                                              <input 
+                                                  value={bar.label} 
+                                                  onChange={(e) => {
+                                                      const newBars = [...chartBars];
+                                                      newBars[idx] = { ...newBars[idx], label: e.target.value };
+                                                      setInfo({ ...info, chartBars: newBars });
+                                                  }} 
+                                                  placeholder="항목명" 
+                                                  className="w-20 border rounded p-1 text-[11px] font-bold text-center text-slate-700 bg-white" 
+                                              />
+                                              <input 
+                                                  value={bar.value} 
+                                                  onChange={(e) => {
+                                                      const newBars = [...chartBars];
+                                                      newBars[idx] = { ...newBars[idx], value: e.target.value };
+                                                      setInfo({ ...info, chartBars: newBars });
+                                                  }} 
+                                                  placeholder="수치(억)" 
+                                                  className="flex-1 border rounded p-1 text-[11px] text-center text-slate-800 bg-white" 
+                                              />
+                                              {/* Highlight Toggle */}
+                                              <button
+                                                  type="button"
+                                                  onClick={() => {
+                                                      const newBars = [...chartBars];
+                                                      newBars[idx] = { ...newBars[idx], isHighlight: !newBars[idx].isHighlight };
+                                                      setInfo({ ...info, chartBars: newBars });
+                                                  }}
+                                                  className={`px-1.5 py-1 rounded text-[9px] font-bold transition-all ${
+                                                      bar.isHighlight ? 'bg-orange-100 text-[#cc5a27] border border-orange-200' : 'bg-slate-100 text-slate-500 border border-slate-200'
+                                                  }`}
+                                                  title="막대 색상 강조"
+                                              >
+                                                  강조
+                                              </button>
+                                              {chartBars.length > 2 && (
+                                                  <button
+                                                      type="button"
+                                                      onClick={() => {
+                                                          const newBars = chartBars.filter((_, i) => i !== idx);
+                                                          setInfo({ ...info, chartBars: newBars });
+                                                      }}
+                                                      className="text-red-400 hover:text-red-600 p-1 text-sm leading-none shrink-0"
+                                                      title="삭제"
+                                                  >
+                                                      ✕
+                                                  </button>
+                                              )}
+                                          </div>
+                                      );
+                                  })}
+                                  
+                                  {/* Add chart bar button */}
+                                  {(info.chartBars || [
+                                      { label: "탁상감정가", value: "80", isHighlight: false },
+                                      { label: "기존 희망가", value: "75", isHighlight: false },
+                                      { label: "인근 시세", value: "85", isHighlight: false },
+                                      { label: "현재 급매가", value: "65", isHighlight: true }
+                                  ]).length < 6 && (
+                                      <button
+                                          type="button"
+                                          onClick={() => {
+                                              const chartBars = info.chartBars || [
+                                                  { label: "탁상감정가", value: "80", isHighlight: false },
+                                                  { label: "기존 희망가", value: "75", isHighlight: false },
+                                                  { label: "인근 시세", value: "85", isHighlight: false },
+                                                  { label: "현재 급매가", value: "65", isHighlight: true }
+                                              ];
+                                              const newBars = [...chartBars, { label: "새 항목", value: "70", isHighlight: false }];
+                                              setInfo({ ...info, chartBars: newBars });
+                                          }}
+                                          className="w-full mt-2 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded text-[11px] font-bold transition-colors flex items-center justify-center gap-1 border border-dashed border-blue-200"
+                                      >
+                                          + 막대 추가
+                                      </button>
+                                  )}
+                              </div>
+                          )}
                       </div>
                   </div>
 

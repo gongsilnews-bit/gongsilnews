@@ -3,6 +3,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { jsPDF } from 'jspdf';
 import FlyerForm from './components/FlyerForm';
 import FlyerCanvas from './components/FlyerCanvas';
+import TableEditorModal from './components/TableEditorModal';
 import { generateFlyerCopy, fileToGenerativePart, extractPropertyInfoFromImages, extractAgentInfoFromImage, extractComplexInfoFromImage } from './services/geminiService';
 import { FlyerState, PropertyInfo, GeneratedContent, FlyerColor, FlyerLayout } from './types';
 import { ArrowDownTrayIcon, CodeBracketIcon, XMarkIcon, CheckIcon } from '@heroicons/react/24/solid';
@@ -66,6 +67,13 @@ const INITIAL_INFO: PropertyInfo = {
     "행정 지원: 책임명도 및 근생 용도변경 등 전폭적 지원"
   ],
   valuationText: "본 자산은 역세권 500억 희소 급매물로, 매입 즉시 감정가 대비 강력한 시세 차익 확보가 가능하며 사업 가치 증대에 최적화된 조건입니다.",
+  showChart: true,
+  chartBars: [
+    { label: "탁상감정가", value: "80", isHighlight: false },
+    { label: "기존 희망가", value: "75", isHighlight: false },
+    { label: "인근 시세", value: "85", isHighlight: false },
+    { label: "현재 급매가", value: "65", isHighlight: true }
+  ],
 
   // Page 3: Photos Captions
   photoCaptions: {
@@ -332,6 +340,7 @@ function App() {
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [isTableEditorOpen, setIsTableEditorOpen] = useState(false);
   const flyerRef = useRef<HTMLDivElement>(null);
   const [showSharePopover, setShowSharePopover] = useState(false);
   const sharePopoverRef = useRef<HTMLDivElement>(null);
@@ -1613,6 +1622,7 @@ ${clone.outerHTML}
               isUploadingImage={isUploadingImage}
               activeTab={activeTab}
               setActiveTab={setActiveTab}
+              onOpenTableEditor={() => setIsTableEditorOpen(true)}
             />
           </div>
         )}
@@ -1639,6 +1649,7 @@ ${clone.outerHTML}
                       onUpdateInfo={handleInfoChange}
                       onImageUpload={handleImageUpload}
                       isUploadingImage={isUploadingImage}
+                      onOpenTableEditor={() => setIsTableEditorOpen(true)}
                     />
                 </div>
             </div>
@@ -1849,6 +1860,19 @@ ${clone.outerHTML}
             }
         }
       `}</style>
+
+      {/* Smart Table Grid Editor Modal */}
+      <TableEditorModal
+        isOpen={isTableEditorOpen}
+        onClose={() => setIsTableEditorOpen(false)}
+        floorStatus={state.info.floorStatus || []}
+        onChange={(newStatus) => {
+          handleInfoChange({
+            ...state.info,
+            floorStatus: newStatus
+          });
+        }}
+      />
     </div>
   );
 }
