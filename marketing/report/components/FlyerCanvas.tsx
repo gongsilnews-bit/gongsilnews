@@ -569,16 +569,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                                 </GeditorWrapper>
                                             ))}
                                             
-                                            {/* Add Row Button on Canvas (print:hidden) */}
-                                            <button 
-                                                onClick={addOverviewTableRow}
-                                                className="print:hidden w-full py-2 bg-slate-50 hover:bg-slate-100 border-b border-dashed border-gray-200 text-gray-500 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
-                                            >
-                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                                                </svg>
-                                                <span>개요 항목(행) 추가</span>
-                                            </button>
+
                                         </>
                                     );
                                 }
@@ -830,16 +821,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                             </table>
                         </div>
                         
-                        {/* Add Floor Row Button on Canvas (print:hidden) */}
-                        <button 
-                            onClick={addFloorStatusRow}
-                            className="print:hidden w-full py-2.5 bg-slate-50 hover:bg-slate-100 border-t border-dashed border-gray-200 text-gray-500 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shrink-0"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                            </svg>
-                            <span>임대현황 행 추가</span>
-                        </button>
+
                         
                         <div className="p-4 mt-auto border-t border-gray-100 text-xs text-gray-500 leading-relaxed bg-[#f8fafc] shrink-0">
                             <EditableBlock value={info.floorStatusNotice || ""} onChange={(val) => handleTextChange('floorStatusNotice', val)} />
@@ -879,16 +861,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                 </GeditorWrapper>
                             ))}
                             
-                            {/* Add Highlight Button on Canvas (print:hidden) */}
-                            <button 
-                                onClick={addHighlightRow}
-                                className="print:hidden w-full py-2 bg-slate-50 hover:bg-slate-100 border border-dashed border-gray-200 text-gray-500 text-xs font-semibold flex items-center justify-center gap-1.5 rounded-lg transition-colors"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                                </svg>
-                                <span>하이라이트 항목 추가</span>
-                            </button>
+
                         </ul>
                         
                         {/* Fake Chart */}
