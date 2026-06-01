@@ -487,14 +487,12 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
             
             if (d.published_at) {
               const dt = new Date(d.published_at);
-              const yy = dt.getFullYear();
-              const mm = String(dt.getMonth()+1).padStart(2,'0');
-              const dd = String(dt.getDate()).padStart(2,'0');
-              setPublishDate(`${yy}-${mm}-${dd}`);
-              
-              const hh = String(dt.getHours()).padStart(2,'0');
-              const _min = String(dt.getMinutes()).padStart(2,'0');
-              setPublishTime(`${hh}:${_min}`);
+              // KST 기준으로 날짜/시간 파싱 (Vercel UTC 서버에서도 정확하게)
+              const kstParts = dt.toLocaleString('sv-SE', { timeZone: 'Asia/Seoul' }).split(' ');
+              // sv-SE locale: "2026-06-01 09:20:00" 형식
+              setPublishDate(kstParts[0]); // "2026-06-01"
+              const timeParts = kstParts[1]?.split(':') || ['00','00'];
+              setPublishTime(`${timeParts[0]}:${timeParts[1]}`); // "09:20"
               // 미래 시간이면 예약 체크박스 자동 설정
               if (dt.getTime() > Date.now()) {
                 setIsReserved(true);
@@ -1455,15 +1453,20 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
 
     setSaving(true);
     try {
-      // 노출시간 조합
+      // 노출시간 조합 (폼의 날짜/시간은 KST 기준이므로 +09:00 오프셋 명시)
       let publishedAt: string | null = null;
       if (isReserved && publishDate) {
-        publishedAt = `${publishDate}T${publishTime || "00:00"}:00`;
+        // 예약: KST 기준 날짜+시간을 ISO로 변환
+        const kstDateStr = `${publishDate}T${publishTime || "00:00"}:00+09:00`;
+        publishedAt = new Date(kstDateStr).toISOString();
       } else {
-        // 예약이 아닌 경우, 신규 작성이면 현재 시간 부여, 수정이면 기존 입력값 유지
+        // 예약이 아닌 경우
         if (loadArticleId) {
-          publishedAt = `${publishDate}T${publishTime || "00:00"}:00`;
+          // 수정: 기존 입력값 유지 (KST 기준)
+          const kstDateStr = `${publishDate}T${publishTime || "00:00"}:00+09:00`;
+          publishedAt = new Date(kstDateStr).toISOString();
         } else {
+          // 신규: 현재 시간
           publishedAt = new Date().toISOString();
         }
       }
