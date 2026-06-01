@@ -98,18 +98,20 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
 
   // Load Kakao Map
   const loadKakaoMap = useCallback((p: any) => {
-    const searchAddr = [p.sido, p.sigungu, p.dong, p.detail_address].filter(Boolean).join(' ');
-    if (!searchAddr) {
+    const detailAddress = p.detail_addr || p.detail_address || "";
+    const searchAddr = [p.sido, p.sigungu, p.dong, detailAddress].filter(Boolean).join(' ');
+    
+    if (!searchAddr.trim()) {
       if (mapRef.current) mapRef.current.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#999;font-size:13px;">주소 정보가 없습니다.</div>';
       if (roadviewRef.current) roadviewRef.current.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#999;font-size:13px;">주소 정보가 없습니다.</div>';
       return;
     }
     const kakaoApiKey = process.env.NEXT_PUBLIC_KAKAO_APP_KEY || "435d3602201a49ea712e5f5a36fe6efc";
-    const doInit = () => {
-      if (!window.kakao?.maps) return;
-      window.kakao.maps.load(() => {
+    
+    const renderMapAndRoadview = (addr: string) => {
+      try {
         const geocoder = new window.kakao.maps.services.Geocoder();
-        geocoder.addressSearch(searchAddr, (result: any, status: any) => {
+        geocoder.addressSearch(addr, (result: any, status: any) => {
           if (status === window.kakao.maps.services.Status.OK) {
             const pos = new window.kakao.maps.LatLng(result[0].y, result[0].x);
             // Map
@@ -124,20 +126,56 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
               const rv = new window.kakao.maps.Roadview(roadviewRef.current);
               const client = new window.kakao.maps.RoadviewClient();
               client.getNearestPanoId(pos, 50, (panoId: any) => {
-                if (panoId) rv.setPanoId(panoId, pos);
-                else if (roadviewRef.current) roadviewRef.current.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#999;font-size:13px;">해당 위치의 로드뷰 정보가 없습니다.</div>';
+                if (panoId) {
+                  rv.setPanoId(panoId, pos);
+                } else if (roadviewRef.current) {
+                  roadviewRef.current.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#999;font-size:13px;">해당 위치의 로드뷰 정보가 없습니다.</div>';
+                }
               });
             }
           } else {
-            if (mapRef.current) mapRef.current.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#999;font-size:13px;">지도 검색 실패</div>';
-            if (roadviewRef.current) roadviewRef.current.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#999;font-size:13px;">로드뷰 검색 실패</div>';
+            console.log("Address search failed for exact address. Trying dong search...");
+            const fallbackAddr = [p.sido, p.sigungu, p.dong].filter(Boolean).join(' ');
+            if (fallbackAddr !== addr) {
+              renderMapAndRoadview(fallbackAddr);
+            } else {
+              if (mapRef.current) mapRef.current.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#999;font-size:13px;">지도 검색 실패</div>';
+              if (roadviewRef.current) roadviewRef.current.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#999;font-size:13px;">로드뷰 검색 실패</div>';
+            }
           }
         });
+      } catch (err) {
+        console.error("Error rendering map and roadview:", err);
+      }
+    };
+
+    const doInit = () => {
+      if (!window.kakao?.maps) return;
+      window.kakao.maps.load(() => {
+        if (!window.kakao.maps.services || !window.kakao.maps.services.Geocoder) {
+          console.warn("Kakao maps services library is not loaded. Reloading Kakao SDK.");
+          const script = document.createElement('script');
+          script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoApiKey}&libraries=services,clusterer&autoload=false`;
+          script.onload = () => {
+            window.kakao.maps.load(() => {
+              if (window.kakao.maps.services?.Geocoder) {
+                renderMapAndRoadview(searchAddr);
+              }
+            });
+          };
+          document.head.appendChild(script);
+          return;
+        }
+        renderMapAndRoadview(searchAddr);
       });
     };
-    if (window.kakao?.maps) { doInit(); return; }
+
+    if (window.kakao?.maps && window.kakao.maps.services?.Geocoder) {
+      doInit();
+      return;
+    }
     const script = document.createElement('script');
-    script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoApiKey}&libraries=services&autoload=false`;
+    script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoApiKey}&libraries=services,clusterer&autoload=false`;
     script.onload = doInit;
     document.head.appendChild(script);
   }, []);
@@ -337,7 +375,7 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
                 {/* Info Grid */}
                 <div className="gdv-info-grid">
                   <div className="gdv-info-label">공실광고번호</div><div className="gdv-info-value">{vacancy.vacancy_no || '-'}</div>
-                  <div className="gdv-info-label">소재지</div><div className="gdv-info-value">{[vacancy.sido, vacancy.sigungu, vacancy.dong, vacancy.detail_address].filter(Boolean).join(' ')}</div>
+                  <div className="gdv-info-label">소재지</div><div className="gdv-info-value">{[vacancy.sido, vacancy.sigungu, vacancy.dong, vacancy.detail_addr || vacancy.detail_address].filter(Boolean).join(' ')}</div>
                   <div className="gdv-info-label">공실광고특징</div><div className="gdv-info-value">{propName}</div>
                   <div className="gdv-info-label">공급/전용면적</div><div className="gdv-info-value">{areaDisplay}</div>
                   <div className="gdv-info-label">해당층/총층</div><div className="gdv-info-value">{vacancy.current_floor||'-'}층 / {vacancy.total_floor||'-'}층</div>
