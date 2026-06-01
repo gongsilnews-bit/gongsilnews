@@ -22,6 +22,7 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<{ text: string; type: "success" | "error" | "info" } | null>(null);
   const [articleFilter, setArticleFilter] = useState("전체");
+  const [exposureFilter, setExposureFilter] = useState("전체");
   const [checkedArticleIds, setCheckedArticleIds] = useState<string[]>([]);
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
