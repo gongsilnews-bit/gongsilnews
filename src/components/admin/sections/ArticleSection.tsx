@@ -42,7 +42,7 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
   const [pageSize, setPageSize] = useState(30);
   const [sortBy, setSortBy] = useState("published_at");
   const [totalCount, setTotalCount] = useState(0);
-  const [counts, setCounts] = useState({ 전체: 0, 승인대기: 0, 발행됨: 0, 예약됨: 0, 작성중: 0, 반려: 0 });
+  const [counts, setCounts] = useState({ 전체: 0, 승인대기: 0, 발행됨: 0, 예약됨: 0, 작성중: 0, 반려: 0, 헤드라인: 0, 중요: 0 });
 
   const loadData = async () => {
     const params: any = {
@@ -62,6 +62,15 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
     if (activeFilters.section2 !== "전체") params.section2 = activeFilters.section2;
     if (activeFilters.keyword) params.searchKeyword = activeFilters.keyword;
 
+    if (exposureFilter === "일반") {
+      params.is_important = false;
+      params.is_headline = false;
+    } else if (exposureFilter === "중요") {
+      params.is_important = true;
+    } else if (exposureFilter === "헤드라인") {
+      params.is_headline = true;
+    }
+
     const res = await getArticles(params);
     if (res.success) {
       setDbArticles(res.data || []);
@@ -69,13 +78,15 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
     }
 
     // Fetch tab counts via server action (admin client, bypasses RLS)
-    const [allRes, pendingRes, approvedRes, scheduledRes, draftRes, rejectedRes] = await Promise.all([
+    const [allRes, pendingRes, approvedRes, scheduledRes, draftRes, rejectedRes, headlineRes, importantRes] = await Promise.all([
       getArticles({ limit: 1 }),
       getArticles({ status: "PENDING", limit: 1 }),
       getArticles({ status: "APPROVED", limit: 1 }),
       getArticles({ status: "SCHEDULED", limit: 1 }),
       getArticles({ status: "DRAFT", limit: 1 }),
       getArticles({ status: "REJECTED", limit: 1 }),
+      getArticles({ is_headline: true, limit: 1 }),
+      getArticles({ is_important: true, limit: 1 }),
     ]);
     setCounts({
       전체: allRes.count || 0,
@@ -84,6 +95,8 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
       예약됨: scheduledRes.count || 0,
       작성중: draftRes.count || 0,
       반려: rejectedRes.count || 0,
+      헤드라인: headlineRes.count || 0,
+      중요: importantRes.count || 0,
     });
   };
 
@@ -96,7 +109,7 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
 
   useEffect(() => {
     loadData();
-  }, [currentPage, articleFilter, activeFilters, pageSize, sortBy]);
+  }, [currentPage, articleFilter, exposureFilter, activeFilters, pageSize, sortBy]);
 
   // 최고관리자 기사관리: AI 에이전트 초안 포함 모든 기사 표시
   const baseArticles = dbArticles;
@@ -117,6 +130,15 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
         <span style={{ fontSize: 13, fontWeight: 600, color: textSecondary }}>
           ( 승인대기 {counts.승인대기}건 / 전체 {counts.전체}건 )
         </span>
+        <div style={{ flex: 1 }}></div>
+        <div style={{ display: "flex", gap: 12 }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: "#ef4444", background: "#fef2f2", padding: "4px 10px", borderRadius: 6, border: "1px solid #fecaca" }}>
+            📌 헤드라인: {counts.헤드라인}건
+          </span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: "#f59e0b", background: "#fffbeb", padding: "4px 10px", borderRadius: 6, border: "1px solid #fde68a" }}>
+            ⭐ 중요기사: {counts.중요}건
+          </span>
+        </div>
       </div>
 
       {/* 필터 검색 바 (상단으로 분리) */}
@@ -172,27 +194,38 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
 
       <div style={{ background: cardBg, borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", overflow: "hidden" }}>
         {/* 필터 탭 */}
-        <div style={{ display: "flex", borderBottom: `1px solid ${border}`, background: darkMode ? "#2c2d31" : "#fafafa", padding: "0 16px" }}>
-          {["전체", "승인대기", "발행됨", "예약됨", "작성중", "반려"].map(tab => {
-            let count = counts[tab as keyof typeof counts] || 0;
+        <div style={{ display: "flex", justifyContent: "space-between", borderBottom: `1px solid ${border}`, background: darkMode ? "#2c2d31" : "#fafafa", padding: "0 16px" }}>
+          <div style={{ display: "flex" }}>
+            {["전체", "승인대기", "발행됨", "예약됨", "작성중", "반려"].map(tab => {
+              let count = counts[tab as keyof typeof counts] || 0;
 
-            return (
-              <button key={tab} onClick={() => {
-                setArticleFilter(tab);
-                setCheckedArticleIds([]);
-                setActiveFilters({ articleNo: "", section: "전체", section2: "전체", keyword: "" });
-                setSearchArticleNo(""); setSearchSection("전체"); setSearchSection2("전체"); setSearchKeyword("");
-                setCurrentPage(1);
-              }}
-                style={{ border: "none", background: "none", padding: "16px 20px", fontSize: 14, fontWeight: articleFilter === tab ? 800 : 600, color: articleFilter === tab ? "#3b82f6" : textSecondary, borderBottom: articleFilter === tab ? "3px solid #3b82f6" : "3px solid transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
-                {tab}
-                <span style={{ 
-                  background: tab === "전체" ? "#e5e7eb" : tab === "승인대기" ? "#8b5cf6" : tab === "발행됨" ? "#10b981" : tab === "예약됨" ? "#f59e0b" : tab === "작성중" ? "#9ca3af" : "#ef4444",
-                  color: tab === "전체" ? "#4b5563" : "#fff", padding: "2px 8px", borderRadius: 10, fontSize: 11, fontWeight: 700 
-                }}>{count}</span>
-              </button>
-            );
-          })}
+              return (
+                <button key={tab} onClick={() => {
+                  setArticleFilter(tab);
+                  setCheckedArticleIds([]);
+                  setActiveFilters({ articleNo: "", section: "전체", section2: "전체", keyword: "" });
+                  setSearchArticleNo(""); setSearchSection("전체"); setSearchSection2("전체"); setSearchKeyword("");
+                  setCurrentPage(1);
+                }}
+                  style={{ border: "none", background: "none", padding: "16px 20px", fontSize: 14, fontWeight: articleFilter === tab ? 800 : 600, color: articleFilter === tab ? "#3b82f6" : textSecondary, borderBottom: articleFilter === tab ? "3px solid #3b82f6" : "3px solid transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+                  {tab}
+                  <span style={{ 
+                    background: tab === "전체" ? "#e5e7eb" : tab === "승인대기" ? "#8b5cf6" : tab === "발행됨" ? "#10b981" : tab === "예약됨" ? "#f59e0b" : tab === "작성중" ? "#9ca3af" : "#ef4444",
+                    color: tab === "전체" ? "#4b5563" : "#fff", padding: "2px 8px", borderRadius: 10, fontSize: 11, fontWeight: 700 
+                  }}>{count}</span>
+                </button>
+              );
+            })}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, paddingRight: 8 }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: textSecondary }}>노출필터:</span>
+            <select value={exposureFilter} onChange={e => { setExposureFilter(e.target.value); setCurrentPage(1); }} style={{ height: 30, padding: "0 8px", border: `1px solid ${border}`, borderRadius: 4, fontSize: 12, color: textPrimary, background: darkMode ? "#1e293b" : "#fff", outline: "none", fontWeight: 600, cursor: "pointer" }}>
+              <option value="전체">전체보기</option>
+              <option value="일반">일반기사</option>
+              <option value="중요">⭐ 중요기사 [중]</option>
+              <option value="헤드라인">📌 헤드라인 [해]</option>
+            </select>
+          </div>
         </div>
 
         {/* 액션 버튼 */}
