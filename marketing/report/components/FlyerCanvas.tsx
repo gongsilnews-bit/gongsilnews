@@ -37,7 +37,7 @@ const EditableText = ({
       ref={ref}
       contentEditable
       suppressContentEditableWarning
-      className={`outline-none hover:bg-amber-100/50 hover:ring-1 hover:ring-amber-300 focus:bg-amber-100/80 focus:ring-1 focus:ring-amber-500 rounded px-1 transition-all duration-150 cursor-text min-w-[30px] inline-block ${className}`}
+      className={`outline-none hover:bg-amber-100/50 hover:ring-1 hover:ring-amber-300 focus:bg-amber-100/80 focus:ring-1 focus:ring-amber-500 rounded px-1 transition-all duration-150 cursor-text min-w-[30px] inline-block w-full ${className}`}
       onBlur={(e) => {
         onChange(e.currentTarget.textContent || "");
       }}
