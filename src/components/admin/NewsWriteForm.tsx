@@ -879,15 +879,77 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
   };
 
   /* ── 모달 확인 → 에디터 커서 위치 삽입 + 우측 사이드바 반영 ── */
-  const handlePhotoModalConfirm = () => {
+  const handlePhotoModalConfirm = async () => {
     if (!modalFile || !modalPreview) {
       alert('사진 파일을 선택해주세요.');
       return;
     }
 
+    let finalFile = modalFile;
+    let finalPreview = modalPreview;
+
+    if (modalWatermark >= 0 && modalWatermark < 9) {
+      try {
+        const { file: wFile, preview: wPreview } = await new Promise<{file: File, preview: string}>((resolve) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return resolve({ file: modalFile, preview: modalPreview });
+            
+            ctx.drawImage(img, 0, 0);
+            
+            const logo = new Image();
+            logo.crossOrigin = 'Anonymous';
+            logo.onload = () => {
+              const logoWidth = Math.max(120, img.width * 0.15);
+              const logoHeight = (logo.height / logo.width) * logoWidth;
+              
+              const col = modalWatermark % 3;
+              const row = Math.floor(modalWatermark / 3);
+              const padding = 20;
+              
+              let x = 0, y = 0;
+              if (col === 0) x = padding;
+              else if (col === 1) x = (img.width - logoWidth) / 2;
+              else if (col === 2) x = img.width - logoWidth - padding;
+              
+              if (row === 0) y = padding;
+              else if (row === 1) y = (img.height - logoHeight) / 2;
+              else if (row === 2) y = img.height - logoHeight - padding;
+              
+              ctx.globalAlpha = 0.85;
+              ctx.drawImage(logo, x, y, logoWidth, logoHeight);
+              ctx.globalAlpha = 1.0;
+              
+              canvas.toBlob((blob) => {
+                if (blob) {
+                  const newFile = new File([blob], modalFile.name, { type: modalFile.type || 'image/png' });
+                  resolve({ file: newFile, preview: URL.createObjectURL(blob) });
+                } else {
+                  resolve({ file: modalFile, preview: modalPreview });
+                }
+              }, modalFile.type || 'image/png', 0.95);
+            };
+            logo.onerror = () => resolve({ file: modalFile, preview: modalPreview });
+            logo.src = '/new_logo.png';
+          };
+          img.onerror = () => resolve({ file: modalFile, preview: modalPreview });
+          img.src = URL.createObjectURL(modalFile);
+        });
+        
+        finalFile = wFile;
+        finalPreview = wPreview;
+      } catch (err) {
+        console.error("Watermark apply error:", err);
+      }
+    }
+
     const newPhoto = {
-      file: modalFile,
-      preview: modalPreview,
+      file: finalFile,
+      preview: finalPreview,
       caption: modalCaption,
       isCover: false,
       size: modalSize,
@@ -902,7 +964,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
     });
 
     // 에디터 커서 위치에 삽입
-    insertImageAtCursor(modalPreview, modalCaption, {
+    insertImageAtCursor(finalPreview, modalCaption, {
       size: modalSize,
       align: modalAlign,
       captionAlign: modalCaptionAlign,
@@ -2551,7 +2613,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
               {/* 워터마크 */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
                 <label style={{ fontSize: 14, fontWeight: 700, color: textPrimary, minWidth: 80 }}>워터마크</label>
-                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', alignItems: 'center' }}>
                   {Array.from({ length: 9 }, (_, i) => (
                     <button key={i} onClick={() => setModalWatermark(i)} style={{
                       width: 34, height: 34, borderRadius: 5, cursor: 'pointer',
@@ -2574,6 +2636,15 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                       </svg>
                     </button>
                   ))}
+                  <button onClick={() => setModalWatermark(9)} style={{
+                    padding: '0 12px', height: 34, borderRadius: 5, cursor: 'pointer', fontSize: 12, fontWeight: 600, marginLeft: 8,
+                    border: modalWatermark === 9 ? '2px solid #ef4444' : `1px solid ${border}`,
+                    background: modalWatermark === 9 ? '#fef2f2' : '#f9fafb',
+                    color: modalWatermark === 9 ? '#ef4444' : textSecondary,
+                    transition: 'all 0.15s',
+                  }}>
+                    없음
+                  </button>
                 </div>
               </div>
 
