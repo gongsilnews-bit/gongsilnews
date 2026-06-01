@@ -1086,16 +1086,14 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
       const photos = editorRef.current.querySelectorAll('.inserted-photo');
       if (photos[idx]) {
         const wrapper = photos[idx] as HTMLElement;
-        const wrapAlign = editAlign === 'left' ? 'left' : editAlign === 'right' ? 'right' : 'center';
-        wrapper.style.textAlign = wrapAlign;
+        const marginCss = editAlign === 'left' ? 'margin: 16px auto 16px 0;' : editAlign === 'right' ? 'margin: 16px 0 16px auto;' : 'margin: 16px auto;';
+        wrapper.style.cssText = `display: table; ${marginCss} text-align: center;`;
 
-        // 이미지 크기 + 정렬
+        // 이미지 크기
         const img = wrapper.querySelector('img') as HTMLElement;
         if (img) {
-          const floatCss = editAlign === 'left' ? 'float: left; margin: 0 16px 8px 0;'
-            : editAlign === 'right' ? 'float: right; margin: 0 0 8px 16px;'
-            : 'display: block; margin: 0 auto;';
-          img.style.cssText = `max-width: ${editSize}px; width: 100%; height: auto; border-radius: 6px; ${floatCss}`;
+          img.style.cssText = `max-width: ${editSize}px; width: 100%; height: auto; border-radius: 6px; display: block;`;
+          img.alt = editCaption || '기사 이미지';
         }
 
         // 캡션 업데이트
@@ -1103,27 +1101,12 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
         if (editCaption) {
           if (!capEl) {
             capEl = document.createElement('p');
-            // clearfix 앞에 삽입
-            const clearDiv = wrapper.querySelector('div[style*="clear"]');
-            if (clearDiv) wrapper.insertBefore(capEl, clearDiv);
-            else wrapper.appendChild(capEl);
+            wrapper.appendChild(capEl);
           }
-          capEl.style.cssText = `font-size: 13px; color: #6b7280; margin: 8px 0 0 0; text-align: ${editCaptionAlign}; line-height: 1.5; clear: both;`;
+          capEl.style.cssText = `display: table-caption; caption-side: bottom; font-size: 13px; color: #6b7280; margin: 8px 0 0 0; text-align: ${editCaptionAlign}; line-height: 1.5;`;
           capEl.textContent = editCaption;
         } else if (capEl) {
           capEl.remove();
-        }
-
-        // clearfix 처리
-        const existingClear = wrapper.querySelector('div[style*="clear"]');
-        if (editAlign !== 'center') {
-          if (!existingClear) {
-            const clear = document.createElement('div');
-            clear.style.cssText = 'clear: both;';
-            wrapper.appendChild(clear);
-          }
-        } else if (existingClear) {
-          existingClear.remove();
         }
 
         setContent(editorRef.current.innerHTML || '');
