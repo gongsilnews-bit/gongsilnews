@@ -276,15 +276,6 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                   </div>
 
                   <div>
-                      <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">문의 안내 (담당자)</h4>
-                      <div className="space-y-3">
-                          <div><label className="text-xs text-gray-500">중개사무소명</label><input name="agentName" value={info.agentName} onChange={handleChange} className="w-full border rounded p-2 text-sm" /></div>
-                          <div><label className="text-xs text-gray-500">담당자명/직급</label><input name="agentRepresentative" value={info.agentRepresentative} onChange={handleChange} className="w-full border rounded p-2 text-sm" /></div>
-                          <div><label className="text-xs text-gray-500">문의 연락처</label><input name="agentMobile" value={info.agentMobile} onChange={handleChange} className="w-full border rounded p-2 text-sm" /></div>
-                      </div>
-                  </div>
-
-                  <div>
                       <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">투자 요약 (하단 3박스)</h4>
                       {[1,2,3].map(i => (
                           <div key={i} className="mb-3 bg-gray-50 p-3 rounded">
@@ -295,6 +286,15 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                               </div>
                           </div>
                       ))}
+                  </div>
+
+                  <div>
+                      <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">문의 안내 (담당자)</h4>
+                      <div className="space-y-3">
+                          <div><label className="text-xs text-gray-500">중개사무소명</label><input name="agentName" value={info.agentName} onChange={handleChange} className="w-full border rounded p-2 text-sm" /></div>
+                          <div><label className="text-xs text-gray-500">담당자명/직급</label><input name="agentRepresentative" value={info.agentRepresentative} onChange={handleChange} className="w-full border rounded p-2 text-sm" /></div>
+                          <div><label className="text-xs text-gray-500">문의 연락처</label><input name="agentMobile" value={info.agentMobile} onChange={handleChange} className="w-full border rounded p-2 text-sm" /></div>
+                      </div>
                   </div>
               </div>
           )}
