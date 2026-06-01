@@ -581,7 +581,7 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
                     <span style={{ fontSize: "13px", color: "#666" }}>기자</span>
                   </div>
                   <div style={{ fontSize: "13px", color: "#888", display: "flex", alignItems: "center", gap: "8px" }}>
-                    <span suppressHydrationWarning>작성 {formatDate(article.created_at || article.published_at)}</span>
+                    <span suppressHydrationWarning>배포 {formatDate(article.published_at || article.created_at)}</span>
                     {article.updated_at && (
                       <span suppressHydrationWarning>수정 {formatDate(article.updated_at)}</span>
                     )}
