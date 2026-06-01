@@ -37,7 +37,21 @@ export async function GET(req: Request) {
     "경상남도", "제주특별자치도"
   ];
 
-  const targetRegions = sidoParam ? sidoParam.split(",") : sidos;
+  // region 인덱스 파라미터 지원 (vercel.json cron 분산용)
+  const regionParam = urlObj.searchParams.get("region");
+  let targetRegions: string[];
+  if (regionParam !== null) {
+    const idx = parseInt(regionParam, 10);
+    if (idx >= 0 && idx < sidos.length) {
+      targetRegions = [sidos[idx]];
+    } else {
+      return NextResponse.json({ error: `잘못된 region 인덱스: ${regionParam}` }, { status: 400 });
+    }
+  } else if (sidoParam) {
+    targetRegions = sidoParam.split(",");
+  } else {
+    targetRegions = sidos;
+  }
   const startTime = Date.now();
   const supabase = getLogClient();
 
