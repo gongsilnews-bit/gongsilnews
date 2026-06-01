@@ -254,7 +254,7 @@ export default function MemberArticleSection({ theme, memberId, memberName, memb
 
         {/* 테이블 */}
         <div style={{ overflowX: "auto", padding: "0 0 8px" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 900, whiteSpace: "nowrap" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 900 }}>
             <thead>
               <tr style={{ background: darkMode ? "#2c2d31" : "#f9fafb" }}>
                 <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 40 }}>

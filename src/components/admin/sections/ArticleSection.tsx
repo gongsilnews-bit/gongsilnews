@@ -228,7 +228,7 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
 
         {/* 테이블 */}
         <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 1000, whiteSpace: "nowrap" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 900 }}>
             <thead>
               <tr style={{ background: darkMode ? "#2c2d31" : "#f9fafb" }}>
                 <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 40 }}>
@@ -295,12 +295,15 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
                       >해</button>
                     </div>
                   </td>
-                  <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", color: textSecondary, fontSize: 12, maxWidth: 140 }}>
+                  <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", color: textSecondary, fontSize: 12, minWidth: 100 }}>
                     <div>{a.section1 || '-'}</div>
                     {a.section2 && <div style={{ color: darkMode ? "#9ca3af" : "#6b7280", fontSize: 11, marginTop: 2 }}>{a.section2}</div>}
                   </td>
                   <td style={{ padding: "16px 10px", textAlign: "left", verticalAlign: "middle" }}>
-                    <button onClick={() => router.push(`?menu=article&action=detail&id=${a.id}`)} style={{ background: "none", border: "none", fontWeight: 700, fontSize: 15, color: textPrimary, textDecoration: "none", cursor: "pointer", padding: 0 }}>{a.title}</button>
+                    <button onClick={() => router.push(`?menu=article&action=detail&id=${a.id}`)} 
+                      style={{ background: "none", border: "none", fontWeight: 700, fontSize: 15, color: textPrimary, textDecoration: "none", cursor: "pointer", padding: 0, textAlign: "left", wordBreak: "keep-all" }}>
+                      {a.title || "(제목 없음)"}
+                    </button>
                     {a.status === "REJECTED" && a.reject_reason && (
                       <div style={{ marginTop: 4, fontSize: 12, color: "#ef4444", fontWeight: 600 }}>반려 사유: {a.reject_reason}</div>
                     )}
