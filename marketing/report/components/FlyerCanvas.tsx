@@ -97,7 +97,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data }, ref)
   const placeholder = "https://placehold.co/800x600/e2e8f0/1e293b?text=Image";
 
   // Data mapping from info
-  const targetTitle = `${info.address || '서초동 역세권'} 매매 안내서`;
+  const targetTitle = info.address || '서초동 역세권 매매 안내서';
   const targetSub = `대상물건: ${info.address || '서울 서초구 서초동 1444-9'}`;
   const price = info.priceMain || '75억 원';
 
