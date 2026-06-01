@@ -616,12 +616,25 @@ function App() {
           return { ...sec, items: newItems };
         });
 
+        const getEnglishTradeType = (tradeType: string) => {
+          switch (tradeType) {
+            case '매매': return 'FOR SALE';
+            case '전세': return 'FOR LEASE';
+            case '월세': return 'FOR RENT';
+            case '경매': return 'FOR AUCTION';
+            default: return 'FOR SALE';
+          }
+        };
+
+        const dongBunji = [v.dong, v.detail_addr].filter(Boolean).join(" ");
+        const autoAddress = [dongBunji, v.building_name, priceText].filter(Boolean).join(" ");
+
         const mappedInfo: PropertyInfo = {
           ...INITIAL_INFO,
           promotionText: priceText,
           propertyNumber: `No. ${v.property_no || v.id || v.vacancy_id || "0000"}`,
-          address: v.building_name || [v.sido, v.sigungu, v.dong].filter(Boolean).join(" ") || "공실 매물 정보",
-          subTitle: `${v.property_type || "프리미엄"} | ${v.direction || "방향 없음"} | ${areaDisplay}`,
+          address: autoAddress || "공실 매물 정보",
+          subTitle: `${v.sub_category || v.property_type || "프리미엄"} | ${v.direction || "방향 없음"} | ${areaDisplay}`,
           transactionType: v.trade_type || "월세",
           priceMain: formatAmount(v.deposit) || "",
           priceSub: v.monthly_rent ? `${Math.round(v.monthly_rent / 10000)}만` : "",
@@ -641,6 +654,11 @@ function App() {
           agentMapUrl: fullAddress ? `https://map.naver.com/p/search/${encodeURIComponent(fullAddress)}` : "",
           consultationUrl: "",
           agentAdditionalInfo: additionalInfo,
+
+          pageBadges: {
+            ...INITIAL_INFO.pageBadges,
+            page1: getEnglishTradeType(v.trade_type)
+          },
 
           noticeTitle: "PREMIUM LISTING DETAIL",
           noticeContent: v.description || "상세 설명이 등록되지 않았습니다.",
