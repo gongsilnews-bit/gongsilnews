@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { PropertyInfo, FlyerColor, FlyerLayout } from '../types';
-import { SwatchIcon, RectangleGroupIcon, PhotoIcon } from '@heroicons/react/24/outline';
+import { SwatchIcon, RectangleGroupIcon, PhotoIcon, TrashIcon, ArrowUpIcon, ArrowDownIcon } from '@heroicons/react/24/outline';
 
 interface FlyerFormProps {
   info: PropertyInfo;
@@ -189,7 +189,37 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                               return (
                                   <>
                                       {tbl.map((row, i) => (
-                                          <div key={i} className="flex gap-1.5 items-center bg-gray-50 p-2 rounded">
+                                          <div key={i} className="flex gap-1.5 items-center bg-gray-50 p-2 rounded border border-transparent hover:border-gray-200 transition-colors">
+                                              <div className="flex flex-col gap-0.5 shrink-0">
+                                                  <button
+                                                      type="button"
+                                                      disabled={i === 0}
+                                                      onClick={() => {
+                                                          const newTable = [...tbl];
+                                                          const temp = newTable[i];
+                                                          newTable[i] = newTable[i - 1];
+                                                          newTable[i - 1] = temp;
+                                                          setInfo({ ...info, overviewTable: newTable });
+                                                      }}
+                                                      className="text-gray-400 hover:text-gray-700 disabled:opacity-30 hover:bg-gray-200 rounded p-0.5 transition-colors"
+                                                  >
+                                                      <ArrowUpIcon className="w-3.5 h-3.5" />
+                                                  </button>
+                                                  <button
+                                                      type="button"
+                                                      disabled={i === tbl.length - 1}
+                                                      onClick={() => {
+                                                          const newTable = [...tbl];
+                                                          const temp = newTable[i];
+                                                          newTable[i] = newTable[i + 1];
+                                                          newTable[i + 1] = temp;
+                                                          setInfo({ ...info, overviewTable: newTable });
+                                                      }}
+                                                      className="text-gray-400 hover:text-gray-700 disabled:opacity-30 hover:bg-gray-200 rounded p-0.5 transition-colors"
+                                                  >
+                                                      <ArrowDownIcon className="w-3.5 h-3.5" />
+                                                  </button>
+                                              </div>
                                               <input 
                                                   value={row.label} 
                                                   onChange={(e) => {
@@ -198,7 +228,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                                                       setInfo({ ...info, overviewTable: newTable });
                                                   }} 
                                                   placeholder="항목명" 
-                                                  className="w-1/3 border rounded p-1.5 text-xs text-center font-bold text-gray-600 bg-white" 
+                                                  className="w-24 border rounded p-1.5 text-xs text-center font-bold text-gray-600 bg-white" 
                                               />
                                               <input 
                                                   value={row.value} 
@@ -208,7 +238,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                                                       setInfo({ ...info, overviewTable: newTable });
                                                   }} 
                                                   placeholder="내용" 
-                                                  className="flex-1 border rounded p-1.5 text-xs bg-white text-gray-800 font-bold" 
+                                                  className="flex-1 border rounded p-1.5 text-xs bg-white text-gray-800 font-bold min-w-0" 
                                               />
                                               <button
                                                   type="button"
@@ -217,10 +247,10 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                                                       newTable.splice(i, 1);
                                                       setInfo({ ...info, overviewTable: newTable });
                                                   }}
-                                                  className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 rounded transition-colors text-xs font-bold"
+                                                  className="text-red-400 hover:text-red-600 hover:bg-red-50 p-1.5 rounded transition-colors shrink-0"
                                                   title="삭제"
                                               >
-                                                  ✕
+                                                  <TrashIcon className="w-4 h-4" />
                                               </button>
                                           </div>
                                       ))}
