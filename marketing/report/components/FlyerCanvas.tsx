@@ -160,8 +160,19 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
 
                 {/* Right Col: Image & Summary */}
                 <div className="w-7/12 flex flex-col justify-between h-full">
-                    <div className="relative h-[340px] rounded-2xl overflow-hidden shadow-md border border-gray-100">
-                        <img src={mainImage || placeholder} alt="Main" className="w-full h-full object-cover" />
+                    <div className="relative h-[340px] rounded-2xl overflow-hidden shadow-md border border-gray-100 bg-[#0f172a]/95">
+                        {/* Blur Background Layer */}
+                        <img 
+                          src={mainImage || placeholder} 
+                          alt="Main Background Blur" 
+                          className="absolute inset-0 w-full h-full object-cover filter blur-2xl opacity-50 scale-110 pointer-events-none" 
+                        />
+                        {/* Clear Foreground Image */}
+                        <img 
+                          src={mainImage || placeholder} 
+                          alt="Main" 
+                          className="relative w-full h-full object-contain z-10" 
+                        />
                     </div>
                     <div>
                         <SectionTitle title="INVESTMENT SUMMARY" subtitle="투자요약" />
@@ -288,9 +299,20 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
         >
             <div className="flex gap-4 h-[550px]">
                 {/* Main Large Photo */}
-                <div className="w-1/2 relative rounded-xl overflow-hidden shadow-md">
-                    <img src={mainImage || placeholder} alt="Exterior" className="w-full h-full object-cover" />
-                    <div className="absolute bottom-0 left-0 w-full p-4 bg-gradient-to-t from-black/80 to-transparent">
+                <div className="w-1/2 relative rounded-xl overflow-hidden shadow-md bg-[#0f172a]/95">
+                    {/* Blur Background Layer */}
+                    <img 
+                      src={mainImage || placeholder} 
+                      alt="Exterior Blur" 
+                      className="absolute inset-0 w-full h-full object-cover filter blur-2xl opacity-50 scale-110 pointer-events-none" 
+                    />
+                    {/* Clear Foreground Image */}
+                    <img 
+                      src={mainImage || placeholder} 
+                      alt="Exterior" 
+                      className="relative w-full h-full object-contain z-10" 
+                    />
+                    <div className="absolute bottom-0 left-0 w-full p-4 bg-gradient-to-t from-black/80 to-transparent z-20">
                         <span className="text-white font-bold">{info.photoCaptions?.main}</span>
                     </div>
                 </div>
