@@ -659,7 +659,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                             imageKey="mainImage"
                             onImageUpload={onImageUpload}
                             isUploading={isUploadingImage?.mainImage}
-                            aspectRatioClass="object-contain"
+                            aspectRatioClass="object-cover"
                         />
                     </div>
                     <div>
@@ -918,7 +918,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                         imageKey="mainImage"
                         onImageUpload={onImageUpload}
                         isUploading={isUploadingImage?.mainImage}
-                        aspectRatioClass="object-contain"
+                        aspectRatioClass="object-cover"
                     />
                     <div className="absolute bottom-0 left-0 w-full p-4 bg-gradient-to-t from-black/80 to-transparent z-20">
                         <span className="text-white font-bold relative z-30">
