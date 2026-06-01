@@ -743,8 +743,10 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
         {(activeTab === 'all' || activeTab === 2) && (
         <ReportPage 
             pageNumber={2} 
-            title="현황 및 가치" 
-            subtitle="Status & Valuation" 
+            title={info.page2Title || "현황 및 가치"} 
+            onUpdateTitle={(val) => handleTextChange('page2Title', val)}
+            subtitle={info.page2Subtitle || "Status & Valuation"} 
+            onUpdateSubtitle={(val) => handleTextChange('page2Subtitle', val)}
             badgeText={info.pageBadges?.page2 || "EVIDENCE & DATA"}
             exportId="page-2"
             onUpdateBadge={(val) => {
@@ -761,7 +763,12 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
             <div className="flex gap-8 h-full">
                 {/* Left: Table */}
                 <div className="w-5/12 h-full flex flex-col">
-                    <div className="text-gray-600 font-bold text-sm mb-4">1. 층별 점유 및 임대 상세 현황</div>
+                    <div className="text-gray-600 font-bold text-sm mb-4">
+                        <EditableText 
+                            value={info.page2TableHeader || "1. 층별 점유 및 임대 상세 현황"} 
+                            onChange={(val) => handleTextChange('page2TableHeader', val)} 
+                        />
+                    </div>
                     <div className="border border-gray-200 rounded-lg overflow-hidden bg-[#f8fafc] flex flex-col h-[500px]">
                         <div className="flex-1 overflow-auto">
                             <table className="w-full text-center text-sm">
@@ -845,9 +852,19 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
  
                 {/* Right: Highlights & Chart */}
                 <div className="w-7/12 h-full flex flex-col">
-                    <div className="text-gray-600 font-bold text-sm mb-4">2. 매각 핵심 하이라이트 & 시세 분석</div>
+                    <div className="text-gray-600 font-bold text-sm mb-4">
+                        <EditableText 
+                            value={info.page2HighlightHeader || "2. 매각 핵심 하이라이트 & 시세 분석"} 
+                            onChange={(val) => handleTextChange('page2HighlightHeader', val)} 
+                        />
+                    </div>
                     <div className="flex-1 border border-yellow-200 rounded-lg p-6 bg-white shadow-sm flex flex-col">
-                        <h3 className="text-xl font-extrabold text-gray-900 mb-4 border-b-2 border-gray-800 pb-2 inline-block">매각 핵심 하이라이트</h3>
+                        <h3 className="text-xl font-extrabold text-gray-900 mb-4 border-b-2 border-gray-800 pb-2 inline-block">
+                            <EditableText 
+                                value={info.page2HighlightBoxTitle || "매각 핵심 하이라이트"} 
+                                onChange={(val) => handleTextChange('page2HighlightBoxTitle', val)} 
+                            />
+                        </h3>
                         <ul className="space-y-3 mb-8">
                             {info.highlights?.map((hl, i) => (
                                 <GeditorWrapper
@@ -910,8 +927,10 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
         {(activeTab === 'all' || activeTab === 3) && (
         <ReportPage 
             pageNumber={3} 
-            title="현장 사진" 
-            subtitle="Actual Field Photos" 
+            title={info.page3Title || "현장 사진"} 
+            onUpdateTitle={(val) => handleTextChange('page3Title', val)}
+            subtitle={info.page3Subtitle || "Actual Field Photos"} 
+            onUpdateSubtitle={(val) => handleTextChange('page3Subtitle', val)}
             badgeText={info.pageBadges?.page3 || "PROPERTY VISUALS"}
             exportId="page-3"
             onUpdateBadge={(val) => {
@@ -998,8 +1017,10 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
         {(activeTab === 'all' || activeTab === 4) && (
         <ReportPage 
             pageNumber={4} 
-            title="입지 및 위치도" 
-            subtitle="Strategic Connectivity" 
+            title={info.page4Title || "입지 및 위치도"} 
+            onUpdateTitle={(val) => handleTextChange('page4Title', val)}
+            subtitle={info.page4Subtitle || "Strategic Connectivity"} 
+            onUpdateSubtitle={(val) => handleTextChange('page4Subtitle', val)}
             badgeText={info.pageBadges?.page4 || "AREA ANALYSIS"}
             exportId="page-4"
             onUpdateBadge={(val) => {
@@ -1050,7 +1071,13 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                         )}
 
                         <div className="absolute top-4 right-4 bg-[#0d1424] text-white p-3 rounded-lg shadow-lg border border-gray-700 z-20">
-                            <div className="text-[#e29d45] text-[10px] font-bold tracking-widest uppercase mb-1">TARGET LOCATION</div>
+                            <div className="text-[#e29d45] text-[10px] font-bold tracking-widest uppercase mb-1">
+                                <EditableText 
+                                    value={info.page4TargetLocationHeader || "TARGET LOCATION"} 
+                                    onChange={(val) => handleTextChange('page4TargetLocationHeader', val)} 
+                                    className="text-[#e29d45]"
+                                />
+                            </div>
                             <div className="font-bold text-sm whitespace-pre-wrap">
                                 <EditableBlock 
                                     value={info.areaTargetName || ""} 
@@ -1067,11 +1094,10 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                         </div>
                         <h3 className="text-[#e29d45] text-2xl font-bold mb-4 leading-snug whitespace-pre-wrap">
                             <EditableBlock 
-                                value={info.areaTargetName?.split('\n')[0] || ""} 
-                                onChange={(val) => handleTextChange('areaTargetName', val)}
+                                value={info.page4TargetTitle || ((info.areaTargetName?.split('\n')[0] || "") + " 클러스터")} 
+                                onChange={(val) => handleTextChange('page4TargetTitle', val)}
                                 className="hover:bg-white/10 hover:ring-white/20 focus:bg-white/20 focus:ring-white/50 text-[#e29d45]"
                             />
-                            클러스터
                         </h3>
                         <div className="text-gray-300 text-sm leading-relaxed mb-auto">
                             <EditableBlock 
@@ -1110,8 +1136,10 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
         {(activeTab === 'all' || activeTab === 5) && (
         <ReportPage 
             pageNumber={5} 
-            title="가치 및 로드맵" 
-            subtitle="Value & Roadmap" 
+            title={info.page5Title || "가치 및 로드맵"} 
+            onUpdateTitle={(val) => handleTextChange('page5Title', val)}
+            subtitle={info.page5Subtitle || "Value & Roadmap"} 
+            onUpdateSubtitle={(val) => handleTextChange('page5Subtitle', val)}
             badgeText={info.pageBadges?.page5 || "INVESTMENT ROADMAP"}
             exportId="page-5"
             onUpdateBadge={(val) => {
@@ -1172,7 +1200,12 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
             </div>
             
             <div className="mt-8 text-right pr-4">
-                <p className="text-gray-500 italic font-serif-kr text-lg">"최고의 입지에 미래 가치를 더합니다."</p>
+                <p className="text-gray-500 italic font-serif-kr text-lg">
+                    <EditableText 
+                        value={info.page5FooterQuote || '"최고의 입지에 미래 가치를 더합니다."'} 
+                        onChange={(val) => handleTextChange('page5FooterQuote', val)} 
+                    />
+                </p>
             </div>
         </ReportPage>
         )}

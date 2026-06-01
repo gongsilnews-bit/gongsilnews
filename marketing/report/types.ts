@@ -94,6 +94,21 @@ export interface PropertyInfo {
     page5?: string;
   };
 
+  page2Title?: string;
+  page2Subtitle?: string;
+  page2TableHeader?: string;
+  page2HighlightHeader?: string;
+  page2HighlightBoxTitle?: string;
+  page3Title?: string;
+  page3Subtitle?: string;
+  page4Title?: string;
+  page4Subtitle?: string;
+  page4TargetLocationHeader?: string;
+  page4TargetTitle?: string;
+  page5Title?: string;
+  page5Subtitle?: string;
+  page5FooterQuote?: string;
+
   // Backward compatibility fields
   promotionText?: string;
   transactionType?: TransactionType;
