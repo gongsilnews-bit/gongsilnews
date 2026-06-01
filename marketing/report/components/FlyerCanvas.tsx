@@ -260,7 +260,18 @@ const ReportPage = ({
 
             {/* Footer */}
             <div className="h-[50px] px-10 flex justify-between items-center shrink-0 border-t border-gray-100">
-                <div className="text-gray-400 text-xs font-bold tracking-widconst SectionTitle = ({ title, subtitle }: { title: string, subtitle: string }) => (
+                <div className="text-gray-400 text-xs font-bold tracking-widest">
+                    CONFIDENTIAL <span className="mx-1">|</span> INFORMATION MEMORANDUM
+                </div>
+                <div className="text-gray-400 text-xs font-bold tracking-widest">
+                    PAGE 0{pageNumber} / 05
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const SectionTitle = ({ title, subtitle }: { title: string, subtitle: string }) => (
     <div className="mb-4 flex items-center gap-2">
         <h3 className="text-gray-500 font-bold tracking-widest uppercase text-sm">{title}</h3>
         <span className="text-gray-300">|</span>
