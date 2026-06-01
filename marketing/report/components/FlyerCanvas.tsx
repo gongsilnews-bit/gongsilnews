@@ -137,10 +137,31 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                 ));
                             })()}
                             {/* Price Row */}
-                            <div className="flex bg-[#fff9f0] border-t border-gray-200">
-                                <div className="w-1/3 text-gray-600 font-bold py-3 pl-4 flex items-center">매매가</div>
-                                <div className="w-2/3 text-[#cc5a27] font-extrabold py-3 pl-4 flex items-center">{price}</div>
-                            </div>
+                            {(() => {
+                                const tType = info.transactionType || "매매";
+                                let label = "매매가";
+                                let value = price;
+                                
+                                if (tType === "전세") {
+                                    label = "보증금 (전세)";
+                                    value = price;
+                                } else if (tType === "월세" || tType === "임대") {
+                                    label = "보증금 / 월세";
+                                    const rent = info.priceSub ? ` / ${info.priceSub}` : "";
+                                    value = `${price}${rent}`;
+                                } else if (tType !== "매매") {
+                                    label = "임대가";
+                                    const rent = info.priceSub ? ` / ${info.priceSub}` : "";
+                                    value = `${price}${rent}`;
+                                }
+                                
+                                return (
+                                    <div className="flex bg-[#fff9f0] border-t border-gray-200">
+                                        <div className="w-1/3 text-gray-600 font-bold py-3 pl-4 flex items-center">{label}</div>
+                                        <div className="w-2/3 text-[#cc5a27] font-extrabold py-3 pl-4 flex items-center">{value}</div>
+                                    </div>
+                                );
+                            })()}
                         </div>
                     </div>
 
