@@ -98,6 +98,7 @@ export interface PropertyInfo {
   leaseTable?: {
     headers: string[];
     rows: string[][];
+    widths?: number[];
   };
   leaseNotice?: string;
   leaseRightTitle?: string;

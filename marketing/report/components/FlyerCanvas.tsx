@@ -1280,7 +1280,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                     const newRows = rows.map((r, ri) => ri === rIdx ? r.map((c, ci) => ci === cIdx ? val : c) : r);
                     onUpdateInfo({
                         ...info,
-                        leaseTable: { headers, rows: newRows }
+                        leaseTable: { ...leaseTable, rows: newRows }
                     });
                 };
 
@@ -1289,7 +1289,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                     const newHeaders = headers.map((h, ci) => ci === cIdx ? val : h);
                     onUpdateInfo({
                         ...info,
-                        leaseTable: { headers: newHeaders, rows }
+                        leaseTable: { ...leaseTable, headers: newHeaders }
                     });
                 };
 
@@ -1302,9 +1302,14 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                         newR.splice(insertIdx, 0, "");
                         return newR;
                     });
+                    
+                    const currentWidths = leaseTable.widths || new Array(headers.length).fill(Math.round(100 / headers.length));
+                    const newWidths = [...currentWidths];
+                    newWidths.splice(insertIdx, 0, 15); // Add default new width 15%
+                    
                     onUpdateInfo({
                         ...info,
-                        leaseTable: { headers: newHeaders, rows: newRows }
+                        leaseTable: { ...leaseTable, headers: newHeaders, rows: newRows, widths: newWidths }
                     });
                 };
 
@@ -1312,9 +1317,13 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                     if (!onUpdateInfo || headers.length <= 1) return;
                     const newHeaders = headers.filter((_, ci) => ci !== colIdx);
                     const newRows = rows.map(r => r.filter((_, ci) => ci !== colIdx));
+                    
+                    const currentWidths = leaseTable.widths || new Array(headers.length).fill(Math.round(100 / headers.length));
+                    const newWidths = currentWidths.filter((_, ci) => ci !== colIdx);
+                    
                     onUpdateInfo({
                         ...info,
-                        leaseTable: { headers: newHeaders, rows: newRows }
+                        leaseTable: { ...leaseTable, headers: newHeaders, rows: newRows, widths: newWidths }
                     });
                 };
 
@@ -1323,7 +1332,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                     const newRows = [...rows, new Array(headers.length).fill("")];
                     onUpdateInfo({
                         ...info,
-                        leaseTable: { headers, rows: newRows }
+                        leaseTable: { ...leaseTable, rows: newRows }
                     });
                 };
 
@@ -1332,7 +1341,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                     const newRows = rows.filter((_, ri) => ri !== rIdx);
                     onUpdateInfo({
                         ...info,
-                        leaseTable: { headers, rows: newRows }
+                        leaseTable: { ...leaseTable, rows: newRows }
                     });
                 };
 
@@ -1342,7 +1351,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                     newRows.splice(rIdx + 1, 0, [...rows[rIdx]]);
                     onUpdateInfo({
                         ...info,
-                        leaseTable: { headers, rows: newRows }
+                        leaseTable: { ...leaseTable, rows: newRows }
                     });
                 };
 
@@ -1356,23 +1365,27 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                     newRows[targetIdx] = temp;
                     onUpdateInfo({
                         ...info,
-                        leaseTable: { headers, rows: newRows }
+                        leaseTable: { ...leaseTable, rows: newRows }
                     });
                 };
 
                 return (
-                    <div className="flex gap-6 h-[550px]">
-                        {/* Left Column: PPT Style Dynamic Table */}
-                        <div className="w-1/2 flex flex-col justify-between h-full bg-white rounded-2xl border border-slate-100 p-5 shadow-sm overflow-hidden">
-                            <div className="overflow-y-auto custom-scrollbar flex-1 pr-1">
-                                <table className="w-full text-left border-collapse table-fixed">
-                                    <thead>
-                                        <tr>
-                                            {headers.map((h, colIdx) => (
+                    <div className="w-full h-[550px] flex flex-col justify-between bg-white rounded-2xl border border-slate-100 p-6 shadow-sm overflow-hidden">
+                        <div className="overflow-y-auto custom-scrollbar flex-1 pr-1">
+                            <table className="w-full text-left border-collapse table-fixed">
+                                <thead>
+                                    <tr>
+                                        {headers.map((h, colIdx) => {
+                                            const currentWidths = leaseTable.widths || [10, 10, 15, 35, 15, 15];
+                                            const colWidth = currentWidths[colIdx] || Math.round(100 / headers.length);
+                                            return (
                                                 <th 
                                                     key={colIdx} 
                                                     className="border border-slate-200 p-2.5 text-xs font-extrabold text-white text-center uppercase relative group/header overflow-visible"
-                                                    style={{ backgroundColor: colorTheme.primary }}
+                                                    style={{ 
+                                                        backgroundColor: colorTheme.primary,
+                                                        width: `${colWidth}%`
+                                                    }}
                                                 >
                                                     <EditableText 
                                                         value={h} 
@@ -1407,121 +1420,132 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                                         >
                                                             +
                                                         </button>
+                                                        
+                                                        {/* Column width adjustments */}
+                                                        <span className="w-[1px] h-3 bg-gray-600"></span>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                const newWidths = [...currentWidths];
+                                                                newWidths[colIdx] = Math.max(5, colWidth - 2);
+                                                                onUpdateInfo({
+                                                                    ...info,
+                                                                    leaseTable: { ...leaseTable, widths: newWidths }
+                                                                });
+                                                            }}
+                                                            className="text-slate-300 hover:text-white font-extrabold cursor-pointer border-none bg-transparent px-0.5"
+                                                            title="열 너비 축소 (-2%)"
+                                                        >
+                                                            ◀
+                                                        </button>
+                                                        <span className="text-gray-300 font-mono text-[8px] min-w-[20px] text-center">
+                                                            {colWidth}%
+                                                        </span>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                const newWidths = [...currentWidths];
+                                                                newWidths[colIdx] = Math.min(80, colWidth + 2);
+                                                                onUpdateInfo({
+                                                                    ...info,
+                                                                    leaseTable: { ...leaseTable, widths: newWidths }
+                                                                });
+                                                            }}
+                                                            className="text-slate-300 hover:text-white font-extrabold cursor-pointer border-none bg-transparent px-0.5"
+                                                            title="열 너비 확대 (+2%)"
+                                                        >
+                                                            ▶
+                                                        </button>
                                                     </div>
                                                 </th>
+                                            );
+                                        })}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {rows.map((row, rowIdx) => (
+                                        <tr key={rowIdx} className="hover:bg-slate-50/50 transition-colors group/row relative">
+                                            {row.map((cell, colIdx) => (
+                                                <td 
+                                                    key={colIdx} 
+                                                    className="border border-slate-200 p-2.5 text-xs text-slate-700 font-semibold relative text-center whitespace-normal break-all"
+                                                >
+                                                    <EditableText 
+                                                        value={cell || ""} 
+                                                        onChange={(val) => updateCell(rowIdx, colIdx, val)}
+                                                    />
+                                                    
+                                                    {/* Floating Row Control Panel on First Cell Hover */}
+                                                    {colIdx === 0 && (
+                                                        <div className="absolute -left-9 top-1/2 transform -translate-y-1/2 bg-[#0d1424] text-white text-[9px] rounded-lg shadow-lg border border-gray-700 p-1 flex flex-col gap-1 hidden group-hover/row:flex print:hidden z-35 transition-all">
+                                                            <button
+                                                                type="button"
+                                                                disabled={rowIdx === 0}
+                                                                onClick={() => moveRow(rowIdx, -1)}
+                                                                className="text-slate-300 hover:text-white disabled:opacity-30 cursor-pointer border-none bg-transparent font-bold"
+                                                                title="위로 이동"
+                                                            >
+                                                                ▲
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => duplicateRow(rowIdx)}
+                                                                className="text-green-400 hover:text-green-300 cursor-pointer border-none bg-transparent font-bold"
+                                                                title="행 복제"
+                                                            >
+                                                                🗐
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => deleteRow(rowIdx)}
+                                                                className="text-red-400 hover:text-red-300 cursor-pointer border-none bg-transparent font-bold"
+                                                                title="행 삭제"
+                                                            >
+                                                                ✕
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                disabled={rowIdx === rows.length - 1}
+                                                                onClick={() => moveRow(rowIdx, 1)}
+                                                                className="text-slate-300 hover:text-white disabled:opacity-30 cursor-pointer border-none bg-transparent font-bold"
+                                                                title="아래로 이동"
+                                                            >
+                                                                ▼
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </td>
                                             ))}
                                         </tr>
-                                    </thead>
-                                    <tbody>
-                                        {rows.map((row, rowIdx) => (
-                                            <tr key={rowIdx} className="hover:bg-slate-50/50 transition-colors group/row relative">
-                                                {row.map((cell, colIdx) => (
-                                                    <td 
-                                                        key={colIdx} 
-                                                        className="border border-slate-200 p-2.5 text-xs text-slate-700 font-semibold relative text-center truncate"
-                                                    >
-                                                        <EditableText 
-                                                            value={cell || ""} 
-                                                            onChange={(val) => updateCell(rowIdx, colIdx, val)}
-                                                        />
-                                                        
-                                                        {/* Floating Row Control Panel on First Cell Hover */}
-                                                        {colIdx === 0 && (
-                                                            <div className="absolute -left-9 top-1/2 transform -translate-y-1/2 bg-[#0d1424] text-white text-[9px] rounded-lg shadow-lg border border-gray-700 p-1 flex flex-col gap-1 hidden group-hover/row:flex print:hidden z-35 transition-all">
-                                                                <button
-                                                                    type="button"
-                                                                    disabled={rowIdx === 0}
-                                                                    onClick={() => moveRow(rowIdx, -1)}
-                                                                    className="text-slate-300 hover:text-white disabled:opacity-30 cursor-pointer border-none bg-transparent font-bold"
-                                                                    title="위로 이동"
-                                                                >
-                                                                    ▲
-                                                                </button>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => duplicateRow(rowIdx)}
-                                                                    className="text-green-400 hover:text-green-300 cursor-pointer border-none bg-transparent font-bold"
-                                                                    title="행 복제"
-                                                                >
-                                                                    🗐
-                                                                </button>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => deleteRow(rowIdx)}
-                                                                    className="text-red-400 hover:text-red-300 cursor-pointer border-none bg-transparent font-bold"
-                                                                    title="행 삭제"
-                                                                >
-                                                                    ✕
-                                                                </button>
-                                                                <button
-                                                                    type="button"
-                                                                    disabled={rowIdx === rows.length - 1}
-                                                                    onClick={() => moveRow(rowIdx, 1)}
-                                                                    className="text-slate-300 hover:text-white disabled:opacity-30 cursor-pointer border-none bg-transparent font-bold"
-                                                                    title="아래로 이동"
-                                                                >
-                                                                    ▼
-                                                                </button>
-                                                            </div>
-                                                        )}
-                                                    </td>
-                                                ))}
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                            
-                            {/* Interactive Quick Action buttons below table */}
-                            <div className="flex gap-2 mt-4 pt-3 border-t border-slate-100 print:hidden shrink-0">
-                                <button
-                                    type="button"
-                                    onClick={addRow}
-                                    className="flex-1 py-1.5 bg-yellow-50 hover:bg-yellow-100 text-yellow-700 rounded-lg text-xs font-bold transition-all border border-dashed border-yellow-200 flex items-center justify-center gap-1 active:scale-95 cursor-pointer"
-                                >
-                                    ➕ 새로운 가로줄(행) 추가
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => addColumn(headers.length)}
-                                    className="flex-1 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg text-xs font-bold transition-all border border-dashed border-blue-200 flex items-center justify-center gap-1 active:scale-95 cursor-pointer"
-                                >
-                                    ➕ 새로운 세로칸(열) 추가
-                                </button>
-                            </div>
-                            
-                            {/* Notice text block */}
-                            <div className="text-[10px] text-slate-400 mt-3 pt-2 border-t border-slate-100 leading-normal shrink-0">
-                                <EditableBlock 
-                                    value={info.leaseNotice || ""} 
-                                    onChange={(val) => handleTextChange('leaseNotice', val)}
-                                />
-                            </div>
+                                    ))}
+                                </tbody>
+                            </table>
                         </div>
-
-                        {/* Right Column: Strategic MD summary card */}
-                        <div className="w-1/2 bg-[#0d1424] rounded-2xl p-8 flex flex-col justify-between shadow-md text-white h-full">
-                            <div>
-                                <div className="w-12 h-12 bg-white/10 rounded-lg flex items-center justify-center mb-6">
-                                    <svg className="w-6 h-6 text-[#e29d45]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                                    </svg>
-                                </div>
-                                <h3 className="text-[#e29d45] text-2xl font-bold mb-4 leading-snug">
-                                    <EditableText 
-                                        value={info.leaseRightTitle || ""} 
-                                        onChange={(val) => handleTextChange('leaseRightTitle', val)}
-                                        className="text-[#e29d45]"
-                                    />
-                                </h3>
-                                <div className="text-gray-300 text-sm leading-relaxed whitespace-pre-wrap">
-                                    <EditableBlock 
-                                        value={info.leaseRightText || ""} 
-                                        onChange={(val) => handleTextChange('leaseRightText', val)}
-                                        className="hover:bg-white/10 hover:ring-white/20 focus:bg-white/20 focus:ring-white/50 text-gray-300"
-                                    />
-                                </div>
-                            </div>
+                        
+                        {/* Interactive Quick Action buttons below table */}
+                        <div className="flex gap-3 mt-4 pt-3 border-t border-slate-100 print:hidden shrink-0">
+                            <button
+                                type="button"
+                                onClick={addRow}
+                                className="flex-1 py-2.5 bg-yellow-50 hover:bg-yellow-100 text-yellow-700 rounded-xl text-xs font-bold transition-all border border-dashed border-yellow-200 flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer shadow-sm"
+                            >
+                                ➕ 새로운 가로줄(행) 추가
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => addColumn(headers.length)}
+                                className="flex-1 py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-xl text-xs font-bold transition-all border border-dashed border-blue-200 flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer shadow-sm"
+                            >
+                                ➕ 새로운 세로칸(열) 추가
+                            </button>
+                        </div>
+                        
+                        {/* Notice text block */}
+                        <div className="text-[10px] text-slate-400 mt-3 pt-2 border-t border-slate-100 leading-normal shrink-0">
+                            <EditableBlock 
+                                value={info.leaseNotice || ""} 
+                                onChange={(val) => handleTextChange('leaseNotice', val)}
+                            />
                         </div>
                     </div>
                 );

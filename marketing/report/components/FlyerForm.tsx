@@ -617,59 +617,93 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                       <p className="text-xs text-gray-400 mb-3">※ 캔버스 화면 위에서도 행과 열을 직접 자유롭게 추가/삭제할 수 있습니다.</p>
                       
                       <div className="space-y-4">
-                          {/* Column headers editor */}
-                          <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-2">
-                              <label className="text-xs text-slate-500 font-bold block mb-1">📋 세로 열(칸) 제목 편집</label>
-                              <div className="flex flex-wrap gap-2">
-                                  {info.leaseTable?.headers.map((h, idx) => (
-                                      <div key={idx} className="flex items-center bg-white border border-slate-200 rounded px-2 py-1 gap-1 text-xs">
-                                          <input 
-                                              value={h} 
-                                              onChange={(e) => {
-                                                  const newHeaders = [...(info.leaseTable?.headers || [])];
-                                                  newHeaders[idx] = e.target.value;
-                                                  setInfo({
-                                                      ...info,
-                                                      leaseTable: {
-                                                          headers: newHeaders,
-                                                          rows: info.leaseTable?.rows || []
-                                                      }
-                                                  });
-                                              }} 
-                                              className="w-16 border-none font-bold text-slate-800 focus:outline-none"
-                                          />
-                                          {info.leaseTable?.headers && info.leaseTable.headers.length > 1 && (
-                                              <button 
-                                                  type="button"
-                                                  onClick={() => {
-                                                      const newHeaders = info.leaseTable!.headers.filter((_, i) => i !== idx);
-                                                      const newRows = info.leaseTable!.rows.map(row => row.filter((_, i) => i !== idx));
+                          {/* Column settings with individual width sliders */}
+                          <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-3">
+                              <label className="text-xs text-slate-500 font-bold block mb-1">📋 세로 열(칸) 제목 및 너비 조절</label>
+                              <div className="space-y-3">
+                                  {info.leaseTable?.headers.map((h, idx) => {
+                                      const currentWidths = info.leaseTable?.widths || [10, 10, 15, 35, 15, 15];
+                                      const colWidth = currentWidths[idx] || Math.round(100 / (info.leaseTable?.headers.length || 6));
+                                      return (
+                                          <div key={idx} className="bg-white border border-slate-200 rounded-xl p-3 shadow-sm space-y-2">
+                                              <div className="flex items-center justify-between gap-2">
+                                                  <span className="text-[10px] font-bold text-slate-400">세로 {idx + 1}번째 칸</span>
+                                                  {info.leaseTable?.headers && info.leaseTable.headers.length > 1 && (
+                                                      <button 
+                                                          type="button"
+                                                          onClick={() => {
+                                                              const newHeaders = info.leaseTable!.headers.filter((_, i) => i !== idx);
+                                                              const newRows = info.leaseTable!.rows.map(row => row.filter((_, i) => i !== idx));
+                                                              const newWidths = currentWidths.filter((_, i) => i !== idx);
+                                                              setInfo({
+                                                                  ...info,
+                                                                  leaseTable: { ...info.leaseTable, headers: newHeaders, rows: newRows, widths: newWidths }
+                                                              });
+                                                          }}
+                                                          className="text-red-400 hover:text-red-600 font-bold border-none bg-transparent cursor-pointer text-[10px]"
+                                                          title="열 삭제"
+                                                      >
+                                                          ✕ 삭제
+                                                      </button>
+                                                  )}
+                                              </div>
+                                              <input 
+                                                  value={h} 
+                                                  onChange={(e) => {
+                                                      const newHeaders = [...(info.leaseTable?.headers || [])];
+                                                      newHeaders[idx] = e.target.value;
                                                       setInfo({
                                                           ...info,
-                                                          leaseTable: { headers: newHeaders, rows: newRows }
+                                                          leaseTable: {
+                                                              ...info.leaseTable,
+                                                              headers: newHeaders
+                                                          }
                                                       });
-                                                  }}
-                                                  className="text-red-400 hover:text-red-600 font-bold border-none bg-transparent cursor-pointer"
-                                                  title="열 삭제"
-                                              >
-                                                  ✕
-                                              </button>
-                                          )}
-                                      </div>
-                                  ))}
+                                                  }} 
+                                                  className="w-full border border-slate-200 rounded px-2 py-1.5 font-bold text-slate-800 text-xs focus:ring-1 focus:ring-blue-500 outline-none"
+                                                  placeholder="열 제목"
+                                              />
+                                              <div className="flex items-center gap-2 pt-1">
+                                                  <input 
+                                                      type="range"
+                                                      min="5"
+                                                      max="80"
+                                                      value={colWidth}
+                                                      onChange={(e) => {
+                                                          const newWidths = [...currentWidths];
+                                                          newWidths[idx] = parseInt(e.target.value);
+                                                          setInfo({
+                                                              ...info,
+                                                              leaseTable: {
+                                                                  ...info.leaseTable,
+                                                                  widths: newWidths
+                                                              }
+                                                          });
+                                                      }}
+                                                      className="flex-1 accent-blue-500 h-1 bg-gray-200 rounded-lg cursor-pointer"
+                                                  />
+                                                  <span className="text-[10px] font-bold font-mono text-slate-500 shrink-0 w-8 text-right">
+                                                      {colWidth}%
+                                                  </span>
+                                              </div>
+                                          </div>
+                                      );
+                                  })}
                                   <button
                                       type="button"
                                       onClick={() => {
+                                          const currentWidths = info.leaseTable?.widths || new Array(info.leaseTable?.headers.length || 6).fill(Math.round(100 / (info.leaseTable?.headers.length || 6)));
                                           const newHeaders = [...(info.leaseTable?.headers || []), "새 열"];
                                           const newRows = (info.leaseTable?.rows || []).map(row => [...row, ""]);
+                                          const newWidths = [...currentWidths, 15]; // Default new width 15%
                                           setInfo({
                                               ...info,
-                                              leaseTable: { headers: newHeaders, rows: newRows }
+                                              leaseTable: { ...info.leaseTable, headers: newHeaders, rows: newRows, widths: newWidths }
                                           });
                                       }}
-                                      className="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded text-xs font-bold transition-all border-none cursor-pointer"
+                                      className="w-full py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-xl text-xs font-bold transition-all border border-dashed border-blue-200 cursor-pointer flex items-center justify-center gap-1 active:scale-95 shadow-sm"
                                   >
-                                      + 열 추가
+                                      ➕ 새로운 세로칸(열) 추가
                                   </button>
                               </div>
                           </div>
@@ -689,34 +723,20 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                                       setInfo({
                                           ...info,
                                           leaseTable: {
-                                              headers: info.leaseTable?.headers || [],
+                                              ...info.leaseTable,
                                               rows: newRows
                                           }
                                       });
                                   }}
-                                  className="w-full py-1.5 bg-yellow-50 hover:bg-yellow-100 text-yellow-700 rounded text-xs font-bold transition-colors flex items-center justify-center gap-1 border border-dashed border-yellow-200 cursor-pointer"
+                                  className="w-full py-2 bg-yellow-50 hover:bg-yellow-100 text-yellow-700 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1 border border-dashed border-yellow-200 cursor-pointer shadow-sm"
                               >
-                                  + 표 가로줄(행) 추가
+                                  ➕ 표 가로줄(행) 추가
                               </button>
                           </div>
 
                           <div>
                               <label className="text-xs text-gray-500 font-semibold">표 하단 유의 사항</label>
                               <textarea name="leaseNotice" value={info.leaseNotice} onChange={handleChange} className="w-full border rounded p-2 text-xs mt-1" rows={2} />
-                          </div>
-                      </div>
-                  </div>
-
-                  <div>
-                      <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">우측 전략 안내 카드</h4>
-                      <div className="space-y-3">
-                          <div>
-                              <label className="text-xs text-gray-500">카드 대제목</label>
-                              <input name="leaseRightTitle" value={info.leaseRightTitle} onChange={handleChange} className="w-full border rounded p-2 text-sm font-bold" />
-                          </div>
-                          <div>
-                              <label className="text-xs text-gray-500">카드 상세 요약본 (줄바꿈 및 점표 지원)</label>
-                              <textarea name="leaseRightText" value={info.leaseRightText} onChange={handleChange} className="w-full border rounded p-2 text-xs" rows={6} />
                           </div>
                       </div>
                   </div>

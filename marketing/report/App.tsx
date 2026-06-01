@@ -85,7 +85,8 @@ const INITIAL_INFO: PropertyInfo = {
       ["지상 2층", "201호", "165.2㎡", "보증금 1억 / 월세 450만", "사무실", "즉시입주"],
       ["지상 1층", "101호", "132.2㎡", "보증금 2억 / 월세 900만", "의원", "임대중"],
       ["지하 1층", "B01호", "198.3㎡", "보증금 5,000만 / 월세 300만", "노래연습장", "명도협의"],
-    ]
+    ],
+    widths: [10, 10, 15, 35, 15, 15]
   },
   leaseNotice: "※ 위 임대현황은 임차인 사정 및 임대 시장 상황에 따라 실제 조건과 상이할 수 있으므로, 반드시 사전 확인 바랍니다.",
   leaseRightTitle: "임대 핵심 가치 및 MD 추천 전략",
@@ -327,7 +328,11 @@ const mergeStateWithDefaults = (loaded: any): FlyerState => {
       floorStatus: loaded?.info?.floorStatus || INITIAL_INFO.floorStatus,
       highlights: loaded?.info?.highlights || INITIAL_INFO.highlights,
       leaseTable: (loaded?.info?.leaseTable && Array.isArray(loaded.info.leaseTable.headers) && Array.isArray(loaded.info.leaseTable.rows)) 
-        ? loaded.info.leaseTable 
+        ? {
+            ...INITIAL_INFO.leaseTable,
+            ...loaded.info.leaseTable,
+            widths: loaded.info.leaseTable.widths || INITIAL_INFO.leaseTable.widths || [10, 10, 15, 35, 15, 15]
+          } 
         : INITIAL_INFO.leaseTable,
       leaseNotice: loaded?.info?.leaseNotice !== undefined ? loaded?.info?.leaseNotice : INITIAL_INFO.leaseNotice,
       leaseRightTitle: loaded?.info?.leaseRightTitle !== undefined ? loaded?.info?.leaseRightTitle : INITIAL_INFO.leaseRightTitle,
