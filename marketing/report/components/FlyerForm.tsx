@@ -270,9 +270,78 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                                   </>
                               );
                           })()}
-                          <div className="mt-4">
-                              <label className="text-xs font-bold text-[#cc5a27]">매매가</label>
-                              <input name="priceMain" value={info.priceMain} onChange={handleChange} className="w-full border-2 border-orange-200 rounded p-2 text-sm font-bold text-gray-800 mt-1" />
+                          {/* 거래 형태 및 금액 설정 */}
+                          <div className="mt-4 bg-orange-50/50 p-3 rounded-lg border border-orange-100/80 space-y-3">
+                              <div className="flex items-center justify-between">
+                                  <label className="text-xs font-extrabold text-[#cc5a27] flex items-center gap-1">
+                                      🤝 거래 형태 및 금액 설정
+                                  </label>
+                                  {/* Select transaction type */}
+                                  <div className="flex bg-white rounded border border-gray-200 p-0.5 shadow-sm shrink-0">
+                                      {["매매", "전세", "월세"].map((t) => (
+                                          <button
+                                              key={t}
+                                              type="button"
+                                              onClick={() => setInfo({ ...info, transactionType: t as any })}
+                                              className={`px-2 py-0.5 rounded text-[10px] font-extrabold transition-all cursor-pointer ${
+                                                  (info.transactionType || "매매") === t 
+                                                      ? 'bg-[#cc5a27] text-white shadow-sm' 
+                                                      : 'text-gray-500 hover:bg-gray-100'
+                                              }`}
+                                          >
+                                              {t}
+                                          </button>
+                                      ))}
+                                  </div>
+                              </div>
+
+                              <div>
+                                  {(() => {
+                                      const tType = info.transactionType || "매매";
+                                      if (tType === "월세") {
+                                          return (
+                                              <div className="space-y-2">
+                                                  <div className="grid grid-cols-2 gap-2">
+                                                      <div>
+                                                          <span className="text-[10px] text-gray-500 font-semibold block mb-1">보증금</span>
+                                                          <input 
+                                                              name="priceMain" 
+                                                              value={info.priceMain} 
+                                                              onChange={handleChange} 
+                                                              placeholder="예: 300억" 
+                                                              className="w-full border border-gray-300 rounded p-1.5 text-xs font-bold text-gray-800 bg-white" 
+                                                          />
+                                                      </div>
+                                                      <div>
+                                                          <span className="text-[10px] text-gray-500 font-semibold block mb-1">월세</span>
+                                                          <input 
+                                                              name="priceSub" 
+                                                              value={info.priceSub || ""} 
+                                                              onChange={handleChange} 
+                                                              placeholder="예: 10000만" 
+                                                              className="w-full border border-gray-300 rounded p-1.5 text-xs font-bold text-[#cc5a27] bg-white" 
+                                                          />
+                                                      </div>
+                                                  </div>
+                                              </div>
+                                          );
+                                      } else {
+                                          const priceLabel = tType === "전세" ? "보증금" : "매매가";
+                                          return (
+                                              <div>
+                                                  <span className="text-[10px] text-gray-500 font-semibold block mb-1">{priceLabel}</span>
+                                                  <input 
+                                                      name="priceMain" 
+                                                      value={info.priceMain} 
+                                                      onChange={handleChange} 
+                                                      placeholder={tType === "전세" ? "예: 150억" : "예: 500억"} 
+                                                      className="w-full border border-gray-300 rounded p-1.5 text-xs font-bold text-gray-800 bg-white" 
+                                                  />
+                                              </div>
+                                          );
+                                      }
+                                  })()}
+                              </div>
                           </div>
                       </div>
                   </div>
