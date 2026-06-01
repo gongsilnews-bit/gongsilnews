@@ -1029,25 +1029,13 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
       const photos = editorRef.current.querySelectorAll('.inserted-photo');
       if (photos[idx]) {
         const wrapper = photos[idx] as HTMLElement;
-        const wrapAlign = newAlign === 'left' ? 'left' : newAlign === 'right' ? 'right' : 'center';
-        wrapper.style.textAlign = wrapAlign;
+        const marginCss = newAlign === 'left' ? 'margin: 16px auto 16px 0;' : newAlign === 'right' ? 'margin: 16px 0 16px auto;' : 'margin: 16px auto;';
+        wrapper.style.cssText = `display: table; ${marginCss} text-align: center;`;
+
         const img = wrapper.querySelector('img') as HTMLElement;
         if (img) {
-          const floatCss = newAlign === 'left' ? 'float: left; margin: 0 16px 8px 0; display: inline;'
-            : newAlign === 'right' ? 'float: right; margin: 0 0 8px 16px; display: inline;'
-            : 'float: none; display: block; margin: 0 auto;';
-          img.style.cssText = img.style.cssText.replace(/float:[^;]*;?/g, '').replace(/display:[^;]*;?/g, '').replace(/margin:[^;]*;?/g, '') + floatCss;
-        }
-        // clearfix 처리
-        const existingClear = wrapper.querySelector('div[style*="clear"]');
-        if (newAlign !== 'center') {
-          if (!existingClear) {
-            const clear = document.createElement('div');
-            clear.style.cssText = 'clear: both;';
-            wrapper.appendChild(clear);
-          }
-        } else if (existingClear) {
-          existingClear.remove();
+          // preserve max-width and just ensure it is block
+          img.style.cssText = img.style.cssText.replace(/float:[^;]*;?/g, '').replace(/display:[^;]*;?/g, '').replace(/margin:[^;]*;?/g, '') + 'display: block; width: 100%; height: auto;';
         }
         setContent(editorRef.current.innerHTML || '');
       }
