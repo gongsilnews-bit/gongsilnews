@@ -1251,6 +1251,29 @@ function App() {
         clone.style.minHeight = 'auto';
         clone.style.margin = '0 auto';
 
+        // 1. Strip contentEditable and hover edit styles from clone
+        const editables = clone.querySelectorAll('[contentEditable]');
+        editables.forEach(el => {
+            el.removeAttribute('contentEditable');
+            el.removeAttribute('suppressContentEditableWarning');
+            // Remove hover ring, background highlight, and cursor-text styles
+            el.className = el.className
+                .replace(/hover:bg-amber-100\/50/g, '')
+                .replace(/hover:ring-1/g, '')
+                .replace(/hover:ring-amber-300/g, '')
+                .replace(/focus:bg-amber-100\/80/g, '')
+                .replace(/focus:ring-1/g, '')
+                .replace(/focus:ring-amber-500/g, '')
+                .replace(/cursor-text/g, 'cursor-default')
+                .trim();
+        });
+
+        // 2. Remove all editor-only print-hidden elements completely (upload overlays, toolbar controllers)
+        const printHiddenElements = clone.querySelectorAll('.print\\:hidden');
+        printHiddenElements.forEach(el => {
+            el.remove();
+        });
+
         await Promise.all(Array.from(imgs).map(async (img) => {
             if (img.src.startsWith('blob:')) {
                 try {
