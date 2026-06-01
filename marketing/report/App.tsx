@@ -326,7 +326,9 @@ const mergeStateWithDefaults = (loaded: any): FlyerState => {
       overviewTable: convertOverviewTableToArray(loaded?.info?.overviewTable || loaded?.info?.overviewTableObj),
       floorStatus: loaded?.info?.floorStatus || INITIAL_INFO.floorStatus,
       highlights: loaded?.info?.highlights || INITIAL_INFO.highlights,
-      leaseTable: loaded?.info?.leaseTable || INITIAL_INFO.leaseTable,
+      leaseTable: (loaded?.info?.leaseTable && Array.isArray(loaded.info.leaseTable.headers) && Array.isArray(loaded.info.leaseTable.rows)) 
+        ? loaded.info.leaseTable 
+        : INITIAL_INFO.leaseTable,
       leaseNotice: loaded?.info?.leaseNotice !== undefined ? loaded?.info?.leaseNotice : INITIAL_INFO.leaseNotice,
       leaseRightTitle: loaded?.info?.leaseRightTitle !== undefined ? loaded?.info?.leaseRightTitle : INITIAL_INFO.leaseRightTitle,
       leaseRightText: loaded?.info?.leaseRightText !== undefined ? loaded?.info?.leaseRightText : INITIAL_INFO.leaseRightText,
@@ -1578,9 +1580,10 @@ ${clone.outerHTML}
       return [
           { id: 'page-1', label: '1. 개요 (Overview)' },
           { id: 'page-2', label: '2. 가치 (Status & Valuation)' },
-          { id: 'page-3', label: '3. 사진 (Field Photos)' },
-          { id: 'page-4', label: '4. 입지 (Area Analysis)' },
-          { id: 'page-5', label: '5. 로드맵 (Roadmap)' },
+          { id: 'page-3', label: '3. 임대현황 (Lease Status)' },
+          { id: 'page-4', label: '4. 사진 (Field Photos)' },
+          { id: 'page-5', label: '5. 입지 (Area Analysis)' },
+          { id: 'page-6', label: '6. 로드맵 (Roadmap)' },
       ];
   };
 

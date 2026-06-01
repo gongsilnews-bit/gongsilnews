@@ -287,7 +287,7 @@ const ReportPage = ({
                     ) : footerText}
                 </div>
                 <div className="text-gray-400 text-xs font-bold tracking-widest">
-                    PAGE 0{pageNumber} / 05
+                    PAGE 0{pageNumber} / 06
                 </div>
             </div>
         </div>
@@ -502,7 +502,7 @@ const KakaoMap = ({ address }: { address: string }) => {
 // ─── MAIN CANVAS COMPONENT ────────────────────────────────────────────────────
 
 const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, activeTab = 'all', onUpdateInfo, onImageUpload, onDeleteImage, isUploadingImage, onOpenTableEditor }, ref) => {
-  const { info, mainImage, subImage1, subImage2, featureImage1, featureImage2, mapImage } = data; 
+  const { info, mainImage, subImage1, subImage2, featureImage1, featureImage2, mapImage, colorTheme } = data; 
   const placeholder = "https://placehold.co/800x600/e2e8f0/1e293b?text=Image";
 
   // Data mapping from info
