@@ -1201,21 +1201,13 @@ ${clone.outerHTML}
 
   // Generate selectable sections list
   const getExportableSections = () => {
-      const sections = [
-          { id: 'hero', label: '메인 타이틀/이미지 (Hero)' },
-          { id: 'stats', label: '요약 스탯 (Bar)' },
-          { id: 'basic-info', label: '매물 상세 정보 (Table)' },
+      return [
+          { id: 'page-1', label: '1. 개요 (Overview)' },
+          { id: 'page-2', label: '2. 가치 (Status & Valuation)' },
+          { id: 'page-3', label: '3. 사진 (Field Photos)' },
+          { id: 'page-4', label: '4. 입지 (Area Analysis)' },
+          { id: 'page-5', label: '5. 로드맵 (Roadmap)' },
       ];
-
-      state.info.sections.forEach((sec) => {
-          sections.push({ 
-              id: sec.id, 
-              label: `${sec.title} (${sec.type === 'grid' ? '사진특징' : sec.type === 'list' ? '상세설명' : sec.type === 'table' ? '단지정보' : 'SNS'})` 
-          });
-      });
-
-      sections.push({ id: 'agent-info', label: '중개사 정보 (Footer)' });
-      return sections;
   };
 
   if (authError) {

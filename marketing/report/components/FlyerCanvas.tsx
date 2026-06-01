@@ -11,17 +11,19 @@ const ReportPage = ({
     title, 
     subtitle, 
     targetName, 
-    badgeText 
+    badgeText,
+    exportId
 }: { 
     children: React.ReactNode, 
     pageNumber: number, 
     title: string, 
     subtitle: string, 
     targetName: string, 
-    badgeText?: string 
+    badgeText?: string,
+    exportId?: string
 }) => {
     return (
-        <div className="relative bg-white w-[1122px] h-[794px] overflow-hidden flex flex-col shadow-2xl mb-8" style={{ pageBreakAfter: 'always' }}>
+        <div data-export-id={exportId} className="relative bg-white w-[1122px] h-[794px] overflow-hidden flex flex-col shadow-2xl mb-8" style={{ pageBreakAfter: 'always' }}>
             {/* Header */}
             <div className="h-[120px] bg-[#0d1424] text-white px-10 py-6 flex justify-between items-end shrink-0">
                 <div>
@@ -107,6 +109,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data }, ref)
             title={targetTitle} 
             subtitle={info.subTitle} 
             targetName={targetSub}
+            exportId="page-1"
         >
             <div className="flex gap-8 h-full">
                 {/* Left Col: Overview Table */}
@@ -185,6 +188,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data }, ref)
             subtitle="Status & Valuation" 
             targetName={targetSub}
             badgeText="EVIDENCE & DATA"
+            exportId="page-2"
         >
             <div className="flex gap-8 h-full">
                 {/* Left: Table */}
@@ -279,6 +283,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data }, ref)
             subtitle="Actual Field Photos" 
             targetName={targetSub}
             badgeText="PROPERTY VISUALS"
+            exportId="page-3"
         >
             <div className="flex gap-4 h-[550px]">
                 {/* Main Large Photo */}
@@ -314,6 +319,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data }, ref)
             subtitle="Strategic Connectivity" 
             targetName={targetSub}
             badgeText="AREA ANALYSIS"
+            exportId="page-4"
         >
             <div className="flex flex-col h-[550px] gap-6">
                 <div className="flex gap-6 h-3/4">
@@ -359,6 +365,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data }, ref)
             subtitle="Value & Roadmap" 
             targetName={targetSub}
             badgeText="INVESTMENT ROADMAP"
+            exportId="page-5"
         >
             <div className="grid grid-cols-2 grid-rows-2 gap-8 h-[480px]">
                 {[
