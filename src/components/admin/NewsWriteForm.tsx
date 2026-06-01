@@ -594,6 +594,18 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
   const [modalCaptionAlign, setModalCaptionAlign] = useState<'left' | 'center' | 'right'>('center');
   const modalFileRef = React.useRef<HTMLInputElement>(null);
 
+  /* ── 영상추가 모달 상태 ── */
+  const [showVideoModal, setShowVideoModal] = useState(false);
+  const [modalVideoUrl, setModalVideoUrl] = useState("");
+  const [modalVideoShorts, setModalVideoShorts] = useState(false);
+
+  const openVideoModal = () => {
+    saveCursorPosition();
+    setModalVideoUrl("");
+    setModalVideoShorts(false);
+    setShowVideoModal(true);
+  };
+
   /* ── 사진수정 모달 상태 ── */
   const [showEditModal, setShowEditModal] = useState(false);
   const [editPhotoIdx, setEditPhotoIdx] = useState<number>(-1);
@@ -1235,6 +1247,17 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
     setYoutubeUrl('');
   };
 
+  /* ── 영상추가 모달 확인 버튼 ── */
+  const handleVideoModalConfirm = () => {
+    if (!modalVideoUrl.trim()) { alert('유튜브 링크를 입력해주세요.'); return; }
+    const videoId = extractYoutubeId(modalVideoUrl);
+    if (!videoId) { alert('올바른 YouTube 링크를 입력해주세요.'); return; }
+
+    setVideoItems(prev => [...prev, { url: modalVideoUrl, videoId, caption: '', isShorts: modalVideoShorts, isCover: false }]);
+    insertVideoAtCursor(videoId, '', modalVideoShorts);
+    setShowVideoModal(false);
+  };
+
   /* ── 영상 삭제 ── */
   const removeVideo = (idx: number) => {
     if (editorRef.current) {
@@ -1698,21 +1721,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                 <span style={{ fontSize: 11, fontWeight: 600, color: "#3b82f6" }}>사진</span>
               </button>
               {/* 영상 */}
-              <button 
-                onClick={() => {
-                  setVideoCollapsed(false);
-                  setTimeout(() => {
-                    const el = document.getElementById('right-sidebar-video-input');
-                    if (el) {
-                      el.focus();
-                      el.style.transition = 'box-shadow 0.3s';
-                      el.style.boxShadow = '0 0 0 3px rgba(59,130,246,0.5)';
-                      setTimeout(() => el.style.boxShadow = 'none', 1000);
-                    }
-                  }, 50);
-                }}
-                style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "12px 4px", border: "none", background: "none", cursor: "pointer", borderRadius: 8 }}
-              >
+              <button onClick={openVideoModal} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "12px 4px", border: "none", background: "none", cursor: "pointer", borderRadius: 8 }}>
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="2" y="4" width="20" height="16" rx="2"/><polygon points="10 8 16 12 10 16 10 8" fill="#ef4444"/>
                 </svg>
@@ -2554,6 +2563,59 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
         </aside>
 
       </div>
+
+      {/* ═══ 영상추가 모달 ═══ */}
+      {showVideoModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.45)', zIndex: 9999,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }} onClick={() => setShowVideoModal(false)}>
+          <div onClick={e => e.stopPropagation()} style={{
+            background: '#fff', borderRadius: 14, width: 540, maxHeight: '85vh', overflowY: 'auto',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
+          }}>
+            {/* 헤더 */}
+            <div style={{
+              background: '#ef4444', color: '#fff', padding: '16px 20px',
+              borderTopLeftRadius: 14, borderTopRightRadius: 14,
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            }}>
+              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>영상추가</h3>
+              <button onClick={() => setShowVideoModal(false)} style={{ background: 'none', border: 'none', color: '#fff', fontSize: 22, cursor: 'pointer', lineHeight: 1 }}>✕</button>
+            </div>
+            {/* 본문 */}
+            <div style={{ padding: '24px 30px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '80px 1fr', gap: 16, alignItems: 'center' }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: textPrimary }}>링크</span>
+                <div>
+                  <input type="text" value={modalVideoUrl} onChange={e => setModalVideoUrl(e.target.value)}
+                    placeholder="YouTube 영상 링크 입력"
+                    style={{ width: '100%', padding: '10px 12px', border: `1px solid ${border}`, borderRadius: 6, fontSize: 13 }} />
+                </div>
+
+                <span style={{ fontSize: 13, fontWeight: 700, color: textPrimary }}>크기 맞춤</span>
+                <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, cursor: "pointer" }}>
+                  <input type="checkbox" checked={modalVideoShorts} onChange={e => setModalVideoShorts(e.target.checked)} style={{ accentColor: accentBlue }} />
+                  쇼츠(세로) 영상으로 크기 맞춤
+                </label>
+              </div>
+
+              {/* 하단 버튼 */}
+              <div style={{ display: 'flex', justifyContent: 'center', gap: 10, marginTop: 32 }}>
+                <button type="button" onClick={handleVideoModalConfirm}
+                  style={{ background: '#3b82f6', color: '#fff', border: 'none', padding: '10px 24px', borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: 'pointer', width: 120 }}>
+                  ✔ 확인
+                </button>
+                <button type="button" onClick={() => setShowVideoModal(false)}
+                  style={{ background: '#fff', color: textPrimary, border: `1px solid ${border}`, padding: '10px 24px', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer', width: 120 }}>
+                  ✕ 취소
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ═══ 사진추가 모달 ═══ */}
       {showPhotoModal && (
