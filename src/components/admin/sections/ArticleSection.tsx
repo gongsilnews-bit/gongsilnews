@@ -224,8 +224,8 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
               {[
                 { value: "전체", label: "전체보기" },
                 { value: "일반", label: "일반" },
-                { value: "헤드라인", label: "📌 헤드라인" },
                 { value: "중요", label: "⭐ 중요" },
+                { value: "헤드라인", label: "📌 헤드라인" },
               ].map(opt => (
                 <button
                   key={opt.value}
