@@ -616,7 +616,39 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
           {(activeTab === 'all' || activeTab === 4) && (
               <div className="space-y-6 animate-fadeIn">
                   <div>
-                      <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">입지 개요</h4>
+                      <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">입지 개요 및 지도 설정</h4>
+                      <div className="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-200/60 mb-4 text-xs">
+                          <div>
+                              <label className="text-xs text-gray-500 font-semibold block mb-1">🗺️ 지도 유형 선택</label>
+                              <div className="flex bg-gray-100 p-1 rounded-lg">
+                                  {[
+                                      { type: "kakao", label: "카카오 지도" },
+                                      { type: "google", label: "구글 지도" },
+                                      { type: "upload", label: "캡처 이미지 업로드" }
+                                  ].map(opt => (
+                                      <button
+                                          key={opt.type}
+                                          type="button"
+                                          onClick={() => setInfo({ ...info, mapType: opt.type as any })}
+                                          className={`flex-1 py-1.5 rounded-md text-[10px] font-extrabold transition-all cursor-pointer border-none ${
+                                              (info.mapType || "kakao") === opt.type 
+                                                  ? "bg-white text-gray-900 shadow-sm" 
+                                                  : "text-gray-500 hover:bg-gray-200 bg-transparent"
+                                          }`}
+                                      >
+                                          {opt.label}
+                                      </button>
+                                  ))}
+                              </div>
+                          </div>
+                          
+                          {info.mapType === "upload" && (
+                              <div className="pt-2 border-t border-slate-200 animate-fadeIn">
+                                  {renderImageUpload('mapImage', '네이버/카카오 지도 캡처 이미지')}
+                              </div>
+                          )}
+                      </div>
+
                       <div className="space-y-3">
                           <div><label className="text-xs text-gray-500">타겟 로케이션 (우측 상단 뱃지)</label><textarea name="areaTargetName" value={info.areaTargetName} onChange={handleChange} className="w-full border rounded p-2 text-sm" rows={2}/></div>
                           <div><label className="text-xs text-gray-500">입지 설명 텍스트</label><textarea name="areaTargetDesc" value={info.areaTargetDesc} onChange={handleChange} className="w-full border rounded p-2 text-sm" rows={4}/></div>

@@ -90,6 +90,7 @@ const INITIAL_INFO: PropertyInfo = {
   areaBox1Title: "STATION AREA", areaBox1Text: "지하철 3호선 남부터미널역과 도보 약 250m 거리로 최상의 대중교통 접근성 확보",
   areaBox2Title: "CULTURAL DIST.", areaBox2Text: "대한민국 대표 문화거점인 예술의전당, 국립국악원 및 관련 클러스터 인접",
   areaBox3Title: "CONNECTIVITY", areaBox3Text: "남부순환로, 서초중앙로 진입이 용이하여 강남권 전역 및 고속도로 접근성 탁월",
+  mapType: 'kakao',
 
   // Page 5: Roadmap
   roadmap: {
@@ -336,6 +337,7 @@ function App() {
     featureImage2: null,
     featureImage3: null,
     featureImage4: null,
+    mapImage: null,
   });
 
   const [isGenerating, setIsGenerating] = useState(false);

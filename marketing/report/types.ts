@@ -108,6 +108,7 @@ export interface PropertyInfo {
   page5Title?: string;
   page5Subtitle?: string;
   page5FooterQuote?: string;
+  mapType?: 'kakao' | 'google' | 'upload';
 
   // Backward compatibility fields
   promotionText?: string;
