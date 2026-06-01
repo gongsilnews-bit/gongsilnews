@@ -6,6 +6,7 @@ interface FlyerFormProps {
   info: PropertyInfo;
   setInfo: (info: PropertyInfo) => void;
   onImageUpload: (key: string, file: File) => void;
+  onDeleteImage?: (key: string) => void;
   colors: FlyerColor[];
   layouts: FlyerLayout[];
   currentColor: FlyerColor;
@@ -20,7 +21,7 @@ interface FlyerFormProps {
 }
 
 const FlyerForm: React.FC<FlyerFormProps> = ({ 
-    info, setInfo, onImageUpload,
+    info, setInfo, onImageUpload, onDeleteImage,
     colors, layouts, currentColor, currentLayout, onColorSelect, onLayoutSelect,
     uploadedImages, isUploadingImage,
     activeTab, setActiveTab,
@@ -80,8 +81,20 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
   const primaryColor = currentColor.primary;
 
   const renderImageUpload = (key: string, label: string) => (
-      <div className="mb-4">
-          <label className="block text-xs font-semibold text-gray-500 mb-1">{label}</label>
+      <div className="mb-4 animate-fadeIn">
+          <div className="flex justify-between items-center mb-1">
+              <label className="block text-xs font-semibold text-gray-500">{label}</label>
+              {uploadedImages[key] && onDeleteImage && (
+                  <button
+                      type="button"
+                      onClick={() => onDeleteImage(key)}
+                      className="text-red-500 hover:text-red-700 font-bold text-[10px] flex items-center gap-0.5 border-none bg-transparent cursor-pointer transition-colors"
+                  >
+                      <TrashIcon className="w-3.5 h-3.5" />
+                      <span>삭제</span>
+                  </button>
+              )}
+          </div>
           <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center relative hover:bg-gray-50 transition-colors group overflow-hidden h-32 flex items-center justify-center bg-gray-50">
               {uploadedImages[key] ? (
                   <img src={uploadedImages[key]} className="absolute inset-0 w-full h-full object-cover" />

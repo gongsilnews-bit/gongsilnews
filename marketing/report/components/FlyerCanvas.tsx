@@ -6,6 +6,7 @@ interface FlyerCanvasProps {
   activeTab?: number | 'all';
   onUpdateInfo?: (info: any) => void;
   onImageUpload?: (key: string, file: File) => Promise<string | undefined>;
+  onDeleteImage?: (key: string) => void;
   isUploadingImage?: Record<string, boolean>;
   onOpenTableEditor?: () => void;
 }
@@ -92,6 +93,7 @@ const EditableImage = ({
   className = "",
   imageKey,
   onImageUpload,
+  onDelete,
   isUploading = false,
   aspectRatioClass = "object-contain"
 }: {
@@ -100,6 +102,7 @@ const EditableImage = ({
   className?: string;
   imageKey: string;
   onImageUpload?: (key: string, file: File) => Promise<string | undefined>;
+  onDelete?: () => void;
   isUploading?: boolean;
   aspectRatioClass?: "object-contain" | "object-cover";
 }) => {
@@ -150,16 +153,39 @@ const EditableImage = ({
 
       {/* Hover overlay with direct upload action (print:hidden) */}
       {onImageUpload && (
-        <div 
-          onClick={() => fileInputRef.current?.click()}
-          className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-center cursor-pointer z-20 print:hidden text-white gap-2"
-        >
-          <div className="bg-amber-500 hover:bg-amber-600 active:scale-95 text-slate-950 font-extrabold px-3.5 py-2 rounded-xl shadow-lg text-xs flex items-center gap-1.5 transition-all">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z" />
-            </svg>
-            <span>사진 업로드 / 변경</span>
+        <div className="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-center z-20 print:hidden text-white gap-2">
+          <div className="flex flex-col sm:flex-row gap-2 px-4 w-full justify-center items-center">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                fileInputRef.current?.click();
+              }}
+              className="bg-amber-500 hover:bg-amber-600 active:scale-95 text-slate-950 font-extrabold px-3 py-1.5 rounded-xl shadow-lg text-[11px] flex items-center gap-1.5 transition-all cursor-pointer border-none"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z" />
+              </svg>
+              <span>업로드/변경</span>
+            </button>
+            
+            {src && onDelete && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete();
+                }}
+                className="bg-red-500 hover:bg-red-600 active:scale-95 text-white font-extrabold px-3 py-1.5 rounded-xl shadow-lg text-[11px] flex items-center gap-1.5 transition-all cursor-pointer border-none"
+                title="사진 삭제"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                </svg>
+                <span>사진 삭제</span>
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -335,7 +361,7 @@ const GeditorWrapper = ({
 
 // ─── MAIN CANVAS COMPONENT ────────────────────────────────────────────────────
 
-const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, activeTab = 'all', onUpdateInfo, onImageUpload, isUploadingImage, onOpenTableEditor }, ref) => {
+const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, activeTab = 'all', onUpdateInfo, onImageUpload, onDeleteImage, isUploadingImage, onOpenTableEditor }, ref) => {
   const { info, mainImage, subImage1, subImage2, featureImage1, featureImage2 } = data; 
   const placeholder = "https://placehold.co/800x600/e2e8f0/1e293b?text=Image";
 
@@ -1098,61 +1124,63 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
             footerText={info.footerText || "CONFIDENTIAL | INFORMATION MEMORANDUM"}
             onUpdateFooter={(val) => handleTextChange('footerText', val)}
         >
-            <div className="flex gap-4 h-[550px]">
-                {/* Main Large Photo */}
-                <div className="w-1/2 relative h-full group">
-                    <EditableImage 
-                        src={mainImage || ""} 
-                        alt="Exterior" 
-                        imageKey="mainImage"
-                        onImageUpload={onImageUpload}
-                        isUploading={isUploadingImage?.mainImage}
-                        aspectRatioClass="object-cover"
-                    />
-                    <div className="absolute bottom-0 left-0 w-full p-4 bg-gradient-to-t from-black/80 to-transparent z-20">
-                        <span className="text-white font-bold relative z-30">
-                            <EditableText 
-                                value={info.photoCaptions?.main || ""} 
-                                onChange={(val) => {
-                                    if (onUpdateInfo) {
-                                        onUpdateInfo({
-                                            ...info,
-                                            photoCaptions: { ...info.photoCaptions, main: val }
-                                        });
-                                    }
-                                }}
-                                className="hover:bg-white/10 hover:ring-white/20 focus:bg-white/20 focus:ring-white/50 text-white"
-                            />
-                        </span>
-                    </div>
-                </div>
-                
-                {/* 4 Grid Photos */}
-                <div className="w-1/2 grid grid-cols-2 grid-rows-2 gap-4">
-                    {[
-                        { img: subImage1, label: info.photoCaptions?.sub1, key: 'sub1', slot: 'subImage1' },
-                        { img: subImage2, label: info.photoCaptions?.sub2, key: 'sub2', slot: 'subImage2' },
-                        { img: featureImage1, label: info.photoCaptions?.feat1, key: 'feat1', slot: 'featureImage1' },
-                        { img: featureImage2, label: info.photoCaptions?.feat2, key: 'feat2', slot: 'featureImage2' },
-                    ].map((p, i) => (
-                        <div key={i} className="relative rounded-xl overflow-hidden shadow-md bg-gray-200">
+            {(() => {
+                // Group active uploaded photos
+                const activePhotos = [
+                    { src: mainImage, key: 'mainImage', captionKey: 'main', label: "Exterior" },
+                    { src: subImage1, key: 'subImage1', captionKey: 'sub1', label: "Side View" },
+                    { src: subImage2, key: 'subImage2', captionKey: 'sub2', label: "Entrance" },
+                    { src: featureImage1, key: 'featureImage1', captionKey: 'feat1', label: "Interior" },
+                    { src: featureImage2, key: 'featureImage2', captionKey: 'feat2', label: "Rooftop" }
+                ].filter(p => p.src);
+
+                const count = activePhotos.length;
+
+                // Case 0: No photos uploaded
+                if (count === 0) {
+                    return (
+                        <div className="w-full h-[550px] border-4 border-dashed border-gray-300 rounded-3xl flex flex-col items-center justify-center bg-gray-50/50 hover:bg-gray-50 hover:border-amber-400 transition-all p-8 relative cursor-pointer group">
                             <EditableImage 
-                                src={p.img || ""} 
-                                alt={p.label || ""} 
-                                imageKey={p.slot}
+                                src="" 
+                                alt="No Photos" 
+                                imageKey="mainImage"
                                 onImageUpload={onImageUpload}
-                                isUploading={isUploadingImage?.[p.slot]}
+                                isUploading={isUploadingImage?.mainImage}
                                 aspectRatioClass="object-cover"
                             />
-                            <div className="absolute bottom-0 left-0 w-full p-3 bg-gradient-to-t from-[#0d1424]/90 to-transparent z-20">
-                                <span className="text-white font-bold text-sm relative z-30">
+                            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none p-6 text-center">
+                                <span className="text-4xl mb-3">📸</span>
+                                <h3 className="text-base font-bold text-gray-700 mb-1">등록된 현장 사진이 없습니다</h3>
+                                <p className="text-xs text-gray-400 max-w-sm">마우스를 올려 [사진 업로드] 버튼을 누르거나 좌측 사이드바에서 사진을 추가해 주세요. (최대 5장 등록 가능)</p>
+                            </div>
+                        </div>
+                    );
+                }
+
+                // Case 1: Single photo (100% full height & width)
+                if (count === 1) {
+                    const p = activePhotos[0];
+                    const captionValue = info.photoCaptions?.[p.captionKey] !== undefined ? info.photoCaptions[p.captionKey] : p.label;
+                    return (
+                        <div className="w-full h-[550px] relative rounded-2xl overflow-hidden shadow-md group">
+                            <EditableImage 
+                                src={p.src || ""} 
+                                alt={p.label} 
+                                imageKey={p.key}
+                                onImageUpload={onImageUpload}
+                                onDelete={() => onDeleteImage && onDeleteImage(p.key)}
+                                isUploading={isUploadingImage?.[p.key]}
+                                aspectRatioClass="object-cover"
+                            />
+                            <div className="absolute bottom-0 left-0 w-full p-4 bg-gradient-to-t from-black/85 to-transparent z-20">
+                                <span className="text-white font-bold relative z-30 text-sm">
                                     <EditableText 
-                                        value={p.label || ""} 
+                                        value={captionValue} 
                                         onChange={(val) => {
                                             if (onUpdateInfo) {
                                                 onUpdateInfo({
                                                     ...info,
-                                                    photoCaptions: { ...info.photoCaptions, [p.key]: val }
+                                                    photoCaptions: { ...(info.photoCaptions || {}), [p.captionKey]: val }
                                                 });
                                             }
                                         }}
@@ -1161,9 +1189,237 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                 </span>
                             </div>
                         </div>
-                    ))}
-                </div>
-            </div>
+                    );
+                }
+
+                // Case 2: 2 photos (50/50 tall side-by-side columns)
+                if (count === 2) {
+                    return (
+                        <div className="flex gap-4 h-[550px] w-full">
+                            {activePhotos.map((p, idx) => {
+                                const captionValue = info.photoCaptions?.[p.captionKey] !== undefined ? info.photoCaptions[p.captionKey] : p.label;
+                                return (
+                                    <div key={idx} className="w-1/2 relative h-full rounded-2xl overflow-hidden shadow-md group">
+                                        <EditableImage 
+                                            src={p.src || ""} 
+                                            alt={p.label} 
+                                            imageKey={p.key}
+                                            onImageUpload={onImageUpload}
+                                            onDelete={() => onDeleteImage && onDeleteImage(p.key)}
+                                            isUploading={isUploadingImage?.[p.key]}
+                                            aspectRatioClass="object-cover"
+                                        />
+                                        <div className="absolute bottom-0 left-0 w-full p-4 bg-gradient-to-t from-black/85 to-transparent z-20">
+                                            <span className="text-white font-bold relative z-30 text-sm">
+                                                <EditableText 
+                                                    value={captionValue} 
+                                                    onChange={(val) => {
+                                                        if (onUpdateInfo) {
+                                                            onUpdateInfo({
+                                                                ...info,
+                                                                photoCaptions: { ...(info.photoCaptions || {}), [p.captionKey]: val }
+                                                            });
+                                                        }
+                                                    }}
+                                                    className="hover:bg-white/10 hover:ring-white/20 focus:bg-white/20 focus:ring-white/50 text-white"
+                                                />
+                                            </span>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    );
+                }
+
+                // Case 3: 3 photos (Left 1 large 60%, Right 2 stacked vertically 40%)
+                if (count === 3) {
+                    const largePhoto = activePhotos[0];
+                    const small1 = activePhotos[1];
+                    const small2 = activePhotos[2];
+                    
+                    const largeCaption = info.photoCaptions?.[largePhoto.captionKey] !== undefined ? info.photoCaptions[largePhoto.captionKey] : largePhoto.label;
+                    
+                    return (
+                        <div className="flex gap-4 h-[550px] w-full">
+                            <div className="w-[60%] relative h-full rounded-2xl overflow-hidden shadow-md group">
+                                <EditableImage 
+                                    src={largePhoto.src || ""} 
+                                    alt={largePhoto.label} 
+                                    imageKey={largePhoto.key}
+                                    onImageUpload={onImageUpload}
+                                    onDelete={() => onDeleteImage && onDeleteImage(largePhoto.key)}
+                                    isUploading={isUploadingImage?.[largePhoto.key]}
+                                    aspectRatioClass="object-cover"
+                                />
+                                <div className="absolute bottom-0 left-0 w-full p-4 bg-gradient-to-t from-black/85 to-transparent z-20">
+                                    <span className="text-white font-bold relative z-30 text-sm">
+                                        <EditableText 
+                                            value={largeCaption} 
+                                            onChange={(val) => {
+                                                if (onUpdateInfo) {
+                                                    onUpdateInfo({
+                                                        ...info,
+                                                        photoCaptions: { ...(info.photoCaptions || {}), [largePhoto.captionKey]: val }
+                                                    });
+                                                }
+                                            }}
+                                            className="hover:bg-white/10 hover:ring-white/20 focus:bg-white/20 focus:ring-white/50 text-white"
+                                        />
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <div className="w-[40%] flex flex-col gap-4 h-full">
+                                {[small1, small2].map((p, idx) => {
+                                    const captionValue = info.photoCaptions?.[p.captionKey] !== undefined ? info.photoCaptions[p.captionKey] : p.label;
+                                    return (
+                                        <div key={idx} className="h-[calc(50%-8px)] relative rounded-2xl overflow-hidden shadow-md group">
+                                            <EditableImage 
+                                                src={p.src || ""} 
+                                                alt={p.label} 
+                                                imageKey={p.key}
+                                                onImageUpload={onImageUpload}
+                                                onDelete={() => onDeleteImage && onDeleteImage(p.key)}
+                                                isUploading={isUploadingImage?.[p.key]}
+                                                aspectRatioClass="object-cover"
+                                            />
+                                            <div className="absolute bottom-0 left-0 w-full p-3 bg-gradient-to-t from-black/85 to-transparent z-20">
+                                                <span className="text-white font-bold relative z-30 text-xs">
+                                                    <EditableText 
+                                                        value={captionValue} 
+                                                        onChange={(val) => {
+                                                            if (onUpdateInfo) {
+                                                                onUpdateInfo({
+                                                                    ...info,
+                                                                    photoCaptions: { ...(info.photoCaptions || {}), [p.captionKey]: val }
+                                                                });
+                                                            }
+                                                        }}
+                                                        className="hover:bg-white/10 hover:ring-white/20 focus:bg-white/20 focus:ring-white/50 text-white"
+                                                    />
+                                                </span>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    );
+                }
+
+                // Case 4: 4 photos (2x2 grid)
+                if (count === 4) {
+                    return (
+                        <div className="grid grid-cols-2 grid-rows-2 gap-4 h-[550px] w-full">
+                            {activePhotos.map((p, idx) => {
+                                const captionValue = info.photoCaptions?.[p.captionKey] !== undefined ? info.photoCaptions[p.captionKey] : p.label;
+                                return (
+                                    <div key={idx} className="relative rounded-2xl overflow-hidden shadow-md group">
+                                        <EditableImage 
+                                            src={p.src || ""} 
+                                            alt={p.label} 
+                                            imageKey={p.key}
+                                            onImageUpload={onImageUpload}
+                                            onDelete={() => onDeleteImage && onDeleteImage(p.key)}
+                                            isUploading={isUploadingImage?.[p.key]}
+                                            aspectRatioClass="object-cover"
+                                        />
+                                        <div className="absolute bottom-0 left-0 w-full p-3 bg-gradient-to-t from-black/85 to-transparent z-20">
+                                            <span className="text-white font-bold relative z-30 text-xs">
+                                                <EditableText 
+                                                    value={captionValue} 
+                                                    onChange={(val) => {
+                                                        if (onUpdateInfo) {
+                                                            onUpdateInfo({
+                                                                ...info,
+                                                                photoCaptions: { ...(info.photoCaptions || {}), [p.captionKey]: val }
+                                                            });
+                                                        }
+                                                    }}
+                                                    className="hover:bg-white/10 hover:ring-white/20 focus:bg-white/20 focus:ring-white/50 text-white"
+                                                />
+                                            </span>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    );
+                }
+
+                // Case 5: 5 photos (Magazine layout: Left 1 large, Right 4 small)
+                const mainP = activePhotos[0];
+                const mainCaption = info.photoCaptions?.[mainP.captionKey] !== undefined ? info.photoCaptions[mainP.captionKey] : mainP.label;
+                return (
+                    <div className="flex gap-4 h-[550px] w-full">
+                        {/* Main Large Photo */}
+                        <div className="w-1/2 relative h-full group">
+                            <EditableImage 
+                                src={mainP.src || ""} 
+                                alt={mainP.label} 
+                                imageKey={mainP.key}
+                                onImageUpload={onImageUpload}
+                                onDelete={() => onDeleteImage && onDeleteImage(mainP.key)}
+                                isUploading={isUploadingImage?.[mainP.key]}
+                                aspectRatioClass="object-cover"
+                            />
+                            <div className="absolute bottom-0 left-0 w-full p-4 bg-gradient-to-t from-black/85 to-transparent z-20">
+                                <span className="text-white font-bold relative z-30">
+                                    <EditableText 
+                                        value={mainCaption} 
+                                        onChange={(val) => {
+                                            if (onUpdateInfo) {
+                                                onUpdateInfo({
+                                                    ...info,
+                                                    photoCaptions: { ...(info.photoCaptions || {}), [mainP.captionKey]: val }
+                                                });
+                                            }
+                                        }}
+                                        className="hover:bg-white/10 hover:ring-white/20 focus:bg-white/20 focus:ring-white/50 text-white"
+                                    />
+                                </span>
+                            </div>
+                        </div>
+                        
+                        {/* 4 Grid Photos */}
+                        <div className="w-1/2 grid grid-cols-2 grid-rows-2 gap-4">
+                            {[activePhotos[1], activePhotos[2], activePhotos[3], activePhotos[4]].map((p, i) => {
+                                const captionValue = info.photoCaptions?.[p.captionKey] !== undefined ? info.photoCaptions[p.captionKey] : p.label;
+                                return (
+                                    <div key={i} className="relative rounded-xl overflow-hidden shadow-md bg-gray-200 group">
+                                        <EditableImage 
+                                            src={p.src || ""} 
+                                            alt={p.label || ""} 
+                                            imageKey={p.key}
+                                            onImageUpload={onImageUpload}
+                                            onDelete={() => onDeleteImage && onDeleteImage(p.key)}
+                                            isUploading={isUploadingImage?.[p.key]}
+                                            aspectRatioClass="object-cover"
+                                        />
+                                        <div className="absolute bottom-0 left-0 w-full p-3 bg-gradient-to-t from-[#0d1424]/90 to-transparent z-20">
+                                            <span className="text-white font-bold text-sm relative z-30">
+                                                <EditableText 
+                                                    value={captionValue} 
+                                                    onChange={(val) => {
+                                                        if (onUpdateInfo) {
+                                                            onUpdateInfo({
+                                                                ...info,
+                                                                photoCaptions: { ...(info.photoCaptions || {}), [p.captionKey]: val }
+                                                            });
+                                                        }
+                                                    }}
+                                                    className="hover:bg-white/10 hover:ring-white/20 focus:bg-white/20 focus:ring-white/50 text-white"
+                                                />
+                                            </span>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                );
+            })()}
         </ReportPage>
         )}
 

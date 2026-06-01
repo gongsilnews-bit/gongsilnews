@@ -1607,6 +1607,13 @@ ${clone.outerHTML}
               info={state.info}
               setInfo={handleInfoChange}
               onImageUpload={handleImageUpload}
+              onDeleteImage={(key) => {
+                pushToHistoryInstant(state);
+                setState(prev => ({
+                  ...prev,
+                  [key]: null
+                }));
+              }}
               onGenerate={handleGenerateAI}
               onAnalyzeImage={handleAnalyzeImage}
               onAnalyzeAgentImage={handleAnalyzeAgentImage}
@@ -1648,6 +1655,13 @@ ${clone.outerHTML}
                       activeTab={activeTab} 
                       onUpdateInfo={handleInfoChange}
                       onImageUpload={handleImageUpload}
+                      onDeleteImage={(key) => {
+                        pushToHistoryInstant(state);
+                        setState(prev => ({
+                          ...prev,
+                          [key]: null
+                        }));
+                      }}
                       isUploadingImage={isUploadingImage}
                       onOpenTableEditor={() => setIsTableEditorOpen(true)}
                     />
