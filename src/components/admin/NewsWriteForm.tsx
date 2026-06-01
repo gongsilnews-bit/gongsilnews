@@ -841,7 +841,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
         isCover: false,
         size: 600,
         align: 'center',
-        captionAlign: 'left',
+        captionAlign: 'center',
       };
 
       setPhotoFiles(prev => {
@@ -850,7 +850,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
         return updated;
       });
 
-      insertImageAtCursor(preview, '', { size: 600, align: 'center', captionAlign: 'left' });
+      insertImageAtCursor(preview, '', { size: 600, align: 'center', captionAlign: 'center' });
     }
   };
 
@@ -1002,6 +1002,9 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
             const clear = wrapper.querySelector('div[style*="clear"]');
             if (clear) wrapper.insertBefore(pTag, clear);
             else wrapper.appendChild(pTag);
+          } else {
+            const capAlign = photoFiles[idx]?.captionAlign || 'center';
+            pTag.style.textAlign = capAlign;
           }
           pTag.textContent = caption;
           const img = wrapper.querySelector('img') as HTMLImageElement;
