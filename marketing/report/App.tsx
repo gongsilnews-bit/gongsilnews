@@ -1158,9 +1158,8 @@ ${clone.outerHTML}
       
       // We need to append the clone to the document to capture it, but keep it hidden/out of view
       clone.style.position = 'absolute';
-      clone.style.left = '-9999px';
-      clone.style.top = '0';
-      clone.style.width = '860px'; // Enforce width for consistency
+      clone.style.left = '0px';
+      clone.style.top = '-99999px'; // Move out of view vertically to avoid x: 0 offset issues
       
       // FIX: Force auto height to remove whitespace from min-h-[1400px] class
       clone.style.minHeight = '0px'; 
@@ -1182,12 +1181,9 @@ ${clone.outerHTML}
         scale: 2, 
         useCORS: true,
         backgroundColor: '#ffffff',
-        width: 860, // Fixed width
-        windowWidth: 1080, 
+        windowWidth: 1400, // Ensure enough width for the 1122px wide layout
         scrollX: 0,
-        scrollY: 0,
-        x: 0,
-        y: 0
+        scrollY: 0
       });
 
       document.body.removeChild(clone); // Cleanup
