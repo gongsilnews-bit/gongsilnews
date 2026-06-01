@@ -920,7 +920,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
               else if (row === 1) y = (img.height - logoHeight) / 2;
               else if (row === 2) y = img.height - logoHeight - padding;
               
-              ctx.globalAlpha = 0.85;
+              ctx.globalAlpha = 0.40;
               ctx.drawImage(logo, x, y, logoWidth, logoHeight);
               ctx.globalAlpha = 1.0;
               
@@ -934,7 +934,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
               }, modalFile.type || 'image/png', 0.95);
             };
             logo.onerror = () => resolve({ file: modalFile, preview: modalPreview });
-            logo.src = '/new_logo.png';
+            logo.src = '/logo.png';
           };
           img.onerror = () => resolve({ file: modalFile, preview: modalPreview });
           img.src = URL.createObjectURL(modalFile);
