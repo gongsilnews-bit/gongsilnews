@@ -22,7 +22,9 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<{ text: string; type: "success" | "error" | "info" } | null>(null);
   const [articleFilter, setArticleFilter] = useState("전체");
-  const [exposureFilter, setExposureFilter] = useState("전체");
+  const [publishFilter, setPublishFilter] = useState<"전체" | "헤드라인" | "중요">("전체");
+  const [isHeadlineHovered, setIsHeadlineHovered] = useState(false);
+  const [isImportantHovered, setIsImportantHovered] = useState(false);
   const [checkedArticleIds, setCheckedArticleIds] = useState<string[]>([]);
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
@@ -63,13 +65,12 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
     if (activeFilters.section2 !== "전체") params.section2 = activeFilters.section2;
     if (activeFilters.keyword) params.searchKeyword = activeFilters.keyword;
 
-    if (exposureFilter === "일반") {
-      params.is_important = false;
-      params.is_headline = false;
-    } else if (exposureFilter === "중요") {
-      params.is_important = true;
-    } else if (exposureFilter === "헤드라인") {
-      params.is_headline = true;
+    if (articleFilter === "발행됨") {
+      if (publishFilter === "헤드라인") {
+        params.is_headline = true;
+      } else if (publishFilter === "중요") {
+        params.is_important = true;
+      }
     }
 
     const res = await getArticles(params);
@@ -86,8 +87,8 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
       getArticles({ status: "SCHEDULED", limit: 1 }),
       getArticles({ status: "DRAFT", limit: 1 }),
       getArticles({ status: "REJECTED", limit: 1 }),
-      getArticles({ is_headline: true, limit: 1 }),
-      getArticles({ is_important: true, limit: 1 }),
+      getArticles({ status: "APPROVED", is_headline: true, limit: 1 }),
+      getArticles({ status: "APPROVED", is_important: true, limit: 1 }),
     ]);
     setCounts({
       전체: allRes.count || 0,
@@ -110,7 +111,7 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
 
   useEffect(() => {
     loadData();
-  }, [currentPage, articleFilter, exposureFilter, activeFilters, pageSize, sortBy]);
+  }, [currentPage, articleFilter, publishFilter, activeFilters, pageSize, sortBy]);
 
   // 최고관리자 기사관리: AI 에이전트 초안 포함 모든 기사 표시
   const baseArticles = dbArticles;
@@ -131,15 +132,6 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
         <span style={{ fontSize: 13, fontWeight: 600, color: textSecondary }}>
           ( 승인대기 {counts.승인대기}건 / 전체 {counts.전체}건 )
         </span>
-        <div style={{ flex: 1 }}></div>
-        <div style={{ display: "flex", gap: 12 }}>
-          <span style={{ fontSize: 13, fontWeight: 700, color: "#ef4444", background: "#fef2f2", padding: "4px 10px", borderRadius: 6, border: "1px solid #fecaca" }}>
-            📌 헤드라인: {counts.헤드라인}건
-          </span>
-          <span style={{ fontSize: 13, fontWeight: 700, color: "#f59e0b", background: "#fffbeb", padding: "4px 10px", borderRadius: 6, border: "1px solid #fde68a" }}>
-            ⭐ 중요기사: {counts.중요}건
-          </span>
-        </div>
       </div>
 
       {/* 필터 검색 바 (상단으로 분리) */}
@@ -203,6 +195,7 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
               return (
                 <button key={tab} onClick={() => {
                   setArticleFilter(tab);
+                  setPublishFilter("전체");
                   setCheckedArticleIds([]);
                   setActiveFilters({ articleNo: "", section: "전체", section2: "전체", keyword: "" });
                   setSearchArticleNo(""); setSearchSection("전체"); setSearchSection2("전체"); setSearchKeyword("");
@@ -218,36 +211,64 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
               );
             })}
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, paddingRight: 16 }}>
-            <span style={{ fontSize: 12, fontWeight: 700, color: textSecondary, marginRight: 2 }}>노출필터:</span>
-            <div style={{ display: "flex", background: darkMode ? "#1e293b" : "#f1f5f9", padding: "3px", borderRadius: "6px", gap: "2px" }}>
-              {[
-                { value: "전체", label: "전체보기" },
-                { value: "일반", label: "일반" },
-                { value: "중요", label: "⭐ 중요" },
-                { value: "헤드라인", label: "📌 헤드라인" },
-              ].map(opt => (
-                <button
-                  key={opt.value}
-                  onClick={() => { setExposureFilter(opt.value); setCurrentPage(1); }}
-                  style={{
-                    border: "none",
-                    background: exposureFilter === opt.value ? (darkMode ? "#3b82f6" : "#fff") : "transparent",
-                    color: exposureFilter === opt.value ? (darkMode ? "#fff" : "#111") : (darkMode ? "#9ca3af" : "#64748b"),
-                    padding: "4px 10px",
-                    fontSize: 12,
-                    fontWeight: exposureFilter === opt.value ? 800 : 600,
-                    borderRadius: "4px",
-                    cursor: "pointer",
-                    boxShadow: exposureFilter === opt.value && !darkMode ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
-                    transition: "all 0.2s"
-                  }}
-                >
-                  {opt.label}
-                </button>
-              ))}
+          {articleFilter === "발행됨" && (
+            <div style={{ display: "flex", alignItems: "center", gap: 12, paddingRight: 8 }}>
+              <button
+                onClick={() => {
+                  setPublishFilter(prev => prev === "헤드라인" ? "전체" : "헤드라인");
+                  setCurrentPage(1);
+                }}
+                onMouseEnter={() => setIsHeadlineHovered(true)}
+                onMouseLeave={() => setIsHeadlineHovered(false)}
+                style={{
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: "#ef4444",
+                  background: publishFilter === "헤드라인" ? "#fecaca" : (isHeadlineHovered ? "#fee2e2" : "#fef2f2"),
+                  padding: "6px 12px",
+                  borderRadius: 6,
+                  border: publishFilter === "헤드라인" ? "2px solid #ef4444" : "1px solid #fecaca",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                  boxShadow: publishFilter === "헤드라인" ? "0 2px 4px rgba(239, 68, 68, 0.2)" : "none",
+                  transform: isHeadlineHovered ? "translateY(-1px)" : "none",
+                  transition: "all 0.2s",
+                  outline: "none"
+                }}
+              >
+                📌 헤드라인: {counts.헤드라인}건
+              </button>
+              <button
+                onClick={() => {
+                  setPublishFilter(prev => prev === "중요" ? "전체" : "중요");
+                  setCurrentPage(1);
+                }}
+                onMouseEnter={() => setIsImportantHovered(true)}
+                onMouseLeave={() => setIsImportantHovered(false)}
+                style={{
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: "#f59e0b",
+                  background: publishFilter === "중요" ? "#fde68a" : (isImportantHovered ? "#fef3c7" : "#fffbeb"),
+                  padding: "6px 12px",
+                  borderRadius: 6,
+                  border: publishFilter === "중요" ? "2px solid #f59e0b" : "1px solid #fde68a",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                  boxShadow: publishFilter === "중요" ? "0 2px 4px rgba(245, 158, 11, 0.2)" : "none",
+                  transform: isImportantHovered ? "translateY(-1px)" : "none",
+                  transition: "all 0.2s",
+                  outline: "none"
+                }}
+              >
+                ⭐ 중요기사: {counts.중요}건
+              </button>
             </div>
-          </div>
+          )}
         </div>
 
         {/* 액션 버튼 */}
