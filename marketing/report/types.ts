@@ -25,6 +25,10 @@ export interface PropertyInfo {
   subTitle: string;
   propertyNumber?: string;
   priceMain: string;
+  overviewTitle?: string;
+  overviewSubtitle?: string;
+  investmentTitle?: string;
+  investmentSubtitle?: string;
   overviewTable: {
     location?: string;
     zoning?: string;

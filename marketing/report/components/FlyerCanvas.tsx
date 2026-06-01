@@ -257,11 +257,37 @@ const ReportPage = ({
     );
 };
 
-const SectionTitle = ({ title, subtitle }: { title: string, subtitle: string }) => (
+const SectionTitle = ({ 
+  title, 
+  subtitle,
+  onUpdateTitle,
+  onUpdateSubtitle
+}: { 
+  title: string, 
+  subtitle: string,
+  onUpdateTitle?: (val: string) => void,
+  onUpdateSubtitle?: (val: string) => void
+}) => (
     <div className="mb-4 flex items-center gap-2">
-        <h3 className="text-gray-500 font-bold tracking-widest uppercase text-sm">{title}</h3>
+        <h3 className="text-gray-500 font-bold tracking-widest uppercase text-sm">
+            {onUpdateTitle ? (
+                <EditableText 
+                    value={title} 
+                    onChange={onUpdateTitle} 
+                    className="hover:bg-slate-100 hover:ring-1 hover:ring-slate-300 focus:bg-slate-200 focus:ring-slate-400 text-gray-600 rounded px-1 transition-all"
+                />
+            ) : title}
+        </h3>
         <span className="text-gray-300">|</span>
-        <span className="text-gray-800 font-bold text-sm">{subtitle}</span>
+        <span className="text-gray-800 font-bold text-sm">
+            {onUpdateSubtitle ? (
+                <EditableText 
+                    value={subtitle} 
+                    onChange={onUpdateSubtitle} 
+                    className="hover:bg-slate-100 hover:ring-1 hover:ring-slate-300 focus:bg-slate-200 focus:ring-slate-400 text-gray-800 rounded px-1 transition-all"
+                />
+            ) : subtitle}
+        </span>
     </div>
 );
 
@@ -537,7 +563,26 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                 {/* Left Col: Overview Table */}
                 <div className="w-5/12 flex flex-col justify-between">
                     <div>
-                        <SectionTitle title="PROPERTY OVERVIEW" subtitle="물건개요" />
+                        <SectionTitle 
+                            title={info.overviewTitle || "PROPERTY OVERVIEW"} 
+                            subtitle={info.overviewSubtitle || "물건개요"} 
+                            onUpdateTitle={(val) => {
+                                if (onUpdateInfo) {
+                                    onUpdateInfo({
+                                        ...info,
+                                        overviewTitle: val
+                                    });
+                                }
+                            }}
+                            onUpdateSubtitle={(val) => {
+                                if (onUpdateInfo) {
+                                    onUpdateInfo({
+                                        ...info,
+                                        overviewSubtitle: val
+                                    });
+                                }
+                            }}
+                        />
                         <div className="border-t-[3px] border-gray-800 flex flex-col text-sm border-b border-gray-200">
                             {(() => {
                                 const rows = Array.isArray(info.overviewTable) 
@@ -696,7 +741,26 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                         />
                     </div>
                     <div>
-                        <SectionTitle title="INVESTMENT SUMMARY" subtitle="투자요약" />
+                        <SectionTitle 
+                            title={info.investmentTitle || "INVESTMENT SUMMARY"} 
+                            subtitle={info.investmentSubtitle || "투자요약"} 
+                            onUpdateTitle={(val) => {
+                                if (onUpdateInfo) {
+                                    onUpdateInfo({
+                                        ...info,
+                                        investmentTitle: val
+                                    });
+                                }
+                            }}
+                            onUpdateSubtitle={(val) => {
+                                if (onUpdateInfo) {
+                                    onUpdateInfo({
+                                        ...info,
+                                        investmentSubtitle: val
+                                    });
+                                }
+                            }}
+                        />
                         <div className="flex gap-4 border-l-4 border-[#cc5a27] pl-4">
                             {[1,2,3].map(i => (
                                 <div key={i} className="flex-1 bg-white border border-gray-100 rounded-lg p-4 text-center shadow-sm">
