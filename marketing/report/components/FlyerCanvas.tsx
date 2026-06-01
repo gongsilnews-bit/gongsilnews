@@ -3,6 +3,7 @@ import { FlyerState } from '../types';
 
 interface FlyerCanvasProps {
   data: FlyerState;
+  activeTab?: number | 'all';
 }
 
 const ReportPage = ({ 
@@ -92,7 +93,7 @@ const SectionTitle = ({ title, subtitle }: { title: string, subtitle: string }) 
     </div>
 );
 
-const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data }, ref) => {
+const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, activeTab = 'all' }, ref) => {
   const { info, mainImage, subImage1, subImage2, featureImage1, featureImage2 } = data; 
   const placeholder = "https://placehold.co/800x600/e2e8f0/1e293b?text=Image";
 
@@ -104,6 +105,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data }, ref)
   return (
     <div className="flex flex-col items-center p-8 bg-gray-100" ref={ref}>
         {/* PAGE 1: OVERVIEW */}
+        {(activeTab === 'all' || activeTab === 1) && (
         <ReportPage 
             pageNumber={1} 
             title={targetTitle} 
@@ -180,8 +182,10 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data }, ref)
                 </div>
             </div>
         </ReportPage>
+        )}
 
         {/* PAGE 2: STATUS & VALUATION */}
+        {(activeTab === 'all' || activeTab === 2) && (
         <ReportPage 
             pageNumber={2} 
             title="현황 및 가치" 
@@ -275,8 +279,10 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data }, ref)
                 </div>
             </div>
         </ReportPage>
+        )}
 
         {/* PAGE 3: PHOTOS */}
+        {(activeTab === 'all' || activeTab === 3) && (
         <ReportPage 
             pageNumber={3} 
             title="현장 사진" 
@@ -311,8 +317,10 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data }, ref)
                 </div>
             </div>
         </ReportPage>
+        )}
 
         {/* PAGE 4: AREA ANALYSIS */}
+        {(activeTab === 'all' || activeTab === 4) && (
         <ReportPage 
             pageNumber={4} 
             title="입지 및 위치도" 
@@ -357,8 +365,10 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data }, ref)
                 </div>
             </div>
         </ReportPage>
+        )}
 
         {/* PAGE 5: ROADMAP */}
+        {(activeTab === 'all' || activeTab === 5) && (
         <ReportPage 
             pageNumber={5} 
             title="가치 및 로드맵" 
@@ -393,6 +403,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data }, ref)
                 <p className="text-gray-500 italic font-serif-kr text-lg">"최고의 입지에 미래 가치를 더합니다."</p>
             </div>
         </ReportPage>
+        )}
     </div>
   );
 });
