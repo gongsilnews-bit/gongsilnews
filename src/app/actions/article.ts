@@ -77,7 +77,6 @@ export async function saveArticle(data: {
       location_name: data.location_name || null,
       published_at: data.published_at || null,
       thumbnail_url: data.thumbnail_url || null,
-      updated_at: new Date().toISOString(),
     };
     if (data.reject_reason !== undefined) {
       (articleData as any).reject_reason = data.reject_reason;
