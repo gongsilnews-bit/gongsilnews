@@ -1260,7 +1260,7 @@ ${clone.outerHTML}
         onExport={downloadJpg}
       />
       
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+      <header className="print:hidden bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
         <div className="max-w-[1600px] mx-auto px-4 lg:px-8 h-16 flex items-center justify-between">
             <div className="flex items-center gap-4">
                 <img 
@@ -1291,8 +1291,8 @@ ${clone.outerHTML}
         </div>
       </header>
 
-      <main className="flex-1 max-w-[1600px] mx-auto w-full p-4 lg:p-8 grid grid-cols-12 gap-6 h-[calc(100vh-64px)]">
-        <div className="col-span-12 lg:col-span-4 xl:col-span-3 lg:h-full lg:overflow-hidden">
+      <main className="print:block print:h-auto print:p-0 flex-1 max-w-[1600px] mx-auto w-full p-4 lg:p-8 grid grid-cols-12 gap-6 h-[calc(100vh-64px)]">
+        <div className="print:hidden col-span-12 lg:col-span-4 xl:col-span-3 lg:h-full lg:overflow-hidden">
           <FlyerForm 
             info={state.info}
             setInfo={handleInfoChange}
@@ -1314,14 +1314,14 @@ ${clone.outerHTML}
             setActiveTab={setActiveTab}
           />
         </div>
-        <div className="col-span-12 lg:col-span-8 xl:col-span-9 bg-gray-200/50 rounded-xl border border-gray-300 overflow-hidden flex flex-col">
-            <div className="bg-white px-4 py-2 border-b flex justify-between items-center text-xs text-gray-500">
+        <div className="print:col-span-12 print:border-none print:bg-white print:m-0 print:p-0 col-span-12 lg:col-span-8 xl:col-span-9 bg-gray-200/50 rounded-xl border border-gray-300 overflow-hidden flex flex-col">
+            <div className="print:hidden bg-white px-4 py-2 border-b flex justify-between items-center text-xs text-gray-500">
                 <span className="flex items-center gap-2"><span className="w-2 h-2 bg-green-500 rounded-full"></span>미리보기</span>
                 <span>Width: 860px</span>
             </div>
-            <div className="flex-1 overflow-auto p-8 flex justify-center custom-scrollbar">
+            <div className="print:overflow-visible print:p-0 print:block flex-1 overflow-auto p-8 flex justify-center custom-scrollbar">
                 {/* Fixed width container for editor preview */}
-                <div style={{ width: '860px', flexShrink: 0 }}>
+                <div className="w-[860px] shrink-0 print:w-[1122px] print:mx-auto print:shrink">
                     <FlyerCanvas ref={flyerRef} data={state} activeTab={activeTab} />
                 </div>
             </div>
@@ -1329,7 +1329,7 @@ ${clone.outerHTML}
       </main>
 
       {/* Floating Bottom Action Bar */}
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[90] w-[95%] sm:w-auto sm:min-w-[520px] bg-white/95 backdrop-blur-md border border-gray-200/80 p-4 rounded-2xl shadow-[0_15px_35px_-5px_rgba(0,0,0,0.15)] flex items-center justify-between gap-4">
+      <div className="print:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[90] w-[95%] sm:w-auto sm:min-w-[520px] bg-white/95 backdrop-blur-md border border-gray-200/80 p-4 rounded-2xl shadow-[0_15px_35px_-5px_rgba(0,0,0,0.15)] flex items-center justify-between gap-4">
         {/* Save Button */}
         <button 
           onClick={handleSaveToStorage}
@@ -1362,6 +1362,20 @@ ${clone.outerHTML}
         >
           <ArrowDownTrayIcon className="w-4 h-4 text-gray-500" />
           <span>이미지 내보내기</span>
+        </button>
+
+        {/* Print Button */}
+        <button 
+          onClick={() => {
+              setActiveTab('all');
+              setTimeout(() => { window.print(); }, 100);
+          }}
+          className="py-3 px-5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 active:scale-95 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all duration-150 shadow-sm"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4 text-gray-500">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0l.229 2.523a1.125 1.125 0 01-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0021 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 00-1.913-.247M6.34 18H5.25A2.25 2.25 0 013 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 011.913-.247m10.5 0a48.536 48.536 0 00-10.5 0v2.796c0 1.161.94 2.1 2.1 2.1h6.3c1.16 0 2.1-.939 2.1-2.1V7.03z" />
+          </svg>
+          <span>인쇄하기</span>
         </button>
 
 
@@ -1412,6 +1426,14 @@ ${clone.outerHTML}
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #999; }
+        
+        @media print {
+            body { margin: 0; padding: 0; background: white; }
+            @page {
+                size: A4 landscape;
+                margin: 0;
+            }
+        }
       `}</style>
     </div>
   );

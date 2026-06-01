@@ -96,6 +96,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
 
   // Data mapping from info
   const targetTitle = info.address || '서초동 역세권 매매 안내서';
+  const targetSub = ''; // For backwards compatibility with ReportPage props
   const price = info.priceMain || '75억 원';
 
   return (
