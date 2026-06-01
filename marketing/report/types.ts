@@ -82,6 +82,14 @@ export interface PropertyInfo {
     box4Title: string; box4Text: string;
   };
 
+  pageBadges?: {
+    page1?: string;
+    page2?: string;
+    page3?: string;
+    page4?: string;
+    page5?: string;
+  };
+
   // Backward compatibility fields
   promotionText?: string;
   transactionType?: TransactionType;

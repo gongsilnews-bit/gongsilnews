@@ -184,7 +184,8 @@ const ReportPage = ({
     badgeText,
     exportId,
     onUpdateTitle,
-    onUpdateSubtitle
+    onUpdateSubtitle,
+    onUpdateBadge
 }: { 
     children: React.ReactNode, 
     pageNumber: number, 
@@ -193,7 +194,8 @@ const ReportPage = ({
     badgeText?: string,
     exportId?: string,
     onUpdateTitle?: (text: string) => void,
-    onUpdateSubtitle?: (text: string) => void
+    onUpdateSubtitle?: (text: string) => void,
+    onUpdateBadge?: (text: string) => void
 }) => {
     return (
         <div data-export-id={exportId} className="relative bg-white w-[1122px] h-[794px] overflow-hidden flex flex-col shadow-2xl mb-8" style={{ pageBreakAfter: 'always' }}>
@@ -221,34 +223,18 @@ const ReportPage = ({
                         </span>
                     </div>
                 </div>
-                {pageNumber === 1 && (
+                {badgeText && (
                     <div className="flex items-center gap-4 h-full pb-2">
                         <div className="w-px h-8 bg-gray-600"></div>
-                        <span className="text-[#e29d45] text-2xl font-black tracking-widest">FOR SALE</span>
-                    </div>
-                )}
-                {pageNumber === 2 && (
-                    <div className="flex items-center gap-4 h-full pb-2">
-                        <div className="w-px h-8 bg-gray-600"></div>
-                        <span className="text-white text-2xl font-black tracking-widest">HIGHLIGHTS</span>
-                    </div>
-                )}
-                {pageNumber === 3 && (
-                    <div className="flex items-center gap-4 h-full pb-2">
-                        <div className="w-px h-8 bg-gray-600"></div>
-                        <span className="text-white text-2xl font-black tracking-widest">ASSET GALLERY</span>
-                    </div>
-                )}
-                {pageNumber === 4 && (
-                    <div className="flex items-center gap-4 h-full pb-2">
-                        <div className="w-px h-8 bg-gray-600"></div>
-                        <span className="text-white text-2xl font-black tracking-widest">ACCESSIBILITY</span>
-                    </div>
-                )}
-                {pageNumber === 5 && (
-                    <div className="flex items-center gap-4 h-full pb-2">
-                        <div className="w-px h-8 bg-gray-600"></div>
-                        <span className="text-white text-2xl font-black tracking-widest">FINAL SUMMARY</span>
+                        <span className={`text-2xl font-black tracking-widest ${pageNumber === 1 ? 'text-[#e29d45]' : 'text-white'}`}>
+                            {onUpdateBadge ? (
+                                <EditableText 
+                                  value={badgeText} 
+                                  onChange={onUpdateBadge} 
+                                  className="hover:bg-white/10 hover:ring-white/20 focus:bg-white/20 focus:ring-white/50" 
+                                />
+                            ) : badgeText}
+                        </span>
                     </div>
                 )}
             </div>
@@ -534,9 +520,18 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
             pageNumber={1} 
             title={targetTitle} 
             subtitle={info.subTitle} 
+            badgeText={info.pageBadges?.page1 || "FOR SALE"}
             exportId="page-1"
             onUpdateTitle={(val) => handleTextChange('address', val)}
             onUpdateSubtitle={(val) => handleTextChange('subTitle', val)}
+            onUpdateBadge={(val) => {
+                if (onUpdateInfo) {
+                    onUpdateInfo({
+                        ...info,
+                        pageBadges: { ...(info.pageBadges || {}), page1: val }
+                    });
+                }
+            }}
         >
             <div className="flex gap-8 h-full">
                 {/* Left Col: Overview Table */}
@@ -752,8 +747,16 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
             pageNumber={2} 
             title="현황 및 가치" 
             subtitle="Status & Valuation" 
-            badgeText="EVIDENCE & DATA"
+            badgeText={info.pageBadges?.page2 || "EVIDENCE & DATA"}
             exportId="page-2"
+            onUpdateBadge={(val) => {
+                if (onUpdateInfo) {
+                    onUpdateInfo({
+                        ...info,
+                        pageBadges: { ...(info.pageBadges || {}), page2: val }
+                    });
+                }
+            }}
         >
             <div className="flex gap-8 h-full">
                 {/* Left: Table */}
@@ -927,8 +930,16 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
             pageNumber={3} 
             title="현장 사진" 
             subtitle="Actual Field Photos" 
-            badgeText="PROPERTY VISUALS"
+            badgeText={info.pageBadges?.page3 || "PROPERTY VISUALS"}
             exportId="page-3"
+            onUpdateBadge={(val) => {
+                if (onUpdateInfo) {
+                    onUpdateInfo({
+                        ...info,
+                        pageBadges: { ...(info.pageBadges || {}), page3: val }
+                    });
+                }
+            }}
         >
             <div className="flex gap-4 h-[550px]">
                 {/* Main Large Photo */}
@@ -1005,8 +1016,16 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
             pageNumber={4} 
             title="입지 및 위치도" 
             subtitle="Strategic Connectivity" 
-            badgeText="AREA ANALYSIS"
+            badgeText={info.pageBadges?.page4 || "AREA ANALYSIS"}
             exportId="page-4"
+            onUpdateBadge={(val) => {
+                if (onUpdateInfo) {
+                    onUpdateInfo({
+                        ...info,
+                        pageBadges: { ...(info.pageBadges || {}), page4: val }
+                    });
+                }
+            }}
         >
             <div className="flex flex-col h-[550px] gap-6">
                 <div className="flex gap-6 h-3/4">
@@ -1107,8 +1126,16 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
             pageNumber={5} 
             title="가치 및 로드맵" 
             subtitle="Value & Roadmap" 
-            badgeText="INVESTMENT ROADMAP"
+            badgeText={info.pageBadges?.page5 || "INVESTMENT ROADMAP"}
             exportId="page-5"
+            onUpdateBadge={(val) => {
+                if (onUpdateInfo) {
+                    onUpdateInfo({
+                        ...info,
+                        pageBadges: { ...(info.pageBadges || {}), page5: val }
+                    });
+                }
+            }}
         >
             <div className="grid grid-cols-2 grid-rows-2 gap-8 h-[480px]">
                 {[
