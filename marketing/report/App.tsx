@@ -1460,7 +1460,7 @@ ${clone.outerHTML}
             <div className="print:overflow-visible print:p-0 print:block flex-1 overflow-auto p-8 flex justify-center custom-scrollbar">
                 {/* Fixed width container for editor preview */}
                 <div className="w-[860px] shrink-0 print:w-[1122px] print:mx-auto print:shrink">
-                    <FlyerCanvas ref={flyerRef} data={state} activeTab={activeTab} />
+                    <FlyerCanvas ref={flyerRef} data={state} activeTab={activeTab} onUpdateInfo={handleInfoChange} />
                 </div>
             </div>
         </div>
