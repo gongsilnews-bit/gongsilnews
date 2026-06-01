@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { jsPDF } from 'jspdf';
 import FlyerForm from './components/FlyerForm';
 import FlyerCanvas from './components/FlyerCanvas';

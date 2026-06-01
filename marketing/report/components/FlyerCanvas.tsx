@@ -260,24 +260,113 @@ const ReportPage = ({
 
             {/* Footer */}
             <div className="h-[50px] px-10 flex justify-between items-center shrink-0 border-t border-gray-100">
-                <div className="text-gray-400 text-xs font-bold tracking-widest">
-                    CONFIDENTIAL <span className="mx-1">|</span> INFORMATION MEMORANDUM
-                </div>
-                <div className="text-gray-400 text-xs font-bold tracking-widest">
-                    PAGE 0{pageNumber} / 05
-                </div>
-            </div>
-        </div>
-    );
-};
-
-const SectionTitle = ({ title, subtitle }: { title: string, subtitle: string }) => (
+                <div className="text-gray-400 text-xs font-bold tracking-widconst SectionTitle = ({ title, subtitle }: { title: string, subtitle: string }) => (
     <div className="mb-4 flex items-center gap-2">
         <h3 className="text-gray-500 font-bold tracking-widest uppercase text-sm">{title}</h3>
         <span className="text-gray-300">|</span>
         <span className="text-gray-800 font-bold text-sm">{subtitle}</span>
     </div>
 );
+
+// ─── GEDITOR STYLE PREMIUM FLOATING TOOLBAR WRAPPER ────────────────────────────
+
+const GeditorWrapper = ({
+  children,
+  onMoveUp,
+  onMoveDown,
+  onDelete,
+  onDuplicate,
+  isFirst = false,
+  isLast = false,
+  className = "",
+  tag = "div"
+}: {
+  children: React.ReactNode;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
+  onDelete?: () => void;
+  onDuplicate?: () => void;
+  isFirst?: boolean;
+  isLast?: boolean;
+  className?: string;
+  tag?: "div" | "tr" | "li";
+}) => {
+  const Component = tag;
+  return (
+    <Component className={`group relative hover:ring-2 hover:ring-blue-500/80 rounded-lg transition-all duration-150 ${className}`}>
+      {children}
+      
+      {/* Geditor Floating Toolbar (print:hidden) */}
+      <div className="absolute -right-20 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 scale-95 group-hover:scale-100 transition-all duration-200 flex flex-col items-center bg-[#1e293b] text-white rounded-xl shadow-xl border border-gray-700 p-1.5 z-[100] print:hidden gap-1 hover:scale-105 cursor-default">
+        {/* Blue Edit Status Indicator */}
+        <div className="w-6 h-6 bg-blue-600 rounded-lg flex items-center justify-center text-[10px] font-bold cursor-default" title="편집 가능 상태">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
+            <path d="M5.433 13.917l1.262-3.155A4 4 0 017.58 9.42l6.92-6.918a2.121 2.121 0 013 3l-6.92 6.918c-.313.313-.689.544-1.107.676l-3.158 1.263a.75.75 0 01-.947-.947z" />
+            <path d="M16.5 16.25a.75.75 0 01.75-.75h1.5a.75.75 0 010 1.5h-1.5a.75.75 0 01-.75-.75zM12 16.25a.75.75 0 01.75-.75h1.5a.75.75 0 010 1.5h-1.5a.75.75 0 01-.75-.75zM8.25 15.5a.75.75 0 000 1.5h1.5a.75.75 0 000-1.5h-1.5zM3 16.25a.75.75 0 01.75-.75H5a.75.75 0 010 1.5H3.75a.75.75 0 01-.75-.75z" />
+          </svg>
+        </div>
+        
+        {/* Add/Duplicate Button */}
+        {onDuplicate && (
+          <button 
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onDuplicate(); }}
+            className="w-6 h-6 hover:bg-slate-700 text-gray-300 hover:text-white rounded-lg flex items-center justify-center transition-colors"
+            title="항목 복제/추가"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+          </button>
+        )}
+        
+        {/* Move Up */}
+        {onMoveUp && (
+          <button 
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onMoveUp(); }}
+            disabled={isFirst}
+            className="w-6 h-6 hover:bg-slate-700 text-gray-300 hover:text-white disabled:opacity-20 disabled:hover:bg-transparent rounded-lg flex items-center justify-center transition-colors"
+            title="위로 이동"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5" />
+            </svg>
+          </button>
+        )}
+        
+        {/* Move Down */}
+        {onMoveDown && (
+          <button 
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onMoveDown(); }}
+            disabled={isLast}
+            className="w-6 h-6 hover:bg-slate-700 text-gray-300 hover:text-white disabled:opacity-20 disabled:hover:bg-transparent rounded-lg flex items-center justify-center transition-colors"
+            title="아래로 이동"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+            </svg>
+          </button>
+        )}
+        
+        {/* Delete */}
+        {onDelete && (
+          <button 
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onDelete(); }}
+            className="w-6 h-6 hover:bg-rose-600/90 text-rose-400 hover:text-white rounded-lg flex items-center justify-center transition-colors border-t border-slate-700 pt-1"
+            title="삭제"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+            </svg>
+          </button>
+        )}
+      </div>
+    </Component>
+  );
+};
 
 // ─── MAIN CANVAS COMPONENT ────────────────────────────────────────────────────
 
@@ -390,6 +479,42 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
     }
   };
 
+  // --- HIGHLIGHTS DYNAMIC ACTIONS (WYSIWYG CANVAS) ---
+  const addHighlightRow = () => {
+    if (onUpdateInfo && Array.isArray(info.highlights)) {
+      onUpdateInfo({
+        ...info,
+        highlights: [...info.highlights, '새로운 하이라이트 핵심 문구를 입력하세요.']
+      });
+    }
+  };
+
+  const deleteHighlightRow = (index: number) => {
+    if (onUpdateInfo && Array.isArray(info.highlights)) {
+      const newHl = info.highlights.filter((_, i) => i !== index);
+      onUpdateInfo({
+        ...info,
+        highlights: newHl
+      });
+    }
+  };
+
+  const moveHighlightRow = (index: number, direction: 'up' | 'down') => {
+    if (onUpdateInfo && Array.isArray(info.highlights)) {
+      const newHl = [...info.highlights];
+      const targetIndex = direction === 'up' ? index - 1 : index + 1;
+      if (targetIndex >= 0 && targetIndex < newHl.length) {
+        const temp = newHl[index];
+        newHl[index] = newHl[targetIndex];
+        newHl[targetIndex] = temp;
+        onUpdateInfo({
+          ...info,
+          highlights: newHl
+        });
+      }
+    }
+  };
+
   return (
     <div className="flex flex-col items-center p-8 bg-gray-100" ref={ref}>
         {/* PAGE 1: OVERVIEW */}
@@ -427,55 +552,39 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                     return (
                                         <>
                                             {info.overviewTable.map((row, i) => (
-                                                <div key={i} className="group relative flex border-b border-gray-100 last:border-0 bg-white">
-                                                    {/* Row Hover Controls: print:hidden */}
-                                                    <div className="absolute -left-12 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 print:hidden bg-white/95 shadow-md border border-gray-200 rounded-md p-1 z-30">
-                                                        <button 
-                                                            onClick={() => moveOverviewTableRow(i, 'up')}
-                                                            disabled={i === 0}
-                                                            className="p-1 hover:bg-gray-100 rounded text-gray-500 disabled:opacity-30 disabled:hover:bg-transparent"
-                                                            title="위로 이동"
-                                                        >
-                                                            ▲
-                                                        </button>
-                                                        <button 
-                                                            onClick={() => moveOverviewTableRow(i, 'down')}
-                                                            disabled={i === info.overviewTable.length - 1}
-                                                            className="p-1 hover:bg-gray-100 rounded text-gray-500 disabled:opacity-30 disabled:hover:bg-transparent"
-                                                            title="아래로 이동"
-                                                        >
-                                                            ▼
-                                                        </button>
-                                                        <button 
-                                                            onClick={() => deleteOverviewTableRow(i)}
-                                                            className="p-1 hover:bg-rose-50 text-rose-500 rounded"
-                                                            title="삭제"
-                                                        >
-                                                            🗑️
-                                                        </button>
+                                                <GeditorWrapper
+                                                    key={i}
+                                                    onMoveUp={() => moveOverviewTableRow(i, 'up')}
+                                                    onMoveDown={() => moveOverviewTableRow(i, 'down')}
+                                                    onDelete={() => deleteOverviewTableRow(i)}
+                                                    onDuplicate={addOverviewTableRow}
+                                                    isFirst={i === 0}
+                                                    isLast={i === info.overviewTable.length - 1}
+                                                    className="border-b border-gray-100 last:border-0 bg-white"
+                                                >
+                                                    <div className="flex w-full">
+                                                        <div className="w-1/3 text-gray-500 font-bold py-3 pl-4 flex items-center">
+                                                            <EditableText 
+                                                                value={row.label} 
+                                                                onChange={(val) => {
+                                                                    const newTable = [...info.overviewTable];
+                                                                    newTable[i] = { ...newTable[i], label: val };
+                                                                    handleTextChange('overviewTable', newTable as any);
+                                                                }}
+                                                            />
+                                                        </div>
+                                                        <div className="w-2/3 text-gray-800 font-bold py-3 pl-4 flex items-center">
+                                                            <EditableText 
+                                                                value={row.value} 
+                                                                onChange={(val) => {
+                                                                    const newTable = [...info.overviewTable];
+                                                                    newTable[i] = { ...newTable[i], value: val };
+                                                                    handleTextChange('overviewTable', newTable as any);
+                                                                }}
+                                                            />
+                                                        </div>
                                                     </div>
-
-                                                    <div className="w-1/3 text-gray-500 font-bold py-3 pl-4 flex items-center">
-                                                        <EditableText 
-                                                            value={row.label} 
-                                                            onChange={(val) => {
-                                                                const newTable = [...info.overviewTable];
-                                                                newTable[i] = { ...newTable[i], label: val };
-                                                                handleTextChange('overviewTable', newTable as any);
-                                                            }}
-                                                        />
-                                                    </div>
-                                                    <div className="w-2/3 text-gray-800 font-bold py-3 pl-4 flex items-center">
-                                                        <EditableText 
-                                                            value={row.value} 
-                                                            onChange={(val) => {
-                                                                const newTable = [...info.overviewTable];
-                                                                newTable[i] = { ...newTable[i], value: val };
-                                                                handleTextChange('overviewTable', newTable as any);
-                                                            }}
-                                                        />
-                                                    </div>
-                                                </div>
+                                                </GeditorWrapper>
                                             ))}
                                             
                                             {/* Add Row Button on Canvas (print:hidden) */}
@@ -528,7 +637,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                                 </button>
                                             ))}
                                         </div>
-
+ 
                                         <div className="w-1/3 text-gray-600 font-bold py-3 pl-4 flex items-center">{label}</div>
                                         <div className="w-2/3 text-[#cc5a27] font-extrabold py-3 pl-4 flex items-center">
                                             {tType === "월세" || tType === "임대" ? (
@@ -546,7 +655,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                             })()}
                         </div>
                     </div>
-
+ 
                     {/* Agent Footer Details */}
                     <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-xl p-4 mt-4 flex flex-col justify-center shadow-sm">
                         <div className="grid grid-cols-[80px_1fr] gap-x-2 gap-y-1.5 text-sm">
@@ -554,12 +663,12 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                             <span className="text-gray-800 font-extrabold">
                                 <EditableText value={info.agentName} onChange={(val) => handleTextChange('agentName', val)} />
                             </span>
-
+ 
                             <span className="text-gray-500 font-bold">담당자</span>
                             <span className="text-gray-800 font-extrabold">
                                 <EditableText value={info.agentRepresentative} onChange={(val) => handleTextChange('agentRepresentative', val)} />
                             </span>
-
+ 
                             <span className="text-gray-500 font-bold">연락처</span>
                             <span className="text-[#cc5a27] font-black text-base">
                                 <EditableText value={info.agentMobile || info.agentPhone || ""} onChange={(val) => handleTextChange('agentMobile', val)} />
@@ -567,7 +676,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                         </div>
                     </div>
                 </div>
-
+ 
                 {/* Right Col: Image & Summary */}
                 <div className="w-7/12 flex flex-col justify-between h-full">
                     <div className="h-[340px]">
@@ -625,7 +734,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
             </div>
         </ReportPage>
         )}
-
+ 
         {/* PAGE 2: STATUS & VALUATION */}
         {(activeTab === 'all' || activeTab === 2) && (
         <ReportPage 
@@ -653,35 +762,18 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                 </thead>
                                 <tbody className="divide-y divide-gray-100 bg-white">
                                     {info.floorStatus?.map((row, i) => (
-                                        <tr key={i} className="group relative">
+                                        <GeditorWrapper
+                                            key={i}
+                                            tag="tr"
+                                            onMoveUp={() => moveFloorStatusRow(i, 'up')}
+                                            onMoveDown={() => moveFloorStatusRow(i, 'down')}
+                                            onDelete={() => deleteFloorStatusRow(i)}
+                                            onDuplicate={addFloorStatusRow}
+                                            isFirst={i === 0}
+                                            isLast={i === info.floorStatus.length - 1}
+                                            className="group"
+                                        >
                                             <td className={`py-4 relative ${row.floor === 'B1' || row.floor.includes('지하') ? 'font-bold' : ''}`}>
-                                                {/* Floor Row Hover Controls: print:hidden */}
-                                                <div className="absolute -left-12 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 print:hidden bg-white/95 shadow-md border border-gray-200 rounded-md p-1 z-30">
-                                                    <button 
-                                                        onClick={() => moveFloorStatusRow(i, 'up')}
-                                                        disabled={i === 0}
-                                                        className="p-1 hover:bg-gray-100 rounded text-gray-500 disabled:opacity-30 disabled:hover:bg-transparent"
-                                                        title="위로 이동"
-                                                    >
-                                                        ▲
-                                                    </button>
-                                                    <button 
-                                                        onClick={() => moveFloorStatusRow(i, 'down')}
-                                                        disabled={i === info.floorStatus.length - 1}
-                                                        className="p-1 hover:bg-gray-100 rounded text-gray-500 disabled:opacity-30 disabled:hover:bg-transparent"
-                                                        title="아래로 이동"
-                                                    >
-                                                        ▼
-                                                    </button>
-                                                    <button 
-                                                        onClick={() => deleteFloorStatusRow(i)}
-                                                        className="p-1 hover:bg-rose-50 text-rose-500 rounded"
-                                                        title="삭제"
-                                                    >
-                                                        🗑️
-                                                    </button>
-                                                </div>
-
                                                 <EditableText value={row.floor} onChange={(val) => updateFloorStatusRow(i, 'floor', val)} />
                                             </td>
                                             <td className={row.floor === 'B1' || row.floor.includes('지하') ? 'font-bold' : ''}>
@@ -709,7 +801,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                                              <EditableText value={row.note} onChange={(val) => updateFloorStatusRow(i, 'note', val)} />
                                                          </td>
                                                      </>
-                                                  ) : (
+                                                   ) : (
                                                      <>
                                                          <td className={row.lease.includes('공실') ? 'text-[#cc5a27] font-bold' : 'font-bold'}>
                                                              <EditableText value={row.lease} onChange={(val) => updateFloorStatusRow(i, 'lease', val)} />
@@ -721,9 +813,9 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                                              <EditableText value={row.note} onChange={(val) => updateFloorStatusRow(i, 'note', val)} />
                                                          </td>
                                                      </>
-                                                  )
+                                                   )
                                              )}
-                                        </tr>
+                                        </GeditorWrapper>
                                     ))}
                                 </tbody>
                             </table>
@@ -745,7 +837,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                         </div>
                     </div>
                 </div>
-
+ 
                 {/* Right: Highlights & Chart */}
                 <div className="w-7/12 h-full flex flex-col">
                     <div className="text-gray-600 font-bold text-sm mb-4">2. 매각 핵심 하이라이트 & 시세 분석</div>
@@ -753,7 +845,17 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                         <h3 className="text-xl font-extrabold text-gray-900 mb-4 border-b-2 border-gray-800 pb-2 inline-block">매각 핵심 하이라이트</h3>
                         <ul className="space-y-3 mb-8">
                             {info.highlights?.map((hl, i) => (
-                                <li key={i} className="flex gap-2 text-sm">
+                                <GeditorWrapper
+                                    key={i}
+                                    tag="li"
+                                    onMoveUp={() => moveHighlightRow(i, 'up')}
+                                    onMoveDown={() => moveHighlightRow(i, 'down')}
+                                    onDelete={() => deleteHighlightRow(i)}
+                                    onDuplicate={addHighlightRow}
+                                    isFirst={i === 0}
+                                    isLast={i === info.highlights.length - 1}
+                                    className="flex gap-2 text-sm items-center w-full"
+                                >
                                     <span className="text-[#cc5a27] font-bold">•</span>
                                     <span className="w-full">
                                         <EditableText 
@@ -765,8 +867,19 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                             }}
                                         />
                                     </span>
-                                </li>
+                                </GeditorWrapper>
                             ))}
+                            
+                            {/* Add Highlight Button on Canvas (print:hidden) */}
+                            <button 
+                                onClick={addHighlightRow}
+                                className="print:hidden w-full py-2 bg-slate-50 hover:bg-slate-100 border border-dashed border-gray-200 text-gray-500 text-xs font-semibold flex items-center justify-center gap-1.5 rounded-lg transition-colors"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                                </svg>
+                                <span>하이라이트 항목 추가</span>
+                            </button>
                         </ul>
                         
                         {/* Fake Chart */}
@@ -783,7 +896,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                 <span>인근 시세</span>
                                 <span className="text-[#cc5a27]">현재 급매가</span>
                             </div>
-
+ 
                             <div className="mt-6">
                                 <div className="text-xs font-bold tracking-widest text-[#cc5a27] uppercase mb-1">STRATEGIC ADVISORY</div>
                                 <div className="text-sm text-gray-600 leading-relaxed">
@@ -796,7 +909,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
             </div>
         </ReportPage>
         )}
-
+ 
         {/* PAGE 3: PHOTOS */}
         {(activeTab === 'all' || activeTab === 3) && (
         <ReportPage 
