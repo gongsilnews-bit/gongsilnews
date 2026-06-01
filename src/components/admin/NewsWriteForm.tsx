@@ -588,10 +588,10 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
   const [modalPreview, setModalPreview] = useState<string>("");
   const [modalSize, setModalSize] = useState<number>(600);
   const [modalInsertMode, setModalInsertMode] = useState<'자동' | '수동'>('자동');
-  const [modalAlign, setModalAlign] = useState<'left' | 'center' | 'right'>('left');
+  const [modalAlign, setModalAlign] = useState<'left' | 'center' | 'right'>('center');
   const [modalWatermark, setModalWatermark] = useState<number>(0);
   const [modalCaption, setModalCaption] = useState('');
-  const [modalCaptionAlign, setModalCaptionAlign] = useState<'left' | 'center' | 'right'>('left');
+  const [modalCaptionAlign, setModalCaptionAlign] = useState<'left' | 'center' | 'right'>('center');
   const modalFileRef = React.useRef<HTMLInputElement>(null);
 
   /* ── 사진수정 모달 상태 ── */
