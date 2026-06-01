@@ -973,28 +973,6 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
     setShowPhotoModal(false);
   };
 
-  /* ── 사진 캡션 업데이트 ── */
-  const updatePhotoCaption = (idx: number, caption: string) => {
-    setPhotoFiles(prev => prev.map((p, i) => i === idx ? { ...p, caption } : p));
-    // 에디터 내 해당 이미지의 캡션도 업데이트
-    if (editorRef.current) {
-      const photos = editorRef.current.querySelectorAll('.inserted-photo');
-      if (photos[idx]) {
-        let capEl = photos[idx].querySelector('p');
-        if (caption) {
-          if (!capEl) {
-            capEl = document.createElement('p');
-            capEl.style.cssText = 'font-size: 13px; color: #6b7280; margin: 8px 0 0 0; text-align: center; line-height: 1.5;';
-            photos[idx].appendChild(capEl);
-          }
-          capEl.textContent = caption;
-        } else if (capEl) {
-          capEl.remove();
-        }
-        setContent(editorRef.current.innerHTML || "");
-      }
-    }
-  };
 
   /* ── 대표 지정 (사진) — 영상 대표도 해제 ── */
   const setAsCover = (idx: number) => {
