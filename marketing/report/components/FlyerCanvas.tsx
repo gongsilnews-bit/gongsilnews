@@ -219,6 +219,84 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
     }
   };
 
+  // --- OVERVIEW TABLE DYNAMIC ACTIONS (WYSIWYG CANVAS) ---
+  const addOverviewTableRow = () => {
+    if (onUpdateInfo && Array.isArray(info.overviewTable)) {
+      onUpdateInfo({
+        ...info,
+        overviewTable: [
+          ...info.overviewTable,
+          { label: '새 항목', value: '내용 입력' }
+        ]
+      });
+    }
+  };
+
+  const deleteOverviewTableRow = (index: number) => {
+    if (onUpdateInfo && Array.isArray(info.overviewTable)) {
+      const newTable = info.overviewTable.filter((_, i) => i !== index);
+      onUpdateInfo({
+        ...info,
+        overviewTable: newTable
+      });
+    }
+  };
+
+  const moveOverviewTableRow = (index: number, direction: 'up' | 'down') => {
+    if (onUpdateInfo && Array.isArray(info.overviewTable)) {
+      const newTable = [...info.overviewTable];
+      const targetIndex = direction === 'up' ? index - 1 : index + 1;
+      if (targetIndex >= 0 && targetIndex < newTable.length) {
+        const temp = newTable[index];
+        newTable[index] = newTable[targetIndex];
+        newTable[targetIndex] = temp;
+        onUpdateInfo({
+          ...info,
+          overviewTable: newTable
+        });
+      }
+    }
+  };
+
+  // --- FLOOR STATUS TABLE DYNAMIC ACTIONS (WYSIWYG CANVAS) ---
+  const addFloorStatusRow = () => {
+    if (onUpdateInfo && Array.isArray(info.floorStatus)) {
+      onUpdateInfo({
+        ...info,
+        floorStatus: [
+          ...info.floorStatus,
+          { floor: '새 층', purpose: '용도', lease: '임대차', status: '점유상태', note: '비고' }
+        ]
+      });
+    }
+  };
+
+  const deleteFloorStatusRow = (index: number) => {
+    if (onUpdateInfo && Array.isArray(info.floorStatus)) {
+      const newStatus = info.floorStatus.filter((_, i) => i !== index);
+      onUpdateInfo({
+        ...info,
+        floorStatus: newStatus
+      });
+    }
+  };
+
+  const moveFloorStatusRow = (index: number, direction: 'up' | 'down') => {
+    if (onUpdateInfo && Array.isArray(info.floorStatus)) {
+      const newStatus = [...info.floorStatus];
+      const targetIndex = direction === 'up' ? index - 1 : index + 1;
+      if (targetIndex >= 0 && targetIndex < newStatus.length) {
+        const temp = newStatus[index];
+        newStatus[index] = newStatus[targetIndex];
+        newStatus[targetIndex] = temp;
+        onUpdateInfo({
+          ...info,
+          floorStatus: newStatus
+        });
+      }
+    }
+  };
+
   return (
     <div className="flex flex-col items-center p-8 bg-gray-100" ref={ref}>
         {/* PAGE 1: OVERVIEW */}
@@ -253,30 +331,72 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                     ];
                                     
                                 if (Array.isArray(info.overviewTable)) {
-                                    return info.overviewTable.map((row, i) => (
-                                        <div key={i} className="flex border-b border-gray-100 last:border-0 bg-white">
-                                            <div className="w-1/3 text-gray-500 font-bold py-3 pl-4 flex items-center">
-                                                <EditableText 
-                                                    value={row.label} 
-                                                    onChange={(val) => {
-                                                        const newTable = [...info.overviewTable];
-                                                        newTable[i] = { ...newTable[i], label: val };
-                                                        handleTextChange('overviewTable', newTable as any);
-                                                    }}
-                                                />
-                                            </div>
-                                            <div className="w-2/3 text-gray-800 font-bold py-3 pl-4 flex items-center">
-                                                <EditableText 
-                                                    value={row.value} 
-                                                    onChange={(val) => {
-                                                        const newTable = [...info.overviewTable];
-                                                        newTable[i] = { ...newTable[i], value: val };
-                                                        handleTextChange('overviewTable', newTable as any);
-                                                    }}
-                                                />
-                                            </div>
-                                        </div>
-                                    ));
+                                    return (
+                                        <>
+                                            {info.overviewTable.map((row, i) => (
+                                                <div key={i} className="group relative flex border-b border-gray-100 last:border-0 bg-white">
+                                                    {/* Row Hover Controls: print:hidden */}
+                                                    <div className="absolute -left-12 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 print:hidden bg-white/95 shadow-md border border-gray-200 rounded-md p-1 z-30">
+                                                        <button 
+                                                            onClick={() => moveOverviewTableRow(i, 'up')}
+                                                            disabled={i === 0}
+                                                            className="p-1 hover:bg-gray-100 rounded text-gray-500 disabled:opacity-30 disabled:hover:bg-transparent"
+                                                            title="위로 이동"
+                                                        >
+                                                            ▲
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => moveOverviewTableRow(i, 'down')}
+                                                            disabled={i === info.overviewTable.length - 1}
+                                                            className="p-1 hover:bg-gray-100 rounded text-gray-500 disabled:opacity-30 disabled:hover:bg-transparent"
+                                                            title="아래로 이동"
+                                                        >
+                                                            ▼
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => deleteOverviewTableRow(i)}
+                                                            className="p-1 hover:bg-rose-50 text-rose-500 rounded"
+                                                            title="삭제"
+                                                        >
+                                                            🗑️
+                                                        </button>
+                                                    </div>
+
+                                                    <div className="w-1/3 text-gray-500 font-bold py-3 pl-4 flex items-center">
+                                                        <EditableText 
+                                                            value={row.label} 
+                                                            onChange={(val) => {
+                                                                const newTable = [...info.overviewTable];
+                                                                newTable[i] = { ...newTable[i], label: val };
+                                                                handleTextChange('overviewTable', newTable as any);
+                                                            }}
+                                                        />
+                                                    </div>
+                                                    <div className="w-2/3 text-gray-800 font-bold py-3 pl-4 flex items-center">
+                                                        <EditableText 
+                                                            value={row.value} 
+                                                            onChange={(val) => {
+                                                                const newTable = [...info.overviewTable];
+                                                                newTable[i] = { ...newTable[i], value: val };
+                                                                handleTextChange('overviewTable', newTable as any);
+                                                            }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            ))}
+                                            
+                                            {/* Add Row Button on Canvas (print:hidden) */}
+                                            <button 
+                                                onClick={addOverviewTableRow}
+                                                className="print:hidden w-full py-2 bg-slate-50 hover:bg-slate-100 border-b border-dashed border-gray-200 text-gray-500 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                                                </svg>
+                                                <span>개요 항목(행) 추가</span>
+                                            </button>
+                                        </>
+                                    );
                                 }
                                 
                                 return rows.filter(row => row.v && row.v.trim() !== '').map((row, i) => (
@@ -414,69 +534,110 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
         >
             <div className="flex gap-8 h-full">
                 {/* Left: Table */}
-                <div className="w-5/12 h-full">
+                <div className="w-5/12 h-full flex flex-col">
                     <div className="text-gray-600 font-bold text-sm mb-4">1. 층별 점유 및 임대 상세 현황</div>
                     <div className="border border-gray-200 rounded-lg overflow-hidden bg-[#f8fafc] flex flex-col h-[500px]">
-                        <table className="w-full text-center text-sm">
-                            <thead className="bg-white border-b border-gray-200">
-                                <tr>
-                                    <th className="py-4 font-bold text-gray-600">층수</th>
-                                    <th className="py-4 font-bold text-gray-600">현용도</th>
-                                    <th className="py-4 font-bold text-gray-600">임대차</th>
-                                    <th className="py-4 font-bold text-gray-600">점유 상태</th>
-                                    <th className="py-4 font-bold text-gray-600">비고</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100 bg-white">
-                                {info.floorStatus?.map((row, i) => (
-                                    <tr key={i}>
-                                        <td className={`py-4 ${row.floor === 'B1' || row.floor.includes('지하') ? 'font-bold' : ''}`}>
-                                            <EditableText value={row.floor} onChange={(val) => updateFloorStatusRow(i, 'floor', val)} />
-                                        </td>
-                                        <td className={row.floor === 'B1' || row.floor.includes('지하') ? 'font-bold' : ''}>
-                                            <EditableText value={row.purpose} onChange={(val) => updateFloorStatusRow(i, 'purpose', val)} />
-                                        </td>
-                                        {i === 0 && info.floorStatus[0].lease === '보증금 / 차임 내역 별도문의' ? (
-                                             <>
-                                                <td rowSpan={info.floorStatus.length} className="text-[#cc5a27] font-bold text-xs writing-vertical-lr tracking-widest border-x border-dashed border-[#cc5a27]/30 bg-[#fff9f0]">
-                                                    <EditableText value={row.lease} onChange={(val) => updateFloorStatusRow(i, 'lease', val)} />
-                                                </td>
-                                                <td className="font-bold">
-                                                    <EditableText value={row.status} onChange={(val) => updateFloorStatusRow(i, 'status', val)} />
-                                                </td>
-                                                <td className="text-gray-500">
-                                                    <EditableText value={row.note} onChange={(val) => updateFloorStatusRow(i, 'note', val)} />
-                                                </td>
-                                             </>
-                                        ) : (
-                                             info.floorStatus[0].lease === '보증금 / 차임 내역 별도문의' ? (
-                                                 <>
-                                                     <td className={row.status.includes('현재 공실') ? 'text-[#cc5a27] font-bold' : 'font-bold'}>
-                                                         <EditableText value={row.status} onChange={(val) => updateFloorStatusRow(i, 'status', val)} />
-                                                     </td>
-                                                     <td className={row.note.includes('즉시 활용') ? 'font-bold text-gray-800' : 'text-gray-500'}>
-                                                         <EditableText value={row.note} onChange={(val) => updateFloorStatusRow(i, 'note', val)} />
-                                                     </td>
-                                                 </>
-                                              ) : (
-                                                 <>
-                                                     <td className={row.lease.includes('공실') ? 'text-[#cc5a27] font-bold' : 'font-bold'}>
-                                                         <EditableText value={row.lease} onChange={(val) => updateFloorStatusRow(i, 'lease', val)} />
-                                                     </td>
-                                                     <td className={row.status.includes('공실') ? 'text-[#cc5a27] font-bold' : 'font-bold'}>
-                                                         <EditableText value={row.status} onChange={(val) => updateFloorStatusRow(i, 'status', val)} />
-                                                     </td>
-                                                     <td className={row.note.includes('즉시') ? 'font-bold text-gray-800' : 'text-gray-500'}>
-                                                         <EditableText value={row.note} onChange={(val) => updateFloorStatusRow(i, 'note', val)} />
-                                                     </td>
-                                                 </>
-                                              )
-                                         )}
+                        <div className="flex-1 overflow-auto">
+                            <table className="w-full text-center text-sm">
+                                <thead className="bg-white border-b border-gray-200 sticky top-0 z-10">
+                                    <tr>
+                                        <th className="py-4 font-bold text-gray-600">층수</th>
+                                        <th className="py-4 font-bold text-gray-600">현용도</th>
+                                        <th className="py-4 font-bold text-gray-600">임대차</th>
+                                        <th className="py-4 font-bold text-gray-600">점유 상태</th>
+                                        <th className="py-4 font-bold text-gray-600">비고</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                        <div className="p-4 mt-auto border-t border-gray-100 text-xs text-gray-500 leading-relaxed bg-[#f8fafc]">
+                                </thead>
+                                <tbody className="divide-y divide-gray-100 bg-white">
+                                    {info.floorStatus?.map((row, i) => (
+                                        <tr key={i} className="group relative">
+                                            <td className={`py-4 relative ${row.floor === 'B1' || row.floor.includes('지하') ? 'font-bold' : ''}`}>
+                                                {/* Floor Row Hover Controls: print:hidden */}
+                                                <div className="absolute -left-12 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 print:hidden bg-white/95 shadow-md border border-gray-200 rounded-md p-1 z-30">
+                                                    <button 
+                                                        onClick={() => moveFloorStatusRow(i, 'up')}
+                                                        disabled={i === 0}
+                                                        className="p-1 hover:bg-gray-100 rounded text-gray-500 disabled:opacity-30 disabled:hover:bg-transparent"
+                                                        title="위로 이동"
+                                                    >
+                                                        ▲
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => moveFloorStatusRow(i, 'down')}
+                                                        disabled={i === info.floorStatus.length - 1}
+                                                        className="p-1 hover:bg-gray-100 rounded text-gray-500 disabled:opacity-30 disabled:hover:bg-transparent"
+                                                        title="아래로 이동"
+                                                    >
+                                                        ▼
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => deleteFloorStatusRow(i)}
+                                                        className="p-1 hover:bg-rose-50 text-rose-500 rounded"
+                                                        title="삭제"
+                                                    >
+                                                        🗑️
+                                                    </button>
+                                                </div>
+
+                                                <EditableText value={row.floor} onChange={(val) => updateFloorStatusRow(i, 'floor', val)} />
+                                            </td>
+                                            <td className={row.floor === 'B1' || row.floor.includes('지하') ? 'font-bold' : ''}>
+                                                <EditableText value={row.purpose} onChange={(val) => updateFloorStatusRow(i, 'purpose', val)} />
+                                            </td>
+                                            {i === 0 && info.floorStatus[0].lease === '보증금 / 차임 내역 별도문의' ? (
+                                                 <>
+                                                    <td rowSpan={info.floorStatus.length} className="text-[#cc5a27] font-bold text-xs writing-vertical-lr tracking-widest border-x border-dashed border-[#cc5a27]/30 bg-[#fff9f0]">
+                                                        <EditableText value={row.lease} onChange={(val) => updateFloorStatusRow(i, 'lease', val)} />
+                                                    </td>
+                                                    <td className="font-bold">
+                                                        <EditableText value={row.status} onChange={(val) => updateFloorStatusRow(i, 'status', val)} />
+                                                    </td>
+                                                    <td className="text-gray-500">
+                                                        <EditableText value={row.note} onChange={(val) => updateFloorStatusRow(i, 'note', val)} />
+                                                    </td>
+                                                 </>
+                                            ) : (
+                                                 info.floorStatus[0].lease === '보증금 / 차임 내역 별도문의' ? (
+                                                     <>
+                                                         <td className={row.status.includes('현재 공실') ? 'text-[#cc5a27] font-bold' : 'font-bold'}>
+                                                             <EditableText value={row.status} onChange={(val) => updateFloorStatusRow(i, 'status', val)} />
+                                                         </td>
+                                                         <td className={row.note.includes('즉시 활용') ? 'font-bold text-gray-800' : 'text-gray-500'}>
+                                                             <EditableText value={row.note} onChange={(val) => updateFloorStatusRow(i, 'note', val)} />
+                                                         </td>
+                                                     </>
+                                                  ) : (
+                                                     <>
+                                                         <td className={row.lease.includes('공실') ? 'text-[#cc5a27] font-bold' : 'font-bold'}>
+                                                             <EditableText value={row.lease} onChange={(val) => updateFloorStatusRow(i, 'lease', val)} />
+                                                         </td>
+                                                         <td className={row.status.includes('공실') ? 'text-[#cc5a27] font-bold' : 'font-bold'}>
+                                                             <EditableText value={row.status} onChange={(val) => updateFloorStatusRow(i, 'status', val)} />
+                                                         </td>
+                                                         <td className={row.note.includes('즉시') ? 'font-bold text-gray-800' : 'text-gray-500'}>
+                                                             <EditableText value={row.note} onChange={(val) => updateFloorStatusRow(i, 'note', val)} />
+                                                         </td>
+                                                     </>
+                                                  )
+                                             )}
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        {/* Add Floor Row Button on Canvas (print:hidden) */}
+                        <button 
+                            onClick={addFloorStatusRow}
+                            className="print:hidden w-full py-2.5 bg-slate-50 hover:bg-slate-100 border-t border-dashed border-gray-200 text-gray-500 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shrink-0"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                            </svg>
+                            <span>임대현황 행 추가</span>
+                        </button>
+                        
+                        <div className="p-4 mt-auto border-t border-gray-100 text-xs text-gray-500 leading-relaxed bg-[#f8fafc] shrink-0">
                             <EditableBlock value={info.floorStatusNotice || ""} onChange={(val) => handleTextChange('floorStatusNotice', val)} />
                         </div>
                     </div>
