@@ -162,7 +162,6 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                 <div className="w-7/12 flex flex-col justify-between h-full">
                     <div className="relative h-[340px] rounded-2xl overflow-hidden shadow-md border border-gray-100">
                         <img src={mainImage || placeholder} alt="Main" className="w-full h-full object-cover" />
-                        <div className="absolute top-4 right-4 text-xs font-black tracking-widest uppercase text-gray-800 mix-blend-overlay">ASSET PREVIEW</div>
                     </div>
                     <div>
                         <SectionTitle title="INVESTMENT SUMMARY" subtitle="투자요약" />
