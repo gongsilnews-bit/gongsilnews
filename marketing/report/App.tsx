@@ -1070,9 +1070,9 @@ function App() {
         const clone = flyerRef.current.cloneNode(true) as HTMLElement;
         const imgs = clone.querySelectorAll('img');
         
-        // Remove fixed width/height for responsive behavior in downloaded file
-        clone.style.width = '100%';
-        clone.style.maxWidth = '860px';
+        // Fix width for IM Report (A4 Landscape)
+        clone.style.width = '1122px';
+        clone.style.maxWidth = 'none';
         clone.style.minHeight = 'auto';
         clone.style.margin = '0 auto';
 
@@ -1099,7 +1099,7 @@ function App() {
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=1122, user-scalable=yes">
 <title>${state.info.address || "공실뉴스 매물 전단지"} - 매매 ${state.info.priceMain || ""}</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
