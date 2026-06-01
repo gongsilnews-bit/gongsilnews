@@ -1209,6 +1209,7 @@ ${clone.outerHTML}
   };
 
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
 
   const downloadPdf = async () => {
     if (!flyerRef.current) return;
@@ -1263,8 +1264,84 @@ ${clone.outerHTML}
     }
   };
 
-  const handleDirectPrint = () => {
-    window.print();
+  const handleDirectPrint = async () => {
+    if (!flyerRef.current) return;
+    try {
+      setIsPrinting(true);
+      const element = flyerRef.current;
+      
+      const clone = element.cloneNode(true) as HTMLElement;
+      clone.style.position = 'absolute';
+      clone.style.left = '0px';
+      clone.style.top = '-99999px';
+      clone.style.minHeight = '0px'; 
+      clone.style.height = 'auto';
+
+      document.body.appendChild(clone);
+
+      const sections = Array.from(clone.querySelectorAll('[data-export-id]')) as HTMLElement[];
+      sections.forEach(p => { p.style.display = 'flex'; });
+
+      // Create PDF with landscape orientation
+      const pdf = new jsPDF('l', 'px', [1122, 794]);
+
+      for (let i = 0; i < sections.length; i++) {
+        const sec = sections[i];
+        
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const canvas = await (window as any).html2canvas(sec, {
+          scale: 2, 
+          useCORS: true,
+          backgroundColor: '#ffffff',
+          width: 1122,
+          height: 794,
+          windowWidth: 1400,
+          scrollX: 0,
+          scrollY: 0
+        });
+
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+        if (i > 0) pdf.addPage([1122, 794], 'l');
+        pdf.addImage(imgData, 'JPEG', 0, 0, 1122, 794);
+      }
+
+      document.body.removeChild(clone);
+      
+      // Convert to blob and trigger silent print via iframe
+      const pdfBlob = pdf.output('blob');
+      const pdfUrl = URL.createObjectURL(pdfBlob);
+      
+      // Remove any existing print iframe
+      const existingFrame = document.getElementById('silent-print-iframe');
+      if (existingFrame) existingFrame.remove();
+      
+      const iframe = document.createElement('iframe');
+      iframe.id = 'silent-print-iframe';
+      iframe.style.position = 'absolute';
+      iframe.style.width = '0px';
+      iframe.style.height = '0px';
+      iframe.style.border = 'none';
+      iframe.style.left = '-9999px';
+      iframe.style.top = '-9999px';
+      iframe.src = pdfUrl;
+      
+      document.body.appendChild(iframe);
+      
+      iframe.onload = () => {
+        setTimeout(() => {
+          if (iframe.contentWindow) {
+            iframe.contentWindow.focus();
+            iframe.contentWindow.print();
+          }
+          setIsPrinting(false);
+        }, 150);
+      };
+      
+    } catch (err) {
+      console.error(err);
+      alert("인쇄 데이터를 준비하는 중 오류가 발생했습니다.");
+      setIsPrinting(false);
+    }
   };
 
   // Generate selectable sections list
@@ -1428,12 +1505,25 @@ ${clone.outerHTML}
         {/* Direct Print Button */}
         <button 
           onClick={handleDirectPrint}
-          className="py-3 px-5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 active:scale-95 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all duration-150 shadow-sm"
+          disabled={isPrinting || isGeneratingPdf}
+          className="py-3 px-5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 active:scale-95 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all duration-150 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4 text-gray-500">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0l.229 2.523a1.125 1.125 0 01-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0021 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 00-1.913-.247M6.34 18H5.25A2.25 2.25 0 013 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 011.913-.247m10.5 0a48.536 48.536 0 00-10.5 0v2.796c0 1.161.94 2.1 2.1 2.1h6.3c1.16 0 2.1-.939 2.1-2.1V7.03z" />
-          </svg>
-          <span>바로 인쇄하기</span>
+          {isPrinting ? (
+            <>
+              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+              <span>인쇄 준비 중...</span>
+            </>
+          ) : (
+            <>
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4 text-gray-500">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0l.229 2.523a1.125 1.125 0 01-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0021 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 00-1.913-.247M6.34 18H5.25A2.25 2.25 0 013 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 011.913-.247m10.5 0a48.536 48.536 0 00-10.5 0v2.796c0 1.161.94 2.1 2.1 2.1h6.3c1.16 0 2.1-.939 2.1-2.1V7.03z" />
+              </svg>
+              <span>바로 인쇄하기</span>
+            </>
+          )}
         </button>
 
         {/* PDF Export Button */}
