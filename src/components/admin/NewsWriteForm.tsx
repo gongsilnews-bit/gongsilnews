@@ -776,30 +776,22 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
 
     // 이미지 + 캡션 wrapper 생성
     const wrapper = document.createElement('div');
-    const wrapAlign = align === 'left' ? 'left' : align === 'right' ? 'right' : 'center';
-    wrapper.style.cssText = `margin: 16px 0; text-align: ${wrapAlign};`;
+    const marginCss = align === 'left' ? 'margin: 16px auto 16px 0;' : align === 'right' ? 'margin: 16px 0 16px auto;' : 'margin: 16px auto;';
+    wrapper.style.cssText = `display: table; ${marginCss} text-align: center;`;
     wrapper.setAttribute('contenteditable', 'false');
     wrapper.className = 'inserted-photo';
 
     const img = document.createElement('img');
     img.src = previewUrl;
-    const floatCss = align === 'left' ? 'float: left; margin: 0 16px 8px 0;' : align === 'right' ? 'float: right; margin: 0 0 8px 16px;' : 'display: block; margin: 0 auto;';
-    img.style.cssText = `max-width: ${imgSize}px; width: 100%; height: auto; border-radius: 6px; ${floatCss}`;
+    img.style.cssText = `max-width: ${imgSize}px; width: 100%; height: auto; border-radius: 6px; display: block;`;
     img.alt = caption || '기사 이미지';
     wrapper.appendChild(img);
 
     if (caption) {
       const cap = document.createElement('p');
-      cap.style.cssText = `font-size: 13px; color: #6b7280; margin: 8px 0 0 0; text-align: ${capAlign}; line-height: 1.5; clear: both;`;
+      cap.style.cssText = `display: table-caption; caption-side: bottom; font-size: 13px; color: #6b7280; margin: 8px 0 0 0; text-align: ${capAlign}; line-height: 1.5;`;
       cap.textContent = caption;
       wrapper.appendChild(cap);
-    }
-
-    // float 해제용 clearfix
-    if (align !== 'center') {
-      const clear = document.createElement('div');
-      clear.style.cssText = 'clear: both;';
-      wrapper.appendChild(clear);
     }
 
     // 삭제 버튼 추가
@@ -1010,10 +1002,8 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
           if (!pTag) {
             pTag = document.createElement('p');
             const capAlign = photoFiles[idx]?.captionAlign || 'center';
-            pTag.style.cssText = `font-size: 13px; color: #6b7280; margin: 8px 0 0 0; text-align: ${capAlign}; line-height: 1.5; clear: both;`;
-            const clear = wrapper.querySelector('div[style*="clear"]');
-            if (clear) wrapper.insertBefore(pTag, clear);
-            else wrapper.appendChild(pTag);
+            pTag.style.cssText = `display: table-caption; caption-side: bottom; font-size: 13px; color: #6b7280; margin: 8px 0 0 0; text-align: ${capAlign}; line-height: 1.5;`;
+            wrapper.appendChild(pTag);
           } else {
             const capAlign = photoFiles[idx]?.captionAlign || 'center';
             pTag.style.textAlign = capAlign;
@@ -1026,6 +1016,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
           const img = wrapper.querySelector('img') as HTMLImageElement;
           if (img) img.alt = '기사 이미지';
         }
+        setContent(editorRef.current.innerHTML || "");
       }
     }
   };
