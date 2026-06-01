@@ -342,6 +342,7 @@ function App() {
   const [isSavingCloud, setIsSavingCloud] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState<Record<string, boolean>>({});
   const [authError, setAuthError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<number | 'all'>('all');
 
   const loadVacancyDataDirectly = async (vacancyId: string) => {
     setLoadingData(true);
@@ -1167,8 +1168,14 @@ ${clone.outerHTML}
 
       document.body.appendChild(clone);
 
-      // Filter sections: remove ones not in selectedIds
+      // Make all pages visible in clone for correct capture
+      // Make all pages visible in clone for correct capture
       const sections = clone.querySelectorAll('[data-export-id]');
+      sections.forEach(p => {
+          (p as HTMLElement).style.display = 'flex';
+      });
+
+      // Filter sections: remove ones not in selectedIds
       sections.forEach((sec) => {
           const id = sec.getAttribute('data-export-id');
           if (id && !selectedIds.includes(id)) {
@@ -1303,6 +1310,8 @@ ${clone.outerHTML}
             onColorSelect={handleColorChange}
             onLayoutSelect={handleLayoutChange}
             isUploadingImage={isUploadingImage}
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
           />
         </div>
         <div className="col-span-12 lg:col-span-8 xl:col-span-9 bg-gray-200/50 rounded-xl border border-gray-300 overflow-hidden flex flex-col">
@@ -1313,7 +1322,7 @@ ${clone.outerHTML}
             <div className="flex-1 overflow-auto p-8 flex justify-center custom-scrollbar">
                 {/* Fixed width container for editor preview */}
                 <div style={{ width: '860px', flexShrink: 0 }}>
-                    <FlyerCanvas ref={flyerRef} data={state} />
+                    <FlyerCanvas ref={flyerRef} data={state} activeTab={activeTab} />
                 </div>
             </div>
         </div>
