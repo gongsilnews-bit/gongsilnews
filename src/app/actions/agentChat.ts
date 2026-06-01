@@ -64,8 +64,6 @@ export async function sendAgentMessage(params: {
           author_id: admin?.id || null,
           author_name: admin?.name || '공실뉴스 AI 비서',
           author_email: admin?.email || 'gongsilnews@gmail.com',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
         }).select('id').single();
 
       const text = `✅ **기사 초안이 성공적으로 작성되었습니다!**\n\n📌 **제목:** ${aiResult.title}\n📂 **카테고리:** 부동산·경제 > ${aiResult.section2 || '부동산 정책/동향'}\n\n[기사관리 > 작성중] 탭에서 확인 및 승인해주세요.`;
@@ -124,8 +122,6 @@ export async function sendAgentMessage(params: {
           author_id: admin?.id || null,
           author_name: admin?.name || '공실뉴스 AI 비서',
           author_email: admin?.email || 'gongsilnews@gmail.com',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
         }).select('id').single();
 
       // 키워드를 별도 테이블에 저장

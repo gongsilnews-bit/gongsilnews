@@ -250,7 +250,7 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
               ) : filteredCustomers.length === 0 ? (
                 <tr><td colSpan={11} style={{ padding: 40, textAlign: "center", color: textSecondary, fontSize: 14 }}>조건에 맞는 문의가 없습니다.</td></tr>
               ) : filteredCustomers.map((row, index) => {
-                const dateStr = new Date(row.created_at).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' });
+                const dateStr = new Date(row.created_at).toLocaleDateString('ko-KR', { timeZone: "Asia/Seoul", month: '2-digit', day: '2-digit' });
                 const isNew = row.status === "신규";
                 const badgeColor = row.status === "신규" ? "#8b5cf6" : row.status === "진행중" ? "#3b82f6" : row.status === "계약완료" ? "#10b981" : "#9ca3af";
                 const serialNum = filteredCustomers.length - index;

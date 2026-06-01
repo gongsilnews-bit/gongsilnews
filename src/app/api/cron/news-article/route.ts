@@ -143,8 +143,6 @@ export async function GET(req: Request) {
           author_id: admin?.id || null,
           author_name: admin?.name || '공실뉴스 AI 비서',
           author_email: admin?.email || 'gongsilnews@gmail.com',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
         })
         .select('id')
         .single();

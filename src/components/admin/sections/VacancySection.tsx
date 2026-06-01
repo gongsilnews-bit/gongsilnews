@@ -341,7 +341,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                   : row.trade_type === "전세" ? `전세 ${formatAmount(row.deposit)}`
                   : `${formatAmount(row.deposit)}/${formatAmount(row.monthly_rent)}`;
                 const addrText = [row.dong, row.building_name].filter(Boolean).join(" ") || [row.sido, row.sigungu, row.dong].filter(Boolean).join(" ");
-                const dateStr = row.created_at ? new Date(row.created_at).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' }) : "";
+                const dateStr = row.created_at ? new Date(row.created_at).toLocaleDateString('ko-KR', { timeZone: "Asia/Seoul", month: '2-digit', day: '2-digit' }) : "";
                 const isActive = row.status === 'ACTIVE';
                 const isPending = row.status === 'PENDING';
                 const daysSinceCreated = row.created_at ? Math.floor((Date.now() - new Date(row.created_at).getTime()) / 86400000) : 0;

@@ -70,8 +70,6 @@ export async function POST(req: Request) {
         author_name: adminUser?.name || '공실뉴스',
         author_email: adminUser?.email || 'gongsilnews@gmail.com',
         source_type: 'ai_press_release',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
       })
       .select('id')
       .single();

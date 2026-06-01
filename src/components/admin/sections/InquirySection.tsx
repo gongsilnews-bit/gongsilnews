@@ -397,6 +397,7 @@ export default function InquirySection({ theme }: InquirySectionProps) {
               ) : (
                 filteredInquiries.map((row) => {
                   const dateStr = new Date(row.created_at).toLocaleDateString("ko-KR", {
+                    timeZone: "Asia/Seoul",
                     month: "2-digit",
                     day: "2-digit",
                     hour: "2-digit",
@@ -639,7 +640,7 @@ export default function InquirySection({ theme }: InquirySectionProps) {
               <div style={{ display: "flex", borderBottom: `1px solid ${border}`, paddingBottom: 10 }}>
                 <div style={{ width: 100, fontSize: 13, fontWeight: 700, color: textSecondary }}>등록 일시</div>
                 <div style={{ fontSize: 13, color: textSecondary }}>
-                  {new Date(selectedInquiry.created_at).toLocaleString("ko-KR")}
+                  {new Date(selectedInquiry.created_at).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}
                 </div>
               </div>
             </div>

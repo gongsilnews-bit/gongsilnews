@@ -152,7 +152,7 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
 
   // 2. 접수일 포맷팅
   const dt = new Date(localCustomer.created_at);
-  const dateStr = dt.toLocaleDateString() + ' ' + dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const dateStr = dt.toLocaleDateString("ko-KR", { timeZone: "Asia/Seoul" }) + ' ' + dt.toLocaleTimeString("ko-KR", { timeZone: "Asia/Seoul", hour: '2-digit', minute: '2-digit' });
 
   // 3. 상담 메모 파싱 (전체 메모를 역순으로 렌더링)
   const allNotes = memos.filter(memo => memo.type !== "system").reverse();
@@ -291,7 +291,7 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
             ) : (
               allNotes.map(memo => {
                 const dt = new Date(memo.created_at);
-                const dateStr = dt.toLocaleDateString() + ' ' + dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const dateStr = dt.toLocaleDateString("ko-KR", { timeZone: "Asia/Seoul" }) + ' ' + dt.toLocaleTimeString("ko-KR", { timeZone: "Asia/Seoul", hour: '2-digit', minute: '2-digit' });
                 return (
                   <div key={memo.id} style={{ 
                     padding: "16px", 
