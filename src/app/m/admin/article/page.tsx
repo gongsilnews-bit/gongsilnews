@@ -115,8 +115,10 @@ function MobileArticleAdmin() {
   };
 
   const filtered = articles.filter(a => {
+    const isFuture = a.published_at && new Date(a.published_at).getTime() > new Date().getTime();
     if (filter === "승인대기" && a.status !== "PENDING") return false;
-    if (filter === "발행됨" && a.status !== "APPROVED") return false;
+    if (filter === "발행됨" && (a.status !== "APPROVED" || isFuture)) return false;
+    if (filter === "예약됨" && (a.status !== "APPROVED" || !isFuture)) return false;
     if (filter === "작성중" && a.status !== "DRAFT") return false;
     if (filter === "반려" && a.status !== "REJECTED") return false;
     if (activeKeyword) {
@@ -200,7 +202,8 @@ function MobileArticleAdmin() {
   const tabs = [
     { key: "전체", count: articles.length },
     { key: "승인대기", count: articles.filter(a => a.status === "PENDING").length },
-    { key: "발행됨", count: articles.filter(a => a.status === "APPROVED").length },
+    { key: "발행됨", count: articles.filter(a => a.status === "APPROVED" && !(a.published_at && new Date(a.published_at).getTime() > new Date().getTime())).length },
+    { key: "예약됨", count: articles.filter(a => a.status === "APPROVED" && (a.published_at && new Date(a.published_at).getTime() > new Date().getTime())).length },
     { key: "작성중", count: articles.filter(a => a.status === "DRAFT").length },
     { key: "반려", count: articles.filter(a => a.status === "REJECTED").length },
   ];
@@ -273,7 +276,7 @@ function MobileArticleAdmin() {
           >
             {tab.key}
             <span style={{
-              background: tab.key === "전체" ? "#e5e7eb" : tab.key === "승인대기" ? "#8b5cf6" : tab.key === "발행됨" ? "#10b981" : tab.key === "작성중" ? "#9ca3af" : "#ef4444",
+              background: tab.key === "전체" ? "#e5e7eb" : tab.key === "승인대기" ? "#8b5cf6" : tab.key === "발행됨" ? "#10b981" : tab.key === "예약됨" ? "#f59e0b" : tab.key === "작성중" ? "#9ca3af" : "#ef4444",
               color: tab.key === "전체" ? "#4b5563" : "#fff",
               padding: "2px 7px", borderRadius: 10, fontSize: 11, fontWeight: 700,
             }}>

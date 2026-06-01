@@ -227,10 +227,14 @@ export async function getArticles(filters?: {
         .order("created_at", { ascending: false });
 
       if (filters?.status) {
-        query = query.eq("status", filters.status);
-        // 공개 페이지용 APPROVED 조회: 예약 기사(미래 published_at) 제외
-        if (filters.status === "APPROVED") {
+        if (filters.status === "SCHEDULED") {
+          query = query.eq("status", "APPROVED");
+          query = query.gt("published_at", new Date().toISOString());
+        } else if (filters.status === "APPROVED") {
+          query = query.eq("status", "APPROVED");
           query = query.or(`published_at.is.null,published_at.lte.${new Date().toISOString()}`);
+        } else {
+          query = query.eq("status", filters.status);
         }
       }
       if (filters?.section1) query = query.eq("section1", filters.section1);

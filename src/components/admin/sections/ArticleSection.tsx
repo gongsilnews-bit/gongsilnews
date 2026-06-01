@@ -41,7 +41,7 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(30);
   const [totalCount, setTotalCount] = useState(0);
-  const [counts, setCounts] = useState({ 전체: 0, 승인대기: 0, 발행됨: 0, 작성중: 0, 반려: 0 });
+  const [counts, setCounts] = useState({ 전체: 0, 승인대기: 0, 발행됨: 0, 예약됨: 0, 작성중: 0, 반려: 0 });
 
   const loadData = async () => {
     const params: any = {
@@ -51,6 +51,7 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
 
     if (articleFilter === "승인대기") params.status = "PENDING";
     else if (articleFilter === "발행됨") params.status = "APPROVED";
+    else if (articleFilter === "예약됨") params.status = "SCHEDULED";
     else if (articleFilter === "작성중") params.status = "DRAFT";
     else if (articleFilter === "반려") params.status = "REJECTED";
 
@@ -66,10 +67,11 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
     }
 
     // Fetch tab counts via server action (admin client, bypasses RLS)
-    const [allRes, pendingRes, approvedRes, draftRes, rejectedRes] = await Promise.all([
+    const [allRes, pendingRes, approvedRes, scheduledRes, draftRes, rejectedRes] = await Promise.all([
       getArticles({ limit: 1 }),
       getArticles({ status: "PENDING", limit: 1 }),
       getArticles({ status: "APPROVED", limit: 1 }),
+      getArticles({ status: "SCHEDULED", limit: 1 }),
       getArticles({ status: "DRAFT", limit: 1 }),
       getArticles({ status: "REJECTED", limit: 1 }),
     ]);
@@ -77,6 +79,7 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
       전체: allRes.count || 0,
       승인대기: pendingRes.count || 0,
       발행됨: approvedRes.count || 0,
+      예약됨: scheduledRes.count || 0,
       작성중: draftRes.count || 0,
       반려: rejectedRes.count || 0,
     });
@@ -160,7 +163,7 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
       <div style={{ background: cardBg, borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", overflow: "hidden" }}>
         {/* 필터 탭 */}
         <div style={{ display: "flex", borderBottom: `1px solid ${border}`, background: darkMode ? "#2c2d31" : "#fafafa", padding: "0 16px" }}>
-          {["전체", "승인대기", "발행됨", "작성중", "반려"].map(tab => {
+          {["전체", "승인대기", "발행됨", "예약됨", "작성중", "반려"].map(tab => {
             let count = counts[tab as keyof typeof counts] || 0;
 
             return (
@@ -174,7 +177,7 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
                 style={{ border: "none", background: "none", padding: "16px 20px", fontSize: 14, fontWeight: articleFilter === tab ? 800 : 600, color: articleFilter === tab ? "#3b82f6" : textSecondary, borderBottom: articleFilter === tab ? "3px solid #3b82f6" : "3px solid transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
                 {tab}
                 <span style={{ 
-                  background: tab === "전체" ? "#e5e7eb" : tab === "승인대기" ? "#8b5cf6" : tab === "발행됨" ? "#10b981" : tab === "작성중" ? "#9ca3af" : "#ef4444",
+                  background: tab === "전체" ? "#e5e7eb" : tab === "승인대기" ? "#8b5cf6" : tab === "발행됨" ? "#10b981" : tab === "예약됨" ? "#f59e0b" : tab === "작성중" ? "#9ca3af" : "#ef4444",
                   color: tab === "전체" ? "#4b5563" : "#fff", padding: "2px 8px", borderRadius: 10, fontSize: 11, fontWeight: 700 
                 }}>{count}</span>
               </button>

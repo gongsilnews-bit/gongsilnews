@@ -87,8 +87,10 @@ export default function MemberArticleSection({ theme, memberId, memberName, memb
   }, [memberId]);
 
   const filtered = articles.filter(a => {
+    const isFuture = a.published_at && new Date(a.published_at).getTime() > new Date().getTime();
     if (filter === "승인대기" && a.status !== "PENDING") return false;
-    if (filter === "발행됨" && a.status !== "APPROVED") return false;
+    if (filter === "발행됨" && (a.status !== "APPROVED" || isFuture)) return false;
+    if (filter === "예약됨" && (a.status !== "APPROVED" || !isFuture)) return false;
     if (filter === "작성중" && a.status !== "DRAFT") return false;
     if (filter === "반려" && a.status !== "REJECTED") return false;
 
@@ -188,11 +190,12 @@ export default function MemberArticleSection({ theme, memberId, memberName, memb
       <div style={{ background: cardBg, borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", overflow: "hidden" }}>
         {/* 필터 탭 */}
         <div style={{ display: "flex", borderBottom: `1px solid ${border}`, background: darkMode ? "#2c2d31" : "#fafafa", padding: "0 16px" }}>
-          {["전체", "승인대기", "발행됨", "작성중", "반려"].map(tab => {
+          {["전체", "승인대기", "발행됨", "예약됨", "작성중", "반려"].map(tab => {
             let count = 0;
             if (tab === "전체") count = articles.length;
             else if (tab === "승인대기") count = articles.filter(a => a.status === "PENDING").length;
-            else if (tab === "발행됨") count = articles.filter(a => a.status === "APPROVED").length;
+            else if (tab === "발행됨") count = articles.filter(a => a.status === "APPROVED" && !(a.published_at && new Date(a.published_at).getTime() > new Date().getTime())).length;
+            else if (tab === "예약됨") count = articles.filter(a => a.status === "APPROVED" && (a.published_at && new Date(a.published_at).getTime() > new Date().getTime())).length;
             else if (tab === "작성중") count = articles.filter(a => a.status === "DRAFT").length;
             else if (tab === "반려") count = articles.filter(a => a.status === "REJECTED").length;
 
@@ -206,7 +209,7 @@ export default function MemberArticleSection({ theme, memberId, memberName, memb
                 style={{ border: "none", background: "none", padding: "16px 20px", fontSize: 14, fontWeight: filter === tab ? 800 : 600, color: filter === tab ? "#3b82f6" : textSecondary, borderBottom: filter === tab ? "3px solid #3b82f6" : "3px solid transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
                 {tab}
                 <span style={{ 
-                  background: tab === "전체" ? "#e5e7eb" : tab === "승인대기" ? "#8b5cf6" : tab === "발행됨" ? "#10b981" : tab === "작성중" ? "#9ca3af" : "#ef4444",
+                  background: tab === "전체" ? "#e5e7eb" : tab === "승인대기" ? "#8b5cf6" : tab === "발행됨" ? "#10b981" : tab === "예약됨" ? "#f59e0b" : tab === "작성중" ? "#9ca3af" : "#ef4444",
                   color: tab === "전체" ? "#4b5563" : "#fff", padding: "2px 8px", borderRadius: 10, fontSize: 11, fontWeight: 700 
                 }}>{count}</span>
               </button>
