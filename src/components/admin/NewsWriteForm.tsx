@@ -1698,11 +1698,25 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                 <span style={{ fontSize: 11, fontWeight: 600, color: "#3b82f6" }}>사진</span>
               </button>
               {/* 영상 */}
-              <button style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "12px 4px", border: "none", background: "none", cursor: "pointer", borderRadius: 8 }}>
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={textSecondary} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="2" y="4" width="20" height="16" rx="2"/><polygon points="10 8 16 12 10 16 10 8"/>
+              <button 
+                onClick={() => {
+                  setVideoCollapsed(false);
+                  setTimeout(() => {
+                    const el = document.getElementById('right-sidebar-video-input');
+                    if (el) {
+                      el.focus();
+                      el.style.transition = 'box-shadow 0.3s';
+                      el.style.boxShadow = '0 0 0 3px rgba(59,130,246,0.5)';
+                      setTimeout(() => el.style.boxShadow = 'none', 1000);
+                    }
+                  }, 50);
+                }}
+                style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "12px 4px", border: "none", background: "none", cursor: "pointer", borderRadius: 8 }}
+              >
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="4" width="20" height="16" rx="2"/><polygon points="10 8 16 12 10 16 10 8" fill="#ef4444"/>
                 </svg>
-                <span style={{ fontSize: 11, fontWeight: 600, color: textSecondary }}>영상</span>
+                <span style={{ fontSize: 11, fontWeight: 600, color: "#ef4444" }}>영상</span>
               </button>
               {/* 포토DB */}
               <button onClick={openPhotoDbModal} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "12px 4px", border: "none", background: "none", cursor: "pointer", borderRadius: 8 }}>
@@ -2334,7 +2348,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                 {!videoCollapsed && (
                   <div>
                     <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
-                      <input type="text" value={youtubeUrl} onChange={e => setYoutubeUrl(e.target.value)}
+                      <input id="right-sidebar-video-input" type="text" value={youtubeUrl} onChange={e => setYoutubeUrl(e.target.value)}
                         placeholder="YouTube영상링크입력"
                         onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddVideo(); } }}
                         style={{ flex: 1, padding: "8px 10px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 12, color: textPrimary, background: cardBg, outline: "none", fontFamily: "inherit" }} />
