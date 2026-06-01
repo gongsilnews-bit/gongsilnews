@@ -346,6 +346,76 @@ function App() {
   const [activeTab, setActiveTab] = useState<number | 'all'>('all');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
+  // --- UNDO / REDO HISTORY ENGINE ---
+  const [past, setPast] = useState<FlyerState[]>([]);
+  const [future, setFuture] = useState<FlyerState[]>([]);
+
+  const pushToHistory = useCallback((currentState: FlyerState) => {
+    setPast(prev => {
+      const last = prev[prev.length - 1];
+      if (last && JSON.stringify(last) === JSON.stringify(currentState)) {
+        return prev;
+      }
+      return [...prev.slice(-49), currentState]; // Keep last 50 states
+    });
+    setFuture([]); // Clear redo stack on new action
+  }, []);
+
+  const handleUndo = useCallback(() => {
+    setPast(prevPast => {
+      if (prevPast.length === 0) return prevPast;
+      const previous = prevPast[prevPast.length - 1];
+      const newPast = prevPast.slice(0, -1);
+      
+      setState(currentState => {
+        setFuture(prevFuture => [currentState, ...prevFuture]);
+        return previous;
+      });
+      
+      return newPast;
+    });
+  }, []);
+
+  const handleRedo = useCallback(() => {
+    setFuture(prevFuture => {
+      if (prevFuture.length === 0) return prevFuture;
+      const next = prevFuture[0];
+      const newFuture = prevFuture.slice(1);
+      
+      setState(currentState => {
+        setPast(prevPast => [...prevPast, currentState]);
+        return next;
+      });
+      
+      return newFuture;
+    });
+  }, []);
+
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      const activeEl = document.activeElement;
+      const isInput = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA');
+      if (isInput) return;
+
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+        if (e.shiftKey) {
+          e.preventDefault();
+          handleRedo();
+        } else {
+          e.preventDefault();
+          handleUndo();
+        }
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
+        e.preventDefault();
+        handleRedo();
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [handleUndo, handleRedo]);
+
   const loadVacancyDataDirectly = async (vacancyId: string) => {
     setLoadingData(true);
     try {
@@ -837,14 +907,17 @@ function App() {
   };
 
   const handleInfoChange = (newInfo: PropertyInfo) => {
+    pushToHistory(state);
     setState(prev => ({ ...prev, info: newInfo }));
   };
 
   const handleColorChange = (color: FlyerColor) => {
+    pushToHistory(state);
     setState(prev => ({ ...prev, colorTheme: color }));
   };
 
   const handleLayoutChange = (layout: FlyerLayout) => {
+    pushToHistory(state);
     setState(prev => ({ ...prev, layoutTheme: layout }));
   };
 
@@ -858,6 +931,7 @@ function App() {
       const compressedBlob = await compressToWebP(file, 0.82);
       const publicUrl = await uploadImageToServer(compressedBlob, vacancyId);
 
+      pushToHistory(state);
       setState(prev => ({
         ...prev,
         [key]: publicUrl

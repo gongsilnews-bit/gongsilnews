@@ -887,8 +887,39 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
             <div className="flex flex-col h-[550px] gap-6">
                 <div className="flex gap-6 h-3/4">
                     {/* Map Box */}
-                    <div className="w-2/3 border border-gray-200 rounded-2xl overflow-hidden relative shadow-sm">
-                        <img src="https://placehold.co/800x400/e2e8f0/1e293b?text=Map+View" alt="Map" className="w-full h-full object-cover" />
+                    <div className="w-2/3 border border-gray-200 rounded-2xl overflow-hidden relative shadow-sm bg-gray-50 flex items-center justify-center">
+                        {info.address ? (
+                            <iframe 
+                                title="Location Map"
+                                width="100%" 
+                                height="100%" 
+                                frameBorder="0" 
+                                style={{ border: 0 }}
+                                src={`https://maps.google.com/maps?q=${encodeURIComponent(info.address)}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
+                                allowFullScreen
+                                className="w-full h-full object-cover"
+                            />
+                        ) : (
+                            <div className="text-gray-400 font-bold">주소를 입력하면 지도가 표시됩니다.</div>
+                        )}
+
+                        {/* Direct Naver Map link on canvas (print:hidden) */}
+                        {info.address && (
+                            <a 
+                                href={info.agentMapUrl || `https://map.naver.com/p/search/${encodeURIComponent(info.address)}`}
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="absolute bottom-4 left-4 bg-white/95 text-slate-800 hover:bg-white active:scale-95 font-extrabold px-3 py-1.5 rounded-xl shadow-lg text-[10px] flex items-center gap-1.5 transition-all border border-gray-200 z-20 print:hidden"
+                                title="네이버 지도로 자세히 보기"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5 text-green-600">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25s-7.5-4.108-7.5-11.25z" />
+                                </svg>
+                                <span>네이버 지도로 보기</span>
+                            </a>
+                        )}
+
                         <div className="absolute top-4 right-4 bg-[#0d1424] text-white p-3 rounded-lg shadow-lg border border-gray-700 z-20">
                             <div className="text-[#e29d45] text-[10px] font-bold tracking-widest uppercase mb-1">TARGET LOCATION</div>
                             <div className="font-bold text-sm whitespace-pre-wrap">
