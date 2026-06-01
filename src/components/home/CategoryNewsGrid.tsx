@@ -73,7 +73,7 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
   const getThumbnailSrc = (article: any, ytInfo: { id: string | null; hasVideo: boolean }) => {
     if (article.thumbnail_url) return article.thumbnail_url;
     if (ytInfo.id) return `https://img.youtube.com/vi/${ytInfo.id}/hqdefault.jpg`;
-    return "https://via.placeholder.com/300x200?text=No+Image";
+    return null;
   };
 
   // 공통 기사 렌더링 함수 (2단 리스트용)
@@ -89,14 +89,16 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
       return (
         <Link key={i} href={`/news/${item.article_no || item.id}`} onClick={saveScroll} style={{ textDecoration: "none", color: "inherit", display: "block", marginBottom: 24 }}>
           <div className="hi-item" style={{ alignItems: "flex-start", display: "flex", gap: "20px" }}>
-            <div className="hi-img" style={{ position: "relative", width: "160px", height: "100px", flexShrink: 0 }}>
-              <img src={thumbSrc !== "https://via.placeholder.com/300x200?text=No+Image" ? thumbSrc : "https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&q=80&w=600&h=337"} alt={item.title} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 4 }} />
-              {ytInfo.hasVideo && (
-                <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 32, height: 32, background: "rgba(0,0,0,0.5)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="white" style={{ marginLeft: 2 }}><path d="M8 5v14l11-7z"/></svg>
-                </div>
-              )}
-            </div>
+            {thumbSrc && (
+              <div className="hi-img" style={{ position: "relative", width: "160px", height: "100px", flexShrink: 0 }}>
+                <img src={thumbSrc} alt={item.title} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 4 }} />
+                {ytInfo.hasVideo && (
+                  <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 32, height: 32, background: "rgba(0,0,0,0.5)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="white" style={{ marginLeft: 2 }}><path d="M8 5v14l11-7z"/></svg>
+                  </div>
+                )}
+              </div>
+            )}
             <div className="hi-txt" style={{ flex: 1, display: "flex", flexDirection: "column", height: "100px", overflow: "hidden" }}>
               <h3 style={{ margin: "0 0 8px 0", fontSize: "16px", fontWeight: "bold", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", lineHeight: 1.2 }}>{item.title}</h3>
               <p style={{ margin: 0, fontSize: "14px", color: "#666", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: 1.4, height: "2.8em" }}>{item.subtitle || ""}</p>
@@ -153,7 +155,7 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
                 return (
                   <Link key={i} href={`/news/${item.article_no || item.id}`} className="vid-item" onClick={saveScroll}>
                     <div className="vid-thumb">
-                      <img src={thumbSrc !== "https://via.placeholder.com/300x200?text=No+Image" ? thumbSrc : "https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&q=80&w=600&h=337"} alt={item.title} />
+                      <img src={thumbSrc || "https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&q=80&w=600&h=337"} alt={item.title} />
                       <div className="vid-play"></div>
                     </div>
                     <div className="vid-title" style={{ color: "#fff" }}>{item.title}</div>
