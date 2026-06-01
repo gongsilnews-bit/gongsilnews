@@ -40,6 +40,7 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
 
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(30);
+  const [sortBy, setSortBy] = useState("published_at");
   const [totalCount, setTotalCount] = useState(0);
   const [counts, setCounts] = useState({ 전체: 0, 승인대기: 0, 발행됨: 0, 예약됨: 0, 작성중: 0, 반려: 0 });
 
@@ -47,6 +48,7 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
     const params: any = {
       page: currentPage,
       limit: pageSize,
+      orderBy: sortBy,
     };
 
     if (articleFilter === "승인대기") params.status = "PENDING";
@@ -94,7 +96,7 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
 
   useEffect(() => {
     loadData();
-  }, [currentPage, articleFilter, activeFilters, pageSize]);
+  }, [currentPage, articleFilter, activeFilters, pageSize, sortBy]);
 
   // 최고관리자 기사관리: AI 에이전트 초안 포함 모든 기사 표시
   const baseArticles = dbArticles;
@@ -146,6 +148,14 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
           </select>
         </div>
         <input type="text" value={searchKeyword} onChange={e => setSearchKeyword(e.target.value)} onKeyDown={e => { if(e.key === 'Enter') { setActiveFilters({ articleNo: searchArticleNo, section: searchSection, section2: searchSection2, keyword: searchKeyword }); if (searchArticleNo || searchKeyword || searchSection !== "전체" || searchSection2 !== "전체") setArticleFilter("전체"); setCurrentPage(1); } }} placeholder="기사 제목 또는 기자명 검색" style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", flex: 1, minWidth: 180 }} />
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <label style={{ fontSize: 13, fontWeight: 600, color: textSecondary, whiteSpace: "nowrap" }}>정렬</label>
+          <select value={sortBy} onChange={e => { setSortBy(e.target.value); setCurrentPage(1); }} style={{ height: 36, padding: "0 10px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", minWidth: 110 }}>
+            <option value="published_at">발행일 최신순</option>
+            <option value="updated_at">수정일 최신순</option>
+            <option value="created_at">작성일 최신순</option>
+          </select>
+        </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <label style={{ fontSize: 13, fontWeight: 600, color: textSecondary, whiteSpace: "nowrap" }}>보기</label>
           <select value={pageSize} onChange={e => { setPageSize(Number(e.target.value)); setCurrentPage(1); }} style={{ height: 36, padding: "0 10px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", minWidth: 90 }}>

@@ -213,6 +213,7 @@ export async function getArticles(filters?: {
   author_id?: string;
   articleNo?: string;
   searchKeyword?: string;
+  orderBy?: "published_at" | "updated_at" | "created_at";
 }) {
   const cacheKey = JSON.stringify(filters || {});
   
@@ -222,9 +223,15 @@ export async function getArticles(filters?: {
       let query = supabase
         .from("articles")
         .select("id, article_no, status, section1, section2, title, subtitle, content, author_name, author_id, published_at, created_at, updated_at, is_deleted, thumbnail_url, view_count, lat, lng, location_name, youtube_url, is_important, is_headline, reject_reason, edit_count, article_keywords(keyword)", { count: "exact" })
-        .eq("is_deleted", false)
-        .order("published_at", { ascending: false, nullsFirst: false })
-        .order("created_at", { ascending: false });
+        .eq("is_deleted", false);
+
+      if (filters?.orderBy === "updated_at") {
+        query = query.order("updated_at", { ascending: false, nullsFirst: false });
+      } else if (filters?.orderBy === "created_at") {
+        query = query.order("created_at", { ascending: false, nullsFirst: false });
+      } else {
+        query = query.order("published_at", { ascending: false, nullsFirst: false }).order("created_at", { ascending: false });
+      }
 
       if (filters?.status) {
         if (filters.status === "SCHEDULED") {

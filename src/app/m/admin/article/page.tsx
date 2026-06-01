@@ -24,6 +24,7 @@ function MobileArticleAdmin() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchKeyword, setSearchKeyword] = useState("");
   const [activeKeyword, setActiveKeyword] = useState("");
+  const [sortBy, setSortBy] = useState("published_at");
   const [previewId, setPreviewId] = useState<string | null>(null);
 
   // 반려 모달
@@ -129,6 +130,12 @@ function MobileArticleAdmin() {
           !(a.id && String(a.id).includes(k))) return false;
     }
     return true;
+  });
+
+  const sortedArticles = [...filtered].sort((a, b) => {
+    if (sortBy === "updated_at") return new Date(b.updated_at || 0).getTime() - new Date(a.updated_at || 0).getTime();
+    if (sortBy === "created_at") return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+    return new Date(b.published_at || b.created_at || 0).getTime() - new Date(a.published_at || a.created_at || 0).getTime();
   });
 
   // 승인신청 (일반 회원용)
@@ -244,19 +251,29 @@ function MobileArticleAdmin() {
 
       {/* 검색 영역 (접이식) */}
       {searchOpen && (
-        <div style={{ background: "#fff", padding: "12px 16px", borderBottom: "1px solid #e5e7eb", display: "flex", gap: 8 }}>
-          <input
-            type="text"
-            value={searchKeyword}
-            onChange={e => setSearchKeyword(e.target.value)}
-            onKeyDown={e => { if (e.key === "Enter") { setActiveKeyword(searchKeyword); setFilter("전체"); } }}
-            placeholder="기사 제목, 기자명 또는 기사번호 검색"
-            style={{ flex: 1, height: 40, padding: "0 12px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, outline: "none" }}
-          />
-          <button onClick={() => { setActiveKeyword(searchKeyword); setFilter("전체"); }} style={{ height: 40, padding: "0 16px", background: "#374151", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700 }}>검색</button>
-          {activeKeyword && (
-            <button onClick={() => { setSearchKeyword(""); setActiveKeyword(""); }} style={{ height: 40, padding: "0 12px", background: "#fff", color: "#6b7280", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 13, fontWeight: 600 }}>초기화</button>
-          )}
+        <div style={{ background: "#fff", padding: "12px 16px", borderBottom: "1px solid #e5e7eb", display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ display: "flex", gap: 8 }}>
+            <input
+              type="text"
+              value={searchKeyword}
+              onChange={e => setSearchKeyword(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter") { setActiveKeyword(searchKeyword); setFilter("전체"); } }}
+              placeholder="기사 제목, 기자명 또는 기사번호 검색"
+              style={{ flex: 1, height: 40, padding: "0 12px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, outline: "none" }}
+            />
+            <button onClick={() => { setActiveKeyword(searchKeyword); setFilter("전체"); }} style={{ height: 40, padding: "0 16px", background: "#374151", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700 }}>검색</button>
+            {activeKeyword && (
+              <button onClick={() => { setSearchKeyword(""); setActiveKeyword(""); }} style={{ height: 40, padding: "0 12px", background: "#fff", color: "#6b7280", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 13, fontWeight: 600 }}>초기화</button>
+            )}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <label style={{ fontSize: 13, fontWeight: 600, color: "#4b5563" }}>정렬 기준</label>
+            <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={{ flex: 1, height: 38, padding: "0 12px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, outline: "none", background: "#f9fafb" }}>
+              <option value="published_at">발행일 최신순</option>
+              <option value="updated_at">수정일 최신순</option>
+              <option value="created_at">작성일 최신순</option>
+            </select>
+          </div>
         </div>
       )}
 
@@ -302,14 +319,14 @@ function MobileArticleAdmin() {
           <div style={{ padding: "40px 0", textAlign: "center", color: "#9ca3af" }}>
             <div style={{ fontSize: 14, fontWeight: 600 }}>불러오는 중...</div>
           </div>
-        ) : filtered.length === 0 ? (
+        ) : sortedArticles.length === 0 ? (
           <div style={{ padding: "60px 0", textAlign: "center", color: "#9ca3af" }}>
             <div style={{ fontSize: 40, marginBottom: 12 }}>📝</div>
             <div style={{ fontSize: 15, fontWeight: 600 }}>
               {filter === "전체" ? "작성한 기사가 없습니다." : "조회된 기사가 없습니다."}
             </div>
           </div>
-        ) : filtered.map(a => {
+        ) : sortedArticles.map(a => {
           const st = statusInfo[a.status] || { bg: "#9ca3af", label: a.status };
           const dateStr = a.created_at ? new Date(a.created_at).toISOString().split("T")[0] : "-";
           const updatedStr = a.updated_at ? new Date(a.updated_at).toISOString().split("T")[0] : "-";

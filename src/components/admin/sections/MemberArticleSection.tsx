@@ -21,6 +21,7 @@ export default function MemberArticleSection({ theme, memberId, memberName, memb
   const { bg, cardBg, textPrimary, textSecondary, darkMode, border } = theme;
   const [articles, setArticles] = useState<any[]>([]);
   const [filter, setFilter] = useState("전체");
+  const [sortBy, setSortBy] = useState("published_at");
   const [checkedIds, setCheckedIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [toastMessage, setToastMessage] = useState<{ text: string; type: "success" | "error" | "info" } | null>(null);
@@ -104,6 +105,12 @@ export default function MemberArticleSection({ theme, memberId, memberName, memb
     return true;
   });
 
+  const sortedArticles = [...filtered].sort((a, b) => {
+    if (sortBy === "updated_at") return new Date(b.updated_at || 0).getTime() - new Date(a.updated_at || 0).getTime();
+    if (sortBy === "created_at") return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+    return new Date(b.published_at || b.created_at || 0).getTime() - new Date(a.published_at || a.created_at || 0).getTime();
+  });
+
   /* 승인신청: DRAFT → PENDING */
   const handleRequestApproval = async () => {
     console.log("[DEBUG] handleRequestApproval called, checkedIds:", checkedIds);
@@ -183,6 +190,14 @@ export default function MemberArticleSection({ theme, memberId, memberName, memb
           </select>
         </div>
         <input type="text" value={searchKeyword} onChange={e => setSearchKeyword(e.target.value)} onKeyDown={e => { if(e.key === 'Enter') { setActiveFilters({ articleNo: searchArticleNo, section: searchSection, keyword: searchKeyword }); if (searchArticleNo || searchKeyword || searchSection !== "전체") setFilter("전체"); } }} placeholder="기사 제목 또는 기자명 검색" style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", flex: 1, minWidth: 180 }} />
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <label style={{ fontSize: 13, fontWeight: 600, color: textSecondary, whiteSpace: "nowrap" }}>정렬</label>
+          <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={{ height: 36, padding: "0 10px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", minWidth: 110 }}>
+            <option value="published_at">발행일 최신순</option>
+            <option value="updated_at">수정일 최신순</option>
+            <option value="created_at">작성일 최신순</option>
+          </select>
+        </div>
         <button onClick={() => { setActiveFilters({ articleNo: searchArticleNo, section: searchSection, keyword: searchKeyword }); if (searchArticleNo || searchKeyword || searchSection !== "전체") setFilter("전체"); }} style={{ height: 36, padding: "0 18px", background: darkMode ? "#2c2d31" : "#374151", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>검색</button>
         <button onClick={() => { setSearchArticleNo(""); setSearchSection("전체"); setSearchKeyword(""); setActiveFilters({ articleNo: "", section: "전체", keyword: "" }); setFilter("전체"); }} style={{ height: 36, padding: "0 14px", background: darkMode ? "#2c2d31" : "#fff", color: textSecondary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>초기화</button>
       </div>
@@ -257,11 +272,11 @@ export default function MemberArticleSection({ theme, memberId, memberName, memb
             <tbody>
               {loading ? (
                 <tr><td colSpan={8} style={{ padding: 40, textAlign: "center", color: textSecondary }}>불러오는 중...</td></tr>
-              ) : filtered.length === 0 ? (
+              ) : sortedArticles.length === 0 ? (
                 <tr><td colSpan={8} style={{ padding: 40, textAlign: "center", color: textSecondary }}>
                   {filter === "전체" ? "작성한 기사가 없습니다. '새 기사 작성' 버튼을 클릭하여 시작하세요." : "조회된 기사가 없습니다."}
                 </td></tr>
-              ) : filtered.map((a) => (
+              ) : sortedArticles.map((a) => (
                 <tr key={a.id} style={{ borderBottom: `1px solid ${darkMode ? "#333" : "#f3f4f6"}` }}>
                   <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
                     <input type="checkbox" style={{ accentColor: "#3b82f6" }} checked={checkedIds.includes(a.id)} onChange={(e) => {
