@@ -808,6 +808,51 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                     </div>
                                 ));
                             })()}
+                            
+                            {/* Price Row */}
+                            {(() => {
+                                const tType = info.transactionType || "매매";
+                                let label = "매매가";
+                                
+                                if (tType === "전세") {
+                                    label = "보증금 (전세)";
+                                } else if (tType === "월세" || tType === "임대") {
+                                    label = "보증금 / 월세";
+                                } else if (tType !== "매매") {
+                                    label = "임대가";
+                                }
+                                
+                                return (
+                                    <div className="flex bg-[#fff9f0] border-t border-gray-200 group relative">
+                                        {/* Direct Transaction Type Switcher: print:hidden */}
+                                        <div className="absolute -left-20 top-1/2 -translate-y-1/2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 print:hidden bg-white/95 shadow-md border border-gray-200 rounded-md p-1.5 z-30">
+                                            <span className="text-[10px] text-gray-400 font-bold text-center border-b pb-0.5 mb-0.5">거래 형태</span>
+                                            {["매매", "전세", "월세"].map((type) => (
+                                                <button
+                                                    key={type}
+                                                    onClick={() => handleTextChange('transactionType', type)}
+                                                    className={`px-1.5 py-0.5 rounded text-[10px] font-extrabold transition-colors ${tType === type ? 'bg-[#cc5a27] text-white' : 'hover:bg-gray-100 text-gray-600'}`}
+                                                >
+                                                    {type}
+                                                </button>
+                                            ))}
+                                        </div>
+ 
+                                        <div className="w-1/3 text-gray-600 font-bold py-3 pl-4 flex items-center">{label}</div>
+                                        <div className="w-2/3 text-[#cc5a27] font-extrabold py-3 pl-4 flex items-center">
+                                            {tType === "월세" || tType === "임대" ? (
+                                                <div className="flex items-center gap-1">
+                                                    <EditableText value={price} onChange={(val) => handleTextChange('priceMain', val)} />
+                                                    <span>/</span>
+                                                    <EditableText value={info.priceSub || ''} onChange={(val) => handleTextChange('priceSub', val)} placeholder="월세" />
+                                                </div>
+                                            ) : (
+                                                <EditableText value={price} onChange={(val) => handleTextChange('priceMain', val)} />
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })()}
 
                         </div>
                     </div>
