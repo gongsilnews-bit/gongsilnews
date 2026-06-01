@@ -314,18 +314,14 @@ function MobileArticleWrite() {
       const status = requestApproval ? "승인신청" : "작성중";
 
       // KST 기준 현재 시간
-      const kstNow = new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Seoul' }).split(' ');
-      let published_at = new Date().toISOString(); // 기본값: 현재 UTC
+      let published_at = new Date().toISOString(); // 기본값: 현재 시간
 
       if (isReserved && publishDate) {
         // 예약: KST 기준 날짜+시간을 ISO로 변환
         const kstDateStr = `${publishDate}T${publishTime || "00:00"}:00+09:00`;
         published_at = new Date(kstDateStr).toISOString();
-      } else if (editId && publishDate) {
-        // 수정: 기존 입력값 유지 (KST 기준)
-        const kstDateStr = `${publishDate}T${publishTime || "00:00"}:00+09:00`;
-        published_at = new Date(kstDateStr).toISOString();
       }
+      // 예약이 아닌 경우: 신규/수정 모두 현재 시간 (기본값 유지)
 
       const coverPhoto = photos.find(p => p.isCover);
       const coverVideo = videos.find(v => v.isCover);

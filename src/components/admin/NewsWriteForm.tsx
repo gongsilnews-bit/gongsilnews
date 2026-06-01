@@ -1460,15 +1460,8 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
         const kstDateStr = `${publishDate}T${publishTime || "00:00"}:00+09:00`;
         publishedAt = new Date(kstDateStr).toISOString();
       } else {
-        // 예약이 아닌 경우
-        if (loadArticleId) {
-          // 수정: 기존 입력값 유지 (KST 기준)
-          const kstDateStr = `${publishDate}T${publishTime || "00:00"}:00+09:00`;
-          publishedAt = new Date(kstDateStr).toISOString();
-        } else {
-          // 신규: 현재 시간
-          publishedAt = new Date().toISOString();
-        }
+        // 예약이 아닌 경우: 신규/수정 모두 현재 시간
+        publishedAt = new Date().toISOString();
       }
 
       // 대표 이미지 URL 결정
