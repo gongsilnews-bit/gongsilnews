@@ -1263,6 +1263,10 @@ ${clone.outerHTML}
     }
   };
 
+  const handleDirectPrint = () => {
+    window.print();
+  };
+
   // Generate selectable sections list
   const getExportableSections = () => {
       return [
@@ -1421,7 +1425,18 @@ ${clone.outerHTML}
           <span>이미지 내보내기</span>
         </button>
 
-        {/* Print (PDF) Button */}
+        {/* Direct Print Button */}
+        <button 
+          onClick={handleDirectPrint}
+          className="py-3 px-5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 active:scale-95 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all duration-150 shadow-sm"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4 text-gray-500">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0l.229 2.523a1.125 1.125 0 01-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0021 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 00-1.913-.247M6.34 18H5.25A2.25 2.25 0 013 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 011.913-.247m10.5 0a48.536 48.536 0 00-10.5 0v2.796c0 1.161.94 2.1 2.1 2.1h6.3c1.16 0 2.1-.939 2.1-2.1V7.03z" />
+          </svg>
+          <span>바로 인쇄하기</span>
+        </button>
+
+        {/* PDF Export Button */}
         <button 
           onClick={downloadPdf}
           disabled={isGeneratingPdf}
@@ -1434,10 +1449,10 @@ ${clone.outerHTML}
             </svg>
           ) : (
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4 text-gray-500">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0l.229 2.523a1.125 1.125 0 01-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0021 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 00-1.913-.247M6.34 18H5.25A2.25 2.25 0 013 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 011.913-.247m10.5 0a48.536 48.536 0 00-10.5 0v2.796c0 1.161.94 2.1 2.1 2.1h6.3c1.16 0 2.1-.939 2.1-2.1V7.03z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
             </svg>
           )}
-          <span>{isGeneratingPdf ? "생성 중..." : "PDF 인쇄(다운로드)"}</span>
+          <span>{isGeneratingPdf ? "생성 중..." : "PDF 내보내기"}</span>
         </button>
 
 
@@ -1490,10 +1505,78 @@ ${clone.outerHTML}
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #999; }
         
         @media print {
-            body { margin: 0; padding: 0; background: white; }
+            body { 
+                margin: 0; 
+                padding: 0; 
+                background: white !important; 
+                -webkit-print-color-adjust: exact !important; 
+                print-color-adjust: exact !important; 
+            }
             @page {
                 size: A4 landscape;
                 margin: 0;
+            }
+            
+            /* Hide non-printable elements */
+            header, .print\:hidden {
+                display: none !important;
+            }
+            
+            /* Main layout adjustments for full print screen */
+            main {
+                display: block !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                max-width: none !important;
+                width: 100% !important;
+                height: auto !important;
+            }
+
+            .print\:col-span-12 {
+                display: block !important;
+                width: 100% !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                border: none !important;
+                background: white !important;
+            }
+
+            .print\:overflow-visible {
+                overflow: visible !important;
+                padding: 0 !important;
+                display: block !important;
+            }
+
+            .print\:w-\[1122px\] {
+                width: 297mm !important;
+                max-width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+
+            /* exact fit for slides container */
+            div.flex.flex-col.items-center.p-8.bg-gray-100 {
+                padding: 0 !important;
+                background: transparent !important;
+            }
+
+            /* Perfect sizing for ReportPage container to match A4 landscape print exactly */
+            div[data-export-id] {
+                width: 297mm !important;
+                height: 210mm !important;
+                margin: 0 !important;
+                box-shadow: none !important;
+                page-break-after: always !important;
+                break-after: page !important;
+                overflow: hidden !important;
+                box-sizing: border-box !important;
+                position: relative !important;
+            }
+
+            img {
+                max-width: 100%;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
             }
         }
       `}</style>
