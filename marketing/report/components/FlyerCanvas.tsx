@@ -1242,22 +1242,308 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
             </div>
         </ReportPage>
         )}
- 
-        {/* PAGE 3: PHOTOS */}
+
+        {/* PAGE 3: LEASE STATUS (NEW DYNAMIC TABLE PAGE) */}
         {(activeTab === 'all' || activeTab === 3) && (
         <ReportPage 
             pageNumber={3} 
-            title={info.page3Title || "현장 사진"} 
+            title={info.page3Title || "임대 상세 현황"} 
             onUpdateTitle={(val) => handleTextChange('page3Title', val)}
-            subtitle={info.page3Subtitle || "Actual Field Photos"} 
+            subtitle={info.page3Subtitle || "Rental Status"} 
             onUpdateSubtitle={(val) => handleTextChange('page3Subtitle', val)}
-            badgeText={info.pageBadges?.page3 || "PROPERTY VISUALS"}
+            badgeText={info.pageBadges?.page3 || "RENTAL STATUS"}
             exportId="page-3"
             onUpdateBadge={(val) => {
                 if (onUpdateInfo) {
                     onUpdateInfo({
                         ...info,
                         pageBadges: { ...(info.pageBadges || {}), page3: val }
+                    });
+                }
+            }}
+            footerText={info.footerText || "CONFIDENTIAL | INFORMATION MEMORANDUM"}
+            onUpdateFooter={(val) => handleTextChange('footerText', val)}
+        >
+            {(() => {
+                const leaseTable = info.leaseTable || {
+                    headers: ["층수", "호실", "면적", "금액", "현용도", "기타"],
+                    rows: [
+                        ["지상 5층", "501호", "165.2㎡", "보증금 1억 / 월세 450만", "사무실", "즉시입주"],
+                        ["지상 4층", "401호", "165.2㎡", "보증금 1억 / 월세 450만", "학원", "임대중"],
+                    ]
+                };
+                const headers = leaseTable.headers;
+                const rows = leaseTable.rows;
+
+                const updateCell = (rIdx: number, cIdx: number, val: string) => {
+                    if (!onUpdateInfo) return;
+                    const newRows = rows.map((r, ri) => ri === rIdx ? r.map((c, ci) => ci === cIdx ? val : c) : r);
+                    onUpdateInfo({
+                        ...info,
+                        leaseTable: { headers, rows: newRows }
+                    });
+                };
+
+                const updateHeader = (cIdx: number, val: string) => {
+                    if (!onUpdateInfo) return;
+                    const newHeaders = headers.map((h, ci) => ci === cIdx ? val : h);
+                    onUpdateInfo({
+                        ...info,
+                        leaseTable: { headers: newHeaders, rows }
+                    });
+                };
+
+                const addColumn = (insertIdx: number) => {
+                    if (!onUpdateInfo) return;
+                    const newHeaders = [...headers];
+                    newHeaders.splice(insertIdx, 0, "새 열");
+                    const newRows = rows.map(r => {
+                        const newR = [...r];
+                        newR.splice(insertIdx, 0, "");
+                        return newR;
+                    });
+                    onUpdateInfo({
+                        ...info,
+                        leaseTable: { headers: newHeaders, rows: newRows }
+                    });
+                };
+
+                const deleteColumn = (colIdx: number) => {
+                    if (!onUpdateInfo || headers.length <= 1) return;
+                    const newHeaders = headers.filter((_, ci) => ci !== colIdx);
+                    const newRows = rows.map(r => r.filter((_, ci) => ci !== colIdx));
+                    onUpdateInfo({
+                        ...info,
+                        leaseTable: { headers: newHeaders, rows: newRows }
+                    });
+                };
+
+                const addRow = () => {
+                    if (!onUpdateInfo) return;
+                    const newRows = [...rows, new Array(headers.length).fill("")];
+                    onUpdateInfo({
+                        ...info,
+                        leaseTable: { headers, rows: newRows }
+                    });
+                };
+
+                const deleteRow = (rIdx: number) => {
+                    if (!onUpdateInfo) return;
+                    const newRows = rows.filter((_, ri) => ri !== rIdx);
+                    onUpdateInfo({
+                        ...info,
+                        leaseTable: { headers, rows: newRows }
+                    });
+                };
+
+                const duplicateRow = (rIdx: number) => {
+                    if (!onUpdateInfo) return;
+                    const newRows = [...rows];
+                    newRows.splice(rIdx + 1, 0, [...rows[rIdx]]);
+                    onUpdateInfo({
+                        ...info,
+                        leaseTable: { headers, rows: newRows }
+                    });
+                };
+
+                const moveRow = (rIdx: number, dir: number) => {
+                    if (!onUpdateInfo) return;
+                    const targetIdx = rIdx + dir;
+                    if (targetIdx < 0 || targetIdx >= rows.length) return;
+                    const newRows = [...rows];
+                    const temp = newRows[rIdx];
+                    newRows[rIdx] = newRows[targetIdx];
+                    newRows[targetIdx] = temp;
+                    onUpdateInfo({
+                        ...info,
+                        leaseTable: { headers, rows: newRows }
+                    });
+                };
+
+                return (
+                    <div className="flex gap-6 h-[550px]">
+                        {/* Left Column: PPT Style Dynamic Table */}
+                        <div className="w-1/2 flex flex-col justify-between h-full bg-white rounded-2xl border border-slate-100 p-5 shadow-sm overflow-hidden">
+                            <div className="overflow-y-auto custom-scrollbar flex-1 pr-1">
+                                <table className="w-full text-left border-collapse table-fixed">
+                                    <thead>
+                                        <tr>
+                                            {headers.map((h, colIdx) => (
+                                                <th 
+                                                    key={colIdx} 
+                                                    className="border border-slate-200 p-2.5 text-xs font-extrabold text-white text-center uppercase relative group/header overflow-visible"
+                                                    style={{ backgroundColor: colorTheme.primary }}
+                                                >
+                                                    <EditableText 
+                                                        value={h} 
+                                                        onChange={(val) => updateHeader(colIdx, val)}
+                                                    />
+                                                    
+                                                    {/* Hover Header Columns Controls */}
+                                                    <div className="absolute -top-7 left-1/2 transform -translate-x-1/2 bg-[#0d1424] text-white text-[9px] rounded-lg shadow-lg border border-gray-700 px-2 py-1 gap-1.5 hidden group-hover/header:flex items-center print:hidden z-40 transition-all">
+                                                        <button 
+                                                            type="button"
+                                                            onClick={() => addColumn(colIdx)}
+                                                            className="text-blue-400 hover:text-blue-300 font-extrabold cursor-pointer border-none bg-transparent"
+                                                            title="왼쪽에 열 추가"
+                                                        >
+                                                            +
+                                                        </button>
+                                                        {headers.length > 1 && (
+                                                            <button 
+                                                                type="button"
+                                                                onClick={() => deleteColumn(colIdx)}
+                                                                className="text-red-400 hover:text-red-300 font-extrabold cursor-pointer border-none bg-transparent"
+                                                                title="열 삭제"
+                                                            >
+                                                                ✕
+                                                            </button>
+                                                        )}
+                                                        <button 
+                                                            type="button"
+                                                            onClick={() => addColumn(colIdx + 1)}
+                                                            className="text-green-400 hover:text-green-300 font-extrabold cursor-pointer border-none bg-transparent"
+                                                            title="오른쪽에 열 추가"
+                                                        >
+                                                            +
+                                                        </button>
+                                                    </div>
+                                                </th>
+                                            ))}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {rows.map((row, rowIdx) => (
+                                            <tr key={rowIdx} className="hover:bg-slate-50/50 transition-colors group/row relative">
+                                                {row.map((cell, colIdx) => (
+                                                    <td 
+                                                        key={colIdx} 
+                                                        className="border border-slate-200 p-2.5 text-xs text-slate-700 font-semibold relative text-center truncate"
+                                                    >
+                                                        <EditableText 
+                                                            value={cell || ""} 
+                                                            onChange={(val) => updateCell(rowIdx, colIdx, val)}
+                                                        />
+                                                        
+                                                        {/* Floating Row Control Panel on First Cell Hover */}
+                                                        {colIdx === 0 && (
+                                                            <div className="absolute -left-9 top-1/2 transform -translate-y-1/2 bg-[#0d1424] text-white text-[9px] rounded-lg shadow-lg border border-gray-700 p-1 flex flex-col gap-1 hidden group-hover/row:flex print:hidden z-35 transition-all">
+                                                                <button
+                                                                    type="button"
+                                                                    disabled={rowIdx === 0}
+                                                                    onClick={() => moveRow(rowIdx, -1)}
+                                                                    className="text-slate-300 hover:text-white disabled:opacity-30 cursor-pointer border-none bg-transparent font-bold"
+                                                                    title="위로 이동"
+                                                                >
+                                                                    ▲
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => duplicateRow(rowIdx)}
+                                                                    className="text-green-400 hover:text-green-300 cursor-pointer border-none bg-transparent font-bold"
+                                                                    title="행 복제"
+                                                                >
+                                                                    🗐
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => deleteRow(rowIdx)}
+                                                                    className="text-red-400 hover:text-red-300 cursor-pointer border-none bg-transparent font-bold"
+                                                                    title="행 삭제"
+                                                                >
+                                                                    ✕
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    disabled={rowIdx === rows.length - 1}
+                                                                    onClick={() => moveRow(rowIdx, 1)}
+                                                                    className="text-slate-300 hover:text-white disabled:opacity-30 cursor-pointer border-none bg-transparent font-bold"
+                                                                    title="아래로 이동"
+                                                                >
+                                                                    ▼
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                    </td>
+                                                ))}
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            {/* Interactive Quick Action buttons below table */}
+                            <div className="flex gap-2 mt-4 pt-3 border-t border-slate-100 print:hidden shrink-0">
+                                <button
+                                    type="button"
+                                    onClick={addRow}
+                                    className="flex-1 py-1.5 bg-yellow-50 hover:bg-yellow-100 text-yellow-700 rounded-lg text-xs font-bold transition-all border border-dashed border-yellow-200 flex items-center justify-center gap-1 active:scale-95 cursor-pointer"
+                                >
+                                    ➕ 새로운 가로줄(행) 추가
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => addColumn(headers.length)}
+                                    className="flex-1 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg text-xs font-bold transition-all border border-dashed border-blue-200 flex items-center justify-center gap-1 active:scale-95 cursor-pointer"
+                                >
+                                    ➕ 새로운 세로칸(열) 추가
+                                </button>
+                            </div>
+                            
+                            {/* Notice text block */}
+                            <div className="text-[10px] text-slate-400 mt-3 pt-2 border-t border-slate-100 leading-normal shrink-0">
+                                <EditableBlock 
+                                    value={info.leaseNotice || ""} 
+                                    onChange={(val) => handleTextChange('leaseNotice', val)}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Right Column: Strategic MD summary card */}
+                        <div className="w-1/2 bg-[#0d1424] rounded-2xl p-8 flex flex-col justify-between shadow-md text-white h-full">
+                            <div>
+                                <div className="w-12 h-12 bg-white/10 rounded-lg flex items-center justify-center mb-6">
+                                    <svg className="w-6 h-6 text-[#e29d45]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                    </svg>
+                                </div>
+                                <h3 className="text-[#e29d45] text-2xl font-bold mb-4 leading-snug">
+                                    <EditableText 
+                                        value={info.leaseRightTitle || ""} 
+                                        onChange={(val) => handleTextChange('leaseRightTitle', val)}
+                                        className="text-[#e29d45]"
+                                    />
+                                </h3>
+                                <div className="text-gray-300 text-sm leading-relaxed whitespace-pre-wrap">
+                                    <EditableBlock 
+                                        value={info.leaseRightText || ""} 
+                                        onChange={(val) => handleTextChange('leaseRightText', val)}
+                                        className="hover:bg-white/10 hover:ring-white/20 focus:bg-white/20 focus:ring-white/50 text-gray-300"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            })()}
+        </ReportPage>
+        )}
+
+        {/* PAGE 4: PHOTOS */}
+        {(activeTab === 'all' || activeTab === 4) && (
+        <ReportPage 
+            pageNumber={4} 
+            title={info.page4Title || "현장 사진"} 
+            onUpdateTitle={(val) => handleTextChange('page4Title', val)}
+            subtitle={info.page4Subtitle || "Actual Field Photos"} 
+            onUpdateSubtitle={(val) => handleTextChange('page4Subtitle', val)}
+            badgeText={info.pageBadges?.page4 || "PROPERTY VISUALS"}
+            exportId="page-4"
+            onUpdateBadge={(val) => {
+                if (onUpdateInfo) {
+                    onUpdateInfo({
+                        ...info,
+                        pageBadges: { ...(info.pageBadges || {}), page4: val }
                     });
                 }
             }}
@@ -1563,21 +1849,21 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
         </ReportPage>
         )}
 
-        {/* PAGE 4: AREA ANALYSIS */}
-        {(activeTab === 'all' || activeTab === 4) && (
+        {/* PAGE 5: AREA ANALYSIS */}
+        {(activeTab === 'all' || activeTab === 5) && (
         <ReportPage 
-            pageNumber={4} 
-            title={info.page4Title || "입지 및 위치도"} 
-            onUpdateTitle={(val) => handleTextChange('page4Title', val)}
-            subtitle={info.page4Subtitle || "Strategic Connectivity"} 
-            onUpdateSubtitle={(val) => handleTextChange('page4Subtitle', val)}
-            badgeText={info.pageBadges?.page4 || "AREA ANALYSIS"}
-            exportId="page-4"
+            pageNumber={5} 
+            title={info.page5Title || "입지 및 위치도"} 
+            onUpdateTitle={(val) => handleTextChange('page5Title', val)}
+            subtitle={info.page5Subtitle || "Strategic Connectivity"} 
+            onUpdateSubtitle={(val) => handleTextChange('page5Subtitle', val)}
+            badgeText={info.pageBadges?.page5 || "AREA ANALYSIS"}
+            exportId="page-5"
             onUpdateBadge={(val) => {
                 if (onUpdateInfo) {
                     onUpdateInfo({
                         ...info,
-                        pageBadges: { ...(info.pageBadges || {}), page4: val }
+                        pageBadges: { ...(info.pageBadges || {}), page5: val }
                     });
                 }
             }}
@@ -1736,21 +2022,21 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
         </ReportPage>
         )}
 
-        {/* PAGE 5: ROADMAP */}
-        {(activeTab === 'all' || activeTab === 5) && (
+        {/* PAGE 6: ROADMAP */}
+        {(activeTab === 'all' || activeTab === 6) && (
         <ReportPage 
-            pageNumber={5} 
-            title={info.page5Title || "가치 및 로드맵"} 
-            onUpdateTitle={(val) => handleTextChange('page5Title', val)}
-            subtitle={info.page5Subtitle || "Value & Roadmap"} 
-            onUpdateSubtitle={(val) => handleTextChange('page5Subtitle', val)}
-            badgeText={info.pageBadges?.page5 || "INVESTMENT ROADMAP"}
-            exportId="page-5"
+            pageNumber={6} 
+            title={info.page6Title || "가치 및 로드맵"} 
+            onUpdateTitle={(val) => handleTextChange('page6Title', val)}
+            subtitle={info.page6Subtitle || "Value & Roadmap"} 
+            onUpdateSubtitle={(val) => handleTextChange('page6Subtitle', val)}
+            badgeText={info.pageBadges?.page6 || "INVESTMENT ROADMAP"}
+            exportId="page-6"
             onUpdateBadge={(val) => {
                 if (onUpdateInfo) {
                     onUpdateInfo({
                         ...info,
-                        pageBadges: { ...(info.pageBadges || {}), page5: val }
+                        pageBadges: { ...(info.pageBadges || {}), page6: val }
                     });
                 }
             }}
@@ -1806,8 +2092,8 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
             <div className="mt-8 text-right pr-4">
                 <p className="text-gray-500 italic font-serif-kr text-lg">
                     <EditableText 
-                        value={info.page5FooterQuote || '"최고의 입지에 미래 가치를 더합니다."'} 
-                        onChange={(val) => handleTextChange('page5FooterQuote', val)} 
+                        value={info.page6FooterQuote || '"최고의 입지에 미래 가치를 더합니다."'} 
+                        onChange={(val) => handleTextChange('page6FooterQuote', val)} 
                     />
                 </p>
             </div>

@@ -156,14 +156,15 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
               { id: 'all' as const, label: '전체' },
               { id: 1, label: '1. 개요' },
               { id: 2, label: '2. 가치' },
-              { id: 3, label: '3. 사진' },
-              { id: 4, label: '4. 입지' },
-              { id: 5, label: '5. 로드맵' },
+              { id: 3, label: '3. 임대현황' },
+              { id: 4, label: '4. 사진' },
+              { id: 5, label: '5. 입지' },
+              { id: 6, label: '6. 로드맵' },
           ].map(tab => (
               <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${activeTab === tab.id ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:bg-gray-200'}`}
+                  className={`flex-1 py-2 text-[10px] font-bold rounded-md transition-all ${activeTab === tab.id ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:bg-gray-200'}`}
               >
                   {tab.label}
               </button>
@@ -603,6 +604,127 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
 
           {(activeTab === 'all' || activeTab === 3) && (
               <div className="space-y-6 animate-fadeIn">
+                  <div>
+                      <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">페이지 타이틀</h4>
+                      <div className="space-y-3">
+                          <div><label className="text-xs text-gray-500">페이지 제목 (기본: 임대 상세 현황)</label><input name="page3Title" value={info.page3Title || "임대 상세 현황"} onChange={handleChange} className="w-full border rounded p-2 text-sm" /></div>
+                          <div><label className="text-xs text-gray-500">페이지 부제목</label><input name="page3Subtitle" value={info.page3Subtitle || "Rental Status"} onChange={handleChange} className="w-full border rounded p-2 text-sm" /></div>
+                      </div>
+                  </div>
+
+                  <div>
+                      <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">임대 현황 표 편집 (PPT식 동적 표)</h4>
+                      <p className="text-xs text-gray-400 mb-3">※ 캔버스 화면 위에서도 행과 열을 직접 자유롭게 추가/삭제할 수 있습니다.</p>
+                      
+                      <div className="space-y-4">
+                          {/* Column headers editor */}
+                          <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-2">
+                              <label className="text-xs text-slate-500 font-bold block mb-1">📋 세로 열(칸) 제목 편집</label>
+                              <div className="flex flex-wrap gap-2">
+                                  {info.leaseTable?.headers.map((h, idx) => (
+                                      <div key={idx} className="flex items-center bg-white border border-slate-200 rounded px-2 py-1 gap-1 text-xs">
+                                          <input 
+                                              value={h} 
+                                              onChange={(e) => {
+                                                  const newHeaders = [...(info.leaseTable?.headers || [])];
+                                                  newHeaders[idx] = e.target.value;
+                                                  setInfo({
+                                                      ...info,
+                                                      leaseTable: {
+                                                          headers: newHeaders,
+                                                          rows: info.leaseTable?.rows || []
+                                                      }
+                                                  });
+                                              }} 
+                                              className="w-16 border-none font-bold text-slate-800 focus:outline-none"
+                                          />
+                                          {info.leaseTable?.headers && info.leaseTable.headers.length > 1 && (
+                                              <button 
+                                                  type="button"
+                                                  onClick={() => {
+                                                      const newHeaders = info.leaseTable!.headers.filter((_, i) => i !== idx);
+                                                      const newRows = info.leaseTable!.rows.map(row => row.filter((_, i) => i !== idx));
+                                                      setInfo({
+                                                          ...info,
+                                                          leaseTable: { headers: newHeaders, rows: newRows }
+                                                      });
+                                                  }}
+                                                  className="text-red-400 hover:text-red-600 font-bold border-none bg-transparent cursor-pointer"
+                                                  title="열 삭제"
+                                              >
+                                                  ✕
+                                              </button>
+                                          )}
+                                      </div>
+                                  ))}
+                                  <button
+                                      type="button"
+                                      onClick={() => {
+                                          const newHeaders = [...(info.leaseTable?.headers || []), "새 열"];
+                                          const newRows = (info.leaseTable?.rows || []).map(row => [...row, ""]);
+                                          setInfo({
+                                              ...info,
+                                              leaseTable: { headers: newHeaders, rows: newRows }
+                                          });
+                                      }}
+                                      className="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded text-xs font-bold transition-all border-none cursor-pointer"
+                                  >
+                                      + 열 추가
+                                  </button>
+                              </div>
+                          </div>
+
+                          {/* Rows data count info */}
+                          <div className="border border-slate-100 bg-slate-50/50 rounded-xl p-4 text-xs space-y-2">
+                              <div className="flex justify-between font-semibold text-slate-500 pb-1.5 border-b border-dashed border-slate-200">
+                                  <span>현재 등록된 행(줄) 수</span>
+                                  <span>{info.leaseTable?.rows.length || 0}줄</span>
+                              </div>
+                              <button
+                                  type="button"
+                                  onClick={() => {
+                                      const headersCount = info.leaseTable?.headers.length || 6;
+                                      const newRows = [...(info.leaseTable?.rows || [])];
+                                      newRows.push(new Array(headersCount).fill(""));
+                                      setInfo({
+                                          ...info,
+                                          leaseTable: {
+                                              headers: info.leaseTable?.headers || [],
+                                              rows: newRows
+                                          }
+                                      });
+                                  }}
+                                  className="w-full py-1.5 bg-yellow-50 hover:bg-yellow-100 text-yellow-700 rounded text-xs font-bold transition-colors flex items-center justify-center gap-1 border border-dashed border-yellow-200 cursor-pointer"
+                              >
+                                  + 표 가로줄(행) 추가
+                              </button>
+                          </div>
+
+                          <div>
+                              <label className="text-xs text-gray-500 font-semibold">표 하단 유의 사항</label>
+                              <textarea name="leaseNotice" value={info.leaseNotice} onChange={handleChange} className="w-full border rounded p-2 text-xs mt-1" rows={2} />
+                          </div>
+                      </div>
+                  </div>
+
+                  <div>
+                      <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">우측 전략 안내 카드</h4>
+                      <div className="space-y-3">
+                          <div>
+                              <label className="text-xs text-gray-500">카드 대제목</label>
+                              <input name="leaseRightTitle" value={info.leaseRightTitle} onChange={handleChange} className="w-full border rounded p-2 text-sm font-bold" />
+                          </div>
+                          <div>
+                              <label className="text-xs text-gray-500">카드 상세 요약본 (줄바꿈 및 점표 지원)</label>
+                              <textarea name="leaseRightText" value={info.leaseRightText} onChange={handleChange} className="w-full border rounded p-2 text-xs" rows={6} />
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          )}
+
+          {(activeTab === 'all' || activeTab === 4) && (
+              <div className="space-y-6 animate-fadeIn">
                   {renderImageUpload('mainImage', '메인 사진 (정면 외관)')}
                   <div className="grid grid-cols-2 gap-4">
                       {renderImageUpload('subImage1', '서브 사진 1')}
@@ -613,7 +735,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
               </div>
           )}
 
-          {(activeTab === 'all' || activeTab === 4) && (
+          {(activeTab === 'all' || activeTab === 5) && (
               <div className="space-y-6 animate-fadeIn">
                   <div>
                       <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">입지 개요 및 지도 설정</h4>
@@ -669,7 +791,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
               </div>
           )}
 
-          {(activeTab === 'all' || activeTab === 5) && (
+          {(activeTab === 'all' || activeTab === 6) && (
               <div className="space-y-6 animate-fadeIn">
                   <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">개발 및 활용 로드맵 (4 시나리오)</h4>
                   {[1,2,3,4].map(i => (

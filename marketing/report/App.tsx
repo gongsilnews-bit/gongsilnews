@@ -75,7 +75,23 @@ const INITIAL_INFO: PropertyInfo = {
     { label: "현재 급매가", value: "65", isHighlight: true }
   ],
 
-  // Page 3: Photos Captions
+  // Page 3: Lease Status (New PPT style interactive grid page)
+  leaseTable: {
+    headers: ["층수", "호실", "면적", "금액", "현용도", "기타"],
+    rows: [
+      ["지상 5층", "501호", "165.2㎡", "보증금 1억 / 월세 450만", "사무실", "즉시입주"],
+      ["지상 4층", "401호", "165.2㎡", "보증금 1억 / 월세 450만", "학원", "임대중"],
+      ["지상 3층", "301호", "165.2㎡", "보증금 1억 / 월세 430만", "사무실", "임대중"],
+      ["지상 2층", "201호", "165.2㎡", "보증금 1억 / 월세 450만", "사무실", "즉시입주"],
+      ["지상 1층", "101호", "132.2㎡", "보증금 2억 / 월세 900만", "의원", "임대중"],
+      ["지하 1층", "B01호", "198.3㎡", "보증금 5,000만 / 월세 300만", "노래연습장", "명도협의"],
+    ]
+  },
+  leaseNotice: "※ 위 임대현황은 임차인 사정 및 임대 시장 상황에 따라 실제 조건과 상이할 수 있으므로, 반드시 사전 확인 바랍니다.",
+  leaseRightTitle: "임대 핵심 가치 및 MD 추천 전략",
+  leaseRightText: "• 우량 임차인 유치: 역세권 오피스 밀집 상권으로 탄탄한 임차 수요 확보 가능\n• 밸류업 기회: 노후 호실 리모델링 및 용도 변경을 통한 추가 임대 수익률 상승\n• MD 리뉴얼 전략: 하층부 트렌디한 F&B 브랜드 유치 및 상층부 메디컬/클리닉 특화 구성 제안\n• 책임명도 지원: 매수인 요구 조건에 맞춰 명도 및 신규 계약 주선 지원 가능",
+
+  // Page 4: Photos Captions (was Page 3)
   photoCaptions: {
     main: "EXTERIOR VIEW - 건물 정면 외관",
     sub1: "Side View",
@@ -84,7 +100,7 @@ const INITIAL_INFO: PropertyInfo = {
     feat2: "Rooftop"
   },
 
-  // Page 4: Area Analysis
+  // Page 5: Area Analysis (was Page 4)
   areaTargetName: "남부터미널역(3호선)\n도보 4분 초역세권",
   areaTargetDesc: "대한민국 최고의 문화 인프라와 남부터미널 업무 지구의 풍부한 배후 수요가 공존합니다.\n희소성 높은 초역세권 대지로서 사옥 신축 및 수익형 밸류업 시 최고의 자산 가치를 보장합니다.",
   areaBox1Title: "STATION AREA", areaBox1Text: "지하철 3호선 남부터미널역과 도보 약 250m 거리로 최상의 대중교통 접근성 확보",
@@ -92,12 +108,21 @@ const INITIAL_INFO: PropertyInfo = {
   areaBox3Title: "CONNECTIVITY", areaBox3Text: "남부순환로, 서초중앙로 진입이 용이하여 강남권 전역 및 고속도로 접근성 탁월",
   mapType: 'kakao',
 
-  // Page 5: Roadmap
+  // Page 6: Roadmap (was Page 5)
   roadmap: {
     box1Title: "단독 사옥 활용 시나리오", box1Text: "전층 명도 협의 후 기업의 아이덴티티를 투영한 단독 사옥으로 활용합니다. 서초동 초역세권 입지의 상징성을 동시에 확보할 수 있는 최상의 환경을 제공합니다.",
     box2Title: "주거 및 근생 수익 모델", box2Text: "상층부(4~5층) 실거주를 통해 최고의 직주근접 환경을 실현합니다. 하층부(B1~3층)는 오피스 및 갤러리 임대를 통해 안정적인 월세 수익을 확보할 수 있습니다.",
     box3Title: "수익형 자산 밸류업 전략", box3Text: "주택 부분의 근생 용도변경 및 전면 리모델링을 통해 우량 법인 임차를 유치합니다. 자산 가치 극대화 후 시세 차익 실현에 집중하는 투자 안입니다.",
     box4Title: "역세권 오피스 개발안", box4Text: "제3종일반주거지역의 높은 용적률을 활용한 고품격 오피스 빌딩 신축 개발입니다. 서초동 초역세권 입지의 희소성을 활용하여 개발 이익을 극대화할 수 있습니다."
+  },
+  
+  pageBadges: {
+    page1: "CONFIDENTIAL | INFORMATION MEMORANDUM",
+    page2: "EVIDENCE & DATA",
+    page3: "RENTAL STATUS",
+    page4: "PHYSICAL ASSETS",
+    page5: "LOCATION ANALYSIS",
+    page6: "FUTURE BLUEPRINT",
   },
   
   // Backward compat
@@ -301,6 +326,14 @@ const mergeStateWithDefaults = (loaded: any): FlyerState => {
       overviewTable: convertOverviewTableToArray(loaded?.info?.overviewTable || loaded?.info?.overviewTableObj),
       floorStatus: loaded?.info?.floorStatus || INITIAL_INFO.floorStatus,
       highlights: loaded?.info?.highlights || INITIAL_INFO.highlights,
+      leaseTable: loaded?.info?.leaseTable || INITIAL_INFO.leaseTable,
+      leaseNotice: loaded?.info?.leaseNotice !== undefined ? loaded?.info?.leaseNotice : INITIAL_INFO.leaseNotice,
+      leaseRightTitle: loaded?.info?.leaseRightTitle !== undefined ? loaded?.info?.leaseRightTitle : INITIAL_INFO.leaseRightTitle,
+      leaseRightText: loaded?.info?.leaseRightText !== undefined ? loaded?.info?.leaseRightText : INITIAL_INFO.leaseRightText,
+      pageBadges: {
+        ...INITIAL_INFO.pageBadges,
+        ...(loaded?.info?.pageBadges || {})
+      },
       investmentSummary: {
         ...INITIAL_INFO.investmentSummary,
         ...(loaded?.info?.investmentSummary || {})

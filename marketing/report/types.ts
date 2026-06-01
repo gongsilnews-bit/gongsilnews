@@ -92,7 +92,16 @@ export interface PropertyInfo {
     page3?: string;
     page4?: string;
     page5?: string;
+    page6?: string;
   };
+
+  leaseTable?: {
+    headers: string[];
+    rows: string[][];
+  };
+  leaseNotice?: string;
+  leaseRightTitle?: string;
+  leaseRightText?: string;
 
   page2Title?: string;
   page2Subtitle?: string;
@@ -107,7 +116,9 @@ export interface PropertyInfo {
   page4TargetTitle?: string;
   page5Title?: string;
   page5Subtitle?: string;
-  page5FooterQuote?: string;
+  page6Title?: string;
+  page6Subtitle?: string;
+  page6FooterQuote?: string;
   mapType?: 'kakao' | 'google' | 'upload';
 
   // Backward compatibility fields
