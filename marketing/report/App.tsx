@@ -349,19 +349,73 @@ function App() {
   // --- UNDO / REDO HISTORY ENGINE ---
   const [past, setPast] = useState<FlyerState[]>([]);
   const [future, setFuture] = useState<FlyerState[]>([]);
+  const historyTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const checkpointStateRef = useRef<FlyerState | null>(null);
+  const isDebouncingRef = useRef<boolean>(false);
 
-  const pushToHistory = useCallback((currentState: FlyerState) => {
+  const commitPendingHistory = useCallback(() => {
+    if (historyTimeoutRef.current) {
+      clearTimeout(historyTimeoutRef.current);
+      historyTimeoutRef.current = null;
+    }
+    if (checkpointStateRef.current) {
+      const checkpoint = checkpointStateRef.current;
+      setPast(prev => {
+        const last = prev[prev.length - 1];
+        if (last && JSON.stringify(last) === JSON.stringify(checkpoint)) {
+          return prev;
+        }
+        return [...prev.slice(-49), checkpoint];
+      });
+      setFuture([]); // Clear redo stack on new action
+      checkpointStateRef.current = null;
+    }
+    isDebouncingRef.current = false;
+  }, []);
+
+  const pushToHistoryDebounced = useCallback((currentState: FlyerState) => {
+    if (!isDebouncingRef.current) {
+      checkpointStateRef.current = currentState;
+      isDebouncingRef.current = true;
+    }
+    
+    if (historyTimeoutRef.current) {
+      clearTimeout(historyTimeoutRef.current);
+    }
+    
+    historyTimeoutRef.current = setTimeout(() => {
+      commitPendingHistory();
+    }, 1000);
+  }, [commitPendingHistory]);
+
+  const pushToHistoryInstant = useCallback((currentState: FlyerState) => {
+    commitPendingHistory();
     setPast(prev => {
       const last = prev[prev.length - 1];
       if (last && JSON.stringify(last) === JSON.stringify(currentState)) {
         return prev;
       }
-      return [...prev.slice(-49), currentState]; // Keep last 50 states
+      return [...prev.slice(-49), currentState];
     });
-    setFuture([]); // Clear redo stack on new action
-  }, []);
+    setFuture([]);
+  }, [commitPendingHistory]);
 
   const handleUndo = useCallback(() => {
+    if (historyTimeoutRef.current) {
+      clearTimeout(historyTimeoutRef.current);
+      historyTimeoutRef.current = null;
+    }
+    if (checkpointStateRef.current) {
+      const checkpoint = checkpointStateRef.current;
+      checkpointStateRef.current = null;
+      isDebouncingRef.current = false;
+      setState(currentState => {
+        setFuture(prevFuture => [currentState, ...prevFuture]);
+        return checkpoint;
+      });
+      return;
+    }
+
     setPast(prevPast => {
       if (prevPast.length === 0) return prevPast;
       const previous = prevPast[prevPast.length - 1];
@@ -377,6 +431,7 @@ function App() {
   }, []);
 
   const handleRedo = useCallback(() => {
+    commitPendingHistory();
     setFuture(prevFuture => {
       if (prevFuture.length === 0) return prevFuture;
       const next = prevFuture[0];
@@ -389,12 +444,25 @@ function App() {
       
       return newFuture;
     });
+  }, [commitPendingHistory]);
+
+  useEffect(() => {
+    return () => {
+      if (historyTimeoutRef.current) {
+        clearTimeout(historyTimeoutRef.current);
+      }
+    };
   }, []);
 
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
       const activeEl = document.activeElement;
-      const isInput = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA');
+      const isInput = activeEl && (
+        activeEl.tagName === 'INPUT' || 
+        activeEl.tagName === 'TEXTAREA' || 
+        activeEl.hasAttribute('contenteditable') || 
+        activeEl.closest('[contenteditable]')
+      );
       if (isInput) return;
 
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
@@ -907,17 +975,17 @@ function App() {
   };
 
   const handleInfoChange = (newInfo: PropertyInfo) => {
-    pushToHistory(state);
+    pushToHistoryDebounced(state);
     setState(prev => ({ ...prev, info: newInfo }));
   };
 
   const handleColorChange = (color: FlyerColor) => {
-    pushToHistory(state);
+    pushToHistoryInstant(state);
     setState(prev => ({ ...prev, colorTheme: color }));
   };
 
   const handleLayoutChange = (layout: FlyerLayout) => {
-    pushToHistory(state);
+    pushToHistoryInstant(state);
     setState(prev => ({ ...prev, layoutTheme: layout }));
   };
 
@@ -931,7 +999,7 @@ function App() {
       const compressedBlob = await compressToWebP(file, 0.82);
       const publicUrl = await uploadImageToServer(compressedBlob, vacancyId);
 
-      pushToHistory(state);
+      pushToHistoryInstant(state);
       setState(prev => ({
         ...prev,
         [key]: publicUrl
@@ -1128,6 +1196,7 @@ function App() {
           newSections[listSectionIndex] = section;
       }
 
+      pushToHistoryInstant(state);
       setState(prev => ({ 
         ...prev, 
         ...(newImages || {}), // Apply new images if provided
