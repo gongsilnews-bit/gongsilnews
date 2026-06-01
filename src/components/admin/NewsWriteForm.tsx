@@ -1008,6 +1008,35 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
     setPhotoFiles(prev => prev.map(p => ({ ...p, isCover: false })));
   };
 
+  /* ── 사이드바 캡션 입력 시 에디터 반영 ── */
+  const updatePhotoCaption = (idx: number, caption: string) => {
+    setPhotoFiles(prev => prev.map((p, i) => i === idx ? { ...p, caption } : p));
+    if (editorRef.current) {
+      const photos = editorRef.current.querySelectorAll('.inserted-photo');
+      if (photos[idx]) {
+        const wrapper = photos[idx] as HTMLElement;
+        let pTag = wrapper.querySelector('p');
+        if (caption) {
+          if (!pTag) {
+            pTag = document.createElement('p');
+            const capAlign = photoFiles[idx]?.captionAlign || 'center';
+            pTag.style.cssText = `font-size: 13px; color: #6b7280; margin: 8px 0 0 0; text-align: ${capAlign}; line-height: 1.5; clear: both;`;
+            const clear = wrapper.querySelector('div[style*="clear"]');
+            if (clear) wrapper.insertBefore(pTag, clear);
+            else wrapper.appendChild(pTag);
+          }
+          pTag.textContent = caption;
+          const img = wrapper.querySelector('img') as HTMLImageElement;
+          if (img) img.alt = caption;
+        } else {
+          if (pTag) pTag.remove();
+          const img = wrapper.querySelector('img') as HTMLImageElement;
+          if (img) img.alt = '기사 이미지';
+        }
+      }
+    }
+  };
+
   /* ── 사진 정렬 변경 (우측 사이드바 버튼 클릭 시 에디터에도 반영) ── */
   const updatePhotoAlign = (idx: number, newAlign: 'left' | 'center' | 'right') => {
     setPhotoFiles(prev => prev.map((p, i) => i === idx ? { ...p, align: newAlign } : p));
@@ -2255,6 +2284,20 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                                   background: "rgba(0,0,0,0.55)", color: "#fff", border: "none", borderRadius: "50%",
                                   fontSize: 11, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
                                 }}>✕</button>
+                            </div>
+
+                            {/* 캡션 입력 */}
+                            <div style={{ padding: "8px 8px 0 8px" }}>
+                              <input 
+                                type="text" 
+                                value={p.caption || ""} 
+                                onChange={(e) => updatePhotoCaption(i, e.target.value)} 
+                                placeholder="사진 설명(캡션) 입력" 
+                                style={{
+                                  width: "100%", padding: "6px 8px", fontSize: 12, border: `1px solid ${border}`,
+                                  borderRadius: 4, background: "#fff", color: textPrimary, outline: "none",
+                                }} 
+                              />
                             </div>
 
                             {/* 정렬 버튼 + 설정 버튼 */}
