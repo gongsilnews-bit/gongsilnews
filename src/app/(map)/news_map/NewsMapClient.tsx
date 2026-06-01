@@ -41,19 +41,19 @@ export default function NewsMapClient({ initialArticles, initialPopularArticles 
   useEffect(() => { activeArticleIdRef.current = activeArticleId; }, [activeArticleId]);
 
 
-  /* ── 유틸: 날짜 포맷 ── */
+  /* ── 유틸: 날짜 포맷 (KST 기준) ── */
   const formatDate = (dateStr: string) => {
     if (!dateStr) return "";
     const d = new Date(dateStr);
-    return `${d.getFullYear()}. ${String(d.getMonth() + 1).padStart(2, "0")}. ${String(d.getDate()).padStart(2, "0")}.`;
+    const parts = d.toLocaleString('sv-SE', { timeZone: 'Asia/Seoul' }).split(' ');
+    const datePart = parts[0].replace(/-/g, '. ') + '.';
+    return datePart;
   };
   const formatDateFull = (dateStr: string) => {
     if (!dateStr) return "";
     const d = new Date(dateStr);
-    const hour = d.getHours();
-    const ampm = hour >= 12 ? "오후" : "오전";
-    const h12 = hour > 12 ? hour - 12 : hour || 12;
-    return `입력 ${d.getFullYear()}. ${String(d.getMonth() + 1).padStart(2, "0")}. ${String(d.getDate()).padStart(2, "0")}. ${ampm} ${h12}:${String(d.getMinutes()).padStart(2, "0")}:${String(d.getSeconds()).padStart(2, "0")}`;
+    const kst = d.toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit', hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
+    return `작성 ${kst}`;
   };
   const stripHtml = (html: string) => html ? html.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim() : "";
   const extractYoutubeId = (url?: string, html?: string): string | null => {

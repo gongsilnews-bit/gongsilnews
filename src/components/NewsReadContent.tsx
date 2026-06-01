@@ -319,16 +319,15 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
     }
   }, [article.id]);
 
-  // 날짜 포맷 (YYYY.MM.DD HH:mm)
+  // 날짜 포맷 (KST 기준 YYYY.MM.DD HH:mm)
   const formatDate = (dateStr: string) => {
     if (!dateStr) return "";
     const d = new Date(dateStr);
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, "0");
-    const dd = String(d.getDate()).padStart(2, "0");
-    const hour = String(d.getHours()).padStart(2, "0");
-    const min = String(d.getMinutes()).padStart(2, "0");
-    return `${yyyy}.${mm}.${dd} ${hour}:${min}`;
+    const parts = d.toLocaleString('sv-SE', { timeZone: 'Asia/Seoul' }).split(' ');
+    // "2026-06-01 09:46:00" → "2026.06.01 09:46"
+    const datePart = parts[0].replace(/-/g, '.');
+    const timePart = parts[1]?.substring(0, 5) || '00:00';
+    return `${datePart} ${timePart}`;
   };
 
   useEffect(() => {
@@ -582,7 +581,7 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
                     <span style={{ fontSize: "13px", color: "#666" }}>기자</span>
                   </div>
                   <div style={{ fontSize: "13px", color: "#888", display: "flex", alignItems: "center", gap: "8px" }}>
-                    <span suppressHydrationWarning>입력 {formatDate(article.published_at || article.created_at)}</span>
+                    <span suppressHydrationWarning>작성 {formatDate(article.created_at || article.published_at)}</span>
                     {article.updated_at && (
                       <span suppressHydrationWarning>수정 {formatDate(article.updated_at)}</span>
                     )}
