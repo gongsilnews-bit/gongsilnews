@@ -274,7 +274,7 @@ const SectionTitle = ({
                 <EditableText 
                     value={title} 
                     onChange={onUpdateTitle} 
-                    className="hover:bg-slate-100 hover:ring-1 hover:ring-slate-300 focus:bg-slate-200 focus:ring-slate-400 text-gray-600 rounded px-1 transition-all"
+                    className="hover:bg-amber-100/50 hover:ring-1 hover:ring-amber-300 focus:bg-amber-100/80 focus:ring-1 focus:ring-amber-500 text-gray-700 rounded px-1 transition-all cursor-text min-w-[120px] inline-block"
                 />
             ) : title}
         </h3>
@@ -284,7 +284,7 @@ const SectionTitle = ({
                 <EditableText 
                     value={subtitle} 
                     onChange={onUpdateSubtitle} 
-                    className="hover:bg-slate-100 hover:ring-1 hover:ring-slate-300 focus:bg-slate-200 focus:ring-slate-400 text-gray-800 rounded px-1 transition-all"
+                    className="hover:bg-amber-100/50 hover:ring-1 hover:ring-amber-300 focus:bg-amber-100/80 focus:ring-1 focus:ring-amber-500 text-gray-800 rounded px-1 transition-all cursor-text min-w-[60px] inline-block"
                 />
             ) : subtitle}
         </span>
