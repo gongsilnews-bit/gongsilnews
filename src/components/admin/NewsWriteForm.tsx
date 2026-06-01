@@ -861,10 +861,10 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
     setModalPreview('');
     setModalSize(600);
     setModalInsertMode('자동');
-    setModalAlign('left');
-    setModalWatermark(0);
+    setModalAlign('center');
+    setModalWatermark(8);
     setModalCaption('');
-    setModalCaptionAlign('left');
+    setModalCaptionAlign('center');
     setShowPhotoModal(true);
   };
 
