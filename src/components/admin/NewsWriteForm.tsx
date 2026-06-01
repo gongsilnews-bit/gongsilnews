@@ -600,7 +600,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
   const [modalVideoShorts, setModalVideoShorts] = useState(false);
 
   const openVideoModal = () => {
-    saveCursorPosition();
+    saveSelection();
     setModalVideoUrl("");
     setModalVideoShorts(false);
     setShowVideoModal(true);
