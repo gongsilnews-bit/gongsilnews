@@ -1730,7 +1730,8 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
               </div>
             </div>
 
-            {/* ── 노출시간 ── */}
+            {/* ── 노출시간 (관리자 전용) ── */}
+            {!isMemberMode && (
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
               <label style={{ fontSize: 14, fontWeight: 600, color: textPrimary, minWidth: 80, display: "flex", alignItems: "center", gap: 4 }}>
                 노출시간
@@ -1747,6 +1748,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                   style={{ padding: "10px 14px 10px 14px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 14, color: (!isReserved && !loadArticleId) ? textMuted : textPrimary, background: (!isReserved && !loadArticleId) ? "#f3f4f6" : cardBg, outline: "none", fontFamily: "inherit" }} />
               </div>
             </div>
+            )}
 
             {/* ── 구분선 ── */}
             <hr style={{ border: "none", borderTop: `1px solid ${border}`, margin: "0 0 24px 0" }} />

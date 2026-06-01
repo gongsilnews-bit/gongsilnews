@@ -53,6 +53,7 @@ function MobileArticleWrite() {
   const [keywords, setKeywords] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   /* ── 미디어 상태 ── */
   const [photos, setPhotos] = useState<{ file: File | null; preview: string; caption: string; isCover: boolean; mediaId?: string }[]>([]);
@@ -90,6 +91,7 @@ function MobileArticleWrite() {
       if (m) {
         setReporterName(m.name || "작성자");
         setReporterEmail(m.email || "");
+        if (m.role === "ADMIN") setIsAdmin(true);
       }
       setCurrentUserId(user.id);
       setAuthChecked(true);
@@ -554,7 +556,8 @@ function MobileArticleWrite() {
           />
         </div>
 
-        {/* 노출시간 예약 */}
+        {/* 노출시간 예약 (관리자 전용) */}
+        {isAdmin && (
         <div style={{ marginBottom: 16 }}>
           <label style={{ fontSize: 13, fontWeight: 700, color: "#374151", display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
             노출시간
@@ -569,6 +572,7 @@ function MobileArticleWrite() {
             <input type="time" value={publishTime} onChange={e => setPublishTime(e.target.value)} disabled={!isReserved && !editId} style={{ flex: 1, padding: "0 10px", height: 40, border: "1px solid #d1d5db", borderRadius: 8, fontSize: 13, background: (!isReserved && !editId) ? "#f3f4f6" : "#fff", color: (!isReserved && !editId) ? "#9ca3af" : "#111", outline: "none" }} />
           </div>
         </div>
+        )}
 
         {/* 미디어 섹션 (사진/영상) */}
         <div style={{ marginBottom: 16, background: "#fff", borderRadius: 14, padding: 16, border: "1px solid #e5e7eb" }}>
