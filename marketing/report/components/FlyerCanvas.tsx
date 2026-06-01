@@ -19,7 +19,6 @@ const ReportPage = ({
     pageNumber: number, 
     title: string, 
     subtitle: string, 
-    targetName: string, 
     badgeText?: string,
     exportId?: string
 }) => {
@@ -28,11 +27,9 @@ const ReportPage = ({
             {/* Header */}
             <div className="h-[120px] bg-[#0d1424] text-white px-10 py-6 flex justify-between items-end shrink-0">
                 <div>
-
                     <h1 className="text-3xl font-extrabold mb-1 tracking-tight">{title}</h1>
                     <div className="flex items-center gap-4">
                         <span className="text-gray-400 text-sm">{subtitle}</span>
-                        <span className="text-[#cc5a27] text-sm font-bold">{targetName}</span>
                     </div>
                 </div>
                 {pageNumber === 1 && (
@@ -99,7 +96,6 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
 
   // Data mapping from info
   const targetTitle = info.address || '서초동 역세권 매매 안내서';
-  const targetSub = `대상물건: ${info.address || '서울 서초구 서초동 1444-9'}`;
   const price = info.priceMain || '75억 원';
 
   return (
@@ -110,7 +106,6 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
             pageNumber={1} 
             title={targetTitle} 
             subtitle={info.subTitle} 
-            targetName={targetSub}
             exportId="page-1"
         >
             <div className="flex gap-8 h-full">
