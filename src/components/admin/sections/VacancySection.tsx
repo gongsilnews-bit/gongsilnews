@@ -441,34 +441,41 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                             <div style={{ display: "flex", gap: 6, justifyContent: "center", width: "100%" }}>
                               {(role === "admin" || role === "realtor") && (() => {
                                 const hasFlyer = flyerMap[row.id];
+                                const allowedCategories = ["상가", "사무실", "건물", "공장", "토지", "단독", "다가구"];
+                                const category = (row.sub_category || row.property_type || "").trim();
+                                const isAllowedCategory = allowedCategories.some(cat => category.includes(cat));
+                                const isSale = row.trade_type === "매매";
+                                const showIMReport = isSale && isAllowedCategory;
 
                                 return (
                                   <div style={{ display: 'flex', gap: '4px' }}>
-                                    <button 
-                                      onClick={() => window.open(`/marketing/report?vacancy_id=${row.id}`, '_blank')}
-                                      style={{ 
-                                        height: 30, 
-                                        padding: "0 10px", 
-                                        background: darkMode ? "#1e3a8a" : "#eff6ff", 
-                                        color: darkMode ? "#93c5fd" : "#1d4ed8", 
-                                        border: `1px solid ${darkMode ? "#1e40af" : "#bfdbfe"}`, 
-                                        borderRadius: 4, 
-                                        fontSize: 12, 
-                                        fontWeight: 700, 
-                                        cursor: "pointer", 
-                                        display: "flex", 
-                                        alignItems: "center", 
-                                        gap: 4, 
-                                        whiteSpace: "nowrap", 
-                                        flexShrink: 0,
-                                        transition: "all 0.15s"
-                                      }}
-                                      onMouseEnter={(e) => { e.currentTarget.style.background = darkMode ? "#1e40af" : "#dbeafe"; }}
-                                      onMouseLeave={(e) => { e.currentTarget.style.background = darkMode ? "#1e3a8a" : "#eff6ff"; }}
-                                      title="프리미엄 물건보고서(IM) 생성기"
-                                    >
-                                      💎 물건보고서(IM)
-                                    </button>
+                                        {showIMReport && (
+                                      <button 
+                                        onClick={() => window.open(`/marketing/report?vacancy_id=${row.id}`, '_blank')}
+                                        style={{ 
+                                          height: 30, 
+                                          padding: "0 10px", 
+                                          background: darkMode ? "#1e3a8a" : "#eff6ff", 
+                                          color: darkMode ? "#93c5fd" : "#1d4ed8", 
+                                          border: `1px solid ${darkMode ? "#1e40af" : "#bfdbfe"}`, 
+                                          borderRadius: 4, 
+                                          fontSize: 12, 
+                                          fontWeight: 700, 
+                                          cursor: "pointer", 
+                                          display: "flex", 
+                                          alignItems: "center", 
+                                          gap: 4, 
+                                          whiteSpace: "nowrap", 
+                                          flexShrink: 0,
+                                          transition: "all 0.15s"
+                                        }}
+                                        onMouseEnter={(e) => { e.currentTarget.style.background = darkMode ? "#1e40af" : "#dbeafe"; }}
+                                        onMouseLeave={(e) => { e.currentTarget.style.background = darkMode ? "#1e3a8a" : "#eff6ff"; }}
+                                        title="프리미엄 매매보고서(IM) 생성기"
+                                      >
+                                        💎 매매보고서(IM)
+                                      </button>
+                                    )}
                                     
                                     <button 
                                       onClick={() => window.open(`/marketing/ai-detail?vacancy_id=${row.id}`, '_blank')}

@@ -1535,11 +1535,11 @@ ${clone.outerHTML}
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m0-10.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.75c0 5.592 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.57-.598-3.75h-.152c-3.196 0-6.1-1.249-8.25-3.286zm0 13.036h.008v.008H12v-.008z" />
             </svg>
           </div>
-          <h2 className="text-2xl font-black mb-3 text-slate-100 tracking-tight">AI 물건보고서 접근 제한</h2>
+          <h2 className="text-2xl font-black mb-3 text-slate-100 tracking-tight">AI 매매보고서 접근 제한</h2>
           <p className="text-slate-400 text-sm leading-relaxed mb-8">
             {authError === "unauthorized" 
               ? "이 서비스를 이용하시려면 로그인이 필요합니다." 
-              : "AI 물건보고서 서비스는 공실뉴스 [부동산 회원] 및 [최고 관리자]만 이용하실 수 있습니다. 일반 회원은 이용이 불가능합니다."}
+              : "AI 매매보고서 서비스는 공실뉴스 [부동산 회원] 및 [최고 관리자]만 이용하실 수 있습니다. 일반 회원은 이용이 불가능합니다."}
           </p>
           <button 
             onClick={() => window.location.href = "/"}
@@ -1580,7 +1580,7 @@ ${clone.outerHTML}
                 />
                 <div className="flex items-center gap-3">
                   <h1 className="text-base sm:text-lg font-black text-gray-900 tracking-tight">
-                    AI물건보고서
+                    AI 매매보고서
                   </h1>
                   {isLoadedFromStorage && (
                       <button 
