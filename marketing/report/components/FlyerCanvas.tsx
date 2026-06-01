@@ -185,7 +185,9 @@ const ReportPage = ({
     exportId,
     onUpdateTitle,
     onUpdateSubtitle,
-    onUpdateBadge
+    onUpdateBadge,
+    footerText = "CONFIDENTIAL | INFORMATION MEMORANDUM",
+    onUpdateFooter
 }: { 
     children: React.ReactNode, 
     pageNumber: number, 
@@ -195,7 +197,9 @@ const ReportPage = ({
     exportId?: string,
     onUpdateTitle?: (text: string) => void,
     onUpdateSubtitle?: (text: string) => void,
-    onUpdateBadge?: (text: string) => void
+    onUpdateBadge?: (text: string) => void,
+    footerText?: string,
+    onUpdateFooter?: (text: string) => void
 }) => {
     return (
         <div data-export-id={exportId} className="relative bg-white w-[1122px] h-[794px] overflow-hidden flex flex-col shadow-2xl mb-8" style={{ pageBreakAfter: 'always' }}>
@@ -247,7 +251,13 @@ const ReportPage = ({
             {/* Footer */}
             <div className="h-[50px] px-10 flex justify-between items-center shrink-0 border-t border-gray-100">
                 <div className="text-gray-400 text-xs font-bold tracking-widest">
-                    CONFIDENTIAL <span className="mx-1">|</span> INFORMATION MEMORANDUM
+                    {onUpdateFooter ? (
+                        <EditableText 
+                            value={footerText} 
+                            onChange={onUpdateFooter} 
+                            className="hover:bg-amber-100/50 hover:ring-1 hover:ring-amber-300 focus:bg-amber-100/80 focus:ring-1 focus:ring-amber-500 rounded px-1 transition-all cursor-text min-w-[280px] inline-block uppercase text-gray-400"
+                        />
+                    ) : footerText}
                 </div>
                 <div className="text-gray-400 text-xs font-bold tracking-widest">
                     PAGE 0{pageNumber} / 05
@@ -489,6 +499,8 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                     });
                 }
             }}
+            footerText={info.footerText || "CONFIDENTIAL | INFORMATION MEMORANDUM"}
+            onUpdateFooter={(val) => handleTextChange('footerText', val)}
         >
             <div className="flex gap-8 h-full">
                 {/* Left Col: Overview Table */}
@@ -743,6 +755,8 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                     });
                 }
             }}
+            footerText={info.footerText || "CONFIDENTIAL | INFORMATION MEMORANDUM"}
+            onUpdateFooter={(val) => handleTextChange('footerText', val)}
         >
             <div className="flex gap-8 h-full">
                 {/* Left: Table */}
@@ -908,6 +922,8 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                     });
                 }
             }}
+            footerText={info.footerText || "CONFIDENTIAL | INFORMATION MEMORANDUM"}
+            onUpdateFooter={(val) => handleTextChange('footerText', val)}
         >
             <div className="flex gap-4 h-[550px]">
                 {/* Main Large Photo */}
@@ -994,6 +1010,8 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                     });
                 }
             }}
+            footerText={info.footerText || "CONFIDENTIAL | INFORMATION MEMORANDUM"}
+            onUpdateFooter={(val) => handleTextChange('footerText', val)}
         >
             <div className="flex flex-col h-[550px] gap-6">
                 <div className="flex gap-6 h-3/4">
@@ -1104,6 +1122,8 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                     });
                 }
             }}
+            footerText={info.footerText || "CONFIDENTIAL | INFORMATION MEMORANDUM"}
+            onUpdateFooter={(val) => handleTextChange('footerText', val)}
         >
             <div className="grid grid-cols-2 grid-rows-2 gap-8 h-[480px]">
                 {[
