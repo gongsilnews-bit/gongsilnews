@@ -125,11 +125,14 @@ function MobileArticleWrite() {
           if (d.published_at) {
             const dt = new Date(d.published_at);
             const now = new Date();
+            // KST 기준으로 날짜/시간 파싱 (Vercel UTC 서버 대응)
+            const kstParts = dt.toLocaleString('sv-SE', { timeZone: 'Asia/Seoul' }).split(' ');
             // 시간이 미래라면 예약 상태로 세팅
             if (dt > now) {
               setIsReserved(true);
-              setPublishDate(`${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`);
-              setPublishTime(`${String(dt.getHours()).padStart(2, "0")}:${String(dt.getMinutes()).padStart(2, "0")}`);
+              setPublishDate(kstParts[0]);
+              const timeParts = kstParts[1]?.split(':') || ['00','00'];
+              setPublishTime(`${timeParts[0]}:${timeParts[1]}`);
             }
           }
           
@@ -307,13 +310,19 @@ function MobileArticleWrite() {
 
       // 2. 기사 저장
       const status = requestApproval ? "승인신청" : "작성중";
-      const now = new Date();
-      let published_at = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}T${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+
+      // KST 기준 현재 시간
+      const kstNow = new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Seoul' }).split(' ');
+      let published_at = new Date().toISOString(); // 기본값: 현재 UTC
 
       if (isReserved && publishDate) {
-        published_at = `${publishDate}T${publishTime || "00:00"}:00`;
+        // 예약: KST 기준 날짜+시간을 ISO로 변환
+        const kstDateStr = `${publishDate}T${publishTime || "00:00"}:00+09:00`;
+        published_at = new Date(kstDateStr).toISOString();
       } else if (editId && publishDate) {
-        published_at = `${publishDate}T${publishTime || "00:00"}:00`;
+        // 수정: 기존 입력값 유지 (KST 기준)
+        const kstDateStr = `${publishDate}T${publishTime || "00:00"}:00+09:00`;
+        published_at = new Date(kstDateStr).toISOString();
       }
 
       const coverPhoto = photos.find(p => p.isCover);

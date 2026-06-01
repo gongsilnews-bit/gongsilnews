@@ -226,7 +226,13 @@ export async function getArticles(filters?: {
         .order("published_at", { ascending: false, nullsFirst: false })
         .order("created_at", { ascending: false });
 
-      if (filters?.status) query = query.eq("status", filters.status);
+      if (filters?.status) {
+        query = query.eq("status", filters.status);
+        // 공개 페이지용 APPROVED 조회: 예약 기사(미래 published_at) 제외
+        if (filters.status === "APPROVED") {
+          query = query.or(`published_at.is.null,published_at.lte.${new Date().toISOString()}`);
+        }
+      }
       if (filters?.section1) query = query.eq("section1", filters.section1);
       if (filters?.section2) {
         if (Array.isArray(filters.section2)) {
@@ -292,6 +298,7 @@ export async function searchArticles(query: string) {
       .select("id, article_no, status, section1, section2, title, subtitle, content, author_name, author_id, published_at, created_at, updated_at, is_deleted, thumbnail_url, view_count, lat, lng, location_name, youtube_url, is_important, is_headline, article_keywords(keyword)")
       .eq("is_deleted", false)
       .eq("status", "APPROVED")
+      .or(`published_at.is.null,published_at.lte.${new Date().toISOString()}`)
       .or(`title.ilike.${searchPattern},subtitle.ilike.${searchPattern},content.ilike.${searchPattern}`)
       .order("published_at", { ascending: false, nullsFirst: false })
       .order("created_at", { ascending: false })
