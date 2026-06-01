@@ -1471,19 +1471,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
             </h2>
             {/* ── 사진 등록 컨트롤 (포토DB + 드래그앤드롭) ── */}
             <div style={{ display: "flex", gap: 24, marginBottom: 16 }}>
-              {/* 왼쪽: 포토DB 간편검색 */}
-              <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: textPrimary, marginBottom: 10 }}>포토DB에서 불러오기</div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <input type="text" placeholder="포토DB 간편검색" value={photoDbSearch} onChange={e => setPhotoDbSearch(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handlePhotoDbSearch(e); } }} onClick={openPhotoDbModal} style={{ ...inputStyle, height: 48, flex: 1 }} />
-                  <button type="button" onClick={openPhotoDbModal} style={{ width: 48, height: 48, border: `1px solid ${border}`, borderRadius: 8, background: cardBg, cursor: "pointer", fontSize: 18, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>🔍</button>
-                </div>
-                <div style={{ fontSize: 12, color: textSecondary, marginTop: 10, lineHeight: 1.5 }}>
-                  * 키워드를 검색하거나 돋보기를 클릭하여<br/>기존 포토DB에 저장된 사진을 간편하게 추가하세요.
-                </div>
-              </div>
-
-              {/* 오른쪽: 사진 마우스 끌어오기 */}
+              {/* 왼쪽: 사진 마우스 끌어오기 */}
               <div style={{ flex: 1.5, display: "flex", flexDirection: "column" }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: textPrimary, marginBottom: 10 }}>내 PC에서 직접 업로드</div>
                 <div
@@ -1501,6 +1489,18 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                   <div style={{ fontSize: 28, color: "#9ca3af", marginBottom: 8 }}>☁️</div>
                   <div style={{ fontSize: 14, fontWeight: 700, color: textPrimary }}>사진 마우스 끌어오기</div>
                   <div style={{ fontSize: 12, color: textSecondary, marginTop: 4 }}>또는 클릭하여 업로드 (자동 압축)</div>
+                </div>
+              </div>
+
+              {/* 오른쪽: 포토DB 간편검색 */}
+              <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: textPrimary, marginBottom: 10 }}>포토DB에서 불러오기</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <input type="text" placeholder="포토DB 간편검색" value={photoDbSearch} onChange={e => setPhotoDbSearch(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handlePhotoDbSearch(e); } }} onClick={openPhotoDbModal} style={{ ...inputStyle, height: 48, flex: 1 }} />
+                  <button type="button" onClick={openPhotoDbModal} style={{ width: 48, height: 48, border: `1px solid ${border}`, borderRadius: 8, background: cardBg, cursor: "pointer", fontSize: 18, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>🔍</button>
+                </div>
+                <div style={{ fontSize: 12, color: textSecondary, marginTop: 10, lineHeight: 1.5 }}>
+                  * 키워드를 검색하거나 돋보기를 클릭하여<br/>기존 포토DB에 저장된 사진을 간편하게 추가하세요.
                 </div>
               </div>
             </div>
