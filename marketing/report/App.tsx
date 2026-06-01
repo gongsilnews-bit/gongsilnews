@@ -344,6 +344,7 @@ function App() {
   const [isUploadingImage, setIsUploadingImage] = useState<Record<string, boolean>>({});
   const [authError, setAuthError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<number | 'all'>('all');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   const loadVacancyDataDirectly = async (vacancyId: string) => {
     setLoadingData(true);
@@ -1430,37 +1431,54 @@ ${clone.outerHTML}
       </header>
 
       <main className="print:block print:h-auto print:p-0 flex-1 max-w-[1600px] mx-auto w-full p-4 lg:p-8 grid grid-cols-12 gap-6 h-[calc(100vh-64px)]">
-        <div className="print:hidden col-span-12 lg:col-span-4 xl:col-span-3 lg:h-full lg:overflow-hidden">
-          <FlyerForm 
-            info={state.info}
-            setInfo={handleInfoChange}
-            onImageUpload={handleImageUpload}
-            onGenerate={handleGenerateAI}
-            onAnalyzeImage={handleAnalyzeImage}
-            onAnalyzeAgentImage={handleAnalyzeAgentImage}
-            onAnalyzeComplexImage={handleAnalyzeComplexImage}
-            isGenerating={isGenerating}
-            uploadedImages={state}
-            colors={COLORS}
-            layouts={LAYOUTS}
-            currentColor={state.colorTheme}
-            currentLayout={state.layoutTheme}
-            onColorSelect={handleColorChange}
-            onLayoutSelect={handleLayoutChange}
-            isUploadingImage={isUploadingImage}
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
-          />
-        </div>
-        <div className="print:col-span-12 print:border-none print:bg-white print:m-0 print:p-0 col-span-12 lg:col-span-8 xl:col-span-9 bg-gray-200/50 rounded-xl border border-gray-300 overflow-hidden flex flex-col">
+        {isSidebarOpen && (
+          <div className="print:hidden col-span-12 lg:col-span-4 xl:col-span-3 lg:h-full lg:overflow-hidden transition-all duration-300">
+            <FlyerForm 
+              info={state.info}
+              setInfo={handleInfoChange}
+              onImageUpload={handleImageUpload}
+              onGenerate={handleGenerateAI}
+              onAnalyzeImage={handleAnalyzeImage}
+              onAnalyzeAgentImage={handleAnalyzeAgentImage}
+              onAnalyzeComplexImage={handleAnalyzeComplexImage}
+              isGenerating={isGenerating}
+              uploadedImages={state}
+              colors={COLORS}
+              layouts={LAYOUTS}
+              currentColor={state.colorTheme}
+              currentLayout={state.layoutTheme}
+              onColorSelect={handleColorChange}
+              onLayoutSelect={handleLayoutChange}
+              isUploadingImage={isUploadingImage}
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            />
+          </div>
+        )}
+        <div className={`print:col-span-12 print:border-none print:bg-white print:m-0 print:p-0 transition-all duration-300 ${isSidebarOpen ? 'col-span-12 lg:col-span-8 xl:col-span-9' : 'col-span-12'} bg-gray-200/50 rounded-xl border border-gray-300 overflow-hidden flex flex-col`}>
             <div className="print:hidden bg-white px-4 py-2 border-b flex justify-between items-center text-xs text-gray-500">
-                <span className="flex items-center gap-2"><span className="w-2 h-2 bg-green-500 rounded-full"></span>미리보기</span>
-                <span>Width: 860px</span>
+                <div className="flex items-center gap-3">
+                    <button 
+                        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                        className="px-2.5 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded border border-gray-300 transition-all active:scale-95 text-xs flex items-center gap-1.5"
+                    >
+                        {isSidebarOpen ? "◀ 사이드바 접기" : "▶ 사이드바 펼치기"}
+                    </button>
+                    <span className="flex items-center gap-2"><span className="w-2 h-2 bg-green-500 rounded-full"></span>미리보기 에디터</span>
+                </div>
+                <span>Width: 860px (A4 가로 배율)</span>
             </div>
             <div className="print:overflow-visible print:p-0 print:block flex-1 overflow-auto p-8 flex justify-center custom-scrollbar">
                 {/* Fixed width container for editor preview */}
                 <div className="w-[860px] shrink-0 print:w-[1122px] print:mx-auto print:shrink">
-                    <FlyerCanvas ref={flyerRef} data={state} activeTab={activeTab} onUpdateInfo={handleInfoChange} />
+                    <FlyerCanvas 
+                      ref={flyerRef} 
+                      data={state} 
+                      activeTab={activeTab} 
+                      onUpdateInfo={handleInfoChange}
+                      onImageUpload={handleImageUpload}
+                      isUploadingImage={isUploadingImage}
+                    />
                 </div>
             </div>
         </div>

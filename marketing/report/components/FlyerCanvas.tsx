@@ -5,6 +5,8 @@ interface FlyerCanvasProps {
   data: FlyerState;
   activeTab?: number | 'all';
   onUpdateInfo?: (info: any) => void;
+  onImageUpload?: (key: string, file: File) => Promise<string | undefined>;
+  isUploadingImage?: Record<string, boolean>;
 }
 
 // ─── NOTION & CANVA STYLE INLINE EDITORS ──────────────────────────────────────
@@ -78,6 +80,97 @@ const EditableBlock = ({
       }}
       placeholder={placeholder}
     />
+  );
+};
+
+// ─── PREMIUM DIRECT IMAGE UPLOADER OVERLAY ────────────────────────────────────
+
+const EditableImage = ({
+  src,
+  alt,
+  className = "",
+  imageKey,
+  onImageUpload,
+  isUploading = false,
+  aspectRatioClass = "object-contain"
+}: {
+  src: string;
+  alt: string;
+  className?: string;
+  imageKey: string;
+  onImageUpload?: (key: string, file: File) => Promise<string | undefined>;
+  isUploading?: boolean;
+  aspectRatioClass?: "object-contain" | "object-cover";
+}) => {
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const placeholder = "https://placehold.co/800x600/e2e8f0/1e293b?text=Image";
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && onImageUpload) {
+      await onImageUpload(imageKey, file);
+    }
+  };
+
+  return (
+    <div className={`group relative w-full h-full bg-[#0f172a]/95 rounded-2xl overflow-hidden shadow-md border border-gray-100 ${className}`}>
+      {/* Hidden file input */}
+      {onImageUpload && (
+        <input 
+          type="file" 
+          ref={fileInputRef} 
+          onChange={handleFileChange} 
+          accept="image/*" 
+          className="hidden" 
+        />
+      )}
+
+      {/* Double layer for portrait background blur */}
+      {aspectRatioClass === "object-contain" ? (
+        <>
+          <img 
+            src={src || placeholder} 
+            alt={`${alt} Blur`} 
+            className="absolute inset-0 w-full h-full object-cover filter blur-2xl opacity-50 scale-110 pointer-events-none" 
+          />
+          <img 
+            src={src || placeholder} 
+            alt={alt} 
+            className="relative w-full h-full object-contain z-10" 
+          />
+        </>
+      ) : (
+        <img 
+          src={src || placeholder} 
+          alt={alt} 
+          className="w-full h-full object-cover" 
+        />
+      )}
+
+      {/* Hover overlay with direct upload action (print:hidden) */}
+      {onImageUpload && (
+        <div 
+          onClick={() => fileInputRef.current?.click()}
+          className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-center cursor-pointer z-20 print:hidden text-white gap-2"
+        >
+          <div className="bg-amber-500 hover:bg-amber-600 active:scale-95 text-slate-950 font-extrabold px-3.5 py-2 rounded-xl shadow-lg text-xs flex items-center gap-1.5 transition-all">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z" />
+            </svg>
+            <span>사진 업로드 / 변경</span>
+          </div>
+        </div>
+      )}
+
+      {/* Loading indicator (print:hidden) */}
+      {isUploading && (
+        <div className="absolute inset-0 bg-slate-900/80 z-[25] flex flex-col items-center justify-center print:hidden">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-amber-500 mb-2"></div>
+          <span className="text-[10px] text-amber-500 font-bold">WebP 최적화 업로드 중...</span>
+        </div>
+      )}
+    </div>
   );
 };
 
@@ -188,7 +281,7 @@ const SectionTitle = ({ title, subtitle }: { title: string, subtitle: string }) 
 
 // ─── MAIN CANVAS COMPONENT ────────────────────────────────────────────────────
 
-const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, activeTab = 'all', onUpdateInfo }, ref) => {
+const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, activeTab = 'all', onUpdateInfo, onImageUpload, isUploadingImage }, ref) => {
   const { info, mainImage, subImage1, subImage2, featureImage1, featureImage2 } = data; 
   const placeholder = "https://placehold.co/800x600/e2e8f0/1e293b?text=Image";
 
@@ -421,7 +514,21 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                 }
                                 
                                 return (
-                                    <div className="flex bg-[#fff9f0] border-t border-gray-200">
+                                    <div className="flex bg-[#fff9f0] border-t border-gray-200 group relative">
+                                        {/* Direct Transaction Type Switcher: print:hidden */}
+                                        <div className="absolute -left-20 top-1/2 -translate-y-1/2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 print:hidden bg-white/95 shadow-md border border-gray-200 rounded-md p-1.5 z-30">
+                                            <span className="text-[10px] text-gray-400 font-bold text-center border-b pb-0.5 mb-0.5">거래 형태</span>
+                                            {["매매", "전세", "월세"].map((type) => (
+                                                <button
+                                                    key={type}
+                                                    onClick={() => handleTextChange('transactionType', type)}
+                                                    className={`px-1.5 py-0.5 rounded text-[10px] font-extrabold transition-colors ${tType === type ? 'bg-[#cc5a27] text-white' : 'hover:bg-gray-100 text-gray-600'}`}
+                                                >
+                                                    {type}
+                                                </button>
+                                            ))}
+                                        </div>
+
                                         <div className="w-1/3 text-gray-600 font-bold py-3 pl-4 flex items-center">{label}</div>
                                         <div className="w-2/3 text-[#cc5a27] font-extrabold py-3 pl-4 flex items-center">
                                             {tType === "월세" || tType === "임대" ? (
@@ -463,18 +570,14 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
 
                 {/* Right Col: Image & Summary */}
                 <div className="w-7/12 flex flex-col justify-between h-full">
-                    <div className="relative h-[340px] rounded-2xl overflow-hidden shadow-md border border-gray-100 bg-[#0f172a]/95">
-                        {/* Blur Background Layer */}
-                        <img 
-                          src={mainImage || placeholder} 
-                          alt="Main Background Blur" 
-                          className="absolute inset-0 w-full h-full object-cover filter blur-2xl opacity-50 scale-110 pointer-events-none" 
-                        />
-                        {/* Clear Foreground Image */}
-                        <img 
-                          src={mainImage || placeholder} 
-                          alt="Main" 
-                          className="relative w-full h-full object-contain z-10" 
+                    <div className="h-[340px]">
+                        <EditableImage 
+                            src={mainImage || ""} 
+                            alt="Main Image" 
+                            imageKey="mainImage"
+                            onImageUpload={onImageUpload}
+                            isUploading={isUploadingImage?.mainImage}
+                            aspectRatioClass="object-contain"
                         />
                     </div>
                     <div>
@@ -705,21 +808,17 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
         >
             <div className="flex gap-4 h-[550px]">
                 {/* Main Large Photo */}
-                <div className="w-1/2 relative rounded-xl overflow-hidden shadow-md bg-[#0f172a]/95">
-                    {/* Blur Background Layer */}
-                    <img 
-                      src={mainImage || placeholder} 
-                      alt="Exterior Blur" 
-                      className="absolute inset-0 w-full h-full object-cover filter blur-2xl opacity-50 scale-110 pointer-events-none" 
-                    />
-                    {/* Clear Foreground Image */}
-                    <img 
-                      src={mainImage || placeholder} 
-                      alt="Exterior" 
-                      className="relative w-full h-full object-contain z-10" 
+                <div className="w-1/2 relative h-full group">
+                    <EditableImage 
+                        src={mainImage || ""} 
+                        alt="Exterior" 
+                        imageKey="mainImage"
+                        onImageUpload={onImageUpload}
+                        isUploading={isUploadingImage?.mainImage}
+                        aspectRatioClass="object-contain"
                     />
                     <div className="absolute bottom-0 left-0 w-full p-4 bg-gradient-to-t from-black/80 to-transparent z-20">
-                        <span className="text-white font-bold">
+                        <span className="text-white font-bold relative z-30">
                             <EditableText 
                                 value={info.photoCaptions?.main || ""} 
                                 onChange={(val) => {
@@ -739,15 +838,22 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                 {/* 4 Grid Photos */}
                 <div className="w-1/2 grid grid-cols-2 grid-rows-2 gap-4">
                     {[
-                        { img: subImage1, label: info.photoCaptions?.sub1, key: 'sub1' },
-                        { img: subImage2, label: info.photoCaptions?.sub2, key: 'sub2' },
-                        { img: featureImage1, label: info.photoCaptions?.feat1, key: 'feat1' },
-                        { img: featureImage2, label: info.photoCaptions?.feat2, key: 'feat2' },
+                        { img: subImage1, label: info.photoCaptions?.sub1, key: 'sub1', slot: 'subImage1' },
+                        { img: subImage2, label: info.photoCaptions?.sub2, key: 'sub2', slot: 'subImage2' },
+                        { img: featureImage1, label: info.photoCaptions?.feat1, key: 'feat1', slot: 'featureImage1' },
+                        { img: featureImage2, label: info.photoCaptions?.feat2, key: 'feat2', slot: 'featureImage2' },
                     ].map((p, i) => (
                         <div key={i} className="relative rounded-xl overflow-hidden shadow-md bg-gray-200">
-                            <img src={p.img || placeholder} alt={p.label} className="w-full h-full object-cover" />
+                            <EditableImage 
+                                src={p.img || ""} 
+                                alt={p.label || ""} 
+                                imageKey={p.slot}
+                                onImageUpload={onImageUpload}
+                                isUploading={isUploadingImage?.[p.slot]}
+                                aspectRatioClass="object-cover"
+                            />
                             <div className="absolute bottom-0 left-0 w-full p-3 bg-gradient-to-t from-[#0d1424]/90 to-transparent z-20">
-                                <span className="text-white font-bold text-sm">
+                                <span className="text-white font-bold text-sm relative z-30">
                                     <EditableText 
                                         value={p.label || ""} 
                                         onChange={(val) => {
