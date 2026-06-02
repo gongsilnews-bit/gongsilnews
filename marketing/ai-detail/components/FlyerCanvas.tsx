@@ -22,6 +22,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, onText
   const bodyFont = layoutTheme?.bodyFont || 'font-sans';
   const layout = layoutTheme?.type || 'type1';
 
+  const editClass = "outline-none focus:outline focus:outline-2 focus:outline-sky-400 focus:bg-sky-400/10 hover:ring-1 hover:ring-sky-300 rounded transition-all cursor-text";
   const placeholder = "https://placehold.co/860x600/e2e8f0/1e293b?text=Property";
   const mainImgSrc = mainImage || placeholder;
   
@@ -58,12 +59,12 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, onText
     // Common elements
     const tag = (
         <div className={`inline-block px-3 py-1 border text-xs font-medium mb-4 w-fit tracking-wider ${layout === 'type3' ? 'border-gray-800 text-gray-800' : 'border-white/30 text-white'}`}>
-             {info.transactionType || '거래 유형'}
+             <span contentEditable suppressContentEditableWarning onBlur={(e) => onTextChange?.('transactionType', e.currentTarget.innerText)} className={editClass}>{info.transactionType || '거래 유형'}</span>
         </div>
     );
-    const title = <h1 contentEditable suppressContentEditableWarning onBlur={(e) => onTextChange?.('address', e.currentTarget.innerText)} className={`font-bold leading-tight mb-2 tracking-tight drop-shadow-sm ${headingFont} outline-none hover:bg-white/20 transition-colors cursor-text ${layout === 'type5' ? 'text-5xl md:text-8xl' : 'text-4xl md:text-7xl'}`}>{info.address}</h1>;
-    const slogan = <p contentEditable suppressContentEditableWarning onBlur={(e) => onTextChange?.('promotionText', e.currentTarget.innerText)} className={`font-bold mb-4 drop-shadow-md ${headingFont} outline-none hover:bg-white/20 transition-colors cursor-text ${layout === 'type5' ? 'text-2xl md:text-4xl' : 'text-2xl md:text-5xl'} ${layout === 'type3' ? 'text-gray-800 hover:bg-black/5' : 'text-white'}`}>{info.promotionText}</p>;
-    const subtitle = <p contentEditable suppressContentEditableWarning onBlur={(e) => onTextChange?.('subTitle', e.currentTarget.innerText)} className={`text-base md:text-xl font-medium outline-none hover:bg-white/20 transition-colors cursor-text ${layout === 'type3' ? 'text-gray-600 hover:bg-black/5' : 'text-white opacity-90'}`} style={{ color: layout === 'type3' ? undefined : secondaryColor }}>{info.subTitle}</p>;
+    const title = <h1 contentEditable suppressContentEditableWarning onBlur={(e) => onTextChange?.('address', e.currentTarget.innerText)} className={`font-bold leading-tight mb-2 tracking-tight drop-shadow-sm ${headingFont} ${editClass} ${layout === 'type5' ? 'text-5xl md:text-8xl' : 'text-4xl md:text-7xl'}`}>{info.address}</h1>;
+    const slogan = <p contentEditable suppressContentEditableWarning onBlur={(e) => onTextChange?.('promotionText', e.currentTarget.innerText)} className={`font-bold mb-4 drop-shadow-md ${headingFont} ${editClass} ${layout === 'type5' ? 'text-2xl md:text-4xl' : 'text-2xl md:text-5xl'} ${layout === 'type3' ? 'text-gray-800 hover:bg-black/5' : 'text-white'}`}>{info.promotionText}</p>;
+    const subtitle = <p contentEditable suppressContentEditableWarning onBlur={(e) => onTextChange?.('subTitle', e.currentTarget.innerText)} className={`text-base md:text-xl font-medium ${editClass} ${layout === 'type3' ? 'text-gray-600 hover:bg-black/5' : 'text-white opacity-90'}`} style={{ color: layout === 'type3' ? undefined : secondaryColor }}>{info.subTitle}</p>;
 
     let content = null;
     switch (layout) {
@@ -93,7 +94,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, onText
                     </div>
                     <div className="relative z-10 p-6 md:p-12 h-full flex items-center justify-center">
                         <div className="border border-white/40 p-6 md:p-12 w-full h-full flex flex-col items-center justify-center text-center text-white">
-                            <span className="mb-4 text-xl md:text-2xl font-serif-en italic" style={{ color: secondaryColor }}>Prestige Collection</span>
+                            <span contentEditable suppressContentEditableWarning className={`mb-4 text-xl md:text-2xl font-serif-en italic ${editClass}`} style={{ color: secondaryColor }}>Prestige Collection</span>
                             {title}
                             <div className="w-20 h-px bg-white/50 my-6"></div>
                             {slogan}
@@ -114,7 +115,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, onText
                      <div className="relative z-10 p-8 md:p-12 bg-white/95 w-[90%] md:w-2/3 shadow-sm rounded-br-3xl">
                         <div className="flex items-center gap-3 mb-4">
                             <div className="w-2 h-8 md:h-12" style={{ backgroundColor: primaryColor }}></div>
-                            <span className="text-xl md:text-3xl font-bold text-gray-800 tracking-widest">PREMIUM</span>
+                            <span contentEditable suppressContentEditableWarning className={`text-xl md:text-3xl font-bold text-gray-800 tracking-widest ${editClass}`}>PREMIUM</span>
                         </div>
                         <h1 className={`text-4xl md:text-6xl font-bold text-gray-900 mb-4 ${headingFont}`}>{info.address}</h1>
                         <p className="text-xl md:text-3xl text-gray-600 font-medium mb-2">{info.promotionText}</p>
@@ -129,7 +130,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, onText
                         <img onClick={() => onImageClick?.('mainImage')} src={mainImgSrc} className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity" title="클릭하여 메인 이미지 변경" />
                     </div>
                     <div className="absolute bottom-6 right-6 md:bottom-12 md:right-12 z-10 bg-white/95 p-6 md:p-10 max-w-[90%] md:max-w-xl shadow-2xl border-l-8" style={{ borderColor: primaryColor }}>
-                        <div className="text-xs md:text-sm font-bold tracking-widest mb-2 text-gray-500 uppercase">{info.transactionType}</div>
+                        <div contentEditable suppressContentEditableWarning onBlur={(e) => onTextChange?.('transactionType', e.currentTarget.innerText)} className={`text-xs md:text-sm font-bold tracking-widest mb-2 text-gray-500 uppercase ${editClass}`}>{info.transactionType}</div>
                         <h1 className={`text-3xl md:text-5xl font-extrabold text-gray-900 mb-2 leading-tight ${headingFont}`}>{info.address}</h1>
                         <p className={`text-xl md:text-3xl font-bold mb-4 ${headingFont}`} style={{ color: primaryColor }}>{info.promotionText}</p>
                         <p className="text-gray-600 text-sm leading-relaxed border-t pt-4 border-gray-200">{info.subTitle}</p>
@@ -145,7 +146,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, onText
                         <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-80"></div>
                     </div>
                     <div className="relative z-10 p-8 md:p-12 flex flex-col justify-end h-full">
-                        <p className="text-white/80 text-sm md:text-lg tracking-[0.5em] mb-4 uppercase font-light">Residence</p>
+                        <p contentEditable suppressContentEditableWarning className={`text-white/80 text-sm md:text-lg tracking-[0.5em] mb-4 uppercase font-light ${editClass}`}>Residence</p>
                         <h1 className={`text-6xl md:text-8xl font-black text-white mb-2 tracking-tighter ${headingFont}`}>{info.address}</h1>
                         <div className="flex items-end gap-4">
                             <p className="text-3xl md:text-6xl font-thin text-white tracking-tight">{info.promotionText}</p>
@@ -176,14 +177,14 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, onText
                 <div className="relative z-20 -mt-16 mx-4 md:mx-12 bg-white shadow-xl flex flex-wrap md:flex-nowrap rounded-sm overflow-hidden min-h-[100px]">
                     {statsItems.map((item, i) => (
                         <div key={i} className="w-1/2 md:flex-1 py-6 px-4 border-r border-b md:border-b-0 border-gray-100 flex flex-col items-center justify-center text-center group hover:bg-gray-50">
-                            <span className="text-[10px] text-gray-400 font-bold tracking-widest mb-1 uppercase">{item.label}</span>
+                            <span contentEditable suppressContentEditableWarning className={`text-[10px] text-gray-400 font-bold tracking-widest mb-1 uppercase ${editClass}`}>{item.label}</span>
                             <span contentEditable suppressContentEditableWarning onBlur={(e) => {
                                 if (i === 0) onTextChange?.('priceMain', e.currentTarget.innerText);
                                 if (i === 1) onTextChange?.('area', e.currentTarget.innerText);
                                 if (i === 2) onTextChange?.('roomCount', e.currentTarget.innerText);
                                 if (i === 3) onTextChange?.('moveInDate', e.currentTarget.innerText);
-                            }} className="text-lg md:text-xl font-bold whitespace-nowrap outline-none hover:bg-black/5 transition-colors cursor-text" style={{ color: primaryColor }}>{item.value}</span>
-                            <span className="text-[10px] text-gray-400 mt-1">{item.sub}</span>
+                            }} className="text-lg md:text-xl font-bold whitespace-nowrap ${editClass}" style={{ color: primaryColor }}>{item.value}</span>
+                            <span contentEditable suppressContentEditableWarning className={`text-[10px] text-gray-400 mt-1 ${editClass}`}>{item.sub}</span>
                         </div>
                     ))}
                 </div>
@@ -200,8 +201,8 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, onText
                                       if (i === 1) onTextChange?.('area', e.currentTarget.innerText);
                                       if (i === 2) onTextChange?.('roomCount', e.currentTarget.innerText);
                                       if (i === 3) onTextChange?.('moveInDate', e.currentTarget.innerText);
-                                  }} className={`block text-2xl font-bold text-gray-800 mb-1 outline-none hover:bg-black/5 transition-colors cursor-text ${headingFont}`}>{item.value}</span>
-                                  <span className="text-xs uppercase tracking-widest text-gray-500 font-serif-en">{item.label}</span>
+                                  }} className={`block text-2xl font-bold text-gray-800 mb-1 ${editClass} ${headingFont}`}>{item.value}</span>
+                                  <span contentEditable suppressContentEditableWarning className={`text-xs uppercase tracking-widest text-gray-500 font-serif-en ${editClass}`}>{item.label}</span>
                               </div>
                           ))}
                       </div>
@@ -213,13 +214,13 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, onText
                   <div className="py-8 text-white flex flex-wrap md:flex-nowrap justify-around items-center gap-4" style={{ backgroundColor: primaryColor }}>
                       {statsItems.map((item, i) => (
                           <div key={i} className="text-center w-1/2 md:w-auto mb-4 md:mb-0">
-                              <span className="block text-sm opacity-70 mb-1">{item.sub}</span>
+                              <span contentEditable suppressContentEditableWarning className={`block text-sm opacity-70 mb-1 ${editClass}`}>{item.sub}</span>
                               <span contentEditable suppressContentEditableWarning onBlur={(e) => {
                                   if (i === 0) onTextChange?.('priceMain', e.currentTarget.innerText);
                                   if (i === 1) onTextChange?.('area', e.currentTarget.innerText);
                                   if (i === 2) onTextChange?.('roomCount', e.currentTarget.innerText);
                                   if (i === 3) onTextChange?.('moveInDate', e.currentTarget.innerText);
-                              }} className="block text-xl md:text-2xl font-bold outline-none hover:bg-white/20 transition-colors cursor-text">{item.value}</span>
+                              }} className="block text-xl md:text-2xl font-bold ${editClass}">{item.value}</span>
                           </div>
                       ))}
                   </div>
@@ -231,13 +232,13 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, onText
                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                            {statsItems.map((item, i) => (
                                <div key={i} className="bg-white p-6 border-t-4 shadow-sm" style={{ borderColor: primaryColor }}>
-                                   <span className="block text-xs font-bold text-gray-400 uppercase mb-2">{item.label}</span>
+                                   <span contentEditable suppressContentEditableWarning className={`block text-xs font-bold text-gray-400 uppercase mb-2 ${editClass}`}>{item.label}</span>
                                    <span contentEditable suppressContentEditableWarning onBlur={(e) => {
                                        if (i === 0) onTextChange?.('priceMain', e.currentTarget.innerText);
                                        if (i === 1) onTextChange?.('area', e.currentTarget.innerText);
                                        if (i === 2) onTextChange?.('roomCount', e.currentTarget.innerText);
                                        if (i === 3) onTextChange?.('moveInDate', e.currentTarget.innerText);
-                                   }} className="block text-lg md:text-xl font-extrabold text-gray-900 outline-none hover:bg-black/5 transition-colors cursor-text">{item.value}</span>
+                                   }} className="block text-lg md:text-xl font-extrabold text-gray-900 ${editClass}">{item.value}</span>
                                </div>
                            ))}
                        </div>
@@ -254,8 +255,8 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, onText
                                    if (i === 1) onTextChange?.('area', e.currentTarget.innerText);
                                    if (i === 2) onTextChange?.('roomCount', e.currentTarget.innerText);
                                    if (i === 3) onTextChange?.('moveInDate', e.currentTarget.innerText);
-                               }} className="text-3xl md:text-4xl font-thin tracking-tighter mb-1 outline-none hover:bg-white/20 transition-colors cursor-text" style={{ color: i === 0 ? secondaryColor : 'white' }}>{item.value}</span>
-                               <span className="text-xs font-bold text-gray-500 uppercase tracking-[0.2em]">{item.label}</span>
+                               }} className="text-3xl md:text-4xl font-thin tracking-tighter mb-1 ${editClass}" style={{ color: i === 0 ? secondaryColor : 'white' }}>{item.value}</span>
+                               <span contentEditable suppressContentEditableWarning className={`text-xs font-bold text-gray-500 uppercase tracking-[0.2em] ${editClass}`}>{item.label}</span>
                            </div>
                        ))}
                    </div>
@@ -271,19 +272,19 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, onText
       if (layout === 'type2') {
           return (
             <div className="flex flex-col items-center mb-12 text-center">
-                <div className="font-serif-en italic text-base md:text-lg mb-2 tracking-wide" style={{ color: secondaryColor }}>{intro}</div>
-                <h2 className={`text-2xl md:text-3xl font-bold text-gray-800 mb-6 ${headingFont}`}>{title}</h2>
+                <div contentEditable suppressContentEditableWarning className={`font-serif-en italic text-base md:text-lg mb-2 tracking-wide ${editClass}`} style={{ color: secondaryColor }}>{intro}</div>
+                <h2 contentEditable suppressContentEditableWarning className={`text-2xl md:text-3xl font-bold text-gray-800 mb-6 ${headingFont} ${editClass}`}>{title}</h2>
                 <div className="w-10 h-0.5" style={{ backgroundColor: primaryColor }}></div>
-                {description && <p className="mt-4 text-gray-500 max-w-xl font-serif-kr text-sm md:text-base">{description}</p>}
+                {description && <p contentEditable suppressContentEditableWarning className={`mt-4 text-gray-500 max-w-xl font-serif-kr text-sm md:text-base ${editClass}`}>{description}</p>}
             </div>
           );
       }
       if (layout === 'type3') {
           return (
             <div className="mb-10 border-b pb-4 border-gray-200">
-                <span className="text-sm font-bold tracking-widest uppercase text-gray-400 mb-1 block">{intro}</span>
-                <h2 className={`text-2xl md:text-3xl font-bold text-gray-800 ${headingFont}`} style={{ color: primaryColor }}>{title}</h2>
-                {description && <p className="mt-2 text-gray-600 text-sm md:text-base">{description}</p>}
+                <span contentEditable suppressContentEditableWarning className={`text-sm font-bold tracking-widest uppercase text-gray-400 mb-1 block ${editClass}`}>{intro}</span>
+                <h2 contentEditable suppressContentEditableWarning className={`text-2xl md:text-3xl font-bold text-gray-800 ${headingFont} ${editClass}`} style={{ color: primaryColor }}>{title}</h2>
+                {description && <p contentEditable suppressContentEditableWarning className={`mt-2 text-gray-600 text-sm md:text-base ${editClass}`}>{description}</p>}
             </div>
           );
       }
@@ -292,8 +293,8 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, onText
             <div className="mb-12 flex items-center gap-4">
                 <div className="w-4 h-12" style={{ backgroundColor: primaryColor }}></div>
                 <div>
-                    <h2 className={`text-2xl md:text-3xl font-extrabold text-gray-900 uppercase ${headingFont}`}>{title}</h2>
-                    <span className="text-sm font-bold text-gray-400 tracking-widest">{intro}</span>
+                    <h2 contentEditable suppressContentEditableWarning className={`text-2xl md:text-3xl font-extrabold text-gray-900 uppercase ${headingFont} ${editClass}`}>{title}</h2>
+                    <span contentEditable suppressContentEditableWarning className={`text-sm font-bold text-gray-400 tracking-widest ${editClass}`}>{intro}</span>
                 </div>
             </div>
         );
@@ -301,19 +302,19 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, onText
       if (layout === 'type5') {
         return (
             <div className="mb-16">
-                 <h2 className={`text-4xl md:text-5xl font-thin text-gray-900 mb-2 ${headingFont}`}>{title}</h2>
-                 <p className="text-xs font-bold text-gray-400 uppercase tracking-[0.3em]">{intro}</p>
-                 {description && <p className="mt-6 text-lg md:text-xl font-light text-gray-600">{description}</p>}
+                 <h2 contentEditable suppressContentEditableWarning className={`text-4xl md:text-5xl font-thin text-gray-900 mb-2 ${headingFont} ${editClass}`}>{title}</h2>
+                 <p contentEditable suppressContentEditableWarning className={`text-xs font-bold text-gray-400 uppercase tracking-[0.3em] ${editClass}`}>{intro}</p>
+                 {description && <p contentEditable suppressContentEditableWarning className={`mt-6 text-lg md:text-xl font-light text-gray-600 ${editClass}`}>{description}</p>}
             </div>
         );
       }
       // Default Type 1
       return (
         <div className="flex flex-col items-center mb-12 text-center">
-            <div className="font-serif-en italic text-base md:text-lg mb-2 tracking-wide" style={{ color: primaryColor }}>{intro}</div>
+            <div contentEditable suppressContentEditableWarning className={`font-serif-en italic text-base md:text-lg mb-2 tracking-wide ${editClass}`} style={{ color: primaryColor }}>{intro}</div>
             <h2 className={`text-2xl md:text-3xl font-bold text-gray-800 mb-6 ${headingFont}`}>{title}</h2>
             <div className="w-10 h-0.5" style={{ backgroundColor: primaryColor }}></div>
-            {description && <p className="mt-4 text-gray-500 max-w-xl text-sm md:text-base">{description}</p>}
+            {description && <p contentEditable suppressContentEditableWarning className={`mt-4 text-gray-500 max-w-xl text-sm md:text-base ${editClass}`}>{description}</p>}
         </div>
       );
   };
@@ -338,7 +339,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, onText
                             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-90 pointer-events-none"></div>
                             <div className="absolute bottom-0 left-0 w-full p-6 text-white transform transition-transform duration-300 group-hover:-translate-y-2">
                                 <span className="text-[10px] font-bold tracking-widest mb-2 block pointer-events-none" style={{ color: secondaryColor }}>0{idx + 1}</span>
-                                <span contentEditable suppressContentEditableWarning onBlur={(e) => onSectionTextChange?.(section.id, item.id, 'text', e.currentTarget.innerText)} className={`font-bold text-lg leading-tight block outline-none hover:bg-white/20 transition-colors cursor-text ${headingFont}`}>{item.text}</span>
+                                <span contentEditable suppressContentEditableWarning onBlur={(e) => onSectionTextChange?.(section.id, item.id, 'text', e.currentTarget.innerText)} className={`font-bold text-lg leading-tight block ${editClass} ${headingFont}`}>{item.text}</span>
                             </div>
                         </div>
                     );
@@ -367,8 +368,8 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, onText
                                 <img onClick={() => onImageClick?.(item.imageKey)} src={imgSrc} className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity" title="이미지 변경" />
                             </div>
                             <div className={`flex flex-col justify-center p-8 bg-gray-50 ${isReversed ? 'md:order-1' : ''}`}>
-                                <h4 contentEditable suppressContentEditableWarning onBlur={(e) => onSectionTextChange?.(section.id, item.id, 'title', e.currentTarget.innerText)} className={`text-xl md:text-2xl font-extrabold text-gray-900 mb-4 outline-none hover:bg-black/5 transition-colors cursor-text ${headingFont}`}>{item.title}</h4>
-                                <p contentEditable suppressContentEditableWarning onBlur={(e) => onSectionTextChange?.(section.id, item.id, 'text', e.currentTarget.innerText)} className={`text-gray-800 text-base md:text-sm leading-8 outline-none hover:bg-black/5 transition-colors cursor-text ${bodyFont}`}>{item.text}</p>
+                                <h4 contentEditable suppressContentEditableWarning onBlur={(e) => onSectionTextChange?.(section.id, item.id, 'title', e.currentTarget.innerText)} className={`text-xl md:text-2xl font-extrabold text-gray-900 mb-4 ${editClass} ${headingFont}`}>{item.title}</h4>
+                                <p contentEditable suppressContentEditableWarning onBlur={(e) => onSectionTextChange?.(section.id, item.id, 'text', e.currentTarget.innerText)} className={`text-gray-800 text-base md:text-sm leading-8 ${editClass} ${bodyFont}`}>{item.text}</p>
                             </div>
                         </div>
                      )
@@ -379,14 +380,14 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, onText
                         <div key={item.id} className="mb-24 px-6 md:px-12">
                             <div className="mb-6">
                                 <span className="text-4xl md:text-6xl font-thin text-gray-200 block mb-2 pointer-events-none">0{idx+1}</span>
-                                <h4 contentEditable suppressContentEditableWarning onBlur={(e) => onSectionTextChange?.(section.id, item.id, 'title', e.currentTarget.innerText)} className={`text-2xl md:text-3xl font-bold text-gray-900 outline-none hover:bg-black/5 transition-colors cursor-text ${headingFont}`}>{item.title}</h4>
+                                <h4 contentEditable suppressContentEditableWarning onBlur={(e) => onSectionTextChange?.(section.id, item.id, 'title', e.currentTarget.innerText)} className={`text-2xl md:text-3xl font-bold text-gray-900 ${editClass} ${headingFont}`}>{item.title}</h4>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
                                 <div className="col-span-1 md:col-span-8 h-[300px] md:h-[400px]">
                                      <img onClick={() => onImageClick?.(item.imageKey)} src={imgSrc} className="w-full h-full object-cover grayscale-[20%] cursor-pointer hover:opacity-90 transition-opacity" title="이미지 변경" />
                                 </div>
                                 <div className="col-span-1 md:col-span-4 flex items-end">
-                                    <p contentEditable suppressContentEditableWarning onBlur={(e) => onSectionTextChange?.(section.id, item.id, 'text', e.currentTarget.innerText)} className={`text-gray-700 text-base md:text-lg leading-relaxed outline-none hover:bg-black/5 transition-colors cursor-text ${bodyFont}`}>{item.text}</p>
+                                    <p contentEditable suppressContentEditableWarning onBlur={(e) => onSectionTextChange?.(section.id, item.id, 'text', e.currentTarget.innerText)} className={`text-gray-700 text-base md:text-lg leading-relaxed ${editClass} ${bodyFont}`}>{item.text}</p>
                                 </div>
                             </div>
                         </div>
@@ -401,8 +402,8 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, onText
                          </div>
                          <div className="w-full md:w-1/2 flex flex-col justify-center px-8 md:px-16 py-12 bg-gray-50/50">
                              <div className="w-8 h-0.5 mb-6" style={{ backgroundColor: primaryColor }}></div>
-                             <h4 contentEditable suppressContentEditableWarning onBlur={(e) => onSectionTextChange?.(section.id, item.id, 'title', e.currentTarget.innerText)} className={`text-xl md:text-2xl font-bold text-gray-800 mb-4 outline-none hover:bg-black/5 transition-colors cursor-text ${headingFont}`}>{item.title}</h4>
-                             <p contentEditable suppressContentEditableWarning onBlur={(e) => onSectionTextChange?.(section.id, item.id, 'text', e.currentTarget.innerText)} className={`text-gray-700 text-base md:text-sm leading-8 break-keep whitespace-pre-wrap outline-none hover:bg-black/5 transition-colors cursor-text ${bodyFont}`}>
+                             <h4 contentEditable suppressContentEditableWarning onBlur={(e) => onSectionTextChange?.(section.id, item.id, 'title', e.currentTarget.innerText)} className={`text-xl md:text-2xl font-bold text-gray-800 mb-4 ${editClass} ${headingFont}`}>{item.title}</h4>
+                             <p contentEditable suppressContentEditableWarning onBlur={(e) => onSectionTextChange?.(section.id, item.id, 'text', e.currentTarget.innerText)} className={`text-gray-700 text-base md:text-sm leading-8 break-keep whitespace-pre-wrap ${editClass} ${bodyFont}`}>
                                  {item.text}
                              </p>
                          </div>
