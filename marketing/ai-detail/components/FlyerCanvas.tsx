@@ -98,7 +98,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, onText
                             {title}
                             <div className="w-20 h-px bg-white/50 my-6"></div>
                             {slogan}
-                            <p className="mt-4 text-sm md:text-lg font-light tracking-widest uppercase">{info.subTitle}</p>
+                            <p contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onTextChange?.('subTitle', e.currentTarget.innerText)} className={`mt-4 text-sm md:text-lg font-light tracking-widest uppercase ${editClass}`}>{info.subTitle}</p>
                         </div>
                     </div>
                 </div>
@@ -131,9 +131,9 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, onText
                     </div>
                     <div className="absolute bottom-6 right-6 md:bottom-12 md:right-12 z-10 bg-white/95 p-6 md:p-10 max-w-[90%] md:max-w-xl shadow-2xl border-l-8" style={{ borderColor: primaryColor }}>
                         <div contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onTextChange?.('transactionType', e.currentTarget.innerText)} className={`text-xs md:text-sm font-bold tracking-widest mb-2 text-gray-500 uppercase ${editClass}`}>{info.transactionType}</div>
-                        <h1 className={`text-3xl md:text-5xl font-extrabold text-gray-900 mb-2 leading-tight ${headingFont}`}>{info.address}</h1>
-                        <p className={`text-xl md:text-3xl font-bold mb-4 ${headingFont}`} style={{ color: primaryColor }}>{info.promotionText}</p>
-                        <p className="text-gray-600 text-sm leading-relaxed border-t pt-4 border-gray-200">{info.subTitle}</p>
+                        <h1 contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onTextChange?.('address', e.currentTarget.innerText)} className={`text-3xl md:text-5xl font-extrabold text-gray-900 mb-2 leading-tight ${headingFont} ${editClass}`}>{info.address}</h1>
+                        <p contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onTextChange?.('promotionText', e.currentTarget.innerText)} className={`text-xl md:text-3xl font-bold mb-4 ${headingFont} ${editClass}`} style={{ color: primaryColor }}>{info.promotionText}</p>
+                        <p contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onTextChange?.('subTitle', e.currentTarget.innerText)} className={`text-gray-600 text-sm leading-relaxed border-t pt-4 border-gray-200 ${editClass}`}>{info.subTitle}</p>
                     </div>
                 </div>
              );
