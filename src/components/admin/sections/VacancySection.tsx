@@ -519,7 +519,6 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                                       }}
                                       title={hasFlyer ? "AI 온라인전단지 완성됨 (클릭하여 편집/수정)" : "AI 온라인전단지 미작성 (클릭하여 제작)"}
                                     >
-                                      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
                                       {hasFlyer ? "AI온라인전단지" : "AI온라인전단지"}
                                     </button>
                                   </div>
