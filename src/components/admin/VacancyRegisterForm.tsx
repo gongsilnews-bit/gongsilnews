@@ -76,7 +76,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
   // 주거형 추가 필드
   const [roomCount, setRoomCount] = useState("1");
   const [bathCount, setBathCount] = useState("1");
-  const [direction, setDirection] = useState("남향");
+  const [direction, setDirection] = useState("");
 
   // 상업형 추가 필드
   const [currentFloor, setCurrentFloor] = useState("");

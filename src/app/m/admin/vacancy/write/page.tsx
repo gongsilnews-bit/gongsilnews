@@ -83,7 +83,7 @@ function MobileVacancyWrite() {
   const [totalFloor, setTotalFloor] = useState("");
   const [roomCount, setRoomCount] = useState("1");
   const [bathCount, setBathCount] = useState("1");
-  const [direction, setDirection] = useState("남향");
+  const [direction, setDirection] = useState("");
 
   // 주소
   const [sido, setSido] = useState("");
