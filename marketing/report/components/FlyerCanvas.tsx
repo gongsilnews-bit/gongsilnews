@@ -976,320 +976,219 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
             footerText={info.footerText || "CONFIDENTIAL | INFORMATION MEMORANDUM"}
             onUpdateFooter={(val) => handleTextChange('footerText', val)}
         >
-            <div className="flex gap-8 h-full">
-                {/* Left: Table */}
-                <div className="w-5/12 h-full flex flex-col">
+                        <div className="flex gap-8 h-full w-full">
+                <div className="w-full h-full flex flex-col">
                     <div className="text-gray-600 font-bold text-sm mb-4">
                         <EditableText 
-                            value={info.page2TableHeader || "1. 층별 점유 및 임대 상세 현황"} 
-                            onChange={(val) => handleTextChange('page2TableHeader', val)} 
-                        />
-                    </div>
-                    <div 
-                        className="border border-gray-200 rounded-lg overflow-hidden bg-[#f8fafc] flex flex-col h-[500px] relative group"
-                        onDoubleClick={onOpenTableEditor}
-                        title="더블클릭하여 표를 크게 편집하세요"
-                    >
-                        {/* Hover Overlay Button */}
-                        <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-200 z-30">
-                            <button
-                                type="button"
-                                onClick={onOpenTableEditor}
-                                className="px-3 py-1.5 bg-slate-900/90 hover:bg-slate-900 text-white rounded-lg text-[10px] font-bold shadow-md flex items-center gap-1 backdrop-blur-sm transition-all active:scale-95 cursor-pointer"
-                            >
-                                ✏️ 표 전체 편집하기 (스마트 빌더)
-                            </button>
-                        </div>
-                        <div className="flex-1 overflow-auto">
-                            <table className="w-full text-center text-sm">
-                                <thead className="bg-white border-b border-gray-200 sticky top-0 z-10">
-                                    <tr>
-                                        <th className="py-4 font-bold text-gray-600">층수</th>
-                                        <th className="py-4 font-bold text-gray-600">현용도</th>
-                                        <th className="py-4 font-bold text-gray-600">임대차</th>
-                                        <th className="py-4 font-bold text-gray-600">점유 상태</th>
-                                        <th className="py-4 font-bold text-gray-600">비고</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-100 bg-white">
-                                    {info.floorStatus?.map((row, i) => (
-                                        <GeditorWrapper
-                                            key={i}
-                                            tag="tr"
-                                            onMoveUp={() => moveFloorStatusRow(i, 'up')}
-                                            onMoveDown={() => moveFloorStatusRow(i, 'down')}
-                                            onDelete={() => deleteFloorStatusRow(i)}
-                                            onDuplicate={addFloorStatusRow}
-                                            isFirst={i === 0}
-                                            isLast={i === info.floorStatus.length - 1}
-                                            className="group"
-                                        >
-                                            <td className={`py-4 relative ${row.floor === 'B1' || row.floor.includes('지하') ? 'font-bold' : ''}`}>
-                                                <EditableText value={row.floor} onChange={(val) => updateFloorStatusRow(i, 'floor', val)} />
-                                            </td>
-                                            <td className={row.floor === 'B1' || row.floor.includes('지하') ? 'font-bold' : ''}>
-                                                <EditableText value={row.purpose} onChange={(val) => updateFloorStatusRow(i, 'purpose', val)} />
-                                            </td>
-                                            {i === 0 && info.floorStatus[0].lease === '보증금 / 차임 내역 별도문의' ? (
-                                                 <>
-                                                    <td rowSpan={info.floorStatus.length} className="text-[#cc5a27] font-bold text-xs writing-vertical-lr tracking-widest border-x border-dashed border-[#cc5a27]/30 bg-[#fff9f0]">
-                                                        <EditableText value={row.lease} onChange={(val) => updateFloorStatusRow(i, 'lease', val)} />
-                                                    </td>
-                                                    <td className="font-bold">
-                                                        <EditableText value={row.status} onChange={(val) => updateFloorStatusRow(i, 'status', val)} />
-                                                    </td>
-                                                    <td className="text-gray-500">
-                                                        <EditableText value={row.note} onChange={(val) => updateFloorStatusRow(i, 'note', val)} />
-                                                    </td>
-                                                 </>
-                                            ) : (
-                                                 info.floorStatus[0].lease === '보증금 / 차임 내역 별도문의' ? (
-                                                     <>
-                                                         <td className={row.status.includes('현재 공실') ? 'text-[#cc5a27] font-bold' : 'font-bold'}>
-                                                             <EditableText value={row.status} onChange={(val) => updateFloorStatusRow(i, 'status', val)} />
-                                                         </td>
-                                                         <td className={row.note.includes('즉시 활용') ? 'font-bold text-gray-800' : 'text-gray-500'}>
-                                                             <EditableText value={row.note} onChange={(val) => updateFloorStatusRow(i, 'note', val)} />
-                                                         </td>
-                                                     </>
-                                                   ) : (
-                                                     <>
-                                                         <td className={row.lease.includes('공실') ? 'text-[#cc5a27] font-bold' : 'font-bold'}>
-                                                             <EditableText value={row.lease} onChange={(val) => updateFloorStatusRow(i, 'lease', val)} />
-                                                         </td>
-                                                         <td className={row.status.includes('공실') ? 'text-[#cc5a27] font-bold' : 'font-bold'}>
-                                                             <EditableText value={row.status} onChange={(val) => updateFloorStatusRow(i, 'status', val)} />
-                                                         </td>
-                                                         <td className={row.note.includes('즉시') ? 'font-bold text-gray-800' : 'text-gray-500'}>
-                                                             <EditableText value={row.note} onChange={(val) => updateFloorStatusRow(i, 'note', val)} />
-                                                         </td>
-                                                     </>
-                                                   )
-                                             )}
-                                        </GeditorWrapper>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                        
-
-                        
-                        <div className="p-4 mt-auto border-t border-gray-100 text-xs text-gray-500 leading-relaxed bg-[#f8fafc] shrink-0">
-                            <EditableBlock value={info.floorStatusNotice || ""} onChange={(val) => handleTextChange('floorStatusNotice', val)} />
-                        </div>
-                    </div>
-                </div>
- 
-                {/* Right: Highlights & Chart */}
-                <div className="w-7/12 h-full flex flex-col">
-                    <div className="text-gray-600 font-bold text-sm mb-4">
-                        <EditableText 
-                            value={info.page2HighlightHeader || "2. 매각 핵심 하이라이트 & 시세 분석"} 
+                            value={info.page2HighlightHeader || "1. 매각 핵심 하이라이트 & 시세 분석"} 
                             onChange={(val) => handleTextChange('page2HighlightHeader', val)} 
                         />
                     </div>
-                    <div className="flex-1 border border-yellow-200 rounded-lg p-6 bg-white shadow-sm flex flex-col">
-                        <h3 className="text-xl font-extrabold text-gray-900 mb-4 border-b-2 border-gray-800 pb-2 inline-block">
-                            <EditableText 
-                                value={info.page2HighlightBoxTitle || "매각 핵심 하이라이트"} 
-                                onChange={(val) => handleTextChange('page2HighlightBoxTitle', val)} 
-                            />
-                        </h3>
-                        <ul className="space-y-3 mb-8">
-                            {info.highlights?.map((hl, i) => (
-                                <GeditorWrapper
-                                    key={i}
-                                    tag="li"
-                                    onMoveUp={() => moveHighlightRow(i, 'up')}
-                                    onMoveDown={() => moveHighlightRow(i, 'down')}
-                                    onDelete={() => deleteHighlightRow(i)}
-                                    onDuplicate={addHighlightRow}
-                                    isFirst={i === 0}
-                                    isLast={i === info.highlights.length - 1}
-                                    className="flex gap-2 text-sm items-center w-full"
-                                >
-                                    <span className="text-[#cc5a27] font-bold">•</span>
-                                    <span className="w-full">
-                                        <EditableText 
-                                            value={hl} 
-                                            onChange={(val) => {
-                                                const newHl = [...info.highlights];
-                                                newHl[i] = val;
-                                                handleTextChange('highlights', newHl as any);
-                                            }}
-                                        />
-                                    </span>
-                                </GeditorWrapper>
-                            ))}
+                    <div className="flex-1 flex gap-6">
+                        {/* Left Half: Highlights */}
+                        <div className="w-1/2 border border-yellow-200 rounded-lg p-6 bg-white shadow-sm flex flex-col">
+                            <h3 className="text-xl font-extrabold text-gray-900 mb-4 border-b-2 border-gray-800 pb-2 inline-block">
+                                <EditableText 
+                                    value={info.page2HighlightBoxTitle || "매각 핵심 하이라이트"} 
+                                    onChange={(val) => handleTextChange('page2HighlightBoxTitle', val)} 
+                                />
+                            </h3>
+                            <ul className="space-y-3 mb-8">
+                                {info.highlights?.map((hl, i) => (
+                                    <GeditorWrapper
+                                        key={i}
+                                        tag="li"
+                                        onMoveUp={() => moveHighlightRow(i, 'up')}
+                                        onMoveDown={() => moveHighlightRow(i, 'down')}
+                                        onDelete={() => deleteHighlightRow(i)}
+                                        onDuplicate={addHighlightRow}
+                                        isFirst={i === 0}
+                                        isLast={i === info.highlights.length - 1}
+                                        className="flex gap-2 text-sm items-center w-full"
+                                    >
+                                        <span className="text-[#cc5a27] font-bold">•</span>
+                                        <span className="w-full">
+                                            <EditableText 
+                                                value={hl} 
+                                                onChange={(val) => {
+                                                    const newHl = [...info.highlights];
+                                                    newHl[i] = val;
+                                                    handleTextChange('highlights', newHl as any);
+                                                }}
+                                            />
+                                        </span>
+                                    </GeditorWrapper>
+                                ))}
+                            </ul>
                             
+                            <div className="mt-auto">
+                                <div className="text-[10px] font-bold tracking-widest text-[#cc5a27] uppercase mb-1">STRATEGIC ADVISORY</div>
+                                <div className="text-xs text-gray-600 leading-relaxed">
+                                    <EditableBlock value={info.valuationText || ""} onChange={(val) => handleTextChange('valuationText', val)} />
+                                </div>
+                            </div>
+                        </div>
 
-                        </ul>
-                        
-                        {/* Dynamic Interactive Chart */}
-                        {(() => {
-                            const showChart = info.showChart !== false;
-                            const chartBars = info.chartBars || [
-                                { label: "탁상감정가", value: "80", isHighlight: false },
-                                { label: "기존 희망가", value: "75", isHighlight: false },
-                                { label: "인근 시세", value: "85", isHighlight: false },
-                                { label: "현재 급매가", value: "65", isHighlight: true }
-                            ];
+                        {/* Right Half: Chart */}
+                        <div className="w-1/2 border border-yellow-200 rounded-lg p-6 bg-white shadow-sm flex flex-col justify-between">
+                            {(() => {
+                                const showChart = info.showChart !== false;
+                                const chartBars = info.chartBars || [
+                                    { label: "탁상감정가", value: "80", isHighlight: false },
+                                    { label: "기존 희망가", value: "75", isHighlight: false },
+                                    { label: "인근 시세", value: "85", isHighlight: false },
+                                    { label: "현재 급매가", value: "65", isHighlight: true }
+                                ];
 
-                            return (
-                                <div className="mt-auto border-t border-slate-200 pt-4 relative group/chart flex flex-col min-h-[260px] justify-between">
-                                    {/* Hover Chart Controls */}
-                                    <div className="absolute -top-3 right-0 opacity-0 group-hover/chart:opacity-100 transition-all duration-200 z-30 flex gap-2 print:hidden">
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                if (onUpdateInfo) {
-                                                    onUpdateInfo({
-                                                        ...info,
-                                                        showChart: !showChart
-                                                    });
-                                                }
-                                            }}
-                                            className="px-2 py-1 bg-slate-900 text-white rounded text-[9px] font-bold shadow flex items-center gap-1 active:scale-95 cursor-pointer"
-                                        >
-                                            {showChart ? "📊 그래프 숨기기" : "📊 그래프 보이기"}
-                                        </button>
-                                        {showChart && chartBars.length < 6 && (
+                                return (
+                                    <div className="relative group/chart flex flex-col h-full justify-center">
+                                        {/* Hover Chart Controls */}
+                                        <div className="absolute -top-3 right-0 opacity-0 group-hover/chart:opacity-100 transition-all duration-200 z-30 flex gap-2 print:hidden">
                                             <button
                                                 type="button"
                                                 onClick={() => {
                                                     if (onUpdateInfo) {
-                                                        const newBars = [...chartBars, { label: "새 항목", value: "70", isHighlight: false }];
                                                         onUpdateInfo({
                                                             ...info,
-                                                            chartBars: newBars
+                                                            showChart: !showChart
                                                         });
                                                     }
                                                 }}
-                                                className="px-2 py-1 bg-blue-600 text-white rounded text-[9px] font-bold shadow flex items-center gap-1 active:scale-95 cursor-pointer"
+                                                className="px-2 py-1 bg-slate-900 text-white rounded text-[9px] font-bold shadow flex items-center gap-1 active:scale-95 cursor-pointer"
                                             >
-                                                ➕ 항목 추가
+                                                {showChart ? "📊 그래프 숨기기" : "📊 그래프 보이기"}
                                             </button>
-                                        )}
-                                    </div>
+                                            {showChart && chartBars.length < 6 && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        if (onUpdateInfo) {
+                                                            const newBars = [...chartBars, { label: "새 항목", value: "70", isHighlight: false }];
+                                                            onUpdateInfo({
+                                                                ...info,
+                                                                chartBars: newBars
+                                                            });
+                                                        }
+                                                    }}
+                                                    className="px-2 py-1 bg-blue-600 text-white rounded text-[9px] font-bold shadow flex items-center gap-1 active:scale-95 cursor-pointer"
+                                                >
+                                                    ➕ 항목 추가
+                                                </button>
+                                            )}
+                                        </div>
 
-                                    {showChart ? (
-                                        <div className="animate-fadeIn">
-                                            {/* Chart Bars */}
-                                            <div className="h-32 flex items-end justify-around px-4 border-b border-slate-200 pb-2 mb-2 relative">
-                                                {chartBars.map((bar: any, idx: number) => {
-                                                    const numericValues = chartBars.map((b: any) => parseFloat(b.value) || 0);
-                                                    const maxVal = Math.max(...numericValues, 1);
-                                                    const heightPercent = Math.max(15, Math.min(95, Math.round(((parseFloat(bar.value) || 0) / maxVal) * 90)));
+                                        {showChart ? (
+                                            <div className="animate-fadeIn mt-auto mb-auto">
+                                                {/* Chart Bars */}
+                                                <div className="h-40 flex items-end justify-around px-4 border-b border-slate-200 pb-2 mb-2 relative">
+                                                    {chartBars.map((bar: any, idx: number) => {
+                                                        const numericValues = chartBars.map((b: any) => parseFloat(b.value) || 0);
+                                                        const maxVal = Math.max(...numericValues, 1);
+                                                        const heightPercent = Math.max(15, Math.min(95, Math.round(((parseFloat(bar.value) || 0) / maxVal) * 90)));
 
-                                                    return (
-                                                        <div key={idx} className="flex flex-col items-center justify-end h-full relative w-20 group/bar">
-                                                            {/* Delete single bar button on hover */}
-                                                            {chartBars.length > 2 && (
-                                                                <button
-                                                                    type="button"
+                                                        return (
+                                                            <div key={idx} className="flex flex-col items-center justify-end h-full relative w-20 group/bar">
+                                                                {/* Delete single bar button on hover */}
+                                                                {chartBars.length > 2 && (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                            if (onUpdateInfo) {
+                                                                                const newBars = chartBars.filter((_: any, i: number) => i !== idx);
+                                                                                onUpdateInfo({
+                                                                                    ...info,
+                                                                                    chartBars: newBars
+                                                                                });
+                                                                            }
+                                                                        }}
+                                                                        className="absolute -top-3 p-0.5 bg-red-500 hover:bg-red-600 text-white rounded-full opacity-0 group-hover/bar:opacity-100 transition-opacity z-20 cursor-pointer shadow print:hidden"
+                                                                        title="삭제"
+                                                                    >
+                                                                        <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                                                        </svg>
+                                                                    </button>
+                                                                )}
+
+                                                                {/* Editable Value Badge above the bar */}
+                                                                <div className="text-[10px] font-extrabold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded shadow-sm border border-slate-200/50 mb-1 leading-none hover:bg-amber-100 transition-colors">
+                                                                    <EditableText 
+                                                                        value={bar.value} 
+                                                                        onChange={(val) => {
+                                                                            if (onUpdateInfo) {
+                                                                                const newBars = [...chartBars];
+                                                                                newBars[idx] = { ...newBars[idx], value: val };
+                                                                                onUpdateInfo({ ...info, chartBars: newBars });
+                                                                            }
+                                                                        }}
+                                                                    />
+                                                                </div>
+
+                                                                {/* The Dynamic Bar */}
+                                                                <div 
+                                                                    className={`w-12 rounded-t transition-all duration-500 shadow-sm relative cursor-pointer ${
+                                                                        bar.isHighlight || idx === chartBars.length - 1
+                                                                            ? 'bg-[#cc5a27] hover:bg-[#cc5a27]/90' 
+                                                                            : 'bg-slate-300 hover:bg-slate-400'
+                                                                    }`}
+                                                                    style={{ height: `${heightPercent}%` }}
+                                                                    title="클릭하여 강조 색상 변경"
                                                                     onClick={() => {
                                                                         if (onUpdateInfo) {
-                                                                            const newBars = chartBars.filter((_: any, i: number) => i !== idx);
-                                                                            onUpdateInfo({
-                                                                                ...info,
-                                                                                chartBars: newBars
-                                                                            });
-                                                                        }
-                                                                    }}
-                                                                    className="absolute -top-3 p-0.5 bg-red-500 hover:bg-red-600 text-white rounded-full opacity-0 group-hover/bar:opacity-100 transition-opacity z-20 cursor-pointer shadow print:hidden"
-                                                                    title="삭제"
-                                                                >
-                                                                    <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                                                                    </svg>
-                                                                </button>
-                                                            )}
-
-                                                            {/* Editable Value Badge above the bar */}
-                                                            <div className="text-[10px] font-extrabold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded shadow-sm border border-slate-200/50 mb-1 leading-none hover:bg-amber-100 transition-colors">
-                                                                <EditableText 
-                                                                    value={bar.value} 
-                                                                    onChange={(val) => {
-                                                                        if (onUpdateInfo) {
                                                                             const newBars = [...chartBars];
-                                                                            newBars[idx] = { ...newBars[idx], value: val };
+                                                                            newBars[idx] = { ...newBars[idx], isHighlight: !newBars[idx].isHighlight };
                                                                             onUpdateInfo({ ...info, chartBars: newBars });
                                                                         }
                                                                     }}
-                                                                />
+                                                                >
+                                                                    {(bar.isHighlight || idx === chartBars.length - 1) && (
+                                                                        <div className="absolute inset-x-0 top-0 h-1 bg-white/20 rounded-t"></div>
+                                                                    )}
+                                                                </div>
                                                             </div>
+                                                        );
+                                                    })}
+                                                </div>
 
-                                                            {/* The Dynamic Bar */}
-                                                            <div 
-                                                                className={`w-12 rounded-t transition-all duration-500 shadow-sm relative cursor-pointer ${
-                                                                    bar.isHighlight || idx === chartBars.length - 1
-                                                                        ? 'bg-[#cc5a27] hover:bg-[#cc5a27]/90' 
-                                                                        : 'bg-slate-300 hover:bg-slate-400'
-                                                                }`}
-                                                                style={{ height: `${heightPercent}%` }}
-                                                                title="클릭하여 강조 색상 변경"
-                                                                onClick={() => {
+                                                {/* Chart Labels */}
+                                                <div className="flex justify-around px-4 text-[10px] font-bold text-gray-500">
+                                                    {chartBars.map((bar: any, idx: number) => (
+                                                        <div key={idx} className={`w-20 text-center truncate ${bar.isHighlight || idx === chartBars.length - 1 ? 'text-[#cc5a27]' : ''}`}>
+                                                            <EditableText 
+                                                                value={bar.label} 
+                                                                onChange={(val) => {
                                                                     if (onUpdateInfo) {
                                                                         const newBars = [...chartBars];
-                                                                        newBars[idx] = { ...newBars[idx], isHighlight: !newBars[idx].isHighlight };
+                                                                        newBars[idx] = { ...newBars[idx], label: val };
                                                                         onUpdateInfo({ ...info, chartBars: newBars });
                                                                     }
                                                                 }}
-                                                            >
-                                                                {(bar.isHighlight || idx === chartBars.length - 1) && (
-                                                                    <div className="absolute inset-x-0 top-0 h-1 bg-white/20 rounded-t"></div>
-                                                                )}
-                                                            </div>
+                                                            />
                                                         </div>
-                                                    );
-                                                })}
+                                                    ))}
+                                                </div>
                                             </div>
-
-                                            {/* Chart Labels */}
-                                            <div className="flex justify-around px-4 text-[10px] font-bold text-gray-500">
-                                                {chartBars.map((bar: any, idx: number) => (
-                                                    <div key={idx} className={`w-20 text-center truncate ${bar.isHighlight || idx === chartBars.length - 1 ? 'text-[#cc5a27]' : ''}`}>
-                                                        <EditableText 
-                                                            value={bar.label} 
-                                                            onChange={(val) => {
-                                                                if (onUpdateInfo) {
-                                                                    const newBars = [...chartBars];
-                                                                    newBars[idx] = { ...newBars[idx], label: val };
-                                                                    onUpdateInfo({ ...info, chartBars: newBars });
-                                                                }
-                                                            }}
-                                                        />
-                                                    </div>
-                                                ))}
+                                        ) : (
+                                            <div className="border-2 border-dashed border-slate-200 rounded-xl py-8 px-4 text-center text-slate-400 text-xs font-semibold hover:bg-slate-50 cursor-pointer animate-fadeIn print:hidden mt-auto mb-auto"
+                                                 onClick={() => {
+                                                     if (onUpdateInfo) {
+                                                         onUpdateInfo({
+                                                             ...info,
+                                                             showChart: true
+                                                         });
+                                                     }
+                                                 }}>
+                                                📊 시세 분석 그래프가 숨김 처리되었습니다. 클릭하여 다시 표시하기
                                             </div>
-                                        </div>
-                                    ) : (
-                                        <div className="border-2 border-dashed border-slate-200 rounded-xl py-8 px-4 text-center text-slate-400 text-xs font-semibold hover:bg-slate-50 cursor-pointer animate-fadeIn print:hidden"
-                                             onClick={() => {
-                                                 if (onUpdateInfo) {
-                                                     onUpdateInfo({
-                                                         ...info,
-                                                         showChart: true
-                                                     });
-                                                 }
-                                             }}>
-                                            📊 시세 분석 그래프가 숨김 처리되었습니다. 클릭하여 다시 표시하기
-                                        </div>
-                                    )}
-
-                                    <div className="mt-4">
-                                        <div className="text-[10px] font-bold tracking-widest text-[#cc5a27] uppercase mb-1">STRATEGIC ADVISORY</div>
-                                        <div className="text-xs text-gray-600 leading-relaxed">
-                                            <EditableBlock value={info.valuationText || ""} onChange={(val) => handleTextChange('valuationText', val)} />
-                                        </div>
+                                        )}
                                     </div>
-                                </div>
-                            );
-                        })()}
+                                );
+                            })()}
+                        </div>
                     </div>
                 </div>
             </div>
-        </ReportPage>
+</ReportPage>
         )}
 
         {/* PAGE 3: LEASE STATUS (NEW DYNAMIC TABLE PAGE) */}
