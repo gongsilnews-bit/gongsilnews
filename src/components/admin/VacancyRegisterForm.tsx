@@ -49,7 +49,7 @@ const formatPhoneNumber = (val: string) => {
 const SUB_CATEGORIES: Record<string, string[]> = {
   "아파트·오피스텔": ["아파트", "아파트분양권", "오피스텔", "오피스텔분양권"],
   "빌라·주택": ["빌라/연립", "단독/다가구", "전원주택", "상가주택"],
-  "원룸·투룸(풀옵션)": ["원룸", "투룸"],
+  "원룸·투룸(풀옵션)": ["원룸", "1.5룸", "투룸"],
   "상가·사무실·건물·공장·토지": ["상가", "사무실", "건물/빌딩", "공장/창고", "지식산업센터", "토지"],
   "분양": ["아파트", "오피스텔", "빌라", "도시형생활주택", "생활숙박시설", "상가/업무"],
 };
@@ -947,7 +947,13 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
             <label style={labelStyle}>공실광고 대분류 (1차) {reqMark}</label>
             <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
               {["아파트·오피스텔", "빌라·주택", "원룸·투룸(풀옵션)", "상가·사무실·건물·공장·토지", "분양"].map(t => (
-                <SelectBtn key={t} label={t} selected={propertyType === t} onClick={() => { setPropertyType(t); setSubCategory(SUB_CATEGORIES[t]?.[0] || ""); }} />
+                <SelectBtn key={t} label={t} selected={propertyType === t} onClick={() => { 
+                  setPropertyType(t); 
+                  const defaultSub = SUB_CATEGORIES[t]?.[0] || "";
+                  setSubCategory(defaultSub); 
+                  if (defaultSub === "원룸" || defaultSub === "1.5룸") setRoomCount("1");
+                  if (defaultSub === "투룸") setRoomCount("2");
+                }} />
               ))}
             </div>
 
@@ -957,7 +963,11 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                 <label style={{ ...labelStyle, color: "#f97316", fontSize: 13 }}>상세 종류 선택 (2차) {reqMark}</label>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                   {SUB_CATEGORIES[propertyType].map(s => (
-                    <SelectBtn key={s} label={s} selected={subCategory === s} onClick={() => setSubCategory(s)} />
+                    <SelectBtn key={s} label={s} selected={subCategory === s} onClick={() => {
+                      setSubCategory(s);
+                      if (s === "원룸" || s === "1.5룸") setRoomCount("1");
+                      if (s === "투룸") setRoomCount("2");
+                    }} />
                   ))}
                 </div>
               </div>

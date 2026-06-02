@@ -11,7 +11,7 @@ import imageCompression from "browser-image-compression";
 const SUB_CATEGORIES: Record<string, string[]> = {
   "아파트·오피스텔": ["아파트", "아파트분양권", "오피스텔", "오피스텔분양권"],
   "빌라·주택": ["빌라/연립", "단독/다가구", "전원주택", "상가주택"],
-  "원룸·투룸(풀옵션)": ["원룸", "투룸"],
+  "원룸·투룸(풀옵션)": ["원룸", "1.5룸", "투룸"],
   "상가·사무실·건물·공장·토지": ["상가", "사무실", "공장/창고", "건물", "토지"],
 };
 
@@ -781,11 +781,21 @@ function MobileVacancyWrite() {
           <div style={{ fontSize:16, fontWeight:800, color:"#111", borderLeft:"4px solid #1a73e8", paddingLeft:10, marginBottom:14 }}>공실광고분류</div>
           <label style={labelStyle}>대분류</label>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6, marginBottom:12 }}>
-            {Object.keys(SUB_CATEGORIES).map(t => <SBtn key={t} label={t} sel={propertyType===t} onClick={() => { setPropertyType(t); setSubCategory(SUB_CATEGORIES[t][0]); }} />)}
+            {Object.keys(SUB_CATEGORIES).map(t => <SBtn key={t} label={t} sel={propertyType===t} onClick={() => { 
+              setPropertyType(t); 
+              const defaultSub = SUB_CATEGORIES[t][0] || "";
+              setSubCategory(defaultSub); 
+              if (defaultSub === "원룸" || defaultSub === "1.5룸") setRoomCount("1");
+              if (defaultSub === "투룸") setRoomCount("2");
+            }} />)}
           </div>
           <label style={labelStyle}>소분류</label>
           <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
-            {(SUB_CATEGORIES[propertyType]||[]).map(s => <SBtn key={s} label={s} sel={subCategory===s} onClick={() => setSubCategory(s)} />)}
+            {(SUB_CATEGORIES[propertyType]||[]).map(s => <SBtn key={s} label={s} sel={subCategory===s} onClick={() => {
+              setSubCategory(s);
+              if (s === "원룸" || s === "1.5룸") setRoomCount("1");
+              if (s === "투룸") setRoomCount("2");
+            }} />)}
           </div>
         </div>
 
