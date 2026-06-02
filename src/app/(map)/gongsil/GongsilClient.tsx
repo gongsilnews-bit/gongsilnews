@@ -1568,55 +1568,48 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
 
   const getThemesByCategory = (category: string): string[] => {
     if (category === "apart") {
-      return ["신축급", "올수리", "한강뷰", "역세권", "풀옵션", "급매물", "대출가능"];
+      if (activePills.includes("아파트분양권") || activePills.includes("오피스텔분양권")) {
+        return ["마이너스피", "무피", "로열층", "중도금무이자", "전매제한없음", "하이엔드", "수익형", "역세권", "뻥뷰", "급매"];
+      }
+      return ["신축첫입주", "특올수리", "로열층", "뻥뷰", "역세권", "풀옵션", "반려동물가능", "주차편리", "초품아", "숲세권", "전세대출가능", "즉시입주"];
     }
     if (category === "villa") {
       return getThemesForVilla(activePills);
     }
     if (category === "one") {
-      return ["가성비", "단기임대", "주차편리", "대로변안전", "여성안심", "오피스텔", "애완견가능", "풀옵션", "급매물"];
+      return ["가성비", "단기임대", "주차편리", "대로변안전", "여성안심", "오피스텔", "애완견가능"];
     }
     if (category === "biz") {
+      if (activePills.includes("상가")) return ["대로변상가", "가시성최상", "무권리", "카페추천", "음식점추천", "코너상가", "유동인구많음"];
+      if (activePills.includes("사무실")) return ["역세권사무실", "채광우수", "가성비사무실", "사옥추천", "디자인사무실", "즉시입주", "주차편리"];
+      if (activePills.includes("건물/빌딩")) return ["사옥추천", "통임대", "수익형건물", "메디컬빌딩", "리모델링빌딩", "코너건물", "가시성우수"];
+      if (activePills.includes("공장/창고")) return ["IC인접", "대로변접", "민원없는곳", "신축공장", "물류창고", "단독공장", "저렴한임대료"];
+      if (activePills.includes("지식산업센터")) return ["드라이브인", "섹션오피스", "역세권지산", "코너호실", "로얄층", "풀인테리어", "가성비매물"];
+      if (activePills.includes("토지")) return ["공장부지", "창고부지", "전원주택지", "투자가치최상", "자연녹지", "급매물", "남향"];
       return ["무권리", "코너자리", "유동인구많음", "주차대수많음", "인테리어잘됨", "층고높음", "대로변"];
     }
-    return ["급매물", "역세권", "신축", "풀옵션", "주차편리", "보증보험가능", "대출가능", "반려동물가능"];
+    return ["급매", "추천공실광고"];
   };
 
   const getThemesForVilla = (pills: string[]): string[] => {
-    if (pills.length === 0) {
-      return ["테라스", "복층", "마당있음", "투자용", "올수리", "급매물", "대출가능"];
-    }
-    const themes = new Set<string>();
     if (pills.includes("빌라/연립")) {
-      ["테라스", "올수리", "역세권", "신축급", "복층", "급매물", "대출가능"].forEach(t => themes.add(t));
+      return ["신축첫입주", "특올수리", "엘리베이터있음", "주차편리", "역세권", "풀옵션", "전세대출가능", "반려동물가능", "안심전세", "투룸/쓰리룸"];
     }
-    if (pills.includes("단독/다가구")) {
-      ["마당있음", "복층", "올수리", "투자용", "급매물", "대출가능"].forEach(t => themes.add(t));
-    }
-    if (pills.includes("전원주택")) {
-      ["마당있음", "테라스", "복층", "투자용", "급매물", "경치좋은"].forEach(t => themes.add(t));
-    }
-    if (pills.includes("상가주택")) {
-      ["상가주택", "코너자리", "투자용", "올수리", "급매물", "대출가능"].forEach(t => themes.add(t));
-    }
-    if (themes.size === 0) {
-      return ["테라스", "복층", "마당있음", "투자용", "올수리", "급매물", "대출가능"];
-    }
-    return Array.from(themes);
+    return ["마당있음", "테라스/옥상", "수익형부동산", "통임대/통매매", "리모델링", "조용한동네", "반려동물환영", "전원생활", "층간소음프리", "대가족추천"];
   };
 
   const getWizardTabs = () => {
     if (activeCategory === "apart") {
-      return ["거래유형", "면적", "사용승인일", "세대수", "방/욕실수", "방향", "등록자", "중개보수", "테마"];
+      return ["거래유형", "면적", "사용승인일", "세대수", "방/욕실수", "방향", "기타옵션", "등록자", "중개보수", "테마"];
     }
     if (activeCategory === "villa") {
       const hasVillaOrCommercialHouse = activePills.includes("빌라/연립") || activePills.includes("상가주택");
       const hasDetachedOrRural = activePills.includes("단독/다가구") || activePills.includes("전원주택");
       
       if (hasDetachedOrRural && !hasVillaOrCommercialHouse) {
-        return ["거래유형", "면적", "사용승인일", "방/욕실수", "방향", "등록자", "중개보수", "테마"];
+        return ["거래유형", "면적", "사용승인일", "방/욕실수", "방향", "기타옵션", "등록자", "중개보수", "테마"];
       }
-      return ["거래유형", "면적", "사용승인일", "세대수", "방/욕실수", "방향", "등록자", "중개보수", "테마"];
+      return ["거래유형", "면적", "사용승인일", "세대수", "방/욕실수", "방향", "기타옵션", "등록자", "중개보수", "테마"];
     }
     if (activeCategory === "one") {
       return ["거래유형", "면적", "방/욕실수", "방향", "관리비", "기타옵션", "등록자", "중개보수", "테마"];
@@ -1630,7 +1623,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     if (activeCategory === "auction") {
       return ["감정가", "최저입찰가", "할인율", "유찰횟수", "입찰일"];
     }
-    return ["거래유형", "면적", "사용승인일", "세대수", "방/욕실수", "방향", "등록자", "중개보수", "테마"];
+    return ["거래유형", "면적", "사용승인일", "세대수", "방/욕실수", "방향", "기타옵션", "등록자", "중개보수", "테마"];
   };
 
   const resetAllFilters = () => {
@@ -3251,10 +3244,24 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                               >
                                 <div style={{ fontSize: "14px", color: "#374151", marginBottom: "10px", fontWeight: "bold" }}>기타옵션</div>
                                 <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8 }}>
-                                  {(activeCategory === "one" 
-                                    ? ["에어컨", "세탁기", "냉장고", "가스렌지", "전자렌지", "침대", "옷장", "TV", "신발장"] 
-                                    : ["냉난방기", "수도설비", "가스설비", "화물용승강기", "보안시스템", "엘리베이터", "주차"]
-                                  ).map((opt) => {
+                                  {(() => {
+                                    if (activeCategory === "apart") {
+                                      return ["시스템에어컨", "세탁기", "건조기", "빌트인냉장고", "식기세척기", "인덕션", "붙박이장", "침대", "TV", "비데", "도어락", "무인택배함"];
+                                    }
+                                    if (activeCategory === "one") {
+                                      return ["에어컨", "세탁기", "냉장고", "가스레인지/인덕션", "전자레인지", "침대", "옷장", "책상", "신발장", "도어락"];
+                                    }
+                                    if (activeCategory === "villa") {
+                                      return ["에어컨", "세탁기", "냉장고", "가스레인지/인덕션", "전자레인지", "침대", "옷장", "책상", "신발장", "도어락", "무인택배함", "CCTV", "엘리베이터"];
+                                    }
+                                    if (activeCategory === "biz") {
+                                      if (activePills.includes("상가")) return ["천장형에어컨", "내부화장실", "탕비실", "엘리베이터", "개별난방", "테라스", "주차가능", "창고", "환풍시설"];
+                                      if (activePills.includes("사무실") || activePills.includes("건물/빌딩")) return ["시스템에어컨", "개별난방", "엘리베이터", "내부화장실", "탕비실", "휴게공간", "주차편리", "보안시스템", "회의실"];
+                                      if (activePills.includes("공장/창고") || activePills.includes("지식산업센터") || activePills.includes("토지")) return ["호이스트", "화물엘리베이터", "동력넉넉", "높은층고(5m이상)", "마당넓음", "대형차량진입", "사무동있음", "기숙사", "크린룸"];
+                                      return ["천장형에어컨", "내부화장실", "탕비실", "엘리베이터", "개별난방", "테라스", "주차가능"];
+                                    }
+                                    return ["주차가능", "엘리베이터"];
+                                  })().map((opt) => {
                                     const isSel = filterOptions.includes(opt);
                                     return (
                                       <button
