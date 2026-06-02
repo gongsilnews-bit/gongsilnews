@@ -1084,7 +1084,8 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                 <div style={{ marginBottom: 24, maxWidth: "50%" }}>
                   <label style={labelStyle}>방향 (거실 등 주실 기준)</label>
                   <select value={direction} onChange={(e) => setDirection(e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
-                    {["남향","남동향","남서향","동향","서향","북향","북동향","북서향"].map(d => <option key={d}>{d}</option>)}
+                    <option value="">선택</option>
+                    {["남향","남동향","남서향","동향","서향","북향","북동향","북서향"].map(d => <option key={d} value={d}>{d}</option>)}
                   </select>
                 </div>
               </>

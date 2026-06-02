@@ -858,7 +858,8 @@ function MobileVacancyWrite() {
               <div style={{flex:1}}>
                 <label style={labelStyle}>방향</label>
                 <select value={direction} onChange={e=>setDirection(e.target.value)} style={{...inputStyle, cursor:"pointer"}}>
-                  {["남향","남동향","남서향","동향","서향","북향"].map(d=><option key={d}>{d}</option>)}
+                  <option value="">선택</option>
+                  {["남향","남동향","남서향","동향","서향","북향"].map(d=><option key={d} value={d}>{d}</option>)}
                 </select>
               </div>
             </div>
