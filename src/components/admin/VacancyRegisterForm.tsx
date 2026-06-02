@@ -1537,7 +1537,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                     <>
                       <option value="가능">가능</option>
                       <option value="1대">1대</option>
-                      <option value="2대이상">2대이상</option>
+                      <option value="2대~">2대~</option>
                     </>
                   )}
                 </select>

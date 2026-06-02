@@ -1278,27 +1278,137 @@ ${clone.outerHTML}
     );
   }
 
+  // ── 유리창 전단지 A4 세로 인쇄 (새 창 방식) ──
+  const handlePrintFlyer = () => {
+    const info = state.propertyInfo;
+    const color = state.colorTheme;
+    const mainImg = state.mainImage || '';
+    const isRent = info.transactionType === '월세' || info.transactionType === '단기임대';
+    
+    const priceDisplay = `${info.priceMain || ''}${isRent && info.priceSub ? ' / ' + info.priceSub : ''}`;
+    const priceLabel = info.transactionType === '매매' ? '매매가' : info.transactionType === '전세' ? '전세가' : info.transactionType === '단기임대' ? '단기임대료' : '보증금/월세';
+
+    const statsData = [
+      { label: 'PRICE', value: priceDisplay, sub: priceLabel },
+      { label: 'AREA', value: (info.area?.split('/')?.[0] || info.area), sub: '전용면적' },
+      { label: 'ROOMS', value: info.roomCount, sub: '방 / 욕실' },
+      { label: 'MOVE-IN', value: (info.moveInDate?.split(' ')?.[0] || info.moveInDate), sub: '입주가능일' },
+    ];
+
+    const detailRows = [
+      { l: '공급/전용면적', v: info.area },
+      { l: '해당층/총층', v: info.floor },
+      { l: '방향', v: info.direction },
+      { l: '주차가능대수', v: info.parking },
+      { l: '옵션 정보', v: info.options },
+    ];
+
+    const printWindow = window.open('', '_blank', 'width=800,height=1100');
+    if (!printWindow) return;
+
+    printWindow.document.write(`<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>${info.address} - AI 매물 전단지</title>
+<style>
+  @page { size: A4 portrait; margin: 0; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 210mm; height: 297mm; overflow: hidden; }
+  body { font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif; color: #222; background: #fff; }
+  .page { width: 210mm; min-height: 297mm; max-height: 297mm; overflow: hidden; display: flex; flex-direction: column; }
+  .hero { position: relative; width: 100%; height: 52%; overflow: hidden; flex-shrink: 0; }
+  .hero img { width: 100%; height: 100%; object-fit: cover; }
+  .hero-overlay { position: absolute; inset: 0; background: linear-gradient(to right, ${color.dark}E6, transparent 70%); }
+  .hero-content { position: absolute; bottom: 0; left: 0; padding: 28px 32px; color: #fff; z-index: 2; }
+  .hero-tag { display: inline-block; border: 1px solid rgba(255,255,255,0.4); padding: 3px 12px; font-size: 10px; font-weight: 600; letter-spacing: 2px; margin-bottom: 8px; }
+  .hero-title { font-size: 36px; font-weight: 800; line-height: 1.15; margin-bottom: 4px; text-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+  .hero-slogan { font-size: 22px; font-weight: 700; margin-bottom: 4px; text-shadow: 0 1px 4px rgba(0,0,0,0.3); }
+  .hero-sub { font-size: 12px; opacity: 0.85; color: ${color.secondary}; }
+  .stats-bar { display: flex; border-bottom: 1px solid #e5e7eb; flex-shrink: 0; }
+  .stats-item { flex: 1; padding: 14px 8px; text-align: center; border-right: 1px solid #f0f0f0; }
+  .stats-item:last-child { border-right: none; }
+  .stats-label { display: block; font-size: 9px; color: #9ca3af; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 4px; }
+  .stats-value { display: block; font-size: 16px; font-weight: 800; color: ${color.primary}; }
+  .stats-sub { display: block; font-size: 9px; color: #9ca3af; margin-top: 2px; }
+  .info-section { padding: 18px 28px 12px; flex: 1; display: flex; flex-direction: column; }
+  .info-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 14px; }
+  .info-header-left .info-label-sm { font-size: 10px; font-weight: 700; letter-spacing: 2px; color: ${color.primary}; display: block; margin-bottom: 2px; }
+  .info-header-left h2 { font-size: 20px; font-weight: 800; color: #1f2937; }
+  .info-header-right .mgmt-label { font-size: 10px; color: #9ca3af; display: block; }
+  .info-header-right .mgmt-value { font-size: 16px; font-weight: 800; color: #1f2937; }
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border-top: 2px solid #1f2937; }
+  .info-row { display: flex; border-bottom: 1px solid #e5e7eb; }
+  .info-row.full { grid-column: 1 / -1; }
+  .info-row .label { width: 100px; padding: 10px 12px; font-size: 12px; font-weight: 700; color: #374151; background: #f9fafb; border-right: 1px solid #e5e7eb; display: flex; align-items: center; flex-shrink: 0; }
+  .info-row .value { flex: 1; padding: 10px 12px; font-size: 12px; font-weight: 800; color: #111827; display: flex; align-items: center; word-break: break-all; }
+  .notice-box { background: #f4f6f8; padding: 14px 16px; margin-top: 10px; border-radius: 4px; flex: 1; }
+  .notice-title { font-size: 10px; font-weight: 700; color: ${color.primary}; letter-spacing: 1px; margin-bottom: 4px; }
+  .notice-content { font-size: 11px; color: #1f2937; font-weight: 600; line-height: 1.7; white-space: pre-wrap; }
+  @media print {
+    html, body { width: 210mm; height: 297mm; }
+    .page { width: 210mm; min-height: 297mm; max-height: 297mm; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="hero">
+    ${mainImg ? `<img src="${mainImg}" alt="매물 사진" />` : '<div style="width:100%;height:100%;background:#e5e7eb;"></div>'}
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+      <div class="hero-tag">${info.transactionType || '매매'}</div>
+      <div class="hero-title">${info.address}</div>
+      <div class="hero-slogan">${info.promotionText}</div>
+      <div class="hero-sub">${info.subTitle}</div>
+    </div>
+  </div>
+  <div class="stats-bar">
+    ${statsData.map(s => `
+      <div class="stats-item">
+        <span class="stats-label">${s.label}</span>
+        <span class="stats-value">${s.value}</span>
+        <span class="stats-sub">${s.sub}</span>
+      </div>
+    `).join('')}
+  </div>
+  <div class="info-section">
+    <div class="info-header">
+      <div class="info-header-left">
+        <span class="info-label-sm">PROPERTY INFO</span>
+        <h2>매물 상세 정보</h2>
+      </div>
+      <div class="info-header-right">
+        <span class="mgmt-label">월 관리비</span>
+        <span class="mgmt-value">${info.managementFee || '-'}</span>
+      </div>
+    </div>
+    <div class="info-grid">
+      ${detailRows.map((r, i) => {
+        const isLast = i === detailRows.length - 1;
+        return `<div class="info-row${isLast ? ' full' : ''}">
+          <div class="label">${r.l}</div>
+          <div class="value">${r.v || '-'}</div>
+        </div>`;
+      }).join('')}
+    </div>
+    ${info.noticeContent ? `
+      <div class="notice-box">
+        <div class="notice-title">${info.noticeTitle || 'DETAIL INFO'}</div>
+        <div class="notice-content">${info.noticeContent}</div>
+      </div>
+    ` : ''}
+  </div>
+</div>
+</body>
+</html>`);
+    printWindow.document.close();
+    printWindow.onload = () => { printWindow.focus(); printWindow.print(); };
+    setTimeout(() => { printWindow.focus(); printWindow.print(); }, 1500);
+  };
+
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden font-sans">
-      <style>{`
-        @media print {
-          @page { size: A4 portrait; margin: 0; }
-          body * { visibility: hidden; }
-          #flyer-print-area, #flyer-print-area * { visibility: visible; }
-          #flyer-print-area {
-            position: absolute !important;
-            left: 0 !important;
-            top: 0 !important;
-            width: 860px !important;
-            transform-origin: top left !important;
-            transform: scale(0.92) !important;
-            margin: 0 !important;
-            padding: 0 !important;
-          }
-          /* Hide scrollbars during print */
-          ::-webkit-scrollbar { display: none; }
-        }
-      `}</style>
       {loadingData && (
         <div className="fixed inset-0 bg-slate-900/80 z-[200] flex flex-col items-center justify-center text-white backdrop-blur-sm">
           <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-amber-500 mb-6"></div>
@@ -1436,7 +1546,7 @@ ${clone.outerHTML}
 
         {/* Print Button */}
         <button 
-          onClick={() => window.print()}
+          onClick={handlePrintFlyer}
           className="py-3 px-5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 active:scale-95 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all duration-150 shadow-sm"
         >
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4 text-gray-500">
