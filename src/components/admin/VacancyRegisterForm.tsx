@@ -831,7 +831,6 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
               }} />
             </div>
           </div>
-          </div>
         </div>
       )}
       <style>{`
