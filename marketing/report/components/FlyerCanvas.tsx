@@ -1217,7 +1217,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
         {(activeTab === 'all' || activeTab === 3) && (
         <ReportPage 
             pageNumber={3} 
-            title={info.page3Title || "PROPERTY RENTAL REPORT"} 
+            title={info.page3Title || "임대 상세 현황"} 
             onUpdateTitle={(val) => handleTextChange('page3Title', val)}
             subtitle={info.page3Subtitle || "Rent Roll"} 
             onUpdateSubtitle={(val) => handleTextChange('page3Subtitle', val)}
@@ -1340,7 +1340,14 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                 };
 
                 return (
-                    <div className="w-full h-[550px] flex flex-col justify-between bg-white rounded-2xl border border-slate-100 p-6 shadow-sm overflow-hidden">
+                    <div className="flex flex-col h-full w-full">
+                        <div className="text-gray-600 font-bold text-sm mb-4">
+                            <EditableText 
+                                value={(info as any).page3HighlightHeader || "PROPERTY RENTAL REPORT"} 
+                                onChange={(val) => handleTextChange('page3HighlightHeader', val)} 
+                            />
+                        </div>
+                        <div className="w-full flex-1 flex flex-col justify-between bg-white rounded-2xl border border-slate-100 p-6 shadow-sm overflow-hidden">
                         <div className="overflow-y-auto custom-scrollbar flex-1 pr-1">
                             <table className="w-full text-left border-collapse table-fixed">
                                 <thead>
@@ -1520,6 +1527,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                 onChange={(val) => handleTextChange('leaseNotice', val)}
                             />
                         </div>
+                    </div>
                     </div>
                 );
             })()}
