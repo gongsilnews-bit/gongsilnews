@@ -1303,10 +1303,19 @@ ${clone.outerHTML}
       { l: '옵션 정보', v: info.options },
     ];
 
-    const printWindow = window.open('', '_blank', 'width=800,height=1100');
-    if (!printWindow) return;
+    // iframe 방식으로 팝업 차단 우회
+    let printFrame = document.getElementById('flyer-print-frame') as HTMLIFrameElement;
+    if (!printFrame) {
+      printFrame = document.createElement('iframe');
+      printFrame.id = 'flyer-print-frame';
+      printFrame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:none;';
+      document.body.appendChild(printFrame);
+    }
+    const printDoc = printFrame.contentWindow?.document;
+    if (!printDoc) return;
 
-    printWindow.document.write(`<!DOCTYPE html>
+    printDoc.open();
+    printDoc.write(`<!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
@@ -1402,9 +1411,16 @@ ${clone.outerHTML}
 </div>
 </body>
 </html>`);
-    printWindow.document.close();
-    printWindow.onload = () => { printWindow.focus(); printWindow.print(); };
-    setTimeout(() => { printWindow.focus(); printWindow.print(); }, 1500);
+    printDoc.close();
+    // 이미지 로딩 대기 후 인쇄
+    setTimeout(() => {
+      try {
+        printFrame.contentWindow?.focus();
+        printFrame.contentWindow?.print();
+      } catch (e) {
+        console.error('Print error:', e);
+      }
+    }, 800);
   };
 
   return (
