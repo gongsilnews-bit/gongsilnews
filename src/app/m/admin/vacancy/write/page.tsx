@@ -750,6 +750,10 @@ function MobileVacancyWrite() {
           "반드시 자동 입력된 내용이 정확한지 다시 한번 확인해 주세요!\n" +
           "(※ 면적은 연동되지 않으므로 수기로 직접 입력해 주세요)"
         );
+      }
+    } catch (err) {
+      console.error(err);
+      alert("건축물대장 조회 중 오류가 발생했습니다.");
     } finally {
       setFetchingLedger(false);
     }
