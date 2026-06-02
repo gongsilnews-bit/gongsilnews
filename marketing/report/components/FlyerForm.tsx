@@ -399,7 +399,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
 
 
                   <div>
-                      <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">매각 핵심 하이라이트</h4>
+                      <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">매물 핵심 하이라이트</h4>
                       <div className="space-y-2">
                           {info.highlights.map((hl, i) => (
                               <div key={i} className="flex gap-2 items-center bg-gray-50 p-2 rounded border border-transparent hover:border-gray-200 transition-colors">
@@ -578,10 +578,6 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                           <div>
                               <label className="text-xs text-gray-500 font-bold">좌측 텍스트 (STRATEGIC ADVISORY)</label>
                               <textarea name="valuationText" value={info.valuationText || ""} onChange={handleChange} className="w-full border rounded p-2 text-sm" rows={4} />
-                          </div>
-                          <div>
-                              <label className="text-xs text-gray-500 font-bold">우측 텍스트 (그래프 하단)</label>
-                              <textarea name="chartAdviseText" value={(info as any).chartAdviseText || ""} onChange={handleChange} className="w-full border rounded p-2 text-sm" rows={4} />
                           </div>
                       </div>
                   </div>
