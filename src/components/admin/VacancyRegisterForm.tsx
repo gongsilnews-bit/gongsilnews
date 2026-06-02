@@ -1240,11 +1240,17 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                   onClick={fetchBuildingLedger}
                   disabled={fetchingLedger}
                   style={{ 
-                    height: 32, padding: "0 12px", background: fetchingLedger ? "#e5e7eb" : (darkMode ? "#3b2f1e" : "#fef3c7"), 
-                    color: fetchingLedger ? "#9ca3af" : "#d97706", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: fetchingLedger ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 6,
-                    marginLeft: "auto"
-                  }}>
-                  {fetchingLedger ? "⏳ 연동 중..." : "📋 건축물대장 연동"}
+                    height: 32, padding: "0 14px", 
+                    background: fetchingLedger ? "#e5e7eb" : (darkMode ? "linear-gradient(135deg, #422006, #78350f)" : "linear-gradient(135deg, #fef3c7, #fde68a)"), 
+                    color: fetchingLedger ? "#9ca3af" : (darkMode ? "#fcd34d" : "#d97706"), 
+                    border: "none", borderRadius: 6, fontSize: 13, fontWeight: 800, 
+                    cursor: fetchingLedger ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 6,
+                    marginLeft: "auto", boxShadow: fetchingLedger ? "none" : "0 2px 8px rgba(217,119,6,0.15)", transition: "all 0.2s"
+                  }}
+                  onMouseEnter={e => { if(!fetchingLedger) e.currentTarget.style.transform = "translateY(-1px)" }} 
+                  onMouseLeave={e => { if(!fetchingLedger) e.currentTarget.style.transform = "translateY(0)" }}
+                >
+                  {fetchingLedger ? "⏳ AI 데이터 불러오는 중..." : "✨ AI 건축물대장 자동완성"}
                 </button>
               )}
             </div>
