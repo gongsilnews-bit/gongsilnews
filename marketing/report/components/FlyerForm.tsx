@@ -171,6 +171,40 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
           ))}
       </div>
 
+      {/* Page Visibility Toggles */}
+      <div className="mb-6 p-3 bg-blue-50/50 border border-blue-100 rounded-lg shrink-0">
+          <div className="text-xs font-bold text-blue-800 mb-2 flex items-center gap-1.5">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+              출력(포함)할 페이지 선택
+          </div>
+          <div className="flex flex-wrap gap-2">
+              {[1, 2, 3, 4, 5, 6].map(pageNum => {
+                  const visiblePages = info.visiblePages || [1, 2, 3, 4, 5, 6];
+                  const isVisible = visiblePages.includes(pageNum);
+                  return (
+                      <label key={pageNum} className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[10px] font-bold cursor-pointer transition-colors border ${isVisible ? 'bg-white border-blue-200 text-blue-700 shadow-sm' : 'bg-gray-50 border-gray-200 text-gray-400'}`}>
+                          <input 
+                              type="checkbox" 
+                              className="w-3 h-3 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                              checked={isVisible}
+                              onChange={(e) => {
+                                  let newVisible = [...visiblePages];
+                                  if (e.target.checked) {
+                                      if (!newVisible.includes(pageNum)) newVisible.push(pageNum);
+                                  } else {
+                                      newVisible = newVisible.filter(p => p !== pageNum);
+                                  }
+                                  newVisible.sort();
+                                  setInfo({ ...info, visiblePages: newVisible });
+                              }}
+                          />
+                          {pageNum}페이지
+                      </label>
+                  );
+              })}
+          </div>
+      </div>
+
       {/* Tab Content */}
       <div className="flex-1 overflow-y-auto pr-2 pb-10 space-y-6">
           

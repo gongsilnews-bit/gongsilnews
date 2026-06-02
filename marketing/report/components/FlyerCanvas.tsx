@@ -206,6 +206,8 @@ const EditableImage = ({
 const ReportPage = ({ 
     children, 
     pageNumber, 
+    pageString,
+    isHidden,
     title, 
     subtitle, 
     badgeText,
@@ -218,6 +220,8 @@ const ReportPage = ({
 }: { 
     children: React.ReactNode, 
     pageNumber: number, 
+    pageString?: string,
+    isHidden?: boolean,
     title: string, 
     subtitle: string, 
     badgeText?: string,
@@ -230,6 +234,11 @@ const ReportPage = ({
 }) => {
     return (
         <div data-export-id={exportId} className="relative bg-white w-[1122px] h-[794px] overflow-hidden flex flex-col shadow-2xl mb-8" style={{ pageBreakAfter: 'always' }}>
+            {isHidden && (
+                <div className="absolute top-0 left-0 right-0 z-50 bg-red-500/90 text-white py-1.5 text-center text-sm font-bold shadow-md tracking-wider backdrop-blur-sm">
+                    ⚠️ 현재 출력(PDF/인쇄)에서 제외된 페이지입니다. (좌측 폼 메뉴에서 설정을 변경할 수 있습니다.)
+                </div>
+            )}
             {/* Header */}
             <div className="h-[120px] bg-[#0d1424] text-white px-10 py-6 flex justify-between items-end shrink-0">
                 <div>
@@ -287,7 +296,7 @@ const ReportPage = ({
                     ) : footerText}
                 </div>
                 <div className="text-gray-400 text-xs font-bold tracking-widest">
-                    PAGE 0{pageNumber} / 06
+                    {pageString || `PAGE 0${pageNumber} / 06`}
                 </div>
             </div>
         </div>
@@ -694,12 +703,31 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
     }
   };
 
+  const visiblePages = info.visiblePages || [1, 2, 3, 4, 5, 6];
+  const getPageStatus = (pageNum: number) => {
+      const isVisible = visiblePages.includes(pageNum);
+      const shouldRender = (activeTab === 'all' && isVisible) || activeTab === pageNum;
+      
+      let pageString = `PAGE 0${pageNum} / 06`;
+      if (isVisible) {
+          const idx = visiblePages.indexOf(pageNum) + 1;
+          const total = visiblePages.length;
+          pageString = `PAGE 0${idx} / 0${total}`;
+      } else {
+          pageString = `EXCLUDED`;
+      }
+      
+      return { isVisible, shouldRender, pageString, isHidden: !isVisible };
+  };
+
   return (
     <div className="flex flex-col items-center p-8 bg-gray-100" ref={ref}>
         {/* PAGE 1: OVERVIEW */}
-        {(activeTab === 'all' || activeTab === 1) && (
+        {getPageStatus(1).shouldRender && (
         <ReportPage 
             pageNumber={1} 
+            pageString={getPageStatus(1).pageString}
+            isHidden={getPageStatus(1).isHidden}
             title={targetTitle} 
             subtitle={info.subTitle} 
             badgeText={info.pageBadges?.page1 || "FOR SALE"}
@@ -925,9 +953,11 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
         )}
  
         {/* PAGE 2: STATUS & VALUATION */}
-        {(activeTab === 'all' || activeTab === 2) && (
+        {getPageStatus(2).shouldRender && (
         <ReportPage 
             pageNumber={2} 
+            pageString={getPageStatus(2).pageString}
+            isHidden={getPageStatus(2).isHidden}
             title={info.page2Title || "매물설명 & 시세"} 
             onUpdateTitle={(val) => handleTextChange('page2Title', val)}
             subtitle={info.page2Subtitle || "Status & Valuation"} 
@@ -1183,9 +1213,11 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
         )}
 
         {/* PAGE 3: LEASE STATUS (NEW DYNAMIC TABLE PAGE) */}
-        {(activeTab === 'all' || activeTab === 3) && (
+        {getPageStatus(3).shouldRender && (
         <ReportPage 
             pageNumber={3} 
+            pageString={getPageStatus(3).pageString}
+            isHidden={getPageStatus(3).isHidden}
             title={info.page3Title || "임대 상세 현황"} 
             onUpdateTitle={(val) => handleTextChange('page3Title', val)}
             subtitle={info.page3Subtitle || "Rent Roll"} 
@@ -1504,9 +1536,11 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
         )}
 
         {/* PAGE 4: PHOTOS */}
-        {(activeTab === 'all' || activeTab === 4) && (
+        {getPageStatus(4).shouldRender && (
         <ReportPage 
             pageNumber={4} 
+            pageString={getPageStatus(4).pageString}
+            isHidden={getPageStatus(4).isHidden}
             title={info.page4Title || "매물 사진"} 
             onUpdateTitle={(val) => handleTextChange('page4Title', val)}
             subtitle={info.page4Subtitle || "Property Photo"} 
@@ -1824,9 +1858,11 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
         )}
 
         {/* PAGE 5: AREA ANALYSIS */}
-        {(activeTab === 'all' || activeTab === 5) && (
+        {getPageStatus(5).shouldRender && (
         <ReportPage 
             pageNumber={5} 
+            pageString={getPageStatus(5).pageString}
+            isHidden={getPageStatus(5).isHidden}
             title={info.page5Title || "입지 및 위치도"} 
             onUpdateTitle={(val) => handleTextChange('page5Title', val)}
             subtitle={info.page5Subtitle || "Strategic Connectivity"} 
@@ -1997,9 +2033,11 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
         )}
 
         {/* PAGE 6: ROADMAP */}
-        {(activeTab === 'all' || activeTab === 6) && (
+        {getPageStatus(6).shouldRender && (
         <ReportPage 
             pageNumber={6} 
+            pageString={getPageStatus(6).pageString}
+            isHidden={getPageStatus(6).isHidden}
             title={info.page6Title || "가치 및 로드맵"} 
             onUpdateTitle={(val) => handleTextChange('page6Title', val)}
             subtitle={info.page6Subtitle || "Value & Roadmap"} 
