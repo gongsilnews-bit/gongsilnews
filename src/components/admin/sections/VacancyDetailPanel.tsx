@@ -152,28 +152,24 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
     const doInit = () => {
       if (!window.kakao?.maps) return;
       window.kakao.maps.load(() => {
-        if (!window.kakao.maps.services || !window.kakao.maps.services.Geocoder) {
-          console.warn("Kakao maps services library is not loaded. Reloading Kakao SDK.");
-          const script = document.createElement('script');
-          script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoApiKey}&libraries=services,clusterer&autoload=false`;
-          script.onload = () => {
-            window.kakao.maps.load(() => {
-              if (window.kakao.maps.services?.Geocoder) {
-                renderMapAndRoadview(searchAddr);
-              }
-            });
-          };
-          document.head.appendChild(script);
-          return;
-        }
         renderMapAndRoadview(searchAddr);
       });
     };
 
-    if (window.kakao?.maps && window.kakao.maps.services?.Geocoder) {
+    if (window.kakao && window.kakao.maps) {
       doInit();
       return;
     }
+
+    const existingScript = document.querySelector('script[src*="dapi.kakao.com"]');
+    if (existingScript) {
+      existingScript.addEventListener('load', doInit);
+      setTimeout(() => {
+        if (window.kakao && window.kakao.maps) doInit();
+      }, 500);
+      return;
+    }
+
     const script = document.createElement('script');
     script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoApiKey}&libraries=services,clusterer&autoload=false`;
     script.onload = doInit;
