@@ -1447,7 +1447,6 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
               <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, padding: 16, marginBottom: 24 }}>
                 <div style={{ fontSize: 13, fontWeight: 800, color: "#1e293b", marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>
                   <span>🏢 건축물대장 추가 스펙</span>
-                  <span style={{ fontSize: 11, background: "#dbeafe", color: "#1e40af", padding: "2px 6px", borderRadius: 4 }}>대장 연동 권장</span>
                   <button 
                     type="button" 
                     onClick={fetchBuildingLedger}
