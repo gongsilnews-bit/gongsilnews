@@ -104,12 +104,15 @@ export function useVacancyFilters(initialVacancies: any[]) {
         });
       } else {
         // 일반 공실 매물 필터링
-        isPropMatch = filters.propertyTypes.includes(v.property_type);
+        isPropMatch = filters.propertyTypes.includes(v.sub_category) || filters.propertyTypes.includes(v.property_type);
         
-        // 🚀 [대표님 지침] 원룸/투룸 초강력 매칭 예외 보정 장치
+        // 🚀 [대표님 지침] 원룸/투룸 초강력 매칭 및 건물 예외 보정 장치
         if (!isPropMatch) {
           if (v.property_type === "원룸·투룸(풀옵션)") {
             isPropMatch = filters.propertyTypes.includes("원룸") || filters.propertyTypes.includes("1.5룸") || filters.propertyTypes.includes("투룸");
+          }
+          if (filters.propertyTypes.includes("건물") && (v.sub_category === "빌딩/건물" || v.sub_category === "건물/빌딩")) {
+            isPropMatch = true;
           }
         }
       }
