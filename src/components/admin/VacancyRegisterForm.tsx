@@ -267,6 +267,11 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
     if (editData.sido) setSido(editData.sido);
     if (editData.sigungu) setSigungu(editData.sigungu);
     if (editData.dong) setDong(editData.dong);
+    if (editData.metadata?.main_usage) setMainUsage(editData.metadata.main_usage);
+    if (editData.metadata?.elevator_cnt) setElevatorCnt(editData.metadata.elevator_cnt);
+    if (editData.metadata?.is_illegal) setIsIllegal(editData.metadata.is_illegal);
+    if (editData.metadata?.building_structure) setBuildingStructure(editData.metadata.building_structure);
+
     if (editData.detail_addr) setDetailAddr(editData.detail_addr);
     if (editData.building_name) setBuildingName(editData.building_name);
     if (editData.apt_dong) setAptDong(editData.apt_dong);
@@ -380,6 +385,11 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
     if (editData.sido) setSido(editData.sido);
     if (editData.sigungu) setSigungu(editData.sigungu);
     if (editData.dong) setDong(editData.dong);
+    if (editData.metadata?.main_usage) setMainUsage(editData.metadata.main_usage);
+    if (editData.metadata?.elevator_cnt) setElevatorCnt(editData.metadata.elevator_cnt);
+    if (editData.metadata?.is_illegal) setIsIllegal(editData.metadata.is_illegal);
+    if (editData.metadata?.building_structure) setBuildingStructure(editData.metadata.building_structure);
+
     if (editData.detail_addr) setDetailAddr(editData.detail_addr);
     if (editData.building_name) setBuildingName(editData.building_name);
     if (editData.apt_dong) setAptDong(editData.apt_dong);
@@ -1837,6 +1847,11 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                       ...(editData?.metadata || {}),
                       land_share_m2: landShareM2 ? parseFloat(landShareM2) : undefined,
                       land_share_py: landSharePy ? parseFloat(landSharePy) : undefined,
+                      main_usage: mainUsage,
+                      elevator_cnt: elevatorCnt,
+                      is_illegal: isIllegal,
+                      building_structure: buildingStructure,
+
                     },
                     client_name: clientName,
                     client_phone: clientPhone,

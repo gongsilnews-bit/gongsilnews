@@ -55,6 +55,11 @@ function MobileVacancyWrite() {
   const STEP_LABELS = ["분류/주소", "가격/면적", "사진·상세", "최종확인"];
 
   // 공실광고 기본
+  
+  const [mainUsage, setMainUsage] = useState("");
+  const [elevatorCnt, setElevatorCnt] = useState("");
+  const [isIllegal, setIsIllegal] = useState(false);
+  const [buildingStructure, setBuildingStructure] = useState("");
   const [propertyType, setPropertyTypeRaw] = useState("아파트·오피스텔");
   const [subCategory, setSubCategory] = useState("아파트");
 
@@ -558,6 +563,11 @@ function MobileVacancyWrite() {
           ...existingMetadata,
           land_share_m2: landShareM2 ? parseFloat(landShareM2) : undefined,
           land_share_py: landSharePy ? parseFloat(landSharePy) : undefined,
+          main_usage: mainUsage,
+          elevator_cnt: elevatorCnt,
+          is_illegal: isIllegal,
+          building_structure: buildingStructure,
+
         },
         consent: true, status,
       };
@@ -693,29 +703,29 @@ function MobileVacancyWrite() {
         }
         
         let p = ledger.mainPurpsCdNm || "";
-        if (p.includes("단독주택") || p.includes("다가구") || p.includes("다세대")) {
+        if (p.includes("단독주택") || p.includes("다세대") || p.includes("연립")) {
            setPropertyType("빌라·주택");
            setSubCategory("빌라/연립");
-        } else if (p.includes("근린생활") || p.includes("상업") || p.includes("업무")) {
+        } else if (p.includes("근린생활") || p.includes("상업") || p.includes("업무") || p.includes("공장") || p.includes("창고")) {
            setPropertyType("상가·사무실·건물·공장·토지");
-           setSubCategory(p.includes("업무") ? "사무실" : "상가");
+           setSubCategory(p.includes("업무") ? "사무실" : p.includes("공장") ? "공장/창고" : "상가");
         }
 
+        if (p) setMainUsage(p);
+        if (ledger.strctCdNm) setBuildingStructure(ledger.strctCdNm);
+        const elvt = (Number(ledger.rideUseElvtCnt) || 0) + (Number(ledger.emgenUseElvtCnt) || 0);
+        if (elvt > 0) setElevatorCnt(elvt.toString());
+        
         const addInfo = [];
-        if (p) addInfo.push(`주용도: ${p}`);
-        if (ledger.strctCdNm) addInfo.push(`구조: ${ledger.strctCdNm}`);
-        if (ledger.rideUseElvtCnt || ledger.emgenUseElvtCnt) {
-          addInfo.push(`승강기: 승용 ${ledger.rideUseElvtCnt || 0}대 / 비상용 ${ledger.emgenUseElvtCnt || 0}대`);
-        }
         if (addInfo.length > 0) {
-          setDescription(prev => (prev ? prev + "\n" : "") + "■ 건축물대장 정보 ■\n" + addInfo.join("\n"));
+          setDescription(prev => (prev ? prev + "
+" : "") + "[건축물대장 추가 정보]
+" + addInfo.join("
+"));
         }
         
-        alert("건축물대장 정보를 성공적으로 불러와 빈칸을 채웠습니다!");
-      }
-    } catch (e) {
-      console.error(e);
-      alert("건축물대장 연동 중 오류가 발생했습니다.");
+        alert("✨ AI 건축물대장 분석 완료!
+면적, 층수, 주용도, 승강기 정보가 자동 입력되었습니다.");
     } finally {
       setFetchingLedger(false);
     }
@@ -964,6 +974,44 @@ function MobileVacancyWrite() {
             </button>
           </div>
         )}
+
+
+        {/* 상업용 건물 전용 추가 스펙 (API 연동 항목) */}
+        {propertyType === "상가·사무실·건물·공장·토지" && subCategory !== "토지" && (
+          <div style={{ background: "#f8fafc", borderRadius: 14, padding: 16, marginBottom: 12, border: "1px solid #e2e8f0" }}>
+            <div style={{ fontSize: 13, fontWeight: 800, color: "#1e293b", marginBottom: 16, display: "flex", alignItems: "center", gap: 6 }}>
+              <span>🏢 상업용 추가 스펙</span>
+              <span style={{ fontSize: 11, background: "#dbeafe", color: "#1e40af", padding: "2px 6px", borderRadius: 4 }}>대장 연동 권장</span>
+            </div>
+            
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ fontSize: 12, fontWeight: 700, color: "#4b5563", marginBottom: 6, display: "block" }}>건축물 주용도</label>
+              <input type="text" placeholder="예: 제2종근린생활시설" value={mainUsage} onChange={(e) => setMainUsage(e.target.value)} style={{ width: "100%", height: 46, borderRadius: 8, border: "1px solid #d1d5db", padding: "0 14px", fontSize: 14, background: "#fff" }} />
+            </div>
+            
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ fontSize: 12, fontWeight: 700, color: "#4b5563", marginBottom: 6, display: "block" }}>건물 구조</label>
+              <input type="text" placeholder="예: 철근콘크리트구조" value={buildingStructure} onChange={(e) => setBuildingStructure(e.target.value)} style={{ width: "100%", height: 46, borderRadius: 8, border: "1px solid #d1d5db", padding: "0 14px", fontSize: 14, background: "#fff" }} />
+            </div>
+
+            <div style={{ display: "flex", gap: 12, alignItems: "flex-end" }}>
+              <div style={{ flex: 1 }}>
+                <label style={{ fontSize: 12, fontWeight: 700, color: "#4b5563", marginBottom: 6, display: "block" }}>승강기 (대수)</label>
+                <div style={{ position: "relative" }}>
+                  <input type="number" placeholder="0" value={elevatorCnt} onChange={(e) => setElevatorCnt(e.target.value)} style={{ width: "100%", height: 46, borderRadius: 8, border: "1px solid #d1d5db", padding: "0 30px 0 14px", fontSize: 14, background: "#fff", textAlign: "right" }} />
+                  <span style={{ position: "absolute", right: 14, top: 14, fontSize: 14, color: "#6b7280" }}>대</span>
+                </div>
+              </div>
+              <div style={{ flex: 1.2 }}>
+                <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, height: 46, background: "#fff", border: "1px solid #e2e8f0", borderRadius: 8 }}>
+                  <input type="checkbox" checked={isIllegal} onChange={(e) => setIsIllegal(e.target.checked)} style={{ width: 18, height: 18, accentColor: "#ef4444" }} />
+                  <span style={{ fontSize: 13, fontWeight: 700, color: isIllegal ? "#ef4444" : "#4b5563" }}>⚠️ 위반건축물</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* 2. 거래/금액 */}
         <div style={{ background:"#fff", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.03)", border:"1px solid #f3f4f6" }}>
           <div style={{ fontSize:16, fontWeight:800, color:"#111", borderLeft:"4px solid #1a73e8", paddingLeft:10, marginBottom:14 }}>거래정보</div>
