@@ -164,11 +164,14 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     }
     return "auction";
   });
-  // 탭별 pill 캐시 (메모리 전용 — 새로고침 시 전체선택으로 초기화)
-  const pillCacheRef = useRef<Record<string, string[]>>({});
   const [activePills, setActivePills] = useState<string[]>(() => {
     if (typeof window !== "undefined") {
       const cat = localStorage.getItem("gongsil_category") || "auction";
+      // sessionStorage에서 복원 (새로고침 시 유지, 브라우저 재접속 시 초기화)
+      const saved = sessionStorage.getItem(`gongsil_pills_${cat}`);
+      if (saved) {
+        try { return JSON.parse(saved); } catch {}
+      }
       const config = CATEGORY_CONFIG[cat];
       if (config && config.pills) {
         return config.pills;
@@ -1704,20 +1707,21 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
       // 2차 카테고리가 사라지지 않도록 더블 클릭 시 변경 방지
       return;
     }
-    // 현재 탭의 pill 상태를 메모리 캐시에 저장
-    pillCacheRef.current[activeCategory] = activePills;
+    // 현재 탭의 pill 상태를 sessionStorage에 저장
+    sessionStorage.setItem(`gongsil_pills_${activeCategory}`, JSON.stringify(activePills));
 
     const newKey = key;
     setActiveCategory(newKey);
     setIsAuctionMode(newKey === "auction");
     setActiveMode(newKey === "auction" ? "경매" : "공실");
     
-    // 메모리 캐시에서 이전 pill 상태 복원, 없으면 전체선택
-    const cachedPills = pillCacheRef.current[newKey];
-    let pills: string[];
-    if (cachedPills && cachedPills.length > 0) {
-      pills = cachedPills;
-    } else {
+    // sessionStorage에서 이전 pill 상태 복원, 없으면 전체선택
+    const savedPills = sessionStorage.getItem(`gongsil_pills_${newKey}`);
+    let pills: string[] = [];
+    if (savedPills) {
+      try { pills = JSON.parse(savedPills); } catch {}
+    }
+    if (pills.length === 0) {
       const c = CATEGORY_CONFIG[newKey];
       pills = c && c.pills ? c.pills : [];
     }
@@ -1740,8 +1744,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
         const withoutOfficetel = prev.filter(x => x !== "오피스텔만 보기");
         next = withoutOfficetel.includes(p) ? withoutOfficetel.filter((x) => x !== p) : [...withoutOfficetel, p];
       }
-      // 메모리 캐시에도 반영
-      pillCacheRef.current[activeCategory] = next;
+      // sessionStorage에도 반영 (새로고침 시 유지)
+      sessionStorage.setItem(`gongsil_pills_${activeCategory}`, JSON.stringify(next));
       return next;
     });
   };
