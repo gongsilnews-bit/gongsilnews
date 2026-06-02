@@ -164,15 +164,11 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     }
     return "auction";
   });
+  // 탭별 pill 캐시 (메모리 전용 — 새로고침 시 전체선택으로 초기화)
+  const pillCacheRef = useRef<Record<string, string[]>>({});
   const [activePills, setActivePills] = useState<string[]>(() => {
     if (typeof window !== "undefined") {
-      const cat = localStorage.getItem("gongsil_category") || "all";
-      const saved = localStorage.getItem("gongsil_pills");
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch {}
-      }
+      const cat = localStorage.getItem("gongsil_category") || "auction";
       const config = CATEGORY_CONFIG[cat];
       if (config && config.pills) {
         return config.pills;
@@ -1708,25 +1704,24 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
       // 2차 카테고리가 사라지지 않도록 더블 클릭 시 변경 방지
       return;
     }
+    // 현재 탭의 pill 상태를 메모리 캐시에 저장
+    pillCacheRef.current[activeCategory] = activePills;
+
     const newKey = key;
     setActiveCategory(newKey);
     setIsAuctionMode(newKey === "auction");
     setActiveMode(newKey === "auction" ? "경매" : "공실");
     
-    const savedPillsKey = `gongsil_pills_${newKey}`;
-    const savedPills = localStorage.getItem(savedPillsKey);
-    let pills: string[] = [];
-    if (savedPills) {
-      try {
-        pills = JSON.parse(savedPills);
-      } catch {}
-    }
-    if (pills.length === 0) {
+    // 메모리 캐시에서 이전 pill 상태 복원, 없으면 전체선택
+    const cachedPills = pillCacheRef.current[newKey];
+    let pills: string[];
+    if (cachedPills && cachedPills.length > 0) {
+      pills = cachedPills;
+    } else {
       const c = CATEGORY_CONFIG[newKey];
       pills = c && c.pills ? c.pills : [];
     }
     setActivePills(pills);
-    localStorage.setItem("gongsil_pills", JSON.stringify(pills));
 
     setShowDetail(false);
     setShowDetailFilters(false);
@@ -1745,8 +1740,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
         const withoutOfficetel = prev.filter(x => x !== "오피스텔만 보기");
         next = withoutOfficetel.includes(p) ? withoutOfficetel.filter((x) => x !== p) : [...withoutOfficetel, p];
       }
-      localStorage.setItem("gongsil_pills", JSON.stringify(next));
-      localStorage.setItem(`gongsil_pills_${activeCategory}`, JSON.stringify(next));
+      // 메모리 캐시에도 반영
+      pillCacheRef.current[activeCategory] = next;
       return next;
     });
   };
