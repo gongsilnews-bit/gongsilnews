@@ -110,29 +110,56 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
     
     const renderMapAndRoadview = (addr: string) => {
       try {
+        const renderCoords = (latLng: any) => {
+          const exp = p.address_exposure || "";
+          const propType = p.property_type || "";
+          const subCategory = p.sub_category || "";
+          const isApt = ["아파트", "오피스텔", "도시형생활주택"].some(t => propType.includes(t) || subCategory.includes(t));
+          const isPrivateAddr = exp && exp !== "번지공개" && exp !== "지번공개" && exp !== "동/호수공개";
+          const useCircle = isPrivateAddr && !isApt;
+
+          if (mapRef.current) {
+            mapRef.current.innerHTML = '';
+            const map = new window.kakao.maps.Map(mapRef.current, { center: latLng, level: useCircle ? 5 : 3 });
+            if (useCircle) {
+              map.setMinLevel(5);
+              map.setMaxLevel(8);
+              new window.kakao.maps.Circle({
+                center: latLng, radius: 500, strokeWeight: 2, strokeColor: "#3b82f6", strokeOpacity: 0.6, strokeStyle: "solid", fillColor: "#3b82f6", fillOpacity: 0.15, map: map
+              });
+            } else {
+              new window.kakao.maps.Marker({ map, position: latLng });
+            }
+          }
+
+          if (roadviewRef.current) {
+            roadviewRef.current.innerHTML = '';
+            if (useCircle) {
+              roadviewRef.current.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#999;font-size:13px;background:#f4f5f7;">비공개 매물은 로드뷰가 제공되지 않습니다.</div>';
+            } else {
+              const rv = new window.kakao.maps.Roadview(roadviewRef.current);
+              const client = new window.kakao.maps.RoadviewClient();
+              client.getNearestPanoId(latLng, 50, (panoId: any) => {
+                if (panoId) {
+                  rv.setPanoId(panoId, latLng);
+                } else if (roadviewRef.current) {
+                  roadviewRef.current.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#999;font-size:13px;background:#f4f5f7;">해당 위치의 로드뷰 정보가 없습니다.</div>';
+                }
+              });
+            }
+          }
+        };
+
+        if (p.lat && p.lng) {
+          renderCoords(new window.kakao.maps.LatLng(p.lat, p.lng));
+          return;
+        }
+
         const geocoder = new window.kakao.maps.services.Geocoder();
         geocoder.addressSearch(addr, (result: any, status: any) => {
           if (status === window.kakao.maps.services.Status.OK) {
             const pos = new window.kakao.maps.LatLng(result[0].y, result[0].x);
-            // Map
-            if (mapRef.current) {
-              mapRef.current.innerHTML = '';
-              const map = new window.kakao.maps.Map(mapRef.current, { center: pos, level: 4 });
-              new window.kakao.maps.Marker({ map, position: pos });
-            }
-            // Roadview
-            if (roadviewRef.current) {
-              roadviewRef.current.innerHTML = '';
-              const rv = new window.kakao.maps.Roadview(roadviewRef.current);
-              const client = new window.kakao.maps.RoadviewClient();
-              client.getNearestPanoId(pos, 50, (panoId: any) => {
-                if (panoId) {
-                  rv.setPanoId(panoId, pos);
-                } else if (roadviewRef.current) {
-                  roadviewRef.current.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#999;font-size:13px;">해당 위치의 로드뷰 정보가 없습니다.</div>';
-                }
-              });
-            }
+            renderCoords(pos);
           } else {
             console.log("Address search failed for exact address. Trying dong search...");
             const fallbackAddr = [p.sido, p.sigungu, p.dong].filter(Boolean).join(' ');
