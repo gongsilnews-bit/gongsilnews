@@ -20,7 +20,7 @@ export interface FilterState {
 }
 
 const ALL_PROPERTY_TYPES = [
-  "아파트", "빌라/연립", "오피스텔", "원룸", "투룸", "단독/다가구",
+  "아파트", "빌라/연립", "오피스텔", "원룸", "1.5룸", "투룸", "단독/다가구",
   "전원주택", "상가주택", "재건축", "재개발",
   "상가", "사무실", "토지", "건물", "공장/창고", "지식산업센터"
 ];
@@ -109,7 +109,7 @@ export function useVacancyFilters(initialVacancies: any[]) {
         // 🚀 [대표님 지침] 원룸/투룸 초강력 매칭 예외 보정 장치
         if (!isPropMatch) {
           if (v.property_type === "원룸·투룸(풀옵션)") {
-            isPropMatch = filters.propertyTypes.includes("원룸") || filters.propertyTypes.includes("투룸");
+            isPropMatch = filters.propertyTypes.includes("원룸") || filters.propertyTypes.includes("1.5룸") || filters.propertyTypes.includes("투룸");
           }
         }
       }
