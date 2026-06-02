@@ -1078,6 +1078,18 @@ function App() {
         const clone = flyerRef.current.cloneNode(true) as HTMLElement;
         const imgs = clone.querySelectorAll('img');
         
+        // Remove editable attributes and styles for the exported HTML
+        const editableElements = clone.querySelectorAll('[contenteditable]');
+        editableElements.forEach(el => {
+            el.removeAttribute('contenteditable');
+            // Remove the focus and hover classes added for the editor
+            const editClasses = [
+                'outline-none', 'focus:outline', 'focus:outline-2', 'focus:outline-sky-400', 
+                'focus:bg-sky-400/10', 'hover:ring-1', 'hover:ring-sky-300', 'cursor-text'
+            ];
+            editClasses.forEach(cls => el.classList.remove(cls));
+        });
+
         // Remove fixed width/height for responsive behavior in downloaded file
         clone.style.width = '100%';
         clone.style.maxWidth = '860px';
