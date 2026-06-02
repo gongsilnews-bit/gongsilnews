@@ -51,7 +51,7 @@ function MobileVacancyWrite() {
   const [loadingEdit, setLoadingEdit] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const TOTAL_STEPS = 4;
-  const STEP_LABELS = ["기본정보", "위치정보", "사진·상세", "최종확인"];
+  const STEP_LABELS = ["분류/주소", "가격/면적", "사진·상세", "최종확인"];
 
   // 공실광고 기본
   const [propertyType, setPropertyTypeRaw] = useState("아파트·오피스텔");
@@ -662,7 +662,7 @@ function MobileVacancyWrite() {
   );
 
   const handleNextStep = () => {
-    if (currentStep === 1) {
+    if (currentStep === 2) {
       if (!deposit) {
         const el = document.getElementById("input-deposit");
         el?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -683,7 +683,7 @@ function MobileVacancyWrite() {
       }
     }
     
-    if (currentStep === 2) {
+    if (currentStep === 1) {
       if (!sido) {
         const el = document.getElementById("input-sido");
         el?.scrollIntoView({ behavior: "smooth", block: "center" });
