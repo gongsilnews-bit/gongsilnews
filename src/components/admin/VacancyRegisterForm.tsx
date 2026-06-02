@@ -303,7 +303,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
   }, [editData]);
 
   // 부동산 회원 전용 (Landlord/Realtor info)
-  const [realtorCommission, setRealtorCommission] = useState("공동중개 0%");
+  const [realtorCommission, setRealtorCommission] = useState("공동중개");
   const [exposureType, setExposureType] = useState("부동산노출"); // Default changed
   
   // 수정 가능한 부동산/기업정보
