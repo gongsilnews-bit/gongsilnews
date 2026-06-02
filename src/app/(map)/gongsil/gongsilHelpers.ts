@@ -196,7 +196,7 @@ export const getPriceText = (row: any) => {
   const monthlyManwon = row.monthly_rent ? Math.round(row.monthly_rent / 10000) : 0;
   return row.trade_type === "매매" ? `매매 ${formatAmount(row.deposit)}`
     : row.trade_type === "전세" ? `전세 ${formatAmount(row.deposit)}`
-    : `${formatAmount(row.deposit)}/${monthlyManwon}만`;
+    : `${row.trade_type || '월세'} ${formatAmount(row.deposit)}/${monthlyManwon}만`;
 };
 
 // 집합건물 판별 헬퍼
