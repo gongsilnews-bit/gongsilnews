@@ -598,9 +598,28 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                   <div>
                       <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">페이지 타이틀</h4>
                       <div className="space-y-3">
-                          <div><label className="text-xs text-gray-500">페이지 제목 (기본: 임대 상세 현황)</label><input name="page3Title" value={info.page3Title || "임대 상세 현황"} onChange={handleChange} className="w-full border rounded p-2 text-sm" /></div>
+                          <div><label className="text-xs text-gray-500">페이지 제목 (기본: PROPERTY RENTAL REPORT)</label><input name="page3Title" value={info.page3Title || "PROPERTY RENTAL REPORT"} onChange={handleChange} className="w-full border rounded p-2 text-sm" /></div>
                           <div><label className="text-xs text-gray-500">페이지 부제목</label><input name="page3Subtitle" value={info.page3Subtitle || "Rent Roll"} onChange={handleChange} className="w-full border rounded p-2 text-sm" /></div>
                           <div><label className="text-xs text-gray-500">표 하단 요약 (Total Summary)</label><input name="leaseSummaryText" value={(info as any).leaseSummaryText || "총 6세대 / 보증금 0원 / 월세 0원"} onChange={handleChange} className="w-full border rounded p-2 text-sm" /></div>
+                          
+                          <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100">
+                              <span className="font-bold text-slate-700 text-xs">우측 설명란 표시</span>
+                              <label className="relative inline-flex items-center cursor-pointer">
+                                  <input 
+                                      type="checkbox" 
+                                      checked={(info as any).showLeaseSummaryDesc !== false} 
+                                      onChange={(e) => setInfo({ ...info, showLeaseSummaryDesc: e.target.checked })}
+                                      className="sr-only peer"
+                                  />
+                                  <div className="w-8 h-4 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-orange-500"></div>
+                              </label>
+                          </div>
+                          {(info as any).showLeaseSummaryDesc !== false && (
+                              <div>
+                                  <label className="text-xs text-gray-500">우측 설명 내용</label>
+                                  <textarea name="leaseSummaryDesc" value={(info as any).leaseSummaryDesc || "임대 수익률 및 상세 조건은 협의 가능합니다."} onChange={handleChange} className="w-full border rounded p-2 text-sm" rows={2} />
+                              </div>
+                          )}
                       </div>
                   </div>
 

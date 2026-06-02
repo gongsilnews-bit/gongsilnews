@@ -1217,7 +1217,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
         {(activeTab === 'all' || activeTab === 3) && (
         <ReportPage 
             pageNumber={3} 
-            title={info.page3Title || "임대 상세 현황"} 
+            title={info.page3Title || "PROPERTY RENTAL REPORT"} 
             onUpdateTitle={(val) => handleTextChange('page3Title', val)}
             subtitle={info.page3Subtitle || "Rent Roll"} 
             onUpdateSubtitle={(val) => handleTextChange('page3Subtitle', val)}
@@ -1492,9 +1492,9 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                             </table>
                         </div>
                         
-                        {/* Custom Total / Summary Block */}
-                        <div className="flex justify-start mt-3 pt-2">
-                            <div className="bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 flex items-center shadow-sm">
+                        {/* Custom Total / Summary Block & Explanation */}
+                        <div className="flex justify-between items-stretch mt-3 pt-2 gap-4">
+                            <div className="bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 flex items-center shadow-sm shrink-0">
                                 <span className="text-[11px] font-bold text-slate-500 mr-3 uppercase tracking-wider border-r border-slate-300 pr-3">Total Summary</span>
                                 <div className="text-xs font-bold text-slate-800">
                                     <EditableText 
@@ -1503,6 +1503,14 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                     />
                                 </div>
                             </div>
+                            {(info as any).showLeaseSummaryDesc !== false && (
+                                <div className="flex-1 bg-white border border-slate-200 rounded-lg px-4 py-2 text-xs text-slate-600 shadow-sm flex items-center h-auto min-h-[36px]">
+                                    <EditableText 
+                                        value={(info as any).leaseSummaryDesc || "임대 수익률 및 상세 조건은 협의 가능합니다."} 
+                                        onChange={(val) => handleTextChange('leaseSummaryDesc', val)} 
+                                    />
+                                </div>
+                            )}
                         </div>
 
                         {/* Notice text block */}
