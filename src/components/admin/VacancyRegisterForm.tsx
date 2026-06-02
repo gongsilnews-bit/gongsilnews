@@ -831,13 +831,15 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
               }} />
             </div>
           </div>
-          <style>{`
-            @keyframes aiSpin { to { transform: rotate(360deg); } }
-            @keyframes aiProgress { 0% { background-position: 200% 0; width: 30%; } 50% { width: 70%; } 100% { background-position: -200% 0; width: 30%; } }
-            @keyframes aiPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); } 50% { box-shadow: 0 0 0 6px rgba(239,68,68,0); } }
-          `}</style>
+          </div>
         </div>
       )}
+      <style>{`
+        @keyframes aiSpin { to { transform: rotate(360deg); } }
+        @keyframes aiProgress { 0% { background-position: 200% 0; width: 30%; } 50% { width: 70%; } 100% { background-position: -200% 0; width: 30%; } }
+        @keyframes aiPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); } 50% { box-shadow: 0 0 0 6px rgba(239,68,68,0); } }
+      `}</style>
+      
       {/* ── AI 멘트 마법사 로딩 오버레이 ── */}
       {isAIGenerating && (
         <div style={{
@@ -849,7 +851,15 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
             background: darkMode ? "#25262b" : "#fff", borderRadius: 20, padding: "40px 48px",
             boxShadow: "0 20px 60px rgba(0,0,0,0.3)", textAlign: "center", maxWidth: 380,
           }}>
-            <div style={{ fontSize: 40, marginBottom: 16, animation: "aiSpin 2s linear infinite" }}>✨</div>
+            <div style={{
+              width: 60, height: 60, margin: "0 auto 20px",
+              border: "4px solid #e5e7eb", borderTopColor: "#8b5cf6",
+              borderRadius: "50%",
+              animation: "aiSpin 1s linear infinite",
+              display: "flex", alignItems: "center", justifyContent: "center"
+            }}>
+              <span style={{ animation: "aiSpin 3s linear infinite reverse", fontSize: 24 }}>✨</span>
+            </div>
             <div style={{ fontSize: 18, fontWeight: 800, color: darkMode ? "#e1e4e8" : "#111827", marginBottom: 8 }}>
               AI 멘트 마법사 작성 중
             </div>
