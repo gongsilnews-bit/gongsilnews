@@ -2529,7 +2529,9 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                       전체
                                     </button>
                                     
-                                    {["매매", "전세", "월세", "단기"].map((type) => {
+                                    {["매매", "전세", "월세", "단기"]
+                                      .filter((type) => !(filterCategory === "원룸·투룸(풀옵션)" && type === "매매"))
+                                      .map((type) => {
                                       const isSel = tempFilterTradeTypes.includes(type);
                                       return (
                                         <button

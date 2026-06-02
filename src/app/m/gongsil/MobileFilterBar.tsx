@@ -213,7 +213,7 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
 
       {/* ═══ 거래방식 시트 ═══ */}
       {activePanel === "trade" && renderSheet("거래방식", (
-        <TradeTypeFilterPanel filters={filters} onFilterChange={onFilterChange} TRADE_TYPES={TRADE_TYPES} />
+        <TradeTypeFilterPanel filters={filters} onFilterChange={onFilterChange} TRADE_TYPES={TRADE_TYPES.filter(t => !(filters.propertyTypes.length > 0 && filters.propertyTypes.every(p => p === "원룸" || p === "투룸") && t === "매매"))} />
       ))}
 
       {/* ═══ 가격 시트 ═══ */}
@@ -267,7 +267,7 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
             {/* 거래유형 */}
             <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
               <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>거래유형</div>
-              <TradeTypeFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} TRADE_TYPES={TRADE_TYPES} />
+              <TradeTypeFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} TRADE_TYPES={TRADE_TYPES.filter(t => !(tempFilters.propertyTypes.length > 0 && tempFilters.propertyTypes.every(p => p === "원룸" || p === "투룸") && t === "매매"))} />
             </div>
 
             {/* 공실광고유형 */}

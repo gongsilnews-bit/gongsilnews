@@ -966,7 +966,9 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
             {/* 거래유형 */}
             <label style={labelStyle}>거래유형 {reqMark}</label>
             <div style={{ display: "flex", gap: 10, marginBottom: 24 }}>
-              {["매매", "전세", "월세", "단기"].map(t => (
+              {["매매", "전세", "월세", "단기"]
+                .filter(t => !(propertyType === "원룸·투룸(풀옵션)" && t === "매매"))
+                .map(t => (
                 <SelectBtn key={t} label={t} selected={tradeType === t} onClick={() => setTradeType(t)} />
               ))}
             </div>

@@ -794,7 +794,9 @@ function MobileVacancyWrite() {
           <div style={{ fontSize:16, fontWeight:800, color:"#111", borderLeft:"4px solid #1a73e8", paddingLeft:10, marginBottom:14 }}>거래정보</div>
           <label style={labelStyle}>거래유형</label>
           <div style={{ display:"flex", gap:8, marginBottom:14 }}>
-            {["매매","전세","월세","단기"].map(t => <SBtn key={t} label={t} sel={tradeType===t} onClick={() => setTradeType(t)} />)}
+            {["매매","전세","월세","단기"]
+              .filter(t => !(propertyType === "원룸·투룸(풀옵션)" && t === "매매"))
+              .map(t => <SBtn key={t} label={t} sel={tradeType===t} onClick={() => setTradeType(t)} />)}
           </div>
 
           <label style={labelStyle}>{tradeType==="매매"?"매매가":"보증금"} {deposit && <span style={{color:"#1a73e8", fontWeight:600}}>{formatKorean(deposit)}</span>}</label>
