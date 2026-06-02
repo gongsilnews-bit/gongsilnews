@@ -32,6 +32,22 @@ try {
   
   console.log('Subproject build and copy completed successfully!');
   
+  console.log('=== STARTING SUBPROJECT BUILD (marketing/report) ===');
+  const reportDir = path.join(__dirname, '../marketing/report');
+  const targetReportDir = path.join(__dirname, '../public/marketing/report');
+  console.log('Installing report dependencies...');
+  execSync('npm install', { cwd: reportDir, stdio: 'inherit' });
+  console.log('Building report...');
+  execSync('npm run build', { cwd: reportDir, stdio: 'inherit' });
+  if (fs.existsSync(targetReportDir)) {
+    fs.rmSync(targetReportDir, { recursive: true, force: true });
+  }
+  fs.mkdirSync(targetReportDir, { recursive: true });
+  const reportDist = path.join(reportDir, 'dist');
+  console.log(`Copying ${reportDist} to ${targetReportDir}...`);
+  fs.cpSync(reportDist, targetReportDir, { recursive: true, force: true });
+  console.log('Report build and copy completed successfully!');
+  
   // 6. Run Next.js build
   console.log('=== RUNNING NEXT.JS BUILD ===');
   execSync('npx next build', { stdio: 'inherit' });

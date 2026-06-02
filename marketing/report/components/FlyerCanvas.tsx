@@ -986,7 +986,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                     </div>
                     <div className="flex-1 flex gap-6">
                         {/* Left Half: Highlights */}
-                        <div className="w-1/2 border border-yellow-200 rounded-lg p-6 bg-white shadow-sm flex flex-col">
+                        <div className="w-1/2 border border-gray-200 rounded-lg p-6 bg-white shadow-sm flex flex-col">
                             <h3 className="text-xl font-extrabold text-gray-900 mb-4 border-b-2 border-gray-800 pb-2 inline-block">
                                 <EditableText 
                                     value={info.page2HighlightBoxTitle || "매각 핵심 하이라이트"} 
@@ -1030,7 +1030,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                         </div>
 
                         {/* Right Half: Chart */}
-                        <div className="w-1/2 border border-yellow-200 rounded-lg p-6 bg-white shadow-sm flex flex-col justify-between">
+                        <div className="w-1/2 border border-gray-200 rounded-lg p-6 bg-white shadow-sm flex flex-col justify-between">
                             {(() => {
                                 const showChart = info.showChart !== false;
                                 const chartBars = info.chartBars || [
@@ -1184,6 +1184,12 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                     </div>
                                 );
                             })()}
+                            <div className="mt-auto pt-6 border-t border-gray-100">
+                                <div className="text-[10px] font-bold tracking-widest text-[#cc5a27] uppercase mb-1">STRATEGIC ADVISORY</div>
+                                <div className="text-xs text-gray-600 leading-relaxed">
+                                    <EditableBlock value={info.chartAdviseText || "본 자산의 시세는 최근 실거래가 및 시장 동향을 반영하여 산출되었습니다. 입지 조건에 따른 프리미엄이 내재되어 있어 향후 가치 상승이 기대됩니다."} onChange={(val) => handleTextChange('chartAdviseText', val)} placeholder="그래프 분석 및 조언 입력..." />
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

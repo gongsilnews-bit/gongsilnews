@@ -179,8 +179,8 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                   <div>
                       <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">기본 타이틀</h4>
                       <div className="space-y-3">
-                          <div><label className="text-xs text-gray-500">보고서 제목 (Address)</label><input name="address" value={info.address} onChange={handleChange} className="w-full border rounded p-2 text-sm" /></div>
-                          <div><label className="text-xs text-gray-500">서브 타이틀</label><textarea name="subTitle" value={info.subTitle} onChange={handleChange} className="w-full border rounded p-2 text-sm resize-y" rows={2} /></div>
+                          <div><label className="text-xs text-gray-500">보고서 제목 (Address)</label><textarea name="address" value={info.address} onChange={handleChange} className="w-full border rounded p-2 text-sm resize-y" rows={2} /></div>
+                          <div><label className="text-xs text-gray-500">서브 타이틀</label><textarea name="subTitle" value={info.subTitle} onChange={handleChange} className="w-full border rounded p-2 text-sm resize-y" rows={3} /></div>
                       </div>
                   </div>
 
@@ -596,8 +596,17 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                   </div>
 
                   <div>
-                      <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">시세 분석 요약 (차트 하단)</h4>
-                      <textarea name="valuationText" value={info.valuationText} onChange={handleChange} className="w-full border rounded p-2 text-sm" rows={4} />
+                      <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">시세 분석 요약 (하단)</h4>
+                      <div className="space-y-3">
+                          <div>
+                              <label className="text-xs text-gray-500 font-bold">좌측 텍스트 (STRATEGIC ADVISORY)</label>
+                              <textarea name="valuationText" value={info.valuationText} onChange={handleChange} className="w-full border rounded p-2 text-sm" rows={4} />
+                          </div>
+                          <div>
+                              <label className="text-xs text-gray-500 font-bold">우측 텍스트 (그래프 하단)</label>
+                              <textarea name="chartAdviseText" value={(info as any).chartAdviseText || ""} onChange={handleChange} className="w-full border rounded p-2 text-sm" rows={4} />
+                          </div>
+                      </div>
                   </div>
               </div>
           )}
