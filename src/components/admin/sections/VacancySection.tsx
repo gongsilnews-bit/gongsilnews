@@ -307,7 +307,8 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                 <th style={{ padding: "12px 4px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 90, whiteSpace: "nowrap" }}>광고설정</th>
                 <th style={{ padding: "12px 4px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 110, whiteSpace: "nowrap" }}>공실광고 종류</th>
                 <th style={{ padding: "12px 10px", textAlign: "left", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: "auto" }}>주소 / 연락처</th>
-                <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 180, whiteSpace: "nowrap" }}>금액</th>
+                <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 70, whiteSpace: "nowrap" }}>거래</th>
+                <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 140, whiteSpace: "nowrap" }}>금액</th>
                 <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 140, whiteSpace: "nowrap" }}>방수/면적(m²)/층</th>
                 <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 80, whiteSpace: "nowrap" }}>최초등록</th>
                 <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 130, whiteSpace: "nowrap" }}>등록자/연락처</th>
@@ -339,10 +340,8 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                 };
                 
                 const priceText = row.trade_type === "매매" || row.trade_type === "전세" 
-                  ? `${row.trade_type} ${formatAmount(row.deposit)}`
-                  : row.trade_type 
-                    ? `${row.trade_type} ${formatAmount(row.deposit)}/${formatAmount(row.monthly_rent)}`
-                    : `${formatAmount(row.deposit)}/${formatAmount(row.monthly_rent)}`;
+                  ? formatAmount(row.deposit) 
+                  : `${formatAmount(row.deposit)}/${formatAmount(row.monthly_rent)}`;
                 const addrText = [row.dong, row.building_name].filter(Boolean).join(" ") || [row.sido, row.sigungu, row.dong].filter(Boolean).join(" ");
                 const dateStr = row.created_at ? new Date(row.created_at).toLocaleDateString('ko-KR', { timeZone: "Asia/Seoul", month: '2-digit', day: '2-digit' }) : "";
                 const isActive = row.status === 'ACTIVE';
@@ -404,6 +403,9 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                     }}>
                       <div style={{ fontWeight: 700, color: textPrimary, fontSize: 15, marginBottom: 4 }}>{addrText}</div>
                       <div style={{ fontSize: 14, color: textSecondary }}>{row.client_phone || ""}</div>
+                    </td>
+                    <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, fontWeight: 700, color: darkMode ? "#9ca3af" : "#4b5563", whiteSpace: "nowrap" }}>
+                      {row.trade_type || "-"}
                     </td>
                     <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
                       <span style={{ color: darkMode ? "#fca5a5" : "#ef4444", fontWeight: 800, fontSize: 15 }}>{priceText}</span>
