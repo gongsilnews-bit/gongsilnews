@@ -317,48 +317,28 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                               <div>
                                   {(() => {
                                       const tType = info.transactionType || "매매";
-                                      if (tType === "월세") {
-                                          return (
-                                              <div className="space-y-2">
-                                                  <div className="grid grid-cols-2 gap-2">
-                                                      <div>
-                                                          <span className="text-[10px] text-gray-500 font-semibold block mb-1">보증금</span>
-                                                          <input 
-                                                              name="priceMain" 
-                                                              value={info.priceMain} 
-                                                              onChange={handleChange} 
-                                                              placeholder="예: 300억" 
-                                                              className="w-full border border-gray-300 rounded p-1.5 text-xs font-bold text-gray-800 bg-white" 
-                                                          />
-                                                      </div>
-                                                      <div>
-                                                          <span className="text-[10px] text-gray-500 font-semibold block mb-1">월세</span>
-                                                          <input 
-                                                              name="priceSub" 
-                                                              value={info.priceSub || ""} 
-                                                              onChange={handleChange} 
-                                                              placeholder="예: 10000만" 
-                                                              className="w-full border border-gray-300 rounded p-1.5 text-xs font-bold text-[#cc5a27] bg-white" 
-                                                          />
-                                                      </div>
-                                                  </div>
-                                              </div>
-                                          );
-                                      } else {
-                                          const priceLabel = tType === "전세" ? "보증금" : "매매가";
-                                          return (
-                                              <div>
-                                                  <span className="text-[10px] text-gray-500 font-semibold block mb-1">{priceLabel}</span>
-                                                  <input 
-                                                      name="priceMain" 
-                                                      value={info.priceMain} 
-                                                      onChange={handleChange} 
-                                                      placeholder={tType === "전세" ? "예: 150억" : "예: 500억"} 
-                                                      className="w-full border border-gray-300 rounded p-1.5 text-xs font-bold text-gray-800 bg-white" 
-                                                  />
-                                              </div>
-                                          );
+                                      let priceLabel = "매매가";
+                                      let pricePlaceholder = "예: 500억";
+                                      if (tType === "전세") {
+                                          priceLabel = "보증금";
+                                          pricePlaceholder = "예: 150억";
+                                      } else if (tType === "월세") {
+                                          priceLabel = "보증금 / 월세";
+                                          pricePlaceholder = "예: 5000만 / 300만";
                                       }
+                                      
+                                      return (
+                                          <div>
+                                              <span className="text-[10px] text-gray-500 font-semibold block mb-1">{priceLabel}</span>
+                                              <input 
+                                                  name="priceMain" 
+                                                  value={info.priceMain} 
+                                                  onChange={handleChange} 
+                                                  placeholder={pricePlaceholder} 
+                                                  className="w-full border border-gray-300 rounded p-1.5 text-xs font-bold text-gray-800 bg-white" 
+                                              />
+                                          </div>
+                                      );
                                   })()}
                               </div>
                           </div>

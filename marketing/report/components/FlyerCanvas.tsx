@@ -817,15 +817,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
  
                                         <div className="w-1/3 text-gray-600 font-bold py-2 pl-4 flex items-center">{label}</div>
                                         <div className="w-2/3 text-[#cc5a27] font-extrabold py-2 pl-4 flex items-center">
-                                            {tType === "월세" || tType === "임대" ? (
-                                                <div className="flex items-center gap-1">
-                                                    <EditableText value={price} onChange={(val) => handleTextChange('priceMain', val)} />
-                                                    <span>/</span>
-                                                    <EditableText value={info.priceSub || ''} onChange={(val) => handleTextChange('priceSub', val)} placeholder="월세" />
-                                                </div>
-                                            ) : (
-                                                <EditableText value={price} onChange={(val) => handleTextChange('priceMain', val)} />
-                                            )}
+                                            <EditableText value={price} onChange={(val) => handleTextChange('priceMain', val)} />
                                         </div>
                                     </div>
                                 );
