@@ -32,7 +32,7 @@ export default function BlockEditorPage() {
     if (!document.getElementById(sid)) {
       const s = document.createElement("script");
       s.id = sid;
-      s.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_APP_KEY || "435d3602201a49ea712e5f5a36fe6efc"}&libraries=services,drawing&autoload=false`;
+      s.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_APP_KEY || "435d3602201a49ea712e5f5a36fe6efc"}&libraries=services,clusterer,drawing&autoload=false`;
       document.head.appendChild(s);
       s.onload = () => { (window as any).kakao.maps.load(() => setMapLoaded(true)); };
     } else {

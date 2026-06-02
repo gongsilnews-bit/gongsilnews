@@ -62,7 +62,7 @@ export default function MiniVacancyMap({ vacancies, isLoading }: Props) {
     };
 
     // Kakao SDK 로드
-    if ((window as any).kakao?.maps?.LatLng) {
+    if ((window as any).kakao?.maps?.MarkerClusterer) {
       initMap();
     } else {
       const scriptId = "kakao-map-script";
@@ -74,7 +74,7 @@ export default function MiniVacancyMap({ vacancies, isLoading }: Props) {
         document.head.appendChild(script);
       } else {
         const timer = setInterval(() => {
-          if ((window as any).kakao?.maps?.LatLng) {
+          if ((window as any).kakao?.maps?.MarkerClusterer) {
             clearInterval(timer);
             initMap();
           }
@@ -91,6 +91,13 @@ export default function MiniVacancyMap({ vacancies, isLoading }: Props) {
     if (!kakao?.maps) return;
 
     // 기존 클러스터러 및 마커 초기화
+    if (typeof kakao.maps.MarkerClusterer !== 'function') {
+      const retryTimer = setTimeout(() => {
+        setMapInstance({ ...mapInstance });
+      }, 500);
+      return () => clearTimeout(retryTimer);
+    }
+
     if (clustererRef.current) {
       clustererRef.current.clear();
     }
