@@ -176,6 +176,11 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
           
           {(activeTab === 'all' || activeTab === 1) && (
               <div className="space-y-6 animate-fadeIn">
+                  {activeTab === 'all' && (
+                      <div className="pt-6 pb-2 border-b-[3px] border-black mb-4">
+                          <h2 className="text-2xl font-black text-black tracking-tight">1. 개요</h2>
+                      </div>
+                  )}
                   <div>
                       <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">기본 타이틀</h4>
                       <div className="space-y-3">
@@ -386,6 +391,11 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
 
           {(activeTab === 'all' || activeTab === 2) && (
               <div className="space-y-6 animate-fadeIn">
+                  {activeTab === 'all' && (
+                      <div className="pt-6 pb-2 border-b-[3px] border-black mb-4 mt-8">
+                          <h2 className="text-2xl font-black text-black tracking-tight">2. 가치</h2>
+                      </div>
+                  )}
                   <div>
                       <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">층별 점유 및 임대 현황</h4>
                       <div className="space-y-4">
@@ -613,6 +623,11 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
 
           {(activeTab === 'all' || activeTab === 3) && (
               <div className="space-y-6 animate-fadeIn">
+                  {activeTab === 'all' && (
+                      <div className="pt-6 pb-2 border-b-[3px] border-black mb-4 mt-8">
+                          <h2 className="text-2xl font-black text-black tracking-tight">3. 임대현황</h2>
+                      </div>
+                  )}
                   <div>
                       <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">페이지 타이틀</h4>
                       <div className="space-y-3">
@@ -754,6 +769,11 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
 
           {(activeTab === 'all' || activeTab === 4) && (
               <div className="space-y-6 animate-fadeIn">
+                  {activeTab === 'all' && (
+                      <div className="pt-6 pb-2 border-b-[3px] border-black mb-4 mt-8">
+                          <h2 className="text-2xl font-black text-black tracking-tight">4. 사진</h2>
+                      </div>
+                  )}
                   {renderImageUpload('mainImage', '메인 사진 (정면 외관)')}
                   <div className="grid grid-cols-2 gap-4">
                       {renderImageUpload('subImage1', '서브 사진 1')}
@@ -766,6 +786,11 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
 
           {(activeTab === 'all' || activeTab === 5) && (
               <div className="space-y-6 animate-fadeIn">
+                  {activeTab === 'all' && (
+                      <div className="pt-6 pb-2 border-b-[3px] border-black mb-4 mt-8">
+                          <h2 className="text-2xl font-black text-black tracking-tight">5. 입지</h2>
+                      </div>
+                  )}
                   <div>
                       <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">입지 개요 및 지도 설정</h4>
                       <div className="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-200/60 mb-4 text-xs">
@@ -822,6 +847,11 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
 
           {(activeTab === 'all' || activeTab === 6) && (
               <div className="space-y-6 animate-fadeIn">
+                  {activeTab === 'all' && (
+                      <div className="pt-6 pb-2 border-b-[3px] border-black mb-4 mt-8">
+                          <h2 className="text-2xl font-black text-black tracking-tight">6. 로드맵</h2>
+                      </div>
+                  )}
                   <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">개발 및 활용 로드맵 (4 시나리오)</h4>
                   {[1,2,3,4].map(i => (
                       <div key={i} className="mb-4 bg-gray-50 p-4 rounded-lg">
