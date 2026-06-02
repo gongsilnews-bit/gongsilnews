@@ -1408,6 +1408,43 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
               </div>
             </div>
 
+            {/* 상업용 건물 전용 추가 스펙 (API 연동 항목) */}
+            {propertyType === "상가·사무실·건물·공장·토지" && subCategory !== "토지" && (
+              <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, padding: 16, marginBottom: 24 }}>
+                <div style={{ fontSize: 13, fontWeight: 800, color: "#1e293b", marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>
+                  <span>🏢 상업용 추가 스펙</span>
+                  <span style={{ fontSize: 11, background: "#dbeafe", color: "#1e40af", padding: "2px 6px", borderRadius: 4 }}>대장 연동 권장</span>
+                </div>
+                
+                <div style={{ display: "flex", gap: 16, marginBottom: 12 }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{...labelStyle, marginBottom: 6}}>건축물 주용도</label>
+                    <input type="text" placeholder="예: 제2종근린생활시설" value={mainUsage} onChange={(e) => setMainUsage(e.target.value)} style={{...inputStyle, background: "#fff"}} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{...labelStyle, marginBottom: 6}}>건물 구조</label>
+                    <input type="text" placeholder="예: 철근콘크리트구조" value={buildingStructure} onChange={(e) => setBuildingStructure(e.target.value)} style={{...inputStyle, background: "#fff"}} />
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", gap: 16, alignItems: "flex-end" }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{...labelStyle, marginBottom: 6}}>승강기 대수</label>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <input type="number" placeholder="예: 2" value={elevatorCnt} onChange={(e) => setElevatorCnt(e.target.value)} style={{...inputStyle, background: "#fff", width: "100%"}} />
+                      <span style={{ fontSize: 14, color: textSecondary }}>대</span>
+                    </div>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: "#fff", border: "1px solid #e2e8f0", height: 46, padding: "0 12px", borderRadius: 8 }}>
+                      <input type="checkbox" checked={isIllegal} onChange={(e) => setIsIllegal(e.target.checked)} style={{ width: 18, height: 18, accentColor: "#ef4444" }} />
+                      <span style={{ fontSize: 14, fontWeight: 600, color: isIllegal ? "#ef4444" : textPrimary }}>⚠️ 위반건축물 여부 (체크)</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* 동적 필드: 주거형 = 방/욕실/방향 */}
             {!isCommercial && (
               <>
