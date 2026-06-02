@@ -943,7 +943,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
  
                     {/* Agent Footer Details */}
                     <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-xl p-3.5 mt-3 flex flex-col justify-center shadow-sm">
-                        <div className="grid grid-cols-[80px_1fr] gap-x-2 gap-y-1.5 text-sm items-center">
+                        <div className="grid grid-cols-[80px_1fr] gap-x-2 gap-y-1.5 text-sm">
                             <span className="text-gray-500 font-bold">부동산명</span>
                             <span className="text-gray-800 font-extrabold">
                                 <EditableText value={info.agentName} onChange={(val) => handleTextChange('agentName', val)} />
@@ -997,8 +997,8 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                         />
                         <div className="flex gap-4 border-l-4 border-[#cc5a27] pl-4">
                             {[1,2,3].map(i => (
-                                <div key={i} className="flex-1 bg-white border border-gray-100 rounded-lg p-4 flex flex-col justify-center items-center text-center shadow-sm">
-                                    <div className="text-xs text-gray-400 font-bold tracking-widest mb-2 w-full uppercase">
+                                <div key={i} className="flex-1 bg-white border border-gray-100 rounded-lg p-4 text-center shadow-sm">
+                                    <div className="text-xs text-gray-400 font-bold tracking-widest mb-2 uppercase">
                                         <EditableText 
                                             value={(info.investmentSummary as any)?.[`box${i}Title`] || ""} 
                                             onChange={(val) => {
@@ -1446,7 +1446,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                             return (
                                                 <th 
                                                     key={colIdx} 
-                                                    className="border border-slate-200 p-2.5 text-xs font-extrabold text-white text-center align-middle uppercase relative group/header overflow-visible"
+                                                    className="border border-slate-200 p-2.5 text-xs font-extrabold text-white text-center uppercase relative group/header overflow-visible"
                                                     style={{ 
                                                         backgroundColor: colorTheme.primary,
                                                         width: `${colWidth}%`
@@ -1533,7 +1533,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                             {row.map((cell, colIdx) => (
                                                 <td 
                                                     key={colIdx} 
-                                                    className="border border-slate-200 p-2.5 text-xs text-slate-700 font-semibold relative text-center align-middle whitespace-normal break-all"
+                                                    className="border border-slate-200 p-2.5 text-xs text-slate-700 font-semibold relative text-center whitespace-normal break-all"
                                                 >
                                                     <EditableText 
                                                         value={cell || ""} 
