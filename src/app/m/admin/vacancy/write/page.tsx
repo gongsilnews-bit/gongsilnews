@@ -853,7 +853,7 @@ function MobileVacancyWrite() {
             <>
               <div style={{ display:"flex", gap:10, marginBottom:4 }}>
                 <div style={{flex:1}}>
-                  <label style={labelStyle}>대지지분({areaUnit==="m2"?"m²":"평"}) <span style={{color:"#ea580c", fontSize:11}}>*필수</span></label>
+                  <label style={labelStyle}>대지지분({areaUnit==="m2"?"m²":"평"})</label>
                   {areaUnit==="m2" ? (
                     <input type="number" value={landShareM2} onChange={e=>handleM2Change(e.target.value, setLandShareM2, setLandSharePy)} placeholder="33" style={inputStyle}/>
                   ) : (

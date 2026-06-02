@@ -1069,7 +1069,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
             {propertyType === "빌라·주택" && tradeType === "매매" && (
               <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
                 <div style={{ flex: 1 }}>
-                  <label style={labelStyle}>대지지분 (필수)</label>
+                  <label style={labelStyle}>대지지분</label>
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                     <input type="number" placeholder="예: 33" value={landShareM2}
                       onChange={(e) => handleM2Change(e.target.value, setLandShareM2, setLandSharePy)}
