@@ -153,7 +153,14 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
         selectedOptions,
         parking,
         moveInDate,
-        infrastructure
+        infrastructure,
+        realtorInfo: userRole === "realtor" ? {
+          company: rCompany,
+          boss: rBoss,
+          tel: rTel,
+          cell: rCell,
+          addr: rAddr
+        } : null
       };
       const res = await generatePropertyDescription(payload);
       if (res.success && res.text) {
