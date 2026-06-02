@@ -1296,7 +1296,7 @@ function App() {
         editables.forEach(el => {
             el.removeAttribute('contentEditable');
             el.removeAttribute('suppressContentEditableWarning');
-          (el as HTMLElement).style.transform = 'translateY(-2.5px)';
+          (el as HTMLElement).style.transform = 'translateY(-3px)';
             // Remove hover ring, background highlight, and cursor-text styles
             el.className = el.className
                 .replace(/hover:bg-amber-100\/50/g, '')
@@ -1400,8 +1400,7 @@ ${clone.outerHTML}
       clone.querySelectorAll('[contentEditable]').forEach(el => {
           el.removeAttribute('contentEditable');
           el.removeAttribute('suppressContentEditableWarning');
-          (el as HTMLElement).style.transform = 'translateY(-2.5px)';
-          (el as HTMLElement).style.transform = 'translateY(-2px)';
+          (el as HTMLElement).style.transform = 'translateY(-3px)';
       });
 
       // We need to append the clone to the document to capture it, but keep it hidden/out of view
@@ -1468,7 +1467,7 @@ ${clone.outerHTML}
       clone.querySelectorAll('[contentEditable]').forEach(el => {
           el.removeAttribute('contentEditable');
           el.removeAttribute('suppressContentEditableWarning');
-          (el as HTMLElement).style.transform = 'translateY(-2.5px)';
+          (el as HTMLElement).style.transform = 'translateY(-3px)';
       });
 
       clone.style.position = 'absolute';
@@ -1529,7 +1528,7 @@ ${clone.outerHTML}
       clone.querySelectorAll('[contentEditable]').forEach(el => {
           el.removeAttribute('contentEditable');
           el.removeAttribute('suppressContentEditableWarning');
-          (el as HTMLElement).style.transform = 'translateY(-2.5px)';
+          (el as HTMLElement).style.transform = 'translateY(-3px)';
       });
 
       clone.style.position = 'absolute';
