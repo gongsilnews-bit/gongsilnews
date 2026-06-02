@@ -117,8 +117,8 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, onText
                             <div className="w-2 h-8 md:h-12" style={{ backgroundColor: primaryColor }}></div>
                             <span contentEditable spellCheck={false} suppressContentEditableWarning className={`text-xl md:text-3xl font-bold text-gray-800 tracking-widest ${editClass}`}>PREMIUM</span>
                         </div>
-                        <h1 className={`text-4xl md:text-6xl font-bold text-gray-900 mb-4 ${headingFont}`}>{info.address}</h1>
-                        <p className="text-xl md:text-3xl text-gray-600 font-medium mb-2">{info.promotionText}</p>
+                        <h1 contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onTextChange?.('address', e.currentTarget.innerText)} className={`text-4xl md:text-6xl font-bold text-gray-900 mb-4 ${headingFont} ${editClass}`}>{info.address}</h1>
+                        <p contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onTextChange?.('promotionText', e.currentTarget.innerText)} className={`text-xl md:text-3xl text-gray-600 font-medium mb-2 ${editClass}`}>{info.promotionText}</p>
                      </div>
                 </div>
             );
