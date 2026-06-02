@@ -829,6 +829,25 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                   )}
                   <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">개발 및 활용 로드맵 (시나리오)</h4>
                   {(() => {
+                      const ROADMAP_ICONS = [
+                          { value: '🏢', label: '빌딩/오피스' },
+                          { value: '🏡', label: '주택/거주' },
+                          { value: '📈', label: '성장/수익' },
+                          { value: '🏗️', label: '건설/개발' },
+                          { value: '💰', label: '자산/투자' },
+                          { value: '🤝', label: '계약/협력' },
+                          { value: '🚀', label: '혁신/미래' },
+                          { value: '🎯', label: '목표/타겟' },
+                          { value: '💡', label: '아이디어' },
+                          { value: '📊', label: '분석/데이터' },
+                          { value: '🛡️', label: '안전/보안' },
+                          { value: '🚆', label: '역세권/교통' },
+                          { value: '🏥', label: '의료/병원' },
+                          { value: '🏪', label: '상가/리테일' },
+                          { value: '👑', label: '프리미엄' },
+                          { value: '🌟', label: '핵심가치' }
+                      ];
+
                       const list = info.roadmapList || [1, 2, 3, 4].map((i, index) => ({
                           title: (info.roadmap as any)?.[`box${i}Title`] || "",
                           text: (info.roadmap as any)?.[`box${i}Text`] || "",
@@ -845,16 +864,24 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                                           <label className="text-xs font-bold text-gray-800">시나리오 {idx + 1}</label>
                                           <div className="flex items-center gap-2">
                                               <span className="text-[10px] text-gray-500 font-normal">아이콘:</span>
-                                              <input 
-                                                  value={item.icon} 
+                                              <select
+                                                  value={item.icon}
                                                   onChange={(e) => {
                                                       const newList = [...list];
                                                       newList[idx] = { ...newList[idx], icon: e.target.value };
                                                       setInfo({ ...info, roadmapList: newList });
-                                                  }} 
-                                                  className="w-10 text-center border rounded p-1 text-base bg-white" 
-                                                  maxLength={5}
-                                              />
+                                                  }}
+                                                  className="w-28 text-xs border rounded p-1 text-gray-800 bg-white cursor-pointer"
+                                              >
+                                                  {ROADMAP_ICONS.map(ic => (
+                                                      <option key={ic.value} value={ic.value}>
+                                                          {ic.value} {ic.label}
+                                                      </option>
+                                                  ))}
+                                                  {!ROADMAP_ICONS.find(ic => ic.value === item.icon) && (
+                                                      <option value={item.icon}>{item.icon} 직접입력</option>
+                                                  )}
+                                              </select>
                                               {list.length > 1 && (
                                                   <button
                                                       type="button"
