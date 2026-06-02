@@ -1297,25 +1297,6 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
               <h2 style={{ fontSize: 20, fontWeight: 800, color: textPrimary, margin: 0 }}>
                 거래 및 상세 정보 (전세, 월세, 면적 등)
               </h2>
-              {propertyType !== "아파트·오피스텔" && propertyType !== "빌라·주택" && propertyType !== "원룸·투룸(풀옵션)" && subCategory !== "토지" && (
-                <button 
-                  type="button" 
-                  onClick={fetchBuildingLedger}
-                  disabled={fetchingLedger}
-                  style={{ 
-                    height: 32, padding: "0 14px", 
-                    background: fetchingLedger ? "#e5e7eb" : (darkMode ? "linear-gradient(135deg, #422006, #78350f)" : "linear-gradient(135deg, #fef3c7, #fde68a)"), 
-                    color: fetchingLedger ? "#9ca3af" : (darkMode ? "#fcd34d" : "#d97706"), 
-                    border: "none", borderRadius: 6, fontSize: 13, fontWeight: 800, 
-                    cursor: fetchingLedger ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 6,
-                    marginLeft: "auto", boxShadow: fetchingLedger ? "none" : "0 2px 8px rgba(217,119,6,0.15)", transition: "all 0.2s"
-                  }}
-                  onMouseEnter={e => { if(!fetchingLedger) e.currentTarget.style.transform = "translateY(-1px)" }} 
-                  onMouseLeave={e => { if(!fetchingLedger) e.currentTarget.style.transform = "translateY(0)" }}
-                >
-                  {fetchingLedger ? "⏳ AI 데이터 불러오는 중..." : "✨ AI 건축물대장 자동완성"}
-                </button>
-              )}
             </div>
 
             {/* 거래유형 */}
@@ -1467,6 +1448,23 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                 <div style={{ fontSize: 13, fontWeight: 800, color: "#1e293b", marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>
                   <span>🏢 건축물대장 추가 스펙</span>
                   <span style={{ fontSize: 11, background: "#dbeafe", color: "#1e40af", padding: "2px 6px", borderRadius: 4 }}>대장 연동 권장</span>
+                  <button 
+                    type="button" 
+                    onClick={fetchBuildingLedger}
+                    disabled={fetchingLedger}
+                    style={{ 
+                      height: 28, padding: "0 12px", 
+                      background: fetchingLedger ? "#e5e7eb" : (darkMode ? "linear-gradient(135deg, #422006, #78350f)" : "linear-gradient(135deg, #fef3c7, #fde68a)"), 
+                      color: fetchingLedger ? "#9ca3af" : (darkMode ? "#fcd34d" : "#d97706"), 
+                      border: "none", borderRadius: 4, fontSize: 12, fontWeight: 800, 
+                      cursor: fetchingLedger ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 4,
+                      marginLeft: "auto", boxShadow: fetchingLedger ? "none" : "0 2px 8px rgba(217,119,6,0.15)", transition: "all 0.2s"
+                    }}
+                    onMouseEnter={e => { if(!fetchingLedger) e.currentTarget.style.transform = "translateY(-1px)" }} 
+                    onMouseLeave={e => { if(!fetchingLedger) e.currentTarget.style.transform = "translateY(0)" }}
+                  >
+                    {fetchingLedger ? "⏳ 데이터 불러오는 중..." : "✨ AI 데이터 연동"}
+                  </button>
                 </div>
                 
                 <div style={{ display: "flex", gap: 16, marginBottom: 12 }}>

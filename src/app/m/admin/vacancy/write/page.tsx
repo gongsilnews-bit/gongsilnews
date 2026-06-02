@@ -984,26 +984,7 @@ function MobileVacancyWrite() {
         {/* ═══ STEP 2: 가격/면적 ═══ */}
         {currentStep === 2 && (<>
 
-        {propertyType !== "아파트·오피스텔" && propertyType !== "빌라·주택" && propertyType !== "원룸·투룸(풀옵션)" && subCategory !== "토지" && (
-          <div style={{ padding: "0 16px 12px" }}>
-            <button 
-              type="button" 
-              onClick={fetchBuildingLedger}
-              disabled={fetchingLedger}
-              style={{ 
-                width: "100%", height: 46, 
-                background: fetchingLedger ? "#e5e7eb" : "linear-gradient(135deg, #fef3c7, #fde68a)", 
-                color: fetchingLedger ? "#9ca3af" : "#d97706", 
-                border: "none", borderRadius: 10, fontSize: 15, fontWeight: 800, 
-                cursor: fetchingLedger ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-                boxShadow: fetchingLedger ? "none" : "0 4px 12px rgba(217,119,6,0.15)", transition: "all 0.2s"
-              }}
-            >
-              <span style={{ fontSize: 18 }}>{fetchingLedger ? "⏳" : "✨"}</span>
-              {fetchingLedger ? "AI 데이터 불러오는 중..." : "AI 건축물대장 자동완성"}
-            </button>
-          </div>
-        )}
+
 
 
         {/* 건축물대장 추가 스펙 (API 연동 항목) */}
@@ -1012,6 +993,21 @@ function MobileVacancyWrite() {
             <div style={{ fontSize: 13, fontWeight: 800, color: "#1e293b", marginBottom: 16, display: "flex", alignItems: "center", gap: 6 }}>
               <span>🏢 건축물대장 추가 스펙</span>
               <span style={{ fontSize: 11, background: "#dbeafe", color: "#1e40af", padding: "2px 6px", borderRadius: 4 }}>대장 연동 권장</span>
+              <button 
+                type="button" 
+                onClick={fetchBuildingLedger}
+                disabled={fetchingLedger}
+                style={{ 
+                  height: 28, padding: "0 10px", 
+                  background: fetchingLedger ? "#e5e7eb" : "linear-gradient(135deg, #fef3c7, #fde68a)", 
+                  color: fetchingLedger ? "#9ca3af" : "#d97706", 
+                  border: "none", borderRadius: 6, fontSize: 12, fontWeight: 800, 
+                  cursor: fetchingLedger ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 4, marginLeft: "auto",
+                  boxShadow: fetchingLedger ? "none" : "0 2px 8px rgba(217,119,6,0.15)", transition: "all 0.2s"
+                }}
+              >
+                {fetchingLedger ? "⏳ 연동 중..." : "✨ AI 연동"}
+              </button>
             </div>
             
             <div style={{ marginBottom: 16 }}>
