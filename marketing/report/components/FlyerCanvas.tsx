@@ -1219,9 +1219,9 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
             pageNumber={3} 
             title={info.page3Title || "임대 상세 현황"} 
             onUpdateTitle={(val) => handleTextChange('page3Title', val)}
-            subtitle={info.page3Subtitle || "Rental Status"} 
+            subtitle={info.page3Subtitle || "Rent Roll"} 
             onUpdateSubtitle={(val) => handleTextChange('page3Subtitle', val)}
-            badgeText={info.pageBadges?.page3 || "RENTAL STATUS"}
+            badgeText={info.pageBadges?.page3 || "RENT ROLL"}
             exportId="page-3"
             onUpdateBadge={(val) => {
                 if (onUpdateInfo) {
@@ -1492,6 +1492,18 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                             </table>
                         </div>
                         
+                        {/* Custom Total / Summary Block */}
+                        <div className="flex justify-start mt-3 pt-2">
+                            <div className="bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 flex items-center shadow-sm">
+                                <span className="text-[11px] font-bold text-slate-500 mr-3 uppercase tracking-wider border-r border-slate-300 pr-3">Total Summary</span>
+                                <div className="text-xs font-bold text-slate-800">
+                                    <EditableText 
+                                        value={(info as any).leaseSummaryText || "총 6세대 / 보증금 0원 / 월세 0원"} 
+                                        onChange={(val) => handleTextChange('leaseSummaryText', val)} 
+                                    />
+                                </div>
+                            </div>
+                        </div>
 
                         {/* Notice text block */}
                         <div className="text-[10px] text-slate-400 mt-3 pt-2 border-t border-slate-100 leading-normal shrink-0">

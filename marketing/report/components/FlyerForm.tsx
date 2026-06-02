@@ -599,7 +599,8 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                       <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">페이지 타이틀</h4>
                       <div className="space-y-3">
                           <div><label className="text-xs text-gray-500">페이지 제목 (기본: 임대 상세 현황)</label><input name="page3Title" value={info.page3Title || "임대 상세 현황"} onChange={handleChange} className="w-full border rounded p-2 text-sm" /></div>
-                          <div><label className="text-xs text-gray-500">페이지 부제목</label><input name="page3Subtitle" value={info.page3Subtitle || "Rental Status"} onChange={handleChange} className="w-full border rounded p-2 text-sm" /></div>
+                          <div><label className="text-xs text-gray-500">페이지 부제목</label><input name="page3Subtitle" value={info.page3Subtitle || "Rent Roll"} onChange={handleChange} className="w-full border rounded p-2 text-sm" /></div>
+                          <div><label className="text-xs text-gray-500">표 하단 요약 (Total Summary)</label><input name="leaseSummaryText" value={(info as any).leaseSummaryText || "총 6세대 / 보증금 0원 / 월세 0원"} onChange={handleChange} className="w-full border rounded p-2 text-sm" /></div>
                       </div>
                   </div>
 
