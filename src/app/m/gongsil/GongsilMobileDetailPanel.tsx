@@ -258,14 +258,18 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
           ) : (
             // 일반 공실 매물 전용 헤더 뷰 (두 번째 스크린샷 완벽 대응)
             <div style={{ borderBottom: "1px solid #f3f4f6", paddingBottom: "16px" }}>
-              {/* Row 1: NO, Date, Report, List */}
+              {/* Row 1: Date, Report, List */}
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <span style={{ fontSize: "14px", fontWeight: "bold", color: "#111" }}>
-                    NO.{selectedVacancy.vacancy_no || '-'}
+                  {showCommission && (selectedVacancy.realtor_commission || selectedVacancy.commission_type) && (
+                    <span style={{ fontSize: "12px", fontWeight: 700, color: "#ef4444", border: "1px solid #ef4444", padding: "2px 8px", borderRadius: "12px" }}>
+                      {selectedVacancy.realtor_commission || selectedVacancy.commission_type || "공동중개"}
+                    </span>
+                  )}
+                  <span style={{ fontSize: "15px", fontWeight: 800, color: "#ef4444" }}>
+                    {selectedVacancy.vacancy_no || '-'}
                   </span>
-                  <span style={{ width: 1, height: 12, background: "#ddd" }}></span>
-                  <span style={{ fontSize: "13px", color: "#888" }}>
+                  <span style={{ fontSize: "13px", color: "#888", marginLeft: "4px" }}>
                     {selectedVacancy.created_at ? new Date(selectedVacancy.created_at).toLocaleDateString("ko-KR").slice(0, -1) : ""}
                   </span>
                 </div>
@@ -335,15 +339,6 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
                 ].filter(Boolean).join(" | ")}
               </div>
 
-              {/* Row 6: 공동중개 Pill */}
-              {showCommission && (selectedVacancy.realtor_commission || selectedVacancy.commission_type) && (
-                <div style={{ marginTop: "10px", display: "flex", gap: "6px" }}>
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", background: "#e8f0fe", color: "#1a73e8", fontSize: "12px", fontWeight: "bold", padding: "4px 8px", borderRadius: "4px", border: "1px solid #d2e3fc" }}>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                    {selectedVacancy.realtor_commission || selectedVacancy.commission_type || "공동중개"}
-                  </span>
-                </div>
-              )}
             </div>
           )}
         </div>
