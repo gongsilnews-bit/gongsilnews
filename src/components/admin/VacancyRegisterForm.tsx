@@ -61,6 +61,10 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
   const router = useRouter();
 
   // ── 상태 관리 ──
+  const [mainUsage, setMainUsage] = useState("");
+  const [elevatorCnt, setElevatorCnt] = useState("");
+  const [isIllegal, setIsIllegal] = useState(false);
+  const [buildingStructure, setBuildingStructure] = useState("");
   const [propertyType, setPropertyType] = useState<string>("아파트·오피스텔");
   const [subCategory, setSubCategory] = useState<string>("아파트");
   const [tradeType, setTradeType] = useState<string>("매매");
