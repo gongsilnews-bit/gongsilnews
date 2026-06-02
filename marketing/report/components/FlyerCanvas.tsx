@@ -959,7 +959,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
         {(activeTab === 'all' || activeTab === 2) && (
         <ReportPage 
             pageNumber={2} 
-            title={info.page2Title || "현황 및 가치"} 
+            title={info.page2Title || "물건설명 및 시세"} 
             onUpdateTitle={(val) => handleTextChange('page2Title', val)}
             subtitle={info.page2Subtitle || "Status & Valuation"} 
             onUpdateSubtitle={(val) => handleTextChange('page2Subtitle', val)}
