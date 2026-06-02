@@ -536,12 +536,12 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, onText
         <div data-export-id="basic-info" className="pt-20 pb-12 px-6 md:px-12 bg-white">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-10 gap-4 md:gap-0">
                 <div>
-                    <span className="font-bold text-xs tracking-widest block mb-1" style={{ color: primaryColor }}>PROPERTY INFO</span>
-                    <h2 className={`text-2xl md:text-3xl font-bold text-gray-800 ${headingFont}`}>매물 상세 정보</h2>
+                    <span contentEditable suppressContentEditableWarning className={`font-bold text-xs tracking-widest block mb-1 ${editClass}`} style={{ color: primaryColor }}>PROPERTY INFO</span>
+                    <h2 contentEditable suppressContentEditableWarning className={`text-2xl md:text-3xl font-bold text-gray-800 ${headingFont} ${editClass}`}>매물 상세 정보</h2>
                 </div>
                 <div className="text-left md:text-right">
-                    <span className="text-gray-400 text-xs block mb-1">월 관리비</span>
-                    <span className="text-xl font-bold text-gray-800">{info.managementFee}</span>
+                    <span contentEditable suppressContentEditableWarning className={`text-gray-400 text-xs block mb-1 ${editClass}`}>월 관리비</span>
+                    <span contentEditable suppressContentEditableWarning onBlur={(e) => onTextChange?.('managementFee', e.currentTarget.innerText)} className={`text-xl font-bold text-gray-800 ${editClass}`}>{info.managementFee}</span>
                 </div>
             </div>
 
@@ -554,17 +554,17 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, onText
                     { l: '옵션 정보', v: info.options, full: true }
                 ].map((item, i) => (
                     <div key={i} className={`flex justify-between border-b border-gray-150 pb-4 ${item.full ? 'col-span-1 md:col-span-2' : ''}`}>
-                        <span className="text-gray-700 font-bold text-[16px] md:text-sm">{item.l}</span>
-                        <span className="font-extrabold text-gray-950 text-[18px] md:text-[15px]">{item.v}</span>
+                        <span contentEditable suppressContentEditableWarning className={`text-gray-700 font-bold text-[16px] md:text-sm ${editClass}`}>{item.l}</span>
+                        <span contentEditable suppressContentEditableWarning onBlur={(e) => { if (item.l === '공급/전용면적') onTextChange?.('area', e.currentTarget.innerText); else if (item.l === '해당층/총층') onTextChange?.('floor', e.currentTarget.innerText); else if (item.l === '방향') onTextChange?.('direction', e.currentTarget.innerText); else if (item.l === '주차가능대수') onTextChange?.('parking', e.currentTarget.innerText); else onTextChange?.('options', e.currentTarget.innerText); }} className={`font-extrabold text-gray-950 text-[18px] md:text-[15px] ${editClass}`}>{item.v}</span>
                     </div>
                 ))}
 
                 {/* Notice Box */}
                 <div className={`col-span-1 md:col-span-2 p-6 mt-4 ${layout === 'type4' ? 'border-2 border-gray-100 bg-white' : 'bg-[#f4f6f8] rounded-sm'}`}>
                     <span className="font-bold block mb-2 text-xs" style={{ color: primaryColor }}>
-                        {info.noticeTitle || "DETAIL INFO"}
+                        <span contentEditable suppressContentEditableWarning onBlur={(e) => onTextChange?.('noticeTitle', e.currentTarget.innerText)} className={editClass}>{info.noticeTitle || "DETAIL INFO"}</span>
                     </span>
-                    <p className={`text-gray-950 text-[17px] md:text-sm font-bold leading-relaxed whitespace-pre-wrap ${bodyFont}`}>
+                    <p contentEditable suppressContentEditableWarning onBlur={(e) => onTextChange?.('noticeContent', e.currentTarget.innerText)} className={`text-gray-950 text-[17px] md:text-sm font-bold leading-relaxed whitespace-pre-wrap ${bodyFont} ${editClass}`}>
                         {info.noticeContent}
                     </p>
                 </div>
@@ -587,10 +587,10 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, onText
             <div className="flex flex-col items-center">
                 <div className={`w-full max-w-3xl p-12 flex flex-col items-center text-center ${layout === 'type4' ? 'bg-white text-gray-900' : 'bg-[#2a2a2a] border border-gray-700'}`}>
                     
-                    <span className={`text-sm font-bold tracking-widest mb-6 block ${layout === 'type4' ? 'text-gray-400' : ''}`} style={{ color: layout === 'type4' ? undefined : primaryColor }}>CONTACT AGENT</span>
+                    <span contentEditable suppressContentEditableWarning className={`text-sm font-bold tracking-widest mb-6 block ${layout === 'type4' ? 'text-gray-400' : ''} ${editClass}`} style={{ color: layout === 'type4' ? undefined : primaryColor }}>CONTACT AGENT</span>
                     
                     <div className="flex items-center justify-center gap-3 mb-3">
-                        <p className={`font-bold text-2xl md:text-3xl ${headingFont}`}>{info.agentName}</p>
+                        <p contentEditable suppressContentEditableWarning onBlur={(e) => onTextChange?.('agentName', e.currentTarget.innerText)} className={`font-bold text-2xl md:text-3xl ${headingFont} ${editClass}`}>{info.agentName}</p>
                         {info.agentMapUrl && (
                             <a 
                                 href={info.agentMapUrl} 
@@ -606,7 +606,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, onText
                     </div>
                     
                     {info.agentRepresentative && (
-                         <p className={`text-base font-medium mb-6 ${layout === 'type4' ? 'text-gray-500' : 'text-gray-400'}`}>{info.agentRepresentative}</p>
+                         <p contentEditable suppressContentEditableWarning onBlur={(e) => onTextChange?.('agentRepresentative', e.currentTarget.innerText)} className={`text-base font-medium mb-6 ${layout === 'type4' ? 'text-gray-500' : 'text-gray-400'} ${editClass}`}>{info.agentRepresentative}</p>
                     )}
 
                     <div className="w-10 h-0.5 bg-gray-500 mb-6"></div>
@@ -618,13 +618,13 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, onText
                         </div>
 
                         <div className="flex flex-col md:flex-row gap-4 items-center justify-center">
-                            <a href={`tel:${info.agentPhone}`} className={`text-3xl md:text-4xl font-bold font-serif-en hover:opacity-80 transition-colors ${layout === 'type4' ? 'text-gray-900' : 'text-white'}`}>
+                            <a contentEditable suppressContentEditableWarning onBlur={(e) => onTextChange?.('agentPhone', e.currentTarget.innerText)} href={`tel:${info.agentPhone}`} className={`text-3xl md:text-4xl font-bold font-serif-en hover:opacity-80 transition-colors ${layout === 'type4' ? 'text-gray-900' : 'text-white'} ${editClass}`}>
                                 {info.agentPhone}
                             </a>
                             {info.agentMobile && (
                                 <>
                                     <span className="hidden md:inline text-gray-500 font-thin text-3xl">|</span>
-                                    <a href={`tel:${info.agentMobile}`} className={`text-3xl md:text-4xl font-bold font-serif-en hover:opacity-80 transition-colors ${layout === 'type4' ? 'text-gray-900' : 'text-white'}`}>
+                                    <a contentEditable suppressContentEditableWarning onBlur={(e) => onTextChange?.('agentMobile', e.currentTarget.innerText)} href={`tel:${info.agentMobile}`} className={`text-3xl md:text-4xl font-bold font-serif-en hover:opacity-80 transition-colors ${layout === 'type4' ? 'text-gray-900' : 'text-white'} ${editClass}`}>
                                         {info.agentMobile}
                                     </a>
                                 </>
@@ -633,7 +633,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, onText
                     </div>
                     
                     {info.agentAdditionalInfo && info.agentAdditionalInfo.map((infoLine, idx) => (
-                        <p key={idx} className={`text-base mb-1 ${layout === 'type4' ? 'text-gray-500' : 'text-gray-400'}`}>{infoLine}</p>
+                        <p key={idx} contentEditable suppressContentEditableWarning onBlur={(e) => { const lines = [...(info.agentAdditionalInfo || [])]; lines[idx] = e.currentTarget.innerText; onTextChange?.('agentAdditionalInfo' as any, lines as any); }} className={`text-base mb-1 ${layout === 'type4' ? 'text-gray-500' : 'text-gray-400'} ${editClass}`}>{infoLine}</p>
                     ))}
                     
                     {hasSocialLinks && (
