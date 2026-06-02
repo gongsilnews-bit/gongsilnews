@@ -372,15 +372,15 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
              <RectangleGroupIcon className="w-5 h-5" />
              레이아웃 테마 선택
         </h3>
-        <div className="flex gap-3">
+        <div className="grid grid-cols-4 gap-2">
              {layouts.map((layout, idx) => (
                  <button
                     key={layout.id}
                     onClick={() => onLayoutSelect(layout)}
-                    className={`flex-1 py-2 rounded-lg border text-xs font-bold transition-all ${currentLayout.id === layout.id ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'}`}
+                    className={`py-2 rounded-lg border text-xs font-bold transition-all flex flex-col items-center justify-center ${currentLayout.id === layout.id ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'}`}
                  >
-                     <span className="block text-lg mb-1">{idx + 1}</span>
-                     {layout.name.split(' ')[0]}
+                     <span className="block text-lg mb-0.5">{idx + 1}</span>
+                     <span className="text-[10px] text-center leading-tight">{layout.name.replace(' ', '\n')}</span>
                  </button>
              ))}
         </div>

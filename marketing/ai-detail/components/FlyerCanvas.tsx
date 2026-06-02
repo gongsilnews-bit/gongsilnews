@@ -520,6 +520,110 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, onText
 
   const hasSocialLinks = socialLinks.some(link => link.url);
 
+  if (layout === 'type6') {
+    return (
+      <div className="flex justify-center p-4">
+        <div ref={ref} className={`bg-white shadow-2xl flex flex-col w-full max-w-[860px] mx-auto min-h-[1216px] border-[16px] border-black p-10 ${bodyFont}`}>
+            <div data-export-id="hero" className="flex-1 flex flex-col">
+                {/* 상단: 금액 */}
+                <div className="text-center mb-10 mt-10">
+                   <div className="text-3xl font-bold text-gray-600 mb-4">{info.transactionType}</div>
+                   <h1 contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onTextChange?.('priceMain', e.currentTarget.innerText)} className={`text-[120px] font-black text-black leading-none tracking-tighter ${editClass}`}>{info.priceMain}</h1>
+                   {info.priceSub && <h2 contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onTextChange?.('priceSub', e.currentTarget.innerText)} className={`text-[80px] font-bold text-gray-800 leading-none mt-4 ${editClass}`}>/ {info.priceSub}</h2>}
+                </div>
+                
+                {/* 중단: 물건명 & 슬로건 */}
+                <div className="border-t-[12px] border-b-[12px] border-black py-12 mb-12 text-center">
+                   <h3 contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onTextChange?.('address', e.currentTarget.innerText)} className={`text-[65px] font-extrabold text-black mb-6 leading-tight break-keep ${headingFont} ${editClass}`}>{info.address}</h3>
+                   <p contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onTextChange?.('promotionText', e.currentTarget.innerText)} className={`text-[40px] font-bold text-gray-800 break-keep ${editClass}`}>{info.promotionText}</p>
+                </div>
+                
+                {/* 하단: 핵심 스펙 & 특징 */}
+                <div className="grid grid-cols-2 gap-8 mb-12">
+                    <div className="border-[6px] border-black p-8 text-center flex flex-col justify-center">
+                        <span className="block text-3xl text-gray-600 font-bold mb-4">면적</span>
+                        <span contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onTextChange?.('area', e.currentTarget.innerText)} className={`text-5xl font-black ${editClass}`}>{info.area.split('/')[0]}</span>
+                    </div>
+                    <div className="border-[6px] border-black p-8 text-center flex flex-col justify-center">
+                        <span className="block text-3xl text-gray-600 font-bold mb-4">층수</span>
+                        <span contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onTextChange?.('floor', e.currentTarget.innerText)} className={`text-5xl font-black ${editClass}`}>{info.floor.split('/')[0]}</span>
+                    </div>
+                </div>
+                
+                <div className="flex-1 flex flex-col justify-center">
+                    <div className="flex flex-col gap-6 items-start w-fit mx-auto">
+                        <div className="flex items-start gap-6">
+                            <span className="text-[45px] leading-none text-black">✔️</span>
+                            <span contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onTextChange?.('subTitle', e.currentTarget.innerText)} className={`text-[45px] font-bold text-black leading-tight ${editClass}`}>{info.subTitle || "핵심 특징을 입력하세요"}</span>
+                        </div>
+                        <div className="flex items-start gap-6">
+                            <span className="text-[45px] leading-none text-black">✔️</span>
+                            <span contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onTextChange?.('options', e.currentTarget.innerText)} className={`text-[45px] font-bold text-black leading-tight ${editClass}`}>{info.options || "옵션 정보를 입력하세요"}</span>
+                        </div>
+                        <div className="flex items-start gap-6">
+                            <span className="text-[45px] leading-none text-black">✔️</span>
+                            <span contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onTextChange?.('parking', e.currentTarget.innerText)} className={`text-[45px] font-bold text-black leading-tight ${editClass}`}>주차 {info.parking} / {info.moveInDate.split(' ')[0]} 입주</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (layout === 'type7') {
+    return (
+      <div className="flex justify-center p-4">
+        <div ref={ref} className={`bg-white shadow-2xl flex flex-col w-full max-w-[860px] mx-auto min-h-[1216px] ${bodyFont}`}>
+            <div data-export-id="hero" className="flex-1 flex flex-col h-full">
+                {/* 상단 50%: 사진 + 물건명 */}
+                <div className="h-[600px] relative bg-gray-100">
+                    <img onClick={() => onImageClick?.('mainImage')} src={mainImgSrc} className="w-full h-full object-cover cursor-pointer" title="클릭하여 메인 이미지 변경" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent flex flex-col justify-end p-12">
+                       <h3 contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onTextChange?.('address', e.currentTarget.innerText)} className={`text-[65px] font-extrabold text-white leading-tight mb-4 break-keep ${headingFont} ${editClass}`}>{info.address}</h3>
+                       <p contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onTextChange?.('promotionText', e.currentTarget.innerText)} className={`text-[35px] font-bold text-white/90 break-keep ${editClass}`}>{info.promotionText}</p>
+                    </div>
+                </div>
+                
+                {/* 하단 50%: 금액 + 스펙 */}
+                <div className="p-12 flex-1 flex flex-col bg-white border-[12px] border-t-0" style={{ borderColor: primaryColor }}>
+                   <div className="text-center mb-10 mt-6">
+                       <div className="text-2xl font-bold text-gray-500 mb-2 uppercase tracking-widest">{info.transactionType}</div>
+                       <h1 contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onTextChange?.('priceMain', e.currentTarget.innerText)} className={`text-[110px] font-black text-black leading-none tracking-tighter ${editClass}`}>{info.priceMain}</h1>
+                       {info.priceSub && <h2 contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onTextChange?.('priceSub', e.currentTarget.innerText)} className={`text-[70px] font-bold text-gray-800 leading-none mt-2 ${editClass}`}>/ {info.priceSub}</h2>}
+                   </div>
+                   
+                   <div className="grid grid-cols-2 gap-6 bg-gray-50 p-8 rounded-[30px] mb-10">
+                        <div className="text-center border-r border-gray-300">
+                            <span className="block text-2xl text-gray-500 font-bold mb-2">면적 / 층수</span>
+                            <span contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onTextChange?.('area', e.currentTarget.innerText)} className={`text-[36px] font-black text-gray-900 ${editClass}`}>{info.area.split('/')[0]} · {info.floor.split('/')[0]}</span>
+                        </div>
+                        <div className="text-center">
+                            <span className="block text-2xl text-gray-500 font-bold mb-2">주차 / 입주</span>
+                            <span contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onTextChange?.('parking', e.currentTarget.innerText)} className={`text-[36px] font-black text-gray-900 ${editClass}`}>{info.parking.includes('대') ? info.parking : '주차 ' + info.parking} · 즉시</span>
+                        </div>
+                   </div>
+                   
+                   <div className="flex-1 flex flex-col justify-center">
+                       <div className="flex flex-col gap-5 items-start w-fit mx-auto">
+                           <div className="flex items-center gap-5">
+                               <div className="w-5 h-5 rounded-full mt-1 shrink-0" style={{ backgroundColor: primaryColor }}></div>
+                               <span contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onTextChange?.('subTitle', e.currentTarget.innerText)} className={`text-[38px] font-bold text-gray-800 leading-tight ${editClass}`}>{info.subTitle || "특징을 입력하세요"}</span>
+                           </div>
+                           <div className="flex items-center gap-5">
+                               <div className="w-5 h-5 rounded-full mt-1 shrink-0" style={{ backgroundColor: primaryColor }}></div>
+                               <span contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onTextChange?.('options', e.currentTarget.innerText)} className={`text-[38px] font-bold text-gray-800 leading-tight ${editClass}`}>{info.options || "옵션 정보를 입력하세요"}</span>
+                           </div>
+                       </div>
+                   </div>
+                </div>
+            </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex justify-center p-4">
       <div 
