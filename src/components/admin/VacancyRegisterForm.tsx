@@ -1538,12 +1538,20 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                 <label style={labelStyle}>주차가능 여부</label>
                 <select value={parking} onChange={(e) => setParking(e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
                   <option value="없음">없음</option>
-                  <option value="가능">가능</option>
-                  <option value="1대">1대</option>
-                  {(propertyType === "아파트·오피스텔" || propertyType === "빌라·주택") ? (
-                    <option value="2대이상">2대이상</option>
+                  {propertyType === "상가·사무실·건물·공장·토지" ? (
+                    <>
+                      <option value="1대">1대</option>
+                      <option value="2대">2대</option>
+                      <option value="3대">3대</option>
+                      <option value="4대">4대</option>
+                      <option value="5대이상">5대이상</option>
+                    </>
                   ) : (
-                    <option value="2대">2대</option>
+                    <>
+                      <option value="가능">가능</option>
+                      <option value="1대">1대</option>
+                      <option value="2대이상">2대이상</option>
+                    </>
                   )}
                 </select>
               </div>
