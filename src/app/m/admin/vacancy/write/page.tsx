@@ -697,10 +697,6 @@ function MobileVacancyWrite() {
           }
         }
         if (ledger.grndFlrCnt) setTotalFloor(ledger.grndFlrCnt.toString());
-        if (ledger.totArea) {
-           setSupplyM2(ledger.totArea.toString());
-           setSupplyPy((Number(ledger.totArea) * 0.3025).toFixed(1));
-        }
         
         let p = ledger.mainPurpsCdNm || "";
         
@@ -713,14 +709,10 @@ function MobileVacancyWrite() {
         
         const addInfo = [];
         if (addInfo.length > 0) {
-          setDescription(prev => (prev ? prev + "
-" : "") + "[건축물대장 추가 정보]
-" + addInfo.join("
-"));
+          setDescription(prev => (prev ? prev + "\n" : "") + "[건축물대장 추가 정보]\n" + addInfo.join("\n"));
         }
         
-        alert("✨ AI 건축물대장 분석 완료!
-면적, 층수, 주용도, 승강기 정보가 자동 입력되었습니다.");
+        alert("✨ AI 건축물대장 분석 완료!\n층수, 주용도, 승강기 정보 등이 자동 입력되었습니다.\n(※ 실제 임대/매매할 호실의 면적은 수기로 입력해 주세요)");
     } finally {
       setFetchingLedger(false);
     }

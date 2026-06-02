@@ -197,10 +197,6 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
           }
         }
         if (ledger.grndFlrCnt) setTotalFloor(ledger.grndFlrCnt.toString());
-        if (ledger.totArea) {
-           setSupplyM2(ledger.totArea.toString());
-           setSupplyPy((Number(ledger.totArea) * 0.3025).toFixed(1));
-        }
         
         let p = ledger.mainPurpsCdNm || "";
         
@@ -212,7 +208,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
         const elvt = (Number(ledger.rideUseElvtCnt) || 0) + (Number(ledger.emgenUseElvtCnt) || 0);
         if (elvt > 0) setElevatorCnt(elvt.toString());
         
-        alert("✨ AI 건축물대장 분석 완료!\n면적, 층수, 주용도, 승강기 정보가 전용 입력칸에 자동 입력되었습니다.");
+        alert("✨ AI 건축물대장 분석 완료!\n층수, 주용도, 승강기 정보 등이 자동 입력되었습니다.\n(※ 실제 임대/매매할 호실의 면적은 수기로 입력해 주세요)");
       }
     } catch (e) {
       console.error(e);
