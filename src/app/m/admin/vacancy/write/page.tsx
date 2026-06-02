@@ -395,7 +395,7 @@ function MobileVacancyWrite() {
       if (subCategory === "아파트분양권" || subCategory === "오피스텔분양권") {
         return Array.from(new Set(["마이너스피", "무피", "로열층", "중도금무이자", "전매제한없음", "하이엔드", "수익형", "역세권", "뻥뷰", "급매", ...selectedThemes]));
       }
-      return Array.from(new Set(["신축첫입주", "특올수리", "로열층", "뻥뷰", "역세권", "풀옵션", "반려동물가능", "주차편리", "전세대출가능", "즉시입주", ...selectedThemes]));
+      return Array.from(new Set(["신축첫입주", "특올수리", "로열층", "뻥뷰", "역세권", "풀옵션", "반려동물가능", "주차편리", "초품아", "숲세권", "전세대출가능", "즉시입주", ...selectedThemes]));
     } else if (propertyType === "원룸·투룸(풀옵션)") {
       return Array.from(new Set(["가성비", "단기임대", "주차편리", "대로변안전", "여성안심", "오피스텔", "애완견가능", ...selectedThemes]));
     } else if (propertyType === "상가·사무실·건물·공장·토지") {
