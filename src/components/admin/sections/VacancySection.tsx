@@ -525,12 +525,6 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                                   </div>
                                 );
                               })()}
-                              {role !== "admin" && (
-                                <button onClick={() => window.open(`/m/gongsil?id=${row.id}`, '_blank')} style={{ height: 30, padding: "0 10px", background: darkMode ? "#1e293b" : "#eff6ff", color: darkMode ? "#93c5fd" : "#2563eb", border: `1px solid ${darkMode ? "#334155" : "#bfdbfe"}`, borderRadius: 4, fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0, cursor: "pointer" }}>
-                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                                  미리보기
-                                </button>
-                              )}
                               <button onClick={async () => {
                                 const path = role === "realtor" ? "/realty_admin" : role === "user" ? "/user_admin" : "/admin";
                                 router.push(`${path}?menu=gongsil&action=write&id=${row.id}`);
