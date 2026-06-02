@@ -761,39 +761,28 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                     return (
                                         <>
                                             {info.overviewTable.map((row, i) => (
-                                                <GeditorWrapper
-                                                    key={i}
-                                                    onMoveUp={() => moveOverviewTableRow(i, 'up')}
-                                                    onMoveDown={() => moveOverviewTableRow(i, 'down')}
-                                                    onDelete={() => deleteOverviewTableRow(i)}
-                                                    onDuplicate={addOverviewTableRow}
-                                                    isFirst={i === 0}
-                                                    isLast={i === info.overviewTable.length - 1}
-                                                    className="border-b border-gray-100 last:border-0 bg-white"
-                                                >
-                                                    <div className="flex w-full">
-                                                        <div className="w-1/3 text-gray-500 font-bold py-2 pl-4 flex items-center">
-                                                            <EditableText 
-                                                                value={row.label} 
-                                                                onChange={(val) => {
-                                                                    const newTable = [...info.overviewTable];
-                                                                    newTable[i] = { ...newTable[i], label: val };
-                                                                    handleTextChange('overviewTable', newTable as any);
-                                                                }}
-                                                            />
-                                                        </div>
-                                                        <div className="w-2/3 text-gray-800 font-bold py-2 pl-4 flex items-center">
-                                                            <EditableText 
-                                                                value={row.value} 
-                                                                onChange={(val) => {
-                                                                    const newTable = [...info.overviewTable];
-                                                                    newTable[i] = { ...newTable[i], value: val };
-                                                                    handleTextChange('overviewTable', newTable as any);
-                                                                }}
-                                                            />
-                                                        </div>
+                                                <div key={i} className="flex w-full border-b border-gray-100 last:border-0 bg-white">
+                                                    <div className="w-1/3 text-gray-500 font-bold py-2 pl-4 flex items-center">
+                                                        <EditableText 
+                                                            value={row.label} 
+                                                            onChange={(val) => {
+                                                                const newTable = [...info.overviewTable];
+                                                                newTable[i] = { ...newTable[i], label: val };
+                                                                handleTextChange('overviewTable', newTable as any);
+                                                            }}
+                                                        />
                                                     </div>
-                                                </GeditorWrapper>
+                                                    <div className="w-2/3 text-gray-800 font-bold py-2 pl-4 flex items-center">
+                                                        <EditableText 
+                                                            value={row.value} 
+                                                            onChange={(val) => {
+                                                                const newTable = [...info.overviewTable];
+                                                                newTable[i] = { ...newTable[i], value: val };
+                                                                handleTextChange('overviewTable', newTable as any);
+                                                            }}
+                                                        />
+                                                    </div>
+                                                </div>
                                             ))}
                                             
 
@@ -824,19 +813,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                 
                                 return (
                                     <div className="flex bg-[#fff9f0] border-t border-gray-200 group relative">
-                                        {/* Direct Transaction Type Switcher: print:hidden */}
-                                        <div className="absolute -left-20 top-1/2 -translate-y-1/2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 print:hidden bg-white/95 shadow-md border border-gray-200 rounded-md p-1.5 z-30">
-                                            <span className="text-[10px] text-gray-400 font-bold text-center border-b pb-0.5 mb-0.5">거래 형태</span>
-                                            {["매매", "전세", "월세"].map((type) => (
-                                                <button
-                                                    key={type}
-                                                    onClick={() => handleTextChange('transactionType', type)}
-                                                    className={`px-1.5 py-0.5 rounded text-[10px] font-extrabold transition-colors ${tType === type ? 'bg-[#cc5a27] text-white' : 'hover:bg-gray-100 text-gray-600'}`}
-                                                >
-                                                    {type}
-                                                </button>
-                                            ))}
-                                        </div>
+                                        {/* Transaction switcher removed to prevent visual clutter; handled in form */}
  
                                         <div className="w-1/3 text-gray-600 font-bold py-2 pl-4 flex items-center">{label}</div>
                                         <div className="w-2/3 text-[#cc5a27] font-extrabold py-2 pl-4 flex items-center">
