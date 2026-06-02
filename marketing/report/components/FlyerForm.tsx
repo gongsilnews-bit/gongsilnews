@@ -848,13 +848,28 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                       </div>
                   )}
                   <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">개발 및 활용 로드맵 (4 시나리오)</h4>
-                  {[1,2,3,4].map(i => (
+                  {[1,2,3,4].map((i, index) => {
+                      const defaultIcons = ['🏢', '🏡', '📈', '🏗️'];
+                      return (
                       <div key={i} className="mb-4 bg-gray-50 p-4 rounded-lg">
-                          <label className="text-xs font-bold text-gray-800 mb-2 block">시나리오 {i}</label>
+                          <div className="flex items-center justify-between mb-2">
+                              <label className="text-xs font-bold text-gray-800">시나리오 {i}</label>
+                              <div className="flex items-center gap-2">
+                                  <span className="text-[10px] text-gray-500 font-normal">아이콘(이모지) 변경:</span>
+                                  <input 
+                                      value={(info.roadmap as any)[`box${i}Icon`] || defaultIcons[index]} 
+                                      onChange={(e)=>handleNestedChange('roadmap', `box${i}Icon`, e.target.value)} 
+                                      className="w-10 text-center border rounded p-1 text-base bg-white" 
+                                      maxLength={5}
+                                      title="이모지(이모티콘)를 입력하세요"
+                                  />
+                              </div>
+                          </div>
                           <input value={(info.roadmap as any)[`box${i}Title`]} onChange={(e)=>handleNestedChange('roadmap', `box${i}Title`, e.target.value)} placeholder="제목" className="w-full border rounded p-2 text-sm mb-2 font-bold" />
                           <textarea value={(info.roadmap as any)[`box${i}Text`]} onChange={(e)=>handleNestedChange('roadmap', `box${i}Text`, e.target.value)} placeholder="상세 내용" className="w-full border rounded p-2 text-sm" rows={3} />
                       </div>
-                  ))}
+                      );
+                  })}
               </div>
           )}
 

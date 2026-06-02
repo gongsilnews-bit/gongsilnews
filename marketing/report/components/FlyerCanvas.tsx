@@ -2035,8 +2035,19 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                     const idx = i + 1;
                     return (
                         <div key={idx} className="bg-white border border-gray-200 rounded-2xl shadow-sm p-8 flex items-start gap-6 hover:shadow-md transition-shadow">
-                            <div className={`w-20 h-20 shrink-0 ${style.bg} rounded-xl border ${style.border} flex items-center justify-center`}>
-                                 <span className="text-4xl">{style.icon}</span>
+                            <div className={`w-20 h-20 shrink-0 ${style.bg} rounded-xl border ${style.border} flex items-center justify-center cursor-text transition-colors hover:bg-black/5`}>
+                                 <EditableText 
+                                     value={(info.roadmap as any)?.[`box${idx}Icon`] || style.icon} 
+                                     onChange={(val) => {
+                                         if (onUpdateInfo) {
+                                             onUpdateInfo({
+                                                 ...info,
+                                                 roadmap: { ...info.roadmap, [`box${idx}Icon`]: val }
+                                             });
+                                         }
+                                     }}
+                                     className="text-4xl text-center bg-transparent min-w-[36px]"
+                                 />
                             </div>
                             <div className="flex-1">
                                 <h3 className="text-xl font-extrabold text-gray-900 mb-3">
