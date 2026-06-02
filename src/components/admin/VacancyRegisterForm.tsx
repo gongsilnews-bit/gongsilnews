@@ -1299,33 +1299,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
               </div>
             )}
 
-            {/* ── 단독 건물 매매 전용 제원 ── */}
-            {(tradeType === "매매" && ["단독/다가구", "전원주택", "상가주택", "빌딩/건물", "공장/창고", "토지", "상가건물", "상가/업무"].includes(subCategory || "") || (propertyType === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고", "토지"].includes(subCategory || ""))) && (
-              <>
-                <div style={{ borderTop: `1px dashed ${border}`, margin: "32px 0" }} />
-                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
-                  <h2 style={{ fontSize: 20, fontWeight: 800, color: textPrimary, margin: 0 }}>건물/토지 상세 제원 (매매 전용)</h2>
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                   <div>
-                     <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: textSecondary, marginBottom: 6 }}>용도지역</label>
-                     <input type="text" value={zoning} onChange={(e) => setZoning(e.target.value)} placeholder="예: 제2종일반주거지역" style={{ width: "100%", height: 44, padding: "0 14px", borderRadius: 8, border: `1px solid ${border}`, backgroundColor: cardBg, color: textPrimary, fontSize: 15 }} />
-                   </div>
-                   <div>
-                     <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: textSecondary, marginBottom: 6 }}>도로 폭 (m)</label>
-                     <input type="number" value={roadWidth} onChange={(e) => setRoadWidth(e.target.value)} placeholder="예: 6" style={{ width: "100%", height: 44, padding: "0 14px", borderRadius: 8, border: `1px solid ${border}`, backgroundColor: cardBg, color: textPrimary, fontSize: 15 }} />
-                   </div>
-                   <div>
-                     <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: textSecondary, marginBottom: 6 }}>지상 층수 (층)</label>
-                     <input type="number" value={groundFloors} onChange={(e) => setGroundFloors(e.target.value)} placeholder="예: 5" style={{ width: "100%", height: 44, padding: "0 14px", borderRadius: 8, border: `1px solid ${border}`, backgroundColor: cardBg, color: textPrimary, fontSize: 15 }} />
-                   </div>
-                   <div>
-                     <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: textSecondary, marginBottom: 6 }}>지하 층수 (층)</label>
-                     <input type="number" value={undergroundFloors} onChange={(e) => setUndergroundFloors(e.target.value)} placeholder="예: 1" style={{ width: "100%", height: 44, padding: "0 14px", borderRadius: 8, border: `1px solid ${border}`, backgroundColor: cardBg, color: textPrimary, fontSize: 15 }} />
-                   </div>
-                </div>
-              </>
-            )}
+
 
             {/* ── 구분선 ── */}
             <div style={{ borderTop: `1px dashed ${border}`, margin: "32px 0" }} />
@@ -1489,23 +1463,54 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
               </div>
             )}
 
-            {/* 공통 필드: 해당층 / 전체층 */}
-            <div style={{ display: "flex", gap: 24, marginBottom: isCommercial ? 24 : 16 }}>
-              <div style={{ flex: 1 }}>
-                <label style={labelStyle}>해당층</label>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <input type="text" placeholder="예: 3, 저층, 고층" value={currentFloor} onChange={(e) => setCurrentFloor(e.target.value)} style={inputStyle} />
-                  {(!currentFloor || !isNaN(Number(currentFloor))) && <span style={{ color: textSecondary, fontSize: 14, flexShrink: 0 }}>층</span>}
+            {/* 공통 필드: 해당층 / 전체층 (단독 건물 매매 시 지상/지하 층수 및 도로 폭으로 대체) */}
+            {(tradeType === "매매" && ["단독/다가구", "전원주택", "상가주택", "빌딩/건물", "공장/창고", "토지", "상가건물", "상가/업무"].includes(subCategory || "") || (propertyType === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고", "토지"].includes(subCategory || ""))) ? (
+              <>
+                <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={labelStyle}>지상 층수</label>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <input type="number" placeholder="예: 5" value={groundFloors} onChange={(e) => setGroundFloors(e.target.value)} style={inputStyle} />
+                      <span style={{ color: textSecondary, fontSize: 14, flexShrink: 0 }}>층</span>
+                    </div>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={labelStyle}>지하 층수</label>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <input type="number" placeholder="예: 1" value={undergroundFloors} onChange={(e) => setUndergroundFloors(e.target.value)} style={inputStyle} />
+                      <span style={{ color: textSecondary, fontSize: 14, flexShrink: 0 }}>층</span>
+                    </div>
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={labelStyle}>도로 폭</label>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <input type="number" placeholder="예: 6" value={roadWidth} onChange={(e) => setRoadWidth(e.target.value)} style={inputStyle} />
+                      <span style={{ color: textSecondary, fontSize: 14, flexShrink: 0 }}>m</span>
+                    </div>
+                  </div>
+                  <div style={{ flex: 1 }}></div>
+                </div>
+              </>
+            ) : (
+              <div style={{ display: "flex", gap: 24, marginBottom: isCommercial ? 24 : 16 }}>
+                <div style={{ flex: 1 }}>
+                  <label style={labelStyle}>해당층</label>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <input type="text" placeholder="예: 3, 저층, 고층" value={currentFloor} onChange={(e) => setCurrentFloor(e.target.value)} style={inputStyle} />
+                    {(!currentFloor || !isNaN(Number(currentFloor))) && <span style={{ color: textSecondary, fontSize: 14, flexShrink: 0 }}>층</span>}
+                  </div>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={labelStyle}>전체층</label>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <input type="number" placeholder="예: 5" value={totalFloor} onChange={(e) => setTotalFloor(e.target.value)} style={inputStyle} />
+                    <span style={{ color: textSecondary, fontSize: 14, flexShrink: 0 }}>층</span>
+                  </div>
                 </div>
               </div>
-              <div style={{ flex: 1 }}>
-                <label style={labelStyle}>전체층</label>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <input type="number" placeholder="예: 5" value={totalFloor} onChange={(e) => setTotalFloor(e.target.value)} style={inputStyle} />
-                  <span style={{ color: textSecondary, fontSize: 14, flexShrink: 0 }}>층</span>
-                </div>
-              </div>
-            </div>
+            )}
 
             {/* 건축물대장 추가 스펙 (API 연동 항목) */}
             {propertyType === "상가·사무실·건물·공장·토지" && subCategory !== "토지" && (

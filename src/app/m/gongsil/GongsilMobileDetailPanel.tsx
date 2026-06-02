@@ -847,8 +847,12 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
                 )}
               <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>공급/전용면적</div>
               <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{selectedVacancy.supply_m2 ? `${selectedVacancy.supply_m2}m²` : "-"} / {selectedVacancy.exclusive_m2 ? `${selectedVacancy.exclusive_m2}m²` : "-"}</div>
-              <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>해당층/총층</div>
-              <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{selectedVacancy.current_floor || selectedVacancy.floor || "-"} / {selectedVacancy.total_floor || selectedVacancy.total_floors || "-"}</div>
+              {!(selectedVacancy.metadata?.ground_floors !== undefined || selectedVacancy.metadata?.underground_floors !== undefined) && (
+                <>
+                  <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>해당층/총층</div>
+                  <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{selectedVacancy.current_floor || selectedVacancy.floor || "-"} / {selectedVacancy.total_floor || selectedVacancy.total_floors || "-"}</div>
+                </>
+              )}
               <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>방/욕실수</div>
               <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{selectedVacancy.room_count || 0}개 / {selectedVacancy.bath_count || selectedVacancy.bathroom_count || 0}개</div>
               <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>방향</div>

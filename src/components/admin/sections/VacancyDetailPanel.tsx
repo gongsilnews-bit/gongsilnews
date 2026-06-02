@@ -405,7 +405,11 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
                   {(vacancy.metadata?.ground_floors !== undefined || vacancy.metadata?.underground_floors !== undefined) && <><div className="gdv-info-label">건물규모</div><div className="gdv-info-value">지하 {vacancy.metadata?.underground_floors || 0}층 / 지상 {vacancy.metadata?.ground_floors || 0}층</div></>}
                   {vacancy.metadata?.land_share_m2 && <><div className="gdv-info-label">대지면적</div><div className="gdv-info-value">{vacancy.metadata.land_share_m2}m² ({vacancy.metadata.land_share_py}평)</div></>}
                   <div className="gdv-info-label">공급/전용면적</div><div className="gdv-info-value">{areaDisplay}</div>
-                  <div className="gdv-info-label">해당층/총층</div><div className="gdv-info-value">{vacancy.current_floor||'-'}층 / {vacancy.total_floor||'-'}층</div>
+                  {!(vacancy.metadata?.ground_floors !== undefined || vacancy.metadata?.underground_floors !== undefined) && (
+                    <>
+                      <div className="gdv-info-label">해당층/총층</div><div className="gdv-info-value">{vacancy.current_floor||'-'}층 / {vacancy.total_floor||'-'}층</div>
+                    </>
+                  )}
                   <div className="gdv-info-label">방/욕실수</div><div className="gdv-info-value">{vacancy.room_count||'-'}개 / {vacancy.bathroom_count||'-'}개</div>
                   <div className="gdv-info-label">방향</div><div className="gdv-info-value">{vacancy.direction || '-'}</div>
                   <div className="gdv-info-label">주차가능 여부</div><div className="gdv-info-value">{vacancy.parking || '없음'}</div>
