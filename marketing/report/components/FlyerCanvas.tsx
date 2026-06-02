@@ -2017,61 +2017,67 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
             footerText={info.footerText || "CONFIDENTIAL | INFORMATION MEMORANDUM"}
             onUpdateFooter={(val) => handleTextChange('footerText', val)}
         >
-            <div className="grid grid-cols-2 grid-rows-2 gap-8 h-[480px]">
-                {[
-                    { bg: 'bg-blue-50', border: 'border-blue-100', icon: '🏢' },
-                    { bg: 'bg-green-50', border: 'border-green-100', icon: '🏡' },
-                    { bg: 'bg-red-50', border: 'border-red-100', icon: '📈' },
-                    { bg: 'bg-yellow-50', border: 'border-yellow-100', icon: '🏗️' },
-                ].map((style, i) => {
-                    const idx = i + 1;
+            <div className="h-[480px] overflow-hidden">
+                {(() => {
+                    const list = info.roadmapList || [1, 2, 3, 4].map((i, index) => ({
+                        title: (info.roadmap as any)?.[`box${i}Title`] || "",
+                        text: (info.roadmap as any)?.[`box${i}Text`] || "",
+                        icon: (info.roadmap as any)?.[`box${i}Icon`] || ['🏢', '🏡', '📈', '🏗️'][index] || '🏢',
+                        bg: ['bg-blue-50', 'bg-green-50', 'bg-red-50', 'bg-yellow-50'][index] || 'bg-gray-50',
+                        border: ['border-blue-100', 'border-green-100', 'border-red-100', 'border-yellow-100'][index] || 'border-gray-200'
+                    }));
+                    
                     return (
-                        <div key={idx} className="bg-white border border-gray-200 rounded-2xl shadow-sm p-8 flex items-start gap-6 hover:shadow-md transition-shadow">
-                            <div className={`w-20 h-20 shrink-0 ${style.bg} rounded-xl border ${style.border} flex items-center justify-center cursor-text transition-colors hover:bg-black/5`}>
-                                 <EditableText 
-                                     value={(info.roadmap as any)?.[`box${idx}Icon`] || style.icon} 
-                                     onChange={(val) => {
-                                         if (onUpdateInfo) {
-                                             onUpdateInfo({
-                                                 ...info,
-                                                 roadmap: { ...info.roadmap, [`box${idx}Icon`]: val }
-                                             });
-                                         }
-                                     }}
-                                     className="text-4xl text-center bg-transparent min-w-[36px]"
-                                 />
-                            </div>
-                            <div className="flex-1">
-                                <h3 className="text-xl font-extrabold text-gray-900 mb-3">
-                                    <EditableText 
-                                        value={(info.roadmap as any)?.[`box${idx}Title`] || ""} 
-                                        onChange={(val) => {
-                                            if (onUpdateInfo) {
-                                                onUpdateInfo({
-                                                    ...info,
-                                                    roadmap: { ...info.roadmap, [`box${idx}Title`]: val }
-                                                });
-                                            }
-                                        }}
-                                    />
-                                </h3>
-                                <div className="text-gray-500 text-sm leading-relaxed">
-                                    <EditableBlock 
-                                        value={(info.roadmap as any)?.[`box${idx}Text`] || ""} 
-                                        onChange={(val) => {
-                                            if (onUpdateInfo) {
-                                                onUpdateInfo({
-                                                    ...info,
-                                                    roadmap: { ...info.roadmap, [`box${idx}Text`]: val }
-                                                });
-                                            }
-                                        }}
-                                    />
+                        <div className={`grid grid-cols-2 gap-6 h-full ${
+                            list.length <= 2 ? 'grid-rows-1' :
+                            list.length <= 4 ? 'grid-rows-2' : 'grid-rows-3'
+                        }`}>
+                            {list.map((item: any, idx: number) => (
+                                <div key={idx} className="bg-white border border-gray-200 rounded-2xl shadow-sm p-6 flex items-start gap-5 hover:shadow-md transition-shadow">
+                                    <div className={`w-16 h-16 shrink-0 ${item.bg} rounded-xl border ${item.border} flex items-center justify-center cursor-text transition-colors hover:bg-black/5`}>
+                                        <EditableText 
+                                            value={item.icon} 
+                                            onChange={(val) => {
+                                                if (onUpdateInfo) {
+                                                    const newList = [...list];
+                                                    newList[idx] = { ...newList[idx], icon: val };
+                                                    onUpdateInfo({ ...info, roadmapList: newList });
+                                                }
+                                            }}
+                                            className="text-3xl text-center bg-transparent min-w-[36px]"
+                                        />
+                                    </div>
+                                    <div className="flex-1">
+                                        <h3 className="text-lg font-extrabold text-gray-900 mb-2">
+                                            <EditableText 
+                                                value={item.title} 
+                                                onChange={(val) => {
+                                                    if (onUpdateInfo) {
+                                                        const newList = [...list];
+                                                        newList[idx] = { ...newList[idx], title: val };
+                                                        onUpdateInfo({ ...info, roadmapList: newList });
+                                                    }
+                                                }}
+                                            />
+                                        </h3>
+                                        <div className="text-gray-500 text-xs leading-relaxed">
+                                            <EditableBlock 
+                                                value={item.text} 
+                                                onChange={(val) => {
+                                                    if (onUpdateInfo) {
+                                                        const newList = [...list];
+                                                        newList[idx] = { ...newList[idx], text: val };
+                                                        onUpdateInfo({ ...info, roadmapList: newList });
+                                                    }
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
+                            ))}
                         </div>
-                    )
-                })}
+                    );
+                })()}
             </div>
             
             <div className="mt-8 text-right pr-4">

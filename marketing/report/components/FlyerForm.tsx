@@ -827,29 +827,86 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                           <h2 className="text-2xl font-black text-black tracking-tight">6. 로드맵</h2>
                       </div>
                   )}
-                  <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">개발 및 활용 로드맵 (4 시나리오)</h4>
-                  {[1,2,3,4].map((i, index) => {
-                      const defaultIcons = ['🏢', '🏡', '📈', '🏗️'];
+                  <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">개발 및 활용 로드맵 (시나리오)</h4>
+                  {(() => {
+                      const list = info.roadmapList || [1, 2, 3, 4].map((i, index) => ({
+                          title: (info.roadmap as any)?.[`box${i}Title`] || "",
+                          text: (info.roadmap as any)?.[`box${i}Text`] || "",
+                          icon: (info.roadmap as any)?.[`box${i}Icon`] || ['🏢', '🏡', '📈', '🏗️'][index] || '🏢',
+                          bg: ['bg-blue-50', 'bg-green-50', 'bg-red-50', 'bg-yellow-50'][index] || 'bg-gray-50',
+                          border: ['border-blue-100', 'border-green-100', 'border-red-100', 'border-yellow-100'][index] || 'border-gray-200'
+                      }));
+
                       return (
-                      <div key={i} className="mb-4 bg-gray-50 p-4 rounded-lg">
-                          <div className="flex items-center justify-between mb-2">
-                              <label className="text-xs font-bold text-gray-800">시나리오 {i}</label>
-                              <div className="flex items-center gap-2">
-                                  <span className="text-[10px] text-gray-500 font-normal">아이콘(이모지) 변경:</span>
-                                  <input 
-                                      value={(info.roadmap as any)[`box${i}Icon`] || defaultIcons[index]} 
-                                      onChange={(e)=>handleNestedChange('roadmap', `box${i}Icon`, e.target.value)} 
-                                      className="w-10 text-center border rounded p-1 text-base bg-white" 
-                                      maxLength={5}
-                                      title="이모지(이모티콘)를 입력하세요"
-                                  />
-                              </div>
-                          </div>
-                          <input value={(info.roadmap as any)[`box${i}Title`]} onChange={(e)=>handleNestedChange('roadmap', `box${i}Title`, e.target.value)} placeholder="제목" className="w-full border rounded p-2 text-sm mb-2 font-bold" />
-                          <textarea value={(info.roadmap as any)[`box${i}Text`]} onChange={(e)=>handleNestedChange('roadmap', `box${i}Text`, e.target.value)} placeholder="상세 내용" className="w-full border rounded p-2 text-sm" rows={3} />
-                      </div>
+                          <>
+                              {list.map((item: any, idx: number) => (
+                                  <div key={idx} className="mb-4 bg-gray-50 p-4 rounded-lg relative">
+                                      <div className="flex items-center justify-between mb-2">
+                                          <label className="text-xs font-bold text-gray-800">시나리오 {idx + 1}</label>
+                                          <div className="flex items-center gap-2">
+                                              <span className="text-[10px] text-gray-500 font-normal">아이콘:</span>
+                                              <input 
+                                                  value={item.icon} 
+                                                  onChange={(e) => {
+                                                      const newList = [...list];
+                                                      newList[idx] = { ...newList[idx], icon: e.target.value };
+                                                      setInfo({ ...info, roadmapList: newList });
+                                                  }} 
+                                                  className="w-10 text-center border rounded p-1 text-base bg-white" 
+                                                  maxLength={5}
+                                              />
+                                              {list.length > 1 && (
+                                                  <button
+                                                      type="button"
+                                                      onClick={() => {
+                                                          const newList = list.filter((_, i) => i !== idx);
+                                                          setInfo({ ...info, roadmapList: newList });
+                                                      }}
+                                                      className="text-red-400 hover:text-red-600 hover:bg-red-50 p-1 rounded"
+                                                  >
+                                                      <TrashIcon className="w-4 h-4" />
+                                                  </button>
+                                              )}
+                                          </div>
+                                      </div>
+                                      <input 
+                                          value={item.title} 
+                                          onChange={(e) => {
+                                              const newList = [...list];
+                                              newList[idx] = { ...newList[idx], title: e.target.value };
+                                              setInfo({ ...info, roadmapList: newList });
+                                          }} 
+                                          placeholder="제목" 
+                                          className="w-full border rounded p-2 text-sm mb-2 font-bold" 
+                                      />
+                                      <textarea 
+                                          value={item.text} 
+                                          onChange={(e) => {
+                                              const newList = [...list];
+                                              newList[idx] = { ...newList[idx], text: e.target.value };
+                                              setInfo({ ...info, roadmapList: newList });
+                                          }} 
+                                          placeholder="상세 내용" 
+                                          className="w-full border rounded p-2 text-sm" 
+                                          rows={3} 
+                                      />
+                                  </div>
+                              ))}
+                              {list.length < 6 && (
+                                  <button
+                                      type="button"
+                                      onClick={() => {
+                                          const newList = [...list, { title: '', text: '', icon: '🌟', bg: 'bg-gray-50', border: 'border-gray-200' }];
+                                          setInfo({ ...info, roadmapList: newList });
+                                      }}
+                                      className="w-full py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-1 border border-dashed border-blue-200"
+                                  >
+                                      + 시나리오 추가
+                                  </button>
+                              )}
+                          </>
                       );
-                  })}
+                  })()}
               </div>
           )}
 
