@@ -821,6 +821,30 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
                 }
                 return selectedVacancy.building_name || "-";
               })()}</div>
+                {selectedVacancy.metadata?.zoning && (
+                  <>
+                    <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>용도지역</div>
+                    <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{selectedVacancy.metadata.zoning}</div>
+                  </>
+                )}
+                {selectedVacancy.metadata?.road_width !== undefined && selectedVacancy.metadata?.road_width !== null && (
+                  <>
+                    <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>도로 폭</div>
+                    <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{selectedVacancy.metadata.road_width}m</div>
+                  </>
+                )}
+                {(selectedVacancy.metadata?.ground_floors !== undefined || selectedVacancy.metadata?.underground_floors !== undefined) && (
+                  <>
+                    <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>건물규모</div>
+                    <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>지하 {selectedVacancy.metadata?.underground_floors || 0}층 / 지상 {selectedVacancy.metadata?.ground_floors || 0}층</div>
+                  </>
+                )}
+                {selectedVacancy.metadata?.land_share_m2 && (
+                  <>
+                    <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>대지면적</div>
+                    <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{selectedVacancy.metadata.land_share_m2}m² ({selectedVacancy.metadata.land_share_py}평)</div>
+                  </>
+                )}
               <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>공급/전용면적</div>
               <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{selectedVacancy.supply_m2 ? `${selectedVacancy.supply_m2}m²` : "-"} / {selectedVacancy.exclusive_m2 ? `${selectedVacancy.exclusive_m2}m²` : "-"}</div>
               <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>해당층/총층</div>
