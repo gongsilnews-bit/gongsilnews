@@ -1253,7 +1253,7 @@ ${clone.outerHTML}
                       AI온라인전단지
                     </h1>
                     <span className="text-xs font-bold text-red-500 bg-red-50 px-2.5 py-1 rounded-md ml-1 border border-red-100">
-                      ※ 초안작성이기 때문에 부정확할 수 있습니다. 참고하시기 바랍니다.
+                      초안작성이기 때문에 부정확할 수 있습니다. 참고하시기 바랍니다.
                     </span>
                   </div>
                   {isLoadedFromStorage && (
