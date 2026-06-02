@@ -342,7 +342,11 @@ function MobileVacancyWrite() {
   const currentOptionList = React.useMemo(() => {
     let base = ["주차", "엘리베이터"];
     if (propertyType === "아파트·오피스텔" || propertyType === "원룸·투룸(풀옵션)") {
-      base = ["시스템에어컨", "세탁기", "건조기", "빌트인냉장고", "식기세척기", "인덕션", "붙박이장", "침대", "TV", "비데", "도어락", "무인택배함"];
+      if (subCategory === "아파트분양권" || subCategory === "오피스텔분양권") {
+        base = ["풀퍼니시드(풀옵션)", "시스템에어컨", "빌트인냉장고", "세탁기", "건조기", "스타일러", "식기세척기", "인덕션", "중문설치", "붙박이장"];
+      } else {
+        base = ["시스템에어컨", "세탁기", "건조기", "빌트인냉장고", "식기세척기", "인덕션", "붙박이장", "침대", "TV", "비데", "도어락", "무인택배함"];
+      }
     } else if (propertyType === "상가·사무실·건물·공장·토지") {
       base = ["냉난방기", "수도설비", "가스설비", "화물용승강기", "보안시스템"];
     }
@@ -362,6 +366,9 @@ function MobileVacancyWrite() {
 
   const currentThemeList = React.useMemo(() => {
     if (propertyType === "아파트·오피스텔") {
+      if (subCategory === "아파트분양권" || subCategory === "오피스텔분양권") {
+        return Array.from(new Set(["마이너스피", "무피", "로열층", "중도금무이자", "전매제한없음", "하이엔드", "수익형", "역세권", "뻥뷰", "급매", ...selectedThemes]));
+      }
       return Array.from(new Set(["신축첫입주", "특올수리", "로열층", "뻥뷰", "역세권", "풀옵션", "반려동물가능", "주차편리", "전세대출가능", "즉시입주", ...selectedThemes]));
     } else if (propertyType === "원룸·투룸(풀옵션)") {
       return Array.from(new Set(["가성비", "단기임대", "주차편리", "대로변안전", "여성안심", "오피스텔", "애완견가능", ...selectedThemes]));
