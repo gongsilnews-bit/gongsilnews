@@ -303,15 +303,15 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                      allBoxes.forEach((box: any) => box.checked = e.target.checked);
                   }} />
                 </th>
-                <th style={{ padding: "12px 4px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 50 }}>번호</th>
-                <th style={{ padding: "12px 4px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 70 }}>광고설정</th>
-                <th style={{ padding: "12px 4px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 70 }}>공실광고 종류</th>
+                <th style={{ padding: "12px 4px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 50, whiteSpace: "nowrap" }}>번호</th>
+                <th style={{ padding: "12px 4px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 90, whiteSpace: "nowrap" }}>광고설정</th>
+                <th style={{ padding: "12px 4px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 110, whiteSpace: "nowrap" }}>공실광고 종류</th>
                 <th style={{ padding: "12px 10px", textAlign: "left", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: "auto" }}>주소 / 연락처</th>
-                <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 160 }}>금액</th>
-                <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 140 }}>방수/면적(m²)/층</th>
-                <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 70 }}>최초등록</th>
-                <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 120 }}>등록자/연락처</th>
-                <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 120 }}>관리</th>
+                <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 180, whiteSpace: "nowrap" }}>금액</th>
+                <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 140, whiteSpace: "nowrap" }}>방수/면적(m²)/층</th>
+                <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 80, whiteSpace: "nowrap" }}>최초등록</th>
+                <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 130, whiteSpace: "nowrap" }}>등록자/연락처</th>
+                <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 160, whiteSpace: "nowrap" }}>관리</th>
               </tr>
             </thead>
             <tbody>
@@ -405,8 +405,8 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                       )}
                       <div style={{ fontSize: 13, color: textSecondary, marginTop: 4, fontWeight: 600 }}>{daysSinceCreated}일</div>
                     </td>
-                    <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 15, fontWeight: 600, color: textPrimary }}>{row.sub_category || row.property_type}</td>
-                    <td style={{ padding: "16px 10px", verticalAlign: "middle", cursor: "pointer" }} onClick={() => {
+                    <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 15, fontWeight: 600, color: textPrimary, whiteSpace: "nowrap" }}>{row.sub_category || row.property_type}</td>
+                    <td style={{ padding: "16px 10px", verticalAlign: "middle", cursor: "pointer", minWidth: 200 }} onClick={() => {
                       const path = role === "realtor" ? "/realty_admin" : role === "user" ? "/user_admin" : "/admin";
                       router.push(`${path}?menu=gongsil&action=detail&id=${row.id}`);
                     }}>
@@ -424,9 +424,9 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                     </td>
                     <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>{dateStr}</td>
                     <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
-                      <div style={{ fontWeight: 700, fontSize: 15, color: textPrimary, marginBottom: 2 }}>{ownerInfo.name || row.client_name || ownerName || "-"}</div>
+                      <div style={{ fontWeight: 700, fontSize: 15, color: textPrimary, marginBottom: 2 }}>{ownerInfo.name || row.client_name || ownerName || "미상"}</div>
                       <div style={{ fontSize: 13, color: textSecondary, fontWeight: 600, marginTop: 2, marginBottom: role === "admin" ? 4 : 0 }}>
-                        {ownerInfo.phone || row.client_phone || ownerPhone || "-"}
+                        {ownerInfo.phone || ownerInfo.cellphone || row.client_phone || ownerPhone || "연락처 미상"}
                       </div>
                       {role === "admin" && (
                         <div style={{ fontSize: 12, padding: "2px 6px", borderRadius: 4, display: "inline-block", background: row.owner_role === 'REALTOR' ? '#dbeafe' : row.owner_role === 'ADMIN' ? '#fce7f3' : '#f3f4f6', color: row.owner_role === 'REALTOR' ? '#1e40af' : row.owner_role === 'ADMIN' ? '#be185d' : '#374151', fontWeight: 600 }}>
