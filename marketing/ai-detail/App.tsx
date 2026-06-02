@@ -1322,12 +1322,25 @@ ${clone.outerHTML}
 
       // A4 portrait: 595.28 x 841.89 px at 72dpi
       const pdf = new jsPDF('p', 'px', [595.28, 841.89]);
-      const imgWidth = 595.28;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      const finalHeight = Math.min(imgHeight, 841.89);
+      
+      const pageWidth = 595.28;
+      const pageHeight = 841.89;
+      
+      let printWidth = pageWidth;
+      let printHeight = (canvas.height * pageWidth) / canvas.width;
+      
+      // 높이가 A4 한 페이지를 초과하는 경우 세로 비율에 맞춰 가로세로 축소 (비율 깨짐 방지)
+      if (printHeight > pageHeight) {
+        printHeight = pageHeight;
+        printWidth = (canvas.width * pageHeight) / canvas.height;
+      }
+      
+      // 여백 정렬 (가로 가운데 정렬)
+      const xOffset = (pageWidth - printWidth) / 2;
+      const yOffset = 0; // 상단부터 배치되게 0으로 설정하거나, (pageHeight - printHeight) / 2 로 가운데 배치
 
       const imgData = canvas.toDataURL('image/jpeg', 0.95);
-      pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, finalHeight);
+      pdf.addImage(imgData, 'JPEG', xOffset, yOffset, printWidth, printHeight);
 
       // iframe print (same as IM report)
       const pdfBlob = pdf.output('blob');

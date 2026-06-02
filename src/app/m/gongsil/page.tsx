@@ -12,7 +12,7 @@ import BookmarkCategoryModal from "@/components/BookmarkCategoryModal";
 import MobileFilterBar from "./MobileFilterBar";
 import { useVacancyFilters } from "./filters/useVacancyFilters";
 import MobileTopBarHeader from "../_components/MobileTopBarHeader";
-import { getAuctionInfo, getJitteredCoords, getMaskedAddress } from "@/app/(map)/gongsil/gongsilHelpers";
+import { getAuctionInfo, getJitteredCoords, getMaskedAddress, getCleanAddrText } from "@/app/(map)/gongsil/gongsilHelpers";
 import { GongsilMobileDetailPanel } from "./GongsilMobileDetailPanel";
 import { GongsilMobileDrawerList } from "./GongsilMobileDrawerList";
 
@@ -428,7 +428,7 @@ function MobileGongsilContent() {
     Kakao.Share.sendDefault({
       objectType: "feed",
       content: {
-        title: selectedVacancy.building_name || [selectedVacancy.dong, selectedVacancy.sigungu].filter(Boolean).join(" ") || "공실광고 상세",
+        title: getCleanAddrText(selectedVacancy) || "공실광고 상세",
         description: `${selectedVacancy.trade_type} ${formatPrice(selectedVacancy)}`,
         imageUrl: selectedVacancy.images?.[0] || "https://gongsilnews.com/new_logo.png",
         link: { mobileWebUrl: shareUrl, webUrl: shareUrl },
@@ -1312,7 +1312,7 @@ function MobileGongsilContent() {
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg>
             </button>
             <h2 style={{ fontSize: "18px", fontWeight: 800, color: "#111827", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {selectedVacancy?.building_name || [selectedVacancy?.dong, selectedVacancy?.sigungu].filter(Boolean).join(" ") || "공실광고 상세"}
+              {getCleanAddrText(selectedVacancy) || "공실광고 상세"}
             </h2>
             {/* Action Buttons */}
             <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>

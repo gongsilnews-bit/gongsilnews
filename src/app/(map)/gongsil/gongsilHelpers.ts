@@ -76,18 +76,17 @@ export const getCleanAddrText = (prop: any) => {
     return bldName;
   }
 
-  const exp = prop.address_exposure;
   const propType = prop.property_type || "";
   const subCategory = prop.sub_category || "";
   const isApt = ["아파트", "오피스텔", "도시형생활주택"].some(t => propType.includes(t) || subCategory.includes(t));
 
-  if (exp && exp !== "번지공개" && exp !== "지번공개" && exp !== "동/호수공개") {
-    if (!isApt) {
-      return dong ? `${dong} 공실 매물` : "공실 매물";
-    }
+  if (isApt) {
+    // 아파트/오피스텔: 동 + sub_category + 건물명 (예: 논현동 아파트 아크로힐스논현)
+    return [dong, subCategory, bldName].filter(Boolean).join(" ");
   }
 
-  return [dong, bldName].filter(Boolean).join(" ");
+  // 그 외: 동 + sub_category (예: 논현동 사무실)
+  return [dong, subCategory].filter(Boolean).join(" ") || "공실 매물";
 };
 
 // 온비드 경공매 물건의 세부 카테고리 정보 및 면적을 안전하게 분석하는 헬퍼 함수
