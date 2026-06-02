@@ -423,7 +423,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, onText
                 <div className="grid grid-cols-1 md:grid-cols-2">
                     {section.items.map((item, idx) => (
                         <div key={item.id} className={`flex border-b border-gray-200 ${idx % 2 === 1 ? 'md:border-l border-gray-200' : ''}`}>
-                            <div className={`w-28 md:w-32 py-5 px-3 text-[17px] md:text-sm flex items-center justify-center text-center shrink-0 border-r border-gray-200 ${layout === 'type4' ? 'bg-gray-800 text-white font-extrabold' : 'bg-gray-50 text-gray-800 font-extrabold'}`}>
+                            <div contentEditable suppressContentEditableWarning onBlur={(e) => onSectionTextChange?.(section.id, item.id, 'title', e.currentTarget.innerText)} className={`w-28 md:w-32 py-5 px-3 text-[17px] md:text-sm flex items-center justify-center text-center shrink-0 border-r border-gray-200 ${editClass} ${layout === 'type4' ? 'bg-gray-800 text-white font-extrabold' : 'bg-gray-50 text-gray-800 font-extrabold'}`}>
                                 {item.title}
                             </div>
                             <div className={`flex-1 py-5 px-4 text-[18px] md:text-sm text-gray-950 font-extrabold flex items-center break-keep ${bodyFont}`}>
@@ -437,10 +437,10 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, onText
                                         title="네이버 지도로 보기"
                                     >
                                         <MapPinIcon className="w-4 h-4 flex-shrink-0" />
-                                        <span>{item.text}</span>
+                                        <span contentEditable suppressContentEditableWarning onBlur={(e) => onSectionTextChange?.(section.id, item.id, 'text', e.currentTarget.innerText)} className={editClass}>{item.text}</span>
                                     </a>
                                 ) : (
-                                    item.text
+                                    <span contentEditable suppressContentEditableWarning onBlur={(e) => onSectionTextChange?.(section.id, item.id, 'text', e.currentTarget.innerText)} className={`w-full ${editClass}`}>{item.text}</span>
                                 )}
                             </div>
                         </div>
