@@ -1395,6 +1395,12 @@ ${clone.outerHTML}
       // Clone the element to filter sections without affecting the view
       const clone = element.cloneNode(true) as HTMLElement;
       
+      // Strip contentEditable to fix html2canvas text baseline shift bug
+      clone.querySelectorAll('[contentEditable]').forEach(el => {
+          el.removeAttribute('contentEditable');
+          el.removeAttribute('suppressContentEditableWarning');
+      });
+
       // We need to append the clone to the document to capture it, but keep it hidden/out of view
       clone.style.position = 'absolute';
       clone.style.left = '0px';
@@ -1454,6 +1460,13 @@ ${clone.outerHTML}
       const element = flyerRef.current;
       
       const clone = element.cloneNode(true) as HTMLElement;
+      
+      // Strip contentEditable to fix html2canvas text baseline shift bug
+      clone.querySelectorAll('[contentEditable]').forEach(el => {
+          el.removeAttribute('contentEditable');
+          el.removeAttribute('suppressContentEditableWarning');
+      });
+
       clone.style.position = 'absolute';
       clone.style.left = '0px';
       clone.style.top = '-99999px';
@@ -1507,6 +1520,13 @@ ${clone.outerHTML}
       const element = flyerRef.current;
       
       const clone = element.cloneNode(true) as HTMLElement;
+      
+      // Strip contentEditable to fix html2canvas text baseline shift bug
+      clone.querySelectorAll('[contentEditable]').forEach(el => {
+          el.removeAttribute('contentEditable');
+          el.removeAttribute('suppressContentEditableWarning');
+      });
+
       clone.style.position = 'absolute';
       clone.style.left = '0px';
       clone.style.top = '-99999px';
