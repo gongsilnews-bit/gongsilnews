@@ -1278,153 +1278,97 @@ ${clone.outerHTML}
     );
   }
 
-  // ── 유리창 전단지 A4 세로 인쇄 (새 창 방식) ──
-  const handlePrintFlyer = () => {
-    const info = state.propertyInfo;
-    const color = state.colorTheme;
-    const mainImg = state.mainImage || '';
-    const isRent = info.transactionType === '월세' || info.transactionType === '단기임대';
-    
-    const priceDisplay = `${info.priceMain || ''}${isRent && info.priceSub ? ' / ' + info.priceSub : ''}`;
-    const priceLabel = info.transactionType === '매매' ? '매매가' : info.transactionType === '전세' ? '전세가' : info.transactionType === '단기임대' ? '단기임대료' : '보증금/월세';
+  // ── 유리창 전단지 A4 세로 인쇄 (매매보고서와 동일: html2canvas → jsPDF → iframe) ──
+  const [isPrinting, setIsPrinting] = useState(false);
 
-    const statsData = [
-      { label: 'PRICE', value: priceDisplay, sub: priceLabel },
-      { label: 'AREA', value: (info.area?.split('/')?.[0] || info.area), sub: '전용면적' },
-      { label: 'ROOMS', value: info.roomCount, sub: '방 / 욕실' },
-      { label: 'MOVE-IN', value: (info.moveInDate?.split(' ')?.[0] || info.moveInDate), sub: '입주가능일' },
-    ];
+  const handlePrintFlyer = async () => {
+    if (!flyerRef.current) return;
+    try {
+      setIsPrinting(true);
+      const element = flyerRef.current;
 
-    const detailRows = [
-      { l: '공급/전용면적', v: info.area },
-      { l: '해당층/총층', v: info.floor },
-      { l: '방향', v: info.direction },
-      { l: '주차가능대수', v: info.parking },
-      { l: '옵션 정보', v: info.options },
-    ];
+      // Clone the flyer DOM
+      const clone = element.cloneNode(true) as HTMLElement;
+      clone.style.position = 'absolute';
+      clone.style.left = '0px';
+      clone.style.top = '-99999px';
+      clone.style.minHeight = '0px';
+      clone.style.height = 'auto';
+      clone.style.width = '860px';
 
-    // iframe 방식으로 팝업 차단 우회
-    let printFrame = document.getElementById('flyer-print-frame') as HTMLIFrameElement;
-    if (!printFrame) {
-      printFrame = document.createElement('iframe');
-      printFrame.id = 'flyer-print-frame';
-      printFrame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:none;';
-      document.body.appendChild(printFrame);
+      document.body.appendChild(clone);
+
+      // Remove sections not needed for print (keep hero, stats, basic-info only)
+      const allSections = clone.querySelectorAll('[data-export-id]');
+      allSections.forEach((sec) => {
+        const id = sec.getAttribute('data-export-id');
+        if (id && !['hero', 'stats', 'basic-info'].includes(id)) {
+          sec.remove();
+        }
+      });
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { jsPDF } = (window as any).jspdf;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const canvas = await (window as any).html2canvas(clone, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        windowWidth: 900,
+        scrollX: 0,
+        scrollY: 0,
+      });
+
+      document.body.removeChild(clone);
+
+      // A4 portrait: 595.28 x 841.89 px at 72dpi
+      const pdf = new jsPDF('p', 'px', [595.28, 841.89]);
+      const imgWidth = 595.28;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const finalHeight = Math.min(imgHeight, 841.89);
+
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+      pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, finalHeight);
+
+      // iframe print (same as IM report)
+      const pdfBlob = pdf.output('blob');
+      const pdfUrl = URL.createObjectURL(pdfBlob);
+
+      const existingFrame = document.getElementById('flyer-print-frame');
+      if (existingFrame) existingFrame.remove();
+
+      const iframe = document.createElement('iframe');
+      iframe.id = 'flyer-print-frame';
+      iframe.style.position = 'absolute';
+      iframe.style.width = '0px';
+      iframe.style.height = '0px';
+      iframe.style.border = 'none';
+      iframe.style.left = '-9999px';
+      iframe.style.top = '-9999px';
+      iframe.src = pdfUrl;
+
+      document.body.appendChild(iframe);
+
+      iframe.onload = () => {
+        setTimeout(() => {
+          if (iframe.contentWindow) {
+            iframe.contentWindow.focus();
+            iframe.contentWindow.print();
+          }
+          setIsPrinting(false);
+        }, 150);
+      };
+
+    } catch (err) {
+      console.error(err);
+      alert("인쇄 데이터를 준비하는 중 오류가 발생했습니다.");
+      setIsPrinting(false);
     }
-    const printDoc = printFrame.contentWindow?.document;
-    if (!printDoc) return;
-
-    printDoc.open();
-    printDoc.write(`<!DOCTYPE html>
-<html lang="ko">
-<head>
-<meta charset="UTF-8">
-<title>${info.address} - AI 매물 전단지</title>
-<style>
-  @page { size: A4 portrait; margin: 0; }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  html, body { width: 210mm; height: 297mm; overflow: hidden; }
-  body { font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif; color: #222; background: #fff; }
-  .page { width: 210mm; min-height: 297mm; max-height: 297mm; overflow: hidden; display: flex; flex-direction: column; }
-  .hero { position: relative; width: 100%; height: 52%; overflow: hidden; flex-shrink: 0; }
-  .hero img { width: 100%; height: 100%; object-fit: cover; }
-  .hero-overlay { position: absolute; inset: 0; background: linear-gradient(to right, ${color.dark}E6, transparent 70%); }
-  .hero-content { position: absolute; bottom: 0; left: 0; padding: 28px 32px; color: #fff; z-index: 2; }
-  .hero-tag { display: inline-block; border: 1px solid rgba(255,255,255,0.4); padding: 3px 12px; font-size: 10px; font-weight: 600; letter-spacing: 2px; margin-bottom: 8px; }
-  .hero-title { font-size: 36px; font-weight: 800; line-height: 1.15; margin-bottom: 4px; text-shadow: 0 2px 8px rgba(0,0,0,0.3); }
-  .hero-slogan { font-size: 22px; font-weight: 700; margin-bottom: 4px; text-shadow: 0 1px 4px rgba(0,0,0,0.3); }
-  .hero-sub { font-size: 12px; opacity: 0.85; color: ${color.secondary}; }
-  .stats-bar { display: flex; border-bottom: 1px solid #e5e7eb; flex-shrink: 0; }
-  .stats-item { flex: 1; padding: 14px 8px; text-align: center; border-right: 1px solid #f0f0f0; }
-  .stats-item:last-child { border-right: none; }
-  .stats-label { display: block; font-size: 9px; color: #9ca3af; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 4px; }
-  .stats-value { display: block; font-size: 16px; font-weight: 800; color: ${color.primary}; }
-  .stats-sub { display: block; font-size: 9px; color: #9ca3af; margin-top: 2px; }
-  .info-section { padding: 18px 28px 12px; flex: 1; display: flex; flex-direction: column; }
-  .info-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 14px; }
-  .info-header-left .info-label-sm { font-size: 10px; font-weight: 700; letter-spacing: 2px; color: ${color.primary}; display: block; margin-bottom: 2px; }
-  .info-header-left h2 { font-size: 20px; font-weight: 800; color: #1f2937; }
-  .info-header-right .mgmt-label { font-size: 10px; color: #9ca3af; display: block; }
-  .info-header-right .mgmt-value { font-size: 16px; font-weight: 800; color: #1f2937; }
-  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border-top: 2px solid #1f2937; }
-  .info-row { display: flex; border-bottom: 1px solid #e5e7eb; }
-  .info-row.full { grid-column: 1 / -1; }
-  .info-row .label { width: 100px; padding: 10px 12px; font-size: 12px; font-weight: 700; color: #374151; background: #f9fafb; border-right: 1px solid #e5e7eb; display: flex; align-items: center; flex-shrink: 0; }
-  .info-row .value { flex: 1; padding: 10px 12px; font-size: 12px; font-weight: 800; color: #111827; display: flex; align-items: center; word-break: break-all; }
-  .notice-box { background: #f4f6f8; padding: 14px 16px; margin-top: 10px; border-radius: 4px; flex: 1; }
-  .notice-title { font-size: 10px; font-weight: 700; color: ${color.primary}; letter-spacing: 1px; margin-bottom: 4px; }
-  .notice-content { font-size: 11px; color: #1f2937; font-weight: 600; line-height: 1.7; white-space: pre-wrap; }
-  @media print {
-    html, body { width: 210mm; height: 297mm; }
-    .page { width: 210mm; min-height: 297mm; max-height: 297mm; }
-  }
-</style>
-</head>
-<body>
-<div class="page">
-  <div class="hero">
-    ${mainImg ? `<img src="${mainImg}" alt="매물 사진" />` : '<div style="width:100%;height:100%;background:#e5e7eb;"></div>'}
-    <div class="hero-overlay"></div>
-    <div class="hero-content">
-      <div class="hero-tag">${info.transactionType || '매매'}</div>
-      <div class="hero-title">${info.address}</div>
-      <div class="hero-slogan">${info.promotionText}</div>
-      <div class="hero-sub">${info.subTitle}</div>
-    </div>
-  </div>
-  <div class="stats-bar">
-    ${statsData.map(s => `
-      <div class="stats-item">
-        <span class="stats-label">${s.label}</span>
-        <span class="stats-value">${s.value}</span>
-        <span class="stats-sub">${s.sub}</span>
-      </div>
-    `).join('')}
-  </div>
-  <div class="info-section">
-    <div class="info-header">
-      <div class="info-header-left">
-        <span class="info-label-sm">PROPERTY INFO</span>
-        <h2>매물 상세 정보</h2>
-      </div>
-      <div class="info-header-right">
-        <span class="mgmt-label">월 관리비</span>
-        <span class="mgmt-value">${info.managementFee || '-'}</span>
-      </div>
-    </div>
-    <div class="info-grid">
-      ${detailRows.map((r, i) => {
-        const isLast = i === detailRows.length - 1;
-        return `<div class="info-row${isLast ? ' full' : ''}">
-          <div class="label">${r.l}</div>
-          <div class="value">${r.v || '-'}</div>
-        </div>`;
-      }).join('')}
-    </div>
-    ${info.noticeContent ? `
-      <div class="notice-box">
-        <div class="notice-title">${info.noticeTitle || 'DETAIL INFO'}</div>
-        <div class="notice-content">${info.noticeContent}</div>
-      </div>
-    ` : ''}
-  </div>
-</div>
-</body>
-</html>`);
-    printDoc.close();
-    // 이미지 로딩 대기 후 인쇄
-    setTimeout(() => {
-      try {
-        printFrame.contentWindow?.focus();
-        printFrame.contentWindow?.print();
-      } catch (e) {
-        console.error('Print error:', e);
-      }
-    }, 800);
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50 overflow-hidden font-sans">
+    <div className="flex h-screen bg-gray-50 overflow-hidden font-sans">
       {loadingData && (
         <div className="fixed inset-0 bg-slate-900/80 z-[200] flex flex-col items-center justify-center text-white backdrop-blur-sm">
           <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-amber-500 mb-6"></div>
@@ -1563,12 +1507,25 @@ ${clone.outerHTML}
         {/* Print Button */}
         <button 
           onClick={handlePrintFlyer}
-          className="py-3 px-5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 active:scale-95 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all duration-150 shadow-sm"
+          disabled={isPrinting}
+          className="py-3 px-5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 active:scale-95 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all duration-150 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4 text-gray-500">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0l.229 2.523a1.125 1.125 0 01-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0021 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 00-1.913-.247M6.34 18H5.25A2.25 2.25 0 013 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 011.913-.247m10.5 0a48.536 48.536 0 00-10.5 0v-2.94a2.25 2.25 0 012.25-2.25h6a2.25 2.25 0 012.25 2.25v2.94z" />
-          </svg>
-          <span>인쇄하기</span>
+          {isPrinting ? (
+            <>
+              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+              <span>인쇄 준비 중...</span>
+            </>
+          ) : (
+            <>
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4 text-gray-500">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0l.229 2.523a1.125 1.125 0 01-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0021 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 00-1.913-.247M6.34 18H5.25A2.25 2.25 0 013 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 011.913-.247m10.5 0a48.536 48.536 0 00-10.5 0v-2.94a2.25 2.25 0 012.25-2.25h6a2.25 2.25 0 012.25 2.25v2.94z" />
+              </svg>
+              <span>인쇄하기</span>
+            </>
+          )}
         </button>
 
 
