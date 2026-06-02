@@ -907,7 +907,7 @@ function MobileVacancyWrite() {
             <div style={{flex:1}}>
               <label style={labelStyle}>주차</label>
               <select value={parking} onChange={e=>setParking(e.target.value)} style={{...inputStyle,cursor:"pointer"}}>
-                {["없음","가능","1대","2대","3대이상"].map(o=><option key={o}>{o}</option>)}
+                {["없음","가능","1대", (propertyType === "아파트·오피스텔" || propertyType === "빌라·주택") ? "2대이상" : "2대", "3대이상"].map(o=><option key={o} value={o}>{o}</option>)}
               </select>
             </div>
             <div style={{flex:1}}>
