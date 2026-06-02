@@ -959,7 +959,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
         {(activeTab === 'all' || activeTab === 2) && (
         <ReportPage 
             pageNumber={2} 
-            title={info.page2Title || "Property Report"} 
+            title={info.page2Title || "매물설명 & 시세"} 
             onUpdateTitle={(val) => handleTextChange('page2Title', val)}
             subtitle={info.page2Subtitle || "Status & Valuation"} 
             onUpdateSubtitle={(val) => handleTextChange('page2Subtitle', val)}
@@ -980,7 +980,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                 <div className="w-full h-full flex flex-col">
                     <div className="text-gray-600 font-bold text-sm mb-4">
                         <EditableText 
-                            value={info.page2HighlightHeader || "1. 매물 핵심 하이라이트 & 시세 분석"} 
+                            value={info.page2HighlightHeader || "1. PROPERTY INFORMATION & VALUE"} 
                             onChange={(val) => handleTextChange('page2HighlightHeader', val)} 
                         />
                     </div>
@@ -1190,6 +1190,12 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                     </div>
                                 );
                             })()}
+                            <div className="mt-auto pt-6 border-t border-gray-100">
+                                <div className="text-[10px] font-bold tracking-widest text-[#cc5a27] uppercase mb-1">STRATEGIC ADVISORY</div>
+                                <div className="text-xs text-gray-600 leading-relaxed">
+                                    <EditableBlock value={(info as any).chartAdviseText || "본 자산의 시세는 최근 실거래가 및 시장 동향을 반영하여 산출되었습니다. 입지 조건에 따른 프리미엄이 내재되어 있어 향후 가치 상승이 기대됩니다."} onChange={(val) => handleTextChange('chartAdviseText', val)} placeholder="그래프 분석 및 조언 입력..." />
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

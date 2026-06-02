@@ -155,7 +155,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
           {[
               { id: 'all' as const, label: '전체' },
               { id: 1, label: '1. 개요' },
-              { id: 2, label: '2. Property Report' },
+              { id: 2, label: '2. 매물설명 & 시세' },
               { id: 3, label: '3. 임대현황' },
               { id: 4, label: '4. 사진' },
               { id: 5, label: '5. 입지' },
@@ -393,7 +393,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
               <div className="space-y-6 animate-fadeIn">
                   {activeTab === 'all' && (
                       <div className="pt-6 pb-2 border-b-[3px] border-black mb-4 mt-8">
-                          <h2 className="text-2xl font-black text-black tracking-tight">2. Property Report</h2>
+                          <h2 className="text-2xl font-black text-black tracking-tight">2. 매물설명 & 시세</h2>
                       </div>
                   )}
 
@@ -578,6 +578,10 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                           <div>
                               <label className="text-xs text-gray-500 font-bold">좌측 텍스트 (STRATEGIC ADVISORY)</label>
                               <textarea name="valuationText" value={info.valuationText || ""} onChange={handleChange} className="w-full border rounded p-2 text-sm" rows={4} />
+                          </div>
+                          <div>
+                              <label className="text-xs text-gray-500 font-bold">우측 텍스트 (그래프 하단)</label>
+                              <textarea name="chartAdviseText" value={(info as any).chartAdviseText || ""} onChange={handleChange} className="w-full border rounded p-2 text-sm" rows={4} />
                           </div>
                       </div>
                   </div>
