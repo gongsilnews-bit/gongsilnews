@@ -812,7 +812,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                 }
                                 
                                 return (
-                                    <div className="flex bg-[#fff9f0] border-t border-gray-200 group relative">
+                                    <div className="flex bg-[#fff9f0] border-t border-gray-200">
                                         {/* Transaction switcher removed to prevent visual clutter; handled in form */}
  
                                         <div className="w-1/3 text-gray-600 font-bold py-2 pl-4 flex items-center">{label}</div>
