@@ -208,7 +208,14 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
         const elvt = (Number(ledger.rideUseElvtCnt) || 0) + (Number(ledger.emgenUseElvtCnt) || 0);
         if (elvt > 0) setElevatorCnt(elvt.toString());
         
-        alert("✨ AI 건축물대장 분석 완료!\n층수, 주용도, 승강기 정보 등이 자동 입력되었습니다.\n(※ 실제 임대/매매할 호실의 면적은 수기로 입력해 주세요)");
+        alert(
+          "✨ AI 건축물대장 분석 완료!\n" +
+          "층수, 주용도, 승강기 정보 등이 자동 입력되었습니다.\n\n" +
+          "⚠️ 주의사항:\n" +
+          "불러온 데이터는 공공장부 기준이므로 실제 현황과 다를 수 있습니다.\n" +
+          "반드시 자동 입력된 내용이 정확한지 다시 한번 확인해 주세요!\n" +
+          "(※ 면적은 연동되지 않으므로 수기로 직접 입력해 주세요)"
+        );
       }
     } catch (e) {
       console.error(e);
