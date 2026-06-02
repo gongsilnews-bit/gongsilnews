@@ -280,7 +280,7 @@ export async function getVacancies(options?: {
           pblctBgnDtm: metadata.pblctBgnDtm,
           bid_start_date: metadata.bid_start_date,
         } : {};
-        return { ...rest, metadata: lightMetadata, vacancy_photos };
+        return { ...rest, metadata: lightMetadata, members, vacancy_photos };
       });
 
       return { success: true, data: lightData, count: count || 0 };
@@ -366,7 +366,7 @@ export async function getVacancies(options?: {
         pblctBgnDtm: metadata.pblctBgnDtm,
         bid_start_date: metadata.bid_start_date,
       } : {};
-      return { ...rest, metadata: lightMetadata, vacancy_photos };
+      return { ...rest, metadata: lightMetadata, members, vacancy_photos };
     });
 
     const finalData = lightData || [];
