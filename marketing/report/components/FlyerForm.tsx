@@ -396,40 +396,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                           <h2 className="text-2xl font-black text-black tracking-tight">2. 물건설명 및 시세</h2>
                       </div>
                   )}
-                  <div>
-                      <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">층별 점유 및 임대 현황</h4>
-                      <div className="space-y-4">
-                          <button
-                              type="button"
-                              onClick={onOpenTableEditor}
-                              className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.99] hover:shadow-lg active:shadow-sm"
-                          >
-                              🖥️ 층별현황 표 넓게 편집하기 (스마트 빌더)
-                          </button>
-                          
-                          {/* 현재 입력된 요약 요소를 예쁘게 보여줌 */}
-                          <div className="border border-slate-100 bg-slate-50/50 rounded-xl p-4 text-xs space-y-2">
-                              <div className="flex justify-between font-semibold text-slate-500 pb-1.5 border-b border-dashed border-slate-200">
-                                  <span>현재 등록된 층</span>
-                                  <span>{info.floorStatus?.length || 0}개 층</span>
-                              </div>
-                              <div className="max-h-36 overflow-y-auto space-y-1.5 custom-scrollbar pr-1">
-                                  {info.floorStatus?.map((row, idx) => (
-                                      <div key={idx} className="flex justify-between items-center text-slate-700 bg-white border border-slate-100 rounded px-2.5 py-1">
-                                          <span className="font-bold text-slate-800">{row.floor || '-'}</span>
-                                          <span className="text-slate-500 truncate max-w-[80px]">{row.purpose || '-'}</span>
-                                          <span className="font-semibold text-orange-600 truncate max-w-[100px]">{row.lease === '보증금 / 차임 내역 별도문의' ? '세로병합' : row.lease || '-'}</span>
-                                      </div>
-                                  ))}
-                              </div>
-                          </div>
 
-                          <div className="mt-4">
-                              <label className="text-xs text-gray-500 font-semibold">현황 하단 안내문</label>
-                              <input name="floorStatusNotice" value={info.floorStatusNotice} onChange={handleChange} className="w-full border rounded p-2 text-xs mt-1" />
-                          </div>
-                      </div>
-                  </div>
 
                   <div>
                       <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">매각 핵심 하이라이트</h4>
