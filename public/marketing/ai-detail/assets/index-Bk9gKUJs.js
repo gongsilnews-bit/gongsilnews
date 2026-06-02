@@ -392,14 +392,14 @@ ${Q}
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>${n.info.address||"공실뉴스 매물 전단지"} - ${n.info.transactionType||"매매"} ${n.info.priceMain||""}</title>
+<title>${n.info.address||"매물 전단지"} - ${n.info.transactionType||"매매"} ${n.info.priceMain||""}</title>
 <meta property="og:type" content="article">
-<meta property="og:site_name" content="공실뉴스">
-<meta property="og:title" content="${n.info.promotionText||n.info.address||"공실뉴스 AI온라인전단지"}">
+<meta property="og:site_name" content="AI 매물 전단지">
+<meta property="og:title" content="${n.info.promotionText||n.info.address||"매물 상세정보"}">
 <meta property="og:description" content="${n.info.subTitle||"상세 정보를 확인해보세요."}">
 <meta property="og:image" content="${n.mainImage||"https://www.gongsilnews.com/images/default.jpg"}">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="${n.info.promotionText||n.info.address||"공실뉴스 AI온라인전단지"}">
+<meta name="twitter:title" content="${n.info.promotionText||n.info.address||"매물 상세정보"}">
 <meta name="twitter:description" content="${n.info.subTitle||"상세 정보를 확인해보세요."}">
 <meta name="twitter:image" content="${n.mainImage||"https://www.gongsilnews.com/images/default.jpg"}">
 <script src="https://cdn.tailwindcss.com"><\/script>
