@@ -94,6 +94,8 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
   const [supplyPy, setSupplyPy] = useState("");
   const [exclusiveM2, setExclusiveM2] = useState("");
   const [exclusivePy, setExclusivePy] = useState("");
+  const [landShareM2, setLandShareM2] = useState("");
+  const [landSharePy, setLandSharePy] = useState("");
 
   // 주소
   const [sido, setSido] = useState("");
@@ -261,6 +263,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
     if (editData.maintenance_fee) setMaintenance(String(editData.maintenance_fee / 10000));
     if (editData.supply_m2) { setSupplyM2(String(editData.supply_m2)); setSupplyPy((Number(editData.supply_m2) * 0.3025).toFixed(1)); }
     if (editData.exclusive_m2) { setExclusiveM2(String(editData.exclusive_m2)); setExclusivePy((Number(editData.exclusive_m2) * 0.3025).toFixed(1)); }
+    if (editData.metadata?.land_share_m2) { setLandShareM2(String(editData.metadata.land_share_m2)); setLandSharePy((Number(editData.metadata.land_share_m2) * 0.3025).toFixed(1)); }
     if (editData.sido) setSido(editData.sido);
     if (editData.sigungu) setSigungu(editData.sigungu);
     if (editData.dong) setDong(editData.dong);
@@ -1046,6 +1049,26 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
               </div>
             </div>
 
+            {propertyType === "빌라·주택" && tradeType === "매매" && (
+              <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
+                <div style={{ flex: 1 }}>
+                  <label style={labelStyle}>대지지분 (필수)</label>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <input type="number" placeholder="예: 33" value={landShareM2}
+                      onChange={(e) => handleM2Change(e.target.value, setLandShareM2, setLandSharePy)}
+                      style={{ ...inputStyle, flex: 1 }} />
+                    <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>m²</span>
+                    <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>=</span>
+                    <input type="number" placeholder="예: 10" value={landSharePy}
+                      onChange={(e) => handlePyChange(e.target.value, setLandSharePy, setLandShareM2)}
+                      style={{ ...inputStyle, flex: 1 }} />
+                    <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>평</span>
+                  </div>
+                </div>
+                <div style={{ flex: 1 }}></div>
+              </div>
+            )}
+
             {/* 공통 필드: 해당층 / 전체층 */}
             <div style={{ display: "flex", gap: 24, marginBottom: isCommercial ? 24 : 16 }}>
               <div style={{ flex: 1 }}>
@@ -1757,6 +1780,11 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                     address_exposure: addressExposure,
                     lat: coords?.lat,
                     lng: coords?.lng,
+                    metadata: {
+                      ...(editData?.metadata || {}),
+                      land_share_m2: landShareM2 ? parseFloat(landShareM2) : undefined,
+                      land_share_py: landSharePy ? parseFloat(landSharePy) : undefined,
+                    },
                     client_name: clientName,
                     client_phone: clientPhone,
                     owner_relation: ownerRelation,

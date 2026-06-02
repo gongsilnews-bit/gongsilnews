@@ -78,6 +78,9 @@ function MobileVacancyWrite() {
   const [exclusivePy, setExclusivePy] = useState("");
   const [supplyM2, setSupplyM2] = useState("");
   const [supplyPy, setSupplyPy] = useState("");
+  const [landShareM2, setLandShareM2] = useState("");
+  const [landSharePy, setLandSharePy] = useState("");
+  const [existingMetadata, setExistingMetadata] = useState<any>({});
   const [areaUnit, setAreaUnit] = useState<"m2"|"py">("py");
   const [currentFloor, setCurrentFloor] = useState("");
   const [totalFloor, setTotalFloor] = useState("");
@@ -201,6 +204,13 @@ function MobileVacancyWrite() {
         if (d.supply_m2) {
           setSupplyM2(String(d.supply_m2));
           setSupplyPy((Number(d.supply_m2) * 0.3025).toFixed(1));
+        }
+        if (d.metadata) {
+          setExistingMetadata(d.metadata);
+          if (d.metadata.land_share_m2) {
+            setLandShareM2(String(d.metadata.land_share_m2));
+            setLandSharePy((Number(d.metadata.land_share_m2) * 0.3025).toFixed(1));
+          }
         }
         if (d.current_floor) setCurrentFloor(d.current_floor);
         if (d.total_floor) setTotalFloor(d.total_floor);
@@ -526,6 +536,11 @@ function MobileVacancyWrite() {
         landlord_name: isRealtor ? landlordName : undefined,
         landlord_phone: isRealtor ? landlordPhone : undefined,
         landlord_memo: isRealtor ? landlordMemo : undefined,
+        metadata: {
+          ...existingMetadata,
+          land_share_m2: landShareM2 ? parseFloat(landShareM2) : undefined,
+          land_share_py: landSharePy ? parseFloat(landSharePy) : undefined,
+        },
         consent: true, status,
       };
 
@@ -817,6 +832,25 @@ function MobileVacancyWrite() {
             <div style={{flex:1}}>{supplyM2 ? (areaUnit==="m2" ? `≈ ${(parseFloat(supplyM2)*0.3025).toFixed(1)}평` : `≈ ${parseFloat(supplyM2).toFixed(1)}m²`) : ""}</div>
             <div style={{flex:1}}>{exclusiveM2 ? (areaUnit==="m2" ? `≈ ${(parseFloat(exclusiveM2)*0.3025).toFixed(1)}평` : `≈ ${parseFloat(exclusiveM2).toFixed(1)}m²`) : ""}</div>
           </div>
+          {propertyType === "빌라·주택" && tradeType === "매매" && (
+            <>
+              <div style={{ display:"flex", gap:10, marginBottom:4 }}>
+                <div style={{flex:1}}>
+                  <label style={labelStyle}>대지지분({areaUnit==="m2"?"m²":"평"}) <span style={{color:"#ea580c", fontSize:11}}>*필수</span></label>
+                  {areaUnit==="m2" ? (
+                    <input type="number" value={landShareM2} onChange={e=>handleM2Change(e.target.value, setLandShareM2, setLandSharePy)} placeholder="33" style={inputStyle}/>
+                  ) : (
+                    <input type="number" value={landSharePy} onChange={e=>handlePyChange(e.target.value, setLandSharePy, setLandShareM2)} placeholder="10" style={inputStyle}/>
+                  )}
+                </div>
+                <div style={{flex:1}}></div>
+              </div>
+              <div style={{ display:"flex", gap:10, marginBottom:10, fontSize:12, color:"#1a73e8", fontWeight:600, padding:"0 2px" }}>
+                <div style={{flex:1}}>{landShareM2 ? (areaUnit==="m2" ? `≈ ${(parseFloat(landShareM2)*0.3025).toFixed(1)}평` : `≈ ${parseFloat(landShareM2).toFixed(1)}m²`) : ""}</div>
+                <div style={{flex:1}}></div>
+              </div>
+            </>
+          )}
           <div style={{ display:"flex", gap:10, marginBottom:10 }}>
             <div style={{flex:1}}><label style={labelStyle}>전체층</label><input type="number" value={totalFloor} onChange={e=>setTotalFloor(e.target.value)} placeholder="15" style={inputStyle}/></div>
             <div style={{flex:1}}><label style={labelStyle}>해당층 <span style={{fontSize:11, color:"#9ca3af", fontWeight:400}}>(직접입력)</span></label><input type="text" inputMode="numeric" value={currentFloor} onChange={e=>setCurrentFloor(e.target.value)} placeholder="예: 3" style={inputStyle}/></div>

@@ -60,6 +60,7 @@ export async function createVacancy(data: {
   approval_year?: number;
   total_units?: number;
   status?: string;
+  metadata?: any;
 }) {
   const supabase = getAdminClient();
 
