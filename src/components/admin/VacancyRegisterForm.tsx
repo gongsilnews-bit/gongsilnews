@@ -938,9 +938,9 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ background: cardBg, borderRadius: 14, padding: "36px 40px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
 
-            {/* ── 섹션 1: 공실광고정보 ── */}
+            {/* ── 섹션 1: 분류 및 주소 ── */}
             <h2 style={{ fontSize: 20, fontWeight: 800, color: textPrimary, margin: "0 0 24px", borderBottom: `2px solid ${textPrimary}`, paddingBottom: 16 }}>
-              공실광고정보 (전세, 월세, 단기 임대정보)
+              공실 분류 및 위치 주소
             </h2>
 
             {/* 공실광고 대분류 */}
@@ -973,203 +973,10 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
               </div>
             )}
 
-            {/* 거래유형 */}
-            <label style={labelStyle}>거래유형 {reqMark}</label>
-            <div style={{ display: "flex", gap: 10, marginBottom: 24 }}>
-              {["매매", "전세", "월세", "단기"]
-                .filter(t => !(propertyType === "원룸·투룸(풀옵션)" && t === "매매"))
-                .map(t => (
-                <SelectBtn key={t} label={t} selected={tradeType === t} onClick={() => setTradeType(t)} />
-              ))}
-            </div>
-
-            {/* 금액 입력 (거래유형에 따라 동적) */}
-            {tradeType === "매매" && (
-              <div style={{ marginBottom: 24 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                  <label style={{ ...labelStyle, marginBottom: 0 }}>매매가</label>
-                  {deposit && <span style={{ color: "#f97316", fontSize: 13, fontWeight: 700 }}>{formatKoreanAmount(deposit)}</span>}
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                  <input type="number" placeholder="예: 30000" value={deposit} onChange={(e) => setDeposit(e.target.value)} style={{ ...inputStyle, flex: 1 }} />
-                  <span style={{ color: textSecondary, fontSize: 14, flexShrink: 0 }}>만원</span>
-                </div>
-                <AmountKeypad value={deposit} setter={setDeposit} />
-              </div>
-            )}
-            {(tradeType === "전세") && (
-              <div style={{ marginBottom: 24 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                  <label style={{ ...labelStyle, marginBottom: 0 }}>보증금</label>
-                  {deposit && <span style={{ color: "#f97316", fontSize: 13, fontWeight: 700 }}>{formatKoreanAmount(deposit)}</span>}
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                  <input type="number" placeholder="예: 20000" value={deposit} onChange={(e) => setDeposit(e.target.value)} style={{ ...inputStyle, flex: 1 }} />
-                  <span style={{ color: textSecondary, fontSize: 14, flexShrink: 0 }}>만원</span>
-                </div>
-                <AmountKeypad value={deposit} setter={setDeposit} />
-              </div>
-            )}
-            {(tradeType === "월세" || tradeType === "단기") && (
-              <>
-                <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                      <label style={{ ...labelStyle, marginBottom: 0 }}>보증금</label>
-                      {deposit && <span style={{ color: "#f97316", fontSize: 13, fontWeight: 700 }}>{formatKoreanAmount(deposit)}</span>}
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                      <input type="number" placeholder="예: 1000" value={deposit} onChange={(e) => setDeposit(e.target.value)} style={{ ...inputStyle }} />
-                      <span style={{ color: textSecondary, fontSize: 14, flexShrink: 0 }}>만원</span>
-                    </div>
-                    <AmountKeypad value={deposit} setter={setDeposit} />
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                       <label style={{ ...labelStyle, marginBottom: 0 }}>월세</label>
-                       {monthly && <span style={{ color: "#f97316", fontSize: 13, fontWeight: 700 }}>{formatKoreanAmount(monthly)}</span>}
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                      <input type="number" placeholder="예: 50" value={monthly} onChange={(e) => setMonthly(e.target.value)} style={{ ...inputStyle }} />
-                      <span style={{ color: textSecondary, fontSize: 14, flexShrink: 0 }}>만원</span>
-                    </div>
-                    <AmountKeypad value={monthly} setter={setMonthly} />
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* 관리비 */}
-            <label style={labelStyle}>관리비</label>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 24, maxWidth: 400 }}>
-              <input type="text" placeholder="예: 10" value={maintenance} onChange={(e) => setMaintenance(e.target.value)} style={{ ...inputStyle }} />
-              <span style={{ color: textSecondary, fontSize: 14, flexShrink: 0 }}>만원</span>
-            </div>
-
-            {/* 면적 */}
-            <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
-              <div style={{ flex: 1 }}>
-                <label style={labelStyle}>공급면적</label>
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <input type="number" placeholder="예: 84" value={supplyM2}
-                    onChange={(e) => handleM2Change(e.target.value, setSupplyM2, setSupplyPy)}
-                    style={{ ...inputStyle, flex: 1 }} />
-                  <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>m²</span>
-                  <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>=</span>
-                  <input type="number" placeholder="예: 25.4" value={supplyPy}
-                    onChange={(e) => handlePyChange(e.target.value, setSupplyPy, setSupplyM2)}
-                    style={{ ...inputStyle, flex: 1 }} />
-                  <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>평</span>
-                </div>
-              </div>
-              <div style={{ flex: 1 }}>
-                <label style={labelStyle}>전용면적</label>
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <input type="number" placeholder="예: 59" value={exclusiveM2}
-                    onChange={(e) => handleM2Change(e.target.value, setExclusiveM2, setExclusivePy)}
-                    style={{ ...inputStyle, flex: 1 }} />
-                  <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>m²</span>
-                  <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>=</span>
-                  <input type="number" placeholder="예: 18.8" value={exclusivePy}
-                    onChange={(e) => handlePyChange(e.target.value, setExclusivePy, setExclusiveM2)}
-                    style={{ ...inputStyle, flex: 1 }} />
-                  <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>평</span>
-                </div>
-              </div>
-            </div>
-
-            {propertyType === "빌라·주택" && tradeType === "매매" && (
-              <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
-                <div style={{ flex: 1 }}>
-                  <label style={labelStyle}>대지지분</label>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <input type="number" placeholder="예: 33" value={landShareM2}
-                      onChange={(e) => handleM2Change(e.target.value, setLandShareM2, setLandSharePy)}
-                      style={{ ...inputStyle, flex: 1 }} />
-                    <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>m²</span>
-                    <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>=</span>
-                    <input type="number" placeholder="예: 10" value={landSharePy}
-                      onChange={(e) => handlePyChange(e.target.value, setLandSharePy, setLandShareM2)}
-                      style={{ ...inputStyle, flex: 1 }} />
-                    <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>평</span>
-                  </div>
-                </div>
-                <div style={{ flex: 1 }}></div>
-              </div>
-            )}
-
-            {/* 공통 필드: 해당층 / 전체층 */}
-            <div style={{ display: "flex", gap: 24, marginBottom: isCommercial ? 24 : 16 }}>
-              <div style={{ flex: 1 }}>
-                <label style={labelStyle}>해당층</label>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <input type="text" placeholder="예: 3, 저층, 고층" value={currentFloor} onChange={(e) => setCurrentFloor(e.target.value)} style={inputStyle} />
-                  {(!currentFloor || !isNaN(Number(currentFloor))) && <span style={{ color: textSecondary, fontSize: 14, flexShrink: 0 }}>층</span>}
-                </div>
-              </div>
-              <div style={{ flex: 1 }}>
-                <label style={labelStyle}>전체층</label>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <input type="number" placeholder="예: 5" value={totalFloor} onChange={(e) => setTotalFloor(e.target.value)} style={inputStyle} />
-                  <span style={{ color: textSecondary, fontSize: 14, flexShrink: 0 }}>층</span>
-                </div>
-              </div>
-            </div>
-
-            {/* 동적 필드: 주거형 = 방/욕실/방향 */}
-            {!isCommercial && (
-              <>
-                <div style={{ display: "flex", gap: 24, marginBottom: 16 }}>
-                  <div style={{ flex: 1 }}>
-                    <label style={labelStyle}>방 개수</label>
-                    <select value={roomCount} onChange={(e) => setRoomCount(e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
-                      {["1","2","3","4개 이상"].map(n => <option key={n}>{n}</option>)}
-                    </select>
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <label style={labelStyle}>욕실 개수</label>
-                    <select value={bathCount} onChange={(e) => setBathCount(e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
-                      {["1","2","3개 이상"].map(n => <option key={n}>{n}</option>)}
-                    </select>
-                  </div>
-                </div>
-                <div style={{ marginBottom: 24, maxWidth: "50%" }}>
-                  <label style={labelStyle}>방향 (거실 등 주실 기준)</label>
-                  <select value={direction} onChange={(e) => setDirection(e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
-                    <option value="">선택</option>
-                    {["남향","남동향","남서향","동향","서향","북향","북동향","북서향"].map(d => <option key={d} value={d}>{d}</option>)}
-                  </select>
-                </div>
-              </>
-            )}
-
-            {/* 주차 / 입주가능일 */}
-            <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
-              <div style={{ flex: 1 }}>
-                <label style={labelStyle}>주차가능 여부</label>
-                <select value={parking} onChange={(e) => setParking(e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
-                  <option value="없음">없음</option>
-                  <option value="가능">가능</option>
-                  <option value="1대">1대</option>
-                  {(propertyType === "아파트·오피스텔" || propertyType === "빌라·주택") ? (
-                    <option value="2대이상">2대이상</option>
-                  ) : (
-                    <option value="2대">2대</option>
-                  )}
-                </select>
-              </div>
-              <div style={{ flex: 1 }}>
-                <label style={labelStyle}>입주가능일</label>
-                <select value={moveInDate} onChange={(e) => setMoveInDate(e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
-                  <option>즉시입주(공실)</option><option>1개월 이내</option><option>2개월 이내</option><option>3개월 이내</option><option>날짜 협의</option>
-                </select>
-              </div>
-            </div>
-
             {/* ── 구분선 ── */}
             <div style={{ borderTop: `1px dashed ${border}`, margin: "32px 0" }} />
 
-            {/* ── 섹션 2: 위치/주소 ── */}
+            {/* ── 위치/주소 ── */}
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
               <h2 style={{ fontSize: 20, fontWeight: 800, color: textPrimary, margin: 0 }}>위치/주소</h2>
               <button type="button" onClick={() => {
@@ -1430,6 +1237,207 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                 </div>
               </div>
             )}
+
+            {/* ── 구분선 ── */}
+            <div style={{ borderTop: `1px dashed ${border}`, margin: "32px 0" }} />
+
+            {/* ── 섹션 2: 거래 및 상세 정보 ── */}
+            <h2 style={{ fontSize: 20, fontWeight: 800, color: textPrimary, margin: "0 0 24px", borderBottom: `2px solid ${textPrimary}`, paddingBottom: 16 }}>
+              거래 및 상세 정보 (전세, 월세, 면적 등)
+            </h2>
+
+            {/* 거래유형 */}
+            <label style={labelStyle}>거래유형 {reqMark}</label>
+            <div style={{ display: "flex", gap: 10, marginBottom: 24 }}>
+              {["매매", "전세", "월세", "단기"]
+                .filter(t => !(propertyType === "원룸·투룸(풀옵션)" && t === "매매"))
+                .map(t => (
+                <SelectBtn key={t} label={t} selected={tradeType === t} onClick={() => setTradeType(t)} />
+              ))}
+            </div>
+
+            {/* 금액 입력 (거래유형에 따라 동적) */}
+            {tradeType === "매매" && (
+              <div style={{ marginBottom: 24 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                  <label style={{ ...labelStyle, marginBottom: 0 }}>매매가</label>
+                  {deposit && <span style={{ color: "#f97316", fontSize: 13, fontWeight: 700 }}>{formatKoreanAmount(deposit)}</span>}
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                  <input type="number" placeholder="예: 30000" value={deposit} onChange={(e) => setDeposit(e.target.value)} style={{ ...inputStyle, flex: 1 }} />
+                  <span style={{ color: textSecondary, fontSize: 14, flexShrink: 0 }}>만원</span>
+                </div>
+                <AmountKeypad value={deposit} setter={setDeposit} />
+              </div>
+            )}
+            {(tradeType === "전세") && (
+              <div style={{ marginBottom: 24 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                  <label style={{ ...labelStyle, marginBottom: 0 }}>보증금</label>
+                  {deposit && <span style={{ color: "#f97316", fontSize: 13, fontWeight: 700 }}>{formatKoreanAmount(deposit)}</span>}
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                  <input type="number" placeholder="예: 20000" value={deposit} onChange={(e) => setDeposit(e.target.value)} style={{ ...inputStyle, flex: 1 }} />
+                  <span style={{ color: textSecondary, fontSize: 14, flexShrink: 0 }}>만원</span>
+                </div>
+                <AmountKeypad value={deposit} setter={setDeposit} />
+              </div>
+            )}
+            {(tradeType === "월세" || tradeType === "단기") && (
+              <>
+                <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                      <label style={{ ...labelStyle, marginBottom: 0 }}>보증금</label>
+                      {deposit && <span style={{ color: "#f97316", fontSize: 13, fontWeight: 700 }}>{formatKoreanAmount(deposit)}</span>}
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                      <input type="number" placeholder="예: 1000" value={deposit} onChange={(e) => setDeposit(e.target.value)} style={{ ...inputStyle }} />
+                      <span style={{ color: textSecondary, fontSize: 14, flexShrink: 0 }}>만원</span>
+                    </div>
+                    <AmountKeypad value={deposit} setter={setDeposit} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                       <label style={{ ...labelStyle, marginBottom: 0 }}>월세</label>
+                       {monthly && <span style={{ color: "#f97316", fontSize: 13, fontWeight: 700 }}>{formatKoreanAmount(monthly)}</span>}
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                      <input type="number" placeholder="예: 50" value={monthly} onChange={(e) => setMonthly(e.target.value)} style={{ ...inputStyle }} />
+                      <span style={{ color: textSecondary, fontSize: 14, flexShrink: 0 }}>만원</span>
+                    </div>
+                    <AmountKeypad value={monthly} setter={setMonthly} />
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* 관리비 */}
+            <label style={labelStyle}>관리비</label>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 24, maxWidth: 400 }}>
+              <input type="text" placeholder="예: 10" value={maintenance} onChange={(e) => setMaintenance(e.target.value)} style={{ ...inputStyle }} />
+              <span style={{ color: textSecondary, fontSize: 14, flexShrink: 0 }}>만원</span>
+            </div>
+
+            {/* 면적 */}
+            <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
+              <div style={{ flex: 1 }}>
+                <label style={labelStyle}>공급면적</label>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <input type="number" placeholder="예: 84" value={supplyM2}
+                    onChange={(e) => handleM2Change(e.target.value, setSupplyM2, setSupplyPy)}
+                    style={{ ...inputStyle, flex: 1 }} />
+                  <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>m²</span>
+                  <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>=</span>
+                  <input type="number" placeholder="예: 25.4" value={supplyPy}
+                    onChange={(e) => handlePyChange(e.target.value, setSupplyPy, setSupplyM2)}
+                    style={{ ...inputStyle, flex: 1 }} />
+                  <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>평</span>
+                </div>
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={labelStyle}>전용면적</label>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <input type="number" placeholder="예: 59" value={exclusiveM2}
+                    onChange={(e) => handleM2Change(e.target.value, setExclusiveM2, setExclusivePy)}
+                    style={{ ...inputStyle, flex: 1 }} />
+                  <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>m²</span>
+                  <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>=</span>
+                  <input type="number" placeholder="예: 18.8" value={exclusivePy}
+                    onChange={(e) => handlePyChange(e.target.value, setExclusivePy, setExclusiveM2)}
+                    style={{ ...inputStyle, flex: 1 }} />
+                  <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>평</span>
+                </div>
+              </div>
+            </div>
+
+            {propertyType === "빌라·주택" && tradeType === "매매" && (
+              <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
+                <div style={{ flex: 1 }}>
+                  <label style={labelStyle}>대지지분</label>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <input type="number" placeholder="예: 33" value={landShareM2}
+                      onChange={(e) => handleM2Change(e.target.value, setLandShareM2, setLandSharePy)}
+                      style={{ ...inputStyle, flex: 1 }} />
+                    <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>m²</span>
+                    <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>=</span>
+                    <input type="number" placeholder="예: 10" value={landSharePy}
+                      onChange={(e) => handlePyChange(e.target.value, setLandSharePy, setLandShareM2)}
+                      style={{ ...inputStyle, flex: 1 }} />
+                    <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>평</span>
+                  </div>
+                </div>
+                <div style={{ flex: 1 }}></div>
+              </div>
+            )}
+
+            {/* 공통 필드: 해당층 / 전체층 */}
+            <div style={{ display: "flex", gap: 24, marginBottom: isCommercial ? 24 : 16 }}>
+              <div style={{ flex: 1 }}>
+                <label style={labelStyle}>해당층</label>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <input type="text" placeholder="예: 3, 저층, 고층" value={currentFloor} onChange={(e) => setCurrentFloor(e.target.value)} style={inputStyle} />
+                  {(!currentFloor || !isNaN(Number(currentFloor))) && <span style={{ color: textSecondary, fontSize: 14, flexShrink: 0 }}>층</span>}
+                </div>
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={labelStyle}>전체층</label>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <input type="number" placeholder="예: 5" value={totalFloor} onChange={(e) => setTotalFloor(e.target.value)} style={inputStyle} />
+                  <span style={{ color: textSecondary, fontSize: 14, flexShrink: 0 }}>층</span>
+                </div>
+              </div>
+            </div>
+
+            {/* 동적 필드: 주거형 = 방/욕실/방향 */}
+            {!isCommercial && (
+              <>
+                <div style={{ display: "flex", gap: 24, marginBottom: 16 }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={labelStyle}>방 개수</label>
+                    <select value={roomCount} onChange={(e) => setRoomCount(e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
+                      {["1","2","3","4개 이상"].map(n => <option key={n}>{n}</option>)}
+                    </select>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={labelStyle}>욕실 개수</label>
+                    <select value={bathCount} onChange={(e) => setBathCount(e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
+                      {["1","2","3개 이상"].map(n => <option key={n}>{n}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div style={{ marginBottom: 24, maxWidth: "50%" }}>
+                  <label style={labelStyle}>방향 (거실 등 주실 기준)</label>
+                  <select value={direction} onChange={(e) => setDirection(e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
+                    <option value="">선택</option>
+                    {["남향","남동향","남서향","동향","서향","북향","북동향","북서향"].map(d => <option key={d} value={d}>{d}</option>)}
+                  </select>
+                </div>
+              </>
+            )}
+
+            {/* 주차 / 입주가능일 */}
+            <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
+              <div style={{ flex: 1 }}>
+                <label style={labelStyle}>주차가능 여부</label>
+                <select value={parking} onChange={(e) => setParking(e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
+                  <option value="없음">없음</option>
+                  <option value="가능">가능</option>
+                  <option value="1대">1대</option>
+                  {(propertyType === "아파트·오피스텔" || propertyType === "빌라·주택") ? (
+                    <option value="2대이상">2대이상</option>
+                  ) : (
+                    <option value="2대">2대</option>
+                  )}
+                </select>
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={labelStyle}>입주가능일</label>
+                <select value={moveInDate} onChange={(e) => setMoveInDate(e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
+                  <option>즉시입주(공실)</option><option>1개월 이내</option><option>2개월 이내</option><option>3개월 이내</option><option>날짜 협의</option>
+                </select>
+              </div>
+            </div>
 
             {/* ── 섹션 4: 상세 ── */}
             <h2 style={{ fontSize: 20, fontWeight: 800, color: textPrimary, margin: "32px 0 24px", borderBottom: `2px solid ${textPrimary}`, paddingBottom: 16 }}>

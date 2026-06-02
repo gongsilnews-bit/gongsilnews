@@ -774,7 +774,7 @@ function MobileVacancyWrite() {
 
       <StepIndicator />
       <div style={{ padding:"8px 16px 100px" }}>
-        {/* ═══ STEP 1: 기본정보 ═══ */}
+        {/* ═══ STEP 1: 분류/주소 ═══ */}
         {currentStep === 1 && (<>
         {/* 1. 공실광고분류 */}
         <div style={{ background:"#fff", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.03)", border:"1px solid #f3f4f6" }}>
@@ -799,6 +799,90 @@ function MobileVacancyWrite() {
           </div>
         </div>
 
+        {/* 4. 주소 */}
+        <div style={{ background:"#fff", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.03)", border:"1px solid #f3f4f6" }}>
+          <div style={{ fontSize:16, fontWeight:800, color:"#111", borderLeft:"4px solid #1a73e8", paddingLeft:10, marginBottom:14 }}>위치/주소</div>
+          <button type="button" onClick={handlePostcodeSearch} style={{ width:"100%", height:46, background:"linear-gradient(135deg,#10b981,#059669)", color:"#fff", border:"none", borderRadius:10, fontSize:15, fontWeight:800, cursor:"pointer", marginBottom:14, display:"flex", alignItems:"center", justifyContent:"center", gap:8, boxShadow:"0 2px 8px rgba(16,185,129,0.2)" }}>
+            🔍 주소 검색
+          </button>
+          <div style={{ display:"flex", gap:8, marginBottom:10 }}>
+            <div style={{flex:1}}><label style={labelStyle}>시/도</label><input id="input-sido" type="text" value={sido} onChange={e=>setSido(e.target.value)} placeholder="서울" style={inputStyle}/></div>
+            <div style={{flex:1}}><label style={labelStyle}>시/군/구</label><input id="input-sigungu" type="text" value={sigungu} onChange={e=>setSigungu(e.target.value)} placeholder="강남구" style={inputStyle}/></div>
+          </div>
+          <div style={{ display:"flex", gap:8, marginBottom:10 }}>
+            <div style={{flex:1}}><label style={labelStyle}>동/읍/면</label><input id="input-dong" type="text" value={dong} onChange={e=>setDong(e.target.value)} placeholder="논현동" style={inputStyle}/></div>
+            <div style={{flex:1}}><label style={labelStyle}>건물명 {!isFieldExposed("buildingName") && isRealtor && <PrivateTag/>}</label><input type="text" value={buildingName} onChange={e=>setBuildingName(e.target.value)} placeholder="건물명" style={inputStyle}/></div>
+          </div>
+          <label style={labelStyle}>상세주소 {!isFieldExposed("detailAddr") && isRealtor && <PrivateTag/>}</label>
+          <input id="input-detailAddr" type="text" value={detailAddr} onChange={e=>setDetailAddr(e.target.value)} placeholder="상세주소 입력" style={{...inputStyle, marginBottom:10}}/>
+
+          {/* 동/호수 (아파트인 경우) */}
+          {propertyType === "아파트·오피스텔" && (
+            <div style={{ display:"flex", gap:8, marginBottom:10 }}>
+              <div style={{flex:1}}><label style={labelStyle}>동 {!isFieldExposed("aptDong") && isRealtor && <PrivateTag/>}</label><input type="text" value={aptDong} onChange={e=>setAptDong(e.target.value)} placeholder="101동" style={inputStyle}/></div>
+              <div style={{flex:1}}><label style={labelStyle}>호수 {!isFieldExposed("hosu") && isRealtor && <PrivateTag/>}</label><input type="text" value={hosu} onChange={e=>setHosu(e.target.value)} placeholder="405호" style={inputStyle}/></div>
+            </div>
+          )}
+          {propertyType !== "아파트·오피스텔" && (
+            <div style={{ marginBottom:10 }}>
+              <label style={labelStyle}>호수 {!isFieldExposed("hosu") && isRealtor && <PrivateTag/>}</label>
+              <input type="text" value={hosu} onChange={e=>setHosu(e.target.value)} placeholder="101호" style={inputStyle}/>
+            </div>
+          )}
+
+          {/* 주소 공개 설정 */}
+          {isRealtor && (
+            <div style={{ background:"#f9fafb", padding:12, borderRadius:10, border:"1px solid #e5e7eb", marginBottom:12 }}>
+              <div style={{ fontSize:13, fontWeight:700, color:"#374151", marginBottom:8 }}>🔒 주소 노출 범위</div>
+              <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+                {propertyType === "아파트·오피스텔" ? (
+                  <>
+                    {["동/호수공개","동수공개","비공개"].map(opt => (
+                      <label key={opt} style={{ display:"flex", alignItems:"center", gap:4, fontSize:13, cursor:"pointer", padding:"6px 10px", borderRadius:8, background: addressExposure===opt?"#eff6ff":"#fff", border: addressExposure===opt?"1px solid #1a73e8":"1px solid #d1d5db" }}>
+                        <input type="radio" name="addrExp" checked={addressExposure===opt} onChange={()=>setAddressExposure(opt)} style={{accentColor:"#1a73e8"}}/>
+                        {opt === "비공개" ? "동호수비공개" : opt}
+                      </label>
+                    ))}
+                  </>
+                ) : (
+                  <>
+                    {["번지공개","본번지만공개","기본주소만공개"].map(opt => (
+                      <label key={opt} style={{ display:"flex", alignItems:"center", gap:4, fontSize:13, cursor:"pointer", padding:"6px 10px", borderRadius:8, background: addressExposure===opt?"#eff6ff":"#fff", border: addressExposure===opt?"1px solid #1a73e8":"1px solid #d1d5db" }}>
+                        <input type="radio" name="addrExp" checked={addressExposure===opt} onChange={()=>setAddressExposure(opt)} style={{accentColor:"#1a73e8"}}/>
+                        {opt}
+                      </label>
+                    ))}
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
+          <button type="button" onClick={handleGeocode} style={{ width:"100%", height:40, background:"#374151", color:"#fff", border:"none", borderRadius:8, fontSize:13, fontWeight:700, cursor:"pointer" }}>
+            📍 좌표 자동설정
+          </button>
+          {coords && <div style={{ marginTop:6, fontSize:12, color:"#10b981", fontWeight:600 }}>✓ 좌표: {coords.lat.toFixed(5)}, {coords.lng.toFixed(5)}</div>}
+
+          {/* 주변환경 (좌표 기반 자동생성) */}
+          <div style={{ marginTop:12 }}>
+            <label style={labelStyle}>🏙️ 주변환경 (좌표 기반 자동생성)</label>
+            <div style={{ background:"#f9fafb", border:"1px solid #e5e7eb", borderRadius:8, padding:12, fontSize:13, color:"#6b7280" }}>
+              {Object.keys(infrastructure).length > 0 ? (
+                Object.entries(infrastructure).map(([category, items]: [string, any]) => (
+                  <div key={category} style={{ marginBottom:6 }}>
+                    <strong style={{ color:"#374151" }}>{category}:</strong> {Array.isArray(items) ? items.join(", ") : ""}
+                  </div>
+                ))
+              ) : (
+                "위 '좌표 자동설정' 버튼을 누르면 주변 인프라가 자동 검색됩니다."
+              )}
+            </div>
+          </div>
+        </div>
+        </>)}
+
+        {/* ═══ STEP 2: 가격/면적 ═══ */}
+        {currentStep === 2 && (<>
         {/* 2. 거래/금액 */}
         <div style={{ background:"#fff", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.03)", border:"1px solid #f3f4f6" }}>
           <div style={{ fontSize:16, fontWeight:800, color:"#111", borderLeft:"4px solid #1a73e8", paddingLeft:10, marginBottom:14 }}>거래정보</div>
@@ -944,91 +1028,6 @@ function MobileVacancyWrite() {
               <select value={moveInDate} onChange={e=>setMoveInDate(e.target.value)} style={{...inputStyle,cursor:"pointer"}}>
                 {["즉시입주(공실)","1개월 이내","2개월 이내","3개월 이내","날짜 협의"].map(o=><option key={o}>{o}</option>)}
               </select>
-            </div>
-          </div>
-        </div>
-        </>)}
-
-        {/* ═══ STEP 2: 위치정보 ═══ */}
-        {currentStep === 2 && (<>
-
-        {/* 4. 주소 */}
-        <div style={{ background:"#fff", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.03)", border:"1px solid #f3f4f6" }}>
-          <div style={{ fontSize:16, fontWeight:800, color:"#111", borderLeft:"4px solid #1a73e8", paddingLeft:10, marginBottom:14 }}>위치/주소</div>
-          <button type="button" onClick={handlePostcodeSearch} style={{ width:"100%", height:46, background:"linear-gradient(135deg,#10b981,#059669)", color:"#fff", border:"none", borderRadius:10, fontSize:15, fontWeight:800, cursor:"pointer", marginBottom:14, display:"flex", alignItems:"center", justifyContent:"center", gap:8, boxShadow:"0 2px 8px rgba(16,185,129,0.2)" }}>
-            🔍 주소 검색
-          </button>
-          <div style={{ display:"flex", gap:8, marginBottom:10 }}>
-            <div style={{flex:1}}><label style={labelStyle}>시/도</label><input id="input-sido" type="text" value={sido} onChange={e=>setSido(e.target.value)} placeholder="서울" style={inputStyle}/></div>
-            <div style={{flex:1}}><label style={labelStyle}>시/군/구</label><input id="input-sigungu" type="text" value={sigungu} onChange={e=>setSigungu(e.target.value)} placeholder="강남구" style={inputStyle}/></div>
-          </div>
-          <div style={{ display:"flex", gap:8, marginBottom:10 }}>
-            <div style={{flex:1}}><label style={labelStyle}>동/읍/면</label><input id="input-dong" type="text" value={dong} onChange={e=>setDong(e.target.value)} placeholder="논현동" style={inputStyle}/></div>
-            <div style={{flex:1}}><label style={labelStyle}>건물명 {!isFieldExposed("buildingName") && isRealtor && <PrivateTag/>}</label><input type="text" value={buildingName} onChange={e=>setBuildingName(e.target.value)} placeholder="건물명" style={inputStyle}/></div>
-          </div>
-          <label style={labelStyle}>상세주소 {!isFieldExposed("detailAddr") && isRealtor && <PrivateTag/>}</label>
-          <input id="input-detailAddr" type="text" value={detailAddr} onChange={e=>setDetailAddr(e.target.value)} placeholder="상세주소 입력" style={{...inputStyle, marginBottom:10}}/>
-
-          {/* 동/호수 (아파트인 경우) */}
-          {propertyType === "아파트·오피스텔" && (
-            <div style={{ display:"flex", gap:8, marginBottom:10 }}>
-              <div style={{flex:1}}><label style={labelStyle}>동 {!isFieldExposed("aptDong") && isRealtor && <PrivateTag/>}</label><input type="text" value={aptDong} onChange={e=>setAptDong(e.target.value)} placeholder="101동" style={inputStyle}/></div>
-              <div style={{flex:1}}><label style={labelStyle}>호수 {!isFieldExposed("hosu") && isRealtor && <PrivateTag/>}</label><input type="text" value={hosu} onChange={e=>setHosu(e.target.value)} placeholder="405호" style={inputStyle}/></div>
-            </div>
-          )}
-          {propertyType !== "아파트·오피스텔" && (
-            <div style={{ marginBottom:10 }}>
-              <label style={labelStyle}>호수 {!isFieldExposed("hosu") && isRealtor && <PrivateTag/>}</label>
-              <input type="text" value={hosu} onChange={e=>setHosu(e.target.value)} placeholder="101호" style={inputStyle}/>
-            </div>
-          )}
-
-          {/* 주소 공개 설정 */}
-          {isRealtor && (
-            <div style={{ background:"#f9fafb", padding:12, borderRadius:10, border:"1px solid #e5e7eb", marginBottom:12 }}>
-              <div style={{ fontSize:13, fontWeight:700, color:"#374151", marginBottom:8 }}>🔒 주소 노출 범위</div>
-              <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
-                {propertyType === "아파트·오피스텔" ? (
-                  <>
-                    {["동/호수공개","동수공개","비공개"].map(opt => (
-                      <label key={opt} style={{ display:"flex", alignItems:"center", gap:4, fontSize:13, cursor:"pointer", padding:"6px 10px", borderRadius:8, background: addressExposure===opt?"#eff6ff":"#fff", border: addressExposure===opt?"1px solid #1a73e8":"1px solid #d1d5db" }}>
-                        <input type="radio" name="addrExp" checked={addressExposure===opt} onChange={()=>setAddressExposure(opt)} style={{accentColor:"#1a73e8"}}/>
-                        {opt === "비공개" ? "동호수비공개" : opt}
-                      </label>
-                    ))}
-                  </>
-                ) : (
-                  <>
-                    {["번지공개","본번지만공개","기본주소만공개"].map(opt => (
-                      <label key={opt} style={{ display:"flex", alignItems:"center", gap:4, fontSize:13, cursor:"pointer", padding:"6px 10px", borderRadius:8, background: addressExposure===opt?"#eff6ff":"#fff", border: addressExposure===opt?"1px solid #1a73e8":"1px solid #d1d5db" }}>
-                        <input type="radio" name="addrExp" checked={addressExposure===opt} onChange={()=>setAddressExposure(opt)} style={{accentColor:"#1a73e8"}}/>
-                        {opt}
-                      </label>
-                    ))}
-                  </>
-                )}
-              </div>
-            </div>
-          )}
-
-          <button type="button" onClick={handleGeocode} style={{ width:"100%", height:40, background:"#374151", color:"#fff", border:"none", borderRadius:8, fontSize:13, fontWeight:700, cursor:"pointer" }}>
-            📍 좌표 자동설정
-          </button>
-          {coords && <div style={{ marginTop:6, fontSize:12, color:"#10b981", fontWeight:600 }}>✓ 좌표: {coords.lat.toFixed(5)}, {coords.lng.toFixed(5)}</div>}
-
-          {/* 주변환경 (좌표 기반 자동생성) */}
-          <div style={{ marginTop:12 }}>
-            <label style={labelStyle}>🏙️ 주변환경 (좌표 기반 자동생성)</label>
-            <div style={{ background:"#f9fafb", border:"1px solid #e5e7eb", borderRadius:8, padding:12, fontSize:13, color:"#6b7280" }}>
-              {Object.keys(infrastructure).length > 0 ? (
-                Object.entries(infrastructure).map(([category, items]: [string, any]) => (
-                  <div key={category} style={{ marginBottom:6 }}>
-                    <strong style={{ color:"#374151" }}>{category}:</strong> {Array.isArray(items) ? items.join(", ") : ""}
-                  </div>
-                ))
-              ) : (
-                "위 '좌표 자동설정' 버튼을 누르면 주변 인프라가 자동 검색됩니다."
-              )}
             </div>
           </div>
         </div>
