@@ -62,8 +62,8 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, onText
              <span contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onTextChange?.('transactionType', e.currentTarget.innerText)} className={editClass}>{info.transactionType || '거래 유형'}</span>
         </div>
     );
-    const title = <h1 contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onTextChange?.('address', e.currentTarget.innerText)} className={`font-bold leading-tight mb-2 tracking-tight drop-shadow-sm ${headingFont} ${editClass} ${layout === 'type5' ? 'text-5xl md:text-8xl' : 'text-4xl md:text-7xl'}`}>{info.address}</h1>;
-    const slogan = <p contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onTextChange?.('promotionText', e.currentTarget.innerText)} className={`font-bold mb-4 drop-shadow-md ${headingFont} ${editClass} ${layout === 'type5' ? 'text-2xl md:text-4xl' : 'text-2xl md:text-5xl'} ${layout === 'type3' ? 'text-gray-800 hover:bg-black/5' : 'text-white'}`}>{info.promotionText}</p>;
+    const title = <h1 contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onTextChange?.('address', e.currentTarget.innerText)} className={`font-bold leading-tight mb-2 tracking-tight drop-shadow-sm max-w-full break-words ${headingFont} ${editClass} ${layout === 'type5' ? 'text-5xl md:text-8xl' : 'text-4xl md:text-7xl'}`}>{info.address}</h1>;
+    const slogan = <p contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onTextChange?.('promotionText', e.currentTarget.innerText)} className={`font-bold mb-4 drop-shadow-md max-w-full break-words ${headingFont} ${editClass} ${layout === 'type5' ? 'text-2xl md:text-4xl' : 'text-2xl md:text-5xl'} ${layout === 'type3' ? 'text-gray-800 hover:bg-black/5' : 'text-white'}`}>{info.promotionText}</p>;
     const subtitle = <p contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onTextChange?.('subTitle', e.currentTarget.innerText)} className={`text-base md:text-xl font-medium ${editClass} ${layout === 'type3' ? 'text-gray-600 hover:bg-black/5' : 'text-white opacity-90'}`} style={{ color: layout === 'type3' ? undefined : secondaryColor }}>{info.subTitle}</p>;
 
     let content = null;
@@ -93,12 +93,12 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, onText
                         <div className="absolute inset-0 bg-black/40"></div>
                     </div>
                     <div className="relative z-10 p-6 md:p-12 h-full flex items-center justify-center">
-                        <div className="border border-white/40 p-6 md:p-12 w-full h-full flex flex-col items-center justify-center text-center text-white">
-                            <span contentEditable spellCheck={false} suppressContentEditableWarning className={`mb-4 text-xl md:text-2xl font-serif-en italic ${editClass}`} style={{ color: secondaryColor }}>Prestige Collection</span>
+                        <div className="border border-white/40 p-6 md:p-12 w-full h-full flex flex-col items-center justify-center text-center text-white overflow-hidden">
+                            <span contentEditable spellCheck={false} suppressContentEditableWarning className={`mb-4 text-xl md:text-2xl font-serif-en italic max-w-full break-words ${editClass}`} style={{ color: secondaryColor }}>Prestige Collection</span>
                             {title}
                             <div className="w-20 h-px bg-white/50 my-6"></div>
                             {slogan}
-                            <p contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onTextChange?.('subTitle', e.currentTarget.innerText)} className={`mt-4 text-sm md:text-lg font-light tracking-widest uppercase ${editClass}`}>{info.subTitle}</p>
+                            <p contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onTextChange?.('subTitle', e.currentTarget.innerText)} className={`mt-4 w-full text-sm md:text-lg font-light tracking-widest uppercase max-w-full break-keep break-words ${editClass}`}>{info.subTitle}</p>
                         </div>
                     </div>
                 </div>
