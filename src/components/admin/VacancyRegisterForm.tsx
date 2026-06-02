@@ -1403,11 +1403,11 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
               </div>
             </div>
 
-            {/* 상업용 건물 전용 추가 스펙 (API 연동 항목) */}
-            {propertyType === "상가·사무실·건물·공장·토지" && subCategory !== "토지" && (
+            {/* 건축물대장 추가 스펙 (API 연동 항목) */}
+            {(propertyType === "상가·사무실·건물·공장·토지" || propertyType === "빌라·주택") && subCategory !== "토지" && (
               <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, padding: 16, marginBottom: 24 }}>
                 <div style={{ fontSize: 13, fontWeight: 800, color: "#1e293b", marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>
-                  <span>🏢 상업용 추가 스펙</span>
+                  <span>🏢 건축물대장 추가 스펙</span>
                   <span style={{ fontSize: 11, background: "#dbeafe", color: "#1e40af", padding: "2px 6px", borderRadius: 4 }}>대장 연동 권장</span>
                 </div>
                 
