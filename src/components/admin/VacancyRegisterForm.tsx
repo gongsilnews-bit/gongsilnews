@@ -128,6 +128,10 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
   // 동적 옵션 기능
   const [customOptionInput, setCustomOptionInput] = useState("");
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
+  
+  // 토지 관련 옵션
+  const [zoning, setZoning] = useState("");
+  const [landPurpose, setLandPurpose] = useState("");
 
   // 전달사항
   const [description, setDescription] = useState("");
@@ -277,6 +281,8 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
     if (editData.metadata?.elevator_cnt) setElevatorCnt(editData.metadata.elevator_cnt);
     if (editData.metadata?.is_illegal) setIsIllegal(editData.metadata.is_illegal);
     if (editData.metadata?.building_structure) setBuildingStructure(editData.metadata.building_structure);
+    if (editData.metadata?.zoning) setZoning(editData.metadata.zoning);
+    if (editData.metadata?.land_purpose) setLandPurpose(editData.metadata.land_purpose);
 
     if (editData.detail_addr) setDetailAddr(editData.detail_addr);
     if (editData.building_name) setBuildingName(editData.building_name);
@@ -395,6 +401,8 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
     if (editData.metadata?.elevator_cnt) setElevatorCnt(editData.metadata.elevator_cnt);
     if (editData.metadata?.is_illegal) setIsIllegal(editData.metadata.is_illegal);
     if (editData.metadata?.building_structure) setBuildingStructure(editData.metadata.building_structure);
+    if (editData.metadata?.zoning) setZoning(editData.metadata.zoning);
+    if (editData.metadata?.land_purpose) setLandPurpose(editData.metadata.land_purpose);
 
     if (editData.detail_addr) setDetailAddr(editData.detail_addr);
     if (editData.building_name) setBuildingName(editData.building_name);
@@ -1401,10 +1409,10 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
               </div>
             </div>
 
-            {propertyType === "빌라·주택" && tradeType === "매매" && (
+            {(propertyType === "빌라·주택" || propertyType === COMMERCIAL_CATEGORY) && tradeType === "매매" && (
               <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
                 <div style={{ flex: 1 }}>
-                  <label style={labelStyle}>대지지분</label>
+                  <label style={labelStyle}>대지면적 (대지지분)</label>
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                     <input type="number" placeholder="예: 33" value={landShareM2}
                       onChange={(e) => handleM2Change(e.target.value, setLandShareM2, setLandSharePy)}
@@ -1417,7 +1425,34 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                     <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>평</span>
                   </div>
                 </div>
-                <div style={{ flex: 1 }}></div>
+                <div style={{ flex: 1 }}>
+                  <label style={labelStyle}>용도지역 (선택)</label>
+                  <select
+                    value={zoning}
+                    onChange={(e) => setZoning(e.target.value)}
+                    style={inputStyle}
+                  >
+                    <option value="">선택 (입력안함)</option>
+                    {["1종전용주거", "2종전용주거", "1종일반주거", "2종일반주거", "3종일반주거", "준주거", "중심상업", "일반상업", "근린상업", "유통상업", "보전녹지", "생산녹지", "자연녹지", "보전관리", "생산관리", "계획관리", "농림지역", "자연환경보전"].map(v => (
+                      <option key={v} value={v}>{v}</option>
+                    ))}
+                  </select>
+                </div>
+                {subCategory === "토지" && (
+                  <div style={{ flex: 1 }}>
+                    <label style={labelStyle}>토지 용도(지목) (선택)</label>
+                    <select
+                      value={landPurpose}
+                      onChange={(e) => setLandPurpose(e.target.value)}
+                      style={inputStyle}
+                    >
+                      <option value="">선택 (입력안함)</option>
+                      {["전", "답", "과수원", "목장용지", "임야", "광천지", "염전", "대", "공장용지", "학교용지", "주차장", "주유소용지", "창고용지", "도로", "철도용지", "제방", "하천", "구거", "유지", "양어장", "수도용지", "공원", "체육용지", "유원지", "종교용지", "사적지", "묘지", "잡종지"].map(v => (
+                        <option key={v} value={v}>{v}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
             )}
 
@@ -1943,7 +1978,8 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                       elevator_cnt: elevatorCnt,
                       is_illegal: isIllegal,
                       building_structure: buildingStructure,
-
+                      zoning: zoning || undefined,
+                      land_purpose: landPurpose || undefined,
                     },
                     client_name: clientName,
                     client_phone: clientPhone,

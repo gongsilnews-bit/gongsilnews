@@ -86,6 +86,8 @@ function MobileVacancyWrite() {
   const [supplyPy, setSupplyPy] = useState("");
   const [landShareM2, setLandShareM2] = useState("");
   const [landSharePy, setLandSharePy] = useState("");
+  const [zoning, setZoning] = useState("");
+  const [landPurpose, setLandPurpose] = useState("");
   const [existingMetadata, setExistingMetadata] = useState<any>({});
   const [areaUnit, setAreaUnit] = useState<"m2"|"py">("py");
   const [currentFloor, setCurrentFloor] = useState("");
@@ -217,6 +219,8 @@ function MobileVacancyWrite() {
             setLandShareM2(String(d.metadata.land_share_m2));
             setLandSharePy((Number(d.metadata.land_share_m2) * 0.3025).toFixed(1));
           }
+          if (d.metadata.zoning) setZoning(d.metadata.zoning);
+          if (d.metadata.land_purpose) setLandPurpose(d.metadata.land_purpose);
         }
         if (d.current_floor) setCurrentFloor(d.current_floor);
         if (d.total_floor) setTotalFloor(d.total_floor);
@@ -597,7 +601,8 @@ function MobileVacancyWrite() {
           elevator_cnt: elevatorCnt,
           is_illegal: isIllegal,
           building_structure: buildingStructure,
-
+          zoning: zoning || undefined,
+          land_purpose: landPurpose || undefined,
         },
         consent: true, status,
       };
@@ -1097,23 +1102,45 @@ function MobileVacancyWrite() {
             <div style={{flex:1}}>{supplyM2 ? (areaUnit==="m2" ? `≈ ${(parseFloat(supplyM2)*0.3025).toFixed(1)}평` : `≈ ${parseFloat(supplyM2).toFixed(1)}m²`) : ""}</div>
             <div style={{flex:1}}>{exclusiveM2 ? (areaUnit==="m2" ? `≈ ${(parseFloat(exclusiveM2)*0.3025).toFixed(1)}평` : `≈ ${parseFloat(exclusiveM2).toFixed(1)}m²`) : ""}</div>
           </div>
-          {propertyType === "빌라·주택" && tradeType === "매매" && (
+          {(propertyType === "빌라·주택" || propertyType === "상가·사무실·건물·공장·토지") && tradeType === "매매" && (
             <>
               <div style={{ display:"flex", gap:10, marginBottom:4 }}>
                 <div style={{flex:1}}>
-                  <label style={labelStyle}>대지지분({areaUnit==="m2"?"m²":"평"})</label>
+                  <label style={labelStyle}>대지면적(지분) ({areaUnit==="m2"?"m²":"평"})</label>
                   {areaUnit==="m2" ? (
                     <input type="number" value={landShareM2} onChange={e=>handleM2Change(e.target.value, setLandShareM2, setLandSharePy)} placeholder="33" style={inputStyle}/>
                   ) : (
                     <input type="number" value={landSharePy} onChange={e=>handlePyChange(e.target.value, setLandSharePy, setLandShareM2)} placeholder="10" style={inputStyle}/>
                   )}
                 </div>
-                <div style={{flex:1}}></div>
+                <div style={{flex:1}}>
+                  <label style={labelStyle}>용도지역 (선택)</label>
+                  <select value={zoning} onChange={e=>setZoning(e.target.value)} style={inputStyle}>
+                    <option value="">선택안함</option>
+                    {["1종전용주거", "2종전용주거", "1종일반주거", "2종일반주거", "3종일반주거", "준주거", "중심상업", "일반상업", "근린상업", "유통상업", "보전녹지", "생산녹지", "자연녹지", "보전관리", "생산관리", "계획관리", "농림지역", "자연환경보전"].map(v => (
+                      <option key={v} value={v}>{v}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
               <div style={{ display:"flex", gap:10, marginBottom:10, fontSize:12, color:"#1a73e8", fontWeight:600, padding:"0 2px" }}>
                 <div style={{flex:1}}>{landShareM2 ? (areaUnit==="m2" ? `≈ ${(parseFloat(landShareM2)*0.3025).toFixed(1)}평` : `≈ ${parseFloat(landShareM2).toFixed(1)}m²`) : ""}</div>
                 <div style={{flex:1}}></div>
               </div>
+              
+              {subCategory === "토지" && (
+                <div style={{ display:"flex", gap:10, marginBottom:10 }}>
+                  <div style={{flex:1}}>
+                    <label style={labelStyle}>토지 용도(지목) (선택)</label>
+                    <select value={landPurpose} onChange={e=>setLandPurpose(e.target.value)} style={inputStyle}>
+                      <option value="">선택안함</option>
+                      {["전", "답", "과수원", "목장용지", "임야", "광천지", "염전", "대", "공장용지", "학교용지", "주차장", "주유소용지", "창고용지", "도로", "철도용지", "제방", "하천", "구거", "유지", "양어장", "수도용지", "공원", "체육용지", "유원지", "종교용지", "사적지", "묘지", "잡종지"].map(v => (
+                        <option key={v} value={v}>{v}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
             </>
           )}
           <div style={{ display:"flex", gap:10, marginBottom:10 }}>
