@@ -859,8 +859,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                 }
                             }}
                         />
-                        <table className="w-full text-sm border-collapse table-fixed border-t-[3px] border-gray-800 border-b border-gray-200">
-                            <tbody>
+                        <div className="border-t-[3px] border-gray-800 flex flex-col text-sm border-b border-gray-200">
                             {(() => {
                                 const rows = Array.isArray(info.overviewTable) 
                                     ? info.overviewTable.map(r => ({ k: r.label, v: r.value }))
@@ -880,8 +879,8 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                     return (
                                         <>
                                             {info.overviewTable.map((row, i) => (
-                                                <tr key={i} className="border-b border-gray-100 last:border-0 bg-white">
-                                                    <td className="w-1/3 text-gray-500 font-bold py-2 pl-4 align-middle">
+                                                <div key={i} className="flex w-full border-b border-gray-100 last:border-0 bg-white">
+                                                    <div className="w-1/3 text-gray-500 font-bold py-2 pl-4 flex items-center">
                                                         <EditableText 
                                                             value={row.label} 
                                                             onChange={(val) => {
@@ -890,8 +889,8 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                                                 handleTextChange('overviewTable', newTable as any);
                                                             }}
                                                         />
-                                                    </td>
-                                                    <td className="w-2/3 text-gray-800 font-bold py-2 pl-4 align-middle">
+                                                    </div>
+                                                    <div className="w-2/3 text-gray-800 font-bold py-2 pl-4 flex items-center">
                                                         <EditableText 
                                                             value={row.value} 
                                                             onChange={(val) => {
@@ -900,18 +899,20 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                                                 handleTextChange('overviewTable', newTable as any);
                                                             }}
                                                         />
-                                                    </td>
-                                                </tr>
+                                                    </div>
+                                                </div>
                                             ))}
+                                            
+
                                         </>
                                     );
                                 }
                                 
                                 return rows.filter(row => row.v && row.v.trim() !== '').map((row, i) => (
-                                    <tr key={i} className="border-b border-gray-100 last:border-0 bg-white">
-                                        <td className="w-1/3 text-gray-500 font-bold py-2 pl-4 align-middle">{row.k}</td>
-                                        <td className="w-2/3 text-gray-800 font-bold py-2 pl-4 align-middle">{row.v}</td>
-                                    </tr>
+                                    <div key={i} className="flex border-b border-gray-100 last:border-0 bg-white">
+                                        <div className="w-1/3 text-gray-500 font-bold py-2 pl-4 flex items-center">{row.k}</div>
+                                        <div className="w-2/3 text-gray-800 font-bold py-2 pl-4 flex items-center">{row.v}</div>
+                                    </div>
                                 ));
                             })()}
                             
@@ -929,16 +930,18 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                 }
                                 
                                 return (
-                                    <tr className="bg-[#fff9f0] border-t border-gray-200">
-                                        <td className="w-1/3 text-gray-600 font-bold py-2 pl-4 align-middle">{label}</td>
-                                        <td className="w-2/3 text-[#cc5a27] font-extrabold py-2 pl-4 align-middle">
+                                    <div className="flex bg-[#fff9f0] border-t border-gray-200">
+                                        {/* Transaction switcher removed to prevent visual clutter; handled in form */}
+ 
+                                        <div className="w-1/3 text-gray-600 font-bold py-2 pl-4 flex items-center">{label}</div>
+                                        <div className="w-2/3 text-[#cc5a27] font-extrabold py-2 pl-4 flex items-center">
                                             <EditableText value={price} onChange={(val) => handleTextChange('priceMain', val)} />
-                                        </td>
-                                    </tr>
+                                        </div>
+                                    </div>
                                 );
                             })()}
-                            </tbody>
-                        </table>
+
+                        </div>
                     </div>
  
                     {/* Agent Footer Details */}
