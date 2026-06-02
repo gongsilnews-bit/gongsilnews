@@ -1279,7 +1279,26 @@ ${clone.outerHTML}
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col font-sans relative">
+    <div className="flex h-screen bg-gray-50 overflow-hidden font-sans">
+      <style>{`
+        @media print {
+          @page { size: A4 portrait; margin: 0; }
+          body * { visibility: hidden; }
+          #flyer-print-area, #flyer-print-area * { visibility: visible; }
+          #flyer-print-area {
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 860px !important;
+            transform-origin: top left !important;
+            transform: scale(0.92) !important;
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+          /* Hide scrollbars during print */
+          ::-webkit-scrollbar { display: none; }
+        }
+      `}</style>
       {loadingData && (
         <div className="fixed inset-0 bg-slate-900/80 z-[200] flex flex-col items-center justify-center text-white backdrop-blur-sm">
           <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-amber-500 mb-6"></div>
@@ -1359,7 +1378,7 @@ ${clone.outerHTML}
             </div>
             <div className="flex-1 overflow-auto p-8 flex justify-center custom-scrollbar">
                 {/* Fixed width container for editor preview */}
-                <div style={{ width: '860px', flexShrink: 0 }}>
+                <div id="flyer-print-area" style={{ width: '860px', flexShrink: 0 }}>
                     <FlyerCanvas 
                         ref={flyerRef} 
                         data={state} 
@@ -1413,6 +1432,17 @@ ${clone.outerHTML}
         >
           <ArrowDownTrayIcon className="w-4 h-4 text-gray-500" />
           <span>이미지 내보내기</span>
+        </button>
+
+        {/* Print Button */}
+        <button 
+          onClick={() => window.print()}
+          className="py-3 px-5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 active:scale-95 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all duration-150 shadow-sm"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4 text-gray-500">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0l.229 2.523a1.125 1.125 0 01-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0021 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 00-1.913-.247M6.34 18H5.25A2.25 2.25 0 013 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 011.913-.247m10.5 0a48.536 48.536 0 00-10.5 0v-2.94a2.25 2.25 0 012.25-2.25h6a2.25 2.25 0 012.25 2.25v2.94z" />
+          </svg>
+          <span>인쇄하기</span>
         </button>
 
 
