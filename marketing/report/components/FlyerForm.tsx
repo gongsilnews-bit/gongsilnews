@@ -762,6 +762,13 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                           <h2 className="text-2xl font-black text-black tracking-tight">4. 사진</h2>
                       </div>
                   )}
+                  <div>
+                      <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">페이지 타이틀</h4>
+                      <div className="space-y-3 mb-4">
+                          <div><label className="text-xs text-gray-500">페이지 제목 (기본: 매물 사진)</label><input name="page4Title" value={info.page4Title || "매물 사진"} onChange={handleChange} className="w-full border rounded p-2 text-sm" /></div>
+                          <div><label className="text-xs text-gray-500">페이지 부제목 (기본: Property Photo)</label><input name="page4Subtitle" value={info.page4Subtitle || "Property Photo"} onChange={handleChange} className="w-full border rounded p-2 text-sm" /></div>
+                      </div>
+                  </div>
                   {renderImageUpload('mainImage', '메인 사진 (정면 외관)')}
                   <div className="grid grid-cols-2 gap-4">
                       {renderImageUpload('subImage1', '서브 사진 1')}

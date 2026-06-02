@@ -1538,11 +1538,11 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
         {(activeTab === 'all' || activeTab === 4) && (
         <ReportPage 
             pageNumber={4} 
-            title={info.page4Title || "현장 사진"} 
+            title={info.page4Title || "매물 사진"} 
             onUpdateTitle={(val) => handleTextChange('page4Title', val)}
-            subtitle={info.page4Subtitle || "Actual Field Photos"} 
+            subtitle={info.page4Subtitle || "Property Photo"} 
             onUpdateSubtitle={(val) => handleTextChange('page4Subtitle', val)}
-            badgeText={info.pageBadges?.page4 || "PROPERTY VISUALS"}
+            badgeText={info.pageBadges?.page4 !== undefined ? info.pageBadges.page4 : ""}
             exportId="page-4"
             onUpdateBadge={(val) => {
                 if (onUpdateInfo) {
