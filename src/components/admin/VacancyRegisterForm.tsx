@@ -121,6 +121,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
 
   // 인프라 기능
   const [infraRadius, setInfraRadius] = useState("2000");
+  const [isInfraLoading, setIsInfraLoading] = useState(false);
   const [infrastructure, setInfrastructure] = useState<Record<string, string[]>>({});
   const [addInfraInput, setAddInfraInput] = useState<Record<string, string>>({});
 
@@ -554,12 +555,19 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
     const newRadius = e.target.value;
     setInfraRadius(newRadius);
     if (coords) {
+      setIsInfraLoading(true);
       try {
         const { searchNearbyInfrastructure } = await import("@/app/actions/geocode");
-        const infra = await searchNearbyInfrastructure(coords.lat, coords.lng, parseInt(newRadius, 10));
+        // 강제 딜레이 0.6초 부여 (너무 빨리 끝나면 사용자가 안 바뀌었다고 오해함)
+        const [infra] = await Promise.all([
+          searchNearbyInfrastructure(coords.lat, coords.lng, parseInt(newRadius, 10)),
+          new Promise(res => setTimeout(res, 600))
+        ]);
         setInfrastructure(infra);
       } catch (err) {
         console.error(err);
+      } finally {
+        setIsInfraLoading(false);
       }
     }
   };
@@ -749,8 +757,8 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
   // ── 체크리스트 계산 ──
   const checkItems = [
     { label: "공실광고 분류 선택 완료", done: !!propertyType },
-    { label: "거래유형/금액 입력", done: !!tradeType && (!!deposit || tradeType === "매매") },
     { label: "소재지 상세 주소", done: !!sido && !!sigungu && !!dong },
+    { label: "거래유형/금액 입력", done: !!tradeType && (!!deposit || tradeType === "매매") },
     { label: "홍보용 사진 등록", done: photos.length > 0 },
     { label: "의뢰인 정보 기입", done: !!clientName && !!clientPhone },
   ];
@@ -1194,6 +1202,13 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                     <option value="5000">반경 5km</option>
                   </select>
                 </div>
+                {isInfraLoading ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "center", justifyContent: "center", background: darkMode ? "#1a1b1e" : "#f8fafc", padding: "40px 16px", borderRadius: 8, border: `1px dashed ${border}` }}>
+                    <div style={{ fontSize: 24 }}>⏳</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: textPrimary }}>반경 {(parseInt(infraRadius)/1000).toFixed(1).replace('.0', '')}km 내 주변 인프라 재검색 중...</div>
+                    <div style={{ fontSize: 12, color: textSecondary }}>가장 가까운 순서대로 새로운 데이터를 불러오고 있습니다.</div>
+                  </div>
+                ) : (
                  <div style={{ display: "flex", flexDirection: "column", gap: 12, background: darkMode ? "#1a1b1e" : "#f9fafb", padding: 16, borderRadius: 8, border: `1px solid ${border}` }}>
                   {Object.entries(infrastructure)
                     .filter(([catName]) => !catName.startsWith('_'))
@@ -1230,7 +1245,8 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                   {Object.keys(infrastructure).filter(k => !k.startsWith('_')).length === 0 && (
                     <div style={{ fontSize: 13, color: textSecondary, textAlign: "center", padding: "10px 0" }}>지정된 반경 내에 추출된 인프라 정보가 없습니다. 직접 추가 기능을 이용해 보세요.</div>
                   )}
-                </div>
+                 </div>
+                )}
               </div>
             )}
 

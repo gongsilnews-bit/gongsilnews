@@ -111,7 +111,7 @@ export async function searchNearbyInfrastructure(lat: number, lng: number, radiu
       { code: "HP8", key: "병원", slice: 4 },
     ].map(async (cat) => {
       const url = `https://dapi.kakao.com/v2/local/search/category.json?category_group_code=${cat.code}&y=${lat}&x=${lng}&radius=${radiusMs}&sort=distance`;
-      const res = await fetch(url, { headers: { Authorization: `KakaoAK ${apiKey}` } });
+      const res = await fetch(url, { headers: { Authorization: `KakaoAK ${apiKey}` }, cache: "no-store" });
       if (res.ok) {
         const data = await res.json();
         results[cat.key] = (data.documents || []).slice(0, cat.slice).map((d: any) => d.place_name);
@@ -119,7 +119,7 @@ export async function searchNearbyInfrastructure(lat: number, lng: number, radiu
     });
 
     // 2. 학교 특별 처리 (초, 중, 고, 대 다양하게 수집)
-    const schoolCall = fetch(`https://dapi.kakao.com/v2/local/search/category.json?category_group_code=SC4&y=${lat}&x=${lng}&radius=${radiusMs}&sort=distance&size=15`, { headers: { Authorization: `KakaoAK ${apiKey}` } })
+    const schoolCall = fetch(`https://dapi.kakao.com/v2/local/search/category.json?category_group_code=SC4&y=${lat}&x=${lng}&radius=${radiusMs}&sort=distance&size=15`, { headers: { Authorization: `KakaoAK ${apiKey}` }, cache: "no-store" })
       .then(res => res.json())
       .then(data => {
         if (data.documents) {
@@ -145,7 +145,7 @@ export async function searchNearbyInfrastructure(lat: number, lng: number, radiu
       }).catch(err => console.error(err));
 
     // 3. 버스정류장 키워드 검색
-    const busCall = fetch(`https://dapi.kakao.com/v2/local/search/keyword.json?query=버스정류장&y=${lat}&x=${lng}&radius=${radiusMs}&sort=distance`, { headers: { Authorization: `KakaoAK ${apiKey}` } })
+    const busCall = fetch(`https://dapi.kakao.com/v2/local/search/keyword.json?query=버스정류장&y=${lat}&x=${lng}&radius=${radiusMs}&sort=distance`, { headers: { Authorization: `KakaoAK ${apiKey}` }, cache: "no-store" })
       .then(res => res.json())
       .then(data => {
         if (data.documents && data.documents.length > 0) {
