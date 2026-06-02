@@ -1181,16 +1181,18 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
               }} style={{ height: 36, padding: "0 16px", background: "#10b981", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
                 🔍 주소 검색
               </button>
-              <button 
-                type="button" 
-                onClick={fetchBuildingLedger}
-                disabled={fetchingLedger}
-                style={{ 
-                  height: 36, padding: "0 16px", background: fetchingLedger ? "#e5e7eb" : (darkMode ? "#3b2f1e" : "#fef3c7"), 
-                  color: fetchingLedger ? "#9ca3af" : "#d97706", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: fetchingLedger ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 6 
-                }}>
-                {fetchingLedger ? "⏳ 연동 중..." : "📋 건축물대장 연동"}
-              </button>
+              {propertyType !== "아파트·오피스텔" && (
+                <button 
+                  type="button" 
+                  onClick={fetchBuildingLedger}
+                  disabled={fetchingLedger}
+                  style={{ 
+                    height: 36, padding: "0 16px", background: fetchingLedger ? "#e5e7eb" : (darkMode ? "#3b2f1e" : "#fef3c7"), 
+                    color: fetchingLedger ? "#9ca3af" : "#d97706", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: fetchingLedger ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 6 
+                  }}>
+                  {fetchingLedger ? "⏳ 연동 중..." : "📋 건축물대장 연동"}
+                </button>
+              )}
             </div>
 
             <div style={{ display: "flex", gap: 24, marginBottom: 16 }}>
