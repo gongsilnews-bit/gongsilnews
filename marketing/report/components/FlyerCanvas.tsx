@@ -772,7 +772,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                                     className="border-b border-gray-100 last:border-0 bg-white"
                                                 >
                                                     <div className="flex w-full">
-                                                        <div className="w-1/3 text-gray-500 font-bold py-3 pl-4 flex items-center">
+                                                        <div className="w-1/3 text-gray-500 font-bold py-2 pl-4 flex items-center">
                                                             <EditableText 
                                                                 value={row.label} 
                                                                 onChange={(val) => {
@@ -782,7 +782,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                                                 }}
                                                             />
                                                         </div>
-                                                        <div className="w-2/3 text-gray-800 font-bold py-3 pl-4 flex items-center">
+                                                        <div className="w-2/3 text-gray-800 font-bold py-2 pl-4 flex items-center">
                                                             <EditableText 
                                                                 value={row.value} 
                                                                 onChange={(val) => {
@@ -803,8 +803,8 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                 
                                 return rows.filter(row => row.v && row.v.trim() !== '').map((row, i) => (
                                     <div key={i} className="flex border-b border-gray-100 last:border-0 bg-white">
-                                        <div className="w-1/3 text-gray-500 font-bold py-3 pl-4 flex items-center">{row.k}</div>
-                                        <div className="w-2/3 text-gray-800 font-bold py-3 pl-4 flex items-center">{row.v}</div>
+                                        <div className="w-1/3 text-gray-500 font-bold py-2 pl-4 flex items-center">{row.k}</div>
+                                        <div className="w-2/3 text-gray-800 font-bold py-2 pl-4 flex items-center">{row.v}</div>
                                     </div>
                                 ));
                             })()}
@@ -838,8 +838,8 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                             ))}
                                         </div>
  
-                                        <div className="w-1/3 text-gray-600 font-bold py-3 pl-4 flex items-center">{label}</div>
-                                        <div className="w-2/3 text-[#cc5a27] font-extrabold py-3 pl-4 flex items-center">
+                                        <div className="w-1/3 text-gray-600 font-bold py-2 pl-4 flex items-center">{label}</div>
+                                        <div className="w-2/3 text-[#cc5a27] font-extrabold py-2 pl-4 flex items-center">
                                             {tType === "월세" || tType === "임대" ? (
                                                 <div className="flex items-center gap-1">
                                                     <EditableText value={price} onChange={(val) => handleTextChange('priceMain', val)} />
@@ -858,7 +858,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                     </div>
  
                     {/* Agent Footer Details */}
-                    <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-xl p-4 mt-4 flex flex-col justify-center shadow-sm">
+                    <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-xl p-3.5 mt-3 flex flex-col justify-center shadow-sm">
                         <div className="grid grid-cols-[80px_1fr] gap-x-2 gap-y-1.5 text-sm">
                             <span className="text-gray-500 font-bold">부동산명</span>
                             <span className="text-gray-800 font-extrabold">
