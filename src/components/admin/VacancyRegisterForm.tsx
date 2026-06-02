@@ -1047,18 +1047,6 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
               }} style={{ height: 36, padding: "0 16px", background: "#10b981", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
                 🔍 주소 검색
               </button>
-              {propertyType !== "아파트·오피스텔" && propertyType !== "빌라·주택" && propertyType !== "원룸·투룸(풀옵션)" && subCategory !== "토지" && (
-                <button 
-                  type="button" 
-                  onClick={fetchBuildingLedger}
-                  disabled={fetchingLedger}
-                  style={{ 
-                    height: 36, padding: "0 16px", background: fetchingLedger ? "#e5e7eb" : (darkMode ? "#3b2f1e" : "#fef3c7"), 
-                    color: fetchingLedger ? "#9ca3af" : "#d97706", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: fetchingLedger ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 6 
-                  }}>
-                  {fetchingLedger ? "⏳ 연동 중..." : "📋 건축물대장 연동"}
-                </button>
-              )}
             </div>
 
             <div style={{ display: "flex", gap: 24, marginBottom: 16 }}>
@@ -1242,9 +1230,24 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
             <div style={{ borderTop: `1px dashed ${border}`, margin: "32px 0" }} />
 
             {/* ── 섹션 2: 거래 및 상세 정보 ── */}
-            <h2 style={{ fontSize: 20, fontWeight: 800, color: textPrimary, margin: "0 0 24px", borderBottom: `2px solid ${textPrimary}`, paddingBottom: 16 }}>
-              거래 및 상세 정보 (전세, 월세, 면적 등)
-            </h2>
+            <div style={{ display: "flex", alignItems: "center", margin: "0 0 24px", borderBottom: `2px solid ${textPrimary}`, paddingBottom: 16 }}>
+              <h2 style={{ fontSize: 20, fontWeight: 800, color: textPrimary, margin: 0 }}>
+                거래 및 상세 정보 (전세, 월세, 면적 등)
+              </h2>
+              {propertyType !== "아파트·오피스텔" && propertyType !== "빌라·주택" && propertyType !== "원룸·투룸(풀옵션)" && subCategory !== "토지" && (
+                <button 
+                  type="button" 
+                  onClick={fetchBuildingLedger}
+                  disabled={fetchingLedger}
+                  style={{ 
+                    height: 32, padding: "0 12px", background: fetchingLedger ? "#e5e7eb" : (darkMode ? "#3b2f1e" : "#fef3c7"), 
+                    color: fetchingLedger ? "#9ca3af" : "#d97706", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: fetchingLedger ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 6,
+                    marginLeft: "auto"
+                  }}>
+                  {fetchingLedger ? "⏳ 연동 중..." : "📋 건축물대장 연동"}
+                </button>
+              )}
+            </div>
 
             {/* 거래유형 */}
             <label style={labelStyle}>거래유형 {reqMark}</label>
