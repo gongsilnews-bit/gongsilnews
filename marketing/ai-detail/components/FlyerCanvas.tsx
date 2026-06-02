@@ -6,9 +6,12 @@ import { PhoneIcon } from '@heroicons/react/24/solid';
 
 interface FlyerCanvasProps {
   data: FlyerState;
+  onTextChange?: (key: keyof typeof FlyerState.prototype.info, value: string) => void;
+  onSectionTextChange?: (sectionId: string, itemId: string, key: 'title' | 'text', value: string) => void;
+  onImageClick?: (imageKey: string) => void;
 }
 
-const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data }, ref) => {
+const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, onTextChange, onSectionTextChange, onImageClick }, ref) => {
   const { info, mainImage, colorTheme, layoutTheme } = data; 
   const primaryColor = colorTheme?.primary || '#00788c';
   const secondaryColor = colorTheme?.secondary || '#00c6d7';
@@ -58,9 +61,9 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data }, ref)
              {info.transactionType || '거래 유형'}
         </div>
     );
-    const title = <h1 className={`font-bold leading-tight mb-2 tracking-tight drop-shadow-sm ${headingFont} ${layout === 'type5' ? 'text-5xl md:text-8xl' : 'text-4xl md:text-7xl'}`}>{info.address}</h1>;
-    const slogan = <p className={`font-bold mb-4 drop-shadow-md ${headingFont} ${layout === 'type5' ? 'text-2xl md:text-4xl' : 'text-2xl md:text-5xl'} ${layout === 'type3' ? 'text-gray-800' : 'text-white'}`}>{info.promotionText}</p>;
-    const subtitle = <p className={`text-base md:text-xl font-medium ${layout === 'type3' ? 'text-gray-600' : 'text-white opacity-90'}`} style={{ color: layout === 'type3' ? undefined : secondaryColor }}>{info.subTitle}</p>;
+    const title = <h1 contentEditable suppressContentEditableWarning onBlur={(e) => onTextChange?.('address', e.currentTarget.innerText)} className={`font-bold leading-tight mb-2 tracking-tight drop-shadow-sm ${headingFont} outline-none hover:bg-white/20 transition-colors cursor-text ${layout === 'type5' ? 'text-5xl md:text-8xl' : 'text-4xl md:text-7xl'}`}>{info.address}</h1>;
+    const slogan = <p contentEditable suppressContentEditableWarning onBlur={(e) => onTextChange?.('promotionText', e.currentTarget.innerText)} className={`font-bold mb-4 drop-shadow-md ${headingFont} outline-none hover:bg-white/20 transition-colors cursor-text ${layout === 'type5' ? 'text-2xl md:text-4xl' : 'text-2xl md:text-5xl'} ${layout === 'type3' ? 'text-gray-800 hover:bg-black/5' : 'text-white'}`}>{info.promotionText}</p>;
+    const subtitle = <p contentEditable suppressContentEditableWarning onBlur={(e) => onTextChange?.('subTitle', e.currentTarget.innerText)} className={`text-base md:text-xl font-medium outline-none hover:bg-white/20 transition-colors cursor-text ${layout === 'type3' ? 'text-gray-600 hover:bg-black/5' : 'text-white opacity-90'}`} style={{ color: layout === 'type3' ? undefined : secondaryColor }}>{info.subTitle}</p>;
 
     let content = null;
     switch (layout) {
@@ -68,7 +71,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data }, ref)
             content = (
                 <div className="relative h-[500px] md:h-[650px] flex flex-col">
                     <div className="absolute inset-0 z-0">
-                        <img src={mainImgSrc} className="w-full h-full object-cover" />
+                        <img onClick={() => onImageClick?.('mainImage')} src={mainImgSrc} className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity" title="클릭하여 메인 이미지 변경" />
                         <div className="absolute inset-0" style={{ background: `linear-gradient(to right, ${darkColor}E6, transparent)` }}></div>
                     </div>
                     <div className="relative z-10 p-8 md:p-16 flex flex-col h-full justify-center text-white items-start text-left">
@@ -85,7 +88,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data }, ref)
             content = (
                 <div className="relative h-[500px] md:h-[650px] flex flex-col">
                     <div className="absolute inset-0 z-0">
-                        <img src={mainImgSrc} className="w-full h-full object-cover" />
+                        <img onClick={() => onImageClick?.('mainImage')} src={mainImgSrc} className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity" title="클릭하여 메인 이미지 변경" />
                         <div className="absolute inset-0 bg-black/40"></div>
                     </div>
                     <div className="relative z-10 p-6 md:p-12 h-full flex items-center justify-center">
@@ -105,7 +108,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data }, ref)
                 <div className="relative h-[500px] md:h-[650px] flex flex-col bg-white">
                      {/* Image takes bottom 80% */}
                      <div className="h-[70%] md:h-[80%] w-full absolute bottom-0 right-0 z-0">
-                        <img src={mainImgSrc} className="w-full h-full object-cover" />
+                        <img onClick={() => onImageClick?.('mainImage')} src={mainImgSrc} className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity" title="클릭하여 메인 이미지 변경" />
                      </div>
                      {/* Text Block Top Left Floating */}
                      <div className="relative z-10 p-8 md:p-12 bg-white/95 w-[90%] md:w-2/3 shadow-sm rounded-br-3xl">
@@ -123,7 +126,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data }, ref)
              content = (
                 <div className="relative h-[500px] md:h-[650px] flex flex-col">
                     <div className="absolute inset-0 z-0">
-                        <img src={mainImgSrc} className="w-full h-full object-cover" />
+                        <img onClick={() => onImageClick?.('mainImage')} src={mainImgSrc} className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity" title="클릭하여 메인 이미지 변경" />
                     </div>
                     <div className="absolute bottom-6 right-6 md:bottom-12 md:right-12 z-10 bg-white/95 p-6 md:p-10 max-w-[90%] md:max-w-xl shadow-2xl border-l-8" style={{ borderColor: primaryColor }}>
                         <div className="text-xs md:text-sm font-bold tracking-widest mb-2 text-gray-500 uppercase">{info.transactionType}</div>
@@ -138,7 +141,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data }, ref)
              content = (
                 <div className="relative h-[500px] md:h-[700px] flex flex-col">
                     <div className="absolute inset-0 z-0">
-                        <img src={mainImgSrc} className="w-full h-full object-cover grayscale-[30%] contrast-125" />
+                        <img onClick={() => onImageClick?.('mainImage')} src={mainImgSrc} className="w-full h-full object-cover grayscale-[30%] contrast-125 cursor-pointer hover:opacity-90 transition-opacity" title="클릭하여 메인 이미지 변경" />
                         <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-80"></div>
                     </div>
                     <div className="relative z-10 p-8 md:p-12 flex flex-col justify-end h-full">
@@ -174,7 +177,12 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data }, ref)
                     {statsItems.map((item, i) => (
                         <div key={i} className="w-1/2 md:flex-1 py-6 px-4 border-r border-b md:border-b-0 border-gray-100 flex flex-col items-center justify-center text-center group hover:bg-gray-50">
                             <span className="text-[10px] text-gray-400 font-bold tracking-widest mb-1 uppercase">{item.label}</span>
-                            <span className="text-lg md:text-xl font-bold whitespace-nowrap" style={{ color: primaryColor }}>{item.value}</span>
+                            <span contentEditable suppressContentEditableWarning onBlur={(e) => {
+                                if (i === 0) onTextChange?.('priceMain', e.currentTarget.innerText);
+                                if (i === 1) onTextChange?.('area', e.currentTarget.innerText);
+                                if (i === 2) onTextChange?.('roomCount', e.currentTarget.innerText);
+                                if (i === 3) onTextChange?.('moveInDate', e.currentTarget.innerText);
+                            }} className="text-lg md:text-xl font-bold whitespace-nowrap outline-none hover:bg-black/5 transition-colors cursor-text" style={{ color: primaryColor }}>{item.value}</span>
                             <span className="text-[10px] text-gray-400 mt-1">{item.sub}</span>
                         </div>
                     ))}
@@ -187,7 +195,12 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data }, ref)
                       <div className="flex flex-col md:flex-row justify-center md:divide-x divide-gray-300 gap-8 md:gap-0">
                           {statsItems.map((item, i) => (
                               <div key={i} className="px-0 md:px-12 text-center">
-                                  <span className={`block text-2xl font-bold text-gray-800 mb-1 ${headingFont}`}>{item.value}</span>
+                                  <span contentEditable suppressContentEditableWarning onBlur={(e) => {
+                                      if (i === 0) onTextChange?.('priceMain', e.currentTarget.innerText);
+                                      if (i === 1) onTextChange?.('area', e.currentTarget.innerText);
+                                      if (i === 2) onTextChange?.('roomCount', e.currentTarget.innerText);
+                                      if (i === 3) onTextChange?.('moveInDate', e.currentTarget.innerText);
+                                  }} className={`block text-2xl font-bold text-gray-800 mb-1 outline-none hover:bg-black/5 transition-colors cursor-text ${headingFont}`}>{item.value}</span>
                                   <span className="text-xs uppercase tracking-widest text-gray-500 font-serif-en">{item.label}</span>
                               </div>
                           ))}
@@ -201,7 +214,12 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data }, ref)
                       {statsItems.map((item, i) => (
                           <div key={i} className="text-center w-1/2 md:w-auto mb-4 md:mb-0">
                               <span className="block text-sm opacity-70 mb-1">{item.sub}</span>
-                              <span className="block text-xl md:text-2xl font-bold">{item.value}</span>
+                              <span contentEditable suppressContentEditableWarning onBlur={(e) => {
+                                  if (i === 0) onTextChange?.('priceMain', e.currentTarget.innerText);
+                                  if (i === 1) onTextChange?.('area', e.currentTarget.innerText);
+                                  if (i === 2) onTextChange?.('roomCount', e.currentTarget.innerText);
+                                  if (i === 3) onTextChange?.('moveInDate', e.currentTarget.innerText);
+                              }} className="block text-xl md:text-2xl font-bold outline-none hover:bg-white/20 transition-colors cursor-text">{item.value}</span>
                           </div>
                       ))}
                   </div>
@@ -214,7 +232,12 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data }, ref)
                            {statsItems.map((item, i) => (
                                <div key={i} className="bg-white p-6 border-t-4 shadow-sm" style={{ borderColor: primaryColor }}>
                                    <span className="block text-xs font-bold text-gray-400 uppercase mb-2">{item.label}</span>
-                                   <span className="block text-lg md:text-xl font-extrabold text-gray-900">{item.value}</span>
+                                   <span contentEditable suppressContentEditableWarning onBlur={(e) => {
+                                       if (i === 0) onTextChange?.('priceMain', e.currentTarget.innerText);
+                                       if (i === 1) onTextChange?.('area', e.currentTarget.innerText);
+                                       if (i === 2) onTextChange?.('roomCount', e.currentTarget.innerText);
+                                       if (i === 3) onTextChange?.('moveInDate', e.currentTarget.innerText);
+                                   }} className="block text-lg md:text-xl font-extrabold text-gray-900 outline-none hover:bg-black/5 transition-colors cursor-text">{item.value}</span>
                                </div>
                            ))}
                        </div>
@@ -226,7 +249,12 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data }, ref)
                    <div className="bg-black text-white py-12 px-6 md:px-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-8 md:gap-0">
                        {statsItems.map((item, i) => (
                            <div key={i} className="flex flex-col">
-                               <span className="text-3xl md:text-4xl font-thin tracking-tighter mb-1" style={{ color: i === 0 ? secondaryColor : 'white' }}>{item.value}</span>
+                               <span contentEditable suppressContentEditableWarning onBlur={(e) => {
+                                   if (i === 0) onTextChange?.('priceMain', e.currentTarget.innerText);
+                                   if (i === 1) onTextChange?.('area', e.currentTarget.innerText);
+                                   if (i === 2) onTextChange?.('roomCount', e.currentTarget.innerText);
+                                   if (i === 3) onTextChange?.('moveInDate', e.currentTarget.innerText);
+                               }} className="text-3xl md:text-4xl font-thin tracking-tighter mb-1 outline-none hover:bg-white/20 transition-colors cursor-text" style={{ color: i === 0 ? secondaryColor : 'white' }}>{item.value}</span>
                                <span className="text-xs font-bold text-gray-500 uppercase tracking-[0.2em]">{item.label}</span>
                            </div>
                        ))}
@@ -306,11 +334,11 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data }, ref)
                      const imgSrc = getImage(item.imageKey) || placeholder;
                      return (
                         <div key={item.id} className={`relative h-64 md:h-full group overflow-hidden ${layout === 'type4' ? 'rounded-none border-2 border-gray-100' : 'rounded-sm shadow-md hover:shadow-xl'} transition-all`}>
-                            <img src={imgSrc} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-90"></div>
+                            <img onClick={() => onImageClick?.(item.imageKey)} src={imgSrc} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 cursor-pointer" title="이미지 변경" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-90 pointer-events-none"></div>
                             <div className="absolute bottom-0 left-0 w-full p-6 text-white transform transition-transform duration-300 group-hover:-translate-y-2">
-                                <span className="text-[10px] font-bold tracking-widest mb-2 block" style={{ color: secondaryColor }}>0{idx + 1}</span>
-                                <span className={`font-bold text-lg leading-tight block ${headingFont}`}>{item.text}</span>
+                                <span className="text-[10px] font-bold tracking-widest mb-2 block pointer-events-none" style={{ color: secondaryColor }}>0{idx + 1}</span>
+                                <span contentEditable suppressContentEditableWarning onBlur={(e) => onSectionTextChange?.(section.id, item.id, 'text', e.currentTarget.innerText)} className={`font-bold text-lg leading-tight block outline-none hover:bg-white/20 transition-colors cursor-text ${headingFont}`}>{item.text}</span>
                             </div>
                         </div>
                     );
@@ -336,11 +364,11 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data }, ref)
                      return (
                         <div key={item.id} className="grid grid-cols-1 md:grid-cols-2 mb-12 mx-6 md:mx-12 border-b border-gray-100 pb-12">
                             <div className={`h-[250px] md:h-[300px] ${isReversed ? 'md:order-2' : ''}`}>
-                                <img src={imgSrc} className="w-full h-full object-cover" />
+                                <img onClick={() => onImageClick?.(item.imageKey)} src={imgSrc} className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity" title="이미지 변경" />
                             </div>
                             <div className={`flex flex-col justify-center p-8 bg-gray-50 ${isReversed ? 'md:order-1' : ''}`}>
-                                <h4 className={`text-xl md:text-2xl font-extrabold text-gray-900 mb-4 ${headingFont}`}>{item.title}</h4>
-                                <p className={`text-gray-800 text-base md:text-sm leading-8 ${bodyFont}`}>{item.text}</p>
+                                <h4 contentEditable suppressContentEditableWarning onBlur={(e) => onSectionTextChange?.(section.id, item.id, 'title', e.currentTarget.innerText)} className={`text-xl md:text-2xl font-extrabold text-gray-900 mb-4 outline-none hover:bg-black/5 transition-colors cursor-text ${headingFont}`}>{item.title}</h4>
+                                <p contentEditable suppressContentEditableWarning onBlur={(e) => onSectionTextChange?.(section.id, item.id, 'text', e.currentTarget.innerText)} className={`text-gray-800 text-base md:text-sm leading-8 outline-none hover:bg-black/5 transition-colors cursor-text ${bodyFont}`}>{item.text}</p>
                             </div>
                         </div>
                      )
@@ -350,15 +378,15 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data }, ref)
                     return (
                         <div key={item.id} className="mb-24 px-6 md:px-12">
                             <div className="mb-6">
-                                <span className="text-4xl md:text-6xl font-thin text-gray-200 block mb-2">0{idx+1}</span>
-                                <h4 className={`text-2xl md:text-3xl font-bold text-gray-900 ${headingFont}`}>{item.title}</h4>
+                                <span className="text-4xl md:text-6xl font-thin text-gray-200 block mb-2 pointer-events-none">0{idx+1}</span>
+                                <h4 contentEditable suppressContentEditableWarning onBlur={(e) => onSectionTextChange?.(section.id, item.id, 'title', e.currentTarget.innerText)} className={`text-2xl md:text-3xl font-bold text-gray-900 outline-none hover:bg-black/5 transition-colors cursor-text ${headingFont}`}>{item.title}</h4>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
                                 <div className="col-span-1 md:col-span-8 h-[300px] md:h-[400px]">
-                                     <img src={imgSrc} className="w-full h-full object-cover grayscale-[20%]" />
+                                     <img onClick={() => onImageClick?.(item.imageKey)} src={imgSrc} className="w-full h-full object-cover grayscale-[20%] cursor-pointer hover:opacity-90 transition-opacity" title="이미지 변경" />
                                 </div>
                                 <div className="col-span-1 md:col-span-4 flex items-end">
-                                    <p className={`text-gray-700 text-base md:text-lg leading-relaxed ${bodyFont}`}>{item.text}</p>
+                                    <p contentEditable suppressContentEditableWarning onBlur={(e) => onSectionTextChange?.(section.id, item.id, 'text', e.currentTarget.innerText)} className={`text-gray-700 text-base md:text-lg leading-relaxed outline-none hover:bg-black/5 transition-colors cursor-text ${bodyFont}`}>{item.text}</p>
                                 </div>
                             </div>
                         </div>
@@ -369,12 +397,12 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data }, ref)
                 return (
                     <div key={item.id} className={`flex flex-col ${isReversed ? 'md:flex-row-reverse' : 'md:flex-row'} items-stretch mb-0 min-h-[400px]`}>
                          <div className="w-full md:w-1/2 relative overflow-hidden group h-[300px] md:h-auto">
-                             <img src={imgSrc} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                             <img onClick={() => onImageClick?.(item.imageKey)} src={imgSrc} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 cursor-pointer" title="이미지 변경" />
                          </div>
                          <div className="w-full md:w-1/2 flex flex-col justify-center px-8 md:px-16 py-12 bg-gray-50/50">
                              <div className="w-8 h-0.5 mb-6" style={{ backgroundColor: primaryColor }}></div>
-                             <h4 className={`text-xl md:text-2xl font-bold text-gray-800 mb-4 ${headingFont}`}>{item.title}</h4>
-                             <p className={`text-gray-700 text-base md:text-sm leading-8 break-keep whitespace-pre-wrap ${bodyFont}`}>
+                             <h4 contentEditable suppressContentEditableWarning onBlur={(e) => onSectionTextChange?.(section.id, item.id, 'title', e.currentTarget.innerText)} className={`text-xl md:text-2xl font-bold text-gray-800 mb-4 outline-none hover:bg-black/5 transition-colors cursor-text ${headingFont}`}>{item.title}</h4>
+                             <p contentEditable suppressContentEditableWarning onBlur={(e) => onSectionTextChange?.(section.id, item.id, 'text', e.currentTarget.innerText)} className={`text-gray-700 text-base md:text-sm leading-8 break-keep whitespace-pre-wrap outline-none hover:bg-black/5 transition-colors cursor-text ${bodyFont}`}>
                                  {item.text}
                              </p>
                          </div>

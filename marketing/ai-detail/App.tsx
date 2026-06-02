@@ -317,6 +317,42 @@ function App() {
   const [isUploadingImage, setIsUploadingImage] = useState<Record<string, boolean>>({});
   const [authError, setAuthError] = useState<string | null>(null);
 
+  const handleTextChange = (key: any, value: string) => {
+      setState(prev => ({ ...prev, info: { ...prev.info, [key]: value } }));
+  };
+
+  const handleSectionTextChange = (sectionId: string, itemId: string, key: 'title' | 'text', value: string) => {
+      setState(prev => {
+          const newSections = prev.info.sections.map(sec => {
+              if (sec.id !== sectionId) return sec;
+              return {
+                  ...sec,
+                  items: sec.items.map(it => {
+                      if (it.id !== itemId) return it;
+                      return { ...it, [key]: value };
+                  })
+              };
+          });
+          return { ...prev, info: { ...prev.info, sections: newSections } };
+      });
+  };
+
+  const hiddenFileInputRef = useRef<HTMLInputElement>(null);
+  const [activeImageKey, setActiveImageKey] = useState<string>('');
+
+  const handleImageClick = (imageKey: string) => {
+      setActiveImageKey(imageKey);
+      hiddenFileInputRef.current?.click();
+  };
+
+  const handleHiddenFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file && activeImageKey) {
+          await handleImageUpload(activeImageKey, file);
+      }
+      if (hiddenFileInputRef.current) hiddenFileInputRef.current.value = '';
+  };
+
   const loadVacancyDataDirectly = async (vacancyId: string) => {
     setLoadingData(true);
     try {
@@ -1303,7 +1339,20 @@ ${clone.outerHTML}
             <div className="flex-1 overflow-auto p-8 flex justify-center custom-scrollbar">
                 {/* Fixed width container for editor preview */}
                 <div style={{ width: '860px', flexShrink: 0 }}>
-                    <FlyerCanvas ref={flyerRef} data={state} />
+                    <FlyerCanvas 
+                        ref={flyerRef} 
+                        data={state} 
+                        onTextChange={handleTextChange}
+                        onSectionTextChange={handleSectionTextChange}
+                        onImageClick={handleImageClick}
+                    />
+                    <input 
+                        type="file" 
+                        ref={hiddenFileInputRef} 
+                        onChange={handleHiddenFileChange} 
+                        style={{ display: 'none' }} 
+                        accept="image/*" 
+                    />
                 </div>
             </div>
         </div>
