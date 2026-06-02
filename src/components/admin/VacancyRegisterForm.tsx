@@ -1211,7 +1211,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
               }} style={{ height: 36, padding: "0 16px", background: "#10b981", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
                 🔍 주소 검색
               </button>
-              {propertyType !== "아파트·오피스텔" && (
+              {propertyType !== "아파트·오피스텔" && propertyType !== "빌라·주택" && (
                 <button 
                   type="button" 
                   onClick={fetchBuildingLedger}
