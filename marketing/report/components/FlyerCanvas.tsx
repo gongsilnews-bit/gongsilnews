@@ -963,7 +963,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
             onUpdateTitle={(val) => handleTextChange('page2Title', val)}
             subtitle={info.page2Subtitle || "Status & Valuation"} 
             onUpdateSubtitle={(val) => handleTextChange('page2Subtitle', val)}
-            badgeText={info.pageBadges?.page2 || "EVIDENCE & DATA"}
+            badgeText={info.pageBadges?.page2 || ""}
             exportId="page-2"
             onUpdateBadge={(val) => {
                 if (onUpdateInfo) {
@@ -980,7 +980,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                 <div className="w-full h-full flex flex-col">
                     <div className="text-gray-600 font-bold text-sm mb-4">
                         <EditableText 
-                            value={info.page2HighlightHeader || "1. PROPERTY INFORMATION & VALUE"} 
+                            value={info.page2HighlightHeader || "PROPERTY INFORMATION & VALUE"} 
                             onChange={(val) => handleTextChange('page2HighlightHeader', val)} 
                         />
                     </div>
