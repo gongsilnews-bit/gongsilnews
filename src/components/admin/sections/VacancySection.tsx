@@ -338,19 +338,11 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                   return result || "0";
                 };
                 
-                const getTradeTypeBadge = (type: string) => {
-                  let bg = "#f3f4f6";
-                  let color = "#4b5563";
-                  if (type === "매매") { bg = "#fee2e2"; color = "#dc2626"; }
-                  else if (type === "전세") { bg = "#e0e7ff"; color = "#4338ca"; }
-                  else if (type === "월세") { bg = "#dcfce3"; color = "#15803d"; }
-                  else if (type === "단기" || type === "단기임대") { bg = "#fef3c7"; color = "#d97706"; }
-                  return <span style={{ padding: "2px 6px", borderRadius: 4, background: bg, color: color, fontSize: 12, fontWeight: 800, marginRight: 6 }}>{type || "미상"}</span>;
-                };
-
                 const priceText = row.trade_type === "매매" || row.trade_type === "전세" 
-                  ? formatAmount(row.deposit) 
-                  : `${formatAmount(row.deposit)}/${formatAmount(row.monthly_rent)}`;
+                  ? `${row.trade_type} ${formatAmount(row.deposit)}`
+                  : row.trade_type 
+                    ? `${row.trade_type} ${formatAmount(row.deposit)}/${formatAmount(row.monthly_rent)}`
+                    : `${formatAmount(row.deposit)}/${formatAmount(row.monthly_rent)}`;
                 const addrText = [row.dong, row.building_name].filter(Boolean).join(" ") || [row.sido, row.sigungu, row.dong].filter(Boolean).join(" ");
                 const dateStr = row.created_at ? new Date(row.created_at).toLocaleDateString('ko-KR', { timeZone: "Asia/Seoul", month: '2-digit', day: '2-digit' }) : "";
                 const isActive = row.status === 'ACTIVE';
@@ -414,10 +406,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                       <div style={{ fontSize: 14, color: textSecondary }}>{row.client_phone || ""}</div>
                     </td>
                     <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        {getTradeTypeBadge(row.trade_type)}
-                        <span style={{ color: darkMode ? "#fca5a5" : "#ef4444", fontWeight: 800, fontSize: 15 }}>{priceText}</span>
-                      </div>
+                      <span style={{ color: darkMode ? "#fca5a5" : "#ef4444", fontWeight: 800, fontSize: 15 }}>{priceText}</span>
                     </td>
                     <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>
                       {row.room_count || "-"} / {row.exclusive_m2 ? `${row.exclusive_m2}m²` : "m²"} / {row.current_floor || "-"}
