@@ -1001,7 +1001,7 @@ function MobileVacancyWrite() {
 
 
         {/* 건축물대장 추가 스펙 (API 연동 항목) */}
-        {(propertyType === "상가·사무실·건물·공장·토지" || propertyType === "빌라·주택") && subCategory !== "토지" && (
+        {propertyType === "상가·사무실·건물·공장·토지" && subCategory !== "토지" && (
           <div style={{ background: "#f8fafc", borderRadius: 14, padding: 16, marginBottom: 12, border: "1px solid #e2e8f0" }}>
             <div style={{ fontSize: 13, fontWeight: 800, color: "#1e293b", marginBottom: 16, display: "flex", alignItems: "center", gap: 6 }}>
               <span>🏢 건축물대장 추가 스펙</span>
