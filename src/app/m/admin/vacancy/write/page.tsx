@@ -47,6 +47,7 @@ function MobileVacancyWrite() {
   const [userPhone, setUserPhone] = useState("");
   const [userRole, setUserRole] = useState("USER");
   const [authChecked, setAuthChecked] = useState(false);
+  const [fetchingLedger, setFetchingLedger] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [loadingEdit, setLoadingEdit] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
@@ -661,6 +662,65 @@ function MobileVacancyWrite() {
     </div>
   );
 
+    const fetchBuildingLedger = async () => {
+    if (!sigunguCd || !bjdongCd || !bun) {
+      alert("먼저 [주소 검색]을 통해 정확한 주소를 입력해주세요.");
+      return;
+    }
+    setFetchingLedger(true);
+    try {
+      const url = `/api/building-ledger?sigunguCd=${sigunguCd}&bjdongCd=${bjdongCd}&bun=${bun}&ji=${ji}&platGbCd=${platGbCd}`;
+      const res = await fetch(url);
+      const json = await res.json();
+      if (!res.ok) {
+        alert(json.error || json.message || "건축물대장 조회에 실패했습니다.");
+        return;
+      }
+      const ledger = json.data;
+      if (ledger) {
+        if (ledger.totPkngCnt !== undefined) setParking(ledger.totPkngCnt.toString());
+        if (ledger.useAprDay) {
+          const rawDate = ledger.useAprDay;
+          if (rawDate.length === 8) {
+            // YYYYMMDD -> YYYY-MM-DD (보통 입주일 대신 메모나 특징에 활용할 수도 있음)
+            setMoveInDate(`${rawDate.substring(0,4)}년 ${rawDate.substring(4,6)}월 승인`);
+          }
+        }
+        if (ledger.grndFlrCnt) setTotalFloor(ledger.grndFlrCnt.toString());
+        if (ledger.totArea) {
+           setSupplyM2(ledger.totArea.toString());
+           setSupplyPy((Number(ledger.totArea) * 0.3025).toFixed(1));
+        }
+        
+        let p = ledger.mainPurpsCdNm || "";
+        if (p.includes("단독주택") || p.includes("다가구") || p.includes("다세대")) {
+           setPropertyType("빌라·주택");
+           setSubCategory("빌라/연립");
+        } else if (p.includes("근린생활") || p.includes("상업") || p.includes("업무")) {
+           setPropertyType("상가·사무실·건물·공장·토지");
+           setSubCategory(p.includes("업무") ? "사무실" : "상가");
+        }
+
+        const addInfo = [];
+        if (p) addInfo.push(`주용도: ${p}`);
+        if (ledger.strctCdNm) addInfo.push(`구조: ${ledger.strctCdNm}`);
+        if (ledger.rideUseElvtCnt || ledger.emgenUseElvtCnt) {
+          addInfo.push(`승강기: 승용 ${ledger.rideUseElvtCnt || 0}대 / 비상용 ${ledger.emgenUseElvtCnt || 0}대`);
+        }
+        if (addInfo.length > 0) {
+          setDescription(prev => (prev ? prev + "\n" : "") + "■ 건축물대장 정보 ■\n" + addInfo.join("\n"));
+        }
+        
+        alert("건축물대장 정보를 성공적으로 불러와 빈칸을 채웠습니다!");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("건축물대장 연동 중 오류가 발생했습니다.");
+    } finally {
+      setFetchingLedger(false);
+    }
+  };
+
   const handleNextStep = () => {
     if (currentStep === 2) {
       if (!deposit) {
@@ -883,6 +943,27 @@ function MobileVacancyWrite() {
 
         {/* ═══ STEP 2: 가격/면적 ═══ */}
         {currentStep === 2 && (<>
+
+        {propertyType !== "아파트·오피스텔" && propertyType !== "빌라·주택" && propertyType !== "원룸·투룸(풀옵션)" && subCategory !== "토지" && (
+          <div style={{ padding: "0 16px 12px" }}>
+            <button 
+              type="button" 
+              onClick={fetchBuildingLedger}
+              disabled={fetchingLedger}
+              style={{ 
+                width: "100%", height: 46, 
+                background: fetchingLedger ? "#e5e7eb" : "linear-gradient(135deg, #fef3c7, #fde68a)", 
+                color: fetchingLedger ? "#9ca3af" : "#d97706", 
+                border: "none", borderRadius: 10, fontSize: 15, fontWeight: 800, 
+                cursor: fetchingLedger ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                boxShadow: fetchingLedger ? "none" : "0 4px 12px rgba(217,119,6,0.15)", transition: "all 0.2s"
+              }}
+            >
+              <span style={{ fontSize: 18 }}>{fetchingLedger ? "⏳" : "✨"}</span>
+              {fetchingLedger ? "AI 데이터 불러오는 중..." : "AI 건축물대장 자동완성"}
+            </button>
+          </div>
+        )}
         {/* 2. 거래/금액 */}
         <div style={{ background:"#fff", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.03)", border:"1px solid #f3f4f6" }}>
           <div style={{ fontSize:16, fontWeight:800, color:"#111", borderLeft:"4px solid #1a73e8", paddingLeft:10, marginBottom:14 }}>거래정보</div>
