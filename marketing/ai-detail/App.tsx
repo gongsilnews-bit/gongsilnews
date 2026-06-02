@@ -5,6 +5,7 @@ import FlyerCanvas from './components/FlyerCanvas';
 import { generateFlyerCopy, fileToGenerativePart, extractPropertyInfoFromImages, extractAgentInfoFromImage, extractComplexInfoFromImage } from './services/geminiService';
 import { FlyerState, PropertyInfo, GeneratedContent, FlyerColor, FlyerLayout } from './types';
 import { ArrowDownTrayIcon, CodeBracketIcon, XMarkIcon, CheckIcon } from '@heroicons/react/24/solid';
+import { jsPDF } from 'jspdf';
 
 export const COLORS: FlyerColor[] = [
   { id: 'teal', name: 'Teal (Raemian)', primary: '#00788c', secondary: '#00c6d7', dark: '#003845' },
@@ -1308,9 +1309,6 @@ ${clone.outerHTML}
       });
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { jsPDF } = (window as any).jspdf;
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const canvas = await (window as any).html2canvas(clone, {
         scale: 2,
         useCORS: true,
@@ -1368,7 +1366,7 @@ ${clone.outerHTML}
   };
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden font-sans">
+    <div className="flex flex-col h-screen bg-gray-50 overflow-hidden font-sans">
       {loadingData && (
         <div className="fixed inset-0 bg-slate-900/80 z-[200] flex flex-col items-center justify-center text-white backdrop-blur-sm">
           <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-amber-500 mb-6"></div>
