@@ -179,8 +179,8 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                   <div>
                       <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">기본 타이틀</h4>
                       <div className="space-y-3">
-                          <div><label className="text-xs text-gray-500">보고서 제목 (Address)</label><textarea name="address" value={info.address} onChange={handleChange} className="w-full border rounded p-2 text-sm resize-y" rows={2} /></div>
-                          <div><label className="text-xs text-gray-500">서브 타이틀</label><textarea name="subTitle" value={info.subTitle} onChange={handleChange} className="w-full border rounded p-2 text-sm resize-y" rows={3} /></div>
+                          <div><label className="text-xs text-gray-500">보고서 제목 (Address)</label><textarea name="address" value={info.address || ""} onChange={handleChange} className="w-full border rounded p-2 text-sm resize-y" rows={2} /></div>
+                          <div><label className="text-xs text-gray-500">서브 타이틀</label><textarea name="subTitle" value={info.subTitle || ""} onChange={handleChange} className="w-full border rounded p-2 text-sm resize-y" rows={3} /></div>
                       </div>
                   </div>
 
@@ -600,7 +600,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                       <div className="space-y-3">
                           <div>
                               <label className="text-xs text-gray-500 font-bold">좌측 텍스트 (STRATEGIC ADVISORY)</label>
-                              <textarea name="valuationText" value={info.valuationText} onChange={handleChange} className="w-full border rounded p-2 text-sm" rows={4} />
+                              <textarea name="valuationText" value={info.valuationText || ""} onChange={handleChange} className="w-full border rounded p-2 text-sm" rows={4} />
                           </div>
                           <div>
                               <label className="text-xs text-gray-500 font-bold">우측 텍스트 (그래프 하단)</label>

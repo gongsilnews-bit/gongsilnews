@@ -61,6 +61,7 @@ export interface PropertyInfo {
   floorStatusNotice: string;
   highlights: string[];
   valuationText: string;
+  chartAdviseText?: string;
 
   // Page 3: Photos (Images are in FlyerState, just add captions if needed)
   photoCaptions: {
