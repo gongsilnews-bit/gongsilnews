@@ -306,9 +306,9 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                 <th style={{ padding: "12px 4px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 50 }}>번호</th>
                 <th style={{ padding: "12px 4px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 70 }}>광고설정</th>
                 <th style={{ padding: "12px 4px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 70 }}>공실광고 종류</th>
-                <th style={{ padding: "12px 10px", textAlign: "left", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 300 }}>주소 / 연락처</th>
-                <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 110 }}>금액</th>
-                <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 130 }}>방수/면적(m²)/층</th>
+                <th style={{ padding: "12px 10px", textAlign: "left", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: "auto" }}>주소 / 연락처</th>
+                <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 160 }}>금액</th>
+                <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 140 }}>방수/면적(m²)/층</th>
                 <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 70 }}>최초등록</th>
                 <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 120 }}>등록자/연락처</th>
                 <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 120 }}>관리</th>
@@ -337,8 +337,19 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                   }
                   return result || "0";
                 };
-                const priceText = row.trade_type === "매매" ? `매매 ${formatAmount(row.deposit)}`
-                  : row.trade_type === "전세" ? `전세 ${formatAmount(row.deposit)}`
+                
+                const getTradeTypeBadge = (type: string) => {
+                  let bg = "#f3f4f6";
+                  let color = "#4b5563";
+                  if (type === "매매") { bg = "#fee2e2"; color = "#dc2626"; }
+                  else if (type === "전세") { bg = "#e0e7ff"; color = "#4338ca"; }
+                  else if (type === "월세") { bg = "#dcfce3"; color = "#15803d"; }
+                  else if (type === "단기" || type === "단기임대") { bg = "#fef3c7"; color = "#d97706"; }
+                  return <span style={{ padding: "2px 6px", borderRadius: 4, background: bg, color: color, fontSize: 12, fontWeight: 800, marginRight: 6 }}>{type || "미상"}</span>;
+                };
+
+                const priceText = row.trade_type === "매매" || row.trade_type === "전세" 
+                  ? formatAmount(row.deposit) 
                   : `${formatAmount(row.deposit)}/${formatAmount(row.monthly_rent)}`;
                 const addrText = [row.dong, row.building_name].filter(Boolean).join(" ") || [row.sido, row.sigungu, row.dong].filter(Boolean).join(" ");
                 const dateStr = row.created_at ? new Date(row.created_at).toLocaleDateString('ko-KR', { timeZone: "Asia/Seoul", month: '2-digit', day: '2-digit' }) : "";
@@ -403,7 +414,10 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                       <div style={{ fontSize: 14, color: textSecondary }}>{row.client_phone || ""}</div>
                     </td>
                     <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
-                      <span style={{ color: darkMode ? "#fca5a5" : "#ef4444", fontWeight: 600, fontSize: 15 }}>{priceText}</span>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        {getTradeTypeBadge(row.trade_type)}
+                        <span style={{ color: darkMode ? "#fca5a5" : "#ef4444", fontWeight: 800, fontSize: 15 }}>{priceText}</span>
+                      </div>
                     </td>
                     <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>
                       {row.room_count || "-"} / {row.exclusive_m2 ? `${row.exclusive_m2}m²` : "m²"} / {row.current_floor || "-"}
@@ -412,7 +426,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                     <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
                       <div style={{ fontWeight: 700, fontSize: 15, color: textPrimary, marginBottom: 2 }}>{ownerInfo.name || row.client_name || ownerName || "-"}</div>
                       <div style={{ fontSize: 13, color: textSecondary, fontWeight: 600, marginTop: 2, marginBottom: role === "admin" ? 4 : 0 }}>
-                        {ownerInfo.phone || ownerPhone || "-"}
+                        {ownerInfo.phone || row.client_phone || ownerPhone || "-"}
                       </div>
                       {role === "admin" && (
                         <div style={{ fontSize: 12, padding: "2px 6px", borderRadius: 4, display: "inline-block", background: row.owner_role === 'REALTOR' ? '#dbeafe' : row.owner_role === 'ADMIN' ? '#fce7f3' : '#f3f4f6', color: row.owner_role === 'REALTOR' ? '#1e40af' : row.owner_role === 'ADMIN' ? '#be185d' : '#374151', fontWeight: 600 }}>
