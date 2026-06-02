@@ -1476,24 +1476,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                             </table>
                         </div>
                         
-                        {/* Interactive Quick Action buttons below table */}
-                        <div className="flex gap-3 mt-4 pt-3 border-t border-slate-100 print:hidden shrink-0">
-                            <button
-                                type="button"
-                                onClick={addRow}
-                                className="flex-1 py-2.5 bg-yellow-50 hover:bg-yellow-100 text-yellow-700 rounded-xl text-xs font-bold transition-all border border-dashed border-yellow-200 flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer shadow-sm"
-                            >
-                                ➕ 새로운 가로줄(행) 추가
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => addColumn(headers.length)}
-                                className="flex-1 py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-xl text-xs font-bold transition-all border border-dashed border-blue-200 flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer shadow-sm"
-                            >
-                                ➕ 새로운 세로칸(열) 추가
-                            </button>
-                        </div>
-                        
+
                         {/* Notice text block */}
                         <div className="text-[10px] text-slate-400 mt-3 pt-2 border-t border-slate-100 leading-normal shrink-0">
                             <EditableBlock 
