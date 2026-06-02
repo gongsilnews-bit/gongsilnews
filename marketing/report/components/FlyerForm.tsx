@@ -151,7 +151,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
       <hr className="border-gray-100 mb-6 shrink-0" />
 
       {/* Tabs */}
-      <div className="flex bg-gray-100 p-1 rounded-lg mb-6 shrink-0">
+      <div className="grid grid-cols-4 gap-1.5 bg-gray-100 p-2 rounded-xl mb-6 shrink-0 shadow-inner">
           {[
               { id: 'all' as const, label: '전체' },
               { id: 1, label: '1. 개요' },
@@ -164,7 +164,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
               <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex-1 py-2 text-[10px] font-bold rounded-md transition-all ${activeTab === tab.id ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:bg-gray-200'}`}
+                  className={`py-2 px-1 text-[11px] sm:text-xs font-bold rounded-lg transition-all ${activeTab === tab.id ? 'bg-white text-gray-900 shadow-md ring-1 ring-gray-200/50' : 'text-gray-500 hover:bg-gray-200/80'}`}
               >
                   {tab.label}
               </button>
