@@ -446,11 +446,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                             <div style={{ display: "flex", gap: 6, justifyContent: "center", width: "100%" }}>
                               {(role === "admin" || role === "realtor") && (() => {
                                 const hasFlyer = flyerMap[row.id];
-                                const allowedCategories = ["상가", "사무실", "건물", "공장", "토지", "단독", "다가구"];
-                                const category = (row.sub_category || row.property_type || "").trim();
-                                const isAllowedCategory = allowedCategories.some(cat => category.includes(cat));
-                                const isSale = row.trade_type === "매매";
-                                const showIMReport = isSale && isAllowedCategory;
+                                const showIMReport = true;
 
                                 return (
                                   <div style={{ display: 'flex', gap: '4px' }}>
@@ -476,9 +472,9 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                                         }}
                                         onMouseEnter={(e) => { e.currentTarget.style.background = darkMode ? "#1e40af" : "#dbeafe"; }}
                                         onMouseLeave={(e) => { e.currentTarget.style.background = darkMode ? "#1e3a8a" : "#eff6ff"; }}
-                                        title="프리미엄 매매보고서(IM) 생성기"
+                                        title="AI 물건보고서 생성기"
                                       >
-                                        매매보고서
+                                        AI물건보고서
                                       </button>
                                     )}
                                     
