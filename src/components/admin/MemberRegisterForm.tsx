@@ -434,23 +434,10 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
           if (uploadRes.success) bizCertUrl = uploadRes.url || null;
         }
 
-        const isCoreRealtorDataChanged = !isAdmin && agencyData.status === "APPROVED" && (
-          files.reg_cert !== undefined || files.biz_cert !== undefined ||
-          (originalAgencyData && (
-            agencyData.name !== originalAgencyData.name ||
-            agencyData.ceo_name !== originalAgencyData.ceo_name ||
-            agencyData.reg_num !== originalAgencyData.reg_num ||
-            agencyData.biz_num !== originalAgencyData.biz_num ||
-            agencyData.address !== originalAgencyData.address
-          ))
-        );
-
         let finalStatus = agencyData.status;
         if (isAdmin) {
           finalStatus = agencyData.status;
         } else if (requestApproval) {
-          finalStatus = "PENDING";
-        } else if (isCoreRealtorDataChanged) {
           finalStatus = "PENDING";
         }
 
@@ -550,25 +537,9 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
       }
 
       if (!isAdmin && agencyData.status === "APPROVED" && formData.role === "부동산회원") {
-        // Find if we downgraded
-        const wasDowngraded = isAdmin ? false : (!requestApproval && (
-          files.reg_cert !== undefined || files.biz_cert !== undefined ||
-          (originalAgencyData && (
-            agencyData.name !== originalAgencyData.name ||
-            agencyData.ceo_name !== originalAgencyData.ceo_name ||
-            agencyData.reg_num !== originalAgencyData.reg_num ||
-            agencyData.biz_num !== originalAgencyData.biz_num ||
-            agencyData.address !== originalAgencyData.address
-          ))
-        ));
-
-        if (wasDowngraded) {
-          alert("중요 회원정보(주소, 등록번호, 서류 등)가 변경되어 다시 [승인대기] 상태로 전환되었습니다.\n관리자 재승인 완료 시 정상 이용이 가능합니다.");
-        } else {
-          alert(editMemberId ? "회원 수정이 완료되었습니다." : "회원 등록이 완료되었습니다.");
-        }
+        alert(editMemberId ? "회원 정보 수정이 완료되었습니다." : "회원 등록이 완료되었습니다.");
       } else {
-        alert(editMemberId ? "회원 수정이 완료되었습니다." : "회원 등록이 완료되었습니다.");
+        alert(editMemberId ? "회원 정보 수정이 완료되었습니다." : "회원 등록이 완료되었습니다.");
       }
       
       onBack();
