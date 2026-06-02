@@ -708,14 +708,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
       if (baek > 0) manStr += `${baek}백`;
       
       if (rest > 0) {
-        if (manStr === "") {
-          manStr += rest; 
-        } else {
-          const sip = Math.floor(rest / 10);
-          const il = rest % 10;
-          if (sip > 0) manStr += `${sip}십`;
-          if (il > 0) manStr += `${il}`;
-        }
+        manStr += rest;
       }
       result += `${manStr}만`;
     }

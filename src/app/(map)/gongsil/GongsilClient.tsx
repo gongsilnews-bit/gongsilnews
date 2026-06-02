@@ -345,6 +345,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   const [filterRoomCount, setFilterRoomCount] = useState<number | null>(null);
   const [filterBathCount, setFilterBathCount] = useState<number | null>(null);
   const [filterDirection, setFilterDirection] = useState<string | null>(null);
+  const [filterParking, setFilterParking] = useState<string | null>(null);
   const [filterYearMin, setFilterYearMin] = useState<number | null>(null);
   const [filterYearMax, setFilterYearMax] = useState<number | null>(null);
   const [filterUnitMin, setFilterUnitMin] = useState<number | null>(null);
@@ -780,6 +781,15 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     // 9) 방향
     if (filterDirection) {
       list = list.filter((v) => v.direction === filterDirection);
+    }
+    
+    // 9.5) 주차
+    if (filterParking) {
+      list = list.filter((v) => {
+        if (!v.parking) return false;
+        // Exact match or contains for 5대이상 etc.
+        return v.parking.includes(filterParking);
+      });
     }
 
     // 10) 사용승인일 (연도 필터)
@@ -1626,7 +1636,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
       return ["거래유형", "면적", "방/욕실수", "방향", "관리비", "기타옵션", "등록자", "중개보수", "테마"];
     }
     if (activeCategory === "biz") {
-      return ["거래유형", "면적", "층수", "관리비", "기타옵션", "등록자", "중개보수", "테마"];
+      return ["거래유형", "면적", "층수", "관리비", "주차", "기타옵션", "등록자", "중개보수", "테마"];
     }
     if (activeCategory === "sale") {
       return ["거래유형", "면적", "세대수", "등록자", "중개보수", "테마"];
@@ -1647,6 +1657,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     setFilterRoomCount(null);
     setFilterBathCount(null);
     setFilterDirection(null);
+    setFilterParking(null);
     setFilterYearMin(null);
     setFilterYearMax(null);
     setFilterUnitMin(null);
@@ -3241,6 +3252,70 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                               </div>
                             )}
 
+                            {/* Section: 주차 */}
+                            {getWizardTabs().includes("주차") && (
+                              <div
+                                id="section-주차"
+                                style={{
+                                  padding: "16px 12px",
+                                  borderRadius: "8px",
+                                  background: activeSection === "주차" ? "#f3f4f6" : "transparent",
+                                  marginBottom: "16px",
+                                  transition: "all 0.2s ease-in-out",
+                                }}
+                              >
+                                <div style={{ fontSize: "14px", color: "#374151", marginBottom: "10px", fontWeight: "bold" }}>주차가능 여부</div>
+                                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
+                                  <button
+                                    onClick={() => {
+                                      setFilterParking(null);
+                                      setTimeout(() => {
+                                        scrollToSection("기타옵션");
+                                      }, 350);
+                                    }}
+                                    style={{
+                                      gridColumn: "span 3",
+                                      padding: "6px 0",
+                                      border: "1px solid " + (filterParking === null ? "#111" : "#eee"),
+                                      borderRadius: 4,
+                                      background: filterParking === null ? "#111" : "#fff",
+                                      color: filterParking === null ? "#fff" : "#333",
+                                      fontSize: 12,
+                                      fontWeight: "bold",
+                                      cursor: "pointer",
+                                      transition: "all 0.15s"
+                                    }}
+                                  >
+                                    전체
+                                  </button>
+                                  {["없음", "1대", "2대", "3대", "4대", "5대이상"].map((p) => (
+                                    <button
+                                      key={p}
+                                      onClick={() => {
+                                        setFilterParking(filterParking === p ? null : p);
+                                        setTimeout(() => {
+                                          scrollToSection("기타옵션");
+                                        }, 350);
+                                      }}
+                                      style={{
+                                        padding: "6px 0",
+                                        border: "1px solid " + (filterParking === p ? "#111" : "#eee"),
+                                        borderRadius: 4,
+                                        background: filterParking === p ? "#e8f0fe" : "#fff",
+                                        color: filterParking === p ? "#1a4282" : "#333",
+                                        fontSize: 12,
+                                        fontWeight: filterParking === p ? "bold" : "normal",
+                                        cursor: "pointer",
+                                        transition: "all 0.15s"
+                                      }}
+                                    >
+                                      {p}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
                             {/* Section: 기타옵션 */}
                             {getWizardTabs().includes("기타옵션") && (
                               <div
@@ -3878,6 +3953,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                                 setFilterRoomCount(null);
                                 setFilterBathCount(null);
                                 setFilterDirection(null);
+                                setFilterParking(null);
                                 setFilterYearMin(null);
                                 setFilterYearMax(null);
                                 setFilterUnitMin(null);
