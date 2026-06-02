@@ -9,7 +9,7 @@ import { geocodeAddress } from "@/app/actions/geocode";
 import imageCompression from "browser-image-compression";
 
 const SUB_CATEGORIES: Record<string, string[]> = {
-  "아파트·오피스텔": ["아파트", "오피스텔", "재건축", "재개발"],
+  "아파트·오피스텔": ["아파트", "아파트분양권", "오피스텔", "오피스텔분양권"],
   "빌라·주택": ["빌라/연립", "단독/다가구", "전원주택", "상가주택"],
   "원룸·투룸(풀옵션)": ["원룸", "투룸"],
   "상가·사무실·건물·공장·토지": ["상가", "사무실", "공장/창고", "건물", "토지"],
