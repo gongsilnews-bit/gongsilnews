@@ -1426,13 +1426,13 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                   </div>
                 </div>
                 <div style={{ flex: 1 }}>
-                  <label style={labelStyle}>용도지역 (선택)</label>
+                  <label style={labelStyle}>용도지역</label>
                   <select
                     value={zoning}
                     onChange={(e) => setZoning(e.target.value)}
                     style={inputStyle}
                   >
-                    <option value="">선택 (입력안함)</option>
+                    <option value="">선택</option>
                     {["1종전용주거", "2종전용주거", "1종일반주거", "2종일반주거", "3종일반주거", "준주거", "중심상업", "일반상업", "근린상업", "유통상업", "보전녹지", "생산녹지", "자연녹지", "보전관리", "생산관리", "계획관리", "농림지역", "자연환경보전"].map(v => (
                       <option key={v} value={v}>{v}</option>
                     ))}
@@ -1440,13 +1440,13 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                 </div>
                 {subCategory === "토지" && (
                   <div style={{ flex: 1 }}>
-                    <label style={labelStyle}>토지 용도(지목) (선택)</label>
+                    <label style={labelStyle}>토지 용도(지목)</label>
                     <select
                       value={landPurpose}
                       onChange={(e) => setLandPurpose(e.target.value)}
                       style={inputStyle}
                     >
-                      <option value="">선택 (입력안함)</option>
+                      <option value="">선택</option>
                       {["전", "답", "과수원", "목장용지", "임야", "광천지", "염전", "대", "공장용지", "학교용지", "주차장", "주유소용지", "창고용지", "도로", "철도용지", "제방", "하천", "구거", "유지", "양어장", "수도용지", "공원", "체육용지", "유원지", "종교용지", "사적지", "묘지", "잡종지"].map(v => (
                         <option key={v} value={v}>{v}</option>
                       ))}
