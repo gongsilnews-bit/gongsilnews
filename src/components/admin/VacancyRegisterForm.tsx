@@ -600,7 +600,21 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
         base = ["시스템에어컨", "세탁기", "건조기", "빌트인냉장고", "식기세척기", "인덕션", "붙박이장", "침대", "TV", "비데", "도어락", "무인택배함"];
       }
     } else if (propertyType === "상가·사무실·건물·공장·토지") {
-      base = ["냉난방기", "수도설비", "가스설비", "화물용승강기", "보안시스템"];
+      if (subCategory === "상가") {
+        base = ["천장형에어컨", "전용화장실", "테라스", "수도설비", "도시가스", "덕트설비", "전면통유리"];
+      } else if (subCategory === "사무실") {
+        base = ["시스템에어컨", "탕비실", "인테리어완비", "룸(회의실)", "개별난방", "남녀분리화장실", "승강기"];
+      } else if (subCategory === "건물/빌딩") {
+        base = ["승강기", "자주식주차", "기계식주차", "옥상정원", "시스템에어컨", "통유리외관", "관리가능"];
+      } else if (subCategory === "공장/창고") {
+        base = ["호이스트", "마당넓음", "높은층고(5m이상)", "대형차량진입", "동력넉넉", "에폭시바닥", "컨테이너진입가능"];
+      } else if (subCategory === "지식산업센터") {
+        base = ["드라이브인", "도어투도어", "화물엘리베이터", "발코니", "층고높음", "기숙사", "시스템에어컨"];
+      } else if (subCategory === "토지") {
+        base = ["도로접", "건축허가득", "지하수설비", "전기인입", "배수관", "평탄화완료"];
+      } else {
+        base = ["냉난방기", "수도설비", "가스설비", "화물용승강기", "보안시스템"];
+      }
     } else if (propertyType === "빌라·주택") {
       if (subCategory === "빌라/연립") {
         base = ["시스템에어컨", "벽걸이에어컨", "세탁기", "건조기", "냉장고", "가스레인지/인덕션", "붙박이장", "비데", "도어락", "엘리베이터", "무인택배함", "CCTV"];
@@ -631,7 +645,23 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
     } else if (propertyType === "원룸·투룸(풀옵션)") {
       return Array.from(new Set(["가성비", "단기임대", "주차편리", "대로변안전", "여성안심", "오피스텔", "애완견가능", ...selectedThemes]));
     } else if (propertyType === "상가·사무실·건물·공장·토지") {
-      return Array.from(new Set(["무권리", "코너자리", "유동인구많음", "주차대수많음", "인테리어잘됨", "층고높음", "대로변", ...selectedThemes]));
+      let defaultThemes: string[] = [];
+      if (subCategory === "상가") {
+        defaultThemes = ["대로변상가", "가시성최상", "무권리", "카페추천", "음식점추천", "코너상가", "유동인구많음"];
+      } else if (subCategory === "사무실") {
+        defaultThemes = ["역세권사무실", "채광우수", "가성비사무실", "사옥추천", "디자인사무실", "즉시입주", "주차편리"];
+      } else if (subCategory === "건물/빌딩") {
+        defaultThemes = ["사옥추천", "통임대", "수익형건물", "메디컬빌딩", "리모델링빌딩", "코너건물", "가시성우수"];
+      } else if (subCategory === "공장/창고") {
+        defaultThemes = ["IC인접", "대로변접", "민원없는곳", "신축공장", "물류창고", "단독공장", "저렴한임대료"];
+      } else if (subCategory === "지식산업센터") {
+        defaultThemes = ["드라이브인", "섹션오피스", "역세권지산", "코너호실", "로얄층", "풀인테리어", "가성비매물"];
+      } else if (subCategory === "토지") {
+        defaultThemes = ["공장부지", "창고부지", "전원주택지", "투자가치최상", "자연녹지", "급매물", "남향"];
+      } else {
+        defaultThemes = ["무권리", "코너자리", "유동인구많음", "주차대수많음", "인테리어잘됨", "층고높음", "대로변"];
+      }
+      return Array.from(new Set([...defaultThemes, ...selectedThemes]));
     } else if (propertyType === "빌라·주택") {
       if (subCategory === "빌라/연립") {
         return Array.from(new Set(["신축첫입주", "특올수리", "엘리베이터있음", "주차편리", "역세권", "풀옵션", "전세대출가능", "반려동물가능", "안심전세", "투룸/쓰리룸", ...selectedThemes]));
