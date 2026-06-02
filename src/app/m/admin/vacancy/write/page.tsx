@@ -930,7 +930,7 @@ function MobileVacancyWrite() {
                     {["동/호수공개","동수공개","비공개"].map(opt => (
                       <label key={opt} style={{ display:"flex", alignItems:"center", gap:4, fontSize:13, cursor:"pointer", padding:"6px 10px", borderRadius:8, background: addressExposure===opt?"#eff6ff":"#fff", border: addressExposure===opt?"1px solid #1a73e8":"1px solid #d1d5db" }}>
                         <input type="radio" name="addrExp" checked={addressExposure===opt} onChange={()=>setAddressExposure(opt)} style={{accentColor:"#1a73e8"}}/>
-                        {opt}
+                        {opt === "비공개" ? "동호수비공개" : opt}
                       </label>
                     ))}
                   </>

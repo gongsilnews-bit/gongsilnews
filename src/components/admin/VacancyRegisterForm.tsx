@@ -1254,7 +1254,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                         <input type="radio" name="addressExposure" checked={addressExposure === "동수공개"} onChange={() => setAddressExposure("동수공개")} /> 동수공개
                       </label>
                       <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14, cursor: "pointer" }}>
-                        <input type="radio" name="addressExposure" checked={addressExposure === "비공개"} onChange={() => setAddressExposure("비공개")} /> 비공개
+                        <input type="radio" name="addressExposure" checked={addressExposure === "비공개"} onChange={() => setAddressExposure("비공개")} /> 동호수비공개
                       </label>
                     </>
                   ) : (
