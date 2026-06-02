@@ -349,6 +349,12 @@ function MobileVacancyWrite() {
       }
     } else if (propertyType === "상가·사무실·건물·공장·토지") {
       base = ["냉난방기", "수도설비", "가스설비", "화물용승강기", "보안시스템"];
+    } else if (propertyType === "빌라·주택") {
+      if (subCategory === "빌라/연립") {
+        base = ["시스템에어컨", "벽걸이에어컨", "세탁기", "건조기", "냉장고", "가스레인지/인덕션", "붙박이장", "비데", "도어락", "엘리베이터", "무인택배함", "CCTV"];
+      } else {
+        base = ["개인차고지", "마당/정원", "옥상(루프탑)", "단독테라스", "창고", "태양광설비", "방범창", "CCTV", "시스템에어컨", "붙박이장"];
+      }
     }
     return Array.from(new Set([...base, ...selectedOptions]));
   }, [propertyType, subCategory, selectedOptions]);
@@ -375,10 +381,14 @@ function MobileVacancyWrite() {
     } else if (propertyType === "상가·사무실·건물·공장·토지") {
       return Array.from(new Set(["무권리", "코너자리", "유동인구많음", "주차대수많음", "인테리어잘됨", "층고높음", "대로변", ...selectedThemes]));
     } else if (propertyType === "빌라·주택") {
-      return Array.from(new Set(["테라스", "복층", "마당있음", "투자용", ...selectedThemes]));
+      if (subCategory === "빌라/연립") {
+        return Array.from(new Set(["신축첫입주", "특올수리", "엘리베이터있음", "주차편리", "역세권", "풀옵션", "전세대출가능", "반려동물가능", "안심전세", "투룸/쓰리룸", ...selectedThemes]));
+      } else {
+        return Array.from(new Set(["마당있음", "테라스/옥상", "수익형부동산", "통임대/통매매", "리모델링", "조용한동네", "반려동물환영", "전원생활", "층간소음프리", "대가족추천", ...selectedThemes]));
+      }
     }
     return Array.from(new Set(["급매", "추천공실광고", ...selectedThemes]));
-  }, [propertyType, selectedThemes]);
+  }, [propertyType, subCategory, selectedThemes]);
 
   const toggleTheme = (theme: string) => {
     setSelectedThemes(prev => prev.includes(theme) ? prev.filter(t => t !== theme) : [...prev, theme]);
