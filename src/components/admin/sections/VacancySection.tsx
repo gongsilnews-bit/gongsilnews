@@ -478,7 +478,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                                         onMouseLeave={(e) => { e.currentTarget.style.background = darkMode ? "#1e3a8a" : "#eff6ff"; }}
                                         title="프리미엄 매매보고서(IM) 생성기"
                                       >
-                                        💎 매매보고서(IM)
+                                        매매보고서
                                       </button>
                                     )}
                                     
