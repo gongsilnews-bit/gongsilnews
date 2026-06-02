@@ -703,13 +703,8 @@ function MobileVacancyWrite() {
         }
         
         let p = ledger.mainPurpsCdNm || "";
-        if (p.includes("단독주택") || p.includes("다세대") || p.includes("연립")) {
-           setPropertyType("빌라·주택");
-           setSubCategory("빌라/연립");
-        } else if (p.includes("근린생활") || p.includes("상업") || p.includes("업무") || p.includes("공장") || p.includes("창고")) {
-           setPropertyType("상가·사무실·건물·공장·토지");
-           setSubCategory(p.includes("업무") ? "사무실" : p.includes("공장") ? "공장/창고" : "상가");
-        }
+        
+        // 중개사의 카테고리 선택을 100% 존중하기 위해 강제 이동 로직 삭제
 
         if (p) setMainUsage(p);
         if (ledger.strctCdNm) setBuildingStructure(ledger.strctCdNm);

@@ -203,25 +203,16 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
         }
         
         let p = ledger.mainPurpsCdNm || "";
-        if (p.includes("단독주택") || p.includes("다가구") || p.includes("다세대")) {
-           setPropertyType("빌라·주택");
-           setSubCategory("빌라/연립");
-        } else if (p.includes("근린생활") || p.includes("상업") || p.includes("업무")) {
-           setPropertyType("상가·사무실·건물·공장·토지");
-           setSubCategory(p.includes("업무") ? "사무실" : "상가");
-        }
-
-        const addInfo = [];
-        if (p) addInfo.push(`주용도: ${p}`);
-        if (ledger.strctCdNm) addInfo.push(`구조: ${ledger.strctCdNm}`);
-        if (ledger.rideUseElvtCnt || ledger.emgenUseElvtCnt) {
-          addInfo.push(`승강기: 승용 ${ledger.rideUseElvtCnt || 0}대 / 비상용 ${ledger.emgenUseElvtCnt || 0}대`);
-        }
-        if (addInfo.length > 0) {
-          setDescription(prev => (prev ? prev + "\n" : "") + "■ 건축물대장 정보 ■\n" + addInfo.join("\n"));
-        }
         
-        alert("건축물대장 정보를 성공적으로 불러와 빈칸을 채웠습니다!");
+        // 중개사의 카테고리 선택을 100% 존중하기 위해 강제 이동 로직 삭제
+        
+        // 새로 만든 UI 입력칸 전용 상태값에 곧바로 꽂아넣기
+        if (p) setMainUsage(p);
+        if (ledger.strctCdNm) setBuildingStructure(ledger.strctCdNm);
+        const elvt = (Number(ledger.rideUseElvtCnt) || 0) + (Number(ledger.emgenUseElvtCnt) || 0);
+        if (elvt > 0) setElevatorCnt(elvt.toString());
+        
+        alert("✨ AI 건축물대장 분석 완료!\n면적, 층수, 주용도, 승강기 정보가 전용 입력칸에 자동 입력되었습니다.");
       }
     } catch (e) {
       console.error(e);
