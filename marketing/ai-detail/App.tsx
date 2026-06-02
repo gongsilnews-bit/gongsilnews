@@ -1486,7 +1486,7 @@ ${clone.outerHTML}
                 <span className="flex items-center gap-2"><span className="w-2 h-2 bg-green-500 rounded-full"></span>미리보기</span>
                 <span>Width: 860px</span>
             </div>
-            <div className="flex-1 overflow-auto p-8 flex justify-center custom-scrollbar">
+            <div className="flex-1 overflow-auto p-8 flex justify-center [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                 {/* Fixed width container for editor preview */}
                 <div id="flyer-print-area" style={{ width: '860px', flexShrink: 0 }}>
                     <FlyerCanvas 
