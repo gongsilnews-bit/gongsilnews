@@ -216,7 +216,9 @@ const ReportPage = ({
     onUpdateSubtitle,
     onUpdateBadge,
     footerText = "CONFIDENTIAL | INFORMATION MEMORANDUM",
-    onUpdateFooter
+    onUpdateFooter,
+    layoutTheme,
+    colorTheme
 }: { 
     children: React.ReactNode, 
     pageNumber: number, 
@@ -230,24 +232,95 @@ const ReportPage = ({
     onUpdateSubtitle?: (text: string) => void,
     onUpdateBadge?: (text: string) => void,
     footerText?: string,
-    onUpdateFooter?: (text: string) => void
+    onUpdateFooter?: (text: string) => void,
+    layoutTheme?: any,
+    colorTheme?: any
 }) => {
-    return (
-        <div data-export-id={exportId} className="relative bg-white w-[1122px] h-[794px] overflow-hidden flex flex-col shadow-2xl mb-8" style={{ pageBreakAfter: 'always' }}>
-            {isHidden && (
-                <div className="absolute top-0 left-0 right-0 z-50 bg-red-500/90 text-white py-1.5 text-center text-sm font-bold shadow-md tracking-wider backdrop-blur-sm">
-                    ⚠️ 현재 출력(PDF/인쇄)에서 제외된 페이지입니다. (좌측 폼 메뉴에서 설정을 변경할 수 있습니다.)
+    const layoutType = layoutTheme?.type || 'type1';
+    const headingFont = layoutTheme?.headingFont || 'font-sans';
+    const bodyFont = layoutTheme?.bodyFont || 'font-sans';
+
+    const renderHeader = () => {
+        if (layoutType === 'type2') {
+            return (
+                <div className={`h-[120px] bg-white text-[var(--theme-dark)] border-b-2 border-[var(--theme-dark)] px-10 py-6 flex flex-col justify-center items-center shrink-0 ${headingFont}`}>
+                    <h1 className="text-3xl font-extrabold tracking-widest uppercase">
+                        {onUpdateTitle ? <EditableText value={title} onChange={onUpdateTitle} className="text-center hover:bg-gray-100 focus:bg-gray-200 px-2" /> : title}
+                    </h1>
+                    <span className="text-gray-500 text-sm tracking-widest mt-1">
+                        {onUpdateSubtitle ? <EditableText value={subtitle} onChange={onUpdateSubtitle} className="text-center hover:bg-gray-100 focus:bg-gray-200 px-2" /> : subtitle}
+                    </span>
+                    {badgeText && <div className="absolute top-6 right-10 border border-[var(--theme-dark)] text-[var(--theme-dark)] px-3 py-1 text-xs font-bold tracking-widest uppercase">{onUpdateBadge ? <EditableText value={badgeText} onChange={onUpdateBadge} /> : badgeText}</div>}
                 </div>
-            )}
-            {/* Header */}
-            <div className="h-[120px] bg-[#0d1424] text-white px-10 py-6 flex justify-between items-end shrink-0">
+            );
+        }
+        if (layoutType === 'type3') {
+            return (
+                <div className={`h-[120px] bg-gray-50 px-10 py-6 flex flex-col justify-end shrink-0 border-l-[12px] border-[var(--theme-primary)] ${headingFont}`}>
+                    <h1 className="text-3xl font-black text-gray-900 tracking-tight">
+                        {onUpdateTitle ? <EditableText value={title} onChange={onUpdateTitle} className="hover:bg-gray-200 focus:bg-gray-300 px-1" /> : title}
+                    </h1>
+                    <span className="text-[var(--theme-primary)] font-bold tracking-widest mt-1 text-sm">
+                        {onUpdateSubtitle ? <EditableText value={subtitle} onChange={onUpdateSubtitle} className="hover:bg-blue-50 focus:bg-blue-100 px-1" /> : subtitle}
+                    </span>
+                    {badgeText && <div className="absolute top-6 right-10 bg-[var(--theme-primary)] text-white px-3 py-1 text-xs font-bold tracking-widest uppercase shadow-sm">{onUpdateBadge ? <EditableText value={badgeText} onChange={onUpdateBadge} /> : badgeText}</div>}
+                </div>
+            );
+        }
+        if (layoutType === 'type4') {
+            return (
+                <div className={`h-[120px] bg-[var(--theme-dark)] text-white px-10 py-6 flex justify-between items-center shrink-0 ${headingFont}`}>
+                    <div className="flex items-center gap-6 w-full">
+                        <div className="text-5xl font-black opacity-20">0{pageNumber}</div>
+                        <div className="flex-1">
+                            <h1 className="text-3xl font-black uppercase tracking-tight">
+                                {onUpdateTitle ? <EditableText value={title} onChange={onUpdateTitle} className="hover:bg-white/10 focus:bg-white/20 px-1" /> : title}
+                            </h1>
+                            <span className="text-white/70 font-bold tracking-widest uppercase text-xs mt-1 block">
+                                {onUpdateSubtitle ? <EditableText value={subtitle} onChange={onUpdateSubtitle} className="hover:bg-white/10 focus:bg-white/20 px-1" /> : subtitle}
+                            </span>
+                        </div>
+                        {badgeText && (
+                            <div className="bg-[var(--theme-primary)] text-white px-4 py-2 font-black tracking-widest shadow-md text-sm">
+                                {onUpdateBadge ? <EditableText value={badgeText} onChange={onUpdateBadge} className="hover:bg-white/20 focus:bg-white/30" /> : badgeText}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+        if (layoutType === 'type5') {
+            return (
+                <div className={`h-[120px] bg-white px-10 py-8 flex justify-between items-start shrink-0 border-b border-gray-100 ${headingFont}`}>
+                    <div className="flex-1">
+                        <h1 className="text-2xl font-light text-gray-800 tracking-wider uppercase border-b border-[var(--theme-primary)] pb-2 inline-block">
+                            {onUpdateTitle ? <EditableText value={title} onChange={onUpdateTitle} className="hover:bg-gray-100 focus:bg-gray-200 px-1" /> : title}
+                        </h1>
+                    </div>
+                    <div className="text-right">
+                        <span className="text-gray-400 font-light tracking-[0.2em] uppercase text-xs block">
+                            {onUpdateSubtitle ? <EditableText value={subtitle} onChange={onUpdateSubtitle} className="hover:bg-gray-100 focus:bg-gray-200 px-1 text-right" /> : subtitle}
+                        </span>
+                        {badgeText && (
+                            <span className="text-[var(--theme-primary)] font-bold tracking-widest uppercase text-sm mt-1 block">
+                                {onUpdateBadge ? <EditableText value={badgeText} onChange={onUpdateBadge} className="hover:bg-gray-100 focus:bg-gray-200 px-1 text-right" /> : badgeText}
+                            </span>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+        
+        // Default Type 1 (Current)
+        return (
+            <div className={`h-[120px] bg-[var(--theme-dark)] text-white px-10 py-6 flex justify-between items-end shrink-0 ${headingFont}`}>
                 <div>
                     <h1 className="text-3xl font-extrabold mb-1 tracking-tight">
                         {onUpdateTitle ? (
                             <EditableText 
                               value={title} 
                               onChange={onUpdateTitle} 
-                              className="hover:bg-white/10 hover:ring-white/20 focus:bg-white/20 focus:ring-white/50 text-white" 
+                              className="hover:bg-white/10 hover:ring-white/20 focus:bg-white/20 focus:ring-white/50 text-white px-1" 
                             />
                         ) : title}
                     </h1>
@@ -257,7 +330,7 @@ const ReportPage = ({
                                 <EditableText 
                                   value={subtitle} 
                                   onChange={onUpdateSubtitle} 
-                                  className="hover:bg-white/10 hover:ring-white/20 focus:bg-white/20 focus:ring-white/50 text-gray-300" 
+                                  className="hover:bg-white/10 hover:ring-white/20 focus:bg-white/20 focus:ring-white/50 text-gray-300 px-1" 
                                 />
                             ) : subtitle}
                         </span>
@@ -266,18 +339,29 @@ const ReportPage = ({
                 {badgeText && (
                     <div className="flex items-center gap-4 h-full pb-2">
                         <div className="w-px h-8 bg-gray-600"></div>
-                        <span className={`text-2xl font-black tracking-widest ${pageNumber === 1 ? 'text-[#e29d45]' : 'text-white'}`}>
+                        <span className={`text-2xl font-black tracking-widest ${pageNumber === 1 ? 'text-[var(--theme-primary)]' : 'text-white'}`}>
                             {onUpdateBadge ? (
                                 <EditableText 
                                   value={badgeText} 
                                   onChange={onUpdateBadge} 
-                                  className="hover:bg-white/10 hover:ring-white/20 focus:bg-white/20 focus:ring-white/50" 
+                                  className="hover:bg-white/10 hover:ring-white/20 focus:bg-white/20 focus:ring-white/50 px-1" 
                                 />
                             ) : badgeText}
                         </span>
                     </div>
                 )}
             </div>
+        );
+    };
+
+    return (
+        <div data-export-id={exportId} className={`relative bg-white w-[1122px] h-[794px] overflow-hidden flex flex-col shadow-2xl mb-8 ${bodyFont}`} style={{ pageBreakAfter: 'always' }}>
+            {isHidden && (
+                <div className="absolute top-0 left-0 right-0 z-50 bg-red-500/90 text-white py-1.5 text-center text-sm font-bold shadow-md tracking-wider backdrop-blur-sm">
+                    ⚠️ 현재 출력(PDF/인쇄)에서 제외된 페이지입니다. (좌측 폼 메뉴에서 설정을 변경할 수 있습니다.)
+                </div>
+            )}
+            {renderHeader()}
 
             {/* Content Body */}
             <div className="flex-1 p-10 relative">
@@ -367,7 +451,7 @@ const GeditorWrapper = ({
       
       {/* Floating Canvas Controls on Hover */}
       {(onMoveUp || onMoveDown || onDelete || onDuplicate) && (
-        <div className="absolute -left-8 top-1/2 transform -translate-y-1/2 bg-[#0d1424] text-white text-[10px] rounded-md shadow-md border border-gray-700 p-1 flex flex-col items-center gap-1 opacity-0 group-hover/geditor:opacity-100 transition-opacity duration-200 print:hidden z-30">
+        <div className="absolute -left-8 top-1/2 transform -translate-y-1/2 bg-[var(--theme-dark)] text-white text-[10px] rounded-md shadow-md border border-gray-700 p-1 flex flex-col items-center gap-1 opacity-0 group-hover/geditor:opacity-100 transition-opacity duration-200 print:hidden z-30">
           {onMoveUp && (
             <button
               type="button"
@@ -720,11 +804,17 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
       return { isVisible, shouldRender, pageString, isHidden: !isVisible };
   };
 
+  const themeStyles = {
+    '--theme-primary': colorTheme.primary,
+    '--theme-secondary': colorTheme.secondary,
+    '--theme-dark': colorTheme.dark,
+  } as React.CSSProperties;
+
   return (
-    <div className="flex flex-col items-center p-8 bg-gray-100" ref={ref}>
+    <div className="flex flex-col items-center p-8 bg-gray-100" ref={ref} style={themeStyles}>
         {/* PAGE 1: OVERVIEW */}
         {getPageStatus(1).shouldRender && (
-        <ReportPage 
+        <ReportPage layoutTheme={layoutTheme} colorTheme={colorTheme}
             pageNumber={1} 
             pageString={getPageStatus(1).pageString}
             isHidden={getPageStatus(1).isHidden}
@@ -769,7 +859,8 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                 }
                             }}
                         />
-                        <div className="border-t-[3px] border-gray-800 flex flex-col text-sm border-b border-gray-200">
+                        <table className="w-full text-sm border-collapse table-fixed border-t-[3px] border-gray-800 border-b border-gray-200">
+                            <tbody>
                             {(() => {
                                 const rows = Array.isArray(info.overviewTable) 
                                     ? info.overviewTable.map(r => ({ k: r.label, v: r.value }))
@@ -789,8 +880,8 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                     return (
                                         <>
                                             {info.overviewTable.map((row, i) => (
-                                                <div key={i} className="flex w-full border-b border-gray-100 last:border-0 bg-white">
-                                                    <div className="w-1/3 text-gray-500 font-bold py-2 pl-4 flex items-center">
+                                                <tr key={i} className="border-b border-gray-100 last:border-0 bg-white">
+                                                    <td className="w-1/3 text-gray-500 font-bold py-2 pl-4 align-middle">
                                                         <EditableText 
                                                             value={row.label} 
                                                             onChange={(val) => {
@@ -799,8 +890,8 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                                                 handleTextChange('overviewTable', newTable as any);
                                                             }}
                                                         />
-                                                    </div>
-                                                    <div className="w-2/3 text-gray-800 font-bold py-2 pl-4 flex items-center">
+                                                    </td>
+                                                    <td className="w-2/3 text-gray-800 font-bold py-2 pl-4 align-middle">
                                                         <EditableText 
                                                             value={row.value} 
                                                             onChange={(val) => {
@@ -809,20 +900,18 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                                                 handleTextChange('overviewTable', newTable as any);
                                                             }}
                                                         />
-                                                    </div>
-                                                </div>
+                                                    </td>
+                                                </tr>
                                             ))}
-                                            
-
                                         </>
                                     );
                                 }
                                 
                                 return rows.filter(row => row.v && row.v.trim() !== '').map((row, i) => (
-                                    <div key={i} className="flex border-b border-gray-100 last:border-0 bg-white">
-                                        <div className="w-1/3 text-gray-500 font-bold py-2 pl-4 flex items-center">{row.k}</div>
-                                        <div className="w-2/3 text-gray-800 font-bold py-2 pl-4 flex items-center">{row.v}</div>
-                                    </div>
+                                    <tr key={i} className="border-b border-gray-100 last:border-0 bg-white">
+                                        <td className="w-1/3 text-gray-500 font-bold py-2 pl-4 align-middle">{row.k}</td>
+                                        <td className="w-2/3 text-gray-800 font-bold py-2 pl-4 align-middle">{row.v}</td>
+                                    </tr>
                                 ));
                             })()}
                             
@@ -840,18 +929,16 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                 }
                                 
                                 return (
-                                    <div className="flex bg-[#fff9f0] border-t border-gray-200">
-                                        {/* Transaction switcher removed to prevent visual clutter; handled in form */}
- 
-                                        <div className="w-1/3 text-gray-600 font-bold py-2 pl-4 flex items-center">{label}</div>
-                                        <div className="w-2/3 text-[#cc5a27] font-extrabold py-2 pl-4 flex items-center">
+                                    <tr className="bg-[#fff9f0] border-t border-gray-200">
+                                        <td className="w-1/3 text-gray-600 font-bold py-2 pl-4 align-middle">{label}</td>
+                                        <td className="w-2/3 text-[#cc5a27] font-extrabold py-2 pl-4 align-middle">
                                             <EditableText value={price} onChange={(val) => handleTextChange('priceMain', val)} />
-                                        </div>
-                                    </div>
+                                        </td>
+                                    </tr>
                                 );
                             })()}
-
-                        </div>
+                            </tbody>
+                        </table>
                     </div>
  
                     {/* Agent Footer Details */}
@@ -954,7 +1041,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
  
         {/* PAGE 2: STATUS & VALUATION */}
         {getPageStatus(2).shouldRender && (
-        <ReportPage 
+        <ReportPage layoutTheme={layoutTheme} colorTheme={colorTheme}
             pageNumber={2} 
             pageString={getPageStatus(2).pageString}
             isHidden={getPageStatus(2).isHidden}
@@ -1080,7 +1167,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                                             });
                                                         }
                                                     }}
-                                                    className="px-2 py-1 bg-blue-600 text-white rounded text-[9px] font-bold shadow flex items-center gap-1 active:scale-95 cursor-pointer"
+                                                    className="px-2 py-1 bg-[var(--theme-primary)] text-white rounded text-[9px] font-bold shadow flex items-center gap-1 active:scale-95 cursor-pointer"
                                                 >
                                                     ➕ 항목 추가
                                                 </button>
@@ -1214,7 +1301,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
 
         {/* PAGE 3: LEASE STATUS (NEW DYNAMIC TABLE PAGE) */}
         {getPageStatus(3).shouldRender && (
-        <ReportPage 
+        <ReportPage layoutTheme={layoutTheme} colorTheme={colorTheme}
             pageNumber={3} 
             pageString={getPageStatus(3).pageString}
             isHidden={getPageStatus(3).isHidden}
@@ -1371,7 +1458,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                                     />
                                                     
                                                     {/* Hover Header Columns Controls */}
-                                                    <div className="absolute -top-7 left-1/2 transform -translate-x-1/2 bg-[#0d1424] text-white text-[9px] rounded-lg shadow-lg border border-gray-700 px-2 py-1 gap-1.5 hidden group-hover/header:flex items-center print:hidden z-40 transition-all">
+                                                    <div className="absolute -top-7 left-1/2 transform -translate-x-1/2 bg-[var(--theme-dark)] text-white text-[9px] rounded-lg shadow-lg border border-gray-700 px-2 py-1 gap-1.5 hidden group-hover/header:flex items-center print:hidden z-40 transition-all">
                                                         <button 
                                                             type="button"
                                                             onClick={() => addColumn(colIdx)}
@@ -1455,7 +1542,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                                     
                                                     {/* Floating Row Control Panel on First Cell Hover */}
                                                     {colIdx === 0 && (
-                                                        <div className="absolute -left-9 top-1/2 transform -translate-y-1/2 bg-[#0d1424] text-white text-[9px] rounded-lg shadow-lg border border-gray-700 p-1 flex flex-col gap-1 hidden group-hover/row:flex print:hidden z-35 transition-all">
+                                                        <div className="absolute -left-9 top-1/2 transform -translate-y-1/2 bg-[var(--theme-dark)] text-white text-[9px] rounded-lg shadow-lg border border-gray-700 p-1 flex flex-col gap-1 hidden group-hover/row:flex print:hidden z-35 transition-all">
                                                             <button
                                                                 type="button"
                                                                 disabled={rowIdx === 0}
@@ -1537,7 +1624,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
 
         {/* PAGE 4: PHOTOS */}
         {getPageStatus(4).shouldRender && (
-        <ReportPage 
+        <ReportPage layoutTheme={layoutTheme} colorTheme={colorTheme}
             pageNumber={4} 
             pageString={getPageStatus(4).pageString}
             isHidden={getPageStatus(4).isHidden}
@@ -1831,7 +1918,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                             isUploading={isUploadingImage?.[p.key]}
                                             aspectRatioClass="object-cover"
                                         />
-                                        <div className="absolute bottom-0 left-0 w-full p-3 bg-gradient-to-t from-[#0d1424]/90 to-transparent z-20">
+                                        <div className="absolute bottom-0 left-0 w-full p-3 bg-gradient-to-t from-[var(--theme-dark)]/90 to-transparent z-20">
                                             <span className="text-white font-bold text-sm relative z-30">
                                                 <EditableText 
                                                     value={captionValue} 
@@ -1859,7 +1946,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
 
         {/* PAGE 5: AREA ANALYSIS */}
         {getPageStatus(5).shouldRender && (
-        <ReportPage 
+        <ReportPage layoutTheme={layoutTheme} colorTheme={colorTheme}
             pageNumber={5} 
             pageString={getPageStatus(5).pageString}
             isHidden={getPageStatus(5).isHidden}
@@ -1970,7 +2057,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                             </a>
                         )}
 
-                        <div className="absolute top-4 right-4 bg-[#0d1424] text-white p-3 rounded-lg shadow-lg border border-gray-700 z-20">
+                        <div className="absolute top-4 right-4 bg-[var(--theme-dark)] text-white p-3 rounded-lg shadow-lg border border-gray-700 z-20">
                             <div className="text-[#e29d45] text-[10px] font-bold tracking-widest uppercase mb-1">
                                 <EditableText 
                                     value={info.page4TargetLocationHeader || "TARGET LOCATION"} 
@@ -1988,7 +2075,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                         </div>
                     </div>
                     {/* Info Box */}
-                    <div className="w-1/3 bg-[#0d1424] rounded-2xl p-8 flex flex-col shadow-md text-white">
+                    <div className="w-1/3 bg-[var(--theme-dark)] rounded-2xl p-8 flex flex-col shadow-md text-white">
                         <div className="w-12 h-12 bg-white/10 rounded-lg flex items-center justify-center mb-6">
                             <svg className="w-6 h-6 text-[#e29d45]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
                         </div>
@@ -2034,7 +2121,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
 
         {/* PAGE 6: ROADMAP */}
         {getPageStatus(6).shouldRender && (
-        <ReportPage 
+        <ReportPage layoutTheme={layoutTheme} colorTheme={colorTheme}
             pageNumber={6} 
             pageString={getPageStatus(6).pageString}
             isHidden={getPageStatus(6).isHidden}
@@ -2061,7 +2148,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                         title: (info.roadmap as any)?.[`box${i}Title`] || "",
                         text: (info.roadmap as any)?.[`box${i}Text`] || "",
                         icon: (info.roadmap as any)?.[`box${i}Icon`] || ['🏢', '🏡', '📈', '🏗️'][index] || '🏢',
-                        bg: ['bg-blue-50', 'bg-green-50', 'bg-red-50', 'bg-yellow-50'][index] || 'bg-gray-50',
+                        bg: ['bg-[var(--theme-primary)]/10', 'bg-green-50', 'bg-red-50', 'bg-yellow-50'][index] || 'bg-gray-50',
                         border: ['border-blue-100', 'border-green-100', 'border-red-100', 'border-yellow-100'][index] || 'border-gray-200'
                     }));
                     
