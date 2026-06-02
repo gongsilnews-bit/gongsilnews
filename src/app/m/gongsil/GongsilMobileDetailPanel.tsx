@@ -3,7 +3,7 @@
 import React, { useEffect, useRef } from "react";
 import Link from "next/link";
 import { formatAmount } from "./page";
-import { getAuctionInfo, getMaskedAddress } from "@/app/(map)/gongsil/gongsilHelpers";
+import { getAuctionInfo, getMaskedAddress, getCleanAddrText } from "@/app/(map)/gongsil/gongsilHelpers";
 
 interface GongsilMobileDetailPanelProps {
   selectedVacancy: any;
@@ -99,7 +99,7 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
 }) => {
   const isMyProperty = currentUser && selectedVacancy && selectedVacancy.owner_id === currentUser.id;
   const detailMasked = selectedVacancy.exposure_type === '부동산노출' && userLevel < 2 && !isMyProperty;
-  const detailAddr = selectedVacancy.building_name || [selectedVacancy.dong, selectedVacancy.sigungu].filter(Boolean).join(" ");
+  const detailAddr = getCleanAddrText(selectedVacancy);
 
   const meta = selectedVacancy?.metadata || {};
   const appraisalRaw = meta.appraisal_price || parseInt(meta.apslEvlAmt || "0", 10) || 0;

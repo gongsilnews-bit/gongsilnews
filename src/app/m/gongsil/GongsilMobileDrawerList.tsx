@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from "react";
 import { formatAmount } from "./page";
-import { getAuctionInfo } from "@/app/(map)/gongsil/gongsilHelpers";
+import { getAuctionInfo, getCleanAddrText } from "@/app/(map)/gongsil/gongsilHelpers";
 
 type AuctionSortKey = "latest" | "appraisal" | "bid" | "bidDate";
 
@@ -122,7 +122,7 @@ const GongsilMobileDrawerListImpl: React.FC<GongsilMobileDrawerListProps> = ({
         {renderList?.map((v: any) => {
           const isMyProperty = currentUser && v && v.owner_id === currentUser.id;
           const cardMasked = v.exposure_type === '부동산노출' && userLevel < 2 && !isMyProperty;
-          const cardAddr = v.building_name || [v.dong, v.sigungu].filter(Boolean).join(" ");
+          const cardAddr = getCleanAddrText(v);
 
           // 경공매 데이터 파싱
           const meta = v.metadata || {};
