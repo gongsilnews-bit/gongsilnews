@@ -2125,22 +2125,24 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                       }
                     }}
                     style={{
-                      background: "transparent",
-                      border: "none",
-                      fontSize: 14,
-                      color: "#111", // 검정색으로 변경
+                      background: isWizardOpen ? "#e8f0fe" : "#fff",
+                      border: `1px solid ${isWizardOpen ? "#1a73e8" : "#ccc"}`,
+                      fontSize: 13,
+                      color: isWizardOpen ? "#1a73e8" : "#333",
                       cursor: "pointer",
-                      padding: "6px 14px 6px 0",
+                      padding: "6px 14px",
+                      borderRadius: 20,
                       whiteSpace: "nowrap",
-                      fontWeight: "bold",
+                      fontWeight: isWizardOpen ? "bold" : "normal",
                       fontFamily: "inherit",
                       transition: "all 0.15s",
                       display: "flex",
                       alignItems: "center",
-                      gap: "4px"
+                      gap: "6px",
+                      boxShadow: isWizardOpen ? "none" : "0 1px 2px rgba(0,0,0,0.05)"
                     }}
                   >
-                    {isWizardOpen ? "검색닫기 ▲" : "검색열기 ▼"}
+                    {isWizardOpen ? "🔍 상세필터 ▲" : "🔍 상세필터 ▼"}
                   </button>
                   
                   {summaryString && (
