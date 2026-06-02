@@ -1022,7 +1022,12 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                             </ul>
                             
                             <div className="mt-auto">
-                                <div className="text-[10px] font-bold tracking-widest text-[#cc5a27] uppercase mb-1">STRATEGIC ADVISORY</div>
+                                <div className="text-[10px] font-bold tracking-widest text-[#cc5a27] uppercase mb-1">
+                                    <EditableText 
+                                        value={(info as any).valuationAdvisoryTitle || "STRATEGIC ADVISORY"} 
+                                        onChange={(val) => handleTextChange('valuationAdvisoryTitle', val)} 
+                                    />
+                                </div>
                                 <div className="text-xs text-gray-600 leading-relaxed">
                                     <EditableBlock value={info.valuationText || ""} onChange={(val) => handleTextChange('valuationText', val)} />
                                 </div>
@@ -1191,7 +1196,12 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                 );
                             })()}
                             <div className="mt-auto pt-6 border-t border-gray-100">
-                                <div className="text-[10px] font-bold tracking-widest text-[#cc5a27] uppercase mb-1">STRATEGIC ADVISORY</div>
+                                <div className="text-[10px] font-bold tracking-widest text-[#cc5a27] uppercase mb-1">
+                                    <EditableText 
+                                        value={(info as any).chartAdvisoryTitle || "STRATEGIC ADVISORY"} 
+                                        onChange={(val) => handleTextChange('chartAdvisoryTitle', val)} 
+                                    />
+                                </div>
                                 <div className="text-xs text-gray-600 leading-relaxed">
                                     <EditableBlock value={(info as any).chartAdviseText || "본 자산의 시세는 최근 실거래가 및 시장 동향을 반영하여 산출되었습니다. 입지 조건에 따른 프리미엄이 내재되어 있어 향후 가치 상승이 기대됩니다."} onChange={(val) => handleTextChange('chartAdviseText', val)} placeholder="그래프 분석 및 조언 입력..." />
                                 </div>
