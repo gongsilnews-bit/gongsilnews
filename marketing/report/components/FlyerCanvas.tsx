@@ -261,7 +261,7 @@ const ReportPage = ({
                         {onUpdateTitle ? <EditableText value={title} onChange={onUpdateTitle} className="hover:bg-gray-200 focus:bg-gray-300 px-1" /> : title}
                     </h1>
                     <span className="text-[var(--theme-primary)] font-bold tracking-widest mt-1 text-sm">
-                        {onUpdateSubtitle ? <EditableText value={subtitle} onChange={onUpdateSubtitle} className="hover:bg-blue-50 focus:bg-blue-100 px-1" /> : subtitle}
+                        {onUpdateSubtitle ? <EditableText value={subtitle} onChange={onUpdateSubtitle} className="hover:bg-[var(--theme-primary)]/10 focus:bg-[var(--theme-primary)]/20 px-1" /> : subtitle}
                     </span>
                     {badgeText && <div className="absolute top-6 right-10 bg-[var(--theme-primary)] text-white px-3 py-1 text-xs font-bold tracking-widest uppercase shadow-sm">{onUpdateBadge ? <EditableText value={badgeText} onChange={onUpdateBadge} /> : badgeText}</div>}
                 </div>
@@ -643,7 +643,7 @@ const KakaoMap = ({ address }: { address: string }) => {
 // ─── MAIN CANVAS COMPONENT ────────────────────────────────────────────────────
 
 const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, activeTab = 'all', onUpdateInfo, onImageUpload, onDeleteImage, isUploadingImage, onOpenTableEditor }, ref) => {
-  const { info, mainImage, subImage1, subImage2, featureImage1, featureImage2, mapImage, colorTheme } = data; 
+  const { info, mainImage, subImage1, subImage2, featureImage1, featureImage2, mapImage, colorTheme, layoutTheme } = data; 
   const placeholder = "https://placehold.co/800x600/e2e8f0/1e293b?text=Image";
 
   // Data mapping from info
