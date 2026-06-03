@@ -995,7 +995,9 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                     <div className="flex border-t border-gray-200" style={{ backgroundColor: info.priceBgColor || '#fff9f0' }}>
                                         {/* Transaction switcher removed to prevent visual clutter; handled in form */}
  
-                                        <div className="w-1/3 text-gray-600 font-bold py-2 pl-4 flex items-center">{label}</div>
+                                        <div className="w-1/3 text-gray-600 font-bold py-2 pl-4 flex items-center">
+                                            <EditableText value={info.priceLabel || label} onChange={(val) => handleTextChange('priceLabel', val)} className="hover:bg-gray-100 hover:ring-2 hover:ring-gray-200 rounded px-1 -ml-1 text-gray-600 w-full" />
+                                        </div>
                                         <div className="w-2/3 font-extrabold py-2 pl-4 flex items-center" style={{ color: info.priceTextColor || 'var(--theme-primary)' }}>
                                             <EditableText value={price} onChange={(val) => handleTextChange('priceMain', val)} />
                                         </div>
@@ -1009,18 +1011,24 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                     {/* Agent Footer Details */}
                     <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-xl p-3.5 mt-3 flex flex-col justify-center shadow-sm">
                         <div className="grid grid-cols-[80px_1fr] gap-x-2 gap-y-1.5 text-sm">
-                            <span className="text-gray-500 font-bold">遺?숈궛紐?/span>
-                            <span className="text-gray-800 font-extrabold">
+                            <span className="text-gray-500 font-bold flex items-center">
+                                <EditableText value={info.agentNameLabel || "부동산명"} onChange={(val) => handleTextChange('agentNameLabel', val)} className="hover:bg-gray-100 hover:ring-2 hover:ring-gray-200 rounded px-1 -ml-1 text-gray-500 w-full" />
+                            </span>
+                            <span className="text-gray-800 font-extrabold flex items-center">
                                 <EditableText value={info.agentName} onChange={(val) => handleTextChange('agentName', val)} />
                             </span>
  
-                            <span className="text-gray-500 font-bold">?대떦??/span>
-                            <span className="text-gray-800 font-extrabold">
+                            <span className="text-gray-500 font-bold flex items-center">
+                                <EditableText value={info.agentRepresentativeLabel || "담당자"} onChange={(val) => handleTextChange('agentRepresentativeLabel', val)} className="hover:bg-gray-100 hover:ring-2 hover:ring-gray-200 rounded px-1 -ml-1 text-gray-500 w-full" />
+                            </span>
+                            <span className="text-gray-800 font-extrabold flex items-center">
                                 <EditableText value={info.agentRepresentative} onChange={(val) => handleTextChange('agentRepresentative', val)} />
                             </span>
  
-                            <span className="text-gray-500 font-bold">?곕씫泥?/span>
-                            <span className="text-[var(--theme-primary)] font-black text-base">
+                            <span className="text-gray-500 font-bold flex items-center">
+                                <EditableText value={info.agentMobileLabel || "연락처"} onChange={(val) => handleTextChange('agentMobileLabel', val)} className="hover:bg-gray-100 hover:ring-2 hover:ring-gray-200 rounded px-1 -ml-1 text-gray-500 w-full" />
+                            </span>
+                            <span className="text-[var(--theme-primary)] font-black text-base flex items-center">
                                 <EditableText value={info.agentMobile || info.agentPhone || ""} onChange={(val) => handleTextChange('agentMobile', val)} />
                             </span>
                         </div>
