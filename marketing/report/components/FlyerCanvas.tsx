@@ -1493,7 +1493,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                 onChange={(val) => handleTextChange('page3HighlightHeader', val)} 
                             />
                         </div>
-                        <div className="w-full flex-1 flex flex-col justify-between bg-white rounded-2xl border border-slate-100 p-6 shadow-sm overflow-hidden relative">
+                        <div className="w-full flex-1 flex flex-col justify-between bg-white rounded-2xl border border-slate-100 p-6 shadow-sm overflow-visible relative">
                         {/* Global Table Controls */}
                         <div className="absolute top-4 right-6 flex items-center gap-2 print:hidden z-20">
                             <button type="button" onClick={addRow} className="text-[10px] bg-[var(--theme-primary)] hover:opacity-80 text-white px-2 py-1 rounded shadow-sm font-bold cursor-pointer transition-opacity">➕ 행 추가</button>
@@ -1502,7 +1502,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                             )}
                             <button type="button" onClick={clearTableContents} className="text-[10px] bg-red-50 hover:bg-red-100 text-red-600 px-2 py-1 rounded shadow-sm font-bold border border-red-100 cursor-pointer transition-colors">🗑️ 내용 지우기</button>
                         </div>
-                        <div className="overflow-y-auto custom-scrollbar flex-1 pr-1 mt-6">
+                        <div className="overflow-visible flex-1 mt-6 relative">
                             <table className="w-full text-left border-collapse table-fixed">
                                 <thead>
                                     <tr>
@@ -1539,7 +1539,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                                         <button 
                                                             type="button"
                                                             onClick={() => deleteColumn(colIdx)}
-                                                            className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold shadow-md cursor-pointer print:hidden opacity-0 group-hover/header:opacity-100 transition-opacity z-40"
+                                                            className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-red-500 hover:bg-red-600 text-white w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold shadow-md cursor-pointer print:hidden opacity-0 group-hover/header:opacity-100 transition-opacity z-[100]"
                                                             title="열 삭제"
                                                         >
                                                             ✕
@@ -1568,7 +1568,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                                         <button 
                                                             type="button"
                                                             onClick={() => deleteRow(rowIdx)}
-                                                            className="absolute top-1/2 right-1 transform -translate-y-1/2 bg-red-500 hover:bg-red-600 text-white w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold shadow-md cursor-pointer print:hidden opacity-0 group-hover/row:opacity-100 transition-opacity z-40"
+                                                            className="absolute top-1/2 -right-3 transform -translate-y-1/2 bg-red-500 hover:bg-red-600 text-white w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold shadow-md cursor-pointer print:hidden opacity-0 group-hover/row:opacity-100 transition-opacity z-[100]"
                                                             title="행 삭제"
                                                         >
                                                             ✕
