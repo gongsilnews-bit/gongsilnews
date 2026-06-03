@@ -60,6 +60,26 @@ export default function MenuPage() {
     checkAuth();
   }, []);
 
+  // 스크롤 위치 저장 & 복원
+  useEffect(() => {
+    if (!loading) {
+      const saved = sessionStorage.getItem('menu_scroll_y');
+      if (saved) {
+        requestAnimationFrame(() => {
+          window.scrollTo(0, parseInt(saved, 10));
+        });
+      }
+    }
+  }, [loading]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      sessionStorage.setItem('menu_scroll_y', String(window.scrollY));
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   const handleOAuthLogin = async (providerName: 'google' | 'kakao') => {
     try {
       const supabase = createClient();

@@ -239,7 +239,7 @@ export default function MobileBoardClient({ board, initialPosts, serverUser, ser
           </div>
         ) : (
           <div style={{ display: 'flex', alignItems: 'center', width: '100%', justifyContent: 'space-between' }}>
-            <button onClick={() => router.push(`/m/study?tab=${backTab}`)} style={{ background: 'none', border: 'none', padding: '8px', marginLeft: '-8px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+            <button onClick={() => router.back()} style={{ background: 'none', border: 'none', padding: '8px', marginLeft: '-8px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
             </button>
             <BoardDropdownHeader currentBoardName={board?.name || "게시판"} />
