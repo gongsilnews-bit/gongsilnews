@@ -150,8 +150,8 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
 
       <hr className="border-gray-100 mb-6 shrink-0" />
 
-      {/* Tabs */}
-      <div className="grid grid-cols-4 gap-1.5 bg-gray-100 p-2 rounded-xl mb-6 shrink-0 shadow-inner">
+      {/* Combined Tabs & Page Visibility Toggles */}
+      <div className="grid grid-cols-4 gap-2 bg-gray-100/80 p-2.5 rounded-xl mb-6 shrink-0 shadow-inner">
           {[
               { id: 'all' as const, label: '전체' },
               { id: 1, label: '1. 개요' },
@@ -160,49 +160,56 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
               { id: 4, label: '4. 사진' },
               { id: 5, label: '5. 입지' },
               { id: 6, label: '6. 로드맵' },
-          ].map(tab => (
-              <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`py-2 px-1 text-[11px] sm:text-xs font-bold rounded-lg transition-all ${activeTab === tab.id ? 'bg-white text-gray-900 shadow-md ring-1 ring-gray-200/50' : 'text-gray-500 hover:bg-gray-200/80'}`}
-              >
-                  {tab.label}
-              </button>
-          ))}
-      </div>
+          ].map(tab => {
+              const visiblePages = info.visiblePages || [1, 2, 3, 4, 5, 6];
+              
+              let isVisible = false;
+              let isAllSelected = false;
+              if (tab.id === 'all') {
+                  isAllSelected = visiblePages.length === 6;
+                  isVisible = isAllSelected;
+              } else {
+                  isVisible = visiblePages.includes(tab.id as number);
+              }
 
-      {/* Page Visibility Toggles */}
-      <div className="mb-6 p-3 bg-blue-50/50 border border-blue-100 rounded-lg shrink-0">
-          <div className="text-xs font-bold text-blue-800 mb-2 flex items-center gap-1.5">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-              출력(포함)할 페이지 선택
-          </div>
-          <div className="flex flex-wrap gap-2">
-              {[1, 2, 3, 4, 5, 6].map(pageNum => {
-                  const visiblePages = info.visiblePages || [1, 2, 3, 4, 5, 6];
-                  const isVisible = visiblePages.includes(pageNum);
-                  return (
-                      <label key={pageNum} className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[10px] font-bold cursor-pointer transition-colors border ${isVisible ? 'bg-white border-blue-200 text-blue-700 shadow-sm' : 'bg-gray-50 border-gray-200 text-gray-400'}`}>
+              return (
+                  <div
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`relative flex flex-col justify-center items-center h-[60px] px-1 text-[11px] sm:text-xs font-bold rounded-lg transition-all cursor-pointer ${activeTab === tab.id ? 'bg-white text-blue-700 shadow-md ring-2 ring-blue-500 z-10' : 'bg-white/60 text-gray-500 hover:bg-white ring-1 ring-gray-200/50'}`}
+                  >
+                      {/* Checkbox wrapper */}
+                      <div 
+                          className="absolute top-1.5 right-1.5"
+                          onClick={(e) => e.stopPropagation()}
+                      >
                           <input 
                               type="checkbox" 
-                              className="w-3 h-3 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                              className="w-3.5 h-3.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
                               checked={isVisible}
+                              title={tab.id === 'all' ? "전체 출력 선택/해제" : "출력(포함) 여부"}
                               onChange={(e) => {
-                                  let newVisible = [...visiblePages];
-                                  if (e.target.checked) {
-                                      if (!newVisible.includes(pageNum)) newVisible.push(pageNum);
+                                  if (tab.id === 'all') {
+                                      setInfo({ ...info, visiblePages: e.target.checked ? [1, 2, 3, 4, 5, 6] : [] });
                                   } else {
-                                      newVisible = newVisible.filter(p => p !== pageNum);
+                                      let newVisible = [...visiblePages];
+                                      if (e.target.checked) {
+                                          if (!newVisible.includes(tab.id as number)) newVisible.push(tab.id as number);
+                                      } else {
+                                          newVisible = newVisible.filter(p => p !== tab.id);
+                                      }
+                                      newVisible.sort();
+                                      setInfo({ ...info, visiblePages: newVisible });
                                   }
-                                  newVisible.sort();
-                                  setInfo({ ...info, visiblePages: newVisible });
                               }}
                           />
-                          {pageNum}페이지
-                      </label>
-                  );
-              })}
-          </div>
+                      </div>
+                      <span className={`mt-2 text-center leading-tight ${!isVisible && tab.id !== 'all' ? 'text-gray-400 opacity-60' : 'text-gray-800'}`}>
+                          {tab.label}
+                      </span>
+                  </div>
+              );
+          })}
       </div>
 
       {/* Tab Content */}
