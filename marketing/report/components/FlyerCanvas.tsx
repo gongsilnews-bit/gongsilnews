@@ -1591,19 +1591,21 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                         </div>
                         
                         {/* Custom Total / Summary Block & Explanation */}
-                        <div className="flex justify-between items-stretch mt-3 pt-2 gap-4">
-                            <div className="bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 flex items-center shadow-sm shrink-0">
-                                <span className="text-[11px] font-bold text-slate-500 mr-3 uppercase tracking-wider border-r border-slate-300 pr-3">Total Summary</span>
-                                <div className="text-xs font-bold text-slate-800">
-                                    <EditableText 
+                        <div className="flex flex-col mt-4 gap-3 shrink-0">
+                            <div className="bg-slate-50 border border-slate-200 rounded-lg p-3.5 flex items-start gap-4 shadow-sm w-full">
+                                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider border-r border-slate-300 pr-4 mt-0.5 shrink-0 whitespace-nowrap">
+                                    Total Summary
+                                </span>
+                                <div className="text-xs font-bold text-slate-800 flex-1 leading-relaxed whitespace-pre-wrap w-full">
+                                    <EditableBlock 
                                         value={(info as any).leaseSummaryText || "총 6세대 / 보증금 0원 / 월세 0원"} 
                                         onChange={(val) => handleTextChange('leaseSummaryText', val)} 
                                     />
                                 </div>
                             </div>
                             {(info as any).showLeaseSummaryDesc !== false && (
-                                <div className="flex-1 bg-white border border-slate-200 rounded-lg px-4 py-2 text-xs text-slate-600 shadow-sm flex items-center h-auto min-h-[36px]">
-                                    <EditableText 
+                                <div className="w-full bg-white border border-slate-200 rounded-lg p-4 text-xs text-slate-600 shadow-sm leading-relaxed whitespace-pre-wrap">
+                                    <EditableBlock 
                                         value={(info as any).leaseSummaryDesc || "임대 수익률 및 상세 조건은 협의 가능합니다."} 
                                         onChange={(val) => handleTextChange('leaseSummaryDesc', val)} 
                                     />
