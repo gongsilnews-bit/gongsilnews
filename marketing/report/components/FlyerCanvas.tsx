@@ -1396,6 +1396,8 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                     });
                 };
 
+
+
                 const addRow = () => {
                     if (!onUpdateInfo) return;
                     const newRows = [...rows, new Array(headers.length).fill("")];
@@ -1493,13 +1495,11 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                 onChange={(val) => handleTextChange('page3HighlightHeader', val)} 
                             />
                         </div>
-                        <div className="w-full flex-1 flex flex-col justify-between bg-white rounded-2xl border border-slate-100 p-6 shadow-sm overflow-visible relative">
+                        <div className="w-full flex-1 flex flex-col justify-between bg-white rounded-2xl border border-slate-100 p-6 shadow-sm overflow-visible relative group/table">
                         {/* Global Table Controls */}
-                        <div className="absolute top-4 right-6 flex items-center gap-2 print:hidden z-20">
+                        <div className="absolute top-4 right-6 flex items-center gap-2 print:hidden z-20 opacity-0 group-hover/table:opacity-100 transition-opacity" data-html2canvas-ignore="true">
                             <button type="button" onClick={addRow} className="text-[10px] bg-[var(--theme-primary)] hover:opacity-80 text-white px-2 py-1 rounded shadow-sm font-bold cursor-pointer transition-opacity">➕ 행 추가</button>
-                            {rows.length > 1 && (
-                                <button type="button" onClick={() => deleteRow(rows.length - 1)} className="text-[10px] bg-orange-50 hover:bg-orange-100 text-orange-600 px-2 py-1 rounded shadow-sm font-bold border border-orange-200 cursor-pointer transition-colors">➖ 행 삭제</button>
-                            )}
+                            <button type="button" onClick={() => addColumn(headers.length)} className="text-[10px] bg-blue-50 hover:bg-blue-100 text-blue-600 px-2 py-1 rounded shadow-sm font-bold border border-blue-200 cursor-pointer transition-colors">➕ 열 추가</button>
                             <button type="button" onClick={clearTableContents} className="text-[10px] bg-red-50 hover:bg-red-100 text-red-600 px-2 py-1 rounded shadow-sm font-bold border border-red-100 cursor-pointer transition-colors">🗑️ 내용 지우기</button>
                         </div>
                         <div className="overflow-visible flex-1 mt-6 relative">
