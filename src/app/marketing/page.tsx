@@ -9,11 +9,6 @@ export default function MarketingPage() {
 
   // Fade-up animation observer
   useEffect(() => {
-    // Next.js 라우팅 트랜지션 완료 후 스크롤을 확실하게 최상단으로 강제 스냅
-    const timer = setTimeout(() => {
-      window.scrollTo({ top: 0, behavior: "instant" });
-    }, 50);
-
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
@@ -24,7 +19,6 @@ export default function MarketingPage() {
 
     document.querySelectorAll('.fade-up').forEach((el) => observer.observe(el));
     return () => {
-      clearTimeout(timer);
       observer.disconnect();
     };
   }, []);
@@ -314,9 +308,9 @@ export default function MarketingPage() {
             </Link>
           </div>
           <div style={{ display: "flex", gap: "20px", fontSize: "14px", fontWeight: "600" }}>
-            <Link href="/about" style={{ color: "#475569", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.color = "#0f172a"} onMouseLeave={(e) => e.currentTarget.style.color = "#475569"} onClick={() => window.scrollTo({ top: 0, behavior: 'instant' })}>회사소개</Link>
-            <Link href="/marketing" style={{ color: "#0f172a", textDecoration: "none" }} onClick={() => window.scrollTo({ top: 0, behavior: 'instant' })}>광고안내</Link>
-            <Link href="/partnership" style={{ color: "#475569", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.color = "#0f172a"} onMouseLeave={(e) => e.currentTarget.style.color = "#475569"} onClick={() => window.scrollTo({ top: 0, behavior: 'instant' })}>제휴문의</Link>
+            <Link href="/about" style={{ color: "#475569", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.color = "#0f172a"} onMouseLeave={(e) => e.currentTarget.style.color = "#475569"}>회사소개</Link>
+            <Link href="/marketing" style={{ color: "#0f172a", textDecoration: "none" }}>광고안내</Link>
+            <Link href="/partnership" style={{ color: "#475569", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.color = "#0f172a"} onMouseLeave={(e) => e.currentTarget.style.color = "#475569"}>제휴문의</Link>
           </div>
         </header>
 
@@ -428,11 +422,11 @@ export default function MarketingPage() {
             <div style={{ borderBottom: "1px solid rgba(255,255,255,0.1)", paddingBottom: 24, marginBottom: 32 }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
                 <div className="contact-links" style={{ gap: 16 }}>
-                  <Link href="/about" onClick={() => window.scrollTo({ top: 0, behavior: 'instant' })}>회사소개</Link>
+                  <Link href="/about">회사소개</Link>
                   <span style={{ color: "rgba(255,255,255,0.2)" }}>|</span>
-                  <Link href="/marketing" onClick={() => window.scrollTo({ top: 0, behavior: 'instant' })}>광고안내</Link>
+                  <Link href="/marketing">광고안내</Link>
                   <span style={{ color: "rgba(255,255,255,0.2)" }}>|</span>
-                  <Link href="/partnership" onClick={() => window.scrollTo({ top: 0, behavior: 'instant' })}>제휴문의</Link>
+                  <Link href="/partnership">제휴문의</Link>
                   <span style={{ color: "rgba(255,255,255,0.2)" }}>|</span>
                   <Link href="/terms">이용약관</Link>
                   <span style={{ color: "rgba(255,255,255,0.2)" }}>|</span>

@@ -10,11 +10,6 @@ export default function PartnershipPage() {
 
   // Fade-up animation observer
   useEffect(() => {
-    // Next.js 라우팅 트랜지션 완료 후 스크롤을 확실하게 최상단으로 강제 스냅
-    const timer = setTimeout(() => {
-      window.scrollTo({ top: 0, behavior: "instant" });
-    }, 50);
-
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
@@ -25,7 +20,6 @@ export default function PartnershipPage() {
 
     document.querySelectorAll('.fade-up').forEach((el) => observer.observe(el));
     return () => {
-      clearTimeout(timer);
       observer.disconnect();
     };
   }, []);
@@ -317,9 +311,9 @@ export default function PartnershipPage() {
             </Link>
           </div>
           <div style={{ display: "flex", gap: "20px", fontSize: "14px", fontWeight: "600" }}>
-            <Link href="/about" style={{ color: "#475569", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.color = "#0f172a"} onMouseLeave={(e) => e.currentTarget.style.color = "#475569"} onClick={() => window.scrollTo({ top: 0, behavior: 'instant' })}>회사소개</Link>
-            <Link href="/marketing" style={{ color: "#475569", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.color = "#0f172a"} onMouseLeave={(e) => e.currentTarget.style.color = "#475569"} onClick={() => window.scrollTo({ top: 0, behavior: 'instant' })}>광고안내</Link>
-            <Link href="/partnership" style={{ color: "#0f172a", textDecoration: "none" }} onClick={() => window.scrollTo({ top: 0, behavior: 'instant' })}>제휴문의</Link>
+            <Link href="/about" style={{ color: "#475569", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.color = "#0f172a"} onMouseLeave={(e) => e.currentTarget.style.color = "#475569"}>회사소개</Link>
+            <Link href="/marketing" style={{ color: "#475569", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.color = "#0f172a"} onMouseLeave={(e) => e.currentTarget.style.color = "#475569"}>광고안내</Link>
+            <Link href="/partnership" style={{ color: "#0f172a", textDecoration: "none" }}>제휴문의</Link>
           </div>
         </header>
 
