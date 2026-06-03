@@ -1552,6 +1552,14 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                                             </button>
                                                             <button
                                                                 type="button"
+                                                                onClick={() => addRow()}
+                                                                className="text-blue-400 hover:text-blue-300 cursor-pointer border-none bg-transparent font-bold text-lg leading-none"
+                                                                title="새 행 추가"
+                                                            >
+                                                                +
+                                                            </button>
+                                                            <button
+                                                                type="button"
                                                                 onClick={() => duplicateRow(rowIdx)}
                                                                 className="text-green-400 hover:text-green-300 cursor-pointer border-none bg-transparent font-bold"
                                                                 title="행 복제"
