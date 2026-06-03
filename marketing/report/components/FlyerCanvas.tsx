@@ -1438,6 +1438,53 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                     });
                 };
 
+                const handleResizeStart = (e: React.MouseEvent, colIdx: number) => {
+                    e.preventDefault();
+                    if (!onUpdateInfo) return;
+                    
+                    const startX = e.clientX;
+                    const currentWidths = leaseTable.widths || new Array(headers.length).fill(Math.round(100 / headers.length));
+                    const startWidth = currentWidths[colIdx];
+                    
+                    const tableEl = (e.currentTarget as HTMLElement).closest('table');
+                    const tableWidth = tableEl ? tableEl.offsetWidth : 800;
+                    
+                    let finalWidths = [...currentWidths];
+                    
+                    const onMouseMove = (moveEvent: MouseEvent) => {
+                        const deltaX = moveEvent.clientX - startX;
+                        const deltaPercent = (deltaX / tableWidth) * 100;
+                        
+                        finalWidths[colIdx] = Math.max(5, startWidth + deltaPercent);
+                        
+                        if (colIdx + 1 < finalWidths.length) {
+                             const nextStartWidth = currentWidths[colIdx + 1];
+                             finalWidths[colIdx + 1] = Math.max(5, nextStartWidth - deltaPercent);
+                        }
+                        
+                        // Update DOM directly for high performance (prevent React re-render lag)
+                        const thElements = tableEl?.querySelectorAll('th');
+                        if (thElements) {
+                            if (thElements[colIdx]) thElements[colIdx].style.width = `${finalWidths[colIdx]}%`;
+                            if (colIdx + 1 < thElements.length) thElements[colIdx + 1].style.width = `${finalWidths[colIdx + 1]}%`;
+                        }
+                    };
+                    
+                    const onMouseUp = () => {
+                        document.removeEventListener('mousemove', onMouseMove);
+                        document.removeEventListener('mouseup', onMouseUp);
+                        
+                        // Commit to React state only when dragging finishes
+                        onUpdateInfo({
+                            ...info,
+                            leaseTable: { ...leaseTable, widths: finalWidths }
+                        });
+                    };
+                    
+                    document.addEventListener('mousemove', onMouseMove);
+                    document.addEventListener('mouseup', onMouseUp);
+                };
+
                 return (
                     <div className="flex flex-col h-full w-full">
                         <div className="text-gray-600 font-bold text-sm mb-4">
@@ -1449,16 +1496,19 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                         <div className="w-full flex-1 flex flex-col justify-between bg-white rounded-2xl border border-slate-100 p-6 shadow-sm overflow-hidden relative">
                         {/* Global Table Controls */}
                         <div className="absolute top-4 right-6 flex items-center gap-2 print:hidden z-20">
-                            <button type="button" onClick={clearTableContents} className="text-[10px] bg-red-50 hover:bg-red-100 text-red-600 px-2 py-1 rounded shadow-sm font-bold border border-red-100 cursor-pointer transition-colors">내용 전체 지우기</button>
-                            <button type="button" onClick={() => addColumn(headers.length)} className="text-[10px] bg-[var(--theme-primary)] hover:opacity-80 text-white px-2 py-1 rounded shadow-sm font-bold cursor-pointer transition-opacity">➕ 열(칸) 추가</button>
-                            <button type="button" onClick={addRow} className="text-[10px] bg-[var(--theme-primary)] hover:opacity-80 text-white px-2 py-1 rounded shadow-sm font-bold cursor-pointer transition-opacity">➕ 행(줄) 추가</button>
+                            <button type="button" onClick={addRow} className="text-[10px] bg-[var(--theme-primary)] hover:opacity-80 text-white px-2 py-1 rounded shadow-sm font-bold cursor-pointer transition-opacity">➕ 행 추가</button>
+                            {rows.length > 1 && (
+                                <button type="button" onClick={() => deleteRow(rows.length - 1)} className="text-[10px] bg-orange-50 hover:bg-orange-100 text-orange-600 px-2 py-1 rounded shadow-sm font-bold border border-orange-200 cursor-pointer transition-colors">➖ 행 삭제</button>
+                            )}
+                            <button type="button" onClick={clearTableContents} className="text-[10px] bg-red-50 hover:bg-red-100 text-red-600 px-2 py-1 rounded shadow-sm font-bold border border-red-100 cursor-pointer transition-colors">🗑️ 내용 지우기</button>
                         </div>
                         <div className="overflow-y-auto custom-scrollbar flex-1 pr-1 mt-6">
                             <table className="w-full text-left border-collapse table-fixed">
                                 <thead>
                                     <tr>
                                         {headers.map((h, colIdx) => {
-                                            const colWidth = 100 / headers.length;
+                                            const currentWidths = leaseTable.widths || new Array(headers.length).fill(Math.round(100 / headers.length));
+                                            const colWidth = currentWidths[colIdx];
                                             return (
                                                 <th 
                                                     key={colIdx} 
@@ -1472,12 +1522,24 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                                         value={h} 
                                                         onChange={(val) => updateHeader(colIdx, val)}
                                                     />
+                                                    
+                                                    {/* Resize Handle */}
+                                                    {colIdx < headers.length - 1 && (
+                                                        <div 
+                                                            className="absolute top-0 -right-2 w-4 h-full cursor-col-resize z-50 flex items-center justify-center opacity-0 group-hover/header:opacity-100 hover:bg-white/20 transition-colors"
+                                                            onMouseDown={(e) => handleResizeStart(e, colIdx)}
+                                                            title="드래그하여 너비 조절"
+                                                        >
+                                                            <div className="w-0.5 h-1/2 bg-white/50 rounded-full"></div>
+                                                        </div>
+                                                    )}
+
                                                     {/* Hover Delete Column */}
                                                     {headers.length > 1 && (
                                                         <button 
                                                             type="button"
                                                             onClick={() => deleteColumn(colIdx)}
-                                                            className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-red-500 hover:bg-red-600 text-white w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold shadow-md cursor-pointer print:hidden opacity-0 group-hover/header:opacity-100 transition-opacity z-40"
+                                                            className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold shadow-md cursor-pointer print:hidden opacity-0 group-hover/header:opacity-100 transition-opacity z-40"
                                                             title="열 삭제"
                                                         >
                                                             ✕
@@ -1506,7 +1568,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                                         <button 
                                                             type="button"
                                                             onClick={() => deleteRow(rowIdx)}
-                                                            className="absolute top-1/2 -right-3 transform -translate-y-1/2 bg-red-500 hover:bg-red-600 text-white w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold shadow-md cursor-pointer print:hidden opacity-0 group-hover/row:opacity-100 transition-opacity z-35"
+                                                            className="absolute top-1/2 right-1 transform -translate-y-1/2 bg-red-500 hover:bg-red-600 text-white w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold shadow-md cursor-pointer print:hidden opacity-0 group-hover/row:opacity-100 transition-opacity z-40"
                                                             title="행 삭제"
                                                         >
                                                             ✕
