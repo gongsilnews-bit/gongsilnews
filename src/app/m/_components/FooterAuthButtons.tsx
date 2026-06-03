@@ -41,7 +41,7 @@ export default function FooterAuthButtons() {
           </button>
         )}
         <button
-          onClick={() => { window.location.href = "/"; }}
+          onClick={() => { document.cookie = "view-desktop=true;path=/;max-age=3600"; window.location.href = "/"; }}
           style={{ flex: 1, maxWidth: 160, height: 42, border: "1px solid #333", borderRadius: 4, background: "#fff", color: "#333", fontSize: 14, fontWeight: 700, cursor: "pointer", letterSpacing: "-0.3px" }}
         >
           PC보기
