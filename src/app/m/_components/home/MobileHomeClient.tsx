@@ -232,7 +232,7 @@ export default function MobileHomeClient(props: Props) {
             {headlineArticles.slice(0, 5).map((hero, i) => (
               <Link key={i} href={`/m/news/${hero.article_no || hero.id}`} onClick={saveHomeScroll} style={{ width: "100%", height: "100%", flexShrink: 0, scrollSnapAlign: "start", scrollSnapStop: "always", position: "relative", display: "block", textDecoration: "none" }}>
                 {hero.thumbnail_url
-                  ? <img src={hero.thumbnail_url} alt={hero.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  ? <img src={hero.thumbnail_url} alt={hero.title} loading={i === 0 ? "eager" : "lazy"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   : <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg,#1a2e50,#2d4a7a)" }} />}
                 {!!extractYoutubeId(hero.youtube_url, hero.content) && (
                   <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 48, height: 48, background: "rgba(0,0,0,0.5)", borderRadius: "50%", border: "2px solid white", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 3 }}>
