@@ -781,6 +781,68 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
 
 
                   <div className="mt-4">
+                      <label className="text-xs text-gray-500 font-semibold mb-2 block">표 (Rent Roll) 관리</label>
+                      <div className="grid grid-cols-3 gap-2 mb-4">
+                          <button
+                              type="button"
+                              onClick={() => {
+                                  const currentHeaders = info.leaseTable?.headers || ['층수', '호실', '면적', '금액', '현용도', '기타'];
+                                  const currentRows = info.leaseTable?.rows || [['', '', '', '', '', '']];
+                                  const currentWidths = info.leaseTable?.widths || new Array(currentHeaders.length).fill(Math.round(100 / currentHeaders.length));
+                                  
+                                  setInfo({
+                                      ...info,
+                                      leaseTable: {
+                                          ...info.leaseTable,
+                                          headers: [...currentHeaders, '새 열'],
+                                          rows: currentRows.map((r: any) => [...r, '']),
+                                          widths: [...currentWidths, 15]
+                                      }
+                                  });
+                              }}
+                              className="py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg text-xs font-bold transition-colors border border-blue-200"
+                          >
+                              ➕ 열(세로칸) 추가
+                          </button>
+                          <button
+                              type="button"
+                              onClick={() => {
+                                  const currentHeaders = info.leaseTable?.headers || ['층수', '호실', '면적', '금액', '현용도', '기타'];
+                                  const currentRows = info.leaseTable?.rows || [['', '', '', '', '', '']];
+                                  
+                                  setInfo({
+                                      ...info,
+                                      leaseTable: {
+                                          ...info.leaseTable,
+                                          rows: [...currentRows, new Array(currentHeaders.length).fill('')]
+                                      }
+                                  });
+                              }}
+                              className="py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg text-xs font-bold transition-colors border border-blue-200"
+                          >
+                              ➕ 행(가로줄) 추가
+                          </button>
+                          <button
+                              type="button"
+                              onClick={() => {
+                                  if (window.confirm("표 내용을 모두 지우시겠습니까?")) {
+                                      const currentHeaders = info.leaseTable?.headers || ['층수', '호실', '면적', '금액', '현용도', '기타'];
+                                      const currentRows = info.leaseTable?.rows || [['', '', '', '', '', '']];
+                                      setInfo({
+                                          ...info,
+                                          leaseTable: {
+                                              ...info.leaseTable,
+                                              rows: currentRows.map((r: any) => new Array(currentHeaders.length).fill(''))
+                                          }
+                                      });
+                                  }
+                              }}
+                              className="py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-xs font-bold transition-colors border border-red-200"
+                          >
+                              내용 초기화
+                          </button>
+                      </div>
+
                       <label className="text-xs text-gray-500 font-semibold">표 하단 유의 사항</label>
                       <textarea name="leaseNotice" value={info.leaseNotice} onChange={handleChange} className="w-full border rounded p-2 text-xs mt-1" rows={2} />
                   </div>

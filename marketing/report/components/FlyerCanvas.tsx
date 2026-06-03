@@ -1563,43 +1563,6 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                     ))}
                                 </tbody>
                             </table>
-                            {/* Table Management Buttons */}
-                            <div className="flex justify-center gap-3 mt-4 print:hidden">
-                                <button
-                                    type="button"
-                                    onClick={() => addColumn(headers.length)}
-                                    className="bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-200 border-dashed rounded-full px-4 py-1.5 text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors shadow-sm active:scale-95"
-                                >
-                                    ➕ 칸(열) 추가
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={addRow}
-                                    className="bg-yellow-50 hover:bg-yellow-100 text-yellow-600 border border-yellow-200 border-dashed rounded-full px-4 py-1.5 text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors shadow-sm active:scale-95"
-                                >
-                                    ➕ 줄(행) 추가
-                                </button>
-                                {rows.length > 1 && (
-                                    <button
-                                        type="button"
-                                        onClick={() => deleteRow(rows.length - 1)}
-                                        className="bg-orange-50 hover:bg-orange-100 text-orange-600 border border-orange-200 border-dashed rounded-full px-4 py-1.5 text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors shadow-sm active:scale-95"
-                                    >
-                                        ➖ 밑줄 삭제
-                                    </button>
-                                )}
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        if (window.confirm("표 내용을 모두 지우시겠습니까?")) {
-                                            clearTableContents();
-                                        }
-                                    }}
-                                    className="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 border-dashed rounded-full px-4 py-1.5 text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors shadow-sm active:scale-95"
-                                >
-                                    🗑️ 내용 지우기
-                                </button>
-                            </div>
                         </div>
                         
                         {/* Custom Total / Summary Block & Explanation */}
