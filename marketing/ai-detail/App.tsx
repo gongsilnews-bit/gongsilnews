@@ -1412,7 +1412,7 @@ ${clone.outerHTML}
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50 overflow-hidden font-sans">
+    <div className="flex flex-col min-h-screen bg-gray-50 font-sans pb-32">
       {loadingData && (
         <div className="fixed inset-0 bg-slate-900/80 z-[200] flex flex-col items-center justify-center text-white backdrop-blur-sm">
           <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-amber-500 mb-6"></div>
@@ -1464,12 +1464,8 @@ ${clone.outerHTML}
         </div>
       </header>
 
-      <main className="flex-1 max-w-[1600px] mx-auto w-full p-4 lg:p-8 grid grid-cols-12 gap-6 h-[calc(100vh-64px)] min-h-0">
-        <div 
-            ref={formScrollRef}
-            onScroll={handleFormScroll}
-            className="col-span-12 lg:col-span-4 xl:col-span-3 lg:h-full lg:overflow-y-auto lg:min-h-0 custom-scrollbar"
-        >
+      <main className="flex-1 max-w-[1600px] mx-auto w-full p-4 lg:p-8 grid grid-cols-12 gap-6 items-start">
+        <div className="col-span-12 lg:col-span-4 xl:col-span-3">
           <FlyerForm 
             info={state.info}
             setInfo={handleInfoChange}
@@ -1489,15 +1485,13 @@ ${clone.outerHTML}
             isUploadingImage={isUploadingImage}
           />
         </div>
-        <div className="col-span-12 lg:col-span-8 xl:col-span-9 bg-gray-200/50 rounded-xl border border-gray-300 overflow-hidden flex flex-col lg:min-h-0">
-            <div className="bg-white px-4 py-2 border-b flex justify-between items-center text-xs text-gray-500">
+        <div className="col-span-12 lg:col-span-8 xl:col-span-9 bg-gray-200/50 rounded-xl border border-gray-300 flex flex-col">
+            <div className="bg-white px-4 py-2 border-b flex justify-between items-center text-xs text-gray-500 rounded-t-xl">
                 <span className="flex items-center gap-2"><span className="w-2 h-2 bg-green-500 rounded-full"></span>미리보기</span>
                 <span>Width: 860px</span>
             </div>
             <div 
-                ref={previewScrollRef}
-                onScroll={handlePreviewScroll}
-                className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar shadow-inner"
+                className="flex-1 shadow-inner"
                 style={{ containerType: 'inline-size' }}
             >
                 <div className="flex justify-center" style={{ padding: '32px 0' }}>

@@ -302,7 +302,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
   const primaryColor = currentColor.primary;
 
   return (
-    <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100 h-full">
+    <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
       
       {/* Design Theme Selection */}
       <div className="mb-8">
