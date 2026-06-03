@@ -286,7 +286,7 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
     if (!mapLoaded || !mapRef.current || kakaoMapRef.current) return;
     const kakao = (window as any).kakao;
     kakaoMapRef.current = new kakao.maps.Map(mapRef.current, {
-      center: new kakao.maps.LatLng(37.498095, 127.02761), level: 6,
+      center: new kakao.maps.LatLng(37.498095, 127.02761), level: 6, draggable: true,
     });
     // Set zoom restrictions based on the requirement for block maps
     kakaoMapRef.current.setMinLevel(4); // Max zoom in (1 block clearly fills the center)

@@ -273,6 +273,7 @@ export default function NewsMapClient({ initialArticles, initialPopularArticles 
     kakaoMapRef.current = new kakao.maps.Map(mapRef.current, {
       center: new kakao.maps.LatLng(37.498095, 127.027610),
       level: 8,
+      draggable: true,
     });
 
     const map = kakaoMapRef.current;
@@ -664,7 +665,7 @@ export default function NewsMapClient({ initialArticles, initialPopularArticles 
           </div>
 
           {/* 지도 영역 */}
-          <div ref={mapRef} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", background: "#e8eaed" }}>
+          <div ref={mapRef} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", background: "#e8eaed", touchAction: "none" }}>
             {mapError && (
               <div style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", background: "#ffefef", color: "#d32f2f", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, zIndex: 10 }}>
                 <span style={{ fontSize: 40 }}>⚠️</span>

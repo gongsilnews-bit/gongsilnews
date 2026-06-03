@@ -666,7 +666,7 @@ export default function KakaoMapView({
         isPushedDown={activeFilterDropdown !== null}
       />
 
-      <div ref={mapRef} style={{ width: "100%", height: "100%", background: "#e8eaed", touchAction: "auto" }}>
+      <div ref={mapRef} style={{ width: "100%", height: "100%", background: "#e8eaed", touchAction: "none" }}>
         {mapError && (
           <div
             style={{
