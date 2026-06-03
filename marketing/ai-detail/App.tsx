@@ -1433,8 +1433,8 @@ ${clone.outerHTML}
         </div>
       </header>
 
-      <main className="flex-1 max-w-[1600px] mx-auto w-full p-4 lg:p-8 grid grid-cols-12 gap-6 pb-32">
-        <div className="col-span-12 lg:col-span-4 xl:col-span-3">
+      <main className="flex-1 max-w-[1600px] mx-auto w-full p-4 lg:p-8 grid grid-cols-12 gap-6 h-[calc(100vh-64px)]">
+        <div className="col-span-12 lg:col-span-4 xl:col-span-3 lg:h-full lg:overflow-hidden">
           <FlyerForm 
             info={state.info}
             setInfo={handleInfoChange}
@@ -1459,7 +1459,7 @@ ${clone.outerHTML}
                 <span className="flex items-center gap-2"><span className="w-2 h-2 bg-green-500 rounded-full"></span>미리보기</span>
                 <span>Width: 860px</span>
             </div>
-            <div className="flex-1 p-8 flex justify-center">
+            <div className="flex-1 overflow-auto p-8 flex justify-center [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                 {/* Fixed width container for editor preview */}
                 <div id="flyer-print-area" style={{ width: '860px', flexShrink: 0 }}>
                     <FlyerCanvas 

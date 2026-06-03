@@ -125,17 +125,17 @@ export default function Footer() {
         <div style={{ borderBottom: "1px solid rgba(255,255,255,0.1)", paddingBottom: 24, marginBottom: 32 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
             <div className="contact-links">
-              <Link href="/about">회사소개</Link>
+              <Link href="/about" onClick={() => { if (typeof window !== 'undefined' && window.location.pathname === '/about') window.scrollTo(0,0) }}>회사소개</Link>
               <span style={{ color: "rgba(255,255,255,0.2)" }}>|</span>
-              <Link href="/marketing">광고안내</Link>
+              <Link href="/marketing" onClick={() => { if (typeof window !== 'undefined' && window.location.pathname === '/marketing') window.scrollTo(0,0) }}>광고안내</Link>
               <span style={{ color: "rgba(255,255,255,0.2)" }}>|</span>
-              <Link href="/partnership">제휴문의</Link>
+              <Link href="/partnership" onClick={() => { if (typeof window !== 'undefined' && window.location.pathname === '/partnership') window.scrollTo(0,0) }}>제휴문의</Link>
               <span style={{ color: "rgba(255,255,255,0.2)" }}>|</span>
-              <Link href="/terms">이용약관</Link>
+              <Link href="/terms" onClick={() => { if (typeof window !== 'undefined' && window.location.pathname === '/terms') window.scrollTo(0,0) }}>이용약관</Link>
               <span style={{ color: "rgba(255,255,255,0.2)" }}>|</span>
               <Link href="#" style={{ fontWeight: 700, color: "#fff" }}>개인정보 처리방침</Link>
               <span style={{ color: "rgba(255,255,255,0.2)" }}>|</span>
-              <Link href="/youth-policy">청소년 보호정책</Link>
+              <Link href="/youth-policy" onClick={() => { if (typeof window !== 'undefined' && window.location.pathname === '/youth-policy') window.scrollTo(0,0) }}>청소년 보호정책</Link>
             </div>
             {/* 우측 파트너 로고/링크 */}
             <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
