@@ -339,7 +339,7 @@ const ReportPage = ({
                 {badgeText && (
                     <div className="flex items-center gap-4 h-full pb-2">
                         <div className="w-px h-8 bg-gray-600"></div>
-                        <span className={`text-2xl font-black tracking-widest ${pageNumber === 1 ? 'text-[var(--theme-primary)]' : 'text-white'}`}>
+                        <span className={`text-2xl font-black tracking-widest text-white`}>
                             {onUpdateBadge ? (
                                 <EditableText 
                                   value={badgeText} 

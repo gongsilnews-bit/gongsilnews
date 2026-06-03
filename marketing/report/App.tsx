@@ -17,7 +17,7 @@ export const COLORS: FlyerColor[] = [
 ];
 
 export const LAYOUTS: FlyerLayout[] = [
-  { id: 'type1', name: 'Modern Overlay', type: 'type1', headingFont: 'font-serif-kr', bodyFont: 'font-sans' },
+  { id: 'type1', name: 'Modern Overlay', type: 'type1', headingFont: 'font-sans', bodyFont: 'font-sans' },
   { id: 'type2', name: 'Luxury Center', type: 'type2', headingFont: 'font-serif-kr', bodyFont: 'font-serif-kr' },
   { id: 'type3', name: 'Natural Clean', type: 'type3', headingFont: 'font-sans', bodyFont: 'font-sans' },
   { id: 'type4', name: 'Bold Box', type: 'type4', headingFont: 'font-sans', bodyFont: 'font-sans' },
