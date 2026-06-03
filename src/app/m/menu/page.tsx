@@ -29,8 +29,8 @@ export default function MenuPage() {
           setCurrentUser(user);
           // 프로필 + 중개사 상태만 빠르게 로드 → 즉시 화면 표시
           const [{ data }, { data: agencyData }] = await Promise.all([
-            supabase.from('members').select('name, email, role, profile_image_url, plan_type, signup_completed').eq('id', user.id).single(),
-            supabase.from('agencies').select('status').eq('owner_id', user.id).single(),
+            supabase.from('members').select('name, email, role, profile_image_url, plan_type, signup_completed').eq('id', user.id).maybeSingle(),
+            supabase.from('agencies').select('status').eq('owner_id', user.id).maybeSingle(),
           ]);
           if (data) {
             setMemberData({ ...data, agencyStatus: agencyData?.status || null });
