@@ -309,6 +309,44 @@ function App() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
   const flyerRef = useRef<HTMLDivElement>(null);
+  const hiddenFileInputRef = useRef<HTMLInputElement>(null);
+  const formScrollRef = useRef<HTMLDivElement>(null);
+  const previewScrollRef = useRef<HTMLDivElement>(null);
+  const isScrollingForm = useRef(false);
+  const isScrollingPreview = useRef(false);
+
+  // Synchronize scrolling between form and preview
+  const handleFormScroll = () => {
+    if (isScrollingPreview.current) return;
+    isScrollingForm.current = true;
+    if (formScrollRef.current && previewScrollRef.current) {
+        const formInner = formScrollRef.current.firstElementChild;
+        if (formInner) {
+            const percentage = formInner.scrollTop / (formInner.scrollHeight - formInner.clientHeight);
+            if (!isNaN(percentage)) {
+                previewScrollRef.current.scrollTop = percentage * (previewScrollRef.current.scrollHeight - previewScrollRef.current.clientHeight);
+            }
+        }
+    }
+    // debounce reset
+    setTimeout(() => { isScrollingForm.current = false; }, 50);
+  };
+
+  const handlePreviewScroll = () => {
+    if (isScrollingForm.current) return;
+    isScrollingPreview.current = true;
+    if (formScrollRef.current && previewScrollRef.current) {
+        const percentage = previewScrollRef.current.scrollTop / (previewScrollRef.current.scrollHeight - previewScrollRef.current.clientHeight);
+        if (!isNaN(percentage)) {
+            const formInner = formScrollRef.current.firstElementChild;
+            if (formInner) {
+                formInner.scrollTop = percentage * (formInner.scrollHeight - formInner.clientHeight);
+            }
+        }
+    }
+    setTimeout(() => { isScrollingPreview.current = false; }, 50);
+  };
+
   const [showSharePopover, setShowSharePopover] = useState(false);
   const sharePopoverRef = useRef<HTMLDivElement>(null);
 
@@ -340,7 +378,6 @@ function App() {
       });
   };
 
-  const hiddenFileInputRef = useRef<HTMLInputElement>(null);
   const [activeImageKey, setActiveImageKey] = useState<string>('');
 
   const handleImageClick = (imageKey: string) => {
@@ -1128,11 +1165,11 @@ function App() {
 <meta property="og:site_name" content="AI 매물 전단지">
 <meta property="og:title" content="${state.info.promotionText || state.info.address || '매물 상세정보'}">
 <meta property="og:description" content="${state.info.subTitle || '상세 정보를 확인해보세요.'}">
-<meta property="og:image" content="${state.mainImage || 'https://www.gongsilnews.com/images/default.jpg'}">
+<meta property="og:image" content="${state.mainImage || 'https://www.gongsilnews.com/logo.png'}">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="${state.info.promotionText || state.info.address || '매물 상세정보'}">
 <meta name="twitter:description" content="${state.info.subTitle || '상세 정보를 확인해보세요.'}">
-<meta name="twitter:image" content="${state.mainImage || 'https://www.gongsilnews.com/images/default.jpg'}">
+<meta name="twitter:image" content="${state.mainImage || 'https://www.gongsilnews.com/logo.png'}">
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
 <link href="https://fonts.googleapis.com/css2?family=Song+Myung:wght@400&display=swap" rel="stylesheet">
@@ -1434,7 +1471,11 @@ ${clone.outerHTML}
       </header>
 
       <main className="flex-1 max-w-[1600px] mx-auto w-full p-4 lg:p-8 grid grid-cols-12 gap-6 h-[calc(100vh-64px)]">
-        <div className="col-span-12 lg:col-span-4 xl:col-span-3 lg:h-full lg:overflow-hidden">
+        <div 
+            ref={formScrollRef}
+            onScroll={handleFormScroll}
+            className="col-span-12 lg:col-span-4 xl:col-span-3 lg:h-full lg:overflow-hidden"
+        >
           <FlyerForm 
             info={state.info}
             setInfo={handleInfoChange}
@@ -1459,7 +1500,11 @@ ${clone.outerHTML}
                 <span className="flex items-center gap-2"><span className="w-2 h-2 bg-green-500 rounded-full"></span>미리보기</span>
                 <span>Width: 860px</span>
             </div>
-            <div className="flex-1 overflow-auto p-8 flex justify-center [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+            <div 
+                ref={previewScrollRef}
+                onScroll={handlePreviewScroll}
+                className="flex-1 overflow-auto p-8 flex justify-center custom-scrollbar shadow-inner"
+            >
                 {/* Fixed width container for editor preview */}
                 <div id="flyer-print-area" style={{ width: '860px', flexShrink: 0 }}>
                     <FlyerCanvas 
