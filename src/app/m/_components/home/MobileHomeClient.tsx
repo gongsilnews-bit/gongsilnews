@@ -55,6 +55,7 @@ interface Props {
   marketingArticles: any[];
   lifeArticles: any[];
   lectures: any[];
+  dronePosts: any[];
 }
 
 const CATEGORIES = [
@@ -66,7 +67,7 @@ const CATEGORIES = [
 ];
 
 export default function MobileHomeClient(props: Props) {
-  const { headlineArticles, gongsilArticles, realestateArticles, marketingArticles, lifeArticles, lectures } = props;
+  const { headlineArticles, gongsilArticles, realestateArticles, marketingArticles, lifeArticles, lectures, dronePosts } = props;
   const router = useRouter();
   const [vacancies, setVacancies] = useState<any[]>([]);
   const [isMapLoading, setIsMapLoading] = useState(true);
@@ -352,6 +353,47 @@ export default function MobileHomeClient(props: Props) {
                 </div>
               </Link>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* ⑧ 드론영상 (자료실) — PC PremiumDroneSection 모바일 대응 */}
+      {dronePosts.length > 0 && (
+        <div style={{ background: "#1a1a2e", marginBottom: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 16px 14px" }}>
+            <Link href="/m/board?id=drone" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="4" cy="4" r="2.5"/><circle cx="20" cy="4" r="2.5"/><line x1="4" y1="6.5" x2="4" y2="10"/><line x1="20" y1="6.5" x2="20" y2="10"/><line x1="4" y1="10" x2="20" y2="10"/><rect x="9" y="9" width="6" height="4" rx="1" fill="#60a5fa" stroke="#60a5fa"/><line x1="12" y1="13" x2="12" y2="16"/><circle cx="12" cy="17.5" r="1.5" fill="#60a5fa" stroke="none"/><line x1="8" y1="20" x2="16" y2="20" strokeWidth="1.5"/></svg>
+              <span style={{ fontSize: 18, fontWeight: 800, color: "#fff", letterSpacing: "-0.5px" }}>드론영상 (자료실)</span>
+            </Link>
+            <Link href="/m/board?id=drone" style={{ fontSize: 15, color: "rgba(255,255,255,0.5)", textDecoration: "none" }}>더보기 ›</Link>
+          </div>
+          <div className="no-scrollbar" style={{ display: "flex", gap: 12, padding: "0 16px 20px", overflowX: "auto" }} onTouchStart={(e) => e.stopPropagation()} onTouchEnd={(e) => e.stopPropagation()}>
+            {dronePosts.map((item: any) => {
+              const ytRx = /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([\w-]{11})/;
+              const driveRx = /\/file\/d\/([a-zA-Z0-9_-]+)/;
+              const ytMatch = (item.youtube_url || "").match(ytRx);
+              const driveMatch = (item.drive_url || "").match(driveRx);
+              const thumb = item.thumbnail_url
+                || (ytMatch ? `https://img.youtube.com/vi/${ytMatch[1]}/mqdefault.jpg` : null)
+                || (driveMatch ? `https://drive.google.com/thumbnail?id=${driveMatch[1]}&sz=w400` : null)
+                || "https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&q=80&w=400&h=225";
+              const hasVideo = !!(item.youtube_url || item.drive_url);
+              return (
+                <Link key={item.id} href={`/m/board_read?id=${item.id}`} className="tap"
+                  style={{ flexShrink: 0, width: "calc(55vw - 16px)", maxWidth: 220, borderRadius: 10, overflow: "hidden", cursor: "pointer", textDecoration: "none", display: "block" }}>
+                  <div style={{ width: "100%", aspectRatio: "16/9", overflow: "hidden", background: "#222", position: "relative", borderRadius: 10 }}>
+                    <Image src={thumb} alt="" fill style={{ objectFit: "cover", opacity: 0.85 }} sizes="55vw" />
+                    {hasVideo && (
+                      <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 40, height: 40, background: "rgba(0,0,0,0.5)", borderRadius: "50%", border: "2px solid rgba(255,255,255,0.7)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="white" style={{ marginLeft: 2 }}><path d="M8 5v14l11-7z"/></svg>
+                      </div>
+                    )}
+                  </div>
+                  <p style={{ fontSize: 14, fontWeight: 700, color: "#e2e8f0", lineHeight: 1.5, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", wordBreak: "keep-all", margin: "8px 0 0", letterSpacing: "-0.3px" }}>{item.title}</p>
+                  <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", margin: "4px 0 0", lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{item.subtitle || "드론 영상 자료실입니다."}</p>
+                </Link>
+              );
+            })}
           </div>
         </div>
       )}
