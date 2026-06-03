@@ -1296,7 +1296,6 @@ function App() {
         editables.forEach(el => {
             el.removeAttribute('contentEditable');
             el.removeAttribute('suppressContentEditableWarning');
-          (el as HTMLElement).style.transform = 'translateY(-6px)';
             // Remove hover ring, background highlight, and cursor-text styles
             el.className = el.className
                 .replace(/hover:bg-amber-100\/50/g, '')
