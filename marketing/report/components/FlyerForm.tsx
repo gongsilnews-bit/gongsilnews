@@ -216,12 +216,13 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
       <div className="flex-1 overflow-y-auto pr-2 pb-10 space-y-6">
           
           {(activeTab === 'all' || activeTab === 1) && (
-              <div className="space-y-6 animate-fadeIn">
-                  {activeTab === 'all' && (
-                      <div className="pt-6 pb-2 border-b-[3px] border-black mb-4">
-                          <h2 className="text-2xl font-black text-black tracking-tight">1. 개요</h2>
-                      </div>
-                  )}
+              <div className={`animate-fadeIn relative ${activeTab === 'all' ? 'max-h-[750px] overflow-hidden bg-white p-5 rounded-2xl shadow-sm border border-gray-200 mb-8 shrink-0' : 'space-y-6'}`}>
+                  <div className="space-y-6">
+                      {activeTab === 'all' && (
+                          <div className="pb-2 border-b-[3px] border-black mb-4">
+                              <h2 className="text-xl font-black text-black tracking-tight">1. 개요</h2>
+                          </div>
+                      )}
                   <div>
                       <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">기본 타이틀</h4>
                       <div className="space-y-3">
@@ -407,16 +408,30 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                           <div><label className="text-xs text-gray-500">문의 연락처</label><input name="agentMobile" value={info.agentMobile} onChange={handleChange} className="w-full border rounded p-2 text-sm" /></div>
                       </div>
                   </div>
+                  </div>
+
+                  {activeTab === 'all' && (
+                      <div className="absolute bottom-0 left-0 w-full h-40 bg-gradient-to-t from-white via-white/90 to-transparent flex items-end justify-center pb-6 z-10 pointer-events-none">
+                          <button 
+                              type="button" 
+                              onClick={() => setActiveTab(1)}
+                              className="pointer-events-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-full shadow-lg flex items-center gap-2 transition-transform hover:scale-105 active:scale-95"
+                          >
+                              📝 1. 개요 수정하기
+                          </button>
+                      </div>
+                  )}
               </div>
           )}
 
           {(activeTab === 'all' || activeTab === 2) && (
-              <div className="space-y-6 animate-fadeIn">
-                  {activeTab === 'all' && (
-                      <div className="pt-6 pb-2 border-b-[3px] border-black mb-4 mt-8">
-                          <h2 className="text-2xl font-black text-black tracking-tight">2. 매물설명 & 시세</h2>
-                      </div>
-                  )}
+              <div className={`animate-fadeIn relative ${activeTab === 'all' ? 'max-h-[750px] overflow-hidden bg-white p-5 rounded-2xl shadow-sm border border-gray-200 mb-8 shrink-0' : 'space-y-6'}`}>
+                  <div className="space-y-6">
+                      {activeTab === 'all' && (
+                          <div className="pb-2 border-b-[3px] border-black mb-4">
+                              <h2 className="text-xl font-black text-black tracking-tight">2. 매물설명 & 시세</h2>
+                          </div>
+                      )}
 
 
                   <div>
@@ -606,16 +621,30 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                           </div>
                       </div>
                   </div>
+                  </div>
+
+                  {activeTab === 'all' && (
+                      <div className="absolute bottom-0 left-0 w-full h-40 bg-gradient-to-t from-white via-white/90 to-transparent flex items-end justify-center pb-6 z-10 pointer-events-none">
+                          <button 
+                              type="button" 
+                              onClick={() => setActiveTab(2)}
+                              className="pointer-events-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-full shadow-lg flex items-center gap-2 transition-transform hover:scale-105 active:scale-95"
+                          >
+                              📝 2. 매물설명 & 시세 수정하기
+                          </button>
+                      </div>
+                  )}
               </div>
           )}
 
           {(activeTab === 'all' || activeTab === 3) && (
-              <div className="space-y-6 animate-fadeIn">
-                  {activeTab === 'all' && (
-                      <div className="pt-6 pb-2 border-b-[3px] border-black mb-4 mt-8">
-                          <h2 className="text-2xl font-black text-black tracking-tight">3. 임대현황</h2>
-                      </div>
-                  )}
+              <div className={`animate-fadeIn relative ${activeTab === 'all' ? 'max-h-[750px] overflow-hidden bg-white p-5 rounded-2xl shadow-sm border border-gray-200 mb-8 shrink-0' : 'space-y-6'}`}>
+                  <div className="space-y-6">
+                      {activeTab === 'all' && (
+                          <div className="pb-2 border-b-[3px] border-black mb-4">
+                              <h2 className="text-xl font-black text-black tracking-tight">3. 임대현황</h2>
+                          </div>
+                      )}
                   <div>
                       <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">페이지 타이틀</h4>
                       <div className="space-y-3">
@@ -773,16 +802,30 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                           </div>
                       </div>
                   </div>
+                  </div>
+
+                  {activeTab === 'all' && (
+                      <div className="absolute bottom-0 left-0 w-full h-40 bg-gradient-to-t from-white via-white/90 to-transparent flex items-end justify-center pb-6 z-10 pointer-events-none">
+                          <button 
+                              type="button" 
+                              onClick={() => setActiveTab(3)}
+                              className="pointer-events-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-full shadow-lg flex items-center gap-2 transition-transform hover:scale-105 active:scale-95"
+                          >
+                              📝 3. 임대현황 수정하기
+                          </button>
+                      </div>
+                  )}
               </div>
           )}
 
           {(activeTab === 'all' || activeTab === 4) && (
-              <div className="space-y-6 animate-fadeIn">
-                  {activeTab === 'all' && (
-                      <div className="pt-6 pb-2 border-b-[3px] border-black mb-4 mt-8">
-                          <h2 className="text-2xl font-black text-black tracking-tight">4. 사진</h2>
-                      </div>
-                  )}
+              <div className={`animate-fadeIn relative ${activeTab === 'all' ? 'max-h-[750px] overflow-hidden bg-white p-5 rounded-2xl shadow-sm border border-gray-200 mb-8 shrink-0' : 'space-y-6'}`}>
+                  <div className="space-y-6">
+                      {activeTab === 'all' && (
+                          <div className="pb-2 border-b-[3px] border-black mb-4">
+                              <h2 className="text-xl font-black text-black tracking-tight">4. 사진</h2>
+                          </div>
+                      )}
                   <div>
                       <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">페이지 타이틀</h4>
                       <div className="space-y-3 mb-4">
@@ -797,16 +840,30 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                       {renderImageUpload('featureImage1', '서브 사진 3')}
                       {renderImageUpload('featureImage2', '서브 사진 4')}
                   </div>
+                  </div>
+
+                  {activeTab === 'all' && (
+                      <div className="absolute bottom-0 left-0 w-full h-40 bg-gradient-to-t from-white via-white/90 to-transparent flex items-end justify-center pb-6 z-10 pointer-events-none">
+                          <button 
+                              type="button" 
+                              onClick={() => setActiveTab(4)}
+                              className="pointer-events-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-full shadow-lg flex items-center gap-2 transition-transform hover:scale-105 active:scale-95"
+                          >
+                              📝 4. 사진 수정하기
+                          </button>
+                      </div>
+                  )}
               </div>
           )}
 
           {(activeTab === 'all' || activeTab === 5) && (
-              <div className="space-y-6 animate-fadeIn">
-                  {activeTab === 'all' && (
-                      <div className="pt-6 pb-2 border-b-[3px] border-black mb-4 mt-8">
-                          <h2 className="text-2xl font-black text-black tracking-tight">5. 입지</h2>
-                      </div>
-                  )}
+              <div className={`animate-fadeIn relative ${activeTab === 'all' ? 'max-h-[750px] overflow-hidden bg-white p-5 rounded-2xl shadow-sm border border-gray-200 mb-8 shrink-0' : 'space-y-6'}`}>
+                  <div className="space-y-6">
+                      {activeTab === 'all' && (
+                          <div className="pb-2 border-b-[3px] border-black mb-4">
+                              <h2 className="text-xl font-black text-black tracking-tight">5. 입지</h2>
+                          </div>
+                      )}
                   <div>
                       <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">입지 개요 및 지도 설정</h4>
                       <div className="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-200/60 mb-4 text-xs">
@@ -858,16 +915,30 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                           </div>
                       ))}
                   </div>
+                  </div>
+
+                  {activeTab === 'all' && (
+                      <div className="absolute bottom-0 left-0 w-full h-40 bg-gradient-to-t from-white via-white/90 to-transparent flex items-end justify-center pb-6 z-10 pointer-events-none">
+                          <button 
+                              type="button" 
+                              onClick={() => setActiveTab(5)}
+                              className="pointer-events-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-full shadow-lg flex items-center gap-2 transition-transform hover:scale-105 active:scale-95"
+                          >
+                              📝 5. 입지 수정하기
+                          </button>
+                      </div>
+                  )}
               </div>
           )}
 
           {(activeTab === 'all' || activeTab === 6) && (
-              <div className="space-y-6 animate-fadeIn">
-                  {activeTab === 'all' && (
-                      <div className="pt-6 pb-2 border-b-[3px] border-black mb-4 mt-8">
-                          <h2 className="text-2xl font-black text-black tracking-tight">6. 로드맵</h2>
-                      </div>
-                  )}
+              <div className={`animate-fadeIn relative ${activeTab === 'all' ? 'max-h-[750px] overflow-hidden bg-white p-5 rounded-2xl shadow-sm border border-gray-200 mb-8 shrink-0' : 'space-y-6'}`}>
+                  <div className="space-y-6">
+                      {activeTab === 'all' && (
+                          <div className="pb-2 border-b-[3px] border-black mb-4">
+                              <h2 className="text-xl font-black text-black tracking-tight">6. 로드맵</h2>
+                          </div>
+                      )}
                   <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">개발 및 활용 로드맵 (시나리오)</h4>
                   {(() => {
                       const ROADMAP_ICONS = [
@@ -975,6 +1046,19 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                           </>
                       );
                   })()}
+                  </div>
+
+                  {activeTab === 'all' && (
+                      <div className="absolute bottom-0 left-0 w-full h-40 bg-gradient-to-t from-white via-white/90 to-transparent flex items-end justify-center pb-6 z-10 pointer-events-none">
+                          <button 
+                              type="button" 
+                              onClick={() => setActiveTab(6)}
+                              className="pointer-events-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-full shadow-lg flex items-center gap-2 transition-transform hover:scale-105 active:scale-95"
+                          >
+                              📝 6. 로드맵 수정하기
+                          </button>
+                      </div>
+                  )}
               </div>
           )}
 
