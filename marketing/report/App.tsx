@@ -394,8 +394,33 @@ function App() {
   const [isSavingCloud, setIsSavingCloud] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState<Record<string, boolean>>({});
   const [authError, setAuthError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<number | 'all'>('all');
+  const [activeTab, setActiveTabInternal] = useState<number | 'all'>('all');
+  const [tabHistory, setTabHistory] = useState<(number | 'all')[]>(['all']);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  const setActiveTab = useCallback((tab: number | 'all') => {
+    setTabHistory(prev => [...prev, tab]);
+    setActiveTabInternal(tab);
+  }, []);
+
+  const handleBackTab = useCallback(() => {
+    setTabHistory(prev => {
+      if (prev.length <= 1) return prev;
+      const newHistory = [...prev];
+      newHistory.pop(); // remove current
+      const previousTab = newHistory[newHistory.length - 1];
+      setActiveTabInternal(previousTab);
+      return newHistory;
+    });
+  }, []);
+  const previewContainerRef = useRef<HTMLDivElement>(null);
+
+  // Scroll to top when '전체보기' is selected
+  useEffect(() => {
+    if (activeTab === 'all' && previewContainerRef.current) {
+      previewContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [activeTab]);
 
   // --- UNDO / REDO HISTORY ENGINE ---
   const [past, setPast] = useState<FlyerState[]>([]);
@@ -1740,6 +1765,7 @@ ${clone.outerHTML}
               isUploadingImage={isUploadingImage}
               activeTab={activeTab}
               setActiveTab={setActiveTab}
+              onBackTab={handleBackTab}
               onOpenTableEditor={() => setIsTableEditorOpen(true)}
             />
           </div>
@@ -1757,7 +1783,7 @@ ${clone.outerHTML}
                 </div>
                 <span>Width: 860px (A4 가로 배율)</span>
             </div>
-            <div className="print:overflow-visible print:p-0 print:block flex-1 overflow-auto p-8 flex justify-center custom-scrollbar">
+            <div ref={previewContainerRef} className="print:overflow-visible print:p-0 print:block flex-1 overflow-auto p-8 flex justify-center custom-scrollbar">
                 {/* Fixed width container for editor preview */}
                 <div className="w-[860px] shrink-0 print:w-[1122px] print:mx-auto print:shrink">
                     <FlyerCanvas 

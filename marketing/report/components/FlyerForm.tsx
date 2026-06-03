@@ -18,6 +18,7 @@ interface FlyerFormProps {
   activeTab: number | 'all';
   setActiveTab: (tab: number | 'all') => void;
   onOpenTableEditor: () => void;
+  onBackTab?: () => void;
 }
 
 const FlyerForm: React.FC<FlyerFormProps> = ({ 
@@ -25,7 +26,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
     colors, layouts, currentColor, currentLayout, onColorSelect, onLayoutSelect,
     uploadedImages, isUploadingImage,
     activeTab, setActiveTab,
-    onOpenTableEditor
+    onOpenTableEditor, onBackTab
 }) => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -768,7 +769,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                       <div className="flex gap-2 justify-center mt-6 pt-6 border-t border-gray-100">
                           <button 
                               type="button" 
-                              onClick={() => setActiveTab(1)}
+                              onClick={onBackTab || (() => setActiveTab('all'))}
                               className="flex-1 py-2.5 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-bold rounded-lg transition-colors text-sm"
                           >
                               뒤로가기
@@ -842,7 +843,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                       <div className="flex gap-2 justify-center mt-6 pt-6 border-t border-gray-100">
                           <button 
                               type="button" 
-                              onClick={() => setActiveTab(2)}
+                              onClick={onBackTab || (() => setActiveTab('all'))}
                               className="flex-1 py-2.5 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-bold rounded-lg transition-colors text-sm"
                           >
                               뒤로가기
@@ -896,7 +897,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                       <div className="flex gap-2 justify-center mt-6 pt-6 border-t border-gray-100">
                           <button 
                               type="button" 
-                              onClick={() => setActiveTab(3)}
+                              onClick={onBackTab || (() => setActiveTab('all'))}
                               className="flex-1 py-2.5 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-bold rounded-lg transition-colors text-sm"
                           >
                               뒤로가기
@@ -987,7 +988,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                       <div className="flex gap-2 justify-center mt-6 pt-6 border-t border-gray-100">
                           <button 
                               type="button" 
-                              onClick={() => setActiveTab(4)}
+                              onClick={onBackTab || (() => setActiveTab('all'))}
                               className="flex-1 py-2.5 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-bold rounded-lg transition-colors text-sm"
                           >
                               뒤로가기
@@ -1134,7 +1135,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                       <div className="flex gap-2 justify-center mt-6 pt-6 border-t border-gray-100">
                           <button 
                               type="button" 
-                              onClick={() => setActiveTab(5)}
+                              onClick={onBackTab || (() => setActiveTab('all'))}
                               className="flex-1 py-2.5 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-bold rounded-lg transition-colors text-sm"
                           >
                               뒤로가기
