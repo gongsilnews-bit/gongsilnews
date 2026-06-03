@@ -929,11 +929,11 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                 }
                                 
                                 return (
-                                    <div className="flex bg-[#fff9f0] border-t border-gray-200">
+                                    <div className="flex border-t border-gray-200" style={{ backgroundColor: info.priceBgColor || '#fff9f0' }}>
                                         {/* Transaction switcher removed to prevent visual clutter; handled in form */}
  
                                         <div className="w-1/3 text-gray-600 font-bold py-2 pl-4 flex items-center">{label}</div>
-                                        <div className="w-2/3 text-[var(--theme-primary)] font-extrabold py-2 pl-4 flex items-center">
+                                        <div className="w-2/3 font-extrabold py-2 pl-4 flex items-center" style={{ color: info.priceTextColor || 'var(--theme-primary)' }}>
                                             <EditableText value={price} onChange={(val) => handleTextChange('priceMain', val)} />
                                         </div>
                                     </div>

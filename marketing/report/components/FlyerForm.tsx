@@ -451,6 +451,48 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                                                   placeholder={pricePlaceholder} 
                                                   className="w-full border border-gray-300 rounded p-1.5 text-xs font-bold text-gray-800 bg-white" 
                                               />
+                                              <div className="flex gap-2 mt-2">
+                                                  <div className="flex-1">
+                                                      <span className="text-[9px] text-gray-400 font-semibold block mb-0.5">배경색</span>
+                                                      <div className="flex items-center gap-1">
+                                                          <input 
+                                                              type="color" 
+                                                              name="priceBgColor" 
+                                                              value={info.priceBgColor || "#fff9f0"} 
+                                                              onChange={handleChange}
+                                                              className="w-6 h-6 p-0 border-0 bg-transparent cursor-pointer shrink-0"
+                                                          />
+                                                          <input
+                                                              type="text"
+                                                              name="priceBgColor"
+                                                              value={info.priceBgColor || ""}
+                                                              onChange={handleChange}
+                                                              placeholder="기본값"
+                                                              className="w-full border border-gray-300 rounded p-1 text-[10px] bg-white text-gray-600"
+                                                          />
+                                                      </div>
+                                                  </div>
+                                                  <div className="flex-1">
+                                                      <span className="text-[9px] text-gray-400 font-semibold block mb-0.5">글씨색</span>
+                                                      <div className="flex items-center gap-1">
+                                                          <input 
+                                                              type="color" 
+                                                              name="priceTextColor" 
+                                                              value={info.priceTextColor || "#cc5a27"} 
+                                                              onChange={handleChange}
+                                                              className="w-6 h-6 p-0 border-0 bg-transparent cursor-pointer shrink-0"
+                                                          />
+                                                          <input
+                                                              type="text"
+                                                              name="priceTextColor"
+                                                              value={info.priceTextColor || ""}
+                                                              onChange={handleChange}
+                                                              placeholder="테마색"
+                                                              className="w-full border border-gray-300 rounded p-1 text-[10px] bg-white text-gray-600"
+                                                          />
+                                                      </div>
+                                                  </div>
+                                              </div>
                                           </div>
                                       );
                                   })()}
