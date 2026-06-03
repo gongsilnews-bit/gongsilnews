@@ -104,6 +104,7 @@ export default function KakaoMapView({
     kakaoMapRef.current = new kakao.maps.Map(mapRef.current, {
       center: new kakao.maps.LatLng(initialLat, initialLng),
       level: 6,
+      draggable: true,
     });
 
     const map = kakaoMapRef.current;
@@ -665,7 +666,7 @@ export default function KakaoMapView({
         isPushedDown={activeFilterDropdown !== null}
       />
 
-      <div ref={mapRef} style={{ width: "100%", height: "100%", background: "#e8eaed" }}>
+      <div ref={mapRef} style={{ width: "100%", height: "100%", background: "#e8eaed", touchAction: "auto" }}>
         {mapError && (
           <div
             style={{
