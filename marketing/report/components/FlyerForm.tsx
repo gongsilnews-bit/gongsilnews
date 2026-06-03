@@ -292,11 +292,9 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
           {(activeTab === 1 || (activeTab === 'all' && (info.visiblePages || [1, 2, 3, 4, 5, 6]).includes(1))) && (
               <div className={`animate-fadeIn relative ${activeTab === 'all' ? 'h-[620px] overflow-hidden bg-white p-5 rounded-2xl shadow-sm border border-gray-200 mb-8 shrink-0' : 'space-y-6'}`}>
                   <div className="space-y-6">
-                      {activeTab === 'all' && (
-                          <div className="pb-2 border-b-[3px] border-black mb-4">
-                              <h2 className="text-xl font-black text-black tracking-tight">1. 개요</h2>
-                          </div>
-                      )}
+                      <div className="pb-2 border-b-[3px] border-black mb-4">
+                          <h2 className="text-xl font-black text-black tracking-tight">1. 개요</h2>
+                      </div>
                   <div>
                       <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">기본 타이틀</h4>
                       <div className="space-y-3">
@@ -501,11 +499,9 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
           {(activeTab === 2 || (activeTab === 'all' && (info.visiblePages || [1, 2, 3, 4, 5, 6]).includes(2))) && (
               <div className={`animate-fadeIn relative ${activeTab === 'all' ? 'h-[620px] overflow-hidden bg-white p-5 rounded-2xl shadow-sm border border-gray-200 mb-8 shrink-0' : 'space-y-6'}`}>
                   <div className="space-y-6">
-                      {activeTab === 'all' && (
-                          <div className="pb-2 border-b-[3px] border-black mb-4">
-                              <h2 className="text-xl font-black text-black tracking-tight">2. 매물설명 & 시세</h2>
-                          </div>
-                      )}
+                      <div className="pb-2 border-b-[3px] border-black mb-4">
+                          <h2 className="text-xl font-black text-black tracking-tight">2. 매물설명 & 시세</h2>
+                      </div>
 
 
                   <div>
@@ -714,11 +710,9 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
           {(activeTab === 3 || (activeTab === 'all' && (info.visiblePages || [1, 2, 3, 4, 5, 6]).includes(3))) && (
               <div className={`animate-fadeIn relative ${activeTab === 'all' ? 'h-[620px] overflow-hidden bg-white p-5 rounded-2xl shadow-sm border border-gray-200 mb-8 shrink-0' : 'space-y-6'}`}>
                   <div className="space-y-6">
-                      {activeTab === 'all' && (
-                          <div className="pb-2 border-b-[3px] border-black mb-4">
-                              <h2 className="text-xl font-black text-black tracking-tight">3. 임대현황</h2>
-                          </div>
-                      )}
+                      <div className="pb-2 border-b-[3px] border-black mb-4">
+                          <h2 className="text-xl font-black text-black tracking-tight">3. 임대현황</h2>
+                      </div>
                   <div>
                       <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">페이지 타이틀</h4>
                       <div className="space-y-3">
@@ -895,11 +889,9 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
           {(activeTab === 4 || (activeTab === 'all' && (info.visiblePages || [1, 2, 3, 4, 5, 6]).includes(4))) && (
               <div className={`animate-fadeIn relative ${activeTab === 'all' ? 'h-[620px] overflow-hidden bg-white p-5 rounded-2xl shadow-sm border border-gray-200 mb-8 shrink-0' : 'space-y-6'}`}>
                   <div className="space-y-6">
-                      {activeTab === 'all' && (
-                          <div className="pb-2 border-b-[3px] border-black mb-4">
-                              <h2 className="text-xl font-black text-black tracking-tight">4. 사진</h2>
-                          </div>
-                      )}
+                      <div className="pb-2 border-b-[3px] border-black mb-4">
+                          <h2 className="text-xl font-black text-black tracking-tight">4. 사진</h2>
+                      </div>
                   <div>
                       <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">페이지 타이틀</h4>
                       <div className="space-y-3 mb-4">
@@ -933,11 +925,9 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
           {(activeTab === 5 || (activeTab === 'all' && (info.visiblePages || [1, 2, 3, 4, 5, 6]).includes(5))) && (
               <div className={`animate-fadeIn relative ${activeTab === 'all' ? 'h-[620px] overflow-hidden bg-white p-5 rounded-2xl shadow-sm border border-gray-200 mb-8 shrink-0' : 'space-y-6'}`}>
                   <div className="space-y-6">
-                      {activeTab === 'all' && (
-                          <div className="pb-2 border-b-[3px] border-black mb-4">
-                              <h2 className="text-xl font-black text-black tracking-tight">5. 입지</h2>
-                          </div>
-                      )}
+                      <div className="pb-2 border-b-[3px] border-black mb-4">
+                          <h2 className="text-xl font-black text-black tracking-tight">5. 입지</h2>
+                      </div>
                   <div>
                       <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">입지 개요 및 지도 설정</h4>
                       <div className="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-200/60 mb-4 text-xs">
@@ -1008,11 +998,9 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
           {(activeTab === 6 || (activeTab === 'all' && (info.visiblePages || [1, 2, 3, 4, 5, 6]).includes(6))) && (
               <div className={`animate-fadeIn relative ${activeTab === 'all' ? 'h-[620px] overflow-hidden bg-white p-5 rounded-2xl shadow-sm border border-gray-200 mb-8 shrink-0' : 'space-y-6'}`}>
                   <div className="space-y-6">
-                      {activeTab === 'all' && (
-                          <div className="pb-2 border-b-[3px] border-black mb-4">
-                              <h2 className="text-xl font-black text-black tracking-tight">6. 로드맵</h2>
-                          </div>
-                      )}
+                      <div className="pb-2 border-b-[3px] border-black mb-4">
+                          <h2 className="text-xl font-black text-black tracking-tight">6. 로드맵</h2>
+                      </div>
                   <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">개발 및 활용 로드맵 (시나리오)</h4>
                   {(() => {
                       const ROADMAP_ICONS = [
