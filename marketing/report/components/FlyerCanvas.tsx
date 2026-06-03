@@ -1588,6 +1588,16 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                     ))}
                                 </tbody>
                             </table>
+                            {/* Add Row Button at Bottom */}
+                            <div className="flex justify-center mt-3 mb-1 print:hidden relative group/addrow">
+                                <button
+                                    type="button"
+                                    onClick={() => addRow()}
+                                    className="opacity-20 hover:opacity-100 transition-opacity bg-yellow-50 hover:bg-yellow-100 text-yellow-600 border border-yellow-200 border-dashed rounded-full px-6 py-1.5 text-xs font-bold flex items-center gap-1 cursor-pointer shadow-sm active:scale-95"
+                                >
+                                    ➕ 가장 밑에 줄(행) 추가
+                                </button>
+                            </div>
                         </div>
                         
                         {/* Custom Total / Summary Block & Explanation */}
