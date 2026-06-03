@@ -846,10 +846,10 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
                   </>
                 )}
               <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>
-                {selectedVacancy.trade_type === "매매" && ((selectedVacancy.property_type === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(selectedVacancy.sub_category)) || (selectedVacancy.property_type === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고", "지식산업센터"].includes(selectedVacancy.sub_category))) ? "연면적" : "공급/전용면적"}
+                {selectedVacancy.trade_type === "매매" && ((selectedVacancy.property_type === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(selectedVacancy.sub_category)) || (selectedVacancy.property_type === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고"].includes(selectedVacancy.sub_category))) ? "연면적" : "공급/전용면적"}
               </div>
               <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>
-                {selectedVacancy.trade_type === "매매" && ((selectedVacancy.property_type === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(selectedVacancy.sub_category)) || (selectedVacancy.property_type === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고", "지식산업센터"].includes(selectedVacancy.sub_category))) 
+                {selectedVacancy.trade_type === "매매" && ((selectedVacancy.property_type === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(selectedVacancy.sub_category)) || (selectedVacancy.property_type === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고"].includes(selectedVacancy.sub_category))) 
                   ? (selectedVacancy.supply_m2 ? `${selectedVacancy.supply_m2}m²` : "-")
                   : `${selectedVacancy.supply_m2 ? `${selectedVacancy.supply_m2}m²` : "-"} / ${selectedVacancy.exclusive_m2 ? `${selectedVacancy.exclusive_m2}m²` : "-"}`
                 }

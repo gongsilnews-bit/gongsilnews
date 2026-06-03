@@ -1386,7 +1386,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
             </div>
 
             {/* 면적 */}
-            {!(tradeType === "매매" && ((propertyType === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(subCategory)) || (propertyType === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고", "지식산업센터"].includes(subCategory)))) && (
+            {!(tradeType === "매매" && ((propertyType === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(subCategory)) || (propertyType === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고"].includes(subCategory)))) && (
             <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
               <div style={{ flex: 1 }}>
                 <label style={labelStyle}>공급면적</label>
@@ -1436,7 +1436,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                   </div>
                 </div>
                 <div style={{ flex: 1 }}>
-                  {tradeType === "매매" && ((propertyType === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(subCategory)) || (propertyType === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고", "지식산업센터"].includes(subCategory))) ? (
+                  {tradeType === "매매" && ((propertyType === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(subCategory)) || (propertyType === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고"].includes(subCategory))) ? (
                     <>
                       <label style={labelStyle}>연면적</label>
                       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
