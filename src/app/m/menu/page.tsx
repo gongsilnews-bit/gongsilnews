@@ -25,29 +25,27 @@ export default function MenuPage() {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           setCurrentUser(user);
-          const { data } = await supabase
-            .from('members')
-            .select('name, email, role, profile_image_url, plan_type, signup_completed')
-            .eq('id', user.id)
-            .single();
-          const { data: agencyData } = await supabase
-            .from('agencies')
-            .select('status')
-            .eq('owner_id', user.id)
-            .single();
+          // 병렬 조회: 프로필 + 중개사 상태 동시
+          const [{ data }, { data: agencyData }] = await Promise.all([
+            supabase.from('members').select('name, email, role, profile_image_url, plan_type, signup_completed').eq('id', user.id).single(),
+            supabase.from('agencies').select('status').eq('owner_id', user.id).single(),
+          ]);
           if (data) {
             setMemberData({ ...data, agencyStatus: agencyData?.status || null });
             const r = data.role?.trim().toUpperCase() || '';
             const isAdmin = r === 'ADMIN' || r === '최고관리자' || r.includes('관리자');
-            const activityRes = await getUserActivityCounts(user.id);
-            if (activityRes.success) setUserActivityCounts(activityRes.counts);
-            if (isAdmin) {
-              const [{ count: vCount }, { count: aCount }, { count: mCount }] = await Promise.all([
+            // 병렬 조회: 활동 카운트 + 관리자 PENDING 카운트 동시
+            const [activityRes, ...adminResults] = await Promise.all([
+              getUserActivityCounts(user.id),
+              ...(isAdmin ? [
                 supabase.from('vacancies').select('*', { count: 'exact', head: true }).eq('status', 'PENDING'),
                 supabase.from('articles').select('*', { count: 'exact', head: true }).eq('status', 'PENDING'),
-                supabase.from('agencies').select('*', { count: 'exact', head: true }).eq('status', 'PENDING')
-              ]);
-              setPendingCounts({ vacancies: vCount || 0, articles: aCount || 0, members: mCount || 0 });
+                supabase.from('agencies').select('*', { count: 'exact', head: true }).eq('status', 'PENDING'),
+              ] : []),
+            ]);
+            if (activityRes.success) setUserActivityCounts(activityRes.counts);
+            if (isAdmin && adminResults.length === 3) {
+              setPendingCounts({ vacancies: adminResults[0].count || 0, articles: adminResults[1].count || 0, members: adminResults[2].count || 0 });
             }
           }
         } else {
