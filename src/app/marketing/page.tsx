@@ -233,9 +233,9 @@ export default function MarketingPage() {
           <img src="/logo.png" alt="부동산 정보채널 공실뉴스" style={{ height: 32, width: "auto" }} />
         </Link>
         <div className="header-links">
-          <Link href="/about" className="header-link">회사소개</Link>
-          <Link href="/marketing" className="header-link active">광고안내</Link>
-          <Link href="/partnership" className="header-link">제휴문의</Link>
+          <a href="/about" className="header-link">회사소개</a>
+          <a href="/marketing" className="header-link active">광고안내</a>
+          <a href="/partnership" className="header-link">제휴문의</a>
         </div>
       </header>
 
@@ -339,12 +339,12 @@ export default function MarketingPage() {
           <div style={{ borderBottom: "1px solid rgba(255,255,255,0.1)", paddingBottom: 24, marginBottom: 32 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
               <div className="contact-links">
-                <Link href="/about">회사소개</Link>
-                <Link href="/marketing">광고안내</Link>
-                <Link href="/partnership">제휴문의</Link>
-                <Link href="/terms">이용약관</Link>
-                <Link href="#" style={{ fontWeight: 700, color: "#fff" }}>개인정보 처리방침</Link>
-                <Link href="/youth-policy">청소년 보호정책</Link>
+                <a href="/about">회사소개</a>
+                <a href="/marketing">광고안내</a>
+                <a href="/partnership">제휴문의</a>
+                <a href="/terms">이용약관</a>
+                <a href="#" style={{ fontWeight: 700, color: "#fff" }}>개인정보 처리방침</a>
+                <a href="/youth-policy">청소년 보호정책</a>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
                 <span style={{ fontSize: 11, color: "#94a3b8", fontWeight: 500 }}>DATA PARTNER</span>

@@ -125,17 +125,17 @@ export default function Footer() {
         <div style={{ borderBottom: "1px solid rgba(255,255,255,0.1)", paddingBottom: 24, marginBottom: 32 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
             <div className="contact-links">
-              <Link href="/about">회사소개</Link>
+              <a href="/about">회사소개</a>
               <span style={{ color: "rgba(255,255,255,0.2)" }}>|</span>
-              <Link href="/marketing">광고안내</Link>
+              <a href="/marketing">광고안내</a>
               <span style={{ color: "rgba(255,255,255,0.2)" }}>|</span>
-              <Link href="/partnership">제휴문의</Link>
+              <a href="/partnership">제휴문의</a>
               <span style={{ color: "rgba(255,255,255,0.2)" }}>|</span>
-              <Link href="/terms">이용약관</Link>
+              <a href="/terms">이용약관</a>
               <span style={{ color: "rgba(255,255,255,0.2)" }}>|</span>
-              <Link href="#" style={{ fontWeight: 700, color: "#fff" }}>개인정보 처리방침</Link>
+              <a href="#" style={{ fontWeight: 700, color: "#fff" }}>개인정보 처리방침</a>
               <span style={{ color: "rgba(255,255,255,0.2)" }}>|</span>
-              <Link href="/youth-policy">청소년 보호정책</Link>
+              <a href="/youth-policy">청소년 보호정책</a>
             </div>
             {/* 우측 파트너 로고/링크 */}
             <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
