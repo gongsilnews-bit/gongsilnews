@@ -1464,11 +1464,11 @@ ${clone.outerHTML}
         </div>
       </header>
 
-      <main className="flex-1 max-w-[1600px] mx-auto w-full p-4 lg:p-8 grid grid-cols-12 gap-6 h-[calc(100vh-64px)]">
+      <main className="flex-1 max-w-[1600px] mx-auto w-full p-4 lg:p-8 grid grid-cols-12 gap-6 h-[calc(100vh-64px)] min-h-0">
         <div 
             ref={formScrollRef}
             onScroll={handleFormScroll}
-            className="col-span-12 lg:col-span-4 xl:col-span-3 lg:h-full lg:overflow-y-auto custom-scrollbar"
+            className="col-span-12 lg:col-span-4 xl:col-span-3 lg:h-full lg:overflow-y-auto lg:min-h-0 custom-scrollbar"
         >
           <FlyerForm 
             info={state.info}
@@ -1489,7 +1489,7 @@ ${clone.outerHTML}
             isUploadingImage={isUploadingImage}
           />
         </div>
-        <div className="col-span-12 lg:col-span-8 xl:col-span-9 bg-gray-200/50 rounded-xl border border-gray-300 overflow-hidden flex flex-col">
+        <div className="col-span-12 lg:col-span-8 xl:col-span-9 bg-gray-200/50 rounded-xl border border-gray-300 overflow-hidden flex flex-col lg:min-h-0">
             <div className="bg-white px-4 py-2 border-b flex justify-between items-center text-xs text-gray-500">
                 <span className="flex items-center gap-2"><span className="w-2 h-2 bg-green-500 rounded-full"></span>미리보기</span>
                 <span>Width: 860px</span>
@@ -1497,24 +1497,31 @@ ${clone.outerHTML}
             <div 
                 ref={previewScrollRef}
                 onScroll={handlePreviewScroll}
-                className="flex-1 overflow-auto p-8 flex justify-center custom-scrollbar shadow-inner"
+                className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar shadow-inner"
+                style={{ containerType: 'inline-size' }}
             >
-                {/* Fixed width container for editor preview */}
-                <div id="flyer-print-area" style={{ width: '860px', flexShrink: 0 }}>
-                    <FlyerCanvas 
-                        ref={flyerRef} 
-                        data={state} 
-                        onTextChange={handleTextChange}
-                        onSectionTextChange={handleSectionTextChange}
-                        onImageClick={handleImageClick}
-                    />
-                    <input 
-                        type="file" 
-                        ref={hiddenFileInputRef} 
-                        onChange={handleHiddenFileChange} 
-                        style={{ display: 'none' }} 
-                        accept="image/*" 
-                    />
+                <div className="flex justify-center" style={{ padding: '32px 0' }}>
+                    {/* Fixed width container for editor preview */}
+                    <div id="flyer-print-area" style={{ 
+                        width: '860px', 
+                        flexShrink: 0,
+                        zoom: 'min(1, calc(100cqw / 900))' // 860 + some padding margin
+                    }}>
+                        <FlyerCanvas 
+                            ref={flyerRef} 
+                            data={state} 
+                            onTextChange={handleTextChange}
+                            onSectionTextChange={handleSectionTextChange}
+                            onImageClick={handleImageClick}
+                        />
+                        <input 
+                            type="file" 
+                            ref={hiddenFileInputRef} 
+                            onChange={handleHiddenFileChange} 
+                            style={{ display: 'none' }} 
+                            accept="image/*" 
+                        />
+                    </div>
                 </div>
             </div>
         </div>
