@@ -11,13 +11,13 @@ interface FlyerCanvasProps {
   onOpenTableEditor?: () => void;
 }
 
-// ??? NOTION & CANVA STYLE INLINE EDITORS ??????????????????????????????????????
+// ─── NOTION & CANVA STYLE INLINE EDITORS ──────────────────────────────────────
 
 const EditableText = ({
   value,
   onChange,
   className = "",
-  placeholder = "?띿뒪???낅젰..."
+  placeholder = "텍스트 입력..."
 }: {
   value: string;
   onChange: (text: string) => void;
@@ -56,7 +56,7 @@ const EditableBlock = ({
   value,
   onChange,
   className = "",
-  placeholder = "?띿뒪???낅젰..."
+  placeholder = "텍스트 입력..."
 }: {
   value: string;
   onChange: (text: string) => void;
@@ -85,7 +85,7 @@ const EditableBlock = ({
   );
 };
 
-// ??? PREMIUM DIRECT IMAGE UPLOADER OVERLAY ????????????????????????????????????
+// ─── PREMIUM DIRECT IMAGE UPLOADER OVERLAY ────────────────────────────────────
 
 const EditableImage = ({
   src,
@@ -167,7 +167,7 @@ const EditableImage = ({
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
                 <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z" />
               </svg>
-              <span>?낅줈??蹂寃?/span>
+              <span>업로드/변경</span>
             </button>
             
             {src && onDelete && (
@@ -178,12 +178,12 @@ const EditableImage = ({
                   onDelete();
                 }}
                 className="bg-red-500 hover:bg-red-600 active:scale-95 text-white font-extrabold px-3 py-1.5 rounded-xl shadow-lg text-[11px] flex items-center gap-1.5 transition-all cursor-pointer border-none"
-                title="?ъ쭊 ??젣"
+                title="사진 삭제"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
                 </svg>
-                <span>?ъ쭊 ??젣</span>
+                <span>사진 삭제</span>
               </button>
             )}
           </div>
@@ -194,14 +194,14 @@ const EditableImage = ({
       {isUploading && (
         <div className="absolute inset-0 bg-slate-900/80 z-[25] flex flex-col items-center justify-center print:hidden">
           <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-amber-500 mb-2"></div>
-          <span className="text-[10px] text-amber-500 font-bold">WebP 理쒖쟻???낅줈??以?..</span>
+          <span className="text-[10px] text-amber-500 font-bold">WebP 최적화 업로드 중...</span>
         </div>
       )}
     </div>
   );
 };
 
-// ??? REPORT PAGE WRAPPER ??????????????????????????????????????????????????????
+// ─── REPORT PAGE WRAPPER ──────────────────────────────────────────────────────
 
 const ReportPage = ({ 
     children, 
@@ -291,19 +291,20 @@ const ReportPage = ({
         }
         if (layoutType === 'type5') {
             return (
-                <div className={`h-[120px] bg-white px-10 flex flex-col justify-end shrink-0 ${headingFont}`}>
-                    <div className="w-full flex items-end relative pb-4">
-                        
-                        <div className="flex-1 flex items-end">
-                            <h1 className="text-3xl font-black text-gray-900 tracking-tight uppercase pb-2 shrink-0 z-10 relative">
-                                {onUpdateTitle ? <EditableText value={title} onChange={onUpdateTitle} className="hover:bg-gray-100 focus:bg-gray-200 px-1" /> : title}
-                            </h1>
-                        </div>
-                        
+                <div className={`h-[120px] bg-white px-10 py-8 flex justify-between items-start shrink-0 border-b border-gray-100 ${headingFont}`}>
+                    <div className="flex-1">
+                        <h1 className="text-2xl font-light text-gray-800 tracking-wider uppercase border-b border-[var(--theme-primary)] pb-2 inline-block">
+                            {onUpdateTitle ? <EditableText value={title} onChange={onUpdateTitle} className="hover:bg-gray-100 focus:bg-gray-200 px-1" /> : title}
+                        </h1>
+                    </div>
+                    <div className="text-right">
+                        <span className="text-gray-400 font-light tracking-[0.2em] uppercase text-xs block">
+                            {onUpdateSubtitle ? <EditableText value={subtitle} onChange={onUpdateSubtitle} className="hover:bg-gray-100 focus:bg-gray-200 px-1 text-right" /> : subtitle}
+                        </span>
                         {badgeText && (
-                            <div className="ml-6 z-10 bg-[var(--theme-primary)] text-white px-5 py-2 font-black tracking-widest uppercase text-[13px] shadow-sm mb-2 relative">
-                                {onUpdateBadge ? <EditableText value={badgeText} onChange={onUpdateBadge} className="hover:bg-white/20 focus:bg-white/30 text-center" /> : badgeText}
-                            </div>
+                            <span className="text-[var(--theme-primary)] font-bold tracking-widest uppercase text-sm mt-1 block">
+                                {onUpdateBadge ? <EditableText value={badgeText} onChange={onUpdateBadge} className="hover:bg-gray-100 focus:bg-gray-200 px-1 text-right" /> : badgeText}
+                            </span>
                         )}
                     </div>
                 </div>
@@ -338,7 +339,7 @@ const ReportPage = ({
                 {badgeText && (
                     <div className="flex items-center gap-4 h-full pb-2">
                         <div className="w-px h-8 bg-gray-600"></div>
-                        <span className={`text-2xl font-black tracking-widest text-white`}>
+                        <span className={`text-2xl font-black tracking-widest ${pageNumber === 1 ? 'text-[var(--theme-primary)]' : 'text-white'}`}>
                             {onUpdateBadge ? (
                                 <EditableText 
                                   value={badgeText} 
@@ -357,7 +358,7 @@ const ReportPage = ({
         <div data-export-id={exportId} className={`relative bg-white w-[1122px] h-[794px] overflow-hidden flex flex-col shadow-2xl mb-8 ${bodyFont}`} style={{ pageBreakAfter: 'always' }}>
             {isHidden && (
                 <div className="absolute top-0 left-0 right-0 z-50 bg-red-500/90 text-white py-1.5 text-center text-sm font-bold shadow-md tracking-wider backdrop-blur-sm">
-                    ?좑툘 ?꾩옱 異쒕젰(PDF/?몄뇙)?먯꽌 ?쒖쇅???섏씠吏?낅땲?? (醫뚯륫 ??硫붾돱?먯꽌 ?ㅼ젙??蹂寃쏀븷 ???덉뒿?덈떎.)
+                    ⚠️ 현재 출력(PDF/인쇄)에서 제외된 페이지입니다. (좌측 폼 메뉴에서 설정을 변경할 수 있습니다.)
                 </div>
             )}
             {renderHeader()}
@@ -420,7 +421,7 @@ const SectionTitle = ({
     </div>
 );
 
-// ??? GEDITOR STYLE PREMIUM FLOATING TOOLBAR WRAPPER ????????????????????????????
+// ─── GEDITOR STYLE PREMIUM FLOATING TOOLBAR WRAPPER ────────────────────────────
 
 const GeditorWrapper = ({
   children,
@@ -457,9 +458,9 @@ const GeditorWrapper = ({
               disabled={isFirst}
               onClick={onMoveUp}
               className="text-slate-300 hover:text-white disabled:opacity-30 cursor-pointer border-none bg-transparent font-bold p-0.5"
-              title="?꾨줈 ?대룞"
+              title="위로 이동"
             >
-              ??
+              ▲
             </button>
           )}
           {onMoveDown && (
@@ -468,9 +469,9 @@ const GeditorWrapper = ({
               disabled={isLast}
               onClick={onMoveDown}
               className="text-slate-300 hover:text-white disabled:opacity-30 cursor-pointer border-none bg-transparent font-bold p-0.5"
-              title="?꾨옒濡??대룞"
+              title="아래로 이동"
             >
-              ??
+              ▼
             </button>
           )}
           {onDuplicate && (
@@ -478,9 +479,9 @@ const GeditorWrapper = ({
               type="button"
               onClick={onDuplicate}
               className="text-green-400 hover:text-green-300 cursor-pointer border-none bg-transparent font-bold p-0.5"
-              title="蹂듭젣"
+              title="복제"
             >
-              竊?
+              ＋
             </button>
           )}
           {onDelete && (
@@ -488,9 +489,9 @@ const GeditorWrapper = ({
               type="button"
               onClick={onDelete}
               className="text-red-400 hover:text-red-300 cursor-pointer border-none bg-transparent font-bold p-0.5"
-              title="??젣"
+              title="삭제"
             >
-              ??
+              ✕
             </button>
           )}
         </div>
@@ -499,7 +500,7 @@ const GeditorWrapper = ({
   );
 };
 
-// ??? KAKAO MAP COMPONENT FOR PAGE 4 ??????????????????????????????????????????
+// ─── KAKAO MAP COMPONENT FOR PAGE 4 ──────────────────────────────────────────
 const KakaoMap = ({ address }: { address: string }) => {
   const containerRef = React.useRef<HTMLDivElement>(null);
   const [loaded, setLoaded] = React.useState(false);
@@ -533,7 +534,7 @@ const KakaoMap = ({ address }: { address: string }) => {
         });
       };
       script.onerror = () => {
-        setErrorMsg("吏???ㅽ겕由쏀듃 濡쒕뱶 ?ㅽ뙣");
+        setErrorMsg("지도 스크립트 로드 실패");
       };
       document.head.appendChild(script);
     };
@@ -552,7 +553,7 @@ const KakaoMap = ({ address }: { address: string }) => {
       
       // Clean up search query
       let cleanAddress = address;
-      const cleanPatterns = [/(留ㅻℓ|?꾩꽭|?붿꽭|?꾨?).*/g, /\d+??*/g];
+      const cleanPatterns = [/(매매|전세|월세|임대).*/g, /\d+억.*/g];
       cleanPatterns.forEach(pat => {
         cleanAddress = cleanAddress.replace(pat, "").trim();
       });
@@ -589,7 +590,7 @@ const KakaoMap = ({ address }: { address: string }) => {
               text-align: center;
               white-space: nowrap;
             ">
-              ?뱦 ${cleanAddress.split(' ').slice(0, 3).join(' ')}
+              📌 ${cleanAddress.split(' ').slice(0, 3).join(' ')}
             </div>
           `;
           
@@ -606,19 +607,19 @@ const KakaoMap = ({ address }: { address: string }) => {
           map.setDraggable(false);
         } else {
           // Fallback to default coordinate if exact geocode fails
-          geocoder.addressSearch("?쒖슱 媛뺣궓援???궪??, (fallbackResult: any, fallbackStatus: any) => {
+          geocoder.addressSearch("서울 강남구 역삼동", (fallbackResult: any, fallbackStatus: any) => {
             if (fallbackStatus === (window as any).kakao.maps.services.Status.OK) {
               const coords = new (window as any).kakao.maps.LatLng(fallbackResult[0].y, fallbackResult[0].x);
               const map = new (window as any).kakao.maps.Map(container, { center: coords, level: 3 });
               new (window as any).kakao.maps.Marker({ map, position: coords });
             }
           });
-          setErrorMsg("?낅젰??二쇱냼???뺥솗??醫뚰몴瑜?李얠쓣 ???놁뒿?덈떎.");
+          setErrorMsg("입력한 주소의 정확한 좌표를 찾을 수 없습니다.");
         }
       });
     } catch (e) {
       console.error("Kakao Map init error", e);
-      setErrorMsg("吏??珥덇린???ㅻ쪟");
+      setErrorMsg("지도 초기화 오류");
     }
   }, [loaded, address]);
 
@@ -629,7 +630,7 @@ const KakaoMap = ({ address }: { address: string }) => {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
         </svg>
         <span className="text-xs text-red-500 mb-1">{errorMsg}</span>
-        <span className="text-[10px] text-gray-400">?ъ씠?쒕컮 二쇱냼 ?ㅼ젙???뺤젙?섍굅?? 吏??罹≪쿂 ?대?吏 吏곸젒 ?낅줈?쒕? ?ъ슜?섏꽭??</span>
+        <span className="text-[10px] text-gray-400">사이드바 주소 설정을 정정하거나, 지도 캡처 이미지 직접 업로드를 사용하세요.</span>
       </div>
     );
   }
@@ -639,15 +640,15 @@ const KakaoMap = ({ address }: { address: string }) => {
   );
 };
 
-// ??? MAIN CANVAS COMPONENT ????????????????????????????????????????????????????
+// ─── MAIN CANVAS COMPONENT ────────────────────────────────────────────────────
 
 const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, activeTab = 'all', onUpdateInfo, onImageUpload, onDeleteImage, isUploadingImage, onOpenTableEditor }, ref) => {
   const { info, mainImage, subImage1, subImage2, featureImage1, featureImage2, mapImage, colorTheme, layoutTheme } = data; 
   const placeholder = "https://placehold.co/800x600/e2e8f0/1e293b?text=Image";
 
   // Data mapping from info
-  const targetTitle = info.address || '?쒖큹????꽭沅?留ㅻℓ ?덈궡??;
-  const price = info.priceMain || '75????;
+  const targetTitle = info.address || '서초동 역세권 매매 안내서';
+  const price = info.priceMain || '75억 원';
 
   const handleTextChange = (key: string, value: string) => {
     if (onUpdateInfo) {
@@ -679,7 +680,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
         ...info,
         overviewTable: [
           ...info.overviewTable,
-          { label: '????ぉ', value: '?댁슜 ?낅젰' }
+          { label: '새 항목', value: '내용 입력' }
         ]
       });
     }
@@ -718,7 +719,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
         ...info,
         floorStatus: [
           ...info.floorStatus,
-          { floor: '??痢?, purpose: '?⑸룄', lease: '?꾨?李?, status: '?먯쑀?곹깭', note: '鍮꾧퀬' }
+          { floor: '새 층', purpose: '용도', lease: '임대차', status: '점유상태', note: '비고' }
         ]
       });
     }
@@ -755,7 +756,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
     if (onUpdateInfo && Array.isArray(info.highlights)) {
       onUpdateInfo({
         ...info,
-        highlights: [...info.highlights, '?덈줈???섏씠?쇱씠???듭떖 臾멸뎄瑜??낅젰?섏꽭??']
+        highlights: [...info.highlights, '새로운 하이라이트 핵심 문구를 입력하세요.']
       });
     }
   };
@@ -786,19 +787,12 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
     }
   };
 
-  let visiblePages = [...(info.visiblePages || [0, 1, 2, 3, 4, 5, 6, 7])];
-  if (!visiblePages.includes(0)) visiblePages.push(0);
-  if (!visiblePages.includes(7)) visiblePages.push(7);
-  visiblePages.sort((a, b) => a - b);
-  
-  if (info.hideRentRoll) visiblePages = visiblePages.filter(p => p !== 3);
-  if (info.hideRoadmap) visiblePages = visiblePages.filter(p => p !== 6);
-  
+  const visiblePages = info.visiblePages || [1, 2, 3, 4, 5, 6];
   const getPageStatus = (pageNum: number) => {
       const isVisible = visiblePages.includes(pageNum);
       const shouldRender = (activeTab === 'all' && isVisible) || activeTab === pageNum;
       
-      let pageString = `PAGE 0${pageNum} / 08`;
+      let pageString = `PAGE 0${pageNum} / 06`;
       if (isVisible) {
           const idx = visiblePages.indexOf(pageNum) + 1;
           const total = visiblePages.length;
@@ -818,62 +812,6 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
 
   return (
     <div className="flex flex-col items-center p-8 bg-gray-100" ref={ref} style={themeStyles}>
-        
-        {/* PAGE 0: COVER */}
-        {getPageStatus(0).shouldRender && (
-            <ReportPage layoutTheme={layoutTheme} colorTheme={colorTheme}
-                pageNumber={0} 
-                pageString={getPageStatus(0).pageString}
-                isHidden={getPageStatus(0).isHidden}
-                title={info.coverTitle || "INVESTMENT MEMORANDUM"} 
-                subtitle={info.coverSubtitle || "부동산 투자 분석 보고서"}
-                badgeText="BROCHURE"
-            >
-                <div className="flex flex-col items-center justify-center h-full w-full relative -mt-10">
-                    <div className="absolute inset-0 opacity-10 flex items-center justify-center overflow-hidden">
-                        <svg className="w-[120%] h-[120%] text-[var(--theme-primary)]" fill="currentColor" viewBox="0 0 100 100" preserveAspectRatio="none">
-                            <polygon points="0,100 100,0 100,100" />
-                        </svg>
-                    </div>
-                    
-                    <div className="z-10 w-full flex flex-col items-center mb-16">
-                        <div className="w-24 h-2 bg-[var(--theme-primary)] mb-8"></div>
-                        <h1 className="text-[64px] font-black text-gray-900 tracking-tighter leading-none mb-4 text-center px-4">
-                            {info.address || "서울 강남구 논현동"}
-                        </h1>
-                        <h2 className="text-3xl font-bold text-[var(--theme-primary)] tracking-widest text-center px-4">
-                            {info.subTitle || "Asset Sales Briefing"}
-                        </h2>
-                    </div>
-
-                    <div className="z-10 w-full max-w-3xl flex flex-col items-center gap-12 mt-8">
-                        <div className="w-full aspect-[21/9] bg-gray-100 rounded-2xl overflow-hidden shadow-2xl relative">
-                            {mainImage ? (
-                                <img src={mainImage} alt="Cover Main" className="w-full h-full object-cover" />
-                            ) : (
-                                <div className="absolute inset-0 flex items-center justify-center text-gray-300">
-                                    <span className="text-2xl font-bold">MAIN IMAGE</span>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    <div className="absolute bottom-10 right-10 flex flex-col items-end z-10">
-                        {info.coverQRLink && (
-                            <div className="bg-white p-3 shadow-xl rounded-xl border border-gray-100 flex flex-col items-center gap-2">
-                                <div className="w-24 h-24 bg-gray-100 rounded flex items-center justify-center border border-dashed border-gray-300">
-                                    <svg className="w-12 h-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 10h4a1 1 0 001-1V5a1 1 0 00-1-1H3a1 1 0 00-1 1v4a1 1 0 001 1zm0 11h4a1 1 0 001-1v-4a1 1 0 00-1-1H3a1 1 0 00-1 1v4a1 1 0 001 1zm11-11h4a1 1 0 001-1V5a1 1 0 00-1-1h-4a1 1 0 00-1 1v4a1 1 0 001 1zm0 11h4a1 1 0 001-1v-4a1 1 0 00-1-1h-4a1 1 0 00-1 1v4a1 1 0 001 1z" />
-                                    </svg>
-                                </div>
-                                <span className="text-[10px] font-black tracking-widest text-[var(--theme-primary)]">SCAN FOR MORE</span>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </ReportPage>
-        )}
-
         {/* PAGE 1: OVERVIEW */}
         {getPageStatus(1).shouldRender && (
         <ReportPage layoutTheme={layoutTheme} colorTheme={colorTheme}
@@ -903,7 +841,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                     <div>
                         <SectionTitle 
                             title={info.overviewTitle || "PROPERTY OVERVIEW"} 
-                            subtitle={info.overviewSubtitle || "臾쇨굔媛쒖슂"} 
+                            subtitle={info.overviewSubtitle || "물건개요"} 
                             onUpdateTitle={(val) => {
                                 if (onUpdateInfo) {
                                     onUpdateInfo({
@@ -921,28 +859,29 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                 }
                             }}
                         />
-                        <div className="border-t-[3px] border-[var(--theme-primary)] flex flex-col text-sm border-b border-gray-200">
+                        <table className="w-full text-sm border-collapse table-fixed border-t-[3px] border-gray-800 border-b border-gray-200">
+                            <tbody>
                             {(() => {
                                 const rows = Array.isArray(info.overviewTable) 
                                     ? info.overviewTable.map(r => ({ k: r.label, v: r.value }))
                                     : [
-                                        { k: '?뚯옱吏', v: info.overviewTable?.location },
-                                        { k: '?⑸룄吏??, v: info.overviewTable?.zoning },
-                                        { k: '?吏硫댁쟻', v: info.overviewTable?.landArea },
-                                        { k: '?곕㈃??, v: info.overviewTable?.totalArea },
-                                        { k: '嫄대Ъ洹쒕え', v: info.overviewTable?.buildingScale },
-                                        { k: '二쇱슜??, v: info.overviewTable?.mainPurpose },
-                                        { k: '二쇱감???, v: info.overviewTable?.parking },
-                                        { k: '?밴컯湲?, v: info.overviewTable?.elevator },
-                                        { k: '以怨듭뿰??, v: info.overviewTable?.completionYear },
+                                        { k: '소재지', v: info.overviewTable?.location },
+                                        { k: '용도지역', v: info.overviewTable?.zoning },
+                                        { k: '대지면적', v: info.overviewTable?.landArea },
+                                        { k: '연면적', v: info.overviewTable?.totalArea },
+                                        { k: '건물규모', v: info.overviewTable?.buildingScale },
+                                        { k: '주용도', v: info.overviewTable?.mainPurpose },
+                                        { k: '주차대수', v: info.overviewTable?.parking },
+                                        { k: '승강기', v: info.overviewTable?.elevator },
+                                        { k: '준공연도', v: info.overviewTable?.completionYear },
                                     ];
                                     
                                 if (Array.isArray(info.overviewTable)) {
                                     return (
                                         <>
                                             {info.overviewTable.map((row, i) => (
-                                                <div key={i} className="flex w-full border-b border-gray-100 last:border-0 bg-white">
-                                                    <div className="w-1/3 text-gray-500 font-bold py-2 pl-4 flex items-center">
+                                                <tr key={i} className="border-b border-gray-100 last:border-0 bg-white">
+                                                    <td className="w-1/3 text-gray-500 font-bold py-2 pl-4 align-middle">
                                                         <EditableText 
                                                             value={row.label} 
                                                             onChange={(val) => {
@@ -951,8 +890,8 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                                                 handleTextChange('overviewTable', newTable as any);
                                                             }}
                                                         />
-                                                    </div>
-                                                    <div className="w-2/3 text-gray-800 font-bold py-2 pl-4 flex items-center">
+                                                    </td>
+                                                    <td className="w-2/3 text-gray-800 font-bold py-2 pl-4 align-middle">
                                                         <EditableText 
                                                             value={row.value} 
                                                             onChange={(val) => {
@@ -961,75 +900,71 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                                                 handleTextChange('overviewTable', newTable as any);
                                                             }}
                                                         />
-                                                    </div>
-                                                </div>
+                                                    </td>
+                                                </tr>
                                             ))}
-                                            
-
                                         </>
                                     );
                                 }
                                 
                                 return rows.filter(row => row.v && row.v.trim() !== '').map((row, i) => (
-                                    <div key={i} className="flex border-b border-gray-100 last:border-0 bg-white">
-                                        <div className="w-1/3 text-gray-500 font-bold py-2 pl-4 flex items-center">{row.k}</div>
-                                        <div className="w-2/3 text-gray-800 font-bold py-2 pl-4 flex items-center">{row.v}</div>
-                                    </div>
+                                    <tr key={i} className="border-b border-gray-100 last:border-0 bg-white">
+                                        <td className="w-1/3 text-gray-500 font-bold py-2 pl-4 align-middle">{row.k}</td>
+                                        <td className="w-2/3 text-gray-800 font-bold py-2 pl-4 align-middle">{row.v}</td>
+                                    </tr>
                                 ));
                             })()}
                             
                             {/* Price Row */}
                             {(() => {
-                                const tType = info.transactionType || "留ㅻℓ";
-                                let label = "留ㅻℓ媛";
+                                const tType = info.transactionType || "매매";
+                                let label = "매매가";
                                 
-                                if (tType === "?꾩꽭") {
-                                    label = "蹂댁쬆湲?(?꾩꽭)";
-                                } else if (tType === "?붿꽭" || tType === "?꾨?") {
-                                    label = "蹂댁쬆湲?/ ?붿꽭";
-                                } else if (tType !== "留ㅻℓ") {
-                                    label = "?꾨?媛";
+                                if (tType === "전세") {
+                                    label = "보증금 (전세)";
+                                } else if (tType === "월세" || tType === "임대") {
+                                    label = "보증금 / 월세";
+                                } else if (tType !== "매매") {
+                                    label = "임대가";
                                 }
                                 
                                 return (
-                                    <div className="flex border-t border-gray-200" style={{ backgroundColor: info.priceBgColor || '#fff9f0' }}>
-                                        {/* Transaction switcher removed to prevent visual clutter; handled in form */}
- 
-                                        <div className="w-1/3 text-gray-600 font-bold py-2 pl-4 flex items-center">
-                                            <EditableText value={info.priceLabel || label} onChange={(val) => handleTextChange('priceLabel', val)} className="hover:bg-gray-100 hover:ring-2 hover:ring-gray-200 rounded px-1 -ml-1 text-gray-600 w-full" />
-                                        </div>
-                                        <div className="w-2/3 font-extrabold py-2 pl-4 flex items-center" style={{ color: info.priceTextColor || 'var(--theme-primary)' }}>
+                                    <tr className="bg-[#fff9f0] border-t border-gray-200">
+                                        <td className="w-1/3 text-gray-600 font-bold py-2 pl-4 align-middle">
+                                            <EditableText value={info.priceMainLabel || label} onChange={(val) => handleTextChange('priceMainLabel', val)} className="w-full hover:bg-white/50 hover:ring-2 hover:ring-amber-200 rounded px-1 -ml-1 transition-all text-left" />
+                                        </td>
+                                        <td className="w-2/3 text-[#cc5a27] font-extrabold py-2 pl-4 align-middle">
                                             <EditableText value={price} onChange={(val) => handleTextChange('priceMain', val)} />
-                                        </div>
-                                    </div>
+                                        </td>
+                                    </tr>
                                 );
                             })()}
-
-                        </div>
+                            </tbody>
+                        </table>
                     </div>
  
                     {/* Agent Footer Details */}
                     <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-xl p-3.5 mt-3 flex flex-col justify-center shadow-sm">
                         <div className="grid grid-cols-[80px_1fr] gap-x-2 gap-y-1.5 text-sm">
                             <span className="text-gray-500 font-bold flex items-center">
-                                <EditableText value={info.agentNameLabel || "부동산명"} onChange={(val) => handleTextChange('agentNameLabel', val)} className="hover:bg-gray-100 hover:ring-2 hover:ring-gray-200 rounded px-1 -ml-1 text-gray-500 w-full" />
+                                <EditableText value={info.agentNameLabel || "부동산명"} onChange={(val) => handleTextChange('agentNameLabel', val)} className="w-full hover:bg-gray-100 hover:ring-2 hover:ring-gray-200 rounded px-1 -ml-1 transition-all text-left" />
                             </span>
                             <span className="text-gray-800 font-extrabold flex items-center">
-                                <EditableText value={info.agentName} onChange={(val) => handleTextChange('agentName', val)} />
+                                <EditableText value={info.agentName} onChange={(val) => handleTextChange('agentName', val)} className="w-full" />
                             </span>
- 
+
                             <span className="text-gray-500 font-bold flex items-center">
-                                <EditableText value={info.agentRepresentativeLabel || "담당자"} onChange={(val) => handleTextChange('agentRepresentativeLabel', val)} className="hover:bg-gray-100 hover:ring-2 hover:ring-gray-200 rounded px-1 -ml-1 text-gray-500 w-full" />
+                                <EditableText value={info.agentRepresentativeLabel || "담당자"} onChange={(val) => handleTextChange('agentRepresentativeLabel', val)} className="w-full hover:bg-gray-100 hover:ring-2 hover:ring-gray-200 rounded px-1 -ml-1 transition-all text-left" />
                             </span>
                             <span className="text-gray-800 font-extrabold flex items-center">
-                                <EditableText value={info.agentRepresentative} onChange={(val) => handleTextChange('agentRepresentative', val)} />
+                                <EditableText value={info.agentRepresentative} onChange={(val) => handleTextChange('agentRepresentative', val)} className="w-full" />
                             </span>
- 
+
                             <span className="text-gray-500 font-bold flex items-center">
-                                <EditableText value={info.agentMobileLabel || "연락처"} onChange={(val) => handleTextChange('agentMobileLabel', val)} className="hover:bg-gray-100 hover:ring-2 hover:ring-gray-200 rounded px-1 -ml-1 text-gray-500 w-full" />
+                                <EditableText value={info.agentContactLabel || "연락처"} onChange={(val) => handleTextChange('agentContactLabel', val)} className="w-full hover:bg-gray-100 hover:ring-2 hover:ring-gray-200 rounded px-1 -ml-1 transition-all text-left" />
                             </span>
-                            <span className="text-[var(--theme-primary)] font-black text-base flex items-center">
-                                <EditableText value={info.agentMobile || info.agentPhone || ""} onChange={(val) => handleTextChange('agentMobile', val)} />
+                            <span className="text-[#cc5a27] font-black text-base flex items-center">
+                                <EditableText value={info.agentMobile || info.agentPhone || ""} onChange={(val) => handleTextChange('agentMobile', val)} className="w-full" />
                             </span>
                         </div>
                     </div>
@@ -1050,7 +985,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                     <div>
                         <SectionTitle 
                             title={info.investmentTitle || "INVESTMENT SUMMARY"} 
-                            subtitle={info.investmentSubtitle || "?ъ옄?붿빟"} 
+                            subtitle={info.investmentSubtitle || "투자요약"} 
                             onUpdateTitle={(val) => {
                                 if (onUpdateInfo) {
                                     onUpdateInfo({
@@ -1068,7 +1003,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                 }
                             }}
                         />
-                        <div className="flex gap-4 border-l-4 border-[var(--theme-primary)] pl-4">
+                        <div className="flex gap-4 border-l-4 border-[#cc5a27] pl-4">
                             {[1,2,3].map(i => (
                                 <div key={i} className="flex-1 bg-white border border-gray-100 rounded-lg p-4 text-center shadow-sm">
                                     <div className="text-xs text-gray-400 font-bold tracking-widest mb-2 uppercase">
@@ -1118,7 +1053,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
             pageNumber={2} 
             pageString={getPageStatus(2).pageString}
             isHidden={getPageStatus(2).isHidden}
-            title={info.page2Title || "留ㅻЪ?ㅻ챸 & ?쒖꽭"} 
+            title={info.page2Title || "매물설명 & 시세"} 
             onUpdateTitle={(val) => handleTextChange('page2Title', val)}
             subtitle={info.page2Subtitle || "Status & Valuation"} 
             onUpdateSubtitle={(val) => handleTextChange('page2Subtitle', val)}
@@ -1148,7 +1083,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                         <div className="w-1/2 border border-gray-200 rounded-lg p-6 bg-white shadow-sm flex flex-col">
                             <h3 className="text-xl font-extrabold text-gray-900 mb-4 border-b-2 border-gray-800 pb-2 inline-block">
                                 <EditableText 
-                                    value={info.page2HighlightBoxTitle || "留ㅻЪ ?듭떖 ?섏씠?쇱씠??} 
+                                    value={info.page2HighlightBoxTitle || "매물 핵심 하이라이트"} 
                                     onChange={(val) => handleTextChange('page2HighlightBoxTitle', val)} 
                                 />
                             </h3>
@@ -1165,7 +1100,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                         isLast={i === info.highlights.length - 1}
                                         className="flex gap-2 text-sm items-center w-full"
                                     >
-                                        <span className="text-[#cc5a27] font-bold">??/span>
+                                        <span className="text-[#cc5a27] font-bold">•</span>
                                         <span className="w-full">
                                             <EditableText 
                                                 value={hl} 
@@ -1181,7 +1116,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                             </ul>
                             
                             <div className="mt-auto">
-                                <div className="text-[10px] font-bold tracking-widest text-[var(--theme-primary)] uppercase mb-1">
+                                <div className="text-[10px] font-bold tracking-widest text-[#cc5a27] uppercase mb-1">
                                     <EditableText 
                                         value={(info as any).valuationAdvisoryTitle || "STRATEGIC ADVISORY"} 
                                         onChange={(val) => handleTextChange('valuationAdvisoryTitle', val)} 
@@ -1195,19 +1130,19 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
 
                         {/* Right Half: Chart */}
                         <div className="w-1/2 border border-gray-200 rounded-lg p-6 bg-white shadow-sm flex flex-col justify-between">
-                            <h3 className="text-xl font-extrabold text-gray-900 mb-4 border-b-2 border-[var(--theme-primary)] pb-2 inline-block">
+                            <h3 className="text-xl font-extrabold text-gray-900 mb-4 border-b-2 border-gray-800 pb-2 inline-block">
                                 <EditableText 
-                                    value={(info as any).page2ChartBoxTitle || "二쇰??쒖꽭 由ы룷??} 
+                                    value={(info as any).page2ChartBoxTitle || "주변시세 리포트"} 
                                     onChange={(val) => handleTextChange('page2ChartBoxTitle', val)} 
                                 />
                             </h3>
                             {(() => {
                                 const showChart = info.showChart !== false;
                                 const chartBars = info.chartBars || [
-                                    { label: "?곸긽媛먯젙媛", value: "80", isHighlight: false },
-                                    { label: "湲곗〈 ?щ쭩媛", value: "75", isHighlight: false },
-                                    { label: "?멸렐 ?쒖꽭", value: "85", isHighlight: false },
-                                    { label: "?꾩옱 湲됰ℓ媛", value: "65", isHighlight: true }
+                                    { label: "탁상감정가", value: "80", isHighlight: false },
+                                    { label: "기존 희망가", value: "75", isHighlight: false },
+                                    { label: "인근 시세", value: "85", isHighlight: false },
+                                    { label: "현재 급매가", value: "65", isHighlight: true }
                                 ];
 
                                 return (
@@ -1226,14 +1161,14 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                                 }}
                                                 className="px-2 py-1 bg-slate-900 text-white rounded text-[9px] font-bold shadow flex items-center gap-1 active:scale-95 cursor-pointer"
                                             >
-                                                {showChart ? "?뱤 洹몃옒???④린湲? : "?뱤 洹몃옒??蹂댁씠湲?}
+                                                {showChart ? "📊 그래프 숨기기" : "📊 그래프 보이기"}
                                             </button>
                                             {showChart && chartBars.length < 6 && (
                                                 <button
                                                     type="button"
                                                     onClick={() => {
                                                         if (onUpdateInfo) {
-                                                            const newBars = [...chartBars, { label: "????ぉ", value: "70", isHighlight: false }];
+                                                            const newBars = [...chartBars, { label: "새 항목", value: "70", isHighlight: false }];
                                                             onUpdateInfo({
                                                                 ...info,
                                                                 chartBars: newBars
@@ -1242,7 +1177,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                                     }}
                                                     className="px-2 py-1 bg-[var(--theme-primary)] text-white rounded text-[9px] font-bold shadow flex items-center gap-1 active:scale-95 cursor-pointer"
                                                 >
-                                                    ????ぉ 異붽?
+                                                    ➕ 항목 추가
                                                 </button>
                                             )}
                                         </div>
@@ -1272,7 +1207,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                                                             }
                                                                         }}
                                                                         className="absolute -top-3 p-0.5 bg-red-500 hover:bg-red-600 text-white rounded-full opacity-0 group-hover/bar:opacity-100 transition-opacity z-20 cursor-pointer shadow print:hidden"
-                                                                        title="??젣"
+                                                                        title="삭제"
                                                                     >
                                                                         <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                                                                             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -1298,11 +1233,11 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                                                 <div 
                                                                     className={`w-12 rounded-t transition-all duration-500 shadow-sm relative cursor-pointer ${
                                                                         bar.isHighlight || idx === chartBars.length - 1
-                                                                            ? 'bg-[var(--theme-primary)] hover:bg-[var(--theme-primary)]/90' 
+                                                                            ? 'bg-[#cc5a27] hover:bg-[#cc5a27]/90' 
                                                                             : 'bg-slate-300 hover:bg-slate-400'
                                                                     }`}
                                                                     style={{ height: `${heightPercent}%` }}
-                                                                    title="?대┃?섏뿬 媛뺤“ ?됱긽 蹂寃?
+                                                                    title="클릭하여 강조 색상 변경"
                                                                     onClick={() => {
                                                                         if (onUpdateInfo) {
                                                                             const newBars = [...chartBars];
@@ -1323,7 +1258,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                                 {/* Chart Labels */}
                                                 <div className="flex justify-around px-4 text-[10px] font-bold text-gray-500">
                                                     {chartBars.map((bar: any, idx: number) => (
-                                                        <div key={idx} className={`w-20 text-center truncate ${bar.isHighlight || idx === chartBars.length - 1 ? 'text-[var(--theme-primary)]' : ''}`}>
+                                                        <div key={idx} className={`w-20 text-center truncate ${bar.isHighlight || idx === chartBars.length - 1 ? 'text-[#cc5a27]' : ''}`}>
                                                             <EditableText 
                                                                 value={bar.label} 
                                                                 onChange={(val) => {
@@ -1348,21 +1283,21 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                                          });
                                                      }
                                                  }}>
-                                                ?뱤 ?쒖꽭 遺꾩꽍 洹몃옒?꾧? ?④? 泥섎━?섏뿀?듬땲?? ?대┃?섏뿬 ?ㅼ떆 ?쒖떆?섍린
+                                                📊 시세 분석 그래프가 숨김 처리되었습니다. 클릭하여 다시 표시하기
                                             </div>
                                         )}
                                     </div>
                                 );
                             })()}
                             <div className="mt-auto pt-6 border-t border-gray-100">
-                                <div className="text-[10px] font-bold tracking-widest text-[var(--theme-primary)] uppercase mb-1">
+                                <div className="text-[10px] font-bold tracking-widest text-[#cc5a27] uppercase mb-1">
                                     <EditableText 
                                         value={(info as any).chartAdvisoryTitle || "STRATEGIC ADVISORY"} 
                                         onChange={(val) => handleTextChange('chartAdvisoryTitle', val)} 
                                     />
                                 </div>
                                 <div className="text-xs text-gray-600 leading-relaxed">
-                                    <EditableBlock value={(info as any).chartAdviseText || "蹂??먯궛???쒖꽭??理쒓렐 ?ㅺ굅?섍? 諛??쒖옣 ?숉뼢??諛섏쁺?섏뿬 ?곗텧?섏뿀?듬땲?? ?낆? 議곌굔???곕Ⅸ ?꾨━誘몄뾼???댁옱?섏뼱 ?덉뼱 ?ν썑 媛移??곸듅??湲곕??⑸땲??"} onChange={(val) => handleTextChange('chartAdviseText', val)} placeholder="洹몃옒??遺꾩꽍 諛?議곗뼵 ?낅젰..." />
+                                    <EditableBlock value={(info as any).chartAdviseText || "본 자산의 시세는 최근 실거래가 및 시장 동향을 반영하여 산출되었습니다. 입지 조건에 따른 프리미엄이 내재되어 있어 향후 가치 상승이 기대됩니다."} onChange={(val) => handleTextChange('chartAdviseText', val)} placeholder="그래프 분석 및 조언 입력..." />
                                 </div>
                             </div>
                         </div>
@@ -1378,7 +1313,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
             pageNumber={3} 
             pageString={getPageStatus(3).pageString}
             isHidden={getPageStatus(3).isHidden}
-            title={info.page3Title || "?꾨? ?곸꽭 ?꾪솴"} 
+            title={info.page3Title || "임대 상세 현황"} 
             onUpdateTitle={(val) => handleTextChange('page3Title', val)}
             subtitle={info.page3Subtitle || "Rent Roll"} 
             onUpdateSubtitle={(val) => handleTextChange('page3Subtitle', val)}
@@ -1397,10 +1332,10 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
         >
             {(() => {
                 const leaseTable = info.leaseTable || {
-                    headers: ["痢듭닔", "?몄떎", "硫댁쟻", "湲덉븸", "?꾩슜??, "湲고?"],
+                    headers: ["층수", "호실", "면적", "금액", "현용도", "기타"],
                     rows: [
-                        ["吏??5痢?, "501??, "165.2??, "蹂댁쬆湲?1??/ ?붿꽭 450留?, "?щТ??, "利됱떆?낆＜"],
-                        ["吏??4痢?, "401??, "165.2??, "蹂댁쬆湲?1??/ ?붿꽭 450留?, "?숈썝", "?꾨?以?],
+                        ["지상 5층", "501호", "165.2㎡", "보증금 1억 / 월세 450만", "사무실", "즉시입주"],
+                        ["지상 4층", "401호", "165.2㎡", "보증금 1억 / 월세 450만", "학원", "임대중"],
                     ]
                 };
                 const headers = leaseTable.headers;
@@ -1427,7 +1362,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                 const addColumn = (insertIdx: number) => {
                     if (!onUpdateInfo) return;
                     const newHeaders = [...headers];
-                    newHeaders.splice(insertIdx, 0, "????);
+                    newHeaders.splice(insertIdx, 0, "새 열");
                     const newRows = rows.map(r => {
                         const newR = [...r];
                         newR.splice(insertIdx, 0, "");
@@ -1457,17 +1392,6 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                         leaseTable: { ...leaseTable, headers: newHeaders, rows: newRows, widths: newWidths }
                     });
                 };
-
-                const clearTableContents = () => {
-                    if (!onUpdateInfo) return;
-                    const newRows = rows.map(r => new Array(headers.length).fill(""));
-                    onUpdateInfo({
-                        ...info,
-                        leaseTable: { ...leaseTable, rows: newRows }
-                    });
-                };
-
-
 
                 const addRow = () => {
                     if (!onUpdateInfo) return;
@@ -1511,53 +1435,6 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                     });
                 };
 
-                const handleResizeStart = (e: React.MouseEvent, colIdx: number) => {
-                    e.preventDefault();
-                    if (!onUpdateInfo) return;
-                    
-                    const startX = e.clientX;
-                    const currentWidths = leaseTable.widths || new Array(headers.length).fill(Math.round(100 / headers.length));
-                    const startWidth = currentWidths[colIdx];
-                    
-                    const tableEl = (e.currentTarget as HTMLElement).closest('table');
-                    const tableWidth = tableEl ? tableEl.offsetWidth : 800;
-                    
-                    let finalWidths = [...currentWidths];
-                    
-                    const onMouseMove = (moveEvent: MouseEvent) => {
-                        const deltaX = moveEvent.clientX - startX;
-                        const deltaPercent = (deltaX / tableWidth) * 100;
-                        
-                        finalWidths[colIdx] = Math.max(5, startWidth + deltaPercent);
-                        
-                        if (colIdx + 1 < finalWidths.length) {
-                             const nextStartWidth = currentWidths[colIdx + 1];
-                             finalWidths[colIdx + 1] = Math.max(5, nextStartWidth - deltaPercent);
-                        }
-                        
-                        // Update DOM directly for high performance (prevent React re-render lag)
-                        const thElements = tableEl?.querySelectorAll('th');
-                        if (thElements) {
-                            if (thElements[colIdx]) thElements[colIdx].style.width = `${finalWidths[colIdx]}%`;
-                            if (colIdx + 1 < thElements.length) thElements[colIdx + 1].style.width = `${finalWidths[colIdx + 1]}%`;
-                        }
-                    };
-                    
-                    const onMouseUp = () => {
-                        document.removeEventListener('mousemove', onMouseMove);
-                        document.removeEventListener('mouseup', onMouseUp);
-                        
-                        // Commit to React state only when dragging finishes
-                        onUpdateInfo({
-                            ...info,
-                            leaseTable: { ...leaseTable, widths: finalWidths }
-                        });
-                    };
-                    
-                    document.addEventListener('mousemove', onMouseMove);
-                    document.addEventListener('mouseup', onMouseUp);
-                };
-
                 return (
                     <div className="flex flex-col h-full w-full">
                         <div className="text-gray-600 font-bold text-sm mb-4">
@@ -1566,20 +1443,14 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                 onChange={(val) => handleTextChange('page3HighlightHeader', val)} 
                             />
                         </div>
-                        <div className="w-full flex-1 flex flex-col justify-between bg-white rounded-2xl border border-slate-100 p-6 shadow-sm overflow-visible relative group/table">
-                        {/* Global Table Controls */}
-                        <div className="absolute top-4 right-6 flex items-center gap-2 print:hidden z-20 opacity-0 group-hover/table:opacity-100 transition-opacity" data-html2canvas-ignore="true">
-                            <button type="button" onClick={addRow} className="text-[10px] bg-[var(--theme-primary)] hover:opacity-80 text-white px-2 py-1 rounded shadow-sm font-bold cursor-pointer transition-opacity">????異붽?</button>
-                            <button type="button" onClick={() => addColumn(headers.length)} className="text-[10px] bg-blue-50 hover:bg-blue-100 text-blue-600 px-2 py-1 rounded shadow-sm font-bold border border-blue-200 cursor-pointer transition-colors">????異붽?</button>
-                            <button type="button" onClick={clearTableContents} className="text-[10px] bg-red-50 hover:bg-red-100 text-red-600 px-2 py-1 rounded shadow-sm font-bold border border-red-100 cursor-pointer transition-colors">?뿊截??댁슜 吏?곌린</button>
-                        </div>
-                        <div className="overflow-visible flex-1 mt-6 relative">
+                        <div className="w-full flex-1 flex flex-col justify-between bg-white rounded-2xl border border-slate-100 p-6 shadow-sm overflow-hidden">
+                        <div className="overflow-y-auto custom-scrollbar flex-1 pr-1">
                             <table className="w-full text-left border-collapse table-fixed">
                                 <thead>
                                     <tr>
                                         {headers.map((h, colIdx) => {
-                                            const currentWidths = leaseTable.widths || new Array(headers.length).fill(Math.round(100 / headers.length));
-                                            const colWidth = currentWidths[colIdx];
+                                            const currentWidths = leaseTable.widths || [10, 10, 15, 35, 15, 15];
+                                            const colWidth = currentWidths[colIdx] || Math.round(100 / headers.length);
                                             return (
                                                 <th 
                                                     key={colIdx} 
@@ -1594,28 +1465,71 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                                         onChange={(val) => updateHeader(colIdx, val)}
                                                     />
                                                     
-                                                    {/* Resize Handle */}
-                                                    {colIdx < headers.length - 1 && (
-                                                        <div 
-                                                            className="absolute top-0 -right-2 w-4 h-full cursor-col-resize z-50 flex items-center justify-center opacity-0 group-hover/header:opacity-100 hover:bg-white/20 transition-colors"
-                                                            onMouseDown={(e) => handleResizeStart(e, colIdx)}
-                                                            title="?쒕옒洹명븯???덈퉬 議곗젅"
-                                                        >
-                                                            <div className="w-0.5 h-1/2 bg-white/50 rounded-full"></div>
-                                                        </div>
-                                                    )}
-
-                                                    {/* Hover Delete Column */}
-                                                    {headers.length > 1 && (
+                                                    {/* Hover Header Columns Controls */}
+                                                    <div className="absolute -top-7 left-1/2 transform -translate-x-1/2 bg-[var(--theme-dark)] text-white text-[9px] rounded-lg shadow-lg border border-gray-700 px-2 py-1 gap-1.5 hidden group-hover/header:flex items-center print:hidden z-40 transition-all">
                                                         <button 
                                                             type="button"
-                                                            onClick={() => deleteColumn(colIdx)}
-                                                            className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-red-500 hover:bg-red-600 text-white w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold shadow-md cursor-pointer print:hidden opacity-0 group-hover/header:opacity-100 transition-opacity z-[100]"
-                                                            title="????젣"
+                                                            onClick={() => addColumn(colIdx)}
+                                                            className="text-blue-400 hover:text-blue-300 font-extrabold cursor-pointer border-none bg-transparent"
+                                                            title="왼쪽에 열 추가"
                                                         >
-                                                            ??
+                                                            +
                                                         </button>
-                                                    )}
+                                                        {headers.length > 1 && (
+                                                            <button 
+                                                                type="button"
+                                                                onClick={() => deleteColumn(colIdx)}
+                                                                className="text-red-400 hover:text-red-300 font-extrabold cursor-pointer border-none bg-transparent"
+                                                                title="열 삭제"
+                                                            >
+                                                                ✕
+                                                            </button>
+                                                        )}
+                                                        <button 
+                                                            type="button"
+                                                            onClick={() => addColumn(colIdx + 1)}
+                                                            className="text-green-400 hover:text-green-300 font-extrabold cursor-pointer border-none bg-transparent"
+                                                            title="오른쪽에 열 추가"
+                                                        >
+                                                            +
+                                                        </button>
+                                                        
+                                                        {/* Column width adjustments */}
+                                                        <span className="w-[1px] h-3 bg-gray-600"></span>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                const newWidths = [...currentWidths];
+                                                                newWidths[colIdx] = Math.max(5, colWidth - 2);
+                                                                onUpdateInfo({
+                                                                    ...info,
+                                                                    leaseTable: { ...leaseTable, widths: newWidths }
+                                                                });
+                                                            }}
+                                                            className="text-slate-300 hover:text-white font-extrabold cursor-pointer border-none bg-transparent px-0.5"
+                                                            title="열 너비 축소 (-2%)"
+                                                        >
+                                                            ◀
+                                                        </button>
+                                                        <span className="text-gray-300 font-mono text-[8px] min-w-[20px] text-center">
+                                                            {colWidth}%
+                                                        </span>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                const newWidths = [...currentWidths];
+                                                                newWidths[colIdx] = Math.min(80, colWidth + 2);
+                                                                onUpdateInfo({
+                                                                    ...info,
+                                                                    leaseTable: { ...leaseTable, widths: newWidths }
+                                                                });
+                                                            }}
+                                                            className="text-slate-300 hover:text-white font-extrabold cursor-pointer border-none bg-transparent px-0.5"
+                                                            title="열 너비 확대 (+2%)"
+                                                        >
+                                                            ▶
+                                                        </button>
+                                                    </div>
                                                 </th>
                                             );
                                         })}
@@ -1634,16 +1548,44 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                                         onChange={(val) => updateCell(rowIdx, colIdx, val)}
                                                     />
                                                     
-                                                    {/* Hover Delete Row (shown on the last cell of the row) */}
-                                                    {colIdx === row.length - 1 && rows.length > 1 && (
-                                                        <button 
-                                                            type="button"
-                                                            onClick={() => deleteRow(rowIdx)}
-                                                            className="absolute top-1/2 -right-3 transform -translate-y-1/2 bg-red-500 hover:bg-red-600 text-white w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold shadow-md cursor-pointer print:hidden opacity-0 group-hover/row:opacity-100 transition-opacity z-[100]"
-                                                            title="????젣"
-                                                        >
-                                                            ??
-                                                        </button>
+                                                    {/* Floating Row Control Panel on First Cell Hover */}
+                                                    {colIdx === 0 && (
+                                                        <div className="absolute -left-9 top-1/2 transform -translate-y-1/2 bg-[var(--theme-dark)] text-white text-[9px] rounded-lg shadow-lg border border-gray-700 p-1 flex flex-col gap-1 hidden group-hover/row:flex print:hidden z-35 transition-all">
+                                                            <button
+                                                                type="button"
+                                                                disabled={rowIdx === 0}
+                                                                onClick={() => moveRow(rowIdx, -1)}
+                                                                className="text-slate-300 hover:text-white disabled:opacity-30 cursor-pointer border-none bg-transparent font-bold"
+                                                                title="위로 이동"
+                                                            >
+                                                                ▲
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => duplicateRow(rowIdx)}
+                                                                className="text-green-400 hover:text-green-300 cursor-pointer border-none bg-transparent font-bold"
+                                                                title="행 복제"
+                                                            >
+                                                                🗐
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => deleteRow(rowIdx)}
+                                                                className="text-red-400 hover:text-red-300 cursor-pointer border-none bg-transparent font-bold"
+                                                                title="행 삭제"
+                                                            >
+                                                                ✕
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                disabled={rowIdx === rows.length - 1}
+                                                                onClick={() => moveRow(rowIdx, 1)}
+                                                                className="text-slate-300 hover:text-white disabled:opacity-30 cursor-pointer border-none bg-transparent font-bold"
+                                                                title="아래로 이동"
+                                                            >
+                                                                ▼
+                                                            </button>
+                                                        </div>
                                                     )}
                                                 </td>
                                             ))}
@@ -1654,23 +1596,20 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                         </div>
                         
                         {/* Custom Total / Summary Block & Explanation */}
-                        <div className="flex gap-4 mt-4 shrink-0 items-stretch">
-                            <div className={`${(info as any).showLeaseSummaryDesc !== false ? 'w-1/2' : 'w-full'} bg-slate-50 border border-slate-200 rounded-lg p-4 flex flex-col gap-2 shadow-sm`}>
-                                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200 pb-2 mb-1 shrink-0">
-                                    Total Summary
-                                </span>
-                                <div className="text-xs font-bold text-slate-800 flex-1 leading-relaxed whitespace-pre-wrap">
-                                    <EditableBlock 
-                                        value={(info as any).leaseSummaryText || "珥?6?몃? / 蹂댁쬆湲?0??/ ?붿꽭 0??} 
+                        <div className="flex justify-between items-stretch mt-3 pt-2 gap-4">
+                            <div className="bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 flex items-center shadow-sm shrink-0">
+                                <span className="text-[11px] font-bold text-slate-500 mr-3 uppercase tracking-wider border-r border-slate-300 pr-3">Total Summary</span>
+                                <div className="text-xs font-bold text-slate-800">
+                                    <EditableText 
+                                        value={(info as any).leaseSummaryText || "총 6세대 / 보증금 0원 / 월세 0원"} 
                                         onChange={(val) => handleTextChange('leaseSummaryText', val)} 
                                     />
                                 </div>
                             </div>
-                            
                             {(info as any).showLeaseSummaryDesc !== false && (
-                                <div className="w-1/2 bg-white border border-slate-200 rounded-lg p-4 text-xs text-slate-600 shadow-sm leading-relaxed whitespace-pre-wrap flex flex-col">
-                                    <EditableBlock 
-                                        value={(info as any).leaseSummaryDesc || "?꾨? ?섏씡瑜?諛??곸꽭 議곌굔? ?묒쓽 媛?ν빀?덈떎."} 
+                                <div className="flex-1 bg-white border border-slate-200 rounded-lg px-4 py-2 text-xs text-slate-600 shadow-sm flex items-center h-auto min-h-[36px]">
+                                    <EditableText 
+                                        value={(info as any).leaseSummaryDesc || "임대 수익률 및 상세 조건은 협의 가능합니다."} 
                                         onChange={(val) => handleTextChange('leaseSummaryDesc', val)} 
                                     />
                                 </div>
@@ -1697,7 +1636,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
             pageNumber={4} 
             pageString={getPageStatus(4).pageString}
             isHidden={getPageStatus(4).isHidden}
-            title={info.page4Title || "留ㅻЪ ?ъ쭊"} 
+            title={info.page4Title || "매물 사진"} 
             onUpdateTitle={(val) => handleTextChange('page4Title', val)}
             subtitle={info.page4Subtitle || "Property Photo"} 
             onUpdateSubtitle={(val) => handleTextChange('page4Subtitle', val)}
@@ -1739,9 +1678,9 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                 aspectRatioClass="object-cover"
                             />
                             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none p-6 text-center">
-                                <span className="text-4xl mb-3">?벝</span>
-                                <h3 className="text-base font-bold text-gray-700 mb-1">?깅줉???꾩옣 ?ъ쭊???놁뒿?덈떎</h3>
-                                <p className="text-xs text-gray-400 max-w-sm">留덉슦?ㅻ? ?щ젮 [?ъ쭊 ?낅줈?? 踰꾪듉???꾨Ⅴ嫄곕굹 醫뚯륫 ?ъ씠?쒕컮?먯꽌 ?ъ쭊??異붽???二쇱꽭?? (理쒕? 5???깅줉 媛??</p>
+                                <span className="text-4xl mb-3">📸</span>
+                                <h3 className="text-base font-bold text-gray-700 mb-1">등록된 현장 사진이 없습니다</h3>
+                                <p className="text-xs text-gray-400 max-w-sm">마우스를 올려 [사진 업로드] 버튼을 누르거나 좌측 사이드바에서 사진을 추가해 주세요. (최대 5장 등록 가능)</p>
                             </div>
                         </div>
                     );
@@ -2019,7 +1958,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
             pageNumber={5} 
             pageString={getPageStatus(5).pageString}
             isHidden={getPageStatus(5).isHidden}
-            title={info.page5Title || "?낆? 諛??꾩튂??} 
+            title={info.page5Title || "입지 및 위치도"} 
             onUpdateTitle={(val) => handleTextChange('page5Title', val)}
             subtitle={info.page5Subtitle || "Strategic Connectivity"} 
             onUpdateSubtitle={(val) => handleTextChange('page5Subtitle', val)}
@@ -2043,9 +1982,9 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                         {/* Map Mode Picker Overlay (print:hidden, visible on hover) */}
                         <div className="absolute top-4 left-4 z-[40] flex items-center gap-1 bg-white/95 backdrop-blur-sm border border-gray-200 rounded-xl p-1 shadow-md opacity-0 group-hover/map:opacity-100 transition-opacity duration-200 print:hidden">
                             {[
-                                { type: "kakao", label: "移댁뭅?? },
-                                { type: "google", label: "援ш?" },
-                                { type: "upload", label: "?대?吏 ?낅줈?? }
+                                { type: "kakao", label: "카카오" },
+                                { type: "google", label: "구글" },
+                                { type: "upload", label: "이미지 업로드" }
                             ].map(opt => (
                                 <button
                                     key={opt.type}
@@ -2066,7 +2005,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                             info.address ? (
                                 <KakaoMap address={info.address} />
                             ) : (
-                                <div className="text-gray-400 font-bold">二쇱냼瑜??낅젰?섎㈃ 吏?꾧? ?쒖떆?⑸땲??</div>
+                                <div className="text-gray-400 font-bold">주소를 입력하면 지도가 표시됩니다.</div>
                             )
                         )}
 
@@ -2083,7 +2022,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                     className="w-full h-full object-cover"
                                 />
                             ) : (
-                                <div className="text-gray-400 font-bold">二쇱냼瑜??낅젰?섎㈃ 吏?꾧? ?쒖떆?⑸땲??</div>
+                                <div className="text-gray-400 font-bold">주소를 입력하면 지도가 표시됩니다.</div>
                             )
                         )}
 
@@ -2103,7 +2042,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                         <svg className="w-8 h-8 text-gray-400 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                         </svg>
-                                        <span className="text-[10px] text-gray-400 font-bold">留덉슦?ㅻ? ?щ젮 吏?꾨? ?낅줈?쒗븯?몄슂</span>
+                                        <span className="text-[10px] text-gray-400 font-bold">마우스를 올려 지도를 업로드하세요</span>
                                     </div>
                                 )}
                             </div>
@@ -2116,13 +2055,13 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                 target="_blank" 
                                 rel="noopener noreferrer"
                                 className="absolute bottom-4 left-4 bg-white/95 text-slate-800 hover:bg-white active:scale-95 font-extrabold px-3 py-1.5 rounded-xl shadow-lg text-[10px] flex items-center gap-1.5 transition-all border border-gray-200 z-20 print:hidden"
-                                title="?ㅼ씠踰?吏?꾨줈 ?먯꽭??蹂닿린"
+                                title="네이버 지도로 자세히 보기"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5 text-green-600">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25s-7.5-4.108-7.5-11.25z" />
                                 </svg>
-                                <span>?ㅼ씠踰?吏?꾨줈 蹂닿린</span>
+                                <span>네이버 지도로 보기</span>
                             </a>
                         )}
 
@@ -2150,7 +2089,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                         </div>
                         <h3 className="text-[#e29d45] text-2xl font-bold mb-4 leading-snug whitespace-pre-wrap">
                             <EditableBlock 
-                                value={info.page4TargetTitle || ((info.areaTargetName?.split('\n')[0] || "") + " ?대윭?ㅽ꽣")} 
+                                value={info.page4TargetTitle || ((info.areaTargetName?.split('\n')[0] || "") + " 클러스터")} 
                                 onChange={(val) => handleTextChange('page4TargetTitle', val)}
                                 className="hover:bg-white/10 hover:ring-white/20 focus:bg-white/20 focus:ring-white/50 text-[#e29d45]"
                             />
@@ -2194,7 +2133,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
             pageNumber={6} 
             pageString={getPageStatus(6).pageString}
             isHidden={getPageStatus(6).isHidden}
-            title={info.page6Title || "媛移?諛?濡쒕뱶留?} 
+            title={info.page6Title || "가치 및 로드맵"} 
             onUpdateTitle={(val) => handleTextChange('page6Title', val)}
             subtitle={info.page6Subtitle || "Value & Roadmap"} 
             onUpdateSubtitle={(val) => handleTextChange('page6Subtitle', val)}
@@ -2216,7 +2155,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                     const list = info.roadmapList || [1, 2, 3, 4].map((i, index) => ({
                         title: (info.roadmap as any)?.[`box${i}Title`] || "",
                         text: (info.roadmap as any)?.[`box${i}Text`] || "",
-                        icon: (info.roadmap as any)?.[`box${i}Icon`] || ['?룫', '?룪', '?뱢', '?룛截?][index] || '?룫',
+                        icon: (info.roadmap as any)?.[`box${i}Icon`] || ['🏢', '🏡', '📈', '🏗️'][index] || '🏢',
                         bg: ['bg-[var(--theme-primary)]/10', 'bg-green-50', 'bg-red-50', 'bg-yellow-50'][index] || 'bg-gray-50',
                         border: ['border-blue-100', 'border-green-100', 'border-red-100', 'border-yellow-100'][index] || 'border-gray-200'
                     }));
@@ -2227,7 +2166,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                             list.length <= 4 ? 'grid-rows-2' : 'grid-rows-3'
                         }`}>
                             {list.map((item: any, idx: number) => (
-                                <div key={idx} className="bg-white border border-gray-200 rounded-2xl shadow-sm p-6 flex items-center gap-5 hover:shadow-md transition-shadow">
+                                <div key={idx} className="bg-white border border-gray-200 rounded-2xl shadow-sm p-6 flex items-start gap-5 hover:shadow-md transition-shadow">
                                     <div className={`w-16 h-16 shrink-0 ${item.bg} rounded-xl border ${item.border} flex items-center justify-center cursor-text transition-colors hover:bg-black/5`}>
                                         <EditableText 
                                             value={item.icon} 
@@ -2277,115 +2216,10 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
             <div className="mt-8 text-right pr-4">
                 <p className="text-gray-500 italic font-serif-kr text-lg">
                     <EditableText 
-                        value={info.page6FooterQuote || '"理쒓퀬???낆???誘몃옒 媛移섎? ?뷀빀?덈떎."'} 
+                        value={info.page6FooterQuote || '"최고의 입지에 미래 가치를 더합니다."'} 
                         onChange={(val) => handleTextChange('page6FooterQuote', val)} 
                     />
                 </p>
-            </div>
-        </ReportPage>
-        )}
-
-        {/* PAGE 7: CONTACT / ENDING */}
-        {getPageStatus(7).shouldRender && (
-        <ReportPage layoutTheme={layoutTheme} colorTheme={colorTheme}
-            pageNumber={7} 
-            pageString={getPageStatus(7).pageString}
-            isHidden={getPageStatus(7).isHidden}
-            title={info.agentName || "미래에셋공인중개사사무소"} 
-            subtitle="Contact Us"
-            badgeText="CONTACT"
-        >
-            <div className="flex flex-col items-center justify-center h-full w-full relative -mt-10">
-                <div className="absolute top-10 left-10 opacity-10">
-                    <svg className="w-64 h-64 text-[var(--theme-primary)]" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                        <circle cx="12" cy="7" r="4"></circle>
-                    </svg>
-                </div>
-
-                <div className="z-10 w-full flex flex-col items-center mb-10">
-                    <h1 className="text-5xl font-black text-gray-900 tracking-tight mb-2">THANK YOU</h1>
-                    <div className="w-16 h-1 bg-[var(--theme-primary)] mb-6"></div>
-                    <p className="text-gray-500 font-bold text-lg tracking-widest text-center">
-                        성공적인 투자를 위한 최고의 파트너가 되겠습니다.
-                    </p>
-                </div>
-
-                <div className="z-10 w-full max-w-4xl grid grid-cols-5 gap-8 mt-4 bg-white p-10 rounded-2xl shadow-xl border border-gray-100">
-                    <div className="col-span-2 flex flex-col items-center justify-center border-r border-gray-100 pr-8">
-                        <div className="w-48 h-48 rounded-full overflow-hidden mb-6 shadow-inner border-4 border-gray-50 bg-gray-100 relative">
-                            {info.agentPhotoKey ? (
-                                <img src={info.agentPhotoKey} alt="Agent" className="w-full h-full object-cover" />
-                            ) : (
-                                <div className="absolute inset-0 flex items-center justify-center text-gray-300">
-                                    <svg className="w-20 h-20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                    </svg>
-                                </div>
-                            )}
-                        </div>
-                        <h3 className="text-2xl font-black text-gray-900">{info.agentRepresentative || "김민혁 과장"}</h3>
-                        <p className="text-[var(--theme-primary)] font-bold mb-4">{info.agentName || "미래에셋공인 중개사 사무소"}</p>
-                    </div>
-                    
-                    <div className="col-span-3 flex flex-col justify-center pl-4">
-                        <div className="space-y-6">
-                            <div className="flex items-center gap-4">
-                                <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center shrink-0">
-                                    <svg className="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
-                                </div>
-                                <div>
-                                    <p className="text-xs text-gray-400 font-bold mb-0.5">MOBILE</p>
-                                    <p className="text-lg font-bold text-gray-800">{info.agentMobile || "010-5554-4444"}</p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-4">
-                                <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center shrink-0">
-                                    <svg className="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
-                                </div>
-                                <div>
-                                    <p className="text-xs text-gray-400 font-bold mb-0.5">OFFICE</p>
-                                    <p className="text-lg font-bold text-gray-800">{info.agentPhone || "02-1234-5678"}</p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-4 mt-6 p-4 bg-gray-50 rounded-xl">
-                                <div className="w-16 h-16 bg-white rounded-lg p-1 border border-gray-200 shrink-0 flex items-center justify-center relative shadow-sm">
-                                    {info.contactQRLink ? (
-                                        <div className="w-full h-full relative border border-dashed border-gray-300 rounded overflow-hidden">
-                                            {/* Placeholder for QR Code */}
-                                            <svg className="w-full h-full text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M3 10h4a1 1 0 001-1V5a1 1 0 00-1-1H3a1 1 0 00-1 1v4a1 1 0 001 1zm0 11h4a1 1 0 001-1v-4a1 1 0 00-1-1H3a1 1 0 00-1 1v4a1 1 0 001 1zm11-11h4a1 1 0 001-1V5a1 1 0 00-1-1h-4a1 1 0 00-1 1v4a1 1 0 001 1zm0 11h4a1 1 0 001-1v-4a1 1 0 00-1-1h-4a1 1 0 00-1 1v4a1 1 0 001 1z" />
-                                            </svg>
-                                        </div>
-                                    ) : (
-                                        <svg className="w-8 h-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                                        </svg>
-                                    )}
-                                </div>
-                                <div className="flex-1">
-                                    <p className="text-[11px] text-gray-500 font-bold mb-1">MORE INFORMATION</p>
-                                    <div className="flex gap-2">
-                                        {info.contactYoutube && <span className="bg-red-50 text-red-600 text-[10px] px-2 py-0.5 rounded font-black border border-red-100">YOUTUBE</span>}
-                                        {info.contactBlog && <span className="bg-green-50 text-green-600 text-[10px] px-2 py-0.5 rounded font-black border border-green-100">BLOG</span>}
-                                        {info.contactWebsite && <span className="bg-blue-50 text-blue-600 text-[10px] px-2 py-0.5 rounded font-black border border-blue-100">WEBSITE</span>}
-                                    </div>
-                                    <p className="text-[10px] text-gray-400 mt-1.5 break-all leading-tight">{info.contactQRLink || "https://gongsilnews.com"}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div className="absolute bottom-12 right-0 left-0 flex justify-center z-10 opacity-70">
-                    <div className="h-12 w-48 relative grayscale">
-                        {info.agencyLogoKey ? (
-                            <img src={info.agencyLogoKey} alt="Agency Logo" className="w-full h-full object-contain" />
-                        ) : (
-                            <div className="w-full h-full flex items-center justify-center text-gray-300 font-bold text-xl tracking-widest border border-dashed border-gray-200 rounded">LOGO</div>
-                        )}
-                    </div>
-                </div>
             </div>
         </ReportPage>
         )}
@@ -2396,7 +2230,3 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
 FlyerCanvas.displayName = 'FlyerCanvas';
 
 export default FlyerCanvas;
-
-
-
-

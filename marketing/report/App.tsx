@@ -1479,6 +1479,7 @@ ${clone.outerHTML}
       const canvas = await (window as any).html2canvas(clone, {
         scale: 2, 
         useCORS: true,
+          proxy: '/api/proxy-image',
         backgroundColor: '#ffffff',
         windowWidth: 1400, // Ensure enough width for the 1122px wide layout
         scrollX: 0,
@@ -1536,6 +1537,7 @@ ${clone.outerHTML}
         const canvas = await (window as any).html2canvas(sec, {
           scale: 2, 
           useCORS: true,
+          proxy: '/api/proxy-image',
           backgroundColor: '#ffffff',
           width: 1122,
           height: 794,
@@ -1598,6 +1600,7 @@ ${clone.outerHTML}
         const canvas = await (window as any).html2canvas(sec, {
           scale: 2, 
           useCORS: true,
+          proxy: '/api/proxy-image',
           backgroundColor: '#ffffff',
           width: 1122,
           height: 794,
