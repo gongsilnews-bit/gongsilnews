@@ -1389,6 +1389,15 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                     });
                 };
 
+                const clearTableContents = () => {
+                    if (!onUpdateInfo) return;
+                    const newRows = rows.map(r => new Array(headers.length).fill(""));
+                    onUpdateInfo({
+                        ...info,
+                        leaseTable: { ...leaseTable, rows: newRows }
+                    });
+                };
+
                 const addRow = () => {
                     if (!onUpdateInfo) return;
                     const newRows = [...rows, new Array(headers.length).fill("")];
@@ -1439,14 +1448,19 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                 onChange={(val) => handleTextChange('page3HighlightHeader', val)} 
                             />
                         </div>
-                        <div className="w-full flex-1 flex flex-col justify-between bg-white rounded-2xl border border-slate-100 p-6 shadow-sm overflow-hidden">
-                        <div className="overflow-y-auto custom-scrollbar flex-1 pr-1">
+                        <div className="w-full flex-1 flex flex-col justify-between bg-white rounded-2xl border border-slate-100 p-6 shadow-sm overflow-hidden relative">
+                        {/* Global Table Controls */}
+                        <div className="absolute top-4 right-6 flex items-center gap-2 print:hidden z-20">
+                            <button type="button" onClick={clearTableContents} className="text-[10px] bg-red-50 hover:bg-red-100 text-red-600 px-2 py-1 rounded shadow-sm font-bold border border-red-100 cursor-pointer transition-colors">내용 전체 지우기</button>
+                            <button type="button" onClick={() => addColumn(headers.length)} className="text-[10px] bg-[var(--theme-primary)] hover:opacity-80 text-white px-2 py-1 rounded shadow-sm font-bold cursor-pointer transition-opacity">➕ 열(칸) 추가</button>
+                            <button type="button" onClick={addRow} className="text-[10px] bg-[var(--theme-primary)] hover:opacity-80 text-white px-2 py-1 rounded shadow-sm font-bold cursor-pointer transition-opacity">➕ 행(줄) 추가</button>
+                        </div>
+                        <div className="overflow-y-auto custom-scrollbar flex-1 pr-1 mt-6">
                             <table className="w-full text-left border-collapse table-fixed">
                                 <thead>
                                     <tr>
                                         {headers.map((h, colIdx) => {
-                                            const currentWidths = leaseTable.widths || [10, 10, 15, 35, 15, 15];
-                                            const colWidth = currentWidths[colIdx] || Math.round(100 / headers.length);
+                                            const colWidth = 100 / headers.length;
                                             return (
                                                 <th 
                                                     key={colIdx} 
@@ -1460,72 +1474,17 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                                         value={h} 
                                                         onChange={(val) => updateHeader(colIdx, val)}
                                                     />
-                                                    
-                                                    {/* Hover Header Columns Controls */}
-                                                    <div className="absolute -top-7 left-1/2 transform -translate-x-1/2 bg-[var(--theme-dark)] text-white text-[9px] rounded-lg shadow-lg border border-gray-700 px-2 py-1 gap-1.5 hidden group-hover/header:flex items-center print:hidden z-40 transition-all">
+                                                    {/* Hover Delete Column */}
+                                                    {headers.length > 1 && (
                                                         <button 
                                                             type="button"
-                                                            onClick={() => addColumn(colIdx)}
-                                                            className="text-blue-400 hover:text-blue-300 font-extrabold cursor-pointer border-none bg-transparent"
-                                                            title="왼쪽에 열 추가"
+                                                            onClick={() => deleteColumn(colIdx)}
+                                                            className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-red-500 hover:bg-red-600 text-white w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold shadow-md cursor-pointer print:hidden opacity-0 group-hover/header:opacity-100 transition-opacity z-40"
+                                                            title="열 삭제"
                                                         >
-                                                            +
+                                                            ✕
                                                         </button>
-                                                        {headers.length > 1 && (
-                                                            <button 
-                                                                type="button"
-                                                                onClick={() => deleteColumn(colIdx)}
-                                                                className="text-red-400 hover:text-red-300 font-extrabold cursor-pointer border-none bg-transparent"
-                                                                title="열 삭제"
-                                                            >
-                                                                ✕
-                                                            </button>
-                                                        )}
-                                                        <button 
-                                                            type="button"
-                                                            onClick={() => addColumn(colIdx + 1)}
-                                                            className="text-green-400 hover:text-green-300 font-extrabold cursor-pointer border-none bg-transparent"
-                                                            title="오른쪽에 열 추가"
-                                                        >
-                                                            +
-                                                        </button>
-                                                        
-                                                        {/* Column width adjustments */}
-                                                        <span className="w-[1px] h-3 bg-gray-600"></span>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => {
-                                                                const newWidths = [...currentWidths];
-                                                                newWidths[colIdx] = Math.max(5, colWidth - 2);
-                                                                onUpdateInfo({
-                                                                    ...info,
-                                                                    leaseTable: { ...leaseTable, widths: newWidths }
-                                                                });
-                                                            }}
-                                                            className="text-slate-300 hover:text-white font-extrabold cursor-pointer border-none bg-transparent px-0.5"
-                                                            title="열 너비 축소 (-2%)"
-                                                        >
-                                                            ◀
-                                                        </button>
-                                                        <span className="text-gray-300 font-mono text-[8px] min-w-[20px] text-center">
-                                                            {colWidth}%
-                                                        </span>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => {
-                                                                const newWidths = [...currentWidths];
-                                                                newWidths[colIdx] = Math.min(80, colWidth + 2);
-                                                                onUpdateInfo({
-                                                                    ...info,
-                                                                    leaseTable: { ...leaseTable, widths: newWidths }
-                                                                });
-                                                            }}
-                                                            className="text-slate-300 hover:text-white font-extrabold cursor-pointer border-none bg-transparent px-0.5"
-                                                            title="열 너비 확대 (+2%)"
-                                                        >
-                                                            ▶
-                                                        </button>
-                                                    </div>
+                                                    )}
                                                 </th>
                                             );
                                         })}
@@ -1544,44 +1503,16 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                                         onChange={(val) => updateCell(rowIdx, colIdx, val)}
                                                     />
                                                     
-                                                    {/* Floating Row Control Panel on First Cell Hover */}
-                                                    {colIdx === 0 && (
-                                                        <div className="absolute -left-9 top-1/2 transform -translate-y-1/2 bg-[var(--theme-dark)] text-white text-[9px] rounded-lg shadow-lg border border-gray-700 p-1 flex flex-col gap-1 hidden group-hover/row:flex print:hidden z-35 transition-all">
-                                                            <button
-                                                                type="button"
-                                                                disabled={rowIdx === 0}
-                                                                onClick={() => moveRow(rowIdx, -1)}
-                                                                className="text-slate-300 hover:text-white disabled:opacity-30 cursor-pointer border-none bg-transparent font-bold"
-                                                                title="위로 이동"
-                                                            >
-                                                                ▲
-                                                            </button>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => duplicateRow(rowIdx)}
-                                                                className="text-green-400 hover:text-green-300 cursor-pointer border-none bg-transparent font-bold"
-                                                                title="행 복제"
-                                                            >
-                                                                🗐
-                                                            </button>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => deleteRow(rowIdx)}
-                                                                className="text-red-400 hover:text-red-300 cursor-pointer border-none bg-transparent font-bold"
-                                                                title="행 삭제"
-                                                            >
-                                                                ✕
-                                                            </button>
-                                                            <button
-                                                                type="button"
-                                                                disabled={rowIdx === rows.length - 1}
-                                                                onClick={() => moveRow(rowIdx, 1)}
-                                                                className="text-slate-300 hover:text-white disabled:opacity-30 cursor-pointer border-none bg-transparent font-bold"
-                                                                title="아래로 이동"
-                                                            >
-                                                                ▼
-                                                            </button>
-                                                        </div>
+                                                    {/* Hover Delete Row (shown on the last cell of the row) */}
+                                                    {colIdx === row.length - 1 && rows.length > 1 && (
+                                                        <button 
+                                                            type="button"
+                                                            onClick={() => deleteRow(rowIdx)}
+                                                            className="absolute top-1/2 -right-3 transform -translate-y-1/2 bg-red-500 hover:bg-red-600 text-white w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold shadow-md cursor-pointer print:hidden opacity-0 group-hover/row:opacity-100 transition-opacity z-35"
+                                                            title="행 삭제"
+                                                        >
+                                                            ✕
+                                                        </button>
                                                     )}
                                                 </td>
                                             ))}
@@ -1589,16 +1520,6 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                     ))}
                                 </tbody>
                             </table>
-                            {/* Add Row Button at Bottom */}
-                            <div className="flex justify-center mt-3 mb-1 print:hidden relative group/addrow">
-                                <button
-                                    type="button"
-                                    onClick={() => addRow()}
-                                    className="opacity-20 hover:opacity-100 transition-opacity bg-yellow-50 hover:bg-yellow-100 text-yellow-600 border border-yellow-200 border-dashed rounded-full px-6 py-1.5 text-xs font-bold flex items-center gap-1 cursor-pointer shadow-sm active:scale-95"
-                                >
-                                    ➕ 가장 밑에 줄(행) 추가
-                                </button>
-                            </div>
                         </div>
                         
                         {/* Custom Total / Summary Block & Explanation */}
