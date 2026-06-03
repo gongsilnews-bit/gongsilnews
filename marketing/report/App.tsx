@@ -405,6 +405,7 @@ function App() {
   const [showExportModal, setShowExportModal] = useState(false);
   const [isTableEditorOpen, setIsTableEditorOpen] = useState(false);
   const flyerRef = useRef<HTMLDivElement>(null);
+  const hiddenFlyerRef = useRef<HTMLDivElement>(null);
   const [showSharePopover, setShowSharePopover] = useState(false);
   const sharePopoverRef = useRef<HTMLDivElement>(null);
 
@@ -1326,9 +1327,9 @@ function App() {
   };
 
   const generateHtmlContent = async (): Promise<string | null> => {
-    if (!flyerRef.current) return null;
+    if (!hiddenFlyerRef.current) return null;
     try {
-        const clone = flyerRef.current.cloneNode(true) as HTMLElement;
+        const clone = hiddenFlyerRef.current.cloneNode(true) as HTMLElement;
         const imgs = clone.querySelectorAll('img');
         
         // Fix width for IM Report (A4 Landscape)
@@ -1434,9 +1435,9 @@ ${clone.outerHTML}
   };
 
   const downloadJpg = async (selectedIds: string[]) => {
-    if (!flyerRef.current) return;
+    if (!hiddenFlyerRef.current) return;
     try {
-      const element = flyerRef.current;
+      const element = hiddenFlyerRef.current;
       
       // Clone the element to filter sections without affecting the view
       const clone = element.cloneNode(true) as HTMLElement;
