@@ -38,7 +38,7 @@ export default async function MobileBoardWritePage({
   }
 
   return (
-    <div style={{ backgroundColor: '#fff', minHeight: '100vh', paddingBottom: '60px' }}>
+    <div style={{ backgroundColor: '#fff', minHeight: '100vh', paddingBottom: '60px', overscrollBehavior: 'contain' }}>
       <Suspense fallback={<div style={{ padding: 40, textAlign: "center" }}>불러오는 중...</div>}>
         <BoardWriteClient 
           board={board} 
