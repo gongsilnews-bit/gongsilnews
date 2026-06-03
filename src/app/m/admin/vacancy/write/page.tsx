@@ -1080,7 +1080,7 @@ function MobileVacancyWrite() {
               <button type="button" onClick={()=>setAreaUnit("py")} style={{ padding:"6px 14px", fontSize:12, fontWeight:800, border:"none", cursor:"pointer", background: areaUnit==="py"?"#1a73e8":"#fff", color: areaUnit==="py"?"#fff":"#6b7280" }}>평</button>
             </div>
           </div>
-          {!(propertyType === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(subCategory) && tradeType === "매매") && (
+          {!(tradeType === "매매" && ((propertyType === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(subCategory)) || (propertyType === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고", "지식산업센터"].includes(subCategory)))) && (
           <>
           <div style={{ display:"flex", gap:10, marginBottom:4 }}>
             <div style={{flex:1}}>
@@ -1118,7 +1118,7 @@ function MobileVacancyWrite() {
                   )}
                 </div>
                 <div style={{flex:1}}>
-                  {propertyType === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(subCategory) && tradeType === "매매" ? (
+                  {tradeType === "매매" && ((propertyType === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(subCategory)) || (propertyType === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고", "지식산업센터"].includes(subCategory))) ? (
                     <>
                       <label style={labelStyle}>연면적 ({areaUnit==="m2"?"m²":"평"})</label>
                       {areaUnit==="m2" ? (
@@ -1143,7 +1143,7 @@ function MobileVacancyWrite() {
               <div style={{ display:"flex", gap:10, marginBottom:10, fontSize:12, color:"#1a73e8", fontWeight:600, padding:"0 2px" }}>
                 <div style={{flex:1}}>{landShareM2 ? (areaUnit==="m2" ? `≈ ${(parseFloat(landShareM2)*0.3025).toFixed(1)}평` : `≈ ${parseFloat(landShareM2).toFixed(1)}m²`) : ""}</div>
                 <div style={{flex:1}}>
-                  {propertyType === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(subCategory) && tradeType === "매매" && supplyM2 ? (
+                  {tradeType === "매매" && ((propertyType === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(subCategory)) || (propertyType === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고", "지식산업센터"].includes(subCategory))) && supplyM2 ? (
                     areaUnit==="m2" ? `≈ ${(parseFloat(supplyM2)*0.3025).toFixed(1)}평` : `≈ ${parseFloat(supplyM2).toFixed(1)}m²`
                   ) : ""}
                 </div>

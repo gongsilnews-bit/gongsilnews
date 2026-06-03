@@ -411,7 +411,11 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                       <span style={{ color: darkMode ? "#fca5a5" : "#ef4444", fontWeight: 800, fontSize: 15 }}>{priceText}</span>
                     </td>
                     <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>
-                      {row.room_count || "-"} / {row.exclusive_m2 ? `${row.exclusive_m2}m²` : "m²"} / {row.current_floor || "-"}
+                      {row.trade_type === "매매" && ((row.property_type === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(row.sub_category)) || (row.property_type === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고", "지식산업센터"].includes(row.sub_category))) ? (
+                        `연면적 ${row.supply_m2 ? `${row.supply_m2}m²` : "-"}`
+                      ) : (
+                        `${row.room_count || "-"} / ${row.exclusive_m2 ? `${row.exclusive_m2}m²` : "m²"} / ${row.current_floor || "-"}`
+                      )}
                     </td>
                     <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>{dateStr}</td>
                     <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>

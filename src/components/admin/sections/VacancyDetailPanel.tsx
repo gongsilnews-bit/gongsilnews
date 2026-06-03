@@ -295,15 +295,23 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
   const supArea = vacancy.supply_m2 ? parseFloat(vacancy.supply_m2) : 0;
   const excArea = vacancy.exclusive_m2 ? parseFloat(vacancy.exclusive_m2) : 0;
   const fmtM2 = (m2: number) => m2 ? `${m2}㎡(${(m2 / 3.3058).toFixed(1)}평)` : '';
+
+  const isSpecialSale = vacancy.trade_type === "매매" && ((vacancy.property_type === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(vacancy.sub_category)) || (vacancy.property_type === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고", "지식산업센터"].includes(vacancy.sub_category)));
+  
+  let areaLabel = isSpecialSale ? "연면적" : "공급/전용면적";
   let areaDisplay = '-';
-  if (supArea && excArea) areaDisplay = `${fmtM2(supArea)} / ${fmtM2(excArea)}`;
-  else if (supArea) areaDisplay = fmtM2(supArea);
-  else if (excArea) areaDisplay = fmtM2(excArea);
+  if (isSpecialSale) {
+    areaDisplay = supArea ? fmtM2(supArea) : '-';
+  } else {
+    if (supArea && excArea) areaDisplay = `${fmtM2(supArea)} / ${fmtM2(excArea)}`;
+    else if (supArea) areaDisplay = fmtM2(supArea);
+    else if (excArea) areaDisplay = fmtM2(excArea);
+  }
 
   const subInfoParts = [];
   if (vacancy.property_type) subInfoParts.push(vacancy.property_type);
   if (vacancy.direction) subInfoParts.push(vacancy.direction);
-  if (areaDisplay !== '-') subInfoParts.push(`공급/전용 면적: ${areaDisplay}`);
+  if (areaDisplay !== '-') subInfoParts.push(`${areaLabel}: ${areaDisplay}`);
   const subInfo = subInfoParts.join(' | ');
 
   const fmtDate = (dt: string) => {
@@ -404,7 +412,7 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
                   {vacancy.metadata?.road_width !== undefined && vacancy.metadata?.road_width !== null && <><div className="gdv-info-label">도로 폭</div><div className="gdv-info-value">{vacancy.metadata.road_width}m</div></>}
                   {(vacancy.metadata?.ground_floors !== undefined || vacancy.metadata?.underground_floors !== undefined) && <><div className="gdv-info-label">건물규모</div><div className="gdv-info-value">지하 {vacancy.metadata?.underground_floors || 0}층 / 지상 {vacancy.metadata?.ground_floors || 0}층</div></>}
                   {vacancy.metadata?.land_share_m2 && <><div className="gdv-info-label">대지면적</div><div className="gdv-info-value">{vacancy.metadata.land_share_m2}m² ({vacancy.metadata.land_share_py}평)</div></>}
-                  <div className="gdv-info-label">공급/전용면적</div><div className="gdv-info-value">{areaDisplay}</div>
+                  <div className="gdv-info-label">{areaLabel}</div><div className="gdv-info-value">{areaDisplay}</div>
                   {!(vacancy.metadata?.ground_floors !== undefined || vacancy.metadata?.underground_floors !== undefined) && (
                     <>
                       <div className="gdv-info-label">해당층/총층</div><div className="gdv-info-value">{vacancy.current_floor||'-'}층 / {vacancy.total_floor||'-'}층</div>

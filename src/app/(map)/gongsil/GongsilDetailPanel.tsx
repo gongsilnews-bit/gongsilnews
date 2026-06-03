@@ -899,7 +899,7 @@ export default function GongsilDetailPanel({
           ) : (
             <>
               <div style={{ fontSize: 13, color: "#555", marginTop: 4, marginBottom: 12 }}>
-                {prop.property_type} · {prop.direction || "방향없음"} · 공급/전용 면적: {prop.supply_m2 || 0}㎡ / {prop.exclusive_m2 || 0}㎡
+                {prop.property_type} · {prop.direction || "방향없음"} · {prop.trade_type === "매매" && ((prop.property_type === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(prop.sub_category)) || (prop.property_type === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고", "지식산업센터"].includes(prop.sub_category))) ? `연면적: ${prop.supply_m2 || 0}㎡` : `공급/전용 면적: ${prop.supply_m2 || 0}㎡ / ${prop.exclusive_m2 || 0}㎡`}
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 12, fontSize: 13, color: "#555" }}>
                 <span>룸 {prop.room_count || 0}개</span>
@@ -1060,8 +1060,15 @@ export default function GongsilDetailPanel({
                     <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.metadata.land_share_m2}m² ({prop.metadata.land_share_py}평)</div>
                   </>
                 )}
-                <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>공급/전용면적</div>
-                <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.supply_m2 ? `${prop.supply_m2}m²(${prop.supply_py || 0}평)` : "-"} / {prop.exclusive_m2 ? `${prop.exclusive_m2}m²(${prop.exclusive_py || 0}평)` : "-"}</div>
+                <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>
+                  {prop.trade_type === "매매" && ((prop.property_type === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(prop.sub_category)) || (prop.property_type === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고", "지식산업센터"].includes(prop.sub_category))) ? "연면적" : "공급/전용면적"}
+                </div>
+                <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>
+                  {prop.trade_type === "매매" && ((prop.property_type === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(prop.sub_category)) || (prop.property_type === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고", "지식산업센터"].includes(prop.sub_category)))
+                    ? (prop.supply_m2 ? `${prop.supply_m2}m²(${prop.supply_py || 0}평)` : "-")
+                    : `${prop.supply_m2 ? `${prop.supply_m2}m²(${prop.supply_py || 0}평)` : "-"} / ${prop.exclusive_m2 ? `${prop.exclusive_m2}m²(${prop.exclusive_py || 0}평)` : "-"}`
+                  }
+                </div>
                 {!(prop.metadata?.ground_floors !== undefined || prop.metadata?.underground_floors !== undefined) && (
                   <>
                     <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>해당층/총층</div>

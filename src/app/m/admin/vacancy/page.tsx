@@ -302,7 +302,11 @@ function MobileVacancyAdmin() {
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
                 <span style={{ fontSize: 16, fontWeight: 800, color: "#ef4444" }}>{priceText}</span>
                 <span style={{ fontSize: 13, color: "#6b7280" }}>
-                  {row.room_count || "-"}방 / {row.exclusive_m2 ? `${row.exclusive_m2}m²` : "-"} / {row.current_floor || "-"}층
+                  {row.trade_type === "매매" && ((row.property_type === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(row.sub_category)) || (row.property_type === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고", "지식산업센터"].includes(row.sub_category))) ? (
+                    `연면적 ${row.supply_m2 ? `${row.supply_m2}m²` : "-"}`
+                  ) : (
+                    `${row.room_count || "-"}방 / ${row.exclusive_m2 ? `${row.exclusive_m2}m²` : "-"} / ${row.current_floor || "-"}층`
+                  )}
                 </span>
               </div>
 

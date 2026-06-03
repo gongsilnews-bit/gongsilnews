@@ -1428,14 +1428,16 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
         <div class="price">${priceText}</div>
         <div style="font-size:13px;color:#555;margin-bottom:20px;">${prop.property_type} · ${
       prop.direction || "방향없음"
-    } · 공급/전용: ${prop.supply_m2 || 0}㎡ / ${prop.exclusive_m2 || 0}㎡</div>
+    } · ${prop.trade_type === "매매" && ((prop.property_type === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(prop.sub_category)) || (prop.property_type === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고", "지식산업센터"].includes(prop.sub_category))) ? `연면적: ${prop.supply_m2 || 0}㎡` : `공급/전용: ${prop.supply_m2 || 0}㎡ / ${prop.exclusive_m2 || 0}㎡`}</div>
         <div class="info-row"><div class="info-label">공실광고번호</div><div class="info-value">${
           prop.vacancy_no || "-"
         }</div></div>
         <div class="info-row"><div class="info-label">소재지</div><div class="info-value">${fullAddr || "-"}</div></div>
-        <div class="info-row"><div class="info-label">공급/전용면적</div><div class="info-value">${
-          prop.supply_m2 ? prop.supply_m2 + "m²" : "-"
-        } / ${prop.exclusive_m2 ? prop.exclusive_m2 + "m²" : "-"}</div></div>
+        <div class="info-row"><div class="info-label">${prop.trade_type === "매매" && ((prop.property_type === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(prop.sub_category)) || (prop.property_type === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고", "지식산업센터"].includes(prop.sub_category))) ? "연면적" : "공급/전용면적"}</div><div class="info-value">${
+          prop.trade_type === "매매" && ((prop.property_type === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(prop.sub_category)) || (prop.property_type === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고", "지식산업센터"].includes(prop.sub_category))) 
+            ? (prop.supply_m2 ? prop.supply_m2 + "m²" : "-")
+            : `${prop.supply_m2 ? prop.supply_m2 + "m²" : "-"} / ${prop.exclusive_m2 ? prop.exclusive_m2 + "m²" : "-"}`
+        }</div></div>
         <div class="info-row"><div class="info-label">해당층/총층</div><div class="info-value">${
           prop.current_floor || "-"
         } / ${prop.total_floor || "-"}</div></div>
