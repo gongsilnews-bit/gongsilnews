@@ -73,7 +73,7 @@ function getPermissionLevel(data: any): number {
 export default function MobileBoardClient({ board, initialPosts, serverUser, serverUserLevel }: { board: any, initialPosts: any[], serverUser?: any, serverUserLevel?: number }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const initialTab = searchParams.get('tab') || "?�체";
+  const initialTab = searchParams.get('tab') || "전체";
   
   const [activeTab, setActiveTab] = useState(initialTab);
   const [currentUser, setCurrentUser] = useState<any>(serverUser ?? null);
@@ -134,7 +134,7 @@ export default function MobileBoardClient({ board, initialPosts, serverUser, ser
     fetchUserLevel();
   }, [serverUser, serverUserLevel]);
 
-  const tabs = ["?�체"];
+  const tabs = ["전체"];
   if (board.categories) {
     const cats = board.categories.split(",").map((c: string) => c.trim()).filter(Boolean);
     tabs.push(...cats);
@@ -146,10 +146,12 @@ export default function MobileBoardClient({ board, initialPosts, serverUser, ser
   const filteredPosts = initialPosts.filter(p => {
     if (showMyPosts && p.author_id !== currentUser?.id) return false;
     
-    // ???�터�?    const matchesTab = activeTab === "?�체" || p.title.includes(`[${activeTab}]`);
+    // 탭 필터링
+    const matchesTab = activeTab === "전체" || p.title.includes(`[${activeTab}]`);
     if (!matchesTab) return false;
 
-    // 검?�어 ?�시�??�터�?    if (searchQuery.trim()) {
+    // 검색어 실시간 필터링
+    if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
       const titleMatch = p.title.toLowerCase().includes(q);
       const contentMatch = (p.content || "").toLowerCase().includes(q);
@@ -170,7 +172,7 @@ export default function MobileBoardClient({ board, initialPosts, serverUser, ser
     }
     const requiredLevel = is1to1 ? 1 : (board.perm_write || 1);
     if (userLevel < requiredLevel) {
-      alert("??게시?�에 글???�성??권한???�습?�다.");
+      alert("이 게시판에 글을 작성할 권한이 없습니다.");
       return;
     }
     router.push(`/m/board_write?board_id=${board.board_id}`);
@@ -183,7 +185,7 @@ export default function MobileBoardClient({ board, initialPosts, serverUser, ser
 
   return (
     <div style={{ width: '100%', backgroundColor: '#f8f9fa', minHeight: '100vh', paddingBottom: '40px' }}>
-      {/* Header ??board_read ?��???*/}
+      {/* Header — board_read 스타일 */}
       <div style={{ position: 'sticky', top: 0, zIndex: 50, backgroundColor: '#fff', height: '54px', borderBottom: '1px solid #f3f4f6', display: 'flex', alignItems: 'center', padding: '0 16px' }}>
         {isSearching ? (
           <div style={{ display: 'flex', alignItems: 'center', width: '100%', gap: '8px' }}>
@@ -196,7 +198,7 @@ export default function MobileBoardClient({ board, initialPosts, serverUser, ser
             <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center' }}>
               <input 
                 type="text" 
-                placeholder={`"${board?.name || "게시??}" ??검??} 
+                placeholder={`"${board?.name || "게시판"}" 내 검색`} 
                 value={searchInputValue}
                 onChange={(e) => setSearchInputValue(e.target.value)}
                 onKeyDown={(e) => {
@@ -232,14 +234,15 @@ export default function MobileBoardClient({ board, initialPosts, serverUser, ser
               onClick={() => handleSearch(searchInputValue)} 
               style={{ background: 'none', border: 'none', padding: '4px 8px', fontSize: '15px', fontWeight: 700, color: '#1e56a0', cursor: 'pointer' }}
             >
-              검??            </button>
+              검색
+            </button>
           </div>
         ) : (
           <div style={{ display: 'flex', alignItems: 'center', width: '100%', justifyContent: 'space-between' }}>
             <button onClick={() => router.push(`/m/study?tab=${backTab}`)} style={{ background: 'none', border: 'none', padding: '8px', marginLeft: '-8px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
             </button>
-            <BoardDropdownHeader currentBoardName={board?.name || "게시??} />
+            <BoardDropdownHeader currentBoardName={board?.name || "게시판"} />
             <button onClick={() => setIsSearching(true)} style={{ background: 'none', border: 'none', padding: '8px', marginRight: '-8px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
             </button>
@@ -249,7 +252,7 @@ export default function MobileBoardClient({ board, initialPosts, serverUser, ser
 
       <div style={{ padding: '10px 16px 8px', textAlign: 'center' }}>
         <p style={{ color: '#9ca3af', fontSize: '15px', margin: 0 }}>
-          {board.subtitle || "공실?�스가 ?�공?�는 ?�료?�입?�다."}
+          {board.subtitle || "공실뉴스가 제공하는 자료실입니다."}
         </p>
       </div>
 
@@ -280,7 +283,7 @@ export default function MobileBoardClient({ board, initialPosts, serverUser, ser
       <div style={{ padding: '0 16px' }}>
         {filteredPosts.length === 0 ? (
           <div style={{ padding: '60px 20px', textAlign: 'center', color: '#9ca3af', backgroundColor: '#fff', borderRadius: '12px', border: '1px solid #f3f4f6' }}>
-            ?�록??게시물이 ?�습?�다.
+            등록된 게시물이 없습니다.
           </div>
         ) : isListType ? (
           <div style={{ backgroundColor: '#fff', borderRadius: '12px', border: '1px solid #f3f4f6', overflow: 'hidden' }}>
@@ -295,7 +298,7 @@ export default function MobileBoardClient({ board, initialPosts, serverUser, ser
                   <div style={{ fontSize: '16px', color: '#111827', fontWeight: 600, lineHeight: 1.4, display: 'flex', alignItems: 'center', gap: '6px' }}>
                     {is1to1 && (
                       <span style={{ fontSize: '11px', fontWeight: 700, padding: '3px 6px', borderRadius: '4px', backgroundColor: (p.board_comments && p.board_comments.length > 0) ? '#10b981' : '#f3f4f6', color: (p.board_comments && p.board_comments.length > 0) ? '#fff' : '#6b7280', flexShrink: 0 }}>
-                        {(p.board_comments && p.board_comments.length > 0) ? '?��??�료' : '?��??��?}
+                        {(p.board_comments && p.board_comments.length > 0) ? '답변완료' : '답변대기'}
                       </span>
                     )}
                     {p.title.replace(/^\[([^\]]+)\]\s*/, "")}
@@ -330,7 +333,7 @@ export default function MobileBoardClient({ board, initialPosts, serverUser, ser
                     <div style={{ fontSize: '14px', color: '#111827', fontWeight: 700, lineHeight: 1.4, marginBottom: '8px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                       {is1to1 && (
                         <span style={{ display: 'inline-block', marginRight: '6px', fontSize: '10px', fontWeight: 700, padding: '2px 4px', borderRadius: '4px', backgroundColor: (p.board_comments && p.board_comments.length > 0) ? '#10b981' : '#f3f4f6', color: (p.board_comments && p.board_comments.length > 0) ? '#fff' : '#6b7280' }}>
-                          {(p.board_comments && p.board_comments.length > 0) ? '?��??�료' : '?��??��?}
+                          {(p.board_comments && p.board_comments.length > 0) ? '답변완료' : '답변대기'}
                         </span>
                       )}
                       {p.title.replace(/^\[([^\]]+)\]\s*/, "")}
@@ -347,7 +350,7 @@ export default function MobileBoardClient({ board, initialPosts, serverUser, ser
         )}
       </div>
 
-      {/* 글?�기 ?�로??버튼 (FAB) */}
+      {/* 글쓰기 플로팅 버튼 (FAB) */}
       <button
         onClick={handleWriteClick}
         className="fab-btn"

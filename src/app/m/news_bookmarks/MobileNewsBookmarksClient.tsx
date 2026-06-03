@@ -13,10 +13,10 @@ function formatDate(d: string) {
   const dt = new Date(d);
   const now = new Date();
   const diff = Math.floor((now.getTime() - dt.getTime()) / 3600000);
-  if (diff < 1) return "방금 ??;
-  if (diff < 24) return `${diff}?�간 ??;
+  if (diff < 1) return "방금 전";
+  if (diff < 24) return `${diff}시간 전`;
   const days = Math.floor(diff / 24);
-  if (days < 7) return `${days}????;
+  if (days < 7) return `${days}일 전`;
   return `${dt.getMonth() + 1}/${dt.getDate()}`;
 }
 
@@ -32,7 +32,7 @@ export default function MobileNewsBookmarksClient() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   
-  // ?�더 ?�동 모달 ?�태
+  // 폴더 이동 모달 상태
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null);
 
@@ -84,7 +84,8 @@ export default function MobileNewsBookmarksClient() {
     fetchBookmarks();
   }, [router, showCategoryModal]);
 
-  // ?�택??카테고리??맞는 기사 ?�터�?  const filteredArticles = articles.filter(article => {
+  // 선택된 카테고리에 맞는 기사 필터링
+  const filteredArticles = articles.filter(article => {
     if (selectedCategoryId === 'ALL') return true;
     const bookmark = bookmarks.find(b => b.article_id === article.id);
     if (!bookmark) return false;
@@ -105,7 +106,7 @@ export default function MobileNewsBookmarksClient() {
         <button onClick={() => router.back()} style={{ background: "none", border: "none", cursor: "pointer", padding: "4px", display: "flex", alignItems: "center", marginLeft: "-4px", marginRight: "8px" }}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#111" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
         </button>
-        <h2 style={{ fontSize: "18px", fontWeight: 800, color: "#111", margin: 0 }}>관?�기??<span style={{ color: "#f97316" }}>{articles.length}</span>�?/h2>
+        <h2 style={{ fontSize: "18px", fontWeight: 800, color: "#111", margin: 0 }}>관심기사 <span style={{ color: "#f97316" }}>{articles.length}</span>개</h2>
       </div>
 
       {/* Category Tabs */}
@@ -118,7 +119,7 @@ export default function MobileNewsBookmarksClient() {
             border: 'none', cursor: 'pointer', whiteSpace: 'nowrap'
           }}
         >
-          ?�체
+          전체
         </button>
         <button
           onClick={() => setSelectedCategoryId(null)}
@@ -128,7 +129,7 @@ export default function MobileNewsBookmarksClient() {
             border: 'none', cursor: 'pointer', whiteSpace: 'nowrap'
           }}
         >
-          기본 ?�더
+          기본 폴더
         </button>
         {categories.map(cat => (
           <button
@@ -148,12 +149,12 @@ export default function MobileNewsBookmarksClient() {
       {/* List */}
       <div style={{ padding: "0 16px 20px", background: "#fff", flex: 1 }}>
         {loading ? (
-          <div style={{ padding: "40px 0", textAlign: "center", color: "#9ca3af" }}>로딩 �?..</div>
+          <div style={{ padding: "40px 0", textAlign: "center", color: "#9ca3af" }}>로딩 중...</div>
         ) : filteredArticles.length === 0 ? (
           <div style={{ textAlign: "center", padding: "60px 0", color: "#9ca3af" }}>
-            <div style={{ fontSize: "40px", marginBottom: "16px" }}>?��</div>
-            <p style={{ fontSize: "15px", fontWeight: 700, color: "#333", marginBottom: "8px" }}>?�당 ?�더??관?�기?��? ?�습?�다.</p>
-            <p style={{ fontSize: "14px" }}>기사?�서 북마???�이콘을 ?�러 추�??�보?�요.</p>
+            <div style={{ fontSize: "40px", marginBottom: "16px" }}>🔖</div>
+            <p style={{ fontSize: "15px", fontWeight: 700, color: "#333", marginBottom: "8px" }}>해당 폴더에 관심기사가 없습니다.</p>
+            <p style={{ fontSize: "14px" }}>기사에서 북마크 아이콘을 눌러 추가해보세요.</p>
           </div>
         ) : (
           filteredArticles.map((article: any) => (
@@ -176,7 +177,7 @@ export default function MobileNewsBookmarksClient() {
                   onClick={(e) => handleOpenMoveModal(e, article.id)}
                   style={{ background: '#f3f4f6', border: 'none', padding: '4px 10px', borderRadius: '4px', fontSize: '11px', fontWeight: 600, color: '#4b5563', cursor: 'pointer' }}
                 >
-                  ?�더 ?�동
+                  폴더 이동
                 </button>
               </div>
               <div style={{ fontSize: "17px", fontWeight: 800, color: "#111", lineHeight: 1.35, marginBottom: "10px", wordBreak: "keep-all" }}>
@@ -187,11 +188,11 @@ export default function MobileNewsBookmarksClient() {
               </div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "13px" }}>
                 <span style={{ color: "#222", fontWeight: 500 }}>
-                  {formatDate(article.published_at || article.created_at)} · {article.author_name || "공실?�스"}
-                  {article.location_name && ` · ?��${article.location_name}`}
+                  {formatDate(article.published_at || article.created_at)} · {article.author_name || "공실뉴스"}
+                  {article.location_name && ` · 📍${article.location_name}`}
                 </span>
                 <span style={{ color: "#f97316", fontWeight: 700 }}>
-                  기사?�세보기 &gt;
+                  기사상세보기 &gt;
                 </span>
               </div>
             </Link>
@@ -209,7 +210,7 @@ export default function MobileNewsBookmarksClient() {
           userId={currentUser.id}
           itemId={selectedArticleId}
           type="ARTICLE"
-          onSuccess={() => alert("?�더 ?�동???�료?�었?�니??")}
+          onSuccess={() => alert("폴더 이동이 완료되었습니다.")}
         />
       )}
 

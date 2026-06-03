@@ -8,13 +8,13 @@ import { adminGetMembers, adminApproveRealtorApplication, adminRejectRealtorAppl
 function MobileMemberAdmin() {
   const router = useRouter();
   const [members, setMembers] = useState<any[]>([]);
-  const [filter, setFilter] = useState("?�체");
+  const [filter, setFilter] = useState("전체");
   const [loading, setLoading] = useState(true);
   const [authChecked, setAuthChecked] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchKeyword, setSearchKeyword] = useState("");
   const [rejectModalFor, setRejectModalFor] = useState<string | null>(null);
-  const [rejectReason, setRejectReason] = useState("?�업?�등록증??불분명합?�다");
+  const [rejectReason, setRejectReason] = useState("사업자등록증이 불분명합니다");
   const [customReason, setCustomReason] = useState("");
   const [activeKeyword, setActiveKeyword] = useState("");
 
@@ -25,13 +25,13 @@ function MobileMemberAdmin() {
       const processedMembers = res.data.map((m: any) => {
         let agencyStatus = null;
         if (m.agencies) agencyStatus = Array.isArray(m.agencies) ? m.agencies[0]?.status : m.agencies.status;
-        let computedStatus = m.signup_completed ? '?�상' : '?�인?��?;
+        let computedStatus = m.signup_completed ? '정상' : '승인대기';
         if (m.role === 'REALTOR') {
-          if (agencyStatus === 'APPROVED') computedStatus = '?�상?�인';
-          else if (agencyStatus === 'REJECTED') computedStatus = '?�류보완';
-          else computedStatus = '?�인?��?;
+          if (agencyStatus === 'APPROVED') computedStatus = '정상승인';
+          else if (agencyStatus === 'REJECTED') computedStatus = '서류보완';
+          else computedStatus = '승인대기';
         } else {
-          computedStatus = '?�상?�인'; // ?�반?�원 �?관리자??기본 ?�상
+          computedStatus = '정상승인'; // 일반회원 및 관리자는 기본 정상
         }
         return { ...m, computedStatus, agencyStatus };
       });
@@ -50,7 +50,7 @@ function MobileMemberAdmin() {
         await fetchMembers();
         setAuthChecked(true);
       } else {
-        alert("?�근 권한???�습?�다.");
+        alert("접근 권한이 없습니다.");
         router.push("/m");
       }
     }
@@ -62,10 +62,10 @@ function MobileMemberAdmin() {
     
     // Role filter (using computed roles for tabs)
     if (filter === "최고관리자" && m.role !== "ADMIN") return false;
-    if (filter === "부?�산?�원" && m.role !== "REALTOR") return false;
-    if (filter === "?�반?�원" && m.role !== "USER") return false;
-    if (filter === "?�인?��? && m.computedStatus !== "?�인?��?) return false;
-    if (filter === "?�류보완" && m.computedStatus !== "?�류보완") return false;
+    if (filter === "부동산회원" && m.role !== "REALTOR") return false;
+    if (filter === "일반회원" && m.role !== "USER") return false;
+    if (filter === "승인대기" && m.computedStatus !== "승인대기") return false;
+    if (filter === "서류보완" && m.computedStatus !== "서류보완") return false;
     
     // Keyword search
     if (activeKeyword) {
@@ -83,8 +83,8 @@ function MobileMemberAdmin() {
 
   const getRoleLabel = (role: string) => {
     if (role === 'ADMIN') return '최고관리자';
-    if (role === 'REALTOR') return '부?�산?�원';
-    return '?�반?�원';
+    if (role === 'REALTOR') return '부동산회원';
+    return '일반회원';
   };
 
   const getRoleColor = (role: string) => {
@@ -94,26 +94,26 @@ function MobileMemberAdmin() {
   };
 
   const statusInfo: Record<string, { bg: string; color: string; label: string }> = {
-    "?�인?��?: { bg: "#fef3c7", color: "#92400e", label: "?�인?��? },
-    "?�상?�인": { bg: "#d1fae5", color: "#065f46", label: "?�상?�인" },
-    "?�류보완": { bg: "#fee2e2", color: "#b91c1c", label: "?�류보완" },
+    "승인대기": { bg: "#fef3c7", color: "#92400e", label: "승인대기" },
+    "정상승인": { bg: "#d1fae5", color: "#065f46", label: "정상승인" },
+    "서류보완": { bg: "#fee2e2", color: "#b91c1c", label: "서류보완" },
   };
 
   const tabs = [
-    { key: "?�체", count: members.filter(m => !m.is_deleted).length },
-    { key: "?�인?��?, count: members.filter(m => !m.is_deleted && m.computedStatus === "?�인?��?).length },
-    { key: "?�류보완", count: members.filter(m => !m.is_deleted && m.computedStatus === "?�류보완").length },
+    { key: "전체", count: members.filter(m => !m.is_deleted).length },
+    { key: "승인대기", count: members.filter(m => !m.is_deleted && m.computedStatus === "승인대기").length },
+    { key: "서류보완", count: members.filter(m => !m.is_deleted && m.computedStatus === "서류보완").length },
     { key: "최고관리자", count: members.filter(m => !m.is_deleted && m.role === "ADMIN").length },
-    { key: "부?�산?�원", count: members.filter(m => !m.is_deleted && m.role === "REALTOR").length },
-    { key: "?�반?�원", count: members.filter(m => !m.is_deleted && m.role === "USER").length },
+    { key: "부동산회원", count: members.filter(m => !m.is_deleted && m.role === "REALTOR").length },
+    { key: "일반회원", count: members.filter(m => !m.is_deleted && m.role === "USER").length },
   ];
 
   if (!authChecked) {
     return (
       <div style={{ display: "flex", height: "100dvh", alignItems: "center", justifyContent: "center", background: "#f4f5f7" }}>
         <div style={{ textAlign: "center", color: "#9ca3af" }}>
-          <div style={{ fontSize: 36, marginBottom: 12 }}>?��</div>
-          <div style={{ fontSize: 14, fontWeight: 600 }}>권한???�인?�고 ?�습?�다...</div>
+          <div style={{ fontSize: 36, marginBottom: 12 }}>🔐</div>
+          <div style={{ fontSize: 14, fontWeight: 600 }}>권한을 확인하고 있습니다...</div>
         </div>
       </div>
     );
@@ -121,13 +121,13 @@ function MobileMemberAdmin() {
 
   return (
     <div style={{ minHeight: "100dvh", background: "#f4f5f7", fontFamily: "'Pretendard Variable', -apple-system, sans-serif" }}>
-      {/* ?�단 ?�더 */}
+      {/* 상단 헤더 */}
       <div style={{ position: "sticky", top: 0, zIndex: 50, background: "#fff", borderBottom: "1px solid #e5e7eb", padding: "0 16px", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <button onClick={() => router.back()} style={{ background: "none", border: "none", cursor: "pointer", padding: 4, display: "flex" }}>
+          <button onClick={() => router.push('/m?menu=open')} style={{ background: "none", border: "none", cursor: "pointer", padding: 4, display: "flex" }}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M15 18L9 12L15 6" stroke="#333" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </button>
-          <h1 style={{ fontSize: 18, fontWeight: 800, color: "#111", margin: 0 }}>?�원관�?/h1>
+          <h1 style={{ fontSize: 18, fontWeight: 800, color: "#111", margin: 0 }}>회원관리</h1>
         </div>
         <button onClick={() => setSearchOpen(!searchOpen)} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -136,25 +136,25 @@ function MobileMemberAdmin() {
         </button>
       </div>
 
-      {/* 검???�역 */}
+      {/* 검색 영역 */}
       {searchOpen && (
         <div style={{ background: "#fff", padding: "12px 16px", borderBottom: "1px solid #e5e7eb", display: "flex", gap: 8 }}>
           <input
             type="text"
             value={searchKeyword}
             onChange={e => setSearchKeyword(e.target.value)}
-            onKeyDown={e => { if (e.key === "Enter") { setActiveKeyword(searchKeyword); setFilter("?�체"); } }}
-            placeholder="?�름, ?�메???�는 ?�원번호 검??
+            onKeyDown={e => { if (e.key === "Enter") { setActiveKeyword(searchKeyword); setFilter("전체"); } }}
+            placeholder="이름, 이메일 또는 회원번호 검색"
             style={{ flex: 1, height: 40, padding: "0 12px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, outline: "none" }}
           />
-          <button onClick={() => { setActiveKeyword(searchKeyword); setFilter("?�체"); }} style={{ height: 40, padding: "0 16px", background: "#374151", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700 }}>검??/button>
+          <button onClick={() => { setActiveKeyword(searchKeyword); setFilter("전체"); }} style={{ height: 40, padding: "0 16px", background: "#374151", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700 }}>검색</button>
           {activeKeyword && (
-            <button onClick={() => { setSearchKeyword(""); setActiveKeyword(""); }} style={{ height: 40, padding: "0 12px", background: "#fff", color: "#6b7280", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 13, fontWeight: 600 }}>초기??/button>
+            <button onClick={() => { setSearchKeyword(""); setActiveKeyword(""); }} style={{ height: 40, padding: "0 12px", background: "#fff", color: "#6b7280", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 13, fontWeight: 600 }}>초기화</button>
           )}
         </div>
       )}
 
-      {/* ?�터 ??*/}
+      {/* 필터 탭 */}
       <div style={{ background: "#fff", borderBottom: "1px solid #e5e7eb", padding: "0 12px", display: "flex", overflowX: "auto", WebkitOverflowScrolling: "touch" }} className="hide-scrollbar">
         {tabs.map(tab => (
           <button
@@ -170,8 +170,8 @@ function MobileMemberAdmin() {
           >
             {tab.key}
             <span style={{
-              background: tab.key === "?�체" ? "#e5e7eb" : tab.key === "?�인?��? ? "#fef3c7" : tab.key === "?�류보완" ? "#fee2e2" : "#dbeafe",
-              color: tab.key === "?�체" ? "#4b5563" : tab.key === "?�인?��? ? "#92400e" : tab.key === "?�류보완" ? "#b91c1c" : "#1e40af",
+              background: tab.key === "전체" ? "#e5e7eb" : tab.key === "승인대기" ? "#fef3c7" : tab.key === "서류보완" ? "#fee2e2" : "#dbeafe",
+              color: tab.key === "전체" ? "#4b5563" : tab.key === "승인대기" ? "#92400e" : tab.key === "서류보완" ? "#b91c1c" : "#1e40af",
               padding: "2px 7px", borderRadius: 10, fontSize: 11, fontWeight: 700,
             }}>
               {tab.count}
@@ -180,8 +180,8 @@ function MobileMemberAdmin() {
         ))}
       </div>
 
-      {/* ?�약 ?�황 카드 (?�체 ??��?�만 보임) */}
-      {filter === "?�체" && !activeKeyword && (
+      {/* 요약 현황 카드 (전체 탭에서만 보임) */}
+      {filter === "전체" && !activeKeyword && (
         <div style={{ padding: "16px 16px 8px" }}>
           <div style={{ background: "#fff", borderRadius: 12, padding: "16px", display: "flex", justifyContent: "space-between", boxShadow: "0 1px 3px rgba(0,0,0,0.05)", border: "1px solid #f0f0f0" }}>
             <div style={{ textAlign: "center", flex: 1 }}>
@@ -190,28 +190,28 @@ function MobileMemberAdmin() {
             </div>
             <div style={{ width: 1, background: "#e5e7eb", margin: "0 10px" }} />
             <div style={{ textAlign: "center", flex: 1 }}>
-              <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>부?�산?�원</div>
-              <div style={{ fontSize: 18, fontWeight: 800, color: "#2563eb" }}>{tabs.find(t => t.key === "부?�산?�원")?.count || 0}</div>
+              <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>부동산회원</div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: "#2563eb" }}>{tabs.find(t => t.key === "부동산회원")?.count || 0}</div>
             </div>
             <div style={{ width: 1, background: "#e5e7eb", margin: "0 10px" }} />
             <div style={{ textAlign: "center", flex: 1 }}>
-              <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>?�반?�원</div>
-              <div style={{ fontSize: 18, fontWeight: 800, color: "#111" }}>{tabs.find(t => t.key === "?�반?�원")?.count || 0}</div>
+              <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>일반회원</div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: "#111" }}>{tabs.find(t => t.key === "일반회원")?.count || 0}</div>
             </div>
           </div>
         </div>
       )}
 
-      {/* ?�원 카드 리스??*/}
+      {/* 회원 카드 리스트 */}
       <div style={{ padding: "8px 16px 40px" }}>
         {loading ? (
           <div style={{ padding: "40px 0", textAlign: "center", color: "#9ca3af" }}>
-            <div style={{ fontSize: 14, fontWeight: 600 }}>불러?�는 �?..</div>
+            <div style={{ fontSize: 14, fontWeight: 600 }}>불러오는 중...</div>
           </div>
         ) : filtered.length === 0 ? (
           <div style={{ padding: "60px 0", textAlign: "center", color: "#9ca3af" }}>
-            <div style={{ fontSize: 40, marginBottom: 12 }}>?��</div>
-            <div style={{ fontSize: 15, fontWeight: 600 }}>조건??맞는 ?�원???�습?�다.</div>
+            <div style={{ fontSize: 40, marginBottom: 12 }}>👥</div>
+            <div style={{ fontSize: 15, fontWeight: 600 }}>조건에 맞는 회원이 없습니다.</div>
           </div>
         ) : filtered.map((member, idx) => {
           const roleLabel = getRoleLabel(member.role);
@@ -224,7 +224,7 @@ function MobileMemberAdmin() {
               background: "#fff", borderRadius: 12, padding: "16px", marginBottom: 12,
               boxShadow: "0 1px 3px rgba(0,0,0,0.05)", border: "1px solid #f0f0f0",
             }}>
-              {/* ?�단: ??�� 뱃�? & ?�태 뱃�? */}
+              {/* 상단: 역할 뱃지 & 상태 뱃지 */}
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <span style={{ background: roleColor.bg, color: roleColor.text, padding: "4px 8px", borderRadius: 6, fontSize: 11, fontWeight: 700 }}>
@@ -236,33 +236,33 @@ function MobileMemberAdmin() {
                     </span>
                   )}
                 </div>
-                <span style={{ fontSize: 12, color: "#9ca3af" }}>{dateStr} 가??/span>
+                <span style={{ fontSize: 12, color: "#9ca3af" }}>{dateStr} 가입</span>
               </div>
 
-              {/* 기본 ?�보 */}
+              {/* 기본 정보 */}
               <div style={{ marginBottom: 16 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                  <span style={{ fontSize: 18, fontWeight: 800, color: "#111" }}>{member.name || '?�름?�음'}</span>
+                  <span style={{ fontSize: 18, fontWeight: 800, color: "#111" }}>{member.name || '이름없음'}</span>
                   {member.memberNumber && <span style={{ fontSize: 12, color: "#6b7280" }}>#{member.memberNumber}</span>}
                 </div>
                 <div style={{ fontSize: 14, color: "#4b5563", marginBottom: 2 }}>{member.email}</div>
                 <div style={{ fontSize: 14, color: "#4b5563" }}>{member.phone || '-'}</div>
               </div>
 
-              {/* ?�션 버튼 */}
+              {/* 액션 버튼 */}
               <div style={{ display: "flex", gap: 8, flexDirection: "column" }}>
-                {member.role === 'REALTOR' && (member.computedStatus === '?�인?��? || member.computedStatus === '?�류보완') && (
+                {member.role === 'REALTOR' && (member.computedStatus === '승인대기' || member.computedStatus === '서류보완') && (
                   <div style={{ display: "flex", gap: 8 }}>
                     <button onClick={async () => {
-                      if (!confirm(`${member.name} ?�원??부?�산?�원?�로 ?�인?�시겠습?�까?`)) return;
+                      if (!confirm(`${member.name} 회원을 부동산회원으로 승인하시겠습니까?`)) return;
                       const res = await adminApproveRealtorApplication(member.id);
-                      if (res.success) { alert('???�인 ?�료!'); fetchMembers(); }
-                      else alert('?�인 ?�패: ' + res.error);
+                      if (res.success) { alert('✅ 승인 완료!'); fetchMembers(); }
+                      else alert('승인 실패: ' + res.error);
                     }} style={{ flex: 1, height: 38, background: "#10b981", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-                      ???�인
+                      ✅ 승인
                     </button>
                     <button onClick={() => setRejectModalFor(member.id)} style={{ flex: 1, height: 38, background: "#ef4444", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-                      ??반려
+                      ❌ 반려
                     </button>
                   </div>
                 )}
@@ -272,7 +272,7 @@ function MobileMemberAdmin() {
                   style={{ width: "100%", height: 38, background: "#f9fafb", color: "#374151", border: "1px solid #e5e7eb", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
-                  ?�세보기 �?처리
+                  상세보기 및 처리
                 </button>
               </div>
             </div>
@@ -285,36 +285,36 @@ function MobileMemberAdmin() {
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
 
-      {/* 반려 ?�유 모달 */}
+      {/* 반려 사유 모달 */}
       {rejectModalFor && (
         <div onClick={() => setRejectModalFor(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 9999, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
           <div onClick={(e) => e.stopPropagation()} style={{ background: "#fff", borderRadius: "20px 20px 0 0", padding: "24px 20px 36px", width: "100%", maxWidth: 448, animation: "slideUp 0.25s ease" }}>
             <style>{`@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }`}</style>
             <div style={{ width: 40, height: 4, borderRadius: 2, background: "#d1d5db", margin: "0 auto 20px" }} />
-            <h3 style={{ fontSize: 18, fontWeight: 800, color: "#111", margin: "0 0 16px" }}>반려 ?�유 ?�택</h3>
-            <select value={rejectReason} onChange={(e) => { setRejectReason(e.target.value); if (e.target.value !== '기�?') setCustomReason(''); }} style={{ width: "100%", height: 46, padding: "0 14px", border: "1px solid #d1d5db", borderRadius: 10, fontSize: 15, outline: "none", marginBottom: 12, background: "#fff", color: "#111", boxSizing: "border-box" }}>
-              <option value="?�업?�등록증??불분명합?�다">?�업?�등록증??불분명합?�다</option>
-              <option value="중개?�등록증???�락?�었?�니??>중개?�등록증???�락?�었?�니??/option>
-              <option value="?�류 ?�보가 ?�치?��? ?�습?�다">?�류 ?�보가 ?�치?��? ?�습?�다</option>
-              <option value="?�수 ?�보가 미입???�었?�니??>?�수 ?�보가 미입???�었?�니??/option>
-              <option value="기�?">기�? (직접 ?�력)</option>
+            <h3 style={{ fontSize: 18, fontWeight: 800, color: "#111", margin: "0 0 16px" }}>반려 사유 선택</h3>
+            <select value={rejectReason} onChange={(e) => { setRejectReason(e.target.value); if (e.target.value !== '기타') setCustomReason(''); }} style={{ width: "100%", height: 46, padding: "0 14px", border: "1px solid #d1d5db", borderRadius: 10, fontSize: 15, outline: "none", marginBottom: 12, background: "#fff", color: "#111", boxSizing: "border-box" }}>
+              <option value="사업자등록증이 불분명합니다">사업자등록증이 불분명합니다</option>
+              <option value="중개업등록증이 누락되었습니다">중개업등록증이 누락되었습니다</option>
+              <option value="서류 정보가 일치하지 않습니다">서류 정보가 일치하지 않습니다</option>
+              <option value="필수 정보가 미입력 되었습니다">필수 정보가 미입력 되었습니다</option>
+              <option value="기타">기타 (직접 입력)</option>
             </select>
-            {rejectReason === '기�?' && (
+            {rejectReason === '기타' && (
               <textarea
                 value={customReason}
                 onChange={(e) => setCustomReason(e.target.value)}
-                placeholder="반려 ?�유�?직접 ?�력?�주?�요..."
+                placeholder="반려 사유를 직접 입력해주세요..."
                 style={{ width: "100%", height: 80, padding: 14, border: "1px solid #d1d5db", borderRadius: 10, fontSize: 15, outline: "none", marginBottom: 12, resize: "none", fontFamily: "inherit", boxSizing: "border-box" }}
               />
             )}
             <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
               <button onClick={() => setRejectModalFor(null)} style={{ flex: 1, height: 48, background: "#f3f4f6", color: "#374151", border: "none", borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: "pointer" }}>취소</button>
               <button onClick={async () => {
-                const finalReason = rejectReason === '기�?' ? (customReason.trim() || '기�? ?�유') : rejectReason;
+                const finalReason = rejectReason === '기타' ? (customReason.trim() || '기타 사유') : rejectReason;
                 const res = await adminRejectRealtorApplication(rejectModalFor, finalReason);
-                if (res.success) { alert('반려 처리 ?�료'); fetchMembers(); setRejectModalFor(null); setRejectReason('?�업?�등록증??불분명합?�다'); setCustomReason(''); }
-                else alert('반려 ?�패: ' + res.error);
-              }} style={{ flex: 1, height: 48, background: "#ef4444", color: "#fff", border: "none", borderRadius: 10, fontSize: 15, fontWeight: 800, cursor: "pointer" }}>반려 ?�정</button>
+                if (res.success) { alert('반려 처리 완료'); fetchMembers(); setRejectModalFor(null); setRejectReason('사업자등록증이 불분명합니다'); setCustomReason(''); }
+                else alert('반려 실패: ' + res.error);
+              }} style={{ flex: 1, height: 48, background: "#ef4444", color: "#fff", border: "none", borderRadius: 10, fontSize: 15, fontWeight: 800, cursor: "pointer" }}>반려 확정</button>
             </div>
           </div>
         </div>

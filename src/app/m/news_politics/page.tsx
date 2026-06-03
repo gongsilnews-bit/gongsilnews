@@ -13,7 +13,7 @@ export default async function MobileNewsPage({
   const authorMatch = resolvedParams.author_name;
   const keywordMatch = resolvedParams.keyword;
   
-  const filters: any = { status: "APPROVED", limit: 30, section1: "부?�산·경제" };
+  const filters: any = { status: "APPROVED", limit: 30, section1: "부동산·경제" };
   if (authorMatch) filters.author_name = authorMatch;
   if (keywordMatch) filters.keyword = keywordMatch;
 

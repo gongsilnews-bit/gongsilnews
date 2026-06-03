@@ -30,7 +30,7 @@ export default function FooterAuthButtons() {
             onClick={handleLogout}
             style={{ flex: 1, maxWidth: 160, height: 42, border: "1px solid #ddd", borderRadius: 4, background: "#fff", color: "#555", fontSize: 14, fontWeight: 700, cursor: "pointer", letterSpacing: "-0.3px" }}
           >
-            로그?�웃
+            로그아웃
           </button>
         ) : (
           <>
@@ -38,12 +38,14 @@ export default function FooterAuthButtons() {
               onClick={() => setShowAuth(true)}
               style={{ flex: 1, maxWidth: 160, height: 42, border: "1px solid #ddd", borderRadius: 4, background: "#fff", color: "#333", fontSize: 14, fontWeight: 700, cursor: "pointer", letterSpacing: "-0.3px" }}
             >
-              로그??            </button>
+              로그인
+            </button>
             <button
               onClick={() => { window.location.href = '/m/signup'; }}
               style={{ flex: 1, maxWidth: 160, height: 42, border: "none", borderRadius: 4, background: "#1e56a0", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer", letterSpacing: "-0.3px" }}
             >
-              무료?�원가??            </button>
+              무료회원가입
+            </button>
           </>
         )}
       </div>

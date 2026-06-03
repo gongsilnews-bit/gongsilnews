@@ -14,9 +14,9 @@ interface Props {
 export default function StudySubMenuBar({ activeTab, onTabChange, showBack }: Props) {
   const router = useRouter();
   const tabs: { key: StudyTab; label: string }[] = [
-    { key: "lecture", label: "?�강준비중" },
-    { key: "board", label: "?�료?? },
-    { key: "community", label: "커�??�티" },
+    { key: "lecture", label: "특강준비중" },
+    { key: "board", label: "자료실" },
+    { key: "community", label: "커뮤니티" },
   ];
 
   return (
@@ -41,7 +41,7 @@ export default function StudySubMenuBar({ activeTab, onTabChange, showBack }: Pr
         .study-sub-menu-scroll { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
 
-      {/* ?�로가�?버튼 (게시???�이지?�서�??�시) */}
+      {/* 뒤로가기 버튼 (게시판 페이지에서만 표시) */}
       {showBack && (
         <button
           onClick={() => router.back()}

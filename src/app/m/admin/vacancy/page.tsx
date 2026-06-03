@@ -8,7 +8,7 @@ import { getVacancies, updateVacancyStatus, deleteVacancy, updateVacancy } from 
 function MobileVacancyAdmin() {
   const router = useRouter();
   const [vacancies, setVacancies] = useState<any[]>([]);
-  const [filter, setFilter] = useState("?�체");
+  const [filter, setFilter] = useState("전체");
   const [loading, setLoading] = useState(true);
   const [memberId, setMemberId] = useState<string | null>(null);
   const [userName, setUserName] = useState("");
@@ -30,7 +30,7 @@ function MobileVacancyAdmin() {
       const { data } = await supabase.from("members").select("id, name, phone, role").eq("id", user.id).single();
       if (data) {
         setMemberId(data.id);
-        setUserName(data.name || "?�름?�음");
+        setUserName(data.name || "이름없음");
         setUserPhone(data.phone || "");
         setUserRole(data.role);
         if (data.role === 'ADMIN' || data.role === 'SUPER_ADMIN' || data.role === '최고관리자') {
@@ -109,9 +109,9 @@ function MobileVacancyAdmin() {
   }, [memberId]);
 
   const filtered = vacancies.filter(v => {
-    if (filter === "광고�? && v.status !== "ACTIVE") return false;
+    if (filter === "광고중" && v.status !== "ACTIVE") return false;
     if (filter === "광고종료" && v.status !== "STOPPED") return false;
-    if (filter === "?�시?�?? && v.status !== "DRAFT") return false;
+    if (filter === "임시저장" && v.status !== "DRAFT") return false;
     if (activeKeyword) {
       const k = activeKeyword.toLowerCase();
       const addr = [v.sido, v.sigungu, v.dong, v.building_name].filter(Boolean).join(" ").toLowerCase();
@@ -130,38 +130,38 @@ function MobileVacancyAdmin() {
     const e = Math.floor(m / 10000);
     const r = m % 10000;
     let result = "";
-    if (e > 0) result += `${e}??;
+    if (e > 0) result += `${e}억`;
     if (r > 0) {
       const c = Math.floor(r / 1000);
       const rem = r % 1000;
       let rest = "";
-      if (c > 0) rest += `${c}�?;
+      if (c > 0) rest += `${c}천`;
       if (rem > 0) rest += `${rem}`;
       if (rest) result += result ? " " + rest : rest;
-      if (e === 0 && c === 0 && rem > 0) result += "�?;
+      if (e === 0 && c === 0 && rem > 0) result += "만";
     }
     return result || "0";
   };
 
   const statusInfo: Record<string, { bg: string; label: string }> = {
-    ACTIVE: { bg: "#10b981", label: "광고�? },
+    ACTIVE: { bg: "#10b981", label: "광고중" },
     STOPPED: { bg: "#ef4444", label: "광고종료" },
-    DRAFT: { bg: "#9ca3af", label: "?�시?�?? },
+    DRAFT: { bg: "#9ca3af", label: "임시저장" },
   };
 
   const tabs = [
-    { key: "?�체", count: vacancies.length },
-    { key: "광고�?, count: vacancies.filter(v => v.status === "ACTIVE").length },
+    { key: "전체", count: vacancies.length },
+    { key: "광고중", count: vacancies.filter(v => v.status === "ACTIVE").length },
     { key: "광고종료", count: vacancies.filter(v => v.status === "STOPPED").length },
-    { key: "?�시?�??, count: vacancies.filter(v => v.status === "DRAFT").length },
+    { key: "임시저장", count: vacancies.filter(v => v.status === "DRAFT").length },
   ];
 
   if (!authChecked) {
     return (
       <div style={{ display: "flex", height: "100dvh", alignItems: "center", justifyContent: "center", background: "#f4f5f7" }}>
         <div style={{ textAlign: "center", color: "#9ca3af" }}>
-          <div style={{ fontSize: 36, marginBottom: 12 }}>?��</div>
-          <div style={{ fontSize: 14, fontWeight: 600 }}>권한???�인?�고 ?�습?�다...</div>
+          <div style={{ fontSize: 36, marginBottom: 12 }}>🔐</div>
+          <div style={{ fontSize: 14, fontWeight: 600 }}>권한을 확인하고 있습니다...</div>
         </div>
       </div>
     );
@@ -169,15 +169,16 @@ function MobileVacancyAdmin() {
 
   return (
     <div style={{ minHeight: "100dvh", background: "#f4f5f7", fontFamily: "'Pretendard Variable', -apple-system, sans-serif" }}>
-      {/* ?�단 ?�더 */}
+      {/* 상단 헤더 */}
       <div style={{ position: "sticky", top: 0, zIndex: 50, background: "#fff", borderBottom: "1px solid #e5e7eb", padding: "0 16px", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <button onClick={() => router.back()} style={{ background: "none", border: "none", cursor: "pointer", padding: 4, display: "flex" }}>
+          <button onClick={() => router.push('/m?menu=open')} style={{ background: "none", border: "none", cursor: "pointer", padding: 4, display: "flex" }}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M15 18L9 12L15 6" stroke="#333" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </button>
-          <h1 style={{ fontSize: 18, fontWeight: 800, color: "#111", margin: 0 }}>공실관�?/h1>
+          <h1 style={{ fontSize: 18, fontWeight: 800, color: "#111", margin: 0 }}>공실관리</h1>
           <span style={{ fontSize: 12, color: "#6b7280", fontWeight: 600 }}>
-            광고 {vacancies.filter(v => v.status === "ACTIVE").length}�?/ ?�체 {vacancies.length}�?          </span>
+            광고 {vacancies.filter(v => v.status === "ACTIVE").length}건 / 전체 {vacancies.length}건
+          </span>
         </div>
         <button onClick={() => setSearchOpen(!searchOpen)} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -186,25 +187,25 @@ function MobileVacancyAdmin() {
         </button>
       </div>
 
-      {/* 검???�역 (?�이?? */}
+      {/* 검색 영역 (접이식) */}
       {searchOpen && (
         <div style={{ background: "#fff", padding: "12px 16px", borderBottom: "1px solid #e5e7eb", display: "flex", gap: 8 }}>
           <input
             type="text"
             value={searchKeyword}
             onChange={e => setSearchKeyword(e.target.value)}
-            onKeyDown={e => { if (e.key === "Enter") { setActiveKeyword(searchKeyword); setFilter("?�체"); } }}
-            placeholder="주소, 건물�? ?�록???�는 공실번호 검??
+            onKeyDown={e => { if (e.key === "Enter") { setActiveKeyword(searchKeyword); setFilter("전체"); } }}
+            placeholder="주소, 건물명, 등록자 또는 공실번호 검색"
             style={{ flex: 1, height: 40, padding: "0 12px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, outline: "none" }}
           />
-          <button onClick={() => { setActiveKeyword(searchKeyword); setFilter("?�체"); }} style={{ height: 40, padding: "0 16px", background: "#374151", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700 }}>검??/button>
+          <button onClick={() => { setActiveKeyword(searchKeyword); setFilter("전체"); }} style={{ height: 40, padding: "0 16px", background: "#374151", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700 }}>검색</button>
           {activeKeyword && (
-            <button onClick={() => { setSearchKeyword(""); setActiveKeyword(""); }} style={{ height: 40, padding: "0 12px", background: "#fff", color: "#6b7280", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 13, fontWeight: 600 }}>초기??/button>
+            <button onClick={() => { setSearchKeyword(""); setActiveKeyword(""); }} style={{ height: 40, padding: "0 12px", background: "#fff", color: "#6b7280", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 13, fontWeight: 600 }}>초기화</button>
           )}
         </div>
       )}
 
-      {/* ?�터 ??*/}
+      {/* 필터 탭 */}
       <div style={{ background: "#fff", borderBottom: "1px solid #e5e7eb", padding: "0 12px", display: "flex", overflowX: "auto", WebkitOverflowScrolling: "touch" }} className="hide-scrollbar">
         {tabs.map(tab => (
           <button
@@ -220,8 +221,8 @@ function MobileVacancyAdmin() {
           >
             {tab.key}
             <span style={{
-              background: tab.key === "?�체" ? "#e5e7eb" : tab.key === "광고�? ? "#10b981" : tab.key === "광고종료" ? "#ef4444" : tab.key === "?�시?�?? ? "#9ca3af" : "#ef4444",
-              color: tab.key === "?�체" ? "#4b5563" : "#fff",
+              background: tab.key === "전체" ? "#e5e7eb" : tab.key === "광고중" ? "#10b981" : tab.key === "광고종료" ? "#ef4444" : tab.key === "임시저장" ? "#9ca3af" : "#ef4444",
+              color: tab.key === "전체" ? "#4b5563" : "#fff",
               padding: "2px 7px", borderRadius: 10, fontSize: 11, fontWeight: 700,
             }}>
               {tab.count}
@@ -230,24 +231,24 @@ function MobileVacancyAdmin() {
         ))}
       </div>
 
-      {/* 공실 카드 리스??*/}
+      {/* 공실 카드 리스트 */}
       <div style={{ padding: "8px 8px 100px" }}>
         {loading ? (
           <div style={{ padding: "40px 0", textAlign: "center", color: "#9ca3af" }}>
-            <div style={{ fontSize: 14, fontWeight: 600 }}>불러?�는 �?..</div>
+            <div style={{ fontSize: 14, fontWeight: 600 }}>불러오는 중...</div>
           </div>
         ) : filtered.length === 0 ? (
           <div style={{ padding: "60px 0", textAlign: "center", color: "#9ca3af" }}>
-            <div style={{ fontSize: 40, marginBottom: 12 }}>?��</div>
+            <div style={{ fontSize: 40, marginBottom: 12 }}>🏢</div>
             <div style={{ fontSize: 15, fontWeight: 600 }}>
-              {filter === "?�체" ? "?�록??공실???�습?�다." : "조건??맞는 공실???�습?�다."}
+              {filter === "전체" ? "등록된 공실이 없습니다." : "조건에 맞는 공실이 없습니다."}
             </div>
           </div>
         ) : filtered.map(row => {
           const st = statusInfo[row.status] || { bg: "#9ca3af", label: row.status };
           const addrText = [row.dong, row.building_name].filter(Boolean).join(" ") || [row.sido, row.sigungu, row.dong].filter(Boolean).join(" ");
           const priceText = row.trade_type === "매매" ? `매매 ${formatAmount(row.deposit)}`
-            : row.trade_type === "?�세" ? `?�세 ${formatAmount(row.deposit)}`
+            : row.trade_type === "전세" ? `전세 ${formatAmount(row.deposit)}`
             : `${formatAmount(row.deposit)}/${formatAmount(row.monthly_rent)}`;
           const dateStr = row.created_at ? new Date(row.created_at).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' }) : "-";
           const daysSinceCreated = row.created_at ? Math.floor((Date.now() - new Date(row.created_at).getTime()) / 86400000) : 0;
@@ -257,14 +258,14 @@ function MobileVacancyAdmin() {
               background: "#fff", borderRadius: 12, padding: "14px", marginBottom: 8,
               boxShadow: "0 1px 3px rgba(0,0,0,0.05)", border: "1px solid #f0f0f0",
             }}>
-              {/* ?�단: ?�태 + 공실광고 종류 + 번호 */}
+              {/* 상단: 상태 + 공실광고 종류 + 번호 */}
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   {(row.status === "ACTIVE" || row.status === "STOPPED") ? (
                     <button
                       onClick={async () => {
                         const isActive = row.status === "ACTIVE";
-                        const msg = isActive ? "광고�?종료?�시겠습?�까?" : "광고�??�작?�시겠습?�까?";
+                        const msg = isActive ? "광고를 종료하시겠습니까?" : "광고를 시작하시겠습니까?";
                         if (!confirm(msg)) return;
                         const newStatus = isActive ? "STOPPED" : "ACTIVE";
                         const res = await updateVacancyStatus(row.id, newStatus);
@@ -286,7 +287,7 @@ function MobileVacancyAdmin() {
                     <span style={{ color: "#ef4444", fontSize: 12 }}>No.{row.vacancy_no || "-"}</span>
                   </span>
                 </div>
-                <span style={{ fontSize: 11, color: "#9ca3af" }}>{daysSinceCreated}??/span>
+                <span style={{ fontSize: 11, color: "#9ca3af" }}>{daysSinceCreated}일</span>
               </div>
 
               {/* 주소 */}
@@ -294,43 +295,44 @@ function MobileVacancyAdmin() {
                 onClick={() => openPreview(row.id)}
                 style={{ fontSize: 16, fontWeight: 800, color: "#111", marginBottom: 6, cursor: "pointer", wordBreak: "keep-all" }}
               >
-                {addrText || "주소 미입??}
+                {addrText || "주소 미입력"}
               </div>
 
-              {/* 가�?+ ?�펙 */}
+              {/* 가격 + 스펙 */}
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
                 <span style={{ fontSize: 16, fontWeight: 800, color: "#ef4444" }}>{priceText}</span>
                 <span style={{ fontSize: 13, color: "#6b7280" }}>
-                  {row.room_count || "-"}�?/ {row.exclusive_m2 ? `${row.exclusive_m2}m²` : "-"} / {row.current_floor || "-"}�?                </span>
+                  {row.room_count || "-"}방 / {row.exclusive_m2 ? `${row.exclusive_m2}m²` : "-"} / {row.current_floor || "-"}층
+                </span>
               </div>
 
-              {/* ?�록??+ ?�짜 */}
+              {/* 등록자 + 날짜 */}
               <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 12, display: "flex", gap: 12 }}>
                 <span>{row.client_name || userName} · {row.client_phone || userPhone}</span>
-                <span>{dateStr} ?�록</span>
+                <span>{dateStr} 등록</span>
               </div>
 
-              {/* ?�션 버튼 */}
+              {/* 액션 버튼 */}
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                {/* 기본 3�?버튼 (미리보기, ?�정, ??��) - ??�� ?�일???�기�???줄에 ?�출 */}
+                {/* 기본 3종 버튼 (미리보기, 수정, 삭제) - 항상 동일한 크기로 한 줄에 노출 */}
                 <div style={{ display: "flex", gap: 6 }}>
                   <button onClick={() => openPreview(row.id)} style={{ flex: 1, height: 36, background: "#f0f9ff", color: "#2563eb", border: "1px solid #bfdbfe", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                    ?���?미리보기
+                    👁️ 미리보기
                   </button>
                   <button onClick={() => router.push(`/m/admin/vacancy/write?id=${row.id}`)} style={{ flex: 1, height: 36, background: "#4b5563", color: "#fff", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                    ?�️ ?�정
+                    ✏️ 수정
                   </button>
                   <button onClick={async () => {
-                    if (!confirm("??공실????��?�시겠습?�까?")) return;
+                    if (!confirm("이 공실을 삭제하시겠습니까?")) return;
                     const res = await deleteVacancy(row.id);
                     if (res.success) fetchVacancies();
                   }} style={{ flex: 1, height: 36, background: "#fff", color: "#ef4444", border: "1px solid #fecaca", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                    ?���???��
+                    🗑️ 삭제
                   </button>
                 </div>
 
-                {/* AI ?�라???�단지 ?�용 공유 / 비활??버튼 */}
-                {(userRole === 'ADMIN' || userRole === 'SUPER_ADMIN' || userRole === '최고관리자' || userRole === '부?�산' || userRole === 'REALTOR') && (() => {
+                {/* AI 온라인 전단지 전용 공유 / 비활성 버튼 */}
+                {(userRole === 'ADMIN' || userRole === 'SUPER_ADMIN' || userRole === '최고관리자' || userRole === '부동산' || userRole === 'REALTOR') && (() => {
                   const hasFlyer = flyerMap[row.id];
                   if (hasFlyer) {
                     return (
@@ -338,7 +340,7 @@ function MobileVacancyAdmin() {
                         onClick={() => {
                           const shareUrl = `${window.location.origin}/flyer/${row.id}.html`;
                           navigator.clipboard.writeText(shareUrl).then(() => {
-                            alert("?�라?�전?��? 링크 주소가 복사?�었?�니??\n?�하???�?�방??붙여?�어 ?�송?�보?�요!");
+                            alert("온라인전단지 링크 주소가 복사되었습니다.\n원하는 대화방에 붙여넣어 전송해보세요!");
                           }).catch(() => {
                             const textArea = document.createElement("textarea");
                             textArea.value = shareUrl;
@@ -346,7 +348,7 @@ function MobileVacancyAdmin() {
                             textArea.select();
                             document.execCommand("copy");
                             document.body.removeChild(textArea);
-                            alert("?�라?�전?��? 링크 주소가 복사?�었?�니??\n?�하???�?�방??붙여?�어 ?�송?�보?�요!");
+                            alert("온라인전단지 링크 주소가 복사되었습니다.\n원하는 대화방에 붙여넣어 전송해보세요!");
                           });
                         }}
                         style={{ 
@@ -368,14 +370,14 @@ function MobileVacancyAdmin() {
                         }}
                       >
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
-                        ?�� ?�단지 URL 복사
+                        📢 전단지 URL 복사
                       </button>
                     );
                   } else {
                     return (
                       <button 
                         onClick={() => {
-                          alert("??매물?� ?�직 AI ?�라?�전?��?가 ?�작?��? ?�았?�니??\nPC 버전 공실관리에???�단지�?먼�? ?�작/?�?�해 주세??");
+                          alert("이 매물은 아직 AI 온라인전단지가 제작되지 않았습니다.\nPC 버전 공실관리에서 전단지를 먼저 제작/저장해 주세요!");
                         }}
                         style={{ 
                           width: "100%", 
@@ -395,7 +397,7 @@ function MobileVacancyAdmin() {
                         }}
                       >
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.6 }}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                        ?�� AI ?�단지 미작??(PC?�서 ?�작 ?�요)
+                        📢 AI 전단지 미작성 (PC에서 제작 필요)
                       </button>
                     );
                   }
@@ -406,7 +408,7 @@ function MobileVacancyAdmin() {
         })}
       </div>
 
-      {/* FAB: 공실?�록 */}
+      {/* FAB: 공실등록 */}
       <button
         onClick={() => router.push("/m/admin/vacancy/write")}
         style={{
@@ -437,7 +439,7 @@ function MobileVacancyAdmin() {
 
 
 
-      {/* 미리보기 ?�버?�이 (iframe) */}
+      {/* 미리보기 오버레이 (iframe) */}
       {previewId && (
         <div style={{ position: "fixed", inset: 0, zIndex: 99999, background: "rgba(0,0,0,0.6)" }}>
           <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column" }}>

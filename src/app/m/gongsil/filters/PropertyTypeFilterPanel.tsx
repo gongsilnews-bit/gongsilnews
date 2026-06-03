@@ -34,7 +34,7 @@ export default function PropertyTypeFilterPanel({ filters, onFilterChange, PROPE
 
   return (
     <div>
-      {/* ?? [?�?�님 지�? 광고?�형 최상???�일 ?�체?�택 ?��? 버튼 ?�착 */}
+      {/* 🚀 [대표님 지침] 광고유형 최상단 단일 전체선택 토글 버튼 장착 */}
       <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "14px" }}>
         <button 
           onClick={handleToggleAll} 
@@ -46,7 +46,7 @@ export default function PropertyTypeFilterPanel({ filters, onFilterChange, PROPE
             transition: "all 0.15s ease"
           }}
         >
-          {isAllSelected ? "???�체?�택" : "?�체?�택"}
+          {isAllSelected ? "✓ 전체선택" : "전체선택"}
         </button>
       </div>
 

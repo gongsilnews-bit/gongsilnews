@@ -5,22 +5,22 @@ import { useRouter } from "next/navigation";
 
 const QUICK_MENU = [
   {
-    category: "커�??�티",
+    category: "커뮤니티",
     items: [
-      { name: "?�유게시??, path: "/m/board?id=free" },
-      { name: "Q&A게시??, path: "/m/board?id=qna" },
-      { name: "공�??�항", path: "/m/board?id=notice" },
+      { name: "자유게시판", path: "/m/board?id=free" },
+      { name: "Q&A게시판", path: "/m/board?id=qna" },
+      { name: "공지사항", path: "/m/board?id=notice" },
       { name: "1:1 문의", path: "/m/board?id=inquiry" },
     ]
   },
   {
-    category: "?�료??,
+    category: "자료실",
     items: [
-      { name: "?�론?�상", path: "/m/board?id=drone" },
-      { name: "APP(??", path: "/m/board?id=app" },
-      { name: "AI ?�롬?�트", path: "/m/board?id=prompt" },
-      { name: "?�원", path: "/m/board?id=sound" },
-      { name: "계약???�식", path: "/m/board?id=doc" },
+      { name: "드론영상", path: "/m/board?id=drone" },
+      { name: "APP(앱)", path: "/m/board?id=app" },
+      { name: "AI 프롬프트", path: "/m/board?id=prompt" },
+      { name: "음원", path: "/m/board?id=sound" },
+      { name: "계약서/양식", path: "/m/board?id=doc" },
     ]
   }
 ];
@@ -30,7 +30,7 @@ export default function BoardDropdownHeader({ currentBoardName }: { currentBoard
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
-  // ?��? ?�릭 ???�롭?�운 ?�기
+  // 외부 클릭 시 드롭다운 닫기
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -76,13 +76,13 @@ export default function BoardDropdownHeader({ currentBoardName }: { currentBoard
 
       {isOpen && (
         <>
-          {/* ?�체 ?�면 배경 ?�버?�이 (?�릭 ???�힘) */}
+          {/* 전체 화면 배경 오버레이 (클릭 시 닫힘) */}
           <div 
             style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.25)", zIndex: 99, backdropFilter: "blur(2px)" }} 
             onClick={() => setIsOpen(false)} 
           />
           
-          {/* ?�롭?�운 메뉴 컨테?�너 */}
+          {/* 드롭다운 메뉴 컨테이너 */}
           <div
             style={{
               position: "absolute",

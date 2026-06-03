@@ -7,10 +7,10 @@ import dynamic from "next/dynamic";
 const SearchOverlay = dynamic(() => import("./header/SearchOverlay"), { ssr: false });
 
 const CATEGORIES = [
-  { key: "news_gongsil", label: "공실?�스", path: "/m/news_gongsil" },
-  { key: "news_politics", label: "부?�산·경제", path: "/m/news_politics" },
-  { key: "news_marketing", label: "AI마�???, path: "/m/news_marketing" },
-  { key: "news_etc", label: "?�이?�·오?�니??, path: "/m/news_etc" },
+  { key: "news_gongsil", label: "공실뉴스", path: "/m/news_gongsil" },
+  { key: "news_politics", label: "부동산·경제", path: "/m/news_politics" },
+  { key: "news_marketing", label: "AI마케팅", path: "/m/news_marketing" },
+  { key: "news_etc", label: "라이프·오피니언", path: "/m/news_etc" },
 ];
 
 interface Props {
@@ -39,7 +39,7 @@ export default function MobileTopBarHeader({ activeTab }: Props) {
           height: "56px",
         }}
       >
-        {/* 좌측 로고 ??고정 */}
+        {/* 좌측 로고 — 고정 */}
         <button
           onClick={() => router.push("/m")}
           style={{
@@ -52,10 +52,10 @@ export default function MobileTopBarHeader({ activeTab }: Props) {
             cursor: "pointer",
           }}
         >
-          <img src="/new_logo.png" alt="?? style={{ width: "28px", height: "28px", objectFit: "contain" }} />
+          <img src="/new_logo.png" alt="홈" style={{ width: "28px", height: "28px", objectFit: "contain" }} />
         </button>
 
-        {/* 중앙 ?�크�?메뉴 */}
+        {/* 중앙 스크롤 메뉴 */}
         <div
           className="hide-scrollbar"
           style={{
@@ -97,11 +97,11 @@ export default function MobileTopBarHeader({ activeTab }: Props) {
               </span>
             </button>
           ))}
-          {/* 검??버튼??가?��?지 ?�도�??��?�??�백 추�? */}
+          {/* 검색 버튼에 가려지지 않도록 끝부분 여백 추가 */}
           <div style={{ flexShrink: 0, width: "40px" }} />
         </div>
         
-        {/* ?�측 검??버튼 ??고정 */}
+        {/* 우측 검색 버튼 — 고정 */}
         <button
           onClick={() => setIsSearchOpen(true)}
           style={{
@@ -125,7 +125,7 @@ export default function MobileTopBarHeader({ activeTab }: Props) {
         </button>
       </div>
 
-      {/* 검???�버?�이 */}
+      {/* 검색 오버레이 */}
       {isSearchOpen && <SearchOverlay isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />}
     </>
   );

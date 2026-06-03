@@ -8,25 +8,26 @@ import { geocodeAddress } from "@/app/actions/geocode";
 
 import imageCompression from "browser-image-compression";
 
-/* ?�?� WebP ?�축 (browser-image-compression ?�용) ?�?� */
+/* ── WebP 압축 (browser-image-compression 활용) ── */
 const compressToWebP = async (file: File, maxWidth = 1200, quality = 0.8): Promise<File> => {
   if (!file.type.startsWith("image/") && !file.name.toLowerCase().endsWith(".heic")) {
     return file;
   }
   try {
     const options = {
-      maxSizeMB: 1,          // 최�? ?�량 1MB ?�한
-      maxWidthOrHeight: maxWidth, // 가로세�?최�? maxWidth 리사?�징
+      maxSizeMB: 1,          // 최대 용량 1MB 제한
+      maxWidthOrHeight: maxWidth, // 가로세로 최대 maxWidth 리사이징
       useWebWorker: true,
-      fileType: "image/webp", // WebP ?�맷?�로 변??강제
+      fileType: "image/webp", // WebP 포맷으로 변환 강제
       initialQuality: quality
     };
-    // HEIC �?고해?�도 처리�??�벽?�게 모바???�드?�어 ?�에??최적??지??    const compressedBlob = await imageCompression(file, options);
+    // HEIC 및 고해상도 처리를 완벽하게 모바일 하드웨어 단에서 최적화 지원
+    const compressedBlob = await imageCompression(file, options);
     return new File([compressedBlob], file.name.replace(/\.[^/.]+$/, "") + ".webp", {
       type: "image/webp"
     });
   } catch (error) {
-    console.error("?�축 ?�패, ?�본 ?�로??", error);
+    console.error("압축 실패, 원본 업로드:", error);
     return file;
   }
 };
@@ -62,20 +63,20 @@ function MobileSettings() {
   const initialTab = searchParams.get('tab') === 'agency' ? 'agency' : 'basic';
   const [tab, setTab] = useState<"basic" | "agency" | "marketing">(initialTab as any);
 
-  /* 마�????�보 (SNS, API) */
-  const initialSnsObj = { url: "", login_id: "", login_pw: "", login_type: "?�반" };
+  /* 마케팅 정보 (SNS, API) */
+  const initialSnsObj = { url: "", login_id: "", login_pw: "", login_type: "일반" };
   const [snsLinks, setSnsLinks] = useState<Record<string, typeof initialSnsObj>>({
     homepage: { ...initialSnsObj }, contact: { ...initialSnsObj }, shopping_mall: { ...initialSnsObj }, 
     blog: { ...initialSnsObj }, cafe: { ...initialSnsObj }, youtube: { ...initialSnsObj }, 
     facebook: { ...initialSnsObj }, twitter: { ...initialSnsObj }, instagram: { ...initialSnsObj }, 
     kakao: { ...initialSnsObj }, threads: { ...initialSnsObj }
   });
-  const snsLabels: Record<string, string> = { homepage: "?�페?��?", contact: "문의?�기", shopping_mall: "?�핑�?, blog: "블로�?, cafe: "카페", youtube: "?�튜�?, facebook: "?�이?�북", twitter: "?�위??, instagram: "?�스?�그램", kakao: "카카??, threads: "?�레?? };
+  const snsLabels: Record<string, string> = { homepage: "홈페이지", contact: "문의하기", shopping_mall: "쇼핑몰", blog: "블로그", cafe: "카페", youtube: "유튜브", facebook: "페이스북", twitter: "트위터", instagram: "인스타그램", kakao: "카카오", threads: "쓰레드" };
   const initialApiObj = { provider: "챗GPT", key_value: "", login_id: "", login_pw: "" };
   const [apiList, setApiList] = useState<typeof initialApiObj[]>([]);
   const [isRealtor, setIsRealtor] = useState(false);
 
-  /* 기본 ?�보 */
+  /* 기본 정보 */
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -84,7 +85,7 @@ function MobileSettings() {
   const [profileFile, setProfileFile] = useState<File | null>(null);
   const profileRef = useRef<HTMLInputElement>(null);
 
-  /* 부?�산 ?�보 */
+  /* 부동산 정보 */
   const [agencyName, setAgencyName] = useState("");
   const [ceoName, setCeoName] = useState("");
   const [cell, setCell] = useState("");
@@ -99,7 +100,7 @@ function MobileSettings() {
   const [rejectReason, setRejectReason] = useState<string | null>(null);
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
 
-  /* ?�류 ?�진 */
+  /* 서류 사진 */
   const [regCertPreview, setRegCertPreview] = useState<string | null>(null);
   const [regCertFile, setRegCertFile] = useState<File | null>(null);
   const [bizCertPreview, setBizCertPreview] = useState<string | null>(null);
@@ -107,7 +108,7 @@ function MobileSettings() {
   const regCertRef = useRef<HTMLInputElement>(null);
   const bizCertRef = useRef<HTMLInputElement>(null);
 
-  /* ?��?지 ?��? */
+  /* 이미지 확대 */
   const [previewImg, setPreviewImg] = useState<string | null>(null);
 
   useEffect(() => {
@@ -124,7 +125,7 @@ function MobileSettings() {
         setEmail(m.email || "");
         setPhone(m.phone || "");
         setRole(m.role || "USER");
-        setIsRealtor(m.role === "REALTOR" || m.role === "부?�산?�원");
+        setIsRealtor(m.role === "REALTOR" || m.role === "부동산회원");
         if (m.profile_image_url) setProfilePreview(m.profile_image_url);
 
         if (m.sns_links) {
@@ -168,7 +169,7 @@ function MobileSettings() {
     })();
   }, []);
 
-  /* ?�음 ?�편번호 */
+  /* 다음 우편번호 */
   useEffect(() => {
     if (!document.getElementById("daum-postcode-script")) {
       const s = document.createElement("script");
@@ -192,7 +193,7 @@ function MobileSettings() {
           } catch { setCoords(null); }
         },
       }).open();
-    } else alert("?�편번호 ?�크립트�?불러?�는 중입?�다.");
+    } else alert("우편번호 스크립트를 불러오는 중입니다.");
   };
 
   const handleSnsObjChange = (key: string, field: string, value: string) => {
@@ -203,9 +204,9 @@ function MobileSettings() {
     if (!text) return;
     try {
       await navigator.clipboard.writeText(text);
-      alert("?�립보드??복사?�었?�니??");
+      alert("클립보드에 복사되었습니다.");
     } catch {
-      alert("복사???�패?�습?�다.");
+      alert("복사에 실패했습니다.");
     }
   };
 
@@ -231,7 +232,7 @@ function MobileSettings() {
     if (!memberId) return;
     setSaving(true);
     try {
-      /* ?�로???�진 */
+      /* 프로필 사진 */
       let profileUrl: string | undefined = undefined;
       if (profileFile) {
         const fd = new FormData();
@@ -248,7 +249,7 @@ function MobileSettings() {
         sns_links: { ...snsLinks, api_list: apiList },
       });
 
-      /* 부?�산 ?�보 */
+      /* 부동산 정보 */
       if (tab === "agency" || isRealtor) {
         let regUrl = regCertPreview?.startsWith("http") ? regCertPreview : null;
         let bizUrl = bizCertPreview?.startsWith("http") ? bizCertPreview : null;
@@ -268,10 +269,10 @@ function MobileSettings() {
           if (r.success) bizUrl = r.url || null;
         }
 
-        // 반려 ?�태?�서 ?��????????�동?�로 ?�인?�기로 변�?(?�시?�?�이 ?�닐 ?�만)
+        // 반려 상태에서 재저장 시 → 자동으로 승인대기로 변경 (임시저장이 아닐 때만)
         let saveStatus = (!isTemp && agencyStatus === 'REJECTED') ? 'PENDING' : agencyStatus;
 
-        // [AI ?�류 ?�동 검�?
+        // [AI 서류 자동 검증]
         let aiReason = "";
         if (bizCertFile && saveStatus !== 'APPROVED') {
           try {
@@ -287,9 +288,9 @@ function MobileSettings() {
             const verifyResult = await verifyRes.json();
             
             if (verifyResult.status === "APPROVED") {
-              saveStatus = "APPROVED"; // AI가 검�??�과?�키�??�동 ?�인
+              saveStatus = "APPROVED"; // AI가 검증 통과시키면 자동 승인
               setAgencyStatus("APPROVED");
-              alert("?�� AI ?�류 검�??�료!\n?�류?� ?�보가 ?�치?�여 ?�동?�로 [?�상?�인] 처리?�었?�니??");
+              alert("🤖 AI 서류 검증 완료!\n서류와 정보가 일치하여 자동으로 [정상승인] 처리되었습니다.");
             } else if (verifyResult.status === "NEEDS_REVIEW") {
               saveStatus = "PENDING";
               setAgencyStatus("PENDING");
@@ -297,18 +298,18 @@ function MobileSettings() {
               if (verifyResult.diff && verifyResult.diff.found) {
                 const isNameDiff = verifyResult.diff.expected?.companyName !== verifyResult.diff.found?.companyName;
                 const isRepDiff = verifyResult.diff.expected?.representative !== verifyResult.diff.found?.representative;
-                diffMsg = "[불일�??�역]\n";
-                if (isNameDiff) diffMsg += `- ?�호�?(?�력: ${verifyResult.diff.expected?.companyName} / ?�류: ${verifyResult.diff.found?.companyName})\n`;
-                if (isRepDiff) diffMsg += `- ?�?�자 (?�력: ${verifyResult.diff.expected?.representative} / ?�류: ${verifyResult.diff.found?.representative})\n`;
+                diffMsg = "[불일치 내역]\n";
+                if (isNameDiff) diffMsg += `- 상호명 (입력: ${verifyResult.diff.expected?.companyName} / 서류: ${verifyResult.diff.found?.companyName})\n`;
+                if (isRepDiff) diffMsg += `- 대표자 (입력: ${verifyResult.diff.expected?.representative} / 서류: ${verifyResult.diff.found?.representative})\n`;
               }
-              aiReason = "?�� AI ?�동 검�?보류: ?�류 ?�용 불일�? " + diffMsg;
-              alert("?�� AI 검�??�내: ?�류?� ?�력?�신 ?�보가 ?��? 불일치하??관리자 ?�동 검???�인?��?�??�어갑니??\n\n" + diffMsg + "\n\n?�류???�힌 ?�스?��? ?�벽???�치?�게 ?�력?�시�?즉시 ?�동 ?�인?�니??");
+              aiReason = "🤖 AI 자동 검증 보류: 서류 내용 불일치. " + diffMsg;
+              alert("🤖 AI 검증 안내: 서류와 입력하신 정보가 일부 불일치하여 관리자 수동 검토(승인대기)로 넘어갑니다.\n\n" + diffMsg + "\n\n서류에 적힌 텍스트와 완벽히 일치하게 입력하시면 즉시 자동 승인됩니다!");
             } else if (verifyResult.status === "ERROR") {
-              alert("?�� AI 검�??�러: " + verifyResult.message + "\n(?�시�??�인?��?처리?�니??");
+              alert("🤖 AI 검증 에러: " + verifyResult.message + "\n(임시로 승인대기 처리됩니다)");
             }
           } catch (e) {
             console.error("AI Verify Error:", e);
-            // ?�러 ?�면 기존처럼 PENDING?�로 진행
+            // 에러 나면 기존처럼 PENDING으로 진행
           }
         }
 
@@ -332,35 +333,35 @@ function MobileSettings() {
         if (!isTemp) {
           setIsRealtor(true);
           setRejectReason(null);
-          alert("??부?�산?�원 ?�환 ?�청???�료?�었?�니??\n\n?�류 ?�인 ???�인 처리?�니??\n(보통 ?�일~1?�업???�요)");
+          alert("✅ 부동산회원 전환 신청이 완료되었습니다!\n\n서류 확인 후 승인 처리됩니다.\n(보통 당일~1영업일 소요)");
           router.push("/m/admin/dashboard");
         } else {
-          alert("?�시?�?�되?�습?�다.");
+          alert("임시저장되었습니다.");
         }
       } else if (!isTemp && agencyStatus === 'REJECTED') {
         setAgencyStatus('PENDING');
         setRejectReason(null);
-        alert("???�류가 ?�제출되?�습?�다!\n\n관리자 ?�심?????�인 처리?�니??");
+        alert("✅ 서류가 재제출되었습니다!\n\n관리자 재심사 후 승인 처리됩니다.");
         router.push("/m/admin/dashboard");
       } else {
-        alert(isTemp ? "?�시?�?�되?�습?�다." : "?�?�되?�습?�다.");
-        if (!isTemp) router.back();
+        alert(isTemp ? "임시저장되었습니다." : "저장되었습니다.");
+        if (!isTemp) router.push("/m?menu=open");
       }
     } catch (err: any) {
-      alert("?�???�패: " + err.message);
+      alert("저장 실패: " + err.message);
     } finally { setSaving(false); }
   };
 
   const handleDeleteAccount = async () => {
-    if (confirm("?�말�??�원???�퇴?�시겠습?�까?\n?�퇴 ??모든 ?�원 ?�보가 ?�기?�며 복구?????�습?�다.")) {
-      alert("?�원 ?�퇴 ?�청???�상?�으�??�수?�었?�니??\n1~2?�업???�에 처리 ?�료 ???�내 ?�메?�이 발송?�니??");
+    if (confirm("정말로 회원을 탈퇴하시겠습니까?\n탈퇴 시 모든 회원 정보가 파기되며 복구할 수 없습니다.")) {
+      alert("회원 탈퇴 요청이 정상적으로 접수되었습니다.\n1~2영업일 내에 처리 완료 후 안내 이메일이 발송됩니다.");
       const supabase = createClient();
       await supabase.auth.signOut();
       router.push("/m");
     }
   };
 
-  const statusLabel = agencyStatus === "APPROVED" ? "?�상?�인" : agencyStatus === "REJECTED" ? "?�류보완" : "?�인?��?;
+  const statusLabel = agencyStatus === "APPROVED" ? "정상승인" : agencyStatus === "REJECTED" ? "서류보완" : "승인대기";
   const statusColor = agencyStatus === "APPROVED" ? "#059669" : agencyStatus === "REJECTED" ? "#dc2626" : "#d97706";
   const statusBg = agencyStatus === "APPROVED" ? "#ecfdf5" : agencyStatus === "REJECTED" ? "#fef2f2" : "#fffbeb";
 
@@ -368,8 +369,8 @@ function MobileSettings() {
     return (
       <div style={{ display: "flex", height: "100dvh", alignItems: "center", justifyContent: "center", background: "#f4f5f7" }}>
         <div style={{ textAlign: "center", color: "#9ca3af" }}>
-          <div style={{ fontSize: 36, marginBottom: 12 }}>?�️</div>
-          <div style={{ fontSize: 14, fontWeight: 600 }}>?�보�?불러?�는 �?..</div>
+          <div style={{ fontSize: 36, marginBottom: 12 }}>⚙️</div>
+          <div style={{ fontSize: 14, fontWeight: 600 }}>정보를 불러오는 중...</div>
         </div>
       </div>
     );
@@ -379,23 +380,23 @@ function MobileSettings() {
 
   return (
     <div style={{ minHeight: "100dvh", background: "#f4f5f7", fontFamily: "'Pretendard Variable', -apple-system, sans-serif" }}>
-      {/* ?�더 */}
+      {/* 헤더 */}
       <div style={{ position: "sticky", top: 0, zIndex: 50, background: "#fff", borderBottom: "1px solid #e5e7eb", padding: "0 16px", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <button onClick={() => router.back()} style={{ background: "none", border: "none", cursor: "pointer", padding: 4, display: "flex" }}>
+          <button onClick={() => router.push('/m?menu=open')} style={{ background: "none", border: "none", cursor: "pointer", padding: 4, display: "flex" }}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M15 18L9 12L15 6" stroke="#333" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </button>
-          <h1 style={{ fontSize: 18, fontWeight: 800, color: "#111", margin: 0 }}>?�보?�정</h1>
+          <h1 style={{ fontSize: 18, fontWeight: 800, color: "#111", margin: 0 }}>정보설정</h1>
         </div>
         <button onClick={() => handleSave(true)} disabled={saving}
           style={{ height: 36, padding: "0 16px", background: "#f3f4f6", color: "#374151", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-          {saving ? "?�?�중..." : "?�시?�??}
+          {saving ? "저장중..." : "임시저장"}
         </button>
       </div>
 
-      {/* ??*/}
+      {/* 탭 */}
       <div style={{ display: "flex", background: "#fff", borderBottom: "1px solid #e5e7eb" }}>
-        {[{ key: "basic" as const, label: "기본?�보" }, { key: "agency" as const, label: "부?�산?�보" }, { key: "marketing" as const, label: "마�??�정�? }].map(t => (
+        {[{ key: "basic" as const, label: "기본정보" }, { key: "agency" as const, label: "부동산정보" }, { key: "marketing" as const, label: "마케팅정보" }].map(t => (
           <button key={t.key} onClick={() => setTab(t.key)}
             style={{ flex: 1, padding: "14px 0", border: "none", background: "none", fontSize: 14, fontWeight: tab === t.key ? 800 : 500, color: tab === t.key ? "#2563eb" : "#6b7280", borderBottom: tab === t.key ? "3px solid #2563eb" : "3px solid transparent", cursor: "pointer" }}>
             {t.label}
@@ -404,146 +405,146 @@ function MobileSettings() {
       </div>
 
       <div style={{ padding: "16px 16px 40px" }}>
-        {/* ?�?� 기본?�보 ???�?� */}
+        {/* ── 기본정보 탭 ── */}
         {tab === "basic" && (
           <>
-            {/* ?�로???�진 */}
+            {/* 프로필 사진 */}
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 24 }}>
               <div style={{ position: "relative", marginBottom: 8 }}>
                 {profilePreview ? (
                   <img src={profilePreview} alt="" style={{ width: 80, height: 80, borderRadius: "50%", objectFit: "cover", border: "3px solid #e5e7eb" }} onClick={() => setPreviewImg(profilePreview)} />
                 ) : (
-                  <div style={{ width: 80, height: 80, borderRadius: "50%", background: "#f3f4f6", border: "2px dashed #d1d5db", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, color: "#9ca3af" }}>?��</div>
+                  <div style={{ width: 80, height: 80, borderRadius: "50%", background: "#f3f4f6", border: "2px dashed #d1d5db", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, color: "#9ca3af" }}>👤</div>
                 )}
                 <button onClick={() => profileRef.current?.click()}
-                  style={{ position: "absolute", bottom: -2, right: -2, width: 28, height: 28, borderRadius: "50%", background: "#2563eb", color: "#fff", border: "2px solid #fff", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>?��</button>
+                  style={{ position: "absolute", bottom: -2, right: -2, width: 28, height: 28, borderRadius: "50%", background: "#2563eb", color: "#fff", border: "2px solid #fff", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>📷</button>
                 <input ref={profileRef} type="file" accept="image/*" onChange={e => handlePhotoCapture(e, "profile")} style={{ display: "none" }} />
               </div>
-              <span style={{ fontSize: 12, color: "#9ca3af" }}>?�치?�여 ?�로???�진 변�?/span>
+              <span style={{ fontSize: 12, color: "#9ca3af" }}>터치하여 프로필 사진 변경</span>
             </div>
 
-            {/* ?�인 ?�태 */}
+            {/* 승인 상태 */}
             {isRealtor && (
               <div style={{ background: statusBg, border: `1px solid ${statusColor}33`, borderRadius: 10, padding: "10px 14px", marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <span style={{ fontSize: 13, fontWeight: 700, color: statusColor }}>{statusLabel}</span>
-                <span style={{ fontSize: 11, color: "#6b7280" }}>{role === "REALTOR" || role === "부?�산?�원" ? "부?�산?�원" : "?�반?�원"}</span>
+                <span style={{ fontSize: 11, color: "#6b7280" }}>{role === "REALTOR" || role === "부동산회원" ? "부동산회원" : "일반회원"}</span>
               </div>
             )}
 
             <div style={{ background: "#fff", borderRadius: 14, padding: 16, border: "1px solid #e5e7eb", marginBottom: 16 }}>
-              <Field label="?�메?? value={email} readOnly />
-              <Field label="?�름" value={name} onChange={setName} />
-              <Field label="?�락�? value={phone} onChange={v => setPhone(formatPhone(v))} placeholder="010-0000-0000" />
+              <Field label="이메일" value={email} readOnly />
+              <Field label="이름" value={name} onChange={setName} />
+              <Field label="연락처" value={phone} onChange={v => setPhone(formatPhone(v))} placeholder="010-0000-0000" />
             </div>
           </>
         )}
 
-        {/* ?�?� 부?�산?�보 ???�?� */}
+        {/* ── 부동산정보 탭 ── */}
         {tab === "agency" && (
           <>
-            {/* ?�인 ?�태 Step Indicator */}
+            {/* 승인 상태 Step Indicator */}
             <div style={{ background: "#fff", borderRadius: 14, padding: 16, border: "1px solid #e5e7eb", marginBottom: 16 }}>
-              <div style={{ fontSize: 14, fontWeight: 800, color: "#111", marginBottom: 12 }}>?�� ?�인 진행 ?�태</div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "#111", marginBottom: 12 }}>📋 승인 진행 상태</div>
               <div style={{ display: "flex", alignItems: "center", gap: 0 }}>
-                {/* Step 1: ?�성 �?*/}
+                {/* Step 1: 작성 중 */}
                 <div style={{ flex: 1, textAlign: "center" }}>
                   <div style={{ width: 32, height: 32, borderRadius: "50%", margin: "0 auto 6px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 800, color: "#fff", background: !isRealtor && agencyStatus !== "PENDING" && agencyStatus !== "APPROVED" && agencyStatus !== "REJECTED" ? "#3b82f6" : "#d1d5db" }}>1</div>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: !isRealtor && agencyStatus !== "PENDING" && agencyStatus !== "APPROVED" && agencyStatus !== "REJECTED" ? "#3b82f6" : "#9ca3af" }}>?�성 �?/div>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: !isRealtor && agencyStatus !== "PENDING" && agencyStatus !== "APPROVED" && agencyStatus !== "REJECTED" ? "#3b82f6" : "#9ca3af" }}>작성 중</div>
                 </div>
                 <div style={{ width: 40, height: 2, background: agencyStatus === "PENDING" || agencyStatus === "APPROVED" || agencyStatus === "REJECTED" ? "#3b82f6" : "#e5e7eb", flexShrink: 0 }} />
-                {/* Step 2: ?�사 ?��?*/}
+                {/* Step 2: 심사 대기 */}
                 <div style={{ flex: 1, textAlign: "center" }}>
                   <div style={{ width: 32, height: 32, borderRadius: "50%", margin: "0 auto 6px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 800, color: "#fff", background: agencyStatus === "PENDING" ? "#f59e0b" : agencyStatus === "APPROVED" ? "#d1d5db" : agencyStatus === "REJECTED" ? "#d1d5db" : "#d1d5db" }}>2</div>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: agencyStatus === "PENDING" ? "#f59e0b" : "#9ca3af" }}>?�사 ?��?/div>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: agencyStatus === "PENDING" ? "#f59e0b" : "#9ca3af" }}>심사 대기</div>
                 </div>
                 <div style={{ width: 40, height: 2, background: agencyStatus === "APPROVED" || agencyStatus === "REJECTED" ? (agencyStatus === "APPROVED" ? "#10b981" : "#ef4444") : "#e5e7eb", flexShrink: 0 }} />
                 {/* Step 3: 결과 */}
                 <div style={{ flex: 1, textAlign: "center" }}>
-                  <div style={{ width: 32, height: 32, borderRadius: "50%", margin: "0 auto 6px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 800, color: "#fff", background: agencyStatus === "APPROVED" ? "#10b981" : agencyStatus === "REJECTED" ? "#ef4444" : "#d1d5db" }}>{agencyStatus === "APPROVED" ? "?? : agencyStatus === "REJECTED" ? "!" : "3"}</div>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: agencyStatus === "APPROVED" ? "#10b981" : agencyStatus === "REJECTED" ? "#ef4444" : "#9ca3af" }}>{agencyStatus === "APPROVED" ? "?�인 ?�료" : agencyStatus === "REJECTED" ? "?�류 보완" : "?�인 ?�료"}</div>
+                  <div style={{ width: 32, height: 32, borderRadius: "50%", margin: "0 auto 6px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 800, color: "#fff", background: agencyStatus === "APPROVED" ? "#10b981" : agencyStatus === "REJECTED" ? "#ef4444" : "#d1d5db" }}>{agencyStatus === "APPROVED" ? "✓" : agencyStatus === "REJECTED" ? "!" : "3"}</div>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: agencyStatus === "APPROVED" ? "#10b981" : agencyStatus === "REJECTED" ? "#ef4444" : "#9ca3af" }}>{agencyStatus === "APPROVED" ? "승인 완료" : agencyStatus === "REJECTED" ? "서류 보완" : "승인 완료"}</div>
                 </div>
               </div>
             </div>
 
-            {/* 반려 ?�유 ?�림 박스 */}
+            {/* 반려 사유 알림 박스 */}
             {agencyStatus === "REJECTED" && (
               <div style={{ background: "#fef2f2", borderRadius: 14, padding: 16, border: "1.5px solid #fecaca", marginBottom: 16 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                  <span style={{ fontSize: 18 }}>?��</span>
-                  <span style={{ fontSize: 14, fontWeight: 800, color: "#b91c1c" }}>?�사 반려 - ?�류 보완???�요?�니??/span>
+                  <span style={{ fontSize: 18 }}>🚨</span>
+                  <span style={{ fontSize: 14, fontWeight: 800, color: "#b91c1c" }}>심사 반려 - 서류 보완이 필요합니다</span>
                 </div>
                 {rejectReason && (
                   <div style={{ background: "#fff", border: "1px solid #fecaca", borderRadius: 8, padding: "12px 14px", marginBottom: 8 }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: "#b91c1c", marginBottom: 4 }}>?�� 반려 ?�유</div>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: "#b91c1c", marginBottom: 4 }}>📌 반려 사유</div>
                     <div style={{ fontSize: 13, color: "#991b1b", lineHeight: 1.5, fontWeight: 600, whiteSpace: "pre-wrap" }}>{rejectReason}</div>
                   </div>
                 )}
-                <div style={{ fontSize: 12, color: "#dc2626", lineHeight: 1.5 }}>?�래 ?�보�??�정?????�단??<strong>[?�정 ???�심???�청]</strong> 버튼???�러주세??</div>
+                <div style={{ fontSize: 12, color: "#dc2626", lineHeight: 1.5 }}>아래 정보를 수정한 후 하단의 <strong>[수정 후 재심사 신청]</strong> 버튼을 눌러주세요.</div>
               </div>
             )}
 
-            {/* ?�인?��??�내 */}
+            {/* 승인대기 안내 */}
             {agencyStatus === "PENDING" && isRealtor && (
               <div style={{ background: "#fffbeb", borderRadius: 14, padding: "12px 16px", border: "1.5px solid #fde68a", marginBottom: 16, display: "flex", gap: 10, alignItems: "center" }}>
-                <span style={{ fontSize: 18 }}>??/span>
+                <span style={{ fontSize: 18 }}>⏳</span>
                 <div style={{ fontSize: 13, color: "#92400e", lineHeight: 1.4 }}>
-                  <strong>?�류 검??중입?�다.</strong> 관리자 ?�인 ???�인 처리?�니??
+                  <strong>서류 검토 중입니다.</strong> 관리자 확인 후 승인 처리됩니다.
                 </div>
               </div>
             )}
 
-            {/* ?�인 ?�료 ?�내 */}
+            {/* 승인 완료 안내 */}
             {agencyStatus === "APPROVED" && (
               <div style={{ background: "#ecfdf5", borderRadius: 14, padding: "12px 16px", border: "1.5px solid #a7f3d0", marginBottom: 16, display: "flex", gap: 10, alignItems: "center" }}>
-                <span style={{ fontSize: 18 }}>??/span>
+                <span style={{ fontSize: 18 }}>✅</span>
                 <div style={{ fontSize: 13, color: "#065f46", lineHeight: 1.4 }}>
-                  <strong>?�상 ?�인 ?�료.</strong> 부?�산?�원 ?�비?��? ?�상?�으�??�용?????�습?�다.
+                  <strong>정상 승인 완료.</strong> 부동산회원 서비스를 정상적으로 이용할 수 있습니다.
                 </div>
               </div>
             )}
             <div style={{ background: "#fff", borderRadius: 14, padding: 16, border: "1px solid #e5e7eb", marginBottom: 16 }}>
-              <Field label="?�호(?�업?�명)" value={agencyName} onChange={setAgencyName} required />
-              <Field label="?�?�자�? value={ceoName} onChange={setCeoName} required />
-              <Field label="?�?�자 ?�락�? value={cell} onChange={v => setCell(formatPhone(v))} placeholder="010-0000-0000" required />
-              <Field label="?�무???�화" value={officePhone} onChange={v => setOfficePhone(formatPhone(v))} required />
+              <Field label="상호(사업장명)" value={agencyName} onChange={setAgencyName} required />
+              <Field label="대표자명" value={ceoName} onChange={setCeoName} required />
+              <Field label="대표자 연락처" value={cell} onChange={v => setCell(formatPhone(v))} placeholder="010-0000-0000" required />
+              <Field label="사무실 전화" value={officePhone} onChange={v => setOfficePhone(formatPhone(v))} required />
             </div>
 
             {/* 주소 */}
             <div style={{ background: "#fff", borderRadius: 14, padding: 16, border: "1px solid #e5e7eb", marginBottom: 16 }}>
-              <div style={{ fontSize: 14, fontWeight: 800, color: "#111", marginBottom: 10 }}>?�� ?�무??주소</div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "#111", marginBottom: 10 }}>📍 사무실 주소</div>
               <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-                <input type="text" value={zipcode} readOnly style={{ ...inputStyle, flex: "none", width: 100, background: "#f9fafb" }} placeholder="?�편번호" />
-                <button onClick={openPostcode} style={{ height: 46, padding: "0 14px", background: "#374151", color: "#fff", border: "none", borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>주소 검??/button>
+                <input type="text" value={zipcode} readOnly style={{ ...inputStyle, flex: "none", width: 100, background: "#f9fafb" }} placeholder="우편번호" />
+                <button onClick={openPostcode} style={{ height: 46, padding: "0 14px", background: "#374151", color: "#fff", border: "none", borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>주소 검색</button>
               </div>
               <input type="text" value={address} readOnly style={{ ...inputStyle, marginBottom: 8, background: "#f9fafb" }} placeholder="기본주소" />
-              <input type="text" value={addressDetail} onChange={e => setAddressDetail(e.target.value)} style={inputStyle} placeholder="?�세주소 ?�력" />
-              {coords && <div style={{ fontSize: 11, color: "#10b981", marginTop: 6 }}>??좌표: {coords.lat.toFixed(5)}, {coords.lng.toFixed(5)}</div>}
+              <input type="text" value={addressDetail} onChange={e => setAddressDetail(e.target.value)} style={inputStyle} placeholder="상세주소 입력" />
+              {coords && <div style={{ fontSize: 11, color: "#10b981", marginTop: 6 }}>✅ 좌표: {coords.lat.toFixed(5)}, {coords.lng.toFixed(5)}</div>}
             </div>
 
-            {/* ?�개 */}
+            {/* 소개 */}
             <div style={{ background: "#fff", borderRadius: 14, padding: 16, border: "1px solid #e5e7eb", marginBottom: 16 }}>
-              <div style={{ fontSize: 14, fontWeight: 800, color: "#111", marginBottom: 10 }}>?�️ 부?�산 ?�개</div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "#111", marginBottom: 10 }}>✏️ 부동산 소개</div>
               <textarea value={intro} onChange={e => setIntro(e.target.value)} maxLength={100}
-                style={{ ...inputStyle, height: 80, padding: 14, resize: "none", lineHeight: 1.6, fontFamily: "inherit" }} placeholder="부?�산 ?�개 (100???�내)" />
+                style={{ ...inputStyle, height: 80, padding: 14, resize: "none", lineHeight: 1.6, fontFamily: "inherit" }} placeholder="부동산 소개 (100자 이내)" />
               <div style={{ textAlign: "right", fontSize: 11, color: intro.length >= 100 ? "#ef4444" : "#9ca3af", marginTop: 4 }}>{intro.length}/100</div>
             </div>
 
-            {/* ?�록번호 & ?�업?�번??*/}
+            {/* 등록번호 & 사업자번호 */}
             <div style={{ background: "#fff", borderRadius: 14, padding: 16, border: "1px solid #e5e7eb", marginBottom: 16 }}>
-              <Field label="중개?�록번호" value={regNum} onChange={setRegNum} required />
-              <Field label="?�업?�등록번?? value={bizNum} onChange={v => setBizNum(formatBizNum(v))} placeholder="000-00-00000" required />
+              <Field label="중개등록번호" value={regNum} onChange={setRegNum} required />
+              <Field label="사업자등록번호" value={bizNum} onChange={v => setBizNum(formatBizNum(v))} placeholder="000-00-00000" required />
             </div>
 
-            {/* ?�류 ?�진 */}
+            {/* 서류 사진 */}
             <div style={{ background: "#fff", borderRadius: 14, padding: 16, border: "1px solid #e5e7eb", marginBottom: 16 }}>
-              <div style={{ fontSize: 14, fontWeight: 800, color: "#111", marginBottom: 12 }}>?�� ?�류 첨�?</div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "#111", marginBottom: 12 }}>📄 서류 첨부</div>
               <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 12, lineHeight: 1.5 }}>
-                카메?�로 촬영?�거??갤러리에???�택?�주?�요.
+                카메라로 촬영하거나 갤러리에서 선택해주세요.
               </div>
 
-              {/* 중개?�록�?*/}
+              {/* 중개등록증 */}
               <DocUpload
-                label="중개?�록�?
+                label="중개등록증"
                 preview={regCertPreview}
                 inputRef={regCertRef}
                 onCapture={e => handlePhotoCapture(e, "reg")}
@@ -551,9 +552,9 @@ function MobileSettings() {
                 onRemove={() => { setRegCertFile(null); setRegCertPreview(null); }}
               />
 
-              {/* ?�업?�등록증 */}
+              {/* 사업자등록증 */}
               <DocUpload
-                label="?�업?�등록증"
+                label="사업자등록증"
                 preview={bizCertPreview}
                 inputRef={bizCertRef}
                 onCapture={e => handlePhotoCapture(e, "biz")}
@@ -564,65 +565,65 @@ function MobileSettings() {
           </>
         )}
 
-        {/* ?�?� 마�??�정�????�?� */}
+        {/* ── 마케팅정보 탭 ── */}
         {tab === "marketing" && (
           <>
             <div style={{ background: "#f8fafc", padding: "14px 16px", borderRadius: 10, fontSize: 13, color: "#64748b", lineHeight: 1.5, marginBottom: 16 }}>
-              ?�래 마�?????��?� ?�하?�는 분만 ?�력?�는 <strong style={{color: "#3b82f6"}}>?�택?�항</strong>?�니??<br/>
-              <span style={{color: "#ef4444", fontSize: 12}}>???�측??메모?�시??ID/PW ?�보??관리자???��??�에�??�출?��? ?�으�? **?�직 본인�?* ?�람?????�도�??�전?�게 보�??�니??</span>
+              아래 마케팅 항목은 원하시는 분만 입력하는 <strong style={{color: "#3b82f6"}}>선택사항</strong>입니다.<br/>
+              <span style={{color: "#ef4444", fontSize: 12}}>※ 우측에 메모하시는 ID/PW 정보는 관리자나 외부인에게 노출되지 않으며, **오직 본인만** 열람할 수 있도록 안전하게 보관됩니다.</span>
             </div>
 
-            {/* API 관�?*/}
+            {/* API 관리 */}
             <div style={{ background: "#fff", borderRadius: 14, padding: 16, border: "1px solid #e5e7eb", marginBottom: 16 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                <div style={{ fontSize: 14, fontWeight: 800, color: "#111" }}>?�� API Key 메모</div>
-                <button onClick={handleAddApi} style={{ padding: "6px 12px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 12, fontWeight: "bold", cursor: "pointer" }}>+ 추�?</button>
+                <div style={{ fontSize: 14, fontWeight: 800, color: "#111" }}>🔑 API Key 메모</div>
+                <button onClick={handleAddApi} style={{ padding: "6px 12px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 12, fontWeight: "bold", cursor: "pointer" }}>+ 추가</button>
               </div>
               
               {apiList.map((api, idx) => (
                 <div key={idx} style={{ background: "#f9fafb", borderRadius: 10, padding: 14, border: "1px solid #e5e7eb", marginBottom: 12 }}>
                   <select value={api.provider} onChange={(e) => handleApiChange(idx, 'provider', e.target.value)} style={{ ...inputStyle, marginBottom: 8, background: "#fff" }}>
                     <option value="챗GPT">챗GPT</option>
-                    <option value="?�로??>?�로??/option>
-                    <option value="구�?">구�? (Gemini)</option>
-                    <option value="기�?">기�? API</option>
+                    <option value="클로드">클로드</option>
+                    <option value="구글">구글 (Gemini)</option>
+                    <option value="기타">기타 API</option>
                   </select>
                   <div style={{ display: "flex", position: "relative", marginBottom: 8 }}>
-                    <input type="text" value={api.key_value} onChange={(e) => handleApiChange(idx, 'key_value', e.target.value)} style={{ ...inputStyle, paddingRight: 40 }} placeholder="API Key ?�는 주소" />
-                    <button onClick={() => handleCopy(api.key_value)} style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", padding: 4 }}>?��</button>
+                    <input type="text" value={api.key_value} onChange={(e) => handleApiChange(idx, 'key_value', e.target.value)} style={{ ...inputStyle, paddingRight: 40 }} placeholder="API Key 또는 주소" />
+                    <button onClick={() => handleCopy(api.key_value)} style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", padding: 4 }}>📋</button>
                   </div>
                   <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
                     <input type="text" value={api.login_id} onChange={(e) => handleApiChange(idx, 'login_id', e.target.value)} style={{ ...inputStyle, flex: 1 }} placeholder="ID" />
-                    <input type="password" value={api.login_pw} onChange={(e) => handleApiChange(idx, 'login_pw', e.target.value)} style={{ ...inputStyle, flex: 1 }} placeholder="비�?번호" />
+                    <input type="password" value={api.login_pw} onChange={(e) => handleApiChange(idx, 'login_pw', e.target.value)} style={{ ...inputStyle, flex: 1 }} placeholder="비밀번호" />
                   </div>
-                  <button onClick={() => handleRemoveApi(idx)} style={{ width: "100%", height: 36, background: "#fef2f2", color: "#ef4444", border: "1px solid #fecaca", borderRadius: 8, fontSize: 13, fontWeight: "bold", cursor: "pointer" }}>??��</button>
+                  <button onClick={() => handleRemoveApi(idx)} style={{ width: "100%", height: 36, background: "#fef2f2", color: "#ef4444", border: "1px solid #fecaca", borderRadius: 8, fontSize: 13, fontWeight: "bold", cursor: "pointer" }}>삭제</button>
                 </div>
               ))}
-              {apiList.length === 0 && <div style={{ fontSize: 13, color: "#9ca3af", textAlign: "center", padding: "10px 0" }}>?�록??API ?�보가 ?�습?�다.</div>}
+              {apiList.length === 0 && <div style={{ fontSize: 13, color: "#9ca3af", textAlign: "center", padding: "10px 0" }}>등록된 API 정보가 없습니다.</div>}
             </div>
 
             {/* SNS 링크 */}
             <div style={{ background: "#fff", borderRadius: 14, padding: 16, border: "1px solid #e5e7eb", marginBottom: 16 }}>
-              <div style={{ fontSize: 14, fontWeight: 800, color: "#111", marginBottom: 16 }}>?�� 마�???�?SNS 링크</div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "#111", marginBottom: 16 }}>🔗 마케팅 및 SNS 링크</div>
               {Object.keys(snsLabels).map((key) => {
                 const sns = snsLinks[key] || initialSnsObj;
                 return (
                   <div key={key} style={{ marginBottom: 20, paddingBottom: 20, borderBottom: "1px solid #f3f4f6" }}>
                     <div style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginBottom: 8 }}>{snsLabels[key]}</div>
                     <div style={{ display: "flex", position: "relative", marginBottom: 8 }}>
-                      <input type="text" value={sns.url} onChange={(e) => handleSnsObjChange(key, 'url', e.target.value)} style={{ ...inputStyle, paddingRight: 40 }} placeholder={`${snsLabels[key]} 주소(URL) ?�력`} />
-                      <button onClick={() => handleCopy(sns.url)} style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", padding: 4 }}>?��</button>
+                      <input type="text" value={sns.url} onChange={(e) => handleSnsObjChange(key, 'url', e.target.value)} style={{ ...inputStyle, paddingRight: 40 }} placeholder={`${snsLabels[key]} 주소(URL) 입력`} />
+                      <button onClick={() => handleCopy(sns.url)} style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", padding: 4 }}>📋</button>
                     </div>
                     <select value={sns.login_type} onChange={(e) => handleSnsObjChange(key, 'login_type', e.target.value)} style={{ ...inputStyle, marginBottom: 8, background: "#f9fafb" }}>
-                      <option value="?�반">?�반/직접가??/option>
-                      <option value="?�이�?>?�이�?가??/option>
-                      <option value="카카??>카카??가??/option>
-                      <option value="구�?">구�? 가??/option>
-                      <option value="?�음">?�음(Daum)</option>
+                      <option value="일반">일반/직접가입</option>
+                      <option value="네이버">네이버 가입</option>
+                      <option value="카카오">카카오 가입</option>
+                      <option value="구글">구글 가입</option>
+                      <option value="다음">다음(Daum)</option>
                     </select>
                     <div style={{ display: "flex", gap: 8 }}>
-                      <input type="text" value={sns.login_id} onChange={(e) => handleSnsObjChange(key, 'login_id', e.target.value)} style={{ ...inputStyle, flex: 1 }} placeholder="로그??ID (메모)" />
-                      <input type="password" value={sns.login_pw} onChange={(e) => handleSnsObjChange(key, 'login_pw', e.target.value)} style={{ ...inputStyle, flex: 1 }} placeholder="비�?번호 (메모)" />
+                      <input type="text" value={sns.login_id} onChange={(e) => handleSnsObjChange(key, 'login_id', e.target.value)} style={{ ...inputStyle, flex: 1 }} placeholder="로그인 ID (메모)" />
+                      <input type="password" value={sns.login_pw} onChange={(e) => handleSnsObjChange(key, 'login_pw', e.target.value)} style={{ ...inputStyle, flex: 1 }} placeholder="비밀번호 (메모)" />
                     </div>
                   </div>
                 );
@@ -631,39 +632,39 @@ function MobileSettings() {
           </>
         )}
 
-        {/* ?�?� ?�단 버튼 ?�역 (?�크�??? 고정�??�님) ?�?� */}
+        {/* ── 하단 버튼 영역 (스크롤 끝, 고정바 아님) ── */}
         <div style={{ marginTop: 32, marginBottom: 16 }}>
           {tab === "agency" && (!isRealtor || agencyStatus === "REJECTED") ? (
             <button onClick={() => {
               if (!agencyName || !ceoName || !cell || !officePhone || !address || !intro || !bizNum || !regNum || (!bizCertPreview && !bizCertFile) || (!regCertPreview && !regCertFile)) {
-                alert("?�수 ?�보�?모두 ?�력?�고 ?�업?�등록증�?중개?�무???�록증을 첨�??�야 ?�인 ?�청??가?�합?�다.");
+                alert("필수 정보를 모두 입력하고 사업자등록증과 중개사무소 등록증을 첨부해야 승인 신청이 가능합니다.");
                 return;
               }
-              if (confirm(agencyStatus === "REJECTED" ? "?�정???�보�??�심?��? ?�청?�시겠습?�까?" : "부?�산?�원 ?�인 ?�사�??�청?�시겠습?�까?\n\n?�출 ??관리자 검?��? 진행?�니??")) {
+              if (confirm(agencyStatus === "REJECTED" ? "수정된 정보로 재심사를 신청하시겠습니까?" : "부동산회원 승인 심사를 신청하시겠습니까?\n\n제출 후 관리자 검토가 진행됩니다.")) {
                 handleSave(false);
               }
             }} disabled={saving}
               style={{ width: "100%", height: 56, borderRadius: 12, border: "none", background: agencyStatus === "REJECTED" ? "linear-gradient(135deg, #f59e0b, #d97706)" : "linear-gradient(135deg, #3b82f6, #2563eb)", color: "#fff", fontSize: 16, fontWeight: 800, cursor: "pointer", boxShadow: agencyStatus === "REJECTED" ? "0 4px 12px rgba(245,158,11,0.3)" : "0 4px 12px rgba(59,130,246,0.3)" }}>
-              {saving ? "처리 �?.." : agencyStatus === "REJECTED" ? "?�� ?�정 ???�심???�청" : "?�� ?�인 ?�사 ?�청?�기"}
+              {saving ? "처리 중..." : agencyStatus === "REJECTED" ? "📋 수정 후 재심사 신청" : "📋 승인 심사 신청하기"}
             </button>
           ) : (
             <button onClick={() => handleSave(false)} disabled={saving}
               style={{ width: "100%", height: 56, borderRadius: 12, border: "none", background: "linear-gradient(135deg, #3b82f6, #2563eb)", color: "#fff", fontSize: 16, fontWeight: 800, cursor: "pointer", boxShadow: "0 4px 12px rgba(59,130,246,0.3)" }}>
-              {saving ? "?�??�?.." : "?�� ?�보 ?�정 ?�??}
+              {saving ? "저장 중..." : "💾 정보 수정 저장"}
             </button>
           )}
         </div>
 
-        {/* ?�?� ?�원 ?�퇴 버튼 ?�?� */}
+        {/* ── 회원 탈퇴 버튼 ── */}
         <div style={{ paddingBottom: 24, textAlign: "center" }}>
           <button onClick={handleDeleteAccount}
             style={{ background: "none", border: "none", color: "#9ca3af", fontSize: 13, textDecoration: "underline", cursor: "pointer", padding: "8px 16px" }}>
-            ?�원 ?�퇴 (계정 ??��)
+            회원 탈퇴 (계정 삭제)
           </button>
         </div>
       </div>
 
-      {/* ?��?지 ?��? 모달 */}
+      {/* 이미지 확대 모달 */}
       {previewImg && (
         <div onClick={() => setPreviewImg(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
           <img src={previewImg} alt="" style={{ maxWidth: "100%", maxHeight: "80dvh", borderRadius: 8, objectFit: "contain" }} />
@@ -673,7 +674,7 @@ function MobileSettings() {
   );
 }
 
-/* ?�?� ?�사???�드 컴포?�트 ?�?� */
+/* ── 재사용 필드 컴포넌트 ── */
 function Field({ label, value, onChange, placeholder, readOnly, required }: {
   label: string; value: string; onChange?: (v: string) => void; placeholder?: string; readOnly?: boolean; required?: boolean;
 }) {
@@ -681,7 +682,7 @@ function Field({ label, value, onChange, placeholder, readOnly, required }: {
     <div style={{ marginBottom: 12 }}>
       <label style={{ fontSize: 13, fontWeight: 700, color: "#374151", display: "flex", alignItems: "center", gap: 4, marginBottom: 6 }}>
         {label}
-        {required && !value && <span style={{ fontSize: 10, color: "#ef4444", fontWeight: 700 }}>?�수</span>}
+        {required && !value && <span style={{ fontSize: 10, color: "#ef4444", fontWeight: 700 }}>필수</span>}
       </label>
       <input
         type="text" value={value}
@@ -694,7 +695,7 @@ function Field({ label, value, onChange, placeholder, readOnly, required }: {
   );
 }
 
-/* ?�?� ?�류 ?�로??컴포?�트 ?�?� */
+/* ── 서류 업로드 컴포넌트 ── */
 function DocUpload({ label, preview, inputRef, onCapture, onPreview, onRemove }: {
   label: string; preview: string | null; inputRef: React.RefObject<HTMLInputElement | null>;
   onCapture: (e: React.ChangeEvent<HTMLInputElement>) => void; onPreview: () => void; onRemove: () => void;
@@ -708,16 +709,16 @@ function DocUpload({ label, preview, inputRef, onCapture, onPreview, onRemove }:
             style={{ width: "100%", maxWidth: 280, height: "auto", borderRadius: 10, border: "1px solid #e5e7eb", cursor: "pointer" }} />
           <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
             <button onClick={() => inputRef.current?.click()}
-              style={{ flex: 1, height: 36, background: "#f3f4f6", color: "#374151", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>?�� ?�시 촬영</button>
+              style={{ flex: 1, height: 36, background: "#f3f4f6", color: "#374151", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>📷 다시 촬영</button>
             <button onClick={onRemove}
-              style={{ height: 36, padding: "0 12px", background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>??��</button>
+              style={{ height: 36, padding: "0 12px", background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>삭제</button>
           </div>
         </div>
       ) : (
         <button onClick={() => inputRef.current?.click()}
           style={{ width: "100%", padding: "20px 0", border: "2px dashed #d1d5db", borderRadius: 10, background: "#fafafa", cursor: "pointer", textAlign: "center" }}>
-          <div style={{ fontSize: 28, marginBottom: 4 }}>?��</div>
-          <div style={{ fontSize: 13, fontWeight: 600, color: "#6b7280" }}>?�치?�여 촬영 ?�는 갤러리에???�택</div>
+          <div style={{ fontSize: 28, marginBottom: 4 }}>📷</div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: "#6b7280" }}>터치하여 촬영 또는 갤러리에서 선택</div>
         </button>
       )}
       <input ref={inputRef} type="file" accept="image/*" onChange={onCapture} style={{ display: "none" }} />

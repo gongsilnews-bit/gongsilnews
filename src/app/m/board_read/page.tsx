@@ -14,7 +14,7 @@ export default async function MobileBoardReadPage({
   if (!postId) {
     return (
       <div style={{ padding: 80, textAlign: "center", fontSize: 16, color: "#999", minHeight: "100vh", paddingTop: "100px" }}>
-        게시글 ID가 ?�습?�다.
+        게시글 ID가 없습니다.
       </div>
     );
   }
@@ -57,7 +57,7 @@ export default async function MobileBoardReadPage({
   if (board?.board_type === "inquiry" && !isAdmin && post?.author_id !== user?.id) {
     return (
       <div style={{ padding: 80, textAlign: "center", fontSize: 16, color: "#999", minHeight: "100vh", paddingTop: "100px" }}>
-        ?�근 권한???�습?�다.
+        접근 권한이 없습니다.
       </div>
     );
   }
@@ -75,13 +75,13 @@ export default async function MobileBoardReadPage({
   if (!post) {
     return (
       <div style={{ padding: 80, textAlign: "center", fontSize: 16, color: "#999", minHeight: "100vh", paddingTop: "100px" }}>
-        게시글??찾을 ???�습?�다.
+        게시글을 찾을 수 없습니다.
       </div>
     );
   }
 
   return (
-    <Suspense fallback={<div style={{ padding: 40, textAlign: "center", minHeight: "100vh", paddingTop: "100px" }}>불러?�는 �?..</div>}>
+    <Suspense fallback={<div style={{ padding: 40, textAlign: "center", minHeight: "100vh", paddingTop: "100px" }}>불러오는 중...</div>}>
       <MobileBoardReadClient
         post={post}
         board={board}

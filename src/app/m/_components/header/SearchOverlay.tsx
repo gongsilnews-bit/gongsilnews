@@ -82,7 +82,7 @@ export default function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
         <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center' }}>
           <input 
             type="text" 
-            placeholder="검?�어�??�력??주세??" 
+            placeholder="검색어를 입력해 주세요." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -99,8 +99,8 @@ export default function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
         {recentSearches.length > 0 ? (
           <>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#111' }}>최근 검?�어</h3>
-              <button onClick={clearAllRecent} style={{ fontSize: '13px', color: '#999', background: 'none', border: 'none', cursor: 'pointer' }}>?�체??��</button>
+              <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#111' }}>최근 검색어</h3>
+              <button onClick={clearAllRecent} style={{ fontSize: '13px', color: '#999', background: 'none', border: 'none', cursor: 'pointer' }}>전체삭제</button>
             </div>
             <div>
               {recentSearches.map((item, i) => (
@@ -119,7 +119,7 @@ export default function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
           </>
         ) : (
           <div style={{ textAlign: 'center', padding: '40px 0', color: '#999', fontSize: '15px' }}>
-            최근 검?�어 ?�역???�습?�다.
+            최근 검색어 내역이 없습니다.
           </div>
         )}
       </div>

@@ -15,10 +15,10 @@ function formatDate(d: string) {
   const dt = new Date(d);
   const now = new Date();
   const h = Math.floor((now.getTime() - dt.getTime()) / 3600000);
-  if (h < 1) return "방금 ??;
-  if (h < 24) return `${h}?�간 ??;
+  if (h < 1) return "방금 전";
+  if (h < 24) return `${h}시간 전`;
   const days = Math.floor(h / 24);
-  if (days < 7) return `${days}????;
+  if (days < 7) return `${days}일 전`;
   return `${dt.getMonth() + 1}.${dt.getDate()}`;
 }
 
@@ -26,10 +26,10 @@ function formatPrice(v: any): string {
   const dep = v.deposit || 0;
   const rent = v.monthly_rent || 0;
   const trade = v.trade_type || "";
-  const fmt = (n: number) => n >= 100000000 ? `${(n/100000000).toFixed(n%100000000===0?0:1)}?? : n >= 10000 ? `${Math.round(n/10000)}�? : `${n}`;
+  const fmt = (n: number) => n >= 100000000 ? `${(n/100000000).toFixed(n%100000000===0?0:1)}억` : n >= 10000 ? `${Math.round(n/10000)}만` : `${n}`;
   if (trade === "경매") return fmt(dep);
-  if (trade === "?�세" && rent > 0) return `${fmt(dep)}/${fmt(rent)}`;
-  if (trade === "?�세") return `?�세 ${fmt(dep)}`;
+  if (trade === "월세" && rent > 0) return `${fmt(dep)}/${fmt(rent)}`;
+  if (trade === "전세") return `전세 ${fmt(dep)}`;
   if (dep > 0) return fmt(dep);
   return "-";
 }
@@ -59,11 +59,11 @@ interface Props {
 }
 
 const CATEGORIES = [
-  { key: "home", label: "??, path: "/m" },
-  { key: "news_gongsil", label: "공실?�스", path: "/m/news_gongsil" },
-  { key: "news_politics", label: "부?�산·경제", path: "/m/news_politics" },
-  { key: "news_marketing", label: "AI마�???, path: "/m/news_marketing" },
-  { key: "news_etc", label: "?�이?�·오?�니??, path: "/m/news_etc" },
+  { key: "home", label: "홈", path: "/m" },
+  { key: "news_gongsil", label: "공실뉴스", path: "/m/news_gongsil" },
+  { key: "news_politics", label: "부동산·경제", path: "/m/news_politics" },
+  { key: "news_marketing", label: "AI마케팅", path: "/m/news_marketing" },
+  { key: "news_etc", label: "라이프·오피니언", path: "/m/news_etc" },
 ];
 
 export default function MobileHomeClient(props: Props) {
@@ -111,7 +111,7 @@ export default function MobileHomeClient(props: Props) {
     getSession();
   }, []);
 
-  // ???�면 ?�크�?복원: 기사 ?�릭 ???�로가�???보던 ?�치�?즉시 복원 (깜빡???�거)
+  // 홈 화면 스크롤 복원: 기사 클릭 후 뒤로가기 시 보던 위치로 즉시 복원 (깜빡임 제거)
   useLayoutEffect(() => {
     const savedScroll = sessionStorage.getItem('mobile_home_scroll');
     if (savedScroll) {
@@ -132,7 +132,7 @@ export default function MobileHomeClient(props: Props) {
 
   const saveHomeScroll = () => sessionStorage.setItem('mobile_home_scroll', window.scrollY.toString());
 
-  // ?�?� ?�드?�인 ?�동 ?�라?�드 (3초마?? ?�?�
+  // ── 헤드라인 자동 슬라이드 (3초마다) ──
   useEffect(() => {
     if (headlineArticles.length <= 1 || isSwipingHero) return;
     const timer = setInterval(() => {
@@ -151,7 +151,7 @@ export default function MobileHomeClient(props: Props) {
     <div
       style={{ display: "flex", flexDirection: "column", width: "100%", background: "#F4F6F8", minHeight: "100vh", paddingBottom: "80px", letterSpacing: "-0.3px", overflow: "hidden" }}
     >
-      {/* ?�비게이??메뉴 (?�이�?모바???��???가�??��??�프) */}
+      {/* 네비게이션 메뉴 (네이버 모바일 스타일 가로 스와이프) */}
       <div
         className="hide-scrollbar"
         onTouchStart={(e) => e.stopPropagation()}
@@ -204,10 +204,10 @@ export default function MobileHomeClient(props: Props) {
           </button>
         ))}
       </div>
-      {/* 카테고리 �??�이만큼 공간 ?�보 */}
+      {/* 카테고리 바 높이만큼 공간 확보 */}
       <div style={{ height: "46px" }} />
 
-      {/* ??Hero 배너 (?�드?�인 기사) ??CSS Scroll Snap ?�로 변경하??버벅???�거 */}
+      {/* ① Hero 배너 (헤드라인 기사) — CSS Scroll Snap 으로 변경하여 버벅임 제거 */}
       {headlineArticles.length > 0 && (
         <div style={{ position: "relative", width: "100%", aspectRatio: "16/9", maxHeight: 280 }}>
           <div
@@ -249,7 +249,7 @@ export default function MobileHomeClient(props: Props) {
             ))}
           </div>
           
-          {/* ?�단 ???�디케?�터) */}
+          {/* 하단 점(인디케이터) */}
           {headlineArticles.length > 1 && (
             <div style={{ position: "absolute", bottom: 12, right: 12, display: "flex", gap: 6, alignItems: "center", zIndex: 10, pointerEvents: "none" }}>
               {headlineArticles.slice(0, 5).map((_, i) => (
@@ -260,13 +260,13 @@ export default function MobileHomeClient(props: Props) {
         </div>
       )}
 
-      {/* ???�시�?공실 공실광고 - 카카??지??미리보기 */}
+      {/* ② 실시간 공실 공실광고 - 카카오 지도 미리보기 */}
       <div style={{ background: "#fff", marginBottom: 12, borderBottom: "1px solid #f0f0f0", position: "relative" }}>
 
 
         <div className="sec-hd">
-          <h2>?�시�?공실 공실광고</h2>
-          <span style={{ fontSize: 15, color: "#6b7280", textDecoration: "none", cursor: "default" }}>?�보�???/span>
+          <h2>실시간 공실 공실광고</h2>
+          <span style={{ fontSize: 15, color: "#6b7280", textDecoration: "none", cursor: "default" }}>더보기 ›</span>
         </div>
         <div style={{ padding: "0 16px 16px", position: "relative" }}>
           <MiniVacancyMap vacancies={vacancies} isLoading={isMapLoading} />
@@ -274,13 +274,13 @@ export default function MobileHomeClient(props: Props) {
       </div>
 
 
-      {/* ??공실?�스 */}
-      <NewsSection title="공실?�스" href="/m/news_gongsil" articles={gongsilArticles} onArticleClick={saveHomeScroll} />
+      {/* ② 공실뉴스 */}
+      <NewsSection title="공실뉴스" href="/m/news_gongsil" articles={gongsilArticles} onArticleClick={saveHomeScroll} />
 
-      {/* ??부?�산·경제 */}
-      <NewsSection title="부?�산·경제" href="/m/news_politics" articles={realestateArticles} onArticleClick={saveHomeScroll} />
+      {/* ③ 부동산·경제 */}
+      <NewsSection title="부동산·경제" href="/m/news_politics" articles={realestateArticles} onArticleClick={saveHomeScroll} />
 
-      {/* ??공실?�스 ?�상 (PC 검?�배경 VideoGrid 모바??버전) */}
+      {/* ④ 공실뉴스 영상 (PC 검은배경 VideoGrid 모바일 버전) */}
       {(() => {
         const ytRx = /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([\w-]{11})/;
         const videoArticles = gongsilArticles.filter((a: any) => {
@@ -294,9 +294,9 @@ export default function MobileHomeClient(props: Props) {
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 16px 14px" }}>
               <Link href="/m/news_gongsil" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
                 <svg width="24" height="17" viewBox="0 0 28 20" fill="none"><rect width="28" height="20" rx="4" fill="#FF0000"/><path d="M11 5.5L19.5 10L11 14.5V5.5Z" fill="white"/></svg>
-                <span style={{ fontSize: 18, fontWeight: 800, color: "#fff", letterSpacing: "-0.5px" }}>공실?�스</span>
+                <span style={{ fontSize: 18, fontWeight: 800, color: "#fff", letterSpacing: "-0.5px" }}>공실뉴스</span>
               </Link>
-              <Link href="/m/news_gongsil" style={{ fontSize: 15, color: "rgba(255,255,255,0.5)", textDecoration: "none" }}>?�보�???/Link>
+              <Link href="/m/news_gongsil" style={{ fontSize: 15, color: "rgba(255,255,255,0.5)", textDecoration: "none" }}>더보기 ›</Link>
             </div>
             <div className="no-scrollbar" style={{ display: "flex", gap: 12, padding: "0 16px 20px", overflowX: "auto" }} onTouchStart={(e) => e.stopPropagation()} onTouchEnd={(e) => e.stopPropagation()}>
               {videoArticles.map((a: any) => {
@@ -323,18 +323,18 @@ export default function MobileHomeClient(props: Props) {
         );
       })()}
 
-      {/* ??AI마�???*/}
-      <NewsSection title="AI마�??? href="/m/news_marketing" articles={marketingArticles} onArticleClick={saveHomeScroll} />
+      {/* ⑤ AI마케팅 */}
+      <NewsSection title="AI마케팅" href="/m/news_marketing" articles={marketingArticles} onArticleClick={saveHomeScroll} />
 
-      {/* ???�이?�·오?�니??*/}
-      <NewsSection title="?�이?�·오?�니?? href="/m/news_etc" articles={lifeArticles} onArticleClick={saveHomeScroll} />
+      {/* ⑥ 라이프·오피니언 */}
+      <NewsSection title="라이프·오피니언" href="/m/news_etc" articles={lifeArticles} onArticleClick={saveHomeScroll} />
 
-      {/* ??부?�산?�강 (PC SpecialLectureBanner ?�?? */}
+      {/* ⑨ 부동산특강 (PC SpecialLectureBanner 대응) */}
       {lectures.length > 0 && (
         <div style={{ background: "#fff", marginBottom: 12, borderBottom: "1px solid #f0f0f0" }}>
           <div className="sec-hd">
-            <h2>부?�산?�강</h2>
-            <Link href="/m/study" style={{ fontSize: 15, color: "#6b7280", textDecoration: "none" }}>?�보�???/Link>
+            <h2>부동산특강</h2>
+            <Link href="/m/study" style={{ fontSize: 15, color: "#6b7280", textDecoration: "none" }}>더보기 ›</Link>
           </div>
           <div className="no-scrollbar" style={{ display: "flex", gap: 12, padding: "0 16px 16px", overflowX: "auto" }} onTouchStart={(e) => e.stopPropagation()} onTouchEnd={(e) => e.stopPropagation()}>
             {lectures.map((lec: any) => (
@@ -343,12 +343,12 @@ export default function MobileHomeClient(props: Props) {
                 <div style={{ width: "100%", height: 112, overflow: "hidden", background: "#e5e7eb", position: "relative" }}>
                   {lec.thumbnail_url
                     ? <Image src={lec.thumbnail_url} alt={lec.title} fill style={{ objectFit: "cover" }} sizes="50vw" />
-                    : <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg,#667eea,#764ba2)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 14, fontWeight: 700, padding: "0 8px", textAlign: "center" }}>{lec.category || "?�강"}</div>}
+                    : <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg,#667eea,#764ba2)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 14, fontWeight: 700, padding: "0 8px", textAlign: "center" }}>{lec.category || "특강"}</div>}
                 </div>
                 <div style={{ padding: "10px" }}>
                   <span style={{ fontSize: 13, fontWeight: 700, color: "#8a3ffc", display: "block", marginBottom: 4, letterSpacing: "-0.2px" }}>{lec.category}</span>
                   <p style={{ fontSize: 15, fontWeight: 700, color: "#333333", lineHeight: 1.5, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", margin: "0 0 6px", wordBreak: "keep-all", letterSpacing: "-0.3px" }}>{lec.title}</p>
-                  <p style={{ fontSize: 14, color: "#666666", margin: 0 }}>{lec.instructor_name || "공실마스??}</p>
+                  <p style={{ fontSize: 14, color: "#666666", margin: 0 }}>{lec.instructor_name || "공실마스터"}</p>
                   <p style={{ fontSize: 15, fontWeight: 800, color: "#333333", marginTop: 6 }}>{lec.discount_price || lec.price ? `${(lec.discount_price || lec.price).toLocaleString()}P` : "무료"}</p>
                 </div>
               </Link>
@@ -357,15 +357,15 @@ export default function MobileHomeClient(props: Props) {
         </div>
       )}
 
-      {/* ???�론?�상 (?�료?? ??PC PremiumDroneSection 모바???�??*/}
+      {/* ⑧ 드론영상 (자료실) — PC PremiumDroneSection 모바일 대응 */}
       {dronePosts.length > 0 && (
         <div style={{ background: "#1a1a2e", marginBottom: 12 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 16px 14px" }}>
             <Link href="/m/board?id=drone" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="4" cy="4" r="2.5"/><circle cx="20" cy="4" r="2.5"/><line x1="4" y1="6.5" x2="4" y2="10"/><line x1="20" y1="6.5" x2="20" y2="10"/><line x1="4" y1="10" x2="20" y2="10"/><rect x="9" y="9" width="6" height="4" rx="1" fill="#60a5fa" stroke="#60a5fa"/><line x1="12" y1="13" x2="12" y2="16"/><circle cx="12" cy="17.5" r="1.5" fill="#60a5fa" stroke="none"/><line x1="8" y1="20" x2="16" y2="20" strokeWidth="1.5"/></svg>
-              <span style={{ fontSize: 18, fontWeight: 800, color: "#fff", letterSpacing: "-0.5px" }}>?�론?�상 (?�료??</span>
+              <span style={{ fontSize: 18, fontWeight: 800, color: "#fff", letterSpacing: "-0.5px" }}>드론영상 (자료실)</span>
             </Link>
-            <Link href="/m/board?id=drone" style={{ fontSize: 15, color: "rgba(255,255,255,0.5)", textDecoration: "none" }}>?�보�???/Link>
+            <Link href="/m/board?id=drone" style={{ fontSize: 15, color: "rgba(255,255,255,0.5)", textDecoration: "none" }}>더보기 ›</Link>
           </div>
           <div className="no-scrollbar" style={{ display: "flex", gap: 12, padding: "0 16px 20px", overflowX: "auto" }} onTouchStart={(e) => e.stopPropagation()} onTouchEnd={(e) => e.stopPropagation()}>
             {dronePosts.map((item: any) => {
@@ -390,7 +390,7 @@ export default function MobileHomeClient(props: Props) {
                     )}
                   </div>
                   <p style={{ fontSize: 14, fontWeight: 700, color: "#e2e8f0", lineHeight: 1.5, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", wordBreak: "keep-all", margin: "8px 0 0", letterSpacing: "-0.3px" }}>{item.title}</p>
-                  <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", margin: "4px 0 0", lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{item.subtitle || "?�론 ?�상 ?�료?�입?�다."}</p>
+                  <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", margin: "4px 0 0", lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{item.subtitle || "드론 영상 자료실입니다."}</p>
                 </Link>
               );
             })}
@@ -413,11 +413,11 @@ export default function MobileHomeClient(props: Props) {
         @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
       `}</style>
 
-      {/* FAB: 공실?�록 */}
+      {/* FAB: 공실등록 */}
       <button
         onClick={() => {
           if (!currentUser) {
-            alert("공실???�록?�려�?로그?�이 ?�요?�니??");
+            alert("공실을 등록하려면 로그인이 필요합니다.");
             setIsAuthModalOpen(true);
           } else {
             router.push("/m/admin/vacancy/write");
@@ -448,10 +448,10 @@ export default function MobileHomeClient(props: Props) {
           <path d="M9 17v-3h2v3" />
           <path d="M14 17h6M17 14v6" stroke="#ffffff" strokeWidth="2.5" />
         </svg>
-        <span style={{ fontSize: "14px", fontWeight: 800, color: "#fff", whiteSpace: "nowrap" }}>공실?�록</span>
+        <span style={{ fontSize: "14px", fontWeight: 800, color: "#fff", whiteSpace: "nowrap" }}>공실등록</span>
       </button>
 
-      {/* 로그??모달 */}
+      {/* 로그인 모달 */}
       {isAuthModalOpen && (
         <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
       )}
@@ -467,9 +467,9 @@ function NewsSection({ title, href, articles, onArticleClick }: { title: string;
     <div style={{ background: "#fff", marginBottom: 12, borderBottom: "1px solid #f0f0f0" }}>
       <div className="sec-hd">
         <h2>{title}</h2>
-        <Link href={href} style={{ fontSize: 15, color: "#999999", textDecoration: "none", letterSpacing: "-0.2px" }}>?�보�???/Link>
+        <Link href={href} style={{ fontSize: 15, color: "#999999", textDecoration: "none", letterSpacing: "-0.2px" }}>더보기 ›</Link>
       </div>
-      {/* 메인 기사 (???�네?? */}
+      {/* 메인 기사 (큰 썸네일) */}
       <Link href={`/m/news/${main.article_no || main.id}`} className="tap art-row" onClick={onArticleClick}
         style={{ padding: "14px 16px", cursor: "pointer", borderBottom: "1px solid #f0f0f0", display: "block" }}>
         <div style={{ display: "flex", gap: 12 }}>
@@ -489,7 +489,7 @@ function NewsSection({ title, href, articles, onArticleClick }: { title: string;
           )}
         </div>
       </Link>
-      {/* ?�머지 기사 (번호 리스?? */}
+      {/* 나머지 기사 (번호 리스트) */}
       {rest.slice(0, 3).map((a: any, i: number) => (
         <Link key={a.id} href={`/m/news/${a.article_no || a.id}`} className="tap art-row" onClick={onArticleClick} style={{ display: "flex" }}>
           <span style={{ flexShrink: 0, width: 24, fontSize: 17, fontWeight: 800, color: i === 0 ? "#508bf5" : "#d1d5db", alignSelf: "center" }}>{i + 1}</span>
