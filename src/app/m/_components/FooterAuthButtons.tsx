@@ -28,24 +28,26 @@ export default function FooterAuthButtons() {
         {isLoggedIn ? (
           <button
             onClick={handleLogout}
-            style={{ flex: 1, maxWidth: 160, height: 42, border: "1px solid #333", borderRadius: 4, background: "#fff", color: "#333", fontSize: 14, fontWeight: 700, cursor: "pointer", letterSpacing: "-0.3px" }}
+            style={{ flex: 1, maxWidth: 160, height: 42, border: "1px solid #ddd", borderRadius: 4, background: "#fff", color: "#555", fontSize: 14, fontWeight: 700, cursor: "pointer", letterSpacing: "-0.3px" }}
           >
             로그아웃
           </button>
         ) : (
-          <button
-            onClick={() => setShowAuth(true)}
-            style={{ flex: 1, maxWidth: 160, height: 42, border: "none", borderRadius: 4, background: "#222", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer", letterSpacing: "-0.3px" }}
-          >
-            로그인
-          </button>
+          <>
+            <button
+              onClick={() => setShowAuth(true)}
+              style={{ flex: 1, maxWidth: 160, height: 42, border: "1px solid #ddd", borderRadius: 4, background: "#fff", color: "#333", fontSize: 14, fontWeight: 700, cursor: "pointer", letterSpacing: "-0.3px" }}
+            >
+              로그인
+            </button>
+            <button
+              onClick={() => setShowAuth(true)}
+              style={{ flex: 1, maxWidth: 160, height: 42, border: "none", borderRadius: 4, background: "#1e56a0", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer", letterSpacing: "-0.3px" }}
+            >
+              무료회원가입
+            </button>
+          </>
         )}
-        <button
-          onClick={() => { document.cookie = "view-desktop=true;path=/;max-age=3600"; window.location.href = "/"; }}
-          style={{ flex: 1, maxWidth: 160, height: 42, border: "1px solid #333", borderRadius: 4, background: "#fff", color: "#333", fontSize: 14, fontWeight: 700, cursor: "pointer", letterSpacing: "-0.3px" }}
-        >
-          PC보기
-        </button>
       </div>
       {showAuth && <AuthModal isOpen={showAuth} onClose={() => setShowAuth(false)} />}
     </>
