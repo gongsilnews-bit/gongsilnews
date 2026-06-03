@@ -334,11 +334,17 @@ const convertOverviewTableToArray = (tbl: any): { label: string; value: string }
 };
 
 const mergeStateWithDefaults = (loaded: any): FlyerState => {
+  let mergedVisiblePages = loaded?.info?.visiblePages || INITIAL_INFO.visiblePages;
+  if (!mergedVisiblePages.includes(0)) mergedVisiblePages = [0, ...mergedVisiblePages];
+  if (!mergedVisiblePages.includes(7)) mergedVisiblePages = [...mergedVisiblePages, 7];
+  mergedVisiblePages.sort((a: number, b: number) => a - b);
+
   return {
     ...loaded,
     info: {
       ...INITIAL_INFO,
       ...(loaded?.info || {}),
+      visiblePages: mergedVisiblePages,
       overviewTable: convertOverviewTableToArray(loaded?.info?.overviewTable || loaded?.info?.overviewTableObj),
       floorStatus: loaded?.info?.floorStatus || INITIAL_INFO.floorStatus,
       highlights: loaded?.info?.highlights || INITIAL_INFO.highlights,

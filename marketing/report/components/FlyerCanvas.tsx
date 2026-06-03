@@ -786,7 +786,11 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
     }
   };
 
-  let visiblePages = info.visiblePages || [0, 1, 2, 3, 4, 5, 6, 7];
+  let visiblePages = [...(info.visiblePages || [0, 1, 2, 3, 4, 5, 6, 7])];
+  if (!visiblePages.includes(0)) visiblePages.push(0);
+  if (!visiblePages.includes(7)) visiblePages.push(7);
+  visiblePages.sort((a, b) => a - b);
+  
   if (info.hideRentRoll) visiblePages = visiblePages.filter(p => p !== 3);
   if (info.hideRoadmap) visiblePages = visiblePages.filter(p => p !== 6);
   

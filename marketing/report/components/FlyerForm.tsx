@@ -237,12 +237,13 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
               { id: 5, label: '5. ?낆?' },
               { id: 6, label: '6. 濡쒕뱶留? },
           ].map(tab => {
-              const visiblePages = info.visiblePages || [1, 2, 3, 4, 5, 6];
+              let visiblePages = [...(info.visiblePages || [0, 1, 2, 3, 4, 5, 6, 7])];
+              if (!visiblePages.includes(0)) visiblePages.push(0);
               
               let isVisible = false;
               let isAllSelected = false;
               if (tab.id === 'all') {
-                  isAllSelected = visiblePages.length === 6;
+                  isAllSelected = visiblePages.length >= 6;
                   isVisible = isAllSelected;
               } else {
                   isVisible = visiblePages.includes(tab.id as number);
@@ -292,7 +293,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
       <div className="flex-1 overflow-y-auto pr-2 pb-10 space-y-6">
           
           {/* 0. 而ㅻ쾭 & ?붾뵫 */}
-          {(activeTab === 0 || (activeTab === 'all' && (info.visiblePages || []).includes(0))) && (
+          {(activeTab === 0 || activeTab === 'all') && (
               <div className={`animate-fadeIn relative ${activeTab === 'all' ? 'overflow-hidden bg-white p-5 rounded-2xl shadow-sm border border-gray-200 mb-8 shrink-0' : 'space-y-6'}`}>
                   <div className="space-y-6">
                       <div className="pb-2 border-b-[3px] border-black mb-4">
