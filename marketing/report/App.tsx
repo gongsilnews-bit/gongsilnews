@@ -1478,7 +1478,7 @@ ${clone.outerHTML}
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const canvas = await (window as any).html2canvas(clone, {
         scale: 2, 
-        useCORS: true,
+        // useCORS: true,
           proxy: '/api/proxy-image',
         backgroundColor: '#ffffff',
         windowWidth: 1400, // Ensure enough width for the 1122px wide layout
@@ -1536,7 +1536,7 @@ ${clone.outerHTML}
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const canvas = await (window as any).html2canvas(sec, {
           scale: 2, 
-          useCORS: true,
+          // useCORS: true,
           proxy: '/api/proxy-image',
           backgroundColor: '#ffffff',
           width: 1122,
@@ -1599,7 +1599,7 @@ ${clone.outerHTML}
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const canvas = await (window as any).html2canvas(sec, {
           scale: 2, 
-          useCORS: true,
+          // useCORS: true,
           proxy: '/api/proxy-image',
           backgroundColor: '#ffffff',
           width: 1122,
