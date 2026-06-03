@@ -109,7 +109,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
   const [buildingName, setBuildingName] = useState("");
   const [aptDong, setAptDong] = useState("");
   const [hosu, setHosu] = useState("");
-  const [addressExposure, setAddressExposure] = useState("기본주소만공개");
+  const [addressExposure, setAddressExposure] = useState("비공개");
 
   // 건축물대장용 코드 저장
   const [bjdongCd, setBjdongCd] = useState("");
@@ -559,7 +559,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
   // ── 주소 노출 여부 판별 ──
   const isFieldExposed = (field: "detailAddr" | "buildingName" | "aptDong" | "hosu") => {
     if (propertyType === "아파트·오피스텔") {
-      if (field === "detailAddr") return addressExposure !== "비공개"; 
+      if (field === "detailAddr") return true; 
       if (field === "buildingName") return true; 
       if (field === "aptDong") return addressExposure !== "비공개"; 
       if (field === "hosu") return addressExposure === "동/호수공개";
@@ -1016,6 +1016,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                   setPropertyType(t); 
                   const defaultSub = SUB_CATEGORIES[t]?.[0] || "";
                   setSubCategory(defaultSub); 
+                  if (t === "아파트·오피스텔") setAddressExposure("비공개"); else setAddressExposure("기본주소만공개");
                   if (defaultSub === "원룸" || defaultSub === "1.5룸") setRoomCount("1");
                   if (defaultSub === "투룸") setRoomCount("2");
                 }} />
