@@ -54,7 +54,6 @@ interface Props {
   realestateArticles: any[];
   marketingArticles: any[];
   lifeArticles: any[];
-  mapArticles: any[];
   lectures: any[];
 }
 
@@ -67,7 +66,7 @@ const CATEGORIES = [
 ];
 
 export default function MobileHomeClient(props: Props) {
-  const { headlineArticles, gongsilArticles, realestateArticles, marketingArticles, lifeArticles, mapArticles, lectures } = props;
+  const { headlineArticles, gongsilArticles, realestateArticles, marketingArticles, lifeArticles, lectures } = props;
   const router = useRouter();
   const [vacancies, setVacancies] = useState<any[]>([]);
   const [isMapLoading, setIsMapLoading] = useState(true);
@@ -280,36 +279,48 @@ export default function MobileHomeClient(props: Props) {
       {/* ③ 부동산·경제 */}
       <NewsSection title="부동산·경제" href="/m/news_politics" articles={realestateArticles} onArticleClick={saveHomeScroll} />
 
-      {/* ④ 우리동네뉴스 (PC VideoGrid 대응) */}
-      {mapArticles.length > 0 && (
-        <div style={{ background: "#fff", marginBottom: 12, borderBottom: "1px solid #f0f0f0" }}>
-          <div className="sec-hd">
-            <h2>우리동네뉴스</h2>
-            <Link href="/m/news_map" style={{ fontSize: 15, color: "#6b7280", textDecoration: "none" }}>더보기 ›</Link>
-          </div>
-          <div className="no-scrollbar" style={{ display: "flex", gap: 12, padding: "0 16px 16px", overflowX: "auto" }} onTouchStart={(e) => e.stopPropagation()} onTouchEnd={(e) => e.stopPropagation()}>
-            {mapArticles.slice(0, 5).map((a: any) => (
-              <Link key={a.id} href={`/m/news/${a.article_no || a.id}`} className="tap" onClick={saveHomeScroll}
-                style={{ flexShrink: 0, width: "calc(50vw - 22px)", maxWidth: 200, borderRadius: 10, overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.07)", border: "1px solid #f3f4f6", background: "#fff", cursor: "pointer", textDecoration: "none", display: "block" }}>
-                <div style={{ width: "100%", aspectRatio: "16/9", overflow: "hidden", background: "#e5e7eb", position: "relative" }}>
-                  {a.thumbnail_url
-                    ? <Image src={a.thumbnail_url} alt="" fill style={{ objectFit: "cover" }} sizes="50vw" />
-                    : <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg,#1a2e50,#2d4a7a)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>📺</div>}
-                  {a.youtube_url && (
-                    <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 36, height: 36, background: "rgba(0,0,0,0.55)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <svg viewBox="0 0 24 24" width="16" height="16" fill="white"><path d="M8 5v14l11-7z"/></svg>
-                    </div>
-                  )}
-                </div>
-                <div style={{ padding: "10px" }}>
-                  <p style={{ fontSize: 15, fontWeight: 700, color: "#333333", lineHeight: 1.5, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", wordBreak: "keep-all", margin: 0, letterSpacing: "-0.3px" }}>{a.title}</p>
-                  <p style={{ fontSize: 13, color: "#222222", fontWeight: 500, marginTop: 5 }}>{formatDate(a.published_at || a.created_at)}</p>
-                </div>
+      {/* ④ 공실뉴스 영상 (PC 검은배경 VideoGrid 모바일 버전) */}
+      {(() => {
+        const ytRx = /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([\w-]{11})/;
+        const videoArticles = gongsilArticles.filter((a: any) => {
+          if (a.youtube_url && ytRx.test(a.youtube_url)) return true;
+          if (a.content && ytRx.test(a.content)) return true;
+          return false;
+        }).slice(0, 5);
+        if (videoArticles.length === 0) return null;
+        return (
+          <div style={{ background: "#111", marginBottom: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 16px 14px" }}>
+              <Link href="/m/news_gongsil" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
+                <svg width="24" height="17" viewBox="0 0 28 20" fill="none"><rect width="28" height="20" rx="4" fill="#FF0000"/><path d="M11 5.5L19.5 10L11 14.5V5.5Z" fill="white"/></svg>
+                <span style={{ fontSize: 18, fontWeight: 800, color: "#fff", letterSpacing: "-0.5px" }}>공실뉴스</span>
               </Link>
-            ))}
+              <Link href="/m/news_gongsil" style={{ fontSize: 15, color: "rgba(255,255,255,0.5)", textDecoration: "none" }}>더보기 ›</Link>
+            </div>
+            <div className="no-scrollbar" style={{ display: "flex", gap: 12, padding: "0 16px 20px", overflowX: "auto" }} onTouchStart={(e) => e.stopPropagation()} onTouchEnd={(e) => e.stopPropagation()}>
+              {videoArticles.map((a: any) => {
+                const ytMatch = (a.youtube_url || a.content || "").match(ytRx);
+                const ytId = ytMatch ? ytMatch[1] : null;
+                const thumbSrc = a.thumbnail_url || (ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : null);
+                return (
+                  <Link key={a.id} href={`/m/news/${a.article_no || a.id}`} className="tap" onClick={saveHomeScroll}
+                    style={{ flexShrink: 0, width: "calc(65vw - 16px)", maxWidth: 260, borderRadius: 10, overflow: "hidden", cursor: "pointer", textDecoration: "none", display: "block" }}>
+                    <div style={{ width: "100%", aspectRatio: "16/9", overflow: "hidden", background: "#222", position: "relative", borderRadius: 10 }}>
+                      {thumbSrc
+                        ? <Image src={thumbSrc} alt="" fill style={{ objectFit: "cover", opacity: 0.85 }} sizes="65vw" />
+                        : <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg,#1a2e50,#2d4a7a)" }} />}
+                      <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 44, height: 44, background: "rgba(0,0,0,0.5)", borderRadius: "50%", border: "2px solid rgba(255,255,255,0.8)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="white" style={{ marginLeft: 2 }}><path d="M8 5v14l11-7z"/></svg>
+                      </div>
+                    </div>
+                    <p style={{ fontSize: 15, fontWeight: 700, color: "#fff", lineHeight: 1.5, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", wordBreak: "keep-all", margin: "10px 0 0", letterSpacing: "-0.3px" }}>{a.title}</p>
+                  </Link>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* ⑤ AI마케팅 */}
       <NewsSection title="AI마케팅" href="/m/news_marketing" articles={marketingArticles} onArticleClick={saveHomeScroll} />

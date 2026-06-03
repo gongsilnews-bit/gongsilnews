@@ -35,7 +35,7 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
   // JS에서 새 카테고리별 분류
   const marketingArts = allNewsArticles.filter(a => a.section1 === "AI마케팅").slice(0, 2);
   const economyArts = allNewsArticles.filter(a => a.section1 === "부동산·경제").slice(0, 2);
-  const gongsilListArts = allNewsArticles.filter(a => a.section1 === "공실뉴스").slice(3, 5);
+  const gongsilListArts = allNewsArticles.filter(a => a.section1 === "공실뉴스").slice(0, 2);
   const lifeArts = allNewsArticles.filter(a => a.section1 === "라이프·오피니언").slice(0, 2);
   const gongsilArts = allNewsArticles.filter(a => a.section1 === "공실뉴스").slice(0, 3);
 
