@@ -282,6 +282,25 @@ export default function NewsMapClient({ initialArticles, initialPopularArticles 
     map.setMinLevel(3);
     map.setMaxLevel(9);
 
+    // 🚀 PC 페이지를 태블릿/모바일에서 열 때 터치 드래그 강제 활성화
+    if (mapRef.current && ('ontouchstart' in window || navigator.maxTouchPoints > 0)) {
+      const container = mapRef.current;
+      const forwardTouch = (e: TouchEvent, mouseType: string) => {
+        if (e.touches.length > 1) return;
+        const touch = e.touches[0] || e.changedTouches[0];
+        const mouseEvent = new MouseEvent(mouseType, {
+          bubbles: true, cancelable: true,
+          clientX: touch.clientX, clientY: touch.clientY,
+          screenX: touch.screenX, screenY: touch.screenY,
+        });
+        container.dispatchEvent(mouseEvent);
+        if (mouseType !== 'mouseup') e.preventDefault();
+      };
+      container.addEventListener('touchstart', (e) => forwardTouch(e, 'mousedown'), { passive: false });
+      container.addEventListener('touchmove', (e) => forwardTouch(e, 'mousemove'), { passive: false });
+      container.addEventListener('touchend', (e) => forwardTouch(e, 'mouseup'), { passive: false });
+    }
+
     // 지도 이동/줌 완료 시 → 현재 뷰포트에 보이는 기사만 사이드바에 표시 + 주소 파악
     kakao.maps.event.addListener(map, 'idle', () => {
       if (!clusterModeRef.current) {
