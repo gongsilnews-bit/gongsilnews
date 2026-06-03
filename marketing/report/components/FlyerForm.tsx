@@ -226,7 +226,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
       <hr className="border-gray-100 mb-6 shrink-0" />
 
       {/* Combined Tabs & Page Visibility Toggles */}
-      <div className="grid grid-cols-4 gap-2 bg-gray-100/80 p-2.5 rounded-xl mb-6 shrink-0 shadow-inner">
+      <div className="grid grid-cols-3 gap-2.5 bg-gray-100/80 p-3 rounded-xl mb-6 shrink-0 shadow-inner">
           {[
               { id: 'all' as const, label: '전체' },
               { id: 1, label: '1. 개요' },
@@ -251,7 +251,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                   <div
                       key={tab.id}
                       onClick={() => setActiveTab(tab.id)}
-                      className={`relative flex flex-col justify-center items-center h-[60px] px-1 text-[11px] sm:text-xs font-bold rounded-lg transition-all cursor-pointer ${activeTab === tab.id ? 'bg-white text-blue-700 shadow-md ring-2 ring-blue-500 z-10' : 'bg-white/60 text-gray-500 hover:bg-white ring-1 ring-gray-200/50'}`}
+                      className={`relative flex flex-col justify-center items-center h-[75px] px-2 text-xs sm:text-[13px] font-bold rounded-lg transition-all cursor-pointer ${activeTab === tab.id ? 'bg-white text-blue-700 shadow-md ring-2 ring-blue-500 z-10' : 'bg-white/60 text-gray-500 hover:bg-white ring-1 ring-gray-200/50'}`}
                   >
                       {/* Checkbox wrapper */}
                       <div 
