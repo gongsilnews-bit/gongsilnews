@@ -293,8 +293,6 @@ const ReportPage = ({
             return (
                 <div className={`h-[120px] bg-white px-10 flex flex-col justify-end shrink-0 ${headingFont}`}>
                     <div className="w-full flex items-end relative pb-4">
-                        {/* Full width gray line at the bottom */}
-                        <div className="absolute left-0 bottom-4 w-full h-[1px] bg-gray-300 z-0"></div>
                         
                         <div className="flex-1 flex items-end">
                             <h1 className="text-3xl font-black text-gray-900 tracking-tight uppercase border-b-[4px] border-[var(--theme-primary)] pb-2 shrink-0 z-10 relative">
