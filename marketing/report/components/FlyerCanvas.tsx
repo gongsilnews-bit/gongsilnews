@@ -1430,9 +1430,9 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                 onChange={(val) => handleTextChange('page3HighlightHeader', val)} 
                             />
                         </div>
-                        <div className="w-full flex-1 flex flex-col justify-between bg-white rounded-2xl border border-slate-100 p-6 shadow-sm overflow-visible relative">
+                        <div className="w-full flex-1 flex flex-col justify-between bg-white rounded-2xl border border-slate-100 p-6 shadow-sm overflow-visible relative group/table">
                             {/* Toolbar for Rent Roll */}
-                            <div className="absolute top-4 right-6 flex gap-2 print:hidden z-10">
+                            <div className="absolute top-4 right-6 gap-2 print:hidden z-10 hidden group-hover/table:flex">
                                 <button type="button" onClick={() => addRow()} className="px-3 py-1.5 bg-[#008299] text-white text-[11px] font-bold rounded shadow-sm hover:bg-[#006f82] transition-colors flex items-center gap-1">
                                     <span className="text-sm leading-none">+</span> 행 추가
                                 </button>
