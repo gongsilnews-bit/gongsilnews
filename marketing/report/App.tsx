@@ -25,6 +25,11 @@ export const LAYOUTS: FlyerLayout[] = [
 ];
 
 const INITIAL_INFO: PropertyInfo = {
+  // Page 0: Cover
+  coverTitle: "INVESTMENT MEMORANDUM",
+  coverSubtitle: "부동산 투자 분석 보고서",
+  coverQRLink: "https://gongsilnews.com",
+
   // Page 1: Overview
   address: "서울 강남구 논현동",
   subTitle: "Asset Sales Briefing",
@@ -128,7 +133,17 @@ const INITIAL_INFO: PropertyInfo = {
   
   // Backward compat
   promotionText: "",
-  sections: []
+  sections: [],
+
+  // New defaults
+  hideRentRoll: false,
+  hideRoadmap: false,
+  contactYoutube: "https://youtube.com/@gongsilnews",
+  contactBlog: "https://blog.naver.com/gongsilnews",
+  contactWebsite: "https://gongsilnews.com",
+  contactQRLink: "https://gongsilnews.com",
+  propertyType: "commercial_sales",
+  visiblePages: [0, 1, 2, 3, 4, 5, 6, 7]
 };
 
 const INITIAL_GENERATED: GeneratedContent = {

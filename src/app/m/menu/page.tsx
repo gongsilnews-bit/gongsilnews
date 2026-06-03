@@ -22,31 +22,35 @@ export default function MenuPage() {
       setLoading(true);
       try {
         const supabase = createClient();
+        // 세션 자동 갱신 후 유저 확인 (토큰 만료 대응)
+        await supabase.auth.getSession();
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           setCurrentUser(user);
-          // 병렬 조회: 프로필 + 중개사 상태 동시
+          // 프로필 + 중개사 상태만 빠르게 로드 → 즉시 화면 표시
           const [{ data }, { data: agencyData }] = await Promise.all([
             supabase.from('members').select('name, email, role, profile_image_url, plan_type, signup_completed').eq('id', user.id).single(),
             supabase.from('agencies').select('status').eq('owner_id', user.id).single(),
           ]);
           if (data) {
             setMemberData({ ...data, agencyStatus: agencyData?.status || null });
-            const r = data.role?.trim().toUpperCase() || '';
-            const isAdmin = r === 'ADMIN' || r === '최고관리자' || r.includes('관리자');
-            // 병렬 조회: 활동 카운트 + 관리자 PENDING 카운트 동시
-            const [activityRes, ...adminResults] = await Promise.all([
-              getUserActivityCounts(user.id),
-              ...(isAdmin ? [
-                supabase.from('vacancies').select('*', { count: 'exact', head: true }).eq('status', 'PENDING'),
-                supabase.from('articles').select('*', { count: 'exact', head: true }).eq('status', 'PENDING'),
-                supabase.from('agencies').select('*', { count: 'exact', head: true }).eq('status', 'PENDING'),
-              ] : []),
-            ]);
-            if (activityRes.success) setUserActivityCounts(activityRes.counts);
-            if (isAdmin && adminResults.length === 3) {
-              setPendingCounts({ vacancies: adminResults[0].count || 0, articles: adminResults[1].count || 0, members: adminResults[2].count || 0 });
-            }
+          }
+          // 로딩 즉시 해제 → 화면 먼저 표시
+          setLoading(false);
+          // 카운트는 백그라운드에서 조용히 로드
+          const r = data?.role?.trim().toUpperCase() || '';
+          const isAdmin = r === 'ADMIN' || r === '최고관리자' || r.includes('관리자');
+          const [activityRes, ...adminResults] = await Promise.all([
+            getUserActivityCounts(user.id),
+            ...(isAdmin ? [
+              supabase.from('vacancies').select('*', { count: 'exact', head: true }).eq('status', 'PENDING'),
+              supabase.from('articles').select('*', { count: 'exact', head: true }).eq('status', 'PENDING'),
+              supabase.from('agencies').select('*', { count: 'exact', head: true }).eq('status', 'PENDING'),
+            ] : []),
+          ]);
+          if (activityRes.success) setUserActivityCounts(activityRes.counts);
+          if (isAdmin && adminResults.length === 3) {
+            setPendingCounts({ vacancies: adminResults[0].count || 0, articles: adminResults[1].count || 0, members: adminResults[2].count || 0 });
           }
         } else {
           setCurrentUser(null);
@@ -271,8 +275,8 @@ export default function MenuPage() {
             </div>
           )}
 
-          {/* 3. 나의 활동 */}
-          <div style={{ background: '#fff', marginBottom: '8px' }}>
+          {/* 3. 나의 활동 (로그인 시에만 표시) */}
+          {currentUser && <div style={{ background: '#fff', marginBottom: '8px' }}>
             <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#6b7280', padding: '16px 20px 8px' }}>나의 활동</h3>
             <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
               {activityItems.map((item) => (
@@ -290,7 +294,7 @@ export default function MenuPage() {
                 </li>
               ))}
             </ul>
-          </div>
+          </div>}
 
           {/* 4. 뉴스 */}
           <div style={{ background: '#fff', marginBottom: '8px' }}>

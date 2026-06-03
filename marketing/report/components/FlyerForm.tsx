@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { PropertyInfo, FlyerColor, FlyerLayout } from '../types';
 import { SwatchIcon, RectangleGroupIcon, PhotoIcon, TrashIcon, ArrowUpIcon, ArrowDownIcon } from '@heroicons/react/24/outline';
 
@@ -92,7 +92,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                       className="text-red-500 hover:text-red-700 font-bold text-[10px] flex items-center gap-0.5 border-none bg-transparent cursor-pointer transition-colors"
                   >
                       <TrashIcon className="w-3.5 h-3.5" />
-                      <span>삭제</span>
+                      <span>??젣</span>
                   </button>
               )}
           </div>
@@ -102,12 +102,12 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
               ) : null}
               {isUploadingImage && isUploadingImage[key] ? (
                   <div className="absolute inset-0 bg-slate-900/60 flex flex-col items-center justify-center text-white text-xs font-bold z-30">
-                      <span>업로드 중...</span>
+                      <span>?낅줈??以?..</span>
                   </div>
               ) : (
                   <div className={`flex flex-col items-center relative z-10 ${uploadedImages[key] ? 'bg-white/80 p-2 rounded' : ''}`}>
                       <PhotoIcon className="w-6 h-6 text-gray-400 group-hover:text-gray-600" />
-                      <span className="text-xs text-gray-400 mt-1">클릭하여 업로드</span>
+                      <span className="text-xs text-gray-400 mt-1">?대┃?섏뿬 ?낅줈??/span>
                   </div>
               )}
               <input 
@@ -126,7 +126,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
       <div className="mb-8 shrink-0">
         <h3 className="text-sm font-bold text-gray-700 flex items-center gap-2 mb-3">
              <SwatchIcon className="w-5 h-5" />
-             디자인 색상 선택
+             ?붿옄???됱긽 ?좏깮
         </h3>
         <div className="flex items-center gap-3 mb-6 flex-wrap">
             {colors.map(color => (
@@ -135,7 +135,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                     onClick={() => onColorSelect(color)}
                     className={`w-10 h-10 rounded-full border-2 transition-all shadow-sm flex items-center justify-center ${currentColor.id === color.id ? 'border-gray-800 scale-110 ring-2 ring-offset-2 ring-gray-300' : 'border-transparent hover:scale-105'}`}
                     style={{ backgroundColor: color.primary }}
-                    title={color.name || '색상'}
+                    title={color.name || '?됱긽'}
                 >
                     {currentColor.id === color.id && <div className="w-2 h-2 bg-white rounded-full"></div>}
                 </button>
@@ -147,7 +147,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                 style={{ 
                     backgroundColor: currentColor.id === 'custom' ? '#f0f5fa' : '#ffffff'
                 }}
-                title="직접 색상 선택"
+                title="吏곸젒 ?됱긽 ?좏깮"
             >
                 <input 
                     type="color"
@@ -175,7 +175,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                         };
                         onColorSelect({
                             id: 'custom',
-                            name: '사용자 지정',
+                            name: '?ъ슜??吏??,
                             primary: val,
                             secondary: adjustColor(val, 40),
                             dark: adjustColor(val, -45)
@@ -207,7 +207,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
 
         <h3 className="text-sm font-bold text-gray-700 flex items-center gap-2 mb-3">
              <RectangleGroupIcon className="w-5 h-5" />
-             레이아웃 테마 선택
+             ?덉씠?꾩썐 ?뚮쭏 ?좏깮
         </h3>
         <div className="grid grid-cols-4 gap-2">
              {layouts.map((layout, idx) => (
@@ -217,7 +217,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                     className={`py-2 rounded-lg border text-xs font-bold transition-all flex flex-col items-center justify-center ${currentLayout.id === layout.id ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'}`}
                  >
                      <span className="block text-lg mb-0.5">{idx + 1}</span>
-                     <span className="text-[10px] text-center leading-tight whitespace-pre-wrap">{layout.name ? layout.name.replace(' ', '\n') : `타입 ${idx + 1}`}</span>
+                     <span className="text-[10px] text-center leading-tight whitespace-pre-wrap">{layout.name ? layout.name.replace(' ', '\n') : `???${idx + 1}`}</span>
                  </button>
              ))}
         </div>
@@ -228,13 +228,14 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
       {/* Combined Tabs & Page Visibility Toggles */}
       <div className="grid grid-cols-3 gap-2.5 bg-gray-100/80 p-3 rounded-xl mb-6 shrink-0 shadow-inner">
           {[
-              { id: 'all' as const, label: '전체' },
-              { id: 1, label: '1. 개요' },
-              { id: 2, label: '2. 매물설명 & 시세' },
-              { id: 3, label: '3. 임대현황' },
-              { id: 4, label: '4. 사진' },
-              { id: 5, label: '5. 입지' },
-              { id: 6, label: '6. 로드맵' },
+              { id: 'all' as const, label: '?꾩껜' },
+              { id: 0, label: '0. 而ㅻ쾭 & ?붾뵫' },
+              { id: 1, label: '1. 媛쒖슂' },
+              { id: 2, label: '2. 留ㅻЪ?ㅻ챸 & ?쒖꽭' },
+              { id: 3, label: '3. ?꾨??꾪솴' },
+              { id: 4, label: '4. ?ъ쭊' },
+              { id: 5, label: '5. ?낆?' },
+              { id: 6, label: '6. 濡쒕뱶留? },
           ].map(tab => {
               const visiblePages = info.visiblePages || [1, 2, 3, 4, 5, 6];
               
@@ -262,7 +263,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                               type="checkbox" 
                               className="w-3.5 h-3.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
                               checked={isVisible}
-                              title={tab.id === 'all' ? "전체 출력 선택/해제" : "출력(포함) 여부"}
+                              title={tab.id === 'all' ? "?꾩껜 異쒕젰 ?좏깮/?댁젣" : "異쒕젰(?ы븿) ?щ?"}
                               onChange={(e) => {
                                   if (tab.id === 'all') {
                                       setInfo({ ...info, visiblePages: e.target.checked ? [1, 2, 3, 4, 5, 6] : [] });
@@ -290,36 +291,104 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
       {/* Tab Content */}
       <div className="flex-1 overflow-y-auto pr-2 pb-10 space-y-6">
           
+          {/* 0. 而ㅻ쾭 & ?붾뵫 */}
+          {(activeTab === 0 || (activeTab === 'all' && (info.visiblePages || []).includes(0))) && (
+              <div className={`animate-fadeIn relative ${activeTab === 'all' ? 'overflow-hidden bg-white p-5 rounded-2xl shadow-sm border border-gray-200 mb-8 shrink-0' : 'space-y-6'}`}>
+                  <div className="space-y-6">
+                      <div className="pb-2 border-b-[3px] border-black mb-4">
+                          <h2 className="text-xl font-black text-black tracking-tight">0. 而ㅻ쾭 & ?붾뵫</h2>
+                      </div>
+                      
+                      <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                          <h4 className="font-bold text-blue-800 mb-2">?꾨━??Pre-fill) ?쒗뵆由??좏깮</h4>
+                          <select
+                              value={info.propertyType || 'commercial_sales'}
+                              onChange={(e) => {
+                                  const type = e.target.value as any;
+                                  setInfo({ ...info, propertyType: type });
+                                  // We can add actual prefill logic here later, for now just change type
+                              }}
+                              className="w-full border-blue-200 rounded p-2 text-sm text-blue-900 bg-white focus:ring-blue-500"
+                          >
+                              <option value="commercial_sales">?곸뾽??留ㅻℓ (嫄대Ъ/鍮뚮뵫)</option>
+                              <option value="commercial_rent">?곸뾽???꾨? (?곴?/?щТ??</option>
+                              <option value="residential">二쇨굅??(留ㅻℓ/?꾩썡??</option>
+                          </select>
+                      </div>
+
+                      <div>
+                          <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">而ㅻ쾭 (?쒖?) ?ㅼ젙</h4>
+                          <div className="space-y-3">
+                              <div>
+                                  <label className="text-xs text-gray-500">而ㅻ쾭 硫붿씤 ??댄?</label>
+                                  <input type="text" name="coverTitle" value={info.coverTitle || ""} onChange={handleChange} className="w-full border rounded p-2 text-sm" placeholder="INVESTMENT MEMORANDUM" />
+                              </div>
+                              <div>
+                                  <label className="text-xs text-gray-500">而ㅻ쾭 ?쒕툕 ??댄?</label>
+                                  <input type="text" name="coverSubtitle" value={info.coverSubtitle || ""} onChange={handleChange} className="w-full border rounded p-2 text-sm" placeholder="遺?숈궛 ?ъ옄 遺꾩꽍 蹂닿퀬?? />
+                              </div>
+                              <div>
+                                  <label className="text-xs text-gray-500">留ㅻЪ ?곸꽭 蹂닿린 QR 留곹겕 (VR/?덊럹?댁?)</label>
+                                  <input type="text" name="coverQRLink" value={info.coverQRLink || ""} onChange={handleChange} className="w-full border rounded p-2 text-sm" placeholder="https://" />
+                              </div>
+                          </div>
+                      </div>
+
+                      <div>
+                          <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">?붾뵫 (留덉?留??? ?ㅼ젙</h4>
+                          <div className="grid grid-cols-2 gap-4">
+                              {renderImageUpload('agentPhoto', '?대떦???꾨줈??/ ?좊ː ?ъ쭊')}
+                              {renderImageUpload('agencyLogo', '以묎컻踰뺤씤 濡쒓퀬 (?섎떒)')}
+                          </div>
+                          <div className="space-y-3 mt-3">
+                              <div>
+                                  <label className="text-xs text-gray-500">?좏뒠釉?留곹겕</label>
+                                  <input type="text" name="contactYoutube" value={info.contactYoutube || ""} onChange={handleChange} className="w-full border rounded p-2 text-sm" />
+                              </div>
+                              <div>
+                                  <label className="text-xs text-gray-500">釉붾줈洹?留곹겕</label>
+                                  <input type="text" name="contactBlog" value={info.contactBlog || ""} onChange={handleChange} className="w-full border rounded p-2 text-sm" />
+                              </div>
+                              <div>
+                                  <label className="text-xs text-gray-500">?덊럹?댁?/臾몄쓽 QR 留곹겕</label>
+                                  <input type="text" name="contactQRLink" value={info.contactQRLink || ""} onChange={handleChange} className="w-full border rounded p-2 text-sm" />
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          )}
+
           {(activeTab === 1 || (activeTab === 'all' && (info.visiblePages || [1, 2, 3, 4, 5, 6]).includes(1))) && (
               <div className={`animate-fadeIn relative ${activeTab === 'all' ? 'h-[620px] overflow-hidden bg-white p-5 rounded-2xl shadow-sm border border-gray-200 mb-8 shrink-0' : 'space-y-6'}`}>
                   <div className="space-y-6">
                       <div className="pb-2 border-b-[3px] border-black mb-4">
-                          <h2 className="text-xl font-black text-black tracking-tight">1. 개요</h2>
+                          <h2 className="text-xl font-black text-black tracking-tight">1. 媛쒖슂</h2>
                       </div>
                   <div>
-                      <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">기본 타이틀</h4>
+                      <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">湲곕낯 ??댄?</h4>
                       <div className="space-y-3">
-                          <div><label className="text-xs text-gray-500">보고서 제목 (Address)</label><textarea name="address" value={info.address || ""} onChange={handleChange} className="w-full border rounded p-2 text-sm resize-y" rows={2} /></div>
-                          <div><label className="text-xs text-gray-500">서브 타이틀</label><textarea name="subTitle" value={info.subTitle || ""} onChange={handleChange} className="w-full border rounded p-2 text-sm resize-y" rows={3} /></div>
+                          <div><label className="text-xs text-gray-500">蹂닿퀬???쒕ぉ (Address)</label><textarea name="address" value={info.address || ""} onChange={handleChange} className="w-full border rounded p-2 text-sm resize-y" rows={2} /></div>
+                          <div><label className="text-xs text-gray-500">?쒕툕 ??댄?</label><textarea name="subTitle" value={info.subTitle || ""} onChange={handleChange} className="w-full border rounded p-2 text-sm resize-y" rows={3} /></div>
                       </div>
                   </div>
 
                   <div>
-                      <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">물건 개요 (표)</h4>
+                      <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">臾쇨굔 媛쒖슂 (??</h4>
                       <div className="space-y-3">
                           {(() => {
                               const tbl = Array.isArray(info.overviewTable) 
                                   ? info.overviewTable 
                                   : [
-                                      { label: "소재지", value: (info.overviewTable as any)?.location || "" },
-                                      { label: "용도지역", value: (info.overviewTable as any)?.zoning || "" },
-                                      { label: "대지면적", value: (info.overviewTable as any)?.landArea || "" },
-                                      { label: "연면적", value: (info.overviewTable as any)?.totalArea || "" },
-                                      { label: "건물규모", value: (info.overviewTable as any)?.buildingScale || "" },
-                                      { label: "주용도", value: (info.overviewTable as any)?.mainPurpose || "" },
-                                      { label: "주차대수", value: (info.overviewTable as any)?.parking || "" },
-                                      { label: "승강기", value: (info.overviewTable as any)?.elevator || "" },
-                                      { label: "준공연도", value: (info.overviewTable as any)?.completionYear || "" },
+                                      { label: "?뚯옱吏", value: (info.overviewTable as any)?.location || "" },
+                                      { label: "?⑸룄吏??, value: (info.overviewTable as any)?.zoning || "" },
+                                      { label: "?吏硫댁쟻", value: (info.overviewTable as any)?.landArea || "" },
+                                      { label: "?곕㈃??, value: (info.overviewTable as any)?.totalArea || "" },
+                                      { label: "嫄대Ъ洹쒕え", value: (info.overviewTable as any)?.buildingScale || "" },
+                                      { label: "二쇱슜??, value: (info.overviewTable as any)?.mainPurpose || "" },
+                                      { label: "二쇱감???, value: (info.overviewTable as any)?.parking || "" },
+                                      { label: "?밴컯湲?, value: (info.overviewTable as any)?.elevator || "" },
+                                      { label: "以怨듭뿰??, value: (info.overviewTable as any)?.completionYear || "" },
                                   ];
                               
                               return (
@@ -363,7 +432,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                                                       newTable[i] = { ...newTable[i], label: e.target.value };
                                                       setInfo({ ...info, overviewTable: newTable });
                                                   }} 
-                                                  placeholder="항목명" 
+                                                  placeholder="??ぉ紐? 
                                                   className="w-24 border rounded p-1.5 text-xs text-center font-bold text-gray-600 bg-white" 
                                               />
                                               <input 
@@ -373,7 +442,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                                                       newTable[i] = { ...newTable[i], value: e.target.value };
                                                       setInfo({ ...info, overviewTable: newTable });
                                                   }} 
-                                                  placeholder="내용" 
+                                                  placeholder="?댁슜" 
                                                   className="flex-1 border rounded p-1.5 text-xs bg-white text-gray-800 font-bold min-w-0" 
                                               />
                                               <button
@@ -384,7 +453,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                                                       setInfo({ ...info, overviewTable: newTable });
                                                   }}
                                                   className="text-red-400 hover:text-red-600 hover:bg-red-50 p-1.5 rounded transition-colors shrink-0"
-                                                  title="삭제"
+                                                  title="??젣"
                                               >
                                                   <TrashIcon className="w-4 h-4" />
                                               </button>
@@ -399,26 +468,26 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                                           }}
                                           className="w-full mt-2 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-1 border border-dashed border-blue-200"
                                       >
-                                          + 개요 항목(행) 추가
+                                          + 媛쒖슂 ??ぉ(?? 異붽?
                                       </button>
                                   </>
                               );
                           })()}
-                          {/* 거래 형태 및 금액 설정 */}
+                          {/* 嫄곕옒 ?뺥깭 諛?湲덉븸 ?ㅼ젙 */}
                           <div className="mt-4 bg-orange-50/50 p-3 rounded-lg border border-orange-100/80 space-y-3">
                               <div className="flex items-center justify-between">
                                   <label className="text-xs font-extrabold text-[#cc5a27] flex items-center gap-1">
-                                      🤝 거래 형태 및 금액 설정
+                                      ?쩃 嫄곕옒 ?뺥깭 諛?湲덉븸 ?ㅼ젙
                                   </label>
                                   {/* Select transaction type */}
                                   <div className="flex bg-white rounded border border-gray-200 p-0.5 shadow-sm shrink-0">
-                                      {["매매", "전세", "월세"].map((t) => (
+                                      {["留ㅻℓ", "?꾩꽭", "?붿꽭"].map((t) => (
                                           <button
                                               key={t}
                                               type="button"
                                               onClick={() => setInfo({ ...info, transactionType: t as any })}
                                               className={`px-2 py-0.5 rounded text-[10px] font-extrabold transition-all cursor-pointer ${
-                                                  (info.transactionType || "매매") === t 
+                                                  (info.transactionType || "留ㅻℓ") === t 
                                                       ? 'bg-[#cc5a27] text-white shadow-sm' 
                                                       : 'text-gray-500 hover:bg-gray-100'
                                               }`}
@@ -431,15 +500,15 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
 
                               <div>
                                   {(() => {
-                                      const tType = info.transactionType || "매매";
-                                      let priceLabel = "매매가";
-                                      let pricePlaceholder = "예: 500억";
-                                      if (tType === "전세") {
-                                          priceLabel = "보증금";
-                                          pricePlaceholder = "예: 150억";
-                                      } else if (tType === "월세") {
-                                          priceLabel = "보증금 / 월세";
-                                          pricePlaceholder = "예: 5000만 / 300만";
+                                      const tType = info.transactionType || "留ㅻℓ";
+                                      let priceLabel = "留ㅻℓ媛";
+                                      let pricePlaceholder = "?? 500??;
+                                      if (tType === "?꾩꽭") {
+                                          priceLabel = "蹂댁쬆湲?;
+                                          pricePlaceholder = "?? 150??;
+                                      } else if (tType === "?붿꽭") {
+                                          priceLabel = "蹂댁쬆湲?/ ?붿꽭";
+                                          pricePlaceholder = "?? 5000留?/ 300留?;
                                       }
                                       
                                       return (
@@ -454,7 +523,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                                               />
                                               <div className="flex gap-2 mt-2">
                                                   <div className="flex-1">
-                                                      <span className="text-[9px] text-gray-400 font-semibold block mb-0.5">배경색</span>
+                                                      <span className="text-[9px] text-gray-400 font-semibold block mb-0.5">諛곌꼍??/span>
                                                       <div className="flex items-center gap-1">
                                                           <input 
                                                               type="color" 
@@ -468,13 +537,13 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                                                               name="priceBgColor"
                                                               value={info.priceBgColor || ""}
                                                               onChange={handleChange}
-                                                              placeholder="기본값"
+                                                              placeholder="湲곕낯媛?
                                                               className="w-full border border-gray-300 rounded p-1 text-[10px] bg-white text-gray-600"
                                                           />
                                                       </div>
                                                   </div>
                                                   <div className="flex-1">
-                                                      <span className="text-[9px] text-gray-400 font-semibold block mb-0.5">글씨색</span>
+                                                      <span className="text-[9px] text-gray-400 font-semibold block mb-0.5">湲?⑥깋</span>
                                                       <div className="flex items-center gap-1">
                                                           <input 
                                                               type="color" 
@@ -488,7 +557,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                                                               name="priceTextColor"
                                                               value={info.priceTextColor || ""}
                                                               onChange={handleChange}
-                                                              placeholder="테마색"
+                                                              placeholder="?뚮쭏??
                                                               className="w-full border border-gray-300 rounded p-1 text-[10px] bg-white text-gray-600"
                                                           />
                                                       </div>
@@ -503,24 +572,24 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                   </div>
 
                   <div>
-                      <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">투자 요약 (하단 3박스)</h4>
+                      <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">?ъ옄 ?붿빟 (?섎떒 3諛뺤뒪)</h4>
                       {[1,2,3].map(i => (
                           <div key={i} className="mb-3 bg-gray-50 p-3 rounded">
-                              <label className="text-xs font-bold">박스 {i}</label>
+                              <label className="text-xs font-bold">諛뺤뒪 {i}</label>
                               <div className="flex gap-2 mt-1">
-                                  <input value={(info.investmentSummary as any)[`box${i}Title`]} onChange={(e)=>handleNestedChange('investmentSummary', `box${i}Title`, e.target.value)} placeholder="영문 타이틀" className="w-1/3 border rounded p-2 text-xs uppercase" />
-                                  <textarea value={(info.investmentSummary as any)[`box${i}Text`]} onChange={(e)=>handleNestedChange('investmentSummary', `box${i}Text`, e.target.value)} placeholder="한글 키워드" className="w-2/3 border rounded p-2 text-xs" rows={2} />
+                                  <input value={(info.investmentSummary as any)[`box${i}Title`]} onChange={(e)=>handleNestedChange('investmentSummary', `box${i}Title`, e.target.value)} placeholder="?곷Ц ??댄?" className="w-1/3 border rounded p-2 text-xs uppercase" />
+                                  <textarea value={(info.investmentSummary as any)[`box${i}Text`]} onChange={(e)=>handleNestedChange('investmentSummary', `box${i}Text`, e.target.value)} placeholder="?쒓? ?ㅼ썙?? className="w-2/3 border rounded p-2 text-xs" rows={2} />
                               </div>
                           </div>
                       ))}
                   </div>
 
                   <div>
-                      <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">문의 안내 (담당자)</h4>
+                      <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">臾몄쓽 ?덈궡 (?대떦??</h4>
                       <div className="space-y-3">
-                          <div><label className="text-xs text-gray-500">중개사무소명</label><input name="agentName" value={info.agentName} onChange={handleChange} className="w-full border rounded p-2 text-sm" /></div>
-                          <div><label className="text-xs text-gray-500">담당자명/직급</label><input name="agentRepresentative" value={info.agentRepresentative} onChange={handleChange} className="w-full border rounded p-2 text-sm" /></div>
-                          <div><label className="text-xs text-gray-500">문의 연락처</label><input name="agentMobile" value={info.agentMobile} onChange={handleChange} className="w-full border rounded p-2 text-sm" /></div>
+                          <div><label className="text-xs text-gray-500">以묎컻?щТ?뚮챸</label><input name="agentName" value={info.agentName} onChange={handleChange} className="w-full border rounded p-2 text-sm" /></div>
+                          <div><label className="text-xs text-gray-500">?대떦?먮챸/吏곴툒</label><input name="agentRepresentative" value={info.agentRepresentative} onChange={handleChange} className="w-full border rounded p-2 text-sm" /></div>
+                          <div><label className="text-xs text-gray-500">臾몄쓽 ?곕씫泥?/label><input name="agentMobile" value={info.agentMobile} onChange={handleChange} className="w-full border rounded p-2 text-sm" /></div>
                       </div>
                   </div>
                   </div>
@@ -532,7 +601,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                               onClick={() => setActiveTab(1)}
                               className="pointer-events-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-full shadow-lg flex items-center gap-2 transition-transform hover:scale-105 active:scale-95"
                           >
-                              📝 1. 개요 수정하기
+                              ?뱷 1. 媛쒖슂 ?섏젙?섍린
                           </button>
                       </div>
                   )}
@@ -543,14 +612,14 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                               onClick={() => setActiveTab('all')}
                               className="flex-1 py-2.5 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-bold rounded-lg transition-colors text-sm"
                           >
-                              뒤로가기
+                              ?ㅻ줈媛湲?
                           </button>
                           <button 
                               type="button" 
                               onClick={() => setActiveTab('all')}
                               className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-lg transition-colors shadow-sm text-sm"
                           >
-                              전체보기
+                              ?꾩껜蹂닿린
                           </button>
                       </div>
                   )}
@@ -561,12 +630,12 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
               <div className={`animate-fadeIn relative ${activeTab === 'all' ? 'h-[620px] overflow-hidden bg-white p-5 rounded-2xl shadow-sm border border-gray-200 mb-8 shrink-0' : 'space-y-6'}`}>
                   <div className="space-y-6">
                       <div className="pb-2 border-b-[3px] border-black mb-4">
-                          <h2 className="text-xl font-black text-black tracking-tight">2. 매물설명 & 시세</h2>
+                          <h2 className="text-xl font-black text-black tracking-tight">2. 留ㅻЪ?ㅻ챸 & ?쒖꽭</h2>
                       </div>
 
 
                   <div>
-                      <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">매물 핵심 하이라이트</h4>
+                      <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">留ㅻЪ ?듭떖 ?섏씠?쇱씠??/h4>
                       <div className="space-y-2">
                           {info.highlights.map((hl, i) => (
                               <div key={i} className="flex gap-2 items-center bg-gray-50 p-2 rounded border border-transparent hover:border-gray-200 transition-colors">
@@ -600,12 +669,12 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                                           <ArrowDownIcon className="w-3.5 h-3.5" />
                                       </button>
                                   </div>
-                                  <input value={hl} onChange={(e)=>handleHighlightsChange(i, e.target.value)} className="flex-1 border rounded p-2 text-xs" placeholder={`메리트 ${i+1}`} />
+                                  <input value={hl} onChange={(e)=>handleHighlightsChange(i, e.target.value)} className="flex-1 border rounded p-2 text-xs" placeholder={`硫붾━??${i+1}`} />
                                   <button
                                       type="button"
                                       onClick={() => removeHighlight(i)}
                                       className="text-red-400 hover:text-red-600 hover:bg-red-50 p-1.5 rounded transition-colors shrink-0"
-                                      title="삭제"
+                                      title="??젣"
                                   >
                                       <TrashIcon className="w-4 h-4" />
                                   </button>
@@ -616,17 +685,17 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                               onClick={addHighlight}
                               className="w-full mt-2 py-2 bg-yellow-50 hover:bg-yellow-100 text-yellow-700 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-1 border border-dashed border-yellow-200"
                           >
-                              + 하이라이트 행 추가
+                              + ?섏씠?쇱씠????異붽?
                           </button>
                       </div>
                   </div>
 
-                  {/* 시세 분석 그래프 설정 */}
+                  {/* ?쒖꽭 遺꾩꽍 洹몃옒???ㅼ젙 */}
                   <div>
-                      <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">시세 분석 그래프 설정</h4>
+                      <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">?쒖꽭 遺꾩꽍 洹몃옒???ㅼ젙</h4>
                       <div className="space-y-4 bg-slate-50 p-4 rounded-xl border border-slate-200/60 text-xs mb-4">
                           <div className="flex items-center justify-between">
-                              <span className="font-bold text-slate-700">📈 그래프 화면 표시</span>
+                              <span className="font-bold text-slate-700">?뱢 洹몃옒???붾㈃ ?쒖떆</span>
                               <label className="relative inline-flex items-center cursor-pointer">
                                   <input 
                                       type="checkbox" 
@@ -641,20 +710,20 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                           {info.showChart !== false && (
                               <div className="space-y-2.5 pt-2.5 border-t border-slate-200 animate-fadeIn">
                                   <div className="flex justify-between items-center mb-1 font-semibold text-slate-500">
-                                      <span>막대 데이터 직접 입력</span>
-                                      <span>(최대 6개)</span>
+                                      <span>留됰? ?곗씠??吏곸젒 ?낅젰</span>
+                                      <span>(理쒕? 6媛?</span>
                                   </div>
                                   {(info.chartBars || [
-                                      { label: "탁상감정가", value: "80", isHighlight: false },
-                                      { label: "기존 희망가", value: "75", isHighlight: false },
-                                      { label: "인근 시세", value: "85", isHighlight: false },
-                                      { label: "현재 급매가", value: "65", isHighlight: true }
+                                      { label: "?곸긽媛먯젙媛", value: "80", isHighlight: false },
+                                      { label: "湲곗〈 ?щ쭩媛", value: "75", isHighlight: false },
+                                      { label: "?멸렐 ?쒖꽭", value: "85", isHighlight: false },
+                                      { label: "?꾩옱 湲됰ℓ媛", value: "65", isHighlight: true }
                                   ]).map((bar: any, idx: number) => {
                                       const chartBars = info.chartBars || [
-                                          { label: "탁상감정가", value: "80", isHighlight: false },
-                                          { label: "기존 희망가", value: "75", isHighlight: false },
-                                          { label: "인근 시세", value: "85", isHighlight: false },
-                                          { label: "현재 급매가", value: "65", isHighlight: true }
+                                          { label: "?곸긽媛먯젙媛", value: "80", isHighlight: false },
+                                          { label: "湲곗〈 ?щ쭩媛", value: "75", isHighlight: false },
+                                          { label: "?멸렐 ?쒖꽭", value: "85", isHighlight: false },
+                                          { label: "?꾩옱 湲됰ℓ媛", value: "65", isHighlight: true }
                                       ];
                                       return (
                                           <div key={idx} className="flex gap-1.5 items-center">
@@ -665,7 +734,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                                                       newBars[idx] = { ...newBars[idx], label: e.target.value };
                                                       setInfo({ ...info, chartBars: newBars });
                                                   }} 
-                                                  placeholder="항목명" 
+                                                  placeholder="??ぉ紐? 
                                                   className="w-20 border rounded p-1 text-[11px] font-bold text-center text-slate-700 bg-white" 
                                               />
                                               <input 
@@ -675,7 +744,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                                                       newBars[idx] = { ...newBars[idx], value: e.target.value };
                                                       setInfo({ ...info, chartBars: newBars });
                                                   }} 
-                                                  placeholder="수치(억)" 
+                                                  placeholder="?섏튂(??" 
                                                   className="flex-1 border rounded p-1 text-[11px] text-center text-slate-800 bg-white" 
                                               />
                                               {/* Highlight Toggle */}
@@ -689,9 +758,9 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                                                   className={`px-1.5 py-1 rounded text-[9px] font-bold transition-all ${
                                                       bar.isHighlight ? 'bg-orange-100 text-[#cc5a27] border border-orange-200' : 'bg-slate-100 text-slate-500 border border-slate-200'
                                                   }`}
-                                                  title="막대 색상 강조"
+                                                  title="留됰? ?됱긽 媛뺤“"
                                               >
-                                                  강조
+                                                  媛뺤“
                                               </button>
                                               {chartBars.length > 2 && (
                                                   <button
@@ -701,9 +770,9 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                                                           setInfo({ ...info, chartBars: newBars });
                                                       }}
                                                       className="text-red-400 hover:text-red-600 p-1 text-sm leading-none shrink-0"
-                                                      title="삭제"
+                                                      title="??젣"
                                                   >
-                                                      ✕
+                                                      ??
                                                   </button>
                                               )}
                                           </div>
@@ -712,26 +781,26 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                                   
                                   {/* Add chart bar button */}
                                   {(info.chartBars || [
-                                      { label: "탁상감정가", value: "80", isHighlight: false },
-                                      { label: "기존 희망가", value: "75", isHighlight: false },
-                                      { label: "인근 시세", value: "85", isHighlight: false },
-                                      { label: "현재 급매가", value: "65", isHighlight: true }
+                                      { label: "?곸긽媛먯젙媛", value: "80", isHighlight: false },
+                                      { label: "湲곗〈 ?щ쭩媛", value: "75", isHighlight: false },
+                                      { label: "?멸렐 ?쒖꽭", value: "85", isHighlight: false },
+                                      { label: "?꾩옱 湲됰ℓ媛", value: "65", isHighlight: true }
                                   ]).length < 6 && (
                                       <button
                                           type="button"
                                           onClick={() => {
                                               const chartBars = info.chartBars || [
-                                                  { label: "탁상감정가", value: "80", isHighlight: false },
-                                                  { label: "기존 희망가", value: "75", isHighlight: false },
-                                                  { label: "인근 시세", value: "85", isHighlight: false },
-                                                  { label: "현재 급매가", value: "65", isHighlight: true }
+                                                  { label: "?곸긽媛먯젙媛", value: "80", isHighlight: false },
+                                                  { label: "湲곗〈 ?щ쭩媛", value: "75", isHighlight: false },
+                                                  { label: "?멸렐 ?쒖꽭", value: "85", isHighlight: false },
+                                                  { label: "?꾩옱 湲됰ℓ媛", value: "65", isHighlight: true }
                                               ];
-                                              const newBars = [...chartBars, { label: "새 항목", value: "70", isHighlight: false }];
+                                              const newBars = [...chartBars, { label: "????ぉ", value: "70", isHighlight: false }];
                                               setInfo({ ...info, chartBars: newBars });
                                           }}
                                           className="w-full mt-2 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded text-[11px] font-bold transition-colors flex items-center justify-center gap-1 border border-dashed border-blue-200"
                                       >
-                                          + 막대 추가
+                                          + 留됰? 異붽?
                                       </button>
                                   )}
                               </div>
@@ -740,14 +809,14 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                   </div>
 
                   <div>
-                      <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">시세 분석 요약 (하단)</h4>
+                      <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">?쒖꽭 遺꾩꽍 ?붿빟 (?섎떒)</h4>
                       <div className="space-y-3">
                           <div>
-                              <label className="text-xs text-gray-500 font-bold">좌측 텍스트 (STRATEGIC ADVISORY)</label>
+                              <label className="text-xs text-gray-500 font-bold">醫뚯륫 ?띿뒪??(STRATEGIC ADVISORY)</label>
                               <textarea name="valuationText" value={info.valuationText || ""} onChange={handleChange} className="w-full border rounded p-2 text-sm" rows={4} />
                           </div>
                           <div>
-                              <label className="text-xs text-gray-500 font-bold">우측 텍스트 (그래프 하단)</label>
+                              <label className="text-xs text-gray-500 font-bold">?곗륫 ?띿뒪??(洹몃옒???섎떒)</label>
                               <textarea name="chartAdviseText" value={(info as any).chartAdviseText || ""} onChange={handleChange} className="w-full border rounded p-2 text-sm" rows={4} />
                           </div>
                       </div>
@@ -761,7 +830,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                               onClick={() => setActiveTab(2)}
                               className="pointer-events-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-full shadow-lg flex items-center gap-2 transition-transform hover:scale-105 active:scale-95"
                           >
-                              📝 2. 매물설명 & 시세 수정하기
+                              ?뱷 2. 留ㅻЪ?ㅻ챸 & ?쒖꽭 ?섏젙?섍린
                           </button>
                       </div>
                   )}
@@ -772,14 +841,13 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                               onClick={onBackTab || (() => setActiveTab('all'))}
                               className="flex-1 py-2.5 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-bold rounded-lg transition-colors text-sm"
                           >
-                              뒤로가기
-                          </button>
+                              ?ㅻ줈媛湲?                          </button>
                           <button 
                               type="button" 
                               onClick={() => setActiveTab('all')}
                               className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-lg transition-colors shadow-sm text-sm"
                           >
-                              전체보기
+                              ?꾩껜蹂닿린
                           </button>
                       </div>
                   )}
@@ -790,18 +858,18 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
               <div className={`animate-fadeIn relative ${activeTab === 'all' ? 'h-[620px] overflow-hidden bg-white p-5 rounded-2xl shadow-sm border border-gray-200 mb-8 shrink-0' : 'space-y-6'}`}>
                   <div className="space-y-6">
                       <div className="pb-2 border-b-[3px] border-black mb-4">
-                          <h2 className="text-xl font-black text-black tracking-tight">3. 임대현황</h2>
+                          <h2 className="text-xl font-black text-black tracking-tight">3. ?꾨??꾪솴</h2>
                       </div>
                   <div>
-                      <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">페이지 타이틀</h4>
+                      <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">?섏씠吏 ??댄?</h4>
                       <div className="space-y-3">
-                          <div><label className="text-xs text-gray-500">페이지 제목 (기본: 임대 상세 현황)</label><input name="page3Title" value={info.page3Title || "임대 상세 현황"} onChange={handleChange} className="w-full border rounded p-2 text-sm" /></div>
-                          <div><label className="text-xs text-gray-500">테이블 상단 소제목 (기본: PROPERTY RENTAL REPORT)</label><input name="page3HighlightHeader" value={(info as any).page3HighlightHeader || "PROPERTY RENTAL REPORT"} onChange={handleChange} className="w-full border rounded p-2 text-sm" /></div>
-                          <div><label className="text-xs text-gray-500">페이지 부제목</label><input name="page3Subtitle" value={info.page3Subtitle || "Rent Roll"} onChange={handleChange} className="w-full border rounded p-2 text-sm" /></div>
-                          <div><label className="text-xs text-gray-500">표 하단 요약 (Total Summary)</label><input name="leaseSummaryText" value={(info as any).leaseSummaryText || "총 6세대 / 보증금 0원 / 월세 0원"} onChange={handleChange} className="w-full border rounded p-2 text-sm" /></div>
+                          <div><label className="text-xs text-gray-500">?섏씠吏 ?쒕ぉ (湲곕낯: ?꾨? ?곸꽭 ?꾪솴)</label><input name="page3Title" value={info.page3Title || "?꾨? ?곸꽭 ?꾪솴"} onChange={handleChange} className="w-full border rounded p-2 text-sm" /></div>
+                          <div><label className="text-xs text-gray-500">?뚯씠釉??곷떒 ?뚯젣紐?(湲곕낯: PROPERTY RENTAL REPORT)</label><input name="page3HighlightHeader" value={(info as any).page3HighlightHeader || "PROPERTY RENTAL REPORT"} onChange={handleChange} className="w-full border rounded p-2 text-sm" /></div>
+                          <div><label className="text-xs text-gray-500">?섏씠吏 遺?쒕ぉ</label><input name="page3Subtitle" value={info.page3Subtitle || "Rent Roll"} onChange={handleChange} className="w-full border rounded p-2 text-sm" /></div>
+                          <div><label className="text-xs text-gray-500">???섎떒 ?붿빟 (Total Summary)</label><input name="leaseSummaryText" value={(info as any).leaseSummaryText || "珥?6?몃? / 蹂댁쬆湲?0??/ ?붿꽭 0??} onChange={handleChange} className="w-full border rounded p-2 text-sm" /></div>
                           
                           <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100">
-                              <span className="font-bold text-slate-700 text-xs">우측 설명란 표시</span>
+                              <span className="font-bold text-slate-700 text-xs">?곗륫 ?ㅻ챸? ?쒖떆</span>
                               <label className="relative inline-flex items-center cursor-pointer">
                                   <input 
                                       type="checkbox" 
@@ -814,8 +882,8 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                           </div>
                           {(info as any).showLeaseSummaryDesc !== false && (
                               <div>
-                                  <label className="text-xs text-gray-500">우측 설명 내용</label>
-                                  <textarea name="leaseSummaryDesc" value={(info as any).leaseSummaryDesc || "임대 수익률 및 상세 조건은 협의 가능합니다."} onChange={handleChange} className="w-full border rounded p-2 text-sm" rows={2} />
+                                  <label className="text-xs text-gray-500">?곗륫 ?ㅻ챸 ?댁슜</label>
+                                  <textarea name="leaseSummaryDesc" value={(info as any).leaseSummaryDesc || "?꾨? ?섏씡瑜?諛??곸꽭 議곌굔? ?묒쓽 媛?ν빀?덈떎."} onChange={handleChange} className="w-full border rounded p-2 text-sm" rows={2} />
                               </div>
                           )}
                       </div>
@@ -824,7 +892,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
 
 
                   <div className="mt-4">
-                      <label className="text-xs text-gray-500 font-semibold">표 하단 유의 사항</label>
+                      <label className="text-xs text-gray-500 font-semibold">???섎떒 ?좎쓽 ?ы빆</label>
                       <textarea name="leaseNotice" value={info.leaseNotice} onChange={handleChange} className="w-full border rounded p-2 text-xs mt-1" rows={2} />
                   </div>
                   </div>
@@ -835,7 +903,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                               onClick={() => setActiveTab(3)}
                               className="pointer-events-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-full shadow-lg flex items-center gap-2 transition-transform hover:scale-105 active:scale-95"
                           >
-                              📝 3. 임대현황 수정하기
+                              ?뱷 3. ?꾨??꾪솴 ?섏젙?섍린
                           </button>
                       </div>
                   )}
@@ -846,14 +914,13 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                               onClick={onBackTab || (() => setActiveTab('all'))}
                               className="flex-1 py-2.5 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-bold rounded-lg transition-colors text-sm"
                           >
-                              뒤로가기
-                          </button>
+                              ?ㅻ줈媛湲?                          </button>
                           <button 
                               type="button" 
                               onClick={() => setActiveTab('all')}
                               className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-lg transition-colors shadow-sm text-sm"
                           >
-                              전체보기
+                              ?꾩껜蹂닿린
                           </button>
                       </div>
                   )}
@@ -864,21 +931,21 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
               <div className={`animate-fadeIn relative ${activeTab === 'all' ? 'h-[620px] overflow-hidden bg-white p-5 rounded-2xl shadow-sm border border-gray-200 mb-8 shrink-0' : 'space-y-6'}`}>
                   <div className="space-y-6">
                       <div className="pb-2 border-b-[3px] border-black mb-4">
-                          <h2 className="text-xl font-black text-black tracking-tight">4. 사진</h2>
+                          <h2 className="text-xl font-black text-black tracking-tight">4. ?ъ쭊</h2>
                       </div>
                   <div>
-                      <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">페이지 타이틀</h4>
+                      <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">?섏씠吏 ??댄?</h4>
                       <div className="space-y-3 mb-4">
-                          <div><label className="text-xs text-gray-500">페이지 제목 (기본: 매물 사진)</label><input name="page4Title" value={info.page4Title || "매물 사진"} onChange={handleChange} className="w-full border rounded p-2 text-sm" /></div>
-                          <div><label className="text-xs text-gray-500">페이지 부제목 (기본: Property Photo)</label><input name="page4Subtitle" value={info.page4Subtitle || "Property Photo"} onChange={handleChange} className="w-full border rounded p-2 text-sm" /></div>
+                          <div><label className="text-xs text-gray-500">?섏씠吏 ?쒕ぉ (湲곕낯: 留ㅻЪ ?ъ쭊)</label><input name="page4Title" value={info.page4Title || "留ㅻЪ ?ъ쭊"} onChange={handleChange} className="w-full border rounded p-2 text-sm" /></div>
+                          <div><label className="text-xs text-gray-500">?섏씠吏 遺?쒕ぉ (湲곕낯: Property Photo)</label><input name="page4Subtitle" value={info.page4Subtitle || "Property Photo"} onChange={handleChange} className="w-full border rounded p-2 text-sm" /></div>
                       </div>
                   </div>
-                  {renderImageUpload('mainImage', '메인 사진 (정면 외관)')}
+                  {renderImageUpload('mainImage', '硫붿씤 ?ъ쭊 (?뺣㈃ ?멸?)')}
                   <div className="grid grid-cols-2 gap-4">
-                      {renderImageUpload('subImage1', '서브 사진 1')}
-                      {renderImageUpload('subImage2', '서브 사진 2')}
-                      {renderImageUpload('featureImage1', '서브 사진 3')}
-                      {renderImageUpload('featureImage2', '서브 사진 4')}
+                      {renderImageUpload('subImage1', '?쒕툕 ?ъ쭊 1')}
+                      {renderImageUpload('subImage2', '?쒕툕 ?ъ쭊 2')}
+                      {renderImageUpload('featureImage1', '?쒕툕 ?ъ쭊 3')}
+                      {renderImageUpload('featureImage2', '?쒕툕 ?ъ쭊 4')}
                   </div>
                   </div>
 
@@ -889,7 +956,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                               onClick={() => setActiveTab(4)}
                               className="pointer-events-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-full shadow-lg flex items-center gap-2 transition-transform hover:scale-105 active:scale-95"
                           >
-                              📝 4. 사진 수정하기
+                              ?뱷 4. ?ъ쭊 ?섏젙?섍린
                           </button>
                       </div>
                   )}
@@ -900,14 +967,13 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                               onClick={onBackTab || (() => setActiveTab('all'))}
                               className="flex-1 py-2.5 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-bold rounded-lg transition-colors text-sm"
                           >
-                              뒤로가기
-                          </button>
+                              ?ㅻ줈媛湲?                          </button>
                           <button 
                               type="button" 
                               onClick={() => setActiveTab('all')}
                               className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-lg transition-colors shadow-sm text-sm"
                           >
-                              전체보기
+                              ?꾩껜蹂닿린
                           </button>
                       </div>
                   )}
@@ -918,18 +984,18 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
               <div className={`animate-fadeIn relative ${activeTab === 'all' ? 'h-[620px] overflow-hidden bg-white p-5 rounded-2xl shadow-sm border border-gray-200 mb-8 shrink-0' : 'space-y-6'}`}>
                   <div className="space-y-6">
                       <div className="pb-2 border-b-[3px] border-black mb-4">
-                          <h2 className="text-xl font-black text-black tracking-tight">5. 입지</h2>
+                          <h2 className="text-xl font-black text-black tracking-tight">5. ?낆?</h2>
                       </div>
                   <div>
-                      <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">입지 개요 및 지도 설정</h4>
+                      <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">?낆? 媛쒖슂 諛?吏???ㅼ젙</h4>
                       <div className="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-200/60 mb-4 text-xs">
                           <div>
-                              <label className="text-xs text-gray-500 font-semibold block mb-1">🗺️ 지도 유형 선택</label>
+                              <label className="text-xs text-gray-500 font-semibold block mb-1">?뿺截?吏???좏삎 ?좏깮</label>
                               <div className="flex bg-gray-100 p-1 rounded-lg">
                                   {[
-                                      { type: "kakao", label: "카카오 지도" },
-                                      { type: "google", label: "구글 지도" },
-                                      { type: "upload", label: "캡처 이미지 업로드" }
+                                      { type: "kakao", label: "移댁뭅??吏?? },
+                                      { type: "google", label: "援ш? 吏?? },
+                                      { type: "upload", label: "罹≪쿂 ?대?吏 ?낅줈?? }
                                   ].map(opt => (
                                       <button
                                           key={opt.type}
@@ -949,24 +1015,24 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                           
                           {info.mapType === "upload" && (
                               <div className="pt-2 border-t border-slate-200 animate-fadeIn">
-                                  {renderImageUpload('mapImage', '네이버/카카오 지도 캡처 이미지')}
+                                  {renderImageUpload('mapImage', '?ㅼ씠踰?移댁뭅??吏??罹≪쿂 ?대?吏')}
                               </div>
                           )}
                       </div>
 
                       <div className="space-y-3">
-                          <div><label className="text-xs text-gray-500">타겟 로케이션 (우측 상단 뱃지)</label><textarea name="areaTargetName" value={info.areaTargetName} onChange={handleChange} className="w-full border rounded p-2 text-sm" rows={2}/></div>
-                          <div><label className="text-xs text-gray-500">입지 설명 텍스트</label><textarea name="areaTargetDesc" value={info.areaTargetDesc} onChange={handleChange} className="w-full border rounded p-2 text-sm" rows={4}/></div>
+                          <div><label className="text-xs text-gray-500">?寃?濡쒖??댁뀡 (?곗륫 ?곷떒 諭껋?)</label><textarea name="areaTargetName" value={info.areaTargetName} onChange={handleChange} className="w-full border rounded p-2 text-sm" rows={2}/></div>
+                          <div><label className="text-xs text-gray-500">?낆? ?ㅻ챸 ?띿뒪??/label><textarea name="areaTargetDesc" value={info.areaTargetDesc} onChange={handleChange} className="w-full border rounded p-2 text-sm" rows={4}/></div>
                       </div>
                   </div>
                   <div>
-                      <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">입지 상세 분석 (하단 3박스)</h4>
+                      <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">?낆? ?곸꽭 遺꾩꽍 (?섎떒 3諛뺤뒪)</h4>
                       {[1,2,3].map(i => (
                           <div key={i} className="mb-3 bg-gray-50 p-3 rounded">
-                              <label className="text-xs font-bold text-gray-600">박스 {i}</label>
+                              <label className="text-xs font-bold text-gray-600">諛뺤뒪 {i}</label>
                               <div className="space-y-2 mt-1">
-                                  <input value={(info as any)[`areaBox${i}Title`]} onChange={handleChange} name={`areaBox${i}Title`} placeholder="영문 타이틀" className="w-full border rounded p-2 text-xs uppercase" />
-                                  <textarea value={(info as any)[`areaBox${i}Text`]} onChange={handleChange} name={`areaBox${i}Text`} placeholder="분석 내용" className="w-full border rounded p-2 text-xs" rows={2} />
+                                  <input value={(info as any)[`areaBox${i}Title`]} onChange={handleChange} name={`areaBox${i}Title`} placeholder="?곷Ц ??댄?" className="w-full border rounded p-2 text-xs uppercase" />
+                                  <textarea value={(info as any)[`areaBox${i}Text`]} onChange={handleChange} name={`areaBox${i}Text`} placeholder="遺꾩꽍 ?댁슜" className="w-full border rounded p-2 text-xs" rows={2} />
                               </div>
                           </div>
                       ))}
@@ -980,7 +1046,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                               onClick={() => setActiveTab(5)}
                               className="pointer-events-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-full shadow-lg flex items-center gap-2 transition-transform hover:scale-105 active:scale-95"
                           >
-                              📝 5. 입지 수정하기
+                              ?뱷 5. ?낆? ?섏젙?섍린
                           </button>
                       </div>
                   )}
@@ -991,14 +1057,13 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                               onClick={onBackTab || (() => setActiveTab('all'))}
                               className="flex-1 py-2.5 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-bold rounded-lg transition-colors text-sm"
                           >
-                              뒤로가기
-                          </button>
+                              ?ㅻ줈媛湲?                          </button>
                           <button 
                               type="button" 
                               onClick={() => setActiveTab('all')}
                               className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-lg transition-colors shadow-sm text-sm"
                           >
-                              전체보기
+                              ?꾩껜蹂닿린
                           </button>
                       </div>
                   )}
@@ -1009,33 +1074,33 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
               <div className={`animate-fadeIn relative ${activeTab === 'all' ? 'h-[620px] overflow-hidden bg-white p-5 rounded-2xl shadow-sm border border-gray-200 mb-8 shrink-0' : 'space-y-6'}`}>
                   <div className="space-y-6">
                       <div className="pb-2 border-b-[3px] border-black mb-4">
-                          <h2 className="text-xl font-black text-black tracking-tight">6. 로드맵</h2>
+                          <h2 className="text-xl font-black text-black tracking-tight">6. 濡쒕뱶留?/h2>
                       </div>
-                  <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">개발 및 활용 로드맵 (시나리오)</h4>
+                  <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">媛쒕컻 諛??쒖슜 濡쒕뱶留?(?쒕굹由ъ삤)</h4>
                   {(() => {
                       const ROADMAP_ICONS = [
-                          { value: '🏢', label: '빌딩/오피스' },
-                          { value: '🏡', label: '주택/거주' },
-                          { value: '📈', label: '성장/수익' },
-                          { value: '🏗️', label: '건설/개발' },
-                          { value: '💰', label: '자산/투자' },
-                          { value: '🤝', label: '계약/협력' },
-                          { value: '🚀', label: '혁신/미래' },
-                          { value: '🎯', label: '목표/타겟' },
-                          { value: '💡', label: '아이디어' },
-                          { value: '📊', label: '분석/데이터' },
-                          { value: '🛡️', label: '안전/보안' },
-                          { value: '🚆', label: '역세권/교통' },
-                          { value: '🏥', label: '의료/병원' },
-                          { value: '🏪', label: '상가/리테일' },
-                          { value: '👑', label: '프리미엄' },
-                          { value: '🌟', label: '핵심가치' }
+                          { value: '?룫', label: '鍮뚮뵫/?ㅽ뵾?? },
+                          { value: '?룪', label: '二쇳깮/嫄곗＜' },
+                          { value: '?뱢', label: '?깆옣/?섏씡' },
+                          { value: '?룛截?, label: '嫄댁꽕/媛쒕컻' },
+                          { value: '?뮥', label: '?먯궛/?ъ옄' },
+                          { value: '?쩃', label: '怨꾩빟/?묐젰' },
+                          { value: '??', label: '?곸떊/誘몃옒' },
+                          { value: '?렞', label: '紐⑺몴/?寃? },
+                          { value: '?뮕', label: '?꾩씠?붿뼱' },
+                          { value: '?뱤', label: '遺꾩꽍/?곗씠?? },
+                          { value: '?썳截?, label: '?덉쟾/蹂댁븞' },
+                          { value: '?쉮', label: '??꽭沅?援먰넻' },
+                          { value: '?룯', label: '?섎즺/蹂묒썝' },
+                          { value: '?룵', label: '?곴?/由ы뀒?? },
+                          { value: '?몣', label: '?꾨━誘몄뾼' },
+                          { value: '?뙚', label: '?듭떖媛移? }
                       ];
 
                       const list = info.roadmapList || [1, 2, 3, 4].map((i, index) => ({
                           title: (info.roadmap as any)?.[`box${i}Title`] || "",
                           text: (info.roadmap as any)?.[`box${i}Text`] || "",
-                          icon: (info.roadmap as any)?.[`box${i}Icon`] || ['🏢', '🏡', '📈', '🏗️'][index] || '🏢',
+                          icon: (info.roadmap as any)?.[`box${i}Icon`] || ['?룫', '?룪', '?뱢', '?룛截?][index] || '?룫',
                           bg: ['bg-blue-50', 'bg-green-50', 'bg-red-50', 'bg-yellow-50'][index] || 'bg-gray-50',
                           border: ['border-blue-100', 'border-green-100', 'border-red-100', 'border-yellow-100'][index] || 'border-gray-200'
                       }));
@@ -1045,9 +1110,9 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                               {list.map((item: any, idx: number) => (
                                   <div key={idx} className="mb-4 bg-gray-50 p-4 rounded-lg relative">
                                       <div className="flex items-center justify-between mb-2">
-                                          <label className="text-xs font-bold text-gray-800">시나리오 {idx + 1}</label>
+                                          <label className="text-xs font-bold text-gray-800">?쒕굹由ъ삤 {idx + 1}</label>
                                           <div className="flex items-center gap-2">
-                                              <span className="text-[10px] text-gray-500 font-normal">아이콘:</span>
+                                              <span className="text-[10px] text-gray-500 font-normal">?꾩씠肄?</span>
                                               <select
                                                   value={item.icon}
                                                   onChange={(e) => {
@@ -1063,7 +1128,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                                                       </option>
                                                   ))}
                                                   {!ROADMAP_ICONS.find(ic => ic.value === item.icon) && (
-                                                      <option value={item.icon}>{item.icon} 직접입력</option>
+                                                      <option value={item.icon}>{item.icon} 吏곸젒?낅젰</option>
                                                   )}
                                               </select>
                                               {list.length > 1 && (
@@ -1087,7 +1152,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                                               newList[idx] = { ...newList[idx], title: e.target.value };
                                               setInfo({ ...info, roadmapList: newList });
                                           }} 
-                                          placeholder="제목" 
+                                          placeholder="?쒕ぉ" 
                                           className="w-full border rounded p-2 text-sm mb-2 font-bold" 
                                       />
                                       <textarea 
@@ -1097,7 +1162,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                                               newList[idx] = { ...newList[idx], text: e.target.value };
                                               setInfo({ ...info, roadmapList: newList });
                                           }} 
-                                          placeholder="상세 내용" 
+                                          placeholder="?곸꽭 ?댁슜" 
                                           className="w-full border rounded p-2 text-sm" 
                                           rows={3} 
                                       />
@@ -1107,12 +1172,12 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                                   <button
                                       type="button"
                                       onClick={() => {
-                                          const newList = [...list, { title: '', text: '', icon: '🌟', bg: 'bg-gray-50', border: 'border-gray-200' }];
+                                          const newList = [...list, { title: '', text: '', icon: '?뙚', bg: 'bg-gray-50', border: 'border-gray-200' }];
                                           setInfo({ ...info, roadmapList: newList });
                                       }}
                                       className="w-full py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-1 border border-dashed border-blue-200"
                                   >
-                                      + 시나리오 추가
+                                      + ?쒕굹由ъ삤 異붽?
                                   </button>
                               )}
                           </>
@@ -1127,7 +1192,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                               onClick={() => setActiveTab(6)}
                               className="pointer-events-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-full shadow-lg flex items-center gap-2 transition-transform hover:scale-105 active:scale-95"
                           >
-                              📝 6. 로드맵 수정하기
+                              ?뱷 6. 濡쒕뱶留??섏젙?섍린
                           </button>
                       </div>
                   )}
@@ -1138,14 +1203,13 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                               onClick={onBackTab || (() => setActiveTab('all'))}
                               className="flex-1 py-2.5 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-bold rounded-lg transition-colors text-sm"
                           >
-                              뒤로가기
-                          </button>
+                              ?ㅻ줈媛湲?                          </button>
                           <button 
                               type="button" 
                               onClick={() => setActiveTab('all')}
                               className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-lg transition-colors shadow-sm text-sm"
                           >
-                              전체보기
+                              ?꾩껜蹂닿린
                           </button>
                       </div>
                   )}
@@ -1158,3 +1222,5 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
 };
 
 export default FlyerForm;
+
+

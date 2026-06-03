@@ -140,6 +140,21 @@ export interface PropertyInfo {
   agentAdditionalInfo?: string[];
   noticeTitle?: string;
   noticeContent?: string;
+
+  // New fields for Cover & Ending Pages (Brochure Design)
+  coverTitle?: string;
+  coverSubtitle?: string;
+  coverQRLink?: string;
+  contactYoutube?: string;
+  contactBlog?: string;
+  contactWebsite?: string;
+  contactQRLink?: string;
+  agentPhotoKey?: string;
+  agencyLogoKey?: string;
+  hideRentRoll?: boolean;
+  hideRoadmap?: boolean;
+  propertyType?: 'commercial_sales' | 'commercial_rent' | 'residential' | 'other';
+  visiblePages?: number[];
 }
 
 export interface GeneratedContent {

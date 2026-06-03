@@ -1,4 +1,4 @@
-import React, { forwardRef } from 'react';
+﻿import React, { forwardRef } from 'react';
 import { FlyerState } from '../types';
 
 interface FlyerCanvasProps {
@@ -11,13 +11,13 @@ interface FlyerCanvasProps {
   onOpenTableEditor?: () => void;
 }
 
-// ─── NOTION & CANVA STYLE INLINE EDITORS ──────────────────────────────────────
+// ??? NOTION & CANVA STYLE INLINE EDITORS ??????????????????????????????????????
 
 const EditableText = ({
   value,
   onChange,
   className = "",
-  placeholder = "텍스트 입력..."
+  placeholder = "?띿뒪???낅젰..."
 }: {
   value: string;
   onChange: (text: string) => void;
@@ -56,7 +56,7 @@ const EditableBlock = ({
   value,
   onChange,
   className = "",
-  placeholder = "텍스트 입력..."
+  placeholder = "?띿뒪???낅젰..."
 }: {
   value: string;
   onChange: (text: string) => void;
@@ -85,7 +85,7 @@ const EditableBlock = ({
   );
 };
 
-// ─── PREMIUM DIRECT IMAGE UPLOADER OVERLAY ────────────────────────────────────
+// ??? PREMIUM DIRECT IMAGE UPLOADER OVERLAY ????????????????????????????????????
 
 const EditableImage = ({
   src,
@@ -167,7 +167,7 @@ const EditableImage = ({
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
                 <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z" />
               </svg>
-              <span>업로드/변경</span>
+              <span>?낅줈??蹂寃?/span>
             </button>
             
             {src && onDelete && (
@@ -178,12 +178,12 @@ const EditableImage = ({
                   onDelete();
                 }}
                 className="bg-red-500 hover:bg-red-600 active:scale-95 text-white font-extrabold px-3 py-1.5 rounded-xl shadow-lg text-[11px] flex items-center gap-1.5 transition-all cursor-pointer border-none"
-                title="사진 삭제"
+                title="?ъ쭊 ??젣"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
                 </svg>
-                <span>사진 삭제</span>
+                <span>?ъ쭊 ??젣</span>
               </button>
             )}
           </div>
@@ -194,14 +194,14 @@ const EditableImage = ({
       {isUploading && (
         <div className="absolute inset-0 bg-slate-900/80 z-[25] flex flex-col items-center justify-center print:hidden">
           <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-amber-500 mb-2"></div>
-          <span className="text-[10px] text-amber-500 font-bold">WebP 최적화 업로드 중...</span>
+          <span className="text-[10px] text-amber-500 font-bold">WebP 理쒖쟻???낅줈??以?..</span>
         </div>
       )}
     </div>
   );
 };
 
-// ─── REPORT PAGE WRAPPER ──────────────────────────────────────────────────────
+// ??? REPORT PAGE WRAPPER ??????????????????????????????????????????????????????
 
 const ReportPage = ({ 
     children, 
@@ -357,7 +357,7 @@ const ReportPage = ({
         <div data-export-id={exportId} className={`relative bg-white w-[1122px] h-[794px] overflow-hidden flex flex-col shadow-2xl mb-8 ${bodyFont}`} style={{ pageBreakAfter: 'always' }}>
             {isHidden && (
                 <div className="absolute top-0 left-0 right-0 z-50 bg-red-500/90 text-white py-1.5 text-center text-sm font-bold shadow-md tracking-wider backdrop-blur-sm">
-                    ⚠️ 현재 출력(PDF/인쇄)에서 제외된 페이지입니다. (좌측 폼 메뉴에서 설정을 변경할 수 있습니다.)
+                    ?좑툘 ?꾩옱 異쒕젰(PDF/?몄뇙)?먯꽌 ?쒖쇅???섏씠吏?낅땲?? (醫뚯륫 ??硫붾돱?먯꽌 ?ㅼ젙??蹂寃쏀븷 ???덉뒿?덈떎.)
                 </div>
             )}
             {renderHeader()}
@@ -420,7 +420,7 @@ const SectionTitle = ({
     </div>
 );
 
-// ─── GEDITOR STYLE PREMIUM FLOATING TOOLBAR WRAPPER ────────────────────────────
+// ??? GEDITOR STYLE PREMIUM FLOATING TOOLBAR WRAPPER ????????????????????????????
 
 const GeditorWrapper = ({
   children,
@@ -457,9 +457,9 @@ const GeditorWrapper = ({
               disabled={isFirst}
               onClick={onMoveUp}
               className="text-slate-300 hover:text-white disabled:opacity-30 cursor-pointer border-none bg-transparent font-bold p-0.5"
-              title="위로 이동"
+              title="?꾨줈 ?대룞"
             >
-              ▲
+              ??
             </button>
           )}
           {onMoveDown && (
@@ -468,9 +468,9 @@ const GeditorWrapper = ({
               disabled={isLast}
               onClick={onMoveDown}
               className="text-slate-300 hover:text-white disabled:opacity-30 cursor-pointer border-none bg-transparent font-bold p-0.5"
-              title="아래로 이동"
+              title="?꾨옒濡??대룞"
             >
-              ▼
+              ??
             </button>
           )}
           {onDuplicate && (
@@ -478,9 +478,9 @@ const GeditorWrapper = ({
               type="button"
               onClick={onDuplicate}
               className="text-green-400 hover:text-green-300 cursor-pointer border-none bg-transparent font-bold p-0.5"
-              title="복제"
+              title="蹂듭젣"
             >
-              ＋
+              竊?
             </button>
           )}
           {onDelete && (
@@ -488,9 +488,9 @@ const GeditorWrapper = ({
               type="button"
               onClick={onDelete}
               className="text-red-400 hover:text-red-300 cursor-pointer border-none bg-transparent font-bold p-0.5"
-              title="삭제"
+              title="??젣"
             >
-              ✕
+              ??
             </button>
           )}
         </div>
@@ -499,7 +499,7 @@ const GeditorWrapper = ({
   );
 };
 
-// ─── KAKAO MAP COMPONENT FOR PAGE 4 ──────────────────────────────────────────
+// ??? KAKAO MAP COMPONENT FOR PAGE 4 ??????????????????????????????????????????
 const KakaoMap = ({ address }: { address: string }) => {
   const containerRef = React.useRef<HTMLDivElement>(null);
   const [loaded, setLoaded] = React.useState(false);
@@ -533,7 +533,7 @@ const KakaoMap = ({ address }: { address: string }) => {
         });
       };
       script.onerror = () => {
-        setErrorMsg("지도 스크립트 로드 실패");
+        setErrorMsg("吏???ㅽ겕由쏀듃 濡쒕뱶 ?ㅽ뙣");
       };
       document.head.appendChild(script);
     };
@@ -552,7 +552,7 @@ const KakaoMap = ({ address }: { address: string }) => {
       
       // Clean up search query
       let cleanAddress = address;
-      const cleanPatterns = [/(매매|전세|월세|임대).*/g, /\d+억.*/g];
+      const cleanPatterns = [/(留ㅻℓ|?꾩꽭|?붿꽭|?꾨?).*/g, /\d+??*/g];
       cleanPatterns.forEach(pat => {
         cleanAddress = cleanAddress.replace(pat, "").trim();
       });
@@ -589,7 +589,7 @@ const KakaoMap = ({ address }: { address: string }) => {
               text-align: center;
               white-space: nowrap;
             ">
-              📌 ${cleanAddress.split(' ').slice(0, 3).join(' ')}
+              ?뱦 ${cleanAddress.split(' ').slice(0, 3).join(' ')}
             </div>
           `;
           
@@ -606,19 +606,19 @@ const KakaoMap = ({ address }: { address: string }) => {
           map.setDraggable(false);
         } else {
           // Fallback to default coordinate if exact geocode fails
-          geocoder.addressSearch("서울 강남구 역삼동", (fallbackResult: any, fallbackStatus: any) => {
+          geocoder.addressSearch("?쒖슱 媛뺣궓援???궪??, (fallbackResult: any, fallbackStatus: any) => {
             if (fallbackStatus === (window as any).kakao.maps.services.Status.OK) {
               const coords = new (window as any).kakao.maps.LatLng(fallbackResult[0].y, fallbackResult[0].x);
               const map = new (window as any).kakao.maps.Map(container, { center: coords, level: 3 });
               new (window as any).kakao.maps.Marker({ map, position: coords });
             }
           });
-          setErrorMsg("입력한 주소의 정확한 좌표를 찾을 수 없습니다.");
+          setErrorMsg("?낅젰??二쇱냼???뺥솗??醫뚰몴瑜?李얠쓣 ???놁뒿?덈떎.");
         }
       });
     } catch (e) {
       console.error("Kakao Map init error", e);
-      setErrorMsg("지도 초기화 오류");
+      setErrorMsg("吏??珥덇린???ㅻ쪟");
     }
   }, [loaded, address]);
 
@@ -629,7 +629,7 @@ const KakaoMap = ({ address }: { address: string }) => {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
         </svg>
         <span className="text-xs text-red-500 mb-1">{errorMsg}</span>
-        <span className="text-[10px] text-gray-400">사이드바 주소 설정을 정정하거나, 지도 캡처 이미지 직접 업로드를 사용하세요.</span>
+        <span className="text-[10px] text-gray-400">?ъ씠?쒕컮 二쇱냼 ?ㅼ젙???뺤젙?섍굅?? 吏??罹≪쿂 ?대?吏 吏곸젒 ?낅줈?쒕? ?ъ슜?섏꽭??</span>
       </div>
     );
   }
@@ -639,15 +639,15 @@ const KakaoMap = ({ address }: { address: string }) => {
   );
 };
 
-// ─── MAIN CANVAS COMPONENT ────────────────────────────────────────────────────
+// ??? MAIN CANVAS COMPONENT ????????????????????????????????????????????????????
 
 const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, activeTab = 'all', onUpdateInfo, onImageUpload, onDeleteImage, isUploadingImage, onOpenTableEditor }, ref) => {
   const { info, mainImage, subImage1, subImage2, featureImage1, featureImage2, mapImage, colorTheme, layoutTheme } = data; 
   const placeholder = "https://placehold.co/800x600/e2e8f0/1e293b?text=Image";
 
   // Data mapping from info
-  const targetTitle = info.address || '서초동 역세권 매매 안내서';
-  const price = info.priceMain || '75억 원';
+  const targetTitle = info.address || '?쒖큹????꽭沅?留ㅻℓ ?덈궡??;
+  const price = info.priceMain || '75????;
 
   const handleTextChange = (key: string, value: string) => {
     if (onUpdateInfo) {
@@ -679,7 +679,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
         ...info,
         overviewTable: [
           ...info.overviewTable,
-          { label: '새 항목', value: '내용 입력' }
+          { label: '????ぉ', value: '?댁슜 ?낅젰' }
         ]
       });
     }
@@ -718,7 +718,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
         ...info,
         floorStatus: [
           ...info.floorStatus,
-          { floor: '새 층', purpose: '용도', lease: '임대차', status: '점유상태', note: '비고' }
+          { floor: '??痢?, purpose: '?⑸룄', lease: '?꾨?李?, status: '?먯쑀?곹깭', note: '鍮꾧퀬' }
         ]
       });
     }
@@ -755,7 +755,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
     if (onUpdateInfo && Array.isArray(info.highlights)) {
       onUpdateInfo({
         ...info,
-        highlights: [...info.highlights, '새로운 하이라이트 핵심 문구를 입력하세요.']
+        highlights: [...info.highlights, '?덈줈???섏씠?쇱씠???듭떖 臾멸뎄瑜??낅젰?섏꽭??']
       });
     }
   };
@@ -840,7 +840,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                     <div>
                         <SectionTitle 
                             title={info.overviewTitle || "PROPERTY OVERVIEW"} 
-                            subtitle={info.overviewSubtitle || "물건개요"} 
+                            subtitle={info.overviewSubtitle || "臾쇨굔媛쒖슂"} 
                             onUpdateTitle={(val) => {
                                 if (onUpdateInfo) {
                                     onUpdateInfo({
@@ -863,15 +863,15 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                 const rows = Array.isArray(info.overviewTable) 
                                     ? info.overviewTable.map(r => ({ k: r.label, v: r.value }))
                                     : [
-                                        { k: '소재지', v: info.overviewTable?.location },
-                                        { k: '용도지역', v: info.overviewTable?.zoning },
-                                        { k: '대지면적', v: info.overviewTable?.landArea },
-                                        { k: '연면적', v: info.overviewTable?.totalArea },
-                                        { k: '건물규모', v: info.overviewTable?.buildingScale },
-                                        { k: '주용도', v: info.overviewTable?.mainPurpose },
-                                        { k: '주차대수', v: info.overviewTable?.parking },
-                                        { k: '승강기', v: info.overviewTable?.elevator },
-                                        { k: '준공연도', v: info.overviewTable?.completionYear },
+                                        { k: '?뚯옱吏', v: info.overviewTable?.location },
+                                        { k: '?⑸룄吏??, v: info.overviewTable?.zoning },
+                                        { k: '?吏硫댁쟻', v: info.overviewTable?.landArea },
+                                        { k: '?곕㈃??, v: info.overviewTable?.totalArea },
+                                        { k: '嫄대Ъ洹쒕え', v: info.overviewTable?.buildingScale },
+                                        { k: '二쇱슜??, v: info.overviewTable?.mainPurpose },
+                                        { k: '二쇱감???, v: info.overviewTable?.parking },
+                                        { k: '?밴컯湲?, v: info.overviewTable?.elevator },
+                                        { k: '以怨듭뿰??, v: info.overviewTable?.completionYear },
                                     ];
                                     
                                 if (Array.isArray(info.overviewTable)) {
@@ -917,15 +917,15 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                             
                             {/* Price Row */}
                             {(() => {
-                                const tType = info.transactionType || "매매";
-                                let label = "매매가";
+                                const tType = info.transactionType || "留ㅻℓ";
+                                let label = "留ㅻℓ媛";
                                 
-                                if (tType === "전세") {
-                                    label = "보증금 (전세)";
-                                } else if (tType === "월세" || tType === "임대") {
-                                    label = "보증금 / 월세";
-                                } else if (tType !== "매매") {
-                                    label = "임대가";
+                                if (tType === "?꾩꽭") {
+                                    label = "蹂댁쬆湲?(?꾩꽭)";
+                                } else if (tType === "?붿꽭" || tType === "?꾨?") {
+                                    label = "蹂댁쬆湲?/ ?붿꽭";
+                                } else if (tType !== "留ㅻℓ") {
+                                    label = "?꾨?媛";
                                 }
                                 
                                 return (
@@ -946,17 +946,17 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                     {/* Agent Footer Details */}
                     <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-xl p-3.5 mt-3 flex flex-col justify-center shadow-sm">
                         <div className="grid grid-cols-[80px_1fr] gap-x-2 gap-y-1.5 text-sm">
-                            <span className="text-gray-500 font-bold">부동산명</span>
+                            <span className="text-gray-500 font-bold">遺?숈궛紐?/span>
                             <span className="text-gray-800 font-extrabold">
                                 <EditableText value={info.agentName} onChange={(val) => handleTextChange('agentName', val)} />
                             </span>
  
-                            <span className="text-gray-500 font-bold">담당자</span>
+                            <span className="text-gray-500 font-bold">?대떦??/span>
                             <span className="text-gray-800 font-extrabold">
                                 <EditableText value={info.agentRepresentative} onChange={(val) => handleTextChange('agentRepresentative', val)} />
                             </span>
  
-                            <span className="text-gray-500 font-bold">연락처</span>
+                            <span className="text-gray-500 font-bold">?곕씫泥?/span>
                             <span className="text-[var(--theme-primary)] font-black text-base">
                                 <EditableText value={info.agentMobile || info.agentPhone || ""} onChange={(val) => handleTextChange('agentMobile', val)} />
                             </span>
@@ -979,7 +979,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                     <div>
                         <SectionTitle 
                             title={info.investmentTitle || "INVESTMENT SUMMARY"} 
-                            subtitle={info.investmentSubtitle || "투자요약"} 
+                            subtitle={info.investmentSubtitle || "?ъ옄?붿빟"} 
                             onUpdateTitle={(val) => {
                                 if (onUpdateInfo) {
                                     onUpdateInfo({
@@ -1047,7 +1047,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
             pageNumber={2} 
             pageString={getPageStatus(2).pageString}
             isHidden={getPageStatus(2).isHidden}
-            title={info.page2Title || "매물설명 & 시세"} 
+            title={info.page2Title || "留ㅻЪ?ㅻ챸 & ?쒖꽭"} 
             onUpdateTitle={(val) => handleTextChange('page2Title', val)}
             subtitle={info.page2Subtitle || "Status & Valuation"} 
             onUpdateSubtitle={(val) => handleTextChange('page2Subtitle', val)}
@@ -1077,7 +1077,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                         <div className="w-1/2 border border-gray-200 rounded-lg p-6 bg-white shadow-sm flex flex-col">
                             <h3 className="text-xl font-extrabold text-gray-900 mb-4 border-b-2 border-gray-800 pb-2 inline-block">
                                 <EditableText 
-                                    value={info.page2HighlightBoxTitle || "매물 핵심 하이라이트"} 
+                                    value={info.page2HighlightBoxTitle || "留ㅻЪ ?듭떖 ?섏씠?쇱씠??} 
                                     onChange={(val) => handleTextChange('page2HighlightBoxTitle', val)} 
                                 />
                             </h3>
@@ -1094,7 +1094,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                         isLast={i === info.highlights.length - 1}
                                         className="flex gap-2 text-sm items-center w-full"
                                     >
-                                        <span className="text-[#cc5a27] font-bold">•</span>
+                                        <span className="text-[#cc5a27] font-bold">??/span>
                                         <span className="w-full">
                                             <EditableText 
                                                 value={hl} 
@@ -1126,17 +1126,17 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                         <div className="w-1/2 border border-gray-200 rounded-lg p-6 bg-white shadow-sm flex flex-col justify-between">
                             <h3 className="text-xl font-extrabold text-gray-900 mb-4 border-b-2 border-[var(--theme-primary)] pb-2 inline-block">
                                 <EditableText 
-                                    value={(info as any).page2ChartBoxTitle || "주변시세 리포트"} 
+                                    value={(info as any).page2ChartBoxTitle || "二쇰??쒖꽭 由ы룷??} 
                                     onChange={(val) => handleTextChange('page2ChartBoxTitle', val)} 
                                 />
                             </h3>
                             {(() => {
                                 const showChart = info.showChart !== false;
                                 const chartBars = info.chartBars || [
-                                    { label: "탁상감정가", value: "80", isHighlight: false },
-                                    { label: "기존 희망가", value: "75", isHighlight: false },
-                                    { label: "인근 시세", value: "85", isHighlight: false },
-                                    { label: "현재 급매가", value: "65", isHighlight: true }
+                                    { label: "?곸긽媛먯젙媛", value: "80", isHighlight: false },
+                                    { label: "湲곗〈 ?щ쭩媛", value: "75", isHighlight: false },
+                                    { label: "?멸렐 ?쒖꽭", value: "85", isHighlight: false },
+                                    { label: "?꾩옱 湲됰ℓ媛", value: "65", isHighlight: true }
                                 ];
 
                                 return (
@@ -1155,14 +1155,14 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                                 }}
                                                 className="px-2 py-1 bg-slate-900 text-white rounded text-[9px] font-bold shadow flex items-center gap-1 active:scale-95 cursor-pointer"
                                             >
-                                                {showChart ? "📊 그래프 숨기기" : "📊 그래프 보이기"}
+                                                {showChart ? "?뱤 洹몃옒???④린湲? : "?뱤 洹몃옒??蹂댁씠湲?}
                                             </button>
                                             {showChart && chartBars.length < 6 && (
                                                 <button
                                                     type="button"
                                                     onClick={() => {
                                                         if (onUpdateInfo) {
-                                                            const newBars = [...chartBars, { label: "새 항목", value: "70", isHighlight: false }];
+                                                            const newBars = [...chartBars, { label: "????ぉ", value: "70", isHighlight: false }];
                                                             onUpdateInfo({
                                                                 ...info,
                                                                 chartBars: newBars
@@ -1171,7 +1171,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                                     }}
                                                     className="px-2 py-1 bg-[var(--theme-primary)] text-white rounded text-[9px] font-bold shadow flex items-center gap-1 active:scale-95 cursor-pointer"
                                                 >
-                                                    ➕ 항목 추가
+                                                    ????ぉ 異붽?
                                                 </button>
                                             )}
                                         </div>
@@ -1201,7 +1201,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                                                             }
                                                                         }}
                                                                         className="absolute -top-3 p-0.5 bg-red-500 hover:bg-red-600 text-white rounded-full opacity-0 group-hover/bar:opacity-100 transition-opacity z-20 cursor-pointer shadow print:hidden"
-                                                                        title="삭제"
+                                                                        title="??젣"
                                                                     >
                                                                         <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                                                                             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -1231,7 +1231,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                                                             : 'bg-slate-300 hover:bg-slate-400'
                                                                     }`}
                                                                     style={{ height: `${heightPercent}%` }}
-                                                                    title="클릭하여 강조 색상 변경"
+                                                                    title="?대┃?섏뿬 媛뺤“ ?됱긽 蹂寃?
                                                                     onClick={() => {
                                                                         if (onUpdateInfo) {
                                                                             const newBars = [...chartBars];
@@ -1277,7 +1277,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                                          });
                                                      }
                                                  }}>
-                                                📊 시세 분석 그래프가 숨김 처리되었습니다. 클릭하여 다시 표시하기
+                                                ?뱤 ?쒖꽭 遺꾩꽍 洹몃옒?꾧? ?④? 泥섎━?섏뿀?듬땲?? ?대┃?섏뿬 ?ㅼ떆 ?쒖떆?섍린
                                             </div>
                                         )}
                                     </div>
@@ -1291,7 +1291,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                     />
                                 </div>
                                 <div className="text-xs text-gray-600 leading-relaxed">
-                                    <EditableBlock value={(info as any).chartAdviseText || "본 자산의 시세는 최근 실거래가 및 시장 동향을 반영하여 산출되었습니다. 입지 조건에 따른 프리미엄이 내재되어 있어 향후 가치 상승이 기대됩니다."} onChange={(val) => handleTextChange('chartAdviseText', val)} placeholder="그래프 분석 및 조언 입력..." />
+                                    <EditableBlock value={(info as any).chartAdviseText || "蹂??먯궛???쒖꽭??理쒓렐 ?ㅺ굅?섍? 諛??쒖옣 ?숉뼢??諛섏쁺?섏뿬 ?곗텧?섏뿀?듬땲?? ?낆? 議곌굔???곕Ⅸ ?꾨━誘몄뾼???댁옱?섏뼱 ?덉뼱 ?ν썑 媛移??곸듅??湲곕??⑸땲??"} onChange={(val) => handleTextChange('chartAdviseText', val)} placeholder="洹몃옒??遺꾩꽍 諛?議곗뼵 ?낅젰..." />
                                 </div>
                             </div>
                         </div>
@@ -1307,7 +1307,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
             pageNumber={3} 
             pageString={getPageStatus(3).pageString}
             isHidden={getPageStatus(3).isHidden}
-            title={info.page3Title || "임대 상세 현황"} 
+            title={info.page3Title || "?꾨? ?곸꽭 ?꾪솴"} 
             onUpdateTitle={(val) => handleTextChange('page3Title', val)}
             subtitle={info.page3Subtitle || "Rent Roll"} 
             onUpdateSubtitle={(val) => handleTextChange('page3Subtitle', val)}
@@ -1326,10 +1326,10 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
         >
             {(() => {
                 const leaseTable = info.leaseTable || {
-                    headers: ["층수", "호실", "면적", "금액", "현용도", "기타"],
+                    headers: ["痢듭닔", "?몄떎", "硫댁쟻", "湲덉븸", "?꾩슜??, "湲고?"],
                     rows: [
-                        ["지상 5층", "501호", "165.2㎡", "보증금 1억 / 월세 450만", "사무실", "즉시입주"],
-                        ["지상 4층", "401호", "165.2㎡", "보증금 1억 / 월세 450만", "학원", "임대중"],
+                        ["吏??5痢?, "501??, "165.2??, "蹂댁쬆湲?1??/ ?붿꽭 450留?, "?щТ??, "利됱떆?낆＜"],
+                        ["吏??4痢?, "401??, "165.2??, "蹂댁쬆湲?1??/ ?붿꽭 450留?, "?숈썝", "?꾨?以?],
                     ]
                 };
                 const headers = leaseTable.headers;
@@ -1356,7 +1356,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                 const addColumn = (insertIdx: number) => {
                     if (!onUpdateInfo) return;
                     const newHeaders = [...headers];
-                    newHeaders.splice(insertIdx, 0, "새 열");
+                    newHeaders.splice(insertIdx, 0, "????);
                     const newRows = rows.map(r => {
                         const newR = [...r];
                         newR.splice(insertIdx, 0, "");
@@ -1498,9 +1498,9 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                         <div className="w-full flex-1 flex flex-col justify-between bg-white rounded-2xl border border-slate-100 p-6 shadow-sm overflow-visible relative group/table">
                         {/* Global Table Controls */}
                         <div className="absolute top-4 right-6 flex items-center gap-2 print:hidden z-20 opacity-0 group-hover/table:opacity-100 transition-opacity" data-html2canvas-ignore="true">
-                            <button type="button" onClick={addRow} className="text-[10px] bg-[var(--theme-primary)] hover:opacity-80 text-white px-2 py-1 rounded shadow-sm font-bold cursor-pointer transition-opacity">➕ 행 추가</button>
-                            <button type="button" onClick={() => addColumn(headers.length)} className="text-[10px] bg-blue-50 hover:bg-blue-100 text-blue-600 px-2 py-1 rounded shadow-sm font-bold border border-blue-200 cursor-pointer transition-colors">➕ 열 추가</button>
-                            <button type="button" onClick={clearTableContents} className="text-[10px] bg-red-50 hover:bg-red-100 text-red-600 px-2 py-1 rounded shadow-sm font-bold border border-red-100 cursor-pointer transition-colors">🗑️ 내용 지우기</button>
+                            <button type="button" onClick={addRow} className="text-[10px] bg-[var(--theme-primary)] hover:opacity-80 text-white px-2 py-1 rounded shadow-sm font-bold cursor-pointer transition-opacity">????異붽?</button>
+                            <button type="button" onClick={() => addColumn(headers.length)} className="text-[10px] bg-blue-50 hover:bg-blue-100 text-blue-600 px-2 py-1 rounded shadow-sm font-bold border border-blue-200 cursor-pointer transition-colors">????異붽?</button>
+                            <button type="button" onClick={clearTableContents} className="text-[10px] bg-red-50 hover:bg-red-100 text-red-600 px-2 py-1 rounded shadow-sm font-bold border border-red-100 cursor-pointer transition-colors">?뿊截??댁슜 吏?곌린</button>
                         </div>
                         <div className="overflow-visible flex-1 mt-6 relative">
                             <table className="w-full text-left border-collapse table-fixed">
@@ -1528,7 +1528,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                                         <div 
                                                             className="absolute top-0 -right-2 w-4 h-full cursor-col-resize z-50 flex items-center justify-center opacity-0 group-hover/header:opacity-100 hover:bg-white/20 transition-colors"
                                                             onMouseDown={(e) => handleResizeStart(e, colIdx)}
-                                                            title="드래그하여 너비 조절"
+                                                            title="?쒕옒洹명븯???덈퉬 議곗젅"
                                                         >
                                                             <div className="w-0.5 h-1/2 bg-white/50 rounded-full"></div>
                                                         </div>
@@ -1540,9 +1540,9 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                                             type="button"
                                                             onClick={() => deleteColumn(colIdx)}
                                                             className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-red-500 hover:bg-red-600 text-white w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold shadow-md cursor-pointer print:hidden opacity-0 group-hover/header:opacity-100 transition-opacity z-[100]"
-                                                            title="열 삭제"
+                                                            title="????젣"
                                                         >
-                                                            ✕
+                                                            ??
                                                         </button>
                                                     )}
                                                 </th>
@@ -1569,9 +1569,9 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                                             type="button"
                                                             onClick={() => deleteRow(rowIdx)}
                                                             className="absolute top-1/2 -right-3 transform -translate-y-1/2 bg-red-500 hover:bg-red-600 text-white w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold shadow-md cursor-pointer print:hidden opacity-0 group-hover/row:opacity-100 transition-opacity z-[100]"
-                                                            title="행 삭제"
+                                                            title="????젣"
                                                         >
-                                                            ✕
+                                                            ??
                                                         </button>
                                                     )}
                                                 </td>
@@ -1590,7 +1590,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                 </span>
                                 <div className="text-xs font-bold text-slate-800 flex-1 leading-relaxed whitespace-pre-wrap">
                                     <EditableBlock 
-                                        value={(info as any).leaseSummaryText || "총 6세대 / 보증금 0원 / 월세 0원"} 
+                                        value={(info as any).leaseSummaryText || "珥?6?몃? / 蹂댁쬆湲?0??/ ?붿꽭 0??} 
                                         onChange={(val) => handleTextChange('leaseSummaryText', val)} 
                                     />
                                 </div>
@@ -1599,7 +1599,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                             {(info as any).showLeaseSummaryDesc !== false && (
                                 <div className="w-1/2 bg-white border border-slate-200 rounded-lg p-4 text-xs text-slate-600 shadow-sm leading-relaxed whitespace-pre-wrap flex flex-col">
                                     <EditableBlock 
-                                        value={(info as any).leaseSummaryDesc || "임대 수익률 및 상세 조건은 협의 가능합니다."} 
+                                        value={(info as any).leaseSummaryDesc || "?꾨? ?섏씡瑜?諛??곸꽭 議곌굔? ?묒쓽 媛?ν빀?덈떎."} 
                                         onChange={(val) => handleTextChange('leaseSummaryDesc', val)} 
                                     />
                                 </div>
@@ -1626,7 +1626,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
             pageNumber={4} 
             pageString={getPageStatus(4).pageString}
             isHidden={getPageStatus(4).isHidden}
-            title={info.page4Title || "매물 사진"} 
+            title={info.page4Title || "留ㅻЪ ?ъ쭊"} 
             onUpdateTitle={(val) => handleTextChange('page4Title', val)}
             subtitle={info.page4Subtitle || "Property Photo"} 
             onUpdateSubtitle={(val) => handleTextChange('page4Subtitle', val)}
@@ -1668,9 +1668,9 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                 aspectRatioClass="object-cover"
                             />
                             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none p-6 text-center">
-                                <span className="text-4xl mb-3">📸</span>
-                                <h3 className="text-base font-bold text-gray-700 mb-1">등록된 현장 사진이 없습니다</h3>
-                                <p className="text-xs text-gray-400 max-w-sm">마우스를 올려 [사진 업로드] 버튼을 누르거나 좌측 사이드바에서 사진을 추가해 주세요. (최대 5장 등록 가능)</p>
+                                <span className="text-4xl mb-3">?벝</span>
+                                <h3 className="text-base font-bold text-gray-700 mb-1">?깅줉???꾩옣 ?ъ쭊???놁뒿?덈떎</h3>
+                                <p className="text-xs text-gray-400 max-w-sm">留덉슦?ㅻ? ?щ젮 [?ъ쭊 ?낅줈?? 踰꾪듉???꾨Ⅴ嫄곕굹 醫뚯륫 ?ъ씠?쒕컮?먯꽌 ?ъ쭊??異붽???二쇱꽭?? (理쒕? 5???깅줉 媛??</p>
                             </div>
                         </div>
                     );
@@ -1948,7 +1948,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
             pageNumber={5} 
             pageString={getPageStatus(5).pageString}
             isHidden={getPageStatus(5).isHidden}
-            title={info.page5Title || "입지 및 위치도"} 
+            title={info.page5Title || "?낆? 諛??꾩튂??} 
             onUpdateTitle={(val) => handleTextChange('page5Title', val)}
             subtitle={info.page5Subtitle || "Strategic Connectivity"} 
             onUpdateSubtitle={(val) => handleTextChange('page5Subtitle', val)}
@@ -1972,9 +1972,9 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                         {/* Map Mode Picker Overlay (print:hidden, visible on hover) */}
                         <div className="absolute top-4 left-4 z-[40] flex items-center gap-1 bg-white/95 backdrop-blur-sm border border-gray-200 rounded-xl p-1 shadow-md opacity-0 group-hover/map:opacity-100 transition-opacity duration-200 print:hidden">
                             {[
-                                { type: "kakao", label: "카카오" },
-                                { type: "google", label: "구글" },
-                                { type: "upload", label: "이미지 업로드" }
+                                { type: "kakao", label: "移댁뭅?? },
+                                { type: "google", label: "援ш?" },
+                                { type: "upload", label: "?대?吏 ?낅줈?? }
                             ].map(opt => (
                                 <button
                                     key={opt.type}
@@ -1995,7 +1995,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                             info.address ? (
                                 <KakaoMap address={info.address} />
                             ) : (
-                                <div className="text-gray-400 font-bold">주소를 입력하면 지도가 표시됩니다.</div>
+                                <div className="text-gray-400 font-bold">二쇱냼瑜??낅젰?섎㈃ 吏?꾧? ?쒖떆?⑸땲??</div>
                             )
                         )}
 
@@ -2012,7 +2012,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                     className="w-full h-full object-cover"
                                 />
                             ) : (
-                                <div className="text-gray-400 font-bold">주소를 입력하면 지도가 표시됩니다.</div>
+                                <div className="text-gray-400 font-bold">二쇱냼瑜??낅젰?섎㈃ 吏?꾧? ?쒖떆?⑸땲??</div>
                             )
                         )}
 
@@ -2032,7 +2032,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                         <svg className="w-8 h-8 text-gray-400 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                         </svg>
-                                        <span className="text-[10px] text-gray-400 font-bold">마우스를 올려 지도를 업로드하세요</span>
+                                        <span className="text-[10px] text-gray-400 font-bold">留덉슦?ㅻ? ?щ젮 吏?꾨? ?낅줈?쒗븯?몄슂</span>
                                     </div>
                                 )}
                             </div>
@@ -2045,13 +2045,13 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                 target="_blank" 
                                 rel="noopener noreferrer"
                                 className="absolute bottom-4 left-4 bg-white/95 text-slate-800 hover:bg-white active:scale-95 font-extrabold px-3 py-1.5 rounded-xl shadow-lg text-[10px] flex items-center gap-1.5 transition-all border border-gray-200 z-20 print:hidden"
-                                title="네이버 지도로 자세히 보기"
+                                title="?ㅼ씠踰?吏?꾨줈 ?먯꽭??蹂닿린"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5 text-green-600">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25s-7.5-4.108-7.5-11.25z" />
                                 </svg>
-                                <span>네이버 지도로 보기</span>
+                                <span>?ㅼ씠踰?吏?꾨줈 蹂닿린</span>
                             </a>
                         )}
 
@@ -2079,7 +2079,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                         </div>
                         <h3 className="text-[#e29d45] text-2xl font-bold mb-4 leading-snug whitespace-pre-wrap">
                             <EditableBlock 
-                                value={info.page4TargetTitle || ((info.areaTargetName?.split('\n')[0] || "") + " 클러스터")} 
+                                value={info.page4TargetTitle || ((info.areaTargetName?.split('\n')[0] || "") + " ?대윭?ㅽ꽣")} 
                                 onChange={(val) => handleTextChange('page4TargetTitle', val)}
                                 className="hover:bg-white/10 hover:ring-white/20 focus:bg-white/20 focus:ring-white/50 text-[#e29d45]"
                             />
@@ -2123,7 +2123,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
             pageNumber={6} 
             pageString={getPageStatus(6).pageString}
             isHidden={getPageStatus(6).isHidden}
-            title={info.page6Title || "가치 및 로드맵"} 
+            title={info.page6Title || "媛移?諛?濡쒕뱶留?} 
             onUpdateTitle={(val) => handleTextChange('page6Title', val)}
             subtitle={info.page6Subtitle || "Value & Roadmap"} 
             onUpdateSubtitle={(val) => handleTextChange('page6Subtitle', val)}
@@ -2145,7 +2145,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                     const list = info.roadmapList || [1, 2, 3, 4].map((i, index) => ({
                         title: (info.roadmap as any)?.[`box${i}Title`] || "",
                         text: (info.roadmap as any)?.[`box${i}Text`] || "",
-                        icon: (info.roadmap as any)?.[`box${i}Icon`] || ['🏢', '🏡', '📈', '🏗️'][index] || '🏢',
+                        icon: (info.roadmap as any)?.[`box${i}Icon`] || ['?룫', '?룪', '?뱢', '?룛截?][index] || '?룫',
                         bg: ['bg-[var(--theme-primary)]/10', 'bg-green-50', 'bg-red-50', 'bg-yellow-50'][index] || 'bg-gray-50',
                         border: ['border-blue-100', 'border-green-100', 'border-red-100', 'border-yellow-100'][index] || 'border-gray-200'
                     }));
@@ -2206,7 +2206,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
             <div className="mt-8 text-right pr-4">
                 <p className="text-gray-500 italic font-serif-kr text-lg">
                     <EditableText 
-                        value={info.page6FooterQuote || '"최고의 입지에 미래 가치를 더합니다."'} 
+                        value={info.page6FooterQuote || '"理쒓퀬???낆???誘몃옒 媛移섎? ?뷀빀?덈떎."'} 
                         onChange={(val) => handleTextChange('page6FooterQuote', val)} 
                     />
                 </p>
@@ -2220,3 +2220,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
 FlyerCanvas.displayName = 'FlyerCanvas';
 
 export default FlyerCanvas;
+
+
+
+
