@@ -1433,8 +1433,8 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                 onChange={(val) => handleTextChange('page3HighlightHeader', val)} 
                             />
                         </div>
-                        <div className="w-full flex-1 flex flex-col justify-between bg-white rounded-2xl border border-slate-100 p-6 shadow-sm overflow-hidden">
-                        <div className="overflow-y-auto custom-scrollbar flex-1 pr-1">
+                        <div className="w-full flex-1 flex flex-col justify-between bg-white rounded-2xl border border-slate-100 p-6 shadow-sm overflow-visible">
+                        <div className="overflow-visible flex-1 pr-1">
                             <table className="w-full text-left border-collapse table-fixed">
                                 <thead>
                                     <tr>
@@ -1538,9 +1538,9 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                                         onChange={(val) => updateCell(rowIdx, colIdx, val)}
                                                     />
                                                     
-                                                    {/* Floating Row Control Panel on First Cell Hover */}
-                                                    {colIdx === 0 && (
-                                                        <div className="absolute -left-9 top-1/2 transform -translate-y-1/2 bg-[var(--theme-dark)] text-white text-[9px] rounded-lg shadow-lg border border-gray-700 p-1 flex flex-col gap-1 hidden group-hover/row:flex print:hidden z-35 transition-all">
+                                                    {/* Floating Row Control Panel on Last Cell Hover */}
+                                                    {colIdx === row.length - 1 && (
+                                                        <div className="absolute -right-9 top-1/2 transform -translate-y-1/2 bg-[var(--theme-dark)] text-white text-[9px] rounded-lg shadow-lg border border-gray-700 p-1 flex flex-col gap-1 hidden group-hover/row:flex print:hidden z-35 transition-all">
                                                             <button
                                                                 type="button"
                                                                 disabled={rowIdx === 0}
