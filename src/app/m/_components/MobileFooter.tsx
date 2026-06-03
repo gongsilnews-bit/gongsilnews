@@ -70,10 +70,10 @@ export default function MobileFooter() {
         }}
       >
         {[
-          { label: "고객센터", href: "/about", bold: true },
+          { label: "회사소개", href: "/m/about", bold: true },
+          { label: "제휴문의", href: "/m/partnership", bold: true },
           { label: "이용약관", href: "/terms", bold: true },
           { label: "개인정보 처리방침", href: "#", bold: true },
-          { label: "청소년 보호정책", href: "/youth-policy", bold: true },
         ].map((item, i, arr) => (
           <React.Fragment key={item.label}>
             <Link
