@@ -2161,7 +2161,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                             list.length <= 4 ? 'grid-rows-2' : 'grid-rows-3'
                         }`}>
                             {list.map((item: any, idx: number) => (
-                                <div key={idx} className="bg-white border border-gray-200 rounded-2xl shadow-sm p-6 flex items-start gap-5 hover:shadow-md transition-shadow">
+                                <div key={idx} className="bg-white border border-gray-200 rounded-2xl shadow-sm p-6 flex items-center gap-5 hover:shadow-md transition-shadow">
                                     <div className={`w-16 h-16 shrink-0 ${item.bg} rounded-xl border ${item.border} flex items-center justify-center cursor-text transition-colors hover:bg-black/5`}>
                                         <EditableText 
                                             value={item.icon} 
