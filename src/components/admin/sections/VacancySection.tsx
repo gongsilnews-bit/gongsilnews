@@ -456,9 +456,9 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                                         style={{ 
                                           height: 30, 
                                           padding: "0 10px", 
-                                          background: darkMode ? "#1e3a8a" : "#eff6ff", 
-                                          color: darkMode ? "#93c5fd" : "#1d4ed8", 
-                                          border: `1px solid ${darkMode ? "#1e40af" : "#bfdbfe"}`, 
+                                          background: hasFlyer ? (darkMode ? "#1e3a8a" : "#eff6ff") : (darkMode ? "#2a2d35" : "#f3f4f6"), 
+                                          color: hasFlyer ? (darkMode ? "#93c5fd" : "#1d4ed8") : (darkMode ? "#7c8ba1" : "#8a94a6"), 
+                                          border: hasFlyer ? `1px solid ${darkMode ? "#1e40af" : "#bfdbfe"}` : `1px solid ${darkMode ? "#444" : "#e5e7eb"}`, 
                                           borderRadius: 4, 
                                           fontSize: 12, 
                                           fontWeight: 700, 
@@ -470,9 +470,17 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                                           flexShrink: 0,
                                           transition: "all 0.15s"
                                         }}
-                                        onMouseEnter={(e) => { e.currentTarget.style.background = darkMode ? "#1e40af" : "#dbeafe"; }}
-                                        onMouseLeave={(e) => { e.currentTarget.style.background = darkMode ? "#1e3a8a" : "#eff6ff"; }}
-                                        title="AI 물건보고서 생성기"
+                                        onMouseEnter={(e) => { 
+                                          e.currentTarget.style.background = hasFlyer 
+                                            ? (darkMode ? "#1e40af" : "#dbeafe") 
+                                            : (darkMode ? "#343842" : "#e5e7eb"); 
+                                        }}
+                                        onMouseLeave={(e) => { 
+                                          e.currentTarget.style.background = hasFlyer 
+                                            ? (darkMode ? "#1e3a8a" : "#eff6ff") 
+                                            : (darkMode ? "#2a2d35" : "#f3f4f6"); 
+                                        }}
+                                        title={hasFlyer ? "AI 물건보고서 완성됨 (클릭하여 편집/수정)" : "AI 물건보고서 미작성 (클릭하여 제작)"}
                                       >
                                         AI물건보고서
                                       </button>
