@@ -20,7 +20,7 @@ export default async function MobileBoardWritePage({
     editPost = postRes.success ? postRes.data : null;
   }
 
-  // 서버에서 유저 정보 로드 (클라이언트 중복 호출 방지)
+  // ?�버?�서 ?��? ?�보 로드 (?�라?�언??중복 ?�출 방�?)
   const { createClient } = await import("@/utils/supabase/server");
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -39,7 +39,7 @@ export default async function MobileBoardWritePage({
 
   return (
     <div style={{ backgroundColor: '#fff', minHeight: '100vh', paddingBottom: '60px' }}>
-      <Suspense fallback={<div style={{ padding: 40, textAlign: "center" }}>불러오는 중...</div>}>
+      <Suspense fallback={<div style={{ padding: 40, textAlign: "center" }}>불러?�는 �?..</div>}>
         <BoardWriteClient 
           board={board} 
           editPostId={editPostId} 

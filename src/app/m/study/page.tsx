@@ -9,15 +9,14 @@ export default async function MobileStudyPage({ searchParams }: { searchParams: 
   const tab = params.tab || 'lecture';
   const subtab = params.subtab;
 
-  // 1. 특강 데이터
-  let lectures = [];
+  // 1. ?�강 ?�이??  let lectures = [];
   const res = await getLectures({ status: "ACTIVE" });
   if (res.success && res.data) {
     lectures = res.data;
   }
 
   return (
-    <Suspense fallback={<div style={{ padding: 40, textAlign: "center", color: "#666", minHeight: "100vh", paddingTop: "100px" }}>특강을 불러오는 중...</div>}>
+    <Suspense fallback={<div style={{ padding: 40, textAlign: "center", color: "#666", minHeight: "100vh", paddingTop: "100px" }}>?�강??불러?�는 �?..</div>}>
       <MobileStudyHubClient 
         lectures={lectures}
       />

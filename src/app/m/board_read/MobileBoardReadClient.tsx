@@ -53,8 +53,7 @@ export default function MobileBoardReadClient({
     }
   };
 
-  // 이전글/다음글 이동 등으로 comments가 변경되면 상태를 동기화
-  useEffect(() => {
+  // ?�전글/?�음글 ?�동 ?�으�?comments가 변경되�??�태�??�기??  useEffect(() => {
     setLocalComments(comments || []);
   }, [comments]);
 
@@ -76,22 +75,22 @@ export default function MobileBoardReadClient({
         setIsChecking(false);
       }
       
-      // 조회수 증가
+      // 조회??증�?
       incrementBoardView(post.id);
     }
     checkAuth();
   }, [post.id, serverUserLevel, serverUser]);
 
   if (isChecking) {
-    return <div style={{ padding: 100, textAlign: "center", color: "#666" }}>권한을 확인하는 중입니다...</div>;
+    return <div style={{ padding: 100, textAlign: "center", color: "#666" }}>권한???�인?�는 중입?�다...</div>;
   }
 
   if (board && !canAccessBoard(userLevel, board.perm_read ?? 0)) {
     return (
       <div style={{ padding: '60px 20px', textAlign: "center", backgroundColor: '#f8f9fa', minHeight: '100vh' }}>
-        <h2 style={{ fontSize: 20, color: "#ef4444", marginBottom: 12 }}>{getLevelName(board.perm_read ?? 0)}부터 열람하실 수 있습니다.</h2>
-        <p style={{ color: "#666", marginBottom: 24 }}>현재 레벨: {userLevel}레벨</p>
-        <button onClick={() => router.back()} style={{ padding: "12px 24px", background: "#2563eb", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer", fontWeight: 600 }}>뒤로 가기</button>
+        <h2 style={{ fontSize: 20, color: "#ef4444", marginBottom: 12 }}>{getLevelName(board.perm_read ?? 0)}부???�람?�실 ???�습?�다.</h2>
+        <p style={{ color: "#666", marginBottom: 24 }}>?�재 ?�벨: {userLevel}?�벨</p>
+        <button onClick={() => router.back()} style={{ padding: "12px 24px", background: "#2563eb", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer", fontWeight: 600 }}>?�로 가�?/button>
       </div>
     );
   }
@@ -100,13 +99,13 @@ export default function MobileBoardReadClient({
     if (!commentText.trim()) return;
     setIsSubmitting(true);
     
-    let authorName = guestName || "게스트";
+    let authorName = guestName || "게스??;
     if (currentUser) {
       const r = currentUser.role?.toUpperCase() || "";
       if (r === "ADMIN" || r === "최고관리자" || r.includes("관리자")) {
         authorName = "최고관리자";
       } else {
-        authorName = currentUser.user_metadata?.full_name || currentUser.name || currentUser.email?.split('@')[0] || "익명";
+        authorName = currentUser.user_metadata?.full_name || currentUser.name || currentUser.email?.split('@')[0] || "?�명";
       }
     }
 
@@ -129,19 +128,19 @@ export default function MobileBoardReadClient({
   };
 
   const handleDelete = async () => {
-    if (!confirm("이 게시글을 삭제하시겠습니까?")) return;
+    if (!confirm("??게시글????��?�시겠습?�까?")) return;
     const res = await deleteBoardPost(post.id);
     if (res.success) {
-      alert("삭제되었습니다.");
+      alert("??��?�었?�니??");
       router.replace(`/m/board?id=${board?.board_id}`);
     } else {
-      alert("삭제 실패: " + res.error);
+      alert("??�� ?�패: " + res.error);
     }
   };
 
   const is1to1 = board?.board_type === "inquiry";
 
-  // 다중 외부 링크 파싱 보완
+  // ?�중 ?��? 링크 ?�싱 보완
   const externalLinks = (() => {
     let links: any[] = [];
     try {
@@ -150,11 +149,11 @@ export default function MobileBoardReadClient({
       }
     } catch(e) {}
     
-    // 이전 버전 호환 (단일 링크 지원 유지)
+    // ?�전 버전 ?�환 (?�일 링크 지???��?)
     if (links.length === 0) {
-      if (post.youtube_url) links.push({ id: "legacy_yt", type: "YOUTUBE", label: "유튜브 영상", url: post.youtube_url });
-      if (post.drive_url) links.push({ id: "legacy_dr", type: "DRIVE", label: "구글 드라이브 다운로드", url: post.drive_url });
-      if (post.external_url && !post.external_url.startsWith("[")) links.push({ id: "legacy_ex", type: "LINK", label: "외부 링크", url: post.external_url });
+      if (post.youtube_url) links.push({ id: "legacy_yt", type: "YOUTUBE", label: "?�튜�??�상", url: post.youtube_url });
+      if (post.drive_url) links.push({ id: "legacy_dr", type: "DRIVE", label: "구�? ?�라?�브 ?�운로드", url: post.drive_url });
+      if (post.external_url && !post.external_url.startsWith("[")) links.push({ id: "legacy_ex", type: "LINK", label: "?��? 링크", url: post.external_url });
     }
     return links;
   })();
@@ -183,7 +182,7 @@ export default function MobileBoardReadClient({
             <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center' }}>
               <input 
                 type="text" 
-                placeholder={`"${board?.name || "게시판"}" 내 검색`} 
+                placeholder={`"${board?.name || "게시??}" ??검??} 
                 value={searchInputValue}
                 onChange={(e) => setSearchInputValue(e.target.value)}
                 onKeyDown={(e) => {
@@ -216,15 +215,14 @@ export default function MobileBoardReadClient({
               onClick={() => handleSearch(searchInputValue)} 
               style={{ background: 'none', border: 'none', padding: '4px 8px', fontSize: '15px', fontWeight: 700, color: '#1e56a0', cursor: 'pointer' }}
             >
-              검색
-            </button>
+              검??            </button>
           </div>
         ) : (
           <div style={{ display: 'flex', alignItems: 'center', width: '100%', justifyContent: 'space-between' }}>
             <button onClick={() => router.back()} style={{ background: 'none', border: 'none', padding: '8px', marginLeft: '-8px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
             </button>
-            <BoardDropdownHeader currentBoardName={board?.name || "자료실"} />
+            <BoardDropdownHeader currentBoardName={board?.name || "?�료??} />
             <button onClick={() => setIsSearching(true)} style={{ background: 'none', border: 'none', padding: '8px', marginRight: '-8px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
             </button>
@@ -236,7 +234,7 @@ export default function MobileBoardReadClient({
       <div style={{ padding: '20px 16px' }}>
         {is1to1 && (
           <div style={{ display: 'inline-block', fontSize: '12px', fontWeight: 700, backgroundColor: (comments && comments.length > 0) ? '#10b981' : '#f3f4f6', color: (comments && comments.length > 0) ? '#fff' : '#6b7280', padding: '4px 10px', borderRadius: '4px', marginBottom: '12px', marginRight: '8px' }}>
-            {(comments && comments.length > 0) ? '답변완료' : '답변대기'}
+            {(comments && comments.length > 0) ? '?��??�료' : '?��??��?}
           </div>
         )}
         {post.title.match(/^\[([^\]]+)\]/) && (
@@ -276,7 +274,7 @@ export default function MobileBoardReadClient({
             </div>
           )}
 
-          {/* 다중 외부 링크 매니저 */}
+          {/* ?�중 ?��? 링크 매니?� */}
           {externalLinks.map((link: any, idx: number) => {
             let resolvedType = link.type;
             if (link.url) {
@@ -296,7 +294,7 @@ export default function MobileBoardReadClient({
                     style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
                     src={embedUrl}
                     allowFullScreen
-                    title={link.label || "YouTube 영상"}
+                    title={link.label || "YouTube ?�상"}
                   />
                 </div>
               );
@@ -311,7 +309,7 @@ export default function MobileBoardReadClient({
                         src={embedUrl}
                         allow="autoplay"
                         allowFullScreen
-                        title="Google Drive 영상"
+                        title="Google Drive ?�상"
                       />
                     </div>
                   )}
@@ -320,8 +318,8 @@ export default function MobileBoardReadClient({
                     padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px'
                   }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '15px', fontWeight: 800, color: '#1e293b', marginBottom: '4px' }}>{link.label || "구글 드라이브 자료 다운로드"}</div>
-                      <div style={{ fontSize: '13px', color: '#64748b' }}>이 게시물에 관련된 구글 드라이브 파일을 다운로드합니다.</div>
+                      <div style={{ fontSize: '15px', fontWeight: 800, color: '#1e293b', marginBottom: '4px' }}>{link.label || "구�? ?�라?�브 ?�료 ?�운로드"}</div>
+                      <div style={{ fontSize: '13px', color: '#64748b' }}>??게시물에 관?�된 구�? ?�라?�브 ?�일???�운로드?�니??</div>
                     </div>
                     <a
                       href={link.url}
@@ -339,7 +337,7 @@ export default function MobileBoardReadClient({
                         <polyline points="7 10 12 15 17 10"/>
                         <line x1="12" y1="15" x2="12" y2="3"/>
                       </svg>
-                      구글 드라이브 다운로드
+                      구�? ?�라?�브 ?�운로드
                     </a>
                   </div>
                 </div>
@@ -352,8 +350,8 @@ export default function MobileBoardReadClient({
                     padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px'
                   }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '15px', fontWeight: 800, color: '#1e293b', marginBottom: '4px' }}>{link.label || "외부 데이터 링크"}</div>
-                      <div style={{ fontSize: '13px', color: '#64748b' }}>게시된 외부 링크 자료로 연결합니다.</div>
+                      <div style={{ fontSize: '15px', fontWeight: 800, color: '#1e293b', marginBottom: '4px' }}>{link.label || "?��? ?�이??링크"}</div>
+                      <div style={{ fontSize: '13px', color: '#64748b' }}>게시???��? 링크 ?�료�??�결?�니??</div>
                     </div>
                     <a
                       href={link.url}
@@ -366,7 +364,7 @@ export default function MobileBoardReadClient({
                         textDecoration: 'none', whiteSpace: 'nowrap'
                       }}
                     >
-                      🔗 외부 링크 방문
+                      ?�� ?��? 링크 방문
                     </a>
                   </div>
                 </div>
@@ -375,7 +373,7 @@ export default function MobileBoardReadClient({
             return null;
           })}
 
-          {/* 에디터 본문 내용 줄바꿈 살려 렌더링 */}
+          {/* ?�디??본문 ?�용 줄바�??�려 ?�더�?*/}
           {post.content && (
             <div style={{ fontSize: '16px', lineHeight: 1.8, color: '#333', marginBottom: '28px', whiteSpace: 'pre-wrap' }}>
               {post.content}
@@ -388,59 +386,59 @@ export default function MobileBoardReadClient({
       <div style={{ marginTop: '20px', borderTop: '8px solid #f8f9fa' }}>
         {prevPost && (
           <Link href={`/m/board_read?id=${prevPost.id}&board_id=${board?.board_id}`} style={{ display: 'flex', alignItems: 'center', padding: '16px', borderBottom: '1px solid #f3f4f6', textDecoration: 'none' }}>
-            <span style={{ fontSize: '13px', color: '#9ca3af', width: '48px', flexShrink: 0 }}>이전글</span>
+            <span style={{ fontSize: '13px', color: '#9ca3af', width: '48px', flexShrink: 0 }}>?�전글</span>
             <span style={{ fontSize: '15px', color: '#374151', fontWeight: 500, flex: 1, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{prevPost.title.replace(/^\[([^\]]+)\]\s*/, "")}</span>
           </Link>
         )}
         {nextPost && (
           <Link href={`/m/board_read?id=${nextPost.id}&board_id=${board?.board_id}`} style={{ display: 'flex', alignItems: 'center', padding: '16px', borderBottom: '1px solid #f3f4f6', textDecoration: 'none' }}>
-            <span style={{ fontSize: '13px', color: '#9ca3af', width: '48px', flexShrink: 0 }}>다음글</span>
+            <span style={{ fontSize: '13px', color: '#9ca3af', width: '48px', flexShrink: 0 }}>?�음글</span>
             <span style={{ fontSize: '15px', color: '#374151', fontWeight: 500, flex: 1, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{nextPost.title.replace(/^\[([^\]]+)\]\s*/, "")}</span>
           </Link>
         )}
       </div>
 
-      {/* 액션 바 (수정/삭제) */}
+      {/* ?�션 �?(?�정/??��) */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '0 16px', gap: '8px', marginTop: '16px' }}>
         {(currentUser?.role?.toLowerCase() === 'admin' || currentUser?.role?.toLowerCase() === 'super_admin' || currentUser?.id === post.author_id) && (
           <>
-            <Link href={`/m/board_write?board_id=${board?.board_id}&post_id=${post.id}`} style={{ border: '1px solid #d1d5db', background: '#fff', color: '#555', padding: '8px 16px', borderRadius: '4px', fontSize: '13px', fontWeight: 600, textDecoration: 'none' }}>수정</Link>
-            <button onClick={handleDelete} style={{ border: '1px solid #fca5a5', background: '#fff5f5', color: '#dc2626', padding: '8px 16px', borderRadius: '4px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>삭제</button>
+            <Link href={`/m/board_write?board_id=${board?.board_id}&post_id=${post.id}`} style={{ border: '1px solid #d1d5db', background: '#fff', color: '#555', padding: '8px 16px', borderRadius: '4px', fontSize: '13px', fontWeight: 600, textDecoration: 'none' }}>?�정</Link>
+            <button onClick={handleDelete} style={{ border: '1px solid #fca5a5', background: '#fff5f5', color: '#dc2626', padding: '8px 16px', borderRadius: '4px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>??��</button>
           </>
         )}
       </div>
 
-      {/* 댓글 영역 */}
+      {/* ?��? ?�역 */}
       <div style={{ marginTop: '24px', borderTop: '8px solid #f8f9fa', padding: '24px 16px' }}>
-        <div style={{ fontSize: '16px', fontWeight: 800, marginBottom: '20px', color: '#111827' }}>댓글 {localComments.length}개</div>
+        <div style={{ fontSize: '16px', fontWeight: 800, marginBottom: '20px', color: '#111827' }}>?��? {localComments.length}�?/div>
 
-        {/* 댓글 목록 */}
+        {/* ?��? 목록 */}
         <div style={{ marginBottom: '24px' }}>
           {localComments.map((c: any) => (
             <div key={c.id} style={{ padding: '16px 0', borderBottom: '1px solid #f3f4f6' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '13px' }}>
-                <span style={{ fontWeight: 700, color: '#374151' }}>{c.author_name || '게스트'}</span>
+                <span style={{ fontWeight: 700, color: '#374151' }}>{c.author_name || '게스??}</span>
                 <span style={{ color: '#9ca3af' }}>{new Date(c.created_at).toLocaleString('ko-KR')}</span>
               </div>
               <div style={{ fontSize: '14px', color: '#4b5563', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{c.content}</div>
             </div>
           ))}
           {localComments.length === 0 && (
-            <div style={{ textAlign: 'center', color: '#9ca3af', padding: '24px 0', fontSize: '14px' }}>첫 댓글을 남겨보세요!</div>
+            <div style={{ textAlign: 'center', color: '#9ca3af', padding: '24px 0', fontSize: '14px' }}>�??��????�겨보세??</div>
           )}
         </div>
 
-        {/* 댓글 입력 */}
+        {/* ?��? ?�력 */}
         <div style={{ border: '1px solid #e5e7eb', borderRadius: '8px', padding: '16px', backgroundColor: '#f9fafb' }}>
           <div style={{ fontSize: '13px', fontWeight: 700, color: '#374151', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             {currentUser ? (
-              <span>{currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0]}님</span>
+              <span>{currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0]}??/span>
             ) : (
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span>이름:</span>
+                <span>?�름:</span>
                 <input 
                   type="text" 
-                  placeholder="게스트" 
+                  placeholder="게스?? 
                   value={guestName} 
                   onChange={e => setGuestName(e.target.value)}
                   style={{ padding: '4px 8px', border: '1px solid #d1d5db', borderRadius: '4px', width: '100px', fontSize: '13px' }}
@@ -451,7 +449,7 @@ export default function MobileBoardReadClient({
           </div>
           <textarea
             style={{ width: '100%', height: '60px', border: '1px solid #d1d5db', borderRadius: '4px', padding: '8px', resize: 'none', fontSize: '14px', outline: 'none', background: '#fff', color: '#333' }}
-            placeholder={canAccessBoard(userLevel, board?.perm_reply ?? 1) ? "댓글을 남겨보세요." : "권한이 없습니다."}
+            placeholder={canAccessBoard(userLevel, board?.perm_reply ?? 1) ? "?��????�겨보세??" : "권한???�습?�다."}
             maxLength={400}
             value={commentText}
             onChange={e => setCommentText(e.target.value)}
@@ -463,7 +461,7 @@ export default function MobileBoardReadClient({
               disabled={isSubmitting || !canAccessBoard(userLevel, board?.perm_reply ?? 1)}
               style={{ background: canAccessBoard(userLevel, board?.perm_reply ?? 1) ? '#2563eb' : '#cbd5e1', color: '#fff', border: 'none', borderRadius: '4px', padding: '8px 16px', fontWeight: 700, fontSize: '13px' }}
             >
-              등록
+              ?�록
             </button>
           </div>
         </div>
@@ -472,7 +470,7 @@ export default function MobileBoardReadClient({
       {/* List Button */}
       <div style={{ padding: '24px 16px', textAlign: 'center' }}>
         <button onClick={() => router.push(`/m/board?id=${board?.board_id || 'drone'}`)} style={{ padding: '12px 32px', backgroundColor: '#f1f5f9', color: '#475569', fontSize: '15px', fontWeight: 600, borderRadius: '8px', border: 'none', cursor: 'pointer' }}>
-          목록으로
+          목록?�로
         </button>
       </div>
 

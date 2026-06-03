@@ -5,7 +5,7 @@ import MobileBoardClient from "./MobileBoardClient";
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: "자료실 - 공실뉴스",
+  title: "?�료??- 공실?�스",
 };
 
 export default async function MobileBoardPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | undefined }> }) {
@@ -48,11 +48,11 @@ export default async function MobileBoardPage({ searchParams }: { searchParams: 
   }
 
   return (
-    <Suspense fallback={<div style={{ padding: 40, textAlign: "center", color: "#666", minHeight: "100vh", paddingTop: "100px" }}>자료실을 불러오는 중...</div>}>
+    <Suspense fallback={<div style={{ padding: 40, textAlign: "center", color: "#666", minHeight: "100vh", paddingTop: "100px" }}>?�료?�을 불러?�는 �?..</div>}>
       {board ? (
         <MobileBoardClient board={board} initialPosts={posts} serverUser={serverUser} serverUserLevel={serverUserLevel} />
       ) : (
-        <div style={{ padding: 80, textAlign: "center", fontSize: 16, color: "#666", minHeight: "100vh", paddingTop: "100px" }}>존재하지 않는 자료실입니다.</div>
+        <div style={{ padding: 80, textAlign: "center", fontSize: 16, color: "#666", minHeight: "100vh", paddingTop: "100px" }}>존재?��? ?�는 ?�료?�입?�다.</div>
       )}
     </Suspense>
   );

@@ -16,7 +16,7 @@ export default function AuthorProfileHeader({ profile }: { profile: any }) {
           </svg>
         </button>
         <button onClick={() => router.push('/m/news?tab=all')} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
-          전체 기자
+          ?�체 기자
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M9 18L15 12L9 6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
@@ -42,7 +42,7 @@ export default function AuthorProfileHeader({ profile }: { profile: any }) {
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{ fontSize: '13px', fontWeight: 'bold', background: 'rgba(255,255,255,0.2)', padding: '2px 8px', borderRadius: '12px' }}>
-                {profile.role === 'ADMIN' ? '기자' : profile.role === 'BIZ' ? (profile.business_type ? `${profile.business_type}기자` : '전문기자') : profile.role === 'REALTOR' ? '부동산기자' : '시민기자'}
+                {profile.role === 'ADMIN' ? '기자' : profile.role === 'BIZ' ? (profile.business_type ? `${profile.business_type}기자` : '?�문기자') : profile.role === 'REALTOR' ? '부?�산기자' : '?��?기자'}
               </span>
             </div>
             <div style={{ fontSize: '26px', fontWeight: '800', letterSpacing: '-0.5px' }}>
@@ -52,13 +52,13 @@ export default function AuthorProfileHeader({ profile }: { profile: any }) {
         </div>
 
         <div style={{ fontSize: '15px', lineHeight: '1.6', color: 'rgba(255,255,255,0.9)', marginBottom: '20px', wordBreak: 'keep-all' }}>
-          {profile.introduction || '공실뉴스와 함께하는 소중한 기자님입니다. 항상 신속하고 정확한 뉴스를 전달하기 위해 최선을 다하겠습니다.'}
+          {profile.introduction || '공실?�스?� ?�께?�는 ?�중??기자?�입?�다. ??�� ?�속?�고 ?�확???�스�??�달?�기 ?�해 최선???�하겠습?�다.'}
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '13px', color: 'rgba(255,255,255,0.7)', marginBottom: '20px', flexWrap: 'wrap' }}>
-          <div>구독 {Math.floor(Math.random()*1000)} | 응원 {profile.point_balance || Math.floor(Math.random()*5000)}</div>
+          <div>구독 {Math.floor(Math.random()*1000)} | ?�원 {profile.point_balance || Math.floor(Math.random()*5000)}</div>
           <div style={{width: 1, height: 10, background: 'rgba(255,255,255,0.3)'}}></div>
-          <div>{profile.phone || profile.email || '연락처 정보 없음'}</div>
+          <div>{profile.phone || profile.email || '?�락�??�보 ?�음'}</div>
         </div>
 
         <div style={{ display: 'flex', gap: '8px' }}>
@@ -66,13 +66,13 @@ export default function AuthorProfileHeader({ profile }: { profile: any }) {
             + 구독
           </button>
           <button style={{ flex: 1, padding: '12px 0', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.4)', background: 'transparent', color: '#fff', fontSize: '14px', fontWeight: 'bold', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px' }}>
-            👏 응원
+            ?�� ?�원
           </button>
           <button style={{ width: '44px', height: '44px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.4)', background: 'transparent', color: '#fff', display: 'flex', justifyContent: 'center', alignItems: 'center', flexShrink: 0 }}>
-            ✉️
+            ?�️
           </button>
           <button style={{ width: '44px', height: '44px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.4)', background: 'transparent', color: '#fff', display: 'flex', justifyContent: 'center', alignItems: 'center', flexShrink: 0 }}>
-            🔗
+            ?��
           </button>
         </div>
       </div>

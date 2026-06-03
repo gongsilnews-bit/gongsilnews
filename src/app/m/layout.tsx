@@ -6,8 +6,8 @@ import RealtorApprovalNotice from '@/components/RealtorApprovalNotice';
 import ComingSoon from "@/components/common/ComingSoon";
 
 export const metadata = {
-  title: "공실뉴스 (모바일)",
-  description: "대한민국 대표 부동산 공실 플랫폼",
+  title: "공실?�스 (모바??",
+  description: "?�?��?�??�??부?�산 공실 ?�랫??,
 };
 
 export default function MobileLayout({ children }: { children: React.ReactNode }) {
@@ -36,9 +36,9 @@ export default function MobileLayout({ children }: { children: React.ReactNode }
         WebkitFontSmoothing: 'antialiased',
       }}
     >
-      {/* 모바일 경로에서 데스크탑 전용 body min-width 강제 해제 */}
+      {/* 모바??경로?�서 ?�스?�탑 ?�용 body min-width 강제 ?�제 */}
       <style>{`body { min-width: auto !important; }`}</style>
-      {/* 각 페이지의 layout.tsx 또는 page.tsx 에서 헤더를 담당합니다 */}
+      {/* �??�이지??layout.tsx ?�는 page.tsx ?�서 ?�더�??�당?�니??*/}
       <main
         style={{
           flex: 1,
@@ -52,7 +52,7 @@ export default function MobileLayout({ children }: { children: React.ReactNode }
         {children}
       </main>
 
-      {/* 공통 하단 탭바 및 전역 드로어 */}
+      {/* 공통 ?�단 ??�� �??�역 ?�로??*/}
       <React.Suspense fallback={null}>
         <RealtorApprovalNotice />
       </React.Suspense>

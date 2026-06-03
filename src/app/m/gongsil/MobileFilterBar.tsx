@@ -21,20 +21,20 @@ interface MobileFilterBarProps {
   activeMode?: "공실" | "경매";
 }
 
-const TRADE_TYPES = ["매매", "전세", "월세", "단기"];
+const TRADE_TYPES = ["매매", "?�세", "?�세", "?�기"];
 
 export default function MobileFilterBar({ vacancies, filteredCount, filters, onFilterChange, onLocationMove, onShowList, kakaoMapRef, locLabel, setLocLabel, activeMode }: MobileFilterBarProps) {
   const [activePanel, setActivePanel] = useState<string | null>(null);
   const [fullFilterOpen, setFullFilterOpen] = useState(false);
 
-  // 🚀 [대표님 지침] 법원 경공매 모드 진입 시 PC와 똑같은 8대 카테고리 구성으로 지능형 전격 치환!
+  // ?? [?�?�님 지�? 법원 경공�?모드 진입 ??PC?� ?�같?� 8?� 카테고리 구성?�로 지?�형 ?�격 치환!
   const PROPERTY_TYPES = activeMode === "경매" ? [
-    { group: "주거", items: ["아파트", "단독/다가구", "빌라/주택"] },
-    { group: "상업·업무", items: ["빌딩/사무실", "공장/창고"] },
-    { group: "토지", items: ["토지"] }
+    { group: "주거", items: ["?�파??, "?�독/?��?�?, "빌라/주택"] },
+    { group: "?�업·?�무", items: ["빌딩/?�무??, "공장/창고"] },
+    { group: "?��?", items: ["?��?"] }
   ] : [
-    { group: "주거", items: ["아파트", "빌라/연립", "오피스텔", "원룸", "1.5룸", "투룸", "단독/다가구", "전원주택", "상가주택"] },
-    { group: "상가·업무·토지", items: ["상가", "사무실", "토지", "건물", "공장/창고", "지식산업센터"] },
+    { group: "주거", items: ["?�파??, "빌라/?�립", "?�피?�텔", "?�룸", "1.5�?, "?�룸", "?�독/?��?�?, "?�원주택", "?��?주택"] },
+    { group: "?��?·?�무·?��?", items: ["?��?", "?�무??, "?��?", "건물", "공장/창고", "지?�산?�센??] },
   ];
 
   // Text search
@@ -50,7 +50,7 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
 
   useEffect(() => {
     if (!filters.sido && !filters.sigungu && !filters.dong) {
-      setLocLabel("위치");
+      setLocLabel("?�치");
     }
   }, [filters.sido, filters.sigungu, filters.dong]);
 
@@ -77,30 +77,30 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
     filters.themes.length > 0;
 
   const currentYear = new Date().getFullYear();
-  const yearLabel = filters.yearMin === currentYear - 1 ? "1년 이내" :
-    filters.yearMin === currentYear - 5 ? "5년 이내" :
-    filters.yearMin === currentYear - 10 ? "10년 이내" :
-    filters.yearMin === currentYear - 15 ? "15년 이내" :
-    filters.yearMax === currentYear - 15 ? "15년 이상" :
-    "사용승인일";
+  const yearLabel = filters.yearMin === currentYear - 1 ? "1???�내" :
+    filters.yearMin === currentYear - 5 ? "5???�내" :
+    filters.yearMin === currentYear - 10 ? "10???�내" :
+    filters.yearMin === currentYear - 15 ? "15???�내" :
+    filters.yearMax === currentYear - 15 ? "15???�상" :
+    "?�용?�인??;
 
-  const ownerLabel = filters.ownerRole === 'USER' ? '일반인' : filters.ownerRole === 'REALTOR' ? '부동산' : '등록자';
+  const ownerLabel = filters.ownerRole === 'USER' ? '?�반?? : filters.ownerRole === 'REALTOR' ? '부?�산' : '?�록??;
   const commissionLabel = filters.commissionType === '공동중개' ? '공동중개' : filters.commissionType === '100' ? '100%(법정)' : filters.commissionType ? `${filters.commissionType}%~` : '중개보수';
-  const themeLabel = filters.themes.length > 0 ? `테마 ${filters.themes.length}개` : '테마';
+  const themeLabel = filters.themes.length > 0 ? `?�마 ${filters.themes.length}�? : '?�마';
 
-  const priceLabel = (filters.priceMin !== null || filters.priceMax !== null) ? `${filters.priceMin !== null ? `${filters.priceMin >= 10000 ? `${filters.priceMin / 10000}억` : `${filters.priceMin}만`}` : ""}~${filters.priceMax !== null ? `${filters.priceMax >= 10000 ? `${filters.priceMax / 10000}억` : `${filters.priceMax}만`}` : ""}` : "가격대";
-  const areaLabel = (filters.areaMin !== null || filters.areaMax !== null) ? `${filters.areaMin !== null ? filters.areaMin : ""}~${filters.areaMax !== null ? filters.areaMax : ""}평` : "면적";
+  const priceLabel = (filters.priceMin !== null || filters.priceMax !== null) ? `${filters.priceMin !== null ? `${filters.priceMin >= 10000 ? `${filters.priceMin / 10000}?? : `${filters.priceMin}�?}` : ""}~${filters.priceMax !== null ? `${filters.priceMax >= 10000 ? `${filters.priceMax / 10000}?? : `${filters.priceMax}�?}` : ""}` : "가격�?";
+  const areaLabel = (filters.areaMin !== null || filters.areaMax !== null) ? `${filters.areaMin !== null ? filters.areaMin : ""}~${filters.areaMax !== null ? filters.areaMax : ""}?? : "면적";
 
   const pillStyle = (active: boolean): React.CSSProperties => ({
     padding: "8px 16px",
     borderRadius: "20px",
     fontSize: "13px",
-    fontWeight: active ? 800 : 500, // 활성화 시 800으로 찐하게!
+    fontWeight: active ? 800 : 500, // ?�성????800?�로 찐하�?
     whiteSpace: "nowrap",
     flexShrink: 0,
-    border: active ? "2px solid #1a73e8" : "1px solid #d1d5db", // 활성화 시 2px solid #1a73e8 로 더 굵고 진하게!
+    border: active ? "2px solid #1a73e8" : "1px solid #d1d5db", // ?�성????2px solid #1a73e8 �???굵고 진하�?
     background: active ? "#f0f7ff" : "#fff",
-    color: active ? "#1a73e8" : "#4b5563", // 활성화 시 고대비 파란색!
+    color: active ? "#1a73e8" : "#4b5563", // ?�성????고�?�??��???
     cursor: "pointer",
     transition: "all 0.15s ease",
     display: "flex",
@@ -118,7 +118,7 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
         <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 448, background: "#fff", borderRadius: "16px 16px 0 0", zIndex: zBase + 1, maxHeight: "55vh", display: "flex", flexDirection: "column", animation: "sheetUp 0.3s ease-out" }}>
           <div style={{ padding: "16px 20px 12px", borderBottom: "1px solid #f3f4f6", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span style={{ fontSize: "16px", fontWeight: 800, color: "#111" }}>{title}</span>
-            <button onClick={() => setActivePanel(null)} style={{ background: "none", border: "none", fontSize: "22px", color: "#9ca3af", cursor: "pointer", padding: "4px" }}>✕</button>
+            <button onClick={() => setActivePanel(null)} style={{ background: "none", border: "none", fontSize: "22px", color: "#9ca3af", cursor: "pointer", padding: "4px" }}>??/button>
           </div>
           <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px 24px", WebkitOverflowScrolling: "touch", overscrollBehaviorY: "contain" }}>{content}</div>
         </div>
@@ -142,9 +142,9 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
         .filter-scroll { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
 
-      {/* ═══ 필터 바 ═══ */}
+      {/* ?�═???�터 �??�═??*/}
       <div style={{ display: "flex", alignItems: "center", background: "#fff", borderBottom: "1px solid #e5e7eb", padding: "8px 0 8px 0", flexShrink: 0, width: "100%" }}>
-        {/* ≡ 통합필터 버튼 */}
+        {/* ???�합?�터 버튼 */}
         {activeMode !== "경매" && (
           <>
             <button onClick={() => setFullFilterOpen(true)} style={{ flexShrink: 0, width: "40px", display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", cursor: "pointer", position: "relative" }}>
@@ -155,23 +155,21 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
           </>
         )}
 
-        {/* 수평 스크롤 필 버튼들 */}
+        {/* ?�평 ?�크�???버튼??*/}
         <div style={{ position: "relative", flex: 1, minWidth: 0, overflow: "hidden" }}>
           <div className="filter-scroll" style={{ overflowX: "auto", display: "flex", gap: "8px", padding: "0 12px 0 12px", WebkitOverflowScrolling: "touch" as any }}>
-            <button onClick={() => setActivePanel(activePanel === "loc" ? null : "loc")} style={pillStyle(activePanel === "loc" || locLabel !== "위치")}>📍 {locLabel} ▾</button>
+            <button onClick={() => setActivePanel(activePanel === "loc" ? null : "loc")} style={pillStyle(activePanel === "loc" || locLabel !== "?�치")}>?�� {locLabel} ??/button>
             <button onClick={() => setActivePanel(activePanel === "prop" ? null : "prop")} style={pillStyle(activePanel === "prop" || filters.propertyTypes.length > 0)}>
               {filters.propertyTypes.length === PROPERTY_TYPES.flatMap(g => g.items).length 
-                ? "전체유형" 
+                ? "?�체?�형" 
                 : filters.propertyTypes.length > 0 
                 ? filters.propertyTypes.slice(0,2).join(", ") + (filters.propertyTypes.length > 2 ? ` +${filters.propertyTypes.length-2}` : "") 
-                : activeMode === "경매" ? "경공매유형" : "공실광고유형"} ▾
-            </button>
+                : activeMode === "경매" ? "경공매유?? : "공실광고?�형"} ??            </button>
             {activeMode !== "경매" && (
               <button onClick={() => setActivePanel(activePanel === "trade" ? null : "trade")} style={pillStyle(activePanel === "trade" || filters.tradeTypes.length > 0)}>
                 {filters.tradeTypes.length === TRADE_TYPES.length || filters.tradeTypes.length === 0
-                  ? "전체거래" 
-                  : filters.tradeTypes.join(", ")} ▾
-              </button>
+                  ? "?�체거래" 
+                  : filters.tradeTypes.join(", ")} ??              </button>
             )}
             {activeMode !== "경매" && (
               <button 
@@ -183,20 +181,19 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
                   color: hasActiveFilters ? "#4b89ff" : "#374151",
                 }}
               >
-                🎛️ 가격·조건필터 ▾
-                {hasActiveFilters && <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#ef4444", marginLeft: "2px" }} />}
+                ?���?가격·조건필????                {hasActiveFilters && <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#ef4444", marginLeft: "2px" }} />}
               </button>
             )}
-            {/* 오른쪽 패딩 확보 */}
+            {/* ?�른�??�딩 ?�보 */}
             <div style={{ flexShrink: 0, width: "8px" }} />
           </div>
-          {/* 오른쪽 페이드 그라데이션 힌트 */}
+          {/* ?�른�??�이??그라?�이???�트 */}
           <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: "24px", background: "linear-gradient(to right, transparent, #fff)", pointerEvents: "none" }} />
         </div>
       </div>
 
-      {/* ═══ 위치 검색 시트 ═══ */}
-      {activePanel === "loc" && renderSheet("📍 위치 검색", (
+      {/* ?�═???�치 검???�트 ?�═??*/}
+      {activePanel === "loc" && renderSheet("?�� ?�치 검??, (
         <LocationFilterPanel 
           onLocationMove={onLocationMove} 
           onFilterChange={onFilterChange}
@@ -206,53 +203,53 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
         />
       ))}
 
-      {/* ═══ 공실광고유형 시트 ═══ */}
-      {activePanel === "prop" && renderSheet("공실광고유형", (
+      {/* ?�═??공실광고?�형 ?�트 ?�═??*/}
+      {activePanel === "prop" && renderSheet("공실광고?�형", (
         <PropertyTypeFilterPanel filters={filters} onFilterChange={onFilterChange} PROPERTY_TYPES={PROPERTY_TYPES} />
       ))}
 
-      {/* ═══ 거래방식 시트 ═══ */}
+      {/* ?�═??거래방식 ?�트 ?�═??*/}
       {activePanel === "trade" && renderSheet("거래방식", (
-        <TradeTypeFilterPanel filters={filters} onFilterChange={onFilterChange} TRADE_TYPES={TRADE_TYPES.filter(t => !(filters.propertyTypes.length > 0 && filters.propertyTypes.every(p => p === "원룸" || p === "투룸") && t === "매매"))} />
+        <TradeTypeFilterPanel filters={filters} onFilterChange={onFilterChange} TRADE_TYPES={TRADE_TYPES.filter(t => !(filters.propertyTypes.length > 0 && filters.propertyTypes.every(p => p === "?�룸" || p === "?�룸") && t === "매매"))} />
       ))}
 
-      {/* ═══ 가격 시트 ═══ */}
-      {activePanel === "price" && renderSheet("매매가/전세가/보증금", (
+      {/* ?�═??가�??�트 ?�═??*/}
+      {activePanel === "price" && renderSheet("매매가/?�세가/보증�?, (
         <PriceFilterPanel filters={filters} onFilterChange={onFilterChange} />
       ))}
 
-      {/* ═══ 면적 시트 ═══ */}
+      {/* ?�═??면적 ?�트 ?�═??*/}
       {activePanel === "area" && renderSheet("면적", (
         <AreaFilterPanel filters={filters} onFilterChange={onFilterChange} />
       ))}
 
-      {/* ═══ 층수 시트 ═══ */}
+      {/* ?�═??층수 ?�트 ?�═??*/}
       {activePanel === "floor" && renderSheet("층수", <FloorFilterPanel filters={filters} onFilterChange={onFilterChange} />)}
 
-      {/* ═══ 사용승인일 시트 ═══ */}
-      {activePanel === "year" && renderSheet("사용승인일 (연식)", <YearFilterPanel filters={filters} onFilterChange={onFilterChange} />)}
+      {/* ?�═???�용?�인???�트 ?�═??*/}
+      {activePanel === "year" && renderSheet("?�용?�인??(?�식)", <YearFilterPanel filters={filters} onFilterChange={onFilterChange} />)}
 
-      {/* ═══ 등록자 시트 ═══ */}
-      {activePanel === "owner" && renderSheet("등록자 유형", <OwnerRoleFilterPanel filters={filters} onFilterChange={onFilterChange} />)}
+      {/* ?�═???�록???�트 ?�═??*/}
+      {activePanel === "owner" && renderSheet("?�록???�형", <OwnerRoleFilterPanel filters={filters} onFilterChange={onFilterChange} />)}
 
-      {/* ═══ 중개보수 시트 ═══ */}
+      {/* ?�═??중개보수 ?�트 ?�═??*/}
       {activePanel === "commission" && renderSheet("중개보수", <CommissionFilterPanel filters={filters} onFilterChange={onFilterChange} />)}
 
-      {/* ═══ 테마 시트 ═══ */}
-      {activePanel === "theme" && renderSheet("테마 키워드", <ThemeFilterPanel filters={filters} onFilterChange={onFilterChange} />)}
+      {/* ?�═???�마 ?�트 ?�═??*/}
+      {activePanel === "theme" && renderSheet("?�마 ?�워??, <ThemeFilterPanel filters={filters} onFilterChange={onFilterChange} />)}
 
-      {/* ═══ 풀스크린 통합 필터 ═══ */}
+      {/* ?�═???�?�크�??�합 ?�터 ?�═??*/}
       {fullFilterOpen && (
         <div style={{ position: "fixed", inset: 0, background: "#fff", zIndex: 10001, display: "flex", flexDirection: "column", animation: "fadeIn 0.2s" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 20px", borderBottom: "1px solid #e5e7eb" }}>
-            <span style={{ fontSize: "17px", fontWeight: 800 }}>필터</span>
-            <button onClick={() => { setTempFilters(filters); setFullFilterOpen(false); }} style={{ background: "none", border: "none", fontSize: "22px", color: "#6b7280", cursor: "pointer" }}>✕</button>
+            <span style={{ fontSize: "17px", fontWeight: 800 }}>?�터</span>
+            <button onClick={() => { setTempFilters(filters); setFullFilterOpen(false); }} style={{ background: "none", border: "none", fontSize: "22px", color: "#6b7280", cursor: "pointer" }}>??/button>
           </div>
 
           <div style={{ flex: 1, overflowY: "auto", padding: "0 20px 100px", WebkitOverflowScrolling: "touch", overscrollBehaviorY: "contain" }}>
-            {/* 위치 검색 */}
+            {/* ?�치 검??*/}
             <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
-              <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>위치 (시/구/동)</div>
+              <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>?�치 (??�???</div>
               <LocationFilterPanel 
                 variant="inline"
                 tempFilters={tempFilters}
@@ -264,21 +261,21 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
               />
             </div>
 
-            {/* 거래유형 */}
+            {/* 거래?�형 */}
             <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
-              <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>거래유형</div>
-              <TradeTypeFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} TRADE_TYPES={TRADE_TYPES.filter(t => !(tempFilters.propertyTypes.length > 0 && tempFilters.propertyTypes.every(p => p === "원룸" || p === "투룸") && t === "매매"))} />
+              <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>거래?�형</div>
+              <TradeTypeFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} TRADE_TYPES={TRADE_TYPES.filter(t => !(tempFilters.propertyTypes.length > 0 && tempFilters.propertyTypes.every(p => p === "?�룸" || p === "?�룸") && t === "매매"))} />
             </div>
 
-            {/* 공실광고유형 */}
+            {/* 공실광고?�형 */}
             <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
-              <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>공실광고유형</div>
+              <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>공실광고?�형</div>
               <PropertyTypeFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} PROPERTY_TYPES={PROPERTY_TYPES} />
             </div>
             
-            {/* 가격 */}
+            {/* 가�?*/}
             <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
-              <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>가격</div>
+              <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>가�?/div>
               <PriceFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} />
             </div>
 
@@ -294,15 +291,15 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
               <FloorFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} />
             </div>
 
-            {/* 사용승인일 */}
+            {/* ?�용?�인??*/}
             <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
-              <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>사용승인일 (연식)</div>
+              <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>?�용?�인??(?�식)</div>
               <YearFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} />
             </div>
 
-            {/* 등록자 유형 */}
+            {/* ?�록???�형 */}
             <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
-              <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>등록자 유형</div>
+              <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>?�록???�형</div>
               <OwnerRoleFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} />
             </div>
 
@@ -312,53 +309,52 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
               <CommissionFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} />
             </div>
 
-            {/* 테마 */}
+            {/* ?�마 */}
             <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
-              <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>테마 키워드</div>
+              <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>?�마 ?�워??/div>
               <ThemeFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} />
             </div>
           </div>
 
-          {/* 하단 CTA */}
+          {/* ?�단 CTA */}
           <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "#fff", borderTop: "1px solid #e5e7eb", padding: "12px 20px 24px", display: "flex", gap: "12px" }}>
             <button 
               onClick={() => {
                 const allPropTypes = PROPERTY_TYPES.flatMap(g => g.items);
                 const empty = { propertyTypes: allPropTypes, tradeTypes: [], keyword: "", priceMin: null, priceMax: null, areaMin: null, areaMax: null, yearMin: null, yearMax: null, floor: null, ownerRole: null, commissionType: null, themes: [], sido: null, sigungu: null, dong: null };
                 setTempFilters(empty);
-                setLocLabel("위치");
+                setLocLabel("?�치");
               }} 
               style={{ padding: "14px 20px", background: "#f3f4f6", border: "none", borderRadius: "10px", fontSize: "14px", fontWeight: 600, color: "#6b7280", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
             >
-              ↻ 초기화
-            </button>
+              ??초기??            </button>
             <button onClick={() => { 
               onFilterChange(tempFilters); 
               setFullFilterOpen(false); 
               if (onShowList) onShowList("filter"); 
-            }} style={{ flex: 1, padding: "14px", background: "#4b89ff", border: "none", borderRadius: "10px", fontSize: "15px", fontWeight: 800, color: "#fff", cursor: "pointer" }}>{filteredCount}개 공실광고 보기</button>
+            }} style={{ flex: 1, padding: "14px", background: "#4b89ff", border: "none", borderRadius: "10px", fontSize: "15px", fontWeight: 800, color: "#fff", cursor: "pointer" }}>{filteredCount}�?공실광고 보기</button>
           </div>
 
         </div>
       )}
 
-      {/* ═══ 텍스트 검색 오버레이 ═══ */}
+      {/* ?�═???�스??검???�버?�이 ?�═??*/}
       {searchOpen && (
         <div style={{ position: "fixed", inset: 0, background: "#fff", zIndex: 10002, display: "flex", flexDirection: "column" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 16px", borderBottom: "1px solid #e5e7eb" }}>
-            <button onClick={() => { setSearchOpen(false); setSearchText(""); }} style={{ background: "none", border: "none", fontSize: "22px", cursor: "pointer", color: "#6b7280" }}>←</button>
-            <input ref={searchInputRef} type="text" placeholder="건물명, 주소, 공실광고번호 검색" value={searchText} onChange={e => setSearchText(e.target.value)} onKeyDown={e => e.key === "Enter" && applyTextSearch()} style={{ flex: 1, padding: "10px 14px", border: "1px solid #d1d5db", borderRadius: "8px", fontSize: "15px", outline: "none" }} />
-            <button onClick={applyTextSearch} style={{ flexShrink: 0, padding: "10px 14px", background: "#4b89ff", color: "#fff", border: "none", borderRadius: "8px", fontWeight: 700, fontSize: "14px", cursor: "pointer" }}>🔍</button>
+            <button onClick={() => { setSearchOpen(false); setSearchText(""); }} style={{ background: "none", border: "none", fontSize: "22px", cursor: "pointer", color: "#6b7280" }}>??/button>
+            <input ref={searchInputRef} type="text" placeholder="건물�? 주소, 공실광고번호 검?? value={searchText} onChange={e => setSearchText(e.target.value)} onKeyDown={e => e.key === "Enter" && applyTextSearch()} style={{ flex: 1, padding: "10px 14px", border: "1px solid #d1d5db", borderRadius: "8px", fontSize: "15px", outline: "none" }} />
+            <button onClick={applyTextSearch} style={{ flexShrink: 0, padding: "10px 14px", background: "#4b89ff", color: "#fff", border: "none", borderRadius: "8px", fontWeight: 700, fontSize: "14px", cursor: "pointer" }}>?��</button>
           </div>
           {searchText && (
             <div style={{ padding: "16px 20px", flex: 1, overflowY: "auto" }}>
-              <div style={{ fontSize: "13px", color: "#9ca3af", marginBottom: "12px" }}>공실광고 검색 결과</div>
+              <div style={{ fontSize: "13px", color: "#9ca3af", marginBottom: "12px" }}>공실광고 검??결과</div>
               {vacancies.filter(v => {
                 const q = searchText.toLowerCase();
                 return (v.building_name || "").toLowerCase().includes(q) || (v.dong || "").toLowerCase().includes(q) || (v.sigungu || "").toLowerCase().includes(q) || (v.vacancy_no || "").toLowerCase().includes(q) || (v.property_type || "").toLowerCase().includes(q);
               }).slice(0, 20).map((v, i) => (
                 <div key={i} style={{ padding: "12px 0", borderBottom: "1px solid #f3f4f6" }}>
-                  <div style={{ fontSize: "14px", fontWeight: 600, color: "#111" }}>📍 {v.building_name || [v.dong, v.sigungu].filter(Boolean).join(" ")}</div>
+                  <div style={{ fontSize: "14px", fontWeight: 600, color: "#111" }}>?�� {v.building_name || [v.dong, v.sigungu].filter(Boolean).join(" ")}</div>
                   <div style={{ fontSize: "12px", color: "#6b7280", marginTop: "2px" }}>{[v.sido, v.sigungu, v.dong].filter(Boolean).join(" ")} · {v.trade_type} {v.property_type}</div>
                 </div>
               ))}

@@ -4,10 +4,10 @@ import HomeHeader from "../_components/HomeHeader";
 export default function HomeLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
-      {/* 홈 전용 헤더 */}
+      {/* ???�용 ?�더 */}
       <HomeHeader />
 
-      {/* 홈 콘텐츠 — 헤더(50px) 높이만큼 padding */}
+      {/* ??콘텐�????�더(50px) ?�이만큼 padding */}
       <div style={{ paddingTop: '50px' }}>
         {children}
       </div>

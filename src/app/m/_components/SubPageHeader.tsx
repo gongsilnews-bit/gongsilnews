@@ -29,12 +29,12 @@ export default function SubPageHeader({ title }: SubPageHeaderProps) {
           borderBottom: '1px solid #f0f0f0',
         }}
       >
-        {/* 좌측 로고 — 홈으로 이동 */}
+        {/* 좌측 로고 ???�으�??�동 */}
         <Link href="/m" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
-          <img src="/logo.png" alt="공실뉴스" style={{ height: '26px', objectFit: 'contain' }} />
+          <img src="/logo.png" alt="공실?�스" style={{ height: '26px', objectFit: 'contain' }} />
         </Link>
 
-        {/* 중앙 타이틀 (선택적) */}
+        {/* 중앙 ?�?��? (?�택?? */}
         {title && (
           <span style={{ 
             fontSize: '16px', fontWeight: 700, color: '#111827', 
@@ -46,7 +46,7 @@ export default function SubPageHeader({ title }: SubPageHeaderProps) {
           </span>
         )}
 
-        {/* 우측 햄버거 메뉴 (메뉴 페이지 이동) */}
+        {/* ?�측 ?�버�?메뉴 (메뉴 ?�이지 ?�동) */}
         <a href="/m/menu" style={{ padding: '4px', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', textDecoration: 'none' }}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <line x1="3" y1="12" x2="21" y2="12"></line>

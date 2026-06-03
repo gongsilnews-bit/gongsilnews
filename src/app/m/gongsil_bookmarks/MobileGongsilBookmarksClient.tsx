@@ -22,19 +22,19 @@ function formatPrice(v: any): string {
     const r = m % 10000;
 
     let result = "";
-    if (e > 0) result += `${e}억`;
+    if (e > 0) result += `${e}??;
 
     if (r > 0) {
       const c = Math.floor(r / 1000);
       const rem = r % 1000;
       
       let rest = "";
-      if (c > 0) rest += `${c}천`;
+      if (c > 0) rest += `${c}�?;
       if (rem > 0) rest += `${rem}`;
       
       if (rest) {
         result += (result && !result.endsWith(" ") ? " " : "") + rest;
-        if (e === 0 && c === 0 && rem > 0) result += "만";
+        if (e === 0 && c === 0 && rem > 0) result += "�?;
       }
     }
     return result || "";
@@ -43,9 +43,9 @@ function formatPrice(v: any): string {
   if (trade === "경매") {
     return `${formatAmount(dep)}`;
   }
-  if (trade === "월세" && rent > 0) {
+  if (trade === "?�세" && rent > 0) {
     const monthlyManwon = Math.round(rent / 10000);
-    return `${formatAmount(dep)}/${monthlyManwon}만`;
+    return `${formatAmount(dep)}/${monthlyManwon}�?;
   }
   if (dep > 0) return `${formatAmount(dep)}`;
   if (v.sale_price > 0) return `${formatAmount(v.sale_price)}`;
@@ -62,7 +62,7 @@ export default function MobileGongsilBookmarksClient() {
   const [user, setUser] = useState<any>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   
-  // 폴더 이동 모달 상태
+  // ?�더 ?�동 모달 ?�태
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [selectedVacancyId, setSelectedVacancyId] = useState<string | null>(null);
 
@@ -119,8 +119,7 @@ export default function MobileGongsilBookmarksClient() {
     fetchBookmarks();
   }, [router, showCategoryModal]);
 
-  // 선택된 카테고리에 맞는 공실광고 필터링
-  const filteredProperties = properties.filter(prop => {
+  // ?�택??카테고리??맞는 공실광고 ?�터�?  const filteredProperties = properties.filter(prop => {
     if (selectedCategoryId === 'ALL') return true;
     const bookmark = bookmarks.find(b => b.vacancy_id === prop.id);
     if (!bookmark) return false;
@@ -141,7 +140,7 @@ export default function MobileGongsilBookmarksClient() {
         <button onClick={() => router.back()} style={{ background: "none", border: "none", cursor: "pointer", padding: "4px", display: "flex", alignItems: "center", marginLeft: "-4px", marginRight: "8px" }}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#111" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
         </button>
-        <h2 style={{ fontSize: "18px", fontWeight: 800, color: "#111", margin: 0 }}>공실광고 <span style={{ color: "#f97316" }}>{properties.length}</span>개</h2>
+        <h2 style={{ fontSize: "18px", fontWeight: 800, color: "#111", margin: 0 }}>공실광고 <span style={{ color: "#f97316" }}>{properties.length}</span>�?/h2>
       </div>
 
       {/* Category Tabs */}
@@ -154,7 +153,7 @@ export default function MobileGongsilBookmarksClient() {
             border: 'none', cursor: 'pointer', whiteSpace: 'nowrap'
           }}
         >
-          전체
+          ?�체
         </button>
         <button
           onClick={() => setSelectedCategoryId(null)}
@@ -164,7 +163,7 @@ export default function MobileGongsilBookmarksClient() {
             border: 'none', cursor: 'pointer', whiteSpace: 'nowrap'
           }}
         >
-          기본 폴더
+          기본 ?�더
         </button>
         {categories.map(cat => (
           <button
@@ -184,12 +183,12 @@ export default function MobileGongsilBookmarksClient() {
       {/* List */}
       <div style={{ padding: "0 16px 20px", background: "#fff", flex: 1 }}>
         {loading ? (
-          <div style={{ padding: "40px 0", textAlign: "center", color: "#9ca3af" }}>로딩 중...</div>
+          <div style={{ padding: "40px 0", textAlign: "center", color: "#9ca3af" }}>로딩 �?..</div>
         ) : filteredProperties.length === 0 ? (
           <div style={{ textAlign: "center", padding: "60px 0", color: "#9ca3af" }}>
-            <div style={{ fontSize: "40px", marginBottom: "16px" }}>🏢</div>
-            <p style={{ fontSize: "15px", fontWeight: 700, color: "#333", marginBottom: "8px" }}>해당 폴더에 찜한 공실광고가 없습니다.</p>
-            <p style={{ fontSize: "14px" }}>지도에서 관심있는 공실광고의 하트를 눌러보세요.</p>
+            <div style={{ fontSize: "40px", marginBottom: "16px" }}>?��</div>
+            <p style={{ fontSize: "15px", fontWeight: 700, color: "#333", marginBottom: "8px" }}>?�당 ?�더??찜한 공실광고가 ?�습?�다.</p>
+            <p style={{ fontSize: "14px" }}>지?�에??관?�있??공실광고???�트�??�러보세??</p>
           </div>
         ) : (
           filteredProperties.map((v: any) => {
@@ -210,7 +209,7 @@ export default function MobileGongsilBookmarksClient() {
                       onClick={(e) => handleOpenMoveModal(e, v.id)}
                       style={{ background: '#f3f4f6', border: 'none', padding: '4px 10px', borderRadius: '4px', fontSize: '11px', fontWeight: 600, color: '#4b5563', cursor: 'pointer' }}
                     >
-                      폴더 이동
+                      ?�더 ?�동
                     </button>
                   </div>
 
@@ -225,11 +224,11 @@ export default function MobileGongsilBookmarksClient() {
                   </p>
                   
                   <p style={{ fontSize: "14px", color: "#6b7280", marginBottom: "2px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                    {[v.property_type || "건물", v.direction, v.exclusive_m2 && `${v.exclusive_m2}㎡`].filter(Boolean).join(" | ")}
+                    {[v.property_type || "건물", v.direction, v.exclusive_m2 && `${v.exclusive_m2}??].filter(Boolean).join(" | ")}
                   </p>
                   
                   <p style={{ fontSize: "14px", color: "#6b7280", marginBottom: "8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                    {[v.room_count !== undefined ? `룸 ${v.room_count}개` : null, v.bath_count !== undefined ? `욕실 ${v.bath_count}개` : null, ...(v.options || [])].filter(Boolean).join(", ")}
+                    {[v.room_count !== undefined ? `�?${v.room_count}�? : null, v.bath_count !== undefined ? `?�실 ${v.bath_count}�? : null, ...(v.options || [])].filter(Boolean).join(", ")}
                   </p>
 
                   {v.themes && v.themes.length > 0 && (
@@ -259,7 +258,7 @@ export default function MobileGongsilBookmarksClient() {
           userId={user.id}
           itemId={selectedVacancyId}
           type="VACANCY"
-          onSuccess={() => alert("폴더 이동이 완료되었습니다.")}
+          onSuccess={() => alert("?�더 ?�동???�료?�었?�니??")}
         />
       )}
 
