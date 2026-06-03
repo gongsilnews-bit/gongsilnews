@@ -291,20 +291,17 @@ const ReportPage = ({
         }
         if (layoutType === 'type5') {
             return (
-                <div className={`h-[120px] bg-white px-10 py-8 flex justify-between items-start shrink-0 border-b border-gray-100 ${headingFont}`}>
+                <div className={`h-[120px] bg-white px-10 py-8 flex justify-between items-center shrink-0 border-b border-gray-100 ${headingFont}`}>
                     <div className="flex-1">
-                        <h1 className="text-2xl font-light text-gray-800 tracking-wider uppercase border-b border-[var(--theme-primary)] pb-2 inline-block">
+                        <h1 className="text-3xl font-black text-gray-900 tracking-tight">
                             {onUpdateTitle ? <EditableText value={title} onChange={onUpdateTitle} className="hover:bg-gray-100 focus:bg-gray-200 px-1" /> : title}
                         </h1>
                     </div>
-                    <div className="text-right">
-                        <span className="text-gray-400 font-light tracking-[0.2em] uppercase text-xs block">
-                            {onUpdateSubtitle ? <EditableText value={subtitle} onChange={onUpdateSubtitle} className="hover:bg-gray-100 focus:bg-gray-200 px-1 text-right" /> : subtitle}
-                        </span>
+                    <div className="text-right flex flex-col items-end justify-center">
                         {badgeText && (
-                            <span className="text-[var(--theme-primary)] font-bold tracking-widest uppercase text-sm mt-1 block">
-                                {onUpdateBadge ? <EditableText value={badgeText} onChange={onUpdateBadge} className="hover:bg-gray-100 focus:bg-gray-200 px-1 text-right" /> : badgeText}
-                            </span>
+                            <div className="bg-[var(--theme-primary)] text-white px-4 py-2 font-black tracking-widest uppercase text-sm shadow-sm">
+                                {onUpdateBadge ? <EditableText value={badgeText} onChange={onUpdateBadge} className="hover:bg-[var(--theme-primary)]/80 focus:bg-[var(--theme-primary)]/60 px-1 text-center" /> : badgeText}
+                            </div>
                         )}
                     </div>
                 </div>
@@ -1433,8 +1430,24 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                 onChange={(val) => handleTextChange('page3HighlightHeader', val)} 
                             />
                         </div>
-                        <div className="w-full flex-1 flex flex-col justify-between bg-white rounded-2xl border border-slate-100 p-6 shadow-sm overflow-visible">
-                        <div className="overflow-visible flex-1 pr-1">
+                        <div className="w-full flex-1 flex flex-col justify-between bg-white rounded-2xl border border-slate-100 p-6 shadow-sm overflow-visible relative">
+                            {/* Toolbar for Rent Roll */}
+                            <div className="absolute top-4 right-6 flex gap-2 print:hidden z-10">
+                                <button type="button" onClick={() => addRow()} className="px-3 py-1.5 bg-[#008299] text-white text-[11px] font-bold rounded shadow-sm hover:bg-[#006f82] transition-colors flex items-center gap-1">
+                                    <span className="text-sm leading-none">+</span> 행 추가
+                                </button>
+                                <button type="button" onClick={() => addColumn(headers.length)} className="px-3 py-1.5 bg-blue-50 text-blue-600 border border-blue-200 text-[11px] font-bold rounded shadow-sm hover:bg-blue-100 transition-colors flex items-center gap-1">
+                                    <span className="text-sm leading-none">+</span> 열 추가
+                                </button>
+                                <button type="button" onClick={() => {
+                                    if (onUpdateInfo && window.confirm("모든 내용을 지우시겠습니까?")) {
+                                        onUpdateInfo({ ...info, leaseTable: { ...leaseTable, rows: rows.map(r => r.map(() => "")) } });
+                                    }
+                                }} className="px-3 py-1.5 bg-red-50 text-red-500 border border-red-200 text-[11px] font-bold rounded shadow-sm hover:bg-red-100 transition-colors flex items-center gap-1">
+                                    <span className="text-[10px]">🗑</span> 내용 지우기
+                                </button>
+                            </div>
+                        <div className="overflow-visible flex-1 pr-1 mt-6">
                             <table className="w-full text-left border-collapse table-fixed">
                                 <thead>
                                     <tr>
@@ -1454,6 +1467,17 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                                         value={h} 
                                                         onChange={(val) => updateHeader(colIdx, val)}
                                                     />
+                                                    {/* Explicit Delete Column Button */}
+                                                    {headers.length > 1 && (
+                                                        <button 
+                                                            type="button"
+                                                            onClick={() => deleteColumn(colIdx)}
+                                                            className="absolute -top-2 -right-2 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center text-[8px] font-bold shadow-md hover:bg-red-600 print:hidden hidden group-hover/header:flex z-50"
+                                                            title="열 삭제"
+                                                        >
+                                                            ✕
+                                                        </button>
+                                                    )}
                                                     
                                                     {/* Hover Header Columns Controls */}
                                                     <div className="absolute -top-7 left-1/2 transform -translate-x-1/2 bg-[var(--theme-dark)] text-white text-[9px] rounded-lg shadow-lg border border-gray-700 px-2 py-1 gap-1.5 hidden group-hover/header:flex items-center print:hidden z-40 transition-all">
@@ -1538,52 +1562,16 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                                         onChange={(val) => updateCell(rowIdx, colIdx, val)}
                                                     />
                                                     
-                                                    {/* Floating Row Control Panel on Last Cell Hover */}
-                                                    {colIdx === row.length - 1 && (
-                                                        <div className="absolute -right-9 top-1/2 transform -translate-y-1/2 bg-[var(--theme-dark)] text-white text-[9px] rounded-lg shadow-lg border border-gray-700 p-1 flex flex-col gap-1 hidden group-hover/row:flex print:hidden z-35 transition-all">
-                                                            <button
-                                                                type="button"
-                                                                disabled={rowIdx === 0}
-                                                                onClick={() => moveRow(rowIdx, -1)}
-                                                                className="text-slate-300 hover:text-white disabled:opacity-30 cursor-pointer border-none bg-transparent font-bold"
-                                                                title="위로 이동"
-                                                            >
-                                                                ▲
-                                                            </button>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => addRow()}
-                                                                className="text-blue-400 hover:text-blue-300 cursor-pointer border-none bg-transparent font-bold text-lg leading-none"
-                                                                title="새 행 추가"
-                                                            >
-                                                                +
-                                                            </button>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => duplicateRow(rowIdx)}
-                                                                className="text-green-400 hover:text-green-300 cursor-pointer border-none bg-transparent font-bold"
-                                                                title="행 복제"
-                                                            >
-                                                                🗐
-                                                            </button>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => deleteRow(rowIdx)}
-                                                                className="text-red-400 hover:text-red-300 cursor-pointer border-none bg-transparent font-bold"
-                                                                title="행 삭제"
-                                                            >
-                                                                ✕
-                                                            </button>
-                                                            <button
-                                                                type="button"
-                                                                disabled={rowIdx === rows.length - 1}
-                                                                onClick={() => moveRow(rowIdx, 1)}
-                                                                className="text-slate-300 hover:text-white disabled:opacity-30 cursor-pointer border-none bg-transparent font-bold"
-                                                                title="아래로 이동"
-                                                            >
-                                                                ▼
-                                                            </button>
-                                                        </div>
+                                                    {/* Explicit Delete Row Button on Last Cell */}
+                                                    {colIdx === row.length - 1 && rows.length > 1 && (
+                                                        <button 
+                                                            type="button"
+                                                            onClick={() => deleteRow(rowIdx)}
+                                                            className="absolute top-1/2 -right-2 transform -translate-y-1/2 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center text-[8px] font-bold shadow-md hover:bg-red-600 print:hidden hidden group-hover/row:flex z-50"
+                                                            title="행 삭제"
+                                                        >
+                                                            ✕
+                                                        </button>
                                                     )}
                                                 </td>
                                             ))}
