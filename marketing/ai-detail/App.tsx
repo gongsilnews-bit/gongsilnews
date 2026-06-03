@@ -320,12 +320,9 @@ function App() {
     if (isScrollingPreview.current) return;
     isScrollingForm.current = true;
     if (formScrollRef.current && previewScrollRef.current) {
-        const formInner = formScrollRef.current.firstElementChild;
-        if (formInner) {
-            const percentage = formInner.scrollTop / (formInner.scrollHeight - formInner.clientHeight);
-            if (!isNaN(percentage)) {
-                previewScrollRef.current.scrollTop = percentage * (previewScrollRef.current.scrollHeight - previewScrollRef.current.clientHeight);
-            }
+        const percentage = formScrollRef.current.scrollTop / (formScrollRef.current.scrollHeight - formScrollRef.current.clientHeight);
+        if (!isNaN(percentage)) {
+            previewScrollRef.current.scrollTop = percentage * (previewScrollRef.current.scrollHeight - previewScrollRef.current.clientHeight);
         }
     }
     // debounce reset
@@ -338,10 +335,7 @@ function App() {
     if (formScrollRef.current && previewScrollRef.current) {
         const percentage = previewScrollRef.current.scrollTop / (previewScrollRef.current.scrollHeight - previewScrollRef.current.clientHeight);
         if (!isNaN(percentage)) {
-            const formInner = formScrollRef.current.firstElementChild;
-            if (formInner) {
-                formInner.scrollTop = percentage * (formInner.scrollHeight - formInner.clientHeight);
-            }
+            formScrollRef.current.scrollTop = percentage * (formScrollRef.current.scrollHeight - formScrollRef.current.clientHeight);
         }
     }
     setTimeout(() => { isScrollingPreview.current = false; }, 50);
@@ -1474,7 +1468,7 @@ ${clone.outerHTML}
         <div 
             ref={formScrollRef}
             onScroll={handleFormScroll}
-            className="col-span-12 lg:col-span-4 xl:col-span-3 lg:h-full lg:overflow-hidden"
+            className="col-span-12 lg:col-span-4 xl:col-span-3 lg:h-full lg:overflow-y-auto custom-scrollbar"
         >
           <FlyerForm 
             info={state.info}
