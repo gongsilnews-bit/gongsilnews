@@ -814,6 +814,7 @@ function MobileVacancyWrite() {
     }
     
     setCurrentStep(s => s + 1);
+    window.scrollTo(0, 0);
   };
 
   const StepIndicator = () => (
@@ -825,7 +826,7 @@ function MobileVacancyWrite() {
         return (
           <React.Fragment key={step}>
             {i > 0 && <div style={{ width:28, height:2, background: isDone ? "#10b981" : "#e5e7eb", flexShrink:0 }} />}
-            <div onClick={() => { if (isDone || isActive) setCurrentStep(step); }} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4, cursor: isDone || isActive ? "pointer" : "default", minWidth: 52 }}>
+            <div onClick={() => { if (isDone || isActive) { setCurrentStep(step); window.scrollTo(0, 0); } }} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4, cursor: isDone || isActive ? "pointer" : "default", minWidth: 52 }}>
               <div style={{ width:28, height:28, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:800, color: isActive ? "#fff" : isDone ? "#fff" : "#9ca3af", background: isActive ? "#1a73e8" : isDone ? "#10b981" : "#e5e7eb", transition:"all 0.2s" }}>
                 {isDone ? "✓" : step}
               </div>
@@ -845,7 +846,7 @@ function MobileVacancyWrite() {
       </button>
       <div style={{ flex:1 }} />
       {currentStep > 1 && (
-        <button type="button" onClick={()=>setCurrentStep(s=>s-1)}
+        <button type="button" onClick={()=>{ setCurrentStep(s=>s-1); window.scrollTo(0,0); }}
           style={{ height:46, padding:"0 20px", background:"#fff", color:"#374151", border:"1px solid #d1d5db", borderRadius:10, fontSize:14, fontWeight:700, cursor:"pointer" }}>
           ← 이전
         </button>
