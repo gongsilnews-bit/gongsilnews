@@ -784,9 +784,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                       <label className="text-xs text-gray-500 font-semibold">표 하단 유의 사항</label>
                       <textarea name="leaseNotice" value={info.leaseNotice} onChange={handleChange} className="w-full border rounded p-2 text-xs mt-1" rows={2} />
                   </div>
-                  
-              </div>
-          </div>
+                  </div>
                   {activeTab === 'all' && (
                       <div className="absolute bottom-0 left-0 w-full h-40 bg-gradient-to-t from-white via-white/90 to-transparent flex items-end justify-center pb-6 z-10 pointer-events-none">
                           <button 
