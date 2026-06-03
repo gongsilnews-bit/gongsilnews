@@ -206,10 +206,10 @@ function MobileBottomNavContent() {
             : '#333';
 
           return item.name === "마이" ? (
-            <button
+            <Link
               key={item.name}
-              onClick={() => window.dispatchEvent(new Event('open-drawer'))}
-              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', position: 'relative', background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: activeColor }}
+              href="/m/menu"
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', position: 'relative', textDecoration: 'none', color: activeColor }}
             >
               <span style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '2px' }}>
                 {profileImg ? (
@@ -291,7 +291,7 @@ function MobileBottomNavContent() {
               <span style={{ fontSize: '10px', fontWeight: isActive ? 700 : 500, color: activeColor }}>
                 {item.name}
               </span>
-            </button>
+            </Link>
           ) : (
             <Link
               key={item.name}

@@ -33,7 +33,7 @@ export default function HomeHeader({
     const params = new URLSearchParams(window.location.search);
     if (params.get('login') === 'success') {
       const timer = setTimeout(() => {
-        window.dispatchEvent(new Event('open-drawer'));
+        router.push('/m/menu');
         window.history.replaceState({}, '', '/m');
       }, 500);
       return () => clearTimeout(timer);
@@ -89,8 +89,8 @@ export default function HomeHeader({
             </svg>
           </button>
 
-          {/* 햄버거 메뉴 아이콘 (드로어 열기) */}
-          <button onClick={() => window.dispatchEvent(new Event('open-drawer'))} style={{ padding: 0, background: 'none', border: 'none', cursor: 'pointer', display: 'flex' }}>
+          {/* 햄버거 메뉴 아이콘 (메뉴 페이지 이동) */}
+          <button onClick={() => router.push('/m/menu')} style={{ padding: 0, background: 'none', border: 'none', cursor: 'pointer', display: 'flex' }}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="3" y1="12" x2="21" y2="12"></line>
               <line x1="3" y1="6" x2="21" y2="6"></line>
