@@ -493,6 +493,24 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                           </button>
                       </div>
                   )}
+                  {activeTab !== 'all' && (
+                      <div className="flex gap-2 justify-center mt-6 pt-6 border-t border-gray-100">
+                          <button 
+                              type="button" 
+                              onClick={() => setActiveTab('all')}
+                              className="flex-1 py-2.5 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-bold rounded-lg transition-colors text-sm"
+                          >
+                              뒤로가기
+                          </button>
+                          <button 
+                              type="button" 
+                              onClick={() => setActiveTab('all')}
+                              className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-lg transition-colors shadow-sm text-sm"
+                          >
+                              전체보기
+                          </button>
+                      </div>
+                  )}
               </div>
           )}
 
@@ -704,6 +722,24 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                           </button>
                       </div>
                   )}
+                  {activeTab !== 'all' && (
+                      <div className="flex gap-2 justify-center mt-6 pt-6 border-t border-gray-100">
+                          <button 
+                              type="button" 
+                              onClick={() => setActiveTab(1)}
+                              className="flex-1 py-2.5 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-bold rounded-lg transition-colors text-sm"
+                          >
+                              뒤로가기
+                          </button>
+                          <button 
+                              type="button" 
+                              onClick={() => setActiveTab('all')}
+                              className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-lg transition-colors shadow-sm text-sm"
+                          >
+                              전체보기
+                          </button>
+                      </div>
+                  )}
               </div>
           )}
 
@@ -883,6 +919,24 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                           </button>
                       </div>
                   )}
+                  {activeTab !== 'all' && (
+                      <div className="flex gap-2 justify-center mt-6 pt-6 border-t border-gray-100">
+                          <button 
+                              type="button" 
+                              onClick={() => setActiveTab(2)}
+                              className="flex-1 py-2.5 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-bold rounded-lg transition-colors text-sm"
+                          >
+                              뒤로가기
+                          </button>
+                          <button 
+                              type="button" 
+                              onClick={() => setActiveTab('all')}
+                              className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-lg transition-colors shadow-sm text-sm"
+                          >
+                              전체보기
+                          </button>
+                      </div>
+                  )}
               </div>
           )}
 
@@ -916,6 +970,24 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                               className="pointer-events-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-full shadow-lg flex items-center gap-2 transition-transform hover:scale-105 active:scale-95"
                           >
                               📝 4. 사진 수정하기
+                          </button>
+                      </div>
+                  )}
+                  {activeTab !== 'all' && (
+                      <div className="flex gap-2 justify-center mt-6 pt-6 border-t border-gray-100">
+                          <button 
+                              type="button" 
+                              onClick={() => setActiveTab(3)}
+                              className="flex-1 py-2.5 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-bold rounded-lg transition-colors text-sm"
+                          >
+                              뒤로가기
+                          </button>
+                          <button 
+                              type="button" 
+                              onClick={() => setActiveTab('all')}
+                              className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-lg transition-colors shadow-sm text-sm"
+                          >
+                              전체보기
                           </button>
                       </div>
                   )}
@@ -989,6 +1061,24 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                               className="pointer-events-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-full shadow-lg flex items-center gap-2 transition-transform hover:scale-105 active:scale-95"
                           >
                               📝 5. 입지 수정하기
+                          </button>
+                      </div>
+                  )}
+                  {activeTab !== 'all' && (
+                      <div className="flex gap-2 justify-center mt-6 pt-6 border-t border-gray-100">
+                          <button 
+                              type="button" 
+                              onClick={() => setActiveTab(4)}
+                              className="flex-1 py-2.5 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-bold rounded-lg transition-colors text-sm"
+                          >
+                              뒤로가기
+                          </button>
+                          <button 
+                              type="button" 
+                              onClick={() => setActiveTab('all')}
+                              className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-lg transition-colors shadow-sm text-sm"
+                          >
+                              전체보기
                           </button>
                       </div>
                   )}
@@ -1118,6 +1208,24 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                               className="pointer-events-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-full shadow-lg flex items-center gap-2 transition-transform hover:scale-105 active:scale-95"
                           >
                               📝 6. 로드맵 수정하기
+                          </button>
+                      </div>
+                  )}
+                  {activeTab !== 'all' && (
+                      <div className="flex gap-2 justify-center mt-6 pt-6 border-t border-gray-100">
+                          <button 
+                              type="button" 
+                              onClick={() => setActiveTab(5)}
+                              className="flex-1 py-2.5 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-bold rounded-lg transition-colors text-sm"
+                          >
+                              뒤로가기
+                          </button>
+                          <button 
+                              type="button" 
+                              onClick={() => setActiveTab('all')}
+                              className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-lg transition-colors shadow-sm text-sm"
+                          >
+                              전체보기
                           </button>
                       </div>
                   )}
