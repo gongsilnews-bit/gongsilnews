@@ -79,7 +79,7 @@ function MobileVacancyAdmin() {
   const fetchVacancies = async () => {
     if (!memberId) return;
     setLoading(true);
-    const res = await getVacancies({ ownerId: memberId });
+    const res = await getVacancies({ ownerId: memberId, excludeOnbid: true });
     if (res.success) {
       const list = res.data || [];
       setVacancies(list);
