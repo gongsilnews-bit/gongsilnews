@@ -243,9 +243,9 @@ export default function PartnershipPage() {
           <img src="/logo.png" alt="부동산 정보채널 공실뉴스" style={{ height: 32, width: "auto" }} />
         </Link>
         <div className="header-links">
-          <a href="/about" className="header-link">회사소개</a>
-          <a href="/marketing" className="header-link">광고안내</a>
-          <a href="/partnership" className="header-link active">제휴문의</a>
+          <Link href="/about" className="header-link">회사소개</Link>
+          <Link href="/marketing" className="header-link">광고안내</Link>
+          <Link href="/partnership" className="header-link active">제휴문의</Link>
         </div>
       </header>
 
