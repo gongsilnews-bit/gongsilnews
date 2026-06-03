@@ -295,7 +295,7 @@ const ReportPage = ({
                     <div className="w-full flex items-end relative pb-4">
                         
                         <div className="flex-1 flex items-end">
-                            <h1 className="text-3xl font-black text-gray-900 tracking-tight uppercase border-b-[4px] border-[var(--theme-primary)] pb-2 shrink-0 z-10 relative">
+                            <h1 className="text-3xl font-black text-gray-900 tracking-tight uppercase pb-2 shrink-0 z-10 relative">
                                 {onUpdateTitle ? <EditableText value={title} onChange={onUpdateTitle} className="hover:bg-gray-100 focus:bg-gray-200 px-1" /> : title}
                             </h1>
                         </div>
@@ -933,7 +933,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                         {/* Transaction switcher removed to prevent visual clutter; handled in form */}
  
                                         <div className="w-1/3 text-gray-600 font-bold py-2 pl-4 flex items-center">{label}</div>
-                                        <div className="w-2/3 text-[#cc5a27] font-extrabold py-2 pl-4 flex items-center">
+                                        <div className="w-2/3 text-[var(--theme-primary)] font-extrabold py-2 pl-4 flex items-center">
                                             <EditableText value={price} onChange={(val) => handleTextChange('priceMain', val)} />
                                         </div>
                                     </div>
@@ -957,7 +957,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                             </span>
  
                             <span className="text-gray-500 font-bold">연락처</span>
-                            <span className="text-[#cc5a27] font-black text-base">
+                            <span className="text-[var(--theme-primary)] font-black text-base">
                                 <EditableText value={info.agentMobile || info.agentPhone || ""} onChange={(val) => handleTextChange('agentMobile', val)} />
                             </span>
                         </div>
