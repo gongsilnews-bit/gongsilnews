@@ -221,17 +221,6 @@ export default function AboutPage() {
             color: #1e293b;
           }
 
-          /* Responsive */
-          @media (max-width: 768px) {
-            .about-header { padding: 0 20px; height: 60px; }
-            .about-hero { height: 400px; }
-            .hero-content { padding: 0 20px; }
-            .hero-title { font-size: 36px; margin-bottom: 16px; }
-            .hero-desc { font-size: 18px; }
-            .about-main { padding: 60px 20px 80px; }
-            .content-grid { grid-template-columns: 1fr; gap: 40px; }
-            .contact-footer { padding: 60px 20px; }
-          }
         `}</style>
 
         <header className="about-header">

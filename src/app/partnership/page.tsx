@@ -308,20 +308,6 @@ export default function PartnershipPage() {
             color: #1e293b;
           }
 
-          /* Responsive */
-          @media (max-width: 768px) {
-            .marketing-header { padding: 0 20px; height: 60px; }
-            .partnership-hero { padding: 60px 20px; }
-            .hero-title { font-size: 32px; }
-            .partnership-main { padding: 60px 20px 80px; }
-            .card-grid { grid-template-columns: 1fr; gap: 16px; margin-bottom: 60px; }
-            .partner-card { padding: 30px; }
-            .process-wrapper { padding: 40px 20px; }
-            .process-steps { flex-direction: column; gap: 40px; margin-top: 40px; }
-            .process-line { display: none; }
-            .step-desc { max-width: 100%; }
-            .contact-footer { padding: 60px 20px; }
-          }
         `}</style>
 
         <header className="marketing-header">

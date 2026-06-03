@@ -305,18 +305,6 @@ export default function MarketingPage() {
             color: #1e293b;
           }
 
-          /* Responsive */
-          @media (max-width: 768px) {
-            .marketing-header { padding: 0 20px; height: 60px; }
-            .marketing-hero { height: 400px; }
-            .hero-content { padding: 0 20px; }
-            .hero-title { font-size: 36px; margin-bottom: 16px; }
-            .hero-desc { font-size: 18px; }
-            .marketing-main { padding: 40px 20px 80px; }
-            .service-grid, .contact-grid { grid-template-columns: 1fr; gap: 20px; }
-            .download-banner { flex-direction: column; text-align: center; gap: 30px; padding: 40px 20px; }
-            .contact-footer { padding: 60px 20px; }
-          }
         `}</style>
 
         <header className="marketing-header">
