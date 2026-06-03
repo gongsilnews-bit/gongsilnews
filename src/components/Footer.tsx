@@ -136,8 +136,6 @@ export default function Footer() {
               <Link href="#" style={{ fontWeight: 700, color: "#fff" }}>개인정보 처리방침</Link>
               <span style={{ color: "rgba(255,255,255,0.2)" }}>|</span>
               <Link href="/youth-policy">청소년 보호정책</Link>
-              <span style={{ color: "rgba(255,255,255,0.2)" }}>|</span>
-              <Link href="/m">모바일보기</Link>
             </div>
             {/* 우측 파트너 로고/링크 */}
             <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
