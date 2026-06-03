@@ -1,5 +1,6 @@
 import React from "react";
 import Link from "next/link";
+import Footer from "@/components/Footer";
 
 export const metadata = {
   title: "회사소개 | 공실뉴스",
@@ -203,43 +204,7 @@ export default function AboutPage() {
         </div>
       </main>
 
-      {/* ===== Footer ===== */}
-      <footer className="contact-footer">
-        <div className="contact-footer-inner">
-          <div style={{ borderBottom: "1px solid rgba(255,255,255,0.1)", paddingBottom: 24, marginBottom: 32 }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
-              <div className="contact-links">
-                <Link href="/about">회사소개</Link>
-                <Link href="/marketing">광고안내</Link>
-                <Link href="/partnership">제휴문의</Link>
-                <Link href="/terms">이용약관</Link>
-                <Link href="#" style={{ fontWeight: 700, color: "#fff" }}>개인정보 처리방침</Link>
-                <Link href="/youth-policy">청소년 보호정책</Link>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                <span style={{ fontSize: 11, color: "#94a3b8", fontWeight: 500 }}>DATA PARTNER</span>
-                <span style={{ fontSize: 12, color: "#cbd5e1", fontWeight: 600, padding: "3px 8px", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 4 }}>공공데이터포털</span>
-                <span style={{ fontSize: 12, color: "#cbd5e1", fontWeight: 600, padding: "3px 8px", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 4 }}>국토교통부</span>
-              </div>
-            </div>
-          </div>
-
-          <div style={{ display: "flex", gap: 32, alignItems: "flex-start", flexWrap: "wrap" }}>
-            <div style={{ flexShrink: 0 }}>
-              <div style={{ fontSize: 22, fontWeight: 900, color: "#fff", letterSpacing: -1, lineHeight: 1.2 }}>공실뉴스</div>
-              <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2, letterSpacing: -0.3 }}>GONGSIL NEWS</div>
-            </div>
-            <div className="company-info" style={{ flex: 1, minWidth: 300 }}>
-              <div>주소 : 서울특별시 강남구 논현로115길 31, 105호 (논현동) <span style={{ color: "rgba(255,255,255,0.2)", margin: "0 8px" }}>|</span> 인터넷신문 등록번호 : 서울 아55037 <span style={{ color: "rgba(255,255,255,0.2)", margin: "0 8px" }}>|</span> 등록일자 : 2023.09.05</div>
-              <div>제호 : 공실뉴스 <span style={{ color: "rgba(255,255,255,0.2)", margin: "0 8px" }}>|</span> 법인명 : (주)공실마케팅 <span style={{ color: "rgba(255,255,255,0.2)", margin: "0 8px" }}>|</span> 사업자등록번호 : 337-81-03010</div>
-              <div>대표자·발행인 : 김윤경 <span style={{ color: "rgba(255,255,255,0.2)", margin: "0 8px" }}>|</span> 편집인 : 김동현 <span style={{ color: "rgba(255,255,255,0.2)", margin: "0 8px" }}>|</span> 이메일 : master@gongsilnews.com</div>
-              <div>고객센터 : 1555-5343 (평일 10:00~18:00)</div>
-              <div style={{ marginTop: 12, fontSize: 12, color: "#64748b" }}>공실뉴스에 게재된 모든 콘텐츠(기사)는 저작권법의 보호를 받으며, 무단 전재, 복사, 배포 등을 금합니다.</div>
-              <div style={{ marginTop: 8, fontSize: 12, color: "#64748b" }}>Copyright © GONGSIL NEWS Co., Ltd. All Rights Reserved.</div>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }
