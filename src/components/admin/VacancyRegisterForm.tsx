@@ -1386,6 +1386,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
             </div>
 
             {/* 면적 */}
+            {!(propertyType === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(subCategory) && tradeType === "매매") && (
             <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
               <div style={{ flex: 1 }}>
                 <label style={labelStyle}>공급면적</label>
@@ -1416,6 +1417,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                 </div>
               </div>
             </div>
+            )}
 
             {(propertyType === "빌라·주택" || propertyType === COMMERCIAL_CATEGORY) && tradeType === "매매" && (
               <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
@@ -1434,10 +1436,27 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                   </div>
                 </div>
                 <div style={{ flex: 1 }}>
-                  <label style={labelStyle}>용도지역</label>
-                  <select
-                    value={zoning}
-                    onChange={(e) => setZoning(e.target.value)}
+                  {propertyType === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(subCategory) && tradeType === "매매" ? (
+                    <>
+                      <label style={labelStyle}>연면적</label>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <input type="number" placeholder="예: 84" value={supplyM2}
+                          onChange={(e) => handleM2Change(e.target.value, setSupplyM2, setSupplyPy)}
+                          style={{ ...inputStyle, flex: 1 }} />
+                        <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>m²</span>
+                        <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>=</span>
+                        <input type="number" placeholder="예: 25.4" value={supplyPy}
+                          onChange={(e) => handlePyChange(e.target.value, setSupplyPy, setSupplyM2)}
+                          style={{ ...inputStyle, flex: 1 }} />
+                        <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>평</span>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <label style={labelStyle}>용도지역</label>
+                      <select
+                        value={zoning}
+                        onChange={(e) => setZoning(e.target.value)}
                     style={inputStyle}
                   >
                     <option value="">선택</option>
@@ -1445,6 +1464,8 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                       <option key={v} value={v}>{v}</option>
                     ))}
                   </select>
+                  </>
+                  )}
                 </div>
                 {subCategory === "토지" && (
                   <div style={{ flex: 1 }}>

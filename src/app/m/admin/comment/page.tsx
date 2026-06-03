@@ -119,7 +119,7 @@ export default function MobileCommentPage() {
         borderBottom: "1px solid #e5e7eb", padding: "0 16px", height: 52,
         display: "flex", alignItems: "center", gap: 10,
       }}>
-        <button onClick={() => router.push('/m?menu=open')} style={{ background: "none", border: "none", cursor: "pointer", padding: 4, display: "flex" }}>
+        <button onClick={() => router.back()} style={{ background: "none", border: "none", cursor: "pointer", padding: 4, display: "flex" }}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M15 18L9 12L15 6" stroke="#333" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </button>
         <h1 style={{ fontSize: 17, fontWeight: 800, color: "#111", margin: 0 }}>댓글 관리</h1>
