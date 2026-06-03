@@ -22,7 +22,7 @@ export default function MobileFooter() {
       }}
     >
       {/* ── 로고 ── */}
-      <div style={{ padding: "24px 16px 16px", borderBottom: "1px solid #ececec" }}>
+      <div style={{ padding: "24px 16px 16px", borderBottom: "1px solid #ececec", textAlign: "center" }}>
         <span style={{ fontSize: 18, fontWeight: 900, color: "#222", letterSpacing: -0.5 }}>
           공실뉴스
         </span>
@@ -40,7 +40,7 @@ export default function MobileFooter() {
             style={{
               display: "flex",
               alignItems: "center",
-              justifyContent: "space-between",
+              justifyContent: "center",
               padding: "15px 16px",
               borderBottom: "1px solid #f0f0f0",
               textDecoration: "none",
@@ -51,7 +51,6 @@ export default function MobileFooter() {
             }}
           >
             {cat.label}
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
           </Link>
         ))}
       </div>
@@ -64,6 +63,7 @@ export default function MobileFooter() {
         style={{
           display: "flex",
           flexWrap: "wrap",
+          justifyContent: "center",
           gap: "4px 0",
           padding: "14px 16px 10px",
           borderTop: "1px solid #ececec",
@@ -98,7 +98,7 @@ export default function MobileFooter() {
       </div>
 
       {/* ── 회사 정보 ── */}
-      <div style={{ padding: "8px 16px 20px" }}>
+      <div style={{ padding: "8px 16px 20px", textAlign: "center" }}>
         <div
           style={{
             fontSize: 11,
