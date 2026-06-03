@@ -107,6 +107,13 @@ function MobileVacancyWrite() {
   const [hosu, setHosu] = useState("");
   const [addressExposure, setAddressExposure] = useState("비공개"); // 아파트·오피스텔 기본값
 
+  // 건축물대장 연동용 법정동 코드 및 지번
+  const [sigunguCd, setSigunguCd] = useState("");
+  const [bjdongCd, setBjdongCd] = useState("");
+  const [platGbCd, setPlatGbCd] = useState("0");
+  const [bun, setBun] = useState("");
+  const [ji, setJi] = useState("");
+
   // 기타
   const [parking, setParking] = useState("없음");
   const [moveInDate, setMoveInDate] = useState("즉시입주(공실)");
@@ -462,6 +469,18 @@ function MobileVacancyWrite() {
             if (remainingAddr.startsWith(p)) remainingAddr = remainingAddr.slice(p.length).trim();
           });
           setDetailAddr(remainingAddr);
+
+          // 건축물대장 연동용 파라미터 추출
+          setSigunguCd(data.sigunguCode || "");
+          setBjdongCd(data.bcode ? data.bcode.substring(5) : "");
+          const targetJibun = data.jibunAddress || data.autoJibunAddress || "";
+          const match = targetJibun.match(/(\d+)(?:-(\d+))?/);
+          if (match) {
+            setBun(match[1]);
+            setJi(match[2] || "0");
+          }
+          setPlatGbCd(targetJibun.includes("산 ") ? "1" : "0");
+
           // 자동 좌표 설정
           const addr = data.address || data.jibunAddress || "";
           if (addr) {

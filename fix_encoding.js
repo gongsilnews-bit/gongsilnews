@@ -1,0 +1,1 @@
+const fs = require('fs'); const iconv = require('iconv-lite'); const filepath = 'marketing/report/components/FlyerCanvas.tsx'; const buffer = fs.readFileSync(filepath); const text = iconv.decode(buffer, 'cp949'); fs.writeFileSync(filepath, text, 'utf8');
