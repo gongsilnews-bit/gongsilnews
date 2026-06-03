@@ -32,12 +32,27 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
   }, []);
 
   const saveScroll = () => sessionStorage.setItem('pc_home_scroll', window.scrollY.toString());
+  // YouTube 추출 유틸리티
+  const extractYoutubeIdInfo = (article: any) => {
+    if (article.youtube_url) {
+      const match = article.youtube_url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|shorts\/))([\w-]{11})/);
+      if (match) return { id: match[1], hasVideo: true };
+    }
+    if (article.content) {
+      const match = article.content.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|shorts\/))([\w-]{11})/);
+      if (match) return { id: match[1], hasVideo: true };
+    }
+    return { id: null, hasVideo: false };
+  };
+
   // JS에서 새 카테고리별 분류
   const marketingArts = allNewsArticles.filter(a => a.section1 === "AI마케팅").slice(0, 2);
   const economyArts = allNewsArticles.filter(a => a.section1 === "부동산·경제").slice(0, 2);
-  const gongsilListArts = allNewsArticles.filter(a => a.section1 === "공실뉴스").slice(0, 2);
   const lifeArts = allNewsArticles.filter(a => a.section1 === "라이프·오피니언").slice(0, 2);
-  const gongsilArts = allNewsArticles.filter(a => a.section1 === "공실뉴스").slice(0, 3);
+  
+  // 공실뉴스: 영상이 있는 기사는 블랙 배경 비디오 섹션으로, 없는 기사는 하단 리스트로 분리
+  const gongsilArts = allNewsArticles.filter(a => a.section1 === "공실뉴스" && extractYoutubeIdInfo(a).hasVideo).slice(0, 3);
+  const gongsilListArts = allNewsArticles.filter(a => a.section1 === "공실뉴스" && !extractYoutubeIdInfo(a).hasVideo).slice(0, 2);
 
   // 날짜 포맷팅
   const formatDate = (dateStr: string) => {
@@ -55,20 +70,7 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
     return text;
   };
 
-  // YouTube 추출 유틸리티
-  const extractYoutubeIdInfo = (article: any) => {
-    // 1순위: 명시적 유튜브 URL
-    if (article.youtube_url) {
-      const match = article.youtube_url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|shorts\/))([\w-]{11})/);
-      if (match) return { id: match[1], hasVideo: true };
-    }
-    // 2순위: 본문(content) 내장 iframe 또는 링크
-    if (article.content) {
-      const match = article.content.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|shorts\/))([\w-]{11})/);
-      if (match) return { id: match[1], hasVideo: true };
-    }
-    return { id: null, hasVideo: false };
-  };
+
 
   const getThumbnailSrc = (article: any, ytInfo: { id: string | null; hasVideo: boolean }) => {
     if (article.thumbnail_url) return article.thumbnail_url;
