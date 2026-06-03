@@ -858,7 +858,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                 }
                             }}
                         />
-                        <div className="border-t-[3px] border-gray-800 flex flex-col text-sm border-b border-gray-200">
+                        <div className="border-t-[3px] border-[var(--theme-primary)] flex flex-col text-sm border-b border-gray-200">
                             {(() => {
                                 const rows = Array.isArray(info.overviewTable) 
                                     ? info.overviewTable.map(r => ({ k: r.label, v: r.value }))
@@ -997,7 +997,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                 }
                             }}
                         />
-                        <div className="flex gap-4 border-l-4 border-[#cc5a27] pl-4">
+                        <div className="flex gap-4 border-l-4 border-[var(--theme-primary)] pl-4">
                             {[1,2,3].map(i => (
                                 <div key={i} className="flex-1 bg-white border border-gray-100 rounded-lg p-4 text-center shadow-sm">
                                     <div className="text-xs text-gray-400 font-bold tracking-widest mb-2 uppercase">
@@ -1110,7 +1110,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                             </ul>
                             
                             <div className="mt-auto">
-                                <div className="text-[10px] font-bold tracking-widest text-[#cc5a27] uppercase mb-1">
+                                <div className="text-[10px] font-bold tracking-widest text-[var(--theme-primary)] uppercase mb-1">
                                     <EditableText 
                                         value={(info as any).valuationAdvisoryTitle || "STRATEGIC ADVISORY"} 
                                         onChange={(val) => handleTextChange('valuationAdvisoryTitle', val)} 
@@ -1124,7 +1124,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
 
                         {/* Right Half: Chart */}
                         <div className="w-1/2 border border-gray-200 rounded-lg p-6 bg-white shadow-sm flex flex-col justify-between">
-                            <h3 className="text-xl font-extrabold text-gray-900 mb-4 border-b-2 border-gray-800 pb-2 inline-block">
+                            <h3 className="text-xl font-extrabold text-gray-900 mb-4 border-b-2 border-[var(--theme-primary)] pb-2 inline-block">
                                 <EditableText 
                                     value={(info as any).page2ChartBoxTitle || "주변시세 리포트"} 
                                     onChange={(val) => handleTextChange('page2ChartBoxTitle', val)} 
@@ -1227,7 +1227,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                                                 <div 
                                                                     className={`w-12 rounded-t transition-all duration-500 shadow-sm relative cursor-pointer ${
                                                                         bar.isHighlight || idx === chartBars.length - 1
-                                                                            ? 'bg-[#cc5a27] hover:bg-[#cc5a27]/90' 
+                                                                            ? 'bg-[var(--theme-primary)] hover:bg-[var(--theme-primary)]/90' 
                                                                             : 'bg-slate-300 hover:bg-slate-400'
                                                                     }`}
                                                                     style={{ height: `${heightPercent}%` }}
@@ -1252,7 +1252,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                                 {/* Chart Labels */}
                                                 <div className="flex justify-around px-4 text-[10px] font-bold text-gray-500">
                                                     {chartBars.map((bar: any, idx: number) => (
-                                                        <div key={idx} className={`w-20 text-center truncate ${bar.isHighlight || idx === chartBars.length - 1 ? 'text-[#cc5a27]' : ''}`}>
+                                                        <div key={idx} className={`w-20 text-center truncate ${bar.isHighlight || idx === chartBars.length - 1 ? 'text-[var(--theme-primary)]' : ''}`}>
                                                             <EditableText 
                                                                 value={bar.label} 
                                                                 onChange={(val) => {
@@ -1284,7 +1284,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                 );
                             })()}
                             <div className="mt-auto pt-6 border-t border-gray-100">
-                                <div className="text-[10px] font-bold tracking-widest text-[#cc5a27] uppercase mb-1">
+                                <div className="text-[10px] font-bold tracking-widest text-[var(--theme-primary)] uppercase mb-1">
                                     <EditableText 
                                         value={(info as any).chartAdvisoryTitle || "STRATEGIC ADVISORY"} 
                                         onChange={(val) => handleTextChange('chartAdvisoryTitle', val)} 
