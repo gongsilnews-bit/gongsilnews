@@ -22,9 +22,12 @@ export default function MenuPage() {
       setLoading(true);
       try {
         const supabase = createClient();
-        // 세션 자동 갱신 후 유저 확인 (토큰 만료 대응)
-        await supabase.auth.getSession();
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession();
+        let user = session?.user;
+        if (!user) {
+          const { data } = await supabase.auth.getUser();
+          user = data?.user;
+        }
         if (user) {
           setCurrentUser(user);
           // 프로필 + 중개사 상태만 빠르게 로드 → 즉시 화면 표시
