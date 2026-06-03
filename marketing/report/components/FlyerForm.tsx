@@ -121,28 +121,102 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
   return (
     <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100 h-full overflow-y-auto custom-scrollbar flex flex-col">
       
-      {/* Design Theme Selection (Kept from original) */}
-      <div className="mb-6 shrink-0">
-        <h3 className="text-sm font-bold text-gray-700 flex items-center gap-2 mb-3"><SwatchIcon className="w-5 h-5" /> 디자인 색상 선택</h3>
-        <div className="flex items-center gap-3 mb-4 flex-wrap">
+      {/* Design Theme Selection */}
+      <div className="mb-8 shrink-0">
+        <h3 className="text-sm font-bold text-gray-700 flex items-center gap-2 mb-3">
+             <SwatchIcon className="w-5 h-5" />
+             디자인 색상 선택
+        </h3>
+        <div className="flex items-center gap-3 mb-6 flex-wrap">
             {colors.map(color => (
                 <button
                     key={color.id}
                     onClick={() => onColorSelect(color)}
-                    className={`w-8 h-8 rounded-full border-2 transition-all shadow-sm flex items-center justify-center ${currentColor.id === color.id ? 'border-gray-800 scale-110 ring-2 ring-offset-2 ring-gray-300' : 'border-transparent'}`}
+                    className={`w-10 h-10 rounded-full border-2 transition-all shadow-sm flex items-center justify-center ${currentColor.id === color.id ? 'border-gray-800 scale-110 ring-2 ring-offset-2 ring-gray-300' : 'border-transparent hover:scale-105'}`}
                     style={{ backgroundColor: color.primary }}
-                />
+                    title={color.name || '색상'}
+                >
+                    {currentColor.id === color.id && <div className="w-2 h-2 bg-white rounded-full"></div>}
+                </button>
             ))}
+
+            {/* Custom Color Picker Swatch */}
+            <div 
+                className={`relative w-10 h-10 rounded-full border transition-all shadow-sm flex items-center justify-center cursor-pointer hover:scale-105 ${currentColor.id === 'custom' ? 'border-gray-800 scale-110 ring-2 ring-offset-2 ring-gray-300' : 'border-gray-200 hover:border-gray-300'}`}
+                style={{ 
+                    backgroundColor: currentColor.id === 'custom' ? '#f0f5fa' : '#ffffff'
+                }}
+                title="직접 색상 선택"
+            >
+                <input 
+                    type="color"
+                    value={currentColor.id === 'custom' ? currentColor.primary : '#00788c'}
+                    onChange={(e) => {
+                        const val = e.target.value;
+                        const adjustColor = (hex: string, percent: number): string => {
+                            let cleanHex = hex.replace(/^\s*#|\s*$/g, '');
+                            if (cleanHex.length === 3) {
+                              cleanHex = cleanHex.replace(/(.)/g, '$1$1');
+                            }
+                            let r = parseInt(cleanHex.substring(0, 2), 16);
+                            let g = parseInt(cleanHex.substring(2, 4), 16);
+                            let b = parseInt(cleanHex.substring(4, 6), 16);
+
+                            r = Math.min(255, Math.max(0, r + Math.round(percent * 2.55)));
+                            g = Math.min(255, Math.max(0, g + Math.round(percent * 2.55)));
+                            b = Math.min(255, Math.max(0, b + Math.round(percent * 2.55)));
+
+                            const rHex = r.toString(16).padStart(2, '0');
+                            const gHex = g.toString(16).padStart(2, '0');
+                            const bHex = b.toString(16).padStart(2, '0');
+
+                            return `#${rHex}${gHex}${bHex}`;
+                        };
+                        onColorSelect({
+                            id: 'custom',
+                            name: '사용자 지정',
+                            primary: val,
+                            secondary: adjustColor(val, 40),
+                            dark: adjustColor(val, -45)
+                        });
+                    }}
+                    className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
+                />
+                
+                {/* Paintbrush icon matching user image */}
+                <svg 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    fill="none" 
+                    viewBox="0 0 24 24" 
+                    strokeWidth="1.8" 
+                    stroke="currentColor" 
+                    className={`w-5 h-5 transition-colors ${currentColor.id === 'custom' ? 'text-slate-800' : 'text-slate-400'}`}
+                >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.53 16.122A3 3 0 0 0 13.5 20.38m-3.97-4.258 5.764-5.764L15 6.622l-1.242-.88 2.84-2.84a1.2 1.2 0 1 1 1.697 1.696L15.45 6.439l-.88-1.242-5.764 5.764M9.53 16.122a3 3 0 0 0-3.97-4.258m3.97 4.258H3" />
+                </svg>
+
+                {currentColor.id === 'custom' && (
+                    <div 
+                        className="absolute bottom-1 right-1 w-2.5 h-2.5 rounded-full border border-white shadow-sm"
+                        style={{ backgroundColor: currentColor.primary }}
+                    />
+                )}
+            </div>
         </div>
-        <h3 className="text-sm font-bold text-gray-700 flex items-center gap-2 mb-3"><RectangleGroupIcon className="w-5 h-5" /> 레이아웃 선택</h3>
-        <div className="flex gap-2 mb-2">
+
+        <h3 className="text-sm font-bold text-gray-700 flex items-center gap-2 mb-3">
+             <RectangleGroupIcon className="w-5 h-5" />
+             레이아웃 테마 선택
+        </h3>
+        <div className="grid grid-cols-4 gap-2">
              {layouts.map((layout, idx) => (
                  <button
                     key={layout.id}
                     onClick={() => onLayoutSelect(layout)}
-                    className={`flex-1 py-1.5 rounded border text-[10px] font-bold transition-all ${currentLayout.id === layout.id ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-600 border-gray-200'}`}
+                    className={`py-2 rounded-lg border text-xs font-bold transition-all flex flex-col items-center justify-center ${currentLayout.id === layout.id ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'}`}
                  >
-                     {idx + 1}
+                     <span className="block text-lg mb-0.5">{idx + 1}</span>
+                     <span className="text-[10px] text-center leading-tight whitespace-pre-wrap">{layout.name ? layout.name.replace(' ', '\n') : `타입 ${idx + 1}`}</span>
                  </button>
              ))}
         </div>
