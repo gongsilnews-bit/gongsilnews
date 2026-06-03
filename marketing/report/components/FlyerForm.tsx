@@ -229,6 +229,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
       <div className="grid grid-cols-3 gap-2.5 bg-gray-100/80 p-3 rounded-xl mb-6 shrink-0 shadow-inner">
           {[
               { id: 'all' as const, label: '전체' },
+              { id: 0, label: '0. 커버 & 엔딩' },
               { id: 1, label: '1. 개요' },
               { id: 2, label: '2. 매물설명 & 시세' },
               { id: 3, label: '3. 임대현황' },
@@ -236,15 +237,17 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
               { id: 5, label: '5. 입지' },
               { id: 6, label: '6. 로드맵' },
           ].map(tab => {
-              const visiblePages = info.visiblePages || [1, 2, 3, 4, 5, 6];
+              let visiblePages = [...(info.visiblePages || [0, 1, 2, 3, 4, 5, 6, 7])];
+              if (!visiblePages.includes(0)) visiblePages.push(0);
+              if (!visiblePages.includes(7)) visiblePages.push(7);
               
               let isVisible = false;
               let isAllSelected = false;
               if (tab.id === 'all') {
-                  isAllSelected = visiblePages.length === 6;
+                  isAllSelected = visiblePages.length >= 6;
                   isVisible = isAllSelected;
               } else {
-                  isVisible = visiblePages.includes(tab.id as number);
+                  isVisible = visiblePages.includes(tab.id as number) || (tab.id === 0 && (visiblePages.includes(0) || visiblePages.includes(7)));
               }
 
               return (
