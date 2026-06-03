@@ -339,7 +339,7 @@ const ReportPage = ({
                 {badgeText && (
                     <div className="flex items-center gap-4 h-full pb-2">
                         <div className="w-px h-8 bg-gray-600"></div>
-                        <span className={`text-2xl font-black tracking-widest ${pageNumber === 1 ? 'text-[var(--theme-primary)]' : 'text-white'}`}>
+                        <span className={`text-2xl font-black tracking-widest text-white`}>
                             {onUpdateBadge ? (
                                 <EditableText 
                                   value={badgeText} 
@@ -1003,7 +1003,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                 }
                             }}
                         />
-                        <div className="flex gap-4 border-l-4 border-[#cc5a27] pl-4">
+                        <div className="flex gap-4 border-l-4 pl-4" style={{ borderColor: colorTheme?.primary || '#cc5a27' }}>
                             {[1,2,3].map(i => (
                                 <div key={i} className="flex-1 bg-white border border-gray-100 rounded-lg p-4 text-center shadow-sm">
                                     <div className="text-xs text-gray-400 font-bold tracking-widest mb-2 uppercase">
@@ -1089,18 +1089,8 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                             </h3>
                             <ul className="space-y-3 mb-8">
                                 {info.highlights?.map((hl, i) => (
-                                    <GeditorWrapper
-                                        key={i}
-                                        tag="li"
-                                        onMoveUp={() => moveHighlightRow(i, 'up')}
-                                        onMoveDown={() => moveHighlightRow(i, 'down')}
-                                        onDelete={() => deleteHighlightRow(i)}
-                                        onDuplicate={addHighlightRow}
-                                        isFirst={i === 0}
-                                        isLast={i === info.highlights.length - 1}
-                                        className="flex gap-2 text-sm items-center w-full"
-                                    >
-                                        <span className="text-[#cc5a27] font-bold">•</span>
+                                    <li key={i} className="flex gap-2 text-sm items-center w-full">
+                                        <span className="font-bold" style={{ color: colorTheme?.primary || '#cc5a27' }}>•</span>
                                         <span className="w-full">
                                             <EditableText 
                                                 value={hl} 
@@ -1111,12 +1101,12 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                                                 }}
                                             />
                                         </span>
-                                    </GeditorWrapper>
+                                    </li>
                                 ))}
                             </ul>
                             
                             <div className="mt-auto">
-                                <div className="text-[10px] font-bold tracking-widest text-[#cc5a27] uppercase mb-1">
+                                <div className="text-[10px] font-bold tracking-widest uppercase mb-1" style={{ color: colorTheme?.primary || '#cc5a27' }}>
                                     <EditableText 
                                         value={(info as any).valuationAdvisoryTitle || "STRATEGIC ADVISORY"} 
                                         onChange={(val) => handleTextChange('valuationAdvisoryTitle', val)} 
@@ -2166,7 +2156,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                             list.length <= 4 ? 'grid-rows-2' : 'grid-rows-3'
                         }`}>
                             {list.map((item: any, idx: number) => (
-                                <div key={idx} className="bg-white border border-gray-200 rounded-2xl shadow-sm p-6 flex items-start gap-5 hover:shadow-md transition-shadow">
+                                <div key={idx} className="bg-white border border-gray-200 rounded-2xl shadow-sm p-6 flex items-center gap-5 hover:shadow-md transition-shadow h-full">
                                     <div className={`w-16 h-16 shrink-0 ${item.bg} rounded-xl border ${item.border} flex items-center justify-center cursor-text transition-colors hover:bg-black/5`}>
                                         <EditableText 
                                             value={item.icon} 
