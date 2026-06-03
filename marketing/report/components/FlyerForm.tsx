@@ -215,7 +215,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
       {/* Tab Content */}
       <div className="flex-1 overflow-y-auto pr-2 pb-10 space-y-6">
           
-          {(activeTab === 'all' || activeTab === 1) && (
+          {(activeTab === 1 || (activeTab === 'all' && (info.visiblePages || [1, 2, 3, 4, 5, 6]).includes(1))) && (
               <div className={`animate-fadeIn relative ${activeTab === 'all' ? 'max-h-[750px] overflow-hidden bg-white p-5 rounded-2xl shadow-sm border border-gray-200 mb-8 shrink-0' : 'space-y-6'}`}>
                   <div className="space-y-6">
                       {activeTab === 'all' && (
@@ -424,7 +424,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
               </div>
           )}
 
-          {(activeTab === 'all' || activeTab === 2) && (
+          {(activeTab === 2 || (activeTab === 'all' && (info.visiblePages || [1, 2, 3, 4, 5, 6]).includes(2))) && (
               <div className={`animate-fadeIn relative ${activeTab === 'all' ? 'max-h-[750px] overflow-hidden bg-white p-5 rounded-2xl shadow-sm border border-gray-200 mb-8 shrink-0' : 'space-y-6'}`}>
                   <div className="space-y-6">
                       {activeTab === 'all' && (
@@ -637,7 +637,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
               </div>
           )}
 
-          {(activeTab === 'all' || activeTab === 3) && (
+          {(activeTab === 3 || (activeTab === 'all' && (info.visiblePages || [1, 2, 3, 4, 5, 6]).includes(3))) && (
               <div className={`animate-fadeIn relative ${activeTab === 'all' ? 'max-h-[750px] overflow-hidden bg-white p-5 rounded-2xl shadow-sm border border-gray-200 mb-8 shrink-0' : 'space-y-6'}`}>
                   <div className="space-y-6">
                       {activeTab === 'all' && (
@@ -818,7 +818,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
               </div>
           )}
 
-          {(activeTab === 'all' || activeTab === 4) && (
+          {(activeTab === 4 || (activeTab === 'all' && (info.visiblePages || [1, 2, 3, 4, 5, 6]).includes(4))) && (
               <div className={`animate-fadeIn relative ${activeTab === 'all' ? 'max-h-[750px] overflow-hidden bg-white p-5 rounded-2xl shadow-sm border border-gray-200 mb-8 shrink-0' : 'space-y-6'}`}>
                   <div className="space-y-6">
                       {activeTab === 'all' && (
@@ -856,7 +856,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
               </div>
           )}
 
-          {(activeTab === 'all' || activeTab === 5) && (
+          {(activeTab === 5 || (activeTab === 'all' && (info.visiblePages || [1, 2, 3, 4, 5, 6]).includes(5))) && (
               <div className={`animate-fadeIn relative ${activeTab === 'all' ? 'max-h-[750px] overflow-hidden bg-white p-5 rounded-2xl shadow-sm border border-gray-200 mb-8 shrink-0' : 'space-y-6'}`}>
                   <div className="space-y-6">
                       {activeTab === 'all' && (
@@ -931,7 +931,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
               </div>
           )}
 
-          {(activeTab === 'all' || activeTab === 6) && (
+          {(activeTab === 6 || (activeTab === 'all' && (info.visiblePages || [1, 2, 3, 4, 5, 6]).includes(6))) && (
               <div className={`animate-fadeIn relative ${activeTab === 'all' ? 'max-h-[750px] overflow-hidden bg-white p-5 rounded-2xl shadow-sm border border-gray-200 mb-8 shrink-0' : 'space-y-6'}`}>
                   <div className="space-y-6">
                       {activeTab === 'all' && (
