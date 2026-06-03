@@ -429,7 +429,7 @@ export default function MobileHomeClient(props: Props) {
           color: "#fff", border: "none", boxShadow: "0 6px 20px rgba(29, 78, 216, 0.4)",
           cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
           padding: "0 18px", gap: "6px",
-          zIndex: 40,
+          zIndex: 100000,
           transition: "transform 0.15s ease",
         }}
         onMouseDown={(e) => { e.currentTarget.style.transform = "scale(0.92)"; }}
