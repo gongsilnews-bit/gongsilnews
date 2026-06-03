@@ -1080,6 +1080,8 @@ function MobileVacancyWrite() {
               <button type="button" onClick={()=>setAreaUnit("py")} style={{ padding:"6px 14px", fontSize:12, fontWeight:800, border:"none", cursor:"pointer", background: areaUnit==="py"?"#1a73e8":"#fff", color: areaUnit==="py"?"#fff":"#6b7280" }}>평</button>
             </div>
           </div>
+          {!(propertyType === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(subCategory) && tradeType === "매매") && (
+          <>
           <div style={{ display:"flex", gap:10, marginBottom:4 }}>
             <div style={{flex:1}}>
               <label style={labelStyle}>공급면적({areaUnit==="m2"?"m²":"평"})</label>
@@ -1102,6 +1104,8 @@ function MobileVacancyWrite() {
             <div style={{flex:1}}>{supplyM2 ? (areaUnit==="m2" ? `≈ ${(parseFloat(supplyM2)*0.3025).toFixed(1)}평` : `≈ ${parseFloat(supplyM2).toFixed(1)}m²`) : ""}</div>
             <div style={{flex:1}}>{exclusiveM2 ? (areaUnit==="m2" ? `≈ ${(parseFloat(exclusiveM2)*0.3025).toFixed(1)}평` : `≈ ${parseFloat(exclusiveM2).toFixed(1)}m²`) : ""}</div>
           </div>
+          </>
+          )}
           {(propertyType === "빌라·주택" || propertyType === "상가·사무실·건물·공장·토지") && tradeType === "매매" && (
             <>
               <div style={{ display:"flex", gap:10, marginBottom:4 }}>
@@ -1114,18 +1118,35 @@ function MobileVacancyWrite() {
                   )}
                 </div>
                 <div style={{flex:1}}>
-                  <label style={labelStyle}>용도지역</label>
-                  <select value={zoning} onChange={e=>setZoning(e.target.value)} style={inputStyle}>
-                    <option value="">선택</option>
-                    {["1종전용주거", "2종전용주거", "1종일반주거", "2종일반주거", "3종일반주거", "준주거", "중심상업", "일반상업", "근린상업", "유통상업", "보전녹지", "생산녹지", "자연녹지", "보전관리", "생산관리", "계획관리", "농림지역", "자연환경보전"].map(v => (
-                      <option key={v} value={v}>{v}</option>
-                    ))}
-                  </select>
+                  {propertyType === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(subCategory) && tradeType === "매매" ? (
+                    <>
+                      <label style={labelStyle}>연면적 ({areaUnit==="m2"?"m²":"평"})</label>
+                      {areaUnit==="m2" ? (
+                        <input type="number" value={supplyM2} onChange={e=>handleM2Change(e.target.value, setSupplyM2, setSupplyPy)} placeholder="84" style={inputStyle}/>
+                      ) : (
+                        <input type="number" value={supplyPy} onChange={e=>handlePyChange(e.target.value, setSupplyPy, setSupplyM2)} placeholder="25.4" style={inputStyle}/>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <label style={labelStyle}>용도지역</label>
+                      <select value={zoning} onChange={e=>setZoning(e.target.value)} style={inputStyle}>
+                        <option value="">선택</option>
+                        {["1종전용주거", "2종전용주거", "1종일반주거", "2종일반주거", "3종일반주거", "준주거", "중심상업", "일반상업", "근린상업", "유통상업", "보전녹지", "생산녹지", "자연녹지", "보전관리", "생산관리", "계획관리", "농림지역", "자연환경보전"].map(v => (
+                          <option key={v} value={v}>{v}</option>
+                        ))}
+                      </select>
+                    </>
+                  )}
                 </div>
               </div>
               <div style={{ display:"flex", gap:10, marginBottom:10, fontSize:12, color:"#1a73e8", fontWeight:600, padding:"0 2px" }}>
                 <div style={{flex:1}}>{landShareM2 ? (areaUnit==="m2" ? `≈ ${(parseFloat(landShareM2)*0.3025).toFixed(1)}평` : `≈ ${parseFloat(landShareM2).toFixed(1)}m²`) : ""}</div>
-                <div style={{flex:1}}></div>
+                <div style={{flex:1}}>
+                  {propertyType === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(subCategory) && tradeType === "매매" && supplyM2 ? (
+                    areaUnit==="m2" ? `≈ ${(parseFloat(supplyM2)*0.3025).toFixed(1)}평` : `≈ ${parseFloat(supplyM2).toFixed(1)}m²`
+                  ) : ""}
+                </div>
               </div>
               
               {subCategory === "토지" && (
