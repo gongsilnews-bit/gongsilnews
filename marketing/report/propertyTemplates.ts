@@ -216,17 +216,25 @@ export const buildOverviewTable = (
 
 /** 면적 표시 포맷 헬퍼 */
 const formatAreaDisplay = (v: any): string => {
-  const supply = v.supply_area_m2 || v.exclusive_area;
-  const exclusive = v.exclusive_area_m2 || v.net_area;
+  const supply = v.supply_m2;
+  const exclusive = v.exclusive_m2;
 
   if (supply && exclusive) {
-    const supplyPy = (parseFloat(supply) / 3.305785).toFixed(1);
-    const exclusivePy = (parseFloat(exclusive) / 3.305785).toFixed(1);
-    return `${parseFloat(supply).toFixed(0)}㎡(${supplyPy}평) / ${parseFloat(exclusive).toFixed(0)}㎡(${exclusivePy}평)`;
+    const supplyVal = parseFloat(supply);
+    const exclusiveVal = parseFloat(exclusive);
+    const supplyPy = (supplyVal / 3.3058).toFixed(1);
+    const exclusivePy = (exclusiveVal / 3.3058).toFixed(1);
+    return `${supplyVal.toFixed(0)}㎡(${supplyPy}평) / ${exclusiveVal.toFixed(0)}㎡(${exclusivePy}평)`;
   }
   if (supply) {
-    const py = (parseFloat(supply) / 3.305785).toFixed(1);
-    return `${parseFloat(supply).toFixed(0)}㎡(${py}평)`;
+    const val = parseFloat(supply);
+    const py = (val / 3.3058).toFixed(1);
+    return `${val.toFixed(0)}㎡(${py}평)`;
+  }
+  if (exclusive) {
+    const val = parseFloat(exclusive);
+    const py = (val / 3.3058).toFixed(1);
+    return `${val.toFixed(0)}㎡(${py}평)`;
   }
   return '';
 };
