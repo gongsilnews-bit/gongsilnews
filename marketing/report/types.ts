@@ -154,6 +154,7 @@ export interface PropertyInfo {
   hideRentRoll?: boolean;
   hideRoadmap?: boolean;
   propertyType?: 'commercial_sales' | 'commercial_rent' | 'residential' | 'other';
+  propertyCategory?: 'apartment' | 'officetel' | 'building' | 'shop' | 'office' | 'land' | 'house' | 'studio';
   visiblePages?: number[];
 }
 

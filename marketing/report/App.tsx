@@ -6,6 +6,7 @@ import FlyerCanvas from './components/FlyerCanvas';
 import TableEditorModal from './components/TableEditorModal';
 import { generateFlyerCopy, fileToGenerativePart, extractPropertyInfoFromImages, extractAgentInfoFromImage, extractComplexInfoFromImage } from './services/geminiService';
 import { FlyerState, PropertyInfo, GeneratedContent, FlyerColor, FlyerLayout } from './types';
+import { detectPropertyCategory, buildOverviewTable } from './propertyTemplates';
 import { ArrowDownTrayIcon, CodeBracketIcon, XMarkIcon, CheckIcon } from '@heroicons/react/24/solid';
 
 export const COLORS: FlyerColor[] = [
@@ -305,7 +306,7 @@ const uploadImageToServer = async (file: File | Blob, vacancyId: string): Promis
   }
 };
 
-const convertOverviewTableToArray = (tbl: any): { label: string; value: string }[] => {
+const convertOverviewTableToArray = (tbl: any, category?: string, transactionType?: string): { label: string; value: string }[] => {
   if (Array.isArray(tbl)) return tbl;
   if (tbl && typeof tbl === 'object') {
     return [
@@ -320,17 +321,12 @@ const convertOverviewTableToArray = (tbl: any): { label: string; value: string }
       { label: "준공연도", value: tbl.completionYear || "" },
     ].filter(row => row.value !== undefined && row.value !== null);
   }
-  return [
-    { label: "소재지", value: "" },
-    { label: "용도지역", value: "" },
-    { label: "대지면적", value: "" },
-    { label: "연면적", value: "" },
-    { label: "건물규모", value: "" },
-    { label: "주용도", value: "" },
-    { label: "주차대수", value: "" },
-    { label: "승강기", value: "" },
-    { label: "준공연도", value: "" },
-  ];
+  // 카테고리가 주어지면 해당 템플릿의 필드명 사용
+  const detected = detectPropertyCategory(category);
+  const isSale = !transactionType || transactionType === '매매';
+  const { getOverviewTemplate } = require('./propertyTemplates');
+  const template = getOverviewTemplate(detected, isSale);
+  return template.map((f: any) => ({ label: f.label, value: '' }));
 };
 
 const mergeStateWithDefaults = (loaded: any): FlyerState => {
@@ -734,6 +730,7 @@ function App() {
           address: autoAddress || "공실 매물 정보",
           subTitle: `${v.sub_category || v.property_type || "프리미엄"} | ${v.direction || "방향 없음"} | ${areaDisplay}`,
           transactionType: v.trade_type || "월세",
+          propertyCategory: detectPropertyCategory(v.sub_category, v.property_type),
           priceMain: formatAmount(v.deposit) || "",
           priceSub: v.monthly_rent ? `${Math.round(v.monthly_rent / 10000)}만` : "",
           managementFee: v.maintenance_fee ? `${Math.round(v.maintenance_fee / 10000)}만원` : "없음",
@@ -758,6 +755,11 @@ function App() {
             page1: getEnglishTradeType(v.trade_type)
           },
 
+          overviewTable: buildOverviewTable(
+            v,
+            detectPropertyCategory(v.sub_category, v.property_type),
+            (v.trade_type || '매매') === '매매'
+          ),
           noticeTitle: "PREMIUM LISTING DETAIL",
           noticeContent: v.description || "상세 설명이 등록되지 않았습니다.",
           sections: newSections

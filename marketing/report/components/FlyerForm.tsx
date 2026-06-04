@@ -313,17 +313,17 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                           {(() => {
                               const tbl = Array.isArray(info.overviewTable) 
                                   ? info.overviewTable 
-                                  : [
-                                      { label: "소재지", value: (info.overviewTable as any)?.location || "" },
-                                      { label: "용도지역", value: (info.overviewTable as any)?.zoning || "" },
-                                      { label: "대지면적", value: (info.overviewTable as any)?.landArea || "" },
-                                      { label: "연면적", value: (info.overviewTable as any)?.totalArea || "" },
-                                      { label: "건물규모", value: (info.overviewTable as any)?.buildingScale || "" },
-                                      { label: "주용도", value: (info.overviewTable as any)?.mainPurpose || "" },
-                                      { label: "주차대수", value: (info.overviewTable as any)?.parking || "" },
-                                      { label: "승강기", value: (info.overviewTable as any)?.elevator || "" },
-                                      { label: "준공연도", value: (info.overviewTable as any)?.completionYear || "" },
-                                  ];
+                                  : (() => {
+                                      const { detectPropertyCategory, getOverviewTemplate } = require('../../propertyTemplates');
+                                      const cat = detectPropertyCategory(info.propertyCategory);
+                                      const isSale = !info.transactionType || info.transactionType === '매매';
+                                      const template = getOverviewTemplate(cat, isSale);
+                                      const tblObj = info.overviewTable as any;
+                                      return template.map((f: any) => ({
+                                        label: f.label,
+                                        value: (tblObj && f.dataKey ? tblObj[f.dataKey] : '') || ''
+                                      }));
+                                    })();
                               
                               return (
                                   <>
