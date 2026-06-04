@@ -431,7 +431,7 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
               
               <div className="w-full flex justify-center mt-32 z-20 relative pointer-events-auto">
                 <h2 className={`text-6xl font-black text-white tracking-widest uppercase drop-shadow-xl text-center ${headingFont}`}>
-                  <EditableText value={info.coverStatusText || "FOR SALE"} onChange={(v) => hc('coverStatusText', v)} className="!w-auto text-center" />
+                  <EditableText value={info.coverStatusText || (info.transactionType && ['월세', '전세', '단기임대', '단기'].includes(info.transactionType) ? "FOR RENT" : "FOR SALE")} onChange={(v) => hc('coverStatusText', v)} className="!w-auto text-center" />
                 </h2>
               </div>
 
