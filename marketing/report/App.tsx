@@ -1126,7 +1126,7 @@ function App() {
     }
 
     // 2. 공유 고유 URL 주소 빌드
-    const shareUrl = `${window.location.origin}/flyer/${vacancyId}.html`;
+    const shareUrl = `${window.location.origin}/flyer/${vacancyId}`;
     
     // 3. 브라우저 클립보드 복사
     try {
