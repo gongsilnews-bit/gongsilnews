@@ -202,7 +202,14 @@ export function YearFilterPanel({ filters, onFilterChange }: Props) {
   );
 }
 
-export function ThemeFilterPanel({ filters, onFilterChange }: Props) {
+interface ThemeProps {
+  filters: FilterState;
+  onFilterChange: (filters: Partial<FilterState>) => void;
+  presets?: string[];
+}
+
+export function ThemeFilterPanel({ filters, onFilterChange, presets }: ThemeProps) {
+  const finalPresets = presets || THEME_PRESETS;
   const toggleTheme = (t: string) => {
     const arr = filters.themes;
     const newArr = arr.includes(t) ? arr.filter(x => x !== t) : [...arr, t];
@@ -211,7 +218,7 @@ export function ThemeFilterPanel({ filters, onFilterChange }: Props) {
   return (
     <div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "20px" }}>
-        {THEME_PRESETS.map(t => (
+        {finalPresets.map(t => (
           <button type="button" key={t} onClick={() => toggleTheme(t)} style={themeBtnStyle(filters.themes.includes(t))}>
             # {t} {filters.themes.includes(t) && "✓"}
           </button>

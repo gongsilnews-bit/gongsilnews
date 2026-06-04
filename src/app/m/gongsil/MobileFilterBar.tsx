@@ -23,6 +23,32 @@ interface MobileFilterBarProps {
 
 const TRADE_TYPES = ["매매", "전세", "월세", "단기"];
 
+const RESIDENTIAL_TYPES = ["아파트", "빌라/연립", "빌라/주택", "빌라·주택", "오피스텔", "원룸", "1.5룸", "투룸", "단독/다가구", "전원주택", "상가주택"];
+const COMMERCIAL_TYPES = ["상가", "사무실", "빌딩/사무실", "건물", "공장/창고", "지식산업센터"];
+const LAND_TYPES = ["토지"];
+
+const RESIDENTIAL_THEMES = ['급매', '추천공실광고', '신축급', '올수리', '한강뷰', '역세권', '풀옵션', '가성비', '단기임대', '주차편리', '대로변안전', '여성안심', '애완견가능', '복층', '마당있음', '투자용'];
+const COMMERCIAL_THEMES = ['급매', '추천공실광고', '신축급', '올수리', '역세권', '가성비', '주차편리', '무권리', '코너자리', '유동인구많음', '인테리어잘됨', '층고높음', '테라스', '투자용'];
+const LAND_THEMES = ['급매', '추천공실광고', '가성비', '투자용'];
+
+const getSelectedGroup = (propertyTypes: string[]) => {
+  if (propertyTypes.length === 0) return "NONE";
+  const hasResidential = propertyTypes.some(t => RESIDENTIAL_TYPES.includes(t));
+  const hasCommercial = propertyTypes.some(t => COMMERCIAL_TYPES.includes(t));
+  const hasLand = propertyTypes.some(t => LAND_TYPES.includes(t));
+  
+  let groupCount = 0;
+  if (hasResidential) groupCount++;
+  if (hasCommercial) groupCount++;
+  if (hasLand) groupCount++;
+  
+  if (groupCount > 1) return "MIXED";
+  if (hasResidential) return "RESIDENTIAL";
+  if (hasCommercial) return "COMMERCIAL";
+  if (hasLand) return "LAND";
+  return "NONE";
+};
+
 export default function MobileFilterBar({ vacancies, filteredCount, filters, onFilterChange, onLocationMove, onShowList, kakaoMapRef, locLabel, setLocLabel, activeMode }: MobileFilterBarProps) {
   const [activePanel, setActivePanel] = useState<string | null>(null);
   const [fullFilterOpen, setFullFilterOpen] = useState(false);
@@ -44,6 +70,13 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
 
   // Temp filters for full filter panel
   const [tempFilters, setTempFilters] = useState<FilterState>(filters);
+
+  const tempGroup = getSelectedGroup(tempFilters.propertyTypes);
+  const showTempPrice = tempGroup === "RESIDENTIAL" || tempGroup === "COMMERCIAL" || tempGroup === "LAND";
+  const showTempArea = tempGroup === "RESIDENTIAL" || tempGroup === "COMMERCIAL" || tempGroup === "LAND";
+  const showTempFloor = tempGroup === "RESIDENTIAL" || tempGroup === "COMMERCIAL";
+  const showTempYear = tempGroup === "RESIDENTIAL" || tempGroup === "COMMERCIAL";
+  const showTempTheme = tempGroup === "RESIDENTIAL" || tempGroup === "COMMERCIAL" || tempGroup === "LAND";
 
   useEffect(() => { setTempFilters(filters); }, [filters]);
   useEffect(() => { if (searchOpen && searchInputRef.current) searchInputRef.current.focus(); }, [searchOpen]);
@@ -241,7 +274,14 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
       {activePanel === "commission" && renderSheet("중개보수", <CommissionFilterPanel filters={filters} onFilterChange={onFilterChange} />)}
 
       {/* ═══ 테마 시트 ═══ */}
-      {activePanel === "theme" && renderSheet("테마 키워드", <ThemeFilterPanel filters={filters} onFilterChange={onFilterChange} />)}
+      {activePanel === "theme" && (() => {
+        const currentGroup = getSelectedGroup(filters.propertyTypes);
+        const presets = 
+          currentGroup === "RESIDENTIAL" ? RESIDENTIAL_THEMES :
+          currentGroup === "COMMERCIAL" ? COMMERCIAL_THEMES :
+          currentGroup === "LAND" ? LAND_THEMES : undefined;
+        return renderSheet("테마 키워드", <ThemeFilterPanel filters={filters} onFilterChange={onFilterChange} presets={presets} />);
+      })()}
 
       {/* ═══ 풀스크린 통합 필터 ═══ */}
       {fullFilterOpen && (
@@ -279,28 +319,36 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
             </div>
             
             {/* 가격 */}
-            <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
-              <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>가격</div>
-              <PriceFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} />
-            </div>
+            {showTempPrice && (
+              <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
+                <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>가격</div>
+                <PriceFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} />
+              </div>
+            )}
 
             {/* 면적 */}
-            <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
-              <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>면적</div>
-              <AreaFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} />
-            </div>
+            {showTempArea && (
+              <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
+                <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>면적</div>
+                <AreaFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} />
+              </div>
+            )}
 
             {/* 층수 */}
-            <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
-              <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>층수</div>
-              <FloorFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} />
-            </div>
+            {showTempFloor && (
+              <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
+                <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>층수</div>
+                <FloorFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} />
+              </div>
+            )}
 
             {/* 사용승인일 */}
-            <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
-              <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>사용승인일 (연식)</div>
-              <YearFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} />
-            </div>
+            {showTempYear && (
+              <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
+                <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>사용승인일 (연식)</div>
+                <YearFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} />
+              </div>
+            )}
 
             {/* 등록자 유형 */}
             <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
@@ -315,10 +363,20 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
             </div>
 
             {/* 테마 */}
-            <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
-              <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>테마 키워드</div>
-              <ThemeFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} />
-            </div>
+            {showTempTheme && (
+              <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
+                <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>테마 키워드</div>
+                <ThemeFilterPanel 
+                  filters={tempFilters} 
+                  onFilterChange={handleTempFilterChange} 
+                  presets={
+                    tempGroup === "RESIDENTIAL" ? RESIDENTIAL_THEMES :
+                    tempGroup === "COMMERCIAL" ? COMMERCIAL_THEMES :
+                    tempGroup === "LAND" ? LAND_THEMES : undefined
+                  }
+                />
+              </div>
+            )}
           </div>
 
           {/* 하단 CTA */}
