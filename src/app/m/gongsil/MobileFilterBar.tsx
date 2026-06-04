@@ -238,12 +238,12 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
               </button>
             )}
             {activeMode !== "경매" && (
-              <button onClick={() => setActivePanel(activePanel === "owner" ? null : "owner")} style={pillStyle(activePanel === "owner" || filters.ownerRole !== null)}>
+              <button onClick={() => setActivePanel(activePanel === "owner" ? null : "owner")} style={pillStyle(activePanel === "owner" || filters.ownerRole !== 'NONE')}>
                 {ownerLabel}
               </button>
             )}
             {activeMode !== "경매" && (
-              <button onClick={() => setActivePanel(activePanel === "commission" ? null : "commission")} style={pillStyle(activePanel === "commission" || filters.commissionType !== null)}>
+              <button onClick={() => setActivePanel(activePanel === "commission" ? null : "commission")} style={pillStyle(activePanel === "commission" || filters.commissionType !== 'NONE')}>
                 {commissionLabel}
               </button>
             )}
