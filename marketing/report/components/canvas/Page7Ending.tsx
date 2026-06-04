@@ -61,11 +61,18 @@ const DirectionsBox = ({ info, hc, qrCodeUrl, className = "bg-white", dark = fal
   </div>
 );
 
-const PhoneBox = ({ info, hc, dark = false }: { info: PropertyInfo, hc: any, dark?: boolean }) => (
-  <div className="flex flex-col justify-center py-2">
-    <div className="flex items-center gap-3">
+const PhoneBox = ({ info, hc, dark = false, stacked = false }: { info: PropertyInfo, hc: any, dark?: boolean, stacked?: boolean }) => (
+  <div className="flex flex-col justify-center py-2 w-full">
+    {stacked && (
+       <div className={`text-[13px] ${dark ? 'text-white/50' : 'text-[var(--theme-primary)]'} font-extrabold tracking-widest mb-1`}>
+         문의하기
+       </div>
+    )}
+    <div className={`flex items-center gap-3 ${stacked ? 'w-full' : ''}`}>
       <div className={`text-[30px] font-black ${dark ? 'text-[var(--theme-secondary)]' : 'text-[var(--theme-primary)]'} flex-1 tracking-tight flex items-center`}>
-        <span className={`text-[13px] ${dark ? 'text-white/50' : 'text-[var(--theme-primary)]'} font-extrabold tracking-widest mr-3 whitespace-nowrap shrink-0`}>문의하기</span>
+        {!stacked && (
+          <span className={`text-[13px] ${dark ? 'text-white/50' : 'text-[var(--theme-primary)]'} font-extrabold tracking-widest mr-3 whitespace-nowrap shrink-0`}>문의하기</span>
+        )}
         <EditableText value={info.agentMobile || "010-5554-4444"} onChange={(v) => hc('agentMobile', v)} />
       </div>
       <div className="flex gap-2 shrink-0">
@@ -145,8 +152,8 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
                   
                   <div className="w-5/12 flex flex-col justify-center">
                     <div className="bg-white border border-gray-100 p-8 rounded-xl flex-1 flex flex-col justify-center shadow-sm">
-                       <div className="flex justify-center mb-6">
-                         <PhoneBox info={info} hc={hc} />
+                       <div className="flex justify-center mb-6 w-full">
+                         <PhoneBox info={info} hc={hc} stacked={true} />
                        </div>
                        <div className="w-full h-px bg-gray-100 mb-6"></div>
                        <SnsBox info={info} hc={hc} />
