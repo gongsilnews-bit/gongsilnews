@@ -34,22 +34,6 @@ export default function PropertyTypeFilterPanel({ filters, onFilterChange, PROPE
 
   return (
     <div>
-      {/* 🚀 [대표님 지침] 광고유형 최상단 단일 전체선택 토글 버튼 장착 */}
-      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "14px" }}>
-        <button 
-          onClick={handleToggleAll} 
-          style={{ 
-            background: "none", border: "none", fontSize: "13px", fontWeight: 800, 
-            cursor: "pointer", padding: "6px 12px", borderRadius: "6px",
-            backgroundColor: isAllSelected ? "#f0f7ff" : "#f3f4f6",
-            color: isAllSelected ? "#1a73e8" : "#4b5563",
-            transition: "all 0.15s ease"
-          }}
-        >
-          {isAllSelected ? "✓ 전체선택" : "전체선택"}
-        </button>
-      </div>
-
       {PROPERTY_TYPES.map(g => {
         const isGroupAllSelected = g.items.every(item => filters.propertyTypes.includes(item));
         const toggleGroup = () => {
@@ -72,9 +56,9 @@ export default function PropertyTypeFilterPanel({ filters, onFilterChange, PROPE
               <button 
                 type="button" 
                 onClick={toggleGroup} 
-                style={gridBtnStyle(isGroupAllSelected)}
+                style={{ ...gridBtnStyle(isGroupAllSelected), fontSize: "14px" }}
               >
-                전체
+                {isGroupAllSelected ? "전체해제" : "전체선택"}
               </button>
               {g.items.map(item => (
                 <button 
