@@ -11,6 +11,7 @@ import {
   DocumentTextIcon,
   PlayCircleIcon
 } from '@heroicons/react/24/solid';
+import ErrorBoundary from '../shared/ErrorBoundary';
 
 interface Props {
   info: PropertyInfo;
@@ -28,7 +29,7 @@ interface Props {
 const MapBlock = ({ info, className = "h-[290px]" }: { info: PropertyInfo, className?: string }) => (
   <div className={`w-full overflow-hidden relative ${className}`}>
     {info.agentAddress ? (
-      <KakaoMap address={info.agentAddress} />
+      <KakaoMap address={String(info.agentAddress)} />
     ) : (
       <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100 text-gray-400 font-bold text-sm">
         <MapPinIcon className="w-8 h-8 text-gray-300 mb-2" />
@@ -68,10 +69,10 @@ const PhoneBox = ({ info, hc, dark = false }: { info: PropertyInfo, hc: any, dar
         <EditableText value={info.agentMobile || "010-5554-4444"} onChange={(v) => hc('agentMobile', v)} />
       </div>
       <div className="flex gap-2 shrink-0">
-        <a href={`tel:${(info.agentMobile || "010-5554-4444").replace(/[^0-9]/g, '')}`} onClick={(e) => e.preventDefault()} className={`w-10 h-10 rounded-full ${dark ? 'bg-[var(--theme-secondary)] text-[var(--theme-dark)]' : 'bg-[var(--theme-primary)] text-white'} flex items-center justify-center shadow-md hover:opacity-80 transition-opacity hover:-translate-y-0.5 active:translate-y-0`} title="전화걸기">
+        <a href={`tel:${String(info.agentMobile || "010-5554-4444").replace(/[^0-9]/g, '')}`} onClick={(e) => e.preventDefault()} className={`w-10 h-10 rounded-full ${dark ? 'bg-[var(--theme-secondary)] text-[var(--theme-dark)]' : 'bg-[var(--theme-primary)] text-white'} flex items-center justify-center shadow-md hover:opacity-80 transition-opacity hover:-translate-y-0.5 active:translate-y-0`} title="전화걸기">
           <PhoneIcon className="w-4 h-4" />
         </a>
-        <a href={`sms:${(info.agentMobile || "010-5554-4444").replace(/[^0-9]/g, '')}`} onClick={(e) => e.preventDefault()} className={`w-10 h-10 rounded-full ${dark ? 'bg-[var(--theme-secondary)] text-[var(--theme-dark)]' : 'bg-[var(--theme-primary)] text-white'} flex items-center justify-center shadow-md hover:opacity-80 transition-opacity hover:-translate-y-0.5 active:translate-y-0`} title="문자보내기">
+        <a href={`sms:${String(info.agentMobile || "010-5554-4444").replace(/[^0-9]/g, '')}`} onClick={(e) => e.preventDefault()} className={`w-10 h-10 rounded-full ${dark ? 'bg-[var(--theme-secondary)] text-[var(--theme-dark)]' : 'bg-[var(--theme-primary)] text-white'} flex items-center justify-center shadow-md hover:opacity-80 transition-opacity hover:-translate-y-0.5 active:translate-y-0`} title="문자보내기">
           <ChatBubbleOvalLeftEllipsisIcon className="w-4 h-4" />
         </a>
       </div>
@@ -84,20 +85,20 @@ const SnsBox = ({ info, hc, dark = false }: { info: PropertyInfo, hc: any, dark?
     <div className="flex gap-6 w-full">
       <div className="flex items-center gap-2 flex-1 group/sns">
         <DocumentTextIcon className={`w-5 h-5 ${dark ? 'text-white/30' : 'text-gray-300'} group-hover/sns:${dark ? 'text-[var(--theme-secondary)]' : 'text-[var(--theme-primary)]'} transition-colors shrink-0`} />
-        <a href={info.contactBlog ? (info.contactBlog.startsWith('http') ? info.contactBlog : `https://${info.contactBlog}`) : '#'} target="_blank" rel="noopener noreferrer" onClick={(e) => { if (!info.contactBlog) e.preventDefault(); }} className={`w-full hover:${dark ? 'text-white' : 'text-[var(--theme-primary)]'} transition-colors`}>
-          <EditableText value={info.contactBlog ? info.contactBlog.replace('https://', '') : ""} placeholder="블로그 (미입력시 숨김)" onChange={(v) => hc('contactBlog', v)} className="w-full" />
+        <a href={info.contactBlog ? (String(info.contactBlog).startsWith('http') ? info.contactBlog : `https://${info.contactBlog}`) : '#'} target="_blank" rel="noopener noreferrer" onClick={(e) => { if (!info.contactBlog) e.preventDefault(); }} className={`w-full hover:${dark ? 'text-white' : 'text-[var(--theme-primary)]'} transition-colors`}>
+          <EditableText value={info.contactBlog ? String(info.contactBlog).replace('https://', '') : ""} placeholder="블로그 (미입력시 숨김)" onChange={(v) => hc('contactBlog', v)} className="w-full" />
         </a>
       </div>
       <div className="flex items-center gap-2 flex-1 group/sns">
         <PlayCircleIcon className={`w-5 h-5 ${dark ? 'text-white/30' : 'text-gray-300'} group-hover/sns:${dark ? 'text-[var(--theme-secondary)]' : 'text-[var(--theme-primary)]'} transition-colors shrink-0`} />
-        <a href={info.contactYoutube ? (info.contactYoutube.startsWith('http') ? info.contactYoutube : `https://${info.contactYoutube}`) : '#'} target="_blank" rel="noopener noreferrer" onClick={(e) => { if (!info.contactYoutube) e.preventDefault(); }} className={`w-full hover:${dark ? 'text-white' : 'text-[var(--theme-primary)]'} transition-colors`}>
-          <EditableText value={info.contactYoutube ? info.contactYoutube.replace('https://', '') : ""} placeholder="유튜브 (미입력시 숨김)" onChange={(v) => hc('contactYoutube', v)} className="w-full" />
+        <a href={info.contactYoutube ? (String(info.contactYoutube).startsWith('http') ? info.contactYoutube : `https://${info.contactYoutube}`) : '#'} target="_blank" rel="noopener noreferrer" onClick={(e) => { if (!info.contactYoutube) e.preventDefault(); }} className={`w-full hover:${dark ? 'text-white' : 'text-[var(--theme-primary)]'} transition-colors`}>
+          <EditableText value={info.contactYoutube ? String(info.contactYoutube).replace('https://', '') : ""} placeholder="유튜브 (미입력시 숨김)" onChange={(v) => hc('contactYoutube', v)} className="w-full" />
         </a>
       </div>
       <div className="flex items-center gap-2 flex-1 group/sns">
         <GlobeAltIcon className={`w-5 h-5 ${dark ? 'text-white/30' : 'text-gray-300'} group-hover/sns:${dark ? 'text-[var(--theme-secondary)]' : 'text-[var(--theme-primary)]'} transition-colors shrink-0`} />
-        <a href={info.contactWebsite ? (info.contactWebsite.startsWith('http') ? info.contactWebsite : `https://${info.contactWebsite}`) : '#'} target="_blank" rel="noopener noreferrer" onClick={(e) => { if (!info.contactWebsite) e.preventDefault(); }} className={`w-full hover:${dark ? 'text-white' : 'text-[var(--theme-primary)]'} transition-colors`}>
-          <EditableText value={info.contactWebsite ? info.contactWebsite.replace('https://', '') : ""} placeholder="웹사이트 (미입력시 숨김)" onChange={(v) => hc('contactWebsite', v)} className="w-full" />
+        <a href={info.contactWebsite ? (String(info.contactWebsite).startsWith('http') ? info.contactWebsite : `https://${info.contactWebsite}`) : '#'} target="_blank" rel="noopener noreferrer" onClick={(e) => { if (!info.contactWebsite) e.preventDefault(); }} className={`w-full hover:${dark ? 'text-white' : 'text-[var(--theme-primary)]'} transition-colors`}>
+          <EditableText value={info.contactWebsite ? String(info.contactWebsite).replace('https://', '') : ""} placeholder="웹사이트 (미입력시 숨김)" onChange={(v) => hc('contactWebsite', v)} className="w-full" />
         </a>
       </div>
     </div>
@@ -110,14 +111,15 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
   const bodyFont = layoutTheme?.bodyFont || 'font-sans';
   const layoutType = layoutTheme?.type || 'type1';
 
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(info.agentMapUrl || `https://map.naver.com/p/search/${(info.agentAddress || '서울 강남구 논현동').split('\n')[0]}`)}`;
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(info.agentMapUrl || `https://map.naver.com/p/search/${String(info.agentAddress || '서울 강남구 논현동').split('\n')[0]}`)}`;
 
   return (
-    <div 
-      data-export-id="page-7" 
-      className={`relative bg-white w-[1122px] h-[794px] overflow-hidden flex flex-col shadow-2xl mb-8 ${bodyFont}`}
-      style={{ pageBreakAfter: 'always' }}
-    >
+    <ErrorBoundary>
+      <div 
+        data-export-id="page-7" 
+        className={`relative bg-white w-[1122px] h-[794px] overflow-hidden flex flex-col shadow-2xl mb-8 ${bodyFont}`}
+        style={{ pageBreakAfter: 'always' }}
+      >
       {isHidden && (
         <div className="absolute top-0 left-0 right-0 z-50 bg-red-500/90 text-white py-1.5 text-center text-sm font-bold shadow-md tracking-wider backdrop-blur-sm">
           ⚠️ 현재 출력(PDF/인쇄)에서 제외된 페이지입니다. (좌측 폼 메뉴에서 설정을 변경할 수 있습니다.)
@@ -308,7 +310,8 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
           </div>
         );
       })()}
-    </div>
+      </div>
+    </ErrorBoundary>
   );
 };
 
