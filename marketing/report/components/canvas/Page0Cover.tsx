@@ -211,19 +211,13 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
             {/* Left side: Content */}
             <div className="w-7/12 p-20 flex flex-col justify-between h-full bg-[#f8fafc] border-r border-gray-200">
               <div className="mt-8">
-                <span className="text-[var(--theme-primary)] text-xs font-black tracking-[0.3em] uppercase block mb-3">
+                <span className="text-[var(--theme-primary)] text-xs font-black tracking-[0.3em] uppercase block mb-4">
                   <EditableText value={info.coverSubtitle || "부동산 투자 분석 보고서"} onChange={(v) => hc('coverSubtitle', v)} />
                 </span>
-                <h1 className={`text-4xl font-extrabold text-gray-900 tracking-tight leading-none ${headingFont}`}>
-                  <EditableText value={info.coverTitle || "INVESTMENT MEMORANDUM"} onChange={(v) => hc('coverTitle', v)} />
-                </h1>
-                <div className="w-20 h-1 bg-[var(--theme-primary)] mt-6"></div>
-              </div>
-
-              <div className="my-6">
-                <h2 className="text-2xl font-extrabold text-gray-800 tracking-tight leading-relaxed max-w-[450px]">
+                <h1 className={`text-4xl font-extrabold text-gray-900 tracking-tight leading-[1.3] ${headingFont} max-w-[500px]`}>
                   <EditableText value={info.address || "서울특별시 강남구 논현동 매매 안내서"} onChange={(v) => hc('address', v)} />
-                </h2>
+                </h1>
+                <div className="w-20 h-1 bg-[var(--theme-primary)] mt-8"></div>
               </div>
 
               <div className="border-t border-gray-200 pt-8 flex justify-between items-end">
