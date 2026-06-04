@@ -1259,7 +1259,7 @@ function MobileVacancyWrite() {
               <label style={labelStyle}>해당층 <span style={{fontSize:11, color:"#9ca3af", fontWeight:400}}>(직접입력)</span></label>
               <input type="text" inputMode="numeric" value={currentFloor} onChange={e=>setCurrentFloor(e.target.value)} placeholder="예: 3" style={{...inputStyle, marginBottom: 8}}/>
               <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-                {(propertyType === "빌라·주택" ? ['지하', '저층', '중층', '고층', '옥탑'] : ['저층', '중층', '고층']).map(f => (
+                {((propertyType === "빌라·주택" || propertyType === "원룸·투룸(풀옵션)") ? ['지하', '저층', '중층', '고층', '옥탑'] : ['저층', '중층', '고층']).map(f => (
                   <button 
                     key={f} 
                     type="button" 

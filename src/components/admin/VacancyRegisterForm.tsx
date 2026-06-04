@@ -1546,7 +1546,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                     {(!currentFloor || !isNaN(Number(currentFloor))) && <span style={{ color: textSecondary, fontSize: 14, flexShrink: 0 }}>층</span>}
                   </div>
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                    {(propertyType === "빌라·주택" ? ['지하', '저층', '중층', '고층', '옥탑'] : ['저층', '중층', '고층']).map(f => (
+                    {((propertyType === "빌라·주택" || propertyType === "원룸·투룸(풀옵션)") ? ['지하', '저층', '중층', '고층', '옥탑'] : ['저층', '중층', '고층']).map(f => (
                       <button
                         key={f}
                         type="button"
