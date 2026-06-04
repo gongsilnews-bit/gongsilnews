@@ -1488,6 +1488,24 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                 )}
               </div>
             )}
+            {tradeType === "매매" && ((propertyType === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(subCategory)) || (propertyType === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고"].includes(subCategory))) && (
+              <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
+                <div style={{ flex: 1 }}>
+                  <label style={labelStyle}>건폐율</label>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <input type="number" placeholder="예: 60" value={buildingCoverage} onChange={(e) => setBuildingCoverage(e.target.value)} style={inputStyle} />
+                    <span style={{ color: textSecondary, fontSize: 14, flexShrink: 0 }}>%</span>
+                  </div>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={labelStyle}>용적률</label>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <input type="number" placeholder="예: 200" value={floorAreaRatio} onChange={(e) => setFloorAreaRatio(e.target.value)} style={inputStyle} />
+                    <span style={{ color: textSecondary, fontSize: 14, flexShrink: 0 }}>%</span>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* 공통 필드: 해당층 / 전체층 (단독 건물 매매 시 지상/지하 층수 및 도로 폭으로 대체) */}
             {(tradeType === "매매" && ["단독/다가구", "전원주택", "상가주택", "빌딩/건물", "공장/창고", "토지", "상가건물", "상가/업무"].includes(subCategory || "") || (propertyType === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고", "토지"].includes(subCategory || ""))) ? (
@@ -1514,22 +1532,6 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <input type="number" placeholder="예: 6" value={roadWidth} onChange={(e) => setRoadWidth(e.target.value)} style={inputStyle} />
                       <span style={{ color: textSecondary, fontSize: 14, flexShrink: 0 }}>m</span>
-                    </div>
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <label style={labelStyle}>건폐율</label>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <input type="number" placeholder="예: 60" value={buildingCoverage} onChange={(e) => setBuildingCoverage(e.target.value)} style={inputStyle} />
-                      <span style={{ color: textSecondary, fontSize: 14, flexShrink: 0 }}>%</span>
-                    </div>
-                  </div>
-                </div>
-                <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
-                  <div style={{ flex: 1 }}>
-                    <label style={labelStyle}>용적률</label>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <input type="number" placeholder="예: 200" value={floorAreaRatio} onChange={(e) => setFloorAreaRatio(e.target.value)} style={inputStyle} />
-                      <span style={{ color: textSecondary, fontSize: 14, flexShrink: 0 }}>%</span>
                     </div>
                   </div>
                   <div style={{ flex: 1 }}></div>

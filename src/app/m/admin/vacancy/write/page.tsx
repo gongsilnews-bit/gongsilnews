@@ -1220,20 +1220,6 @@ function MobileVacancyWrite() {
                   ) : ""}
                 </div>
               </div>
-              
-              {subCategory === "토지" && (
-                <div style={{ display:"flex", gap:10, marginBottom:10 }}>
-                  <div style={{flex:1}}>
-                    <label style={labelStyle}>토지 용도(지목)</label>
-                    <select value={landPurpose} onChange={e=>setLandPurpose(e.target.value)} style={inputStyle}>
-                      <option value="">선택</option>
-                      {["전", "답", "과수원", "목장용지", "임야", "광천지", "염전", "대", "공장용지", "학교용지", "주차장", "주유소용지", "창고용지", "도로", "철도용지", "제방", "하천", "구거", "유지", "양어장", "수도용지", "공원", "체육용지", "유원지", "종교용지", "사적지", "묘지", "잡종지"].map(v => (
-                        <option key={v} value={v}>{v}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              )}
               {tradeType === "매매" && ((propertyType === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(subCategory)) || (propertyType === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고"].includes(subCategory))) && (
                 <div style={{ display:"flex", gap:10, marginBottom:10 }}>
                   <div style={{flex:1}}>
@@ -1249,6 +1235,20 @@ function MobileVacancyWrite() {
                       <input type="number" value={floorAreaRatio} onChange={e=>setFloorAreaRatio(e.target.value)} placeholder="예: 200" style={inputStyle} />
                       <span style={{ color:"#6b7280", fontSize:13, flexShrink:0 }}>%</span>
                     </div>
+                  </div>
+                </div>
+              )}
+              
+              {subCategory === "토지" && (
+                <div style={{ display:"flex", gap:10, marginBottom:10 }}>
+                  <div style={{flex:1}}>
+                    <label style={labelStyle}>토지 용도(지목)</label>
+                    <select value={landPurpose} onChange={e=>setLandPurpose(e.target.value)} style={inputStyle}>
+                      <option value="">선택</option>
+                      {["전", "답", "과수원", "목장용지", "임야", "광천지", "염전", "대", "공장용지", "학교용지", "주차장", "주유소용지", "창고용지", "도로", "철도용지", "제방", "하천", "구거", "유지", "양어장", "수도용지", "공원", "체육용지", "유원지", "종교용지", "사적지", "묘지", "잡종지"].map(v => (
+                        <option key={v} value={v}>{v}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
               )}

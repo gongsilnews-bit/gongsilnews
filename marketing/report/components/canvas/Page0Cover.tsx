@@ -236,7 +236,9 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
                       <div className="flex items-center">
                         <EditableText value={info.agentName || "착한임대부동산중개"} onChange={(v) => hc('agentName', v)} className="!w-auto" />
                         <span className="text-gray-400 font-normal mx-1.5">|</span>
-                        <span className="text-gray-800">대표 <EditableText value={info.agentRepresentative || "김상태"} onChange={(v) => hc('agentRepresentative', v)} className="!w-auto" /></span>
+                        <span className="text-gray-800 flex items-center">
+                          대표 <EditableText value={(info.agentRepresentative || "김상태").replace(/^(대표\s*|공인중개사\s*)+/g, '')} onChange={(v) => hc('agentRepresentative', v)} className="!w-auto ml-1" />
+                        </span>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">

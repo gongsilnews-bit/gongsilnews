@@ -676,7 +676,7 @@ function App() {
         const agency = Array.isArray(owner.agencies) ? owner.agencies[0] : owner.agencies;
         
         const agentName = agency?.name || owner.company_name || owner.name || "공실뉴스 중개소";
-        const agentRepresentative = agency ? `대표 공인중개사 ${agency.ceo_name}` : (owner.ceo_name ? `대표 ${owner.ceo_name}` : `대표 ${owner.name}`);
+        const agentRepresentative = agency ? agency.ceo_name : (owner.ceo_name || owner.name);
         const agentPhone = agency?.phone || owner.tel_num || v.client_phone || "";
         const agentMobile = agency?.cell || owner.cell_num || "";
         
