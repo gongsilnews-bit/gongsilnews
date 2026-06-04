@@ -299,9 +299,9 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
 
             <div className="w-5/12 bg-[var(--theme-dark)] flex flex-col justify-between p-12 text-white relative overflow-hidden group/coverimg">
               {/* Background Image Layer */}
-              <div className={`absolute inset-0 z-10 [&_img]:opacity-20 group-hover/coverimg:[&_img]:opacity-30 [&_img]:transition-opacity transition-opacity duration-300 ${!agentImage ? 'opacity-0 hover:opacity-100 print:hidden' : 'opacity-100'}`}>
+              <div className={`absolute inset-0 z-10 [&_img]:opacity-20 group-hover/coverimg:[&_img]:opacity-30 [&_img]:transition-opacity transition-opacity duration-300 opacity-100`}>
                 <EditableImage
-                  src={agentImage || ""}
+                  src={agentImage || "/marketing/report/default_contact_bg.jpg"}
                   alt="담당자/배경 사진"
                   imageKey="agentImage"
                   onImageUpload={onImageUpload}
