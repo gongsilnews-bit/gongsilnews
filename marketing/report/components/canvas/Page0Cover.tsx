@@ -227,7 +227,7 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
                 <div className="w-20 h-1 bg-[var(--theme-primary)] mt-8"></div>
               </div>
 
-              <div className="border-t border-gray-200 pt-8 flex justify-between items-end">
+              <div className="pt-8 flex justify-between items-end">
                 <div className="flex flex-col flex-1 whitespace-nowrap">
                   <span className="text-[15px] text-gray-400 font-bold tracking-widest block mb-2">
                     <EditableText value={info.agentLabel || "REALTY AGENCY"} onChange={(v) => hc('agentLabel', v)} className="!w-auto" />
@@ -295,9 +295,9 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
 
               <div className="z-20 flex justify-end items-end h-full relative pointer-events-none">
                 <div className="flex flex-col items-end">
-                  <div className="text-right pointer-events-auto leading-tight mb-2">
-                    <p className="text-[12px] font-extrabold text-white tracking-widest uppercase">
-                      <EditableText value={info.qrLabel || "QR REPORT"} onChange={(v) => hc('qrLabel', v)} className="!w-auto text-right" multiline={true} />
+                  <div className="w-[72px] text-center pointer-events-auto leading-tight mb-1.5">
+                    <p className="text-[10px] font-extrabold text-white tracking-widest uppercase">
+                      <EditableText value={info.qrLabel || "QR REPORT"} onChange={(v) => hc('qrLabel', v)} className="!w-full text-center" multiline={true} />
                     </p>
                   </div>
                   {(customQrImage || qrCodeUrl) && (
