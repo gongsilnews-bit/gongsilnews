@@ -48,7 +48,7 @@ const INITIAL_INFO: PropertyInfo = {
   ],
   agentName: "미래에셋공인 중개사 사무소",
   agentLabel: "REALTY AGENCY",
-  qrLabel: "QR ONLINE\nREPORT",
+  qrLabel: "QR",
   agentRegistrationNumber: "제11680-2015-00123호",
   agentRepresentative: "김민혁",
   agentPhone: "02-1234-5678",

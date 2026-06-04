@@ -229,7 +229,7 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
 
               <div className="border-t border-gray-200 pt-8 flex justify-between items-end">
                 <div className="flex flex-col flex-1 whitespace-nowrap">
-                  <span className="text-[14px] text-gray-400 font-bold tracking-widest block mb-2">
+                  <span className="text-[15px] text-gray-400 font-bold tracking-widest block mb-2">
                     <EditableText value={info.agentLabel || "REALTY AGENCY"} onChange={(v) => hc('agentLabel', v)} className="!w-auto" />
                   </span>
                   <div className="text-[14px] font-extrabold text-black tracking-wide leading-[1.8] flex flex-col items-start gap-1">
@@ -295,8 +295,13 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
 
               <div className="z-20 flex justify-end items-end h-full relative pointer-events-none">
                 <div className="flex flex-col items-end">
+                  <div className="text-right pointer-events-auto leading-tight mb-2">
+                    <p className="text-[12px] font-extrabold text-white tracking-widest uppercase">
+                      <EditableText value={info.qrLabel || "QR"} onChange={(v) => hc('qrLabel', v)} className="!w-auto text-right" />
+                    </p>
+                  </div>
                   {(customQrImage || qrCodeUrl) && (
-                    <div className="pointer-events-auto relative group/qr mb-2">
+                    <div className="pointer-events-auto relative group/qr">
                       <label className="cursor-pointer block relative">
                         <img src={customQrImage || qrCodeUrl || ''} alt="QR Code" className="w-[72px] h-[72px] p-1 bg-white rounded shadow-sm opacity-95 object-cover" />
                         {onImageUpload && (
@@ -323,11 +328,6 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
                       </label>
                     </div>
                   )}
-                  <div className="text-right pointer-events-auto leading-tight">
-                    <p className="text-[14px] font-extrabold text-white tracking-wider uppercase">
-                      <EditableText value={info.qrLabel || "QR ONLINE\nREPORT"} onChange={(v) => hc('qrLabel', v)} className="!w-auto text-right" multiline={true} />
-                    </p>
-                  </div>
                 </div>
               </div>
             </div>
