@@ -158,12 +158,14 @@ export function useVacancyFilters(initialVacancies: any[]) {
 
       // 7. 등록자 유형 (일반인 / 부동산)
       if (filters.ownerRole) {
+        if (filters.ownerRole === 'NONE') return false;
         if (filters.ownerRole === 'USER' && v.owner_role !== 'USER') return false;
         if (filters.ownerRole === 'REALTOR' && v.owner_role !== 'REALTOR') return false;
       }
 
       // 8. 중개보수 필터
       if (filters.commissionType) {
+        if (filters.commissionType === 'NONE') return false;
         const vc = v.realtor_commission || v.commission_type || '';
         if (filters.commissionType === '공동중개') {
           if (!vc.includes('공동')) return false;

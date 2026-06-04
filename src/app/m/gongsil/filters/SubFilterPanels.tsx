@@ -53,34 +53,122 @@ const themeBtnStyle = (active: boolean): React.CSSProperties => ({
 });
 
 export function OwnerRoleFilterPanel({ filters, onFilterChange }: Props) {
+  const isAllSelected = filters.ownerRole === null;
+  const isUserActive = filters.ownerRole === null || filters.ownerRole === 'USER';
+  const isRealtorActive = filters.ownerRole === null || filters.ownerRole === 'REALTOR';
+
+  const handleToggleAll = () => {
+    if (isAllSelected) {
+      onFilterChange({ ownerRole: 'NONE' });
+    } else {
+      onFilterChange({ ownerRole: null });
+    }
+  };
+
+  const toggleUser = () => {
+    if (filters.ownerRole === null) {
+      onFilterChange({ ownerRole: 'REALTOR' });
+    } else if (filters.ownerRole === 'USER') {
+      onFilterChange({ ownerRole: 'NONE' });
+    } else if (filters.ownerRole === 'REALTOR') {
+      onFilterChange({ ownerRole: null });
+    } else {
+      onFilterChange({ ownerRole: 'USER' });
+    }
+  };
+
+  const toggleRealtor = () => {
+    if (filters.ownerRole === null) {
+      onFilterChange({ ownerRole: 'USER' });
+    } else if (filters.ownerRole === 'REALTOR') {
+      onFilterChange({ ownerRole: 'NONE' });
+    } else if (filters.ownerRole === 'USER') {
+      onFilterChange({ ownerRole: null });
+    } else {
+      onFilterChange({ ownerRole: 'REALTOR' });
+    }
+  };
+
   return (
     <div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", marginBottom: "20px" }}>
-        {OWNER_PRESETS.map(p => (
-          <button type="button" key={p.label} onClick={() => onFilterChange({ ownerRole: filters.ownerRole === p.value ? null : p.value })} style={gridBtnStyle(filters.ownerRole === p.value)}>
-            {p.label}
-          </button>
-        ))}
+        <button 
+          type="button" 
+          onClick={handleToggleAll} 
+          style={{ ...gridBtnStyle(isAllSelected), fontSize: "14px" }}
+        >
+          {isAllSelected ? "전체해제" : "전체선택"}
+        </button>
+        <button 
+          type="button" 
+          onClick={toggleUser} 
+          style={gridBtnStyle(isUserActive)}
+        >
+          일반인
+        </button>
+        <button 
+          type="button" 
+          onClick={toggleRealtor} 
+          style={gridBtnStyle(isRealtorActive)}
+        >
+          부동산
+        </button>
       </div>
       <div style={{ display: "flex", justifyContent: "flex-end" }}>
-        <button type="button" onClick={() => onFilterChange({ ownerRole: null })} style={{ background: "none", border: "none", color: "#6b7280", fontSize: "14px", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}>↻ 조건삭제</button>
+        <button type="button" onClick={() => onFilterChange({ ownerRole: 'NONE' })} style={{ background: "none", border: "none", color: "#6b7280", fontSize: "14px", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}>↻ 조건삭제</button>
       </div>
     </div>
   );
 }
 
 export function CommissionFilterPanel({ filters, onFilterChange }: Props) {
+  const isAllSelected = filters.commissionType === null;
+
+  const isOptionActive = (val: string) => {
+    return filters.commissionType === null || filters.commissionType === val;
+  };
+
+  const handleToggleAll = () => {
+    if (isAllSelected) {
+      onFilterChange({ commissionType: 'NONE' });
+    } else {
+      onFilterChange({ commissionType: null });
+    }
+  };
+
+  const toggleOption = (val: string) => {
+    if (filters.commissionType === null) {
+      onFilterChange({ commissionType: val });
+    } else if (filters.commissionType === val) {
+      onFilterChange({ commissionType: 'NONE' });
+    } else {
+      onFilterChange({ commissionType: val });
+    }
+  };
+
   return (
     <div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "8px", marginBottom: "20px" }}>
-        {COMMISSION_PRESETS.map(p => (
-          <button type="button" key={p.label} onClick={() => onFilterChange({ commissionType: filters.commissionType === p.value ? null : p.value })} style={gridBtnStyle(filters.commissionType === p.value)}>
+        <button 
+          type="button" 
+          onClick={handleToggleAll} 
+          style={{ ...gridBtnStyle(isAllSelected), fontSize: "14px" }}
+        >
+          {isAllSelected ? "전체해제" : "전체선택"}
+        </button>
+        {COMMISSION_PRESETS.filter(p => p.value !== null).map(p => (
+          <button 
+            type="button" 
+            key={p.label} 
+            onClick={() => toggleOption(p.value!)} 
+            style={gridBtnStyle(isOptionActive(p.value!))}
+          >
             {p.label}
           </button>
         ))}
       </div>
       <div style={{ display: "flex", justifyContent: "flex-end" }}>
-        <button type="button" onClick={() => onFilterChange({ commissionType: null })} style={{ background: "none", border: "none", color: "#6b7280", fontSize: "14px", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}>↻ 조건삭제</button>
+        <button type="button" onClick={() => onFilterChange({ commissionType: 'NONE' })} style={{ background: "none", border: "none", color: "#6b7280", fontSize: "14px", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}>↻ 조건삭제</button>
       </div>
     </div>
   );
