@@ -336,11 +336,27 @@ const mergeStateWithDefaults = (loaded: any): FlyerState => {
   if (!mergedVisiblePages.includes(7)) mergedVisiblePages = [...mergedVisiblePages, 7];
   mergedVisiblePages.sort((a: number, b: number) => a - b);
 
+  let shareUrl = "https://gongsilnews.com";
+  if (typeof window !== 'undefined') {
+    const params = new URLSearchParams(window.location.search);
+    const vacancyId = params.get("vacancy_id");
+    if (vacancyId) {
+      shareUrl = `${window.location.origin}/flyer/${vacancyId}.html`;
+    }
+  }
+
+  const loadedInfo = loaded?.info || {};
+  let coverQRLink = loadedInfo.coverQRLink;
+  if (!coverQRLink || coverQRLink === "https://gongsilnews.com") {
+    coverQRLink = shareUrl;
+  }
+
   return {
     ...loaded,
     info: {
       ...INITIAL_INFO,
-      ...(loaded?.info || {}),
+      ...loadedInfo,
+      coverQRLink,
       visiblePages: mergedVisiblePages,
       overviewTable: convertOverviewTableToArray(loaded?.info?.overviewTable || loaded?.info?.overviewTableObj),
       floorStatus: loaded?.info?.floorStatus || INITIAL_INFO.floorStatus,
@@ -580,6 +596,7 @@ function App() {
   }, [handleUndo, handleRedo]);
 
   const loadVacancyDataDirectly = async (vacancyId: string) => {
+    const shareUrl = typeof window !== 'undefined' ? `${window.location.origin}/flyer/${vacancyId}.html` : "https://gongsilnews.com";
     setLoadingData(true);
     try {
       const res = await fetch(`/api/vacancy/detail?id=${vacancyId}`);
@@ -726,6 +743,7 @@ function App() {
 
         const mappedInfo: PropertyInfo = {
           ...INITIAL_INFO,
+          coverQRLink: shareUrl,
           promotionText: priceText,
           propertyNumber: `No. ${v.property_no || v.id || v.vacancy_id || "0000"}`,
           address: autoAddress || "공실 매물 정보",

@@ -1519,9 +1519,31 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
               <div style={{ display: "flex", gap: 24, marginBottom: isCommercial ? 24 : 16 }}>
                 <div style={{ flex: 1 }}>
                   <label style={labelStyle}>해당층</label>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
                     <input type="text" placeholder="예: 3, 저층, 고층" value={currentFloor} onChange={(e) => setCurrentFloor(e.target.value)} style={inputStyle} />
                     {(!currentFloor || !isNaN(Number(currentFloor))) && <span style={{ color: textSecondary, fontSize: 14, flexShrink: 0 }}>층</span>}
+                  </div>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    {['저층', '중층', '고층', '반지하', '옥탑'].map(f => (
+                      <button
+                        key={f}
+                        type="button"
+                        onClick={() => setCurrentFloor(currentFloor === f ? "" : f)}
+                        style={{
+                          padding: "4px 10px",
+                          borderRadius: 20,
+                          border: currentFloor === f ? "1px solid #3b82f6" : `1px solid ${border}`,
+                          background: currentFloor === f ? (darkMode ? "#1e3a8a" : "#eff6ff") : cardBg,
+                          color: currentFloor === f ? "#3b82f6" : textSecondary,
+                          fontSize: 12,
+                          fontWeight: currentFloor === f ? 700 : 500,
+                          cursor: "pointer",
+                          transition: "all 0.2s"
+                        }}
+                      >
+                        {f}
+                      </button>
+                    ))}
                   </div>
                 </div>
                 <div style={{ flex: 1 }}>
