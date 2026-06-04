@@ -40,9 +40,289 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
         </div>
       )}
 
-      {/* Render layout-based Cover - Standardized to Type 1 structure for ALL themes per user request */}
+      {/* Render layout-based Cover */}
       {(() => {
-        // Default Type 1 (Modern Overlay / Split Layout) applied to all themes
+        if (layoutType === 'type2') {
+          // Luxury Center (Serif, Centered, Gold/Burgundy elegance)
+          return (
+            <div className="flex-1 flex flex-col justify-between p-20 border-[16px] border-[var(--theme-dark)] h-full">
+              <div className="text-center mt-12">
+                <p className={`text-[var(--theme-primary)] text-lg tracking-[0.3em] font-bold uppercase mb-4 ${headingFont}`}>
+                  <EditableText value={info.coverSubtitle || "부동산 물건 보고서"} onChange={(v) => hc('coverSubtitle', v)} />
+                </p>
+                <div className="w-16 h-[2px] bg-[var(--theme-primary)] mx-auto my-6"></div>
+                <h1 className={`text-5xl sm:text-6xl font-black text-gray-900 tracking-tight leading-[1.3] ${headingFont} max-w-[800px] mx-auto`}>
+                  <EditableText multiline={true} value={info.address || "서울특별시 강남구 논현동 매매 안내서"} onChange={(v) => hc('address', v)} />
+                </h1>
+              </div>
+
+              <div className="flex justify-between items-end">
+                <div className="flex flex-col text-left">
+                  <span className="text-[16px] text-gray-400 font-bold tracking-widest block mb-2 uppercase">
+                    <EditableText value={info.agentLabel || "PREPARED BY"} onChange={(v) => hc('agentLabel', v)} className="!w-auto" />
+                  </span>
+                  <div className="text-[16px] font-bold text-gray-800 tracking-wide leading-[1.6] flex flex-col items-start gap-1.5">
+                    <div className="flex items-center gap-2">
+                      <Building2 className="w-[18px] h-[18px] text-[var(--theme-primary)]" strokeWidth={2.5} />
+                      <EditableText 
+                        value={`${info.agentName || "미래에셋공인 중개사 사무소"} | 대표 ${info.agentRepresentative || "김상태"}`} 
+                        onChange={(v) => {
+                          const parts = v.split('|');
+                          hc('agentName', parts[0].trim());
+                          if (parts.length > 1) {
+                            hc('agentRepresentative', parts[1].replace(/대표\s*/, '').trim());
+                          }
+                        }} 
+                        className="!w-auto" 
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-[18px] h-[18px] text-[var(--theme-primary)]" strokeWidth={2.5} />
+                      <EditableText 
+                        value={`등록번호 : ${info.agentRegistrationNumber || "제11680-2015-00123호"}`} 
+                        onChange={(v) => {
+                          const val = v.replace(/^등록번호\s*:\s*/, '');
+                          hc('agentRegistrationNumber', val.trim());
+                        }} 
+                        className="!w-auto" 
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Phone className="w-[18px] h-[18px] text-[var(--theme-primary)]" strokeWidth={2.5} />
+                      <EditableText value={info.agentPhone || "02-1234-5678"} onChange={(v) => hc('agentPhone', v)} className="!w-auto" />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-[18px] h-[18px] text-[var(--theme-primary)]" strokeWidth={2.5} />
+                      <EditableText value={info.agentAddress || "서울 강남구 논현동 123-45"} onChange={(v) => hc('agentAddress', v)} className="!w-auto" />
+                    </div>
+                  </div>
+                </div>
+                {qrCodeUrl && (
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="p-2 border border-gray-200 bg-white shadow-sm rounded-lg">
+                      <img src={qrCodeUrl} alt="QR Code" className="w-32 h-32" />
+                    </div>
+                    <span className="text-sm text-gray-400 font-bold tracking-wider">SCAN FOR DETAIL</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        }
+
+        if (layoutType === 'type3') {
+          // Natural Clean (Left Accent Bar, Clean Sans, Fresh)
+          return (
+            <div className="flex-1 flex h-full">
+              {/* Left Accent Bar */}
+              <div className="w-[40px] bg-[var(--theme-primary)] h-full shrink-0"></div>
+              {/* Content */}
+              <div className="flex-1 flex flex-col justify-between p-20">
+                <div className="mt-10">
+                  <div className="inline-block bg-[var(--theme-primary)]/10 text-[var(--theme-primary)] px-3 py-1 text-xs font-black tracking-widest uppercase rounded-full mb-4">
+                    <EditableText value={info.coverSubtitle || "부동산 물건 보고서"} onChange={(v) => hc('coverSubtitle', v)} />
+                  </div>
+                  <h1 className={`text-4xl font-extrabold text-gray-900 tracking-tight leading-[1.3] mt-2 ${headingFont} max-w-[650px]`}>
+                    <EditableText multiline={true} value={info.address || "서울특별시 강남구 논현동 매매 안내서"} onChange={(v) => hc('address', v)} />
+                  </h1>
+                  <div className="w-24 h-[6px] bg-[var(--theme-primary)] mt-8"></div>
+                </div>
+
+                <div className="flex justify-between items-end border-t border-gray-100 pt-10">
+                  <div className="flex flex-col text-left">
+                    <span className="text-[14px] text-gray-400 font-bold tracking-widest block mb-2 uppercase">
+                      <EditableText value={info.agentLabel || "ISSUED BY"} onChange={(v) => hc('agentLabel', v)} className="!w-auto" />
+                    </span>
+                    <div className="text-[16px] font-bold text-gray-800 tracking-wide leading-[1.6] flex flex-col items-start gap-1">
+                      <div className="flex items-center gap-2">
+                        <Building2 className="w-[18px] h-[18px] text-[var(--theme-primary)]" strokeWidth={2.5} />
+                        <EditableText 
+                          value={`${info.agentName || "미래에셋공인 중개사 사무소"} | 대표 ${info.agentRepresentative || "김상태"}`} 
+                          onChange={(v) => {
+                            const parts = v.split('|');
+                            hc('agentName', parts[0].trim());
+                            if (parts.length > 1) {
+                              hc('agentRepresentative', parts[1].replace(/대표\s*/, '').trim());
+                            }
+                          }} 
+                          className="!w-auto" 
+                        />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <FileText className="w-[18px] h-[18px] text-[var(--theme-primary)]" strokeWidth={2.5} />
+                        <EditableText 
+                          value={`등록번호 : ${info.agentRegistrationNumber || "제11680-2015-00123호"}`} 
+                          onChange={(v) => {
+                            const val = v.replace(/^등록번호\s*:\s*/, '');
+                            hc('agentRegistrationNumber', val.trim());
+                          }} 
+                          className="!w-auto" 
+                        />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Phone className="w-[18px] h-[18px] text-[var(--theme-primary)]" strokeWidth={2.5} />
+                        <EditableText value={info.agentPhone || "02-1234-5678"} onChange={(v) => hc('agentPhone', v)} className="!w-auto" />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <MapPin className="w-[18px] h-[18px] text-[var(--theme-primary)]" strokeWidth={2.5} />
+                        <EditableText value={info.agentAddress || "서울 강남구 논현동 123-45"} onChange={(v) => hc('agentAddress', v)} className="!w-auto" />
+                      </div>
+                    </div>
+                  </div>
+                  {qrCodeUrl && (
+                    <div className="flex items-center gap-4 bg-gray-50 p-3 rounded-xl border border-gray-100 shadow-sm">
+                      <img src={qrCodeUrl} alt="QR Code" className="w-32 h-32 rounded-md" />
+                      <div className="text-left">
+                        <p className="text-xs font-black text-gray-800">QR 안내</p>
+                        <p className="text-[14px] text-gray-400 font-bold leading-tight mt-0.5">스마트폰 카메라로<br />스캔하여 상세 정보 확인</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        }
+
+        if (layoutType === 'type4') {
+          // Bold Box (Full Theme Dark / Primary contrast)
+          return (
+            <div className="flex-1 flex flex-col justify-between p-20 bg-[var(--theme-dark)] text-white h-full relative">
+              {/* Decorative background box */}
+              <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-[var(--theme-primary)] opacity-10 rounded-bl-full pointer-events-none"></div>
+              
+              <div className="mt-10">
+                <span className="text-[var(--theme-secondary)] text-sm font-bold tracking-[0.3em] uppercase block mb-3">
+                  <EditableText value={info.coverSubtitle || "부동산 물건 보고서"} onChange={(v) => hc('coverSubtitle', v)} />
+                </span>
+                <h1 className={`text-5xl font-black tracking-tight leading-[1.2] text-white ${headingFont} max-w-[750px]`}>
+                  <EditableText multiline={true} value={info.address || "서울특별시 강남구 논현동 매매 안내서"} onChange={(v) => hc('address', v)} />
+                </h1>
+                <div className="w-32 h-[8px] bg-[var(--theme-secondary)] mt-6"></div>
+              </div>
+
+              <div className="flex justify-between items-end border-t border-white/10 pt-10">
+                <div className="flex flex-col text-left">
+                  <span className="text-[14px] text-white/60 font-bold tracking-widest block mb-2 uppercase">
+                    <EditableText value={info.agentLabel || "PARTNER BROKER"} onChange={(v) => hc('agentLabel', v)} className="!w-auto" />
+                  </span>
+                  <div className="text-[16px] font-bold text-white tracking-wide leading-[1.6] flex flex-col items-start gap-1">
+                    <div className="flex items-center gap-2">
+                      <Building2 className="w-[18px] h-[18px] text-[var(--theme-secondary)]" strokeWidth={2.5} />
+                      <EditableText 
+                        value={`${info.agentName || "미래에셋공인 중개사 사무소"} | 대표 ${info.agentRepresentative || "김상태"}`} 
+                        onChange={(v) => {
+                          const parts = v.split('|');
+                          hc('agentName', parts[0].trim());
+                          if (parts.length > 1) {
+                            hc('agentRepresentative', parts[1].replace(/대표\s*/, '').trim());
+                          }
+                        }} 
+                        className="!w-auto" 
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-[18px] h-[18px] text-[var(--theme-secondary)]" strokeWidth={2.5} />
+                      <EditableText 
+                        value={`등록번호 : ${info.agentRegistrationNumber || "제11680-2015-00123호"}`} 
+                        onChange={(v) => {
+                          const val = v.replace(/^등록번호\s*:\s*/, '');
+                          hc('agentRegistrationNumber', val.trim());
+                        }} 
+                        className="!w-auto" 
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Phone className="w-[18px] h-[18px] text-[var(--theme-secondary)]" strokeWidth={2.5} />
+                      <EditableText value={info.agentPhone || "02-1234-5678"} onChange={(v) => hc('agentPhone', v)} className="!w-auto" />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-[18px] h-[18px] text-[var(--theme-secondary)]" strokeWidth={2.5} />
+                      <EditableText value={info.agentAddress || "서울 강남구 논현동 123-45"} onChange={(v) => hc('agentAddress', v)} className="!w-auto" />
+                    </div>
+                  </div>
+                </div>
+                {qrCodeUrl && (
+                  <div className="flex items-center gap-3 bg-white p-3 rounded-xl shadow-lg border border-white/10">
+                    <img src={qrCodeUrl} alt="QR Code" className="w-32 h-32" />
+                    <div className="text-left text-gray-800">
+                      <p className="text-xs font-bold">ONLINE BRIEFING</p>
+                      <p className="text-[12px] text-gray-400 font-bold mt-0.5">Scan to view webpage</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        }
+
+        if (layoutType === 'type5') {
+          // High-end Minimal (Sleek, Space, Thin Lines, Editorial Look)
+          return (
+            <div className="flex-1 flex flex-col justify-between p-24 bg-white h-full border-t-[8px] border-[var(--theme-primary)]">
+              <div className="mt-12 flex flex-col justify-start items-start">
+                <p className="text-xs text-gray-400 tracking-[0.4em] uppercase font-semibold mb-4">
+                  <EditableText value={info.coverSubtitle || "부동산 물건 보고서"} onChange={(v) => hc('coverSubtitle', v)} />
+                </p>
+                <h1 className={`text-5xl font-black text-gray-900 tracking-tight leading-[1.3] max-w-[700px] ${headingFont}`}>
+                  <EditableText multiline={true} value={info.address || "서울특별시 강남구 논현동 매매 안내서"} onChange={(v) => hc('address', v)} />
+                </h1>
+                <div className="w-[100px] h-[2px] bg-gray-900 mt-8"></div>
+              </div>
+
+              <div className="flex justify-between items-end border-t border-gray-100 pt-12">
+                <div className="flex flex-col text-left">
+                  <span className="text-[14px] text-gray-400 font-semibold tracking-[0.3em] block mb-3 uppercase">
+                    <EditableText value={info.agentLabel || "REPRESENTATIVE AGENCY"} onChange={(v) => hc('agentLabel', v)} className="!w-auto" />
+                  </span>
+                  <div className="text-[16px] font-medium text-gray-800 tracking-wide leading-[1.6] flex flex-col items-start gap-1">
+                    <div className="flex items-center gap-2">
+                      <Building2 className="w-[18px] h-[18px] text-[var(--theme-primary)]" strokeWidth={2.5} />
+                      <EditableText 
+                        value={`${info.agentName || "미래에셋공인 중개사 사무소"} | 대표 ${info.agentRepresentative || "김상태"}`} 
+                        onChange={(v) => {
+                          const parts = v.split('|');
+                          hc('agentName', parts[0].trim());
+                          if (parts.length > 1) {
+                            hc('agentRepresentative', parts[1].replace(/대표\s*/, '').trim());
+                          }
+                        }} 
+                        className="!w-auto" 
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-[18px] h-[18px] text-[var(--theme-primary)]" strokeWidth={2.5} />
+                      <EditableText 
+                        value={`등록번호 : ${info.agentRegistrationNumber || "제11680-2015-00123호"}`} 
+                        onChange={(v) => {
+                          const val = v.replace(/^등록번호\s*:\s*/, '');
+                          hc('agentRegistrationNumber', val.trim());
+                        }} 
+                        className="!w-auto" 
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Phone className="w-[18px] h-[18px] text-[var(--theme-primary)]" strokeWidth={2.5} />
+                      <EditableText value={info.agentPhone || "02-1234-5678"} onChange={(v) => hc('agentPhone', v)} className="!w-auto" />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-[18px] h-[18px] text-[var(--theme-primary)]" strokeWidth={2.5} />
+                      <EditableText value={info.agentAddress || "서울 강남구 논현동 123-45"} onChange={(v) => hc('agentAddress', v)} className="!w-auto" />
+                    </div>
+                  </div>
+                </div>
+                {qrCodeUrl && (
+                  <div className="flex flex-col items-end gap-1.5">
+                    <img src={qrCodeUrl} alt="QR Code" className="w-14 h-14 grayscale hover:grayscale-0 transition-all border border-gray-100 p-1 bg-white" />
+                    <span className="text-[12px] text-gray-400 font-semibold tracking-widest">QR CODE</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        }
+
+        // Default Type 1 (Modern Overlay / Split Layout)
         return (
           <div className="flex-1 flex h-full">
             {/* Left side: Content */}
@@ -59,12 +339,12 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
 
               <div className="pt-8 flex justify-between items-end">
                 <div className="flex flex-col flex-1 whitespace-nowrap">
-                  <span className="text-[15px] text-gray-400 font-bold tracking-widest block mb-2">
+                  <span className="text-[16px] text-gray-400 font-bold tracking-widest block mb-2">
                     <EditableText value={info.agentLabel || "REALTY AGENCY"} onChange={(v) => hc('agentLabel', v)} className="!w-auto" />
                   </span>
                   <div className="text-[14px] font-extrabold text-black tracking-wide leading-[1.8] flex flex-col items-start gap-1">
                     <div className="flex items-center gap-2">
-                      <Building2 className="w-[14px] h-[14px] text-[var(--theme-primary)]" strokeWidth={2.5} />
+                      <Building2 className="w-[18px] h-[18px] text-[var(--theme-primary)]" strokeWidth={2.5} />
                       <EditableText 
                         value={`${info.agentName || "착한임대부동산중개"} | 대표 ${info.agentRepresentative || "김상태"}`} 
                         onChange={(v) => {
@@ -78,7 +358,7 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
                       />
                     </div>
                     <div className="flex items-center gap-2">
-                      <FileText className="w-[14px] h-[14px] text-[var(--theme-primary)]" strokeWidth={2.5} />
+                      <FileText className="w-[18px] h-[18px] text-[var(--theme-primary)]" strokeWidth={2.5} />
                       <EditableText 
                         value={`등록번호 : ${info.agentRegistrationNumber || "제11680-2015-00123호"}`} 
                         onChange={(v) => {
@@ -89,11 +369,11 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
                       />
                     </div>
                     <div className="flex items-center gap-2">
-                      <Phone className="w-[14px] h-[14px] text-[var(--theme-primary)]" strokeWidth={2.5} />
+                      <Phone className="w-[18px] h-[18px] text-[var(--theme-primary)]" strokeWidth={2.5} />
                       <EditableText value={info.agentPhone || "02-1234-5678"} onChange={(v) => hc('agentPhone', v)} className="!w-auto" />
                     </div>
                     <div className="flex items-center gap-2">
-                      <MapPin className="w-[14px] h-[14px] text-[var(--theme-primary)]" strokeWidth={2.5} />
+                      <MapPin className="w-[18px] h-[18px] text-[var(--theme-primary)]" strokeWidth={2.5} />
                       <EditableText value={info.agentAddress || "서울 강남구 논현동 123-45"} onChange={(v) => hc('agentAddress', v)} className="!w-auto" />
                     </div>
                   </div>
@@ -126,7 +406,7 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
               <div className="z-20 flex justify-end items-end h-full relative pointer-events-none">
                 <div className="flex flex-col items-end">
                   <div className="w-[72px] text-center pointer-events-auto leading-tight mb-1.5">
-                    <p className="text-[10px] font-extrabold text-white tracking-widest uppercase">
+                    <p className="text-[14px] font-extrabold text-white tracking-widest uppercase">
                       <EditableText value={info.qrLabel || "QR REPORT"} onChange={(v) => hc('qrLabel', v)} className="!w-full text-center" multiline={true} />
                     </p>
                   </div>
@@ -136,7 +416,7 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
                         <img src={customQrImage || qrCodeUrl || ''} alt="QR Code" className="w-[72px] h-[72px] p-1 bg-white rounded shadow-sm opacity-95 object-cover" />
                         {onImageUpload && (
                           <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/qr:opacity-100 transition-opacity rounded flex flex-col items-center justify-center print:hidden">
-                            <span className="text-[10px] text-white font-bold leading-tight text-center">QR<br/>변경</span>
+                            <span className="text-[14px] text-white font-bold leading-tight text-center">QR<br/>변경</span>
                           </div>
                         )}
                         {onImageUpload && (

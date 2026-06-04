@@ -121,6 +121,15 @@ function MobileVacancyWrite() {
   const [buildingCoverage, setBuildingCoverage] = useState(""); // 건폐율
   const [floorAreaRatio, setFloorAreaRatio] = useState(""); // 용적률
   const [currentUsage, setCurrentUsage] = useState(""); // 현용도
+
+  // 지식산업센터 특화 스펙
+  const [jisanUsage, setJisanUsage] = useState("");
+  const [ceilingHeight, setCeilingHeight] = useState("");
+  const [powerCapacity, setPowerCapacity] = useState("");
+  const [hasDriveIn, setHasDriveIn] = useState(false);
+  const [hasDoorToDoor, setHasDoorToDoor] = useState(false);
+  const [hasFreightElevator, setHasFreightElevator] = useState(false);
+  const [freeParkingCnt, setFreeParkingCnt] = useState("");
   const [description, setDescription] = useState("");
   const [isAIGenerating, setIsAIGenerating] = useState(false);
 
@@ -156,6 +165,7 @@ function MobileVacancyWrite() {
       const res = await generatePropertyDescription(payload);
       if (res.success && res.text) {
         setDescription(res.text);
+        alert("✨ AI 초안 작성이 완료되었습니다!\n반드시 내용을 읽어보시고, 실제 매물 정보에 맞게 꼼꼼히 체크 및 수정해 주세요.");
       } else {
         alert(res.error || "AI 마법사 생성에 실패했습니다.");
       }
@@ -280,6 +290,13 @@ function MobileVacancyWrite() {
           if (d.metadata.building_coverage) setBuildingCoverage(String(d.metadata.building_coverage));
           if (d.metadata.floor_area_ratio) setFloorAreaRatio(String(d.metadata.floor_area_ratio));
           if (d.metadata.current_usage) setCurrentUsage(d.metadata.current_usage);
+          if (d.metadata.jisan_usage) setJisanUsage(d.metadata.jisan_usage);
+          if (d.metadata.ceiling_height) setCeilingHeight(d.metadata.ceiling_height);
+          if (d.metadata.power_capacity) setPowerCapacity(d.metadata.power_capacity);
+          if (d.metadata.has_drive_in) setHasDriveIn(d.metadata.has_drive_in);
+          if (d.metadata.has_door_to_door) setHasDoorToDoor(d.metadata.has_door_to_door);
+          if (d.metadata.has_freight_elevator) setHasFreightElevator(d.metadata.has_freight_elevator);
+          if (d.metadata.free_parking_cnt) setFreeParkingCnt(d.metadata.free_parking_cnt);
         }
         if (d.current_floor) setCurrentFloor(d.current_floor);
         if (d.total_floor) setTotalFloor(d.total_floor);
@@ -672,6 +689,13 @@ function MobileVacancyWrite() {
           elevator_cnt: elevatorCnt,
           is_illegal: isIllegal,
           building_structure: buildingStructure,
+          jisan_usage: jisanUsage || undefined,
+          ceiling_height: ceilingHeight || undefined,
+          power_capacity: powerCapacity || undefined,
+          has_drive_in: hasDriveIn,
+          has_door_to_door: hasDoorToDoor,
+          has_freight_elevator: hasFreightElevator,
+          free_parking_cnt: freeParkingCnt || undefined,
           zoning: zoning || undefined,
           land_purpose: landPurpose || undefined,
           building_coverage: buildingCoverage ? parseFloat(buildingCoverage) : undefined,
@@ -919,10 +943,25 @@ function MobileVacancyWrite() {
         💾 임시저장
       </button>
       <div style={{ flex:1 }} />
-      <button type="button" disabled={submitting} onClick={()=>handleSubmit("ACTIVE")}
-        style={{ height:46, padding:"0 24px", background: submitting?"#9ca3af":"linear-gradient(135deg,#10b981,#059669)", color:"#fff", border:"none", borderRadius:10, fontSize:14, fontWeight:800, cursor: submitting?"not-allowed":"pointer", boxShadow:"0 2px 8px rgba(16,185,129,0.3)" }}>
-        {submitting ? "처리중..." : editId ? "✅ 수정완료" : "✅ 광고등록"}
-      </button>
+      
+      {currentStep > 1 && (
+        <button type="button" onClick={()=>{ setCurrentStep(s=>s-1); window.scrollTo(0,0); }}
+          style={{ height:46, padding:"0 20px", background:"#fff", color:"#374151", border:"1px solid #d1d5db", borderRadius:10, fontSize:14, fontWeight:700, cursor:"pointer" }}>
+          ← 이전
+        </button>
+      )}
+
+      {currentStep < TOTAL_STEPS ? (
+        <button type="button" onClick={handleNextStep}
+          style={{ height:46, padding:"0 24px", background:"#1a73e8", color:"#fff", border:"none", borderRadius:10, fontSize:14, fontWeight:800, cursor:"pointer", boxShadow:"0 4px 12px rgba(26,115,232,0.25)" }}>
+          다음 →
+        </button>
+      ) : (
+        <button type="button" disabled={submitting} onClick={()=>handleSubmit("ACTIVE")}
+          style={{ height:46, padding:"0 24px", background: submitting?"#9ca3af":"linear-gradient(135deg,#10b981,#059669)", color:"#fff", border:"none", borderRadius:10, fontSize:14, fontWeight:800, cursor: submitting?"not-allowed":"pointer", boxShadow:"0 2px 8px rgba(16,185,129,0.3)" }}>
+          {submitting ? "처리중..." : editId ? "✅ 수정완료" : "✅ 광고등록"}
+        </button>
+      )}
     </div>
   );
 
@@ -933,14 +972,14 @@ function MobileVacancyWrite() {
         <button onClick={() => { if (currentStep > 1) { setCurrentStep(s=>s-1); } else { router.replace("/m/admin/vacancy"); }}} style={{ background:"none", border:"none", cursor:"pointer", padding:4, display:"flex" }}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M15 18L9 12L15 6" stroke="#333" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </button>
-        <h1 style={{ fontSize:18, fontWeight:800, color:"#111", margin:0, flex:1 }}>{editId ? "공실수정" : "공실등록"} </h1>
+        <h1 style={{ fontSize:18, fontWeight:800, color:"#111", margin:0, flex:1 }}>{editId ? "공실수정" : "공실등록"} <span style={{fontSize:13, color:"#6b7280", fontWeight:600}}>({currentStep}/{TOTAL_STEPS})</span></h1>
       </div>
       <div style={{ height:56 }} />
 
       <StepIndicator />
       <div style={{ padding:"8px 16px 100px" }}>
         {/* ═══ STEP 1: 분류/주소 ═══ */}
-        <>
+        {currentStep === 1 && (<>
         {/* 1. 공실광고분류 */}
         <div style={{ background:"#fff", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.03)", border:"1px solid #f3f4f6" }}>
           <div style={{ fontSize:16, fontWeight:800, color:"#111", borderLeft:"4px solid #1a73e8", paddingLeft:10, marginBottom:14 }}>공실광고분류</div>
@@ -981,14 +1020,13 @@ function MobileVacancyWrite() {
           <label style={labelStyle}>상세주소 {!isFieldExposed("detailAddr") && isRealtor && <PrivateTag/>}</label>
           <input id="input-detailAddr" type="text" value={detailAddr} onChange={e=>setDetailAddr(e.target.value)} placeholder="상세주소 입력" style={{...inputStyle, marginBottom:10}}/>
 
-          {/* 동/호수 (아파트인 경우) */}
-          {propertyType === "아파트·오피스텔" && (
+          {/* 동/호수 (아파트 또는 지식산업센터인 경우) */}
+          {(propertyType === "아파트·오피스텔" || subCategory === "지식산업센터") ? (
             <div style={{ display:"flex", gap:8, marginBottom:10 }}>
-              <div style={{flex:1}}><label style={labelStyle}>동 {!isFieldExposed("aptDong") && isRealtor && <PrivateTag/>}</label><input type="text" value={aptDong} onChange={e=>setAptDong(e.target.value)} placeholder="101동" style={inputStyle}/></div>
+              <div style={{flex:1}}><label style={labelStyle}>동 {!isFieldExposed("aptDong") && isRealtor && <PrivateTag/>}</label><input type="text" value={aptDong} onChange={e=>setAptDong(e.target.value)} placeholder="예: 101동, A동" style={inputStyle}/></div>
               <div style={{flex:1}}><label style={labelStyle}>호수 {!isFieldExposed("hosu") && isRealtor && <PrivateTag/>}</label><input type="text" value={hosu} onChange={e=>setHosu(e.target.value)} placeholder="405호" style={inputStyle}/></div>
             </div>
-          )}
-          {propertyType !== "아파트·오피스텔" && (
+          ) : (
             <div style={{ marginBottom:10 }}>
               <label style={labelStyle}>호수 {!isFieldExposed("hosu") && isRealtor && <PrivateTag/>}</label>
               <input type="text" value={hosu} onChange={e=>setHosu(e.target.value)} placeholder="101호" style={inputStyle}/>
@@ -1044,16 +1082,65 @@ function MobileVacancyWrite() {
             </div>
           </div>
         </div>
-        </>
+        </>)}
 
         {/* ═══ STEP 2: 가격/면적 ═══ */}
-        <>
+        {currentStep === 2 && (<>
 
 
 
 
-        {/* 상세 제원 (선택형) */}
-        {propertyType === "상가·사무실·건물·공장·토지" && subCategory !== "토지" && (
+        {/* 지식산업센터 특화 제원 */}
+        {subCategory === "지식산업센터" && (
+          <div style={{ background: "#f0fdf4", border: "1px solid #10b981", borderRadius: 14, padding: 16, marginBottom: 12 }}>
+            <div style={{ fontSize: 13, fontWeight: 800, color: "#065f46", marginBottom: 16, display: "flex", alignItems: "center", gap: 6 }}>
+              <span>⚙️ 지식산업센터 특화 제원</span>
+            </div>
+            
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ fontSize: 12, fontWeight: 700, color: "#4b5563", marginBottom: 6, display: "block" }}>호실 용도 (필수)</label>
+              <select value={jisanUsage} onChange={(e) => setJisanUsage(e.target.value)} style={{ width: "100%", height: 46, borderRadius: 8, border: "1px solid #d1d5db", padding: "0 14px", fontSize: 14, background: "#fff" }}>
+                <option value="">선택</option>
+                {["제조형 공장", "업무형 공장", "지원시설(상가)", "지원시설(업무)", "창고", "기숙사", "기타"].map(v => (
+                  <option key={v} value={v}>{v}</option>
+                ))}
+              </select>
+            </div>
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ fontSize: 12, fontWeight: 700, color: "#4b5563", marginBottom: 6, display: "block" }}>해당 호실 무료 주차 (대)</label>
+              <input type="number" placeholder="예: 2" value={freeParkingCnt} onChange={(e) => setFreeParkingCnt(e.target.value)} style={{ width: "100%", height: 46, borderRadius: 8, border: "1px solid #d1d5db", padding: "0 14px", fontSize: 14, background: "#fff" }} />
+            </div>
+
+            <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+              <div style={{ flex: 1 }}>
+                <label style={{ fontSize: 12, fontWeight: 700, color: "#4b5563", marginBottom: 6, display: "block" }}>층고 (m)</label>
+                <input type="number" placeholder="예: 5.5" value={ceilingHeight} onChange={(e) => setCeilingHeight(e.target.value)} style={{ width: "100%", height: 46, borderRadius: 8, border: "1px solid #d1d5db", padding: "0 14px", fontSize: 14, background: "#fff" }} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={{ fontSize: 12, fontWeight: 700, color: "#4b5563", marginBottom: 6, display: "block" }}>사용 전력 (kW)</label>
+                <input type="number" placeholder="예: 20" value={powerCapacity} onChange={(e) => setPowerCapacity(e.target.value)} style={{ width: "100%", height: 46, borderRadius: 8, border: "1px solid #d1d5db", padding: "0 14px", fontSize: 14, background: "#fff" }} />
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 8 }}>
+              <label style={{ fontSize: 12, fontWeight: 700, color: "#4b5563", marginBottom: 8, display: "block" }}>특화 구조 / 접근성 (다중 선택)</label>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                <button type="button" onClick={() => setHasDriveIn(!hasDriveIn)} style={{ padding: "8px 12px", borderRadius: 8, border: hasDriveIn ? "1px solid #10b981" : "1px solid #d1d5db", background: hasDriveIn ? "#d1fae5" : "#fff", color: hasDriveIn ? "#065f46" : "#4b5563", fontSize: 13, fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }}>
+                  {hasDriveIn ? "✅ 드라이브인" : "드라이브인"}
+                </button>
+                <button type="button" onClick={() => setHasDoorToDoor(!hasDoorToDoor)} style={{ padding: "8px 12px", borderRadius: 8, border: hasDoorToDoor ? "1px solid #10b981" : "1px solid #d1d5db", background: hasDoorToDoor ? "#d1fae5" : "#fff", color: hasDoorToDoor ? "#065f46" : "#4b5563", fontSize: 13, fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }}>
+                  {hasDoorToDoor ? "✅ 도어투도어" : "도어투도어"}
+                </button>
+                <button type="button" onClick={() => setHasFreightElevator(!hasFreightElevator)} style={{ padding: "8px 12px", borderRadius: 8, border: hasFreightElevator ? "1px solid #10b981" : "1px solid #d1d5db", background: hasFreightElevator ? "#d1fae5" : "#fff", color: hasFreightElevator ? "#065f46" : "#4b5563", fontSize: 13, fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }}>
+                  {hasFreightElevator ? "✅ 화물 승강기" : "화물 승강기"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 상세 제원 (선택형) - 지식산업센터 제외 */}
+        {propertyType === "상가·사무실·건물·공장·토지" && subCategory !== "토지" && subCategory !== "지식산업센터" && (
           <div style={{ background: "#f8fafc", borderRadius: 14, padding: 16, marginBottom: 12, border: "1px solid #e2e8f0" }}>
             <div style={{ fontSize: 13, fontWeight: 800, color: "#1e293b", marginBottom: 16, display: "flex", alignItems: "center", gap: 6 }}>
               <span>🏢 상세 제원 (선택형)</span>
@@ -1180,7 +1267,7 @@ function MobileVacancyWrite() {
           </div>
           </>
           )}
-          {(propertyType === "빌라·주택" || propertyType === "상가·사무실·건물·공장·토지") && tradeType === "매매" && (
+          {(propertyType === "빌라·주택" || propertyType === "상가·사무실·건물·공장·토지") && tradeType === "매매" && subCategory !== "지식산업센터" && (
             <>
               <div style={{ display:"flex", gap:10, marginBottom:4 }}>
                 <div style={{flex:1}}>
@@ -1364,10 +1451,10 @@ function MobileVacancyWrite() {
             </div>
           </div>
         </div>
-        </>
+        </>)}
 
         {/* ═══ STEP 3: 사진·상세 ═══ */}
-        <>
+        {currentStep === 3 && (<>
         {/* 5. 추가 */}
         <div style={{ background:"#fff", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.03)", border:"1px solid #f3f4f6" }}>
           <div style={{ fontSize:16, fontWeight:800, color:"#111", borderLeft:"4px solid #1a73e8", paddingLeft:10, marginBottom:14 }}>상세정보</div>
@@ -1434,7 +1521,7 @@ function MobileVacancyWrite() {
             </div>
           </div>
 
-          <div style={{ marginTop: 16, borderTop: "1px dashed #e5e7eb", paddingTop: 16 }}>
+          <div style={{ marginTop: 16, borderTop: "1px dashed #e5e7eb", paddingTop: 16, position: "relative" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
               <label style={{ ...labelStyle, marginBottom: 0 }}>전달사항 / 공실광고설명</label>
               <button 
@@ -1449,10 +1536,23 @@ function MobileVacancyWrite() {
                   color: isAIGenerating ? "#9ca3af" : "#d97706", transition: "all 0.2s" 
                 }} 
               >
-                {isAIGenerating ? "⏳ 생성 중..." : "✨ AI 상세글쓰기"}
+                {isAIGenerating ? "⏳ 생성 중..." : "✨ AI초안글쓰기"}
               </button>
             </div>
             <textarea value={description} onChange={e=>setDescription(e.target.value)} placeholder="공실광고에 대한 추가 설명을 입력하세요" rows={4} style={{ ...inputStyle, height:"auto", padding:12, resize:"vertical", lineHeight:1.5 }}/>
+            
+            {/* AI 글쓰기 로딩 오버레이 (textarea 덮기) */}
+            {isAIGenerating && (
+              <div style={{ position: "absolute", top: 38, left: 0, right: 0, bottom: 0, background: "rgba(255,255,255,0.85)", backdropFilter: "blur(2px)", borderRadius: 10, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", zIndex: 10 }}>
+                <style>{`
+                  @keyframes ai-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+                `}</style>
+                <div style={{ width: 30, height: 30, border: "3px solid #fef3c7", borderTop: "3px solid #d97706", borderRadius: "50%", animation: "ai-spin 1s linear infinite", marginBottom: 12 }} />
+                <div style={{ color: "#d97706", fontSize: 13, fontWeight: 800 }}>AI가 초안을 작성 중입니다...</div>
+                <div style={{ color: "#9ca3af", fontSize: 11, marginTop: 4, marginBottom: 8 }}>잠시만 기다려주세요</div>
+                <div style={{ background: "#fef2f2", color: "#ef4444", fontSize: 11, fontWeight: 700, padding: "4px 8px", borderRadius: 6, border: "1px solid #fca5a5" }}>⚠️ 완료 후 반드시 내용을 체크해 주세요!</div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -1479,10 +1579,10 @@ function MobileVacancyWrite() {
             )}
           </div>
         </div>
-        </>
+        </>)}
 
         {/* ═══ STEP 4: 최종확인 ═══ */}
-        <>
+        {currentStep === 4 && (<>
         {/* 미리보기 요약 */}
         <div style={{ background:"#fff", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.03)", border:"1px solid #10b981" }}>
           <div style={{ fontSize:16, fontWeight:800, color:"#10b981", borderLeft:"4px solid #10b981", paddingLeft:10, marginBottom:14 }}>입력 정보 요약</div>
@@ -1627,7 +1727,7 @@ function MobileVacancyWrite() {
           </div>
         )}
 
-        </>
+        </>)}
       </div>
 
       <BottomNav />

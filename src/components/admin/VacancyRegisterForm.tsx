@@ -140,6 +140,14 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
   const [buildingCoverage, setBuildingCoverage] = useState(""); // 건폐율
   const [floorAreaRatio, setFloorAreaRatio] = useState(""); // 용적률
   const [currentUsage, setCurrentUsage] = useState(""); // 현용도
+  // 지식산업센터 특화 스펙
+  const [jisanUsage, setJisanUsage] = useState("");
+  const [ceilingHeight, setCeilingHeight] = useState("");
+  const [powerCapacity, setPowerCapacity] = useState("");
+  const [hasDriveIn, setHasDriveIn] = useState(false);
+  const [hasDoorToDoor, setHasDoorToDoor] = useState(false);
+  const [hasFreightElevator, setHasFreightElevator] = useState(false);
+  const [freeParkingCnt, setFreeParkingCnt] = useState("");
 
   // 전달사항
   const [description, setDescription] = useState("");
@@ -177,6 +185,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
       const res = await generatePropertyDescription(payload);
       if (res.success && res.text) {
         setDescription(res.text);
+        alert("✨ AI 초안 작성이 완료되었습니다!\n반드시 내용을 읽어보시고, 실제 매물 정보에 맞게 꼼꼼히 체크 및 수정해 주세요.");
       } else {
         alert(res.error || "AI 마법사 생성에 실패했습니다.");
       }
@@ -433,6 +442,17 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
     if (editData.lat && editData.lng) setCoords({ lat: editData.lat, lng: editData.lng });
     if (editData.infrastructure) setInfrastructure(editData.infrastructure);
     if (editData.consent !== undefined) setConsent(editData.consent);
+
+    if (editData.metadata) {
+      if (editData.metadata.jisan_usage) setJisanUsage(editData.metadata.jisan_usage);
+      if (editData.metadata.ceiling_height) setCeilingHeight(editData.metadata.ceiling_height);
+      if (editData.metadata.power_capacity) setPowerCapacity(editData.metadata.power_capacity);
+      if (editData.metadata.has_drive_in) setHasDriveIn(editData.metadata.has_drive_in);
+      if (editData.metadata.has_door_to_door) setHasDoorToDoor(editData.metadata.has_door_to_door);
+      if (editData.metadata.has_freight_elevator) setHasFreightElevator(editData.metadata.has_freight_elevator);
+      if (editData.metadata.free_parking_cnt) setFreeParkingCnt(editData.metadata.free_parking_cnt);
+    }
+
     if (editData.vacancy_photos && editData.vacancy_photos.length > 0) {
       const sorted = [...editData.vacancy_photos].sort((a: any, b: any) => a.sort_order - b.sort_order);
       setExistingPhotoUrls(sorted.map((p: any) => p.url));
@@ -876,10 +896,13 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
               <span style={{ animation: "aiSpin 3s linear infinite reverse", fontSize: 24 }}>✨</span>
             </div>
             <div style={{ fontSize: 18, fontWeight: 800, color: darkMode ? "#e1e4e8" : "#111827", marginBottom: 8 }}>
-              AI 멘트 마법사 작성 중
+              AI가 초안을 작성 중입니다...
             </div>
-            <div style={{ fontSize: 13, color: darkMode ? "#9ca3af" : "#6b7280", lineHeight: 1.6 }}>
-              매물 정보를 바탕으로 매력적인<br />전달사항을 작성하고 있습니다...
+            <div style={{ fontSize: 13, color: darkMode ? "#9ca3af" : "#6b7280", lineHeight: 1.6, marginBottom: 16 }}>
+              매물 정보를 바탕으로 매력적인<br />소개글을 작성하고 있습니다. 잠시만 기다려주세요.
+            </div>
+            <div style={{ background: "#fef2f2", color: "#ef4444", fontSize: 12, fontWeight: 700, padding: "8px 12px", borderRadius: 8, border: "1px solid #fca5a5", display: "inline-block" }}>
+              ⚠️ 완료 후 반드시 내용을 체크해 주세요!
             </div>
             <div style={{
               marginTop: 20, height: 4, background: darkMode ? "#333" : "#e5e7eb", borderRadius: 2, overflow: "hidden",
@@ -1615,8 +1638,59 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
               </div>
             )}
 
-            {/* 추가 정보 (용도, 구조, 승강기 등) */}
-            {propertyType === "상가·사무실·건물·공장·토지" && subCategory !== "토지" && (
+            {/* 지식산업센터 특화 제원 */}
+            {subCategory === "지식산업센터" && (
+              <div style={{ background: "#f0fdf4", border: "1px solid #10b981", borderRadius: 8, padding: 16, marginBottom: 24 }}>
+                <div style={{ fontSize: 13, fontWeight: 800, color: "#065f46", marginBottom: 16, display: "flex", alignItems: "center", gap: 6 }}>
+                  <span>⚙️ 지식산업센터 특화 제원</span>
+                </div>
+                
+                <div style={{ display: "flex", gap: 24, marginBottom: 16 }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{...labelStyle, marginBottom: 6}}>호실 용도 (필수)</label>
+                    <select value={jisanUsage} onChange={(e) => setJisanUsage(e.target.value)} style={{...inputStyle, background: "#fff", width: "100%"}}>
+                      <option value="">선택</option>
+                      {["제조형 공장", "업무형 공장", "지원시설(상가)", "지원시설(업무)", "창고", "기숙사", "기타"].map(v => (
+                        <option key={v} value={v}>{v}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{...labelStyle, marginBottom: 6}}>해당 호실 무료 주차 (대)</label>
+                    <input type="number" placeholder="예: 2" value={freeParkingCnt} onChange={(e) => setFreeParkingCnt(e.target.value)} style={{...inputStyle, background: "#fff", width: "100%"}} />
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", gap: 24, marginBottom: 16 }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{...labelStyle, marginBottom: 6}}>층고 (m)</label>
+                    <input type="number" placeholder="예: 5.5" value={ceilingHeight} onChange={(e) => setCeilingHeight(e.target.value)} style={{...inputStyle, background: "#fff", width: "100%"}} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{...labelStyle, marginBottom: 6}}>사용 전력 (kW)</label>
+                    <input type="number" placeholder="예: 20" value={powerCapacity} onChange={(e) => setPowerCapacity(e.target.value)} style={{...inputStyle, background: "#fff", width: "100%"}} />
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: 8 }}>
+                  <label style={{...labelStyle, marginBottom: 8}}>특화 구조 / 접근성 (다중 선택)</label>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                    <button type="button" onClick={() => setHasDriveIn(!hasDriveIn)} style={{ padding: "8px 16px", borderRadius: 8, border: hasDriveIn ? "1px solid #10b981" : "1px solid #d1d5db", background: hasDriveIn ? "#d1fae5" : "#fff", color: hasDriveIn ? "#065f46" : "#4b5563", fontSize: 13, fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }}>
+                      {hasDriveIn ? "✅ 드라이브인" : "드라이브인"}
+                    </button>
+                    <button type="button" onClick={() => setHasDoorToDoor(!hasDoorToDoor)} style={{ padding: "8px 16px", borderRadius: 8, border: hasDoorToDoor ? "1px solid #10b981" : "1px solid #d1d5db", background: hasDoorToDoor ? "#d1fae5" : "#fff", color: hasDoorToDoor ? "#065f46" : "#4b5563", fontSize: 13, fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }}>
+                      {hasDoorToDoor ? "✅ 도어투도어" : "도어투도어"}
+                    </button>
+                    <button type="button" onClick={() => setHasFreightElevator(!hasFreightElevator)} style={{ padding: "8px 16px", borderRadius: 8, border: hasFreightElevator ? "1px solid #10b981" : "1px solid #d1d5db", background: hasFreightElevator ? "#d1fae5" : "#fff", color: hasFreightElevator ? "#065f46" : "#4b5563", fontSize: 13, fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }}>
+                      {hasFreightElevator ? "✅ 화물 승강기" : "화물 승강기"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 추가 정보 (용도, 구조, 승강기 등) - 지식산업센터 제외 */}
+            {propertyType === "상가·사무실·건물·공장·토지" && subCategory !== "토지" && subCategory !== "지식산업센터" && (
               <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, padding: 16, marginBottom: 24 }}>
                 <div style={{ fontSize: 13, fontWeight: 800, color: "#1e293b", marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>
                   <span>🏢 상세 제원 (선택형)</span>
@@ -1822,7 +1896,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                 onMouseEnter={e => !isAIGenerating && (e.currentTarget.style.opacity = "0.8")} 
                 onMouseLeave={e => !isAIGenerating && (e.currentTarget.style.opacity = "1")}
               >
-                {isAIGenerating ? "⏳ 멘트 생성 중..." : "✨ AI 멘트 마법사"}
+                {isAIGenerating ? "⏳ 초안 작성 중..." : "✨ AI초안글쓰기"}
               </button>
             </div>
             <textarea
@@ -2138,6 +2212,13 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                       building_coverage: buildingCoverage ? parseFloat(buildingCoverage) : null,
                       floor_area_ratio: floorAreaRatio ? parseFloat(floorAreaRatio) : null,
                       current_usage: currentUsage || null,
+                      jisan_usage: jisanUsage || undefined,
+                      ceiling_height: ceilingHeight || undefined,
+                      power_capacity: powerCapacity || undefined,
+                      has_drive_in: hasDriveIn,
+                      has_door_to_door: hasDoorToDoor,
+                      has_freight_elevator: hasFreightElevator,
+                      free_parking_cnt: freeParkingCnt || undefined,
                     },
                     client_name: clientName,
                     client_phone: clientPhone,

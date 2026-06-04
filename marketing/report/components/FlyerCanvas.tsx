@@ -61,6 +61,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                 coverImage={mainImage || null}
                 customQrImage={customQrImage || null}
                 onImageUpload={onImageUpload}
+                onDeleteImage={onDeleteImage}
                 isUploading={isUploadingImage?.['mainImage'] || false}
                 isUploadingQr={isUploadingImage?.['customQrImage'] || false}
             />
