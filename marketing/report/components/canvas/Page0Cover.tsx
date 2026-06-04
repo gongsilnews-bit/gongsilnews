@@ -1,6 +1,7 @@
 import React from 'react';
 import { PropertyInfo, FlyerColor, FlyerLayout } from '../../types';
 import EditableText from '../shared/EditableText';
+import EditableImage from '../shared/EditableImage';
 
 interface Props {
   info: PropertyInfo;
@@ -9,9 +10,12 @@ interface Props {
   layoutTheme: FlyerLayout;
   colorTheme: FlyerColor;
   onUpdateInfo?: (info: any) => void;
+  coverImage?: string | null;
+  onImageUpload?: (key: string, file: File) => Promise<string | undefined>;
+  isUploading?: boolean;
 }
 
-const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, colorTheme, onUpdateInfo }) => {
+const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, colorTheme, onUpdateInfo, coverImage, onImageUpload, isUploading }) => {
   const hc = (key: string, value: any) => { if (onUpdateInfo) onUpdateInfo({ ...info, [key]: value }); };
   const headingFont = layoutTheme?.headingFont || 'font-sans';
   const bodyFont = layoutTheme?.bodyFont || 'font-sans';
@@ -236,14 +240,27 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
             </div>
 
             {/* Right side: Modern Architectural Graphic/Accent Cover */}
-            <div className="w-5/12 bg-[var(--theme-dark)] flex flex-col justify-between p-12 text-white relative">
-              <div className="absolute inset-0 bg-gradient-to-tr from-[var(--theme-dark)] via-[var(--theme-dark)]/90 to-[var(--theme-primary)]/40 mix-blend-overlay pointer-events-none"></div>
+            <div className="w-5/12 bg-[var(--theme-dark)] flex flex-col justify-between p-12 text-white relative overflow-hidden group/coverimg">
+              {/* Background Image Layer */}
+              <div className="absolute inset-0 z-0">
+                <EditableImage
+                  src={coverImage || ""}
+                  alt="표지 메인 이미지"
+                  imageKey="mainImage"
+                  onImageUpload={onImageUpload}
+                  isUploading={isUploading}
+                  aspectRatioClass="object-cover"
+                  className="w-full h-full !rounded-none !border-none"
+                />
+              </div>
               
-              <div className="text-right z-10">
+              <div className="absolute inset-0 z-0 bg-gradient-to-tr from-[var(--theme-dark)] via-[var(--theme-dark)]/90 to-[var(--theme-primary)]/40 mix-blend-multiply pointer-events-none"></div>
+              
+              <div className="text-right z-10 relative pointer-events-none">
                 <span className="text-[var(--theme-secondary)] font-extrabold tracking-widest text-xs uppercase">CONFIDENTIAL</span>
               </div>
 
-              <div className="z-10 flex flex-col justify-end h-full">
+              <div className="z-10 flex flex-col justify-end h-full relative pointer-events-none">
                 <p className="text-[10px] text-white/50 tracking-wider uppercase font-bold mb-1">CLASSIFICATION</p>
                 <p className="text-lg font-black text-white tracking-widest uppercase">REAL ESTATE BRIEF</p>
               </div>

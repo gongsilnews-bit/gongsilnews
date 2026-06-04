@@ -1258,7 +1258,7 @@ function MobileVacancyWrite() {
                 {propertyType === "상가·사무실·건물·공장·토지" ? (
                   ["없음", "1대", "2대", "3대", "4대", "5대이상"].map(o=><option key={o} value={o}>{o}</option>)
                 ) : (
-                  ["없음", "가능", "1대", "2대~"].map(o=><option key={o} value={o}>{o}</option>)
+                  ["없음", "가능", "1대", "2대", "3대", "4대", "5대이상"].map(o=><option key={o} value={o}>{o}</option>)
                 )}
               </select>
             </div>

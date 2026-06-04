@@ -58,6 +58,9 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                 layoutTheme={layoutTheme}
                 colorTheme={colorTheme}
                 onUpdateInfo={onUpdateInfo}
+                coverImage={mainImage || null}
+                onImageUpload={onImageUpload}
+                isUploading={isUploadingImage?.['mainImage'] || false}
             />
         )}
 
