@@ -52,7 +52,7 @@ const KakaoMap = ({ address }: { address: string }) => {
       
       // Clean up search query (take only the first line if multiline, to allow directions text)
       let cleanAddress = address.split('\n')[0];
-      const cleanPatterns = [/(매매|전세|월세|임대).*/g, /\d+억.*/g];
+      const cleanPatterns = [/(매매|전세|월세|임대).*/g, /\d+억.*/g, /\s+([지상하B]*\d+[층호]).*$/g];
       cleanPatterns.forEach(pat => {
         cleanAddress = cleanAddress.replace(pat, "").trim();
       });
