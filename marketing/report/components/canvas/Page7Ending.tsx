@@ -328,10 +328,10 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
           // High-end Minimal
           return (
             <div className="flex-1 flex flex-col justify-between p-16 bg-white h-full border-b-[8px] border-[var(--theme-primary)]">
-              <div className="flex justify-between items-start mb-6">
+              <div className="flex justify-between items-start mb-8">
                 <div>
                   <h1 className={`text-6xl font-black text-gray-900 tracking-tight ${headingFont}`}>CONTACT</h1>
-                  <p className="text-xs text-gray-400 tracking-[0.3em] font-bold mt-2">상담 및 정보 문의처</p>
+                  <p className="text-base text-gray-400 tracking-[0.3em] font-bold mt-3">상담 및 정보 문의처</p>
                 </div>
                 <div className="w-[100px] h-[1px] bg-gray-300 mt-4 hidden lg:block"></div>
               </div>
