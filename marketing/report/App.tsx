@@ -6,7 +6,7 @@ import FlyerCanvas from './components/FlyerCanvas';
 import TableEditorModal from './components/TableEditorModal';
 import { generateFlyerCopy, fileToGenerativePart, extractPropertyInfoFromImages, extractAgentInfoFromImage, extractComplexInfoFromImage } from './services/geminiService';
 import { FlyerState, PropertyInfo, GeneratedContent, FlyerColor, FlyerLayout } from './types';
-import { detectPropertyCategory, buildOverviewTable } from './propertyTemplates';
+import { detectPropertyCategory, buildOverviewTable, buildInvestmentSummary } from './propertyTemplates';
 import { ArrowDownTrayIcon, CodeBracketIcon, XMarkIcon, CheckIcon } from '@heroicons/react/24/solid';
 
 export const COLORS: FlyerColor[] = [
@@ -760,6 +760,22 @@ function App() {
             detectPropertyCategory(v.sub_category, v.property_type),
             (v.trade_type || '매매') === '매매'
           ),
+          ...(() => {
+            const summary = buildInvestmentSummary(
+              v,
+              detectPropertyCategory(v.sub_category, v.property_type),
+              v.trade_type || '매매'
+            );
+            return {
+              investmentTitle: summary.sectionTitle,
+              investmentSubtitle: summary.sectionSubtitle,
+              investmentSummary: {
+                box1Title: summary.box1Title, box1Text: summary.box1Text,
+                box2Title: summary.box2Title, box2Text: summary.box2Text,
+                box3Title: summary.box3Title, box3Text: summary.box3Text,
+              },
+            };
+          })(),
           noticeTitle: "PREMIUM LISTING DETAIL",
           noticeContent: v.description || "상세 설명이 등록되지 않았습니다.",
           sections: newSections

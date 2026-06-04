@@ -238,3 +238,114 @@ const formatAreaDisplay = (v: any): string => {
   }
   return '';
 };
+
+/**
+ * 거래유형 × 물건유형 기반 투자요약 3박스 자동 생성
+ * Gemini 호출 없이 기존 vacancy 데이터만 활용
+ */
+export const buildInvestmentSummary = (
+  vacancy: any,
+  category: PropertyCategory,
+  transactionType: string
+): {
+  sectionTitle: string;
+  sectionSubtitle: string;
+  box1Title: string; box1Text: string;
+  box2Title: string; box2Text: string;
+  box3Title: string; box3Text: string;
+} => {
+  const direction = vacancy.direction || '';
+  const parking = vacancy.parking || '';
+  const moveIn = vacancy.move_in_date || '즉시입주';
+  const maintenance = vacancy.maintenance_fee
+    ? `${Math.round(vacancy.maintenance_fee / 10000)}만원`
+    : '';
+  const monthlyRent = vacancy.monthly_rent
+    ? `${Math.round(vacancy.monthly_rent / 10000)}만`
+    : '';
+  const buildingName = vacancy.building_name || '';
+  const roomCount = vacancy.room_count || '';
+  const exclusiveM2 = vacancy.exclusive_m2 ? parseFloat(vacancy.exclusive_m2) : 0;
+  const exclusivePy = exclusiveM2 ? `${(exclusiveM2 / 3.3058).toFixed(0)}평` : '';
+  const approvalYear = vacancy.approval_year || '';
+
+  // 방향 텍스트
+  const dirText = direction ? `${direction}\n채광 우수` : '우수한\n채광 조건';
+  // 주차 텍스트
+  const parkText = parking && parking !== '없음' ? `주차 ${parking}\n확보` : '대중교통\n우수';
+  // 면적+방 텍스트
+  const unitText = exclusivePy && roomCount
+    ? `${exclusivePy} ${roomCount}룸\n${direction || '효율형'}`
+    : roomCount
+      ? `${roomCount}룸 구조\n분리형`
+      : '넓은 공간\n활용';
+
+  switch (transactionType) {
+    case '매매':
+      return {
+        sectionTitle: 'INVESTMENT SUMMARY',
+        sectionSubtitle: '투자요약',
+        box1Title: 'LOCATION',
+        box1Text: dirText,
+        box2Title: category === 'apartment' || category === 'officetel'
+          ? 'BRAND' : 'ASSET QUALITY',
+        box2Text: buildingName
+          ? `${buildingName}\n브랜드 단지`
+          : approvalYear
+            ? `${approvalYear}년 준공\n우수 관리`
+            : '내외관\n리모델링',
+        box3Title: 'UNIT',
+        box3Text: unitText,
+      };
+
+    case '전세':
+      return {
+        sectionTitle: 'LIVING SUMMARY',
+        sectionSubtitle: '생활요약',
+        box1Title: 'LOCATION',
+        box1Text: dirText,
+        box2Title: 'PARKING',
+        box2Text: parkText,
+        box3Title: 'MOVE-IN',
+        box3Text: moveIn === '즉시입주' || moveIn.includes('즉시')
+          ? '즉시입주\n가능'
+          : `${moveIn}\n입주 가능`,
+      };
+
+    case '월세':
+    case '단기임대':
+      // 월 총비용 계산
+      const totalCost = monthlyRent && maintenance
+        ? `월세 ${monthlyRent}\n관리비 ${maintenance}`
+        : monthlyRent
+          ? `월 ${monthlyRent}\n합리적 비용`
+          : maintenance
+            ? `관리비\n${maintenance}`
+            : '합리적\n임대 조건';
+
+      return {
+        sectionTitle: 'RENTAL SUMMARY',
+        sectionSubtitle: '입주요약',
+        box1Title: 'LOCATION',
+        box1Text: dirText,
+        box2Title: 'TOTAL COST',
+        box2Text: totalCost,
+        box3Title: 'MOVE-IN',
+        box3Text: moveIn === '즉시입주' || moveIn.includes('즉시')
+          ? '즉시입주\n가능'
+          : `${moveIn}\n입주 가능`,
+      };
+
+    default:
+      return {
+        sectionTitle: 'INVESTMENT SUMMARY',
+        sectionSubtitle: '투자요약',
+        box1Title: 'CONNECTIVITY',
+        box1Text: dirText,
+        box2Title: 'ASSET QUALITY',
+        box2Text: parkText,
+        box3Title: 'SUITABILITY',
+        box3Text: unitText,
+      };
+  }
+};
