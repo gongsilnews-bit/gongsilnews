@@ -321,7 +321,7 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
               <div className="flex flex-col flex-1 justify-center py-2">
                 <div className="flex items-center gap-3">
                   <div className="text-[34px] font-black text-[var(--theme-primary)] flex-1 tracking-tight flex items-center">
-                    <span className="text-[13px] text-gray-400 font-bold tracking-widest mr-3">문의하기 :</span>
+                    <span className="text-[14px] text-[var(--theme-primary)] font-extrabold tracking-widest mr-3">문의하기</span>
                     <EditableText value={info.agentMobile || "010-5554-4444"} onChange={(v) => hc('agentMobile', v)} />
                   </div>
                   <div className="flex gap-2 shrink-0">

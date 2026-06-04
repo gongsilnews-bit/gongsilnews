@@ -678,9 +678,9 @@ function App() {
         const agency = Array.isArray(owner.agencies) ? owner.agencies[0] : owner.agencies;
         
         const agentName = agency?.name || owner.company_name || owner.name || "공실뉴스 중개소";
-        const agentRepresentative = agency ? agency.ceo_name : (owner.ceo_name || owner.name);
-        const agentPhone = agency?.phone || owner.tel_num || v.client_phone || "";
-        const agentMobile = agency?.cell || owner.cell_num || "";
+        const agentRepresentative = owner.name || (agency ? agency.ceo_name : owner.ceo_name) || "담당자명";
+        const agentPhone = owner.tel_num || agency?.phone || v.client_phone || "";
+        const agentMobile = owner.cell_num || agency?.cell || "";
         
         const additionalInfo: string[] = [];
         if (agency?.reg_num || owner.company_reg_no) {

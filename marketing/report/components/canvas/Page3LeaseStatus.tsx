@@ -215,7 +215,7 @@ const Page3LeaseStatus: React.FC<Page3LeaseStatusProps> = ({
                         </div>
                         {(info as any).showLeaseSummaryDesc !== false && (
                             <div className="flex-1 bg-white border border-slate-200 rounded-lg p-4 text-xs text-slate-600 shadow-sm flex flex-col justify-center">
-                                <EditableText value={(info as any).leaseSummaryDesc || "임대 수익률 및 상세 조건은 협의 가능합니다."} onChange={(val) => handleTextChange('leaseSummaryDesc', val)} />
+                                <EditableText multiline value={(info as any).leaseSummaryDesc || "임대 수익률 및 상세 조건은 협의 가능합니다."} onChange={(val) => handleTextChange('leaseSummaryDesc', val)} />
                             </div>
                         )}
                     </div>
