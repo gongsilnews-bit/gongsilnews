@@ -338,28 +338,16 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
 
               <div className="flex gap-10 flex-1">
                 <div className="w-5/12 flex flex-col gap-4 h-full border-r border-gray-100 pr-10">
-                  <div className="flex-1 rounded-xl overflow-hidden border border-gray-200 bg-gray-50 group relative shadow-sm min-h-[140px]">
+                  <div className="flex-1 group relative min-h-[140px]">
                      <EditableImage 
                        src={info.agentCardFront || ""}
-                       alt="명함 앞면"
+                       alt="명함 이미지"
                        imageKey="agentCardFront"
                        onImageUpload={(file) => onImageUpload && onImageUpload('agentCardFront', file)}
                        onDelete={() => onDeleteImage && onDeleteImage('agentCardFront')}
                        isUploading={isUploading}
-                       className="w-full h-full object-contain p-2"
-                       placeholderText="명함 앞면 사진 등록"
-                     />
-                  </div>
-                  <div className="flex-1 rounded-xl overflow-hidden border border-gray-200 bg-gray-50 group relative shadow-sm min-h-[140px]">
-                     <EditableImage 
-                       src={info.agentCardBack || ""}
-                       alt="명함 뒷면"
-                       imageKey="agentCardBack"
-                       onImageUpload={(file) => onImageUpload && onImageUpload('agentCardBack', file)}
-                       onDelete={() => onDeleteImage && onDeleteImage('agentCardBack')}
-                       isUploading={isUploading}
-                       className="w-full h-full object-contain p-2"
-                       placeholderText="명함 뒷면 사진 등록"
+                       className="w-full h-full object-contain"
+                       placeholderText="명함 사진 등록"
                      />
                   </div>
                   <div className="pt-2 shrink-0">
