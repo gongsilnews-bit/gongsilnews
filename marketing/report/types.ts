@@ -156,6 +156,8 @@ export interface PropertyInfo {
   contactQRLink?: string;
   agentPhotoKey?: string;
   agencyLogoKey?: string;
+  agentCardFront?: string;
+  agentCardBack?: string;
   hideRentRoll?: boolean;
   hideRoadmap?: boolean;
   propertyType?: 'commercial_sales' | 'commercial_rent' | 'residential' | 'other';

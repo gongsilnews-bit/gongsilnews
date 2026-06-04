@@ -226,27 +226,62 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
                   <div className="w-16 h-[5px] bg-[var(--theme-primary)] mt-4"></div>
                 </div>
 
-                <div className="flex gap-8 my-6 flex-1">
-                  <div className="w-5/12 space-y-8 py-4">
-                    <div className="border-l-4 border-[var(--theme-primary)] pl-4">
-                      <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block">중개업소명</span>
-                      <span className="text-xl font-black text-gray-800"><EditableText value={info.agentName || "미래에셋공인"} onChange={(v) => hc('agentName', v)} /></span>
+                <div className="flex gap-8 my-5 flex-1 h-full">
+                  {/* 왼쪽: 명함 앞/뒷면 업로드 영역 */}
+                  <div className="w-5/12 flex flex-col gap-4">
+                    <div className="flex-1 rounded-xl overflow-hidden border border-gray-200 bg-gray-50 group relative shadow-sm min-h-[160px]">
+                       <EditableImage 
+                         src={info.agentCardFront || ""}
+                         alt="명함 앞면"
+                         imageKey="agentCardFront"
+                         onImageUpload={(file) => onImageUpload && onImageUpload('agentCardFront', file)}
+                         onDelete={() => onDeleteImage && onDeleteImage('agentCardFront')}
+                         isUploading={isUploading}
+                         className="w-full h-full object-contain p-2"
+                         placeholderText="명함 앞면 사진 등록"
+                       />
                     </div>
-                    <div className="border-l-4 border-[var(--theme-primary)]/40 pl-4">
-                      <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block">담당 대표 공인중개사</span>
-                      <span className="text-lg font-extrabold text-gray-800"><EditableText value={info.agentRepresentative || "김민혁"} onChange={(v) => hc('agentRepresentative', v)} /></span>
-                    </div>
-                    <div className="pt-4">
-                      <PhoneBox info={info} hc={hc} />
+                    <div className="flex-1 rounded-xl overflow-hidden border border-gray-200 bg-gray-50 group relative shadow-sm min-h-[160px]">
+                       <EditableImage 
+                         src={info.agentCardBack || ""}
+                         alt="명함 뒷면"
+                         imageKey="agentCardBack"
+                         onImageUpload={(file) => onImageUpload && onImageUpload('agentCardBack', file)}
+                         onDelete={() => onDeleteImage && onDeleteImage('agentCardBack')}
+                         isUploading={isUploading}
+                         className="w-full h-full object-contain p-2"
+                         placeholderText="명함 뒷면 사진 등록"
+                       />
                     </div>
                   </div>
-                  <div className="w-7/12 flex flex-col">
-                    <MapBlock info={info} className="flex-1 mb-3 rounded-xl border border-gray-200 shadow-sm" />
-                    <DirectionsBox info={info} hc={hc} qrCodeUrl={qrCodeUrl} />
+
+                  {/* 오른쪽: 지도 및 오시는 길/연락처 */}
+                  <div className="w-7/12 flex flex-col gap-4 h-full">
+                    <MapBlock info={info} className="flex-1 rounded-xl border border-gray-200 shadow-sm" />
+                    
+                    <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm flex items-center justify-between gap-4 shrink-0">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-1.5 mb-2">
+                          <MapPinIcon className="w-4 h-4 text-[var(--theme-primary)]" />
+                          <span className="font-black text-xs tracking-widest text-[var(--theme-primary)]">
+                            <EditableText value={info.page7DirectionsTitle || "오시는 길"} onChange={(v) => hc('page7DirectionsTitle', v)} />
+                          </span>
+                        </div>
+                        <div className="text-gray-700 font-bold text-xs leading-relaxed whitespace-pre-wrap break-keep">
+                          <EditableText multiline value={info.agentAddress || "강남구 내 주요 전철역 도보 5분 거리"} onChange={(v) => hc('agentAddress', v)} />
+                        </div>
+                      </div>
+                      
+                      <div className="w-px h-16 bg-gray-100 mx-2 hidden lg:block"></div>
+                      
+                      <div className="shrink-0 flex items-center">
+                        <PhoneBox info={info} hc={hc} stacked={true} />
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                <div className="border-t border-gray-100 pt-5 mt-auto">
+                <div className="border-t border-gray-100 pt-5 mt-4 shrink-0">
                   <SnsBox info={info} hc={hc} />
                 </div>
               </div>
