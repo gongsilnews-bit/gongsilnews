@@ -320,9 +320,6 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
               {/* Phone Number */}
               <div className="flex flex-col flex-1 justify-center py-2">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-[var(--theme-primary)]/10 flex items-center justify-center shrink-0">
-                    <PhoneIcon className="w-5 h-5 text-[var(--theme-primary)]" />
-                  </div>
                   <div className="text-[34px] font-black text-[var(--theme-primary)] flex-1 tracking-tight">
                     <EditableText value={info.agentMobile || "010-5554-4444"} onChange={(v) => hc('agentMobile', v)} />
                   </div>
