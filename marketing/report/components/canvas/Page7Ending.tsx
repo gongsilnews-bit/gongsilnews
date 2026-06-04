@@ -2,6 +2,7 @@ import React from 'react';
 import { PropertyInfo, FlyerColor, FlyerLayout } from '../../types';
 import EditableText from '../shared/EditableText';
 import EditableImage from '../shared/EditableImage';
+import KakaoMap from '../shared/KakaoMap';
 
 interface Props {
   info: PropertyInfo;
@@ -259,40 +260,87 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
         // Default Type 1
         return (
           <div className="flex-1 flex h-full">
-            <div className="w-7/12 p-20 flex flex-col justify-between h-full bg-[#f8fafc] border-r border-gray-200">
-              <div className="mt-6">
+            <div className="w-7/12 p-16 flex flex-col justify-between h-full bg-[#f8fafc] border-r border-gray-200">
+              <div className="mb-4">
                 <h1 className={`text-4xl font-extrabold text-gray-900 tracking-tight leading-none ${headingFont}`}>
                   CONTACT US
                 </h1>
                 <div className="w-16 h-1 bg-[var(--theme-primary)] mt-4"></div>
               </div>
 
-              <div className="my-6 space-y-5">
-                <div className="border-l-4 border-[var(--theme-primary)] pl-4">
-                  <span className="text-[9px] text-gray-400 font-bold block mb-0.5">부동산 법인명</span>
-                  <span className="text-lg font-extrabold text-gray-800">
-                    <EditableText value={info.agentName || "미래에셋공인 중개사 사무소"} onChange={(v) => hc('agentName', v)} />
-                  </span>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="border-l-4 border-gray-300 pl-4">
-                    <span className="text-[9px] text-gray-400 font-bold block mb-0.5">담당 차장/과장</span>
-                    <span className="text-sm font-bold text-gray-700">
-                      <EditableText value={info.agentRepresentative || "김민혁 과장"} onChange={(v) => hc('agentRepresentative', v)} />
+              {/* Map Box */}
+              <div className="w-full h-[320px] rounded-xl overflow-hidden border border-gray-200 shadow-sm mb-6 relative">
+                {info.agentAddress ? (
+                  <KakaoMap address={info.agentAddress} />
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100 text-gray-400 font-bold text-sm">
+                    <svg className="w-8 h-8 text-gray-300 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.242-4.243a8 8 0 1111.314 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    오시는 길 주소를 입력하면 지도가 표시됩니다.
+                  </div>
+                )}
+                {info.agentAddress && (
+                  <a 
+                      href={info.agentMapUrl || `https://map.naver.com/p/search/${encodeURIComponent(info.agentAddress)}`}
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="absolute bottom-3 right-3 bg-white/95 text-slate-800 hover:bg-white active:scale-95 font-extrabold px-3 py-1.5 rounded-xl shadow-lg text-[10px] flex items-center gap-1.5 transition-all border border-gray-200 z-20 print:hidden"
+                      title="네이버 지도로 보기"
+                  >
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5 text-green-600">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25s-7.5-4.108-7.5-11.25z" />
+                      </svg>
+                      <span>네이버 지도 보기</span>
+                  </a>
+                )}
+              </div>
+
+              <div className="flex flex-col flex-1">
+                <div className="flex gap-4">
+                  <div className="flex-1">
+                    <span className="text-[10px] text-[var(--theme-primary)] font-black tracking-wider block mb-1">오시는 길</span>
+                    <span className="text-lg font-extrabold text-gray-800 break-keep leading-tight block">
+                      <EditableText value={info.agentAddress || "서울 강남구 논현동 123-45"} onChange={(v) => hc('agentAddress', v)} />
+                    </span>
+                    <span className="text-sm font-bold text-gray-500 block mt-2">
+                      <EditableText value={info.agentName || "미래에셋공인 중개사 사무소"} onChange={(v) => hc('agentName', v)} className="inline-block" />
+                      <span className="mx-2 text-gray-300">|</span>
+                      <EditableText value={info.agentRepresentative || "김민혁 과장"} onChange={(v) => hc('agentRepresentative', v)} className="inline-block" />
                     </span>
                   </div>
-                  <div className="border-l-4 border-gray-300 pl-4">
-                    <span className="text-[9px] text-gray-400 font-bold block mb-0.5">연락처</span>
-                    <span className="text-sm font-black text-gray-800">
-                      <EditableText value={info.agentMobile || "010-5554-4444"} onChange={(v) => hc('agentMobile', v)} />
-                    </span>
+
+                  <div className="flex flex-col items-end shrink-0 justify-center pl-4 border-l border-gray-200">
+                    <span className="text-[10px] text-gray-400 font-bold tracking-wider mb-1">모바일 터치 시 바로 연결</span>
+                    <a href={`tel:${(info.agentMobile || "010-5554-4444").replace(/[^0-9]/g, '')}`} onClick={(e) => e.preventDefault()} className="text-3xl font-black text-[var(--theme-primary)] hover:opacity-80 transition-opacity block">
+                      <EditableText value={info.agentMobile || "010-5554-4444"} onChange={(v) => hc('agentMobile', v)} className="!text-right" />
+                    </a>
                   </div>
                 </div>
               </div>
 
-              <div className="border-t border-gray-200 pt-6 flex justify-between items-center text-xs text-gray-400 font-bold">
-                <div className="flex gap-4">
-                  <span>유튜브: <EditableText value={info.contactYoutube ? info.contactYoutube.replace('https://', '') : ""} onChange={(v) => hc('contactYoutube', v)} className="text-gray-600 inline-block font-medium" /></span>
+              <div className="border-t border-gray-200 pt-5 mt-auto flex justify-between items-center text-xs text-gray-500 font-bold">
+                <div className="flex gap-6 w-full">
+                  <div className="flex items-center gap-2 flex-1">
+                    <span className="text-gray-400 shrink-0">블로그</span>
+                    <a href={info.contactBlog ? (info.contactBlog.startsWith('http') ? info.contactBlog : `https://${info.contactBlog}`) : '#'} target="_blank" rel="noopener noreferrer" onClick={(e) => { if (!info.contactBlog) e.preventDefault(); }} className="text-gray-700 hover:text-[var(--theme-primary)] transition-colors inline-block w-full underline underline-offset-2">
+                      <EditableText value={info.contactBlog ? info.contactBlog.replace('https://', '') : ""} placeholder="미입력 시 숨김" onChange={(v) => hc('contactBlog', v)} className="w-full" />
+                    </a>
+                  </div>
+                  <div className="flex items-center gap-2 flex-1">
+                    <span className="text-gray-400 shrink-0">유튜브</span>
+                    <a href={info.contactYoutube ? (info.contactYoutube.startsWith('http') ? info.contactYoutube : `https://${info.contactYoutube}`) : '#'} target="_blank" rel="noopener noreferrer" onClick={(e) => { if (!info.contactYoutube) e.preventDefault(); }} className="text-gray-700 hover:text-[var(--theme-primary)] transition-colors inline-block w-full underline underline-offset-2">
+                      <EditableText value={info.contactYoutube ? info.contactYoutube.replace('https://', '') : ""} placeholder="미입력 시 숨김" onChange={(v) => hc('contactYoutube', v)} className="w-full" />
+                    </a>
+                  </div>
+                  <div className="flex items-center gap-2 flex-1">
+                    <span className="text-gray-400 shrink-0">웹사이트</span>
+                    <a href={info.contactWebsite ? (info.contactWebsite.startsWith('http') ? info.contactWebsite : `https://${info.contactWebsite}`) : '#'} target="_blank" rel="noopener noreferrer" onClick={(e) => { if (!info.contactWebsite) e.preventDefault(); }} className="text-gray-700 hover:text-[var(--theme-primary)] transition-colors inline-block w-full underline underline-offset-2">
+                      <EditableText value={info.contactWebsite ? info.contactWebsite.replace('https://', '') : ""} placeholder="미입력 시 숨김" onChange={(v) => hc('contactWebsite', v)} className="w-full" />
+                    </a>
+                  </div>
                 </div>
               </div>
             </div>
