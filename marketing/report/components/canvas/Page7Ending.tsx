@@ -288,22 +288,53 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
               </div>
 
               <div className="flex gap-8 flex-1 mt-6">
-                <div className="w-5/12 flex flex-col justify-center gap-8 bg-white/5 border border-white/10 rounded-2xl p-8 backdrop-blur-sm shadow-xl">
+                <div className="w-5/12 flex flex-col justify-center gap-12 bg-white/5 border border-white/10 rounded-2xl p-8 backdrop-blur-sm shadow-xl">
                   <div>
-                    <span className="text-xs text-[var(--theme-secondary)] font-bold tracking-widest block mb-2">PARTNER FIRM</span>
-                    <span className="text-3xl font-black text-white tracking-tight"><EditableText value={info.agentName || "미래에셋공인"} onChange={(v) => hc('agentName', v)} /></span>
+                    <span className="text-xs text-[var(--theme-secondary)] font-bold tracking-widest block mb-3">AGENT</span>
+                    <span className="text-4xl font-extrabold text-white tracking-tight"><EditableText value={info.agentRepresentative || "김민혁"} onChange={(v) => hc('agentRepresentative', v)} /></span>
                   </div>
-                  <div>
-                    <span className="text-xs text-[var(--theme-secondary)] font-bold tracking-widest block mb-2">AGENT</span>
-                    <span className="text-2xl font-extrabold text-white tracking-tight"><EditableText value={info.agentRepresentative || "김민혁"} onChange={(v) => hc('agentRepresentative', v)} /></span>
-                  </div>
-                  <div className="pt-2 border-t border-white/10">
+                  <div className="pt-6 border-t border-white/10">
                     <PhoneBox info={info} hc={hc} dark stacked={true} />
                   </div>
                 </div>
+                
                 <div className="w-7/12 flex flex-col">
                   <MapBlock info={info} className="flex-1 mb-3 border border-white/10 rounded-xl" />
-                  <DirectionsBox info={info} hc={hc} qrCodeUrl={qrCodeUrl} dark className="" />
+                  
+                  {/* Custom Directions Box for Theme 4 with Agent Name */}
+                  <div className="flex gap-3 shrink-0">
+                    <div className="flex-1 border border-white/10 bg-white/5 rounded-xl p-4 shadow-sm flex items-center justify-between relative overflow-hidden">
+                      <div className="absolute top-0 left-0 w-1 h-full bg-[var(--theme-secondary)]"></div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-1.5 mb-1.5">
+                          <MapPinIcon className="w-3.5 h-3.5 text-[var(--theme-secondary)]" />
+                          <span className="font-black text-xs tracking-widest text-[var(--theme-secondary)]">
+                            <EditableText value={info.page7DirectionsTitle || "오시는 길"} onChange={(v) => hc('page7DirectionsTitle', v)} />
+                          </span>
+                        </div>
+                        <div className="font-bold text-[10px] leading-relaxed whitespace-pre-wrap break-keep text-white/80">
+                          <EditableText multiline value={info.agentAddress || "강남구 내 주요 전철역 도보 5분 거리"} onChange={(v) => hc('agentAddress', v)} />
+                        </div>
+                      </div>
+                      
+                      <div className="shrink-0 text-2xl font-black text-white tracking-tight text-right ml-4 mr-2">
+                        <EditableText value={info.agentName || "미래에셋공인"} onChange={(v) => hc('agentName', v)} />
+                      </div>
+                    </div>
+                    
+                    <div className="w-[90px] shrink-0 border border-white/10 bg-white/5 rounded-xl p-2 shadow-sm flex flex-col items-center justify-center">
+                      {qrCodeUrl ? (
+                        <img src={qrCodeUrl} alt="QR Code" className="w-14 h-14 object-contain" />
+                      ) : (
+                        <div className="w-14 h-14 bg-white/10 rounded-lg flex items-center justify-center">
+                          <span className="text-[8px] text-white/30">QR</span>
+                        </div>
+                      )}
+                      <span className="text-[7px] font-bold mt-1 text-white/50">
+                        <EditableText value={info.qrLabel || "네이버 지도"} onChange={(v) => hc('qrLabel', v)} />
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
