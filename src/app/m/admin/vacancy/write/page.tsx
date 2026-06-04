@@ -919,23 +919,10 @@ function MobileVacancyWrite() {
         💾 임시저장
       </button>
       <div style={{ flex:1 }} />
-      {currentStep > 1 && (
-        <button type="button" onClick={()=>{ setCurrentStep(s=>s-1); window.scrollTo(0,0); }}
-          style={{ height:46, padding:"0 20px", background:"#fff", color:"#374151", border:"1px solid #d1d5db", borderRadius:10, fontSize:14, fontWeight:700, cursor:"pointer" }}>
-          ← 이전
-        </button>
-      )}
-      {currentStep < TOTAL_STEPS ? (
-        <button type="button" onClick={handleNextStep}
-          style={{ height:46, padding:"0 24px", background:"#1a73e8", color:"#fff", border:"none", borderRadius:10, fontSize:14, fontWeight:800, cursor:"pointer", boxShadow:"0 4px 12px rgba(26,115,232,0.25)" }}>
-          다음 →
-        </button>
-      ) : (
-        <button type="button" disabled={submitting} onClick={()=>handleSubmit("ACTIVE")}
-          style={{ height:46, padding:"0 24px", background: submitting?"#9ca3af":"linear-gradient(135deg,#10b981,#059669)", color:"#fff", border:"none", borderRadius:10, fontSize:14, fontWeight:800, cursor: submitting?"not-allowed":"pointer", boxShadow:"0 2px 8px rgba(16,185,129,0.3)" }}>
-          {submitting ? "처리중..." : editId ? "✅ 수정완료" : "✅ 광고등록"}
-        </button>
-      )}
+      <button type="button" disabled={submitting} onClick={()=>handleSubmit("ACTIVE")}
+        style={{ height:46, padding:"0 24px", background: submitting?"#9ca3af":"linear-gradient(135deg,#10b981,#059669)", color:"#fff", border:"none", borderRadius:10, fontSize:14, fontWeight:800, cursor: submitting?"not-allowed":"pointer", boxShadow:"0 2px 8px rgba(16,185,129,0.3)" }}>
+        {submitting ? "처리중..." : editId ? "✅ 수정완료" : "✅ 광고등록"}
+      </button>
     </div>
   );
 
@@ -946,14 +933,14 @@ function MobileVacancyWrite() {
         <button onClick={() => { if (currentStep > 1) { setCurrentStep(s=>s-1); } else { router.replace("/m/admin/vacancy"); }}} style={{ background:"none", border:"none", cursor:"pointer", padding:4, display:"flex" }}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M15 18L9 12L15 6" stroke="#333" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </button>
-        <h1 style={{ fontSize:18, fontWeight:800, color:"#111", margin:0, flex:1 }}>{editId ? "공실수정" : "공실등록"} <span style={{fontSize:13, color:"#6b7280", fontWeight:600}}>({currentStep}/{TOTAL_STEPS})</span></h1>
+        <h1 style={{ fontSize:18, fontWeight:800, color:"#111", margin:0, flex:1 }}>{editId ? "공실수정" : "공실등록"} </h1>
       </div>
       <div style={{ height:56 }} />
 
       <StepIndicator />
       <div style={{ padding:"8px 16px 100px" }}>
         {/* ═══ STEP 1: 분류/주소 ═══ */}
-        {currentStep === 1 && (<>
+        <>
         {/* 1. 공실광고분류 */}
         <div style={{ background:"#fff", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.03)", border:"1px solid #f3f4f6" }}>
           <div style={{ fontSize:16, fontWeight:800, color:"#111", borderLeft:"4px solid #1a73e8", paddingLeft:10, marginBottom:14 }}>공실광고분류</div>
@@ -1057,10 +1044,10 @@ function MobileVacancyWrite() {
             </div>
           </div>
         </div>
-        </>)}
+        </>
 
         {/* ═══ STEP 2: 가격/면적 ═══ */}
-        {currentStep === 2 && (<>
+        <>
 
 
 
@@ -1142,13 +1129,15 @@ function MobileVacancyWrite() {
             <span style={{ color:"#6b7280", fontSize:13, flexShrink:0 }}>만원</span>
           </div>
 
-          {(tradeType==="월세"||tradeType==="단기") && (<>
-            <label style={labelStyle}>월세 {monthly && <span style={{color:"#1a73e8",fontWeight:600}}>{formatKorean(monthly)}</span>}</label>
-            <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:10 }}>
-              <input id="input-monthly" type="number" value={monthly} onChange={e=>setMonthly(e.target.value)} placeholder="만원 단위" style={inputStyle} />
-              <span style={{ color:"#6b7280", fontSize:13, flexShrink:0 }}>만원</span>
-            </div>
-          </>)}
+          {(tradeType==="월세"||tradeType==="단기") && (
+            <>
+              <label style={labelStyle}>월세 {monthly && <span style={{color:"#1a73e8",fontWeight:600}}>{formatKorean(monthly)}</span>}</label>
+              <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:10 }}>
+                <input id="input-monthly" type="number" value={monthly} onChange={e=>setMonthly(e.target.value)} placeholder="만원 단위" style={inputStyle} />
+                <span style={{ color:"#6b7280", fontSize:13, flexShrink:0 }}>만원</span>
+              </div>
+            </>
+          )}
 
           <label style={labelStyle}>관리비 {maintenance && <span style={{color:"#1a73e8", fontWeight:600}}>{formatKorean(maintenance)}</span>}</label>
           <div style={{ display:"flex", alignItems:"center", gap:6 }}>
@@ -1376,10 +1365,10 @@ function MobileVacancyWrite() {
             </div>
           </div>
         </div>
-        </>)}
+        </>
 
         {/* ═══ STEP 3: 사진·상세 ═══ */}
-        {currentStep === 3 && (<>
+        <>
         {/* 5. 추가 */}
         <div style={{ background:"#fff", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.03)", border:"1px solid #f3f4f6" }}>
           <div style={{ fontSize:16, fontWeight:800, color:"#111", borderLeft:"4px solid #1a73e8", paddingLeft:10, marginBottom:14 }}>상세정보</div>
@@ -1491,10 +1480,10 @@ function MobileVacancyWrite() {
             )}
           </div>
         </div>
-        </>)}
+        </>
 
         {/* ═══ STEP 4: 최종확인 ═══ */}
-        {currentStep === 4 && (<>
+        <>
         {/* 미리보기 요약 */}
         <div style={{ background:"#fff", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.03)", border:"1px solid #10b981" }}>
           <div style={{ fontSize:16, fontWeight:800, color:"#10b981", borderLeft:"4px solid #10b981", paddingLeft:10, marginBottom:14 }}>입력 정보 요약</div>
@@ -1639,7 +1628,7 @@ function MobileVacancyWrite() {
           </div>
         )}
 
-        </>)}
+        </>
       </div>
 
       <BottomNav />
