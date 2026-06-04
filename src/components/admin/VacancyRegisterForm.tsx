@@ -1597,7 +1597,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
               </div>
             )}
             
-            {propertyType === "상가·사무실·건물·공장·토지" && (
+            {propertyType === "상가·사무실·건물·공장·토지" && ["상가", "사무실"].includes(subCategory) && (
               <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
                 <div style={{ flex: 1 }}>
                   <label style={labelStyle}>현재 용도 (현용도)</label>
@@ -1667,11 +1667,10 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                     </div>
                   </div>
                   <div style={{ flex: 1 }}>
-                    <label style={{...labelStyle, marginBottom: 6}}>위반건축물 여부</label>
-                    <select value={isIllegal ? "true" : "false"} onChange={(e) => setIsIllegal(e.target.value === "true")} style={{...inputStyle, background: isIllegal ? "#fef2f2" : "#fff", color: isIllegal ? "#ef4444" : textPrimary, borderColor: isIllegal ? "#ef4444" : "#e2e8f0"}}>
-                      <option value="false">해당없음</option>
-                      <option value="true">⚠️ 위반건축물</option>
-                    </select>
+                    <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: isIllegal ? "#fef2f2" : "#fff", border: `1px solid ${isIllegal ? "#ef4444" : "#e2e8f0"}`, height: 46, padding: "0 12px", borderRadius: 8, marginTop: 28 }}>
+                      <input type="checkbox" checked={isIllegal} onChange={(e) => setIsIllegal(e.target.checked)} style={{ width: 18, height: 18, accentColor: "#ef4444" }} />
+                      <span style={{ fontSize: 14, fontWeight: 700, color: isIllegal ? "#ef4444" : textPrimary }}>⚠️ 위반건축물 여부 (체크)</span>
+                    </label>
                   </div>
                 </div>
               </div>

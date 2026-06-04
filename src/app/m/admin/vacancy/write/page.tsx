@@ -1103,11 +1103,10 @@ function MobileVacancyWrite() {
                 </div>
               </div>
               <div style={{ flex: 1 }}>
-                <label style={{ fontSize: 12, fontWeight: 700, color: "#4b5563", marginBottom: 6, display: "block" }}>위반건축물</label>
-                <select value={isIllegal ? "true" : "false"} onChange={(e) => setIsIllegal(e.target.value === "true")} style={{ width: "100%", height: 46, borderRadius: 8, border: "1px solid #d1d5db", padding: "0 14px", fontSize: 14, background: isIllegal ? "#fef2f2" : "#fff", color: isIllegal ? "#ef4444" : "#4b5563", borderColor: isIllegal ? "#ef4444" : "#e2e8f0" }}>
-                  <option value="false">해당없음</option>
-                  <option value="true">⚠️ 위반건축물</option>
-                </select>
+                <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, height: 46, background: isIllegal ? "#fef2f2" : "#fff", border: `1px solid ${isIllegal ? "#ef4444" : "#e2e8f0"}`, borderRadius: 8, marginTop: 24, cursor: "pointer" }}>
+                  <input type="checkbox" checked={isIllegal} onChange={(e) => setIsIllegal(e.target.checked)} style={{ width: 18, height: 18, accentColor: "#ef4444" }} />
+                  <span style={{ fontSize: 13, fontWeight: 700, color: isIllegal ? "#ef4444" : "#4b5563" }}>⚠️ 위반건축물</span>
+                </label>
               </div>
             </div>
           </div>
@@ -1302,7 +1301,7 @@ function MobileVacancyWrite() {
             </div>
           </div>
           
-          {propertyType === "상가·사무실·건물·공장·토지" && (
+          {propertyType === "상가·사무실·건물·공장·토지" && ["상가", "사무실"].includes(subCategory) && (
             <div style={{ display:"flex", gap:10, marginBottom:14 }}>
               <div style={{flex:1}}>
                 <label style={labelStyle}>현재 용도 (현용도)</label>
