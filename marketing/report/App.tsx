@@ -6,7 +6,7 @@ import FlyerCanvas from './components/FlyerCanvas';
 import TableEditorModal from './components/TableEditorModal';
 import { generateFlyerCopy, fileToGenerativePart, extractPropertyInfoFromImages, extractAgentInfoFromImage, extractComplexInfoFromImage } from './services/geminiService';
 import { FlyerState, PropertyInfo, GeneratedContent, FlyerColor, FlyerLayout } from './types';
-import { detectPropertyCategory, buildOverviewTable, buildInvestmentSummary } from './propertyTemplates';
+import { detectPropertyCategory, buildOverviewTable, buildInvestmentSummary, buildPage2Content } from './propertyTemplates';
 import { ArrowDownTrayIcon, CodeBracketIcon, XMarkIcon, CheckIcon } from '@heroicons/react/24/solid';
 
 export const COLORS: FlyerColor[] = [
@@ -774,6 +774,21 @@ function App() {
                 box2Title: summary.box2Title, box2Text: summary.box2Text,
                 box3Title: summary.box3Title, box3Text: summary.box3Text,
               },
+            };
+          })(),
+          ...(() => {
+            const page2 = buildPage2Content(
+              v,
+              detectPropertyCategory(v.sub_category, v.property_type),
+              v.trade_type || '매매'
+            );
+            return {
+              highlights: page2.highlights,
+              chartBars: page2.chartBars,
+              valuationText: page2.valuationText,
+              page2Title: page2.page2Title,
+              page2Subtitle: page2.page2Subtitle,
+              page2HighlightBoxTitle: page2.page2HighlightHeader,
             };
           })(),
           noticeTitle: "PREMIUM LISTING DETAIL",

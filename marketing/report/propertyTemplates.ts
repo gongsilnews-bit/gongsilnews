@@ -349,3 +349,144 @@ export const buildInvestmentSummary = (
       };
   }
 };
+
+/**
+ * Page2 (매물설명 & 시세) 콘텐츠 자동 생성
+ * 차트 라벨, 하이라이트, 어드바이저리를 거래유형 × 물건유형으로 생성
+ */
+export const buildPage2Content = (
+  vacancy: any,
+  category: PropertyCategory,
+  transactionType: string
+): {
+  highlights: string[];
+  chartBars: { label: string; value: string; isHighlight: boolean }[];
+  valuationText: string;
+  page2Title: string;
+  page2Subtitle: string;
+  page2HighlightHeader: string;
+} => {
+  const direction = vacancy.direction || '';
+  const parking = vacancy.parking || '';
+  const moveIn = vacancy.move_in_date || '즉시입주';
+  const buildingName = vacancy.building_name || '';
+  const roomCount = vacancy.room_count || '';
+  const approvalYear = vacancy.approval_year || '';
+  const maintenance = vacancy.maintenance_fee
+    ? `${Math.round(vacancy.maintenance_fee / 10000)}만원`
+    : '';
+  const address = [vacancy.sido, vacancy.sigungu, vacancy.dong].filter(Boolean).join(' ');
+
+  // ── 차트 라벨 (거래유형별) ──
+  let chartBars: { label: string; value: string; isHighlight: boolean }[];
+
+  switch (transactionType) {
+    case '매매':
+      chartBars = [
+        { label: '탁상감정가', value: '', isHighlight: false },
+        { label: '기존 희망가', value: '', isHighlight: false },
+        { label: '인근 시세', value: '', isHighlight: false },
+        { label: '현재 매매가', value: '', isHighlight: true },
+      ];
+      break;
+    case '전세':
+      chartBars = [
+        { label: '단지 평균 전세', value: '', isHighlight: false },
+        { label: '주변 전세 시세', value: '', isHighlight: false },
+        { label: '최근 실거래', value: '', isHighlight: false },
+        { label: '현재 전세가', value: '', isHighlight: true },
+      ];
+      break;
+    case '월세':
+    case '단기임대':
+    default:
+      chartBars = [
+        { label: '주변 평균 월세', value: '', isHighlight: false },
+        { label: '단지 평균 월세', value: '', isHighlight: false },
+        { label: '최근 실거래', value: '', isHighlight: false },
+        { label: '현재 월세', value: '', isHighlight: true },
+      ];
+      break;
+  }
+
+  // ── 하이라이트 (물건유형 × 거래유형) ──
+  const highlights: string[] = [];
+
+  // 1. 방향/채광
+  if (direction) {
+    highlights.push(`채광 우수: ${direction} 배치로 밝고 쾌적한 주거 환경`);
+  }
+
+  // 2. 교통/입지
+  highlights.push(
+    transactionType === '매매'
+      ? `입지 가치: ${address || '우수한 입지'} 역세권 프리미엄`
+      : `교통 편의: ${address || '주요 지역'} 대중교통 접근 우수`
+  );
+
+  // 3. 주차
+  if (parking && parking !== '없음') {
+    highlights.push(`주차 편의: ${parking} 주차 가능`);
+  }
+
+  // 4. 입주조건/건물상태
+  if (transactionType === '매매') {
+    if (approvalYear) {
+      highlights.push(`건물 상태: ${approvalYear}년 준공, 관리 상태 양호`);
+    }
+    if (buildingName) {
+      highlights.push(`브랜드 가치: ${buildingName} 단지 프리미엄`);
+    }
+  } else {
+    if (moveIn) {
+      highlights.push(`입주 조건: ${moveIn} 가능`);
+    }
+    if (maintenance) {
+      highlights.push(`관리비: 월 ${maintenance}으로 합리적 관리`);
+    }
+  }
+
+  // 5. 방/구조
+  if (roomCount) {
+    highlights.push(`공간 구성: ${roomCount}룸 구조로 효율적 공간 활용`);
+  }
+
+  // 최소 4개 보장
+  while (highlights.length < 4) {
+    highlights.push(
+      transactionType === '매매'
+        ? '투자 가치: 안정적 자산 가치 상승 기대'
+        : '생활 환경: 주변 편의시설 및 인프라 우수'
+    );
+  }
+
+  // ── 어드바이저리 텍스트 ──
+  let valuationText: string;
+  if (transactionType === '매매') {
+    valuationText = buildingName
+      ? `본 자산은 ${buildingName} 단지의 우수한 입지와 시설을 갖추고 있어, 안정적인 자산 가치와 향후 프리미엄 상승이 기대됩니다.`
+      : `본 자산의 시세는 최근 실거래가 및 시장 동향을 반영하여 산출되었습니다. 입지 조건에 따른 프리미엄이 내재되어 있어 향후 가치 상승이 기대됩니다.`;
+  } else {
+    valuationText = maintenance
+      ? `본 물건은 월세 및 관리비(${maintenance})를 포함하여 합리적인 주거 비용으로 쾌적한 생활이 가능합니다. 주변 시세 대비 경쟁력 있는 조건입니다.`
+      : `본 물건은 주변 시세 대비 경쟁력 있는 임대 조건을 갖추고 있으며, 교통 및 생활 인프라가 우수한 입지에 위치해 있습니다.`;
+  }
+
+  // ── 페이지 제목 ──
+  const page2Title = transactionType === '매매'
+    ? '매물설명 & 시세'
+    : '매물설명 & 임대시세';
+  const page2Subtitle = 'Status & Valuation';
+  const page2HighlightHeader = transactionType === '매매'
+    ? '매물 핵심 하이라이트'
+    : '입주 핵심 포인트';
+
+  return {
+    highlights: highlights.slice(0, 4),
+    chartBars,
+    valuationText,
+    page2Title,
+    page2Subtitle,
+    page2HighlightHeader,
+  };
+};
