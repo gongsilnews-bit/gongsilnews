@@ -227,11 +227,24 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
               </div>
 
               <div className="border-t border-gray-200 pt-8 flex justify-between items-end">
-                <div>
-                  <span className="text-[10px] text-gray-400 font-bold tracking-widest block mb-1">PARTNER REALTY</span>
-                  <span className="text-base font-extrabold text-gray-800 tracking-wide">
-                    <EditableText value={info.agentName || "미래에셋공인 중개사 사무소"} onChange={(v) => hc('agentName', v)} />
-                  </span>
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-gray-400 font-bold tracking-widest block mb-1.5">PARTNER REALTY</span>
+                  <div className="text-[13px] font-extrabold text-black tracking-wide leading-[1.6] flex flex-col">
+                    <div className="flex gap-1 items-center">
+                      <EditableText value={info.agentName || "미래에셋공인 중개사 사무소"} onChange={(v) => hc('agentName', v)} />
+                      <span className="text-[11px] text-gray-600 font-bold">
+                        (<EditableText value={info.agentRegistrationNumber || "제11680-2015-00123호"} onChange={(v) => hc('agentRegistrationNumber', v)} />)
+                      </span>
+                    </div>
+                    <div>
+                      <EditableText value={info.agentPhone || "02-1234-5678"} onChange={(v) => hc('agentPhone', v)} />
+                    </div>
+                    <div className="flex gap-1.5 items-center text-gray-800">
+                      <EditableText value={info.agentRepresentative || "김민혁"} onChange={(v) => hc('agentRepresentative', v)} />
+                      <span className="text-gray-400">|</span>
+                      <EditableText value={info.agentAddress || "서울 강남구 논현동 123-45"} onChange={(v) => hc('agentAddress', v)} />
+                    </div>
+                  </div>
                 </div>
                 {/* QR code moved to the right side */}
               </div>
