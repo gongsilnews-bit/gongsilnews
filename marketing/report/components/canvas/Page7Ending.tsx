@@ -304,11 +304,6 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
                   <div className="text-gray-700 font-bold text-[13px] leading-relaxed whitespace-pre-wrap break-keep">
                     <EditableText multiline value={info.agentAddress || "강남구 내 주요 전철역 및 다수의 버스 노선 접근이 용이하여 출퇴근 및 대중교통 편리성 확보"} onChange={(v) => hc('agentAddress', v)} />
                   </div>
-                  <div className="mt-3 text-[11px] font-bold text-gray-400">
-                    <EditableText value={info.agentName || "미래에셋공인 중개사 사무소"} onChange={(v) => hc('agentName', v)} className="inline-block" />
-                    <span className="mx-2">|</span>
-                    <EditableText value={info.agentRepresentative || "김민혁 과장"} onChange={(v) => hc('agentRepresentative', v)} className="inline-block" />
-                  </div>
                 </div>
 
                 {/* QR Code (Naver Map) */}
