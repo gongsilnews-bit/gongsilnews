@@ -323,9 +323,9 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
                       </label>
                     </div>
                   )}
-                  <div className="text-right pointer-events-auto">
-                    <p className="text-[14px] font-extrabold text-white tracking-wide uppercase">
-                      <EditableText value={info.qrLabel || "QR ONELINE REPORT"} onChange={(v) => hc('qrLabel', v)} className="!w-auto" />
+                  <div className="text-right pointer-events-auto leading-tight">
+                    <p className="text-[14px] font-extrabold text-white tracking-wider uppercase">
+                      <EditableText value={info.qrLabel || "QR ONLINE\nREPORT"} onChange={(v) => hc('qrLabel', v)} className="!w-auto text-right" multiline={true} />
                     </p>
                   </div>
                 </div>
