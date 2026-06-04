@@ -739,7 +739,8 @@ function App() {
         };
 
         const dongBunji = [v.dong, v.detail_addr].filter(Boolean).join(" ");
-        const autoAddress = [dongBunji, v.building_name, priceText].filter(Boolean).join(" ");
+        const locationName = [dongBunji, v.building_name].filter(Boolean).join(" ");
+        const autoAddress = locationName ? `${locationName}\n${priceText}` : priceText;
 
         const mappedInfo: PropertyInfo = {
           ...INITIAL_INFO,

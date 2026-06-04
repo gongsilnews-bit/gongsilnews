@@ -1391,29 +1391,29 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
               <div style={{ flex: 1 }}>
                 <label style={labelStyle}>공급면적</label>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <input type="number" placeholder="예: 84" value={supplyM2}
-                    onChange={(e) => handleM2Change(e.target.value, setSupplyM2, setSupplyPy)}
-                    style={{ ...inputStyle, flex: 1 }} />
-                  <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>m²</span>
-                  <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>=</span>
                   <input type="number" placeholder="예: 25.4" value={supplyPy}
                     onChange={(e) => handlePyChange(e.target.value, setSupplyPy, setSupplyM2)}
                     style={{ ...inputStyle, flex: 1 }} />
                   <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>평</span>
+                  <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>=</span>
+                  <input type="number" placeholder="예: 84" value={supplyM2}
+                    onChange={(e) => handleM2Change(e.target.value, setSupplyM2, setSupplyPy)}
+                    style={{ ...inputStyle, flex: 1 }} />
+                  <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>m²</span>
                 </div>
               </div>
               <div style={{ flex: 1 }}>
                 <label style={labelStyle}>전용면적</label>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <input type="number" placeholder="예: 59" value={exclusiveM2}
-                    onChange={(e) => handleM2Change(e.target.value, setExclusiveM2, setExclusivePy)}
-                    style={{ ...inputStyle, flex: 1 }} />
-                  <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>m²</span>
-                  <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>=</span>
                   <input type="number" placeholder="예: 18.8" value={exclusivePy}
                     onChange={(e) => handlePyChange(e.target.value, setExclusivePy, setExclusiveM2)}
                     style={{ ...inputStyle, flex: 1 }} />
                   <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>평</span>
+                  <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>=</span>
+                  <input type="number" placeholder="예: 59" value={exclusiveM2}
+                    onChange={(e) => handleM2Change(e.target.value, setExclusiveM2, setExclusivePy)}
+                    style={{ ...inputStyle, flex: 1 }} />
+                  <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>m²</span>
                 </div>
               </div>
             </div>
@@ -1424,15 +1424,15 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                 <div style={{ flex: 1 }}>
                   <label style={labelStyle}>대지면적</label>
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <input type="number" placeholder="예: 33" value={landShareM2}
-                      onChange={(e) => handleM2Change(e.target.value, setLandShareM2, setLandSharePy)}
-                      style={{ ...inputStyle, flex: 1 }} />
-                    <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>m²</span>
-                    <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>=</span>
                     <input type="number" placeholder="예: 10" value={landSharePy}
                       onChange={(e) => handlePyChange(e.target.value, setLandSharePy, setLandShareM2)}
                       style={{ ...inputStyle, flex: 1 }} />
                     <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>평</span>
+                    <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>=</span>
+                    <input type="number" placeholder="예: 33" value={landShareM2}
+                      onChange={(e) => handleM2Change(e.target.value, setLandShareM2, setLandSharePy)}
+                      style={{ ...inputStyle, flex: 1 }} />
+                    <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>m²</span>
                   </div>
                 </div>
                 <div style={{ flex: 1 }}>
@@ -1440,15 +1440,15 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                     <>
                       <label style={labelStyle}>연면적</label>
                       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                        <input type="number" placeholder="예: 84" value={supplyM2}
-                          onChange={(e) => handleM2Change(e.target.value, setSupplyM2, setSupplyPy)}
-                          style={{ ...inputStyle, flex: 1 }} />
-                        <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>m²</span>
-                        <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>=</span>
                         <input type="number" placeholder="예: 25.4" value={supplyPy}
                           onChange={(e) => handlePyChange(e.target.value, setSupplyPy, setSupplyM2)}
                           style={{ ...inputStyle, flex: 1 }} />
                         <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>평</span>
+                        <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>=</span>
+                        <input type="number" placeholder="예: 84" value={supplyM2}
+                          onChange={(e) => handleM2Change(e.target.value, setSupplyM2, setSupplyPy)}
+                          style={{ ...inputStyle, flex: 1 }} />
+                        <span style={{ color: textSecondary, fontSize: 13, flexShrink: 0 }}>m²</span>
                       </div>
                     </>
                   ) : (
