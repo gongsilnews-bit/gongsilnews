@@ -137,6 +137,8 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
   const [roadWidth, setRoadWidth] = useState("");
   const [groundFloors, setGroundFloors] = useState("");
   const [undergroundFloors, setUndergroundFloors] = useState("");
+  const [buildingCoverage, setBuildingCoverage] = useState(""); // 건폐율
+  const [floorAreaRatio, setFloorAreaRatio] = useState(""); // 용적률
 
   // 전달사항
   const [description, setDescription] = useState("");
@@ -288,6 +290,8 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
     if (editData.metadata?.building_structure) setBuildingStructure(editData.metadata.building_structure);
     if (editData.metadata?.zoning) setZoning(editData.metadata.zoning);
     if (editData.metadata?.land_purpose) setLandPurpose(editData.metadata.land_purpose);
+    if (editData.metadata?.building_coverage) setBuildingCoverage(String(editData.metadata.building_coverage));
+    if (editData.metadata?.floor_area_ratio) setFloorAreaRatio(String(editData.metadata.floor_area_ratio));
 
     if (editData.detail_addr) setDetailAddr(editData.detail_addr);
     if (editData.building_name) setBuildingName(editData.building_name);
@@ -1512,6 +1516,22 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                       <span style={{ color: textSecondary, fontSize: 14, flexShrink: 0 }}>m</span>
                     </div>
                   </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={labelStyle}>건폐율</label>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <input type="number" placeholder="예: 60" value={buildingCoverage} onChange={(e) => setBuildingCoverage(e.target.value)} style={inputStyle} />
+                      <span style={{ color: textSecondary, fontSize: 14, flexShrink: 0 }}>%</span>
+                    </div>
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={labelStyle}>용적률</label>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <input type="number" placeholder="예: 200" value={floorAreaRatio} onChange={(e) => setFloorAreaRatio(e.target.value)} style={inputStyle} />
+                      <span style={{ color: textSecondary, fontSize: 14, flexShrink: 0 }}>%</span>
+                    </div>
+                  </div>
                   <div style={{ flex: 1 }}></div>
                 </div>
               </>
@@ -2085,6 +2105,8 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                       road_width: roadWidth ? parseFloat(roadWidth) : null,
                       ground_floors: groundFloors ? parseInt(groundFloors) : null,
                       underground_floors: undergroundFloors ? parseInt(undergroundFloors) : null,
+                      building_coverage: buildingCoverage ? parseFloat(buildingCoverage) : null,
+                      floor_area_ratio: floorAreaRatio ? parseFloat(floorAreaRatio) : null,
                     },
                     client_name: clientName,
                     client_phone: clientPhone,

@@ -118,6 +118,8 @@ function MobileVacancyWrite() {
   // 기타
   const [parking, setParking] = useState("없음");
   const [moveInDate, setMoveInDate] = useState("즉시입주(공실)");
+  const [buildingCoverage, setBuildingCoverage] = useState(""); // 건폐율
+  const [floorAreaRatio, setFloorAreaRatio] = useState(""); // 용적률
   const [description, setDescription] = useState("");
   const [isAIGenerating, setIsAIGenerating] = useState(false);
 
@@ -274,6 +276,8 @@ function MobileVacancyWrite() {
           }
           if (d.metadata.zoning) setZoning(d.metadata.zoning);
           if (d.metadata.land_purpose) setLandPurpose(d.metadata.land_purpose);
+          if (d.metadata.building_coverage) setBuildingCoverage(String(d.metadata.building_coverage));
+          if (d.metadata.floor_area_ratio) setFloorAreaRatio(String(d.metadata.floor_area_ratio));
         }
         if (d.current_floor) setCurrentFloor(d.current_floor);
         if (d.total_floor) setTotalFloor(d.total_floor);
@@ -668,6 +672,8 @@ function MobileVacancyWrite() {
           building_structure: buildingStructure,
           zoning: zoning || undefined,
           land_purpose: landPurpose || undefined,
+          building_coverage: buildingCoverage ? parseFloat(buildingCoverage) : undefined,
+          floor_area_ratio: floorAreaRatio ? parseFloat(floorAreaRatio) : undefined,
         },
         consent: true, status,
       };
@@ -1225,6 +1231,24 @@ function MobileVacancyWrite() {
                         <option key={v} value={v}>{v}</option>
                       ))}
                     </select>
+                  </div>
+                </div>
+              )}
+              {tradeType === "매매" && ((propertyType === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(subCategory)) || (propertyType === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고"].includes(subCategory))) && (
+                <div style={{ display:"flex", gap:10, marginBottom:10 }}>
+                  <div style={{flex:1}}>
+                    <label style={labelStyle}>건폐율</label>
+                    <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                      <input type="number" value={buildingCoverage} onChange={e=>setBuildingCoverage(e.target.value)} placeholder="예: 60" style={inputStyle} />
+                      <span style={{ color:"#6b7280", fontSize:13, flexShrink:0 }}>%</span>
+                    </div>
+                  </div>
+                  <div style={{flex:1}}>
+                    <label style={labelStyle}>용적률</label>
+                    <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                      <input type="number" value={floorAreaRatio} onChange={e=>setFloorAreaRatio(e.target.value)} placeholder="예: 200" style={inputStyle} />
+                      <span style={{ color:"#6b7280", fontSize:13, flexShrink:0 }}>%</span>
+                    </div>
                   </div>
                 </div>
               )}
