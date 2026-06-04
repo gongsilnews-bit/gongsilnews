@@ -342,7 +342,13 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                 const priceText = row.trade_type === "매매" || row.trade_type === "전세" 
                   ? formatAmount(row.deposit) 
                   : `${formatAmount(row.deposit)}/${formatAmount(row.monthly_rent)}`;
-                const addrText = [row.dong, row.building_name].filter(Boolean).join(" ") || [row.sido, row.sigungu, row.dong].filter(Boolean).join(" ");
+                const addrText = [
+                  row.dong,
+                  row.detail_addr,
+                  row.building_name,
+                  row.apt_dong ? (row.apt_dong.includes("동") ? row.apt_dong : `${row.apt_dong}동`) : "",
+                  row.hosu ? (row.hosu.includes("호") ? row.hosu : `${row.hosu}호`) : ""
+                ].filter(Boolean).join(" ") || [row.sido, row.sigungu, row.dong].filter(Boolean).join(" ");
                 const dateStr = row.created_at ? new Date(row.created_at).toLocaleDateString('ko-KR', { timeZone: "Asia/Seoul", month: '2-digit', day: '2-digit' }) : "";
                 const isActive = row.status === 'ACTIVE';
                 const isPending = row.status === 'PENDING';

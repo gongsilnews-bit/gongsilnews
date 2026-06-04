@@ -246,7 +246,13 @@ function MobileVacancyAdmin() {
           </div>
         ) : filtered.map(row => {
           const st = statusInfo[row.status] || { bg: "#9ca3af", label: row.status };
-          const addrText = [row.dong, row.building_name].filter(Boolean).join(" ") || [row.sido, row.sigungu, row.dong].filter(Boolean).join(" ");
+          const addrText = [
+            row.dong,
+            row.detail_addr,
+            row.building_name,
+            row.apt_dong ? (row.apt_dong.includes("동") ? row.apt_dong : `${row.apt_dong}동`) : "",
+            row.hosu ? (row.hosu.includes("호") ? row.hosu : `${row.hosu}호`) : ""
+          ].filter(Boolean).join(" ") || [row.sido, row.sigungu, row.dong].filter(Boolean).join(" ");
           const priceText = row.trade_type === "매매" ? `매매 ${formatAmount(row.deposit)}`
             : row.trade_type === "전세" ? `전세 ${formatAmount(row.deposit)}`
             : `${formatAmount(row.deposit)}/${formatAmount(row.monthly_rent)}`;
