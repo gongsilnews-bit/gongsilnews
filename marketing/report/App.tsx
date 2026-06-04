@@ -1882,8 +1882,7 @@ ${clone.outerHTML}
         </button>
 
         {/* AI Regenerate Button */}
-        {isLoadedFromStorage && (
-          <button 
+        <button 
             onClick={handleResetAndRegenerate} 
             className="py-3 px-5 bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 active:scale-95 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all duration-150 shadow-sm"
             title="임시저장 데이터를 지우고 AI로 처음부터 다시 생성합니다."
@@ -1893,7 +1892,6 @@ ${clone.outerHTML}
             </svg>
             <span>AI 새로 생성</span>
           </button>
-        )}
 
         {/* Image Export Button */}
         <button 
