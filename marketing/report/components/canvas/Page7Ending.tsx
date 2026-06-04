@@ -227,30 +227,18 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
                 </div>
 
                 <div className="flex gap-8 my-5 flex-1 h-full">
-                  {/* 왼쪽: 명함 앞/뒷면 업로드 영역 */}
-                  <div className="w-5/12 flex flex-col gap-4">
-                    <div className="flex-1 rounded-xl overflow-hidden border border-gray-200 bg-gray-50 group relative shadow-sm min-h-[160px]">
+                  {/* 왼쪽: 명함 이미지 업로드 영역 */}
+                  <div className="w-5/12 flex flex-col justify-center gap-4 h-full">
+                    <div className="w-full aspect-[9/5] group relative mx-auto">
                        <EditableImage 
                          src={info.agentCardFront || ""}
-                         alt="명함 앞면"
+                         alt="명함 이미지"
                          imageKey="agentCardFront"
                          onImageUpload={(file) => onImageUpload && onImageUpload('agentCardFront', file)}
                          onDelete={() => onDeleteImage && onDeleteImage('agentCardFront')}
                          isUploading={isUploading}
-                         className="w-full h-full object-contain p-2"
-                         placeholderText="명함 앞면 사진 등록"
-                       />
-                    </div>
-                    <div className="flex-1 rounded-xl overflow-hidden border border-gray-200 bg-gray-50 group relative shadow-sm min-h-[160px]">
-                       <EditableImage 
-                         src={info.agentCardBack || ""}
-                         alt="명함 뒷면"
-                         imageKey="agentCardBack"
-                         onImageUpload={(file) => onImageUpload && onImageUpload('agentCardBack', file)}
-                         onDelete={() => onDeleteImage && onDeleteImage('agentCardBack')}
-                         isUploading={isUploading}
-                         className="w-full h-full object-contain p-2"
-                         placeholderText="명함 뒷면 사진 등록"
+                         className="w-full h-full object-contain"
+                         placeholderText="명함 사진 등록"
                        />
                     </div>
                   </div>
