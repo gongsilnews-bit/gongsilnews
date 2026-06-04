@@ -557,3 +557,122 @@ export const buildPage5Content = (
   };
 };
 
+/**
+ * Page6 (가치 및 로드맵) 콘텐츠 자동 생성
+ * 거래유형 x 물건카테고리에 최적화된 로드맵 카드 생성
+ */
+export const buildPage6Content = (
+  vacancy: any,
+  category: PropertyCategory,
+  transactionType: string
+): {
+  page6Title: string;
+  page6Subtitle: string;
+  page6Badge: string;
+  page6FooterQuote: string;
+  roadmap: {
+    box1Title: string; box1Text: string; box1Icon: string;
+    box2Title: string; box2Text: string; box2Icon: string;
+    box3Title: string; box3Text: string; box3Icon: string;
+    box4Title: string; box4Text: string; box4Icon: string;
+  };
+} => {
+  const isResidential = ['apartment', 'officetel', 'house', 'studio'].includes(category);
+  const dong = vacancy.dong || vacancy.sigungu || '해당 지역';
+
+  // 1. 주거용 임대 (전세, 월세, 단기임대)
+  if (isResidential && (transactionType === '월세' || transactionType === '전세' || transactionType === '단기임대')) {
+    return {
+      page6Title: '주거 가치 & 추천 전략',
+      page6Subtitle: 'Living Strategy',
+      page6Badge: 'LIVING STRATEGY',
+      page6FooterQuote: `"${dong}에서 편리하고 품격 있는 라이프스타일을 시작해 보세요."`,
+      roadmap: {
+        box1Title: '완벽한 교통 및 직주근접',
+        box1Text: '지하철역 및 주요 도로망이 인접하여 도심 주요 업무 지구 및 핵심 상권으로 신속한 출퇴근 및 대중교통 이동이 가능합니다.',
+        box1Icon: '🚗',
+        box2Title: '편리한 원스톱 라이프',
+        box2Text: '도보 거리에 대형마트, 은행, 병원 및 풍부한 먹거리와 인프라 상권이 완벽히 조성되어 우수한 정주 여건을 보장합니다.',
+        box2Icon: '🛒',
+        box3Title: '안전한 주거 안심 케어',
+        box3Text: '입주민 전용 카드키, CCTV 및 체계적인 관리 시스템을 적용하여 외부 침입 걱정 없이 프라이빗하고 안심할 수 있는 환경입니다.',
+        box3Icon: '🔒',
+        box4Title: '합리적인 유지 비용 관리',
+        box4Text: '단열 및 난방 효율이 우수한 친환경 자재 마감과 세대 수 대비 낮은 공동 관리비로 매월 합리적인 가계 소비가 가능합니다.',
+        box4Icon: '💵',
+      }
+    };
+  }
+
+  // 2. 주거용 매매 (아파트, 오피스텔 등)
+  if (isResidential && transactionType === '매매') {
+    return {
+      page6Title: '자산 가치 & 주거 로드맵',
+      page6Subtitle: 'Asset Roadmap',
+      page6Badge: 'ASSET ROADMAP',
+      page6FooterQuote: `"${dong} 최고의 생활 환경에서 편리한 일상과 자산 가치 상승을 함께 누리세요."`,
+      roadmap: {
+        box1Title: '최고의 정주 여건 만족',
+        box1Text: '우수한 학군, 단지 근린공원 및 편리한 생활 인프라를 일상에서 누릴 수 있어 장기 거주 시 만족도가 매우 뛰어납니다.',
+        box1Icon: '🏡',
+        box2Title: '입지 희소성 및 시세 방어',
+        box2Text: '대기 수요가 탄탄한 도심 주거 핵심지에 위치하여 인플레이션에 강하며 안정적인 시세 상승 및 탁월한 가격 방어력을 보입니다.',
+        box2Icon: '📈',
+        box3Title: '공실 걱정 없는 임대 운영',
+        box3Text: '역세권 입지와 1~2인 가구 중심의 임대 수요를 확보하기 용이해 향후 임대 전환 시에도 지속적이고 안정적인 캐시플로우가 창출됩니다.',
+        box3Icon: '💰',
+        box4Title: '리모델링을 통한 가치 상승',
+        box4Text: '인테리어 현대식 리뉴얼을 통해 주변 유사 매물 대비 한 차원 높은 보증금 및 월세 책정이 가능하며 단기적 시세 견인이 가능합니다.',
+        box4Icon: '🛠️',
+      }
+    };
+  }
+
+  // 3. 상업용/사무실 임대 (빌딩, 상가, 오피스 등 x 전월세)
+  if (!isResidential && (transactionType === '월세' || transactionType === '전세' || transactionType === '단기임대')) {
+    return {
+      page6Title: '비즈니스 공간 & 추천 전략',
+      page6Subtitle: 'Business Blueprint',
+      page6Badge: 'BUSINESS BLUEPRINT',
+      page6FooterQuote: `"귀사의 성장과 비즈니스 성공을 위한 최상의 업무 파트너가 되어 드립니다."`,
+      roadmap: {
+        box1Title: '비즈니스 효율 공간 설계',
+        box1Text: '팀원 간 유기적인 협업과 집중도 향상을 고려한 스마트 레이아웃으로, 넓고 쾌적한 비즈니스 및 컨퍼런스 룸 활용이 용이합니다.',
+        box1Icon: '🏢',
+        box2Title: '최적의 대외 네트워킹',
+        box2Text: '파트너사 방문 및 바이어 초청 시 품격 있는 첫인상을 심어줄 수 있는 자주식 무료 주차 혜택과 높은 빌딩 인지도를 지닙니다.',
+        box2Icon: '🚇',
+        box3Title: '고정 비용 절감 효과',
+        box3Text: '인근 유사 프라임급 빌딩 대비 합리적이고 조율 가능한 임대료와 관리비 조건으로 장기 운영 시 고정 비용 절감을 실현합니다.',
+        box3Icon: '📉',
+        box4Title: '신속한 공공 업무 편의',
+        box4Text: '도보 5분 거리 내 세무서, 우체국, 구청 및 주요 시중은행들이 밀집해 있어 신속하고 매끄러운 오피스 행정 처리를 돕습니다.',
+        box4Icon: '🤝',
+      }
+    };
+  }
+
+  // 4. 상업용 매매 (빌딩, 상가 등 x 매매) -> 기존 유지
+  return {
+    page6Title: '가치 및 로드맵',
+    page6Subtitle: 'Value & Roadmap',
+    page6Badge: 'INVESTMENT ROADMAP',
+    page6FooterQuote: '"최고의 입지에 미래 가치를 더합니다."',
+    roadmap: {
+      box1Title: '단독 사옥 활용 시나리오',
+      box1Text: '전층 명도 협의 후 기업의 아이덴티티를 투영한 단독 사옥으로 활용합니다. 역세권 입지의 상징성을 동시에 확보할 수 있는 최상의 환경을 제공합니다.',
+      box1Icon: '🏢',
+      box2Title: '주거 및 근생 수익 모델',
+      box2Text: '상층부 실거주를 통해 최고의 직주근접 환경을 실현합니다. 하층부는 오피스 및 상가 임대를 통해 안정적인 월세 수익을 확보할 수 있습니다.',
+      box2Icon: '🏡',
+      box3Title: '수익형 자산 밸류업 전략',
+      box3Text: '주택 부분의 근생 용도변경 및 전면 리모델링을 통해 우량 법인 임차를 유치합니다. 자산 가치 극대화 후 시세 차익 실현에 집중하는 투자 안입니다.',
+      box3Icon: '📈',
+      box4Title: '역세권 오피스 개발안',
+      box4Text: '높은 용적률을 활용한 고품격 오피스 빌딩 신축 개발입니다. 역세권 입지의 희소성을 활용하여 개발 이익을 극대화할 수 있습니다.',
+      box4Icon: '🏗️',
+    }
+  };
+};
+
+

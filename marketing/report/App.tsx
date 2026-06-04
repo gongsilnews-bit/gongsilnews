@@ -6,7 +6,7 @@ import FlyerCanvas from './components/FlyerCanvas';
 import TableEditorModal from './components/TableEditorModal';
 import { generateFlyerCopy, fileToGenerativePart, extractPropertyInfoFromImages, extractAgentInfoFromImage, extractComplexInfoFromImage } from './services/geminiService';
 import { FlyerState, PropertyInfo, GeneratedContent, FlyerColor, FlyerLayout } from './types';
-import { detectPropertyCategory, buildOverviewTable, buildInvestmentSummary, buildPage2Content, buildPage5Content } from './propertyTemplates';
+import { detectPropertyCategory, buildOverviewTable, buildInvestmentSummary, buildPage2Content, buildPage5Content, buildPage6Content } from './propertyTemplates';
 import { ArrowDownTrayIcon, CodeBracketIcon, XMarkIcon, CheckIcon } from '@heroicons/react/24/solid';
 
 export const COLORS: FlyerColor[] = [
@@ -752,7 +752,12 @@ function App() {
 
           pageBadges: {
             ...INITIAL_INFO.pageBadges,
-            page1: getEnglishTradeType(v.trade_type)
+            page1: getEnglishTradeType(v.trade_type),
+            page6: buildPage6Content(
+              v,
+              detectPropertyCategory(v.sub_category, v.property_type),
+              v.trade_type || '매매'
+            ).page6Badge
           },
 
           overviewTable: buildOverviewTable(
@@ -806,6 +811,19 @@ function App() {
               areaBox3Title: page5.areaBox3Title,
               areaBox3Text: page5.areaBox3Text,
               page4TargetTitle: page5.page4TargetTitle,
+            };
+          })(),
+          ...(() => {
+            const page6 = buildPage6Content(
+              v,
+              detectPropertyCategory(v.sub_category, v.property_type),
+              v.trade_type || '매매'
+            );
+            return {
+              page6Title: page6.page6Title,
+              page6Subtitle: page6.page6Subtitle,
+              page6FooterQuote: page6.page6FooterQuote,
+              roadmap: page6.roadmap,
             };
           })(),
           noticeTitle: "PREMIUM LISTING DETAIL",
