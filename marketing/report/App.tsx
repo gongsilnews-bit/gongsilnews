@@ -1125,8 +1125,8 @@ function App() {
       setIsSavingCloud(false);
     }
 
-    // 2. 공유 고유 URL 주소 빌드
-    const shareUrl = `${window.location.origin}/flyer/${vacancyId}`;
+    // 2. 공유 고유 URL 주소 빌드 (html 확장자 유지)
+    const shareUrl = `${window.location.origin}/flyer/${vacancyId}.html`;
     
     // 3. 브라우저 클립보드 복사
     try {
@@ -1823,6 +1823,20 @@ ${clone.outerHTML}
         sections={getExportableSections()}
         onExport={downloadJpg}
       />
+
+      <div style={{ position: 'absolute', top: '-9999px', left: '-9999px', pointerEvents: 'none', opacity: 0 }}>
+        <div ref={hiddenFlyerRef}>
+          <FlyerCanvas 
+            data={state} 
+            activeTab="all"
+            onUpdateInfo={() => {}}
+            onImageUpload={async () => undefined}
+            onDeleteImage={() => {}}
+            isUploadingImage={{}}
+            onOpenTableEditor={() => {}}
+          />
+        </div>
+      </div>
       
       <header className="print:hidden bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
         <div className="max-w-[1600px] mx-auto px-4 lg:px-8 h-16 flex items-center justify-between">
