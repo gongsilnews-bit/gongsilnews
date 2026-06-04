@@ -17,6 +17,7 @@ export interface FilterState {
   sido: string | null;             // 시/도 필터
   sigungu: string | null;          // 시/군/구 필터
   dong: string | null;             // 읍/면/동 필터
+  locationSearchType?: 'map' | 'filter'; // 검색 유형 (A스타일: map, B스타일: filter)
 }
 
 const ALL_PROPERTY_TYPES = [
@@ -42,6 +43,7 @@ export const initialFilterState: FilterState = {
   sido: null,
   sigungu: null,
   dong: null,
+  locationSearchType: 'map',
 };
 
 export const normalizeSido = (sido: string | null): string => {
@@ -207,20 +209,21 @@ export function useVacancyFilters(initialVacancies: any[]) {
       }
 
       // 11. 위치 필터 (시/구/동) - [대표님 최종 개혁 지침]: 행정동 텍스트 하드 매칭을 걷어내어 화면(Bbox) 안 매물은 다 보이게 공간 연산 일원화!
-      /*
-      if (filterSidoNorm) {
-        const vSidoNorm = normalizeSido(v.sido);
-        if (vSidoNorm !== filterSidoNorm) return false;
+      // 단, 필터창에서 주소를 검색하여 결과 목록을 볼 때(B스타일)는 필터에서 선택한 구체적인 지역명과 매물 주소를 하드 매칭합니다.
+      if (filters.locationSearchType === 'filter') {
+        if (filterSidoNorm) {
+          const vSidoNorm = normalizeSido(v.sido);
+          if (vSidoNorm !== filterSidoNorm) return false;
+        }
+        if (filterSigunguNorm) {
+          const vSigungu = v.sigungu?.trim() || "";
+          if (vSigungu !== filterSigunguNorm) return false;
+        }
+        if (filterDongNorm) {
+          const vDong = v.dong?.trim() || "";
+          if (vDong !== filterDongNorm) return false;
+        }
       }
-      if (filterSigunguNorm) {
-        const vSigungu = v.sigungu?.trim() || "";
-        if (vSigungu !== filterSigunguNorm) return false;
-      }
-      if (filterDongNorm) {
-        const vDong = v.dong?.trim() || "";
-        if (vDong !== filterDongNorm) return false;
-      }
-      */
 
       return true;
     });

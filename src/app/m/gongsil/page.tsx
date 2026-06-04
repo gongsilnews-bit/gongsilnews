@@ -98,6 +98,7 @@ function MobileGongsilContent() {
   // 🚀 위치 역지오코딩 & 상단 라벨 실시간 갱신용 React State
   const [locLabel, setLocLabel] = useState("위치");
   const geocoderRef = useRef<any>(null);
+  const skipGeocodingSyncRef = useRef<boolean>(false);
   
   // 🚀 초고속 Bbox 데이터 실시간 갱신용 React State
   const [mapBounds, setMapBounds] = useState<any>(null);
@@ -499,28 +500,37 @@ function MobileGongsilContent() {
     return () => window.removeEventListener("popstate", handlePopState);
   }, [selectedVacancy, selectedCluster, isEmbedded, showListView, showGalleryFullscreen]);
 
-  // 💡 [대표님 지침] Bbox(지도의 화면 영역) 변화에 따라 Supabase에서 실시간으로 범위 내 매물만 초고속 패치!
+  // 💡 [대표님 지침] Bbox(지도의 화면 영역) 변화 또는 필터 기반(B스타일) 행정구역 검색 시 Supabase에서 실시간으로 범위 내/지역 내 매물 패치!
   useEffect(() => {
-    if (!mapBounds) return;
+    // A스타일(map)인데 mapBounds가 없으면 조회를 대기
+    if (filters.locationSearchType === 'map' && !mapBounds) return;
 
-    const fetchBboxVacancies = async () => {
+    const fetchVacanciesData = async () => {
       setIsFetchingVacancies(true);
       try {
-        const sw = mapBounds.getSouthWest();
-        const ne = mapBounds.getNorthEast();
+        let res;
 
-        const swLat = sw.getLat();
-        const swLng = sw.getLng();
-        const neLat = ne.getLat();
-        const neLng = ne.getLng();
+        if (filters.locationSearchType === 'filter' && (filters.sido || filters.sigungu || filters.dong)) {
+          // B스타일: 행정구역 텍스트 기반 전체 데이터 쿼리
+          res = await getVacanciesForMap({
+            sido: filters.sido || undefined,
+            sigungu: filters.sigungu || undefined,
+            dong: filters.dong || undefined,
+            is_auction: activeMode === "경매",
+            limit: 10000
+          });
+        } else {
+          // A스타일: 지도 영역(Bbox) 기반 쿼리
+          if (!mapBounds) return;
+          const sw = mapBounds.getSouthWest();
+          const ne = mapBounds.getNorthEast();
+          res = await getVacanciesForMap({
+            bbox: { swLat: sw.getLat(), swLng: sw.getLng(), neLat: ne.getLat(), neLng: ne.getLng() },
+            is_auction: activeMode === "경매"
+          });
+        }
 
-        // getVacanciesForMap Server Action을 활용한 0.1초 미만 초고속 지도 영역 쿼리 실행
-        const res = await getVacanciesForMap({
-          bbox: { swLat, swLng, neLat, neLng },
-          is_auction: activeMode === "경매" // 🚀 경공매 모드일 때 경공매 매물만 초고속 쿼리!
-        });
-
-        if (res.success && res.data) {
+        if (res && res.success && res.data) {
           const withImages = res.data.map((v: any) => ({
             ...v,
             images: v.vacancy_photos
@@ -543,15 +553,15 @@ function MobileGongsilContent() {
           }
         }
       } catch (err) {
-        console.error("Failed to fetch mobile bbox vacancies:", err);
+        console.error("Failed to fetch mobile vacancies:", err);
       } finally {
         setIsFetchingVacancies(false);
         setLoading(false);
       }
     };
 
-    fetchBboxVacancies();
-  }, [mapBounds, activeMode]);
+    fetchVacanciesData();
+  }, [mapBounds, activeMode, filters.locationSearchType, filters.sido, filters.sigungu, filters.dong]);
 
   // 💡 최초 진입 시, 만약 URL에 id 파라미터가 있어서 다이렉트 뷰 모드인 경우 1회 강제 단일 상세 로드
   useEffect(() => {
@@ -802,6 +812,8 @@ function MobileGongsilContent() {
       setZoomLevel(map.getLevel());
       updateVisibleCount();
 
+      if (skipGeocodingSyncRef.current) return; // 👈 프로그램에 의한 지도 이동 시 필터 덮어쓰기 방지
+
       // 🚀 [대표님 기획 지침] 지도 드래그 이동 시 중심점 주소를 획득하여 상단 📍 위치 탭 및 필터 행정구역 자동 동기화
       if (geocoderRef.current) {
         geocoderRef.current.coord2RegionCode(center.getLng(), center.getLat(), (result: any, status: any) => {
@@ -815,11 +827,12 @@ function MobileGongsilContent() {
               const label = [sigungu, dong].filter(Boolean).join(" ");
               setLocLabel(label || "위치");
 
-              // 지도 위치 이동에 맞춰 필터 상태의 행정구역도 완벽 동기화!
+              // 지도 위치 이동에 맞춰 필터 상태의 행정구역도 완벽 동기화 및 A스타일로 강제 전환!
               updateFilter({
                 sido: sido || null,
                 sigungu: sigungu || null,
-                dong: dong || null
+                dong: dong || null,
+                locationSearchType: 'map'
               });
 
               if (currentUser && currentUser.id) {
@@ -827,7 +840,8 @@ function MobileGongsilContent() {
                   ...filters,
                   sido: sido || null,
                   sigungu: sigungu || null,
-                  dong: dong || null
+                  dong: dong || null,
+                  locationSearchType: 'map'
                 };
                 saveLastSearchState(nextFilters, activeMode, currentUser);
               }
@@ -1037,8 +1051,12 @@ function MobileGongsilContent() {
             onLocationMove={(lat, lng, zoom) => {
               const kakao = (window as any).kakao;
               if (kakaoMapRef.current && kakao) {
+                skipGeocodingSyncRef.current = true;
                 kakaoMapRef.current.panTo(new kakao.maps.LatLng(lat, lng));
                 kakaoMapRef.current.setLevel(zoom);
+                setTimeout(() => {
+                  skipGeocodingSyncRef.current = false;
+                }, 1200);
               }
             }}
             onShowList={(mode) => {

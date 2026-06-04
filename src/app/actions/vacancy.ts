@@ -530,6 +530,9 @@ export async function getVacanciesForMap(options?: {
     neLat: number;
     neLng: number;
   };
+  sido?: string;
+  sigungu?: string;
+  dong?: string;
   is_auction?: boolean; // 🚀 경공매 모드 스위치 지원을 위한 옵션 정의
   limit?: number; // ⚡️ 로딩 성능 비약적 향상을 위한 limit 파라미터 추가
 }) {
@@ -563,6 +566,16 @@ export async function getVacanciesForMap(options?: {
           .lte('lat', options.bbox.neLat)
           .gte('lng', options.bbox.swLng)
           .lte('lng', options.bbox.neLng);
+      }
+
+      if (options?.sido) {
+        pageQuery = pageQuery.eq('sido', options.sido);
+      }
+      if (options?.sigungu) {
+        pageQuery = pageQuery.eq('sigungu', options.sigungu);
+      }
+      if (options?.dong) {
+        pageQuery = pageQuery.eq('dong', options.dong);
       }
 
       pageQuery = pageQuery

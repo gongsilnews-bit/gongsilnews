@@ -69,10 +69,17 @@ export default function LocationFilterPanel({ onLocationMove, onFilterChange, on
   const moveMap = (keyword: string, zoom: number) => {
     const kakao = (window as any).kakao;
     if (!kakao?.maps?.services) return;
-    const ps = new kakao.maps.services.Places();
-    ps.keywordSearch(keyword, (data: any, status: any) => {
+    const geocoder = new kakao.maps.services.Geocoder();
+    geocoder.addressSearch(keyword, (data: any, status: any) => {
       if (status === kakao.maps.services.Status.OK && data.length > 0) {
         onLocationMove(parseFloat(data[0].y), parseFloat(data[0].x), zoom);
+      } else {
+        const ps = new kakao.maps.services.Places();
+        ps.keywordSearch(keyword, (pData: any, pStatus: any) => {
+          if (pStatus === kakao.maps.services.Status.OK && pData.length > 0) {
+            onLocationMove(parseFloat(pData[0].y), parseFloat(pData[0].x), zoom);
+          }
+        });
       }
     });
   };

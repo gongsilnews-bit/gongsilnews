@@ -88,7 +88,15 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
   }, [filters.sido, filters.sigungu, filters.dong]);
 
   const handleTempFilterChange = (partial: Partial<FilterState>) => {
-    setTempFilters(prev => ({ ...prev, ...partial }));
+    setTempFilters(prev => {
+      const next = { ...prev, ...partial };
+      if (next.sido || next.sigungu || next.dong) {
+        next.locationSearchType = 'filter';
+      } else {
+        next.locationSearchType = 'map';
+      }
+      return next;
+    });
   };
 
   const applyTextSearch = () => {
@@ -429,7 +437,7 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
             <button 
               onClick={() => {
                 const allPropTypes = PROPERTY_TYPES.flatMap(g => g.items);
-                const empty = { propertyTypes: allPropTypes, tradeTypes: TRADE_TYPES, keyword: "", priceMin: null, priceMax: null, areaMin: null, areaMax: null, yearMin: null, yearMax: null, floor: null, ownerRole: null, commissionType: null, themes: [], sido: null, sigungu: null, dong: null };
+                const empty = { propertyTypes: allPropTypes, tradeTypes: TRADE_TYPES, keyword: "", priceMin: null, priceMax: null, areaMin: null, areaMax: null, yearMin: null, yearMax: null, floor: null, ownerRole: null, commissionType: null, themes: [], sido: null, sigungu: null, dong: null, locationSearchType: 'map' };
                 setTempFilters(empty);
                 setLocLabel("위치");
               }} 

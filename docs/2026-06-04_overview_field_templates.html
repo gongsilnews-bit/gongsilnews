@@ -1,0 +1,634 @@
+﻿<html><head><meta charset='utf-8'><style>body{font-family:'Malgun Gothic',sans-serif;max-width:900px;margin:40px auto;padding:20px;line-height:1.8;color:#1a1a1a}h1{border-bottom:3px solid #333;padding-bottom:10px}h2{color:#005f8c;margin-top:30px}h3{color:#333}table{border-collapse:collapse;width:100%;margin:15px 0}th,td{border:1px solid #ccc;padding:8px 12px;text-align:left}th{background:#f0f4f8;font-weight:bold}tr:nth-child(even){background:#fafbfc}blockquote{border-left:4px solid #f0ad4e;background:#fff8e1;padding:10px 15px;margin:15px 0}code{background:#f5f5f5;padding:2px 6px;border-radius:3px}pre{background:#f5f5f5;padding:15px;border-radius:5px;overflow-x:auto}@media print{body{margin:0;padding:15px}}</style></head><body><h1>AI 매매보고서 - 물건 유형별 개요 필드 정의서</h1>
+<blockquote>
+<p>작성일: 2026-06-04
+상태: <strong>회의 중 (검토 필요)</strong></p>
+</blockquote>
+<hr>
+<h2>1. 현재 문제</h2>
+<p>Page 1 (개요) 테이블이 <strong>빌딩/상가건물 기준 9칸으로 하드코딩</strong>되어 있어,
+아파트·오피스텔·토지 등 다른 물건 유형에서는 부적합한 항목이 노출됨.</p>
+<pre><code>현재 하드코딩 필드 (빌딩 전용):
+소재지 / 용도지역 / 대지면적 / 연면적 / 건물규모 / 주용도 / 주차대수 / 승강기 / 준공연도
+</code></pre>
+<hr>
+<h2>2. 설계 원칙</h2>
+<ul>
+<li>테이블 구조: <strong>9칸 (물건 정보) + 1칸 (가격)</strong> = 총 10행 고정</li>
+<li><strong>물건 유형</strong>에 따라 9칸의 필드명이 바뀜</li>
+<li><strong>거래 유형</strong>(매매/전세/월세)에 따라 가격행 라벨 + 일부 필드(9번) 교체</li>
+<li>10번째 행(가격)은 거래유형에 따라 자동 변환 (이미 구현됨)</li>
+</ul>
+<h3>값이 없는 필드 처리</h3>
+<ul>
+<li>물건 데이터에 해당 항목이 없을 경우 → <strong>필드명(라벨)은 표시, 값은 공란</strong></li>
+<li>사용자가 캔버스에서 클릭하여 <strong>직접 입력</strong> 가능</li>
+<li>향후 AI(Gemini)가 상세설명에서 추출하여 <strong>자동 채움</strong> 가능</li>
+</ul>
+<h3>거래유형별 차이점 (9번 칸 분기)</h3>
+<table>
+<thead>
+<tr>
+<th align="left">거래유형</th>
+<th align="left">9번 칸</th>
+<th align="left">비고</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">매매</td>
+<td align="left">준공연도</td>
+<td align="left">매수자: 건물 나이 중요</td>
+</tr>
+<tr>
+<td align="left">전세/월세/단기</td>
+<td align="left">관리비</td>
+<td align="left">임차인: 월 비용 중요</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>⚠️ 나머지 1~8번 칸은 거래유형과 무관하게 물건유형에 의해서만 결정됨</p>
+</blockquote>
+<hr>
+<h2>3. 물건 유형별 개요 필드 (9칸)</h2>
+<h3>3-1. 아파트 (Apartment)</h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>필드명</th>
+<th>예시 값</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>소재지</td>
+<td>서울 강남구 논현동</td>
+</tr>
+<tr>
+<td>2</td>
+<td>단지명</td>
+<td>논현 e편한세상</td>
+</tr>
+<tr>
+<td>3</td>
+<td>공급/전용면적</td>
+<td>109.11㎡(33.0평) / 84.98㎡(25.7평)</td>
+</tr>
+<tr>
+<td>4</td>
+<td>해당층/총층</td>
+<td>10층 / 11층</td>
+</tr>
+<tr>
+<td>5</td>
+<td>방/욕실수</td>
+<td>3개 / 2개</td>
+</tr>
+<tr>
+<td>6</td>
+<td>방향</td>
+<td>남향</td>
+</tr>
+<tr>
+<td>7</td>
+<td>주차가능 여부</td>
+<td>1대 확보</td>
+</tr>
+<tr>
+<td>8</td>
+<td>입주가능일</td>
+<td>즉시입주</td>
+</tr>
+<tr>
+<td>9</td>
+<td><strong>매매→준공연도</strong> / <strong>임대→관리비</strong></td>
+<td>2002년 / 30만원</td>
+</tr>
+</tbody></table>
+<hr>
+<h3>3-2. 오피스텔 (Officetel)</h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>필드명</th>
+<th>예시 값</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>소재지</td>
+<td>서울 강남구 역삼동</td>
+</tr>
+<tr>
+<td>2</td>
+<td>건물명</td>
+<td>OO타워</td>
+</tr>
+<tr>
+<td>3</td>
+<td>공급/전용면적</td>
+<td>84㎡(25.4평) / 57㎡(17.2평)</td>
+</tr>
+<tr>
+<td>4</td>
+<td>해당층/총층</td>
+<td>저층 / 4층</td>
+</tr>
+<tr>
+<td>5</td>
+<td>방/욕실수</td>
+<td>3개 / 1개</td>
+</tr>
+<tr>
+<td>6</td>
+<td>방향</td>
+<td>남향</td>
+</tr>
+<tr>
+<td>7</td>
+<td>주차가능 여부</td>
+<td>2대~</td>
+</tr>
+<tr>
+<td>8</td>
+<td>입주가능일</td>
+<td>1개월 이내</td>
+</tr>
+<tr>
+<td>9</td>
+<td><strong>매매→준공연도</strong> / <strong>임대→관리비</strong></td>
+<td>2015년 / 20만원</td>
+</tr>
+</tbody></table>
+<hr>
+<h3>3-3. 빌딩 / 상가건물 (Commercial Building)</h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>필드명</th>
+<th>예시 값</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>소재지</td>
+<td>서울 강남구 논현동</td>
+</tr>
+<tr>
+<td>2</td>
+<td>용도지역</td>
+<td>제3종 일반주거지역 / 도로 6m 접</td>
+</tr>
+<tr>
+<td>3</td>
+<td>대지면적</td>
+<td>317.9㎡ (96.16평)</td>
+</tr>
+<tr>
+<td>4</td>
+<td>연면적</td>
+<td>905.13㎡ (273.8평)</td>
+</tr>
+<tr>
+<td>5</td>
+<td>건물규모</td>
+<td>지하1층 / 지상 5층</td>
+</tr>
+<tr>
+<td>6</td>
+<td>주용도</td>
+<td>근린생활시설 및 주택 (상가주택)</td>
+</tr>
+<tr>
+<td>7</td>
+<td>주차대수</td>
+<td>자주식 7대</td>
+</tr>
+<tr>
+<td>8</td>
+<td>승강기</td>
+<td>1대 완비</td>
+</tr>
+<tr>
+<td>9</td>
+<td>준공연도</td>
+<td>2002년 (최근 리모델링 완료)</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>빌딩은 거래유형과 무관하게 9번=준공연도 고정</p>
+</blockquote>
+<hr>
+<h3>3-4. 상가 / 점포 (Shop / Store)</h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>필드명</th>
+<th>예시 값</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>소재지</td>
+<td>서울 강남구 역삼동</td>
+</tr>
+<tr>
+<td>2</td>
+<td>건물명</td>
+<td>OO프라자 3층</td>
+</tr>
+<tr>
+<td>3</td>
+<td>전용면적</td>
+<td>85.5㎡ (25.9평)</td>
+</tr>
+<tr>
+<td>4</td>
+<td>해당층/총층</td>
+<td>3층 / 7층</td>
+</tr>
+<tr>
+<td>5</td>
+<td>현용도</td>
+<td>카페 / 음식점</td>
+</tr>
+<tr>
+<td>6</td>
+<td>권리금</td>
+<td>5,000만원</td>
+</tr>
+<tr>
+<td>7</td>
+<td>주차가능 여부</td>
+<td>건물 내 2대</td>
+</tr>
+<tr>
+<td>8</td>
+<td>입주가능일</td>
+<td>협의</td>
+</tr>
+<tr>
+<td>9</td>
+<td><strong>매매→준공연도</strong> / <strong>임대→관리비</strong></td>
+<td>2010년 / 25만원</td>
+</tr>
+</tbody></table>
+<hr>
+<h3>3-5. 사무실 (Office)</h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>필드명</th>
+<th>예시 값</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>소재지</td>
+<td>서울 강남구 테헤란로</td>
+</tr>
+<tr>
+<td>2</td>
+<td>건물명</td>
+<td>OO타워</td>
+</tr>
+<tr>
+<td>3</td>
+<td>전용면적</td>
+<td>165.2㎡ (50평)</td>
+</tr>
+<tr>
+<td>4</td>
+<td>해당층/총층</td>
+<td>8층 / 15층</td>
+</tr>
+<tr>
+<td>5</td>
+<td>건물등급</td>
+<td>A급</td>
+</tr>
+<tr>
+<td>6</td>
+<td>주차대수</td>
+<td>2대 포함</td>
+</tr>
+<tr>
+<td>7</td>
+<td>승강기</td>
+<td>3대</td>
+</tr>
+<tr>
+<td>8</td>
+<td>입주가능일</td>
+<td>즉시입주</td>
+</tr>
+<tr>
+<td>9</td>
+<td><strong>매매→준공연도</strong> / <strong>임대→관리비</strong></td>
+<td>2018년 / 평당 2.5만</td>
+</tr>
+</tbody></table>
+<hr>
+<h3>3-6. 토지 (Land)</h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>필드명</th>
+<th>예시 값</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>소재지</td>
+<td>경기 용인시 수지구</td>
+</tr>
+<tr>
+<td>2</td>
+<td>지목</td>
+<td>대</td>
+</tr>
+<tr>
+<td>3</td>
+<td>용도지역</td>
+<td>제2종 일반주거지역</td>
+</tr>
+<tr>
+<td>4</td>
+<td>대지면적</td>
+<td>450.0㎡ (136.1평)</td>
+</tr>
+<tr>
+<td>5</td>
+<td>건폐율/용적률</td>
+<td>60% / 200%</td>
+</tr>
+<tr>
+<td>6</td>
+<td>도로조건</td>
+<td>6m 도로 접면</td>
+</tr>
+<tr>
+<td>7</td>
+<td>지형/형상</td>
+<td>평지 / 정방형</td>
+</tr>
+<tr>
+<td>8</td>
+<td>현재이용</td>
+<td>나대지 (공터)</td>
+</tr>
+<tr>
+<td>9</td>
+<td>개발가능</td>
+<td>단독/다세대 신축 가능</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>토지는 거래유형 분기 없음 (매매 전용)</p>
+</blockquote>
+<hr>
+<h3>3-7. 단독 / 다가구주택 (Detached / Multi-family)</h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>필드명</th>
+<th>예시 값</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>소재지</td>
+<td>서울 마포구 연남동</td>
+</tr>
+<tr>
+<td>2</td>
+<td>용도지역</td>
+<td>제1종 일반주거지역</td>
+</tr>
+<tr>
+<td>3</td>
+<td>대지면적</td>
+<td>198.3㎡ (60평)</td>
+</tr>
+<tr>
+<td>4</td>
+<td>연면적</td>
+<td>396.6㎡ (120평)</td>
+</tr>
+<tr>
+<td>5</td>
+<td>건물규모</td>
+<td>지하1층 / 지상 3층</td>
+</tr>
+<tr>
+<td>6</td>
+<td>세대수</td>
+<td>6세대</td>
+</tr>
+<tr>
+<td>7</td>
+<td>주차대수</td>
+<td>2대</td>
+</tr>
+<tr>
+<td>8</td>
+<td>준공연도</td>
+<td>2015년</td>
+</tr>
+<tr>
+<td>9</td>
+<td>월수익</td>
+<td>550만원</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>다가구는 수익형이므로 9번=월수익 고정</p>
+</blockquote>
+<hr>
+<h3>3-8. 원룸 / 투룸 (Studio / Two-room)</h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>필드명</th>
+<th>예시 값</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>소재지</td>
+<td>서울 관악구 신림동</td>
+</tr>
+<tr>
+<td>2</td>
+<td>건물명</td>
+<td>OO빌라</td>
+</tr>
+<tr>
+<td>3</td>
+<td>전용면적</td>
+<td>26.4㎡ (8평)</td>
+</tr>
+<tr>
+<td>4</td>
+<td>해당층/총층</td>
+<td>3층 / 5층</td>
+</tr>
+<tr>
+<td>5</td>
+<td>방/욕실수</td>
+<td>1개 / 1개</td>
+</tr>
+<tr>
+<td>6</td>
+<td>방향</td>
+<td>남향</td>
+</tr>
+<tr>
+<td>7</td>
+<td>주차가능 여부</td>
+<td>불가</td>
+</tr>
+<tr>
+<td>8</td>
+<td>입주가능일</td>
+<td>즉시입주</td>
+</tr>
+<tr>
+<td>9</td>
+<td>관리비</td>
+<td>5만원</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>원룸은 거래유형 분기 없음 (대부분 임대, 9번=관리비 고정)</p>
+</blockquote>
+<hr>
+<h2>4. 유형 자동 판별 규칙</h2>
+<p>공실뉴스 데이터의 물건 유형 문자열을 기반으로 템플릿 매핑:</p>
+<table>
+<thead>
+<tr>
+<th align="left">데이터 값</th>
+<th align="left">적용 템플릿</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><code>아파트</code></td>
+<td align="left">아파트</td>
+</tr>
+<tr>
+<td align="left"><code>오피스텔</code></td>
+<td align="left">오피스텔</td>
+</tr>
+<tr>
+<td align="left"><code>빌딩</code>, <code>건물</code>, <code>상가건물</code></td>
+<td align="left">빌딩/상가건물</td>
+</tr>
+<tr>
+<td align="left"><code>상가</code>, <code>점포</code></td>
+<td align="left">상가/점포</td>
+</tr>
+<tr>
+<td align="left"><code>사무실</code></td>
+<td align="left">사무실</td>
+</tr>
+<tr>
+<td align="left"><code>토지</code>, <code>나대지</code></td>
+<td align="left">토지</td>
+</tr>
+<tr>
+<td align="left"><code>단독</code>, <code>다가구</code>, <code>다세대</code></td>
+<td align="left">단독/다가구</td>
+</tr>
+<tr>
+<td align="left"><code>원룸</code>, <code>투룸</code>, <code>쓰리룸</code></td>
+<td align="left">원룸/투룸</td>
+</tr>
+<tr>
+<td align="left">기타 / 미지정</td>
+<td align="left">빌딩/상가건물 (기본값)</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>5. 10번째 행 (가격) 라벨 규칙</h2>
+<table>
+<thead>
+<tr>
+<th align="left">거래유형</th>
+<th align="left">라벨</th>
+<th align="left">예시</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">매매</td>
+<td align="left">매매가</td>
+<td align="left">17억</td>
+</tr>
+<tr>
+<td align="left">전세</td>
+<td align="left">보증금 (전세)</td>
+<td align="left">5억</td>
+</tr>
+<tr>
+<td align="left">월세</td>
+<td align="left">보증금 / 월세</td>
+<td align="left">1억 / 70만</td>
+</tr>
+<tr>
+<td align="left">단기임대</td>
+<td align="left">보증금 / 월세</td>
+<td align="left">500만 / 50만</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>이미 현재 코드에 구현되어 있음 (Page1Overview.tsx)</p>
+</blockquote>
+<hr>
+<h2>6. 구현 범위</h2>
+<h3>변경 대상 파일</h3>
+<table>
+<thead>
+<tr>
+<th align="left">파일</th>
+<th align="left">변경 내용</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><code>propertyTemplates.ts</code> (신규)</td>
+<td align="left">8가지 물건유형 × 거래유형별 9칸 필드 정의</td>
+</tr>
+<tr>
+<td align="left"><code>App.tsx</code></td>
+<td align="left"><code>convertOverviewTableToArray()</code> 수정 → 유형별 템플릿 적용</td>
+</tr>
+<tr>
+<td align="left"><code>FlyerForm.tsx</code></td>
+<td align="left">fallback 필드 목록 → 템플릿 참조로 변경</td>
+</tr>
+<tr>
+<td align="left"><code>types.ts</code></td>
+<td align="left"><code>PropertyInfo</code>에 <code>propertyType</code> 필드 추가</td>
+</tr>
+</tbody></table>
+<h3>변경하지 않는 파일</h3>
+<ul>
+<li><code>Page1Overview.tsx</code> — 이미 <code>[{label, value}]</code> 배열 기반이라 변경 불필요</li>
+<li>기타 Page 컴포넌트 — 영향 없음</li>
+</ul>
+<hr>
+<h2>7. TODO</h2>
+<ul>
+<li><input disabled="" type="checkbox"> 위 필드 정의 최종 승인</li>
+<li><input disabled="" type="checkbox"> <code>propertyTemplates.ts</code> 작성</li>
+<li><input disabled="" type="checkbox"> <code>convertOverviewTableToArray()</code> 수정</li>
+<li><input disabled="" type="checkbox"> <code>FlyerForm.tsx</code> fallback 수정</li>
+<li><input disabled="" type="checkbox"> <code>types.ts</code> 타입 추가</li>
+<li><input disabled="" type="checkbox"> 브라우저 테스트 (아파트 물건으로 보고서 생성 확인)</li>
+</ul>
+</body></html>
