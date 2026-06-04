@@ -2,6 +2,7 @@ import React from 'react';
 import { PropertyInfo, FlyerColor, FlyerLayout } from '../../types';
 import EditableText from '../shared/EditableText';
 import EditableImage from '../shared/EditableImage';
+import { Building2, FileText, Phone, MapPin } from 'lucide-react';
 
 interface Props {
   info: PropertyInfo;
@@ -228,20 +229,29 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
 
               <div className="border-t border-gray-200 pt-8 flex justify-between items-end">
                 <div className="flex flex-col flex-1 whitespace-nowrap">
-                  <span className="text-[10px] text-gray-400 font-bold tracking-widest block mb-1.5">PARTNER REALTY</span>
-                  <div className="text-[15px] font-extrabold text-black tracking-wide leading-[1.7] flex flex-col items-start">
-                    <div className="flex items-center">
-                      <EditableText value={info.agentName || "미래에셋공인 중개사 사무소"} onChange={(v) => hc('agentName', v)} className="!w-auto" />
-                      <span className="text-[13px] text-gray-600 font-bold ml-1">
-                        (<EditableText value={info.agentRegistrationNumber || "제11680-2015-00123호"} onChange={(v) => hc('agentRegistrationNumber', v)} className="!w-auto" />)
-                      </span>
+                  <span className="text-[10px] text-gray-400 font-bold tracking-widest block mb-2">PARTNER REALTY</span>
+                  <div className="text-[14px] font-extrabold text-black tracking-wide leading-[1.8] flex flex-col items-start gap-1">
+                    <div className="flex items-center gap-2">
+                      <Building2 className="w-[14px] h-[14px] text-[var(--theme-primary)]" strokeWidth={2.5} />
+                      <div className="flex items-center">
+                        <EditableText value={info.agentName || "착한임대부동산중개"} onChange={(v) => hc('agentName', v)} className="!w-auto" />
+                        <span className="text-gray-400 font-normal mx-1.5">|</span>
+                        <span className="text-gray-800">대표 <EditableText value={info.agentRepresentative || "김상태"} onChange={(v) => hc('agentRepresentative', v)} className="!w-auto" /></span>
+                      </div>
                     </div>
-                    <div>
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-[14px] h-[14px] text-[var(--theme-primary)]" strokeWidth={2.5} />
+                      <div className="flex items-center">
+                        <span className="text-gray-600 mr-1">등록번호 :</span>
+                        <EditableText value={info.agentRegistrationNumber || "제11680-2015-00123호"} onChange={(v) => hc('agentRegistrationNumber', v)} className="!w-auto" />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Phone className="w-[14px] h-[14px] text-[var(--theme-primary)]" strokeWidth={2.5} />
                       <EditableText value={info.agentPhone || "02-1234-5678"} onChange={(v) => hc('agentPhone', v)} className="!w-auto" />
                     </div>
-                    <div className="flex items-center text-gray-800">
-                      <EditableText value={info.agentRepresentative || "김민혁"} onChange={(v) => hc('agentRepresentative', v)} className="!w-auto" />
-                      <span className="text-gray-400 mx-1.5">|</span>
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-[14px] h-[14px] text-[var(--theme-primary)]" strokeWidth={2.5} />
                       <EditableText value={info.agentAddress || "서울 강남구 논현동 123-45"} onChange={(v) => hc('agentAddress', v)} className="!w-auto" />
                     </div>
                   </div>
