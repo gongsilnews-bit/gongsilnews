@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import { PropertyInfo, FlyerColor, FlyerLayout } from '../../types';
 import { EditableText, EditableBlock, ReportPage } from '../shared';
 
@@ -14,6 +14,54 @@ interface Page3LeaseStatusProps {
 const Page3LeaseStatus: React.FC<Page3LeaseStatusProps> = ({
   info, pageString, isHidden, layoutTheme, colorTheme, onUpdateInfo,
 }) => {
+  const [localWidths, setLocalWidths] = useState<number[] | null>(null);
+  const dragRef = useRef<{ startX: number; colIdx: number; startWidths: number[]; tableWidth: number } | null>(null);
+  const tableRef = useRef<HTMLTableElement>(null);
+
+  const handleDragStart = (e: React.MouseEvent, colIdx: number, currentWidths: number[], leaseTableData: any) => {
+      if (!tableRef.current || !onUpdateInfo) return;
+      e.preventDefault();
+      
+      dragRef.current = {
+          startX: e.clientX,
+          colIdx,
+          startWidths: currentWidths,
+          tableWidth: tableRef.current.getBoundingClientRect().width
+      };
+      setLocalWidths([...currentWidths]);
+
+      const handleMouseMove = (moveEvent: MouseEvent) => {
+          if (!dragRef.current) return;
+          const { startX, colIdx: cIdx, startWidths, tableWidth } = dragRef.current;
+          const deltaX = moveEvent.clientX - startX;
+          const deltaPct = (deltaX / tableWidth) * 100;
+          
+          const newWidths = [...startWidths];
+          if (newWidths[cIdx] + deltaPct > 5 && newWidths[cIdx + 1] - deltaPct > 5) {
+              newWidths[cIdx] = startWidths[cIdx] + deltaPct;
+              newWidths[cIdx + 1] = startWidths[cIdx + 1] - deltaPct;
+              setLocalWidths(newWidths);
+          }
+      };
+
+      const handleMouseUp = () => {
+          if (dragRef.current && onUpdateInfo) {
+              setLocalWidths(currentLocal => {
+                  if (currentLocal) {
+                      onUpdateInfo({ ...info, leaseTable: { ...leaseTableData, widths: currentLocal } });
+                  }
+                  return null;
+              });
+          }
+          dragRef.current = null;
+          document.removeEventListener('mousemove', handleMouseMove);
+          document.removeEventListener('mouseup', handleMouseUp);
+      };
+
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+  };
+
   const handleTextChange = (key: string, value: any) => {
     if (onUpdateInfo) onUpdateInfo({ ...info, [key]: value });
   };
@@ -109,16 +157,16 @@ const Page3LeaseStatus: React.FC<Page3LeaseStatusProps> = ({
                             </button>
                         </div>
                     <div className="overflow-visible flex-1 pr-1 mt-6">
-                        <table className="w-full text-left border-collapse table-fixed">
+                        <table ref={tableRef} className="w-full text-left border-collapse table-fixed">
                             <thead>
                                 <tr>
                                     {headers.map((h: string, colIdx: number) => {
-                                        const currentWidths = leaseTable.widths || [10, 10, 15, 35, 15, 15];
+                                        const currentWidths = localWidths || leaseTable.widths || new Array(headers.length).fill(Math.round(100 / headers.length));
                                         const colWidth = currentWidths[colIdx] || Math.round(100 / headers.length);
                                         return (
                                             <th 
                                                 key={colIdx} 
-                                                className="border border-slate-200 p-2.5 text-xs font-extrabold text-white text-center uppercase relative group/header overflow-visible"
+                                                className="border border-slate-200 p-2.5 text-xs font-extrabold text-white text-center uppercase relative group/header overflow-visible select-none"
                                                 style={{ backgroundColor: colorTheme.primary, width: `${colWidth}%` }}
                                             >
                                                 <EditableText value={h} onChange={(val) => updateHeader(colIdx, val)} />
@@ -126,6 +174,12 @@ const Page3LeaseStatus: React.FC<Page3LeaseStatusProps> = ({
                                                     <button type="button" onClick={() => deleteColumn(colIdx)}
                                                         className="absolute -top-2 -right-2 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center text-[8px] font-bold shadow-md hover:bg-red-600 print:hidden hidden group-hover/header:flex z-50"
                                                         title="열 삭제">✕</button>
+                                                )}
+                                                {colIdx < headers.length - 1 && (
+                                                    <div 
+                                                        className="absolute top-0 -right-2 w-4 h-full cursor-col-resize z-40 print:hidden group-hover/header:bg-white/20 hover:!bg-white/50 transition-colors"
+                                                        onMouseDown={(e) => handleDragStart(e, colIdx, currentWidths, leaseTable)}
+                                                    />
                                                 )}
                                             </th>
                                         );

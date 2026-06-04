@@ -1524,7 +1524,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                     {(!currentFloor || !isNaN(Number(currentFloor))) && <span style={{ color: textSecondary, fontSize: 14, flexShrink: 0 }}>층</span>}
                   </div>
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                    {['저층', '중층', '고층', '반지하', '옥탑'].map(f => (
+                    {['저층', '중층', '고층'].map(f => (
                       <button
                         key={f}
                         type="button"
@@ -1544,6 +1544,23 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                         {f}
                       </button>
                     ))}
+                    <button
+                      type="button"
+                      onClick={() => setCurrentFloor("")}
+                      style={{
+                        padding: "4px 10px",
+                        borderRadius: 20,
+                        border: "1px solid #fca5a5",
+                        background: "#fef2f2",
+                        color: "#ef4444",
+                        fontSize: 12,
+                        fontWeight: 700,
+                        cursor: "pointer",
+                        transition: "all 0.2s"
+                      }}
+                    >
+                      초기화
+                    </button>
                   </div>
                 </div>
                 <div style={{ flex: 1 }}>

@@ -1190,7 +1190,7 @@ function MobileVacancyWrite() {
             <div style={{flex:1}}><label style={labelStyle}>해당층 <span style={{fontSize:11, color:"#9ca3af", fontWeight:400}}>(직접입력)</span></label><input type="text" inputMode="numeric" value={currentFloor} onChange={e=>setCurrentFloor(e.target.value)} placeholder="예: 3" style={inputStyle}/></div>
           </div>
           <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:14 }}>
-            {['저층', '중층', '고층', '반지하', '옥탑', '지하 1층', '지하 2층', '전체층'].map(f => (
+            {['저층', '중층', '고층', '지하 1층', '지하 2층', '전체층'].map(f => (
               <button 
                 key={f} 
                 type="button" 
@@ -1208,6 +1208,20 @@ function MobileVacancyWrite() {
                 {f}
               </button>
             ))}
+            <button
+              type="button"
+              onClick={() => setCurrentFloor("")}
+              style={{
+                padding:"4px 12px", borderRadius:20,
+                border: "1px solid #fca5a5",
+                background: "#fef2f2",
+                color: "#ef4444",
+                fontSize:12, fontWeight: 700,
+                cursor:"pointer", transition:"all 0.15s ease"
+              }}
+            >
+              초기화
+            </button>
           </div>
           {!isCommercial && (
             <div style={{ display:"flex", gap:10 }}>
