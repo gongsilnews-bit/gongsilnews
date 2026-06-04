@@ -331,14 +331,14 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
               <div className="flex justify-between items-start mb-6">
                 <div>
                   <h1 className={`text-6xl font-black text-gray-900 tracking-tight ${headingFont}`}>CONTACT</h1>
-                  <p className="text-[9px] text-gray-400 tracking-[0.3em] font-semibold mt-1">상담 및 정보 문의처</p>
+                  <p className="text-xs text-gray-400 tracking-[0.3em] font-bold mt-2">상담 및 정보 문의처</p>
                 </div>
                 <div className="w-[100px] h-[1px] bg-gray-300 mt-4 hidden lg:block"></div>
               </div>
 
               <div className="flex gap-10 flex-1">
-                <div className="w-5/12 flex flex-col gap-4 h-full border-r border-gray-100 pr-10">
-                  <div className="flex-1 group relative min-h-[140px]">
+                <div className="w-5/12 flex flex-col justify-center gap-6 h-full border-r border-gray-100 pr-10">
+                  <div className="w-full aspect-[9/5] group relative mx-auto">
                      <EditableImage 
                        src={info.agentCardFront || ""}
                        alt="명함 이미지"
