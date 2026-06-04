@@ -299,17 +299,19 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
                 <div className="w-20 h-[6px] bg-[var(--theme-secondary)] mt-4"></div>
               </div>
 
-              <div className="flex gap-8 flex-1">
-                <div className="w-5/12 flex flex-col justify-center space-y-6 bg-white/5 border border-white/10 rounded-2xl p-8 backdrop-blur-sm">
+              <div className="flex gap-8 flex-1 mt-6">
+                <div className="w-5/12 flex flex-col justify-center gap-8 bg-white/5 border border-white/10 rounded-2xl p-8 backdrop-blur-sm shadow-xl">
                   <div>
-                    <span className="text-[9px] text-white/50 font-bold block mb-1">PARTNER FIRM</span>
-                    <span className="text-xl font-bold text-white"><EditableText value={info.agentName || "미래에셋공인"} onChange={(v) => hc('agentName', v)} /></span>
+                    <span className="text-xs text-[var(--theme-secondary)] font-bold tracking-widest block mb-2">PARTNER FIRM</span>
+                    <span className="text-3xl font-black text-white tracking-tight"><EditableText value={info.agentName || "미래에셋공인"} onChange={(v) => hc('agentName', v)} /></span>
                   </div>
                   <div>
-                    <span className="text-[9px] text-white/50 font-bold block mb-1">AGENT</span>
-                    <span className="text-sm font-semibold text-white/90"><EditableText value={info.agentRepresentative || "김민혁"} onChange={(v) => hc('agentRepresentative', v)} /></span>
+                    <span className="text-xs text-[var(--theme-secondary)] font-bold tracking-widest block mb-2">AGENT</span>
+                    <span className="text-2xl font-extrabold text-white tracking-tight"><EditableText value={info.agentRepresentative || "김민혁"} onChange={(v) => hc('agentRepresentative', v)} /></span>
                   </div>
-                  <PhoneBox info={info} hc={hc} dark />
+                  <div className="pt-2 border-t border-white/10">
+                    <PhoneBox info={info} hc={hc} dark stacked={true} />
+                  </div>
                 </div>
                 <div className="w-7/12 flex flex-col">
                   <MapBlock info={info} className="flex-1 mb-3 border border-white/10 rounded-xl" />
