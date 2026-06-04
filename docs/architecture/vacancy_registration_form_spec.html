@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>공실등록 폼 (Vacancy Registration Form) DB & UI 매핑 설계도 (최종 완전판)</title>
+<style>
+  body {
+    font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+    line-height: 1.6;
+    color: #333;
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 40px;
+    background-color: #fff;
+  }
+  h1 {
+    font-size: 26px;
+    color: #111827;
+    border-bottom: 2px solid #2563eb;
+    padding-bottom: 12px;
+    margin-bottom: 24px;
+  }
+  h2 {
+    font-size: 20px;
+    color: #1f2937;
+    margin-top: 40px;
+    margin-bottom: 16px;
+    padding-left: 8px;
+    border-left: 4px solid #3b82f6;
+  }
+  h3 {
+    font-size: 16px;
+    color: #374151;
+    margin-top: 24px;
+    margin-bottom: 10px;
+  }
+  blockquote {
+    border-left: 4px solid #10b981;
+    background: #f0fdf4;
+    padding: 12px 20px;
+    margin: 20px 0;
+    color: #065f46;
+    border-radius: 0 8px 8px 0;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    margin-bottom: 30px;
+    font-size: 14px;
+  }
+  th {
+    background-color: #f8fafc;
+    color: #475569;
+    font-weight: 700;
+    text-align: left;
+    padding: 12px 16px;
+    border: 1px solid #cbd5e1;
+    border-bottom: 2px solid #94a3b8;
+  }
+  td {
+    padding: 10px 16px;
+    border: 1px solid #e2e8f0;
+    vertical-align: middle;
+  }
+  tr:nth-child(even) {
+    background-color: #f8fafc;
+  }
+  code {
+    background: #f1f5f9;
+    padding: 4px 6px;
+    border-radius: 4px;
+    font-family: Consolas, monospace;
+    font-size: 0.9em;
+    color: #b91c1c;
+    font-weight: 600;
+  }
+  hr {
+    border: none;
+    border-top: 1px dashed #d1d5db;
+    margin: 40px 0;
+  }
+  @media print {
+    body {
+      padding: 0;
+      max-width: 100%;
+    }
+    @page {
+      margin: 1.5cm;
+    }
+    h2, h3, table {
+      page-break-inside: avoid;
+    }
+    tr {
+      page-break-inside: avoid;
+    }
+  }
+</style>
+</head>
+<body>
+<h1>공실등록 폼 (Vacancy Registration Form) DB &amp; UI 매핑 설계도 (최종 완전판)</h1>
+<blockquote>
+<p><strong>작성일</strong>: 2026-06-04<br>
+<strong>목적</strong>: 장애 발생 시 완전한 프론트/백엔드 데이터 복구 및 아키텍처 파악을 위한 1:1 DB 구조 바이블.<br>
+<strong>대상 파일</strong>: <code>VacancyRegisterForm.tsx</code> (PC), <code>page.tsx</code> (Mobile) / Supabase <code>vacancies</code> Table</p>
+</blockquote>
+<p>본 문서는 플랫폼의 '공실등록' 화면에 표시되는 <strong>UI 입력항목</strong>이 <strong>React State</strong>를 거쳐 <strong>Supabase DB 컬럼</strong>에 정확히 어떻게 꽂히는지(Payload 매핑)를 기록한 완전한 설계도입니다.</p>
+<hr>
+
+<h2>1. 매물 기본 정보 (Core Properties)</h2>
+<table>
+<thead>
+<tr><th>UI 항목명</th><th>React 상태(State)</th><th>Supabase 컬럼 (<code>vacancies</code>)</th><th>데이터 타입</th><th>비고 / 노출 조건</th></tr>
+</thead>
+<tbody>
+<tr><td>매물 대분류</td><td><code>propertyType</code></td><td><code>property_type</code></td><td>string</td><td>아파트·오피스텔 등 5종</td></tr>
+<tr><td>매물 소분류</td><td><code>subCategory</code></td><td><code>sub_category</code></td><td>string</td><td>대분류에 종속 (상가, 사무실, 지산 등)</td></tr>
+<tr><td>거래 종류</td><td><code>tradeType</code></td><td><code>trade_type</code></td><td>string</td><td>매매 / 전세 / 월세 / 단기임대</td></tr>
+</tbody>
+</table>
+
+<h2>2. 금액 및 면적 정보 (Price &amp; Area)</h2>
+<table>
+<thead>
+<tr><th>UI 항목명</th><th>React 상태</th><th>Supabase 컬럼 (<code>vacancies</code>)</th><th>데이터 타입</th><th>서버 전송 변환 로직</th></tr>
+</thead>
+<tbody>
+<tr><td>매매가/보증금</td><td><code>deposit</code></td><td><code>deposit</code></td><td>integer</td><td>입력값(만원) * 10000</td></tr>
+<tr><td>월세</td><td><code>monthly</code></td><td><code>monthly_rent</code></td><td>integer</td><td>입력값(만원) * 10000</td></tr>
+<tr><td>관리비</td><td><code>maintenance</code></td><td><code>maintenance_fee</code></td><td>integer</td><td>입력값(만원) * 10000</td></tr>
+<tr><td>공동중개 수수료 유형</td><td><code>commissionType</code></td><td><code>commission_type</code></td><td>string</td><td>"요율", "협의" 등</td></tr>
+<tr><td>공동중개 수수료 금액</td><td><code>commissionAmount</code></td><td><code>commission_amount</code></td><td>string</td><td>(비공개)</td></tr>
+<tr><td>공동중개 기타 사항</td><td><code>commissionEtc</code></td><td><code>commission_etc</code></td><td>string</td><td>(비공개)</td></tr>
+<tr><td>공급면적</td><td><code>supplyM2</code>, <code>supplyPy</code></td><td><code>supply_m2</code>, <code>supply_py</code></td><td>numeric</td><td>m², 평수 입력</td></tr>
+<tr><td>전용면적</td><td><code>exclusiveM2</code>, <code>exclusivePy</code></td><td><code>exclusive_m2</code>, <code>exclusive_py</code></td><td>numeric</td><td>m², 평수 입력</td></tr>
+</tbody>
+</table>
+
+<h2>3. 기본 제원 (Basic Specs)</h2>
+<table>
+<thead>
+<tr><th>UI 항목명</th><th>React 상태</th><th>Supabase 컬럼 (<code>vacancies</code>)</th><th>데이터 타입</th><th>비고 / 노출 조건</th></tr>
+</thead>
+<tbody>
+<tr><td>방 수</td><td><code>roomCount</code></td><td><code>room_count</code></td><td>integer</td><td>주거용일 때만 입력</td></tr>
+<tr><td>욕실 수</td><td><code>bathCount</code></td><td><code>bath_count</code></td><td>integer</td><td>주거용일 때만 입력</td></tr>
+<tr><td>방향</td><td><code>direction</code></td><td><code>direction</code></td><td>string</td><td>주거용일 때만 입력 (남/동향 등)</td></tr>
+<tr><td>해당층</td><td><code>currentFloor</code></td><td><code>current_floor</code></td><td>string</td><td>단독/건물 매매 시 null 처리</td></tr>
+<tr><td>전체층</td><td><code>totalFloor</code></td><td><code>total_floor</code></td><td>string</td><td>단독/건물 매매 시 null 처리</td></tr>
+<tr><td>주차대수</td><td><code>parking</code></td><td><code>parking</code></td><td>string</td><td>"없음", "1대", "협의" 등</td></tr>
+<tr><td>입주가능일</td><td><code>moveInDate</code></td><td><code>move_in_date</code></td><td>string</td><td>"즉시입주", "협의" 등</td></tr>
+</tbody>
+</table>
+
+<h2>4. 주소 및 위치, 인프라 (Address &amp; Infra)</h2>
+<table>
+<thead>
+<tr><th>UI 항목명</th><th>React 상태</th><th>Supabase 컬럼 (<code>vacancies</code>)</th><th>데이터 타입</th><th>비고 / 노출 조건</th></tr>
+</thead>
+<tbody>
+<tr><td>시/도</td><td><code>sido</code></td><td><code>sido</code></td><td>string</td><td></td></tr>
+<tr><td>시/군/구</td><td><code>sigungu</code></td><td><code>sigungu</code></td><td>string</td><td></td></tr>
+<tr><td>읍/면/동</td><td><code>dong</code></td><td><code>dong</code></td><td>string</td><td></td></tr>
+<tr><td>상세주소(번지)</td><td><code>detailAddr</code></td><td><code>detail_addr</code></td><td>string</td><td></td></tr>
+<tr><td>건물명</td><td><code>buildingName</code></td><td><code>building_name</code></td><td>string</td><td></td></tr>
+<tr><td>동 (아파트/지산용)</td><td><code>aptDong</code></td><td><code>apt_dong</code></td><td>string</td><td>아파트/지식산업센터 카테고리만 노출</td></tr>
+<tr><td>호수</td><td><code>hosu</code></td><td><code>hosu</code></td><td>string</td><td></td></tr>
+<tr><td>주소 노출 범위</td><td><code>addressExposure</code></td><td><code>address_exposure</code></td><td>string</td><td>동/호수공개, 번지공개, 비공개 등</td></tr>
+<tr><td>위도</td><td><code>coords.lat</code></td><td><code>lat</code></td><td>numeric</td><td>카카오맵 API 추출 위도</td></tr>
+<tr><td>경도</td><td><code>coords.lng</code></td><td><code>lng</code></td><td>numeric</td><td>카카오맵 API 추출 경도</td></tr>
+<tr><td>주변 인프라</td><td><code>infrastructure</code></td><td><code>infrastructure</code></td><td>jsonb</td><td>반경 내 지하철, 병원, 쇼핑 객체 정보</td></tr>
+<tr><td>옵션 (다중)</td><td><code>selectedOptions</code></td><td><code>options</code></td><td>string[]</td><td>배열 형태 저장</td></tr>
+<tr><td>테마 (다중)</td><td><code>selectedThemes</code></td><td><code>themes</code></td><td>string[]</td><td>배열 형태 저장</td></tr>
+</tbody>
+</table>
+
+<h2>5. 상세 제원 (<code>metadata</code> JSON 컬럼) 🌟</h2>
+<p>아래 세부/특화 제원들은 Supabase DB의 <code>vacancies</code> 테이블 내부 <strong><code>metadata</code> (jsonb 타입) 컬럼 안에 Key-Value 객체 형태로 통째로 저장</strong>됩니다. 카테고리별로 필요한 키값만 유동적으로 저장합니다.</p>
+<table>
+<thead>
+<tr><th>카테고리</th><th>UI 항목명</th><th>React 상태</th><th><code>metadata</code> JSON Key</th><th>데이터 타입</th><th>비고</th></tr>
+</thead>
+<tbody>
+<tr><td><strong>공통 (상업용)</strong></td><td>건축물 주용도</td><td><code>mainUsage</code></td><td><code>main_usage</code></td><td>string</td><td>건축물대장 자동 연동</td></tr>
+<tr><td></td><td>승강기 (대수)</td><td><code>elevatorCnt</code></td><td><code>elevator_cnt</code></td><td>string</td><td>건축물대장 자동 연동</td></tr>
+<tr><td></td><td>위반건축물 여부</td><td><code>isIllegal</code></td><td><code>is_illegal</code></td><td>boolean</td><td>건축물대장 자동 연동</td></tr>
+<tr><td></td><td>건물 구조</td><td><code>buildingStructure</code></td><td><code>building_structure</code></td><td>string</td><td>건축물대장 자동 연동</td></tr>
+<tr><td></td><td>현재 용도</td><td><code>currentUsage</code></td><td><code>current_usage</code></td><td>string</td><td>상가, 점포 등</td></tr>
+<tr><td><strong>토지/건물 매매</strong></td><td>지목</td><td><code>landPurpose</code></td><td><code>land_purpose</code></td><td>string</td><td>대장 연동</td></tr>
+<tr><td></td><td>용도지역</td><td><code>zoning</code></td><td><code>zoning</code></td><td>string</td><td></td></tr>
+<tr><td></td><td>대지면적</td><td><code>landShareM2</code>, <code>landSharePy</code></td><td><code>land_share_m2</code>, <code>land_share_py</code></td><td>numeric</td><td></td></tr>
+<tr><td></td><td>접면 도로 폭</td><td><code>roadWidth</code></td><td><code>road_width</code></td><td>numeric</td><td></td></tr>
+<tr><td></td><td>지상 층수</td><td><code>groundFloors</code></td><td><code>ground_floors</code></td><td>integer</td><td>해당층/전체층 대신 입력</td></tr>
+<tr><td></td><td>지하 층수</td><td><code>undergroundFloors</code></td><td><code>underground_floors</code></td><td>integer</td><td>해당층/전체층 대신 입력</td></tr>
+<tr><td></td><td>건폐율</td><td><code>buildingCoverage</code></td><td><code>building_coverage</code></td><td>numeric</td><td></td></tr>
+<tr><td></td><td>용적률</td><td><code>floorAreaRatio</code></td><td><code>floor_area_ratio</code></td><td>numeric</td><td></td></tr>
+<tr><td><strong>지식산업센터</strong></td><td>호실 용도</td><td><code>jisanUsage</code></td><td><code>jisan_usage</code></td><td>string</td><td>지원시설, 제조형 등</td></tr>
+<tr><td></td><td>층고</td><td><code>ceilingHeight</code></td><td><code>ceiling_height</code></td><td>string</td><td>m 단위 (문자열 취급)</td></tr>
+<tr><td></td><td>사용 전력</td><td><code>powerCapacity</code></td><td><code>power_capacity</code></td><td>string</td><td>kW 단위 (문자열 취급)</td></tr>
+<tr><td></td><td>드라이브인</td><td><code>hasDriveIn</code></td><td><code>has_drive_in</code></td><td>boolean</td><td>버튼 토글</td></tr>
+<tr><td></td><td>도어투도어</td><td><code>hasDoorToDoor</code></td><td><code>has_door_to_door</code></td><td>boolean</td><td>버튼 토글</td></tr>
+<tr><td></td><td>화물 승강기</td><td><code>hasFreightElevator</code></td><td><code>has_freight_elevator</code></td><td>boolean</td><td>버튼 토글</td></tr>
+<tr><td></td><td>무료 주차 대수</td><td><code>freeParkingCnt</code></td><td><code>free_parking_cnt</code></td><td>string</td><td>해당 호실 기준</td></tr>
+</tbody>
+</table>
+
+<h2>6. 중개사 전용 비공개 메모 및 상태 제어</h2>
+<p>이 데이터들은 오직 매물을 올린 '중개사 본인(또는 관리자)' 장부에만 사용되며 일반 앱 화면에는 노출되지 않습니다.</p>
+<table>
+<thead>
+<tr><th>UI 항목명</th><th>React 상태</th><th>Supabase 컬럼 (<code>vacancies</code>)</th><th>데이터 타입</th><th>비고 / 노출 조건</th></tr>
+</thead>
+<tbody>
+<tr><td>노출/영업 유형</td><td><code>exposureType</code></td><td><code>exposure_type</code></td><td>string</td><td>전속중개, 양타가능 여부 등</td></tr>
+<tr><td>임대인 명</td><td><code>landlordName</code></td><td><code>landlord_name</code></td><td>string</td><td>(realtor 등급일 때만 활성화)</td></tr>
+<tr><td>임대인 연락처</td><td><code>landlordPhone</code></td><td><code>landlord_phone</code></td><td>string</td><td></td></tr>
+<tr><td>임대인 메모</td><td><code>landlordMemo</code></td><td><code>landlord_memo</code></td><td>string</td><td></td></tr>
+<tr><td>의뢰인 이름</td><td><code>clientName</code></td><td><code>client_name</code></td><td>string</td><td>(일반/관리자 등급일 때)</td></tr>
+<tr><td>의뢰인 연락처</td><td><code>clientPhone</code></td><td><code>client_phone</code></td><td>string</td><td>(일반/관리자 등급일 때)</td></tr>
+<tr><td>소유자와의 관계</td><td><code>ownerRelation</code></td><td><code>owner_relation</code></td><td>string</td><td>본인, 가족, 대리인 등</td></tr>
+<tr><td>전달사항 (AI글쓰기)</td><td><code>description</code></td><td><code>description</code></td><td>text</td><td>AI 초안 생성 내용 포함</td></tr>
+<tr><td>개인정보 동의</td><td><code>consent</code></td><td><code>consent</code></td><td>boolean</td><td>등록 시 필수 체크</td></tr>
+<tr><td>매물 상태값</td><td><code>status</code></td><td><code>status</code></td><td>string</td><td>"DRAFT"(임시저장), "ACTIVE"(공실광고) 등</td></tr>
+</tbody>
+</table>
+
+<hr>
+
+<h2>7. 실제 UI 입력 컴포넌트 세부 명세 (프론트엔드 복구용)</h2>
+<p>각 항목별로 실제 화면(DOM)에서 렌더링되는 입력 양식(Input Type)과 안내 문구(Placeholder)를 상세히 기록합니다. 프론트엔드 UI 복구 시 픽셀 단위로 동일한 경험을 제공하기 위한 목적입니다.</p>
+
+<h3>7-1. Select (드롭다운) &amp; Button (단일/다중 선택)</h3>
+<table>
+<thead>
+<tr><th>UI 항목명</th><th>HTML 요소 타입</th><th>제공되는 선택지 (Options)</th></tr>
+</thead>
+<tbody>
+<tr><td>대분류 / 소분류</td><td><code>&lt;select&gt;</code></td><td>아파트·오피스텔, 빌라·주택 등 / 아파트, 상가, 지식산업센터 등</td></tr>
+<tr><td>거래 종류</td><td><code>&lt;button&gt;</code> (Radio 형태)</td><td>매매, 전세, 월세, 단기임대</td></tr>
+<tr><td>관리비 포함 항목</td><td><code>&lt;button&gt;</code> (다중 선택)</td><td>인터넷, 유선TV, 청소비, 수도요금, 전기요금, 가스요금 등</td></tr>
+<tr><td>주차대수</td><td><code>&lt;select&gt;</code></td><td>없음, 1대, 2대, 3대, 4대이상, 가능, 불가, 협의</td></tr>
+<tr><td>입주가능일</td><td><code>&lt;select&gt;</code></td><td>즉시입주(공실), 1개월 이내, 2개월 이내, 3개월 이내, 협의</td></tr>
+<tr><td>방향</td><td><code>&lt;select&gt;</code></td><td>남향, 동향, 서향, 북향, 남동향, 남서향, 북동향, 북서향</td></tr>
+<tr><td>옵션 및 테마</td><td><code>&lt;button&gt;</code> (다중 선택)</td><td>에어컨, 세탁기 등 / #역세권, #무권리 등 (카테고리별 동적 변경)</td></tr>
+<tr><td>건축물 주용도</td><td><code>&lt;select&gt;</code></td><td>제1종근린생활시설, 업무시설, 공장 등 + (직접 입력창 병행)</td></tr>
+<tr><td>지식산업센터 용도</td><td><code>&lt;select&gt;</code></td><td>제조형 공장, 업무형 공장, 지원시설(상가), 지원시설(업무), 창고, 기숙사</td></tr>
+<tr><td>특화 구조 (지산)</td><td><code>&lt;button&gt;</code> (Toggle 형태)</td><td>드라이브인, 도어투도어, 화물 승강기</td></tr>
+<tr><td>주소 노출 범위</td><td><code>&lt;label&gt;&lt;input type="radio"&gt;</code></td><td>동/호수공개, 동수공개, 비공개 등</td></tr>
+</tbody>
+</table>
+
+<h3>7-2. Number (숫자 전용 입력창)</h3>
+<table>
+<thead>
+<tr><th>UI 항목명</th><th>HTML 요소 타입</th><th>Placeholder (안내 문구) 및 UI 특징</th></tr>
+</thead>
+<tbody>
+<tr><td>층수 (해당/전체)</td><td><code>&lt;input type="number"&gt;</code></td><td><code>예: 5</code> (우측에 '층' 텍스트 고정 표시)</td></tr>
+<tr><td>면적 (전용/공급)</td><td><code>&lt;input type="number"&gt;</code></td><td><code>0</code> (입력 시 하단에 '평' 단위 자동 환산 표시)</td></tr>
+<tr><td>대지면적</td><td><code>&lt;input type="number"&gt;</code></td><td><code>0</code> (입력 시 하단에 '평' 단위 자동 환산 표시)</td></tr>
+<tr><td>층고</td><td><code>&lt;input type="number"&gt;</code></td><td><code>예: 5.5</code> (우측에 'm' 텍스트 고정)</td></tr>
+<tr><td>사용 전력</td><td><code>&lt;input type="number"&gt;</code></td><td><code>예: 20</code> (우측에 'kW' 텍스트 고정)</td></tr>
+<tr><td>방/욕실 수</td><td><code>&lt;input type="number"&gt;</code></td><td><code>예: 3</code></td></tr>
+</tbody>
+</table>
+
+<h3>7-3. Text (텍스트 입력창) &amp; Textarea (장문 입력)</h3>
+<table>
+<thead>
+<tr><th>UI 항목명</th><th>HTML 요소 타입</th><th>Placeholder (안내 문구) 및 UI 특징</th></tr>
+</thead>
+<tbody>
+<tr><td>매매가/보증금</td><td><code>&lt;input type="text"&gt;</code></td><td><code>0</code> (입력 시 '만 원' 단위 자동 포맷팅 콤마 추가)</td></tr>
+<tr><td>상세주소(번지)</td><td><code>&lt;input type="text"&gt;</code></td><td><code>예: 123-45</code> (주소검색 API 결과와 별도로 입력)</td></tr>
+<tr><td>건물명</td><td><code>&lt;input type="text"&gt;</code></td><td><code>예: 공실타워</code></td></tr>
+<tr><td>동 / 호수</td><td><code>&lt;input type="text"&gt;</code></td><td><code>예: 101</code> (우측에 '동', '호' 텍스트 고정)</td></tr>
+<tr><td>전달사항 (상세)</td><td><code>&lt;textarea rows="6"&gt;</code></td><td><code>공실광고의 특징, 입주 가능일 등 상세 내용을 입력해주세요.</code></td></tr>
+<tr><td>임대인 연락처</td><td><code>&lt;input type="text"&gt;</code></td><td><code>예: 010-8831-9450</code> (자동 하이픈 포맷팅)</td></tr>
+</tbody>
+</table>
+
+<h3>7-4. 기타 특수 UI 요소</h3>
+<table>
+<thead>
+<tr><th>UI 항목명</th><th>HTML 요소 타입</th><th>동작 방식 및 특징</th></tr>
+</thead>
+<tbody>
+<tr><td>주소 검색 API</td><td><code>&lt;button&gt;</code></td><td>클릭 시 카카오 우편번호 검색 팝업 호출</td></tr>
+<tr><td>지도 핀 (좌표)</td><td><code>&lt;div id="map"&gt;</code></td><td>추출된 좌표를 기반으로 카카오맵 마커 렌더링 (읽기 전용)</td></tr>
+<tr><td>사진 업로드</td><td><code>&lt;input type="file" multiple&gt;</code></td><td>드래그 앤 드롭 영역. 업로드 시 썸네일 미리보기 렌더링</td></tr>
+<tr><td>AI 초안글쓰기</td><td><code>&lt;button&gt;</code> + Overlay</td><td>로딩 중 화면 전체에 <code>&lt;div style="fixed"&gt;</code> 블러 오버레이 노출</td></tr>
+</tbody>
+</table>
+
+</body>
+</html>
