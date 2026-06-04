@@ -47,9 +47,11 @@ const INITIAL_INFO: PropertyInfo = {
     { label: "준공연도", value: "2002년 (최근 층별 리모델링 완료)" },
   ],
   agentName: "미래에셋공인 중개사 사무소",
-  agentRepresentative: "김민혁과장",
+  agentRegistrationNumber: "제11680-2015-00123호",
+  agentRepresentative: "김민혁",
   agentPhone: "02-1234-5678",
   agentMobile: "010-5554-4444",
+  agentAddress: "서울 강남구 논현동 123-45",
   investmentSummary: {
     box1Title: "CONNECTIVITY", box1Text: "전철역\n도보 4분",
     box2Title: "ASSET QUALITY", box2Text: "내외관\n리모델링",

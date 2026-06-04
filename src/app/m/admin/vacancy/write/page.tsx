@@ -1130,7 +1130,7 @@ function MobileVacancyWrite() {
             </div>
           </>)}
 
-          <label style={labelStyle}>관리비</label>
+          <label style={labelStyle}>관리비 {maintenance && <span style={{color:"#1a73e8", fontWeight:600}}>{formatKorean(maintenance)}</span>}</label>
           <div style={{ display:"flex", alignItems:"center", gap:6 }}>
             <input type="number" value={maintenance} onChange={e=>setMaintenance(e.target.value)} placeholder="만원 단위" style={inputStyle} />
             <span style={{ color:"#6b7280", fontSize:13, flexShrink:0 }}>만원</span>

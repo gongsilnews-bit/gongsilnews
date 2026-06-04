@@ -45,9 +45,11 @@ export interface PropertyInfo {
     value: string;
   }[];
   agentName: string;
+  agentRegistrationNumber?: string;
   agentRepresentative: string;
   agentPhone: string;
   agentMobile: string;
+  agentAddress?: string;
   investmentSummary: {
     box1Title: string; box1Text: string;
     box2Title: string; box2Text: string;

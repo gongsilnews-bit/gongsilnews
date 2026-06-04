@@ -1355,7 +1355,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                   <div style={{ flex: 1 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
                       <label style={{ ...labelStyle, marginBottom: 0 }}>보증금</label>
-                      {deposit && <span style={{ color: "#f97316", fontSize: 13, fontWeight: 700 }}>{formatKoreanAmount(deposit)}</span>}
+                      {deposit && <span style={{ color: "#3b82f6", fontSize: 13, fontWeight: 700 }}>{formatKoreanAmount(deposit)}</span>}
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
                       <input type="number" placeholder="예: 1000" value={deposit} onChange={(e) => setDeposit(e.target.value)} style={{ ...inputStyle }} />
@@ -1366,7 +1366,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                   <div style={{ flex: 1 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
                        <label style={{ ...labelStyle, marginBottom: 0 }}>월세</label>
-                       {monthly && <span style={{ color: "#f97316", fontSize: 13, fontWeight: 700 }}>{formatKoreanAmount(monthly)}</span>}
+                       {monthly && <span style={{ color: "#3b82f6", fontSize: 13, fontWeight: 700 }}>{formatKoreanAmount(monthly)}</span>}
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
                       <input type="number" placeholder="예: 50" value={monthly} onChange={(e) => setMonthly(e.target.value)} style={{ ...inputStyle }} />
@@ -1379,7 +1379,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
             )}
 
             {/* 관리비 */}
-            <label style={labelStyle}>관리비</label>
+            <label style={labelStyle}>관리비 {maintenance && <span style={{ color: "#3b82f6", fontSize: 13, fontWeight: 700 }}>{formatKoreanAmount(maintenance)}</span>}</label>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 24, maxWidth: 400 }}>
               <input type="text" placeholder="예: 10" value={maintenance} onChange={(e) => setMaintenance(e.target.value)} style={{ ...inputStyle }} />
               <span style={{ color: textSecondary, fontSize: 14, flexShrink: 0 }}>만원</span>
