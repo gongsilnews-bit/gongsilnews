@@ -1097,8 +1097,8 @@ function MobileVacancyWrite() {
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
             <div style={{ fontSize:16, fontWeight:800, color:"#111", borderLeft:"4px solid #1a73e8", paddingLeft:10 }}>면적·층수</div>
             <div style={{ display:"flex", borderRadius:8, overflow:"hidden", border:"1px solid #e5e7eb" }}>
-              <button type="button" onClick={()=>setAreaUnit("m2")} style={{ padding:"6px 14px", fontSize:12, fontWeight:800, border:"none", cursor:"pointer", background: areaUnit==="m2"?"#1a73e8":"#fff", color: areaUnit==="m2"?"#fff":"#6b7280" }}>m²</button>
               <button type="button" onClick={()=>setAreaUnit("py")} style={{ padding:"6px 14px", fontSize:12, fontWeight:800, border:"none", cursor:"pointer", background: areaUnit==="py"?"#1a73e8":"#fff", color: areaUnit==="py"?"#fff":"#6b7280" }}>평</button>
+              <button type="button" onClick={()=>setAreaUnit("m2")} style={{ padding:"6px 14px", fontSize:12, fontWeight:800, border:"none", cursor:"pointer", background: areaUnit==="m2"?"#1a73e8":"#fff", color: areaUnit==="m2"?"#fff":"#6b7280" }}>m²</button>
             </div>
           </div>
           {!(tradeType === "매매" && ((propertyType === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(subCategory)) || (propertyType === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고"].includes(subCategory)))) && (
@@ -1185,43 +1185,49 @@ function MobileVacancyWrite() {
               )}
             </>
           )}
-          <div style={{ display:"flex", gap:10, marginBottom:10 }}>
-            <div style={{flex:1}}><label style={labelStyle}>전체층</label><input type="number" value={totalFloor} onChange={e=>setTotalFloor(e.target.value)} placeholder="15" style={inputStyle}/></div>
-            <div style={{flex:1}}><label style={labelStyle}>해당층 <span style={{fontSize:11, color:"#9ca3af", fontWeight:400}}>(직접입력)</span></label><input type="text" inputMode="numeric" value={currentFloor} onChange={e=>setCurrentFloor(e.target.value)} placeholder="예: 3" style={inputStyle}/></div>
-          </div>
-          <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:14 }}>
-            {['저층', '중층', '고층', '지하 1층', '지하 2층', '전체층'].map(f => (
-              <button 
-                key={f} 
-                type="button" 
-                onClick={() => setCurrentFloor(currentFloor === f ? "" : f)} 
-                style={{ 
-                  padding:"4px 12px", borderRadius:20, 
-                  border: currentFloor === f ? "1px solid #1a73e8" : "1px solid #e5e7eb", 
-                  background: currentFloor === f ? "#1a73e8" : "#fff", 
-                  fontSize:12, fontWeight: currentFloor === f ? 800 : 600, 
-                  color: currentFloor === f ? "#fff" : "#6b7280", 
-                  boxShadow: currentFloor === f ? "0 2px 6px rgba(26,115,232,0.15)" : "none",
-                  cursor:"pointer", transition:"all 0.15s ease" 
-                }}
-              >
-                {f}
-              </button>
-            ))}
-            <button
-              type="button"
-              onClick={() => setCurrentFloor("")}
-              style={{
-                padding:"4px 12px", borderRadius:20,
-                border: "1px solid #fca5a5",
-                background: "#fef2f2",
-                color: "#ef4444",
-                fontSize:12, fontWeight: 700,
-                cursor:"pointer", transition:"all 0.15s ease"
-              }}
-            >
-              초기화
-            </button>
+          <div style={{ display:"flex", gap:10, marginBottom:14 }}>
+            <div style={{flex:1}}>
+              <label style={labelStyle}>해당층 <span style={{fontSize:11, color:"#9ca3af", fontWeight:400}}>(직접입력)</span></label>
+              <input type="text" inputMode="numeric" value={currentFloor} onChange={e=>setCurrentFloor(e.target.value)} placeholder="예: 3" style={{...inputStyle, marginBottom: 8}}/>
+              <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                {['저층', '중층', '고층'].map(f => (
+                  <button 
+                    key={f} 
+                    type="button" 
+                    onClick={() => setCurrentFloor(currentFloor === f ? "" : f)} 
+                    style={{ 
+                      padding:"4px 12px", borderRadius:20, 
+                      border: currentFloor === f ? "1px solid #1a73e8" : "1px solid #e5e7eb", 
+                      background: currentFloor === f ? "#1a73e8" : "#fff", 
+                      fontSize:12, fontWeight: currentFloor === f ? 800 : 600, 
+                      color: currentFloor === f ? "#fff" : "#6b7280", 
+                      boxShadow: currentFloor === f ? "0 2px 6px rgba(26,115,232,0.15)" : "none",
+                      cursor:"pointer", transition:"all 0.15s ease" 
+                    }}
+                  >
+                    {f}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setCurrentFloor("")}
+                  style={{
+                    padding:"4px 12px", borderRadius:20,
+                    border: "1px solid #fca5a5",
+                    background: "#fef2f2",
+                    color: "#ef4444",
+                    fontSize:12, fontWeight: 700,
+                    cursor:"pointer", transition:"all 0.15s ease"
+                  }}
+                >
+                  초기화
+                </button>
+              </div>
+            </div>
+            <div style={{flex:1}}>
+              <label style={labelStyle}>전체층</label>
+              <input type="number" value={totalFloor} onChange={e=>setTotalFloor(e.target.value)} placeholder="15" style={inputStyle}/>
+            </div>
           </div>
           {!isCommercial && (
             <div style={{ display:"flex", gap:10 }}>

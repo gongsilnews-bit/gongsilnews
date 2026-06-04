@@ -242,7 +242,7 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
             {/* Right side: Modern Architectural Graphic/Accent Cover */}
             <div className="w-5/12 bg-[var(--theme-dark)] flex flex-col justify-between p-12 text-white relative overflow-hidden group/coverimg">
               {/* Background Image Layer */}
-              <div className="absolute inset-0 z-0">
+              <div className="absolute inset-0 z-0 opacity-20 transition-opacity hover:opacity-30">
                 <EditableImage
                   src={coverImage || ""}
                   alt="표지 메인 이미지"
@@ -257,7 +257,7 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
               <div className="absolute inset-0 z-0 bg-gradient-to-tr from-[var(--theme-dark)] via-[var(--theme-dark)]/90 to-[var(--theme-primary)]/40 mix-blend-multiply pointer-events-none"></div>
               
               <div className="text-right z-10 relative pointer-events-none">
-                <span className="text-[var(--theme-secondary)] font-extrabold tracking-widest text-xs uppercase">CONFIDENTIAL</span>
+                {/* Removed CONFIDENTIAL text per user request */}
               </div>
 
               <div className="z-10 flex flex-col justify-end h-full relative pointer-events-none">
