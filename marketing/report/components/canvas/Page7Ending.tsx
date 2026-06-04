@@ -69,7 +69,7 @@ const PhoneBox = ({ info, hc, dark = false, stacked = false }: { info: PropertyI
        </div>
     )}
     <div className={`flex items-center gap-3 ${stacked ? 'w-full' : ''}`}>
-      <div className={`text-[30px] font-black ${dark ? 'text-[var(--theme-secondary)]' : 'text-[var(--theme-primary)]'} flex-1 tracking-tight flex items-center`}>
+      <div className={`${stacked ? 'text-[26px]' : 'text-[30px]'} font-black ${dark ? 'text-[var(--theme-secondary)]' : 'text-[var(--theme-primary)]'} flex-1 tracking-tight flex items-center whitespace-nowrap`}>
         {!stacked && (
           <span className={`text-[13px] ${dark ? 'text-white/50' : 'text-[var(--theme-primary)]'} font-extrabold tracking-widest mr-3 whitespace-nowrap shrink-0`}>문의하기</span>
         )}
