@@ -616,7 +616,7 @@ function App() {
         // 1. Supabase 클라우드 동기화 데이터 우선 로드
         const supabaseFlyerSettings = json.flyer?.flyer_state || v.infrastructure?._flyer_settings;
         if (supabaseFlyerSettings) {
-          setState(mergeStateWithDefaults(supabaseFlyerSettings));
+          setState({ ...mergeStateWithDefaults(supabaseFlyerSettings), isAdClosed: v.status === 'STOPPED' });
           setIsLoadedFromStorage(true);
           setIsInitialized(true);
           setLoadingData(false);
@@ -628,7 +628,7 @@ function App() {
         if (savedStr) {
           try {
             const savedState = JSON.parse(savedStr);
-            setState(mergeStateWithDefaults(savedState));
+            setState({ ...mergeStateWithDefaults(savedState), isAdClosed: v.status === 'STOPPED' });
             setIsLoadedFromStorage(true);
             setIsInitialized(true);
             setLoadingData(false);

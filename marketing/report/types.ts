@@ -158,6 +158,7 @@ export interface PropertyInfo {
   agencyLogoKey?: string;
   agentCardFront?: string;
   agentCardBack?: string;
+  isAdClosed?: boolean;
   hideRentRoll?: boolean;
   hideRoadmap?: boolean;
   propertyType?: 'commercial_sales' | 'commercial_rent' | 'residential' | 'other';

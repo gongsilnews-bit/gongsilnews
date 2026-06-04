@@ -49,6 +49,21 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
 
   return (
     <div className="flex flex-col items-center p-8 bg-gray-100" ref={ref} style={themeStyles}>
+        {info.isAdClosed ? (
+            <Page7Ending
+                info={info}
+                pageString=""
+                isHidden={false}
+                layoutTheme={layoutTheme}
+                colorTheme={colorTheme}
+                onUpdateInfo={onUpdateInfo}
+                agentImage={agentImage || null}
+                onImageUpload={onImageUpload}
+                onDeleteImage={onDeleteImage}
+                isUploading={isUploadingImage?.['agentImage'] || false}
+            />
+        ) : (
+            <>
         {/* PAGE 0: COVER */}
         {getPageStatus(0).shouldRender && (
             <Page0Cover
@@ -168,6 +183,8 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                 onDeleteImage={onDeleteImage}
                 isUploading={isUploadingImage?.['agentImage'] || false}
             />
+        )}
+            </>
         )}
     </div>
   );
