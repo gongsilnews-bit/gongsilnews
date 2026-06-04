@@ -229,24 +229,34 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
 
               <div className="border-t border-gray-200 pt-8 flex justify-between items-end">
                 <div className="flex flex-col flex-1 whitespace-nowrap">
-                  <span className="text-[10px] text-gray-400 font-bold tracking-widest block mb-2">PARTNER REALTY</span>
+                  <span className="text-[10px] text-gray-400 font-bold tracking-widest block mb-2">
+                    <EditableText value={info.agentLabel || "REALTY AGENCY"} onChange={(v) => hc('agentLabel', v)} className="!w-auto" />
+                  </span>
                   <div className="text-[14px] font-extrabold text-black tracking-wide leading-[1.8] flex flex-col items-start gap-1">
                     <div className="flex items-center gap-2">
                       <Building2 className="w-[14px] h-[14px] text-[var(--theme-primary)]" strokeWidth={2.5} />
-                      <div className="flex items-center">
-                        <EditableText value={info.agentName || "착한임대부동산중개"} onChange={(v) => hc('agentName', v)} className="!w-auto" />
-                        <span className="text-gray-400 font-normal mx-1.5">|</span>
-                        <span className="text-gray-800 flex items-center">
-                          대표 <EditableText value={(info.agentRepresentative || "김상태").replace(/^(대표\s*|공인중개사\s*)+/g, '')} onChange={(v) => hc('agentRepresentative', v)} className="!w-auto ml-1" />
-                        </span>
-                      </div>
+                      <EditableText 
+                        value={`${info.agentName || "착한임대부동산중개"} | 대표 ${info.agentRepresentative || "김상태"}`} 
+                        onChange={(v) => {
+                          const parts = v.split('|');
+                          hc('agentName', parts[0].trim());
+                          if (parts.length > 1) {
+                            hc('agentRepresentative', parts[1].replace(/대표\s*/, '').trim());
+                          }
+                        }} 
+                        className="!w-auto" 
+                      />
                     </div>
                     <div className="flex items-center gap-2">
                       <FileText className="w-[14px] h-[14px] text-[var(--theme-primary)]" strokeWidth={2.5} />
-                      <div className="flex items-center">
-                        <span className="text-gray-600 mr-1">등록번호 :</span>
-                        <EditableText value={info.agentRegistrationNumber || "제11680-2015-00123호"} onChange={(v) => hc('agentRegistrationNumber', v)} className="!w-auto" />
-                      </div>
+                      <EditableText 
+                        value={`등록번호 : ${info.agentRegistrationNumber || "제11680-2015-00123호"}`} 
+                        onChange={(v) => {
+                          const val = v.replace(/^등록번호\s*:\s*/, '');
+                          hc('agentRegistrationNumber', val.trim());
+                        }} 
+                        className="!w-auto" 
+                      />
                     </div>
                     <div className="flex items-center gap-2">
                       <Phone className="w-[14px] h-[14px] text-[var(--theme-primary)]" strokeWidth={2.5} />

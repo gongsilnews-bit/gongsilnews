@@ -45,6 +45,7 @@ export interface PropertyInfo {
     value: string;
   }[];
   agentName: string;
+  agentLabel?: string;
   agentRegistrationNumber?: string;
   agentRepresentative: string;
   agentPhone: string;

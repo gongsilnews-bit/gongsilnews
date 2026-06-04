@@ -47,6 +47,7 @@ const INITIAL_INFO: PropertyInfo = {
     { label: "준공연도", value: "2002년 (최근 층별 리모델링 완료)" },
   ],
   agentName: "미래에셋공인 중개사 사무소",
+  agentLabel: "REALTY AGENCY",
   agentRegistrationNumber: "제11680-2015-00123호",
   agentRepresentative: "김민혁",
   agentPhone: "02-1234-5678",
