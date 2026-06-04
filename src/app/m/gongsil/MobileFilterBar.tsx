@@ -168,8 +168,10 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
             </button>
             {activeMode !== "경매" && (
               <button onClick={() => setActivePanel(activePanel === "trade" ? null : "trade")} style={pillStyle(activePanel === "trade" || filters.tradeTypes.length > 0)}>
-                {filters.tradeTypes.length === TRADE_TYPES.length || filters.tradeTypes.length === 0
+                {filters.tradeTypes.length === TRADE_TYPES.length
                   ? "전체거래" 
+                  : filters.tradeTypes.length === 0
+                  ? "선택없음"
                   : filters.tradeTypes.join(", ")} ▾
               </button>
             )}
@@ -324,7 +326,7 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
             <button 
               onClick={() => {
                 const allPropTypes = PROPERTY_TYPES.flatMap(g => g.items);
-                const empty = { propertyTypes: allPropTypes, tradeTypes: [], keyword: "", priceMin: null, priceMax: null, areaMin: null, areaMax: null, yearMin: null, yearMax: null, floor: null, ownerRole: null, commissionType: null, themes: [], sido: null, sigungu: null, dong: null };
+                const empty = { propertyTypes: allPropTypes, tradeTypes: TRADE_TYPES, keyword: "", priceMin: null, priceMax: null, areaMin: null, areaMax: null, yearMin: null, yearMax: null, floor: null, ownerRole: null, commissionType: null, themes: [], sido: null, sigungu: null, dong: null };
                 setTempFilters(empty);
                 setLocLabel("위치");
               }} 

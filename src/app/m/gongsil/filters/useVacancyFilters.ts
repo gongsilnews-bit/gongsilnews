@@ -27,7 +27,7 @@ const ALL_PROPERTY_TYPES = [
 
 export const initialFilterState: FilterState = {
   propertyTypes: ALL_PROPERTY_TYPES,
-  tradeTypes: [],
+  tradeTypes: ["매매", "전세", "월세", "단기"],
   keyword: "",
   priceMin: null,
   priceMax: null,
@@ -120,7 +120,7 @@ export function useVacancyFilters(initialVacancies: any[]) {
       if (!isPropMatch) return false;
       
       // 2. 거래 방식
-      if (filters.tradeTypes.length > 0 && !filters.tradeTypes.includes(v.trade_type)) return false;
+      if (!filters.tradeTypes.includes(v.trade_type)) return false;
       
       // 3. 가격 (만원 단위) - 월세의 경우 보증금(deposit_price), 그 외는 매매가/전세가(trade_price)
       if (filters.priceMin !== null || filters.priceMax !== null) {
