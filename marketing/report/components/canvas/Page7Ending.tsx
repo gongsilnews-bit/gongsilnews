@@ -1,6 +1,7 @@
 import React from 'react';
 import { PropertyInfo, FlyerColor, FlyerLayout } from '../../types';
 import EditableText from '../shared/EditableText';
+import EditableImage from '../shared/EditableImage';
 
 interface Props {
   info: PropertyInfo;
@@ -9,9 +10,13 @@ interface Props {
   layoutTheme: FlyerLayout;
   colorTheme: FlyerColor;
   onUpdateInfo?: (info: any) => void;
+  agentImage?: string | null;
+  onImageUpload?: (key: string, file: File) => Promise<string | undefined>;
+  onDeleteImage?: (key: string) => void;
+  isUploading?: boolean;
 }
 
-const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, colorTheme, onUpdateInfo }) => {
+const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, colorTheme, onUpdateInfo, agentImage, onImageUpload, onDeleteImage, isUploading }) => {
   const hc = (key: string, value: any) => { if (onUpdateInfo) onUpdateInfo({ ...info, [key]: value }); };
   const headingFont = layoutTheme?.headingFont || 'font-sans';
   const bodyFont = layoutTheme?.bodyFont || 'font-sans';
@@ -292,13 +297,27 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
               </div>
             </div>
 
-            <div className="w-5/12 bg-[var(--theme-dark)] flex flex-col justify-between p-12 text-white relative">
-              <div className="absolute inset-0 bg-gradient-to-tr from-[var(--theme-dark)] via-[var(--theme-dark)]/90 to-[var(--theme-primary)]/40 mix-blend-overlay pointer-events-none"></div>
-              
-              <div className="text-right z-10">
+            <div className="w-5/12 bg-[var(--theme-dark)] flex flex-col justify-between p-12 text-white relative overflow-hidden group/coverimg">
+              {/* Background Image Layer */}
+              <div className={`absolute inset-0 z-10 [&_img]:opacity-20 group-hover/coverimg:[&_img]:opacity-30 [&_img]:transition-opacity transition-opacity duration-300 ${!agentImage ? 'opacity-0 hover:opacity-100 print:hidden' : 'opacity-100'}`}>
+                <EditableImage
+                  src={agentImage || ""}
+                  alt="담당자/배경 사진"
+                  imageKey="agentImage"
+                  onImageUpload={onImageUpload}
+                  onDelete={() => onDeleteImage && onDeleteImage('agentImage')}
+                  isUploading={isUploading}
+                  aspectRatioClass="object-cover"
+                  className="w-full h-full !rounded-none !border-none !bg-transparent"
+                />
               </div>
 
-              <div className="z-10 flex flex-col items-center gap-3">
+              <div className="absolute inset-0 z-10 bg-gradient-to-tr from-[var(--theme-dark)] via-[var(--theme-dark)]/90 to-[var(--theme-primary)]/40 mix-blend-overlay pointer-events-none"></div>
+              
+              <div className="text-right z-20">
+              </div>
+
+              <div className="z-20 flex flex-col items-center gap-3 relative">
                 {qrCodeUrl && (
                   <div className="bg-white p-2.5 rounded shadow-lg">
                     <img src={qrCodeUrl} alt="QR Code" className="w-24 h-24" />

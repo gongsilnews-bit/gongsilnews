@@ -36,6 +36,7 @@ async function run() {
   const categories = ['아파트', '오피스텔', '빌딩', '상가/점포', '사무실', '토지', '단독/다가구', '원룸/투룸'];
   const transactions = ['매매', '전세', '월세', '단기'];
   
+  // 이미 성공한 아파트 매매 2건은 제외할 수도 있지만 깔끔하게 전체를 다시 돌립니다.
   for (const cat of categories) {
     for (const t of transactions) {
       for (let i = 1; i <= 2; i++) {
@@ -87,7 +88,7 @@ async function run() {
             setVal('sigungu', '강남구');
             setVal('dong', '역삼동');
             setVal('detail_addr', '123-45');
-            setVal('building_name', `자동화 테스트 건물 (${cat}-${t}-${i})`);
+            setVal('building_name', `자동 등록 테스트 매물 (${cat}-${t}-${i})`);
             
             setVal('lat', '37.500');
             setVal('lng', '127.036');
@@ -110,6 +111,7 @@ async function run() {
             setVal('description', `자동 등록 봇이 입력한 ${cat} ${t} 테스트 매물입니다. (AI 미사용)`);
           }, cat, t, i);
           
+          // Click Next if it's a multi-step form
           for(let step = 0; step < 3; step++) {
             await page.evaluate(() => {
                const btns = Array.from(document.querySelectorAll('button'));
@@ -119,30 +121,17 @@ async function run() {
             await new Promise(r => setTimeout(r, 500));
           }
 
-          // Use page.evaluate to trigger the click, but catch navigation errors
-          try {
-              const submitResult = await page.evaluate(() => {
-                  const btns = Array.from(document.querySelectorAll('button'));
-                  const submitBtn = btns.find(b => b.innerText.includes('등록') || b.innerText.includes('저장') || b.innerText.includes('완료'));
-                  if (submitBtn) {
-                      submitBtn.click();
-                      return true;
-                  }
-                  return false;
-              });
-              
-              if(submitResult) {
-                  // Wait a bit for navigation or API call to complete
-                  await new Promise(r => setTimeout(r, 2000));
-              }
-          } catch(err) {
-              // Ignore "Execution context was destroyed" which happens when page navigates away during evaluation
-              if (!err.message.includes('Execution context was destroyed')) {
-                  throw err;
-              }
-              // Wait a bit for navigation to settle
-              await new Promise(r => setTimeout(r, 2000));
-          }
+          // 비동기 setTimeout을 사용해 CDP 연결 끊김(Context Destroyed) 에러 방지
+          await page.evaluate(() => {
+            const btns = Array.from(document.querySelectorAll('button'));
+            const submitBtn = btns.find(b => b.innerText.includes('등록') || b.innerText.includes('저장') || b.innerText.includes('완료'));
+            if (submitBtn) {
+              setTimeout(() => submitBtn.click(), 100);
+            }
+          });
+          
+          // Submit 후 페이지 넘어가기를 충분히 기다림
+          await new Promise(r => setTimeout(r, 3000));
           
           console.log(`✅ Success ${cat} - ${t} - ${i}`);
           

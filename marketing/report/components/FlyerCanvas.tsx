@@ -22,7 +22,7 @@ interface FlyerCanvasProps {
 // ─── MAIN CANVAS COMPONENT ────────────────────────────────────────────────────
 
 const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, activeTab = 'all', onUpdateInfo, onImageUpload, onDeleteImage, isUploadingImage, onOpenTableEditor }, ref) => {
-  const { info, mainImage, customQrImage, subImage1, subImage2, featureImage1, featureImage2, mapImage, colorTheme, layoutTheme } = data; 
+  const { info, mainImage, agentImage, customQrImage, subImage1, subImage2, featureImage1, featureImage2, mapImage, colorTheme, layoutTheme } = data; 
 
   const visiblePages = info.visiblePages || [1, 2, 3, 4, 5, 6];
   const getPageStatus = (pageNum: number) => {
@@ -163,6 +163,10 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                 layoutTheme={layoutTheme}
                 colorTheme={colorTheme}
                 onUpdateInfo={onUpdateInfo}
+                agentImage={agentImage || null}
+                onImageUpload={onImageUpload}
+                onDeleteImage={onDeleteImage}
+                isUploading={isUploadingImage?.['agentImage'] || false}
             />
         )}
     </div>
