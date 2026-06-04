@@ -20,6 +20,7 @@ export interface FlyerSection {
 }
 
 export interface PropertyInfo {
+  coverStatusText?: string;
   // Page 1: Overview
   address: string;
   subTitle: string;
