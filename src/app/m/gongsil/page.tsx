@@ -12,7 +12,7 @@ import BookmarkCategoryModal from "@/components/BookmarkCategoryModal";
 import MobileFilterBar from "./MobileFilterBar";
 import { useVacancyFilters } from "./filters/useVacancyFilters";
 import MobileTopBarHeader from "../_components/MobileTopBarHeader";
-import { getAuctionInfo, getJitteredCoords, getMaskedAddress, getCleanAddrText } from "@/app/(map)/gongsil/gongsilHelpers";
+import { getAuctionInfo, getJitteredCoords, getMaskedAddress, getCleanAddrText, getMarkerDimensions } from "@/app/(map)/gongsil/gongsilHelpers";
 import { GongsilMobileDetailPanel } from "./GongsilMobileDetailPanel";
 import { GongsilMobileDrawerList } from "./GongsilMobileDrawerList";
 
@@ -702,23 +702,49 @@ function MobileGongsilContent() {
 
       kakao.maps.event.addListener(clustererRef.current, 'clusterclick', (cluster: any) => {
         const mks = cluster.getMarkers();
-        const items = mks.map((m: any) => m.customData);
+        const items = mks.flatMap((m: any) => m.customData || []);
         window.history.pushState({ panel: "cluster" }, "");
         setSelectedVacancy(null);
         setSelectedCluster(items);
       });
+
+      kakao.maps.event.addListener(clustererRef.current, 'clustered', (clusters: any[]) => {
+        clusters.forEach((cluster) => {
+          const markers = cluster.getMarkers();
+          const totalCount = markers.reduce((sum, m) => sum + (m.customData ? m.customData.length : 1), 0);
+          const overlay = cluster.getClusterMarker().getContent();
+          if (overlay) {
+            overlay.innerText = totalCount.toString();
+          }
+        });
+      });
     }
 
+    // Group vacancies by unique coordinate
+    const isZoomedIn = zoomLevel <= 5;
+    const coordinateGroups = new Map<string, any[]>();
     filteredVacancies.forEach((v) => {
-      const isZoomedIn = zoomLevel <= 5;
       const coords = getJitteredCoords(v, isZoomedIn);
-      if (!coords.lat || !coords.lng) return;
-      const size = 50;
+      if (coords.lat && coords.lng) {
+        const key = `${coords.lat.toFixed(6)}_${coords.lng.toFixed(6)}`;
+        if (!coordinateGroups.has(key)) {
+          coordinateGroups.set(key, []);
+        }
+        coordinateGroups.get(key)!.push({ ...v, lat: coords.lat, lng: coords.lng });
+      }
+    });
+
+    coordinateGroups.forEach((group) => {
+      if (group.length === 0) return;
+      const v = group[0];
+      const count = group.length;
+
+      const { size, fontSize } = getMarkerDimensions(count);
       const color = activeMode === "경매" ? "#1a4282" : "#1a73e8";
 
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
         <circle cx="${size/2}" cy="${size/2}" r="${size/2-3}" fill="${color}" stroke="white" stroke-width="3"/>
-        <text x="50%" y="50%" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="18" font-weight="bold" font-family="sans-serif">1</text>
+        <text x="50%" y="50%" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="${fontSize}" font-weight="bold" font-family="sans-serif">${count}</text>
       </svg>`;
 
       const img = new kakao.maps.MarkerImage(
@@ -727,15 +753,15 @@ function MobileGongsilContent() {
         { offset: new kakao.maps.Point(size / 2, size / 2) }
       );
       const marker = new kakao.maps.Marker({
-        position: new kakao.maps.LatLng(coords.lat, coords.lng),
+        position: new kakao.maps.LatLng(v.lat, v.lng),
         image: img,
       });
-      marker.customData = { ...v, lat: coords.lat, lng: coords.lng };
+      marker.customData = group;
 
       kakao.maps.event.addListener(marker, "click", () => {
         window.history.pushState({ panel: "cluster" }, "");
         setSelectedVacancy(null);
-        setSelectedCluster([{ ...v, lat: coords.lat, lng: coords.lng }]);
+        setSelectedCluster(group);
       });
       markersRef.current.push(marker);
     });
