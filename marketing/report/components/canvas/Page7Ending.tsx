@@ -139,31 +139,70 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
               </div>
 
               <div className="flex flex-col gap-6 flex-1">
-                {/* 상단: 지도(좌) + 오시는 길(우) */}
-                <div className="flex gap-8 flex-1">
+                {/* 상단: 지도(좌) + 연락처/SNS(우) */}
+                <div className="flex gap-6 flex-1">
                   <MapBlock info={info} className="w-7/12 rounded-xl border border-gray-200" />
+                  
                   <div className="w-5/12 flex flex-col justify-center">
-                    <DirectionsBox info={info} hc={hc} qrCodeUrl={qrCodeUrl} className="bg-transparent !mb-0" />
+                    <div className="bg-white border border-gray-100 p-8 rounded-xl flex-1 flex flex-col justify-center shadow-sm">
+                       <div className="flex justify-center mb-6">
+                         <PhoneBox info={info} hc={hc} />
+                       </div>
+                       <div className="w-full h-px bg-gray-100 mb-6"></div>
+                       <SnsBox info={info} hc={hc} />
+                    </div>
                   </div>
                 </div>
 
-                {/* 하단: 담당자 정보 + 연락처 */}
-                <div className="bg-gray-50 border border-gray-100 p-6 rounded-xl flex justify-between items-center shadow-sm">
-                  <div className="flex-1">
-                    <h2 className="text-2xl font-black text-gray-800 tracking-tight">
-                      <EditableText value={info.agentName || "미래에셋공인"} onChange={(v) => hc('agentName', v)} />
-                    </h2>
-                    <p className="text-sm text-gray-500 font-bold mt-1">
-                      대표/담당자: <EditableText value={info.agentRepresentative || "김민혁"} onChange={(v) => hc('agentRepresentative', v)} className="inline-block text-gray-700" />
-                    </p>
+                {/* 하단: 3가지 정보 섹션 */}
+                <div className="grid grid-cols-3 gap-5 h-[160px]">
+                  {/* Section 1: 중개사무소 정보 */}
+                  <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm flex flex-col">
+                    <div className="flex items-center gap-1.5 mb-3 border-b border-gray-100 pb-2">
+                      <span className="font-bold text-sm tracking-widest text-[var(--theme-primary)]">🏢 중개사무소 정보</span>
+                    </div>
+                    <div className="text-gray-700 font-bold text-xs leading-relaxed space-y-1.5 mt-1">
+                      <p className="flex justify-between">
+                        <span className="text-gray-400">상호</span> 
+                        <span><EditableText value={info.agentName || "미래에셋공인중개사사무소"} onChange={(v) => hc('agentName', v)} className="inline-block text-right" /></span>
+                      </p>
+                      <p className="flex justify-between">
+                        <span className="text-gray-400">대표</span> 
+                        <span><EditableText value={info.agentRepresentative || "김민혁"} onChange={(v) => hc('agentRepresentative', v)} className="inline-block text-right" /></span>
+                      </p>
+                      <p className="flex justify-between">
+                        <span className="text-gray-400">등록번호</span> 
+                        <span><EditableText value={info.agentRegistrationNo || "제 11680-2024-00123 호"} onChange={(v) => hc('agentRegistrationNo', v)} className="inline-block text-right" /></span>
+                      </p>
+                    </div>
                   </div>
-                  <div className="w-1/2 flex justify-end">
-                    <PhoneBox info={info} hc={hc} />
+
+                  {/* Section 2: 오시는 길 및 주차 */}
+                  <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm flex flex-col">
+                    <div className="flex items-center gap-1.5 mb-3 border-b border-gray-100 pb-2">
+                      <MapPinIcon className="w-4 h-4 text-[var(--theme-primary)]" />
+                      <span className="font-bold text-sm tracking-widest text-[var(--theme-primary)]">
+                        <EditableText value={info.page7DirectionsTitle || "오시는 길 및 주차안내"} onChange={(v) => hc('page7DirectionsTitle', v)} />
+                      </span>
+                    </div>
+                    <div className="text-gray-700 font-bold text-xs leading-relaxed whitespace-pre-wrap break-keep mt-1">
+                      <EditableText multiline value={info.agentAddress || "강남구 내 주요 전철역 도보 5분 거리\n건물 내 지하주차장 무료 이용 가능"} onChange={(v) => hc('agentAddress', v)} />
+                    </div>
+                  </div>
+
+                  {/* Section 3: 모바일 퀵 연결 (QR) */}
+                  <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm flex flex-col relative overflow-hidden">
+                    <div className="flex items-center gap-1.5 mb-3 border-b border-gray-100 pb-2">
+                      <span className="font-bold text-sm tracking-widest text-[var(--theme-primary)]">📱 모바일 길찾기</span>
+                    </div>
+                    <div className="text-gray-600 font-bold text-xs leading-relaxed pr-16 mt-1 break-keep">
+                      스마트폰 카메라로 우측 QR코드를 스캔하시면 네이버 지도 길찾기로 바로 연결됩니다.
+                    </div>
+                    <div className="absolute bottom-4 right-4 flex flex-col items-center">
+                      <img src={qrCodeUrl} alt="Naver Map QR" className="w-14 h-14 mix-blend-multiply border border-gray-100 p-0.5 rounded bg-white shadow-sm" />
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="mt-4 pt-5 border-t border-gray-100">
-                <SnsBox info={info} hc={hc} />
               </div>
             </div>
           );
