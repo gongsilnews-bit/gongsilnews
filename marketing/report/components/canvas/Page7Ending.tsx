@@ -277,7 +277,7 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
               </div>
 
               {/* Map Box */}
-              <div className="w-full h-[320px] rounded-xl overflow-hidden border border-gray-200 shadow-sm mb-6 relative">
+              <div className="w-full h-[290px] rounded-xl overflow-hidden border border-gray-200 shadow-sm mb-4 relative">
                 {info.agentAddress ? (
                   <KakaoMap address={info.agentAddress} />
                 ) : (
@@ -289,64 +289,55 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
                     오시는 길 주소를 입력하면 지도가 표시됩니다.
                   </div>
                 )}
-                {info.agentAddress && (
-                  <a 
-                      href={info.agentMapUrl || `https://map.naver.com/p/search/${encodeURIComponent(info.agentAddress)}`}
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="absolute bottom-3 right-3 bg-white/95 text-slate-800 hover:bg-white active:scale-95 font-extrabold px-3 py-1.5 rounded-xl shadow-lg text-[10px] flex items-center gap-1.5 transition-all border border-gray-200 z-20 print:hidden"
-                      title="네이버 지도로 보기"
-                  >
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5 text-green-600">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25s-7.5-4.108-7.5-11.25z" />
-                      </svg>
-                      <span>네이버 지도 보기</span>
-                  </a>
-                )}
               </div>
 
-              <div className="flex flex-col flex-1 justify-center gap-5 mt-2">
-                {/* 1. Agency & Agent */}
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-[var(--theme-primary)]/10 flex items-center justify-center shrink-0">
-                    <BuildingOfficeIcon className="w-4 h-4 text-[var(--theme-primary)]" />
+              {/* 오시는 길 Box + QR Code */}
+              <div className="flex gap-3 mb-2">
+                <div className="flex-1 border border-gray-200 rounded-xl p-4 shadow-sm bg-white flex flex-col justify-center relative overflow-hidden">
+                  <div className="absolute top-0 left-0 w-1 h-full bg-[var(--theme-primary)]"></div>
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <MapPinIcon className="w-3.5 h-3.5 text-[var(--theme-primary)]" />
+                    <span className="font-black text-xs tracking-widest text-[var(--theme-primary)]">
+                      <EditableText value={info.page7DirectionsTitle || "오시는 길"} onChange={(v) => hc('page7DirectionsTitle', v)} />
+                    </span>
                   </div>
-                  <span className="text-lg font-bold text-gray-800">
+                  <div className="text-gray-700 font-bold text-[13px] leading-relaxed whitespace-pre-wrap break-keep">
+                    <EditableText multiline value={info.agentAddress || "강남구 내 주요 전철역 및 다수의 버스 노선 접근이 용이하여 출퇴근 및 대중교통 편리성 확보"} onChange={(v) => hc('agentAddress', v)} />
+                  </div>
+                  <div className="mt-3 text-[11px] font-bold text-gray-400">
                     <EditableText value={info.agentName || "미래에셋공인 중개사 사무소"} onChange={(v) => hc('agentName', v)} className="inline-block" />
-                    <span className="mx-2 text-gray-300">|</span>
+                    <span className="mx-2">|</span>
                     <EditableText value={info.agentRepresentative || "김민혁 과장"} onChange={(v) => hc('agentRepresentative', v)} className="inline-block" />
-                  </span>
+                  </div>
                 </div>
 
-                {/* 2. Phone Number */}
+                {/* QR Code (Naver Map) */}
+                <div className="w-[100px] shrink-0 flex flex-col items-center justify-center border border-gray-200 rounded-xl p-2 shadow-sm bg-white">
+                  <img 
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(info.agentMapUrl || `https://map.naver.com/p/search/${info.agentAddress || '서울 강남구 논현동'}`)}`} 
+                    alt="Naver Map QR" 
+                    className="w-14 h-14"
+                  />
+                  <span className="text-[8px] text-gray-500 font-bold tracking-widest mt-1.5 uppercase">네이버 지도</span>
+                </div>
+              </div>
+
+              {/* Phone Number */}
+              <div className="flex flex-col flex-1 justify-center py-2">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-[var(--theme-primary)]/10 flex items-center justify-center shrink-0">
-                    <PhoneIcon className="w-4 h-4 text-[var(--theme-primary)]" />
+                  <div className="w-10 h-10 rounded-full bg-[var(--theme-primary)]/10 flex items-center justify-center shrink-0">
+                    <PhoneIcon className="w-5 h-5 text-[var(--theme-primary)]" />
                   </div>
-                  <div className="text-3xl font-black text-[var(--theme-primary)] flex-1 tracking-tight">
+                  <div className="text-[34px] font-black text-[var(--theme-primary)] flex-1 tracking-tight">
                     <EditableText value={info.agentMobile || "010-5554-4444"} onChange={(v) => hc('agentMobile', v)} />
                   </div>
                   <div className="flex gap-2 shrink-0">
-                    <a href={`tel:${(info.agentMobile || "010-5554-4444").replace(/[^0-9]/g, '')}`} onClick={(e) => e.preventDefault()} className="w-10 h-10 rounded-full bg-[var(--theme-primary)] text-white flex items-center justify-center shadow-md hover:opacity-80 transition-opacity hover:-translate-y-0.5 active:translate-y-0" title="전화걸기">
-                      <PhoneIcon className="w-4 h-4" />
+                    <a href={`tel:${(info.agentMobile || "010-5554-4444").replace(/[^0-9]/g, '')}`} onClick={(e) => e.preventDefault()} className="w-11 h-11 rounded-full bg-[var(--theme-primary)] text-white flex items-center justify-center shadow-md hover:opacity-80 transition-opacity hover:-translate-y-0.5 active:translate-y-0" title="전화걸기">
+                      <PhoneIcon className="w-5 h-5" />
                     </a>
-                    <a href={`sms:${(info.agentMobile || "010-5554-4444").replace(/[^0-9]/g, '')}`} onClick={(e) => e.preventDefault()} className="w-10 h-10 rounded-full bg-[var(--theme-primary)] text-white flex items-center justify-center shadow-md hover:opacity-80 transition-opacity hover:-translate-y-0.5 active:translate-y-0" title="문자보내기">
-                      <ChatBubbleOvalLeftEllipsisIcon className="w-4 h-4" />
+                    <a href={`sms:${(info.agentMobile || "010-5554-4444").replace(/[^0-9]/g, '')}`} onClick={(e) => e.preventDefault()} className="w-11 h-11 rounded-full bg-[var(--theme-primary)] text-white flex items-center justify-center shadow-md hover:opacity-80 transition-opacity hover:-translate-y-0.5 active:translate-y-0" title="문자보내기">
+                      <ChatBubbleOvalLeftEllipsisIcon className="w-5 h-5" />
                     </a>
-                  </div>
-                </div>
-
-                {/* 3. Address (오시는 길) */}
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
-                    <MapPinIcon className="w-4 h-4 text-gray-500" />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-[10px] text-gray-400 font-bold tracking-wider mb-0.5">오시는 길</span>
-                    <span className="text-base font-bold text-gray-700">
-                      <EditableText value={info.agentAddress || "서울 강남구 논현동 123-45"} onChange={(v) => hc('agentAddress', v)} />
-                    </span>
                   </div>
                 </div>
               </div>
@@ -396,12 +387,6 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
               </div>
 
               <div className="z-20 flex flex-col items-center gap-3 relative">
-                {qrCodeUrl && (
-                  <div className="bg-white p-2.5 rounded shadow-lg">
-                    <img src={qrCodeUrl} alt="QR Code" className="w-24 h-24" />
-                  </div>
-                )}
-                <p className="text-[9px] text-white/50 tracking-wider uppercase font-bold text-center mt-1">스캔 시 온라인 매물 상세<br />또는 상담 채널로 연결</p>
               </div>
             </div>
           </div>
