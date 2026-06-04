@@ -1724,12 +1724,14 @@ ${clone.outerHTML}
   // Generate selectable sections list
   const getExportableSections = () => {
       return [
+          { id: 'page-0', label: '0. 표지 (Cover)' },
           { id: 'page-1', label: '1. 개요 (Overview)' },
           { id: 'page-2', label: '2. 가치 (Status & Valuation)' },
           { id: 'page-3', label: '3. 임대현황 (Lease Status)' },
           { id: 'page-4', label: '4. 사진 (Field Photos)' },
           { id: 'page-5', label: '5. 입지 (Area Analysis)' },
           { id: 'page-6', label: '6. 로드맵 (Roadmap)' },
+          { id: 'page-7', label: '7. 연락처 (Contact/Ending)' },
       ];
   };
 

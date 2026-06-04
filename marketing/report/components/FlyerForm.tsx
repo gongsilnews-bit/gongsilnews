@@ -229,25 +229,24 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
       <div className="grid grid-cols-3 gap-2.5 bg-gray-100/80 p-3 rounded-xl mb-6 shrink-0 shadow-inner">
           {[
               { id: 'all' as const, label: '전체' },
-              { id: 0, label: '0. 커버 & 엔딩' },
+              { id: 0, label: '0. 표지' },
               { id: 1, label: '1. 개요' },
               { id: 2, label: '2. 매물설명 & 시세' },
               { id: 3, label: '3. 임대현황' },
               { id: 4, label: '4. 사진' },
               { id: 5, label: '5. 입지' },
               { id: 6, label: '6. 로드맵' },
+              { id: 7, label: '7. 연락처' },
           ].map(tab => {
               let visiblePages = [...(info.visiblePages || [0, 1, 2, 3, 4, 5, 6, 7])];
-              if (!visiblePages.includes(0)) visiblePages.push(0);
-              if (!visiblePages.includes(7)) visiblePages.push(7);
               
               let isVisible = false;
               let isAllSelected = false;
               if (tab.id === 'all') {
-                  isAllSelected = visiblePages.length >= 6;
+                  isAllSelected = [0, 1, 2, 3, 4, 5, 6, 7].every(p => visiblePages.includes(p));
                   isVisible = isAllSelected;
               } else {
-                  isVisible = visiblePages.includes(tab.id as number) || (tab.id === 0 && (visiblePages.includes(0) || visiblePages.includes(7)));
+                  isVisible = visiblePages.includes(tab.id as number);
               }
 
               return (
@@ -268,7 +267,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                               title={tab.id === 'all' ? "전체 출력 선택/해제" : "출력(포함) 여부"}
                               onChange={(e) => {
                                   if (tab.id === 'all') {
-                                      setInfo({ ...info, visiblePages: e.target.checked ? [1, 2, 3, 4, 5, 6] : [] });
+                                      setInfo({ ...info, visiblePages: e.target.checked ? [0, 1, 2, 3, 4, 5, 6, 7] : [] });
                                   } else {
                                       let newVisible = [...visiblePages];
                                       if (e.target.checked) {
@@ -293,7 +292,64 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
       {/* Tab Content */}
       <div className="flex-1 overflow-y-auto pr-2 pb-10 space-y-6">
           
-          {(activeTab === 1 || (activeTab === 'all' && (info.visiblePages || [1, 2, 3, 4, 5, 6]).includes(1))) && (
+          {(activeTab === 0 || (activeTab === 'all' && (info.visiblePages || [0, 1, 2, 3, 4, 5, 6, 7]).includes(0))) && (
+              <div className={`animate-fadeIn relative ${activeTab === 'all' ? 'h-[620px] overflow-hidden bg-white p-5 rounded-2xl shadow-sm border border-gray-200 mb-8 shrink-0' : 'space-y-6'}`}>
+                  <div className="space-y-6">
+                      <div className="pb-2 border-b-[3px] border-black mb-4">
+                          <h2 className="text-xl font-black text-black tracking-tight">0. 표지</h2>
+                      </div>
+                      <div>
+                          <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">표지 기본 정보</h4>
+                          <div className="space-y-3">
+                              <div>
+                                  <label className="text-xs text-gray-500">표지 대제목 (Title)</label>
+                                  <input type="text" name="coverTitle" value={info.coverTitle || ""} onChange={handleChange} className="w-full border rounded p-2 text-sm font-semibold" />
+                              </div>
+                              <div>
+                                  <label className="text-xs text-gray-500">표지 부제목 (Subtitle)</label>
+                                  <input type="text" name="coverSubtitle" value={info.coverSubtitle || ""} onChange={handleChange} className="w-full border rounded p-2 text-sm" />
+                              </div>
+                              <div>
+                                  <label className="text-xs text-gray-500">QR 안내 링크 (QR Code Link)</label>
+                                  <input type="text" name="coverQRLink" value={info.coverQRLink || ""} onChange={handleChange} className="w-full border rounded p-2 text-sm placeholder-gray-400 font-mono" placeholder="https://..." />
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+
+                  {activeTab === 'all' && (
+                      <div className="absolute bottom-0 left-0 w-full h-40 bg-gradient-to-t from-white via-white/90 to-transparent flex items-end justify-center pb-6 z-10 pointer-events-none">
+                          <button 
+                              type="button" 
+                              onClick={() => setActiveTab(0)}
+                              className="pointer-events-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-full shadow-lg flex items-center gap-2 transition-transform hover:scale-105 active:scale-95"
+                          >
+                              📝 0. 표지 수정하기
+                          </button>
+                      </div>
+                  )}
+                  {activeTab !== 'all' && (
+                      <div className="flex gap-2 justify-center mt-6 pt-6 border-t border-gray-100">
+                          <button 
+                              type="button" 
+                              onClick={onBackTab || (() => setActiveTab('all'))}
+                              className="flex-1 py-2.5 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-bold rounded-lg transition-colors text-sm"
+                          >
+                              뒤로가기
+                          </button>
+                          <button 
+                              type="button" 
+                              onClick={() => setActiveTab('all')}
+                              className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-lg transition-colors shadow-sm text-sm"
+                          >
+                              전체보기
+                          </button>
+                      </div>
+                  )}
+              </div>
+          )}
+
+          {(activeTab === 1 || (activeTab === 'all' && (info.visiblePages || [0, 1, 2, 3, 4, 5, 6, 7]).includes(1))) && (
               <div className={`animate-fadeIn relative ${activeTab === 'all' ? 'h-[620px] overflow-hidden bg-white p-5 rounded-2xl shadow-sm border border-gray-200 mb-8 shrink-0' : 'space-y-6'}`}>
                   <div className="space-y-6">
                       <div className="pb-2 border-b-[3px] border-black mb-4">
@@ -1129,6 +1185,88 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                               className="pointer-events-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-full shadow-lg flex items-center gap-2 transition-transform hover:scale-105 active:scale-95"
                           >
                               📝 6. 로드맵 수정하기
+                          </button>
+                      </div>
+                  )}
+                  {activeTab !== 'all' && (
+                      <div className="flex gap-2 justify-center mt-6 pt-6 border-t border-gray-100">
+                          <button 
+                              type="button" 
+                              onClick={onBackTab || (() => setActiveTab('all'))}
+                              className="flex-1 py-2.5 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-bold rounded-lg transition-colors text-sm"
+                          >
+                              뒤로가기
+                          </button>
+                          <button 
+                              type="button" 
+                              onClick={() => setActiveTab('all')}
+                              className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-lg transition-colors shadow-sm text-sm"
+                          >
+                              전체보기
+                          </button>
+                      </div>
+                  )}
+              </div>
+          )}
+
+          {(activeTab === 7 || (activeTab === 'all' && (info.visiblePages || [0, 1, 2, 3, 4, 5, 6, 7]).includes(7))) && (
+              <div className={`animate-fadeIn relative ${activeTab === 'all' ? 'h-[620px] overflow-hidden bg-white p-5 rounded-2xl shadow-sm border border-gray-200 mb-8 shrink-0' : 'space-y-6'}`}>
+                  <div className="space-y-6 animate-fadeIn">
+                      <div className="pb-2 border-b-[3px] border-black mb-4">
+                          <h2 className="text-xl font-black text-black tracking-tight">7. 연락처</h2>
+                      </div>
+                      <div>
+                          <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">담당자 및 부동산 정보</h4>
+                          <div className="space-y-3">
+                              <div>
+                                  <label className="text-xs text-gray-500">중개사무소명 (Agency Name)</label>
+                                  <input type="text" name="agentName" value={info.agentName || ""} onChange={handleChange} className="w-full border rounded p-2 text-sm font-semibold" />
+                              </div>
+                              <div>
+                                  <label className="text-xs text-gray-500">담당자 성명 및 직책 (Representative)</label>
+                                  <input type="text" name="agentRepresentative" value={info.agentRepresentative || ""} onChange={handleChange} className="w-full border rounded p-2 text-sm" />
+                              </div>
+                              <div>
+                                  <label className="text-xs text-gray-500">담당자 휴대폰 번호 (Mobile)</label>
+                                  <input type="text" name="agentMobile" value={info.agentMobile || ""} onChange={handleChange} className="w-full border rounded p-2 text-sm" />
+                              </div>
+                              <div>
+                                  <label className="text-xs text-gray-500">대표 유선 번호 (Phone)</label>
+                                  <input type="text" name="agentPhone" value={info.agentPhone || ""} onChange={handleChange} className="w-full border rounded p-2 text-sm" />
+                              </div>
+                          </div>
+                      </div>
+                      <div>
+                          <h4 className="font-bold text-gray-800 mb-3 text-sm border-b pb-2">SNS / 외부 채널 링크 및 QR</h4>
+                          <div className="space-y-3">
+                              <div>
+                                  <label className="text-xs text-gray-500">네이버 블로그 링크 (Blog)</label>
+                                  <input type="text" name="contactBlog" value={info.contactBlog || ""} onChange={handleChange} className="w-full border rounded p-2 text-sm font-mono text-xs animate-fadeIn" placeholder="https://blog.naver.com/..." />
+                              </div>
+                              <div>
+                                  <label className="text-xs text-gray-500">유튜브 채널 링크 (YouTube)</label>
+                                  <input type="text" name="contactYoutube" value={info.contactYoutube || ""} onChange={handleChange} className="w-full border rounded p-2 text-sm font-mono text-xs" placeholder="https://youtube.com/..." />
+                              </div>
+                              <div>
+                                  <label className="text-xs text-gray-500">홈페이지 링크 (Website)</label>
+                                  <input type="text" name="contactWebsite" value={info.contactWebsite || ""} onChange={handleChange} className="w-full border rounded p-2 text-sm font-mono text-xs" placeholder="https://..." />
+                              </div>
+                              <div>
+                                  <label className="text-xs text-gray-500">상담 연결 QR 링크 (Inquiry QR Link)</label>
+                                  <input type="text" name="contactQRLink" value={info.contactQRLink || ""} onChange={handleChange} className="w-full border rounded p-2 text-sm font-mono text-xs" placeholder="https://..." />
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+
+                  {activeTab === 'all' && (
+                      <div className="absolute bottom-0 left-0 w-full h-40 bg-gradient-to-t from-white via-white/90 to-transparent flex items-end justify-center pb-6 z-10 pointer-events-none">
+                          <button 
+                              type="button" 
+                              onClick={() => setActiveTab(7)}
+                              className="pointer-events-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-full shadow-lg flex items-center gap-2 transition-transform hover:scale-105 active:scale-95"
+                          >
+                              📝 7. 연락처 수정하기
                           </button>
                       </div>
                   )}

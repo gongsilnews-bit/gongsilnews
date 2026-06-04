@@ -1,11 +1,13 @@
 import React, { forwardRef } from 'react';
 import { FlyerState } from '../types';
+import Page0Cover from './canvas/Page0Cover';
 import Page1Overview from './canvas/Page1Overview';
 import Page2StatusValuation from './canvas/Page2StatusValuation';
 import Page3LeaseStatus from './canvas/Page3LeaseStatus';
 import Page4Photos from './canvas/Page4Photos';
 import Page5AreaAnalysis from './canvas/Page5AreaAnalysis';
 import Page6Roadmap from './canvas/Page6Roadmap';
+import Page7Ending from './canvas/Page7Ending';
 
 interface FlyerCanvasProps {
   data: FlyerState;
@@ -47,6 +49,18 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
 
   return (
     <div className="flex flex-col items-center p-8 bg-gray-100" ref={ref} style={themeStyles}>
+        {/* PAGE 0: COVER */}
+        {getPageStatus(0).shouldRender && (
+            <Page0Cover
+                info={info}
+                pageString={getPageStatus(0).pageString}
+                isHidden={getPageStatus(0).isHidden}
+                layoutTheme={layoutTheme}
+                colorTheme={colorTheme}
+                onUpdateInfo={onUpdateInfo}
+            />
+        )}
+
         {/* PAGE 1: OVERVIEW */}
         {getPageStatus(1).shouldRender && (
             <Page1Overview
@@ -128,6 +142,18 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                 info={info}
                 pageString={getPageStatus(6).pageString}
                 isHidden={getPageStatus(6).isHidden}
+                layoutTheme={layoutTheme}
+                colorTheme={colorTheme}
+                onUpdateInfo={onUpdateInfo}
+            />
+        )}
+
+        {/* PAGE 7: ENDING (CONTACT) */}
+        {getPageStatus(7).shouldRender && (
+            <Page7Ending
+                info={info}
+                pageString={getPageStatus(7).pageString}
+                isHidden={getPageStatus(7).isHidden}
                 layoutTheme={layoutTheme}
                 colorTheme={colorTheme}
                 onUpdateInfo={onUpdateInfo}
