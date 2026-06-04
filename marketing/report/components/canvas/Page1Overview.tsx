@@ -79,7 +79,13 @@ const Page1Overview: React.FC<Props> = ({ info, pageString, isHidden, layoutThem
                                         <EditableText value={info.priceMainLabel || label} onChange={(v) => hc('priceMainLabel', v)} className="w-full hover:bg-white/50 hover:ring-2 hover:ring-amber-200 rounded px-1 -ml-1 transition-all text-left" />
                                     </td>
                                     <td className="w-2/3 text-[#cc5a27] font-extrabold py-2 pl-4 align-middle">
-                                        <EditableText value={price} onChange={(v) => hc('priceMain', v)} />
+                                        <EditableText value={(() => {
+                                            const tType = info.transactionType || "매매";
+                                            if ((tType === "월세" || tType === "단기임대") && info.priceSub) {
+                                                return `${price} / ${info.priceSub}`;
+                                            }
+                                            return price;
+                                        })()} onChange={(v) => hc('priceMain', v)} />
                                     </td>
                                 </tr>
                             );
