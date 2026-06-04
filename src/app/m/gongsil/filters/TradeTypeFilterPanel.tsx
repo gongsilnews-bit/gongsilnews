@@ -8,7 +8,7 @@ interface Props {
 }
 
 export default function TradeTypeFilterPanel({ filters, onFilterChange, TRADE_TYPES }: Props) {
-  const isAllSelected = filters.tradeTypes.length === TRADE_TYPES.length;
+  const isAllSelected = TRADE_TYPES.length > 0 && TRADE_TYPES.every(item => filters.tradeTypes.includes(item));
 
   const toggleTrade = (item: string) => {
     const arr = filters.tradeTypes;

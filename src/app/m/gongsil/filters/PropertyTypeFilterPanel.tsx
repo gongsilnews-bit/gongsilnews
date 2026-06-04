@@ -9,7 +9,7 @@ interface Props {
 
 export default function PropertyTypeFilterPanel({ filters, onFilterChange, PROPERTY_TYPES }: Props) {
   const allItems = PROPERTY_TYPES.flatMap(g => g.items);
-  const isAllSelected = filters.propertyTypes.length === allItems.length;
+  const isAllSelected = allItems.length > 0 && allItems.every(item => filters.propertyTypes.includes(item));
 
   const toggleProp = (item: string) => {
     const arr = filters.propertyTypes;
