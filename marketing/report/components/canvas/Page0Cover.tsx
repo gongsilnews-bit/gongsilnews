@@ -293,39 +293,41 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
                 {/* Removed CONFIDENTIAL text per user request */}
               </div>
 
-              <div className="z-20 flex justify-between items-end h-full relative pointer-events-none">
-                <div>
-                  <p className="text-[10px] text-white/50 tracking-wider uppercase font-bold mb-1">CLASSIFICATION</p>
-                  <p className="text-lg font-black text-white tracking-widest uppercase">REAL ESTATE BRIEF</p>
-                </div>
-                {(customQrImage || qrCodeUrl) && (
-                  <div className="pointer-events-auto relative group/qr">
-                    <label className="cursor-pointer block relative">
-                      <img src={customQrImage || qrCodeUrl || ''} alt="QR Code" className="w-20 h-20 p-1 bg-white rounded shadow-lg opacity-90 object-cover" />
-                      {onImageUpload && (
-                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/qr:opacity-100 transition-opacity rounded flex flex-col items-center justify-center print:hidden">
-                          <span className="text-[10px] text-white font-bold leading-tight text-center">QR<br/>변경</span>
-                        </div>
-                      )}
-                      {onImageUpload && (
-                        <input 
-                          type="file" 
-                          accept="image/*" 
-                          className="hidden" 
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) onImageUpload('customQrImage', file);
-                          }} 
-                        />
-                      )}
-                      {isUploadingQr && (
-                        <div className="absolute inset-0 bg-white/80 rounded flex items-center justify-center">
-                          <div className="w-4 h-4 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
-                        </div>
-                      )}
-                    </label>
+              <div className="z-20 flex justify-end items-end h-full relative pointer-events-none">
+                <div className="flex flex-col items-end">
+                  <div className="text-right mb-3">
+                    <p className="text-[10px] text-white/50 tracking-widest uppercase font-bold mb-2">CLASSIFICATION</p>
+                    <p className="text-[14px] font-extrabold text-white tracking-wide uppercase">REAL ESTATE BRIEF</p>
                   </div>
-                )}
+                  {(customQrImage || qrCodeUrl) && (
+                    <div className="pointer-events-auto relative group/qr">
+                      <label className="cursor-pointer block relative">
+                        <img src={customQrImage || qrCodeUrl || ''} alt="QR Code" className="w-[72px] h-[72px] p-1 bg-white rounded shadow-sm opacity-95 object-cover" />
+                        {onImageUpload && (
+                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/qr:opacity-100 transition-opacity rounded flex flex-col items-center justify-center print:hidden">
+                            <span className="text-[10px] text-white font-bold leading-tight text-center">QR<br/>변경</span>
+                          </div>
+                        )}
+                        {onImageUpload && (
+                          <input 
+                            type="file" 
+                            accept="image/*" 
+                            className="hidden" 
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) onImageUpload('customQrImage', file);
+                            }} 
+                          />
+                        )}
+                        {isUploadingQr && (
+                          <div className="absolute inset-0 bg-white/80 rounded flex items-center justify-center">
+                            <div className="w-4 h-4 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+                          </div>
+                        )}
+                      </label>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
