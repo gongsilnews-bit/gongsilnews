@@ -25,6 +25,85 @@ interface Props {
   isUploading?: boolean;
 }
 
+const MapBlock = ({ info, className = "h-[290px]" }: { info: PropertyInfo, className?: string }) => (
+  <div className={`w-full overflow-hidden relative ${className}`}>
+    {info.agentAddress ? (
+      <KakaoMap address={info.agentAddress} />
+    ) : (
+      <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100 text-gray-400 font-bold text-sm">
+        <MapPinIcon className="w-8 h-8 text-gray-300 mb-2" />
+        오시는 길 주소를 입력하면 지도가 표시됩니다.
+      </div>
+    )}
+  </div>
+);
+
+const DirectionsBox = ({ info, hc, qrCodeUrl, className = "bg-white", dark = false }: { info: PropertyInfo, hc: any, qrCodeUrl: string, className?: string, dark?: boolean }) => (
+  <div className={`flex gap-3 mb-2 ${className}`}>
+    <div className={`flex-1 border ${dark ? 'border-white/10 bg-white/5' : 'border-gray-200 bg-white'} rounded-xl p-4 shadow-sm flex flex-col justify-center relative overflow-hidden`}>
+      <div className={`absolute top-0 left-0 w-1 h-full ${dark ? 'bg-[var(--theme-secondary)]' : 'bg-[var(--theme-primary)]'}`}></div>
+      <div className="flex items-center gap-1.5 mb-1.5">
+        <MapPinIcon className={`w-3.5 h-3.5 ${dark ? 'text-[var(--theme-secondary)]' : 'text-[var(--theme-primary)]'}`} />
+        <span className={`font-black text-xs tracking-widest ${dark ? 'text-[var(--theme-secondary)]' : 'text-[var(--theme-primary)]'}`}>
+          <EditableText value={info.page7DirectionsTitle || "오시는 길"} onChange={(v) => hc('page7DirectionsTitle', v)} />
+        </span>
+      </div>
+      <div className={`${dark ? 'text-white/90' : 'text-gray-700'} font-bold text-[13px] leading-relaxed whitespace-pre-wrap break-keep`}>
+        <EditableText multiline value={info.agentAddress || "강남구 내 주요 전철역 및 다수의 버스 노선 접근이 용이하여 출퇴근 및 대중교통 편리성 확보"} onChange={(v) => hc('agentAddress', v)} />
+      </div>
+    </div>
+
+    <div className="w-[90px] shrink-0 flex flex-col items-center justify-center">
+      <img src={qrCodeUrl} alt="Naver Map QR" className={`w-16 h-16 ${dark ? 'bg-white p-1 rounded' : 'mix-blend-multiply'}`} />
+      <span className={`text-[8px] ${dark ? 'text-white/40' : 'text-gray-400'} font-bold tracking-widest mt-1 uppercase`}>네이버 지도</span>
+    </div>
+  </div>
+);
+
+const PhoneBox = ({ info, hc, dark = false }: { info: PropertyInfo, hc: any, dark?: boolean }) => (
+  <div className="flex flex-col justify-center py-2">
+    <div className="flex items-center gap-3">
+      <div className={`text-[30px] font-black ${dark ? 'text-[var(--theme-secondary)]' : 'text-[var(--theme-primary)]'} flex-1 tracking-tight flex items-center`}>
+        <span className={`text-[13px] ${dark ? 'text-white/50' : 'text-[var(--theme-primary)]'} font-extrabold tracking-widest mr-3 whitespace-nowrap shrink-0`}>문의하기</span>
+        <EditableText value={info.agentMobile || "010-5554-4444"} onChange={(v) => hc('agentMobile', v)} />
+      </div>
+      <div className="flex gap-2 shrink-0">
+        <a href={`tel:${(info.agentMobile || "010-5554-4444").replace(/[^0-9]/g, '')}`} onClick={(e) => e.preventDefault()} className={`w-10 h-10 rounded-full ${dark ? 'bg-[var(--theme-secondary)] text-[var(--theme-dark)]' : 'bg-[var(--theme-primary)] text-white'} flex items-center justify-center shadow-md hover:opacity-80 transition-opacity hover:-translate-y-0.5 active:translate-y-0`} title="전화걸기">
+          <PhoneIcon className="w-4 h-4" />
+        </a>
+        <a href={`sms:${(info.agentMobile || "010-5554-4444").replace(/[^0-9]/g, '')}`} onClick={(e) => e.preventDefault()} className={`w-10 h-10 rounded-full ${dark ? 'bg-[var(--theme-secondary)] text-[var(--theme-dark)]' : 'bg-[var(--theme-primary)] text-white'} flex items-center justify-center shadow-md hover:opacity-80 transition-opacity hover:-translate-y-0.5 active:translate-y-0`} title="문자보내기">
+          <ChatBubbleOvalLeftEllipsisIcon className="w-4 h-4" />
+        </a>
+      </div>
+    </div>
+  </div>
+);
+
+const SnsBox = ({ info, hc, dark = false }: { info: PropertyInfo, hc: any, dark?: boolean }) => (
+  <div className={`flex justify-between items-center text-xs font-bold ${dark ? 'text-white/60' : 'text-gray-500'} w-full`}>
+    <div className="flex gap-6 w-full">
+      <div className="flex items-center gap-2 flex-1 group/sns">
+        <DocumentTextIcon className={`w-5 h-5 ${dark ? 'text-white/30' : 'text-gray-300'} group-hover/sns:${dark ? 'text-[var(--theme-secondary)]' : 'text-[var(--theme-primary)]'} transition-colors shrink-0`} />
+        <a href={info.contactBlog ? (info.contactBlog.startsWith('http') ? info.contactBlog : `https://${info.contactBlog}`) : '#'} target="_blank" rel="noopener noreferrer" onClick={(e) => { if (!info.contactBlog) e.preventDefault(); }} className={`w-full hover:${dark ? 'text-white' : 'text-[var(--theme-primary)]'} transition-colors`}>
+          <EditableText value={info.contactBlog ? info.contactBlog.replace('https://', '') : ""} placeholder="블로그 (미입력시 숨김)" onChange={(v) => hc('contactBlog', v)} className="w-full" />
+        </a>
+      </div>
+      <div className="flex items-center gap-2 flex-1 group/sns">
+        <PlayCircleIcon className={`w-5 h-5 ${dark ? 'text-white/30' : 'text-gray-300'} group-hover/sns:${dark ? 'text-[var(--theme-secondary)]' : 'text-[var(--theme-primary)]'} transition-colors shrink-0`} />
+        <a href={info.contactYoutube ? (info.contactYoutube.startsWith('http') ? info.contactYoutube : `https://${info.contactYoutube}`) : '#'} target="_blank" rel="noopener noreferrer" onClick={(e) => { if (!info.contactYoutube) e.preventDefault(); }} className={`w-full hover:${dark ? 'text-white' : 'text-[var(--theme-primary)]'} transition-colors`}>
+          <EditableText value={info.contactYoutube ? info.contactYoutube.replace('https://', '') : ""} placeholder="유튜브 (미입력시 숨김)" onChange={(v) => hc('contactYoutube', v)} className="w-full" />
+        </a>
+      </div>
+      <div className="flex items-center gap-2 flex-1 group/sns">
+        <GlobeAltIcon className={`w-5 h-5 ${dark ? 'text-white/30' : 'text-gray-300'} group-hover/sns:${dark ? 'text-[var(--theme-secondary)]' : 'text-[var(--theme-primary)]'} transition-colors shrink-0`} />
+        <a href={info.contactWebsite ? (info.contactWebsite.startsWith('http') ? info.contactWebsite : `https://${info.contactWebsite}`) : '#'} target="_blank" rel="noopener noreferrer" onClick={(e) => { if (!info.contactWebsite) e.preventDefault(); }} className={`w-full hover:${dark ? 'text-white' : 'text-[var(--theme-primary)]'} transition-colors`}>
+          <EditableText value={info.contactWebsite ? info.contactWebsite.replace('https://', '') : ""} placeholder="웹사이트 (미입력시 숨김)" onChange={(v) => hc('contactWebsite', v)} className="w-full" />
+        </a>
+      </div>
+    </div>
+  </div>
+);
+
 const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, colorTheme, onUpdateInfo, agentImage, onImageUpload, onDeleteImage, isUploading }) => {
   const hc = (key: string, value: any) => { if (onUpdateInfo) onUpdateInfo({ ...info, [key]: value }); };
   const headingFont = layoutTheme?.headingFont || 'font-sans';
@@ -32,85 +111,6 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
   const layoutType = layoutTheme?.type || 'type1';
 
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(info.agentMapUrl || `https://map.naver.com/p/search/${(info.agentAddress || '서울 강남구 논현동').split('\n')[0]}`)}`;
-
-  const MapBlock = ({ className = "h-[290px]" }) => (
-    <div className={`w-full overflow-hidden relative ${className}`}>
-      {info.agentAddress ? (
-        <KakaoMap address={info.agentAddress} />
-      ) : (
-        <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100 text-gray-400 font-bold text-sm">
-          <MapPinIcon className="w-8 h-8 text-gray-300 mb-2" />
-          오시는 길 주소를 입력하면 지도가 표시됩니다.
-        </div>
-      )}
-    </div>
-  );
-
-  const DirectionsBox = ({ className = "bg-white", dark = false }) => (
-    <div className={`flex gap-3 mb-2 ${className}`}>
-      <div className={`flex-1 border ${dark ? 'border-white/10 bg-white/5' : 'border-gray-200 bg-white'} rounded-xl p-4 shadow-sm flex flex-col justify-center relative overflow-hidden`}>
-        <div className={`absolute top-0 left-0 w-1 h-full ${dark ? 'bg-[var(--theme-secondary)]' : 'bg-[var(--theme-primary)]'}`}></div>
-        <div className="flex items-center gap-1.5 mb-1.5">
-          <MapPinIcon className={`w-3.5 h-3.5 ${dark ? 'text-[var(--theme-secondary)]' : 'text-[var(--theme-primary)]'}`} />
-          <span className={`font-black text-xs tracking-widest ${dark ? 'text-[var(--theme-secondary)]' : 'text-[var(--theme-primary)]'}`}>
-            <EditableText value={info.page7DirectionsTitle || "오시는 길"} onChange={(v) => hc('page7DirectionsTitle', v)} />
-          </span>
-        </div>
-        <div className={`${dark ? 'text-white/90' : 'text-gray-700'} font-bold text-[13px] leading-relaxed whitespace-pre-wrap break-keep`}>
-          <EditableText multiline value={info.agentAddress || "강남구 내 주요 전철역 및 다수의 버스 노선 접근이 용이하여 출퇴근 및 대중교통 편리성 확보"} onChange={(v) => hc('agentAddress', v)} />
-        </div>
-      </div>
-
-      <div className="w-[90px] shrink-0 flex flex-col items-center justify-center">
-        <img src={qrCodeUrl} alt="Naver Map QR" className={`w-16 h-16 ${dark ? 'bg-white p-1 rounded' : 'mix-blend-multiply'}`} />
-        <span className={`text-[8px] ${dark ? 'text-white/40' : 'text-gray-400'} font-bold tracking-widest mt-1 uppercase`}>네이버 지도</span>
-      </div>
-    </div>
-  );
-
-  const PhoneBox = ({ dark = false }) => (
-    <div className="flex flex-col justify-center py-2">
-      <div className="flex items-center gap-3">
-        <div className={`text-[30px] font-black ${dark ? 'text-[var(--theme-secondary)]' : 'text-[var(--theme-primary)]'} flex-1 tracking-tight flex items-center`}>
-          <span className={`text-[13px] ${dark ? 'text-white/50' : 'text-[var(--theme-primary)]'} font-extrabold tracking-widest mr-3 whitespace-nowrap shrink-0`}>문의하기</span>
-          <EditableText value={info.agentMobile || "010-5554-4444"} onChange={(v) => hc('agentMobile', v)} />
-        </div>
-        <div className="flex gap-2 shrink-0">
-          <a href={`tel:${(info.agentMobile || "010-5554-4444").replace(/[^0-9]/g, '')}`} onClick={(e) => e.preventDefault()} className={`w-10 h-10 rounded-full ${dark ? 'bg-[var(--theme-secondary)] text-[var(--theme-dark)]' : 'bg-[var(--theme-primary)] text-white'} flex items-center justify-center shadow-md hover:opacity-80 transition-opacity hover:-translate-y-0.5 active:translate-y-0`} title="전화걸기">
-            <PhoneIcon className="w-4 h-4" />
-          </a>
-          <a href={`sms:${(info.agentMobile || "010-5554-4444").replace(/[^0-9]/g, '')}`} onClick={(e) => e.preventDefault()} className={`w-10 h-10 rounded-full ${dark ? 'bg-[var(--theme-secondary)] text-[var(--theme-dark)]' : 'bg-[var(--theme-primary)] text-white'} flex items-center justify-center shadow-md hover:opacity-80 transition-opacity hover:-translate-y-0.5 active:translate-y-0`} title="문자보내기">
-            <ChatBubbleOvalLeftEllipsisIcon className="w-4 h-4" />
-          </a>
-        </div>
-      </div>
-    </div>
-  );
-
-  const SnsBox = ({ dark = false }) => (
-    <div className={`flex justify-between items-center text-xs font-bold ${dark ? 'text-white/60' : 'text-gray-500'} w-full`}>
-      <div className="flex gap-6 w-full">
-        <div className="flex items-center gap-2 flex-1 group/sns">
-          <DocumentTextIcon className={`w-5 h-5 ${dark ? 'text-white/30' : 'text-gray-300'} group-hover/sns:${dark ? 'text-[var(--theme-secondary)]' : 'text-[var(--theme-primary)]'} transition-colors shrink-0`} />
-          <a href={info.contactBlog ? (info.contactBlog.startsWith('http') ? info.contactBlog : `https://${info.contactBlog}`) : '#'} target="_blank" rel="noopener noreferrer" onClick={(e) => { if (!info.contactBlog) e.preventDefault(); }} className={`w-full hover:${dark ? 'text-white' : 'text-[var(--theme-primary)]'} transition-colors`}>
-            <EditableText value={info.contactBlog ? info.contactBlog.replace('https://', '') : ""} placeholder="블로그 (미입력시 숨김)" onChange={(v) => hc('contactBlog', v)} className="w-full" />
-          </a>
-        </div>
-        <div className="flex items-center gap-2 flex-1 group/sns">
-          <PlayCircleIcon className={`w-5 h-5 ${dark ? 'text-white/30' : 'text-gray-300'} group-hover/sns:${dark ? 'text-[var(--theme-secondary)]' : 'text-[var(--theme-primary)]'} transition-colors shrink-0`} />
-          <a href={info.contactYoutube ? (info.contactYoutube.startsWith('http') ? info.contactYoutube : `https://${info.contactYoutube}`) : '#'} target="_blank" rel="noopener noreferrer" onClick={(e) => { if (!info.contactYoutube) e.preventDefault(); }} className={`w-full hover:${dark ? 'text-white' : 'text-[var(--theme-primary)]'} transition-colors`}>
-            <EditableText value={info.contactYoutube ? info.contactYoutube.replace('https://', '') : ""} placeholder="유튜브 (미입력시 숨김)" onChange={(v) => hc('contactYoutube', v)} className="w-full" />
-          </a>
-        </div>
-        <div className="flex items-center gap-2 flex-1 group/sns">
-          <GlobeAltIcon className={`w-5 h-5 ${dark ? 'text-white/30' : 'text-gray-300'} group-hover/sns:${dark ? 'text-[var(--theme-secondary)]' : 'text-[var(--theme-primary)]'} transition-colors shrink-0`} />
-          <a href={info.contactWebsite ? (info.contactWebsite.startsWith('http') ? info.contactWebsite : `https://${info.contactWebsite}`) : '#'} target="_blank" rel="noopener noreferrer" onClick={(e) => { if (!info.contactWebsite) e.preventDefault(); }} className={`w-full hover:${dark ? 'text-white' : 'text-[var(--theme-primary)]'} transition-colors`}>
-            <EditableText value={info.contactWebsite ? info.contactWebsite.replace('https://', '') : ""} placeholder="웹사이트 (미입력시 숨김)" onChange={(v) => hc('contactWebsite', v)} className="w-full" />
-          </a>
-        </div>
-      </div>
-    </div>
-  );
 
   return (
     <div 
@@ -138,19 +138,19 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
 
               <div className="flex gap-10 flex-1">
                 <div className="flex-1 flex flex-col justify-between">
-                  <MapBlock className="flex-1 mb-4 rounded-xl border border-gray-200" />
-                  <DirectionsBox />
+                  <MapBlock info={info} className="flex-1 mb-4 rounded-xl border-gray-200" />
+                  <DirectionsBox info={info} hc={hc} qrCodeUrl={qrCodeUrl} />
                 </div>
                 <div className="w-5/12 flex flex-col justify-center gap-6">
                   <div className="bg-gray-50 border border-gray-100 p-8 rounded-xl">
                     <h2 className="text-xl font-black text-gray-800"><EditableText value={info.agentName || "미래에셋공인"} onChange={(v) => hc('agentName', v)} /></h2>
                     <p className="text-sm text-gray-500 font-bold mt-1">대표/담당자: <EditableText value={info.agentRepresentative || "김민혁"} onChange={(v) => hc('agentRepresentative', v)} className="inline-block" /></p>
                   </div>
-                  <PhoneBox />
+                  <PhoneBox info={info} hc={hc} />
                 </div>
               </div>
               <div className="mt-4 pt-5 border-t border-gray-100">
-                <SnsBox />
+                <SnsBox info={info} hc={hc} />
               </div>
             </div>
           );
@@ -178,17 +178,17 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
                       <span className="text-lg font-extrabold text-gray-800"><EditableText value={info.agentRepresentative || "김민혁"} onChange={(v) => hc('agentRepresentative', v)} /></span>
                     </div>
                     <div className="pt-4">
-                      <PhoneBox />
+                      <PhoneBox info={info} hc={hc} />
                     </div>
                   </div>
                   <div className="w-7/12 flex flex-col">
-                    <MapBlock className="flex-1 mb-3 rounded-xl border border-gray-200 shadow-sm" />
-                    <DirectionsBox />
+                    <MapBlock info={info} className="flex-1 mb-3 rounded-xl border border-gray-200 shadow-sm" />
+                    <DirectionsBox info={info} hc={hc} qrCodeUrl={qrCodeUrl} />
                   </div>
                 </div>
 
                 <div className="border-t border-gray-100 pt-5 mt-auto">
-                  <SnsBox />
+                  <SnsBox info={info} hc={hc} />
                 </div>
               </div>
             </div>
@@ -215,16 +215,16 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
                     <span className="text-[9px] text-white/50 font-bold block mb-1">AGENT</span>
                     <span className="text-sm font-semibold text-white/90"><EditableText value={info.agentRepresentative || "김민혁"} onChange={(v) => hc('agentRepresentative', v)} /></span>
                   </div>
-                  <PhoneBox dark />
+                  <PhoneBox info={info} hc={hc} dark />
                 </div>
                 <div className="w-7/12 flex flex-col">
-                  <MapBlock className="flex-1 mb-3 border border-white/10 rounded-xl" />
-                  <DirectionsBox dark className="" />
+                  <MapBlock info={info} className="flex-1 mb-3 border border-white/10 rounded-xl" />
+                  <DirectionsBox info={info} hc={hc} qrCodeUrl={qrCodeUrl} dark className="" />
                 </div>
               </div>
 
               <div className="border-t border-white/10 pt-5 mt-4">
-                <SnsBox dark />
+                <SnsBox info={info} hc={hc} dark />
               </div>
             </div>
           );
@@ -253,17 +253,17 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
                     <span className="text-base text-gray-700 tracking-wide font-medium"><EditableText value={info.agentRepresentative || "김민혁"} onChange={(v) => hc('agentRepresentative', v)} /></span>
                   </div>
                   <div className="pt-2">
-                    <PhoneBox />
+                    <PhoneBox info={info} hc={hc} />
                   </div>
                 </div>
                 <div className="w-7/12 flex flex-col">
-                  <MapBlock className="flex-1 mb-3 border border-gray-200 rounded-xl" />
-                  <DirectionsBox className="" />
+                  <MapBlock info={info} className="flex-1 mb-3 border border-gray-200 rounded-xl" />
+                  <DirectionsBox info={info} hc={hc} qrCodeUrl={qrCodeUrl} className="" />
                 </div>
               </div>
 
               <div className="border-t border-gray-100 pt-5 mt-4">
-                <SnsBox />
+                <SnsBox info={info} hc={hc} />
               </div>
             </div>
           );
@@ -280,12 +280,12 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
                 <div className="w-16 h-1 bg-[var(--theme-primary)] mt-4"></div>
               </div>
 
-              <MapBlock className="mb-4 rounded-xl border border-gray-200 shadow-sm" />
-              <DirectionsBox className="bg-white" />
-              <PhoneBox />
+              <MapBlock info={info} className="mb-4 rounded-xl border border-gray-200 shadow-sm" />
+              <DirectionsBox info={info} hc={hc} qrCodeUrl={qrCodeUrl} className="bg-white" />
+              <PhoneBox info={info} hc={hc} />
 
               <div className="border-t border-gray-200 pt-5 mt-auto flex justify-between items-center text-xs text-gray-500 font-bold">
-                <SnsBox />
+                <SnsBox info={info} hc={hc} />
               </div>
             </div>
 
