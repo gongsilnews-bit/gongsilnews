@@ -306,40 +306,47 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
                 )}
               </div>
 
-              <div className="flex flex-col flex-1">
-                <div className="flex gap-4">
-                  <div className="flex-1 space-y-3 mt-1">
-                    <div className="flex items-start gap-2">
-                      <MapPinIcon className="w-5 h-5 text-[var(--theme-primary)] shrink-0 mt-0.5" />
-                      <span className="text-lg font-extrabold text-gray-800 break-keep leading-tight block">
-                        <EditableText value={info.agentAddress || "서울 강남구 논현동 123-45"} onChange={(v) => hc('agentAddress', v)} />
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <BuildingOfficeIcon className="w-5 h-5 text-[var(--theme-primary)] shrink-0" />
-                      <span className="text-sm font-bold text-gray-500 block">
-                        <EditableText value={info.agentName || "미래에셋공인 중개사 사무소"} onChange={(v) => hc('agentName', v)} className="inline-block" />
-                        <span className="mx-2 text-gray-300">|</span>
-                        <EditableText value={info.agentRepresentative || "김민혁 과장"} onChange={(v) => hc('agentRepresentative', v)} className="inline-block" />
-                      </span>
-                    </div>
+              <div className="flex flex-col flex-1 justify-center gap-5 mt-2">
+                {/* 1. Agency & Agent */}
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-[var(--theme-primary)]/10 flex items-center justify-center shrink-0">
+                    <BuildingOfficeIcon className="w-4 h-4 text-[var(--theme-primary)]" />
                   </div>
+                  <span className="text-lg font-bold text-gray-800">
+                    <EditableText value={info.agentName || "미래에셋공인 중개사 사무소"} onChange={(v) => hc('agentName', v)} className="inline-block" />
+                    <span className="mx-2 text-gray-300">|</span>
+                    <EditableText value={info.agentRepresentative || "김민혁 과장"} onChange={(v) => hc('agentRepresentative', v)} className="inline-block" />
+                  </span>
+                </div>
 
-                  <div className="flex flex-col items-end shrink-0 justify-center pl-6 border-l border-gray-200">
-                    <span className="text-[10px] text-[var(--theme-primary)] font-bold tracking-wider mb-2">모바일 터치 시 바로 연결</span>
-                    <div className="flex items-center gap-3">
-                      <div className="text-3xl font-black text-[var(--theme-primary)]">
-                        <EditableText value={info.agentMobile || "010-5554-4444"} onChange={(v) => hc('agentMobile', v)} className="!text-right" />
-                      </div>
-                      <div className="flex gap-1.5 shrink-0">
-                        <a href={`tel:${(info.agentMobile || "010-5554-4444").replace(/[^0-9]/g, '')}`} onClick={(e) => e.preventDefault()} className="w-9 h-9 rounded-full bg-[var(--theme-primary)] text-white flex items-center justify-center shadow-sm hover:opacity-80 transition-opacity" title="전화걸기">
-                          <PhoneIcon className="w-4 h-4" />
-                        </a>
-                        <a href={`sms:${(info.agentMobile || "010-5554-4444").replace(/[^0-9]/g, '')}`} onClick={(e) => e.preventDefault()} className="w-9 h-9 rounded-full bg-[var(--theme-primary)] text-white flex items-center justify-center shadow-sm hover:opacity-80 transition-opacity" title="문자보내기">
-                          <ChatBubbleOvalLeftEllipsisIcon className="w-4 h-4" />
-                        </a>
-                      </div>
-                    </div>
+                {/* 2. Phone Number */}
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-[var(--theme-primary)]/10 flex items-center justify-center shrink-0">
+                    <PhoneIcon className="w-4 h-4 text-[var(--theme-primary)]" />
+                  </div>
+                  <div className="text-3xl font-black text-[var(--theme-primary)] flex-1 tracking-tight">
+                    <EditableText value={info.agentMobile || "010-5554-4444"} onChange={(v) => hc('agentMobile', v)} />
+                  </div>
+                  <div className="flex gap-2 shrink-0">
+                    <a href={`tel:${(info.agentMobile || "010-5554-4444").replace(/[^0-9]/g, '')}`} onClick={(e) => e.preventDefault()} className="w-10 h-10 rounded-full bg-[var(--theme-primary)] text-white flex items-center justify-center shadow-md hover:opacity-80 transition-opacity hover:-translate-y-0.5 active:translate-y-0" title="전화걸기">
+                      <PhoneIcon className="w-4 h-4" />
+                    </a>
+                    <a href={`sms:${(info.agentMobile || "010-5554-4444").replace(/[^0-9]/g, '')}`} onClick={(e) => e.preventDefault()} className="w-10 h-10 rounded-full bg-[var(--theme-primary)] text-white flex items-center justify-center shadow-md hover:opacity-80 transition-opacity hover:-translate-y-0.5 active:translate-y-0" title="문자보내기">
+                      <ChatBubbleOvalLeftEllipsisIcon className="w-4 h-4" />
+                    </a>
+                  </div>
+                </div>
+
+                {/* 3. Address (오시는 길) */}
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
+                    <MapPinIcon className="w-4 h-4 text-gray-500" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] text-gray-400 font-bold tracking-wider mb-0.5">오시는 길</span>
+                    <span className="text-base font-bold text-gray-700">
+                      <EditableText value={info.agentAddress || "서울 강남구 논현동 123-45"} onChange={(v) => hc('agentAddress', v)} />
+                    </span>
                   </div>
                 </div>
               </div>
