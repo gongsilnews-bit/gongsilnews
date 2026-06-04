@@ -29,7 +29,7 @@ const Page3LeaseStatus: React.FC<Page3LeaseStatusProps> = ({
         onUpdateBadge={(val) => {
             if (onUpdateInfo) onUpdateInfo({ ...info, pageBadges: { ...(info.pageBadges || {}), page3: val } });
         }}
-        footerText={info.footerText || "CONFIDENTIAL | INFORMATION MEMORANDUM"}
+        footerText={info.footerText || "PROPERTY REPORT"}
         onUpdateFooter={(val) => handleTextChange('footerText', val)}
     >
         {(() => {

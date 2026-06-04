@@ -18,7 +18,7 @@ const Page2StatusValuation: React.FC<Props> = ({ info, pageString, isHidden, lay
         subtitle={info.page2Subtitle || "Status & Valuation"} onUpdateSubtitle={(v) => hc('page2Subtitle', v)}
         badgeText={info.pageBadges?.page2 || ""} exportId="page-2"
         onUpdateBadge={(v) => { if (onUpdateInfo) onUpdateInfo({ ...info, pageBadges: { ...(info.pageBadges || {}), page2: v } }); }}
-        footerText={info.footerText || "CONFIDENTIAL | INFORMATION MEMORANDUM"}
+        footerText={info.footerText || "PROPERTY REPORT"}
         onUpdateFooter={(v) => hc('footerText', v)}
     >
         <div className="flex gap-8 h-full w-full">

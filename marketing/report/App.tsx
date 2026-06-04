@@ -144,7 +144,8 @@ const INITIAL_INFO: PropertyInfo = {
   contactWebsite: "https://gongsilnews.com",
   contactQRLink: "https://gongsilnews.com",
   propertyType: "commercial_sales",
-  visiblePages: [0, 1, 2, 3, 4, 5, 6, 7]
+  visiblePages: [0, 1, 2, 3, 4, 5, 6, 7],
+  footerText: "PROPERTY REPORT"
 };
 
 const INITIAL_GENERATED: GeneratedContent = {

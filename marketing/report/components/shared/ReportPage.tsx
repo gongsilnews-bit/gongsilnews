@@ -13,7 +13,7 @@ const ReportPage = ({
     onUpdateTitle,
     onUpdateSubtitle,
     onUpdateBadge,
-    footerText = "CONFIDENTIAL | INFORMATION MEMORANDUM",
+    footerText = "PROPERTY REPORT",
     onUpdateFooter,
     layoutTheme,
     colorTheme

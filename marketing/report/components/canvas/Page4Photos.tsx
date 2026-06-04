@@ -63,7 +63,7 @@ const Page4Photos: React.FC<Page4PhotosProps> = ({
                 });
             }
         }}
-        footerText={info.footerText || "CONFIDENTIAL | INFORMATION MEMORANDUM"}
+        footerText={info.footerText || "PROPERTY REPORT"}
         onUpdateFooter={(val) => handleTextChange('footerText', val)}
     >
         {(() => {

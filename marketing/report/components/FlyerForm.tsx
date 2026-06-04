@@ -221,6 +221,18 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                  </button>
              ))}
         </div>
+        
+        <div className="mt-4">
+             <label className="text-xs font-bold text-gray-500 block mb-1">하단 공통 문구 (Footer Text)</label>
+             <input 
+                 type="text" 
+                 name="footerText" 
+                 value={info.footerText || "PROPERTY REPORT"} 
+                 onChange={handleChange} 
+                 className="w-full border rounded p-2 text-sm font-semibold tracking-wider placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                 placeholder="PROPERTY REPORT"
+             />
+        </div>
       </div>
 
       <hr className="border-gray-100 mb-6 shrink-0" />

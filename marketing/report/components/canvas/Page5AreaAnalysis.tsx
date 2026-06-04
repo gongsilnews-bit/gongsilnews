@@ -55,7 +55,7 @@ const Page5AreaAnalysis: React.FC<Page5AreaAnalysisProps> = ({
                 });
             }
         }}
-        footerText={info.footerText || "CONFIDENTIAL | INFORMATION MEMORANDUM"}
+        footerText={info.footerText || "PROPERTY REPORT"}
         onUpdateFooter={(val) => handleTextChange('footerText', val)}
     >
         <div className="flex flex-col h-[550px] gap-6">

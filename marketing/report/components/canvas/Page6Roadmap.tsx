@@ -44,7 +44,7 @@ const Page6Roadmap: React.FC<Page6RoadmapProps> = ({
                 });
             }
         }}
-        footerText={info.footerText || "CONFIDENTIAL | INFORMATION MEMORANDUM"}
+        footerText={info.footerText || "PROPERTY REPORT"}
         onUpdateFooter={(val) => handleTextChange('footerText', val)}
     >
         <div className="h-[480px] overflow-hidden">

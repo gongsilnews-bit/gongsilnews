@@ -23,7 +23,7 @@ const Page1Overview: React.FC<Props> = ({ info, pageString, isHidden, layoutThem
         badgeText={info.pageBadges?.page1 || "FOR SALE"} exportId="page-1"
         onUpdateTitle={(v) => hc('address', v)} onUpdateSubtitle={(v) => hc('subTitle', v)}
         onUpdateBadge={(v) => { if (onUpdateInfo) onUpdateInfo({ ...info, pageBadges: { ...(info.pageBadges || {}), page1: v } }); }}
-        footerText={info.footerText || "CONFIDENTIAL | INFORMATION MEMORANDUM"}
+        footerText={info.footerText || "PROPERTY REPORT"}
         onUpdateFooter={(v) => hc('footerText', v)}
     >
         <div className="flex gap-8 h-full">
