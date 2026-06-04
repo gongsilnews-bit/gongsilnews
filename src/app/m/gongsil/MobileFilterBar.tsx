@@ -117,12 +117,19 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
     filters.yearMax === currentYear - 15 ? "15년 이상" :
     "사용승인일";
 
-  const ownerLabel = filters.ownerRole === 'USER' ? '일반인' : filters.ownerRole === 'REALTOR' ? '부동산' : '등록자';
-  const commissionLabel = filters.commissionType === '공동중개' ? '공동중개' : filters.commissionType === '100' ? '100%(법정)' : filters.commissionType ? `${filters.commissionType}%~` : '중개보수';
-  const themeLabel = filters.themes.length > 0 ? `테마 ${filters.themes.length}개` : '테마';
+  const currentGroup = getSelectedGroup(filters.propertyTypes);
+  const showPricePill = currentGroup === "RESIDENTIAL" || currentGroup === "COMMERCIAL" || currentGroup === "LAND";
+  const showAreaPill = currentGroup === "RESIDENTIAL" || currentGroup === "COMMERCIAL" || currentGroup === "LAND";
+  const showFloorPill = currentGroup === "RESIDENTIAL" || currentGroup === "COMMERCIAL";
+  const showYearPill = currentGroup === "RESIDENTIAL" || currentGroup === "COMMERCIAL";
+  const showThemePill = currentGroup === "RESIDENTIAL" || currentGroup === "COMMERCIAL" || currentGroup === "LAND";
 
-  const priceLabel = (filters.priceMin !== null || filters.priceMax !== null) ? `${filters.priceMin !== null ? `${filters.priceMin >= 10000 ? `${filters.priceMin / 10000}억` : `${filters.priceMin}만`}` : ""}~${filters.priceMax !== null ? `${filters.priceMax >= 10000 ? `${filters.priceMax / 10000}억` : `${filters.priceMax}만`}` : ""}` : "가격대";
-  const areaLabel = (filters.areaMin !== null || filters.areaMax !== null) ? `${filters.areaMin !== null ? filters.areaMin : ""}~${filters.areaMax !== null ? filters.areaMax : ""}평` : "면적";
+  const ownerLabel = filters.ownerRole === 'USER' ? '일반인 ▾' : filters.ownerRole === 'REALTOR' ? '부동산 ▾' : filters.ownerRole === 'NONE' ? '선택없음 ▾' : '등록자 ▾';
+  const commissionLabel = filters.commissionType === '공동중개' ? '공동중개 ▾' : filters.commissionType === '100' ? '100%(법정) ▾' : filters.commissionType === 'NONE' ? '선택없음 ▾' : filters.commissionType ? `${filters.commissionType}%~ ▾` : '중개보수 ▾';
+  const themeLabel = filters.themes.length > 0 ? `테마 ${filters.themes.length}개 ▾` : '테마 ▾';
+
+  const priceLabel = (filters.priceMin !== null || filters.priceMax !== null) ? `${filters.priceMin !== null ? `${filters.priceMin >= 10000 ? `${filters.priceMin / 10000}억` : `${filters.priceMin}만`}` : ""}~${filters.priceMax !== null ? `${filters.priceMax >= 10000 ? `${filters.priceMax / 10000}억` : `${filters.priceMax}만`}` : ""} ▾` : "가격대 ▾";
+  const areaLabel = (filters.areaMin !== null || filters.areaMax !== null) ? `${filters.areaMin !== null ? filters.areaMin : ""}~${filters.areaMax !== null ? filters.areaMax : ""}평 ▾` : "면적 ▾";
 
   const pillStyle = (active: boolean): React.CSSProperties => ({
     padding: "8px 16px",
@@ -208,6 +215,44 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
                   : filters.tradeTypes.join(", ")} ▾
               </button>
             )}
+
+            {/* 동적 단축 필터 버튼들 */}
+            {activeMode !== "경매" && showPricePill && (
+              <button onClick={() => setActivePanel(activePanel === "price" ? null : "price")} style={pillStyle(activePanel === "price" || filters.priceMin !== null || filters.priceMax !== null)}>
+                {priceLabel}
+              </button>
+            )}
+            {activeMode !== "경매" && showAreaPill && (
+              <button onClick={() => setActivePanel(activePanel === "area" ? null : "area")} style={pillStyle(activePanel === "area" || filters.areaMin !== null || filters.areaMax !== null)}>
+                {areaLabel}
+              </button>
+            )}
+            {activeMode !== "경매" && showFloorPill && (
+              <button onClick={() => setActivePanel(activePanel === "floor" ? null : "floor")} style={pillStyle(activePanel === "floor" || filters.floor !== null)}>
+                {filters.floor ? `${filters.floor}` : "층수 ▾"}
+              </button>
+            )}
+            {activeMode !== "경매" && showYearPill && (
+              <button onClick={() => setActivePanel(activePanel === "year" ? null : "year")} style={pillStyle(activePanel === "year" || filters.yearMin !== null || filters.yearMax !== null)}>
+                {yearLabel} ▾
+              </button>
+            )}
+            {activeMode !== "경매" && (
+              <button onClick={() => setActivePanel(activePanel === "owner" ? null : "owner")} style={pillStyle(activePanel === "owner" || filters.ownerRole !== null)}>
+                {ownerLabel}
+              </button>
+            )}
+            {activeMode !== "경매" && (
+              <button onClick={() => setActivePanel(activePanel === "commission" ? null : "commission")} style={pillStyle(activePanel === "commission" || filters.commissionType !== null)}>
+                {commissionLabel}
+              </button>
+            )}
+            {activeMode !== "경매" && showThemePill && (
+              <button onClick={() => setActivePanel(activePanel === "theme" ? null : "theme")} style={pillStyle(activePanel === "theme" || filters.themes.length > 0)}>
+                {themeLabel}
+              </button>
+            )}
+
             {activeMode !== "경매" && (
               <button 
                 onClick={() => setFullFilterOpen(true)} 
@@ -218,7 +263,7 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
                   color: hasActiveFilters ? "#4b89ff" : "#374151",
                 }}
               >
-                🎛️ 가격·조건필터 ▾
+                🎛️ 상세필터 ▾
                 {hasActiveFilters && <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#ef4444", marginLeft: "2px" }} />}
               </button>
             )}
