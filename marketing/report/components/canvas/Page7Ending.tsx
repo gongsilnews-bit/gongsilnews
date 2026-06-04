@@ -134,7 +134,6 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
                     <span>유튜브: <EditableText value={info.contactYoutube ? info.contactYoutube.replace('https://', '') : ""} onChange={(v) => hc('contactYoutube', v)} className="text-gray-600 inline-block" /></span>
                     <span>블로그: <EditableText value={info.contactBlog ? info.contactBlog.replace('https://', '') : ""} onChange={(v) => hc('contactBlog', v)} className="text-gray-600 inline-block" /></span>
                   </div>
-                  <span>PAGE 07 / 07</span>
                 </div>
               </div>
             </div>
@@ -191,7 +190,6 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
                   <span>블로그: <EditableText value={info.contactBlog || ""} onChange={(v) => hc('contactBlog', v)} className="text-white/80 inline-block" /></span>
                   <span>웹: <EditableText value={info.contactWebsite || ""} onChange={(v) => hc('contactWebsite', v)} className="text-white/80 inline-block" /></span>
                 </div>
-                <span className="font-bold tracking-widest text-[var(--theme-secondary)]">PAGE 07 / 07</span>
               </div>
             </div>
           );
@@ -258,7 +256,6 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
           <div className="flex-1 flex h-full">
             <div className="w-7/12 p-20 flex flex-col justify-between h-full bg-[#f8fafc] border-r border-gray-200">
               <div className="mt-6">
-                <span className="text-[var(--theme-primary)] text-xs font-black tracking-[0.3em] uppercase block mb-2">INFORMATION PARTNER</span>
                 <h1 className={`text-4xl font-extrabold text-gray-900 tracking-tight leading-none ${headingFont}`}>
                   CONTACT US
                 </h1>
@@ -292,7 +289,6 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
                 <div className="flex gap-4">
                   <span>유튜브: <EditableText value={info.contactYoutube ? info.contactYoutube.replace('https://', '') : ""} onChange={(v) => hc('contactYoutube', v)} className="text-gray-600 inline-block font-medium" /></span>
                 </div>
-                <span>PAGE 07 / 07</span>
               </div>
             </div>
 
@@ -300,7 +296,6 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
               <div className="absolute inset-0 bg-gradient-to-tr from-[var(--theme-dark)] via-[var(--theme-dark)]/90 to-[var(--theme-primary)]/40 mix-blend-overlay pointer-events-none"></div>
               
               <div className="text-right z-10">
-                <span className="text-[var(--theme-secondary)] font-extrabold tracking-widest text-xs uppercase">ONLINE BRIEFING</span>
               </div>
 
               <div className="z-10 flex flex-col items-center gap-3">
