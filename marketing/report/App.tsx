@@ -770,6 +770,7 @@ function App() {
           agentRepresentative,
           agentPhone,
           agentMobile,
+          agentAddress: fullAddress || INITIAL_INFO.agentAddress,
           agentMapUrl: fullAddress ? `https://map.naver.com/p/search/${encodeURIComponent(fullAddress)}` : "",
           consultationUrl: "",
           agentAdditionalInfo: additionalInfo,
