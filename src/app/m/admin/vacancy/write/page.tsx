@@ -74,6 +74,14 @@ function MobileVacancyWrite() {
       setAddressExposure("기본주소만공개");
     }
   };
+
+  useEffect(() => {
+    if (subCategory === "지식산업센터") {
+      setAddressExposure("비공개");
+    } else if (propertyType === "상가·사무실·건물·공장·토지") {
+      setAddressExposure("기본주소만공개");
+    }
+  }, [subCategory, propertyType]);
   const [tradeType, setTradeType] = useState("매매");
 
   // 금액
@@ -233,7 +241,7 @@ function MobileVacancyWrite() {
 
   // PC와 동일한 주소 공개/비공개 판정 로직
   const isFieldExposed = (field: "detailAddr" | "buildingName" | "aptDong" | "hosu") => {
-    if (propertyType === "아파트·오피스텔") {
+    if (propertyType === "아파트·오피스텔" || (propertyType === "상가·사무실·건물·공장·토지" && subCategory === "지식산업센터")) {
       if (field === "detailAddr") return addressExposure !== "비공개";
       if (field === "buildingName") return true;
       if (field === "aptDong") return addressExposure !== "비공개";
@@ -1038,7 +1046,7 @@ function MobileVacancyWrite() {
             <div style={{ background:"#f9fafb", padding:12, borderRadius:10, border:"1px solid #e5e7eb", marginBottom:12 }}>
               <div style={{ fontSize:13, fontWeight:700, color:"#374151", marginBottom:8 }}>🔒 주소 노출 범위</div>
               <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
-                {propertyType === "아파트·오피스텔" ? (
+                {propertyType === "아파트·오피스텔" || (propertyType === "상가·사무실·건물·공장·토지" && subCategory === "지식산업센터") ? (
                   <>
                     {["동/호수공개","동수공개","비공개"].map(opt => (
                       <label key={opt} style={{ display:"flex", alignItems:"center", gap:4, fontSize:13, cursor:"pointer", padding:"6px 10px", borderRadius:8, background: addressExposure===opt?"#eff6ff":"#fff", border: addressExposure===opt?"1px solid #1a73e8":"1px solid #d1d5db" }}>
