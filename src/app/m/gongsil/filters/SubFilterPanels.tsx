@@ -97,7 +97,7 @@ export function OwnerRoleFilterPanel({ filters, onFilterChange }: Props) {
           onClick={handleToggleAll} 
           style={{ ...gridBtnStyle(isAllSelected), fontSize: "14px" }}
         >
-          {isAllSelected ? "전체해제" : "전체선택"}
+          {isAllSelected ? "✓ 전체해제" : "✓ 전체선택"}
         </button>
         <button 
           type="button" 
@@ -154,7 +154,7 @@ export function CommissionFilterPanel({ filters, onFilterChange }: Props) {
           onClick={handleToggleAll} 
           style={{ ...gridBtnStyle(isAllSelected), fontSize: "14px" }}
         >
-          {isAllSelected ? "전체해제" : "전체선택"}
+          {isAllSelected ? "✓ 전체해제" : "✓ 전체선택"}
         </button>
         {COMMISSION_PRESETS.filter(p => p.value !== null).map(p => (
           <button 

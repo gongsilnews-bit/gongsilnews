@@ -45,7 +45,7 @@ export default function TradeTypeFilterPanel({ filters, onFilterChange, TRADE_TY
             transition: "all 0.15s ease"
           }}
         >
-          {isAllSelected ? "전체해제" : "전체선택"}
+          {isAllSelected ? "✓ 전체해제" : "✓ 전체선택"}
         </button>
       </div>
 

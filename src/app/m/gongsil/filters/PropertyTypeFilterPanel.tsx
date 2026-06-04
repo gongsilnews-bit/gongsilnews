@@ -58,7 +58,7 @@ export default function PropertyTypeFilterPanel({ filters, onFilterChange, PROPE
                 onClick={toggleGroup} 
                 style={{ ...gridBtnStyle(isGroupAllSelected), fontSize: "14px" }}
               >
-                {isGroupAllSelected ? "전체해제" : "전체선택"}
+                {isGroupAllSelected ? "✓ 전체해제" : "✓ 전체선택"}
               </button>
               {g.items.map(item => (
                 <button 
