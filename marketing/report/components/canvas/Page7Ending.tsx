@@ -87,9 +87,9 @@ const PhoneBox = ({ info, hc, dark = false, stacked = false }: { info: PropertyI
   </div>
 );
 
-const SnsBox = ({ info, hc, dark = false }: { info: PropertyInfo, hc: any, dark?: boolean }) => (
+const SnsBox = ({ info, hc, dark = false, stacked = false }: { info: PropertyInfo, hc: any, dark?: boolean, stacked?: boolean }) => (
   <div className={`flex justify-between items-center text-xs font-bold ${dark ? 'text-white/60' : 'text-gray-500'} w-full`}>
-    <div className="flex gap-6 w-full">
+    <div className={`flex ${stacked ? 'flex-col gap-3' : 'gap-6'} w-full`}>
       <div className="flex items-center gap-2 flex-1 group/sns">
         <DocumentTextIcon className={`w-5 h-5 ${dark ? 'text-white/30' : 'text-gray-300'} group-hover/sns:${dark ? 'text-[var(--theme-secondary)]' : 'text-[var(--theme-primary)]'} transition-colors shrink-0`} />
         <a href={info.contactBlog ? (String(info.contactBlog).startsWith('http') ? info.contactBlog : `https://${info.contactBlog}`) : '#'} target="_blank" rel="noopener noreferrer" onClick={(e) => { if (!info.contactBlog) e.preventDefault(); }} className={`w-full hover:${dark ? 'text-white' : 'text-[var(--theme-primary)]'} transition-colors`}>
@@ -155,8 +155,8 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
                        <div className="flex justify-center mb-6 w-full">
                          <PhoneBox info={info} hc={hc} stacked={true} />
                        </div>
-                       <div className="w-full h-px bg-gray-100 mb-6"></div>
-                       <SnsBox info={info} hc={hc} />
+                       <div className="w-full h-px bg-gray-100 mb-5"></div>
+                       <SnsBox info={info} hc={hc} stacked={true} />
                     </div>
                   </div>
                 </div>
