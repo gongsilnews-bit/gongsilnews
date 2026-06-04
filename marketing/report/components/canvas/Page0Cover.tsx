@@ -14,11 +14,12 @@ interface Props {
   coverImage?: string | null;
   customQrImage?: string | null;
   onImageUpload?: (key: string, file: File) => Promise<string | undefined>;
+  onDeleteImage?: (key: string) => void;
   isUploading?: boolean;
   isUploadingQr?: boolean;
 }
 
-const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, colorTheme, onUpdateInfo, coverImage, customQrImage, onImageUpload, isUploading, isUploadingQr }) => {
+const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, colorTheme, onUpdateInfo, coverImage, customQrImage, onImageUpload, onDeleteImage, isUploading, isUploadingQr }) => {
   const hc = (key: string, value: any) => { if (onUpdateInfo) onUpdateInfo({ ...info, [key]: value }); };
   const headingFont = layoutTheme?.headingFont || 'font-sans';
   const bodyFont = layoutTheme?.bodyFont || 'font-sans';
@@ -187,9 +188,23 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
         if (layoutType === 'type4') {
           // Bold Box (Full Theme Dark / Primary contrast)
           return (
-            <div className="flex-1 flex flex-col justify-between p-20 bg-[var(--theme-dark)] text-white h-full relative">
+            <div className="flex-1 flex flex-col justify-between p-20 bg-[var(--theme-dark)] text-white h-full relative z-0 overflow-hidden group/coverimg">
+              {/* Background Image Layer */}
+              <div className={`absolute inset-0 z-[-2] [&_img]:opacity-30 group-hover/coverimg:[&_img]:opacity-40 [&_img]:transition-opacity [&_img]:mix-blend-luminosity transition-opacity duration-300 ${!coverImage ? 'opacity-0 hover:opacity-100 print:hidden' : 'opacity-100'}`}>
+                <EditableImage
+                  src={coverImage || ""}
+                  alt="표지 배경 이미지"
+                  imageKey="mainImage"
+                  onImageUpload={onImageUpload}
+                  onDelete={() => onDeleteImage && onDeleteImage('mainImage')}
+                  isUploading={isUploading}
+                  aspectRatioClass="object-cover"
+                  className="w-full h-full !rounded-none !border-none !bg-transparent"
+                />
+              </div>
+
               {/* Decorative background box */}
-              <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-[var(--theme-primary)] opacity-10 rounded-bl-full pointer-events-none"></div>
+              <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-[var(--theme-primary)] opacity-10 rounded-bl-full pointer-events-none z-[-1]"></div>
               
               <div className="mt-10">
                 <span className="text-[var(--theme-secondary)] text-sm font-bold tracking-[0.3em] uppercase block mb-3">
@@ -260,14 +275,28 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
           // High-end Minimal (Sleek, Space, Thin Lines, Editorial Look)
           return (
             <div className="flex-1 flex flex-col justify-between p-24 bg-white h-full border-t-[8px] border-[var(--theme-primary)]">
-              <div className="mt-12 flex flex-col justify-start items-start">
-                <p className="text-xs text-gray-400 tracking-[0.4em] uppercase font-semibold mb-4">
-                  <EditableText value={info.coverSubtitle || "부동산 물건 보고서"} onChange={(v) => hc('coverSubtitle', v)} />
-                </p>
-                <h1 className={`text-5xl font-black text-gray-900 tracking-tight leading-[1.3] max-w-[700px] ${headingFont}`}>
-                  <EditableText multiline={true} value={info.address || "서울특별시 강남구 논현동 매매 안내서"} onChange={(v) => hc('address', v)} />
-                </h1>
-                <div className="w-[100px] h-[2px] bg-gray-900 mt-8"></div>
+              <div className="mt-12 flex flex-row justify-between items-stretch gap-12 flex-1 mb-12">
+                <div className="flex flex-col justify-start items-start flex-1 pt-2">
+                  <p className="text-xs text-gray-400 tracking-[0.4em] uppercase font-semibold mb-4">
+                    <EditableText value={info.coverSubtitle || "부동산 물건 보고서"} onChange={(v) => hc('coverSubtitle', v)} />
+                  </p>
+                  <h1 className={`text-5xl font-black text-gray-900 tracking-tight leading-[1.3] w-full ${headingFont}`}>
+                    <EditableText multiline={true} value={info.address || "서울특별시 강남구 논현동 매매 안내서"} onChange={(v) => hc('address', v)} />
+                  </h1>
+                  <div className="w-[100px] h-[2px] bg-gray-900 mt-8 mb-8"></div>
+                </div>
+
+                <div className={`w-[45%] relative rounded-xl overflow-hidden transition-opacity duration-300 ${!coverImage ? 'opacity-0 hover:opacity-100 print:hidden border-2 border-dashed border-gray-300 bg-gray-50' : 'opacity-100 shadow-md'}`}>
+                  <EditableImage
+                    src={coverImage || ""}
+                    alt="표지 메인 이미지"
+                    imageKey="mainImage"
+                    onImageUpload={onImageUpload}
+                    onDelete={() => onDeleteImage && onDeleteImage('mainImage')}
+                    isUploading={isUploading}
+                    aspectRatioClass="object-cover"
+                  />
+                </div>
               </div>
 
               <div className="flex justify-between items-end border-t border-gray-100 pt-12">
@@ -385,12 +414,13 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
             {/* Right side: Modern Architectural Graphic/Accent Cover */}
             <div className="w-5/12 bg-[var(--theme-dark)] flex flex-col justify-between p-12 text-white relative overflow-hidden group/coverimg">
               {/* Background Image Layer */}
-              <div className="absolute inset-0 z-10 [&_img]:opacity-20 group-hover/coverimg:[&_img]:opacity-30 [&_img]:transition-opacity">
+              <div className={`absolute inset-0 z-10 [&_img]:opacity-20 group-hover/coverimg:[&_img]:opacity-30 [&_img]:transition-opacity transition-opacity duration-300 ${!coverImage ? 'opacity-0 hover:opacity-100 print:hidden' : 'opacity-100'}`}>
                 <EditableImage
                   src={coverImage || ""}
                   alt="표지 메인 이미지"
                   imageKey="mainImage"
                   onImageUpload={onImageUpload}
+                  onDelete={() => onDeleteImage && onDeleteImage('mainImage')}
                   isUploading={isUploading}
                   aspectRatioClass="object-cover"
                   className="w-full h-full !rounded-none !border-none !bg-transparent"
@@ -399,8 +429,10 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
               
               <div className="absolute inset-0 z-0 bg-gradient-to-tr from-[var(--theme-dark)] via-[var(--theme-dark)]/90 to-[var(--theme-primary)]/40 mix-blend-multiply pointer-events-none"></div>
               
-              <div className="text-right z-20 relative pointer-events-none">
-                {/* Removed CONFIDENTIAL text per user request */}
+              <div className="w-full flex justify-center mt-32 z-20 relative pointer-events-auto">
+                <h2 className={`text-6xl font-black text-white tracking-widest uppercase drop-shadow-xl text-center ${headingFont}`}>
+                  <EditableText value={info.coverStatusText || "FOR SALE"} onChange={(v) => hc('coverStatusText', v)} className="!w-auto text-center" />
+                </h2>
               </div>
 
               <div className="z-20 flex justify-end items-end h-full relative pointer-events-none">
