@@ -1491,15 +1491,13 @@ ${clone.outerHTML}
                 <span>Width: 860px</span>
             </div>
             <div 
-                className="flex-1 shadow-inner"
-                style={{ containerType: 'inline-size' }}
+                className="flex-1 shadow-inner overflow-x-auto"
             >
                 <div className="flex justify-center" style={{ padding: '32px 0' }}>
                     {/* Fixed width container for editor preview */}
                     <div id="flyer-print-area" style={{ 
                         width: '860px', 
                         flexShrink: 0,
-                        zoom: 'min(1, calc(100cqw / 900))' // 860 + some padding margin
                     }}>
                         <FlyerCanvas 
                             ref={flyerRef} 
