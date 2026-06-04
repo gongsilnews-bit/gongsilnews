@@ -231,11 +231,7 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
                     <EditableText value={info.agentName || "미래에셋공인 중개사 사무소"} onChange={(v) => hc('agentName', v)} />
                   </span>
                 </div>
-                {qrCodeUrl && (
-                  <div className="flex items-center gap-3">
-                    <img src={qrCodeUrl} alt="QR Code" className="w-14 h-14 border border-gray-200 p-1 bg-white rounded" />
-                  </div>
-                )}
+                {/* QR code moved to the right side */}
               </div>
             </div>
 
@@ -260,9 +256,16 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
                 {/* Removed CONFIDENTIAL text per user request */}
               </div>
 
-              <div className="z-10 flex flex-col justify-end h-full relative pointer-events-none">
-                <p className="text-[10px] text-white/50 tracking-wider uppercase font-bold mb-1">CLASSIFICATION</p>
-                <p className="text-lg font-black text-white tracking-widest uppercase">REAL ESTATE BRIEF</p>
+              <div className="z-10 flex justify-between items-end h-full relative pointer-events-none">
+                <div>
+                  <p className="text-[10px] text-white/50 tracking-wider uppercase font-bold mb-1">CLASSIFICATION</p>
+                  <p className="text-lg font-black text-white tracking-widest uppercase">REAL ESTATE BRIEF</p>
+                </div>
+                {qrCodeUrl && (
+                  <div className="pointer-events-auto">
+                    <img src={qrCodeUrl} alt="QR Code" className="w-20 h-20 p-1 bg-white rounded shadow-lg opacity-90" />
+                  </div>
+                )}
               </div>
             </div>
           </div>
