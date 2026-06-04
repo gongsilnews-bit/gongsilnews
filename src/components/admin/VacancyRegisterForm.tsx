@@ -1633,13 +1633,13 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                   <div style={{ flex: 1 }}>
                     <label style={labelStyle}>방 개수</label>
                     <select value={roomCount} onChange={(e) => setRoomCount(e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
-                      {["1","2","3","4개 이상"].map(n => <option key={n}>{n}</option>)}
+                      {["1","2","3","4","5","6","7개 이상"].map(n => <option key={n}>{n}</option>)}
                     </select>
                   </div>
                   <div style={{ flex: 1 }}>
                     <label style={labelStyle}>욕실 개수</label>
                     <select value={bathCount} onChange={(e) => setBathCount(e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
-                      {["1","2","3개 이상"].map(n => <option key={n}>{n}</option>)}
+                      {["1","2","3","4","5개 이상"].map(n => <option key={n}>{n}</option>)}
                     </select>
                   </div>
                 </div>

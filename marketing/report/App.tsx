@@ -28,7 +28,7 @@ export const LAYOUTS: FlyerLayout[] = [
 const INITIAL_INFO: PropertyInfo = {
   // Page 0: Cover
   coverTitle: "INVESTMENT MEMORANDUM",
-  coverSubtitle: "부동산 투자 분석 보고서",
+  coverSubtitle: "부동산 물건 보고서",
   coverQRLink: "https://gongsilnews.com",
 
   // Page 1: Overview

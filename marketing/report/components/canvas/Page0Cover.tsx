@@ -41,7 +41,7 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
             <div className="flex-1 flex flex-col justify-between p-20 border-[16px] border-[var(--theme-dark)] h-full">
               <div className="text-center mt-12">
                 <p className={`text-[var(--theme-primary)] text-sm tracking-[0.3em] font-bold uppercase mb-4 ${headingFont}`}>
-                  <EditableText value={info.coverSubtitle || "부동산 투자 분석 보고서"} onChange={(v) => hc('coverSubtitle', v)} />
+                  <EditableText value={info.coverSubtitle || "부동산 물건 보고서"} onChange={(v) => hc('coverSubtitle', v)} />
                 </p>
                 <div className="w-16 h-[2px] bg-[var(--theme-primary)] mx-auto my-6"></div>
                 <h1 className={`text-4xl sm:text-5xl font-extrabold text-gray-900 tracking-[0.2em] leading-tight ${headingFont}`}>
@@ -85,7 +85,7 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
               <div className="flex-1 flex flex-col justify-between p-20">
                 <div className="mt-10">
                   <div className="inline-block bg-[var(--theme-primary)]/10 text-[var(--theme-primary)] px-3 py-1 text-xs font-black tracking-widest uppercase rounded-full mb-4">
-                    <EditableText value={info.coverSubtitle || "부동산 투자 분석 보고서"} onChange={(v) => hc('coverSubtitle', v)} />
+                    <EditableText value={info.coverSubtitle || "부동산 물건 보고서"} onChange={(v) => hc('coverSubtitle', v)} />
                   </div>
                   <h1 className={`text-5xl font-black text-gray-900 tracking-tight leading-none mt-2 ${headingFont}`}>
                     <EditableText value={info.coverTitle || "INVESTMENT MEMORANDUM"} onChange={(v) => hc('coverTitle', v)} />
@@ -130,7 +130,7 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
               
               <div className="mt-10">
                 <span className="text-[var(--theme-secondary)] text-sm font-bold tracking-[0.3em] uppercase block mb-3">
-                  <EditableText value={info.coverSubtitle || "부동산 투자 분석 보고서"} onChange={(v) => hc('coverSubtitle', v)} />
+                  <EditableText value={info.coverSubtitle || "부동산 물건 보고서"} onChange={(v) => hc('coverSubtitle', v)} />
                 </span>
                 <h1 className={`text-6xl font-black tracking-tighter leading-none uppercase ${headingFont}`}>
                   <EditableText value={info.coverTitle || "INVESTMENT MEMORANDUM"} onChange={(v) => hc('coverTitle', v)} />
@@ -175,7 +175,7 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
                     <EditableText value={info.coverTitle || "INVESTMENT MEMORANDUM"} onChange={(v) => hc('coverTitle', v)} />
                   </h1>
                   <p className="text-xs text-gray-400 tracking-[0.4em] uppercase font-semibold">
-                    <EditableText value={info.coverSubtitle || "부동산 투자 분석 보고서"} onChange={(v) => hc('coverSubtitle', v)} />
+                    <EditableText value={info.coverSubtitle || "부동산 물건 보고서"} onChange={(v) => hc('coverSubtitle', v)} />
                   </p>
                 </div>
                 <div className="w-[100px] h-[1px] bg-gray-300 mt-4"></div>
@@ -212,7 +212,7 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
             <div className="w-7/12 p-20 flex flex-col justify-between h-full bg-[#f8fafc] border-r border-gray-200">
               <div className="mt-8">
                 <span className="text-[var(--theme-primary)] text-xs font-black tracking-[0.3em] uppercase block mb-4">
-                  <EditableText value={info.coverSubtitle || "부동산 투자 분석 보고서"} onChange={(v) => hc('coverSubtitle', v)} />
+                  <EditableText value={info.coverSubtitle || "부동산 물건 보고서"} onChange={(v) => hc('coverSubtitle', v)} />
                 </span>
                 <h1 className={`text-4xl font-extrabold text-gray-900 tracking-tight leading-[1.3] ${headingFont} max-w-[500px]`}>
                   <EditableText multiline={true} value={info.address || "서울특별시 강남구 논현동 매매 안내서"} onChange={(v) => hc('address', v)} />
