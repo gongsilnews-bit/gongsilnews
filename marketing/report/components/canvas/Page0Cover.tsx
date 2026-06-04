@@ -229,7 +229,7 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
 
               <div className="border-t border-gray-200 pt-8 flex justify-between items-end">
                 <div className="flex flex-col flex-1 whitespace-nowrap">
-                  <span className="text-[10px] text-gray-400 font-bold tracking-widest block mb-2">
+                  <span className="text-[13px] text-gray-400 font-bold tracking-widest block mb-2">
                     <EditableText value={info.agentLabel || "REALTY AGENCY"} onChange={(v) => hc('agentLabel', v)} className="!w-auto" />
                   </span>
                   <div className="text-[14px] font-extrabold text-black tracking-wide leading-[1.8] flex flex-col items-start gap-1">
