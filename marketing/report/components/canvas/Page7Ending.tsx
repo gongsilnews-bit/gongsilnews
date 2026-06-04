@@ -138,17 +138,28 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
                 <div className="w-12 h-[2px] bg-[var(--theme-primary)] mx-auto mt-4"></div>
               </div>
 
-              <div className="flex gap-10 flex-1">
-                <div className="flex-1 flex flex-col justify-between">
-                  <MapBlock info={info} className="flex-1 mb-4 rounded-xl border-gray-200" />
-                  <DirectionsBox info={info} hc={hc} qrCodeUrl={qrCodeUrl} />
-                </div>
-                <div className="w-5/12 flex flex-col justify-center gap-6">
-                  <div className="bg-gray-50 border border-gray-100 p-8 rounded-xl">
-                    <h2 className="text-xl font-black text-gray-800"><EditableText value={info.agentName || "미래에셋공인"} onChange={(v) => hc('agentName', v)} /></h2>
-                    <p className="text-sm text-gray-500 font-bold mt-1">대표/담당자: <EditableText value={info.agentRepresentative || "김민혁"} onChange={(v) => hc('agentRepresentative', v)} className="inline-block" /></p>
+              <div className="flex flex-col gap-6 flex-1">
+                {/* 상단: 지도(좌) + 오시는 길(우) */}
+                <div className="flex gap-8 flex-1">
+                  <MapBlock info={info} className="w-7/12 rounded-xl border border-gray-200" />
+                  <div className="w-5/12 flex flex-col justify-center">
+                    <DirectionsBox info={info} hc={hc} qrCodeUrl={qrCodeUrl} className="bg-transparent !mb-0" />
                   </div>
-                  <PhoneBox info={info} hc={hc} />
+                </div>
+
+                {/* 하단: 담당자 정보 + 연락처 */}
+                <div className="bg-gray-50 border border-gray-100 p-6 rounded-xl flex justify-between items-center shadow-sm">
+                  <div className="flex-1">
+                    <h2 className="text-2xl font-black text-gray-800 tracking-tight">
+                      <EditableText value={info.agentName || "미래에셋공인"} onChange={(v) => hc('agentName', v)} />
+                    </h2>
+                    <p className="text-sm text-gray-500 font-bold mt-1">
+                      대표/담당자: <EditableText value={info.agentRepresentative || "김민혁"} onChange={(v) => hc('agentRepresentative', v)} className="inline-block text-gray-700" />
+                    </p>
+                  </div>
+                  <div className="w-1/2 flex justify-end">
+                    <PhoneBox info={info} hc={hc} />
+                  </div>
                 </div>
               </div>
               <div className="mt-4 pt-5 border-t border-gray-100">
