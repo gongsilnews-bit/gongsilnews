@@ -330,23 +330,39 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
             <div className="flex-1 flex flex-col justify-between p-16 bg-white h-full border-b-[8px] border-[var(--theme-primary)]">
               <div className="flex justify-between items-start mb-6">
                 <div>
-                  <h1 className={`text-3xl font-light text-gray-900 tracking-[0.2em] uppercase ${headingFont}`}>CONTACT</h1>
+                  <h1 className={`text-6xl font-black text-gray-900 tracking-tight ${headingFont}`}>CONTACT</h1>
                   <p className="text-[9px] text-gray-400 tracking-[0.3em] font-semibold mt-1">상담 및 정보 문의처</p>
                 </div>
-                <div className="w-[100px] h-[1px] bg-gray-300 mt-4"></div>
+                <div className="w-[100px] h-[1px] bg-gray-300 mt-4 hidden lg:block"></div>
               </div>
 
               <div className="flex gap-10 flex-1">
-                <div className="w-5/12 flex flex-col justify-center space-y-8 border-r border-gray-100 pr-10">
-                  <div>
-                    <span className="text-[9px] text-gray-400 tracking-[0.2em] font-semibold block mb-2">OFFICE</span>
-                    <span className="text-xl font-bold text-gray-800 tracking-wider"><EditableText value={info.agentName || "미래에셋공인"} onChange={(v) => hc('agentName', v)} /></span>
+                <div className="w-5/12 flex flex-col gap-4 h-full border-r border-gray-100 pr-10">
+                  <div className="flex-1 rounded-xl overflow-hidden border border-gray-200 bg-gray-50 group relative shadow-sm min-h-[140px]">
+                     <EditableImage 
+                       src={info.agentCardFront || ""}
+                       alt="명함 앞면"
+                       imageKey="agentCardFront"
+                       onImageUpload={(file) => onImageUpload && onImageUpload('agentCardFront', file)}
+                       onDelete={() => onDeleteImage && onDeleteImage('agentCardFront')}
+                       isUploading={isUploading}
+                       className="w-full h-full object-contain p-2"
+                       placeholderText="명함 앞면 사진 등록"
+                     />
                   </div>
-                  <div>
-                    <span className="text-[9px] text-gray-400 tracking-[0.2em] font-semibold block mb-2">REPRESENTATIVE</span>
-                    <span className="text-base text-gray-700 tracking-wide font-medium"><EditableText value={info.agentRepresentative || "김민혁"} onChange={(v) => hc('agentRepresentative', v)} /></span>
+                  <div className="flex-1 rounded-xl overflow-hidden border border-gray-200 bg-gray-50 group relative shadow-sm min-h-[140px]">
+                     <EditableImage 
+                       src={info.agentCardBack || ""}
+                       alt="명함 뒷면"
+                       imageKey="agentCardBack"
+                       onImageUpload={(file) => onImageUpload && onImageUpload('agentCardBack', file)}
+                       onDelete={() => onDeleteImage && onDeleteImage('agentCardBack')}
+                       isUploading={isUploading}
+                       className="w-full h-full object-contain p-2"
+                       placeholderText="명함 뒷면 사진 등록"
+                     />
                   </div>
-                  <div className="pt-2">
+                  <div className="pt-2 shrink-0">
                     <PhoneBox info={info} hc={hc} />
                   </div>
                 </div>
