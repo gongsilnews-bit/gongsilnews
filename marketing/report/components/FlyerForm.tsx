@@ -414,20 +414,18 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                                       🤝 거래 형태 및 금액 설정
                                   </label>
                                   {/* Select transaction type */}
-                                  <div className="flex bg-white rounded border border-gray-200 p-0.5 shadow-sm shrink-0">
+                                  <div className="flex bg-white rounded border border-gray-200 p-0.5 shadow-sm shrink-0 opacity-70">
                                       {["매매", "전세", "월세"].map((t) => (
-                                          <button
+                                          <span
                                               key={t}
-                                              type="button"
-                                              onClick={() => setInfo({ ...info, transactionType: t as any })}
-                                              className={`px-2 py-0.5 rounded text-[10px] font-extrabold transition-all cursor-pointer ${
+                                              className={`px-2 py-0.5 rounded text-[10px] font-extrabold select-none ${
                                                   (info.transactionType || "매매") === t 
                                                       ? 'bg-[#cc5a27] text-white shadow-sm' 
-                                                      : 'text-gray-500 hover:bg-gray-100'
+                                                      : 'text-gray-400'
                                               }`}
                                           >
                                               {t}
-                                          </button>
+                                          </span>
                                       ))}
                                   </div>
                               </div>
