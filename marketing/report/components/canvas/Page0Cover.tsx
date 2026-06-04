@@ -295,12 +295,8 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
 
               <div className="z-20 flex justify-end items-end h-full relative pointer-events-none">
                 <div className="flex flex-col items-end">
-                  <div className="text-right mb-3">
-                    <p className="text-[10px] text-white/50 tracking-widest uppercase font-bold mb-2">CLASSIFICATION</p>
-                    <p className="text-[14px] font-extrabold text-white tracking-wide uppercase">REAL ESTATE BRIEF</p>
-                  </div>
                   {(customQrImage || qrCodeUrl) && (
-                    <div className="pointer-events-auto relative group/qr">
+                    <div className="pointer-events-auto relative group/qr mb-2">
                       <label className="cursor-pointer block relative">
                         <img src={customQrImage || qrCodeUrl || ''} alt="QR Code" className="w-[72px] h-[72px] p-1 bg-white rounded shadow-sm opacity-95 object-cover" />
                         {onImageUpload && (
@@ -327,6 +323,11 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
                       </label>
                     </div>
                   )}
+                  <div className="text-right pointer-events-auto">
+                    <p className="text-[14px] font-extrabold text-white tracking-wide uppercase">
+                      <EditableText value={info.qrLabel || "QR ONELINE REPORT"} onChange={(v) => hc('qrLabel', v)} className="!w-auto" />
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
