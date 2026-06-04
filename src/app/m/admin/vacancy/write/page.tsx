@@ -120,6 +120,7 @@ function MobileVacancyWrite() {
   const [moveInDate, setMoveInDate] = useState("즉시입주(공실)");
   const [buildingCoverage, setBuildingCoverage] = useState(""); // 건폐율
   const [floorAreaRatio, setFloorAreaRatio] = useState(""); // 용적률
+  const [currentUsage, setCurrentUsage] = useState(""); // 현용도
   const [description, setDescription] = useState("");
   const [isAIGenerating, setIsAIGenerating] = useState(false);
 
@@ -278,6 +279,7 @@ function MobileVacancyWrite() {
           if (d.metadata.land_purpose) setLandPurpose(d.metadata.land_purpose);
           if (d.metadata.building_coverage) setBuildingCoverage(String(d.metadata.building_coverage));
           if (d.metadata.floor_area_ratio) setFloorAreaRatio(String(d.metadata.floor_area_ratio));
+          if (d.metadata.current_usage) setCurrentUsage(d.metadata.current_usage);
         }
         if (d.current_floor) setCurrentFloor(d.current_floor);
         if (d.total_floor) setTotalFloor(d.total_floor);
@@ -674,6 +676,7 @@ function MobileVacancyWrite() {
           land_purpose: landPurpose || undefined,
           building_coverage: buildingCoverage ? parseFloat(buildingCoverage) : undefined,
           floor_area_ratio: floorAreaRatio ? parseFloat(floorAreaRatio) : undefined,
+          current_usage: currentUsage || undefined,
         },
         consent: true, status,
       };
@@ -1298,6 +1301,23 @@ function MobileVacancyWrite() {
               <input type="number" value={totalFloor} onChange={e=>setTotalFloor(e.target.value)} placeholder="15" style={inputStyle}/>
             </div>
           </div>
+          
+          {propertyType === "상가·사무실·건물·공장·토지" && (
+            <div style={{ display:"flex", gap:10, marginBottom:14 }}>
+              <div style={{flex:1}}>
+                <label style={labelStyle}>현재 용도 (현용도)</label>
+                <div style={{ display:"flex", gap:6 }}>
+                  <select value={["공실", "사무실", "식당/카페", "학원/병원", "미용/뷰티", "판매/소매", "창고/공장", "기타", ""].includes(currentUsage) ? currentUsage : "기타"} onChange={(e) => setCurrentUsage(e.target.value === "기타" ? "" : e.target.value)} style={{ ...inputStyle, flex: 1 }}>
+                    <option value="">선택</option>
+                    {["공실", "사무실", "식당/카페", "학원/병원", "미용/뷰티", "판매/소매", "창고/공장", "기타"].map(v => (
+                      <option key={v} value={v}>{v}</option>
+                    ))}
+                  </select>
+                  <input type="text" placeholder="직접 입력" value={currentUsage} onChange={(e) => setCurrentUsage(e.target.value)} style={{ ...inputStyle, flex: 1 }} />
+                </div>
+              </div>
+            </div>
+          )}
           {!isCommercial && (
             <div style={{ display:"flex", gap:10 }}>
               <div style={{flex:1}}>

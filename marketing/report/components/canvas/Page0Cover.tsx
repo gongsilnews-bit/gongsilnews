@@ -297,7 +297,7 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
                 <div className="flex flex-col items-end">
                   <div className="text-right pointer-events-auto leading-tight mb-2">
                     <p className="text-[12px] font-extrabold text-white tracking-widest uppercase">
-                      <EditableText value={info.qrLabel || "QR"} onChange={(v) => hc('qrLabel', v)} className="!w-auto text-right" />
+                      <EditableText value={info.qrLabel || "QR REPORT"} onChange={(v) => hc('qrLabel', v)} className="!w-auto text-right" multiline={true} />
                     </p>
                   </div>
                   {(customQrImage || qrCodeUrl) && (
