@@ -351,16 +351,16 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
               />
             </div>
 
-            {/* 거래유형 */}
-            <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
-              <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>거래유형</div>
-              <TradeTypeFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} TRADE_TYPES={TRADE_TYPES.filter(t => !(tempFilters.propertyTypes.length > 0 && tempFilters.propertyTypes.every(p => p === "원룸" || p === "투룸") && t === "매매"))} />
-            </div>
-
             {/* 공실광고유형 */}
             <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
               <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>공실광고유형</div>
               <PropertyTypeFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} PROPERTY_TYPES={PROPERTY_TYPES} />
+            </div>
+
+            {/* 거래유형 */}
+            <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
+              <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>거래유형</div>
+              <TradeTypeFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} TRADE_TYPES={TRADE_TYPES.filter(t => !(tempFilters.propertyTypes.length > 0 && tempFilters.propertyTypes.every(p => p === "원룸" || p === "투룸") && t === "매매"))} />
             </div>
             
             {/* 가격 */}

@@ -34,32 +34,20 @@ export default function PropertyTypeFilterPanel({ filters, onFilterChange, PROPE
 
   return (
     <div>
-      {PROPERTY_TYPES.map(g => {
-        const isGroupAllSelected = g.items.every(item => filters.propertyTypes.includes(item));
-        const toggleGroup = () => {
-          if (isGroupAllSelected) {
-            onFilterChange({
-              propertyTypes: filters.propertyTypes.filter(x => !g.items.includes(x))
-            });
-          } else {
-            const otherGroupsItems = filters.propertyTypes.filter(x => !g.items.includes(x));
-            onFilterChange({
-              propertyTypes: [...otherGroupsItems, ...g.items]
-            });
-          }
-        };
-
+      {PROPERTY_TYPES.map((g, idx) => {
         return (
           <div key={g.group} style={{ marginBottom: "16px" }}>
             <div style={{ fontSize: "13px", fontWeight: 700, color: "#6b7280", marginBottom: "8px" }}>{g.group}</div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px" }}>
-              <button 
-                type="button" 
-                onClick={toggleGroup} 
-                style={{ ...gridBtnStyle(isGroupAllSelected), fontSize: "14px" }}
-              >
-                {isGroupAllSelected ? "✓ 전체해제" : "✓ 전체선택"}
-              </button>
+              {idx === 0 && (
+                <button 
+                  type="button" 
+                  onClick={handleToggleAll} 
+                  style={{ ...gridBtnStyle(isAllSelected), fontSize: "14px" }}
+                >
+                  {isAllSelected ? "✓ 전체해제" : "✓ 전체선택"}
+                </button>
+              )}
               {g.items.map(item => (
                 <button 
                   type="button" 
