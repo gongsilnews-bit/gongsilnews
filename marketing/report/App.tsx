@@ -6,7 +6,7 @@ import FlyerCanvas from './components/FlyerCanvas';
 import TableEditorModal from './components/TableEditorModal';
 import { generateFlyerCopy, fileToGenerativePart, extractPropertyInfoFromImages, extractAgentInfoFromImage, extractComplexInfoFromImage } from './services/geminiService';
 import { FlyerState, PropertyInfo, GeneratedContent, FlyerColor, FlyerLayout } from './types';
-import { detectPropertyCategory, buildOverviewTable, buildInvestmentSummary, buildPage2Content } from './propertyTemplates';
+import { detectPropertyCategory, buildOverviewTable, buildInvestmentSummary, buildPage2Content, buildPage5Content } from './propertyTemplates';
 import { ArrowDownTrayIcon, CodeBracketIcon, XMarkIcon, CheckIcon } from '@heroicons/react/24/solid';
 
 export const COLORS: FlyerColor[] = [
@@ -789,6 +789,23 @@ function App() {
               page2Title: page2.page2Title,
               page2Subtitle: page2.page2Subtitle,
               page2HighlightBoxTitle: page2.page2HighlightHeader,
+            };
+          })(),
+          ...(() => {
+            const page5 = buildPage5Content(
+              v,
+              detectPropertyCategory(v.sub_category, v.property_type)
+            );
+            return {
+              areaTargetName: page5.areaTargetName,
+              areaTargetDesc: page5.areaTargetDesc,
+              areaBox1Title: page5.areaBox1Title,
+              areaBox1Text: page5.areaBox1Text,
+              areaBox2Title: page5.areaBox2Title,
+              areaBox2Text: page5.areaBox2Text,
+              areaBox3Title: page5.areaBox3Title,
+              areaBox3Text: page5.areaBox3Text,
+              page4TargetTitle: page5.page4TargetTitle,
             };
           })(),
           noticeTitle: "PREMIUM LISTING DETAIL",

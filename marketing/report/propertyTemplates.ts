@@ -490,3 +490,70 @@ export const buildPage2Content = (
     page2HighlightHeader,
   };
 };
+
+/**
+ * Page5 (입지 및 위치도) 콘텐츠 자동 생성
+ * 주소(sido, sigungu, dong)와 물건 카테고리에 맞춰 텍스트 생성
+ */
+export const buildPage5Content = (
+  vacancy: any,
+  category: PropertyCategory
+): {
+  areaTargetName: string;
+  areaTargetDesc: string;
+  areaBox1Title: string;
+  areaBox1Text: string;
+  areaBox2Title: string;
+  areaBox2Text: string;
+  areaBox3Title: string;
+  areaBox3Text: string;
+  page4TargetTitle: string;
+} => {
+  const sido = vacancy.sido || '';
+  const sigungu = vacancy.sigungu || '';
+  const dong = vacancy.dong || '';
+  const buildingName = vacancy.building_name || '';
+
+  const locName = dong ? `${dong} 일대` : sigungu ? `${sigungu} 일대` : '해당 지역';
+  const displaySigungu = sigungu || '인근';
+  const displayDong = dong || sigungu || '해당 지역';
+
+  // 1. 타겟 로케이션 뱃지
+  const areaTargetName = `${locName}\n대중교통 및 우수한 입지`;
+
+  // 2. 우측 박스 타이틀 및 설명 (주거형 vs 상업용/기타)
+  const isResidential = ['apartment', 'officetel', 'house', 'studio'].includes(category);
+  const page4TargetTitle = `${locName} 주거·업무 클러스터`;
+
+  let areaTargetDesc = '';
+  if (isResidential) {
+    areaTargetDesc = `본 자산이 위치한 ${locName} 주변은 우수한 교육 및 생활 밀착형 인프라가 조성되어 있어 주거 편의성이 매우 뛰어납니다. 대중교통 접근성이 양호하고 인근 상권이 잘 정비되어 있어 안정적인 주거 임차 수요가 강점입니다.`;
+  } else {
+    areaTargetDesc = `본 자산이 위치한 ${locName} 일대는 주요 업무 지구 및 활성화된 상권이 인접하여 배후 유동인구와 비즈니스 수요가 매우 풍부합니다. 주요 도로망 진입이 용이해 직주근접성 및 물류/업무 효율성을 극대화할 수 있는 핵심 입지입니다.`;
+  }
+
+  // 3. 하단 3개 특징 박스
+  const areaBox1Title = 'TRANSIT / 교통';
+  const areaBox1Text = `${displaySigungu} 내 주요 전철역 및 다수의 버스 노선 접근이 용이하여 출퇴근 및 대중교통 편리성 확보`;
+
+  const areaBox2Title = 'LIFE / 인프라';
+  const areaBox2Text = isResidential
+    ? `단지 인근 생활 편의시설, 마트, 카페 및 쾌적한 근린 공원이 인접하여 원스톱 생활권 형성`
+    : `오피스 타운, 은행, 주요 행정기관 및 상업 편의시설 밀집으로 편리한 비즈니스 환경 지원`;
+
+  const areaBox3Title = 'VALUE / 미래가치';
+  const areaBox3Text = `${displayDong} 주변의 지속적인 인프라 확충 및 정비사업 등으로 안정적인 임대 수요 유지와 향후 자산가치 상승 기대`;
+
+  return {
+    areaTargetName,
+    areaTargetDesc,
+    areaBox1Title,
+    areaBox1Text,
+    areaBox2Title,
+    areaBox2Text,
+    areaBox3Title,
+    areaBox3Text,
+    page4TargetTitle,
+  };
+};
+
