@@ -309,7 +309,7 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
                 {/* QR Code (Naver Map) */}
                 <div className="w-[90px] shrink-0 flex flex-col items-center justify-center">
                   <img 
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(info.agentMapUrl || `https://map.naver.com/p/search/${info.agentAddress || '서울 강남구 논현동'}`)}`} 
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(info.agentMapUrl || `https://map.naver.com/p/search/${(info.agentAddress || '서울 강남구 논현동').split('\n')[0]}`)}`} 
                     alt="Naver Map QR" 
                     className="w-16 h-16 mix-blend-multiply"
                   />
