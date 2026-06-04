@@ -134,7 +134,7 @@ const Page5AreaAnalysis: React.FC<Page5AreaAnalysisProps> = ({
                     {/* Direct Naver Map link on canvas (print:hidden) */}
                     {info.address && (
                         <a 
-                            href={info.agentMapUrl || `https://map.naver.com/p/search/${encodeURIComponent(info.address)}`}
+                            href={`https://map.naver.com/p/search/${encodeURIComponent(info.address.split('\n')[0])}`}
                             target="_blank" 
                             rel="noopener noreferrer"
                             className="absolute bottom-4 left-4 bg-white/95 text-slate-800 hover:bg-white active:scale-95 font-extrabold px-3 py-1.5 rounded-xl shadow-lg text-[10px] flex items-center gap-1.5 transition-all border border-gray-200 z-20 print:hidden"
