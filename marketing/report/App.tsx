@@ -600,7 +600,7 @@ function App() {
   }, [handleUndo, handleRedo]);
 
   const loadVacancyDataDirectly = async (vacancyId: string) => {
-    const shareUrl = typeof window !== 'undefined' ? `${window.location.origin}/flyer/${vacancyId}.html` : "https://gongsilnews.com";
+    const shareUrl = typeof window !== 'undefined' ? `${window.location.origin}/flyer/${vacancyId}` : "https://gongsilnews.com";
     setLoadingData(true);
     try {
       const res = await fetch(`/api/vacancy/detail?id=${vacancyId}`);
