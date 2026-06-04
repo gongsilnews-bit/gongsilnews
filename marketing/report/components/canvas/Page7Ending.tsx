@@ -282,7 +282,7 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
                 <div className="w-16 h-1 bg-[var(--theme-primary)] mt-4"></div>
               </div>
 
-              <MapBlock info={info} className="mb-4 rounded-xl border border-gray-200 shadow-sm" />
+              <MapBlock info={info} className="flex-1 mb-6 mt-4 rounded-xl border border-gray-200 shadow-sm" />
               <DirectionsBox info={info} hc={hc} qrCodeUrl={qrCodeUrl} className="bg-white" />
               <PhoneBox info={info} hc={hc} />
 
