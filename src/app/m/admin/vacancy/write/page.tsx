@@ -6,6 +6,7 @@ import { createClient } from "@/utils/supabase/client";
 import { createVacancy, updateVacancy, getVacancyDetail, syncVacancyPhotos, uploadVacancyPhoto } from "@/app/actions/vacancy";
 import { getPhotoLibrary, togglePhotoFavorite } from "@/app/actions/article";
 import { geocodeAddress } from "@/app/actions/geocode";
+import { generatePropertyDescription } from "@/app/actions/gemini";
 import imageCompression from "browser-image-compression";
 
 const SUB_CATEGORIES: Record<string, string[]> = {
@@ -118,6 +119,50 @@ function MobileVacancyWrite() {
   const [parking, setParking] = useState("없음");
   const [moveInDate, setMoveInDate] = useState("즉시입주(공실)");
   const [description, setDescription] = useState("");
+  const [isAIGenerating, setIsAIGenerating] = useState(false);
+
+  const handleGenerateAI = async () => {
+    setIsAIGenerating(true);
+    try {
+      const payload = {
+        propertyType,
+        subCategory,
+        tradeType,
+        deposit,
+        monthly,
+        maintenance,
+        currentFloor,
+        totalFloor,
+        exclusivePy,
+        supplyPy,
+        roomCount,
+        bathCount,
+        direction,
+        selectedOptions,
+        parking,
+        moveInDate,
+        infrastructure,
+        realtorInfo: userRole === "realtor" ? {
+          company: rCompany,
+          boss: rBoss,
+          tel: rTel,
+          cell: rCell,
+          addr: rAddr
+        } : null
+      };
+      const res = await generatePropertyDescription(payload);
+      if (res.success && res.text) {
+        setDescription(res.text);
+      } else {
+        alert(res.error || "AI 마법사 생성에 실패했습니다.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("AI 마법사 생성 중 오류가 발생했습니다.");
+    } finally {
+      setIsAIGenerating(false);
+    }
+  };
   const [clientName, setClientName] = useState("");
   const [clientPhone, setClientPhone] = useState("");
   const [commissionType, setCommissionType] = useState("법정수수료");
@@ -1347,7 +1392,23 @@ function MobileVacancyWrite() {
           </div>
 
           <div style={{ marginTop: 16, borderTop: "1px dashed #e5e7eb", paddingTop: 16 }}>
-            <label style={labelStyle}>전달사항 / 공실광고설명</label>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+              <label style={{ ...labelStyle, marginBottom: 0 }}>전달사항 / 공실광고설명</label>
+              <button 
+                type="button" 
+                onClick={handleGenerateAI}
+                disabled={isAIGenerating}
+                style={{ 
+                  height: 28, padding: "0 12px", border: "none", borderRadius: 14, 
+                  background: isAIGenerating ? "#e5e7eb" : "#fef3c7", 
+                  cursor: isAIGenerating ? "not-allowed" : "pointer", 
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 4, fontSize: 12, fontWeight: 700, 
+                  color: isAIGenerating ? "#9ca3af" : "#d97706", transition: "all 0.2s" 
+                }} 
+              >
+                {isAIGenerating ? "⏳ 생성 중..." : "✨ AI 상세글쓰기"}
+              </button>
+            </div>
             <textarea value={description} onChange={e=>setDescription(e.target.value)} placeholder="공실광고에 대한 추가 설명을 입력하세요" rows={4} style={{ ...inputStyle, height:"auto", padding:12, resize:"vertical", lineHeight:1.5 }}/>
           </div>
         </div>

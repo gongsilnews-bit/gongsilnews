@@ -11,11 +11,13 @@ interface Props {
   colorTheme: FlyerColor;
   onUpdateInfo?: (info: any) => void;
   coverImage?: string | null;
+  customQrImage?: string | null;
   onImageUpload?: (key: string, file: File) => Promise<string | undefined>;
   isUploading?: boolean;
+  isUploadingQr?: boolean;
 }
 
-const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, colorTheme, onUpdateInfo, coverImage, onImageUpload, isUploading }) => {
+const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, colorTheme, onUpdateInfo, coverImage, customQrImage, onImageUpload, isUploading, isUploadingQr }) => {
   const hc = (key: string, value: any) => { if (onUpdateInfo) onUpdateInfo({ ...info, [key]: value }); };
   const headingFont = layoutTheme?.headingFont || 'font-sans';
   const bodyFont = layoutTheme?.bodyFont || 'font-sans';
@@ -238,7 +240,7 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
             {/* Right side: Modern Architectural Graphic/Accent Cover */}
             <div className="w-5/12 bg-[var(--theme-dark)] flex flex-col justify-between p-12 text-white relative overflow-hidden group/coverimg">
               {/* Background Image Layer */}
-              <div className="absolute inset-0 z-0 opacity-20 transition-opacity hover:opacity-30">
+              <div className="absolute inset-0 z-10 [&_img]:opacity-20 group-hover/coverimg:[&_img]:opacity-30 [&_img]:transition-opacity">
                 <EditableImage
                   src={coverImage || ""}
                   alt="표지 메인 이미지"
@@ -246,24 +248,47 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
                   onImageUpload={onImageUpload}
                   isUploading={isUploading}
                   aspectRatioClass="object-cover"
-                  className="w-full h-full !rounded-none !border-none"
+                  className="w-full h-full !rounded-none !border-none !bg-transparent"
                 />
               </div>
               
               <div className="absolute inset-0 z-0 bg-gradient-to-tr from-[var(--theme-dark)] via-[var(--theme-dark)]/90 to-[var(--theme-primary)]/40 mix-blend-multiply pointer-events-none"></div>
               
-              <div className="text-right z-10 relative pointer-events-none">
+              <div className="text-right z-20 relative pointer-events-none">
                 {/* Removed CONFIDENTIAL text per user request */}
               </div>
 
-              <div className="z-10 flex justify-between items-end h-full relative pointer-events-none">
+              <div className="z-20 flex justify-between items-end h-full relative pointer-events-none">
                 <div>
                   <p className="text-[10px] text-white/50 tracking-wider uppercase font-bold mb-1">CLASSIFICATION</p>
                   <p className="text-lg font-black text-white tracking-widest uppercase">REAL ESTATE BRIEF</p>
                 </div>
-                {qrCodeUrl && (
-                  <div className="pointer-events-auto">
-                    <img src={qrCodeUrl} alt="QR Code" className="w-20 h-20 p-1 bg-white rounded shadow-lg opacity-90" />
+                {(customQrImage || qrCodeUrl) && (
+                  <div className="pointer-events-auto relative group/qr">
+                    <label className="cursor-pointer block relative">
+                      <img src={customQrImage || qrCodeUrl || ''} alt="QR Code" className="w-20 h-20 p-1 bg-white rounded shadow-lg opacity-90 object-cover" />
+                      {onImageUpload && (
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/qr:opacity-100 transition-opacity rounded flex flex-col items-center justify-center print:hidden">
+                          <span className="text-[10px] text-white font-bold leading-tight text-center">QR<br/>변경</span>
+                        </div>
+                      )}
+                      {onImageUpload && (
+                        <input 
+                          type="file" 
+                          accept="image/*" 
+                          className="hidden" 
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) onImageUpload('customQrImage', file);
+                          }} 
+                        />
+                      )}
+                      {isUploadingQr && (
+                        <div className="absolute inset-0 bg-white/80 rounded flex items-center justify-center">
+                          <div className="w-4 h-4 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+                        </div>
+                      )}
+                    </label>
                   </div>
                 )}
               </div>
