@@ -8,6 +8,7 @@ import Page4Photos from './canvas/Page4Photos';
 import Page5AreaAnalysis from './canvas/Page5AreaAnalysis';
 import Page6Roadmap from './canvas/Page6Roadmap';
 import Page7Ending from './canvas/Page7Ending';
+import { ReportContext } from './shared/ReportContext';
 
 interface FlyerCanvasProps {
   data: FlyerState;
@@ -48,22 +49,9 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
   } as React.CSSProperties;
 
   return (
-    <div className="flex flex-col items-center p-8 bg-gray-100" ref={ref} style={themeStyles}>
-        {info.isAdClosed ? (
-            <Page7Ending
-                info={info}
-                pageString=""
-                isHidden={false}
-                layoutTheme={layoutTheme}
-                colorTheme={colorTheme}
-                onUpdateInfo={onUpdateInfo}
-                agentImage={agentImage || null}
-                onImageUpload={onImageUpload}
-                onDeleteImage={onDeleteImage}
-                isUploading={isUploadingImage?.['agentImage'] || false}
-            />
-        ) : (
-            <>
+    <ReportContext.Provider value={{ isAdClosed: !!info.isAdClosed, info, colorTheme }}>
+      <div className="flex flex-col items-center p-8 bg-gray-100" ref={ref} style={themeStyles}>
+
         {/* PAGE 0: COVER */}
         {getPageStatus(0).shouldRender && (
             <Page0Cover
@@ -184,9 +172,8 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                 isUploading={isUploadingImage?.['agentImage'] || isUploadingImage?.['agentCardFront'] || false}
             />
         )}
-            </>
-        )}
-    </div>
+      </div>
+    </ReportContext.Provider>
   );
 });
 

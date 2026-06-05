@@ -4,3 +4,6 @@ export { default as ReportPage } from './ReportPage';
 export { default as SectionTitle } from './SectionTitle';
 export { default as EditableImage } from './EditableImage';
 export { default as KakaoMap } from './KakaoMap';
+export { default as CompletedOverlay } from './CompletedOverlay';
+export { ReportContext } from './ReportContext';
+

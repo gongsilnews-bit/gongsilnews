@@ -3,6 +3,7 @@ import { PropertyInfo, FlyerColor, FlyerLayout } from '../../types';
 import EditableText from '../shared/EditableText';
 import EditableImage from '../shared/EditableImage';
 import { Building2, FileText, Phone, MapPin } from 'lucide-react';
+import CompletedOverlay from '../shared/CompletedOverlay';
 
 interface Props {
   info: PropertyInfo;
@@ -476,6 +477,9 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
           </div>
         );
       })()}
+      {info.isAdClosed && (
+        <CompletedOverlay info={info} colorTheme={colorTheme} />
+      )}
     </div>
   );
 };

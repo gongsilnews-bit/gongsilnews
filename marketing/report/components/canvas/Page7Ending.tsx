@@ -3,6 +3,7 @@ import { PropertyInfo, FlyerColor, FlyerLayout } from '../../types';
 import EditableText from '../shared/EditableText';
 import EditableImage from '../shared/EditableImage';
 import KakaoMap from '../shared/KakaoMap';
+import CompletedOverlay from '../shared/CompletedOverlay';
 import { 
   MapPinIcon, 
   PhoneIcon, 
@@ -464,6 +465,9 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
           </div>
         );
       })()}
+      {info.isAdClosed && (
+        <CompletedOverlay info={info} colorTheme={colorTheme} />
+      )}
       </div>
     </ErrorBoundary>
   );

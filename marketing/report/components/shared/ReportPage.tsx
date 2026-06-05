@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import EditableText from './EditableText';
+import { ReportContext } from './ReportContext';
+import CompletedOverlay from './CompletedOverlay';
 
 const ReportPage = ({ 
     children, 
@@ -37,6 +39,8 @@ const ReportPage = ({
     const layoutType = layoutTheme?.type || 'type1';
     const headingFont = layoutTheme?.headingFont || 'font-sans';
     const bodyFont = layoutTheme?.bodyFont || 'font-sans';
+
+    const { isAdClosed, info: contextInfo, colorTheme: contextColorTheme } = useContext(ReportContext);
 
     const renderHeader = () => {
         if (layoutType === 'type2') {
@@ -126,7 +130,7 @@ const ReportPage = ({
                                   value={subtitle} 
                                   onChange={onUpdateSubtitle} 
                                   className="hover:bg-white/10 hover:ring-white/20 focus:bg-white/20 focus:ring-white/50 text-gray-300 px-1" 
-                                />
+                                  />
                             ) : subtitle}
                         </span>
                     </div>
@@ -178,6 +182,14 @@ const ReportPage = ({
                     {pageString || `PAGE 0${pageNumber} / 06`}
                 </div>
             </div>
+
+            {/* Completed Advertisement Blur Overlay */}
+            {isAdClosed && (
+                <CompletedOverlay 
+                    info={contextInfo} 
+                    colorTheme={contextColorTheme || colorTheme} 
+                />
+            )}
         </div>
     );
 };
