@@ -376,7 +376,7 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
                     <div className="flex items-center gap-2">
                       <Building2 className="w-[18px] h-[18px] text-[var(--theme-primary)]" strokeWidth={2.5} />
                       <EditableText 
-                        value={`${info.agentName || "착한임대부동산중개"} | 대표 ${info.agentRepresentative || "김상태"}`} 
+                        value={`${info.agentName || "미래에셋공인 중개사 사무소"} | 대표 ${info.agentRepresentative || "김상태"}`} 
                         onChange={(v) => {
                           const parts = v.split('|');
                           hc('agentName', parts[0].trim());

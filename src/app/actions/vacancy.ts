@@ -665,11 +665,29 @@ export async function saveVacancyFlyer(vacancyId: string, flyerState: any) {
   const supabase = getAdminClient();
   try {
     if (flyerState === null) {
-      const { error } = await supabase
+      const { error: deleteFlyerError } = await supabase
         .from('vacancy_flyers')
         .delete()
         .eq('vacancy_id', vacancyId);
-      if (error) return { success: false, error: error.message };
+      if (deleteFlyerError) return { success: false, error: deleteFlyerError.message };
+
+      const { data: vac, error: fetchError } = await supabase
+        .from('vacancies')
+        .select('infrastructure')
+        .eq('id', vacancyId)
+        .maybeSingle();
+
+      if (!fetchError && vac && vac.infrastructure) {
+        const infra = { ...vac.infrastructure };
+        if ('_flyer_settings' in infra) {
+          delete infra._flyer_settings;
+          await supabase
+            .from('vacancies')
+            .update({ infrastructure: infra })
+            .eq('id', vacancyId);
+        }
+      }
+
       return { success: true };
     }
 
