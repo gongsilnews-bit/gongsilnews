@@ -1158,65 +1158,6 @@ function MobileVacancyWrite() {
           </div>
         )}
 
-        {/* 상세 제원 (선택형) - 지식산업센터 제외 */}
-        {propertyType === "상가·사무실·건물·공장·토지" && subCategory !== "토지" && subCategory !== "지식산업센터" && (
-          <div style={{ background: "#f8fafc", borderRadius: 14, padding: 16, marginBottom: 12, border: "1px solid #e2e8f0" }}>
-            <div style={{ fontSize: 13, fontWeight: 800, color: "#1e293b", marginBottom: 16, display: "flex", alignItems: "center", gap: 6 }}>
-              <span>🏢 상세 제원 (선택형)</span>
-            </div>
-            
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ fontSize: 12, fontWeight: 700, color: "#4b5563", marginBottom: 6, display: "block" }}>건축물 주용도</label>
-              <div style={{ display: "flex", gap: 6 }}>
-                <select value={["제1종근린생활시설", "제2종근린생활시설", "판매시설", "업무시설", "교육연구시설", "의료시설", "숙박시설", "단독주택", "공동주택", "공장", "창고시설", "기타", ""].includes(mainUsage) ? mainUsage : "기타"} onChange={(e) => setMainUsage(e.target.value === "기타" ? "" : e.target.value)} style={{ flex: 1, height: 46, borderRadius: 8, border: "1px solid #d1d5db", padding: "0 14px", fontSize: 14, background: "#fff" }}>
-                  <option value="">선택</option>
-                  {["제1종근린생활시설", "제2종근린생활시설", "판매시설", "업무시설", "교육연구시설", "의료시설", "숙박시설", "단독주택", "공동주택", "공장", "창고시설", "기타"].map(v => (
-                    <option key={v} value={v}>{v}</option>
-                  ))}
-                </select>
-                <input type="text" placeholder="직접입력" value={mainUsage} onChange={(e) => setMainUsage(e.target.value)} style={{ flex: 1, height: 46, borderRadius: 8, border: "1px solid #d1d5db", padding: "0 14px", fontSize: 14, background: "#fff" }} />
-              </div>
-            </div>
-            
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ fontSize: 12, fontWeight: 700, color: "#4b5563", marginBottom: 6, display: "block" }}>건물 구조</label>
-              <div style={{ display: "flex", gap: 6 }}>
-                <select value={["철근콘크리트구조", "철골구조", "경량철골구조", "일반철골구조", "벽돌구조", "목구조", "기타", ""].includes(buildingStructure) ? buildingStructure : "기타"} onChange={(e) => setBuildingStructure(e.target.value === "기타" ? "" : e.target.value)} style={{ flex: 1, height: 46, borderRadius: 8, border: "1px solid #d1d5db", padding: "0 14px", fontSize: 14, background: "#fff" }}>
-                  <option value="">선택</option>
-                  {["철근콘크리트구조", "철골구조", "경량철골구조", "일반철골구조", "벽돌구조", "목구조", "기타"].map(v => (
-                    <option key={v} value={v}>{v}</option>
-                  ))}
-                </select>
-                <input type="text" placeholder="직접입력" value={buildingStructure} onChange={(e) => setBuildingStructure(e.target.value)} style={{ flex: 1, height: 46, borderRadius: 8, border: "1px solid #d1d5db", padding: "0 14px", fontSize: 14, background: "#fff" }} />
-              </div>
-            </div>
-
-            <div style={{ display: "flex", gap: 12, alignItems: "flex-end" }}>
-              <div style={{ flex: 1 }}>
-                <label style={{ fontSize: 12, fontWeight: 700, color: "#4b5563", marginBottom: 6, display: "block" }}>승강기 대수</label>
-                <div style={{ display: "flex", gap: 6 }}>
-                  <select value={["없음", "1", "2", "3", "4", "5", "기타", ""].includes(elevatorCnt) ? elevatorCnt : "기타"} onChange={(e) => setElevatorCnt(e.target.value === "기타" ? "" : e.target.value)} style={{ flex: 1, height: 46, borderRadius: 8, border: "1px solid #d1d5db", padding: "0 14px", fontSize: 14, background: "#fff" }}>
-                    <option value="">선택</option>
-                    <option value="없음">없음</option>
-                    <option value="1">1대</option>
-                    <option value="2">2대</option>
-                    <option value="3">3대</option>
-                    <option value="4">4대</option>
-                    <option value="5">5대 이상</option>
-                    <option value="기타">기타</option>
-                  </select>
-                  <input type="text" placeholder="입력" value={elevatorCnt} onChange={(e) => setElevatorCnt(e.target.value)} style={{ flex: 0.8, height: 46, borderRadius: 8, border: "1px solid #d1d5db", padding: "0 10px", fontSize: 14, background: "#fff" }} />
-                </div>
-              </div>
-              <div style={{ flex: 1 }}>
-                <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, height: 46, background: isIllegal ? "#fef2f2" : "#fff", border: `1px solid ${isIllegal ? "#ef4444" : "#e2e8f0"}`, borderRadius: 8, marginTop: 24, cursor: "pointer" }}>
-                  <input type="checkbox" checked={isIllegal} onChange={(e) => setIsIllegal(e.target.checked)} style={{ width: 18, height: 18, accentColor: "#ef4444" }} />
-                  <span style={{ fontSize: 13, fontWeight: 700, color: isIllegal ? "#ef4444" : "#4b5563" }}>⚠️ 위반건축물</span>
-                </label>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* 2. 거래 및 상세 정보 */}
         <div style={{ background:"#fff", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.03)", border:"1px solid #f3f4f6" }}>
@@ -1510,6 +1451,66 @@ function MobileVacancyWrite() {
             </div>
           </div>
         </div>
+
+        {/* 상세 제원 (선택형) - 지식산업센터 제외 */}
+        {propertyType === "상가·사무실·건물·공장·토지" && subCategory !== "토지" && subCategory !== "지식산업센터" && (
+          <div style={{ background: "#f8fafc", borderRadius: 14, padding: 16, marginBottom: 12, border: "1px solid #e2e8f0" }}>
+            <div style={{ fontSize: 13, fontWeight: 800, color: "#1e293b", marginBottom: 16, display: "flex", alignItems: "center", gap: 6 }}>
+              <span>🏢 상세 제원 (선택형)</span>
+            </div>
+            
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ fontSize: 12, fontWeight: 700, color: "#4b5563", marginBottom: 6, display: "block" }}>건축물 주용도</label>
+              <div style={{ display: "flex", gap: 6 }}>
+                <select value={["제1종근린생활시설", "제2종근린생활시설", "판매시설", "업무시설", "교육연구시설", "의료시설", "숙박시설", "단독주택", "공동주택", "공장", "창고시설", "기타", ""].includes(mainUsage) ? mainUsage : "기타"} onChange={(e) => setMainUsage(e.target.value === "기타" ? "" : e.target.value)} style={{ flex: 1, height: 46, borderRadius: 8, border: "1px solid #d1d5db", padding: "0 14px", fontSize: 14, background: "#fff" }}>
+                  <option value="">선택</option>
+                  {["제1종근린생활시설", "제2종근린생활시설", "판매시설", "업무시설", "교육연구시설", "의료시설", "숙박시설", "단독주택", "공동주택", "공장", "창고시설", "기타"].map(v => (
+                    <option key={v} value={v}>{v}</option>
+                  ))}
+                </select>
+                <input type="text" placeholder="직접입력" value={mainUsage} onChange={(e) => setMainUsage(e.target.value)} style={{ flex: 1, height: 46, borderRadius: 8, border: "1px solid #d1d5db", padding: "0 14px", fontSize: 14, background: "#fff" }} />
+              </div>
+            </div>
+            
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ fontSize: 12, fontWeight: 700, color: "#4b5563", marginBottom: 6, display: "block" }}>건물 구조</label>
+              <div style={{ display: "flex", gap: 6 }}>
+                <select value={["철근콘크리트구조", "철골구조", "경량철골구조", "일반철골구조", "벽돌구조", "목구조", "기타", ""].includes(buildingStructure) ? buildingStructure : "기타"} onChange={(e) => setBuildingStructure(e.target.value === "기타" ? "" : e.target.value)} style={{ flex: 1, height: 46, borderRadius: 8, border: "1px solid #d1d5db", padding: "0 14px", fontSize: 14, background: "#fff" }}>
+                  <option value="">선택</option>
+                  {["철근콘크리트구조", "철골구조", "경량철골구조", "일반철골구조", "벽돌구조", "목구조", "기타"].map(v => (
+                    <option key={v} value={v}>{v}</option>
+                  ))}
+                </select>
+                <input type="text" placeholder="직접입력" value={buildingStructure} onChange={(e) => setBuildingStructure(e.target.value)} style={{ flex: 1, height: 46, borderRadius: 8, border: "1px solid #d1d5db", padding: "0 14px", fontSize: 14, background: "#fff" }} />
+              </div>
+            </div>
+
+            <div style={{ display: "flex", gap: 12, alignItems: "flex-end" }}>
+              <div style={{ flex: 1 }}>
+                <label style={{ fontSize: 12, fontWeight: 700, color: "#4b5563", marginBottom: 6, display: "block" }}>승강기 대수</label>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <select value={["없음", "1", "2", "3", "4", "5", "기타", ""].includes(elevatorCnt) ? elevatorCnt : "기타"} onChange={(e) => setElevatorCnt(e.target.value === "기타" ? "" : e.target.value)} style={{ flex: 1, height: 46, borderRadius: 8, border: "1px solid #d1d5db", padding: "0 14px", fontSize: 14, background: "#fff" }}>
+                    <option value="">선택</option>
+                    <option value="없음">없음</option>
+                    <option value="1">1대</option>
+                    <option value="2">2대</option>
+                    <option value="3">3대</option>
+                    <option value="4">4대</option>
+                    <option value="5">5대 이상</option>
+                    <option value="기타">기타</option>
+                  </select>
+                  <input type="text" placeholder="입력" value={elevatorCnt} onChange={(e) => setElevatorCnt(e.target.value)} style={{ flex: 0.8, height: 46, borderRadius: 8, border: "1px solid #d1d5db", padding: "0 10px", fontSize: 14, background: "#fff" }} />
+                </div>
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, height: 46, background: isIllegal ? "#fef2f2" : "#fff", border: `1px solid ${isIllegal ? "#ef4444" : "#e2e8f0"}`, borderRadius: 8, marginTop: 24, cursor: "pointer" }}>
+                  <input type="checkbox" checked={isIllegal} onChange={(e) => setIsIllegal(e.target.checked)} style={{ width: 18, height: 18, accentColor: "#ef4444" }} />
+                  <span style={{ fontSize: 13, fontWeight: 700, color: isIllegal ? "#ef4444" : "#4b5563" }}>⚠️ 위반건축물</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        )}
         </>)}
 
         {/* ═══ STEP 3: 사진·상세 ═══ */}
