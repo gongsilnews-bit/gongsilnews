@@ -315,7 +315,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                           <div className="space-y-3">
                               <div>
                                   <label className="text-xs text-gray-500">표지 대제목 (Title)</label>
-                                  <input type="text" name="coverTitle" value={info.coverTitle || ""} onChange={handleChange} className="w-full border rounded p-2 text-sm font-semibold" />
+                                  <textarea name="address" value={info.address || ""} onChange={handleChange} className="w-full border rounded p-2 text-sm font-semibold resize-y" rows={2} />
                               </div>
                               <div>
                                   <label className="text-xs text-gray-500">표지 부제목 (Subtitle)</label>
